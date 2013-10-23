@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd `dirname $BASH_SOURCE`
+mkdir -p ~/bin
+ln -sf `pwd`/fzf ~/bin/fzf
+chmod +x ~/bin/fzf
+

@@ -1,0 +1,371 @@
+#!/usr/bin/env bash
+# vim: set filetype=ruby isk=@,48-57,_,192-255:
+#
+#     ____      ____
+#    / __/___  / __/
+#   / /_/_  / / /_
+#  / __/ / /_/ __/
+# /_/   /___/_/    Fuzzy finder for your shell
+#
+# URL:         https://github.com/junegunn/fzf
+# Author:      Junegunn Choi
+# License:     MIT
+# Last update: October 24, 2013
+#
+# Copyright (c) 2013 Junegunn Choi
+#
+# MIT License
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+exec /usr/bin/env ruby -x "$0" $* 3>&1 1>&2 2>&3
+#!ruby
+# encoding: utf-8
+
+require 'thread'
+require 'ostruct'
+require 'curses'
+
+MAX_SORT_LEN = 500
+C = Curses
+
+@main     = Thread.current
+@new      = []
+@lists    = []
+@query    = ''
+@mtx      = Mutex.new
+@smtx     = Mutex.new
+@cv       = ConditionVariable.new
+@count    = 0
+@cursor_x = 0
+@vcursor  = 0
+@matches  = []
+@stat     = OpenStruct.new(:hit => 0, :partial_hit => 0,
+                           :prefix_hit => 0, :search => 0)
+
+def max_items; C.lines - 2; end
+def cursor_y;  C.lines - 1; end
+def cprint str, col
+  C.attron  C.color_pair(col) | C::A_BOLD
+  C.addstr  str
+  C.attroff C.color_pair(col) | C::A_BOLD
+end
+
+def print_input
+  C.setpos cursor_y, 0
+  C.clrtoeol
+  cprint '> ',   1
+  cprint @query, 2
+end
+
+def print_info msg = nil
+  C.setpos cursor_y - 1, 0
+  C.clrtoeol
+  C.addstr "  #{@matches.length}/#{@count} file(s)#{msg}"
+end
+
+def refresh
+  C.setpos cursor_y, 2 + ulen(@query[0, @cursor_x])
+  C.refresh
+end
+
+def ctrl char
+  char.to_s.ord - 'a'.ord + 1
+end
+
+if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
+  def ulen str
+    expr = '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
+    str.gsub(Regexp.new(expr), '  ').length
+  end
+else
+  def ulen str
+    str.length
+  end
+
+  class String
+    def ord
+      self.unpack('c').first
+    end
+  end
+end
+
+C.init_screen
+C.start_color
+C.raw
+C.noecho
+C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
+C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
+C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
+C.init_pair 4, C::COLOR_RED,    C::COLOR_BLACK
+
+@read =
+  if $stdin.tty?
+    if !`which find`.empty?
+      IO.popen('find . -type f 2> /dev/null')
+    else
+      exit 1
+    end
+  else
+    $stdin
+  end
+
+reader = Thread.new {
+  while line = @read.gets
+    @mtx.synchronize do
+      @new << line.chomp
+      @cv.broadcast
+    end
+  end
+}
+
+searcher = Thread.new {
+  fcache     = {}
+  matches    = []
+  new_length = 0
+  pquery     = nil
+  vcursor    = 0
+  pvcursor   = nil
+  zz         = [0, 0]
+
+  begin
+    while true
+      query_changed = nil
+      new_items     = nil
+      vcursor_moved = nil
+      @mtx.synchronize do
+        while true
+          new_items     = !@new.empty?
+          query_changed = pquery   != @query
+          vcursor_moved = pvcursor != @vcursor
+
+          if !new_items && !query_changed && !vcursor_moved
+            @cv.wait @mtx
+            next
+          end
+
+          break
+        end
+
+        if new_items
+          @lists << [@new, {}]
+          @count += @new.length
+
+          @new   = []
+          fcache = {}
+        end
+
+        pquery   = @query
+        pvcursor = @vcursor
+      end#mtx
+
+      new_search = new_items || query_changed
+      if new_search
+        regexp = pquery.empty? ? nil :
+          Regexp.new(pquery.each_char.inject('') { |sum, e|
+            e = Regexp.escape e
+            sum << "#{e}[^#{e}]*?"
+          }, Regexp::IGNORECASE)
+
+        if fcache.has_key?(pquery)
+          @stat.hit += 1
+        else
+          @smtx.synchronize do
+            print_info ' ..'
+            refresh
+          end unless pquery.empty?
+        end
+        matches = fcache[pquery] ||= @lists.map { |pair|
+          list, cache = pair
+
+          if cache[pquery]
+            @stat.partial_hit += 1
+            cache[pquery]
+          else
+            prefix_cache = nil
+            (pquery.length - 1).downto(1) do |len|
+              prefix = pquery[0, len]
+              if prefix_cache = cache[prefix]
+                @stat.prefix_hit += 1
+                break
+              end
+            end
+
+            cache[pquery] ||= (prefix_cache ? prefix_cache.map(&:first) : list).map { |line|
+              if regexp
+                md = line.match regexp
+                md ? [line, md.offset(0)] : nil
+              else
+                [line, zz]
+              end
+            }.compact
+          end
+        }.flatten(1)
+        @stat.search += 1
+
+        new_length = matches.length
+        if new_length <= MAX_SORT_LEN
+          matches.replace matches.sort_by { |pair|
+            line, offset = pair
+            [offset.last - offset.first, line.length, line]
+          }
+        end
+      end#new matches
+
+      # This small delay reduces the number of partial lists.
+      sleep 0.2 if !query_changed && !vcursor_moved
+
+      prev_length = @matches.length
+      if vcursor_moved || new_search
+        vcursor =
+          @mtx.synchronize do
+            @matches = matches
+            @vcursor = [0, [@vcursor, new_length - 1, max_items - 1].min].max
+          end
+      end
+
+      # Output
+      @smtx.synchronize do
+        if new_length < prev_length
+          prev_length.downto(new_length) do |idx|
+            C.setpos cursor_y - idx - 2, 0
+            C.clrtoeol
+          end
+        end
+
+        maxc = C.cols - 3
+        matches[0, max_items].each_with_index do |item, idx|
+          next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
+
+          line, offset = item
+          row = cursor_y - idx - 2
+          chosen = idx == vcursor
+
+          if line.length > maxc
+            line = line[0, maxc] + '..'
+          end
+
+          C.setpos row, 0
+          C.clrtoeol
+          C.attron C.color_pair(3) | C::A_BOLD if chosen
+
+          b, e = offset
+          e = [e, maxc].min
+          if b < maxc && b < e
+            C.addstr line[0, b]
+            cprint   line[b...e], chosen ? 4 : 1
+            C.attron C.color_pair(3) | C::A_BOLD if chosen
+            C.addstr line[e..-1]
+          else
+            C.addstr line
+          end
+          C.attroff C.color_pair(3) | C::A_BOLD if chosen
+        end
+
+        print_info
+        print_input
+        refresh
+      end
+    end
+  rescue Exception => e
+    @main.raise e
+  end
+}
+
+got = nil
+begin
+  tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
+  input   = ''
+  cursor  = 0
+  actions = {
+    ctrl(:c) => proc { exit 1 },
+    ctrl(:d) => proc { exit 1 if input.empty? },
+    ctrl(:m) => proc {
+      @mtx.synchronize do
+        got = @matches.fetch(@vcursor, [])[0]
+      end
+      exit 0
+    },
+    ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
+    ctrl(:a) => proc { cursor = 0 },
+    ctrl(:e) => proc { cursor = input.length },
+    ctrl(:j) => proc {
+      @mtx.synchronize do
+        @vcursor = [0, @vcursor - 1].max
+        @cv.broadcast
+      end
+    },
+    ctrl(:k) => proc {
+      @mtx.synchronize do
+        @vcursor = [0, [@matches.length - 1, @vcursor + 1].min].max
+        @cv.broadcast
+      end
+    },
+    ctrl(:w) => proc {
+      ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
+      input  = input[0...ridx] + input[cursor..-1]
+      cursor = ridx
+    },
+    127 => proc { input[cursor -= 1] = '' if cursor > 0 },
+    68  => proc { cursor = [0, cursor - 1].max },
+    67  => proc { cursor = [input.length, cursor + 1].min },
+  }.tap { |actions|
+    actions[ctrl :b] = actions[68]
+    actions[ctrl :f] = actions[67]
+    actions[ctrl :h] = actions[127]
+    actions[66] = actions[ctrl :n] = actions[ctrl :j]
+    actions[65] = actions[ctrl :p] = actions[ctrl :k]
+  }
+
+  while true
+    ord = tty.getc.ord
+    if ord == 27
+      ord = tty.getc.ord
+      if ord == 91
+        ord = tty.getc.ord
+      end
+    end
+
+    actions.fetch(ord, proc { |ord|
+      char = [ord].pack('U*')
+      if char =~ /[[:print:]]/
+        input.insert cursor, char
+        cursor += 1
+      end
+    }).call(ord)
+
+    # Dispatch key event
+    @mtx.synchronize do
+      @query = input.dup
+      @cv.broadcast
+    end
+
+    # Update user input
+    @smtx.synchronize do
+      @cursor_x = cursor
+      print_input
+      refresh
+    end
+  end
+ensure
+  C.close_screen
+  $stderr.puts got if got
+end
+
