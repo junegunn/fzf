@@ -119,7 +119,7 @@ C.init_pair 4, C::COLOR_RED,    C::COLOR_BLACK
 @read =
   if $stdin.tty?
     if !`which find`.empty?
-      IO.popen('find . -type f 2> /dev/null')
+      IO.popen("find * -path '*/\\.*' -prune -o -type f -print 2> /dev/null")
     else
       exit 1
     end
