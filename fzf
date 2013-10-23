@@ -78,7 +78,7 @@ end
 def print_info msg = nil
   C.setpos cursor_y - 1, 0
   C.clrtoeol
-  C.addstr "  #{@matches.length}/#{@count} file(s)#{msg}"
+  C.addstr "  #{@matches.length}/#{@count}#{msg}"
 end
 
 def refresh
