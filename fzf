@@ -295,6 +295,7 @@ begin
   input   = ''
   cursor  = 0
   actions = {
+    :nop     => proc {},
     ctrl(:c) => proc { exit 1 },
     ctrl(:d) => proc { exit 1 if input.empty? },
     ctrl(:m) => proc {
@@ -324,14 +325,14 @@ begin
       cursor = ridx
     },
     127 => proc { input[cursor -= 1] = '' if cursor > 0 },
-    68  => proc { cursor = [0, cursor - 1].max },
-    67  => proc { cursor = [input.length, cursor + 1].min },
+    :left => proc { cursor = [0, cursor - 1].max },
+    :right => proc { cursor = [input.length, cursor + 1].min },
   }.tap { |actions|
     actions[ctrl :b] = actions[68]
     actions[ctrl :f] = actions[67]
     actions[ctrl :h] = actions[127]
-    actions[66] = actions[ctrl :n] = actions[ctrl :j]
-    actions[65] = actions[ctrl :p] = actions[ctrl :k]
+    actions[ctrl :n] = actions[ctrl :j]
+    actions[ctrl :p] = actions[ctrl :k]
   }
 
   while true
@@ -339,7 +340,13 @@ begin
     if ord == 27
       ord = tty.getc.ord
       if ord == 91
-        ord = tty.getc.ord
+        ord = case tty.getc.ord
+              when 68 then :left
+              when 67 then :right
+              when 66 then ctrl(:j)
+              when 65 then ctrl(:k)
+              else :nop
+              end
       end
     end
 
