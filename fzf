@@ -328,8 +328,8 @@ begin
     :left => proc { cursor = [0, cursor - 1].max },
     :right => proc { cursor = [input.length, cursor + 1].min },
   }.tap { |actions|
-    actions[ctrl :b] = actions[68]
-    actions[ctrl :f] = actions[67]
+    actions[ctrl :b] = actions[:left]
+    actions[ctrl :f] = actions[:right]
     actions[ctrl :h] = actions[127]
     actions[ctrl :n] = actions[ctrl :j]
     actions[ctrl :p] = actions[ctrl :k]
