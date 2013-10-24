@@ -105,6 +105,12 @@ else
       self.unpack('c').first
     end
   end
+
+  class Fixnum
+    def ord
+      self
+    end
+  end
 end
 
 C.init_screen
@@ -179,7 +185,7 @@ searcher = Thread.new {
       new_search = new_items || query_changed
       if new_search
         regexp = pquery.empty? ? nil :
-          Regexp.new(pquery.each_char.inject('') { |sum, e|
+          Regexp.new(pquery.split(//).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
           }, Regexp::IGNORECASE)
@@ -208,7 +214,7 @@ searcher = Thread.new {
               end
             end
 
-            cache[pquery] ||= (prefix_cache ? prefix_cache.map(&:first) : list).map { |line|
+            cache[pquery] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
               if regexp
                 md = line.match regexp
                 md ? [line, md.offset(0)] : nil
@@ -217,7 +223,7 @@ searcher = Thread.new {
               end
             }.compact
           end
-        }.flatten(1)
+        }.inject([]) { |all, e| all.concat e }
         @stat.search += 1
 
         new_length = matches.length
@@ -327,13 +333,12 @@ begin
     127 => proc { input[cursor -= 1] = '' if cursor > 0 },
     :left => proc { cursor = [0, cursor - 1].max },
     :right => proc { cursor = [input.length, cursor + 1].min },
-  }.tap { |actions|
-    actions[ctrl :b] = actions[:left]
-    actions[ctrl :f] = actions[:right]
-    actions[ctrl :h] = actions[127]
-    actions[ctrl :n] = actions[ctrl :j]
-    actions[ctrl :p] = actions[ctrl :k]
   }
+  actions[ctrl(:b)] = actions[:left]
+  actions[ctrl(:f)] = actions[:right]
+  actions[ctrl(:h)] = actions[127]
+  actions[ctrl(:n)] = actions[ctrl(:j)]
+  actions[ctrl(:p)] = actions[ctrl(:k)]
 
   while true
     ord = tty.getc.ord
