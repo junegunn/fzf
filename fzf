@@ -57,7 +57,8 @@ C = Curses
 @cursor_x = 0
 @vcursor  = 0
 @matches  = []
-@fan      = '-\|/-\|/'.split(//)
+@loaded   = false
+@sort     = ARGV.delete('--no-sort').nil?
 @stat     = OpenStruct.new(:hit => 0, :partial_hit => 0,
                            :prefix_hit => 0, :search => 0)
 
@@ -76,7 +77,8 @@ def print_input
   cprint @query, 2
 end
 
-def print_info msg = nil
+def print_info progress = true, msg = nil
+  @fan ||= '-\|/-\|/'.split(//)
   C.setpos cursor_y - 1, 0
   C.clrtoeol
   prefix =
@@ -87,7 +89,7 @@ def print_info msg = nil
     else
       '  '
     end
-  C.addstr "#{prefix}#{@matches.length}/#{@count}"
+  C.addstr "#{prefix}#{@matches.length}/#{@count}" if progress
   C.addstr msg if msg
 end
 
@@ -151,6 +153,10 @@ reader = Thread.new {
       @cv.broadcast
     end
   end
+  @mtx.synchronize do
+    @loaded = true
+    @cv.broadcast
+  end
   @smtx.synchronize { @fan = [] }
 }
 
@@ -158,9 +164,10 @@ searcher = Thread.new {
   fcache     = {}
   matches    = []
   new_length = 0
-  pquery     = nil
-  vcursor    = 0
-  pvcursor   = nil
+  pquery     = ''
+  pvcursor   = 0
+  ploaded    = false
+  plength    = 0
   zz         = [0, 0]
 
   begin
@@ -168,101 +175,118 @@ searcher = Thread.new {
       query_changed = nil
       new_items     = nil
       vcursor_moved = nil
+      wait_for_completion = nil
       @mtx.synchronize do
         while true
-          new_items     = !@new.empty?
-          query_changed = pquery   != @query
-          vcursor_moved = pvcursor != @vcursor
+          new_items           = !@new.empty?
+          query_changed       = pquery   != @query
+          vcursor_moved       = pvcursor != @vcursor
+          loading_finished    = ploaded  != @loaded
+          wait_for_completion = !@sort && !@loaded
 
-          if !new_items && !query_changed && !vcursor_moved
+          if !new_items && !query_changed && !vcursor_moved && !loading_finished
             @cv.wait @mtx
             next
           end
-
           break
         end
 
-        if new_items
+        if !wait_for_completion && new_items
           @lists << [@new, {}]
           @count += @new.length
-
-          @new   = []
-          fcache = {}
+          @new    = []
+          fcache  = {}
         end
 
         pquery   = @query
         pvcursor = @vcursor
+        ploaded  = @loaded
       end#mtx
 
+      if wait_for_completion
+        @smtx.synchronize do
+          print_info false, " +#{@new.length}"
+          print_input
+          refresh
+          sleep 0.1
+        end
+        next
+      end
+
       new_search = new_items || query_changed
-      if new_search
+      if new_search && !@lists.empty?
         regexp = pquery.empty? ? nil :
           Regexp.new(pquery.split(//).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
           }, Regexp::IGNORECASE)
 
-        if fcache.has_key?(pquery)
-          @stat.hit += 1
-        else
-          @smtx.synchronize do
-            print_info ' ..'
-            refresh
-          end unless pquery.empty?
-        end
-        matches = fcache[pquery] ||= @lists.map { |pair|
-          list, cache = pair
-
-          if cache[pquery]
-            @stat.partial_hit += 1
-            cache[pquery]
+        matches =
+          if fcache.has_key?(pquery)
+            @stat.hit += 1
+            fcache[pquery]
           else
-            prefix_cache = nil
-            (pquery.length - 1).downto(1) do |len|
-              prefix = pquery[0, len]
-              if prefix_cache = cache[prefix]
-                @stat.prefix_hit += 1
-                break
-              end
-            end
+            @smtx.synchronize do
+              print_info true, ' ..'
+              refresh
+            end unless pquery.empty?
 
-            cache[pquery] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
-              if regexp
-                md = line.match regexp
-                md ? [line, md.offset(0)] : nil
+            found = @lists.map { |pair|
+              list, cache = pair
+
+              if cache[pquery]
+                @stat.partial_hit += 1
+                cache[pquery]
               else
-                [line, zz]
+                prefix_cache = nil
+                (pquery.length - 1).downto(1) do |len|
+                  prefix = pquery[0, len]
+                  if prefix_cache = cache[prefix]
+                    @stat.prefix_hit += 1
+                    break
+                  end
+                end
+
+                cache[pquery] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
+                  if regexp
+                    # Ignore errors: e.g. invalid byte sequence in UTF-8
+                    md = line.match(regexp) rescue nil
+                    md ? [line, md.offset(0)] : nil
+                  else
+                    [line, zz]
+                  end
+                }.compact
               end
-            }.compact
+            }.inject([]) { |all, e| all.concat e }
+            fcache[pquery] = @sort ? found : found.reverse
           end
-        }.inject([]) { |all, e| all.concat e }
         @stat.search += 1
 
         new_length = matches.length
-        if new_length <= MAX_SORT_LEN
+        if @sort && new_length <= MAX_SORT_LEN
           matches.replace matches.sort_by { |pair|
             line, offset = pair
             [offset.last - offset.first, line.length, line]
           }
         end
-      end#new matches
+      end#new_search
 
-      # This small delay reduces the number of partial lists.
+      # This small delay reduces the number of partial lists
       sleep 0.2 if !query_changed && !vcursor_moved
 
-      prev_length = @matches.length
       if vcursor_moved || new_search
-        vcursor =
-          @mtx.synchronize do
-            @matches = matches
-            @vcursor = [0, [@vcursor, new_length - 1, max_items - 1].min].max
-          end
+        @mtx.synchronize do
+          plength  = [@matches.length, max_items].min
+          @matches = matches
+          pvcursor = @vcursor = [0, [@vcursor, new_length - 1, max_items - 1].min].max
+        end
       end
 
       # Output
       @smtx.synchronize do
-        if new_length < prev_length
-          prev_length.downto(new_length) do |idx|
+        item_length = [new_length, max_items].min
+        if item_length < plength
+          plength.downto(item_length) do |idx|
             C.setpos cursor_y - idx - 2, 0
             C.clrtoeol
           end
@@ -270,11 +294,11 @@ searcher = Thread.new {
 
         maxc = C.cols - 3
         matches[0, max_items].each_with_index do |item, idx|
-          next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
+          next if !new_search && !((pvcursor-1)..(pvcursor+1)).include?(idx)
 
           line, offset = item
           row = cursor_y - idx - 2
-          chosen = idx == vcursor
+          chosen = idx == pvcursor
 
           if line.length > maxc
             line = line[0, maxc] + '..'
@@ -297,7 +321,7 @@ searcher = Thread.new {
           C.attroff C.color_pair(3) | C::A_BOLD if chosen
         end
 
-        print_info
+        print_info if !@lists.empty? || ploaded
         print_input
         refresh
       end
@@ -327,13 +351,13 @@ begin
     ctrl(:e) => proc { cursor = input.length },
     ctrl(:j) => proc {
       @mtx.synchronize do
-        @vcursor = [0, @vcursor - 1].max
+        @vcursor -= 1
         @cv.broadcast
       end
     },
     ctrl(:k) => proc {
       @mtx.synchronize do
-        @vcursor = [0, [@matches.length - 1, @vcursor + 1].min].max
+        @vcursor += 1
         @cv.broadcast
       end
     },

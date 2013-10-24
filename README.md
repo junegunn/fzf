@@ -52,13 +52,6 @@ You can use any plugin manager. If you don't use one, I recommend you try
 
 3. Run `:PlugInstall`
 
-Then, you have `:FZF [optional command]` command.
-
-```vim
-:FZF
-:FZF find ~/github -type d
-```
-
 Usage
 -----
 
@@ -76,6 +69,12 @@ files (excluding hidden ones).
 vim `fzf`
 ```
 
+If you do not want the matched items to be sorted, provide `--no-sort` option.
+
+```sh
+history | fzf --no-sort
+```
+
 ### Key binding
 
 Use CTRL-J and CTRL-K (or CTRL-N and CTRL-P) to change the selection, press
@@ -87,8 +86,24 @@ The following readline key bindings should also work as expected.
 - CTRL-B / CTRL-F
 - CTRL-W / CTRL-U
 
-Useful bash bindings and settings
----------------------------------
+Usage as Vim plugin
+-------------------
+
+If you install fzf as a Vim plugin, `:FZF` command will be added.
+
+```vim
+:FZF
+:FZF --no-sort
+```
+
+You can override the command which produces input to fzf.
+
+```vim
+let g:fzf_command = 'find . -type f'
+```
+
+Useful bash examples
+--------------------
 
 ```sh
 # vimf - Open selected file in Vim
@@ -102,6 +117,16 @@ fd() {
 # fda - including hidden directories
 fda() {
   DIR=`find ${1:-*} -type d 2> /dev/null | fzf` && cd "$DIR"
+}
+
+# fh - repeat history
+fh() {
+  eval $(history | fzf --no-sort | sed 's/ *[0-9]* *//')
+}
+
+# fkill - kill process
+fkill() {
+  ps -ef | sed 1d | fzf | awk '{print $2}' | xargs kill -${1:-9}
 }
 
 # CTRL-T - Open fuzzy finder and paste the selected item to the command line
