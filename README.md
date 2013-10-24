@@ -1,14 +1,15 @@
-fzf: fuzzy finder for your shell
-================================
+fzf - Fuzzy finder for your shell
+=================================
 
 fzf is a general-purpose fuzzy finder for your shell.
 
-It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim).
+It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim) and
+the likes.
 
 Requirements
 ------------
 
-fzf requires Ruby.
+fzf requires Ruby (>= 1.8.5).
 
 Installation
 ------------
@@ -86,8 +87,8 @@ The following readline key bindings should also work as expected.
 - CTRL-B / CTRL-F
 - CTRL-W / CTRL-U
 
-Useful bash binding and settings
---------------------------------
+Useful bash bindings and settings
+---------------------------------
 
 ```sh
 # vimf - Open selected file in Vim
