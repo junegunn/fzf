@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
 # vim: set filetype=ruby isk=@,48-57,_,192-255:
+#!/usr/bin/env bash
 #
 #     ____      ____
 #    / __/___  / __/
@@ -40,27 +40,31 @@ exec /usr/bin/env ruby -x "$0" $* 3>&1 1>&2 2>&3
 # encoding: utf-8
 
 require 'thread'
-require 'ostruct'
 require 'curses'
 
 MAX_SORT_LEN = 500
 C = Curses
 
-@main     = Thread.current
-@new      = []
-@lists    = []
-@query    = ''
 @mtx      = Mutex.new
 @smtx     = Mutex.new
 @cv       = ConditionVariable.new
+@lists    = []
+@new      = []
+@query    = ''
+@matches  = []
 @count    = 0
 @cursor_x = 0
 @vcursor  = 0
-@matches  = []
-@loaded   = false
+@events   = {}
 @sort     = ARGV.delete('--no-sort').nil?
-@stat     = OpenStruct.new(:hit => 0, :partial_hit => 0,
-                           :prefix_hit => 0, :search => 0)
+@stat     = { :hit => 0, :partial_hit => 0, :prefix_hit => 0, :search => 0 }
+
+def emit event
+  @mtx.synchronize do
+    @events[event] = yield
+    @cv.broadcast
+  end
+end
 
 def max_items; C.lines - 2; end
 def cursor_y;  C.lines - 1; end
@@ -148,59 +152,45 @@ C.init_pair 5, C::COLOR_CYAN,   C::COLOR_BLACK
 
 reader = Thread.new {
   while line = @read.gets
-    @mtx.synchronize do
-      @new << line.chomp
-      @cv.broadcast
-    end
+    emit(:new) { @new << line.chomp }
   end
-  @mtx.synchronize do
-    @loaded = true
-    @cv.broadcast
-  end
+  emit(:loaded) { true }
   @smtx.synchronize { @fan = [] }
 }
 
+main     = Thread.current
 searcher = Thread.new {
-  fcache     = {}
-  matches    = []
-  new_length = 0
-  pquery     = ''
-  pvcursor   = 0
-  ploaded    = false
-  plength    = 0
-  zz         = [0, 0]
+  events  = {}
+  fcache  = {}
+  matches = []
+  mcount  = 0      # match count
+  plcount = 0      # prev list count
+  q       = ''
+  vcursor = 0
+  zz      = [0, 0]
 
   begin
     while true
-      query_changed = nil
-      new_items     = nil
-      vcursor_moved = nil
       wait_for_completion = nil
       @mtx.synchronize do
         while true
-          new_items           = !@new.empty?
-          query_changed       = pquery   != @query
-          vcursor_moved       = pvcursor != @vcursor
-          loading_finished    = ploaded  != @loaded
-          wait_for_completion = !@sort && !@loaded
+          events.merge! @events
+          wait_for_completion = !@sort && !events[:loaded]
 
-          if !new_items && !query_changed && !vcursor_moved && !loading_finished
+          if @events.empty? # No new events
             @cv.wait @mtx
             next
           end
+          @events.clear
           break
         end
 
-        if !wait_for_completion && new_items
+        if !wait_for_completion && events[:new]
           @lists << [@new, {}]
           @count += @new.length
           @new    = []
           fcache  = {}
         end
-
-        pquery   = @query
-        pvcursor = @vcursor
-        ploaded  = @loaded
       end#mtx
 
       if wait_for_completion
@@ -213,41 +203,45 @@ searcher = Thread.new {
         next
       end
 
-      new_search = new_items || query_changed
+      new_search = events[:key] || events[:new]
+      user_input = events[:key] || events[:vcursor]
+
       if new_search && !@lists.empty?
-        regexp = pquery.empty? ? nil :
-          Regexp.new(pquery.split(//).inject('') { |sum, e|
+        events.delete :new
+        q = events.delete(:key) || q
+        regexp = q.empty? ? nil :
+          Regexp.new(q.split(//).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
           }, Regexp::IGNORECASE)
 
         matches =
-          if fcache.has_key?(pquery)
-            @stat.hit += 1
-            fcache[pquery]
+          if fcache.has_key?(q)
+            @stat[:hit] += 1
+            fcache[q]
           else
             @smtx.synchronize do
               print_info true, ' ..'
               refresh
-            end unless pquery.empty?
+            end unless q.empty?
 
             found = @lists.map { |pair|
               list, cache = pair
 
-              if cache[pquery]
-                @stat.partial_hit += 1
-                cache[pquery]
+              if cache[q]
+                @stat[:partial_hit] += 1
+                cache[q]
               else
                 prefix_cache = nil
-                (pquery.length - 1).downto(1) do |len|
-                  prefix = pquery[0, len]
+                (q.length - 1).downto(1) do |len|
+                  prefix = q[0, len]
                   if prefix_cache = cache[prefix]
-                    @stat.prefix_hit += 1
+                    @stat[:prefix_hit] += 1
                     break
                   end
                 end
 
-                cache[pquery] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
+                cache[q] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
                   if regexp
                     # Ignore errors: e.g. invalid byte sequence in UTF-8
                     md = line.match(regexp) rescue nil
@@ -258,12 +252,12 @@ searcher = Thread.new {
                 }.compact
               end
             }.inject([]) { |all, e| all.concat e }
-            fcache[pquery] = @sort ? found : found.reverse
+            fcache[q] = @sort ? found : found.reverse
           end
-        @stat.search += 1
+        @stat[:search] += 1
 
-        new_length = matches.length
-        if @sort && new_length <= MAX_SORT_LEN
+        mcount = matches.length
+        if @sort && mcount <= MAX_SORT_LEN
           matches.replace matches.sort_by { |pair|
             line, offset = pair
             [offset.last - offset.first, line.length, line]
@@ -272,21 +266,21 @@ searcher = Thread.new {
       end#new_search
 
       # This small delay reduces the number of partial lists
-      sleep 0.2 if !query_changed && !vcursor_moved
+      sleep 0.2 unless user_input
 
-      if vcursor_moved || new_search
+      if events.delete(:vcursor) || new_search
         @mtx.synchronize do
-          plength  = [@matches.length, max_items].min
+          plcount  = [@matches.length, max_items].min
           @matches = matches
-          pvcursor = @vcursor = [0, [@vcursor, new_length - 1, max_items - 1].min].max
+          vcursor  = @vcursor = [0, [@vcursor, mcount - 1, max_items - 1].min].max
         end
       end
 
       # Output
       @smtx.synchronize do
-        item_length = [new_length, max_items].min
-        if item_length < plength
-          plength.downto(item_length) do |idx|
+        item_length = [mcount, max_items].min
+        if item_length < plcount
+          plcount.downto(item_length) do |idx|
             C.setpos cursor_y - idx - 2, 0
             C.clrtoeol
           end
@@ -294,11 +288,11 @@ searcher = Thread.new {
 
         maxc = C.cols - 3
         matches[0, max_items].each_with_index do |item, idx|
-          next if !new_search && !((pvcursor-1)..(pvcursor+1)).include?(idx)
+          next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
 
           line, offset = item
           row = cursor_y - idx - 2
-          chosen = idx == pvcursor
+          chosen = idx == vcursor
 
           if line.length > maxc
             line = line[0, maxc] + '..'
@@ -321,13 +315,13 @@ searcher = Thread.new {
           C.attroff C.color_pair(3) | C::A_BOLD if chosen
         end
 
-        print_info if !@lists.empty? || ploaded
+        print_info if !@lists.empty? || events[:loaded]
         print_input
         refresh
       end
     end
   rescue Exception => e
-    @main.raise e
+    main.raise e
   end
 }
 
@@ -349,18 +343,8 @@ begin
     ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
     ctrl(:a) => proc { cursor = 0 },
     ctrl(:e) => proc { cursor = input.length },
-    ctrl(:j) => proc {
-      @mtx.synchronize do
-        @vcursor -= 1
-        @cv.broadcast
-      end
-    },
-    ctrl(:k) => proc {
-      @mtx.synchronize do
-        @vcursor += 1
-        @cv.broadcast
-      end
-    },
+    ctrl(:j) => proc { emit(:vcursor) { @vcursor -= 1 } },
+    ctrl(:k) => proc { emit(:vcursor) { @vcursor += 1 } },
     ctrl(:w) => proc {
       ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
       input  = input[0...ridx] + input[cursor..-1]
@@ -400,10 +384,7 @@ begin
     }).call(ord)
 
     # Dispatch key event
-    @mtx.synchronize do
-      @query = input.dup
-      @cv.broadcast
-    end
+    emit(:key) { @query = input.dup }
 
     # Update user input
     @smtx.synchronize do

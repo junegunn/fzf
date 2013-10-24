@@ -107,7 +107,9 @@ Useful bash examples
 
 ```sh
 # vimf - Open selected file in Vim
-alias vimf='vim `fzf`'
+vimf() {
+  FILE=`fzf` && vim "$FILE"
+}
 
 # fd - cd to selected directory
 fd() {
