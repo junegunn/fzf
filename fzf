@@ -57,15 +57,16 @@ C = Curses
 @cursor_x = 0
 @vcursor  = 0
 @matches  = []
+@fan      = '-\|/-\|/'.split(//)
 @stat     = OpenStruct.new(:hit => 0, :partial_hit => 0,
                            :prefix_hit => 0, :search => 0)
 
 def max_items; C.lines - 2; end
 def cursor_y;  C.lines - 1; end
-def cprint str, col
-  C.attron  C.color_pair(col) | C::A_BOLD
+def cprint str, col, flag = C::A_BOLD
+  C.attron  C.color_pair(col) | flag
   C.addstr  str
-  C.attroff C.color_pair(col) | C::A_BOLD
+  C.attroff C.color_pair(col) | flag
 end
 
 def print_input
@@ -78,7 +79,16 @@ end
 def print_info msg = nil
   C.setpos cursor_y - 1, 0
   C.clrtoeol
-  C.addstr "  #{@matches.length}/#{@count}#{msg}"
+  prefix =
+    if fan = @fan.shift
+      @fan.push fan
+      cprint fan, 5, 0
+      ' '
+    else
+      '  '
+    end
+  C.addstr "#{prefix}#{@matches.length}/#{@count}"
+  C.addstr msg if msg
 end
 
 def refresh
@@ -121,6 +131,7 @@ C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
 C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
 C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
 C.init_pair 4, C::COLOR_RED,    C::COLOR_BLACK
+C.init_pair 5, C::COLOR_CYAN,   C::COLOR_BLACK
 
 @read =
   if $stdin.tty?
@@ -140,6 +151,7 @@ reader = Thread.new {
       @cv.broadcast
     end
   end
+  @smtx.synchronize { @fan = [] }
 }
 
 searcher = Thread.new {
