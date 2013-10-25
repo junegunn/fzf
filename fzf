@@ -73,7 +73,6 @@ require 'curses'
 @cursor_x = 0
 @vcursor  = 0
 @events   = {}
-@stat     = { :hit => 0, :partial_hit => 0, :prefix_hit => 0, :search => 0 }
 
 def emit event
   @mtx.synchronize do
@@ -232,33 +231,28 @@ searcher = Thread.new {
             sum << "#{e}[^#{e}]*?"
           }, @rxflag)
 
-        matches =
-          if fcache.has_key?(q)
-            @stat[:hit] += 1
-            fcache[q]
-          else
+        matches = fcache[q] ||=
+          begin
             @smtx.synchronize do
               print_info true, ' ..'
               refresh
             end unless q.empty?
 
-            found = @lists.map { |pair|
-              list, cache = pair
+            found = []
+            skip  = false
+            @lists.each do |pair|
+              @mtx.synchronize { skip = @events[:key] }
+              break if skip
 
-              if cache[q]
-                @stat[:partial_hit] += 1
-                cache[q]
-              else
+              list, cache = pair
+              found.concat(cache[q] ||= begin
                 prefix_cache = nil
                 (q.length - 1).downto(1) do |len|
                   prefix = q[0, len]
-                  if prefix_cache = cache[prefix]
-                    @stat[:prefix_hit] += 1
-                    break
-                  end
+                  break if prefix_cache = cache[prefix]
                 end
 
-                cache[q] ||= (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
+                (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
                   if regexp
                     # Ignore errors: e.g. invalid byte sequence in UTF-8
                     md = line.match(regexp) rescue nil
@@ -267,11 +261,11 @@ searcher = Thread.new {
                     [line, zz]
                   end
                 }.compact
-              end
-            }.inject([]) { |all, e| all.concat e }
-            fcache[q] = @sort ? found : found.reverse
+              end)
+            end
+            next if skip
+            @sort ? found : found.reverse
           end
-        @stat[:search] += 1
 
         mcount = matches.length
         if @sort && mcount <= @sort
