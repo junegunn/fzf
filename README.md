@@ -55,6 +55,14 @@ You can use any plugin manager. If you don't use one, I recommend you try
 Usage
 -----
 
+```
+usage: fzf [options]
+
+  -s, --sort=MAX   Maximum number of matched items to sort. Default: 500
+  +s, --no-sort    Keep the sequence unchanged.
+  +i               Case-sensitive match
+```
+
 fzf will launch curses-based finder, read the list from STDIN, and write the
 selected item to STDOUT.
 
@@ -69,10 +77,11 @@ files (excluding hidden ones).
 vim `fzf`
 ```
 
-If you do not want the matched items to be sorted, provide `--no-sort` option.
+If you want to preserve the exact sequence of the input, provide `--no-sort` (or
+`+s`) option.
 
 ```sh
-history | fzf --no-sort
+history | fzf +s
 ```
 
 ### Key binding
@@ -123,7 +132,7 @@ fda() {
 
 # fh - repeat history
 fh() {
-  eval $(history | fzf --no-sort | sed 's/ *[0-9]* *//')
+  eval $(history | fzf +s | sed 's/ *[0-9]* *//')
 }
 
 # fkill - kill process

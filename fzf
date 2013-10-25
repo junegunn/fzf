@@ -39,11 +39,28 @@ exec /usr/bin/env ruby -x "$0" $* 3>&1 1>&2 2>&3
 #!ruby
 # encoding: utf-8
 
+def usage x
+  puts %[usage: fzf [options]
+
+  -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
+  +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
+  +i               Case-sensitive match]
+  exit x
+end
+
+usage 0 unless (%w[--help -h] & ARGV).empty?
+@rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
+@sort   = (ARGV.delete('+s') || ARGV.delete('--no-sort')) ? nil : 500
+rest    = ARGV.join ' '
+if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
+  usage 1 unless @sort
+  @sort = sort[2].to_i
+  rest  = rest.delete sort[0]
+end
+usage 1 unless rest.empty?
+
 require 'thread'
 require 'curses'
-
-MAX_SORT_LEN = 500
-C = Curses
 
 @mtx      = Mutex.new
 @smtx     = Mutex.new
@@ -56,7 +73,6 @@ C = Curses
 @cursor_x = 0
 @vcursor  = 0
 @events   = {}
-@sort     = ARGV.delete('--no-sort').nil?
 @stat     = { :hit => 0, :partial_hit => 0, :prefix_hit => 0, :search => 0 }
 
 def emit event
@@ -66,6 +82,7 @@ def emit event
   end
 end
 
+C = Curses
 def max_items; C.lines - 2; end
 def cursor_y;  C.lines - 1; end
 def cprint str, col, flag = C::A_BOLD
@@ -213,7 +230,7 @@ searcher = Thread.new {
           Regexp.new(q.split(//).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
-          }, Regexp::IGNORECASE)
+          }, @rxflag)
 
         matches =
           if fcache.has_key?(q)
@@ -257,7 +274,7 @@ searcher = Thread.new {
         @stat[:search] += 1
 
         mcount = matches.length
-        if @sort && mcount <= MAX_SORT_LEN
+        if @sort && mcount <= @sort
           matches.replace matches.sort_by { |pair|
             line, offset = pair
             [offset.last - offset.first, line.length, line]
