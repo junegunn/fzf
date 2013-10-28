@@ -237,25 +237,28 @@ C.noecho
 if C.can_change_color?
   fg = ENV.fetch('FZF_FG', 252).to_i
   bg = ENV.fetch('FZF_BG', 236).to_i
-  C.init_pair 1, 110, bg
-  C.init_pair 2, fg,  bg
-  C.init_pair 3, 108, bg
-  C.init_pair 4, 220, bg - 1
-  C.init_pair 5, 151, bg - 1
-  C.init_pair 6, 148, bg + 1
-  C.init_pair 7, 144, bg + 1
+  C.init_pair 1, 110,    bg
+  C.init_pair 2, fg,     bg
+  C.init_pair 3, 108,    bg
+  C.init_pair 4, fg + 2, bg - 1
+  C.init_pair 5, 151,    bg - 1
+  C.init_pair 6, 148,    bg + 1
+  C.init_pair 7, 144,    bg + 1
+  C.init_pair 8, 161,    bg - 1
 else
   C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
   C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
-  C.init_pair 3, C::COLOR_CYAN,   C::COLOR_BLACK
+  C.init_pair 3, C::COLOR_GREEN,  C::COLOR_BLACK
   C.init_pair 4, C::COLOR_YELLOW, C::COLOR_BLACK
-  C.init_pair 5, C::COLOR_CYAN,   C::COLOR_BLACK
+  C.init_pair 5, C::COLOR_GREEN,  C::COLOR_BLACK
   C.init_pair 6, C::COLOR_GREEN,  C::COLOR_BLACK
   C.init_pair 7, C::COLOR_WHITE,  C::COLOR_BLACK
+  C.init_pair 8, C::COLOR_RED,    C::COLOR_BLACK
 end
 
 def color sym, bold = false
-  C.color_pair([:blue, :normal, :match, :chosen, :match!, :fan, :info].index(sym) + 1) |
+  C.color_pair([:blue, :normal, :match, :chosen,
+                :match!, :fan, :info, :red].index(sym) + 1) |
     (bold ? C::A_BOLD : 0)
 end
 
@@ -418,8 +421,10 @@ searcher = Thread.new {
 
           C.setpos row, 0
           C.clrtoeol
+          cprint chosen ? '>' : ' ', color(:red, true)
+          cprint ' ', color(chosen ? :chosen : :normal)
+
           C.attron basic
-          C.addstr chosen ? '> ' : '  '
 
           b, e = offset
           e = [e, maxc].min
