@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: October 24, 2013
+# Last update: October 28, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -74,6 +74,86 @@ require 'curses'
 @vcursor  = 0
 @events   = {}
 
+case RUBY_PLATFORM
+when /darwin/
+  module UConv
+    CHOSUNG   = 0x1100
+    JUNGSUNG  = 0x1161
+    JONGSUNG  = 0x11A7
+    CHOSUNGS  = 19
+    JUNGSUNGS = 21
+    JONGSUNGS = 28
+    JJCOUNT   = JUNGSUNGS * JONGSUNGS
+    NFC_BEGIN = 0xAC00
+    NFC_END   = NFC_BEGIN + CHOSUNGS * JUNGSUNGS * JONGSUNGS
+
+    def self.nfd str
+      ret = ''
+      str.split(//).each do |c|
+        cp = c.ord
+        if cp >= NFC_BEGIN && cp < NFC_END
+          idx  = cp - NFC_BEGIN
+          cho  = CHOSUNG  + idx / JJCOUNT
+          jung = JUNGSUNG + (idx % JJCOUNT) / JONGSUNGS
+          jong = JONGSUNG + idx % JONGSUNGS
+          ret << cho << jung
+          ret << jong if jong != JONGSUNG
+        else
+          ret << c
+        end
+      end
+      ret
+    end
+
+    def self.nfc str, offset
+      ret = ''
+      omap = []
+      pend = []
+      str.split(//).each_with_index do |c, idx|
+        cp = c.ord
+        omap << ret.length
+        unless pend.empty?
+          if cp >= JUNGSUNG && cp < JUNGSUNG + JUNGSUNGS
+            pend << cp - JUNGSUNG
+            next
+          elsif cp >= JONGSUNG && cp < JONGSUNG + JONGSUNGS
+            pend << cp - JONGSUNG
+            next
+          else
+            omap[-1] = omap[-1] + 1
+            ret << [NFC_BEGIN + pend[0] * JJCOUNT +
+                                (pend[1] || 0) * JONGSUNGS +
+                                (pend[2] || 0)].pack('U*')
+            pend.clear
+          end
+        end
+        if cp >= CHOSUNG && cp < CHOSUNG + CHOSUNGS
+          pend << cp - CHOSUNG
+        else
+          ret << c
+        end
+      end
+      return [ret, offset.map { |o| omap[o] || (omap.last + 1) }]
+    end
+  end
+
+  def convert_query q
+    UConv.nfd(q).split(//)
+  end
+
+  def convert_item item
+    UConv.nfc(*item)
+  end
+else
+  def convert_query q
+    q.split(//)
+  end
+
+  def convert_item item
+    item
+  end
+end
+
 def emit event
   @mtx.synchronize do
     @events[event] = yield
@@ -124,8 +204,8 @@ end
 
 if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
   def ulen str
-    expr = '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
-    str.gsub(Regexp.new(expr), '  ').length
+    @urx ||= Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
+    str.gsub(@urx, '  ').length
   end
 else
   def ulen str
@@ -226,7 +306,7 @@ searcher = Thread.new {
         events.delete :new
         q = events.delete(:key) || q
         regexp = q.empty? ? nil :
-          Regexp.new(q.split(//).inject('') { |sum, e|
+          Regexp.new(convert_query(q).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
           }, @rxflag)
@@ -301,7 +381,7 @@ searcher = Thread.new {
         matches[0, max_items].each_with_index do |item, idx|
           next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
 
-          line, offset = item
+          line, offset = convert_item item
           row = cursor_y - idx - 2
           chosen = idx == vcursor
 
