@@ -3,6 +3,8 @@ fzf - Fuzzy finder for your shell
 
 fzf is a general-purpose fuzzy finder for your shell.
 
+![](https://raw.github.com/junegunn/fzf/gif/fzf.gif)
+
 It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim) and
 the likes.
 
