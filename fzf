@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: October 28, 2013
+# Last update: October 29, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -164,17 +164,18 @@ end
 C = Curses
 def max_items; C.lines - 2; end
 def cursor_y;  C.lines - 1; end
-def cprint str, col, flag = C::A_BOLD
-  C.attron  C.color_pair(col) | flag
-  C.addstr  str
-  C.attroff C.color_pair(col) | flag
+def cprint str, col
+  C.attron(col) do
+    C.addstr str
+  end
 end
 
 def print_input
   C.setpos cursor_y, 0
   C.clrtoeol
-  cprint '> ',   1
-  cprint @query, 2
+  cprint '> ', color(:blue, true)
+  cprint @query, color(:normal, true)
+  cprint ' ' * C.cols, color(:normal, true)
 end
 
 def print_info progress = true, msg = nil
@@ -184,13 +185,17 @@ def print_info progress = true, msg = nil
   prefix =
     if fan = @fan.shift
       @fan.push fan
-      cprint fan, 5, 0
+      cprint fan, color(:fan, true)
       ' '
     else
       '  '
     end
-  C.addstr "#{prefix}#{@matches.length}/#{@count}" if progress
-  C.addstr msg if msg
+  C.attron color(:info, false) do
+    progress &&= "#{prefix}#{@matches.length}/#{@count}"
+    C.addstr progress if progress
+    C.addstr msg if msg
+    C.addstr ' ' * (C.cols - (progress.to_s + msg.to_s).length)
+  end
 end
 
 def refresh
@@ -229,11 +234,30 @@ C.init_screen
 C.start_color
 C.raw
 C.noecho
-C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
-C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
-C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
-C.init_pair 4, C::COLOR_RED,    C::COLOR_BLACK
-C.init_pair 5, C::COLOR_CYAN,   C::COLOR_BLACK
+if C.can_change_color?
+  fg = ENV.fetch('FZF_FG', 252).to_i
+  bg = ENV.fetch('FZF_BG', 236).to_i
+  C.init_pair 1, 110, bg
+  C.init_pair 2, fg,  bg
+  C.init_pair 3, 108, bg
+  C.init_pair 4, 220, bg - 1
+  C.init_pair 5, 151, bg - 1
+  C.init_pair 6, 148, bg + 1
+  C.init_pair 7, 144, bg + 1
+else
+  C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
+  C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
+  C.init_pair 3, C::COLOR_CYAN,   C::COLOR_BLACK
+  C.init_pair 4, C::COLOR_YELLOW, C::COLOR_BLACK
+  C.init_pair 5, C::COLOR_CYAN,   C::COLOR_BLACK
+  C.init_pair 6, C::COLOR_GREEN,  C::COLOR_BLACK
+  C.init_pair 7, C::COLOR_WHITE,  C::COLOR_BLACK
+end
+
+def color sym, bold = false
+  C.color_pair([:blue, :normal, :match, :chosen, :match!, :fan, :info].index(sym) + 1) |
+    (bold ? C::A_BOLD : 0)
+end
 
 @read =
   if $stdin.tty?
@@ -315,6 +339,7 @@ searcher = Thread.new {
           begin
             @smtx.synchronize do
               print_info true, ' ..'
+              print_input
               refresh
             end unless q.empty?
 
@@ -377,7 +402,7 @@ searcher = Thread.new {
           end
         end
 
-        maxc = C.cols - 3
+        maxc = C.cols - 5
         matches[0, max_items].each_with_index do |item, idx|
           next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
 
@@ -389,21 +414,25 @@ searcher = Thread.new {
             line = line[0, maxc] + '..'
           end
 
+          basic = chosen ? color(:chosen, true) : color(:normal)
+
           C.setpos row, 0
           C.clrtoeol
-          C.attron C.color_pair(3) | C::A_BOLD if chosen
+          C.attron basic
+          C.addstr chosen ? '> ' : '  '
 
           b, e = offset
           e = [e, maxc].min
           if b < maxc && b < e
             C.addstr line[0, b]
-            cprint   line[b...e], chosen ? 4 : 1
-            C.attron C.color_pair(3) | C::A_BOLD if chosen
+            cprint   line[b...e], color(chosen ? :match! : :match, chosen)
+            C.attron basic
             C.addstr line[e..-1]
           else
             C.addstr line
           end
-          C.attroff C.color_pair(3) | C::A_BOLD if chosen
+          C.addstr ' ' * [0, C.cols - line.length - 2].max
+          C.attroff basic
         end
 
         print_info if !@lists.empty? || events[:loaded]
