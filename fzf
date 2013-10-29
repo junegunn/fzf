@@ -230,36 +230,35 @@ end
 
 C.init_screen
 C.start_color
-default_bg =
+dfg, dbg =
   if C.respond_to?(:use_default_colors)
     C.use_default_colors
-    -1
+    [-1, -1]
   else
-    0
+    [C::COLOR_WHITE, C::COLOR_BLACK]
   end
 C.raw
 C.noecho
 if C.can_change_color?
   fg = ENV.fetch('FZF_FG', 252).to_i
   bg = ENV.fetch('FZF_BG', 236).to_i
-  C.init_pair 0, 110,    default_bg
-  C.init_pair 1, 110,    default_bg
-  C.init_pair 2, fg,     default_bg
-  C.init_pair 3, 108,    default_bg
+  C.init_pair 1, 110,    dbg
+  C.init_pair 2, dfg,    dbg
+  C.init_pair 3, 108,    dbg
   C.init_pair 4, fg + 2, bg
   C.init_pair 5, 151,    bg
-  C.init_pair 6, 148,    default_bg
-  C.init_pair 7, 144,    default_bg
+  C.init_pair 6, 148,    dbg
+  C.init_pair 7, 144,    dbg
   C.init_pair 8, 161,    bg
 else
-  C.init_pair 1, C::COLOR_BLUE,   default_bg
-  C.init_pair 2, C::COLOR_WHITE,  default_bg
-  C.init_pair 3, C::COLOR_GREEN,  default_bg
-  C.init_pair 4, C::COLOR_YELLOW, default_bg
-  C.init_pair 5, C::COLOR_GREEN,  default_bg
-  C.init_pair 6, C::COLOR_GREEN,  default_bg
-  C.init_pair 7, C::COLOR_WHITE,  default_bg
-  C.init_pair 8, C::COLOR_RED,    default_bg
+  C.init_pair 1, C::COLOR_BLUE,   dbg
+  C.init_pair 2, C::COLOR_WHITE,  dbg
+  C.init_pair 3, C::COLOR_GREEN,  dbg
+  C.init_pair 4, C::COLOR_YELLOW, dbg
+  C.init_pair 5, C::COLOR_GREEN,  dbg
+  C.init_pair 6, C::COLOR_GREEN,  dbg
+  C.init_pair 7, C::COLOR_WHITE,  dbg
+  C.init_pair 8, C::COLOR_RED,    dbg
 end
 
 def color sym, bold = false
