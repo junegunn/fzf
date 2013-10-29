@@ -41,8 +41,12 @@ export PATH=$PATH:~/bin
 Install as Vim plugin
 ---------------------
 
-You can use any plugin manager. If you don't use one, I recommend you try
-[vim-plug](https://github.com/junegunn/vim-plug).
+fzf was not designed to be a Vim plugin, but you can use it as one. The only
+reason one might consider using fzf in Vim is its speed. For a very large list
+of files, fzf is significantly faster than native Vim plugins.
+
+You can use any Vim plugin manager to install fzf as a Vim plugin. If you don't
+use one, I recommend you try [vim-plug](https://github.com/junegunn/vim-plug).
 
 1. [Install vim-plug](https://github.com/junegunn/vim-plug#usage)
 2. Edit your .vimrc
