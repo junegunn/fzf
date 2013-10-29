@@ -174,7 +174,9 @@ def print_input
   C.setpos cursor_y, 0
   C.clrtoeol
   cprint '> ', color(:blue, true)
-  cprint @query, color(:normal, true)
+  C.attron(C::A_BOLD) do
+    C.addstr @query
+  end
 end
 
 def print_info progress = true, msg = nil
@@ -230,12 +232,12 @@ end
 
 C.init_screen
 C.start_color
-dfg, dbg =
+dbg =
   if C.respond_to?(:use_default_colors)
     C.use_default_colors
-    [-1, -1]
+    -1
   else
-    [C::COLOR_WHITE, C::COLOR_BLACK]
+    C::COLOR_BLACK
   end
 C.raw
 C.noecho
@@ -243,26 +245,24 @@ if C.can_change_color?
   fg = ENV.fetch('FZF_FG', 252).to_i
   bg = ENV.fetch('FZF_BG', 236).to_i
   C.init_pair 1, 110,    dbg
-  C.init_pair 2, dfg,    dbg
-  C.init_pair 3, 108,    dbg
-  C.init_pair 4, fg + 2, bg
-  C.init_pair 5, 151,    bg
-  C.init_pair 6, 148,    dbg
-  C.init_pair 7, 144,    dbg
-  C.init_pair 8, 161,    bg
+  C.init_pair 2, 108,    dbg
+  C.init_pair 3, fg + 2, bg
+  C.init_pair 4, 151,    bg
+  C.init_pair 5, 148,    dbg
+  C.init_pair 6, 144,    dbg
+  C.init_pair 7, 161,    bg
 else
   C.init_pair 1, C::COLOR_BLUE,   dbg
-  C.init_pair 2, C::COLOR_WHITE,  dbg
-  C.init_pair 3, C::COLOR_GREEN,  dbg
-  C.init_pair 4, C::COLOR_YELLOW, dbg
+  C.init_pair 2, C::COLOR_GREEN,  dbg
+  C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
+  C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
   C.init_pair 5, C::COLOR_GREEN,  dbg
-  C.init_pair 6, C::COLOR_GREEN,  dbg
-  C.init_pair 7, C::COLOR_WHITE,  dbg
-  C.init_pair 8, C::COLOR_RED,    dbg
+  C.init_pair 6, C::COLOR_WHITE,  dbg
+  C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
 end
 
 def color sym, bold = false
-  C.color_pair([:blue, :normal, :match, :chosen,
+  C.color_pair([:blue, :match, :chosen,
                 :match!, :fan, :info, :red].index(sym) + 1) |
     (bold ? C::A_BOLD : 0)
 end
@@ -423,31 +423,39 @@ searcher = Thread.new {
           line, offset = convert_item item
           row = cursor_y - idx - 2
           chosen = idx == vcursor
+          b, e = offset
 
+          if line.length > maxc
+            diff = e - (maxc - 2)
+            if diff > 2
+              line = '..' + line[diff..-1]
+              b -= diff - 2
+              b = [2, b].max
+            else
+              line = line[0, maxc] + '..'
+            end
+          end
           if line.length > maxc
             line = line[0, maxc] + '..'
           end
 
-          basic = chosen ? color(:chosen, true) : color(:normal)
-
           C.setpos row, 0
           C.clrtoeol
           cprint chosen ? '>' : ' ', color(:red, true)
-          cprint ' ', color(chosen ? :chosen : :normal)
+          cprint ' ', chosen ? color(:chosen) : 0
 
-          C.attron basic
+          C.attron color(:chosen, true) if chosen
 
-          b, e = offset
           e = [e, maxc].min
           if b < maxc && b < e
             C.addstr line[0, b]
             cprint   line[b...e], color(chosen ? :match! : :match, chosen)
-            C.attron basic
+            C.attron color(:chosen, true) if chosen
             C.addstr line[e..-1] || ''
           else
             C.addstr line
           end
-          C.attroff basic
+          C.attroff color(:chosen, true) if chosen
         end
 
         print_info if !@lists.empty? || events[:loaded]
