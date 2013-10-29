@@ -175,7 +175,6 @@ def print_input
   C.clrtoeol
   cprint '> ', color(:blue, true)
   cprint @query, color(:normal, true)
-  #cprint ' ' * C.cols, color(:normal, true)
 end
 
 def print_info progress = true, msg = nil
@@ -194,7 +193,6 @@ def print_info progress = true, msg = nil
     progress &&= "#{prefix}#{@matches.length}/#{@count}"
     C.addstr progress if progress
     C.addstr msg if msg
-    # C.addstr ' ' * (C.cols - (progress.to_s + msg.to_s).length)
   end
 end
 
@@ -444,7 +442,6 @@ searcher = Thread.new {
           else
             C.addstr line
           end
-          # C.addstr ' ' * [0, C.cols - line.length - 2].max
           C.attroff basic
         end
 
