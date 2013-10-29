@@ -175,7 +175,7 @@ def print_input
   C.clrtoeol
   cprint '> ', color(:blue, true)
   cprint @query, color(:normal, true)
-  cprint ' ' * C.cols, color(:normal, true)
+  #cprint ' ' * C.cols, color(:normal, true)
 end
 
 def print_info progress = true, msg = nil
@@ -194,7 +194,7 @@ def print_info progress = true, msg = nil
     progress &&= "#{prefix}#{@matches.length}/#{@count}"
     C.addstr progress if progress
     C.addstr msg if msg
-    C.addstr ' ' * (C.cols - (progress.to_s + msg.to_s).length)
+    # C.addstr ' ' * (C.cols - (progress.to_s + msg.to_s).length)
   end
 end
 
@@ -232,28 +232,30 @@ end
 
 C.init_screen
 C.start_color
+C.use_default_colors
 C.raw
 C.noecho
 if C.can_change_color?
   fg = ENV.fetch('FZF_FG', 252).to_i
   bg = ENV.fetch('FZF_BG', 236).to_i
-  C.init_pair 1, 110,    bg
-  C.init_pair 2, fg,     bg
-  C.init_pair 3, 108,    bg
-  C.init_pair 4, fg + 2, bg - 1
-  C.init_pair 5, 151,    bg - 1
-  C.init_pair 6, 148,    bg + 1
-  C.init_pair 7, 144,    bg + 1
-  C.init_pair 8, 161,    bg - 1
+  C.init_pair 0, 110,    -1
+  C.init_pair 1, 110,    -1
+  C.init_pair 2, fg,     -1
+  C.init_pair 3, 108,    -1
+  C.init_pair 4, fg + 2, bg
+  C.init_pair 5, 151,    bg
+  C.init_pair 6, 148,    -1
+  C.init_pair 7, 144,    -1
+  C.init_pair 8, 161,    bg
 else
-  C.init_pair 1, C::COLOR_BLUE,   C::COLOR_BLACK
-  C.init_pair 2, C::COLOR_WHITE,  C::COLOR_BLACK
-  C.init_pair 3, C::COLOR_GREEN,  C::COLOR_BLACK
-  C.init_pair 4, C::COLOR_YELLOW, C::COLOR_BLACK
-  C.init_pair 5, C::COLOR_GREEN,  C::COLOR_BLACK
-  C.init_pair 6, C::COLOR_GREEN,  C::COLOR_BLACK
-  C.init_pair 7, C::COLOR_WHITE,  C::COLOR_BLACK
-  C.init_pair 8, C::COLOR_RED,    C::COLOR_BLACK
+  C.init_pair 1, C::COLOR_BLUE,   -1
+  C.init_pair 2, C::COLOR_WHITE,  -1
+  C.init_pair 3, C::COLOR_GREEN,  -1
+  C.init_pair 4, C::COLOR_YELLOW, -1
+  C.init_pair 5, C::COLOR_GREEN,  -1
+  C.init_pair 6, C::COLOR_GREEN,  -1
+  C.init_pair 7, C::COLOR_WHITE,  -1
+  C.init_pair 8, C::COLOR_RED,    -1
 end
 
 def color sym, bold = false
@@ -436,7 +438,7 @@ searcher = Thread.new {
           else
             C.addstr line
           end
-          C.addstr ' ' * [0, C.cols - line.length - 2].max
+          # C.addstr ' ' * [0, C.cols - line.length - 2].max
           C.attroff basic
         end
 
