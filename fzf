@@ -359,13 +359,19 @@ searcher = Thread.new {
 
               list, cache = pair
               found.concat(cache[q] ||= begin
-                prefix_cache = nil
-                (q.length - 1).downto(1) do |len|
-                  prefix = q[0, len]
-                  break if prefix_cache = cache[prefix]
+                prefix, suffix = @query[0, @cursor_x], @query[@cursor_x..-1] || ''
+                prefix_cache = suffix_cache = nil
+
+                (prefix.length - 1).downto(1) do |len|
+                  break if prefix_cache = cache[prefix[0, len]]
                 end
 
-                (prefix_cache ? prefix_cache.map { |e| e.first } : list).map { |line|
+                0.upto(suffix.length - 1) do |idx|
+                  break if suffix_cache = cache[suffix[idx..-1]]
+                end unless suffix.empty?
+
+                partial_cache = [prefix_cache, suffix_cache].compact.sort_by { |e| e.length }.first
+                (partial_cache ? partial_cache.map { |e| e.first } : list).map { |line|
                   if regexp
                     # Ignore errors: e.g. invalid byte sequence in UTF-8
                     md = line.match(regexp) rescue nil
