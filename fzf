@@ -167,7 +167,7 @@ def cursor_y;  C.lines - 1; end
 def cprint str, col
   C.attron(col) do
     C.addstr str
-  end
+  end if str
 end
 
 def print_input
@@ -443,7 +443,7 @@ searcher = Thread.new {
             C.addstr line[0, b]
             cprint   line[b...e], color(chosen ? :match! : :match, chosen)
             C.attron basic
-            C.addstr line[e..-1]
+            C.addstr line[e..-1] || ''
           else
             C.addstr line
           end
