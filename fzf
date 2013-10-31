@@ -295,7 +295,7 @@ searcher = Thread.new {
   q       = ''
   vcursor = 0
   zz      = [0, 0]
-  delay   = 0.0
+  delay   = -5
 
   begin
     while true
@@ -396,7 +396,7 @@ searcher = Thread.new {
       end#new_search
 
       # This small delay reduces the number of partial lists
-      sleep [0.2, delay += 0.05].min unless user_input
+      sleep [20, delay += 5].min * 0.01 unless user_input
 
       if events.delete(:vcursor) || new_search
         @mtx.synchronize do
