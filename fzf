@@ -1,5 +1,5 @@
-# vim: set filetype=ruby isk=@,48-57,_,192-255:
-#!/usr/bin/env bash
+#!/usr/bin/env ruby
+# encoding: utf-8
 #
 #     ____      ____
 #    / __/___  / __/
@@ -35,10 +35,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-exec /usr/bin/env ruby -x "$0" $* 3>&1 1>&2 2>&3
-#!ruby
-# encoding: utf-8
-
 def usage x
   puts %[usage: fzf [options]
 
@@ -47,6 +43,9 @@ def usage x
   +i               Case-sensitive match]
   exit x
 end
+
+stdout = $stdout.clone
+$stdout.reopen($stderr)
 
 usage 0 unless (%w[--help -h] & ARGV).empty?
 @rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
@@ -296,6 +295,7 @@ searcher = Thread.new {
   q       = ''
   vcursor = 0
   zz      = [0, 0]
+  started = false
 
   begin
     while true
@@ -396,7 +396,10 @@ searcher = Thread.new {
       end#new_search
 
       # This small delay reduces the number of partial lists
-      sleep 0.2 unless user_input
+      if started && !user_input
+        sleep 0.2
+      end
+      started = true
 
       if events.delete(:vcursor) || new_search
         @mtx.synchronize do
@@ -538,6 +541,6 @@ begin
   end
 ensure
   C.close_screen
-  $stderr.puts got if got
+  stdout.puts got if got
 end
 
