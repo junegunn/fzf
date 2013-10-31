@@ -38,8 +38,18 @@ Make sure that ~/bin is included in $PATH.
 export PATH=$PATH:~/bin
 ```
 
-Install as Vim plugin
----------------------
+### Install as Ruby gem
+
+fzf can be installed as a Ruby gem
+
+```
+gem install fzf
+```
+
+However, this is not recommended since the Ruby gem version of fzf takes
+slightly longer to start.
+
+### Install as Vim plugin
 
 fzf was not designed to be a Vim plugin, but you can use it as one. The only
 reason one might consider using fzf in Vim is its speed. For a very large list
