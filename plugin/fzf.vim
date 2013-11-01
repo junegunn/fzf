@@ -29,7 +29,10 @@ function! s:fzf(args)
     let prefix = exists('g:fzf_command') ? g:fzf_command.'|' : ''
     execute "silent !".prefix."/usr/bin/env ruby ".s:exec." ".a:args." > ".tf
     if !v:shell_error
-      execute 'silent e '.join(readfile(tf), '')
+      let file = join(readfile(tf), '')
+      if !empty(file)
+        execute 'silent e '.file
+      endif
     endif
   finally
     silent! call delete(tf)
