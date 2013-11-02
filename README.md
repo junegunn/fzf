@@ -46,8 +46,8 @@ fzf can be installed as a Ruby gem
 gem install fzf
 ```
 
-However, this is not recommended since the Ruby gem version of fzf takes
-slightly longer to start.
+It's a bit easier to install and update the script but the Ruby gem version
+takes slightly longer to start.
 
 ### Install as Vim plugin
 
@@ -87,7 +87,8 @@ find * -type f | fzf > selected
 ```
 
 Without STDIN pipe, fzf will use find command to fetch the list of
-files (excluding hidden ones).
+files excluding hidden ones. (You can override the default command with
+`FZF_DEFAULT_COMMAND`)
 
 ```sh
 vim `fzf`
@@ -156,9 +157,14 @@ fkill() {
   ps -ef | sed 1d | fzf | awk '{print $2}' | xargs kill -${1:-9}
 }
 
-# CTRL-T - Open fuzzy finder and paste the selected item to the command line
+# Assuming you don't use the default CTRL-T and CTRL-R
+
+# CTRL-T - Paste the selected file path into the command line
 bind '"\er": redraw-current-line'
 bind '"\C-t": " \C-u \C-a\C-k$(fzf)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+
+# CTRL-R - Paste the selected command from history into the command line
+bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 ```
 
 License

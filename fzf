@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: October 29, 2013
+# Last update: November 2, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -269,7 +269,8 @@ end
 @read =
   if $stdin.tty?
     if !`which find`.empty?
-      IO.popen("find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null")
+      IO.popen(ENV.fetch('FZF_DEFAULT_COMMAND',
+          "find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null"))
     else
       exit 1
     end
