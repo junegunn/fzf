@@ -439,7 +439,7 @@ searcher = Thread.new {
           if width(line) > maxc
             ewidth = width(line[0...e])
             # Stri..
-            if ewidth <= maxc
+            if ewidth <= maxc - 2
               line = line[0...-1] while width(line) > maxc - 2
               line << '..'
             # ..ring
