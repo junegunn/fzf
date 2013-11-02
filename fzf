@@ -105,7 +105,7 @@ when /darwin/
     end
 
     def self.nfc str, offset
-      ret = ''
+      ret  = ''
       omap = []
       pend = []
       str.split(//).each_with_index do |c, idx|
@@ -198,7 +198,7 @@ def print_info progress = true, msg = nil
 end
 
 def refresh
-  C.setpos cursor_y, 2 + ulen(@query[0, @cursor_x])
+  C.setpos cursor_y, 2 + width(@query[0, @cursor_x])
   C.refresh
 end
 
@@ -207,12 +207,12 @@ def ctrl char
 end
 
 if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
-  def ulen str
+  def width str
     @urx ||= Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
     str.gsub(@urx, '  ').length
   end
 else
-  def ulen str
+  def width str
     str.length
   end
 
@@ -334,6 +334,8 @@ searcher = Thread.new {
 
       new_search = events[:key] || events[:new]
       user_input = events[:key] || events[:vcursor]
+      progress   = 0
+      started_at = Time.now
 
       if new_search && !@lists.empty?
         events.delete :new
@@ -346,19 +348,26 @@ searcher = Thread.new {
 
         matches = fcache[q] ||=
           begin
-            @smtx.synchronize do
-              print_info true, ' ..'
-              print_input
-              refresh
-            end unless q.empty?
-
             found = []
             skip  = false
+            cnt   = 0
             @lists.each do |pair|
-              @mtx.synchronize { skip = @events[:key] }
+              list, cache = pair
+              cnt += list.length
+
+              @mtx.synchronize {
+                skip = @events[:key]
+                progress = (100 * cnt / @count)
+              }
               break if skip
 
-              list, cache = pair
+              if !q.empty? && progress < 100 && Time.now - started_at > 0.5
+                @smtx.synchronize do
+                  print_info true, " (#{progress}%)"
+                  refresh
+                end
+              end
+
               found.concat(cache[q] ||= begin
                 prefix, suffix = @query[0, @cursor_x], @query[@cursor_x..-1] || ''
                 prefix_cache = suffix_cache = nil
@@ -397,7 +406,7 @@ searcher = Thread.new {
       end#new_search
 
       # This small delay reduces the number of partial lists
-      sleep [20, delay += 5].min * 0.01 unless user_input
+      sleep((delay = [20, delay + 5].min) * 0.01) unless user_input
 
       if events.delete(:vcursor) || new_search
         @mtx.synchronize do
@@ -417,7 +426,7 @@ searcher = Thread.new {
           end
         end
 
-        maxc = C.cols - 5
+        maxc = C.cols - 3
         matches[0, max_items].each_with_index do |item, idx|
           next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
 
@@ -426,18 +435,27 @@ searcher = Thread.new {
           chosen = idx == vcursor
           b, e = offset
 
-          if line.length > maxc
-            diff = e - (maxc - 2)
-            if diff > 2
-              line = '..' + line[diff..-1]
-              b -= diff - 2
-              b = [2, b].max
+          # Overflow
+          if width(line) > maxc
+            ewidth = width(line[0...e])
+            # Stri..
+            if ewidth <= maxc
+              line = line[0...-1] while width(line) > maxc - 2
+              line << '..'
+            # ..ring
             else
-              line = line[0, maxc] + '..'
+              # ..ri..
+              line = line[0...e] + '..' if ewidth < width(line) - 2
+              while width(line) > maxc - 2
+                b -= 1
+                e -= 1
+                line = line[1..-1]
+              end
+              b += 2
+              e += 2
+              b = [2, b].max
+              line = '..' + line
             end
-          end
-          if line.length > maxc
-            line = line[0, maxc] + '..'
           end
 
           C.setpos row, 0
@@ -447,8 +465,7 @@ searcher = Thread.new {
 
           C.attron color(:chosen, true) if chosen
 
-          e = [e, maxc].min
-          if b < maxc && b < e
+          if b < e
             C.addstr line[0, b]
             cprint   line[b...e], color(chosen ? :match! : :match, chosen)
             C.attron color(:chosen, true) if chosen
