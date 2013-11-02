@@ -1,7 +1,7 @@
 # coding: utf-8
 Gem::Specification.new do |spec|
   spec.name          = 'fzf'
-  spec.version       = '0.1.2'
+  spec.version       = '0.1.3'
   spec.authors       = ['Junegunn Choi']
   spec.email         = ['junegunn.c@gmail.com']
   spec.description   = %q{Fuzzy finder for your shell}
