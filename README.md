@@ -51,12 +51,8 @@ takes slightly longer to start.
 
 ### Install as Vim plugin
 
-fzf was not designed to be a Vim plugin, but you can use it as one. The only
-reason one might consider using fzf in Vim is its speed. For a very large list
-of files, fzf is significantly faster than native Vim plugins.
-
-You can use any Vim plugin manager to install fzf as a Vim plugin. If you don't
-use one, I recommend you try [vim-plug](https://github.com/junegunn/vim-plug).
+You can use any Vim plugin manager to install fzf for Vim. If you don't use one,
+I recommend you try [vim-plug](https://github.com/junegunn/vim-plug).
 
 1. [Install vim-plug](https://github.com/junegunn/vim-plug#usage)
 2. Edit your .vimrc
@@ -128,6 +124,10 @@ You can override the command which produces input to fzf.
 let g:fzf_command = 'find . -type f'
 ```
 
+Most of the time, you will prefer native Vim plugins with better integration
+with Vim. The only reason one might consider using fzf in Vim is its speed. For
+a very large list of files, fzf is significantly faster and it does not block.
+
 Useful bash examples
 --------------------
 
@@ -157,7 +157,7 @@ fkill() {
   ps -ef | sed 1d | fzf | awk '{print $2}' | xargs kill -${1:-9}
 }
 
-# Assuming you don't use the default CTRL-T and CTRL-R
+# (Assuming you don't use the default CTRL-T and CTRL-R)
 
 # CTRL-T - Paste the selected file path into the command line
 bind '"\er": redraw-current-line'
