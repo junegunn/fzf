@@ -207,13 +207,33 @@ def ctrl char
 end
 
 if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
+  @wrx = Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
   def width str
-    @urx ||= Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
-    str.gsub(@urx, '  ').length
+    str.gsub(@wrx, '  ').length
+  end
+
+  def trim str, len, left
+    width = width str
+    diff = 0
+    while width > len
+      width -= (left ? str[0, 1] : str[-1, 1]) =~ @wrx ? 2 : 1
+      str = left ? str[1..-1] : str[0...-1]
+      diff += 1
+    end
+    [str, diff]
   end
 else
   def width str
     str.length
+  end
+
+  def trim str, len, left
+    diff = str.length - len
+    if diff > 0
+      [left ? str[diff..-1] : str[0...-diff], diff]
+    else
+      [str, 0]
+    end
   end
 
   class String
@@ -440,19 +460,15 @@ searcher = Thread.new {
             ewidth = width(line[0...e])
             # Stri..
             if ewidth <= maxc - 2
-              line = line[0...-1] while width(line) > maxc - 2
+              line, _ = trim line, maxc - 2, false
               line << '..'
             # ..ring
             else
               # ..ri..
               line = line[0...e] + '..' if ewidth < width(line) - 2
-              while width(line) > maxc - 2
-                b -= 1
-                e -= 1
-                line = line[1..-1]
-              end
-              b += 2
-              e += 2
+              line, diff = trim line, maxc - 2, true
+              b += 2 - diff
+              e += 2 - diff
               b = [2, b].max
               line = '..' + line
             end
