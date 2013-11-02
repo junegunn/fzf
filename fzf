@@ -104,7 +104,7 @@ when /darwin/
       ret
     end
 
-    def self.nfc str, offset
+    def self.nfc str, b, e
       ret  = ''
       omap = []
       pend = []
@@ -132,7 +132,7 @@ when /darwin/
           ret << c
         end
       end
-      return [ret, offset.map { |o| omap[o] || (omap.last + 1) }]
+      return [ret, omap[b] || 0, omap[e] || (omap.last || 0 + 1)]
     end
   end
 
@@ -315,7 +315,6 @@ searcher = Thread.new {
   plcount = 0      # prev list count
   q       = ''
   vcursor = 0
-  zz      = [0, 0]
   delay   = -5
 
   begin
@@ -405,9 +404,9 @@ searcher = Thread.new {
                   if regexp
                     # Ignore errors: e.g. invalid byte sequence in UTF-8
                     md = line.match(regexp) rescue nil
-                    md ? [line, md.offset(0)] : nil
+                    md ? [line, *md.offset(0)] : nil
                   else
-                    [line, zz]
+                    [line, 0, 0]
                   end
                 }.compact
               end)
@@ -418,9 +417,9 @@ searcher = Thread.new {
 
         mcount = matches.length
         if @sort && mcount <= @sort
-          matches.replace matches.sort_by { |pair|
-            line, offset = pair
-            [offset.last - offset.first, line.length, line]
+          matches.replace matches.sort_by { |triple|
+            line, b, e = triple
+            [e - b, line.length, line]
           }
         end
       end#new_search
@@ -450,10 +449,9 @@ searcher = Thread.new {
         matches[0, max_items].each_with_index do |item, idx|
           next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
 
-          line, offset = convert_item item
+          line, b, e = convert_item item
           row = cursor_y - idx - 2
           chosen = idx == vcursor
-          b, e = offset
 
           # Overflow
           if width(line) > maxc
