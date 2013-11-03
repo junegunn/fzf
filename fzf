@@ -514,7 +514,7 @@ begin
     ctrl(:d) => proc { exit 1 if input.empty? },
     ctrl(:m) => proc {
       @mtx.synchronize do
-        got = @matches.fetch(@vcursor, [])[0]
+        got = [*@matches.fetch(@vcursor, [])][0]
       end
       exit 0
     },
