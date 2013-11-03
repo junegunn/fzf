@@ -180,7 +180,7 @@ def print_input
   end
 end
 
-def print_info progress = true, msg = nil
+def print_info msg = nil
   @fan ||= '-\|/-\|/'.split(//)
   C.setpos cursor_y - 1, 0
   C.clrtoeol
@@ -193,8 +193,7 @@ def print_info progress = true, msg = nil
       '  '
     end
   C.attron color(:info, false) do
-    progress &&= "#{prefix}#{@matches.length}/#{@count}"
-    C.addstr progress if progress
+    C.addstr "#{prefix}#{@matches.length}/#{@count}"
     C.addstr msg if msg
   end
 end
@@ -337,11 +336,9 @@ searcher = Thread.new {
 
   begin
     while true
-      wait_for_completion = nil
       @mtx.synchronize do
         while true
           events.merge! @events
-          wait_for_completion = !@sort && !events[:loaded]
 
           if @events.empty? # No new events
             @cv.wait @mtx
@@ -351,22 +348,13 @@ searcher = Thread.new {
           break
         end
 
-        if !wait_for_completion && events[:new]
+        if events[:new]
           @lists << [@new, {}]
           @count += @new.length
           @new    = []
           fcache  = {}
         end
       end#mtx
-
-      if wait_for_completion
-        @smtx.synchronize do
-          print_info false, " +#{@new.length}"
-          refresh
-        end
-        sleep((delay = [20, delay + 5].min) * 0.01)
-        next
-      end
 
       new_search = events[:key] || events[:new]
       user_input = events[:key] || events[:vcursor]
@@ -403,7 +391,7 @@ searcher = Thread.new {
               found.concat(cache[q] ||= q.empty? ? list : begin
                 if progress < 100 && Time.now - started_at > 0.5
                   @smtx.synchronize do
-                    print_info true, " (#{progress}%)"
+                    print_info " (#{progress}%)"
                     refresh
                   end
                 end
