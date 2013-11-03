@@ -104,7 +104,7 @@ when /darwin/
       ret
     end
 
-    def self.nfc str, b, e
+    def self.nfc str, b = 0, e = 0
       ret  = ''
       omap = []
       pend = []
@@ -344,10 +344,9 @@ searcher = Thread.new {
       if wait_for_completion
         @smtx.synchronize do
           print_info false, " +#{@new.length}"
-          print_input
           refresh
-          sleep 0.1
         end
+        sleep((delay = [20, delay + 5].min) * 0.01)
         next
       end
 
@@ -359,11 +358,14 @@ searcher = Thread.new {
       if new_search && !@lists.empty?
         events.delete :new
         q = events.delete(:key) || q
-        regexp = q.empty? ? nil :
-          Regexp.new(convert_query(q).inject('') { |sum, e|
+
+        unless q.empty?
+          q = q.downcase if @rxflag != 0
+          regexp = Regexp.new(convert_query(q).inject('') { |sum, e|
             e = Regexp.escape e
             sum << "#{e}[^#{e}]*?"
           }, @rxflag)
+        end
 
         matches = fcache[q] ||=
           begin
@@ -380,14 +382,14 @@ searcher = Thread.new {
               }
               break if skip
 
-              if !q.empty? && progress < 100 && Time.now - started_at > 0.5
-                @smtx.synchronize do
-                  print_info true, " (#{progress}%)"
-                  refresh
+              found.concat(cache[q] ||= q.empty? ? list : begin
+                if progress < 100 && Time.now - started_at > 0.5
+                  @smtx.synchronize do
+                    print_info true, " (#{progress}%)"
+                    refresh
+                  end
                 end
-              end
 
-              found.concat(cache[q] ||= begin
                 prefix, suffix = @query[0, @cursor_x], @query[@cursor_x..-1] || ''
                 prefix_cache = suffix_cache = nil
 
@@ -401,13 +403,9 @@ searcher = Thread.new {
 
                 partial_cache = [prefix_cache, suffix_cache].compact.sort_by { |e| e.length }.first
                 (partial_cache ? partial_cache.map { |e| e.first } : list).map { |line|
-                  if regexp
-                    # Ignore errors: e.g. invalid byte sequence in UTF-8
-                    md = line.match(regexp) rescue nil
-                    md ? [line, *md.offset(0)] : nil
-                  else
-                    [line, 0, 0]
-                  end
+                  # Ignore errors: e.g. invalid byte sequence in UTF-8
+                  md = line.match(regexp) rescue nil
+                  md && [line, *md.offset(0)]
                 }.compact
               end)
             end
@@ -419,7 +417,7 @@ searcher = Thread.new {
         if @sort && mcount <= @sort
           matches.replace matches.sort_by { |triple|
             line, b, e = triple
-            [e - b, line.length, line]
+            [b ? (e - b) : 0, line.length, line]
           }
         end
       end#new_search
@@ -491,10 +489,9 @@ searcher = Thread.new {
         end
 
         print_info if !@lists.empty? || events[:loaded]
-        print_input
         refresh
       end
-    end
+    end#while
   rescue Exception => e
     main.raise e
   end
@@ -536,6 +533,13 @@ begin
   actions[ctrl(:p)] = actions[ctrl(:k)]
 
   while true
+    # Update user input
+    @smtx.synchronize do
+      @cursor_x = cursor
+      print_input
+      refresh
+    end
+
     ord = tty.getc.ord
     if ord == 27
       ord = tty.getc.ord
@@ -560,13 +564,6 @@ begin
 
     # Dispatch key event
     emit(:key) { @query = input.dup }
-
-    # Update user input
-    @smtx.synchronize do
-      @cursor_x = cursor
-      print_input
-      refresh
-    end
   end
 ensure
   C.close_screen
