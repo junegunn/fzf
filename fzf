@@ -40,7 +40,8 @@ def usage x
 
   -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
   +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
-  +i               Case-sensitive match]
+  +i               Case-sensitive match
+  +c, --no-color   Disable colors]
   exit x
 end
 
@@ -50,6 +51,7 @@ $stdout.reopen($stderr)
 usage 0 unless (%w[--help -h] & ARGV).empty?
 @rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
 @sort   = (ARGV.delete('+s') || ARGV.delete('--no-sort')) ? nil : 500
+@color  = (ARGV.delete('+c') || ARGV.delete('--no-color')).nil?
 rest    = ARGV.join ' '
 if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
   usage 1 unless @sort
@@ -132,7 +134,7 @@ when /darwin/
           ret << c
         end
       end
-      return [ret, omap[b] || 0, omap[e] || (omap.last || 0 + 1)]
+      return [ret, omap[b] || 0, omap[e] || ((omap.last || 0) + 1)]
     end
   end
 
@@ -260,30 +262,46 @@ dbg =
   end
 C.raw
 C.noecho
-if C.can_change_color?
-  fg = ENV.fetch('FZF_FG', 252).to_i
-  bg = ENV.fetch('FZF_BG', 236).to_i
-  C.init_pair 1, 110,    dbg
-  C.init_pair 2, 108,    dbg
-  C.init_pair 3, fg + 2, bg
-  C.init_pair 4, 151,    bg
-  C.init_pair 5, 148,    dbg
-  C.init_pair 6, 144,    dbg
-  C.init_pair 7, 161,    bg
-else
-  C.init_pair 1, C::COLOR_BLUE,   dbg
-  C.init_pair 2, C::COLOR_GREEN,  dbg
-  C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
-  C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
-  C.init_pair 5, C::COLOR_GREEN,  dbg
-  C.init_pair 6, C::COLOR_WHITE,  dbg
-  C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
-end
 
-def color sym, bold = false
-  C.color_pair([:blue, :match, :chosen,
-                :match!, :fan, :info, :red].index(sym) + 1) |
-    (bold ? C::A_BOLD : 0)
+if @color
+  if C.can_change_color?
+    fg = ENV.fetch('FZF_FG', 252).to_i
+    bg = ENV.fetch('FZF_BG', 236).to_i
+    C.init_pair 1, 110,    dbg
+    C.init_pair 2, 108,    dbg
+    C.init_pair 3, fg + 2, bg
+    C.init_pair 4, 151,    bg
+    C.init_pair 5, 148,    dbg
+    C.init_pair 6, 144,    dbg
+    C.init_pair 7, 161,    bg
+  else
+    C.init_pair 1, C::COLOR_BLUE,   dbg
+    C.init_pair 2, C::COLOR_GREEN,  dbg
+    C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
+    C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
+    C.init_pair 5, C::COLOR_GREEN,  dbg
+    C.init_pair 6, C::COLOR_WHITE,  dbg
+    C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
+  end
+
+  def color sym, bold = false
+    C.color_pair([:blue, :match, :chosen,
+                  :match!, :fan, :info, :red].index(sym) + 1) |
+      (bold ? C::A_BOLD : 0)
+  end
+else
+  def color sym, bold = false
+    case sym
+    when :chosen
+     bold ? C::A_REVERSE : 0
+    when :match
+      C::A_UNDERLINE
+    when :match!
+      C::A_REVERSE | C::A_UNDERLINE
+    else
+      0
+    end | (bold ? C::A_BOLD : 0)
+  end
 end
 
 @read =

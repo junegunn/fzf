@@ -73,6 +73,7 @@ usage: fzf [options]
   -s, --sort=MAX   Maximum number of matched items to sort. Default: 500
   +s, --no-sort    Keep the sequence unchanged.
   +i               Case-sensitive match
+  +c, --no-color   Disable colors
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
