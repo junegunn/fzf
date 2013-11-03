@@ -167,7 +167,7 @@ def max_items; C.lines - 2; end
 def cursor_y;  C.lines - 1; end
 def cprint str, col
   C.attron(col) do
-    C.addstr str
+    C.addstr str.gsub("\0", '')
   end if str
 end
 
