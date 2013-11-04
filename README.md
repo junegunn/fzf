@@ -16,7 +16,8 @@ fzf requires Ruby (>= 1.8.5).
 Installation
 ------------
 
-Download fzf executable and put it somewhere in your search $PATH.
+Download [fzf executable](https://raw.github.com/junegunn/fzf/master/fzf) and
+put it somewhere in your search $PATH.
 
 ```sh
 mkdir -p ~/bin
