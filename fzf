@@ -305,9 +305,10 @@ end
 
 @read =
   if $stdin.tty?
-    if !`which find`.empty?
-      IO.popen(ENV.fetch('FZF_DEFAULT_COMMAND',
-          "find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null"))
+    if default_command = ENV['FZF_DEFAULT_COMMAND']
+      IO.popen(default_command)
+    elsif !`which find`.empty?
+      IO.popen("find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null")
     else
       exit 1
     end
