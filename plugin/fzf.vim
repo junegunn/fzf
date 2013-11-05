@@ -27,7 +27,8 @@ function! s:fzf(args)
   try
     let tf = tempname()
     let prefix = exists('g:fzf_command') ? g:fzf_command.'|' : ''
-    execute "silent !".prefix."/usr/bin/env ruby ".s:exec." ".a:args." > ".tf
+    let fzf = executable(s:exec) ? s:exec : 'fzf'
+    execute "silent !".prefix.fzf." ".a:args." > ".tf
     if !v:shell_error
       let file = join(readfile(tf), '')
       if !empty(file)
