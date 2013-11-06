@@ -89,7 +89,7 @@ files excluding hidden ones. (You can override the default command with
 `FZF_DEFAULT_COMMAND`)
 
 ```sh
-vim `fzf`
+vim $(fzf)
 ```
 
 If you want to preserve the exact sequence of the input, provide `--no-sort` (or
@@ -136,17 +136,17 @@ Useful bash examples
 ```sh
 # vimf - Open selected file in Vim
 vimf() {
-  FILE=`fzf` && vim "$FILE"
+  FILE=$(fzf) && vim "$FILE"
 }
 
 # fd - cd to selected directory
 fd() {
-  DIR=`find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf` && cd "$DIR"
+  DIR=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && cd "$DIR"
 }
 
 # fda - including hidden directories
 fda() {
-  DIR=`find ${1:-*} -type d 2> /dev/null | fzf` && cd "$DIR"
+  DIR=$(find ${1:-*} -type d 2> /dev/null | fzf) && cd "$DIR"
 }
 
 # fh - repeat history
