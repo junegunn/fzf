@@ -169,6 +169,30 @@ bind '"\C-t": " \C-u \C-a\C-k$(fzf)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
 bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 ```
 
+zsh widgets
+-----------
+
+```sh
+# CTRL-T - Paste the selected file path into the command line
+fzf-file-widget() {
+  LBUFFER+=$(
+      find * -path '*/\\.*' -prune \
+      -o -type f -print \
+      -o -type l -print 2> /dev/null | fzf)
+  zle redisplay
+}
+zle     -N   fzf-file-widget
+bindkey '^T' fzf-file-widget
+
+# CTRL-R - Paste the selected command from history into the command line
+fzf-history-widget() {
+  LBUFFER+=$(history | fzf +s | sed "s/ *[0-9]* *//")
+  zle redisplay
+}
+zle     -N   fzf-history-widget
+bindkey '^R' fzf-history-widget
+```
+
 License
 -------
 
