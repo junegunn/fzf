@@ -429,7 +429,7 @@ searcher = Thread.new {
           end
 
         mcount = matches.length
-        if @sort && mcount <= @sort
+        if @sort && mcount <= @sort && !q.empty?
           matches.replace matches.sort_by { |triple|
             line, b, e = triple
             [b ? (e - b) : 0, line.length, line]
