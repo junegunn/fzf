@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: November 4, 2013
+# Last update: November 10, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -38,6 +38,7 @@
 def usage x
   puts %[usage: fzf [options]
 
+  -m, --multi      Enable multi-select
   -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
   +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
   +i               Case-sensitive match
@@ -50,8 +51,9 @@ $stdout.reopen($stderr)
 
 usage 0 unless (%w[--help -h] & ARGV).empty?
 @rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
-@sort   = (ARGV.delete('+s') || ARGV.delete('--no-sort')) ? nil : 500
-@color  = (ARGV.delete('+c') || ARGV.delete('--no-color')).nil?
+@sort   = %w[+s --no-sort].map  { |e| ARGV.delete e }.compact.empty? ? 500 : nil
+@color  = %w[+c --no-color].map { |e| ARGV.delete e }.compact.empty?
+@multi  = !%w[-m --multi].map   { |e| ARGV.delete e }.compact.empty?
 rest    = ARGV.join ' '
 if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
   usage 1 unless @sort
@@ -74,6 +76,7 @@ require 'curses'
 @cursor_x = 0
 @vcursor  = 0
 @events   = {}
+@selects  = {} # ordered >= 1.9
 
 case RUBY_PLATFORM
 when /darwin/
@@ -180,7 +183,7 @@ def print_input
   end
 end
 
-def print_info msg = nil
+def print_info selected, msg = nil
   @fan ||= '-\|/-\|/'.split(//)
   C.setpos cursor_y - 1, 0
   C.clrtoeol
@@ -194,6 +197,7 @@ def print_info msg = nil
     end
   C.attron color(:info, false) do
     C.addstr "#{prefix}#{@matches.length}/#{@count}"
+    C.addstr " (#{selected})" if selected > 0
     C.addstr msg if msg
   end
 end
@@ -329,6 +333,7 @@ searcher = Thread.new {
   events  = {}
   fcache  = {}
   matches = []
+  selects = {}
   mcount  = 0      # match count
   plcount = 0      # prev list count
   q       = ''
@@ -355,15 +360,18 @@ searcher = Thread.new {
           @new    = []
           fcache  = {}
         end
+
+        if events[:select]
+          selects = @selects.dup
+        end
       end#mtx
 
-      new_search = events[:key] || events[:new]
-      user_input = events[:key] || events[:vcursor]
+      new_search = events[:key] || events.delete(:new)
+      user_input = events[:key] || events[:vcursor] || events.delete(:select)
       progress   = 0
       started_at = Time.now
 
       if new_search && !@lists.empty?
-        events.delete :new
         q = events.delete(:key) || q
 
         unless q.empty?
@@ -392,7 +400,7 @@ searcher = Thread.new {
               found.concat(cache[q] ||= q.empty? ? list : begin
                 if progress < 100 && Time.now - started_at > 0.5
                   @smtx.synchronize do
-                    print_info " (#{progress}%)"
+                    print_info selects.length, " (#{progress}%)"
                     refresh
                   end
                 end
@@ -482,7 +490,9 @@ searcher = Thread.new {
           C.setpos row, 0
           C.clrtoeol
           cprint chosen ? '>' : ' ', color(:red, true)
-          cprint ' ', chosen ? color(:chosen) : 0
+          selected = selects.include?([*item][0])
+          cprint selected ? '>' : ' ',
+            chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
 
           C.attron color(:chosen, true) if chosen
 
@@ -497,7 +507,7 @@ searcher = Thread.new {
           C.attroff color(:chosen, true) if chosen
         end
 
-        print_info if !@lists.empty? || events[:loaded]
+        print_info selects.length if !@lists.empty? || events[:loaded]
         refresh
       end
     end#while
@@ -532,6 +542,18 @@ begin
       cursor = ridx
     },
     127 => proc { input[cursor -= 1] = '' if cursor > 0 },
+    9 => proc {
+      emit(:select) {
+        if sel = [*@matches.fetch(@vcursor, [])][0]
+          if @selects.has_key? sel
+            @selects.delete sel
+          else
+            @selects[sel] = 1
+          end
+          @vcursor = [0, @vcursor - 1].max
+        end
+      } if @multi
+    },
     :left => proc { cursor = [0, cursor - 1].max },
     :right => proc { cursor = [input.length, cursor + 1].min },
   }
@@ -576,6 +598,12 @@ begin
   end
 ensure
   C.close_screen
-  stdout.puts got if got
+  if got
+    @selects.delete got
+    @selects.each do |sel, _|
+      stdout.puts sel
+    end
+    stdout.puts got
+  end
 end
 

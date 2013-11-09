@@ -71,6 +71,7 @@ Usage
 ```
 usage: fzf [options]
 
+  -m, --multi      Enable multi-select
   -s, --sort=MAX   Maximum number of matched items to sort. Default: 500
   +s, --no-sort    Keep the sequence unchanged.
   +i               Case-sensitive match
@@ -109,6 +110,9 @@ The following readline key bindings should also work as expected.
 - CTRL-A / CTRL-E
 - CTRL-B / CTRL-F
 - CTRL-W / CTRL-U
+
+If you enable multi-select mode with `-m` option, you can select multiple items
+with TAB key.
 
 Usage as Vim plugin
 -------------------
