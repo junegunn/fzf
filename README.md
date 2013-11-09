@@ -160,7 +160,7 @@ fh() {
 
 # fkill - kill process
 fkill() {
-  ps -ef | sed 1d | fzf | awk '{print $2}' | xargs kill -${1:-9}
+  ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
 }
 
 # (Assuming you don't use the default CTRL-T and CTRL-R)
