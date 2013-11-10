@@ -180,7 +180,7 @@ zsh widgets
 # CTRL-T - Paste the selected file path into the command line
 fzf-file-widget() {
   LBUFFER+=$(
-      find * -path '*/\\.*' -prune \
+      find * -path '*/\.*' -prune \
       -o -type f -print \
       -o -type l -print 2> /dev/null | fzf)
   zle redisplay
