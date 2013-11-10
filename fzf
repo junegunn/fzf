@@ -542,7 +542,7 @@ begin
       cursor = ridx
     },
     127 => proc { input[cursor -= 1] = '' if cursor > 0 },
-    9 => proc {
+    9 => proc { |o|
       emit(:select) {
         if sel = [*@matches.fetch(@vcursor, [])][0]
           if @selects.has_key? sel
@@ -550,7 +550,7 @@ begin
           else
             @selects[sel] = 1
           end
-          @vcursor = [0, @vcursor - 1].max
+          @vcursor = [0, @vcursor + (o == :stab ? 1 : -1)].max
         end
       } if @multi
     },
@@ -562,6 +562,7 @@ begin
   actions[ctrl(:h)] = actions[127]
   actions[ctrl(:n)] = actions[ctrl(:j)]
   actions[ctrl(:p)] = actions[ctrl(:k)]
+  actions[:stab]    = actions[9]
 
   while true
     # Update user input
@@ -580,6 +581,7 @@ begin
               when 67 then :right
               when 66 then ctrl(:j)
               when 65 then ctrl(:k)
+              when 90 then :stab
               else :nop
               end
       end

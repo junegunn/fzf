@@ -112,7 +112,7 @@ The following readline key bindings should also work as expected.
 - CTRL-W / CTRL-U
 
 If you enable multi-select mode with `-m` option, you can select multiple items
-with TAB key.
+with TAB or Shift-TAB key.
 
 Usage as Vim plugin
 -------------------
