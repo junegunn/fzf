@@ -196,8 +196,8 @@ bindkey '^T' fzf-file-widget
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
-  cd ${$(find * -path '*/\.*' -prune \
-         -o -type d -print 2> /dev/null | fzf):-.}
+  cd "${$(find * -path '*/\.*' -prune \
+          -o -type d -print 2> /dev/null | fzf):-.}"
   zle reset-prompt
 }
 zle     -N    fzf-cd-widget
