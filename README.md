@@ -197,6 +197,32 @@ zle     -N   fzf-history-widget
 bindkey '^R' fzf-history-widget
 ```
 
+Tips
+----
+
+### Faster startup with `--disable-gems` options
+
+If you're running Ruby 1.9 or above, you can improve the startup time with
+`--disable-gems` option to Ruby.
+
+- `time ruby ~/bin/fzf -h`
+    - 0.077 sec
+- `time ruby --disable-gems ~/bin/fzf -h`
+    - 0.025 sec
+
+Define fzf alias with the option as follows:
+
+```sh
+alias fzf='ruby --disable-gems ~/bin/fzf'
+```
+
+### Incorrect display on Ruby 1.8
+
+It is reported that the output of fzf can become unreadable on some terminals
+when it's running on Ruby 1.8. If you experience the problem, upgrade your Ruby
+to 1.9 or above. Ruby 1.9 or above is also required for displaying Unicode
+characters.
+
 License
 -------
 
