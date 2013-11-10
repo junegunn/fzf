@@ -51,7 +51,8 @@ $stdout.reopen($stderr)
 
 usage 0 unless (%w[--help -h] & ARGV).empty?
 @rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
-@sort   = %w[+s --no-sort].map  { |e| ARGV.delete e }.compact.empty? ? 500 : nil
+@sort   = %w[+s --no-sort].map  { |e| ARGV.delete e }.compact.empty? ?
+  ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
 @color  = %w[+c --no-color].map { |e| ARGV.delete e }.compact.empty?
 @multi  = !%w[-m --multi].map   { |e| ARGV.delete e }.compact.empty?
 rest    = ARGV.join ' '
