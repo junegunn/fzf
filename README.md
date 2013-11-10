@@ -73,7 +73,7 @@ usage: fzf [options]
 
   -m, --multi      Enable multi-select
   -s, --sort=MAX   Maximum number of matched items to sort. Default: 500
-  +s, --no-sort    Keep the sequence unchanged.
+  +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
   +i               Case-sensitive match
   +c, --no-color   Disable colors
 ```
