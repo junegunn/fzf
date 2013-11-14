@@ -70,8 +70,9 @@ class FZF
     @rxflag = argv.delete('+i') ? 0 : Regexp::IGNORECASE
     @sort   = %w[+s --no-sort].map  { |e| argv.delete e }.compact.empty? ?
       ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
-    @color  = %w[+c --no-color].map { |e| argv.delete e }.compact.empty?
-    @multi  = !%w[-m --multi].map   { |e| argv.delete e }.compact.empty?
+    @color  = %w[+c --no-color].map  { |e| argv.delete e }.compact.empty?
+    @multi  = !%w[-m --multi].map    { |e| argv.delete e }.compact.empty?
+    @xmode  = !%w[-x --extended].map { |e| argv.delete e }.compact.empty?
     rest    = argv.join ' '
     if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
       usage 1 unless @sort
@@ -109,6 +110,7 @@ class FZF
     $stderr.puts %[usage: fzf [options]
 
     -m, --multi      Enable multi-select
+    -x, --extended   Extended mode
     -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
     +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
     +i               Case-sensitive match
@@ -451,7 +453,7 @@ class FZF
 
   def start_search
     main     = Thread.current
-    matcher  = FuzzyMatcher.new @rxflag
+    matcher  = (@xmode ? XFuzzyMatcher : FuzzyMatcher).new @rxflag
     searcher = Thread.new {
       lists   = []
       events  = {}
@@ -599,7 +601,7 @@ class FZF
             end
           } if @multi
         },
-        :left => proc { cursor = [0, cursor - 1].max },
+        :left  => proc { cursor = [0, cursor - 1].max },
         :right => proc { cursor = [input.length, cursor + 1].min },
       }
       actions[ctrl(:b)] = actions[:left]
@@ -657,7 +659,7 @@ class FZF
   end
 
   class FuzzyMatcher < Matcher
-    attr_reader :cache
+    attr_reader :cache, :rxflag
 
     def initialize rxflag
       @cache  = Hash.new { |h, k| h[k] = {} }
@@ -665,17 +667,20 @@ class FZF
       @rxflag = rxflag
     end
 
-    def match list, q, prefix, suffix
-      regexp = @regexp[q] ||= begin
+    def fuzzy_regex q
+      @regexp[q] ||= begin
         q = q.downcase if @rxflag != 0
         Regexp.new(convert_query(q).inject('') { |sum, e|
           e = Regexp.escape e
           sum << "#{e}[^#{e}]*?"
         }, @rxflag)
       end
+    end
+
+    def match list, q, prefix, suffix
+      regexp = fuzzy_regex q
 
       cache = @cache[list.object_id]
-
       prefix_cache = nil
       (prefix.length - 1).downto(1) do |len|
         break if prefix_cache = cache[prefix[0, len]]
@@ -694,6 +699,42 @@ class FZF
         md = line.match(regexp) rescue nil
         md && [line, [md.offset(0)]]
       }.compact
+    end
+  end
+
+  class XFuzzyMatcher < FuzzyMatcher
+    def match list, q, prefix, suffix
+      regexps = q.strip.split(/\s+/).map { |w|
+        invert =
+          if w =~ /^!/
+            w = w[1..-1]
+            true
+          end
+
+        [ case w
+          when ''
+            nil
+          when /^\^/
+            w.length > 1 ? Regexp.new('^' << w[1..-1], rxflag) : nil
+          when /\$$/
+            w.length > 1 ? Regexp.new(w[0..-2] << '$', rxflag) : nil
+          else
+            fuzzy_regex w
+          end, invert ]
+      }.select { |pair| pair.first }
+
+      list.map { |line|
+        offsets = []
+        regexps.all? { |pair|
+          regexp, invert = pair
+          md = line.match(regexp) rescue nil
+          if md && !invert
+            offsets << md.offset(0)
+          elsif !md && invert
+            true
+          end
+        } && [line, offsets]
+      }.select { |e| e }
     end
   end
 end#FZF
