@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: November 10, 2013
+# Last update: November 15, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -35,608 +35,668 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-def usage x
-  puts %[usage: fzf [options]
-
-  -m, --multi      Enable multi-select
-  -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
-  +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
-  +i               Case-sensitive match
-  +c, --no-color   Disable colors]
-  exit x
-end
-
-stdout = $stdout.clone
-$stdout.reopen($stderr)
-
-usage 0 unless (%w[--help -h] & ARGV).empty?
-@rxflag = ARGV.delete('+i') ? 0 : Regexp::IGNORECASE
-@sort   = %w[+s --no-sort].map  { |e| ARGV.delete e }.compact.empty? ?
-  ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
-@color  = %w[+c --no-color].map { |e| ARGV.delete e }.compact.empty?
-@multi  = !%w[-m --multi].map   { |e| ARGV.delete e }.compact.empty?
-rest    = ARGV.join ' '
-if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
-  usage 1 unless @sort
-  @sort = sort[2].to_i
-  rest  = rest.delete sort[0]
-end
-usage 1 unless rest.empty?
-
 require 'thread'
 require 'curses'
 
-@mtx      = Mutex.new
-@smtx     = Mutex.new
-@cv       = ConditionVariable.new
-@lists    = []
-@new      = []
-@query    = ''
-@matches  = []
-@count    = 0
-@cursor_x = 0
-@vcursor  = 0
-@events   = {}
-@selects  = {} # ordered >= 1.9
+class FZF
+  C = Curses
+  attr_reader :rxflag, :sort, :color, :multi
 
-case RUBY_PLATFORM
-when /darwin/
-  module UConv
-    CHOSUNG   = 0x1100
-    JUNGSUNG  = 0x1161
-    JONGSUNG  = 0x11A7
-    CHOSUNGS  = 19
-    JUNGSUNGS = 21
-    JONGSUNGS = 28
-    JJCOUNT   = JUNGSUNGS * JONGSUNGS
-    NFC_BEGIN = 0xAC00
-    NFC_END   = NFC_BEGIN + CHOSUNGS * JUNGSUNGS * JONGSUNGS
-
-    def self.nfd str
-      ret = ''
-      str.split(//).each do |c|
-        cp = c.ord
-        if cp >= NFC_BEGIN && cp < NFC_END
-          idx  = cp - NFC_BEGIN
-          cho  = CHOSUNG  + idx / JJCOUNT
-          jung = JUNGSUNG + (idx % JJCOUNT) / JONGSUNGS
-          jong = JONGSUNG + idx % JONGSUNGS
-          ret << cho << jung
-          ret << jong if jong != JONGSUNG
-        else
-          ret << c
-        end
-      end
-      ret
+  class AtomicVar
+    def initialize value
+      @value = value
+      @mutex = Mutex.new
     end
 
-    def self.nfc str, offsets = []
-      ret  = ''
-      omap = []
-      pend = []
-      str.split(//).each_with_index do |c, idx|
-        cp = c.ord
-        omap << ret.length
-        unless pend.empty?
-          if cp >= JUNGSUNG && cp < JUNGSUNG + JUNGSUNGS
-            pend << cp - JUNGSUNG
-            next
-          elsif cp >= JONGSUNG && cp < JONGSUNG + JONGSUNGS
-            pend << cp - JONGSUNG
-            next
+    def get
+      @mutex.synchronize { @value }
+    end
+
+    def set value = nil
+      if block_given?
+        @mutex.synchronize { @value = yield @value }
+      else
+        @mutex.synchronize { @value = value }
+      end
+    end
+
+    def method_missing sym, *args, &blk
+      @mutex.synchronize { @value.send(sym, *args, &blk) }
+    end
+  end
+
+  def initialize argv, source = $stdin
+    usage 0 unless (%w[--help -h] & argv).empty?
+    @rxflag = argv.delete('+i') ? 0 : Regexp::IGNORECASE
+    @sort   = %w[+s --no-sort].map  { |e| argv.delete e }.compact.empty? ?
+      ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
+    @color  = %w[+c --no-color].map { |e| argv.delete e }.compact.empty?
+    @multi  = !%w[-m --multi].map   { |e| argv.delete e }.compact.empty?
+    rest    = argv.join ' '
+    if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
+      usage 1 unless @sort
+      @sort = sort[2].to_i
+      rest  = rest.delete sort[0]
+    end
+    usage 1 unless rest.empty?
+
+    @source   = source
+    @mtx      = Mutex.new
+    @cv       = ConditionVariable.new
+    @events   = {}
+    @new      = []
+    @smtx     = Mutex.new
+    @cursor_x = AtomicVar.new(0)
+    @query    = AtomicVar.new('')
+    @matches  = AtomicVar.new([])
+    @count    = AtomicVar.new(0)
+    @vcursor  = AtomicVar.new(0)
+    @fan      = AtomicVar.new('-\|/-\|/'.split(//))
+    @selects  = AtomicVar.new({}) # ordered >= 1.9
+  end
+
+  def start
+    @stdout = $stdout.clone
+    $stdout.reopen($stderr)
+
+    init_screen
+    start_reader
+    start_search
+    start_loop
+  end
+
+  def usage x
+    $stderr.puts %[usage: fzf [options]
+
+    -m, --multi      Enable multi-select
+    -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
+    +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
+    +i               Case-sensitive match
+    +c, --no-color   Disable colors]
+    exit x
+  end
+
+  case RUBY_PLATFORM
+  when /darwin/
+    module UConv
+      CHOSUNG   = 0x1100
+      JUNGSUNG  = 0x1161
+      JONGSUNG  = 0x11A7
+      CHOSUNGS  = 19
+      JUNGSUNGS = 21
+      JONGSUNGS = 28
+      JJCOUNT   = JUNGSUNGS * JONGSUNGS
+      NFC_BEGIN = 0xAC00
+      NFC_END   = NFC_BEGIN + CHOSUNGS * JUNGSUNGS * JONGSUNGS
+
+      def self.nfd str
+        ret = ''
+        str.split(//).each do |c|
+          cp = c.ord
+          if cp >= NFC_BEGIN && cp < NFC_END
+            idx  = cp - NFC_BEGIN
+            cho  = CHOSUNG  + idx / JJCOUNT
+            jung = JUNGSUNG + (idx % JJCOUNT) / JONGSUNGS
+            jong = JONGSUNG + idx % JONGSUNGS
+            ret << cho << jung
+            ret << jong if jong != JONGSUNG
           else
-            omap[-1] = omap[-1] + 1
-            ret << [NFC_BEGIN + pend[0] * JJCOUNT +
-                                (pend[1] || 0) * JONGSUNGS +
-                                (pend[2] || 0)].pack('U*')
-            pend.clear
+            ret << c
           end
         end
-        if cp >= CHOSUNG && cp < CHOSUNG + CHOSUNGS
-          pend << cp - CHOSUNG
-        else
-          ret << c
-        end
+        ret
       end
-      return [ret,
-              offsets.map { |pair|
-                b, e = pair
-                [omap[b] || 0, omap[e] || ((omap.last || 0) + 1)] }]
-    end
-  end
 
-  def convert_query q
-    UConv.nfd(q).split(//)
-  end
-
-  def convert_item item
-    UConv.nfc(*item)
-  end
-else
-  def convert_query q
-    q.split(//)
-  end
-
-  def convert_item item
-    item
-  end
-end
-
-def emit event
-  @mtx.synchronize do
-    @events[event] = yield
-    @cv.broadcast
-  end
-end
-
-C = Curses
-def max_items; C.lines - 2; end
-def cursor_y;  C.lines - 1; end
-def cprint str, col
-  C.attron(col) do
-    C.addstr str.gsub("\0", '')
-  end if str
-end
-
-def print_input
-  C.setpos cursor_y, 0
-  C.clrtoeol
-  cprint '> ', color(:blue, true)
-  C.attron(C::A_BOLD) do
-    C.addstr @query
-  end
-end
-
-def print_info selected, msg = nil
-  @fan ||= '-\|/-\|/'.split(//)
-  C.setpos cursor_y - 1, 0
-  C.clrtoeol
-  prefix =
-    if fan = @fan.shift
-      @fan.push fan
-      cprint fan, color(:fan, true)
-      ' '
-    else
-      '  '
-    end
-  C.attron color(:info, false) do
-    C.addstr "#{prefix}#{@matches.length}/#{@count}"
-    C.addstr " (#{selected})" if selected > 0
-    C.addstr msg if msg
-  end
-end
-
-def refresh
-  C.setpos cursor_y, 2 + width(@query[0, @cursor_x])
-  C.refresh
-end
-
-def ctrl char
-  char.to_s.ord - 'a'.ord + 1
-end
-
-def format line, limit, offsets
-  offsets ||= []
-  maxe = offsets.map { |e| e.last }.max || 0
-
-  # Overflow
-  if width(line) > limit
-    ewidth = width(line[0...maxe])
-    # Stri..
-    if ewidth <= limit - 2
-      line, _ = trim line, limit - 2, false
-      line << '..'
-    # ..ring
-    else
-      # ..ri..
-      line = line[0...maxe] + '..' if ewidth < width(line) - 2
-      line, diff = trim line, limit - 2, true
-      offsets = offsets.map { |pair|
-        b, e = pair
-        b += 2 - diff
-        e += 2 - diff
-        b = [2, b].max
-        [b, e]
-      }
-      line = '..' + line
-    end
-  end
-
-  tokens = []
-  index = 0
-  offsets.select  { |pair| pair.first < pair.last }.
-          sort_by { |pair| pair }.each do |pair|
-    b, e = pair.map { |x| [index, x].max }
-    tokens << [line[index...b], false]
-    tokens << [line[b...e], true]
-    index = e
-  end
-  tokens << [line[index..-1], false]
-  tokens.reject { |pair| pair.first.empty? }
-end
-
-def print_item row, tokens, chosen, selected
-  # Cursor
-  C.setpos row, 0
-  C.clrtoeol
-  cprint chosen ? '>' : ' ', color(:red, true)
-  cprint selected ? '>' : ' ',
-    chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
-
-  # Highlighted item
-  C.attron color(:chosen, true) if chosen
-  tokens.each do |pair|
-    token, highlighted = pair
-
-    if highlighted
-      cprint   token, color(chosen ? :match! : :match, chosen)
-      C.attron color(:chosen, true) if chosen
-    else
-      C.addstr token
-    end
-  end
-  C.attroff color(:chosen, true) if chosen
-end
-
-if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
-  @wrx = Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
-  def width str
-    str.gsub(@wrx, '  ').length
-  end
-
-  def trim str, len, left
-    width = width str
-    diff = 0
-    while width > len
-      width -= (left ? str[0, 1] : str[-1, 1]) =~ @wrx ? 2 : 1
-      str = left ? str[1..-1] : str[0...-1]
-      diff += 1
-    end
-    [str, diff]
-  end
-else
-  def width str
-    str.length
-  end
-
-  def trim str, len, left
-    diff = str.length - len
-    if diff > 0
-      [left ? str[diff..-1] : str[0...-diff], diff]
-    else
-      [str, 0]
-    end
-  end
-
-  class String
-    def ord
-      self.unpack('c').first
-    end
-  end
-
-  class Fixnum
-    def ord
-      self
-    end
-  end
-end
-
-C.init_screen
-C.start_color
-dbg =
-  if C.respond_to?(:use_default_colors)
-    C.use_default_colors
-    -1
-  else
-    C::COLOR_BLACK
-  end
-C.raw
-C.noecho
-
-if @color
-  if C.can_change_color?
-    fg = ENV.fetch('FZF_FG', 252).to_i
-    bg = ENV.fetch('FZF_BG', 236).to_i
-    C.init_pair 1, 110,    dbg
-    C.init_pair 2, 108,    dbg
-    C.init_pair 3, fg + 2, bg
-    C.init_pair 4, 151,    bg
-    C.init_pair 5, 148,    dbg
-    C.init_pair 6, 144,    dbg
-    C.init_pair 7, 161,    bg
-  else
-    C.init_pair 1, C::COLOR_BLUE,   dbg
-    C.init_pair 2, C::COLOR_GREEN,  dbg
-    C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
-    C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
-    C.init_pair 5, C::COLOR_GREEN,  dbg
-    C.init_pair 6, C::COLOR_WHITE,  dbg
-    C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
-  end
-
-  def color sym, bold = false
-    C.color_pair([:blue, :match, :chosen,
-                  :match!, :fan, :info, :red].index(sym) + 1) |
-      (bold ? C::A_BOLD : 0)
-  end
-else
-  def color sym, bold = false
-    case sym
-    when :chosen
-     bold ? C::A_REVERSE : 0
-    when :match
-      C::A_UNDERLINE
-    when :match!
-      C::A_REVERSE | C::A_UNDERLINE
-    else
-      0
-    end | (bold ? C::A_BOLD : 0)
-  end
-end
-
-@read =
-  if $stdin.tty?
-    if default_command = ENV['FZF_DEFAULT_COMMAND']
-      IO.popen(default_command)
-    elsif !`which find`.empty?
-      IO.popen("find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null")
-    else
-      exit 1
-    end
-  else
-    $stdin
-  end
-
-reader = Thread.new {
-  while line = @read.gets
-    emit(:new) { @new << line.chomp }
-  end
-  emit(:loaded) { true }
-  @smtx.synchronize { @fan = [] }
-}
-
-main     = Thread.current
-searcher = Thread.new {
-  events  = {}
-  fcache  = {}
-  matches = []
-  selects = {}
-  mcount  = 0      # match count
-  plcount = 0      # prev list count
-  q       = ''
-  vcursor = 0
-  delay   = -5
-
-  begin
-    while true
-      @mtx.synchronize do
-        while true
-          events.merge! @events
-
-          if @events.empty? # No new events
-            @cv.wait @mtx
-            next
-          end
-          @events.clear
-          break
-        end
-
-        if events[:new]
-          @lists << [@new, {}]
-          @count += @new.length
-          @new    = []
-          fcache  = {}
-        end
-
-        if events[:select]
-          selects = @selects.dup
-        end
-      end#mtx
-
-      new_search = events[:key] || events.delete(:new)
-      user_input = events[:key] || events[:vcursor] || events.delete(:select)
-      progress   = 0
-      started_at = Time.now
-
-      if new_search && !@lists.empty?
-        q = events.delete(:key) || q
-
-        unless q.empty?
-          q = q.downcase if @rxflag != 0
-          regexp = Regexp.new(convert_query(q).inject('') { |sum, e|
-            e = Regexp.escape e
-            sum << "#{e}[^#{e}]*?"
-          }, @rxflag)
-        end
-
-        matches = fcache[q] ||=
-          begin
-            found = []
-            skip  = false
-            cnt   = 0
-            @lists.each do |pair|
-              list, cache = pair
-              cnt += list.length
-
-              @mtx.synchronize {
-                skip = @events[:key]
-                progress = (100 * cnt / @count)
-              }
-              break if skip
-
-              found.concat(cache[q] ||= q.empty? ? list : begin
-                if progress < 100 && Time.now - started_at > 0.5
-                  @smtx.synchronize do
-                    print_info selects.length, " (#{progress}%)"
-                    refresh
-                  end
-                end
-
-                prefix, suffix = @query[0, @cursor_x], @query[@cursor_x..-1] || ''
-                prefix_cache = suffix_cache = nil
-
-                (prefix.length - 1).downto(1) do |len|
-                  break if prefix_cache = cache[prefix[0, len]]
-                end
-
-                0.upto(suffix.length - 1) do |idx|
-                  break if suffix_cache = cache[suffix[idx..-1]]
-                end unless suffix.empty?
-
-                partial_cache = [prefix_cache, suffix_cache].compact.sort_by { |e| e.length }.first
-                (partial_cache ? partial_cache.map { |e| e.first } : list).map { |line|
-                  # Ignore errors: e.g. invalid byte sequence in UTF-8
-                  md = line.match(regexp) rescue nil
-                  md && [line, [md.offset(0)]]
-                }.compact
-              end)
+      def self.nfc str, offsets = []
+        ret  = ''
+        omap = []
+        pend = []
+        str.split(//).each_with_index do |c, idx|
+          cp = c.ord
+          omap << ret.length
+          unless pend.empty?
+            if cp >= JUNGSUNG && cp < JUNGSUNG + JUNGSUNGS
+              pend << cp - JUNGSUNG
+              next
+            elsif cp >= JONGSUNG && cp < JONGSUNG + JONGSUNGS
+              pend << cp - JONGSUNG
+              next
+            else
+              omap[-1] = omap[-1] + 1
+              ret << [NFC_BEGIN + pend[0] * JJCOUNT +
+                                  (pend[1] || 0) * JONGSUNGS +
+                                  (pend[2] || 0)].pack('U*')
+              pend.clear
             end
-            next if skip
-            @sort ? found : found.reverse
           end
-
-        mcount = matches.length
-        if @sort && mcount <= @sort && !q.empty?
-          matches.replace matches.sort_by { |tuple|
-            line, offsets = tuple
-            matchlen = offsets.map { |pair| pair.last }.max || 0 -
-                       offsets.map { |pair| pair.first }.min || 0
-            [matchlen, line.length, line]
-          }
-        end
-      end#new_search
-
-      # This small delay reduces the number of partial lists
-      sleep((delay = [20, delay + 5].min) * 0.01) unless user_input
-
-      if events.delete(:vcursor) || new_search
-        @mtx.synchronize do
-          plcount  = [@matches.length, max_items].min
-          @matches = matches
-          vcursor  = @vcursor = [0, [@vcursor, mcount - 1, max_items - 1].min].max
-        end
-      end
-
-      # Output
-      @smtx.synchronize do
-        item_length = [mcount, max_items].min
-        if item_length < plcount
-          plcount.downto(item_length) do |idx|
-            C.setpos cursor_y - idx - 2, 0
-            C.clrtoeol
+          if cp >= CHOSUNG && cp < CHOSUNG + CHOSUNGS
+            pend << cp - CHOSUNG
+          else
+            ret << c
           end
         end
-
-        maxc = C.cols - 3
-        matches[0, max_items].each_with_index do |item, idx|
-          next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
-          row = cursor_y - idx - 2
-          chosen = idx == vcursor
-          selected = selects.include?([*item][0])
-          line, offsets = convert_item item
-          tokens = format line, maxc, offsets
-          print_item row, tokens, chosen, selected
-        end
-
-        print_info selects.length if !@lists.empty? || events[:loaded]
-        refresh
+        return [ret,
+                offsets.map { |pair|
+                  b, e = pair
+                  [omap[b] || 0, omap[e] || ((omap.last || 0) + 1)] }]
       end
-    end#while
-  rescue Exception => e
-    main.raise e
+    end
+
+    def convert_item item
+      UConv.nfc(*item)
+    end
+
+    class Matcher
+      def convert_query q
+        UConv.nfd(q).split(//)
+      end
+    end
+  else
+    def convert_item item
+      item
+    end
+
+    class Matcher
+      def convert_query q
+        q.split(//)
+      end
+    end
   end
-}
 
-got = nil
-begin
-  tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
-  input   = ''
-  cursor  = 0
-  actions = {
-    :nop     => proc {},
-    ctrl(:c) => proc { exit 1 },
-    ctrl(:d) => proc { exit 1 if input.empty? },
-    ctrl(:m) => proc {
-      @mtx.synchronize do
-        got = [*@matches.fetch(@vcursor, [])][0]
+  def emit event
+    @mtx.synchronize do
+      @events[event] = yield
+      @cv.broadcast
+    end
+  end
+
+  def max_items; C.lines - 2; end
+  def cursor_y;  C.lines - 1; end
+  def cprint str, col
+    C.attron(col) do
+      C.addstr str.gsub("\0", '')
+    end if str
+  end
+
+  def print_input
+    C.setpos cursor_y, 0
+    C.clrtoeol
+    cprint '> ', color(:blue, true)
+    C.attron(C::A_BOLD) do
+      C.addstr @query.get
+    end
+  end
+
+  def print_info msg = nil
+    C.setpos cursor_y - 1, 0
+    C.clrtoeol
+    prefix =
+      if fan = @fan.shift
+        @fan.push fan
+        cprint fan, color(:fan, true)
+        ' '
+      else
+        '  '
+      end
+    C.attron color(:info, false) do
+      C.addstr "#{prefix}#{@matches.length}/#{@count.get}"
+      if (selected = @selects.length) > 0
+        C.addstr " (#{selected})"
+      end
+      C.addstr msg if msg
+    end
+  end
+
+  def refresh
+    C.setpos cursor_y, 2 + width(@query[0, @cursor_x.get])
+    C.refresh
+  end
+
+  def ctrl char
+    char.to_s.ord - 'a'.ord + 1
+  end
+
+  def format line, limit, offsets
+    offsets ||= []
+    maxe = offsets.map { |e| e.last }.max || 0
+
+    # Overflow
+    if width(line) > limit
+      ewidth = width(line[0...maxe])
+      # Stri..
+      if ewidth <= limit - 2
+        line, _ = trim line, limit - 2, false
+        line << '..'
+      # ..ring
+      else
+        # ..ri..
+        line = line[0...maxe] + '..' if ewidth < width(line) - 2
+        line, diff = trim line, limit - 2, true
+        offsets = offsets.map { |pair|
+          b, e = pair
+          b += 2 - diff
+          e += 2 - diff
+          b = [2, b].max
+          [b, e]
+        }
+        line = '..' + line
+      end
+    end
+
+    tokens = []
+    index = 0
+    offsets.select  { |pair| pair.first < pair.last }.
+            sort_by { |pair| pair }.each do |pair|
+      b, e = pair.map { |x| [index, x].max }
+      tokens << [line[index...b], false]
+      tokens << [line[b...e], true]
+      index = e
+    end
+    tokens << [line[index..-1], false]
+    tokens.reject { |pair| pair.first.empty? }
+  end
+
+  def print_item row, tokens, chosen, selected
+    # Cursor
+    C.setpos row, 0
+    C.clrtoeol
+    cprint chosen ? '>' : ' ', color(:red, true)
+    cprint selected ? '>' : ' ',
+      chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
+
+    # Highlighted item
+    C.attron color(:chosen, true) if chosen
+    tokens.each do |pair|
+      token, highlighted = pair
+
+      if highlighted
+        cprint   token, color(chosen ? :match! : :match, chosen)
+        C.attron color(:chosen, true) if chosen
+      else
+        C.addstr token
+      end
+    end
+    C.attroff color(:chosen, true) if chosen
+  end
+
+  def sort_by_rank list
+    list.sort_by { |tuple|
+      line, offsets = tuple
+      matchlen = (offsets.map { |pair| pair.last  }.max || 0) -
+                 (offsets.map { |pair| pair.first }.min || 0)
+      [matchlen, line.length, line]
+    }
+  end
+
+  if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
+    @@wrx = Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
+    def width str
+      str.gsub(@@wrx, '  ').length
+    end
+
+    def trim str, len, left
+      width = width str
+      diff  = 0
+      while width > len
+        width -= (left ? str[0, 1] : str[-1, 1]) =~ @@wrx ? 2 : 1
+        str    = left ? str[1..-1] : str[0...-1]
+        diff  += 1
+      end
+      [str, diff]
+    end
+  else
+    def width str
+      str.length
+    end
+
+    def trim str, len, left
+      diff = str.length - len
+      if diff > 0
+        [left ? str[diff..-1] : str[0...-diff], diff]
+      else
+        [str, 0]
+      end
+    end
+
+    class ::String
+      def ord
+        self.unpack('c').first
+      end
+    end
+
+    class ::Fixnum
+      def ord
+        self
+      end
+    end
+  end
+
+  def init_screen
+    C.init_screen
+    C.start_color
+    dbg =
+      if C.respond_to?(:use_default_colors)
+        C.use_default_colors
+        -1
+      else
+        C::COLOR_BLACK
+      end
+    C.raw
+    C.noecho
+
+    if @color
+      if C.can_change_color?
+        fg = ENV.fetch('FZF_FG', 252).to_i
+        bg = ENV.fetch('FZF_BG', 236).to_i
+        C.init_pair 1, 110,    dbg
+        C.init_pair 2, 108,    dbg
+        C.init_pair 3, fg + 2, bg
+        C.init_pair 4, 151,    bg
+        C.init_pair 5, 148,    dbg
+        C.init_pair 6, 144,    dbg
+        C.init_pair 7, 161,    bg
+      else
+        C.init_pair 1, C::COLOR_BLUE,   dbg
+        C.init_pair 2, C::COLOR_GREEN,  dbg
+        C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
+        C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
+        C.init_pair 5, C::COLOR_GREEN,  dbg
+        C.init_pair 6, C::COLOR_WHITE,  dbg
+        C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
+      end
+
+      def self.color sym, bold = false
+        C.color_pair([:blue, :match, :chosen,
+                      :match!, :fan, :info, :red].index(sym) + 1) |
+          (bold ? C::A_BOLD : 0)
+      end
+    else
+      def self.color sym, bold = false
+        case sym
+        when :chosen
+          bold ? C::A_REVERSE : 0
+        when :match
+          C::A_UNDERLINE
+        when :match!
+          C::A_REVERSE | C::A_UNDERLINE
+        else
+          0
+        end | (bold ? C::A_BOLD : 0)
+      end
+    end
+  end
+
+  def start_reader
+    stream =
+      if @source.tty?
+        if default_command = ENV['FZF_DEFAULT_COMMAND']
+          IO.popen(default_command)
+        elsif !`which find`.empty?
+          IO.popen("find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null")
+        else
+          exit 1
+        end
+      else
+        @source
+      end
+
+    Thread.new do
+      while line = stream.gets
+        emit(:new) { @new << line.chomp }
+      end
+      emit(:loaded) { true }
+      @fan.clear
+    end
+  end
+
+  def start_search
+    main     = Thread.current
+    matcher  = FuzzyMatcher.new @rxflag
+    searcher = Thread.new {
+      lists   = []
+      events  = {}
+      fcache  = {}
+      mcount  = 0  # match count
+      plcount = 0  # prev list count
+      q       = ''
+      delay   = -5
+
+      begin
+        while true
+          @mtx.synchronize do
+            while true
+              events.merge! @events
+
+              if @events.empty? # No new events
+                @cv.wait @mtx
+                next
+              end
+              @events.clear
+              break
+            end
+
+            if events[:new]
+              lists << @new
+              @count.set { |c| c + @new.length }
+              @new    = []
+              fcache  = {}
+            end
+          end#mtx
+
+          new_search = events[:key] || events.delete(:new)
+          user_input = events[:key] || events[:vcursor] || events.delete(:select)
+          progress   = 0
+          started_at = Time.now
+
+          if new_search && !lists.empty?
+            q, cx = events.delete(:key) || [q, 0]
+
+            plcount = [@matches.length, max_items].min
+            @matches.set(fcache[q] ||=
+              begin
+                found = []
+                skip  = false
+                cnt   = 0
+                lists.each do |list|
+                  cnt += list.length
+                  skip = @mtx.synchronize { @events[:key] }
+                  break if skip
+
+                  progress = (100 * cnt / @count.get)
+                  if progress < 100 && Time.now - started_at > 0.5 && !q.empty?
+                    @smtx.synchronize do
+                      print_info " (#{progress}%)"
+                      refresh
+                    end
+                  end
+
+                  found.concat(q.empty? ? list :
+                               matcher.match(list, q, q[0, cx], q[cx..-1]))
+                end
+                next if skip
+                @sort ? found : found.reverse
+              end)
+
+            mcount = @matches.length
+            if @sort && mcount <= @sort && !q.empty?
+              @matches.set { |m| sort_by_rank m }
+            end
+          end#new_search
+
+          # This small delay reduces the number of partial lists
+          sleep((delay = [20, delay + 5].min) * 0.01) unless user_input
+
+          if events.delete(:vcursor) || new_search
+            @vcursor.set { |v| [0, [v, mcount - 1, max_items - 1].min].max }
+          end
+
+          # Output
+          @smtx.synchronize do
+            item_length = [mcount, max_items].min
+            if item_length < plcount
+              plcount.downto(item_length) do |idx|
+                C.setpos cursor_y - idx - 2, 0
+                C.clrtoeol
+              end
+            end
+
+            maxc    = C.cols - 3
+            vcursor = @vcursor.get
+            @matches[0, max_items].each_with_index do |item, idx|
+              next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
+              row           = cursor_y - idx - 2
+              chosen        = idx == vcursor
+              selected      = @selects.include?([*item][0])
+              line, offsets = convert_item item
+              tokens        = format line, maxc, offsets
+              print_item row, tokens, chosen, selected
+            end
+
+            print_info if !lists.empty? || events[:loaded]
+            refresh
+          end
+        end#while
+      rescue Exception => e
+        main.raise e
+      end
+    }
+  end
+
+  def start_loop
+    got = nil
+    begin
+      tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
+      input   = ''
+      cursor  = 0
+      actions = {
+        :nop     => proc {},
+        ctrl(:c) => proc { exit 1 },
+        ctrl(:d) => proc { exit 1 if input.empty? },
+        ctrl(:m) => proc {
+          got = [*@matches.fetch(@vcursor.get, [])][0]
+          exit 0
+        },
+        ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
+        ctrl(:a) => proc { cursor = 0 },
+        ctrl(:e) => proc { cursor = input.length },
+        ctrl(:j) => proc { emit(:vcursor) { @vcursor.set { |v| v - 1 } } },
+        ctrl(:k) => proc { emit(:vcursor) { @vcursor.set { |v| v + 1 } } },
+        ctrl(:w) => proc {
+          ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
+          input  = input[0...ridx] + input[cursor..-1]
+          cursor = ridx
+        },
+        127 => proc { input[cursor -= 1] = '' if cursor > 0 },
+        9   => proc { |o|
+          emit(:select) {
+            if sel = [*@matches.fetch(@vcursor.get, [])][0]
+              if @selects.has_key? sel
+                @selects.delete sel
+              else
+                @selects[sel] = 1
+              end
+              @vcursor.set { |v| [0, v + (o == :stab ? 1 : -1)].max }
+            end
+          } if @multi
+        },
+        :left => proc { cursor = [0, cursor - 1].max },
+        :right => proc { cursor = [input.length, cursor + 1].min },
+      }
+      actions[ctrl(:b)] = actions[:left]
+      actions[ctrl(:f)] = actions[:right]
+      actions[ctrl(:h)] = actions[127]
+      actions[ctrl(:n)] = actions[ctrl(:j)]
+      actions[ctrl(:p)] = actions[ctrl(:k)]
+      actions[:stab]    = actions[9]
+
+      while true
+        @cursor_x.set cursor
+        # Update user input
+        @smtx.synchronize do
+          print_input
+          refresh
+        end
+
+        ord = tty.getc.ord
+        if ord == 27
+          ord = tty.getc.ord
+          if ord == 91
+            ord = case tty.getc.ord
+                  when 68 then :left
+                  when 67 then :right
+                  when 66 then ctrl(:j)
+                  when 65 then ctrl(:k)
+                  when 90 then :stab
+                  else :nop
+                  end
+          end
+        end
+
+        actions.fetch(ord, proc { |ord|
+          char = [ord].pack('U*')
+          if char =~ /[[:print:]]/
+            input.insert cursor, char
+            cursor += 1
+          end
+        }).call(ord)
+
+        # Dispatch key event
+        emit(:key) { [@query.set(input.dup), cursor] }
+      end
+    ensure
+      C.close_screen
+      if got
+        @selects.delete got
+        @selects.each do |sel, _|
+          @stdout.puts sel
+        end
+        @stdout.puts got
       end
       exit 0
-    },
-    ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
-    ctrl(:a) => proc { cursor = 0 },
-    ctrl(:e) => proc { cursor = input.length },
-    ctrl(:j) => proc { emit(:vcursor) { @vcursor -= 1 } },
-    ctrl(:k) => proc { emit(:vcursor) { @vcursor += 1 } },
-    ctrl(:w) => proc {
-      ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
-      input  = input[0...ridx] + input[cursor..-1]
-      cursor = ridx
-    },
-    127 => proc { input[cursor -= 1] = '' if cursor > 0 },
-    9 => proc { |o|
-      emit(:select) {
-        if sel = [*@matches.fetch(@vcursor, [])][0]
-          if @selects.has_key? sel
-            @selects.delete sel
-          else
-            @selects[sel] = 1
-          end
-          @vcursor = [0, @vcursor + (o == :stab ? 1 : -1)].max
-        end
-      } if @multi
-    },
-    :left => proc { cursor = [0, cursor - 1].max },
-    :right => proc { cursor = [input.length, cursor + 1].min },
-  }
-  actions[ctrl(:b)] = actions[:left]
-  actions[ctrl(:f)] = actions[:right]
-  actions[ctrl(:h)] = actions[127]
-  actions[ctrl(:n)] = actions[ctrl(:j)]
-  actions[ctrl(:p)] = actions[ctrl(:k)]
-  actions[:stab]    = actions[9]
-
-  while true
-    # Update user input
-    @smtx.synchronize do
-      @cursor_x = cursor
-      print_input
-      refresh
     end
-
-    ord = tty.getc.ord
-    if ord == 27
-      ord = tty.getc.ord
-      if ord == 91
-        ord = case tty.getc.ord
-              when 68 then :left
-              when 67 then :right
-              when 66 then ctrl(:j)
-              when 65 then ctrl(:k)
-              when 90 then :stab
-              else :nop
-              end
-      end
-    end
-
-    actions.fetch(ord, proc { |ord|
-      char = [ord].pack('U*')
-      if char =~ /[[:print:]]/
-        input.insert cursor, char
-        cursor += 1
-      end
-    }).call(ord)
-
-    # Dispatch key event
-    emit(:key) { @query = input.dup }
   end
-ensure
-  C.close_screen
-  if got
-    @selects.delete got
-    @selects.each do |sel, _|
-      stdout.puts sel
+
+  class FuzzyMatcher < Matcher
+    attr_reader :cache
+
+    def initialize rxflag
+      @cache  = Hash.new { |h, k| h[k] = {} }
+      @regexp = {}
+      @rxflag = rxflag
     end
-    stdout.puts got
+
+    def match list, q, prefix, suffix
+      regexp = @regexp[q] ||= begin
+        q = q.downcase if @rxflag != 0
+        Regexp.new(convert_query(q).inject('') { |sum, e|
+          e = Regexp.escape e
+          sum << "#{e}[^#{e}]*?"
+        }, @rxflag)
+      end
+
+      cache = @cache[list.object_id]
+
+      prefix_cache = nil
+      (prefix.length - 1).downto(1) do |len|
+        break if prefix_cache = cache[prefix[0, len]]
+      end
+
+      suffix_cache = nil
+      0.upto(suffix.length - 1) do |idx|
+        break if suffix_cache = cache[suffix[idx..-1]]
+      end unless suffix.empty?
+
+      partial_cache = [prefix_cache,
+                       suffix_cache].compact.sort_by { |e| e.length }.first
+      cache[q] ||= (partial_cache ?
+                    partial_cache.map { |e| e.first } : list).map { |line|
+        # Ignore errors: e.g. invalid byte sequence in UTF-8
+        md = line.match(regexp) rescue nil
+        md && [line, [md.offset(0)]]
+      }.compact
+    end
   end
-end
+end#FZF
+
+FZF.new(ARGV, $stdin).start if $0 == __FILE__
 
