@@ -110,7 +110,7 @@ when /darwin/
       ret
     end
 
-    def self.nfc str, b = 0, e = 0
+    def self.nfc str, offsets = []
       ret  = ''
       omap = []
       pend = []
@@ -138,7 +138,10 @@ when /darwin/
           ret << c
         end
       end
-      return [ret, omap[b] || 0, omap[e] || ((omap.last || 0) + 1)]
+      return [ret,
+              offsets.map { |pair|
+                b, e = pair
+                [omap[b] || 0, omap[e] || ((omap.last || 0) + 1)] }]
     end
   end
 
@@ -210,6 +213,69 @@ end
 
 def ctrl char
   char.to_s.ord - 'a'.ord + 1
+end
+
+def format line, limit, offsets
+  offsets ||= []
+  maxe = offsets.map { |e| e.last }.max || 0
+
+  # Overflow
+  if width(line) > limit
+    ewidth = width(line[0...maxe])
+    # Stri..
+    if ewidth <= limit - 2
+      line, _ = trim line, limit - 2, false
+      line << '..'
+    # ..ring
+    else
+      # ..ri..
+      line = line[0...maxe] + '..' if ewidth < width(line) - 2
+      line, diff = trim line, limit - 2, true
+      offsets = offsets.map { |pair|
+        b, e = pair
+        b += 2 - diff
+        e += 2 - diff
+        b = [2, b].max
+        [b, e]
+      }
+      line = '..' + line
+    end
+  end
+
+  tokens = []
+  index = 0
+  offsets.select  { |pair| pair.first < pair.last }.
+          sort_by { |pair| pair }.each do |pair|
+    b, e = pair.map { |x| [index, x].max }
+    tokens << [line[index...b], false]
+    tokens << [line[b...e], true]
+    index = e
+  end
+  tokens << [line[index..-1], false]
+  tokens.reject { |pair| pair.first.empty? }
+end
+
+def print_item row, tokens, chosen, selected
+  # Cursor
+  C.setpos row, 0
+  C.clrtoeol
+  cprint chosen ? '>' : ' ', color(:red, true)
+  cprint selected ? '>' : ' ',
+    chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
+
+  # Highlighted item
+  C.attron color(:chosen, true) if chosen
+  tokens.each do |pair|
+    token, highlighted = pair
+
+    if highlighted
+      cprint   token, color(chosen ? :match! : :match, chosen)
+      C.attron color(:chosen, true) if chosen
+    else
+      C.addstr token
+    end
+  end
+  C.attroff color(:chosen, true) if chosen
 end
 
 if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
@@ -421,7 +487,7 @@ searcher = Thread.new {
                 (partial_cache ? partial_cache.map { |e| e.first } : list).map { |line|
                   # Ignore errors: e.g. invalid byte sequence in UTF-8
                   md = line.match(regexp) rescue nil
-                  md && [line, *md.offset(0)]
+                  md && [line, [md.offset(0)]]
                 }.compact
               end)
             end
@@ -431,9 +497,11 @@ searcher = Thread.new {
 
         mcount = matches.length
         if @sort && mcount <= @sort && !q.empty?
-          matches.replace matches.sort_by { |triple|
-            line, b, e = triple
-            [b ? (e - b) : 0, line.length, line]
+          matches.replace matches.sort_by { |tuple|
+            line, offsets = tuple
+            matchlen = offsets.map { |pair| pair.last }.max || 0 -
+                       offsets.map { |pair| pair.first }.min || 0
+            [matchlen, line.length, line]
           }
         end
       end#new_search
@@ -462,50 +530,12 @@ searcher = Thread.new {
         maxc = C.cols - 3
         matches[0, max_items].each_with_index do |item, idx|
           next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
-
-          line, b, e = convert_item item
-          b ||= 0
-          e ||= 0
           row = cursor_y - idx - 2
           chosen = idx == vcursor
-
-          # Overflow
-          if width(line) > maxc
-            ewidth = width(line[0...e])
-            # Stri..
-            if ewidth <= maxc - 2
-              line, _ = trim line, maxc - 2, false
-              line << '..'
-            # ..ring
-            else
-              # ..ri..
-              line = line[0...e] + '..' if ewidth < width(line) - 2
-              line, diff = trim line, maxc - 2, true
-              b += 2 - diff
-              e += 2 - diff
-              b = [2, b].max
-              line = '..' + line
-            end
-          end
-
-          C.setpos row, 0
-          C.clrtoeol
-          cprint chosen ? '>' : ' ', color(:red, true)
           selected = selects.include?([*item][0])
-          cprint selected ? '>' : ' ',
-            chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
-
-          C.attron color(:chosen, true) if chosen
-
-          if b < e
-            C.addstr line[0, b]
-            cprint   line[b...e], color(chosen ? :match! : :match, chosen)
-            C.attron color(:chosen, true) if chosen
-            C.addstr line[e..-1] || ''
-          else
-            C.addstr line
-          end
-          C.attroff color(:chosen, true) if chosen
+          line, offsets = convert_item item
+          tokens = format line, maxc, offsets
+          print_item row, tokens, chosen, selected
         end
 
         print_info selects.length if !@lists.empty? || events[:loaded]
