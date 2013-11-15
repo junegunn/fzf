@@ -115,11 +115,12 @@ The following readline key bindings should also work as expected.
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
 
-### Extended mode (WIP)
+### Extended-search mode
 
-With `-x` or `--extended` option, fzf will start in "extended mode".
+With `-x` or `--extended` option, fzf will start in "extended-search mode".
 
-In extended mode, you can specify multiple patterns delimited by spaces, such as: `^music .mp3$ sbtrkt !rmx`
+In this mode, you can specify multiple patterns delimited by spaces,
+such as: `^music .mp3$ sbtrkt !rmx`
 
 | Token    | Description                      | Match type           |
 | -------- | -------------------------------- | -------------------- |
