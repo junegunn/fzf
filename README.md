@@ -120,14 +120,14 @@ With `-x` or `--extended` option, fzf will start in "extended mode".
 
 In extended mode, you can specify multiple patterns delimited by spaces, such as: `^music .mp3$ sbtrkt !rmx`
 
-| Token       | Description                      | Match type           |
-| ----------- | -------------------------------- | -------------------- |
-| `^music`    | Items that start with `music`    | prefix-exact-match   |
-| `.mp3$`     | Items that end with `.mp3`       | suffix-exact-match   |
-| `sbtrkt`    | Items that match `sbtrkt`        | fuzzy-match          |
-| `!rmx`      | Items that do not match `rmx`    | invert-fuzzy-match   |
-| `'wild`     | Items that include `wild`        | exact-match          |
-| `!'fire`    | Items that do not include `fire` | invert-exact-match   |
+| Token    | Description                      | Match type           |
+| -------- | -------------------------------- | -------------------- |
+| `^music` | Items that start with `music`    | prefix-exact-match   |
+| `.mp3$`  | Items that end with `.mp3`       | suffix-exact-match   |
+| `sbtrkt` | Items that match `sbtrkt`        | fuzzy-match          |
+| `!rmx`   | Items that do not match `rmx`    | inverse-fuzzy-match  |
+| `'wild`  | Items that include `wild`        | exact-match (quoted) |
+| `!'fire` | Items that do not include `fire` | inverse-exact-match  |
 
 Usage as Vim plugin
 -------------------
