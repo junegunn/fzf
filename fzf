@@ -155,12 +155,27 @@ class FZF
          (arr[2] || 0)].pack('U*')
       end
 
+      if String.method_defined?(:each_char)
+        def self.split str
+          str.each_char.to_a
+        end
+      else
+        def self.split str
+          str.split('')
+        end
+      end
+
       def self.nfc str, offsets = []
         ret  = ''
         omap = []
         pend = []
-        str.split(//).each_with_index do |c, idx|
-          cp = c.ord
+        split(str).each_with_index do |c, idx|
+          cp =
+            begin
+              c.ord
+            rescue Exception
+              next
+            end
           omap << ret.length
           unless pend.empty?
             if cp >= JUNGSUNG && cp < JUNGSUNG + JUNGSUNGS
@@ -221,8 +236,11 @@ class FZF
   def cursor_y;  C.lines - 1; end
   def cprint str, col
     C.attron(col) do
-      C.addstr str.gsub("\0", '')
+      addstr_safe str
     end if str
+  end
+  def addstr_safe str
+    C.addstr str.gsub("\0", '')
   end
 
   def print_input
@@ -320,7 +338,7 @@ class FZF
         cprint   token, color(chosen ? :match! : :match, chosen)
         C.attron color(:chosen, true) if chosen
       else
-        C.addstr token
+        addstr_safe token
       end
     end
     C.attroff color(:chosen, true) if chosen

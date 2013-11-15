@@ -288,5 +288,10 @@ class TestFZF < MiniTest::Unit::TestCase
       assert_equal NFD, nfd
     end
   end
+
+  def test_split
+    assert_equal ["a", "b", "c", "\xFF", "d", "e", "f"],
+      FZF::UConv.split("abc\xFFdef")
+  end
 end
 
