@@ -194,6 +194,14 @@ class TestFZF < MiniTest::Unit::TestCase
 
       # ! + f
       assert_equal [["juicy", [[4, 5]]]], match.call('y !l', '')
+
+      # '
+      assert_equal %w[juiceful juiceless juicily],
+        match.call('il', '').map { |e| e.first }
+      assert_equal %w[juicily],
+        match.call("'il", '').map { |e| e.first }
+      assert_equal (list - %w[juicily]).sort,
+        match.call("!'il", '').map { |e| e.first }.sort
     end
     assert !matcher.caches.empty?
   end

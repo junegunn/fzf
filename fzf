@@ -549,7 +549,7 @@ class FZF
               end)
 
             mcount = @matches.length
-            if @sort && mcount <= @sort && !q.empty?
+            if @sort && mcount <= @sort && !matcher.empty?(q)
               @matches.set { |m| sort_by_rank m }
             end
           end#new_search
@@ -697,6 +697,10 @@ class FZF
       @rxflag = rxflag
     end
 
+    def empty? q
+      q.empty?
+    end
+
     def fuzzy_regex q
       @regexp[q] ||= begin
         q = q.downcase if @rxflag != 0
@@ -739,10 +743,13 @@ class FZF
       @regexps = {}
     end
 
-    def match list, q, prefix, suffix
-      q = q.strip
+    def empty? q
+      parse(q).empty?
+    end
 
-      regexps = @regexps[q] ||= q.split(/\s+/).map { |w|
+    def parse q
+      q = q.strip
+      @regexps[q] ||= q.split(/\s+/).map { |w|
         invert =
           if w =~ /^!/
             w = w[1..-1]
@@ -753,6 +760,9 @@ class FZF
             case w
             when ''
               nil
+            when /^'/
+              w.length > 1 ?
+                Regexp.new(Regexp.escape(w[1..-1]), rxflag) : nil
             when /^\^/
               w.length > 1 ?
                 Regexp.new('^' << Regexp.escape(w[1..-1]), rxflag) : nil
@@ -763,10 +773,13 @@ class FZF
               fuzzy_regex w
             end, invert ]
       }.select { |pair| pair.first }
+    end
 
+    def match list, q, prefix, suffix
+      regexps = parse q
       # Look for prefix cache
       cache  = @caches[list.object_id]
-      prefix = prefix.strip.sub(/\$\S+$/, '').sub(/!\S+$/, '')
+      prefix = prefix.strip.sub(/\$\S*$/, '').sub(/(^|\s)!\S*$/, '')
       prefix_cache = nil
       (prefix.length - 1).downto(1) do |len|
         break if prefix_cache = cache[Set[@regexps[prefix[0, len]]]]
