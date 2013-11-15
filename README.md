@@ -114,6 +114,19 @@ The following readline key bindings should also work as expected.
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
 
+### Extended mode
+
+With `-x` or `--extended` option, fzf will start in "extended mode".
+
+In extended mode, you can specify multiple patterns delimited by spaces, such as: `^music .mp3$ sbtrkt !rmx`
+
+| Token    | Description                   | Match type           |
+| -------- | ----------------------------- | -------------------- |
+| `^music` | Items that start with `music` | prefix-exact-match   |
+| `.mp3$`  | Items that end with `.mp3`    | suffix-exact-match   |
+| `sbtrkt` | Items that match `sbtrkt`     | fuzzy-match          |
+| `!rmx`   | Items that do not match `rmx` | invert-fuzzy-match   |
+
 Usage as Vim plugin
 -------------------
 

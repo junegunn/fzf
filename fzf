@@ -68,7 +68,7 @@ class FZF
   def initialize argv, source = $stdin
     usage 0 unless (%w[--help -h] & argv).empty?
     @rxflag = argv.delete('+i') ? 0 : Regexp::IGNORECASE
-    @sort   = %w[+s --no-sort].map  { |e| argv.delete e }.compact.empty? ?
+    @sort   = %w[+s --no-sort].map   { |e| argv.delete e }.compact.empty? ?
       ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
     @color  = %w[+c --no-color].map  { |e| argv.delete e }.compact.empty?
     @multi  = !%w[-m --multi].map    { |e| argv.delete e }.compact.empty?
@@ -149,6 +149,12 @@ class FZF
         ret
       end
 
+      def self.to_nfc arr
+        [NFC_BEGIN + arr[0] * JJCOUNT +
+         (arr[1] || 0) * JONGSUNGS +
+         (arr[2] || 0)].pack('U*')
+      end
+
       def self.nfc str, offsets = []
         ret  = ''
         omap = []
@@ -165,9 +171,7 @@ class FZF
               next
             else
               omap[-1] = omap[-1] + 1
-              ret << [NFC_BEGIN + pend[0] * JJCOUNT +
-                                  (pend[1] || 0) * JONGSUNGS +
-                                  (pend[2] || 0)].pack('U*')
+              ret << to_nfc(pend)
               pend.clear
             end
           end
@@ -177,6 +181,7 @@ class FZF
             ret << c
           end
         end
+        ret << to_nfc(pend) unless pend.empty?
         return [ret,
                 offsets.map { |pair|
                   b, e = pair
@@ -324,8 +329,14 @@ class FZF
   def sort_by_rank list
     list.sort_by { |tuple|
       line, offsets = tuple
-      matchlen = (offsets.map { |pair| pair.last  }.max || 0) -
-                 (offsets.map { |pair| pair.first }.min || 0)
+      matchlen = 0
+      pe = nil
+      offsets.sort.each do |pair|
+        b, e = pair
+        b    = pe if pe && pe > b
+        pe   = e
+        matchlen += e - b
+      end
       [matchlen, line.length, line]
     }
   end
@@ -453,7 +464,7 @@ class FZF
 
   def start_search
     main     = Thread.current
-    matcher  = (@xmode ? XFuzzyMatcher : FuzzyMatcher).new @rxflag
+    matcher  = (@xmode ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
     searcher = Thread.new {
       lists   = []
       events  = {}
@@ -654,15 +665,14 @@ class FZF
         end
         @stdout.puts got
       end
-      exit 0
     end
   end
 
   class FuzzyMatcher < Matcher
-    attr_reader :cache, :rxflag
+    attr_reader :caches, :rxflag
 
     def initialize rxflag
-      @cache  = Hash.new { |h, k| h[k] = {} }
+      @caches = Hash.new { |h, k| h[k] = {} }
       @regexp = {}
       @rxflag = rxflag
     end
@@ -680,7 +690,7 @@ class FZF
     def match list, q, prefix, suffix
       regexp = fuzzy_regex q
 
-      cache = @cache[list.object_id]
+      cache = @caches[list.object_id]
       prefix_cache = nil
       (prefix.length - 1).downto(1) do |len|
         break if prefix_cache = cache[prefix[0, len]]
@@ -702,28 +712,49 @@ class FZF
     end
   end
 
-  class XFuzzyMatcher < FuzzyMatcher
+  class ExtendedFuzzyMatcher < FuzzyMatcher
+    def initialize rxflag
+      super
+      require 'set'
+      @regexps = {}
+    end
+
     def match list, q, prefix, suffix
-      regexps = q.strip.split(/\s+/).map { |w|
+      q = q.strip
+
+      regexps = @regexps[q] ||= q.split(/\s+/).map { |w|
         invert =
           if w =~ /^!/
             w = w[1..-1]
             true
           end
 
-        [ case w
-          when ''
-            nil
-          when /^\^/
-            w.length > 1 ? Regexp.new('^' << w[1..-1], rxflag) : nil
-          when /\$$/
-            w.length > 1 ? Regexp.new(w[0..-2] << '$', rxflag) : nil
-          else
-            fuzzy_regex w
-          end, invert ]
+        [ @regexp[w] ||=
+            case w
+            when ''
+              nil
+            when /^\^/
+              w.length > 1 ?
+                Regexp.new('^' << Regexp.escape(w[1..-1]), rxflag) : nil
+            when /\$$/
+              w.length > 1 ?
+                Regexp.new(Regexp.escape(w[0..-2]) << '$', rxflag) : nil
+            else
+              fuzzy_regex w
+            end, invert ]
       }.select { |pair| pair.first }
 
-      list.map { |line|
+      # Look for prefix cache
+      cache  = @caches[list.object_id]
+      prefix = prefix.strip.sub(/\$\S+$/, '').sub(/!\S+$/, '')
+      prefix_cache = nil
+      (prefix.length - 1).downto(1) do |len|
+        break if prefix_cache = cache[Set[@regexps[prefix[0, len]]]]
+      end
+
+      cache[Set[regexps]] ||= (prefix_cache ?
+                               prefix_cache.map { |e| e.first } :
+                               list).map { |line|
         offsets = []
         regexps.all? { |pair|
           regexp, invert = pair
