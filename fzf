@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: November 16, 2013
+# Last update: November 17, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -631,6 +631,9 @@ class FZF
       tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
       input   = ''
       cursor  = 0
+      backword = proc {
+        cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
+      }
       actions = {
         :nop     => proc { nil },
         ctrl(:c) => proc { exit 1 },
@@ -645,9 +648,9 @@ class FZF
         ctrl(:j) => proc { @vcursor.set { |v| @vcursors << v; v - 1 }; update_list false },
         ctrl(:k) => proc { @vcursor.set { |v| @vcursors << v; v + 1 }; update_list false },
         ctrl(:w) => proc {
-          ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
-          input  = input[0...ridx] + input[cursor..-1]
-          cursor = ridx
+          pcursor = cursor
+          backword.call
+          input = input[0...cursor] + input[pcursor..-1]
         },
         127 => proc { input[cursor -= 1] = '' if cursor > 0 },
         9   => proc { |o|
@@ -666,6 +669,11 @@ class FZF
         },
         :left  => proc { cursor = [0, cursor - 1].max; nil },
         :right => proc { cursor = [input.length, cursor + 1].min; nil },
+        :alt_b => proc { backword.call; nil },
+        :alt_f => proc {
+          cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
+          nil
+        },
       }
       actions[ctrl(:b)] = actions[:left]
       actions[ctrl(:f)] = actions[:right]
@@ -679,19 +687,24 @@ class FZF
         render { print_input }
 
         ord = tty.getc.ord
-        if ord == 27
+        ord =
           case ord = tty.getc.ord
           when 91
-            ord = case tty.getc.ord
-                  when 68 then :left
-                  when 67 then :right
-                  when 66 then ctrl(:j)
-                  when 65 then ctrl(:k)
-                  when 90 then :stab
-                  else :nop
-                  end
-          end
-        end
+            case tty.getc.ord
+            when 68 then :left
+            when 67 then :right
+            when 66 then ctrl(:j)
+            when 65 then ctrl(:k)
+            when 90 then :stab
+            else :nop
+            end
+          when 'b'.ord
+            :alt_b
+          when 'f'.ord
+            :alt_f
+          else
+            ord
+          end if ord == 27
 
         upd = actions.fetch(ord, proc { |ord|
           char = [ord].pack('U*')

@@ -111,6 +111,7 @@ The following readline key bindings should also work as expected.
 - CTRL-A / CTRL-E
 - CTRL-B / CTRL-F
 - CTRL-W / CTRL-U
+- ALT-B / ALT-F
 
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
