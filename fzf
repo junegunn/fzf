@@ -69,7 +69,7 @@ class FZF
     usage 0 unless (%w[--help -h] & argv).empty?
     @rxflag = argv.delete('+i') ? 0 : Regexp::IGNORECASE
     @sort   = %w[+s --no-sort].map   { |e| argv.delete e }.compact.empty? ?
-      ENV.fetch('FZF_DEFAULT_SORT', 500).to_i : nil
+      ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i : nil
     @color  = %w[+c --no-color].map  { |e| argv.delete e }.compact.empty?
     @multi  = !%w[-m --multi].map    { |e| argv.delete e }.compact.empty?
     @xmode  = !%w[-x --extended].map { |e| argv.delete e }.compact.empty?
@@ -111,7 +111,7 @@ class FZF
 
     -m, --multi      Enable multi-select
     -x, --extended   Extended-search mode
-    -s, --sort=MAX   Maximum number of matched items to sort. Default: 500.
+    -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
     +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
     +i               Case-sensitive match
     +c, --no-color   Disable colors]

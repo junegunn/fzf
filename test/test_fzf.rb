@@ -8,15 +8,15 @@ load 'fzf'
 class TestFZF < MiniTest::Unit::TestCase
   def test_default_options
     fzf = FZF.new []
-    assert_equal 500, fzf.sort
+    assert_equal 1000, fzf.sort
     assert_equal false, fzf.multi
     assert_equal true, fzf.color
     assert_equal Regexp::IGNORECASE, fzf.rxflag
 
     begin
-      ENV['FZF_DEFAULT_SORT'] = '1000'
+      ENV['FZF_DEFAULT_SORT'] = '1500'
       fzf = FZF.new []
-      assert_equal 1000, fzf.sort
+      assert_equal 1500, fzf.sort
     ensure
       ENV.delete 'FZF_DEFAULT_SORT'
     end
