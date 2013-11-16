@@ -92,7 +92,7 @@ class FZF
     @matches  = AtomicVar.new([])
     @count    = AtomicVar.new(0)
     @vcursor  = AtomicVar.new(0)
-    @fan      = AtomicVar.new('-\|/-\|/'.split(//))
+    @spinner  = AtomicVar.new('-\|/-\|/'.split(//))
     @selects  = AtomicVar.new({}) # ordered >= 1.9
   end
 
@@ -246,7 +246,7 @@ class FZF
   def print_input
     C.setpos cursor_y, 0
     C.clrtoeol
-    cprint '> ', color(:blue, true)
+    cprint '> ', color(:prompt, true)
     C.attron(C::A_BOLD) do
       C.addstr @query.get
     end
@@ -256,9 +256,9 @@ class FZF
     C.setpos cursor_y - 1, 0
     C.clrtoeol
     prefix =
-      if fan = @fan.shift
-        @fan.push fan
-        cprint fan, color(:fan, true)
+      if spinner = @spinner.shift
+        @spinner.push spinner
+        cprint spinner, color(:spinner, true)
         ' '
       else
         '  '
@@ -325,9 +325,9 @@ class FZF
     # Cursor
     C.setpos row, 0
     C.clrtoeol
-    cprint chosen ? '>' : ' ', color(:red, true)
+    cprint chosen ? '>' : ' ', color(:cursor, true)
     cprint selected ? '>' : ' ',
-      chosen ? color(:chosen) : (selected ? color(:red, true) : 0)
+      chosen ? color(:chosen) : (selected ? color(:selected, true) : 0)
 
     # Highlighted item
     C.attron color(:chosen, true) if chosen
@@ -417,28 +417,28 @@ class FZF
 
     if @color
       if C.can_change_color?
-        fg = ENV.fetch('FZF_FG', 252).to_i
-        bg = ENV.fetch('FZF_BG', 236).to_i
-        C.init_pair 1, 110,    dbg
-        C.init_pair 2, 108,    dbg
-        C.init_pair 3, fg + 2, bg
-        C.init_pair 4, 151,    bg
-        C.init_pair 5, 148,    dbg
-        C.init_pair 6, 144,    dbg
-        C.init_pair 7, 161,    bg
+        C.init_pair 1, 110, dbg
+        C.init_pair 2, 108, dbg
+        C.init_pair 3, 254, 236
+        C.init_pair 4, 151, 236
+        C.init_pair 5, 148, dbg
+        C.init_pair 6, 144, dbg
+        C.init_pair 7, 161, 236
+        C.init_pair 8, 168, 236
       else
-        C.init_pair 1, C::COLOR_BLUE,   dbg
-        C.init_pair 2, C::COLOR_GREEN,  dbg
-        C.init_pair 3, C::COLOR_YELLOW, C::COLOR_BLACK
-        C.init_pair 4, C::COLOR_GREEN,  C::COLOR_BLACK
-        C.init_pair 5, C::COLOR_GREEN,  dbg
-        C.init_pair 6, C::COLOR_WHITE,  dbg
-        C.init_pair 7, C::COLOR_RED,    C::COLOR_BLACK
+        C.init_pair 1, C::COLOR_BLUE,    dbg
+        C.init_pair 2, C::COLOR_GREEN,   dbg
+        C.init_pair 3, C::COLOR_YELLOW,  C::COLOR_BLACK
+        C.init_pair 4, C::COLOR_GREEN,   C::COLOR_BLACK
+        C.init_pair 5, C::COLOR_GREEN,   dbg
+        C.init_pair 6, C::COLOR_WHITE,   dbg
+        C.init_pair 7, C::COLOR_RED,     C::COLOR_BLACK
+        C.init_pair 8, C::COLOR_MAGENTA, C::COLOR_BLACK
       end
 
       def self.color sym, bold = false
-        C.color_pair([:blue, :match, :chosen,
-                      :match!, :fan, :info, :red].index(sym) + 1) |
+        C.color_pair([:prompt, :match, :chosen, :match!,
+                      :spinner, :info, :cursor, :selected].index(sym) + 1) |
           (bold ? C::A_BOLD : 0)
       end
     else
@@ -476,7 +476,7 @@ class FZF
         emit(:new) { @new << line.chomp }
       end
       emit(:loaded) { true }
-      @fan.clear
+      @spinner.clear
     end
   end
 
