@@ -37,6 +37,7 @@
 
 require 'thread'
 require 'curses'
+require 'set'
 
 class FZF
   C = Curses
@@ -86,22 +87,26 @@ class FZF
     @cv       = ConditionVariable.new
     @events   = {}
     @new      = []
-    @smtx     = Mutex.new
+    @queue    = Queue.new
     @cursor_x = AtomicVar.new(0)
     @query    = AtomicVar.new('')
     @matches  = AtomicVar.new([])
     @count    = AtomicVar.new(0)
     @vcursor  = AtomicVar.new(0)
+    @vcursors = AtomicVar.new(Set.new)
     @spinner  = AtomicVar.new('-\|/-\|/'.split(//))
     @selects  = AtomicVar.new({}) # ordered >= 1.9
+    @main     = Thread.current
+    @stdout   = $stdout.clone
+    @plcount  = 0
   end
 
   def start
-    @stdout = $stdout.clone
     $stdout.reopen($stderr)
 
     init_screen
     start_reader
+    start_renderer
     start_search
     start_loop
   end
@@ -256,8 +261,7 @@ class FZF
     C.setpos cursor_y - 1, 0
     C.clrtoeol
     prefix =
-      if spinner = @spinner.shift
-        @spinner.push spinner
+      if spinner = @spinner.first
         cprint spinner, color(:spinner, true)
         ' '
       else
@@ -481,14 +485,11 @@ class FZF
   end
 
   def start_search
-    main     = Thread.current
     matcher  = (@xmode ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
     searcher = Thread.new {
       lists   = []
       events  = {}
       fcache  = {}
-      mcount  = 0  # match count
-      plcount = 0  # prev list count
       q       = ''
       delay   = -5
 
@@ -509,21 +510,25 @@ class FZF
             if events[:new]
               lists << @new
               @count.set { |c| c + @new.length }
-              @new    = []
-              fcache  = {}
+              @spinner.set { |spinner|
+                if e = spinner.shift
+                  spinner.push e
+                end; spinner
+              }
+              @new = []
+              fcache.clear
             end
           end#mtx
 
           new_search = events[:key] || events.delete(:new)
-          user_input = events[:key] || events[:vcursor] || events.delete(:select)
+          user_input = events[:key]
           progress   = 0
           started_at = Time.now
 
           if new_search && !lists.empty?
             q, cx = events.delete(:key) || [q, 0]
-
-            plcount = [@matches.length, max_items].min
-            @matches.set(fcache[q] ||=
+            empty = matcher.empty?(q)
+            matches = fcache[q] ||=
               begin
                 found = []
                 skip  = false
@@ -533,12 +538,8 @@ class FZF
                   skip = @mtx.synchronize { @events[:key] }
                   break if skip
 
-                  progress = (100 * cnt / @count.get)
-                  if progress < 100 && Time.now - started_at > 0.5 && !q.empty?
-                    @smtx.synchronize do
-                      print_info " (#{progress}%)"
-                      refresh
-                    end
+                  if !empty && (progress = 100 * cnt / @count.get) < 100 && Time.now - started_at > 0.5
+                    render { print_info " (#{progress}%)" }
                   end
 
                   found.concat(q.empty? ? list :
@@ -546,51 +547,82 @@ class FZF
                 end
                 next if skip
                 @sort ? found : found.reverse
-              end)
+              end
 
-            mcount = @matches.length
-            if @sort && mcount <= @sort && !matcher.empty?(q)
-              @matches.set { |m| sort_by_rank m }
+            if !empty && @sort && matches.length <= @sort
+              matches = sort_by_rank(matches)
             end
+
+            # Atomic update
+            @matches.set matches
           end#new_search
 
           # This small delay reduces the number of partial lists
           sleep((delay = [20, delay + 5].min) * 0.01) unless user_input
 
-          if events.delete(:vcursor) || new_search
-            @vcursor.set { |v| [0, [v, mcount - 1, max_items - 1].min].max }
-          end
-
-          # Output
-          @smtx.synchronize do
-            item_length = [mcount, max_items].min
-            if item_length < plcount
-              plcount.downto(item_length) do |idx|
-                C.setpos cursor_y - idx - 2, 0
-                C.clrtoeol
-              end
-            end
-
-            maxc    = C.cols - 3
-            vcursor = @vcursor.get
-            @matches[0, max_items].each_with_index do |item, idx|
-              next if !new_search && !((vcursor-1)..(vcursor+1)).include?(idx)
-              row           = cursor_y - idx - 2
-              chosen        = idx == vcursor
-              selected      = @selects.include?([*item][0])
-              line, offsets = convert_item item
-              tokens        = format line, maxc, offsets
-              print_item row, tokens, chosen, selected
-            end
-
-            print_info if !lists.empty? || events[:loaded]
-            refresh
-          end
+          update_list new_search
         end#while
       rescue Exception => e
-        main.raise e
+        @main.raise e
       end
     }
+  end
+
+  def pick
+    items = @matches[0, max_items]
+    curr = [0, [@vcursor.get, items.length - 1].min].max
+    [*items.fetch(curr, [])][0]
+  end
+
+  def update_list wipe
+    render do
+      items = @matches[0, max_items]
+
+      # Wipe
+      if items.length < @plcount
+        @plcount.downto(items.length) do |idx|
+          C.setpos cursor_y - idx - 2, 0
+          C.clrtoeol
+        end
+      end
+      @plcount = items.length
+
+      maxc    = C.cols - 3
+      vcursor = @vcursor.set { |v| [0, [v, items.length - 1].min].max }
+      cleanse = Set[vcursor]
+      @vcursors.set { |vs|
+        cleanse.merge vs
+        Set.new
+      }
+      items.each_with_index do |item, idx|
+        next unless wipe || cleanse.include?(idx)
+        row           = cursor_y - idx - 2
+        chosen        = idx == vcursor
+        selected      = @selects.include?([*item][0])
+        line, offsets = convert_item item
+        tokens        = format line, maxc, offsets
+        print_item row, tokens, chosen, selected
+      end
+      print_info
+    end
+  end
+
+  def start_renderer
+    Thread.new do
+      begin
+        while blk = @queue.shift
+          blk.call
+          refresh
+        end
+      rescue Exception => e
+        @main.raise e
+      end
+    end
+  end
+
+  def render &blk
+    @queue.push blk
+    nil
   end
 
   def start_loop
@@ -600,18 +632,18 @@ class FZF
       input   = ''
       cursor  = 0
       actions = {
-        :nop     => proc {},
+        :nop     => proc { nil },
         ctrl(:c) => proc { exit 1 },
         ctrl(:d) => proc { exit 1 if input.empty? },
         ctrl(:m) => proc {
-          got = [*@matches.fetch(@vcursor.get, [])][0]
+          got = pick
           exit 0
         },
         ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
-        ctrl(:a) => proc { cursor = 0 },
-        ctrl(:e) => proc { cursor = input.length },
-        ctrl(:j) => proc { emit(:vcursor) { @vcursor.set { |v| v - 1 } } },
-        ctrl(:k) => proc { emit(:vcursor) { @vcursor.set { |v| v + 1 } } },
+        ctrl(:a) => proc { cursor = 0; nil },
+        ctrl(:e) => proc { cursor = input.length; nil },
+        ctrl(:j) => proc { @vcursor.set { |v| @vcursors << v; v - 1 }; update_list false },
+        ctrl(:k) => proc { @vcursor.set { |v| @vcursors << v; v + 1 }; update_list false },
         ctrl(:w) => proc {
           ridx   = (input[0...cursor - 1].rindex(/\S\s/) || -2) + 2
           input  = input[0...ridx] + input[cursor..-1]
@@ -619,19 +651,21 @@ class FZF
         },
         127 => proc { input[cursor -= 1] = '' if cursor > 0 },
         9   => proc { |o|
-          emit(:select) {
-            if sel = [*@matches.fetch(@vcursor.get, [])][0]
-              if @selects.has_key? sel
-                @selects.delete sel
-              else
-                @selects[sel] = 1
-              end
-              @vcursor.set { |v| [0, v + (o == :stab ? 1 : -1)].max }
+          if @multi && sel = pick
+            if @selects.has_key? sel
+              @selects.delete sel
+            else
+              @selects[sel] = 1
             end
-          } if @multi
+            @vcursor.set { |v|
+              @vcursors << v
+              v + (o == :stab ? 1 : -1)
+            }
+            update_list false
+          end
         },
-        :left  => proc { cursor = [0, cursor - 1].max },
-        :right => proc { cursor = [input.length, cursor + 1].min },
+        :left  => proc { cursor = [0, cursor - 1].max; nil },
+        :right => proc { cursor = [input.length, cursor + 1].min; nil },
       }
       actions[ctrl(:b)] = actions[:left]
       actions[ctrl(:f)] = actions[:right]
@@ -642,16 +676,12 @@ class FZF
 
       while true
         @cursor_x.set cursor
-        # Update user input
-        @smtx.synchronize do
-          print_input
-          refresh
-        end
+        render { print_input }
 
         ord = tty.getc.ord
         if ord == 27
-          ord = tty.getc.ord
-          if ord == 91
+          case ord = tty.getc.ord
+          when 91
             ord = case tty.getc.ord
                   when 68 then :left
                   when 67 then :right
@@ -663,7 +693,7 @@ class FZF
           end
         end
 
-        actions.fetch(ord, proc { |ord|
+        upd = actions.fetch(ord, proc { |ord|
           char = [ord].pack('U*')
           if char =~ /[[:print:]]/
             input.insert cursor, char
@@ -672,7 +702,7 @@ class FZF
         }).call(ord)
 
         # Dispatch key event
-        emit(:key) { [@query.set(input.dup), cursor] }
+        emit(:key) { [@query.set(input.dup), cursor] } if upd
       end
     ensure
       C.close_screen
@@ -739,7 +769,6 @@ class FZF
   class ExtendedFuzzyMatcher < FuzzyMatcher
     def initialize rxflag
       super
-      require 'set'
       @regexps = {}
     end
 
