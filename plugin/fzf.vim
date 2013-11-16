@@ -23,23 +23,25 @@
 
 let s:exec = expand('<sfile>:h:h').'/fzf'
 
-function! s:fzf(args)
+function! fzf#run(command, args)
   try
-    let tf = tempname()
-    let prefix = exists('g:fzf_command') ? g:fzf_command.'|' : ''
-    let fzf = executable(s:exec) ? s:exec : 'fzf'
-    execute "silent !".prefix.fzf." ".a:args." > ".tf
+    let tf      = tempname()
+    let prefix  = exists('g:fzf_source') ? g:fzf_source.'|' : ''
+    let fzf     = executable(s:exec)     ? s:exec : 'fzf'
+    let options = empty(a:args)          ? get(g:, 'fzf_options', '') : a:args
+    execute "silent !".prefix.fzf.' '.options." > ".tf
     if !v:shell_error
-      let file = join(readfile(tf), '')
-      if !empty(file)
-        execute 'silent e '.file
-      endif
+      for line in readfile(tf)
+        if !empty(line)
+          execute a:command.' '.line
+        endif
+      endfor
     endif
   finally
-    silent! call delete(tf)
     redraw!
+    silent! call delete(tf)
   endtry
 endfunction
 
-command! -nargs=* FZF call s:fzf(<q-args>)
+command! -nargs=* FZF call fzf#run('silent e', <q-args>)
 

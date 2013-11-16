@@ -139,13 +139,25 @@ If you install fzf as a Vim plugin, `:FZF` command will be added.
 
 ```vim
 :FZF
-:FZF --no-sort
+:FZF --no-sort -m
 ```
 
-You can override the command which produces input to fzf.
+You can override the source command which produces input to fzf.
 
 ```vim
-let g:fzf_command = 'find . -type f'
+let g:fzf_source = 'find . -type f'
+```
+
+And you can predefine default options to fzf command.
+
+```vim
+let g:fzf_options = '--no-color --extended'
+```
+
+For more advanced uses, you can call `fzf#run` function as follows.
+
+```vim
+:call fzf#run('tabedit', '-m +c')
 ```
 
 Most of the time, you will prefer native Vim plugins with better integration
