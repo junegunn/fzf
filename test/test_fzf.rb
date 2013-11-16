@@ -3,6 +3,7 @@
 
 require 'minitest/autorun'
 $LOAD_PATH.unshift File.expand_path('../..', __FILE__)
+ENV['FZF_EXECUTABLE'] = '0'
 load 'fzf'
 
 class TestFZF < MiniTest::Unit::TestCase

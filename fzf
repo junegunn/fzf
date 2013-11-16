@@ -845,5 +845,5 @@ class FZF
   end
 end#FZF
 
-FZF.new(ARGV, $stdin).start if $0 == __FILE__
+FZF.new(ARGV, $stdin).start if ENV.fetch('FZF_EXECUTABLE', '1') == '1'
 
