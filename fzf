@@ -219,6 +219,12 @@ class FZF
       end
     end
   else
+    module UConv
+      def self.nfd str
+        str
+      end
+    end
+
     def convert_item item
       item
     end
