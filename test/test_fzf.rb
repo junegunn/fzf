@@ -296,6 +296,21 @@ class TestFZF < MiniTest::Unit::TestCase
       assert_equal 6, nfd.length
       assert_equal NFD, nfd
     end
+
+    def test_nfd_fuzzy_matcher
+      matcher = FZF::FuzzyMatcher.new 0
+      match = matcher.match([NFD], '할', '', '')
+      assert_equal [[NFD, [[0, 6]]]], match
+      assert_equal ['한글', [[0, 2]]], FZF::UConv.nfc(*match.first)
+    end
+
+    def test_nfd_extended_fuzzy_matcher
+      matcher = FZF::ExtendedFuzzyMatcher.new 0
+      assert_equal [], matcher.match([NFD], "'할", '', '')
+      match = matcher.match([NFD], "'한글", '', '')
+      assert_equal [[NFD, [[0, 6]]]], match
+      assert_equal ['한글', [[0, 2]]], FZF::UConv.nfc(*match.first)
+    end
   end
 
   def test_split

@@ -214,7 +214,7 @@ class FZF
     end
 
     class Matcher
-      def convert_query q
+      def query_chars q
         UConv.nfd(q).split(//)
       end
     end
@@ -224,7 +224,7 @@ class FZF
     end
 
     class Matcher
-      def convert_query q
+      def query_chars q
         q.split(//)
       end
     end
@@ -747,7 +747,7 @@ class FZF
     def fuzzy_regex q
       @regexp[q] ||= begin
         q = q.downcase if @rxflag != 0
-        Regexp.new(convert_query(q).inject('') { |sum, e|
+        Regexp.new(query_chars(q).inject('') { |sum, e|
           e = Regexp.escape e
           sum << "#{e}[^#{e}]*?"
         }, @rxflag)
@@ -804,13 +804,13 @@ class FZF
               nil
             when /^'/
               w.length > 1 ?
-                Regexp.new(Regexp.escape(w[1..-1]), rxflag) : nil
+                Regexp.new(UConv.nfd(Regexp.escape(w[1..-1])), rxflag) : nil
             when /^\^/
               w.length > 1 ?
-                Regexp.new('^' << Regexp.escape(w[1..-1]), rxflag) : nil
+                Regexp.new('^' << UConv.nfd(Regexp.escape(w[1..-1])), rxflag) : nil
             when /\$$/
               w.length > 1 ?
-                Regexp.new(Regexp.escape(w[0..-2]) << '$', rxflag) : nil
+                Regexp.new(UConv.nfd(Regexp.escape(w[0..-2])) << '$', rxflag) : nil
             else
               fuzzy_regex w
             end, invert ]
