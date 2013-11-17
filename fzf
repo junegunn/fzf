@@ -137,21 +137,21 @@ class FZF
       NFC_END   = NFC_BEGIN + CHOSUNGS * JUNGSUNGS * JONGSUNGS
 
       def self.nfd str
-        ret = ''
-        str.split(//).each do |c|
+        str.split(//).map do |c|
           cp = c.ord
           if cp >= NFC_BEGIN && cp < NFC_END
+            chr = ''
             idx  = cp - NFC_BEGIN
             cho  = CHOSUNG  + idx / JJCOUNT
             jung = JUNGSUNG + (idx % JJCOUNT) / JONGSUNGS
             jong = JONGSUNG + idx % JONGSUNGS
-            ret << cho << jung
-            ret << jong if jong != JONGSUNG
+            chr << cho << jung
+            chr << jong if jong != JONGSUNG
+            chr
           else
-            ret << c
+            c
           end
         end
-        ret
       end
 
       def self.to_nfc arr
@@ -215,16 +215,14 @@ class FZF
 
     class Matcher
       def query_chars q
-        UConv.nfd(q).split(//)
+        UConv.nfd(q)
+      end
+
+      def sanitize q
+        UConv.nfd(q).join
       end
     end
   else
-    module UConv
-      def self.nfd str
-        str
-      end
-    end
-
     def convert_item item
       item
     end
@@ -232,6 +230,10 @@ class FZF
     class Matcher
       def query_chars q
         q.split(//)
+      end
+
+      def sanitize q
+        q
       end
     end
   end
@@ -755,7 +757,8 @@ class FZF
         q = q.downcase if @rxflag != 0
         Regexp.new(query_chars(q).inject('') { |sum, e|
           e = Regexp.escape e
-          sum << "#{e}[^#{e}]*?"
+          sum << (e.length > 1 ? "(?:#{e}).*?" :  # FIXME: not equivalent
+                                 "#{e}[^#{e}]*?")
         }, @rxflag)
       end
     end
@@ -810,13 +813,13 @@ class FZF
               nil
             when /^'/
               w.length > 1 ?
-                Regexp.new(UConv.nfd(Regexp.escape(w[1..-1])), rxflag) : nil
+                Regexp.new(sanitize(Regexp.escape(w[1..-1])), rxflag) : nil
             when /^\^/
               w.length > 1 ?
-                Regexp.new('^' << UConv.nfd(Regexp.escape(w[1..-1])), rxflag) : nil
+                Regexp.new('^' << sanitize(Regexp.escape(w[1..-1])), rxflag) : nil
             when /\$$/
               w.length > 1 ?
-                Regexp.new(UConv.nfd(Regexp.escape(w[0..-2])) << '$', rxflag) : nil
+                Regexp.new(sanitize(Regexp.escape(w[0..-2])) << '$', rxflag) : nil
             else
               fuzzy_regex w
             end, invert ]

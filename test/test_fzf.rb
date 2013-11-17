@@ -293,21 +293,23 @@ class TestFZF < MiniTest::Unit::TestCase
     def test_nfd
       nfc = '한글'
       nfd = FZF::UConv.nfd(nfc)
-      assert_equal 6, nfd.length
-      assert_equal NFD, nfd
+      assert_equal 2, nfd.length
+      assert_equal 6, nfd.join.length
+      assert_equal NFD, nfd.join
     end
 
     def test_nfd_fuzzy_matcher
       matcher = FZF::FuzzyMatcher.new 0
-      match = matcher.match([NFD], '할', '', '')
-      assert_equal [[NFD, [[0, 6]]]], match
-      assert_equal ['한글', [[0, 2]]], FZF::UConv.nfc(*match.first)
+      assert_equal [], matcher.match([NFD + NFD], '할', '', '')
+      match   = matcher.match([NFD + NFD], '글글', '', '')
+      assert_equal [[NFD + NFD, [[3, 12]]]], match
+      assert_equal ['한글한글', [[1, 4]]], FZF::UConv.nfc(*match.first)
     end
 
     def test_nfd_extended_fuzzy_matcher
       matcher = FZF::ExtendedFuzzyMatcher.new 0
-      assert_equal [], matcher.match([NFD], "'할", '', '')
-      match = matcher.match([NFD], "'한글", '', '')
+      assert_equal [], matcher.match([NFD], "'글글", '', '')
+      match   = matcher.match([NFD], "'한글", '', '')
       assert_equal [[NFD, [[0, 6]]]], match
       assert_equal ['한글', [[0, 2]]], FZF::UConv.nfc(*match.first)
     end
