@@ -183,6 +183,14 @@ fda() {
   DIR=$(find ${1:-*} -type d 2> /dev/null | fzf) && cd "$DIR"
 }
 
+# fsel - Select multiple files in the given path
+fsel() {
+  find ${1:-*} | fzf -m | while read item; do
+    echo -n "\"$item\" "
+  done
+  echo
+}
+
 # fh - repeat history
 fh() {
   eval $(history | fzf +s | sed 's/ *[0-9]* *//')
