@@ -78,16 +78,17 @@ for cmd in "cd pushd rmdir"; do
   complete -F _fzf_dir_completion -o default $cmd
 done
 
-FZF_COMPLETION_COMMANDS=${FZF_COMPLETION_COMMANDS:-
-  awk basename bunzip2 bzip2 curl diff diff3 dirname du emacs ex file find ftp
-  g++ gcc git grep gunzip gvim gzip head hg jar java javac jps ld less ls more
-  mvim open patch perl python rsync ruby scp sed sftp sort svn tail tar tee
-  uniq unzip vi view vim wc zip
+_FZF_COMPLETION_COMMANDS=${FZF_COMPLETION_COMMANDS:-
+  awk basename bunzip2 bzip2 cat chmod chown curl cp diff diff3 dirname du
+  emacs ex file find ftp g++ gcc git grep gunzip gvim gzip head hg jar java
+  javac jps ld less ln ls more mv mvim open patch perl python rm rsync ruby scp
+  sed sftp sort source svn tail tar tee uniq unzip vi view vim wc zip
 }
 
-for cmd in $FZF_COMPLETION_COMMANDS; do
+for cmd in $_FZF_COMPLETION_COMMANDS; do
   complete -F _fzf_all_completion -o default $cmd
 done
+unset _FZF_COMPLETION_COMMANDS
 
 bind '"\e\e": complete'
 bind '"\er": redraw-current-line'
