@@ -5,8 +5,8 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.bash
 #
-# - $FZF_COMPLETION_TRIGGER (default '**')
-# - $FZF_COMPLETION_OPTS
+# - $FZF_COMPLETION_TRIGGER (default: '**')
+# - $FZF_COMPLETION_OPTS    (default: empty)
 
 _fzf_opts_completion() {
   local cur prev opts

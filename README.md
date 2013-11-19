@@ -263,24 +263,42 @@ over time*
 fuzzy-finder-completion can be triggered if you type in a directory name
 followed by the trigger sequence which is by default `**`.
 
+#### Examples
+
 ```sh
+# Files under current directory
+# - You can select multiple items with TAB key
 vim **<TAB>
+
+# Files under parent directory
 vim ..**<TAB>
+
+# Files under your home directory
 vim ~/**<TAB>
 
+
+# Directories under current directory (single-selection)
 cd **<TAB>
+
+# Directories under parent directory
 cd ../<TAB>
 ```
 
-You can use different trigger sequence by setting `FZF_COMPLETION_TRIGGER`
+#### Settings
 
 ```sh
+# Use ~~ as the trigger sequence instead of the default **
 export FZF_COMPLETION_TRIGGER='~~'
+
+# Options to fzf command
+export FZF_COMPLETION_OPTS='+c -x'
 ```
 
 ### zsh
 
-TODO
+TODO :smiley:
+
+(Pull requests are appreciated.)
 
 Tips
 ----
