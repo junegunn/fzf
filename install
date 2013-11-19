@@ -1,7 +1,72 @@
 #!/bin/bash
 
 cd `dirname $BASH_SOURCE`
-mkdir -p ~/bin
-ln -sf `pwd`/fzf ~/bin/fzf
-chmod +x ~/bin/fzf
+FZF_BASE=`pwd`
+
+# ruby executable
+echo -n "Checking Ruby executable ... "
+RUBY=`which ruby`
+if [ $? -ne 0 ]; then
+  echo "ruby executable not found!"
+  exit 1
+fi
+echo "OK"
+
+# Curses-support
+echo -n "Checking Curses support ... "
+/usr/bin/env ruby -e "begin; require 'curses'; rescue Exception; exit 1; end"
+if [ $? -ne 0 ]; then
+  echo "Your ruby does not support 'curses'"
+  exit 1
+fi
+echo "OK"
+
+# Ruby version
+echo -n "Checking Ruby version ... "
+/usr/bin/env ruby -e 'exit RUBY_VERSION >= "1.9"'
+if [ $? -eq 0 ]; then
+  echo ">= 1.9"
+  FZF_ALIAS="alias fzf='$RUBY --disable-gems $FZF_BASE/fzf'"
+else
+  echo "< 1.9"
+  FZF_ALIAS="alias fzf='$RUBY $FZF_BASE/fzf' # fzf"
+fi
+
+# Auto-completion
+read -p "Do you want to add auto-completion support? (y/n) " -n 1 -r
+echo
+[[ ! $REPLY =~ ^[Nn]$ ]]
+AUTO_COMPLETION=$?
+
+echo
+for shell in bash zsh; do
+  rc=~/.${shell}rc
+  echo "Update $rc:"
+
+  # Install fzf alias
+  echo "- Add fzf alias:"
+  echo "  - $FZF_ALIAS"
+  if [ $(grep "alias fzf=" $rc | wc -l) -gt 0 ]; then
+    echo "    - (X) fzf alias already exists"
+  else
+    echo $FZF_ALIAS >> $rc
+    echo "    - Added."
+  fi
+
+  # Install auto-completion support
+  if [ $AUTO_COMPLETION -eq 0 ]; then
+    FZF_COMPLETION="source $FZF_BASE/fzf-completion.${shell}"
+    echo "- Add auto-completion support"
+    echo "  - $FZF_COMPLETION"
+    if [ $(grep "source.*fzf-completion" $rc | wc -l) -gt 0 ]; then
+      echo "    - (X) fzf-completion.${shell} already being sourced"
+    else
+      echo $FZF_COMPLETION >> $rc
+      echo "    - Added."
+    fi
+  fi
+  echo
+done
+
+echo "Finished. Remove the added lines to uninstall fzf."
 

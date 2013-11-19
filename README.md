@@ -16,27 +16,29 @@ fzf requires Ruby (>= 1.8.5).
 Installation
 ------------
 
-Download [fzf executable](https://raw.github.com/junegunn/fzf/master/fzf) and
-put it somewhere in your search $PATH.
+### Using install script
+
+Clone this repository and run
+[install](https://github.com/junegunn/fzf/blob/master/install) script.
+
+```sh
+git clone https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+```
+
+The script will add an alias to fzf and auto-completion support to your
+`.bashrc` and `.zshrc`.
+
+### Manual installation
+
+Or you can just download
+[fzf executable](https://raw.github.com/junegunn/fzf/master/fzf) and put it
+somewhere in your search $PATH.
 
 ```sh
 mkdir -p ~/bin
 wget https://raw.github.com/junegunn/fzf/master/fzf -O ~/bin/fzf
 chmod +x ~/bin/fzf
-```
-
-Or you can just clone this repository and run
-[install](https://github.com/junegunn/fzf/blob/master/install) script.
-
-```sh
-git clone https://github.com/junegunn/fzf.git
-fzf/install
-```
-
-Make sure that ~/bin is included in $PATH.
-
-```sh
-export PATH=$PATH:~/bin
 ```
 
 ### Install as Ruby gem
@@ -215,7 +217,7 @@ zsh widgets
 -----------
 
 ```sh
-# CTRL-T - Paste the selected file(s) path into the command line
+# CTRL-T - Paste the selected file path(s) into the command line
 fzf-file-widget() {
   local FILES
   local IFS="
@@ -250,6 +252,36 @@ zle     -N   fzf-history-widget
 bindkey '^R' fzf-history-widget
 ```
 
+Auto-completion (experimental)
+------------------------------
+
+Disclaimer: *Auto-completion feature is currently experimental, it can change
+over time*
+
+### bash
+
+fuzzy-finder-completion can be triggered if you type in a directory name
+followed by the trigger sequence which is by default `**`.
+
+```sh
+vim **<TAB>
+vim ..**<TAB>
+vim ~/**<TAB>
+
+cd **<TAB>
+cd ../<TAB>
+```
+
+You can use different trigger sequence by setting `FZF_COMPLETION_TRIGGER`
+
+```sh
+export FZF_COMPLETION_TRIGGER='~~'
+```
+
+### zsh
+
+TODO
+
 Tips
 ----
 
@@ -268,6 +300,9 @@ Define fzf alias with the option as follows:
 ```sh
 alias fzf='ruby --disable-gems ~/bin/fzf'
 ```
+
+This is automatically set up in your .bashrc and .zshrc if you use the bundled
+[install](https://github.com/junegunn/fzf/blob/master/install) script.
 
 ### Incorrect display on Ruby 1.8
 
