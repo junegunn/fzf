@@ -68,5 +68,15 @@ for shell in bash zsh; do
   echo
 done
 
+case "$SHELL" in
+  *bash)
+    echo "Reloading ~/.bashrc ..."
+    source ~/.bashrc
+    ;;
+  *zsh)
+    echo "Reloading ~/.zshrc ..."
+    source ~/.zshrc
+    ;;
+esac
 echo "Finished. Remove the added lines to uninstall fzf."
 
