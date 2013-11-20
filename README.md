@@ -287,7 +287,7 @@ vim ~/**<TAB>
 cd **<TAB>
 
 # Directories under parent directory
-cd ../<TAB>
+cd ../**<TAB>
 ```
 
 #### Settings
