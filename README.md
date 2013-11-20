@@ -140,8 +140,14 @@ Usage as Vim plugin
 If you install fzf as a Vim plugin, `:FZF` command will be added.
 
 ```vim
+" Look for files under current directory
 :FZF
-:FZF --no-sort -m
+
+" Look for files under your home directory
+:FZF ~
+
+" With options
+:FZF --no-sort -m /tmp
 ```
 
 You can override the source command which produces input to fzf.

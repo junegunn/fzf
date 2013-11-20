@@ -23,25 +23,37 @@
 
 let s:exec = expand('<sfile>:h:h').'/fzf'
 
-function! fzf#run(command, args)
+function! s:escape(path)
+  return substitute(a:path, ' ', '\\ ', 'g')
+endfunction
+
+function! fzf#run(command, ...)
+  let cwd = getcwd()
   try
+    let args = copy(a:000)
+    if len(args) > 0
+      let dir = remove(args, -1)
+      execute 'chdir '.s:escape(dir)
+    endif
+    let argstr  = join(args)
     let tf      = tempname()
     let prefix  = exists('g:fzf_source') ? g:fzf_source.'|' : ''
     let fzf     = executable(s:exec)     ? s:exec : 'fzf'
-    let options = empty(a:args)          ? get(g:, 'fzf_options', '') : a:args
+    let options = empty(argstr)          ? get(g:, 'fzf_options', '') : argstr
     execute "silent !".prefix.fzf.' '.options." > ".tf
     if !v:shell_error
       for line in readfile(tf)
         if !empty(line)
-          execute a:command.' '.line
+          execute a:command.' '.s:escape(line)
         endif
       endfor
     endif
   finally
+    execute 'chdir '.s:escape(cwd)
     redraw!
     silent! call delete(tf)
   endtry
 endfunction
 
-command! -nargs=* FZF call fzf#run('silent e', <q-args>)
+command! -nargs=* -complete=dir FZF call fzf#run('silent e', <f-args>)
 
