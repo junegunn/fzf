@@ -106,7 +106,7 @@ history | fzf +s
 ### Key binding
 
 Use CTRL-J and CTRL-K (or CTRL-N and CTRL-P) to change the selection, press
-enter key to select the item. CTRL-C will terminate the finder.
+enter key to select the item. CTRL-C, CTRL-G, or ESC will terminate the finder.
 
 The following readline key bindings should also work as expected.
 

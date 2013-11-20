@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: November 17, 2013
+# Last update: November 20, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -643,8 +643,7 @@ class FZF
         cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
       }
       actions = {
-        :nop     => proc { nil },
-        ctrl(:c) => proc { exit 1 },
+        :esc     => proc { exit 1 },
         ctrl(:d) => proc { exit 1 if input.empty? },
         ctrl(:m) => proc {
           got = pick
@@ -688,6 +687,7 @@ class FZF
       actions[ctrl(:h)] = actions[127]
       actions[ctrl(:n)] = actions[ctrl(:j)]
       actions[ctrl(:p)] = actions[ctrl(:k)]
+      actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
       actions[:stab]    = actions[9]
 
       while true
@@ -696,22 +696,20 @@ class FZF
 
         ord = tty.getc.ord
         ord =
-          case ord = tty.getc.ord
+          case ord = (tty.read_nonblock(1).ord rescue :esc)
           when 91
-            case tty.getc.ord
+            case (tty.read_nonblock(1).ord rescue nil)
             when 68 then :left
             when 67 then :right
             when 66 then ctrl(:j)
             when 65 then ctrl(:k)
             when 90 then :stab
-            else :nop
+            else         next
             end
-          when 'b'.ord
-            :alt_b
-          when 'f'.ord
-            :alt_f
-          else
-            ord
+          when 'b'.ord then :alt_b
+          when 'f'.ord then :alt_f
+          when :esc    then :esc
+          else              next
           end if ord == 27
 
         upd = actions.fetch(ord, proc { |ord|
