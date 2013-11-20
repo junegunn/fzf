@@ -31,7 +31,7 @@ function! fzf#run(command, ...)
   let cwd = getcwd()
   try
     let args = copy(a:000)
-    if len(args) > 0
+    if len(args) > 0 && isdirectory(expand(args[-1]))
       let dir = remove(args, -1)
       execute 'chdir '.s:escape(dir)
     endif
