@@ -31,7 +31,7 @@ _fzf_opts_completion() {
 }
 
 _fzf_generic_completion() {
-  local cur prev opts base matches ignore
+  local cur prev opts base matches
   COMPREPLY=()
   FZF_COMPLETION_TRIGGER=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
@@ -41,7 +41,6 @@ _fzf_generic_completion() {
     base=${base%/}
     eval base=$base
 
-    ignore=${FZF_COMPLETION_IGNORE:-*/.git/*}
     find_opts="-name .git -prune -o -name .svn -prune -o"
     if [ -z "$base" -o -d "$base" ]; then
       matches=$(find ${base:-*} $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 | while read item; do
