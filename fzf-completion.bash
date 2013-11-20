@@ -62,6 +62,12 @@ _fzf_generic_completion() {
 
 _fzf_all_completion() {
   _fzf_generic_completion \
+    "-name .git -prune -o -name .svn -prune -o -type d -print -o -type f -print -o -type l -print" \
+    "-m"
+}
+
+_fzf_file_completion() {
+  _fzf_generic_completion \
     "-name .git -prune -o -name .svn -prune -o -type f -print -o -type l -print" \
     "-m"
 }
@@ -74,16 +80,28 @@ _fzf_dir_completion() {
 
 complete -F _fzf_opts_completion fzf
 
+# Directory
 for cmd in "cd pushd rmdir"; do
   complete -F _fzf_dir_completion -o default $cmd
 done
 
-_FZF_COMPLETION_COMMANDS=${FZF_COMPLETION_COMMANDS:-
-  awk basename bunzip2 bzip2 cat chmod chown curl cp diff diff3 dirname du
-  emacs ex file find ftp g++ gcc git grep gunzip gvim gzip head hg jar java
-  javac jps ld less ln ls more mv mvim open patch perl python rm rsync ruby scp
-  sed sftp sort source svn tail tar tee uniq unzip vi view vim wc zip
-}
+# File
+for cmd in "
+  awk cat diff diff3
+  emacs ex file ftp g++ gcc gvim head hg java
+  javac ld less more mvim patch perl python ruby
+  sed sftp sort source tail tee uniq vi view vim wc"; do
+  complete -F _fzf_file_completion -o default $cmd
+done
+
+# Anything
+for cmd in "
+  basename bunzip2 bzip2 chmod chown curl cp dirname du
+  find git grep gunzip gzip hg jar
+  ln ls mv open rm rsync scp
+  svn tar unzip zip"; do
+  complete -F _fzf_all_completion -o default $cmd
+done
 
 for cmd in $_FZF_COMPLETION_COMMANDS; do
   complete -F _fzf_all_completion -o default $cmd
