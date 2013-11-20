@@ -103,11 +103,6 @@ for cmd in "
   complete -F _fzf_all_completion -o default $cmd
 done
 
-for cmd in $_FZF_COMPLETION_COMMANDS; do
-  complete -F _fzf_all_completion -o default $cmd
-done
-unset _FZF_COMPLETION_COMMANDS
-
 bind '"\e\e": complete'
 bind '"\er": redraw-current-line'
 bind '"\C-i": "\e\e\er"'
