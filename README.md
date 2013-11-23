@@ -73,12 +73,13 @@ Usage
 ```
 usage: fzf [options]
 
-  -m, --multi      Enable multi-select
-  -x, --extended   Extended-search mode
-  -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
-  +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
-  +i               Case-sensitive match
-  +c, --no-color   Disable colors
+    -m, --multi      Enable multi-select
+    -x, --extended   Extended-search mode
+    -q, --query=STR  Initial query
+    -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
+    +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
+    +i               Case-sensitive match
+    +c, --no-color   Disable colors
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
@@ -266,8 +267,10 @@ over time*
 
 ### bash
 
-fuzzy-finder-completion can be triggered if you type in a directory name
-followed by the trigger sequence which is by default `**`.
+Fuzzy completion can be triggered if the word before the cursor ends
+with the trigger sequence which is by default `**`.
+
+- `COMMAND [DIRECTORY/][FUZZY_PATTERN]**<TAB>`
 
 #### Examples
 
@@ -277,7 +280,10 @@ followed by the trigger sequence which is by default `**`.
 vim **<TAB>
 
 # Files under parent directory
-vim ..**<TAB>
+vim ../**<TAB>
+
+# Files under parent directory that match `fzf`
+vim ../fzf**<TAB>
 
 # Files under your home directory
 vim ~/**<TAB>
@@ -286,8 +292,8 @@ vim ~/**<TAB>
 # Directories under current directory (single-selection)
 cd **<TAB>
 
-# Directories under parent directory
-cd ../**<TAB>
+# Directories under ~/github that match `fzf`
+cd ~/github/fzf**<TAB>
 ```
 
 #### Settings

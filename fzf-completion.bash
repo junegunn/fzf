@@ -31,31 +31,37 @@ _fzf_opts_completion() {
 }
 
 _fzf_generic_completion() {
-  local cur prev opts base matches
+  local cur prev opts base dir leftover matches
   COMPREPLY=()
   FZF_COMPLETION_TRIGGER=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   if [[ ${cur} == *"$FZF_COMPLETION_TRIGGER" ]]; then
     base=${cur:0:${#cur}-${#FZF_COMPLETION_TRIGGER}}
-    base=${base%/}
     eval base=$base
 
-    find_opts="-name .git -prune -o -name .svn -prune -o"
-    if [ -z "$base" -o -d "$base" ]; then
-      matches=$(find ${base:-*} $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 | while read item; do
-        if [[ ${item} =~ \  ]]; then
-          echo -n "\"$item\" "
-        else
-          echo -n "$item "
+    dir="$base"
+    while [ 1 ]; do
+      if [ -z "$dir" -o -d "$dir" ]; then
+        leftover=${base/#"$dir"}
+        leftover=${leftover/#\/}
+        [ "$dir" = '.' ] && dir=''
+        matches=$(find "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
+          if [[ ${item} =~ \  ]]; then
+            echo -n "\"$item\" "
+          else
+            echo -n "$item "
+          fi
+        done)
+        matches=${matches% }
+        if [ -n "$matches" ]; then
+          COMPREPLY=( "$matches" )
+          return 0
         fi
-      done)
-      matches=${matches% }
-      if [ -n "$matches" ]; then
-        COMPREPLY=( "$matches" )
-        return 0
+        return 1
       fi
-    fi
+      dir=$(dirname "$dir")
+    done
   fi
 }
 
