@@ -25,22 +25,35 @@ class TestFZF < MiniTest::Unit::TestCase
 
   def test_option_parser
     # Long opts
-    fzf = FZF.new %w[--sort=2000 --no-color --multi +i]
-    assert_equal 2000, fzf.sort
-    assert_equal true, fzf.multi
-    assert_equal false, fzf.color
-    assert_equal 0, fzf.rxflag
+    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello]
+    assert_equal 2000,    fzf.sort
+    assert_equal true,    fzf.multi
+    assert_equal false,   fzf.color
+    assert_equal 0,       fzf.rxflag
+    assert_equal 'hello', fzf.query.get
 
     # Short opts
-    fzf = FZF.new %w[-s 2000 +c -m +i]
-    assert_equal 2000, fzf.sort
-    assert_equal true, fzf.multi
-    assert_equal false, fzf.color
-    assert_equal 0, fzf.rxflag
+    fzf = FZF.new %w[-s 2000 +c -m +i -qhello]
+    assert_equal 2000,    fzf.sort
+    assert_equal true,    fzf.multi
+    assert_equal false,   fzf.color
+    assert_equal 0,       fzf.rxflag
+    assert_equal 'hello', fzf.query.get
+
+    # Left-to-right
+    fzf = FZF.new %w[-qhello -s 2000 --no-sort -q world]
+    assert_equal nil,     fzf.sort
+    assert_equal 'world', fzf.query.get
+
+    fzf = FZF.new %w[--query hello +s -s 2000 --query=world]
+    assert_equal 2000,    fzf.sort
+    assert_equal 'world', fzf.query.get
+  rescue SystemExit => e
+    assert false, "Exited"
   end
 
   def test_invalid_option
-    [%w[-s 2000 +s], %w[yo dawg]].each do |argv|
+    [%w[--unknown], %w[yo dawg]].each do |argv|
       assert_raises(SystemExit) do
         fzf = FZF.new argv
       end

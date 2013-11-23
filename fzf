@@ -41,7 +41,7 @@ require 'set'
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :multi
+  attr_reader :rxflag, :sort, :color, :multi, :query
 
   class AtomicVar
     def initialize value
@@ -67,20 +67,36 @@ class FZF
   end
 
   def initialize argv, source = $stdin
-    usage 0 unless (%w[--help -h] & argv).empty?
-    @rxflag = argv.delete('+i') ? 0 : Regexp::IGNORECASE
-    @sort   = %w[+s --no-sort].map   { |e| argv.delete e }.compact.empty? ?
-      ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i : nil
-    @color  = %w[+c --no-color].map  { |e| argv.delete e }.compact.empty?
-    @multi  = !%w[-m --multi].map    { |e| argv.delete e }.compact.empty?
-    @xmode  = !%w[-x --extended].map { |e| argv.delete e }.compact.empty?
-    rest    = argv.join ' '
-    if sort = rest.match(/(-s|--sort=?) ?([0-9]+)/)
-      usage 1 unless @sort
-      @sort = sort[2].to_i
-      rest  = rest.delete sort[0]
+    @rxflag = Regexp::IGNORECASE
+    @sort   = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
+    @color  = true
+    @multi  = false
+    @xmode  = false
+
+    argv = argv.dup
+    while o = argv.shift
+      case o
+      when '-h', '--help'     then usage 0
+      when '-m', '--multi'    then @multi  = true
+      when '-x', '--extended' then @xmode  = true
+      when '+i'               then @rxflag = 0
+      when '+s', '--no-sort'  then @sort   = nil
+      when '+c', '--no-color' then @color  = false
+      when '-q', '--query'
+        usage 1, 'query string required' unless query = argv.shift
+        @query = AtomicVar.new query.dup
+      when /^-q(.*)$/, /^--query=(.*)$/
+        @query = AtomicVar.new($1)
+      when '-s', '--sort'
+        usage 1, 'sort size required' unless sort = argv.shift
+        usage 1, 'invalid sort size'  unless sort =~ /^[0-9]+$/
+        @sort = sort.to_i
+      when /^-s([0-9]+)$/, /^--sort=([0-9]+)$/
+        @sort = $1.to_i
+      else
+        usage 1, "illegal option: #{o}"
+      end
     end
-    usage 1 unless rest.empty?
 
     @source   = source
     @mtx      = Mutex.new
@@ -88,8 +104,8 @@ class FZF
     @events   = {}
     @new      = []
     @queue    = Queue.new
-    @cursor_x = AtomicVar.new(0)
-    @query    = AtomicVar.new('')
+    @query  ||= AtomicVar.new('')
+    @cursor_x = AtomicVar.new(@query.length)
     @matches  = AtomicVar.new([])
     @count    = AtomicVar.new(0)
     @vcursor  = AtomicVar.new(0)
@@ -111,11 +127,13 @@ class FZF
     start_loop
   end
 
-  def usage x
+  def usage x, message = nil
+    $stderr.puts message if message
     $stderr.puts %[usage: fzf [options]
 
     -m, --multi      Enable multi-select
     -x, --extended   Extended-search mode
+    -q, --query=STR  Initial query
     -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
     +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
     +i               Case-sensitive match
@@ -637,8 +655,8 @@ class FZF
     got = nil
     begin
       tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
-      input   = ''
-      cursor  = 0
+      input   = @query.get.dup
+      cursor  = input.length
       backword = proc {
         cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
       }
@@ -690,6 +708,7 @@ class FZF
       actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
       actions[:stab]    = actions[9]
 
+      emit(:key) { [@query.get, cursor] } unless @query.empty?
       while true
         @cursor_x.set cursor
         render { print_input }
