@@ -45,7 +45,7 @@ _fzf_generic_completion() {
       if [ -z "$dir" -o -d "$dir" ]; then
         leftover=${base/#"$dir"}
         leftover=${leftover/#\/}
-        [ "$dir" = '.' ] && dir=''
+        [ "$dir" = './' ] && dir=''
         matches=$(find "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
           if [[ ${item} =~ \  ]]; then
             echo -n "\"$item\" "
@@ -62,6 +62,7 @@ _fzf_generic_completion() {
         return 0
       fi
       dir=$(dirname "$dir")
+      [[ "$dir" =~ /$ ]] || dir="$dir"/
     done
   fi
 }
