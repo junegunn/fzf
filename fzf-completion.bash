@@ -56,9 +56,10 @@ _fzf_generic_completion() {
         matches=${matches% }
         if [ -n "$matches" ]; then
           COMPREPLY=( "$matches" )
-          return 0
+        else
+          COMPREPLY=( "$cur" )
         fi
-        return 1
+        return 0
       fi
       dir=$(dirname "$dir")
     done
@@ -87,7 +88,7 @@ complete -F _fzf_opts_completion fzf
 
 # Directory
 for cmd in "cd pushd rmdir"; do
-  complete -F _fzf_dir_completion -o default $cmd
+  complete -F _fzf_dir_completion -o default -o bashdefault $cmd
 done
 
 # File
@@ -96,7 +97,7 @@ for cmd in "
   emacs ex file ftp g++ gcc gvim head hg java
   javac ld less more mvim patch perl python ruby
   sed sftp sort source tail tee uniq vi view vim wc"; do
-  complete -F _fzf_file_completion -o default $cmd
+  complete -F _fzf_file_completion -o default -o bashdefault $cmd
 done
 
 # Anything
@@ -105,7 +106,7 @@ for cmd in "
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"; do
-  complete -F _fzf_all_completion -o default $cmd
+  complete -F _fzf_all_completion -o default -o bashdefault $cmd
 done
 
 bind '"\e\e": complete'
