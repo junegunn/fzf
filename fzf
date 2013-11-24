@@ -638,9 +638,7 @@ class FZF
     Thread.new do
       begin
         while blk = @queue.shift
-          blks = [blk]
-          blks << blk while blk = (@queue.shift(true) rescue nil)
-          blks.each { |blk| blk.call }
+          blk.call
           refresh
         end
       rescue Exception => e
