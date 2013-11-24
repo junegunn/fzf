@@ -10,7 +10,7 @@
 # URL:         https://github.com/junegunn/fzf
 # Author:      Junegunn Choi
 # License:     MIT
-# Last update: November 20, 2013
+# Last update: November 24, 2013
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -630,6 +630,7 @@ class FZF
         print_item row, tokens, chosen, selected
       end
       print_info
+      print_input
     end
   end
 
