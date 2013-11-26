@@ -1,11 +1,11 @@
 #!/bin/bash
 
 cd `dirname $BASH_SOURCE`
-FZF_BASE=`pwd`
+fzf_base=`pwd`
 
 # ruby executable
 echo -n "Checking Ruby executable ... "
-RUBY=`which ruby`
+ruby=`which ruby`
 if [ $? -ne 0 ]; then
   echo "ruby executable not found!"
   exit 1
@@ -26,44 +26,52 @@ echo -n "Checking Ruby version ... "
 /usr/bin/env ruby -e 'exit RUBY_VERSION >= "1.9"'
 if [ $? -eq 0 ]; then
   echo ">= 1.9"
-  FZF_ALIAS="alias fzf='$RUBY --disable-gems $FZF_BASE/fzf'"
+  fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
 else
   echo "< 1.9"
-  FZF_ALIAS="alias fzf='$RUBY $FZF_BASE/fzf' # fzf"
+  fzf_cmd="$ruby $fzf_base/fzf"
 fi
 
 # Auto-completion
 read -p "Do you want to add auto-completion support? (y/n) " -n 1 -r
 echo
 [[ ! $REPLY =~ ^[Nn]$ ]]
-AUTO_COMPLETION=$?
+auto_completion=$?
+
+echo
+for shell in bash zsh; do
+  echo -n "Generate ~/.fzf.$shell ... "
+  src=~/.fzf.${shell}
+
+  fzf_completion="source $fzf_base/fzf-completion.${shell}"
+  if [ $auto_completion -ne 0 ]; then
+    fzf_completion="# $fzf_completion"
+  fi
+
+  cat > $src << EOF
+unalias fzf 2> /dev/null
+fzf() {
+  $fzf_cmd "\$@"
+}
+export -f fzf > /dev/null
+$fzf_completion
+
+EOF
+  echo "OK"
+done
 
 echo
 for shell in bash zsh; do
   rc=~/.${shell}rc
+  src="source ~/.fzf.${shell}"
+
   echo "Update $rc:"
-
-  # Install fzf alias
-  echo "- Add fzf alias:"
-  echo "  - $FZF_ALIAS"
-  if [ $(grep "alias fzf=" $rc | wc -l) -gt 0 ]; then
-    echo "    - (X) fzf alias already exists"
+  echo "  - $src"
+  if [ $(grep "$src" $rc | wc -l) -gt 0 ]; then
+    echo "    - Not added (already being sourced)"
   else
-    echo $FZF_ALIAS >> $rc
-    echo "    - Added."
-  fi
-
-  # Install auto-completion support
-  if [ $AUTO_COMPLETION -eq 0 ]; then
-    FZF_COMPLETION="source $FZF_BASE/fzf-completion.${shell}"
-    echo "- Add auto-completion support"
-    echo "  - $FZF_COMPLETION"
-    if [ $(grep "source.*fzf-completion" $rc | wc -l) -gt 0 ]; then
-      echo "    - (X) fzf-completion.${shell} already being sourced"
-    else
-      echo $FZF_COMPLETION >> $rc
-      echo "    - Added."
-    fi
+    echo $src >> $rc
+    echo "    - Added"
   fi
   echo
 done
@@ -72,5 +80,5 @@ echo "Finished. Reload your .bashrc or .zshrc to take effect."
 echo "   source ~/.bashrc  # bash"
 echo "   source ~/.zshrc   # zsh"
 echo
-echo "To uninstall fzf, simply remove the added lines."
+echo "To uninstall fzf, simply remove the added line."
 

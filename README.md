@@ -26,8 +26,8 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-The script will add an alias to fzf and auto-completion support to your
-`.bashrc` and `.zshrc`.
+The script will generate `~/.fzf.bash` and `~/.fzf.zsh` and update your
+`.bashrc` and `.zshrc` to load them.
 
 ### Manual installation
 
