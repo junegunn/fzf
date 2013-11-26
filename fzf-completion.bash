@@ -46,12 +46,9 @@ _fzf_generic_completion() {
         leftover=${base/#"$dir"}
         leftover=${leftover/#\/}
         [ "$dir" = './' ] && dir=''
+        tput sc
         matches=$(find "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
-          if [[ ${item} =~ \  ]]; then
-            echo -n "\"$item\" "
-          else
-            echo -n "$item "
-          fi
+          printf '%q ' "$item"
         done)
         matches=${matches% }
         if [ -n "$matches" ]; then
@@ -59,6 +56,7 @@ _fzf_generic_completion() {
         else
           COMPREPLY=( "$cur" )
         fi
+        tput rc
         return 0
       fi
       dir=$(dirname "$dir")
@@ -109,8 +107,4 @@ for cmd in "
   svn tar unzip zip"; do
   complete -F _fzf_all_completion -o default -o bashdefault $cmd
 done
-
-bind '"\e\e": complete'
-bind '"\er": redraw-current-line'
-bind '"\C-i": "\e\e\er"'
 

@@ -192,14 +192,6 @@ fda() {
   DIR=$(find ${1:-*} -type d 2> /dev/null | fzf) && cd "$DIR"
 }
 
-# fsel - Select multiple files in the given path
-fsel() {
-  find ${1:-*} | fzf -m | while read item; do
-    echo -n "\"$item\" "
-  done
-  echo
-}
-
 # fh - repeat history
 fh() {
   eval $(history | fzf +s | sed 's/ *[0-9]* *//')
@@ -209,12 +201,23 @@ fh() {
 fkill() {
   ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
 }
+```
 
-# (Assuming you don't use the default CTRL-T and CTRL-R)
+bash key bindings
+-----------------
+
+```sh
+# Required to refresh the prompt after fzf
+bind '"\er": redraw-current-line'
 
 # CTRL-T - Paste the selected file path into the command line
-bind '"\er": redraw-current-line'
-bind '"\C-t": " \C-u \C-a\C-k$(fzf)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+fsel() {
+  find ${1:-*} | fzf -m | while read item; do
+    printf '%q ' $item
+  done
+  echo
+}
+bind '"\C-t": " \C-u \C-a\C-k$(fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
 
 # CTRL-R - Paste the selected command from history into the command line
 bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
