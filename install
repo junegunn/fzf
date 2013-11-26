@@ -33,7 +33,7 @@ else
 fi
 
 # Auto-completion
-read -p "Do you want to add auto-completion support? (y/n) " -n 1 -r
+read -p "Do you want to add auto-completion support? ([y]/n) " -n 1 -r
 echo
 [[ ! $REPLY =~ ^[Nn]$ ]]
 auto_completion=$?
@@ -67,7 +67,7 @@ for shell in bash zsh; do
 
   echo "Update $rc:"
   echo "  - $src"
-  if [ $(grep "$src" $rc | wc -l) -gt 0 ]; then
+  if [ $(grep -F "$src" $rc | wc -l) -gt 0 ]; then
     echo "    - Not added (already being sourced)"
   else
     echo $src >> $rc
