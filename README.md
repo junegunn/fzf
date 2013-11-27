@@ -213,7 +213,7 @@ bind '"\er": redraw-current-line'
 # CTRL-T - Paste the selected file path into the command line
 fsel() {
   find ${1:-*} | fzf -m | while read item; do
-    printf '%q ' $item
+    printf '%q ' "$item"
   done
   echo
 }
