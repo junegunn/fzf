@@ -328,14 +328,17 @@ If you're running Ruby 1.9 or above, you can improve the startup time with
 - `time ruby --disable-gems ~/bin/fzf -h`
     - 0.025 sec
 
-Define fzf alias with the option as follows:
+You can define fzf function with the option as follows:
 
 ```sh
-alias fzf='ruby --disable-gems ~/bin/fzf'
+fzf() {
+  ruby --disable-gems ~/bin/fzf "$@"
+}
+export -f fzf
 ```
 
-This is automatically set up in your .bashrc and .zshrc if you use the bundled
-[install](https://github.com/junegunn/fzf/blob/master/install) script.
+However, this is automatically set up in your .bashrc and .zshrc if you use the
+bundled [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
 ### Incorrect display on Ruby 1.8
 
