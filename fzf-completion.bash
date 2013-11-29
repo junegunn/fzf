@@ -31,11 +31,10 @@ _fzf_opts_completion() {
 }
 
 _fzf_generic_completion() {
-  local cur prev opts base dir leftover matches
+  local cur base dir leftover matches
   COMPREPLY=()
   FZF_COMPLETION_TRIGGER=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
   if [[ ${cur} == *"$FZF_COMPLETION_TRIGGER" ]]; then
     base=${cur:0:${#cur}-${#FZF_COMPLETION_TRIGGER}}
     eval base=$base
@@ -84,6 +83,8 @@ _fzf_dir_completion() {
 }
 
 _fzf_kill_completion() {
+  [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
+
   local selected
   tput sc
   selected=$(ps -ef | sed 1d | fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
@@ -96,17 +97,17 @@ _fzf_kill_completion() {
 }
 
 _fzf_host_completion() {
-  if [ "${COMP_WORDS[COMP_CWORD-1]}" = '-l' ]; then
-    return 1
-  fi
+  local cur prev selected
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  [ "$cur" = '-l' -o "$prev" = '-l' ] && return 1
 
-  local selected
   tput sc
-  selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS)
+  selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
   tput rc
 
   if [ -n "$selected" ]; then
-    COMPREPLY=( "$selected" )
+    COMPREPLY=("$selected")
     return 0
   fi
 }
