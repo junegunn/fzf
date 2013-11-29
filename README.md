@@ -270,6 +270,8 @@ over time*
 
 ### bash
 
+#### Files and directories
+
 Fuzzy completion for files and directories can be triggered if the word before
 the cursor ends with the trigger sequence which is by default `**`.
 
@@ -297,12 +299,24 @@ cd **<TAB>
 cd ~/github/fzf**<TAB>
 ```
 
-Fuzzy completion for PIDs are provided for kill command. In this case
+#### Process IDs
+
+Fuzzy completion for PIDs is provided for kill command. In this case
 there is no trigger sequence, just press tab key after kill command.
 
 ```sh
 # Can select multiple processes with <TAB> or <Shift-TAB> keys
 kill -9 <TAB>
+```
+
+#### Host names
+
+For ssh and telnet command, fuzzy completion for host names is provided. The
+names are extracted from /etc/hosts file.
+
+```sh
+ssh <TAB>
+telnet <TAB>
 ```
 
 #### Settings

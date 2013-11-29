@@ -95,6 +95,22 @@ _fzf_kill_completion() {
   fi
 }
 
+_fzf_host_completion() {
+  if [ "${COMP_WORDS[COMP_CWORD-1]}" = '-l' ]; then
+    return 1
+  fi
+
+  local selected
+  tput sc
+  selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS)
+  tput rc
+
+  if [ -n "$selected" ]; then
+    COMPREPLY=( "$selected" )
+    return 0
+  fi
+}
+
 complete -F _fzf_opts_completion fzf
 
 # Directory
@@ -122,4 +138,9 @@ done
 
 # Kill completion
 complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
+
+# Host completion
+for cmd in "ssh telnet"; do
+  complete -F _fzf_host_completion -o default -o bashdefault $cmd
+done
 
