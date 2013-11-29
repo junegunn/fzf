@@ -311,7 +311,7 @@ kill -9 <TAB>
 
 #### Host names
 
-For ssh and telnet command, fuzzy completion for host names is provided. The
+For ssh and telnet commands, fuzzy completion for host names is provided. The
 names are extracted from /etc/hosts file.
 
 ```sh
