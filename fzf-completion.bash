@@ -83,6 +83,18 @@ _fzf_dir_completion() {
     ""
 }
 
+_fzf_kill_completion() {
+  local selected
+  tput sc
+  selected=$(ps -ef | sed 1d | fzf -m | awk '{print $2}' | tr '\n' ' ')
+  tput rc
+
+  if [ -n "$selected" ]; then
+    COMPREPLY=( "$selected" )
+    return 0
+  fi
+}
+
 complete -F _fzf_opts_completion fzf
 
 # Directory
@@ -107,4 +119,7 @@ for cmd in "
   svn tar unzip zip"; do
   complete -F _fzf_all_completion -o default -o bashdefault $cmd
 done
+
+# Kill completion
+complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
 

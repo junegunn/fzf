@@ -270,8 +270,8 @@ over time*
 
 ### bash
 
-Fuzzy completion can be triggered if the word before the cursor ends
-with the trigger sequence which is by default `**`.
+Fuzzy completion for files and directories can be triggered if the word before
+the cursor ends with the trigger sequence which is by default `**`.
 
 - `COMMAND [DIRECTORY/][FUZZY_PATTERN]**<TAB>`
 
@@ -297,6 +297,14 @@ cd **<TAB>
 
 # Directories under ~/github that match `fzf`
 cd ~/github/fzf**<TAB>
+```
+
+Fuzzy completion for PIDs are provided for kill command. In this case
+there is no trigger sequence, just press tab key after kill command.
+
+```sh
+# Can select multiple processes with <TAB> or <Shift-TAB> keys
+kill -9 <TAB>
 ```
 
 #### Settings
