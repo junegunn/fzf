@@ -86,7 +86,7 @@ _fzf_dir_completion() {
 _fzf_kill_completion() {
   local selected
   tput sc
-  selected=$(ps -ef | sed 1d | fzf -m | awk '{print $2}' | tr '\n' ' ')
+  selected=$(ps -ef | sed 1d | fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
   tput rc
 
   if [ -n "$selected" ]; then

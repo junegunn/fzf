@@ -275,8 +275,6 @@ the cursor ends with the trigger sequence which is by default `**`.
 
 - `COMMAND [DIRECTORY/][FUZZY_PATTERN]**<TAB>`
 
-#### Examples
-
 ```sh
 # Files under current directory
 # - You can select multiple items with TAB key
