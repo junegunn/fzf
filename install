@@ -76,9 +76,11 @@ for shell in bash zsh; do
   echo
 done
 
-echo "Finished. Reload your .bashrc or .zshrc to take effect."
-echo "   source ~/.bashrc  # bash"
-echo "   source ~/.zshrc   # zsh"
-echo
-echo "To uninstall fzf, simply remove the added line."
+cat << EOF
+Finished. Reload your .bashrc or .zshrc to take effect.
+   source ~/.bashrc  # bash"
+   source ~/.zshrc   # zsh"
+
+To uninstall fzf, simply remove the added line.
+EOF
 
