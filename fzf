@@ -347,7 +347,7 @@ class FZF
       tokens << [line[b...e], true]
       index = e
     end
-    tokens << [line[index..-1], false]
+    tokens << [line[index..-1], false] if index < line.length
     tokens.reject { |pair| pair.first.empty? }
   end
 
@@ -829,6 +829,8 @@ class FZF
             case w
             when ''
               nil
+            when /^\^(.*)\$$/
+              Regexp.new('^' << sanitize(Regexp.escape $1) << '$', rxflag)
             when /^'/
               w.length > 1 ?
                 Regexp.new(sanitize(Regexp.escape(w[1..-1])), rxflag) : nil

@@ -189,7 +189,7 @@ fd() {
 
 # fda - including hidden directories
 fda() {
-  DIR=$(find ${1:-*} -type d 2> /dev/null | fzf) && cd "$DIR"
+  DIR=$(find ${1:-.} -type d 2> /dev/null | fzf) && cd "$DIR"
 }
 
 # fh - repeat history

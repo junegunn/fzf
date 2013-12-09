@@ -197,6 +197,11 @@ class TestFZF < MiniTest::Unit::TestCase
       assert_equal list.length,     match.call('j', '').length
       assert_equal list.length - 1, match.call('^j', '').length
 
+      # ^ + $
+      assert_equal 0, match.call('^juici$', '').length
+      assert_equal 1, match.call('^juice$', '').length
+      assert_equal 0, match.call('^.*$', '').length
+
       # !
       assert_equal 0, match.call('!j', '').length
 
@@ -331,6 +336,15 @@ class TestFZF < MiniTest::Unit::TestCase
   def test_split
     assert_equal ["a", "b", "c", "\xFF", "d", "e", "f"],
       FZF::UConv.split("abc\xFFdef")
+  end
+
+  # ^$ -> matches empty item
+  def test_format_empty_item
+    fzf = FZF.new []
+    item = ['', [[0, 0]]]
+    line, offsets = fzf.convert_item item
+    tokens        = fzf.format line, 80, offsets
+    assert_equal [], tokens
   end
 end
 
