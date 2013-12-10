@@ -830,7 +830,7 @@ class FZF
             when ''
               nil
             when /^\^(.*)\$$/
-              Regexp.new('^' << sanitize(Regexp.escape $1) << '$', rxflag)
+              Regexp.new('^' << sanitize(Regexp.escape($1)) << '$', rxflag)
             when /^'/
               w.length > 1 ?
                 Regexp.new(sanitize(Regexp.escape(w[1..-1])), rxflag) : nil
