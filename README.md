@@ -16,8 +16,6 @@ fzf requires Ruby (>= 1.8.5).
 Installation
 ------------
 
-### Using install script
-
 Clone this repository and run
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
@@ -29,28 +27,9 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 The script will generate `~/.fzf.bash` and `~/.fzf.zsh` and update your
 `.bashrc` and `.zshrc` to load them.
 
-### Manual installation
-
 Or you can just download
 [fzf executable](https://raw.github.com/junegunn/fzf/master/fzf) and put it
 somewhere in your search $PATH.
-
-```sh
-mkdir -p ~/bin
-wget https://raw.github.com/junegunn/fzf/master/fzf -O ~/bin/fzf
-chmod +x ~/bin/fzf
-```
-
-### Install as Ruby gem
-
-fzf can be installed as a Ruby gem
-
-```
-gem install fzf
-```
-
-It's a bit easier to install and update the script but the Ruby gem version
-takes slightly longer to start.
 
 ### Install as Vim plugin
 
@@ -262,8 +241,8 @@ zle     -N   fzf-history-widget
 bindkey '^R' fzf-history-widget
 ```
 
-Auto-completion (experimental)
-------------------------------
+Auto-completion
+---------------
 
 Disclaimer: *Auto-completion feature is currently experimental, it can change
 over time*
