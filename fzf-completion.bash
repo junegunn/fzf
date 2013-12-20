@@ -100,7 +100,7 @@ _fzf_host_completion() {
   local cur prev selected
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  [ "$cur" = '-l' -o "$prev" = '-l' ] && return 1
+  [[ "$cur" =~ ^- || "$prev" =~ ^- ]] && return 1
 
   tput sc
   selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
