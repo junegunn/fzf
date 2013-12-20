@@ -9,10 +9,10 @@ load 'fzf'
 class TestFZF < MiniTest::Unit::TestCase
   def test_default_options
     fzf = FZF.new []
-    assert_equal 1000, fzf.sort
+    assert_equal 1000,  fzf.sort
     assert_equal false, fzf.multi
-    assert_equal true, fzf.color
-    assert_equal Regexp::IGNORECASE, fzf.rxflag
+    assert_equal true,  fzf.color
+    assert_equal nil,   fzf.rxflag
 
     begin
       ENV['FZF_DEFAULT_SORT'] = '1500'
@@ -152,13 +152,57 @@ class TestFZF < MiniTest::Unit::TestCase
     # TODO : partial_cache
   end
 
+  def test_fuzzy_matcher_rxflag
+    assert_equal nil, FZF::FuzzyMatcher.new(nil).rxflag
+    assert_equal 0, FZF::FuzzyMatcher.new(0).rxflag
+    assert_equal 1, FZF::FuzzyMatcher.new(1).rxflag
+
+    assert_equal 1, FZF::FuzzyMatcher.new(nil).rxflag_for('abc')
+    assert_equal 0, FZF::FuzzyMatcher.new(nil).rxflag_for('Abc')
+    assert_equal 0, FZF::FuzzyMatcher.new(0).rxflag_for('abc')
+    assert_equal 0, FZF::FuzzyMatcher.new(0).rxflag_for('Abc')
+    assert_equal 1, FZF::FuzzyMatcher.new(1).rxflag_for('abc')
+    assert_equal 1, FZF::FuzzyMatcher.new(1).rxflag_for('Abc')
+  end
+
   def test_fuzzy_matcher_case_sensitive
+    # Smart-case match (Uppercase found)
+    assert_equal [['Fruit', [[0, 5]]]],
+      FZF::FuzzyMatcher.new(nil).match(%w[Fruit Grapefruit], 'Fruit', '', '').sort
+
+    # Smart-case match (Uppercase not-found)
+    assert_equal [["Fruit", [[0, 5]]], ["Grapefruit", [[5, 10]]]],
+      FZF::FuzzyMatcher.new(nil).match(%w[Fruit Grapefruit], 'fruit', '', '').sort
+
+    # Case-sensitive match (-i)
     assert_equal [['Fruit', [[0, 5]]]],
       FZF::FuzzyMatcher.new(0).match(%w[Fruit Grapefruit], 'Fruit', '', '').sort
 
+    # Case-insensitive match (+i)
     assert_equal [["Fruit", [[0, 5]]], ["Grapefruit", [[5, 10]]]],
       FZF::FuzzyMatcher.new(Regexp::IGNORECASE).
       match(%w[Fruit Grapefruit], 'Fruit', '', '').sort
+  end
+
+  def test_extended_fuzzy_matcher_case_sensitive
+    %w['Fruit Fruit$].each do |q|
+      # Smart-case match (Uppercase found)
+      assert_equal [['Fruit', [[0, 5]]]],
+        FZF::ExtendedFuzzyMatcher.new(nil).match(%w[Fruit Grapefruit], q, '', '').sort
+
+      # Smart-case match (Uppercase not-found)
+      assert_equal [["Fruit", [[0, 5]]], ["Grapefruit", [[5, 10]]]],
+        FZF::ExtendedFuzzyMatcher.new(nil).match(%w[Fruit Grapefruit], q.downcase, '', '').sort
+
+      # Case-sensitive match (-i)
+      assert_equal [['Fruit', [[0, 5]]]],
+        FZF::ExtendedFuzzyMatcher.new(0).match(%w[Fruit Grapefruit], q, '', '').sort
+
+      # Case-insensitive match (+i)
+      assert_equal [["Fruit", [[0, 5]]], ["Grapefruit", [[5, 10]]]],
+        FZF::ExtendedFuzzyMatcher.new(Regexp::IGNORECASE).
+        match(%w[Fruit Grapefruit], q, '', '').sort
+    end
   end
 
   def test_extended_fuzzy_matcher

@@ -57,6 +57,7 @@ usage: fzf [options]
     -q, --query=STR  Initial query
     -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
     +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
+    -i               Case-insensitive match (default: smart-case match)
     +i               Case-sensitive match
     +c, --no-color   Disable colors
 ```
