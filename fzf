@@ -706,7 +706,7 @@ class FZF
       actions[ctrl(:h)] = actions[127]
       actions[ctrl(:n)] = actions[ctrl(:j)]
       actions[ctrl(:p)] = actions[ctrl(:k)]
-      actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
+      actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
       actions[:stab]    = actions[9]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
