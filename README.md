@@ -183,8 +183,8 @@ fkill() {
 }
 ```
 
-Key bindings
-------------
+Key bindings for command line
+-----------------------------
 
 The install script will add the following key bindings to your configuration
 files.
@@ -359,6 +359,20 @@ It is reported that the output of fzf can become unreadable on some terminals
 when it's running on Ruby 1.8. If you experience the problem, upgrade your Ruby
 to 1.9 or above. Ruby 1.9 or above is also required for displaying Unicode
 characters.
+
+### Ranking algorithm
+
+fzf sorts the result first by the length of the matched substring, then by the
+length of the whole string. However it only does so when the number of matches
+is less than the limit which is by default 1000, in order to avoid the cost of
+sorting a large list and limit the response time of the query.
+
+This limit can be adjusted with `-s` option, or with the environment variable
+`FZF_DEFAULT_SORT`.
+
+```sh
+export FZF_DEFAULT_SORT=10000
+```
 
 License
 -------
