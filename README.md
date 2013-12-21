@@ -153,8 +153,8 @@ Most of the time, you will prefer native Vim plugins with better integration
 with Vim. The only reason one might consider using fzf in Vim is its speed. For
 a very large list of files, fzf is significantly faster and it does not block.
 
-Useful bash examples
---------------------
+Useful examples
+---------------
 
 ```sh
 # vimf - Open selected file in Vim
@@ -183,8 +183,16 @@ fkill() {
 }
 ```
 
-bash key bindings
------------------
+Key bindings
+------------
+
+The install script will add the following key bindings to your configuration
+files.
+
+### bash
+
+- `CTRL-T` - Paste the selected file path(s) into the command line
+- `CTRL-R` - Paste the selected command from history into the command line
 
 ```sh
 # Required to refresh the prompt after fzf
@@ -192,7 +200,9 @@ bind '"\er": redraw-current-line'
 
 # CTRL-T - Paste the selected file path into the command line
 fsel() {
-  find ${1:-*} | fzf -m | while read item; do
+  find * -path '*/\.*' -prune \
+    -o -type f -print \
+    -o -type l -print 2> /dev/null | fzf -m | while read item; do
     printf '%q ' "$item"
   done
   echo
@@ -203,8 +213,11 @@ bind '"\C-t": " \C-u \C-a\C-k$(fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
 bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 ```
 
-zsh widgets
------------
+### zsh
+
+- `CTRL-T` - Paste the selected file path(s) into the command line
+- `CTRL-R` - Paste the selected command from history into the command line
+- `ALT-C` - cd into the selected directory
 
 ```sh
 # CTRL-T - Paste the selected file path(s) into the command line

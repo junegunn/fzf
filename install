@@ -38,6 +38,12 @@ echo
 [[ ! $REPLY =~ ^[Nn]$ ]]
 auto_completion=$?
 
+# Key-bindings
+read -p "Do you want to add key bindings? ([y]/n) " -n 1 -r
+echo
+[[ ! $REPLY =~ ^[Nn]$ ]]
+key_bindings=$?
+
 echo
 for shell in bash zsh; do
   echo -n "Generate ~/.fzf.$shell ... "
@@ -49,14 +55,85 @@ for shell in bash zsh; do
   fi
 
   cat > $src << EOF
+# Setup fzf function
+# ------------------
 unalias fzf 2> /dev/null
 fzf() {
   $fzf_cmd "\$@"
 }
 export -f fzf > /dev/null
+
+# Auto-completion
+# ---------------
 $fzf_completion
 
 EOF
+
+  if [ $key_bindings -eq 0 ]; then
+    if [ $shell = bash ]; then
+      cat >> $src << "EOF"
+# Key bindings
+# ------------
+# Required to refresh the prompt after fzf
+bind '"\er": redraw-current-line'
+
+# CTRL-T - Paste the selected file path into the command line
+fsel() {
+  find * -path '*/\.*' -prune \
+    -o -type f -print \
+    -o -type l -print 2> /dev/null | fzf -m | while read item; do
+    printf '%q ' "$item"
+  done
+  echo
+}
+bind '"\C-t": " \C-u \C-a\C-k$(fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+
+# CTRL-R - Paste the selected command from history into the command line
+bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
+
+EOF
+    else
+      cat >> $src << "EOF"
+# Key bindings
+# ------------
+# CTRL-T - Paste the selected file path(s) into the command line
+fzf-file-widget() {
+  local FILES
+  local IFS="
+"
+  FILES=($(
+    find * -path '*/\.*' -prune \
+    -o -type f -print \
+    -o -type l -print 2> /dev/null | fzf -m))
+  unset IFS
+  FILES=$FILES:q
+  LBUFFER="${LBUFFER%% #} $FILES"
+  zle redisplay
+}
+zle     -N   fzf-file-widget
+bindkey '^T' fzf-file-widget
+
+# ALT-C - cd into the selected directory
+fzf-cd-widget() {
+  cd "${$(find * -path '*/\.*' -prune \
+          -o -type d -print 2> /dev/null | fzf):-.}"
+  zle reset-prompt
+}
+zle     -N    fzf-cd-widget
+bindkey '\ec' fzf-cd-widget
+
+# CTRL-R - Paste the selected command from history into the command line
+fzf-history-widget() {
+  LBUFFER=$(history | fzf +s | sed "s/ *[0-9]* *//")
+  zle redisplay
+}
+zle     -N   fzf-history-widget
+bindkey '^R' fzf-history-widget
+
+EOF
+    fi
+  fi
+
   echo "OK"
 done
 
