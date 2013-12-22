@@ -96,7 +96,7 @@ _fzf_kill_completion() {
   fi
 }
 
-_fzf_host_completion() {
+_fzf_telnet_completion() {
   local cur prev selected
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -104,6 +104,25 @@ _fzf_host_completion() {
 
   tput sc
   selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
+  tput rc
+
+  if [ -n "$selected" ]; then
+    COMPREPLY=("$selected")
+    return 0
+  fi
+}
+
+_fzf_ssh_completion() {
+  local cur prev selected
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  [[ "$cur" =~ ^- || "$prev" =~ ^- ]] && return 1
+
+  tput sc
+  selected=$(cat \
+    <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | grep -i ^host) \
+    <(grep -v '^\s*\(#\|$\)' /etc/hosts) | \
+    awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
   tput rc
 
   if [ -n "$selected" ]; then
@@ -141,7 +160,6 @@ done
 complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
 
 # Host completion
-for cmd in "ssh telnet"; do
-  complete -F _fzf_host_completion -o default -o bashdefault $cmd
-done
+complete -F _fzf_ssh_completion -o default -o bashdefault ssh
+complete -F _fzf_telnet_completion -o default -o bashdefault telnet
 
