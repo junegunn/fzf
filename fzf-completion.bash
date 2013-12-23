@@ -31,12 +31,12 @@ _fzf_opts_completion() {
 }
 
 _fzf_generic_completion() {
-  local cur base dir leftover matches
+  local cur base dir leftover matches trigger
   COMPREPLY=()
-  FZF_COMPLETION_TRIGGER=${FZF_COMPLETION_TRIGGER:-**}
+  trigger=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ ${cur} == *"$FZF_COMPLETION_TRIGGER" ]]; then
-    base=${cur:0:${#cur}-${#FZF_COMPLETION_TRIGGER}}
+  if [[ ${cur} == *"$trigger" ]]; then
+    base=${cur:0:${#cur}-${#trigger}}
     eval base=$base
 
     dir="$base"
@@ -97,10 +97,11 @@ _fzf_kill_completion() {
 }
 
 _fzf_telnet_completion() {
-  local cur prev selected
+  local cur selected trigger
+  trigger=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
-  [[ "$cur" =~ ^- || "$prev" =~ ^- ]] && return 1
+  [[ ${cur} == *"$trigger" ]] || return 1
+  cur=${cur:0:${#cur}-${#trigger}}
 
   tput sc
   selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
@@ -113,10 +114,11 @@ _fzf_telnet_completion() {
 }
 
 _fzf_ssh_completion() {
-  local cur prev selected
+  local cur selected trigger
+  trigger=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
-  [[ "$cur" =~ ^- || "$prev" =~ ^- ]] && return 1
+  [[ ${cur} == *"$trigger" ]] || return 1
+  cur=${cur:0:${#cur}-${#trigger}}
 
   tput sc
   selected=$(cat \

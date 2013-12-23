@@ -305,11 +305,11 @@ kill -9 <TAB>
 #### Host names
 
 For ssh and telnet commands, fuzzy completion for host names is provided. The
-names are extracted from /etc/hosts file.
+names are extracted from /etc/hosts and ~/.ssh/config.
 
 ```sh
-ssh <TAB>
-telnet <TAB>
+ssh **<TAB>
+telnet **<TAB>
 ```
 
 #### Settings
