@@ -167,8 +167,8 @@ done
 
 cat << EOF
 Finished. Reload your .bashrc or .zshrc.
-   source ~/.bashrc  # bash"
-   source ~/.zshrc   # zsh"
+   source ~/.bashrc  # bash
+   source ~/.zshrc   # zsh
 
 To uninstall fzf, simply remove the added line.
 EOF
