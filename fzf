@@ -556,26 +556,25 @@ class FZF
           if new_search && !lists.empty?
             q, cx = events.delete(:key) || [q, 0]
             empty = matcher.empty?(q)
-            matches = fcache[q] ||=
-              begin
-                found = []
-                skip  = false
-                cnt   = 0
-                lists.each do |list|
-                  cnt += list.length
-                  skip = @mtx.synchronize { @events[:key] }
-                  break if skip
+            unless matches = fcache[q]
+              found = []
+              skip  = false
+              cnt   = 0
+              lists.each do |list|
+                cnt += list.length
+                skip = @mtx.synchronize { @events[:key] }
+                break if skip
 
-                  if !empty && (progress = 100 * cnt / @count.get) < 100 && Time.now - started_at > 0.5
-                    render { print_info " (#{progress}%)" }
-                  end
-
-                  found.concat(q.empty? ? list :
-                               matcher.match(list, q, q[0, cx], q[cx..-1]))
+                if !empty && (progress = 100 * cnt / @count.get) < 100 && Time.now - started_at > 0.5
+                  render { print_info " (#{progress}%)" }
                 end
-                next if skip
-                @sort ? found : found.reverse
+
+                found.concat(q.empty? ? list :
+                             matcher.match(list, q, q[0, cx], q[cx..-1]))
               end
+              next if skip
+              matches = fcache[q] = @sort ? found : found.reverse
+            end
 
             if !empty && @sort && matches.length <= @sort
               matches = sort_by_rank(matches)
