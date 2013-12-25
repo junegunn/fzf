@@ -11,8 +11,9 @@ the likes.
 Requirements
 ------------
 
-fzf requires Ruby (>= 1.8.5). 'curses' gem is required for [Ruby 2.1 or
-above](https://bugs.ruby-lang.org/issues/8584).
+fzf requires Ruby (>= 1.8.5).
+
+*curses* gem is required for [Ruby 2.1 or above](https://bugs.ruby-lang.org/issues/8584).
 
 Installation
 ------------
