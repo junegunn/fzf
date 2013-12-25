@@ -15,11 +15,18 @@ echo "OK"
 # Curses-support
 echo -n "Checking Curses support ... "
 /usr/bin/env ruby -e "begin; require 'curses'; rescue Exception; exit 1; end"
-if [ $? -ne 0 ]; then
-  echo "Your ruby does not support 'curses'"
-  exit 1
+if [ $? -eq 0 ]; then
+  echo "OK"
+else
+  echo "Not found"
+  echo "Installing 'curses' gem ... "
+  /usr/bin/env gem install curses
+  if [ $? -ne 0 ]; then
+    echo "Failed to install 'curses' gem."
+    echo "Try installing it as root: sudo gem install curses"
+    exit 1
+  fi
 fi
-echo "OK"
 
 # Ruby version
 echo -n "Checking Ruby version ... "
@@ -154,7 +161,7 @@ for shell in bash zsh; do
 done
 
 cat << EOF
-Finished. Reload your .bashrc or .zshrc to take effect.
+Finished. Reload your .bashrc or .zshrc.
    source ~/.bashrc  # bash"
    source ~/.zshrc   # zsh"
 
