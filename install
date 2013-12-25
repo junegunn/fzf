@@ -33,7 +33,12 @@ echo -n "Checking Ruby version ... "
 /usr/bin/env ruby -e 'exit RUBY_VERSION >= "1.9"'
 if [ $? -eq 0 ]; then
   echo ">= 1.9"
-  fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+  /usr/bin/env ruby --disable-gems -e "begin; require 'curses'; rescue Exception; exit 1; end"
+  if [ $? -eq 0 ]; then
+    fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+  else
+    fzf_cmd="$ruby $fzf_base/fzf"
+  fi
 else
   echo "< 1.9"
   fzf_cmd="$ruby $fzf_base/fzf"
