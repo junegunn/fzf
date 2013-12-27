@@ -7,10 +7,11 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# URL:         https://github.com/junegunn/fzf
-# Author:      Junegunn Choi
-# License:     MIT
-# Last update: December 20, 2013
+# Version: 0.6.1 (December 28, 2013)
+#
+# Author:  Junegunn Choi
+# URL:     https://github.com/junegunn/fzf
+# License: MIT
 #
 # Copyright (c) 2013 Junegunn Choi
 #
@@ -76,6 +77,7 @@ class FZF
     argv = argv.dup
     while o = argv.shift
       case o
+      when '--version'        then version
       when '-h', '--help'     then usage 0
       when '-m', '--multi'    then @multi  = true
       when '-x', '--extended' then @xmode  = true
@@ -126,6 +128,17 @@ class FZF
     start_renderer
     start_search
     start_loop
+  end
+
+  def version
+    File.open(__FILE__, 'r') do |f|
+      f.each_line do |line|
+        if line =~ /Version: (.*)/
+          $stdout.puts "fzf " << $1
+          exit
+        end
+      end
+    end
   end
 
   def usage x, message = nil
