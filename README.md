@@ -117,44 +117,6 @@ such as: `^music .mp3$ sbtrkt !rmx`
 | `'wild`  | Items that include `wild`        | exact-match (quoted) |
 | `!'fire` | Items that do not include `fire` | inverse-exact-match  |
 
-Usage as Vim plugin
--------------------
-
-If you install fzf as a Vim plugin, `:FZF` command will be added.
-
-```vim
-" Look for files under current directory
-:FZF
-
-" Look for files under your home directory
-:FZF ~
-
-" With options
-:FZF --no-sort -m /tmp
-```
-
-You can override the source command which produces input to fzf.
-
-```vim
-let g:fzf_source = 'find . -type f'
-```
-
-And you can predefine default options to fzf command.
-
-```vim
-let g:fzf_options = '--no-color --extended'
-```
-
-For more advanced uses, you can call `fzf#run` function as follows.
-
-```vim
-:call fzf#run('tabedit', '-m +c')
-```
-
-Most of the time, you will prefer native Vim plugins with better integration
-with Vim. The only reason one might consider using fzf in Vim is its speed. For
-a very large list of files, fzf is significantly faster and it does not block.
-
 Useful examples
 ---------------
 
@@ -329,6 +291,44 @@ export FZF_COMPLETION_OPTS='+c -x'
 TODO :smiley:
 
 (Pull requests are appreciated.)
+
+Usage as Vim plugin
+-------------------
+
+If you install fzf as a Vim plugin, `:FZF` command will be added.
+
+```vim
+" Look for files under current directory
+:FZF
+
+" Look for files under your home directory
+:FZF ~
+
+" With options
+:FZF --no-sort -m /tmp
+```
+
+You can override the source command which produces input to fzf.
+
+```vim
+let g:fzf_source = 'find . -type f'
+```
+
+And you can predefine default options to fzf command.
+
+```vim
+let g:fzf_options = '--no-color --extended'
+```
+
+For more advanced uses, you can call `fzf#run` function as follows.
+
+```vim
+:call fzf#run('tabedit', '-m +c')
+```
+
+Most of the time, you will prefer native Vim plugins with better integration
+with Vim. The only reason one might consider using fzf in Vim is its speed. For
+a very large list of files, fzf is significantly faster and it does not block.
 
 Tips
 ----
