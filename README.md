@@ -13,8 +13,6 @@ Requirements
 
 fzf requires Ruby (>= 1.8.5).
 
-*curses* gem is required for [Ruby 2.1 or above](https://bugs.ruby-lang.org/issues/8584).
-
 Installation
 ------------
 
@@ -26,12 +24,11 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-The script will generate `~/.fzf.bash` and `~/.fzf.zsh` and update your
-`.bashrc` and `.zshrc` to load them.
+The script will setup:
 
-Or you can just download
-[fzf executable](https://raw.github.com/junegunn/fzf/master/fzf) and put it
-somewhere in your search $PATH.
+- `fzf` executable
+- Key bindings (`CTRL-T`, `CTRL-R`, etc.)
+- Fuzzy auto-completion for bash
 
 ### Install as Vim plugin
 
@@ -150,32 +147,14 @@ fkill() {
 Key bindings for command line
 -----------------------------
 
-The install script will add the following key bindings to your configuration
-files.
+The install script will setup the following key bindings.
 
 ### bash
 
 - `CTRL-T` - Paste the selected file path(s) into the command line
 - `CTRL-R` - Paste the selected command from history into the command line
 
-```sh
-# Required to refresh the prompt after fzf
-bind '"\er": redraw-current-line'
-
-# CTRL-T - Paste the selected file path into the command line
-fsel() {
-  find * -path '*/\.*' -prune \
-    -o -type f -print \
-    -o -type l -print 2> /dev/null | fzf -m | while read item; do
-    printf '%q ' "$item"
-  done
-  echo
-}
-bind '"\C-t": " \C-u \C-a\C-k$(fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
-
-# CTRL-R - Paste the selected command from history into the command line
-bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
-```
+The source code can be found in `~/.fzf.bash`.
 
 ### zsh
 
@@ -183,41 +162,7 @@ bind '"\C-r": " \C-e\C-u$(history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 - `CTRL-R` - Paste the selected command from history into the command line
 - `ALT-C` - cd into the selected directory
 
-```sh
-# CTRL-T - Paste the selected file path(s) into the command line
-fzf-file-widget() {
-  local FILES
-  local IFS="
-"
-  FILES=($(
-    find * -path '*/\.*' -prune \
-    -o -type f -print \
-    -o -type l -print 2> /dev/null | fzf -m))
-  unset IFS
-  FILES=$FILES:q
-  LBUFFER="${LBUFFER%% #} $FILES"
-  zle redisplay
-}
-zle     -N   fzf-file-widget
-bindkey '^T' fzf-file-widget
-
-# ALT-C - cd into the selected directory
-fzf-cd-widget() {
-  cd "${$(find * -path '*/\.*' -prune \
-          -o -type d -print 2> /dev/null | fzf):-.}"
-  zle reset-prompt
-}
-zle     -N    fzf-cd-widget
-bindkey '\ec' fzf-cd-widget
-
-# CTRL-R - Paste the selected command from history into the command line
-fzf-history-widget() {
-  LBUFFER=$(history | fzf +s | sed "s/ *[0-9]* *//")
-  zle redisplay
-}
-zle     -N   fzf-history-widget
-bindkey '^R' fzf-history-widget
-```
+The source code can be found in `~/.fzf.zsh`.
 
 Auto-completion
 ---------------
