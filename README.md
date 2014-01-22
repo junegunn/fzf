@@ -51,14 +51,19 @@ Usage
 ```
 usage: fzf [options]
 
-    -m, --multi      Enable multi-select
-    -x, --extended   Extended-search mode
-    -q, --query=STR  Initial query
-    -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
-    +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
-    -i               Case-insensitive match (default: smart-case match)
-    +i               Case-sensitive match
-    +c, --no-color   Disable colors
+  Options
+    -m, --multi          Enable multi-select
+    -x, --extended       Extended-search mode
+    -q, --query=STR      Initial query
+    -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
+    +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
+    -i                   Case-insensitive match (default: smart-case match)
+    +i                   Case-sensitive match
+    +c, --no-color       Disable colors
+
+  Environment variables
+    FZF_DEFAULT_COMMAND  Default command to use when input is tty
+    FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
@@ -315,10 +320,10 @@ is less than the limit which is by default 1000, in order to avoid the cost of
 sorting a large list and limit the response time of the query.
 
 This limit can be adjusted with `-s` option, or with the environment variable
-`FZF_DEFAULT_SORT`.
+`FZF_DEFAULT_OPTS`.
 
 ```sh
-export FZF_DEFAULT_SORT=10000
+export FZF_DEFAULT_OPTS="--sort 20000"
 ```
 
 License

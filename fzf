@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.6.1 (December 28, 2013)
+# Version: 0.6.2-devel (January 22, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -42,7 +42,7 @@ require 'set'
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :multi, :query
+  attr_reader :rxflag, :sort, :color, :multi, :query, :extended
 
   class AtomicVar
     def initialize value
@@ -68,23 +68,32 @@ class FZF
   end
 
   def initialize argv, source = $stdin
-    @rxflag = nil
-    @sort   = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
-    @color  = true
-    @multi  = false
-    @xmode  = false
+    @rxflag   = nil
+    @sort     = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
+    @color    = true
+    @multi    = false
+    @extended = false
 
-    argv = argv.dup
+    argv =
+      if opts = ENV['FZF_DEFAULT_OPTS']
+        require 'shellwords'
+        Shellwords.shellwords(opts) + argv
+      else
+        argv.dup
+      end
     while o = argv.shift
       case o
-      when '--version'        then version
-      when '-h', '--help'     then usage 0
-      when '-m', '--multi'    then @multi  = true
-      when '-x', '--extended' then @xmode  = true
-      when '-i'               then @rxflag = Regexp::IGNORECASE
-      when '+i'               then @rxflag = 0
-      when '+s', '--no-sort'  then @sort   = nil
-      when '+c', '--no-color' then @color  = false
+      when '--version'           then version
+      when '-h', '--help'        then usage 0
+      when '-m', '--multi'       then @multi    = true
+      when '+m', '--no-multi'    then @multi    = false
+      when '-x', '--extended'    then @extended = true
+      when '+x', '--no-extended' then @extended = false
+      when '-i'                  then @rxflag   = Regexp::IGNORECASE
+      when '+i'                  then @rxflag   = 0
+      when '-c', '--color'       then @color    = true
+      when '+c', '--no-color'    then @color    = false
+      when '+s', '--no-sort'     then @sort     = nil
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
         @query = AtomicVar.new query.dup
@@ -145,14 +154,19 @@ class FZF
     $stderr.puts message if message
     $stderr.puts %[usage: fzf [options]
 
-    -m, --multi      Enable multi-select
-    -x, --extended   Extended-search mode
-    -q, --query=STR  Initial query
-    -s, --sort=MAX   Maximum number of matched items to sort. Default: 1000
-    +s, --no-sort    Do not sort the result. Keep the sequence unchanged.
-    -i               Case-insensitive match (default: smart-case match)
-    +i               Case-sensitive match
-    +c, --no-color   Disable colors]
+  Options
+    -m, --multi          Enable multi-select
+    -x, --extended       Extended-search mode
+    -q, --query=STR      Initial query
+    -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
+    +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
+    -i                   Case-insensitive match (default: smart-case match)
+    +i                   Case-sensitive match
+    +c, --no-color       Disable colors
+
+  Environment variables
+    FZF_DEFAULT_COMMAND  Default command to use when input is tty
+    FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
     exit x
   end
 
@@ -526,7 +540,7 @@ class FZF
   end
 
   def start_search
-    matcher  = (@xmode ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
+    matcher  = (@extended ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
     searcher = Thread.new {
       lists   = []
       events  = {}
