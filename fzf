@@ -40,6 +40,14 @@ require 'thread'
 require 'curses'
 require 'set'
 
+unless String.method_defined? :force_encoding
+  class String
+    def force_encoding *arg
+      self
+    end
+  end
+end
+
 class FZF
   C = Curses
   attr_reader :rxflag, :sort, :color, :multi, :query, :extended
@@ -110,7 +118,7 @@ class FZF
       end
     end
 
-    @source   = source
+    @source   = source.clone
     @mtx      = Mutex.new
     @cv       = ConditionVariable.new
     @events   = {}
@@ -463,6 +471,8 @@ class FZF
 
   def init_screen
     C.init_screen
+    C.mousemask C::BUTTON1_CLICKED | C::BUTTON2_CLICKED
+    C.stdscr.keypad(true)
     C.start_color
     dbg =
       if C.respond_to?(:use_default_colors)
@@ -684,6 +694,7 @@ class FZF
     got = nil
     begin
       tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
+      $stdin.reopen(tty)
       input   = @query.get.dup
       cursor  = input.length
       backword = proc {
@@ -706,8 +717,8 @@ class FZF
           backword.call
           input = input[0...cursor] + input[pcursor..-1]
         },
-        127 => proc { input[cursor -= 1] = '' if cursor > 0 },
-        9   => proc { |o|
+        ctrl(:h) => proc { input[cursor -= 1] = '' if cursor > 0 },
+        ctrl(:i) => proc { |o|
           if @multi && sel = pick
             if @selects.has_key? sel
               @selects.delete sel
@@ -716,57 +727,77 @@ class FZF
             end
             @vcursor.set { |v|
               @vcursors << v
-              v + (o == :stab ? 1 : -1)
+              v + (o == C::KEY_BTAB ? 1 : -1)
             }
             update_list false
           end
         },
-        :left  => proc { cursor = [0, cursor - 1].max; nil },
-        :right => proc { cursor = [input.length, cursor + 1].min; nil },
+        ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
+        ctrl(:f) => proc { cursor = [input.length, cursor + 1].min; nil },
         :alt_b => proc { backword.call; nil },
         :alt_f => proc {
           cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
           nil
         },
       }
-      actions[ctrl(:b)] = actions[:left]
-      actions[ctrl(:f)] = actions[:right]
-      actions[ctrl(:h)] = actions[127]
-      actions[ctrl(:n)] = actions[ctrl(:j)]
-      actions[ctrl(:p)] = actions[ctrl(:k)]
-      actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
-      actions[:stab]    = actions[9]
+      actions[C::KEY_LEFT]  = actions[ctrl(:b)]
+      actions[C::KEY_RIGHT] = actions[ctrl(:f)]
+      actions[127]          = actions[ctrl(:h)]
+      actions[C::KEY_DOWN]  = actions[ctrl(:n)] = actions[ctrl(:j)]
+      actions[C::KEY_UP]    = actions[ctrl(:p)] = actions[ctrl(:k)]
+      actions[ctrl(:q)]     = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
+      actions[C::KEY_BTAB]  = actions[ctrl(:i)]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
       while true
         @cursor_x.set cursor
         render { print_input }
 
-        ord = tty.getc.ord
-        ord =
-          case ord = (tty.read_nonblock(1).ord rescue :esc)
-          when 91
-            case (tty.read_nonblock(1).ord rescue nil)
-            when 68 then :left
-            when 67 then :right
-            when 66 then ctrl(:j)
-            when 65 then ctrl(:k)
-            when 90 then :stab
-            else         next
-            end
-          when 'b'.ord then :alt_b
-          when 'f'.ord then :alt_f
-          when :esc    then :esc
-          else              next
-          end if ord == 27
+        C.stdscr.timeout = -1
+        ch = C.getch
 
-        upd = actions.fetch(ord, proc { |ord|
-          char = [ord].pack('U*')
-          if char =~ /[[:print:]]/
-            input.insert cursor, char
+        case ch
+        when C::KEY_MOUSE
+          if m = C.getmouse
+            # TODO: unicode
+            p m.bstate
+          end
+        when 27
+          C.stdscr.timeout = 0
+          ch =
+            case ch2 = C.getch
+            when 'b' then :alt_b
+            when 'f' then :alt_f
+            when nil then :esc
+            else
+              ch2
+            end
+        when Fixnum
+          bytes = 1
+          if (ch >> 7) == 1
+            6.downto(2) do |shift|
+              if (ch >> shift) & 0x1 == 0
+                break
+              end
+              bytes += 1
+            end
+          end
+          if bytes > 1
+            chs = [ch]
+            (bytes - 1).times do
+              chs << C.getch
+            end
+            # TODO: ruby 1.8
+            ch = chs.pack('C*').force_encoding('UTF-8')
+          end
+        end
+
+        upd = actions.fetch(ch, proc { |chr|
+          if chr =~ /[[:print:]]/
+            input.insert cursor, chr
             cursor += 1
           end
-        }).call(ord)
+        }).call(ch)
 
         # Dispatch key event
         emit(:key) { [@query.set(input.dup), cursor] } if upd
