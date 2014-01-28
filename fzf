@@ -701,6 +701,20 @@ class FZF
     update_list false
   end
 
+  def num_unicode_bytes chr
+    # http://en.wikipedia.org/wiki/UTF-8
+    if chr & 0b10000000 > 0
+      bytes = 0
+      7.downto(2) do |shift|
+        break if (chr >> shift) & 0x1 == 0
+        bytes += 1
+      end
+      bytes
+    else
+      1
+    end
+  end
+
   def start_loop
     got = nil
     begin
@@ -797,22 +811,19 @@ class FZF
               ch2
             end
         when Fixnum
-          bytes = 1
-          if (ch >> 7) == 1
-            6.downto(2) do |shift|
-              if (ch >> shift) & 0x1 == 0
-                break
-              end
-              bytes += 1
-            end
-          end
-          if bytes > 1
+          # Ruby 1.8
+          if (ch.chr rescue nil) && ch.chr =~ /[[:print:]]/
+            ch = ch.chr
+          else
             chs = [ch]
-            (bytes - 1).times do
+            (num_unicode_bytes(ch) - 1).times do |i|
               chs << C.getch
             end
-            # TODO: ruby 1.8
-            ch = chs.pack('C*').force_encoding('UTF-8')
+
+            # UTF-8 TODO Ruby 1.8
+            if chs.length > 1
+              ch = chs.pack('C*').force_encoding('UTF-8')
+            end
           end
         end
 
