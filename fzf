@@ -471,7 +471,10 @@ class FZF
 
   def init_screen
     C.init_screen
-    C.mousemask C::BUTTON1_CLICKED | C::BUTTON2_CLICKED
+    if ENV.fetch('FZF_MOUSE_ENABLED', '1') == '1'
+      C.mousemask C::BUTTON1_CLICKED | C::BUTTON1_DOUBLE_CLICKED |
+                  C::BUTTON2_PRESSED | C::BUTTON4_PRESSED
+    end
     C.stdscr.keypad(true)
     C.start_color
     dbg =
@@ -482,6 +485,7 @@ class FZF
         C::COLOR_BLACK
       end
     C.raw
+    C.nonl
     C.noecho
 
     if @color
@@ -537,6 +541,7 @@ class FZF
           exit 1
         end
       else
+        $stdin.reopen IO.open(IO.sysopen('/dev/tty'), 'r')
         @source
       end
 
@@ -675,6 +680,7 @@ class FZF
   def start_renderer
     Thread.new do
       begin
+        refresh
         while blk = @queue.shift
           blk.call
           refresh
@@ -690,11 +696,14 @@ class FZF
     nil
   end
 
+  def vselect &prc
+    @vcursor.set { |v| @vcursors << v; prc.call v }
+    update_list false
+  end
+
   def start_loop
     got = nil
     begin
-      tty     = IO.open(IO.sysopen('/dev/tty'), 'r')
-      $stdin.reopen(tty)
       input   = @query.get.dup
       cursor  = input.length
       backword = proc {
@@ -710,8 +719,8 @@ class FZF
         ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
         ctrl(:a) => proc { cursor = 0; nil },
         ctrl(:e) => proc { cursor = input.length; nil },
-        ctrl(:j) => proc { @vcursor.set { |v| @vcursors << v; v - 1 }; update_list false },
-        ctrl(:k) => proc { @vcursor.set { |v| @vcursors << v; v + 1 }; update_list false },
+        ctrl(:j) => proc { vselect { |v| v - 1 } },
+        ctrl(:k) => proc { vselect { |v| v + 1 } },
         ctrl(:w) => proc {
           pcursor = cursor
           backword.call
@@ -725,11 +734,7 @@ class FZF
             else
               @selects[sel] = 1
             end
-            @vcursor.set { |v|
-              @vcursors << v
-              v + (o == C::KEY_BTAB ? 1 : -1)
-            }
-            update_list false
+            vselect { |v| v + (o == C::KEY_BTAB ? 1 : -1) }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
@@ -759,8 +764,27 @@ class FZF
         case ch
         when C::KEY_MOUSE
           if m = C.getmouse
-            # TODO: unicode
-            p m.bstate
+            case m.bstate
+            when C::BUTTON1_CLICKED
+              if m.y == cursor_y
+                cursor = [0, [input.length, m.x - 2].min].max
+              elsif m.x > 1 && m.y <= max_items
+                vselect { |v|
+                  tv = max_items - m.y - 1
+                  ch = ctrl(:i) if v == tv
+                  tv
+                }
+              end
+            when C::BUTTON1_DOUBLE_CLICKED
+              if m.x > 1 && m.x <= max_items
+                vselect { |v| max_items - m.y - 1 }
+                ch = ctrl(:m)
+              end
+            when 0x8000000, C::BUTTON2_PRESSED
+              ch = C::KEY_DOWN
+            when C::BUTTON4_PRESSED
+              ch = C::KEY_UP
+            end
           end
         when 27
           C.stdscr.timeout = 0
