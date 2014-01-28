@@ -748,7 +748,7 @@ class FZF
             else
               @selects[sel] = 1
             end
-            vselect { |v| v + (o == C::KEY_BTAB ? 1 : -1) }
+            vselect { |v| v + (o == C::KEY_BTAB ? 1 : -1) } unless o == :select
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
@@ -762,10 +762,10 @@ class FZF
       actions[C::KEY_LEFT]  = actions[ctrl(:b)]
       actions[C::KEY_RIGHT] = actions[ctrl(:f)]
       actions[127]          = actions[ctrl(:h)]
-      actions[C::KEY_DOWN]  = actions[ctrl(:n)] = actions[ctrl(:j)]
-      actions[C::KEY_UP]    = actions[ctrl(:p)] = actions[ctrl(:k)]
-      actions[ctrl(:q)]     = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
-      actions[C::KEY_BTAB]  = actions[ctrl(:i)]
+      actions[C::KEY_DOWN]  = actions[ctrl(:n)]    = actions[ctrl(:j)]
+      actions[C::KEY_UP]    = actions[ctrl(:p)]    = actions[ctrl(:k)]
+      actions[ctrl(:q)]     = actions[ctrl(:g)]    = actions[ctrl(:c)] = actions[:esc]
+      actions[:select]      = actions[C::KEY_BTAB] = actions[ctrl(:i)]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
       while true
@@ -781,11 +781,12 @@ class FZF
             case m.bstate
             when C::BUTTON1_CLICKED
               if m.y == cursor_y
+                # TODO Wide-characters
                 cursor = [0, [input.length, m.x - 2].min].max
               elsif m.x > 1 && m.y <= max_items
                 vselect { |v|
                   tv = max_items - m.y - 1
-                  ch = ctrl(:i) if v == tv
+                  ch = :select if v == tv
                   tv
                 }
               end
