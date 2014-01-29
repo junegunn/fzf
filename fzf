@@ -430,7 +430,7 @@ class FZF
   if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
     @@wrx = Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
     def width str
-      str.gsub(@@wrx, '  ').length
+      str.gsub(@@wrx, '  ').length rescue str.length
     end
 
     def trim str, len, left
