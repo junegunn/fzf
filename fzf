@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.6.2-devel (January 22, 2014)
+# Version: 0.7.0-devel (January 30, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -472,8 +472,8 @@ class FZF
   def init_screen
     C.init_screen
     if ENV.fetch('FZF_MOUSE_ENABLED', '1') == '1'
-      C.mousemask C::BUTTON1_CLICKED | C::BUTTON1_DOUBLE_CLICKED |
-                  C::BUTTON2_PRESSED | C::BUTTON4_PRESSED
+      C.mouseinterval 0
+      C.mousemask C::ALL_MOUSE_EVENTS
     end
     C.stdscr.keypad(true)
     C.start_color
@@ -748,7 +748,13 @@ class FZF
             else
               @selects[sel] = 1
             end
-            vselect { |v| v + (o == C::KEY_BTAB ? 1 : -1) } unless o == :select
+            vselect { |v|
+              v + case o
+                  when :select     then 0
+                  when C::KEY_BTAB then 1
+                  else -1
+                  end
+            }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
@@ -768,6 +774,7 @@ class FZF
       actions[:select]      = actions[C::KEY_BTAB] = actions[ctrl(:i)]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
+      pmv = nil
       while true
         @cursor_x.set cursor
         render { print_input }
@@ -778,26 +785,28 @@ class FZF
         case ch
         when C::KEY_MOUSE
           if m = C.getmouse
-            case m.bstate
-            when C::BUTTON1_CLICKED
+            st = m.bstate
+            if ((st & C::BUTTON1_PRESSED) | (st & C::BUTTON1_RELEASED)) > 0
               if m.y == cursor_y
                 # TODO Wide-characters
                 cursor = [0, [input.length, m.x - 2].min].max
               elsif m.x > 1 && m.y <= max_items
                 vselect { |v|
                   tv = max_items - m.y - 1
-                  ch = :select if v == tv
+                  if st & C::BUTTON1_RELEASED > 0
+                    if (st & C::BUTTON_SHIFT) > 0
+                      ch = :select
+                    elsif pmv == tv
+                      ch = ctrl(:m)
+                    end
+                    pmv = tv
+                  end
                   tv
                 }
               end
-            when C::BUTTON1_DOUBLE_CLICKED
-              if m.x > 1 && m.x <= max_items
-                vselect { |v| max_items - m.y - 1 }
-                ch = ctrl(:m)
-              end
-            when 0x8000000, C::BUTTON2_PRESSED
+            elsif ((st & 0x8000000) | (st & C::BUTTON2_PRESSED)) > 0
               ch = C::KEY_DOWN
-            when C::BUTTON4_PRESSED
+            elsif (st & C::BUTTON4_PRESSED) > 0
               ch = C::KEY_UP
             end
           end
