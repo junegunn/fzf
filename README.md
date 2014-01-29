@@ -64,6 +64,7 @@ usage: fzf [options]
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
     FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")
+    FZF_MOUSE_ENABLED    Set to 0 to disable mouse
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
@@ -102,6 +103,9 @@ The following readline key bindings should also work as expected.
 
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
+
+You can also use mouse. Click on an item to select it or shift-click to select
+multiple items. Use mouse wheel to move the cursor up and down.
 
 ### Extended-search mode
 
