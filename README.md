@@ -60,11 +60,11 @@ usage: fzf [options]
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+        --no-mouse       Disable mouse
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
     FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")
-    FZF_MOUSE_ENABLED    Set to 0 to disable mouse
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the

@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.0-devel (January 30, 2014)
+# Version: 0.7.0 (January 30, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :multi, :query, :extended
+  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :extended
 
   class AtomicVar
     def initialize value
@@ -81,6 +81,7 @@ class FZF
     @color    = true
     @multi    = false
     @extended = false
+    @mouse    = true
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -101,6 +102,7 @@ class FZF
       when '+i'                  then @rxflag   = 0
       when '-c', '--color'       then @color    = true
       when '+c', '--no-color'    then @color    = false
+      when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
@@ -171,11 +173,11 @@ class FZF
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+        --no-mouse       Disable mouse
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
-    FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")
-    FZF_MOUSE_ENABLED    Set to 0 to disable mouse] + $/ + $/
+    FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
     exit x
   end
 
@@ -472,7 +474,7 @@ class FZF
 
   def init_screen
     C.init_screen
-    unless ENV.fetch('FZF_MOUSE_ENABLED', '1') == '0'
+    if @mouse
       C.mouseinterval 0
       C.mousemask C::ALL_MOUSE_EVENTS
     end
