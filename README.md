@@ -60,6 +60,7 @@ usage: fzf [options]
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+        --no-mouse       Disable mouse
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -102,6 +103,9 @@ The following readline key bindings should also work as expected.
 
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
+
+You can also use mouse. Click on an item to select it or shift-click to select
+multiple items. Use mouse wheel to move the cursor up and down.
 
 ### Extended-search mode
 
