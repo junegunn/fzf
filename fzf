@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.0 (January 30, 2014)
+# Version: 0.7.1 (January 31, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -142,7 +142,7 @@ class FZF
   def start
     $stdout.reopen($stderr)
 
-    init_screen
+    render { init_screen }
     start_reader
     start_renderer
     start_search
