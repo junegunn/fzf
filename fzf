@@ -7,13 +7,13 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.1 (January 31, 2014)
+# Version: 0.7.2-devel (February 1, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
 # License: MIT
 #
-# Copyright (c) 2013 Junegunn Choi
+# Copyright (c) 2014 Junegunn Choi
 #
 # MIT License
 #
@@ -683,7 +683,6 @@ class FZF
   def start_renderer
     Thread.new do
       begin
-        refresh
         while blk = @queue.shift
           blk.call
           refresh
@@ -766,6 +765,7 @@ class FZF
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
         ctrl(:f) => proc { cursor = [input.length, cursor + 1].min; nil },
+        ctrl(:l) => proc { render { C.clear; C.refresh }; update_list true },
         :alt_b => proc { backword.call; nil },
         :alt_f => proc {
           cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
