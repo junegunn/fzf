@@ -29,11 +29,13 @@ class TestFZF < MiniTest::Unit::TestCase
     fzf = FZF.new []
     assert_equal 20000, fzf.sort
 
-    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c --no-mouse'
+    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c --no-mouse -f "goodbye world"'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
                           fzf.query.get
+    assert_equal 'goodbye world',
+                          fzf.filter
     assert_equal true,    fzf.extended
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -42,42 +44,48 @@ class TestFZF < MiniTest::Unit::TestCase
 
   def test_option_parser
     # Long opts
-    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --extended --no-mouse]
+    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
+                     --filter=howdy --extended --no-mouse]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
     assert_equal false,   fzf.mouse
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
+    assert_equal 'howdy', fzf.filter
     assert_equal true,    fzf.extended
 
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
+                     --filter a --filter b
                      --no-sort -i --color --no-multi]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
     assert_equal true,    fzf.mouse
     assert_equal 1,       fzf.rxflag
+    assert_equal 'b',     fzf.filter
     assert_equal 'hello', fzf.query.get
     assert_equal false,   fzf.extended
 
     # Short opts
-    fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x]
+    fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fhowdy]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
+    assert_equal 'howdy', fzf.filter
     assert_equal true,    fzf.extended
 
     # Left-to-right
-    fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x
-                     -s 3000 -c +m -i -q world +x]
+    fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fgoodbye
+                     -s 3000 -c +m -i -q world +x -fworld]
     assert_equal 3000,    fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
     assert_equal 1,       fzf.rxflag
     assert_equal 'world', fzf.query.get
+    assert_equal 'world', fzf.filter
     assert_equal false,   fzf.extended
 
     fzf = FZF.new %w[--query hello +s -s 2000 --query=world]

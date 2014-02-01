@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.2-devel (February 1, 2014)
+# Version: 0.7.2 (February 2, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :extended
+  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -63,10 +63,8 @@ class FZF
     end
 
     def set value = nil
-      if block_given?
-        @mutex.synchronize { @value = yield @value }
-      else
-        @mutex.synchronize { @value = value }
+      @mutex.synchronize do
+        @value = block_given? ? yield(@value) : value
       end
     end
 
@@ -82,6 +80,7 @@ class FZF
     @multi    = false
     @extended = false
     @mouse    = true
+    @filter   = nil
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -109,6 +108,11 @@ class FZF
         @query = AtomicVar.new query.dup
       when /^-q(.*)$/, /^--query=(.*)$/
         @query = AtomicVar.new($1)
+      when '-f', '--filter'
+        usage 1, 'query string required' unless query = argv.shift
+        @filter = query
+      when /^-f(.*)$/, /^--filter=(.*)$/
+        @filter = $1
       when '-s', '--sort'
         usage 1, 'sort size required' unless sort = argv.shift
         usage 1, 'invalid sort size'  unless sort =~ /^[0-9]+$/
@@ -126,27 +130,44 @@ class FZF
     @events   = {}
     @new      = []
     @queue    = Queue.new
-    @query  ||= AtomicVar.new('')
-    @cursor_x = AtomicVar.new(@query.length)
-    @matches  = AtomicVar.new([])
-    @count    = AtomicVar.new(0)
-    @vcursor  = AtomicVar.new(0)
-    @vcursors = AtomicVar.new(Set.new)
-    @spinner  = AtomicVar.new('-\|/-\|/'.split(//))
-    @selects  = AtomicVar.new({}) # ordered >= 1.9
-    @main     = Thread.current
-    @stdout   = $stdout.clone
-    @plcount  = 0
+
+    unless @filter
+      @query  ||= AtomicVar.new('')
+      @cursor_x = AtomicVar.new(@query.length)
+      @matches  = AtomicVar.new([])
+      @count    = AtomicVar.new(0)
+      @vcursor  = AtomicVar.new(0)
+      @vcursors = AtomicVar.new(Set.new)
+      @spinner  = AtomicVar.new('-\|/-\|/'.split(//))
+      @selects  = AtomicVar.new({}) # ordered >= 1.9
+      @main     = Thread.current
+      @plcount  = 0
+    end
   end
 
   def start
-    $stdout.reopen($stderr)
+    if @filter
+      start_reader(false).join
+      filter_list @new
+    else
+      @stdout = $stdout.clone
+      $stdout.reopen($stderr)
 
-    init_screen
-    start_reader
-    start_renderer
-    start_search
-    start_loop
+      start_reader true
+      init_screen
+      start_renderer
+      start_search
+      start_loop
+    end
+  end
+
+  def filter_list list
+    matcher = (@extended ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
+    matches = matcher.match(list, @filter, '', '')
+    if @sort && matches.length <= @sort
+      matches = sort_by_rank(matches)
+    end
+    matches.each { |m| puts m.first }
   end
 
   def version
@@ -168,6 +189,7 @@ class FZF
     -m, --multi          Enable multi-select
     -x, --extended       Extended-search mode
     -q, --query=STR      Initial query
+    -f, --filter=STR     Filter mode. Do not start interactive finder.
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
     -i                   Case-insensitive match (default: smart-case match)
@@ -535,7 +557,7 @@ class FZF
     C.refresh
   end
 
-  def start_reader
+  def start_reader curses
     stream =
       if @source.tty?
         if default_command = ENV['FZF_DEFAULT_COMMAND']
@@ -546,7 +568,7 @@ class FZF
           exit 1
         end
       else
-        $stdin.reopen IO.open(IO.sysopen('/dev/tty'), 'r')
+        $stdin.reopen IO.open(IO.sysopen('/dev/tty'), 'r') if curses
         @source
       end
 
@@ -555,7 +577,7 @@ class FZF
         emit(:new) { @new << line.chomp }
       end
       emit(:loaded) { true }
-      @spinner.clear
+      @spinner.clear if curses
     end
   end
 

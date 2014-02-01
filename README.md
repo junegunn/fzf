@@ -55,6 +55,7 @@ usage: fzf [options]
     -m, --multi          Enable multi-select
     -x, --extended       Extended-search mode
     -q, --query=STR      Initial query
+    -f, --filter=STR     Filter mode. Do not start interactive finder.
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
     -i                   Case-insensitive match (default: smart-case match)
