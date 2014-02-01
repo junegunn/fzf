@@ -29,7 +29,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Not found"
   echo "Installing 'curses' gem ... "
-  /usr/bin/env gem install curses
+  /usr/bin/env gem install curses -v 1.0.0
   if [ $? -ne 0 ]; then
     echo "Failed to install 'curses' gem."
     echo "Try installing it as root: sudo gem install curses"
