@@ -142,7 +142,7 @@ class FZF
   def start
     $stdout.reopen($stderr)
 
-    render { init_screen }
+    init_screen
     start_reader
     start_renderer
     start_search
@@ -531,6 +531,8 @@ class FZF
         end | (bold ? C::A_BOLD : 0)
       end
     end
+
+    C.refresh
   end
 
   def start_reader
@@ -819,13 +821,20 @@ class FZF
           end
         when 27
           C.stdscr.timeout = 0
-          ch =
+          ch = # Typeahead arrow keys
             case ch2 = C.getch
-            when 'b' then :alt_b
-            when 'f' then :alt_f
-            when nil then :esc
-            else
-              ch2
+            when '[', 91
+              case ch3 = C.getch
+              when 'D', 68 then ctrl(:b)
+              when 'C', 67 then ctrl(:f)
+              when 'B', 66 then ctrl(:j)
+              when 'A', 65 then ctrl(:k)
+              else ch3
+              end
+            when 'b',  98 then :alt_b
+            when 'f', 102 then :alt_f
+            when nil      then :esc
+            else ch2
             end
         end
 
