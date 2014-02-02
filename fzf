@@ -642,11 +642,11 @@ class FZF
                              matcher.match(list, q, q[0, cx], q[cx..-1]))
               end
               next if skip
-              matches = fcache[q] = @sort ? found : found.reverse
-            end
-
-            if !empty && @sort && matches.length <= @sort
-              matches = sort_by_rank(matches)
+              matches = @sort ? found : found.reverse
+              if !empty && @sort && matches.length <= @sort
+                matches = sort_by_rank(matches)
+              end
+              fcache[q] = matches
             end
 
             # Atomic update
