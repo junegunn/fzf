@@ -102,6 +102,7 @@ bind '"\er": redraw-current-line'
 __fsel() {
   find * -path '*/\.*' -prune \
     -o -type f -print \
+    -o -type d -print \
     -o -type l -print 2> /dev/null | fzf -m | while read item; do
     printf '%q ' "$item"
   done
@@ -125,6 +126,7 @@ fzf-file-widget() {
   FILES=($(
     find * -path '*/\.*' -prune \
     -o -type f -print \
+    -o -type d -print \
     -o -type l -print 2> /dev/null | fzf -m))
   unset IFS
   FILES=$FILES:q
