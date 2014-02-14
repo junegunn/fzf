@@ -95,6 +95,8 @@ EOF
       cat >> $src << "EOF"
 # Key bindings
 # ------------
+if [[ $- =~ i ]]; then
+
 # Required to refresh the prompt after fzf
 bind '"\er": redraw-current-line'
 
@@ -113,6 +115,7 @@ bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
 # CTRL-R - Paste the selected command from history into the command line
 bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 
+fi
 EOF
     else
       cat >> $src << "EOF"
