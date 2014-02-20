@@ -514,7 +514,7 @@ class FZF
     C.noecho
 
     if @color
-      if C.can_change_color? && ENV['TERM'].to_s =~ /256/
+      if ENV['TERM'].to_s =~ /256/
         C.init_pair 1, 110, dbg
         C.init_pair 2, 108, dbg
         C.init_pair 3, 254, 236
