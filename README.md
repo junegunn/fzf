@@ -32,18 +32,14 @@ The script will setup:
 
 ### Install as Vim plugin
 
-You can use any Vim plugin manager to install fzf for Vim. If you don't use one,
-I recommend you try [vim-plug](https://github.com/junegunn/vim-plug).
+Once you have cloned the repository, add the following line to your .vimrc.
 
-1. [Install vim-plug](https://github.com/junegunn/vim-plug#usage)
-2. Edit your .vimrc
+```vim
+set rtp+=~/.fzf
+```
 
-        call plug#begin()
-        Plug 'junegunn/fzf'
-        " ...
-        call plug#end()
-
-3. Run `:PlugInstall`
+Or you may use any Vim plugin manager, such as
+[vim-plug](https://github.com/junegunn/vim-plug).
 
 Usage
 -----
