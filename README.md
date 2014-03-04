@@ -50,6 +50,7 @@ usage: fzf [options]
   Options
     -m, --multi          Enable multi-select
     -x, --extended       Extended-search mode
+    -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
@@ -119,6 +120,9 @@ such as: `^music .mp3$ sbtrkt !rmx`
 | `!rmx`   | Items that do not match `rmx`    | inverse-fuzzy-match  |
 | `'wild`  | Items that include `wild`        | exact-match (quoted) |
 | `!'fire` | Items that do not include `fire` | inverse-exact-match  |
+
+If you don't need fuzzy matching and do not wish to "quote" every word, start
+fzf with `-e` or `--extended-exact` option.
 
 Useful examples
 ---------------

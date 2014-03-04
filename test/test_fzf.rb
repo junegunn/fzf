@@ -36,7 +36,7 @@ class TestFZF < MiniTest::Unit::TestCase
                           fzf.query.get
     assert_equal 'goodbye world',
                           fzf.filter
-    assert_equal true,    fzf.extended
+    assert_equal :fuzzy,  fzf.extended
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
     assert_equal false,   fzf.mouse
@@ -45,7 +45,7 @@ class TestFZF < MiniTest::Unit::TestCase
   def test_option_parser
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
-                     --filter=howdy --extended --no-mouse]
+                     --filter=howdy --extended-exact --no-mouse]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -53,7 +53,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
     assert_equal 'howdy', fzf.filter
-    assert_equal true,    fzf.extended
+    assert_equal :exact,  fzf.extended
 
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
                      --filter a --filter b
@@ -65,7 +65,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 1,       fzf.rxflag
     assert_equal 'b',     fzf.filter
     assert_equal 'hello', fzf.query.get
-    assert_equal false,   fzf.extended
+    assert_equal nil,     fzf.extended
 
     # Short opts
     fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fhowdy]
@@ -75,7 +75,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
     assert_equal 'howdy', fzf.filter
-    assert_equal true,    fzf.extended
+    assert_equal :fuzzy,  fzf.extended
 
     # Left-to-right
     fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fgoodbye
@@ -86,7 +86,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 1,       fzf.rxflag
     assert_equal 'world', fzf.query.get
     assert_equal 'world', fzf.filter
-    assert_equal false,   fzf.extended
+    assert_equal nil,     fzf.extended
 
     fzf = FZF.new %w[--query hello +s -s 2000 --query=world]
     assert_equal 2000,    fzf.sort
@@ -376,6 +376,25 @@ class TestFZF < MiniTest::Unit::TestCase
        ["___01___", [[3, 5], [0, 2]]],
        ["____0_1",  [[4, 7], [0, 2]]]],
       FZF.new([]).sort_by_rank(xmatcher.match(list, '01 __', '', '')))
+  end
+
+  def test_extended_exact_mode
+    exact = FZF::ExtendedFuzzyMatcher.new Regexp::IGNORECASE, :exact
+    fuzzy = FZF::ExtendedFuzzyMatcher.new Regexp::IGNORECASE, :fuzzy
+    list = %w[
+      extended-exact-mode-not-fuzzy
+      extended'-fuzzy-mode
+    ]
+    assert_equal 2, fuzzy.match(list, 'extended', '', '').length
+    assert_equal 2, fuzzy.match(list, 'mode extended', '', '').length
+    assert_equal 2, fuzzy.match(list, 'xtndd', '', '').length
+    assert_equal 2, fuzzy.match(list, "'-fuzzy", '', '').length
+
+    assert_equal 2, exact.match(list, 'extended', '', '').length
+    assert_equal 2, exact.match(list, 'mode extended', '', '').length
+    assert_equal 0, exact.match(list, 'xtndd', '', '').length
+    assert_equal 1, exact.match(list, "'-fuzzy", '', '').length
+    assert_equal 2, exact.match(list, "-fuzzy", '', '').length
   end
 
   if RUBY_PLATFORM =~ /darwin/

@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.3 (February 20, 2014)
+# Version: 0.7.3 (March 4, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -78,7 +78,7 @@ class FZF
     @sort     = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
     @color    = true
     @multi    = false
-    @extended = false
+    @extended = nil
     @mouse    = true
     @filter   = nil
 
@@ -95,8 +95,8 @@ class FZF
       when '-h', '--help'        then usage 0
       when '-m', '--multi'       then @multi    = true
       when '+m', '--no-multi'    then @multi    = false
-      when '-x', '--extended'    then @extended = true
-      when '+x', '--no-extended' then @extended = false
+      when '-x', '--extended'    then @extended = :fuzzy
+      when '+x', '--no-extended' then @extended = nil
       when '-i'                  then @rxflag   = Regexp::IGNORECASE
       when '+i'                  then @rxflag   = 0
       when '-c', '--color'       then @color    = true
@@ -119,6 +119,8 @@ class FZF
         @sort = sort.to_i
       when /^-s([0-9]+)$/, /^--sort=([0-9]+)$/
         @sort = $1.to_i
+      when '-e', '--extended-exact'    then @extended = :exact
+      when '+e', '--no-extended-exact' then @extended = nil
       else
         usage 1, "illegal option: #{o}"
       end
@@ -162,12 +164,19 @@ class FZF
   end
 
   def filter_list list
-    matcher = (@extended ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
-    matches = matcher.match(list, @filter, '', '')
+    matches = get_matcher.match(list, @filter, '', '')
     if @sort && matches.length <= @sort
       matches = sort_by_rank(matches)
     end
     matches.each { |m| puts m.first }
+  end
+
+  def get_matcher
+    if @extended
+      ExtendedFuzzyMatcher.new @rxflag, @extended
+    else
+      FuzzyMatcher.new @rxflag
+    end
   end
 
   def version
@@ -188,6 +197,7 @@ class FZF
   Options
     -m, --multi          Enable multi-select
     -x, --extended       Extended-search mode
+    -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
@@ -582,7 +592,7 @@ class FZF
   end
 
   def start_search
-    matcher  = (@extended ? ExtendedFuzzyMatcher : FuzzyMatcher).new @rxflag
+    matcher  = get_matcher
     searcher = Thread.new {
       lists   = []
       events  = {}
@@ -952,9 +962,10 @@ class FZF
   end
 
   class ExtendedFuzzyMatcher < FuzzyMatcher
-    def initialize rxflag
-      super
+    def initialize rxflag, mode = :fuzzy
+      super rxflag
       @regexps = {}
+      @mode = mode
     end
 
     def empty? q
@@ -977,8 +988,11 @@ class FZF
             when /^\^(.*)\$$/
               Regexp.new('^' << sanitize(Regexp.escape($1)) << '$', rxflag_for(w))
             when /^'/
-              w.length > 1 ?
-                Regexp.new(sanitize(Regexp.escape(w[1..-1])), rxflag_for(w)) : nil
+              if @mode == :fuzzy && w.length > 1
+                exact_regex w[1..-1]
+              elsif @mode == :exact
+                exact_regex w
+              end
             when /^\^/
               w.length > 1 ?
                 Regexp.new('^' << sanitize(Regexp.escape(w[1..-1])), rxflag_for(w)) : nil
@@ -986,9 +1000,13 @@ class FZF
               w.length > 1 ?
                 Regexp.new(sanitize(Regexp.escape(w[0..-2])) << '$', rxflag_for(w)) : nil
             else
-              fuzzy_regex w
+              @mode == :fuzzy ? fuzzy_regex(w) : exact_regex(w)
             end, invert ]
       }.select { |pair| pair.first }
+    end
+
+    def exact_regex w
+      Regexp.new(sanitize(Regexp.escape(w)), rxflag_for(w))
     end
 
     def match list, q, prefix, suffix
