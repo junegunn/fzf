@@ -82,7 +82,6 @@ class FZF
     @mouse    = true
     @filter   = nil
     @pending  = nil
-    @mutex    = Mutex.new
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -130,6 +129,7 @@ class FZF
 
     @source   = source.clone
     @mtx      = Mutex.new
+    @rmtx     = Mutex.new
     @cv       = ConditionVariable.new
     @events   = {}
     @new      = []
@@ -722,7 +722,7 @@ class FZF
     Thread.new do
       begin
         while blk = @queue.shift
-          @mutex.synchronize do
+          @rmtx.synchronize do
             blk.call
             refresh
           end
@@ -780,7 +780,7 @@ class FZF
   end
 
   def getch_nb
-    @mutex.synchronize { C.getch }
+    @rmtx.synchronize { C.getch }
   end
 
   def getch
@@ -875,7 +875,7 @@ class FZF
 
         case ch = getch
         when C::KEY_MOUSE
-          if m = @mutex.synchronize { C.getmouse }
+          if m = C.getmouse
             st = m.bstate
             if test_mouse(st, C::BUTTON1_PRESSED, C::BUTTON1_RELEASED)
               if m.y == cursor_y
