@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.3 (March 4, 2014)
+# Version: 0.7.3 (March 5, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -81,6 +81,7 @@ class FZF
     @extended = nil
     @mouse    = true
     @filter   = nil
+    @pending  = nil
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -755,6 +756,49 @@ class FZF
     states.any? { |s| s & st > 0 }
   end
 
+  def to_printable ch
+    if ch.is_a?(Fixnum)
+      # Ruby 1.8
+      if (ch.chr rescue '') =~ /[[:print:]]/
+        ch = ch.chr
+      elsif (nch = num_unicode_bytes(ch)) > 1
+        chs = [ch]
+        (nch - 1).times do |i|
+          chs << C.getch
+        end
+        # UTF-8 TODO Ruby 1.8
+        ch = chs.pack('C*').force_encoding('UTF-8')
+      end
+    end
+
+    ch.is_a?(String) && ch =~ /[[:print:]]/ && ch
+  end
+
+  def getch
+    if pending = @pending
+      @pending = nil
+      return pending
+    end
+
+    C.stdscr.timeout = -1
+    c = C.getch
+    if ch = to_printable(c)
+      chs = [ch]
+      C.stdscr.timeout = 0
+      while c = C.getch
+        if ch = to_printable(c)
+          chs << ch
+        else
+          @pending = c
+          break
+        end
+      end
+      chs
+    else
+      c
+    end
+  end
+
   def start_loop
     got = nil
     begin
@@ -820,10 +864,7 @@ class FZF
         @cursor_x.set cursor
         render { print_input }
 
-        C.stdscr.timeout = -1
-        ch = C.getch
-
-        case ch
+        case ch = getch
         when C::KEY_MOUSE
           if m = C.getmouse
             st = m.bstate
@@ -871,23 +912,9 @@ class FZF
         end
 
         upd = actions.fetch(ch, proc { |ch|
-          if ch.is_a?(Fixnum)
-            # Ruby 1.8
-            if (ch.chr rescue '') =~ /[[:print:]]/
-              ch = ch.chr
-            elsif (nch = num_unicode_bytes(ch)) > 1
-              chs = [ch]
-              (nch - 1).times do |i|
-                chs << C.getch
-              end
-              # UTF-8 TODO Ruby 1.8
-              ch = chs.pack('C*').force_encoding('UTF-8')
-            end
-          end
-
-          if ch.is_a?(String) && ch =~ /[[:print:]]/
-            input.insert cursor, ch
-            cursor += 1
+          if ch.is_a? Array
+            input.insert cursor, ch.join
+            cursor += ch.length
           end
         }).call(ch)
 
