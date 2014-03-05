@@ -462,7 +462,9 @@ class FZF
     }
   end
 
-  if RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join > '001009'
+  AFTER_1_9 = RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join >= '001009'
+
+  if AFTER_1_9
     @@wrx = Regexp.new '\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}'
     def width str
       str.gsub(@@wrx, '  ').length rescue str.length
@@ -784,8 +786,8 @@ class FZF
     c = C.getch
     if ch = to_printable(c)
       chs = [ch]
-      C.stdscr.timeout = 0
-      while c = C.getch
+      C.stdscr.timeout = 0 if AFTER_1_9
+      while AFTER_1_9 && c = C.getch
         if ch = to_printable(c)
           chs << ch
         else
