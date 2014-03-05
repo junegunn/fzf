@@ -82,6 +82,7 @@ class FZF
     @mouse    = true
     @filter   = nil
     @pending  = nil
+    @mutex    = Mutex.new
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -721,8 +722,10 @@ class FZF
     Thread.new do
       begin
         while blk = @queue.shift
-          blk.call
-          refresh
+          @mutex.synchronize do
+            blk.call
+            refresh
+          end
         end
       rescue Exception => e
         @main.raise e
@@ -766,7 +769,7 @@ class FZF
       elsif (nch = num_unicode_bytes(ch)) > 1
         chs = [ch]
         (nch - 1).times do |i|
-          chs << C.getch
+          chs << getch_nb
         end
         # UTF-8 TODO Ruby 1.8
         ch = chs.pack('C*').force_encoding('UTF-8')
@@ -774,6 +777,10 @@ class FZF
     end
 
     ch.is_a?(String) && ch =~ /[[:print:]]/ && ch
+  end
+
+  def getch_nb
+    @mutex.synchronize { C.getch }
   end
 
   def getch
@@ -784,10 +791,10 @@ class FZF
 
     C.stdscr.timeout = -1
     c = C.getch
+    C.stdscr.timeout = 0
     if ch = to_printable(c)
       chs = [ch]
-      C.stdscr.timeout = 0 if AFTER_1_9
-      while AFTER_1_9 && c = C.getch
+      while AFTER_1_9 && c = getch_nb
         if ch = to_printable(c)
           chs << ch
         else
@@ -868,7 +875,7 @@ class FZF
 
         case ch = getch
         when C::KEY_MOUSE
-          if m = C.getmouse
+          if m = @mutex.synchronize { C.getmouse }
             st = m.bstate
             if test_mouse(st, C::BUTTON1_PRESSED, C::BUTTON1_RELEASED)
               if m.y == cursor_y
@@ -897,9 +904,9 @@ class FZF
         when 27
           C.stdscr.timeout = 0
           ch = # Typeahead arrow keys
-            case ch2 = C.getch
+            case ch2 = getch_nb
             when '[', 91
-              case ch3 = C.getch
+              case ch3 = getch_nb
               when 'D', 68 then ctrl(:b)
               when 'C', 67 then ctrl(:f)
               when 'B', 66 then ctrl(:j)
