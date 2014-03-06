@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :multi, :query, :filter, :extended
+  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -78,6 +78,7 @@ class FZF
     @sort     = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
     @color    = true
     @multi    = false
+    @mouse    = true
     @extended = nil
     @filter   = nil
 
@@ -100,6 +101,7 @@ class FZF
       when '+i'                  then @rxflag   = 0
       when '-c', '--color'       then @color    = true
       when '+c', '--no-color'    then @color    = false
+      when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
@@ -204,6 +206,7 @@ class FZF
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+        --no-mouse       Disable mouse
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -506,6 +509,7 @@ class FZF
 
   def init_screen
     C.init_screen
+    C.mousemask C::ALL_MOUSE_EVENTS if @mouse
     C.start_color
     dbg =
       if C.respond_to?(:use_default_colors)
@@ -744,6 +748,29 @@ class FZF
     end
   end
 
+  def read_nb chars = 1, default = nil
+    @tty.read_nonblock(chars).ord rescue default
+  end
+
+  def get_mouse
+    case ord = read_nb
+    when 32, 36,  # mouse-down / shift-mouse-down
+         35, 39   # mouse-up / shift-mouse-up
+      x = read_nb - 33
+      y = read_nb - 33
+      { :event => (ord % 2 == 0 ? :click : :release),
+        :x => x, :y => y, :shift => ord >= 36 }
+    when 96, 100, # scroll-up / shift-scroll-up
+         97, 101  # scroll-down / shift-scroll-down
+      read_nb(2)
+      { :event => :scroll, :diff => (ord % 2 == 0 ? -1 : 1), :shift => ord >= 100 }
+    else
+      # e.g. 40, 43, 104, 105
+      read_nb(2)
+      nil
+    end
+  end
+
   def get_input actions
     @tty ||= IO.open(IO.sysopen('/dev/tty'), 'r')
 
@@ -776,21 +803,24 @@ class FZF
         end
 
       ord =
-        case ord = (@tty.read_nonblock(1).ord rescue :esc)
+        case ord = read_nb(1, :esc)
         when 91
-          case (@tty.read_nonblock(1).ord rescue nil)
+          case read_nb(1, nil)
           when 68 then ctrl(:b)
           when 67 then ctrl(:f)
           when 66 then ctrl(:j)
           when 65 then ctrl(:k)
           when 90 then :stab
-          else         next
+          when 77
+            get_mouse
           end
         when 'b',  98 then :alt_b
         when 'f', 102 then :alt_f
         when :esc     then :esc
         else          next
         end if ord == 27
+
+      return ord if ord.nil? || ord.is_a?(Hash)
 
       if actions.has_key?(ord)
         if str.empty?
@@ -805,6 +835,32 @@ class FZF
         end
         str << ord if ord =~ /[[:print:]]/
       end
+    end
+  end
+
+  class MouseEvent
+    DOUBLE_CLICK_INTERVAL = 0.5
+
+    attr_reader :v
+
+    def initialize v = nil
+      @c = 0
+      @v = v
+      @t = Time.at 0
+    end
+
+    def v= v
+      @c = (@v == v && within?) ? @c + 1 : 0
+      @v = v
+      @t = Time.now
+    end
+
+    def double? v
+      @c == 1 && @v == v && within?
+    end
+
+    def within?
+      (Time.now - @t) < DOUBLE_CLICK_INTERVAL
     end
   end
 
@@ -841,7 +897,11 @@ class FZF
             else
               @selects[sel] = 1
             end
-            vselect { |v| v + (o == :stab ? 1 : -1) }
+            vselect { |v| v + case o
+                              when :stab then 1
+                              when :sclick then 0
+                              else -1
+                              end }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
@@ -860,14 +920,44 @@ class FZF
       actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
+      mouse = MouseEvent.new
       while true
         @cursor_x.set cursor
         render { print_input }
 
         if key = get_input(actions)
-          upd = actions.fetch(key, proc { |str|
-            input.insert cursor, str
-            cursor += str.length
+          upd = actions.fetch(key, proc { |val|
+            case val
+            when String
+              input.insert cursor, val
+              cursor += val.length
+            when Hash
+              event = val[:event]
+              case event
+              when :click, :release
+                x, y, shift = val.values_at :x, :y, :shift
+                if y == cursor_y
+                  cursor = [0, [input.length, x - 2].min].max
+                elsif x > 1 && y <= max_items
+                  tv = max_items - y - 1
+
+                  case event
+                  when :click
+                    vselect { |_| tv }
+                    actions[ctrl(:i)].call(:sclick) if shift
+                    mouse.v = tv
+                  when :release
+                    if !shift && mouse.double?(tv)
+                      actions[ctrl(:m)].call
+                    end
+                  end
+                end
+              when :scroll
+                diff, shift = val.values_at :diff, :shift
+                actions[ctrl(:i)].call(:sclick) if shift
+                actions[ctrl(diff > 0 ? :j : :k)].call
+              end
+            end
           }).call(key)
 
           # Dispatch key event

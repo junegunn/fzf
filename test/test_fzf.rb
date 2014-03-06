@@ -7,7 +7,6 @@ ENV['FZF_EXECUTABLE'] = '0'
 load 'fzf'
 
 class TestFZF < MiniTest::Unit::TestCase
-
   def setup
     ENV.delete 'FZF_DEFAULT_SORT'
     ENV.delete 'FZF_DEFAULT_OPTS'
@@ -20,6 +19,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false, fzf.multi
     assert_equal true,  fzf.color
     assert_equal nil,   fzf.rxflag
+    assert_equal true,  fzf.mouse
   end
 
   def test_environment_variables
@@ -28,7 +28,7 @@ class TestFZF < MiniTest::Unit::TestCase
     fzf = FZF.new []
     assert_equal 20000, fzf.sort
 
-    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c -f "goodbye world"'
+    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c --no-mouse -f "goodbye world"'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -38,15 +38,17 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal :fuzzy,  fzf.extended
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
+    assert_equal false,   fzf.mouse
   end
 
   def test_option_parser
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
-                     --filter=howdy --extended-exact]
+                     --filter=howdy --extended-exact --no-mouse]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
+    assert_equal false,   fzf.mouse
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
     assert_equal 'howdy', fzf.filter
@@ -58,6 +60,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
+    assert_equal true,    fzf.mouse
     assert_equal 1,       fzf.rxflag
     assert_equal 'b',     fzf.filter
     assert_equal 'hello', fzf.query.get
@@ -447,6 +450,22 @@ class TestFZF < MiniTest::Unit::TestCase
     line, offsets = fzf.convert_item item
     tokens        = fzf.format line, 80, offsets
     assert_equal [], tokens
+  end
+
+  def test_mouse_event
+    interval = FZF::MouseEvent::DOUBLE_CLICK_INTERVAL
+    me = FZF::MouseEvent.new nil
+    me.v = 10
+    assert_equal false, me.double?(10)
+    assert_equal false, me.double?(20)
+    me.v = 20
+    assert_equal false, me.double?(10)
+    assert_equal false, me.double?(20)
+    me.v = 20
+    assert_equal false, me.double?(10)
+    assert_equal true,  me.double?(20)
+    sleep interval
+    assert_equal false,  me.double?(20)
   end
 end
 
