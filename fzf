@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.7.3 (March 5, 2014)
+# Version: 0.8.0 (March 6, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :filter, :extended
+  attr_reader :rxflag, :sort, :color, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -79,9 +79,7 @@ class FZF
     @color    = true
     @multi    = false
     @extended = nil
-    @mouse    = true
     @filter   = nil
-    @pending  = nil
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -102,7 +100,6 @@ class FZF
       when '+i'                  then @rxflag   = 0
       when '-c', '--color'       then @color    = true
       when '+c', '--no-color'    then @color    = false
-      when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
@@ -129,11 +126,11 @@ class FZF
 
     @source   = source.clone
     @mtx      = Mutex.new
-    @rmtx     = Mutex.new
     @cv       = ConditionVariable.new
     @events   = {}
     @new      = []
     @queue    = Queue.new
+    @pending  = nil
 
     unless @filter
       @query  ||= AtomicVar.new('')
@@ -207,7 +204,6 @@ class FZF
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
-        --no-mouse       Disable mouse
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -510,11 +506,6 @@ class FZF
 
   def init_screen
     C.init_screen
-    if @mouse
-      C.mouseinterval 0
-      C.mousemask C::ALL_MOUSE_EVENTS
-    end
-    C.stdscr.keypad(true)
     C.start_color
     dbg =
       if C.respond_to?(:use_default_colors)
@@ -524,7 +515,6 @@ class FZF
         C::COLOR_BLACK
       end
     C.raw
-    C.nonl
     C.noecho
 
     if @color
@@ -582,7 +572,6 @@ class FZF
           exit 1
         end
       else
-        $stdin.reopen IO.open(IO.sysopen('/dev/tty'), 'r') if curses
         @source
       end
 
@@ -722,10 +711,8 @@ class FZF
     Thread.new do
       begin
         while blk = @queue.shift
-          @rmtx.synchronize do
-            blk.call
-            refresh
-          end
+          blk.call
+          refresh
         end
       rescue Exception => e
         @main.raise e
@@ -757,54 +744,67 @@ class FZF
     end
   end
 
-  def test_mouse st, *states
-    states.any? { |s| s & st > 0 }
-  end
+  def get_input actions
+    @tty ||= IO.open(IO.sysopen('/dev/tty'), 'r')
 
-  def to_printable ch
-    if ch.is_a?(Fixnum)
-      # Ruby 1.8
-      if (ch.chr rescue '') =~ /[[:print:]]/
-        ch = ch.chr
-      elsif (nch = num_unicode_bytes(ch)) > 1
-        chs = [ch]
-        (nch - 1).times do |i|
-          chs << getch_nb
-        end
-        # UTF-8 TODO Ruby 1.8
-        ch = chs.pack('C*').force_encoding('UTF-8')
-      end
-    end
-
-    ch.is_a?(String) && ch =~ /[[:print:]]/ && ch
-  end
-
-  def getch_nb
-    @rmtx.synchronize { C.getch }
-  end
-
-  def getch
     if pending = @pending
       @pending = nil
       return pending
     end
 
-    C.stdscr.timeout = -1
-    c = C.getch
-    C.stdscr.timeout = 0
-    if ch = to_printable(c)
-      chs = [ch]
-      while AFTER_1_9 && c = getch_nb
-        if ch = to_printable(c)
-          chs << ch
+    str = ''
+    while true
+      ord =
+        if str.empty?
+          @tty.getc.ord
         else
-          @pending = c
-          break
+          begin
+            ord = @tty.read_nonblock(1).ord
+            if (nb = num_unicode_bytes(ord)) > 1
+              ords = [ord]
+              (nb - 1).times do |_|
+                ords << @tty.read_nonblock(1).ord
+              end
+              # UTF-8 TODO Ruby 1.8
+              ords.pack('C*').force_encoding('UTF-8')
+            else
+              ord
+            end
+          rescue Exception
+            return str
+          end
         end
+
+      ord =
+        case ord = (@tty.read_nonblock(1).ord rescue :esc)
+        when 91
+          case (@tty.read_nonblock(1).ord rescue nil)
+          when 68 then ctrl(:b)
+          when 67 then ctrl(:f)
+          when 66 then ctrl(:j)
+          when 65 then ctrl(:k)
+          when 90 then :stab
+          else         next
+          end
+        when 'b',  98 then :alt_b
+        when 'f', 102 then :alt_f
+        when :esc     then :esc
+        else          next
+        end if ord == 27
+
+      if actions.has_key?(ord)
+        if str.empty?
+          return ord
+        else
+          @pending = ord
+          return str
+        end
+      else
+        unless ord.is_a? String
+          ord = [ord].pack('U*')
+        end
+        str << ord if ord =~ /[[:print:]]/
       end
-      chs
-    else
-      c
     end
   end
 
@@ -841,13 +841,7 @@ class FZF
             else
               @selects[sel] = 1
             end
-            vselect { |v|
-              v + case o
-                  when :select     then 0
-                  when C::KEY_BTAB then 1
-                  else -1
-                  end
-            }
+            vselect { |v| v + (o == :stab ? 1 : -1) }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
@@ -859,76 +853,26 @@ class FZF
           nil
         },
       }
-      actions[C::KEY_UP]        = actions[ctrl(:p)] = actions[ctrl(:k)]
-      actions[C::KEY_DOWN]      = actions[ctrl(:n)] = actions[ctrl(:j)]
-      actions[C::KEY_LEFT]      = actions[ctrl(:b)]
-      actions[C::KEY_RIGHT]     = actions[ctrl(:f)]
-      actions[C::KEY_BTAB]      = actions[:select]  = actions[ctrl(:i)]
-      actions[C::KEY_BACKSPACE] = actions[127]      = actions[ctrl(:h)]
+      actions[ctrl(:p)] = actions[ctrl(:k)]
+      actions[ctrl(:n)] = actions[ctrl(:j)]
+      actions[:stab]    = actions[ctrl(:i)]
+      actions[127]      = actions[ctrl(:h)]
       actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
-      pmv = nil
       while true
         @cursor_x.set cursor
         render { print_input }
 
-        case ch = getch
-        when C::KEY_MOUSE
-          if m = C.getmouse
-            st = m.bstate
-            if test_mouse(st, C::BUTTON1_PRESSED, C::BUTTON1_RELEASED)
-              if m.y == cursor_y
-                # TODO Wide-characters
-                cursor = [0, [input.length, m.x - 2].min].max
-              elsif m.x > 1 && m.y <= max_items
-                vselect { |v|
-                  tv = max_items - m.y - 1
-                  if test_mouse(st, C::BUTTON1_RELEASED)
-                    if test_mouse(st, C::BUTTON_SHIFT)
-                      ch = :select
-                    elsif pmv == tv
-                      ch = ctrl(:m)
-                    end
-                    pmv = tv
-                  end
-                  tv
-                }
-              end
-            elsif test_mouse(st, 0x8000000, C::BUTTON2_PRESSED)
-              ch = C::KEY_DOWN
-            elsif test_mouse(st, C::BUTTON4_PRESSED)
-              ch = C::KEY_UP
-            end
-          end
-        when 27
-          C.stdscr.timeout = 0
-          ch = # Typeahead arrow keys
-            case ch2 = getch_nb
-            when '[', 91
-              case ch3 = getch_nb
-              when 'D', 68 then ctrl(:b)
-              when 'C', 67 then ctrl(:f)
-              when 'B', 66 then ctrl(:j)
-              when 'A', 65 then ctrl(:k)
-              else ch3
-              end
-            when 'b',  98 then :alt_b
-            when 'f', 102 then :alt_f
-            when nil      then :esc
-            else ch2
-            end
+        if key = get_input(actions)
+          upd = actions.fetch(key, proc { |str|
+            input.insert cursor, str
+            cursor += str.length
+          }).call(key)
+
+          # Dispatch key event
+          emit(:key) { [@query.set(input.dup), cursor] } if upd
         end
-
-        upd = actions.fetch(ch, proc { |ch|
-          if ch.is_a? Array
-            input.insert cursor, ch.join
-            cursor += ch.length
-          end
-        }).call(ch)
-
-        # Dispatch key event
-        emit(:key) { [@query.set(input.dup), cursor] } if upd
       end
     ensure
       C.close_screen
