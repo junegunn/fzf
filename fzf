@@ -753,8 +753,15 @@ class FZF
     end
   end
 
-  def read_nb chars = 1, default = nil
-    @tty.read_nonblock(chars).ord rescue default
+  def read_nb chars = 1, default = nil, tries = 20
+    tries.times do |_|
+      begin
+        return @tty.read_nonblock(chars).ord
+      rescue Exception
+        sleep 0.01
+      end
+    end
+    default
   end
 
   def get_mouse
@@ -808,7 +815,7 @@ class FZF
         end
 
       ord =
-        case ord = read_nb(1, :esc)
+        case read_nb(1, :esc)
         when 91
           case read_nb(1, nil)
           when 68 then ctrl(:b)
@@ -816,12 +823,14 @@ class FZF
           when 66 then ctrl(:j)
           when 65 then ctrl(:k)
           when 90 then :stab
-          when 49 then read_nb(1); ctrl(:a)
-          when 50 then read_nb(1); :ins
-          when 51 then read_nb(1); :del
-          when 52 then read_nb(1); ctrl(:e)
-          when 53 then read_nb(1); :pgup
-          when 54 then read_nb(1); :pgdn
+          when 50 then read_nb; :ins
+          when 51 then read_nb; :del
+          when 53 then read_nb; :pgup
+          when 54 then read_nb; :pgdn
+          when 49 then read_nb; ctrl(:a)
+          when 52 then read_nb; ctrl(:e)
+          when 72 then ctrl(:a)
+          when 70 then ctrl(:e)
           when 77
             get_mouse
           end
