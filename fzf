@@ -753,7 +753,7 @@ class FZF
     end
   end
 
-  def read_nb chars = 1, default = nil, tries = 20
+  def read_nb chars = 1, default = nil, tries = 10
     tries.times do |_|
       begin
         return @tty.read_nonblock(chars).ord
