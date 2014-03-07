@@ -764,6 +764,14 @@ class FZF
     default
   end
 
+  def read_nbs
+    ords = []
+    while ord = read_nb
+      ords << ord
+    end
+    ords
+  end
+
   def get_mouse
     case ord = read_nb
     when 32, 36, 40, 48, # mouse-down / shift / cmd / ctrl
@@ -827,7 +835,12 @@ class FZF
           when 51 then read_nb; :del
           when 53 then read_nb; :pgup
           when 54 then read_nb; :pgdn
-          when 49 then read_nb; ctrl(:a)
+          when 49
+            case read_nbs
+            when [59, 50, 68] then ctrl(:a)
+            when [59, 50, 67] then ctrl(:e)
+            when [126]        then ctrl(:a)
+            end
           when 52 then read_nb; ctrl(:e)
           when 72 then ctrl(:a)
           when 70 then ctrl(:e)
