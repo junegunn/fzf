@@ -102,8 +102,9 @@ The following readline key bindings should also work as expected.
 If you enable multi-select mode with `-m` option, you can select multiple items
 with TAB or Shift-TAB key.
 
-You can also use mouse. Double-click on an item to select it or shift-click to
-select multiple items. Use mouse wheel to move the cursor up and down.
+You can also use mouse. Double-click on an item to select it or shift-click (or
+ctrl-click) to select multiple items. Use mouse wheel to move the cursor up and
+down.
 
 ### Extended-search mode
 

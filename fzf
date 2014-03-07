@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.0 (March 6, 2014)
+# Version: 0.8.0 (March 7, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -754,14 +754,14 @@ class FZF
 
   def get_mouse
     case ord = read_nb
-    when 32, 36,  # mouse-down / shift-mouse-down
-         35, 39   # mouse-up / shift-mouse-up
+    when 32, 36, 40, 48, # mouse-down / shift / cmd / ctrl
+         35, 39, 43, 51  # mouse-up / shift / cmd / ctrl
       x = read_nb - 33
       y = read_nb - 33
       { :event => (ord % 2 == 0 ? :click : :release),
         :x => x, :y => y, :shift => ord >= 36 }
-    when 96, 100, # scroll-up / shift-scroll-up
-         97, 101  # scroll-down / shift-scroll-down
+    when 96, 100, 104, 112, # scroll-up / shift / cmd / ctrl
+         97, 101, 105, 113  # scroll-down / shift / cmd / ctrl
       read_nb(2)
       { :event => :scroll, :diff => (ord % 2 == 0 ? -1 : 1), :shift => ord >= 100 }
     else
