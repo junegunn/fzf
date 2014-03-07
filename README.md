@@ -58,6 +58,7 @@ usage: fzf [options]
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+    +2, --no-256         Disable 256-color
         --no-mouse       Disable mouse
 
   Environment variables

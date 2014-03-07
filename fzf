@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :mouse, :multi, :query, :filter, :extended
+  attr_reader :rxflag, :sort, :color, :ansi256, :mouse, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -77,6 +77,7 @@ class FZF
     @rxflag   = nil
     @sort     = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
     @color    = true
+    @ansi256  = true
     @multi    = false
     @mouse    = true
     @extended = nil
@@ -101,6 +102,9 @@ class FZF
       when '+i'                  then @rxflag   = 0
       when '-c', '--color'       then @color    = true
       when '+c', '--no-color'    then @color    = false
+      when '-2', '--256'         then @ansi256  = true
+      when '+2', '--no-256'      then @ansi256  = false
+      when       '--mouse'       then @mouse    = true
       when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
       when '-q', '--query'
@@ -206,6 +210,7 @@ class FZF
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
+    +2, --no-256         Disable 256-color
         --no-mouse       Disable mouse
 
   Environment variables
@@ -522,7 +527,7 @@ class FZF
     C.noecho
 
     if @color
-      if ENV['TERM'].to_s =~ /256/
+      if @ansi256 && ENV['TERM'].to_s =~ /256/
         C.init_pair 1, 110, dbg
         C.init_pair 2, 108, dbg
         C.init_pair 3, 254, 236
