@@ -59,6 +59,7 @@ usage: fzf [options]
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
     +2, --no-256         Disable 256-color
+        --black          Use black background
         --no-mouse       Disable mouse
 
   Environment variables

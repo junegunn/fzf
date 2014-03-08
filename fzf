@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.0 (March 8, 2014)
+# Version: 0.8.1 (March 9, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :ansi256, :mouse, :multi, :query, :filter, :extended
+  attr_reader :rxflag, :sort, :color, :black, :ansi256, :mouse, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -78,6 +78,7 @@ class FZF
     @sort     = ENV.fetch('FZF_DEFAULT_SORT', 1000).to_i
     @color    = true
     @ansi256  = true
+    @black    = false
     @multi    = false
     @mouse    = true
     @extended = nil
@@ -104,6 +105,8 @@ class FZF
       when '+c', '--no-color'    then @color    = false
       when '-2', '--256'         then @ansi256  = true
       when '+2', '--no-256'      then @ansi256  = false
+      when       '--black'       then @black    = true
+      when       '--no-black'    then @black    = false
       when       '--mouse'       then @mouse    = true
       when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
@@ -211,6 +214,7 @@ class FZF
     +i                   Case-sensitive match
     +c, --no-color       Disable colors
     +2, --no-256         Disable 256-color
+        --black          Use black background
         --no-mouse       Disable mouse
 
   Environment variables
@@ -517,7 +521,7 @@ class FZF
     C.mousemask C::ALL_MOUSE_EVENTS if @mouse
     C.start_color
     dbg =
-      if C.respond_to?(:use_default_colors)
+      if !@black && C.respond_to?(:use_default_colors)
         C.use_default_colors
         -1
       else

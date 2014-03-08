@@ -28,7 +28,7 @@ class TestFZF < MiniTest::Unit::TestCase
     fzf = FZF.new []
     assert_equal 20000, fzf.sort
 
-    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c +2 --no-mouse -f "goodbye world"'
+    ENV['FZF_DEFAULT_OPTS'] = '-x -m -s 10000 -q "  hello  world  " +c +2 --no-mouse -f "goodbye world" --black'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -39,6 +39,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
     assert_equal false,   fzf.ansi256
+    assert_equal true,    fzf.black
     assert_equal false,   fzf.mouse
   end
 
@@ -50,6 +51,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
     assert_equal false,   fzf.ansi256
+    assert_equal false,   fzf.black
     assert_equal false,   fzf.mouse
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
@@ -57,12 +59,13 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal :exact,  fzf.extended
 
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
-                     --filter a --filter b --no-256
+                     --filter a --filter b --no-256 --black
                      --no-sort -i --color --no-multi --256]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
     assert_equal true,    fzf.ansi256
+    assert_equal true,    fzf.black
     assert_equal true,    fzf.mouse
     assert_equal 1,       fzf.rxflag
     assert_equal 'b',     fzf.filter
@@ -82,11 +85,12 @@ class TestFZF < MiniTest::Unit::TestCase
 
     # Left-to-right
     fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fgoodbye +2
-                     -s 3000 -c +m -i -q world +x -fworld -2]
+                     -s 3000 -c +m -i -q world +x -fworld -2 --black --no-black]
     assert_equal 3000,    fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
     assert_equal true,    fzf.ansi256
+    assert_equal false,   fzf.black
     assert_equal 1,       fzf.rxflag
     assert_equal 'world', fzf.query.get
     assert_equal 'world', fzf.filter
