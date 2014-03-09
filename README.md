@@ -297,7 +297,7 @@ If you have any rendering issues, check the followings:
 
 1. Make sure `$TERM` is correctly set. fzf will use 256-color only if it
   contains `256` (e.g. `xterm-256color`)
-2. If you're on screen or tmux, $TERM should be either `screen` or
+2. If you're on screen or tmux, `$TERM` should be either `screen` or
   `screen-256color`
 3. Some terminal emulators (e.g. mintty) have problem displaying default
   background color and make some text unable to read. In that case, try `--black`
