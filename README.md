@@ -313,12 +313,20 @@ export -f fzf
 However, this is automatically set up in your .bashrc and .zshrc if you use the
 bundled [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
-### Incorrect display on Ruby 1.8
+### Rendering issues
 
-It is reported that the output of fzf can become unreadable on some terminals
-when it's running on Ruby 1.8. If you experience the problem, upgrade your Ruby
-to 1.9 or above. Ruby 1.9 or above is also required for displaying Unicode
-characters.
+If you have any rendering issues, check the followings:
+
+1. Make sure `$TERM` is correctly set. fzf will use 256-color only if it
+  contains `256` (e.g. `xterm-256color`)
+2. If you're on screen or tmux, $TERM should be either `screen` or
+  `screen-256color`
+3. Some terminal emulators (e.g. mintty) have problem displaying default
+  background color and make some text unable to read. In that case, try `--black`
+  option. And if it solves your problem, I recommend including it in
+  `FZF_DEFAULT_OPTS` for further convenience.
+4. If you still have problem, try `--no-256` option or even `--no-color`.
+5. Ruby 1.9 or above is required for correctly displaying unicode characters.
 
 ### Ranking algorithm
 
