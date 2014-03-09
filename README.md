@@ -291,28 +291,6 @@ a very large list of files, fzf is significantly faster and it does not block.
 Tips
 ----
 
-### Faster startup with `--disable-gems` options
-
-If you're running Ruby 1.9 or above, you can improve the startup time with
-`--disable-gems` option to Ruby.
-
-- `time ruby ~/bin/fzf -h`
-    - 0.077 sec
-- `time ruby --disable-gems ~/bin/fzf -h`
-    - 0.025 sec
-
-You can define fzf function with the option as follows:
-
-```sh
-fzf() {
-  ruby --disable-gems ~/bin/fzf "$@"
-}
-export -f fzf
-```
-
-However, this is automatically set up in your .bashrc and .zshrc if you use the
-bundled [install](https://github.com/junegunn/fzf/blob/master/install) script.
-
 ### Rendering issues
 
 If you have any rendering issues, check the followings:
