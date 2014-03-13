@@ -162,20 +162,13 @@ Key bindings for command line
 
 The install script will setup the following key bindings.
 
-### bash
-
-- `CTRL-T` - Paste the selected file path(s) into the command line
-- `CTRL-R` - Paste the selected command from history into the command line
-
-The source code can be found in `~/.fzf.bash`.
-
-### zsh
+### bash/zsh
 
 - `CTRL-T` - Paste the selected file path(s) into the command line
 - `CTRL-R` - Paste the selected command from history into the command line
 - `ALT-C` - cd into the selected directory
 
-The source code can be found in `~/.fzf.zsh`.
+The source code can be found in `~/.fzf.bash` and in `~/.fzf.zsh`.
 
 Auto-completion
 ---------------

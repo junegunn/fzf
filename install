@@ -110,6 +110,10 @@ __fsel() {
   echo
 }
 
+__fcd() {
+  DIR=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && printf 'cd %q' "$DIR"
+}
+
 if [ -z "$(set -o | grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
@@ -119,6 +123,9 @@ if [ -z "$(set -o | grep '^vi.*on')" ]; then
 
   # CTRL-R - Paste the selected command from history into the command line
   bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
+
+  # ALT-C - cd into the selected directory
+  bind '"\ec": " \C-e\C-u$(__fcd)\e\C-e\er\C-m"'
 else
   bind '"\C-x\C-e": shell-expand-line'
   bind '"\C-x\C-r": redraw-current-line'
@@ -129,6 +136,9 @@ else
 
   # CTRL-R - Paste the selected command from history into the command line
   bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
+
+  # ALT-C - cd into the selected directory
+  bind '"\ec": "\eddi$(__fcd)\C-x\C-e\C-x\C-r\C-m"'
 fi
 
 fi
