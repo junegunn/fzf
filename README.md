@@ -27,7 +27,7 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 The script will setup:
 
 - `fzf` executable
-- Key bindings (`CTRL-T`, `CTRL-R`, etc.)
+- Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) for bash and zsh
 - Fuzzy auto-completion for bash
 
 ### Install as Vim plugin
