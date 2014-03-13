@@ -29,10 +29,13 @@ if [ $? -eq 0 ]; then
 else
   echo "Not found"
   echo "Installing 'curses' gem ... "
-  /usr/bin/env gem install curses -v 1.0.0
+  /usr/bin/env gem install curses -v 1.0.0 --user-install
   if [ $? -ne 0 ]; then
+    echo
     echo "Failed to install 'curses' gem."
-    echo "Try installing it as root: sudo gem install curses"
+    if [[ $(uname -r) =~ 'ARCH' ]]; then
+      echo "Make sure that base-devel package group is installed."
+    fi
     exit 1
   fi
 fi
