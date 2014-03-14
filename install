@@ -111,7 +111,8 @@ __fsel() {
 }
 
 __fcd() {
-  DIR=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && printf 'cd %q' "$DIR"
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && printf 'cd %q' "$dir"
 }
 
 if [ -z "$(set -o | grep '^vi.*on')" ]; then

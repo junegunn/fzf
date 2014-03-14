@@ -133,17 +133,20 @@ Useful examples
 ```sh
 # vimf - Open selected file in Vim
 vimf() {
-  FILE=$(fzf) && vim "$FILE"
+  local file
+  file=$(fzf) && vim "$file"
 }
 
 # fd - cd to selected directory
 fd() {
-  DIR=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && cd "$DIR"
+  local dir
+  dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf) && cd "$dir"
 }
 
 # fda - including hidden directories
 fda() {
-  DIR=$(find ${1:-.} -type d 2> /dev/null | fzf) && cd "$DIR"
+  local dir
+  dir=$(find ${1:-.} -type d 2> /dev/null | fzf) && cd "$dir"
 }
 
 # fh - repeat history
@@ -154,6 +157,22 @@ fh() {
 # fkill - kill process
 fkill() {
   ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
+}
+
+# fbr - checkout git branch
+fbr() {
+  local branches branch
+  branches=$(git branch) &&
+  branch=$(echo "$branches" | fzf +s +m) &&
+  git checkout $(echo "$branch" | sed "s/.* //")
+}
+
+# fbr - checkout git commit
+fco() {
+  local commits commit
+  commits=$(git log --pretty=oneline --abbrev-commit) &&
+  commit=$(echo "$commits" | fzf +s +m -e) &&
+  git checkout $(echo "$commit" | sed "s/ .*//")
 }
 ```
 
