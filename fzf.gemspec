@@ -13,5 +13,5 @@ Gem::Specification.new do |spec|
   spec.files         = %w[fzf.gemspec]
   spec.executables   = 'fzf'
 
-  spec.add_runtime_dependency 'curses', '~> 1.0.0'
+  spec.extensions   += ['ext/mkrf_conf.rb']
 end
