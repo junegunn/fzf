@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.1 (March 9, 2014)
+# Version: 0.8.2 (March 15, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -904,8 +904,10 @@ class FZF
   def start_loop
     got = nil
     begin
-      input   = @query.get.dup
-      cursor  = input.length
+      input = @query.get.dup
+      cursor = input.length
+      yanked = ''
+      mouse_event = MouseEvent.new
       backword = proc {
         cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
       }
@@ -916,7 +918,11 @@ class FZF
           got = pick
           exit 0
         },
-        ctrl(:u) => proc { input = input[cursor..-1]; cursor = 0 },
+        ctrl(:u) => proc {
+          yanked = input[0...cursor] if cursor > 0
+          input = input[cursor..-1]
+          cursor = 0
+        },
         ctrl(:a) => proc { cursor = 0; nil },
         ctrl(:e) => proc { cursor = input.length; nil },
         ctrl(:j) => proc { vselect { |v| v - 1 } },
@@ -924,8 +930,10 @@ class FZF
         ctrl(:w) => proc {
           pcursor = cursor
           backword.call
+          yanked = input[cursor...pcursor] if pcursor > cursor
           input = input[0...cursor] + input[pcursor..-1]
         },
+        ctrl(:y) => proc { actions[:default].call yanked },
         ctrl(:h) => proc { input[cursor -= 1] = '' if cursor > 0 },
         ctrl(:i) => proc { |o|
           if @multi && sel = pick
@@ -952,6 +960,39 @@ class FZF
           cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
           nil
         },
+        :default => proc { |val|
+          case val
+          when String
+            input.insert cursor, val
+            cursor += val.length
+          when Hash
+            event = val[:event]
+            case event
+            when :click, :release
+              x, y, shift = val.values_at :x, :y, :shift
+              if y == cursor_y
+                cursor = [0, [input.length, x - 2].min].max
+              elsif x > 1 && y <= max_items
+                tv = max_items - y - 1
+
+                case event
+                when :click
+                  vselect { |_| tv }
+                  actions[ctrl(:i)].call(:sclick) if shift
+                  mouse_event.v = tv
+                when :release
+                  if !shift && mouse_event.double?(tv)
+                    actions[ctrl(:m)].call
+                  end
+                end
+              end
+            when :scroll
+              diff, shift = val.values_at :diff, :shift
+              actions[ctrl(:i)].call(:sclick) if shift
+              actions[ctrl(diff > 0 ? :j : :k)].call
+            end
+          end
+        }
       }
       actions[ctrl(:p)] = actions[ctrl(:k)]
       actions[ctrl(:n)] = actions[ctrl(:j)]
@@ -960,45 +1001,12 @@ class FZF
       actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
 
       emit(:key) { [@query.get, cursor] } unless @query.empty?
-      mouse = MouseEvent.new
       while true
         @cursor_x.set cursor
         render { print_input }
 
         if key = get_input(actions)
-          upd = actions.fetch(key, proc { |val|
-            case val
-            when String
-              input.insert cursor, val
-              cursor += val.length
-            when Hash
-              event = val[:event]
-              case event
-              when :click, :release
-                x, y, shift = val.values_at :x, :y, :shift
-                if y == cursor_y
-                  cursor = [0, [input.length, x - 2].min].max
-                elsif x > 1 && y <= max_items
-                  tv = max_items - y - 1
-
-                  case event
-                  when :click
-                    vselect { |_| tv }
-                    actions[ctrl(:i)].call(:sclick) if shift
-                    mouse.v = tv
-                  when :release
-                    if !shift && mouse.double?(tv)
-                      actions[ctrl(:m)].call
-                    end
-                  end
-                end
-              when :scroll
-                diff, shift = val.values_at :diff, :shift
-                actions[ctrl(:i)].call(:sclick) if shift
-                actions[ctrl(diff > 0 ? :j : :k)].call
-              end
-            end
-          }).call(key)
+          upd = actions.fetch(key, actions[:default]).call(key)
 
           # Dispatch key event
           emit(:key) { [@query.set(input.dup), cursor] } if upd
