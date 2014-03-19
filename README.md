@@ -169,7 +169,7 @@ fbr() {
   git checkout $(echo "$branch" | sed "s/.* //")
 }
 
-# fbr - checkout git commit
+# fco - checkout git commit
 fco() {
   local commits commit
   commits=$(git log --pretty=oneline --abbrev-commit) &&
