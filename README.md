@@ -134,7 +134,7 @@ Useful examples
 # vimf - Open selected file in Vim
 vimf() {
   local file
-  file=$(fzf --query=$1) && vim "$file"
+  file=$(fzf --query="$1") && vim "$file"
 }
 
 # fd - cd to selected directory
