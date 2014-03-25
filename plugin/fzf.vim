@@ -69,6 +69,7 @@ function! fzf#run(...) abort
       let cwd = getcwd()
       execute 'chdir '.s:escape(dict.dir)
     endif
+    silent !clear
     execute 'silent !'.prefix.s:exec.' '.optstr.' > '.result
     redraw!
     if v:shell_error
