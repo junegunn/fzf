@@ -21,7 +21,18 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-let s:exec = expand('<sfile>:h:h').'/fzf'
+call system('type fzf')
+if v:shell_error
+  let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
+  if executable(s:fzf_rb)
+    let s:exec = s:fzf_rb
+  else
+    echoerr 'fzf executable not found'
+    finish
+  endif
+else
+  let s:exec = 'fzf'
+endif
 
 function! s:escape(path)
   return substitute(a:path, ' ', '\\ ', 'g')
@@ -38,9 +49,8 @@ function! fzf#run(command, ...)
     let argstr  = join(args)
     let tf      = tempname()
     let prefix  = exists('g:fzf_source') ? g:fzf_source.'|' : ''
-    let fzf     = executable(s:exec)     ? s:exec : 'fzf'
     let options = empty(argstr)          ? get(g:, 'fzf_options', '') : argstr
-    execute "silent !".prefix.fzf.' '.options." > ".tf
+    execute 'silent !'.prefix.s:exec.' '.options.' > '.tf
     if !v:shell_error
       for line in readfile(tf)
         if !empty(line)
