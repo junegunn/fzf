@@ -115,6 +115,14 @@ __fcd() {
   dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) && printf 'cd %q' "$dir"
 }
 
+cdf() {
+        local query
+        local file
+        local dir
+        query=$1
+        file=$(fzf -m +s -q $query) && dir=$(dirname "$file") && cd "$dir"
+}
+
 if [ -z "$(set -o | grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
