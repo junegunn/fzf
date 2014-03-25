@@ -1,0 +1,37 @@
+Execute (Setup):
+  let g:dir = fnamemodify(g:vader_file, ':p:h')
+  Log 'Test directory: ' . g:dir
+
+Execute (fzf#run with dir option):
+  let result = fzf#run({ 'options': '--filter=vdr', 'dir': g:dir })
+  AssertEqual ['fzf.vader'], result
+
+  let result = sort(fzf#run({ 'options': '--filter e', 'dir': g:dir }))
+  AssertEqual ['fzf.vader', 'test_fzf.rb'], result
+
+Execute (fzf#run with Funcref command):
+  let g:ret = []
+  function! g:proc(e)
+    call add(g:ret, a:e)
+  endfunction
+  let result = sort(fzf#run({ 'sink': function('g:proc'), 'options': '--filter e', 'dir': g:dir }))
+  AssertEqual ['fzf.vader', 'test_fzf.rb'], result
+  AssertEqual ['fzf.vader', 'test_fzf.rb'], sort(g:ret)
+
+Execute (fzf#run with string source):
+  let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
+  AssertEqual ['hi'], result
+
+Execute (fzf#run with list source):
+  let result = sort(fzf#run({ 'source': ['hello', 'world'], 'options': '-f e' }))
+  AssertEqual ['hello'], result
+  let result = sort(fzf#run({ 'source': ['hello', 'world'], 'options': '-f o' }))
+  AssertEqual ['hello', 'world'], result
+
+Execute (fzf#run with string source):
+  let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
+  AssertEqual ['hi'], result
+
+Execute (Cleanup):
+  unlet g:dir
+  Restore

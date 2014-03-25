@@ -290,7 +290,9 @@ TODO :smiley:
 Usage as Vim plugin
 -------------------
 
-If you install fzf as a Vim plugin, `:FZF` command will be added.
+### `:FZF`
+
+If you have set up fzf as a Vim plugin, `:FZF` command will be added.
 
 ```vim
 " Look for files under current directory
@@ -303,27 +305,76 @@ If you install fzf as a Vim plugin, `:FZF` command will be added.
 :FZF --no-sort -m /tmp
 ```
 
-You can override the source command which produces input to fzf.
+Note that environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
+also apply here.
+
+### `fzf#run([options])`
+
+For more advanced uses, you can call `fzf#run()` function which returns the list
+of the selected items.
+
+`fzf#run()` may take an options-dictionary:
+
+| Option name | Type    | Description                                                |
+| ----------- | ------- | ---------------------------------------------------------- |
+| `source`    | string  | External command to generate input to fzf (e.g. `find .`)  |
+| `source`    | list    | Vim list as input to fzf                                   |
+| `sink`      | string  | Vim command to handle the selected item (e.g. `e`, `tabe`) |
+| `sink`      | funcref | Reference to function to process each selected item        |
+| `options`   | string  | Options to fzf                                             |
+| `dir`       | string  | Working directory                                          |
+
+#### Examples
+
+If `sink` option is not given, `fzf#run` will simply return the list.
 
 ```vim
-let g:fzf_source = 'find . -type f'
+let items = fzf#run({ 'options': '-m +c', 'dir': '~', 'source': 'ls' })
 ```
 
-And you can predefine default options to fzf command.
+But if `sink` is given as a string, the command will be executed for each
+selected item.
 
 ```vim
-let g:fzf_options = '--no-color --extended'
+" Each selected item will be opened in a new tab
+let items = fzf#run({ 'sink': 'tabe', 'options': '-m +c', 'dir': '~', 'source': 'ls' })
 ```
 
-For more advanced uses, you can call `fzf#run` function as follows.
+We can also use a Vim list as the source as follows:
 
 ```vim
-:call fzf#run('tabedit', '-m +c')
+" Choose a color scheme with fzf
+call fzf#run({
+\   'source':
+\     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
+\         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
+\   'sink':    'colo',
+\   'options': '+m'
+\ })
 ```
 
-Most of the time, you will prefer native Vim plugins with better integration
-with Vim. The only reason one might consider using fzf in Vim is its speed. For
-a very large list of files, fzf is significantly faster and it does not block.
+`sink` option can be a function reference. The following example creates a
+handy mapping that selects an open buffer.
+
+```vim
+" List of buffers
+function! g:buflist()
+  redir => ls
+  silent ls
+  redir END
+  return split(ls, '\n')
+endfunction
+
+function! g:bufopen(e)
+  execute 'buffer '. matchstr(a:e, '^[ 0-9]*')
+endfunction
+
+nnoremap <Leader><Enter> :call fzf#run({
+\   'source':  g:buflist(),
+\   'sink':    function('g:bufopen'),
+\   'options': '+m +s',
+\ })<CR>
+```
 
 Tips
 ----

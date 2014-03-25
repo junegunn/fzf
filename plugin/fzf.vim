@@ -1,4 +1,4 @@
-" Copyright (c) 2013 Junegunn Choi
+" Copyright (c) 2014 Junegunn Choi
 "
 " MIT License
 "
@@ -21,6 +21,9 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+let s:cpo_save = &cpo
+set cpo&vim
+
 call system('type fzf')
 if v:shell_error
   let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
@@ -38,32 +41,73 @@ function! s:escape(path)
   return substitute(a:path, ' ', '\\ ', 'g')
 endfunction
 
-function! fzf#run(command, ...)
-  let cwd = getcwd()
-  try
-    let args = copy(a:000)
-    if len(args) > 0 && isdirectory(expand(args[-1]))
-      let dir = remove(args, -1)
-      execute 'chdir '.s:escape(dir)
+function! fzf#run(...) abort
+  let dict   = exists('a:1') ? a:1 : {}
+  let temps  = [tempname()]
+  let result = temps[0]
+  let optstr = get(dict, 'options', '')
+  let cd     = has_key(dict, 'dir')
+
+  if has_key(dict, 'source')
+    let source = dict.source
+    let type = type(source)
+    if type == 1
+      let prefix = source.'|'
+    elseif type == 3
+      let input = add(temps, tempname())[-1]
+      call writefile(source, input)
+      let prefix = 'cat '.s:escape(input).'|'
+    else
+      throw 'Invalid source type'
     endif
-    let argstr  = join(args)
-    let tf      = tempname()
-    let prefix  = exists('g:fzf_source') ? g:fzf_source.'|' : ''
-    let options = empty(argstr)          ? get(g:, 'fzf_options', '') : argstr
-    execute 'silent !'.prefix.s:exec.' '.options.' > '.tf
-    if !v:shell_error
-      for line in readfile(tf)
-        if !empty(line)
-          execute a:command.' '.s:escape(line)
+  else
+    let prefix = ''
+  endif
+
+  try
+    if cd
+      let cwd = getcwd()
+      execute 'chdir '.s:escape(dict.dir)
+    endif
+    execute 'silent !'.prefix.s:exec.' '.optstr.' > '.result
+    redraw!
+    if v:shell_error
+      return []
+    endif
+
+    let lines = readfile(result)
+
+    if has_key(dict, 'sink')
+      for line in lines
+        if type(dict.sink) == 2
+          call dict.sink(line)
+        else
+          execute dict.sink.' '.s:escape(line)
         endif
       endfor
     endif
+    return lines
   finally
-    execute 'chdir '.s:escape(cwd)
-    redraw!
-    silent! call delete(tf)
+    if cd
+      execute 'chdir '.s:escape(cwd)
+    endif
+    for tf in temps
+      silent! call delete(tf)
+    endfor
   endtry
 endfunction
 
-command! -nargs=* -complete=dir FZF call fzf#run('silent e', <f-args>)
+function! s:cmd(...)
+  let args = copy(a:000)
+  let opts = {}
+  if len(args) > 0 && isdirectory(expand(args[-1]))
+    let opts.dir = remove(args, -1)
+  endif
+  call fzf#run(extend({ 'sink': 'e', 'options': join(args) }, opts))
+endfunction
+
+command! -nargs=* -complete=dir FZF call s:cmd(<f-args>)
+
+let &cpo = s:cpo_save
+unlet s:cpo_save
 
