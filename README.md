@@ -290,9 +290,11 @@ TODO :smiley:
 Usage as Vim plugin
 -------------------
 
-### `:FZF`
+(fzf is a command-line utility, naturally it is only accessible in terminal Vim)
 
-If you have set up fzf as a Vim plugin, `:FZF` command will be added.
+### `:FZF[!]`
+
+If you have set up fzf for Vim, `:FZF` command will be added.
 
 ```vim
 " Look for files under current directory
@@ -305,8 +307,12 @@ If you have set up fzf as a Vim plugin, `:FZF` command will be added.
 :FZF --no-sort -m /tmp
 ```
 
-Note that environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
+Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
+
+If you're on a tmux session, `:FZF`, will launch fzf in a new split-window whose
+height can be adjusted with `g:fzf_tmux_height` (default: 15). However, the bang
+version (`:FZF!`) will always start in fullscreen.
 
 ### `fzf#run([options])`
 
@@ -323,6 +329,7 @@ of the selected items.
 | `sink`      | funcref | Reference to function to process each selected item        |
 | `options`   | string  | Options to fzf                                             |
 | `dir`       | string  | Working directory                                          |
+| `tmux`      | number  | Use tmux split if possible with the given height           |
 
 #### Examples
 
@@ -344,13 +351,14 @@ We can also use a Vim list as the source as follows:
 
 ```vim
 " Choose a color scheme with fzf
-call fzf#run({
+nnoremap <silent> <Leader>C :call fzf#run({
 \   'source':
 \     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
 \         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
 \   'sink':    'colo',
-\   'options': '+m'
-\ })
+\   'options': '+m',
+\   'tmux':    15
+\ })<CR>
 ```
 
 `sink` option can be a function reference. The following example creates a
@@ -369,10 +377,11 @@ function! g:bufopen(e)
   execute 'buffer '. matchstr(a:e, '^[ 0-9]*')
 endfunction
 
-nnoremap <Leader><Enter> :call fzf#run({
+nnoremap <silent> <Leader><Enter> :call fzf#run({
 \   'source':  g:buflist(),
 \   'sink':    function('g:bufopen'),
 \   'options': '+m +s',
+\   'tmux':    15
 \ })<CR>
 ```
 
