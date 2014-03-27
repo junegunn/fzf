@@ -212,6 +212,10 @@ The install script will setup the following key bindings.
 - `CTRL-R` - Paste the selected command from history into the command line
 - `ALT-C` - cd into the selected directory
 
+If you're on a tmux session, `CTRL-T` will launch fzf in a new split-window. You
+may disable this tmux integration by setting `FZF_TMUX` to 0, or change the
+height of the window with `FZF_TMUX_HEIGHT`.
+
 The source code can be found in `~/.fzf.bash` and in `~/.fzf.zsh`.
 
 Auto-completion
@@ -310,7 +314,7 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
 
-If you're on a tmux session, `:FZF`, will launch fzf in a new split-window whose
+If you're on a tmux session, `:FZF` will launch fzf in a new split-window whose
 height can be adjusted with `g:fzf_tmux_height` (default: 15). However, the bang
 version (`:FZF!`) will always start in fullscreen.
 
