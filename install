@@ -95,12 +95,12 @@ EOF
 
   if [ $key_bindings -eq 0 ]; then
     if [ $shell = bash ]; then
-      cat >> $src << "EOF"
+      cat >> $src << "EOFZF"
 # Key bindings
 # ------------
 if [[ $- =~ i ]]; then
 
-__fsel() {
+read -r -d '' __fsel <<'EOF'
   find * -path '*/\.*' -prune \
     -o -type f -print \
     -o -type d -print \
@@ -108,6 +108,14 @@ __fsel() {
     printf '%q ' "$item"
   done
   echo
+EOF
+
+__fsel() {
+  eval "$__fsel"
+}
+
+__fsel_tmux() {
+  tmux split-window -l ${FZF_TMUX_HEIGHT:-15} "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
 }
 
 __fcd() {
@@ -115,12 +123,19 @@ __fcd() {
   dir=$(find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) && printf 'cd %q' "$dir"
 }
 
+__use_tmux=0
+[ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-30} -gt 15 ] && __use_tmux=1
+
 if [ -z "$(set -o | grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
 
   # CTRL-T - Paste the selected file path into the command line
-  bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+  if [ $__use_tmux -eq 1 ]; then
+    bind '"\C-t": " \C-u \C-a\C-k$(__fsel_tmux)\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
+  else
+    bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+  fi
 
   # CTRL-R - Paste the selected command from history into the command line
   bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
@@ -133,7 +148,11 @@ else
 
   # CTRL-T - Paste the selected file path into the command line
   # - FIXME: Selected items are attached to the end regardless of cursor position
-  bind '"\C-t": "\eddi$(__fsel)\C-x\C-e\e0P$a \C-x\C-r"'
+  if [ $__use_tmux -eq 1 ]; then
+    bind '"\C-t": "\e$a \eddi$(__fsel_tmux)\C-x\C-e\e0P$xa"'
+  else
+    bind '"\C-t": "\e$a \eddi$(__fsel)\C-x\C-e\e0Px$a \C-x\C-r"'
+  fi
 
   # CTRL-R - Paste the selected command from history into the command line
   bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
@@ -142,27 +161,35 @@ else
   bind '"\ec": "\eddi$(__fcd)\C-x\C-e\C-x\C-r\C-m"'
 fi
 
+unset __use_tmux
+
 fi
-EOF
+EOFZF
     else
-      cat >> $src << "EOF"
+      cat >> $src << "EOFZF"
 # Key bindings
 # ------------
 # CTRL-T - Paste the selected file path(s) into the command line
-fzf-file-widget() {
-  local FILES
-  local IFS="
-"
-  FILES=($(
-    find * -path '*/\.*' -prune \
+read -r -d '' __fsel <<'EOF'
+  find * -path '*/\.*' -prune \
     -o -type f -print \
     -o -type d -print \
-    -o -type l -print 2> /dev/null | fzf -m))
-  unset IFS
-  FILES=$FILES:q
-  LBUFFER="${LBUFFER%% #} $FILES"
-  zle redisplay
-}
+    -o -type l -print 2> /dev/null | fzf -m | while read item; do
+    printf '%q ' "$item"
+  done
+  echo
+EOF
+
+if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-30} -gt 15 ]; then
+  fzf-file-widget() {
+    tmux split-window -l ${FZF_TMUX_HEIGHT:-15} "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
+  }
+else
+  fzf-file-widget() {
+    LBUFFER="${LBUFFER%% #}$(eval "$__fsel")"
+    zle redisplay
+  }
+fi
 zle     -N   fzf-file-widget
 bindkey '^T' fzf-file-widget
 
@@ -183,7 +210,7 @@ fzf-history-widget() {
 zle     -N   fzf-history-widget
 bindkey '^R' fzf-history-widget
 
-EOF
+EOFZF
     fi
   fi
 
