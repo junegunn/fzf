@@ -115,7 +115,14 @@ __fsel() {
 }
 
 __fsel_tmux() {
-  tmux split-window -l ${FZF_TMUX_HEIGHT:-15} "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
+  local height lines
+  height=${FZF_TMUX_HEIGHT:-40%}
+  lines=${LINES:-40}
+  if [[ $height =~ %$ ]]; then
+    height=${height:0:${#height}-1}
+    height=$(( height * lines / 100 ))
+  fi
+  tmux split-window -l $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
 }
 
 __fcd() {
@@ -124,7 +131,7 @@ __fcd() {
 }
 
 __use_tmux=0
-[ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-30} -gt 15 ] && __use_tmux=1
+[ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ] && __use_tmux=1
 
 if [ -z "$(set -o | grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
@@ -180,9 +187,16 @@ read -r -d '' __fsel <<'EOF'
   echo
 EOF
 
-if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-30} -gt 15 ]; then
+if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
   fzf-file-widget() {
-    tmux split-window -l ${FZF_TMUX_HEIGHT:-15} "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
+    local height lines
+    height=${FZF_TMUX_HEIGHT:-40%}
+    lines=${LINES:-40}
+    if [[ $height =~ %$ ]]; then
+      height=${height:0:${#height}-1}
+      height=$(( height * lines / 100 ))
+    fi
+    tmux split-window -l $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
   }
 else
   fzf-file-widget() {

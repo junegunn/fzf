@@ -214,7 +214,7 @@ The install script will setup the following key bindings.
 
 If you're on a tmux session, `CTRL-T` will launch fzf in a new split-window. You
 may disable this tmux integration by setting `FZF_TMUX` to 0, or change the
-height of the window with `FZF_TMUX_HEIGHT`.
+height of the window with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
 
 The source code can be found in `~/.fzf.bash` and in `~/.fzf.zsh`.
 
@@ -315,8 +315,8 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
 
 If you're on a tmux session, `:FZF` will launch fzf in a new split-window whose
-height can be adjusted with `g:fzf_tmux_height` (default: 15). However, the bang
-version (`:FZF!`) will always start in fullscreen.
+height can be adjusted with `g:fzf_tmux_height` (default: '40%'). However, the
+bang version (`:FZF!`) will always start in fullscreen.
 
 ### `fzf#run([options])`
 
@@ -325,15 +325,15 @@ of the selected items.
 
 `fzf#run()` may take an options-dictionary:
 
-| Option name | Type    | Description                                                |
-| ----------- | ------- | ---------------------------------------------------------- |
-| `source`    | string  | External command to generate input to fzf (e.g. `find .`)  |
-| `source`    | list    | Vim list as input to fzf                                   |
-| `sink`      | string  | Vim command to handle the selected item (e.g. `e`, `tabe`) |
-| `sink`      | funcref | Reference to function to process each selected item        |
-| `options`   | string  | Options to fzf                                             |
-| `dir`       | string  | Working directory                                          |
-| `tmux`      | number  | Use tmux split if possible with the given height           |
+| Option name | Type          | Description                                                         |
+| ----------- | ------------- | ------------------------------------------------------------------- |
+| `source`    | string        | External command to generate input to fzf (e.g. `find .`)           |
+| `source`    | list          | Vim list as input to fzf                                            |
+| `sink`      | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)          |
+| `sink`      | funcref       | Reference to function to process each selected item                 |
+| `options`   | string        | Options to fzf                                                      |
+| `dir`       | string        | Working directory                                                   |
+| `tmux`      | number/string | Use tmux split if possible with the given height (e.g. `20`, `50%`) |
 
 #### Examples
 

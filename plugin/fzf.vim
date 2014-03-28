@@ -22,7 +22,7 @@
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 let s:min_tmux_height = 3
-let s:default_tmux_height = 15
+let s:default_tmux_height = '40%'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -114,7 +114,17 @@ function! s:execute_tmux(dict, command, temps)
   else
     let command = a:command
   endif
-  let height = a:dict.tmux
+
+  if type(a:dict.tmux) == 1
+    if a:dict.tmux =~ '%$'
+      let height = screenrow() * str2nr(a:dict.tmux[0:-2]) / 100
+    else
+      let height = str2nr(a:dict.tmux)
+    endif
+  else
+    let height = a:dict.tmux
+  endif
+
   let s:pane = substitute(
     \ system(
       \ printf(
