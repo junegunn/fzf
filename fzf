@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.2 (March 15, 2014)
+# Version: 0.8.2 (March 30, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,8 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :color, :black, :ansi256, :mouse, :multi, :query, :filter, :extended
+  attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256,
+              :mouse, :multi, :query, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -83,6 +84,8 @@ class FZF
     @mouse    = true
     @extended = nil
     @filter   = nil
+    @nth      = nil
+    @delim    = nil
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -120,6 +123,17 @@ class FZF
         @filter = query
       when /^-f(.*)$/, /^--filter=(.*)$/
         @filter = $1
+      when '-n', '--nth'
+        usage 1, 'field number required' unless nth = argv.shift
+        usage 1, 'invalid field number' if nth.to_i == 0
+        @nth = nth.to_i
+      when /^-n(-?[1-9][0-9]*)$/, /^--nth=(-?[1-9][0-9]*)$/
+        @nth = $1.to_i
+      when '-d', '--delimiter'
+        usage 1, 'delimiter required' unless delim = argv.shift
+        @delim = FZF.build_delim_regex delim
+      when /^-d(.+)$/, /^--delimiter=(.+)$/
+        @delim = FZF.build_delim_regex $1
       when '-s', '--sort'
         usage 1, 'sort size required' unless sort = argv.shift
         usage 1, 'invalid sort size'  unless sort =~ /^[0-9]+$/
@@ -155,6 +169,11 @@ class FZF
     end
   end
 
+  def FZF.build_delim_regex delim
+    Regexp.compile(delim) rescue (delim = Regexp.escape(delim))
+    Regexp.compile "(?:.*?#{delim})|(?:.+?$)"
+  end
+
   def start
     if @filter
       start_reader(false).join
@@ -181,9 +200,9 @@ class FZF
 
   def get_matcher
     if @extended
-      ExtendedFuzzyMatcher.new @rxflag, @extended
+      ExtendedFuzzyMatcher.new @rxflag, @extended, @nth, @delim
     else
-      FuzzyMatcher.new @rxflag
+      FuzzyMatcher.new @rxflag, @nth, @delim
     end
   end
 
@@ -208,6 +227,8 @@ class FZF
     -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
+    -n, --nth=[-]N       Match only in the N-th token of the item
+    -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
     -i                   Case-insensitive match (default: smart-case match)
@@ -1026,10 +1047,55 @@ class FZF
     end
   end
 
+  class Matcher
+    class MatchData
+      def initialize n
+        @n = n
+      end
+
+      def offset _
+        @n
+      end
+    end
+
+    def initialize nth, delim
+      @nth = nth && (nth > 0 ? nth - 1 : nth)
+      @delim = delim
+      @tokens_cache = {}
+    end
+
+    def tokenize str
+      @tokens_cache[str] ||=
+        unless @delim
+          # AWK default
+          prefix_length = str[/^\s+/].length rescue 0
+          [prefix_length, (str.strip.scan(/\S+\s*/) rescue [])]
+        else
+          prefix_length = 0
+          [prefix_length, (str.scan(@delim) rescue [])]
+        end
+    end
+
+    def do_match str, pat
+      if @nth
+        prefix_length, tokens = tokenize str
+
+        if (token = tokens[@nth]) && (md = token.match(pat) rescue nil)
+          prefix_length += (tokens[0...@nth] || []).join.length
+          offset = md.offset(0).map { |o| o + prefix_length }
+          MatchData.new offset
+        end
+      else
+        str.match(pat) rescue nil
+      end
+    end
+  end
+
   class FuzzyMatcher < Matcher
     attr_reader :caches, :rxflag
 
-    def initialize rxflag
+    def initialize rxflag, nth = nil, delim = nil
+      super nth, delim
       @caches = Hash.new { |h, k| h[k] = {} }
       @regexp = {}
       @rxflag = rxflag
@@ -1073,15 +1139,15 @@ class FZF
       cache[q] ||= (partial_cache ?
                     partial_cache.map { |e| e.first } : list).map { |line|
         # Ignore errors: e.g. invalid byte sequence in UTF-8
-        md = line.match(regexp) rescue nil
+        md = do_match(line, regexp)
         md && [line, [md.offset(0)]]
       }.compact
     end
   end
 
   class ExtendedFuzzyMatcher < FuzzyMatcher
-    def initialize rxflag, mode = :fuzzy
-      super rxflag
+    def initialize rxflag, mode = :fuzzy, nth = nil, delim = nil
+      super rxflag, nth, delim
       @regexps = {}
       @mode = mode
     end
@@ -1143,7 +1209,7 @@ class FZF
         offsets = []
         regexps.all? { |pair|
           regexp, invert = pair
-          md = line.match(regexp) rescue nil
+          md = do_match(line, regexp)
           if md && !invert
             offsets << md.offset(0)
           elsif !md && invert
