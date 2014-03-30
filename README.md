@@ -53,6 +53,8 @@ usage: fzf [options]
     -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
+    -n, --nth=[-]N       Match only in the N-th token of the item
+    -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
     -i                   Case-insensitive match (default: smart-case match)
@@ -175,6 +177,14 @@ fco() {
   commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
   commit=$(echo "$commits" | fzf +s +m -e) &&
   git checkout $(echo "$commit" | sed "s/ .*//")
+}
+
+# ftags - search ctags
+ftags() {
+  local line
+  [ -e tags ] &&
+    line=$(grep -v "^!" tags | cut -f1-3 | cut -c1-80 | fzf --nth=1) &&
+    $EDITOR $(cut -f2 <<< "$line")
 }
 
 # fq1 [QUERY]
