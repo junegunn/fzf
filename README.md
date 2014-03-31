@@ -30,6 +30,9 @@ The script will setup:
 - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) for bash and zsh
 - Fuzzy auto-completion for bash
 
+If you don't use bash or zsh, you have to manually place fzf executable in a
+directory included in `$PATH`. Key bindings are not yet supported.
+
 ### Install as Vim plugin
 
 Once you have cloned the repository, add the following line to your .vimrc.
