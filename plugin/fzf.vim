@@ -108,6 +108,15 @@ function! s:execute(dict, command, temps)
   endif
 endfunction
 
+function! s:screenrow()
+  try
+    execute "normal! :let g:_screenrow = screenrow()\<cr>"
+    return g:_screenrow
+  finally
+    unlet! g:_screenrow
+  endtry
+endfunction
+
 function! s:execute_tmux(dict, command, temps)
   if has_key(a:dict, 'dir')
     let command = 'cd '.s:escape(a:dict.dir).' && '.a:command
@@ -117,7 +126,7 @@ function! s:execute_tmux(dict, command, temps)
 
   if type(a:dict.tmux) == 1
     if a:dict.tmux =~ '%$'
-      let height = screenrow() * str2nr(a:dict.tmux[0:-2]) / 100
+      let height = s:screenrow() * str2nr(a:dict.tmux[0:-2]) / 100
     else
       let height = str2nr(a:dict.tmux)
     endif
