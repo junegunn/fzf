@@ -115,14 +115,14 @@ __fsel() {
 }
 
 __fsel_tmux() {
-  local height lines
+  local height
   height=${FZF_TMUX_HEIGHT:-40%}
-  lines=${LINES:-40}
   if [[ $height =~ %$ ]]; then
-    height=${height:0:${#height}-1}
-    height=$(( height * lines / 100 ))
+    height="-p ${height%\%}"
+  else
+    height="-l $height"
   fi
-  tmux split-window -l $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
+  tmux split-window $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
 }
 
 __fcd() {
@@ -189,14 +189,14 @@ EOF
 
 if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
   fzf-file-widget() {
-    local height lines
+    local height
     height=${FZF_TMUX_HEIGHT:-40%}
-    lines=${LINES:-40}
     if [[ $height =~ %$ ]]; then
-      height=${height:0:${#height}-1}
-      height=$(( height * lines / 100 ))
+      height="-p ${height%\%}"
+    else
+      height="-l $height"
     fi
-    tmux split-window -l $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
+    tmux split-window $height "tmux send-keys -t $TMUX_PANE \"\$($__fsel)\""
   }
 else
   fzf-file-widget() {

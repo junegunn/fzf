@@ -115,20 +115,16 @@ function! s:execute_tmux(dict, command, temps)
     let command = a:command
   endif
 
-  if type(a:dict.tmux) == 1
-    if a:dict.tmux =~ '%$'
-      let height = &lines * str2nr(a:dict.tmux[0:-2]) / 100
-    else
-      let height = str2nr(a:dict.tmux)
-    endif
+  if type(a:dict.tmux) == 1 && a:dict.tmux =~ '%$'
+    let height = '-p '.a:dict.tmux[0:-2]
   else
-    let height = a:dict.tmux
+    let height = '-l '.a:dict.tmux
   endif
 
   let s:pane = substitute(
     \ system(
       \ printf(
-        \ 'tmux split-window -l %d -P -F "#{pane_id}" %s',
+        \ 'tmux split-window %s -P -F "#{pane_id}" %s',
         \ height, s:shellesc(command))), '\n', '', 'g')
   let s:dict = a:dict
   let s:temps = a:temps
