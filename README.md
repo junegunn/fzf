@@ -56,7 +56,8 @@ usage: fzf [options]
     -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
-    -n, --nth=[-]N       Match only in the N-th token of the item
+    -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
+                         search scope (positive or negative integers)
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
@@ -186,8 +187,11 @@ fco() {
 ftags() {
   local line
   [ -e tags ] &&
-    line=$(grep -v "^!" tags | cut -f1-3 | cut -c1-80 | fzf --nth=1) &&
-    $EDITOR $(cut -f2 <<< "$line")
+  line=$(
+    awk 'BEGIN { FS="\t" } !/^!/ {print toupper($4)"\t"$1"\t"$2"\t"$3}' tags |
+    cut -c1-80 | fzf --nth=1,2
+  ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
+                                      -c "silent tag $(cut -f2 <<< "$line")"
 }
 
 # fq1 [QUERY]

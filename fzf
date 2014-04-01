@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.2 (March 30, 2014)
+# Version: 0.8.3 (April 2, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -126,9 +126,9 @@ class FZF
       when '-n', '--nth'
         usage 1, 'field number required' unless nth = argv.shift
         usage 1, 'invalid field number' if nth.to_i == 0
-        @nth = nth.to_i
-      when /^-n(-?[1-9][0-9]*)$/, /^--nth=(-?[1-9][0-9]*)$/
-        @nth = $1.to_i
+        @nth = parse_nth nth
+      when /^-n([0-9,-]+)$/, /^--nth=([0-9,-]+)$/
+        @nth = parse_nth $1
       when '-d', '--delimiter'
         usage 1, 'delimiter required' unless delim = argv.shift
         @delim = FZF.build_delim_regex delim
@@ -167,6 +167,14 @@ class FZF
       @main     = Thread.current
       @plcount  = 0
     end
+  end
+
+  def parse_nth nth
+    nth.split(',').map { |n|
+      ni = n.to_i
+      usage 1, "invalid field number: #{n}" if ni == 0
+      ni
+    }
   end
 
   def FZF.build_delim_regex delim
@@ -227,7 +235,8 @@ class FZF
     -e, --extended-exact Extended-search mode (exact match)
     -q, --query=STR      Initial query
     -f, --filter=STR     Filter mode. Do not start interactive finder.
-    -n, --nth=[-]N       Match only in the N-th token of the item
+    -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
+                         search scope (positive or negative integers)
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
@@ -1059,7 +1068,7 @@ class FZF
     end
 
     def initialize nth, delim
-      @nth = nth && (nth > 0 ? nth - 1 : nth)
+      @nth = nth && nth.map { |n| n > 0 ? n - 1 : n }
       @delim = delim
       @tokens_cache = {}
     end
@@ -1080,11 +1089,14 @@ class FZF
       if @nth
         prefix_length, tokens = tokenize str
 
-        if (token = tokens[@nth]) && (md = token.match(pat) rescue nil)
-          prefix_length += (tokens[0...@nth] || []).join.length
-          offset = md.offset(0).map { |o| o + prefix_length }
-          MatchData.new offset
+        @nth.each do |n|
+          if (token = tokens[n]) && (md = token.match(pat) rescue nil)
+            prefix_length += (tokens[0...n] || []).join.length
+            offset = md.offset(0).map { |o| o + prefix_length }
+            return MatchData.new offset
+          end
         end
+        nil
       else
         str.match(pat) rescue nil
       end
