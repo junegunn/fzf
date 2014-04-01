@@ -89,7 +89,7 @@ export -f fzf > /dev/null
 
 # Auto-completion
 # ---------------
-$fzf_completion
+[[ \$- =~ i ]] && $fzf_completion
 
 EOF
 
@@ -98,8 +98,6 @@ EOF
       cat >> $src << "EOFZF"
 # Key bindings
 # ------------
-if [[ $- =~ i ]]; then
-
 __fsel() {
   find * -path '*/\.*' -prune \
     -o -type f -print \
@@ -110,6 +108,8 @@ __fsel() {
   echo
 }
 
+if [[ $- =~ i ]]; then
+
 __fsel_tmux() {
   local height
   height=${FZF_TMUX_HEIGHT:-40%}
@@ -118,7 +118,7 @@ __fsel_tmux() {
   else
     height="-l $height"
   fi
-  tmux split-window $height "bash -ci 'source ~/.fzf.bash; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
+  tmux split-window $height "bash -c 'source ~/.fzf.bash; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
 }
 
 __fcd() {
