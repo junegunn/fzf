@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+require 'curses'
+require 'timeout'
+require 'stringio'
 require 'minitest/autorun'
 $LOAD_PATH.unshift File.expand_path('../..', __FILE__)
 ENV['FZF_EXECUTABLE'] = '0'
@@ -20,6 +23,15 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,  fzf.color
     assert_equal nil,   fzf.rxflag
     assert_equal true,  fzf.mouse
+    assert_equal nil,   fzf.nth
+    assert_equal true,  fzf.color
+    assert_equal false, fzf.black
+    assert_equal true,  fzf.ansi256
+    assert_equal '',    fzf.query.get
+    assert_equal false, fzf.select1
+    assert_equal false, fzf.exit0
+    assert_equal nil,   fzf.filter
+    assert_equal nil,   fzf.extended
   end
 
   def test_environment_variables
@@ -30,7 +42,8 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.nth
 
     ENV['FZF_DEFAULT_OPTS'] =
-      '-x -m -s 10000 -q "  hello  world  " +c +2 --no-mouse -f "goodbye world" --black --nth=3,-1,2'
+      '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' +
+      '--no-mouse -f "goodbye world" --black --nth=3,-1,2'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -43,13 +56,16 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.ansi256
     assert_equal true,    fzf.black
     assert_equal false,   fzf.mouse
+    assert_equal true,    fzf.select1
+    assert_equal true,    fzf.exit0
     assert_equal [3, -1, 2], fzf.nth
   end
 
   def test_option_parser
     # Long opts
-    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
-                     --filter=howdy --extended-exact --no-mouse --no-256 --nth=1]
+    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
+                     --exit-0 --filter=howdy --extended-exact
+                     --no-mouse --no-256 --nth=1]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -58,12 +74,16 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.mouse
     assert_equal 0,       fzf.rxflag
     assert_equal 'hello', fzf.query.get
+    assert_equal true,    fzf.select1
+    assert_equal true,    fzf.exit0
     assert_equal 'howdy', fzf.filter
     assert_equal :exact,  fzf.extended
     assert_equal [1],     fzf.nth
 
-    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello
-                     --filter a --filter b --no-256 --black --nth -2
+    # Long opts (left-to-right)
+    fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query=hello
+                     --filter a --filter b --no-256 --black --nth -1 --nth -2
+                     --select-1 --exit-0 --no-select-1 --no-exit-0
                      --no-sort -i --color --no-multi --256]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
@@ -74,11 +94,13 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 1,       fzf.rxflag
     assert_equal 'b',     fzf.filter
     assert_equal 'hello', fzf.query.get
+    assert_equal false,   fzf.select1
+    assert_equal false,   fzf.exit0
     assert_equal nil,     fzf.extended
     assert_equal [-2],    fzf.nth
 
     # Short opts
-    fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fhowdy +2 -n3]
+    fzf = FZF.new %w[-s2000 +c -m +i -qhello -x -fhowdy +2 -n3 -1 -0]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -88,10 +110,14 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 'howdy', fzf.filter
     assert_equal :fuzzy,  fzf.extended
     assert_equal [3],     fzf.nth
+    assert_equal true,    fzf.select1
+    assert_equal true,    fzf.exit0
 
     # Left-to-right
     fzf = FZF.new %w[-s 2000 +c -m +i -qhello -x -fgoodbye +2 -n3 -n4,5
-                     -s 3000 -c +m -i -q world +x -fworld -2 --black --no-black]
+                     -s 3000 -c +m -i -q world +x -fworld -2 --black --no-black
+                     -1 -0 +1 +0
+                    ]
     assert_equal 3000,    fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
@@ -99,13 +125,11 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.black
     assert_equal 1,       fzf.rxflag
     assert_equal 'world', fzf.query.get
+    assert_equal false,   fzf.select1
+    assert_equal false,   fzf.exit0
     assert_equal 'world', fzf.filter
     assert_equal nil,     fzf.extended
     assert_equal [4, 5],  fzf.nth
-
-    fzf = FZF.new %w[--query hello +s -s 2000 --query=world]
-    assert_equal 2000,    fzf.sort
-    assert_equal 'world', fzf.query.get
   rescue SystemExit => e
     assert false, "Exited"
   end
@@ -537,6 +561,61 @@ class TestFZF < MiniTest::Unit::TestCase
 
     matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2], regex
     assert_equal [[list[0], [[1, 2]]], [list[1], [[8, 9]]]], matcher.match(list, 'f', '', '')
+  end
+
+  def stream_for str
+    StringIO.new(str).tap do |sio|
+      sio.instance_eval do
+        alias org_gets gets
+
+        def gets
+          org_gets.tap { |e| sleep 0.5 unless e.nil? }
+        end
+      end
+    end
+  end
+
+  def test_select_1
+    stream = stream_for "Hello\nWorld"
+    output = StringIO.new
+
+    begin
+      $stdout = output
+      FZF.new(%w[--query=ol --select-1], stream).start
+    rescue SystemExit => e
+      assert_equal 0, e.status
+      assert_equal 'World', output.string.chomp
+    ensure
+      $stdout = STDOUT
+    end
+  end
+
+  def test_select_1_ambiguity
+    stream = stream_for "Hello\nWorld"
+    begin
+      Timeout::timeout(3) do
+        FZF.new(%w[--query=o --select-1], stream).start
+      end
+      flunk 'Should not reach here'
+    rescue Exception => e
+      Curses.close_screen
+      assert_instance_of Timeout::Error, e
+    end
+  end
+
+  def test_exit_0
+    stream = stream_for "Hello\nWorld"
+    output = StringIO.new
+
+    begin
+      $stdout = output
+      FZF.new(%w[--query=zz --exit-0], stream).start
+    rescue SystemExit => e
+      assert_equal 1, e.status
+      assert_equal '', output.string
+    ensure
+      $stdout = STDOUT
+    end
   end
 end
 

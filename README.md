@@ -50,23 +50,31 @@ Usage
 ```
 usage: fzf [options]
 
-  Options
-    -m, --multi          Enable multi-select
+  Search
     -x, --extended       Extended-search mode
     -e, --extended-exact Extended-search mode (exact match)
-    -q, --query=STR      Initial query
-    -f, --filter=STR     Filter mode. Do not start interactive finder.
+    -i                   Case-insensitive match (default: smart-case match)
+    +i                   Case-sensitive match
     -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
                          search scope (positive or negative integers)
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
+
+  Search result
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
-    -i                   Case-insensitive match (default: smart-case match)
-    +i                   Case-sensitive match
+
+  Interface
+    -m, --multi          Enable multi-select with tab/shift-tab
+        --no-mouse       Disable mouse
     +c, --no-color       Disable colors
     +2, --no-256         Disable 256-color
         --black          Use black background
-        --no-mouse       Disable mouse
+
+  Scripting
+    -q, --query=STR      Start the finder with the given query
+    -1, --select-1       (with --query) Automatically select the only match
+    -0, --exit-0         (with --query) Exit when there's no match
+    -f, --filter=STR     Filter mode. Do not start interactive finder.
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -137,10 +145,12 @@ Useful examples
 ---------------
 
 ```sh
-# vimf - Open selected file in Vim
-vimf() {
+# fe [FUZZY PATTERN] - Open the selected file with the default editor
+#   - Bypass fuzzy finder if there's only one match (--select-1)
+#   - Exit if there's no match (--exit-0)
+fe() {
   local file
-  file=$(fzf --query="$1") && vim "$file"
+  file=$(fzf --query="$1" --select-1 --exit-0) && ${EDITOR:-vim} "$file"
 }
 
 # fd - cd to selected directory
@@ -192,29 +202,6 @@ ftags() {
     cut -c1-80 | fzf --nth=1,2
   ) && $EDITOR $(cut -f3 <<< "$line") -c "set nocst" \
                                       -c "silent tag $(cut -f2 <<< "$line")"
-}
-
-# fq1 [QUERY]
-# - Immediately select the file when there's only one match.
-#   If not, start the fuzzy finder as usual.
-fq1() {
-  local lines
-  lines=$(fzf --filter="$1" --no-sort)
-  if [ -z "$lines" ]; then
-    return 1
-  elif [ $(wc -l <<< "$lines") -eq 1 ]; then
-    echo "$lines"
-  else
-    echo "$lines" | fzf --query="$1"
-  fi
-}
-
-# fe [QUERY]
-# - Open the selected file with the default editor
-#   (Bypass fuzzy finder when there's only one match)
-fe() {
-  local file
-  file=$(fq1 "$1") && ${EDITOR:-vim} "$file"
 }
 ```
 

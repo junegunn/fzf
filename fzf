@@ -51,7 +51,7 @@ end
 class FZF
   C = Curses
   attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256,
-              :mouse, :multi, :query, :filter, :extended
+              :mouse, :multi, :query, :select1, :exit0, :filter, :extended
 
   class AtomicVar
     def initialize value
@@ -83,6 +83,8 @@ class FZF
     @multi    = false
     @mouse    = true
     @extended = nil
+    @select1  = false
+    @exit0    = false
     @filter   = nil
     @nth      = nil
     @delim    = nil
@@ -113,6 +115,10 @@ class FZF
       when       '--mouse'       then @mouse    = true
       when       '--no-mouse'    then @mouse    = false
       when '+s', '--no-sort'     then @sort     = nil
+      when '-1', '--select-1'    then @select1  = true
+      when '+1', '--no-select-1' then @select1  = false
+      when '-0', '--exit-0'      then @exit0    = true
+      when '+0', '--no-exit-0'   then @exit0    = false
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
         @query = AtomicVar.new query.dup
@@ -184,41 +190,60 @@ class FZF
 
   def start
     if @filter
-      start_reader(false).join
+      start_reader.join
       filter_list @new
     else
-      @stdout = $stdout.clone
-      $stdout.reopen($stderr)
+      start_reader
+      emit(:key) { q = @query.get; [q, q.length] } unless @query.empty?
+      if !@query.empty? && (@select1 || @exit0)
+        start_search do |loaded, matches|
+          len = matches.length
+          if loaded
+            if @select1 && len == 1
+              puts matches.first.first
+              exit 0
+            elsif @exit0 && len == 0
+              exit 1
+            end
+          end
 
-      start_reader true
-      init_screen
-      start_renderer
-      start_search
-      start_loop
+          if loaded || len > 1
+            start_renderer
+            Thread.new { start_loop }
+          end
+        end
+
+        sleep
+      else
+        start_search
+        start_renderer
+        start_loop
+      end
     end
   end
 
   def filter_list list
-    matches = get_matcher.match(list, @filter, '', '')
+    matches = matcher.match(list, @filter, '', '')
     if @sort && matches.length <= @sort
       matches = sort_by_rank(matches)
     end
     matches.each { |m| puts m.first }
   end
 
-  def get_matcher
-    if @extended
-      ExtendedFuzzyMatcher.new @rxflag, @extended, @nth, @delim
-    else
-      FuzzyMatcher.new @rxflag, @nth, @delim
-    end
+  def matcher
+    @matcher ||=
+      if @extended
+        ExtendedFuzzyMatcher.new @rxflag, @extended, @nth, @delim
+      else
+        FuzzyMatcher.new @rxflag, @nth, @delim
+      end
   end
 
   def version
     File.open(__FILE__, 'r') do |f|
       f.each_line do |line|
         if line =~ /Version: (.*)/
-          $stdout.puts "fzf " << $1
+          $stdout.puts 'fzf ' << $1
           exit
         end
       end
@@ -229,23 +254,31 @@ class FZF
     $stderr.puts message if message
     $stderr.puts %[usage: fzf [options]
 
-  Options
-    -m, --multi          Enable multi-select
+  Search
     -x, --extended       Extended-search mode
     -e, --extended-exact Extended-search mode (exact match)
-    -q, --query=STR      Initial query
-    -f, --filter=STR     Filter mode. Do not start interactive finder.
+    -i                   Case-insensitive match (default: smart-case match)
+    +i                   Case-sensitive match
     -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
                          search scope (positive or negative integers)
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
+
+  Search result
     -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
     +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
-    -i                   Case-insensitive match (default: smart-case match)
-    +i                   Case-sensitive match
+
+  Interface
+    -m, --multi          Enable multi-select with tab/shift-tab
+        --no-mouse       Disable mouse
     +c, --no-color       Disable colors
     +2, --no-256         Disable 256-color
         --black          Use black background
-        --no-mouse       Disable mouse
+
+  Scripting
+    -q, --query=STR      Start the finder with the given query
+    -1, --select-1       (with --query) Automatically select the only match
+    -0, --exit-0         (with --query) Exit when there's no match
+    -f, --filter=STR     Filter mode. Do not start interactive finder.
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -547,6 +580,9 @@ class FZF
   end
 
   def init_screen
+    @stdout = $stdout.clone
+    $stdout.reopen($stderr)
+
     C.init_screen
     C.mousemask C::ALL_MOUSE_EVENTS if @mouse
     C.start_color
@@ -604,7 +640,7 @@ class FZF
     C.refresh
   end
 
-  def start_reader curses
+  def start_reader
     stream =
       if @source.tty?
         if default_command = ENV['FZF_DEFAULT_COMMAND']
@@ -623,13 +659,12 @@ class FZF
         emit(:new) { @new << line.chomp }
       end
       emit(:loaded) { true }
-      @spinner.clear if curses
+      @spinner.clear if @spinner
     end
   end
 
-  def start_search
-    matcher  = get_matcher
-    searcher = Thread.new {
+  def start_search &callback
+    Thread.new do
       lists   = []
       events  = {}
       fcache  = {}
@@ -668,7 +703,7 @@ class FZF
           progress   = 0
           started_at = Time.now
 
-          if new_search && !lists.empty?
+          if updated = new_search && !lists.empty?
             q, cx = events.delete(:key) || [q, 0]
             empty = matcher.empty?(q)
             unless matches = fcache[q]
@@ -699,6 +734,10 @@ class FZF
             @matches.set matches
           end#new_search
 
+          callback = nil if callback &&
+                            (updated || events[:loaded]) &&
+                            callback.call(events[:loaded], matches)
+
           # This small delay reduces the number of partial lists
           sleep((delay = [20, delay + 5].min) * 0.01) unless user_input
 
@@ -707,7 +746,7 @@ class FZF
       rescue Exception => e
         @main.raise e
       end
-    }
+    end
   end
 
   def pick
@@ -751,6 +790,8 @@ class FZF
   end
 
   def start_renderer
+    init_screen
+
     Thread.new do
       begin
         while blk = @queue.shift
@@ -1030,7 +1071,6 @@ class FZF
       actions[127]      = actions[ctrl(:h)]
       actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
 
-      emit(:key) { [@query.get, cursor] } unless @query.empty?
       while true
         @cursor_x.set cursor
         render { print_input }
@@ -1093,7 +1133,7 @@ class FZF
           if (token = tokens[n]) && (md = token.match(pat) rescue nil)
             prefix_length += (tokens[0...n] || []).join.length
             offset = md.offset(0).map { |o| o + prefix_length }
-            return MatchData.new offset
+            return MatchData.new(offset)
           end
         end
         nil
