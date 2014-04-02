@@ -590,6 +590,21 @@ class TestFZF < MiniTest::Unit::TestCase
     end
   end
 
+  def test_select_1_without_query
+    stream = stream_for "Hello World"
+    output = StringIO.new
+
+    begin
+      $stdout = output
+      FZF.new(%w[--select-1], stream).start
+    rescue SystemExit => e
+      assert_equal 0, e.status
+      assert_equal 'Hello World', output.string.chomp
+    ensure
+      $stdout = STDOUT
+    end
+  end
+
   def test_select_1_ambiguity
     stream = stream_for "Hello\nWorld"
     begin
@@ -611,7 +626,22 @@ class TestFZF < MiniTest::Unit::TestCase
       $stdout = output
       FZF.new(%w[--query=zz --exit-0], stream).start
     rescue SystemExit => e
-      assert_equal 1, e.status
+      assert_equal 0, e.status
+      assert_equal '', output.string
+    ensure
+      $stdout = STDOUT
+    end
+  end
+
+  def test_exit_0_without_query
+    stream = stream_for ""
+    output = StringIO.new
+
+    begin
+      $stdout = output
+      FZF.new(%w[--exit-0], stream).start
+    rescue SystemExit => e
+      assert_equal 0, e.status
       assert_equal '', output.string
     ensure
       $stdout = STDOUT

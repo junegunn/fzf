@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.3 (April 2, 2014)
+# Version: 0.8.3 (April 3, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -194,16 +194,16 @@ class FZF
       filter_list @new
     else
       start_reader
-      emit(:key) { q = @query.get; [q, q.length] } unless @query.empty?
-      if !@query.empty? && (@select1 || @exit0)
+      emit(:key) { q = @query.get; [q, q.length] } unless empty = @query.empty?
+      if @select1 || @exit0
         start_search do |loaded, matches|
-          len = matches.length
+          len = empty ? @count.get : matches.length
           if loaded
             if @select1 && len == 1
-              puts matches.first.first
+              puts empty ? matches.first : matches.first.first
               exit 0
             elsif @exit0 && len == 0
-              exit 1
+              exit 0
             end
           end
 
@@ -276,8 +276,8 @@ class FZF
 
   Scripting
     -q, --query=STR      Start the finder with the given query
-    -1, --select-1       (with --query) Automatically select the only match
-    -0, --exit-0         (with --query) Exit when there's no match
+    -1, --select-1       Automatically select the only match
+    -0, --exit-0         Exit immediately when there's no match
     -f, --filter=STR     Filter mode. Do not start interactive finder.
 
   Environment variables

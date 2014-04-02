@@ -72,8 +72,8 @@ usage: fzf [options]
 
   Scripting
     -q, --query=STR      Start the finder with the given query
-    -1, --select-1       (with --query) Automatically select the only match
-    -0, --exit-0         (with --query) Exit when there's no match
+    -1, --select-1       Automatically select the only match
+    -0, --exit-0         Exit immediately when there's no match
     -f, --filter=STR     Filter mode. Do not start interactive finder.
 
   Environment variables
