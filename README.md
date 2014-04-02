@@ -150,7 +150,8 @@ Useful examples
 #   - Exit if there's no match (--exit-0)
 fe() {
   local file
-  file=$(fzf --query="$1" --select-1 --exit-0) && ${EDITOR:-vim} "$file"
+  file=$(fzf --query="$1" --select-1 --exit-0)
+  [ -n "$file" ] && ${EDITOR:-vim} "$file"
 }
 
 # fd - cd to selected directory
