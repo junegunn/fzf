@@ -400,7 +400,7 @@ class TestFZF < MiniTest::Unit::TestCase
        ["0____1",   [[0, 6]]],
        ["0_____1",  [[0, 7]]],
        ["0______1", [[0, 8]]]],
-      FZF.new([]).sort_by_rank(matcher.match(list, '01', '', '')))
+      FZF.sort(matcher.match(list, '01', '', '')))
 
     assert_equal(
       [["01",       [[0, 1], [1, 2]]],
@@ -411,16 +411,19 @@ class TestFZF < MiniTest::Unit::TestCase
        ["____0_1",  [[4, 5], [6, 7]]],
        ["0______1", [[0, 1], [7, 8]]],
        ["___01___", [[3, 4], [4, 5]]]],
-      FZF.new([]).sort_by_rank(xmatcher.match(list, '0 1', '', '')))
+      FZF.sort(xmatcher.match(list, '0 1', '', '')))
 
     assert_equal(
-      [["_01_",     [[1, 3], [0, 4]]],
-       ["0____1",   [[0, 6], [1, 3]]],
-       ["0_____1",  [[0, 7], [1, 3]]],
-       ["0______1", [[0, 8], [1, 3]]],
-       ["___01___", [[3, 5], [0, 2]]],
-       ["____0_1",  [[4, 7], [0, 2]]]],
-      FZF.new([]).sort_by_rank(xmatcher.match(list, '01 __', '', '')))
+      [["_01_",     [[1, 3], [0, 4]], [4, 4, "_01_"]],
+       ["___01___", [[3, 5], [0, 2]], [4, 8, "___01___"]],
+       ["____0_1",  [[4, 7], [0, 2]], [5, 7, "____0_1"]],
+       ["0____1",   [[0, 6], [1, 3]], [6, 6, "0____1"]],
+       ["0_____1",  [[0, 7], [1, 3]], [7, 7, "0_____1"]],
+       ["0______1", [[0, 8], [1, 3]], [8, 8, "0______1"]]],
+      FZF.sort(xmatcher.match(list, '01 __', '', '')).map { |tuple|
+         tuple << FZF.rank(tuple)
+       }
+    )
   end
 
   def test_extended_exact_mode
@@ -646,6 +649,17 @@ class TestFZF < MiniTest::Unit::TestCase
     ensure
       $stdout = STDOUT
     end
+  end
+
+  def test_ranking_overlap_match_regions
+    list = [
+      '1           3   4      2',
+      '1           2   3    4'
+    ]
+    assert_equal [
+      ['1           2   3    4',   [[0, 13], [16, 22]]],
+      ['1           3   4      2', [[0, 24], [12, 17]]],
+    ], FZF.sort(FZF::ExtendedFuzzyMatcher.new(nil).match(list, '12 34', '', ''))
   end
 end
 

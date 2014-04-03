@@ -98,7 +98,7 @@ class FZF
       end
     while o = argv.shift
       case o
-      when '--version'           then version
+      when '--version'           then FZF.version
       when '-h', '--help'        then usage 0
       when '-m', '--multi'       then @multi    = true
       when '+m', '--no-multi'    then @multi    = false
@@ -225,7 +225,7 @@ class FZF
   def filter_list list
     matches = matcher.match(list, @filter, '', '')
     if @sort && matches.length <= @sort
-      matches = sort_by_rank(matches)
+      matches = FZF.sort(matches)
     end
     matches.each { |m| puts m.first }
   end
@@ -239,14 +239,33 @@ class FZF
       end
   end
 
-  def version
-    File.open(__FILE__, 'r') do |f|
-      f.each_line do |line|
-        if line =~ /Version: (.*)/
-          $stdout.puts 'fzf ' << $1
-          exit
+  class << self
+    def version
+      File.open(__FILE__, 'r') do |f|
+        f.each_line do |line|
+          if line =~ /Version: (.*)/
+            $stdout.puts 'fzf ' << $1
+            exit
+          end
         end
       end
+    end
+
+    def sort list
+      list.sort_by { |tuple| rank tuple }
+    end
+
+    def rank tuple
+      line, offsets = tuple
+      matchlen = 0
+      pe = 0
+      offsets.sort.each do |pair|
+        b, e = pair
+        b    = pe if pe > b
+        pe   = e  if e > pe
+        matchlen += e - b if e > b
+      end
+      [matchlen, line.length, line]
     end
   end
 
@@ -519,21 +538,6 @@ class FZF
     C.attroff color(:chosen, true) if chosen
   end
 
-  def sort_by_rank list
-    list.sort_by { |tuple|
-      line, offsets = tuple
-      matchlen = 0
-      pe = nil
-      offsets.sort.each do |pair|
-        b, e = pair
-        b    = pe if pe && pe > b
-        pe   = e
-        matchlen += e - b
-      end
-      [matchlen, line.length, line]
-    }
-  end
-
   AFTER_1_9 = RUBY_VERSION.split('.').map { |e| e.rjust(3, '0') }.join >= '001009'
 
   if AFTER_1_9
@@ -725,7 +729,7 @@ class FZF
               next if skip
               matches = @sort ? found : found.reverse
               if !empty && @sort && matches.length <= @sort
-                matches = sort_by_rank(matches)
+                matches = FZF.sort(matches)
               end
               fcache[q] = matches
             end
