@@ -172,7 +172,7 @@ fda() {
 
 # fh - repeat history
 fh() {
-  eval $(history | fzf +s | sed 's/ *[0-9]* *//')
+  eval $(('fc' -l 1 || 'history') | fzf +s | sed 's/ *[0-9]* *//')
 }
 
 # fkill - kill process
