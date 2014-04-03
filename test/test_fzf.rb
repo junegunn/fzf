@@ -421,8 +421,8 @@ class TestFZF < MiniTest::Unit::TestCase
        ["0_____1",  [[0, 7], [1, 3]], [7, 7, "0_____1"]],
        ["0______1", [[0, 8], [1, 3]], [8, 8, "0______1"]]],
       FZF.sort(xmatcher.match(list, '01 __', '', '')).map { |tuple|
-         tuple << FZF.rank(tuple)
-       }
+        tuple << FZF.rank(tuple)
+      }
     )
   end
 
