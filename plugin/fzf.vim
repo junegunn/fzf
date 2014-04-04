@@ -40,6 +40,19 @@ else
   let s:exec = 'fzf'
 endif
 
+function! s:tmux_enabled()
+  if exists('s:tmux')
+    return s:tmux
+  endif
+
+  let s:tmux = 0
+  if exists('$TMUX')
+    let output = system('tmux -V')
+    let s:tmux = !v:shell_error && output >= 'tmux 1.7'
+  endif
+  return s:tmux
+endfunction
+
 function! s:shellesc(arg)
   return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
 endfunction
@@ -75,7 +88,7 @@ function! fzf#run(...) abort
   endif
   let command = prefix.s:exec.' '.optstr.' > '.temps.result
 
-  if exists('$TMUX') && has_key(dict, 'tmux') &&
+  if s:tmux_enabled() && has_key(dict, 'tmux') &&
         \ dict.tmux > 0 && winheight(0) >= s:min_tmux_height
     return s:execute_tmux(dict, command, temps)
   else
