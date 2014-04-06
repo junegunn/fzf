@@ -428,6 +428,30 @@ This limit can be adjusted with `-s` option, or with the environment variable
 export FZF_DEFAULT_OPTS="--sort 20000"
 ```
 
+### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
+
+[ag](https://github.com/ggreer/the_silver_searcher) or
+[pt](https://github.com/monochromegane/the_platinum_searcher) will do the
+filtering:
+
+```sh
+# Feed the output of ag into fzf
+ag -l -g "" | fzf
+
+# Setting ag as the default source for fzf
+export FZF_DEFAULT_COMMAND='ag -l -g ""'
+
+# Now fzf (w/o pipe) will use ag instead of find
+fzf
+```
+
+### Windows
+
+fzf works on [Cygwin](http://www.cygwin.com/) and
+[MSYS2](http://sourceforge.net/projects/msys2/). You may need to use `--black`
+option in MSYS2 to avoid rendering issues.
+
+
 License
 -------
 
