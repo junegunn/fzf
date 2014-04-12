@@ -390,10 +390,10 @@ function! g:bufopen(e)
 endfunction
 
 nnoremap <silent> <Leader><Enter> :call fzf#run({
-\   'source':  g:buflist(),
-\   'sink':    function('g:bufopen'),
-\   'options': '+m +s',
-\   'tmux':    15
+\   'source':      reverse(g:buflist()),
+\   'sink':        function('g:bufopen'),
+\   'options':     '+m',
+\   'tmux_height': '40%'
 \ })<CR>
 ```
 
