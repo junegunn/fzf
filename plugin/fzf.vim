@@ -21,6 +21,7 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+let s:min_tmux_width  = 10
 let s:min_tmux_height = 3
 let s:default_tmux_height = '40%'
 
@@ -88,12 +89,17 @@ function! fzf#run(...) abort
   endif
   let command = prefix.s:exec.' '.optstr.' > '.temps.result
 
-  if s:tmux_enabled() && has_key(dict, 'tmux') &&
-        \ dict.tmux > 0 && winheight(0) >= s:min_tmux_height
+  if s:tmux_enabled() && s:tmux_splittable(dict)
     return s:execute_tmux(dict, command, temps)
   else
     return s:execute(dict, command, temps)
   endif
+endfunction
+
+function! s:tmux_splittable(dict)
+  return
+  \ min([&columns, get(a:dict, 'tmux_width', 0)]) >= s:min_tmux_width ||
+  \ min([&lines, get(a:dict, 'tmux_height', get(a:dict, 'tmux', 0))]) >= s:min_tmux_height
 endfunction
 
 function! s:pushd(dict)
@@ -128,17 +134,25 @@ function! s:execute_tmux(dict, command, temps)
     let command = a:command
   endif
 
-  if type(a:dict.tmux) == 1 && a:dict.tmux =~ '%$'
-    let height = '-p '.a:dict.tmux[0:-2]
+  let splitopt = '-v'
+  if has_key(a:dict, 'tmux_width')
+    let splitopt = '-h'
+    let size = a:dict.tmux_width
   else
-    let height = '-l '.a:dict.tmux
+    let size = get(a:dict, 'tmux_height', get(a:dict, 'tmux'))
+  endif
+
+  if type(size) == 1 && size =~ '%$'
+    let sizeopt = '-p '.size[0:-2]
+  else
+    let sizeopt = '-l '.size
   endif
 
   let s:pane = substitute(
     \ system(
       \ printf(
-        \ 'tmux split-window %s -P -F "#{pane_id}" %s',
-        \ height, s:shellesc(command))), '\n', '', 'g')
+        \ 'tmux split-window %s %s -P -F "#{pane_id}" %s',
+        \ splitopt, sizeopt, s:shellesc(command))), '\n', '', 'g')
   let s:dict = a:dict
   let s:temps = a:temps
 

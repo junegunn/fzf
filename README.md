@@ -332,15 +332,16 @@ of the selected items.
 
 `fzf#run()` may take an options-dictionary:
 
-| Option name | Type          | Description                                                         |
-| ----------- | ------------- | ------------------------------------------------------------------- |
-| `source`    | string        | External command to generate input to fzf (e.g. `find .`)           |
-| `source`    | list          | Vim list as input to fzf                                            |
-| `sink`      | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)          |
-| `sink`      | funcref       | Reference to function to process each selected item                 |
-| `options`   | string        | Options to fzf                                                      |
-| `dir`       | string        | Working directory                                                   |
-| `tmux`      | number/string | Use tmux split if possible with the given height (e.g. `20`, `50%`) |
+| Option name   | Type          | Description                                                        |
+| ------------- | ------------- | ------------------------------------------------------------------ |
+| `source`      | string        | External command to generate input to fzf (e.g. `find .`)          |
+| `source`      | list          | Vim list as input to fzf                                           |
+| `sink`        | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)         |
+| `sink`        | funcref       | Reference to function to process each selected item                |
+| `options`     | string        | Options to fzf                                                     |
+| `dir`         | string        | Working directory                                                  |
+| `tmux_width`  | number/string | Use tmux vertical split with the given height (e.g. `20`, `50%`)   |
+| `tmux_height` | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
 
 #### Examples
 
@@ -366,9 +367,9 @@ nnoremap <silent> <Leader>C :call fzf#run({
 \   'source':
 \     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
 \         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
-\   'sink':    'colo',
-\   'options': '+m',
-\   'tmux':    15
+\   'sink':       'colo',
+\   'options':    '+m',
+\   'tmux_width': 20
 \ })<CR>
 ```
 
