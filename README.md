@@ -449,7 +449,7 @@ fzf
 
 fzf works on [Cygwin](http://www.cygwin.com/) and
 [MSYS2](http://sourceforge.net/projects/msys2/). You may need to use `--black`
-option in MSYS2 to avoid rendering issues.
+option on MSYS2 to avoid rendering issues.
 
 
 License
