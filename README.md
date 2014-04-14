@@ -5,8 +5,6 @@ fzf is a general-purpose fuzzy finder for your shell.
 
 ![](https://raw.github.com/junegunn/i/master/fzf.gif)
 
-([tmux integration!](https://cloud.githubusercontent.com/assets/700826/2593609/3ec13962-ba83-11e3-88d3-f9f95bd8a64b.gif))
-
 It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim) and
 the likes.
 
