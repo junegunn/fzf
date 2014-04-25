@@ -24,6 +24,15 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
+In case you don't have git installed:
+
+```sh
+mkdir -p ~/.fzf
+curl -L https://github.com/junegunn/fzf/archive/HEAD.tar.gz |
+    tar xz --strip-components 1 -C ~/.fzf
+~/.fzf/install
+```
+
 The script will setup:
 
 - `fzf` executable
@@ -31,7 +40,8 @@ The script will setup:
 - Fuzzy auto-completion for bash
 
 If you don't use bash or zsh, you have to manually place fzf executable in a
-directory included in `$PATH`. Key bindings are not yet supported.
+directory included in `$PATH`. Key bindings and auto-completion will not be
+available in that case.
 
 ### Install as Vim plugin
 
@@ -394,6 +404,10 @@ nnoremap <silent> <Leader><Enter> :call fzf#run({
 \   'tmux_height': '40%'
 \ })<CR>
 ```
+
+### Articles
+
+- [fzf+vim+tmux](http://junegunn.kr/2014/04/fzf+vim+tmux)
 
 Tips
 ----
