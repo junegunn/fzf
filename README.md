@@ -28,7 +28,7 @@ In case you don't have git installed:
 
 ```sh
 mkdir -p ~/.fzf
-curl -L https://github.com/junegunn/fzf/archive/HEAD.tar.gz |
+curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
     tar xz --strip-components 1 -C ~/.fzf
 ~/.fzf/install
 ```
