@@ -12,10 +12,9 @@ if [ $? -ne 0 ]; then
 fi
 
 # System ruby is preferred
-curses_check="begin; require 'curses'; rescue Exception; exit 1; end"
 system_ruby=/usr/bin/ruby
 if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
-  $system_ruby --disable-gems -e "$curses_check" 2> /dev/null
+  $system_ruby --disable-gems -rcurses -e0 2> /dev/null
   [ $? -eq 0 ] && ruby=$system_ruby
 fi
 
@@ -23,7 +22,7 @@ echo "OK ($ruby)"
 
 # Curses-support
 echo -n "Checking Curses support ... "
-"$ruby" -e "$curses_check"
+"$ruby" -rcurses -e0 2> /dev/null
 if [ $? -eq 0 ]; then
   echo "OK"
 else
@@ -45,7 +44,7 @@ echo -n "Checking Ruby version ... "
 "$ruby" -e 'exit RUBY_VERSION >= "1.9"'
 if [ $? -eq 0 ]; then
   echo ">= 1.9"
-  "$ruby" --disable-gems -e "$curses_check"
+  "$ruby" --disable-gems -rcurses -e0 2> /dev/null
   if [ $? -eq 0 ]; then
     fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
   else
