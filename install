@@ -230,29 +230,118 @@ EOFZF
   echo "OK"
 done
 
-echo
-for shell in bash zsh; do
-  rc=~/.${shell}rc
-  src="source ~/.fzf.${shell}"
+# fish
+has_fish=0
+if [ -n "$(which fish)" ]; then
+  has_fish=1
+  echo -n "Generate ~/.config/fish/functions/fzf.fish ... "
+  mkdir -p ~/.config/fish/functions
+  cat > ~/.config/fish/functions/fzf.fish << EOFZF
+function fzf
+  $fzf_cmd \$argv
+end
+EOFZF
+  echo "ok"
 
-  echo "Update $rc:"
-  echo "  - $src"
-  line=$(grep -nF "$src" $rc | sed 's/:.*//')
+  if [ $key_bindings -eq 0 ]; then
+    echo -n "Generate ~/.config/fish/functions/fzf_key_bindings.fish ... "
+    cat > ~/.config/fish/functions/fzf_key_bindings.fish << "EOFZF"
+function fzf_key_bindings
+  function __fzf_select
+    find * -path '*/\.*' -prune \
+      -o -type f -print \
+      -o -type d -print \
+      -o -type l -print 2> /dev/null | fzf -m | while read item
+      echo -n (echo -n "$item" | sed 's/ /\\\\ /g')' '
+    end
+    echo
+  end
+
+  function __fzf_ctrl_t
+    if [ -n "$TMUX_PANE" -a "$FZF_TMUX" != "0" ]
+      tmux split-window (__fzf_tmux_height) "fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
+    else
+      __fzf_select > $TMPDIR/fzf.result
+      and commandline -i (cat $TMPDIR/fzf.result)
+    end
+  end
+
+  function __fzf_ctrl_t_tmux
+    __fzf_select > $TMPDIR/fzf.result
+    and tmux send-keys -t $argv[1] (cat $TMPDIR/fzf.result)
+  end
+
+  function __fzf_ctrl_r
+    if history | fzf +s +m > $TMPDIR/fzf.result
+      commandline (cat $TMPDIR/fzf.result)
+    else
+      commandline -f repaint
+    end
+  end
+
+  function __fzf_alt_c
+    find * -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m > $TMPDIR/fzf.result
+    if [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
+      cd (cat $TMPDIR/fzf.result)
+    end
+    commandline -f repaint
+  end
+
+  function __fzf_tmux_height
+    if set -q FZF_TMUX_HEIGHT
+      set height $FZF_TMUX_HEIGHT
+    else
+      set height 40%
+    end
+    if echo $height | grep -q -E '%$'
+      echo "-p "(echo $height | sed 's/%$//')
+    else
+      echo "-l $height"
+    end
+    set -e height
+  end
+
+  bind \ct '__fzf_ctrl_t'
+  bind \cr '__fzf_ctrl_r'
+  bind \ec '__fzf_alt_c'
+end
+EOFZF
+    echo "ok"
+  fi
+fi
+
+append_line() {
+  echo "Update $2:"
+  echo "  - $1"
+  [ -f "$2" ] || touch "$2"
+  line=$(grep -nF "$1" "$2" | sed 's/:.*//')
   if [ -n "$line" ]; then
     echo "    - Already exists (line #$line)"
   else
-    echo $src >> $rc
+    echo "$1" >> "$2"
     echo "    - Added"
   fi
   echo
+}
+
+echo
+for shell in bash zsh; do
+  append_line "source ~/.fzf.${shell}" ~/.${shell}rc
 done
 
+if [ $key_bindings -eq 0 -a $has_fish -eq 1 ]; then
+  bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
+  append_line "fzf_key_bindings" "$bind_file"
+fi
+
 cat << EOF
-Finished. Reload your .bashrc or .zshrc.
+Finished. Restart your shell or reload config file.
    source ~/.bashrc  # bash
    source ~/.zshrc   # zsh
+EOF
+[ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
 
-To uninstall fzf, simply remove the added line.
+To uninstall fzf, simply remove the added lines.
 
 For more information, see: https://github.com/junegunn/fzf
 EOF

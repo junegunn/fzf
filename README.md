@@ -35,13 +35,13 @@ curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
 
 The script will setup:
 
-- `fzf` executable
-- Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) for bash and zsh
-- Fuzzy auto-completion for bash
+- `fzf` function (bash, zsh, fish)
+- Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
+- Fuzzy auto-completion (bash)
 
-If you don't use bash or zsh, you have to manually place fzf executable in a
-directory included in `$PATH`. Key bindings and auto-completion will not be
-available in that case.
+If you don't use any of the aforementioned shells, you have to manually place
+fzf executable in a directory included in `$PATH`. Key bindings and
+auto-completion will not be available in that case.
 
 ### Install as Vim plugin
 
@@ -456,6 +456,29 @@ export FZF_DEFAULT_COMMAND='ag -l -g ""'
 
 # Now fzf (w/o pipe) will use ag instead of find
 fzf
+```
+
+### Fish shell
+
+It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
+that it doesn't allow reading from STDIN in command substitution, which means
+simple `vim (fzf)` won't work as expected. The workaround is to store the result
+of fzf to a temporary file.
+
+```sh
+function vimf
+  if fzf > $TMPDIR/fzf.result
+    vim (cat $TMPDIR/fzf.result)
+  end
+end
+
+function fe
+  set tmp $TMPDIR/fzf.result
+  fzf --query="$argv[1]" --select-1 --exit-0 > $tmp
+  if [ (cat $tmp | wc -l) -gt 0 ]
+    vim (cat $tmp)
+  end
+end
 ```
 
 ### Windows
