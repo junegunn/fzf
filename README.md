@@ -458,6 +458,26 @@ export FZF_DEFAULT_COMMAND='ag -l -g ""'
 fzf
 ```
 
+### `git ls-tree` for fast traversal
+
+If you're running fzf in a large git repository, `git ls-tree` can boost up the
+speed of the traversal.
+
+```sh
+# Copy the original fzf function to __fzf
+declare -f __fzf > /dev/null ||
+  eval "$(echo "__fzf() {"; declare -f fzf | grep -v '^{' | tail -n +2)"
+
+# Use git ls-tree when possible
+fzf() {
+  if [ -n "$(git rev-parse HEAD 2> /dev/null)" ]; then
+    FZF_DEFAULT_COMMAND="git ls-tree -r --name-only HEAD" __fzf "$@"
+  else
+    __fzf "$@"
+  fi
+}
+```
+
 ### Fish shell
 
 It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
