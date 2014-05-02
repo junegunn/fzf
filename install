@@ -263,12 +263,14 @@ function fzf_key_bindings
     else
       __fzf_select > $TMPDIR/fzf.result
       and commandline -i (cat $TMPDIR/fzf.result)
+      rm -f $TMPDIR/fzf.result
     end
   end
 
   function __fzf_ctrl_t_tmux
     __fzf_select > $TMPDIR/fzf.result
     and tmux send-keys -t $argv[1] (cat $TMPDIR/fzf.result)
+    rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_ctrl_r
@@ -277,6 +279,7 @@ function fzf_key_bindings
     else
       commandline -f repaint
     end
+    rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_alt_c
@@ -285,6 +288,7 @@ function fzf_key_bindings
       cd (cat $TMPDIR/fzf.result)
     end
     commandline -f repaint
+    rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_tmux_height
