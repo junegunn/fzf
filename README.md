@@ -216,6 +216,9 @@ ftags() {
 }
 ```
 
+For more examples, see [the wiki
+page](https://github.com/junegunn/fzf/wiki/examples).
+
 Key bindings for command line
 -----------------------------
 
