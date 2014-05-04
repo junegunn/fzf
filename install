@@ -136,7 +136,7 @@ if [ -z "$(set -o | grep '^vi.*on')" ]; then
   if [ $__use_tmux -eq 1 ]; then
     bind '"\C-t": " \C-u \C-a\C-k$(__fsel_tmux)\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
   else
-    bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er"'
+    bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
@@ -153,7 +153,7 @@ else
   if [ $__use_tmux -eq 1 ]; then
     bind '"\C-t": "\e$a \eddi$(__fsel_tmux)\C-x\C-e\e0P$xa"'
   else
-    bind '"\C-t": "\e$a \eddi$(__fsel)\C-x\C-e\e0Px$a \C-x\C-r"'
+    bind '"\C-t": "\e$a \eddi$(__fsel)\C-x\C-e\e0Px$a \C-x\C-r\exa "'
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
