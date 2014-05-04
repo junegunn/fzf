@@ -222,9 +222,8 @@ page](https://github.com/junegunn/fzf/wiki/examples).
 Key bindings for command line
 -----------------------------
 
-The install script will setup the following key bindings.
-
-### bash/zsh
+The install script will setup the following key bindings for bash, zsh, and
+fish.
 
 - `CTRL-T` - Paste the selected file path(s) into the command line
 - `CTRL-R` - Paste the selected command from history into the command line
@@ -233,6 +232,10 @@ The install script will setup the following key bindings.
 If you're on a tmux session, `CTRL-T` will launch fzf in a new split-window. You
 may disable this tmux integration by setting `FZF_TMUX` to 0, or change the
 height of the window with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
+
+If you use vi mode on bash, you need to add `set -o vi` *before* `source
+~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
+mode.
 
 The source code can be found in `~/.fzf.bash` and in `~/.fzf.zsh`.
 
