@@ -237,7 +237,8 @@ If you use vi mode on bash, you need to add `set -o vi` *before* `source
 ~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
 mode.
 
-The source code can be found in `~/.fzf.bash`, `~/.fzf.zsh`, and
+If you want to customize the key bindings, consider editing the
+installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 `~/.config/fish/functions/fzf_key_bindings.fish`.
 
 Auto-completion
