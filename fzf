@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.3 (April 3, 2014)
+# Version: 0.8.4 (May 17, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256,
+  attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse,
               :mouse, :multi, :query, :select1, :exit0, :filter, :extended
 
   class AtomicVar
@@ -88,6 +88,7 @@ class FZF
     @filter   = nil
     @nth      = nil
     @delim    = nil
+    @reverse  = false
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -114,6 +115,8 @@ class FZF
       when       '--no-black'    then @black    = false
       when       '--mouse'       then @mouse    = true
       when       '--no-mouse'    then @mouse    = false
+      when       '--reverse'     then @reverse  = true
+      when       '--no-reverse'  then @reverse  = false
       when '+s', '--no-sort'     then @sort     = nil
       when '-1', '--select-1'    then @select1  = true
       when '+1', '--no-select-1' then @select1  = false
@@ -292,6 +295,7 @@ class FZF
     +c, --no-color       Disable colors
     +2, --no-256         Disable 256-color
         --black          Use black background
+        --reverse        Reverse orientation
 
   Scripting
     -q, --query=STR      Start the finder with the given query
@@ -428,7 +432,11 @@ class FZF
   end
 
   def max_items; C.lines - 2; end
-  def cursor_y;  C.lines - 1; end
+
+  def cursor_y offset = 0
+    @reverse ? (offset) : (C.lines - 1 - offset)
+  end
+
   def cprint str, col
     C.attron(col) do
       addstr_safe str
@@ -448,7 +456,7 @@ class FZF
   end
 
   def print_info msg = nil
-    C.setpos cursor_y - 1, 0
+    C.setpos cursor_y(1), 0
     C.clrtoeol
     prefix =
       if spinner = @spinner.first
@@ -766,7 +774,7 @@ class FZF
       # Wipe
       if items.length < @plcount
         @plcount.downto(items.length) do |idx|
-          C.setpos cursor_y - idx - 2, 0
+          C.setpos cursor_y(idx + 2), 0
           C.clrtoeol
         end
       end
@@ -781,7 +789,7 @@ class FZF
       }
       items.each_with_index do |item, idx|
         next unless wipe || cleanse.include?(idx)
-        row           = cursor_y - idx - 2
+        row           = cursor_y(idx + 2)
         chosen        = idx == vcursor
         selected      = @selects.include?([*item][0])
         line, offsets = convert_item item
@@ -1000,8 +1008,8 @@ class FZF
         },
         ctrl(:a) => proc { cursor = 0; nil },
         ctrl(:e) => proc { cursor = input.length; nil },
-        ctrl(:j) => proc { vselect { |v| v - 1 } },
-        ctrl(:k) => proc { vselect { |v| v + 1 } },
+        ctrl(:j) => proc { vselect { |v| v - (@reverse ? -1 : 1) } },
+        ctrl(:k) => proc { vselect { |v| v + (@reverse ? -1 : 1) } },
         ctrl(:w) => proc {
           pcursor = cursor
           backword.call
@@ -1021,7 +1029,7 @@ class FZF
                               when :stab then 1
                               when :sclick then 0
                               else -1
-                              end }
+                              end * (@reverse ? -1 : 1) }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },

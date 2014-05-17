@@ -32,6 +32,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false, fzf.exit0
     assert_equal nil,   fzf.filter
     assert_equal nil,   fzf.extended
+    assert_equal false, fzf.reverse
   end
 
   def test_environment_variables
@@ -43,7 +44,7 @@ class TestFZF < MiniTest::Unit::TestCase
 
     ENV['FZF_DEFAULT_OPTS'] =
       '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' +
-      '--no-mouse -f "goodbye world" --black --nth=3,-1,2'
+      '--no-mouse -f "goodbye world" --black --nth=3,-1,2 --reverse'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -58,6 +59,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.mouse
     assert_equal true,    fzf.select1
     assert_equal true,    fzf.exit0
+    assert_equal true,    fzf.reverse
     assert_equal [3, -1, 2], fzf.nth
   end
 
@@ -65,7 +67,7 @@ class TestFZF < MiniTest::Unit::TestCase
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
                      --exit-0 --filter=howdy --extended-exact
-                     --no-mouse --no-256 --nth=1]
+                     --no-mouse --no-256 --nth=1 --reverse]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -79,12 +81,14 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 'howdy', fzf.filter
     assert_equal :exact,  fzf.extended
     assert_equal [1],     fzf.nth
+    assert_equal true,    fzf.reverse
 
     # Long opts (left-to-right)
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query=hello
                      --filter a --filter b --no-256 --black --nth -1 --nth -2
                      --select-1 --exit-0 --no-select-1 --no-exit-0
-                     --no-sort -i --color --no-multi --256]
+                     --no-sort -i --color --no-multi --256
+                     --reverse --no-reverse]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
@@ -98,6 +102,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.exit0
     assert_equal nil,     fzf.extended
     assert_equal [-2],    fzf.nth
+    assert_equal false,   fzf.reverse
 
     # Short opts
     fzf = FZF.new %w[-s2000 +c -m +i -qhello -x -fhowdy +2 -n3 -1 -0]
