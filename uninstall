@@ -1,0 +1,45 @@
+#!/bin/bash
+
+remove_line() {
+  src=$(readlink "$2")
+  if [ $? -eq 0 ]; then
+    echo "Remove from $2 ($src):"
+  else
+    src=$2
+    echo "Remove from $2:"
+  fi
+  echo "  - $1"
+
+  changed=0
+  while [ 1 ]; do
+    line=$(grep -m1 -nF "$1" "$src") || break
+    line_no=$(sed 's/:.*//' <<< "$line")
+    echo "    - Remove line ($line)"
+    awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$src.bak" &&
+      mv "$src.bak" "$src" || break
+    changed=1
+  done
+  [ $changed -eq 0 ] && echo "    - Nothing found"
+  echo
+}
+
+for shell in bash zsh; do
+  rm -f ~/.fzf.${shell}
+  remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
+done
+
+bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
+if [ -f "$bind_file" ]; then
+  remove_line "fzf_key_bindings" "$bind_file"
+fi
+
+if [ -d ~/.config/fish/functions ]; then
+  rm -f ~/.config/fish/functions/fzf.fish
+
+  if [ "$(ls -A ~/.config/fish/functions)" ]; then
+    echo "Can't delete non-empty directory: \"~/.config/fish/functions\""
+  else
+    rmdir ~/.config/fish/functions
+  fi
+fi
+
