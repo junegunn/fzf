@@ -345,7 +345,7 @@ Finished. Restart your shell or reload config file.
 EOF
 [ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
 
-To uninstall fzf, simply remove the added lines.
+Use uninstall script to remove fzf.
 
 For more information, see: https://github.com/junegunn/fzf
 EOF
