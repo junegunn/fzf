@@ -3,13 +3,25 @@
 remove_line() {
   echo "Remove from $2:"
   echo "  - $1"
-  line=$(grep -nF "$1" "$2" | sed 's/:.*//')
-  if [ -n "$line" ]; then
-    echo "    - Remove line (line #$line)"
-    awk -v n=$line 'NR == n {next} {print}' $2 > $2.bak; mv $2.bak $2
-  else
+  
+  i=$(grep -c "$1" "$2")
+  if [ $i -eq 0 ]
+  then
     echo "    - Nothing found"
   fi
+  
+  while [ $i -gt 0 ]
+  do
+    line=$(grep -m1 -nF "$1" "$2")
+    lineNumber=$(grep -m1 -nF "$1" "$2" | sed 's/:.*//')
+    if [ -n "$lineNumber" ]; then
+      echo "    - Remove line ($line)"
+      awk -v n=$lineNumber 'NR == n {next} {print}' $2 > $2.bak && mv $2.bak $2
+    else
+      echo "    - Nothing found"
+    fi
+    i=`expr $i - 1`
+  done
   echo
 }
 
@@ -26,8 +38,18 @@ for shell in bash zsh; do
   fi
 done
 
-if [ -f ~/.config/fish/functions/fzf.fish ]
+if [ -d ~/.config/fish/functions ]
 then
-  rm ~/.config/fish/functions/fzf.fish
+  if [ -f ~/.config/fish/functions/fzf.fish ]
+  then
+    rm ~/.config/fish/functions/fzf.fish
+  fi
+
+  if [ "$(ls -A ~/.config/fish/functions)" ]
+  then
+    echo "Can't delete non-empty directory: \"~/.config/fish/functions\""
+  else
+    rmdir ~/.config/fish/functions
+  fi
 fi
-rmdir --ignore-fail-on-non-empty ~/.config/fish/functions
+
