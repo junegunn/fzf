@@ -127,6 +127,11 @@ class FZF
         @query = AtomicVar.new query.dup
       when /^-q(.*)$/, /^--query=(.*)$/
         @query = AtomicVar.new($1)
+      when /^--ignore=(.*)$/
+        @ignore = Regexp.new $1
+      when '--ignore'
+        usage 1, 'ignore string required' unless query = argv.shift
+        @ignore = Regexp.new query.dup
       when '-f', '--filter'
         usage 1, 'query string required' unless query = argv.shift
         @filter = query
@@ -698,6 +703,7 @@ class FZF
             end
 
             if events[:new]
+              @new = @new.select { |x| x !~ @ignore } if @ignore
               lists << @new
               @count.set { |c| c + @new.length }
               @spinner.set { |spinner|
@@ -1203,7 +1209,7 @@ class FZF
       cache[q] ||= (partial_cache ?
                     partial_cache.map { |e| e.first } : list).map { |line|
         # Ignore errors: e.g. invalid byte sequence in UTF-8
-        md = do_match(line, regexp)
+        md = do_match(line, regexp) if line !~ @ignore
         md && [line, [md.offset(0)]]
       }.compact
     end
