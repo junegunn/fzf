@@ -241,7 +241,7 @@ function fzf
   $fzf_cmd \$argv
 end
 EOFZF
-  echo "ok"
+  echo "OK"
 
   if [ $key_bindings -eq 0 ]; then
     echo -n "Generate ~/.config/fish/functions/fzf_key_bindings.fish ... "
@@ -310,7 +310,7 @@ function fzf_key_bindings
   bind \ec '__fzf_alt_c'
 end
 EOFZF
-    echo "ok"
+    echo "OK"
   fi
 fi
 
