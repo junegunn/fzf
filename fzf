@@ -911,7 +911,7 @@ class FZF
 
       ord =
         case read_nb(1, :esc)
-        when 91
+        when 91, 79
           case read_nb(1, nil)
           when 68 then ctrl(:b)
           when 67 then ctrl(:f)
