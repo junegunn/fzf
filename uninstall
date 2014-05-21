@@ -30,10 +30,11 @@ remove_line() {
   match=0
   while [ 1 ]; do
     line=$(sed -n "$line_no,\$p" "$src" | grep -m1 -nF "$1") || break
-    match=1
     line_no=$(( $(sed 's/:.*//' <<< "$line") + line_no - 1 ))
-    echo    "  - Line #$line_no: $(sed 's/^[0-9]*://' <<< "$line")"
-    confirm "    - Remove (y/n) ? "
+    content=$(sed 's/^[0-9]*://' <<< "$line")
+    match=1
+    echo    "  - Line #$line_no: $content"
+    [ "$content" = "$1" ] || confirm "    - Remove (y/n) ? "
     if [ $? -eq 0 ]; then
       awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$src.bak" &&
         mv "$src.bak" "$src" || break
