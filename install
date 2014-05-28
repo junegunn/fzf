@@ -198,7 +198,7 @@ if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
   }
 else
   fzf-file-widget() {
-    LBUFFER="${LBUFFER%% #}$(__fsel)"
+    LBUFFER="${LBUFFER}$(__fsel)"
     zle redisplay
   }
 fi
