@@ -450,58 +450,11 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 2, exact.match(list, "-fuzzy", '', '').length
   end
 
-  if RUBY_PLATFORM =~ /darwin/
-    NFD = '한글'
-    def test_nfc
-      assert_equal 6, NFD.length
-      assert_equal ["한글", [[0, 1], [1, 2]]],
-        FZF::UConv.nfc(NFD, [[0, 3], [3, 6]])
-
-      nfd2 = 'before' + NFD + 'after'
-      assert_equal 6 + 6 + 5, nfd2.length
-
-      nfc, offsets = FZF::UConv.nfc(nfd2, [[4, 14], [9, 13]])
-      o1, o2 = offsets
-      assert_equal 'before한글after', nfc
-      assert_equal 're한글af',        nfc[(o1.first...o1.last)]
-      assert_equal '글a',             nfc[(o2.first...o2.last)]
-    end
-
-    def test_nfd
-      nfc = '한글'
-      nfd = FZF::UConv.nfd(nfc)
-      assert_equal 2, nfd.length
-      assert_equal 6, nfd.join.length
-      assert_equal NFD, nfd.join
-    end
-
-    def test_nfd_fuzzy_matcher
-      matcher = FZF::FuzzyMatcher.new 0
-      assert_equal [], matcher.match([NFD + NFD], '할', '', '')
-      match   = matcher.match([NFD + NFD], '글글', '', '')
-      assert_equal [[NFD + NFD, [[3, 12]]]], match
-      assert_equal ['한글한글', [[1, 4]]], FZF::UConv.nfc(*match.first)
-    end
-
-    def test_nfd_extended_fuzzy_matcher
-      matcher = FZF::ExtendedFuzzyMatcher.new 0
-      assert_equal [], matcher.match([NFD], "'글글", '', '')
-      match   = matcher.match([NFD], "'한글", '', '')
-      assert_equal [[NFD, [[0, 6]]]], match
-      assert_equal ['한글', [[0, 2]]], FZF::UConv.nfc(*match.first)
-    end
-  end
-
-  def test_split
-    assert_equal ["a", "b", "c", "\xFF", "d", "e", "f"],
-      FZF::UConv.split("abc\xFFdef")
-  end
-
   # ^$ -> matches empty item
   def test_format_empty_item
     fzf = FZF.new []
     item = ['', [[0, 0]]]
-    line, offsets = fzf.convert_item item
+    line, offsets = item
     tokens        = fzf.format line, 80, offsets
     assert_equal [], tokens
   end

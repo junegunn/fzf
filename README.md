@@ -549,6 +549,13 @@ fzf works on [Cygwin](http://www.cygwin.com/) and
 [MSYS2](http://sourceforge.net/projects/msys2/). You may need to use `--black`
 option on MSYS2 to avoid rendering issues.
 
+### Handling UTF-8 NFD paths on OSX
+
+Use iconv to convert NFD paths to NFC:
+
+```sh
+find . | iconv -f utf-8-mac -t utf8//ignore | fzf
+```
 
 License
 -------

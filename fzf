@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (May 21, 2014)
+# Version: 0.8.5 (May 29, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -307,121 +307,6 @@ class FZF
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
     FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
     exit x
-  end
-
-  case RUBY_PLATFORM
-  when /darwin/
-    module UConv
-      CHOSUNG   = 0x1100
-      JUNGSUNG  = 0x1161
-      JONGSUNG  = 0x11A7
-      CHOSUNGS  = 19
-      JUNGSUNGS = 21
-      JONGSUNGS = 28
-      JJCOUNT   = JUNGSUNGS * JONGSUNGS
-      NFC_BEGIN = 0xAC00
-      NFC_END   = NFC_BEGIN + CHOSUNGS * JUNGSUNGS * JONGSUNGS
-
-      def self.nfd str
-        str.split(//).map do |c|
-          cp = c.ord
-          if cp >= NFC_BEGIN && cp < NFC_END
-            chr = ''
-            idx  = cp - NFC_BEGIN
-            cho  = CHOSUNG  + idx / JJCOUNT
-            jung = JUNGSUNG + (idx % JJCOUNT) / JONGSUNGS
-            jong = JONGSUNG + idx % JONGSUNGS
-            chr << cho << jung
-            chr << jong if jong != JONGSUNG
-            chr
-          else
-            c
-          end
-        end
-      end
-
-      def self.to_nfc arr
-        [NFC_BEGIN + arr[0] * JJCOUNT +
-         (arr[1] || 0) * JONGSUNGS +
-         (arr[2] || 0)].pack('U*')
-      end
-
-      if String.method_defined?(:each_char)
-        def self.split str
-          str.each_char.to_a
-        end
-      else
-        def self.split str
-          str.split('')
-        end
-      end
-
-      def self.nfc str, offsets = []
-        ret  = ''
-        omap = []
-        pend = []
-        split(str).each_with_index do |c, idx|
-          cp =
-            begin
-              c.ord
-            rescue Exception
-              next
-            end
-          omap << ret.length
-          unless pend.empty?
-            if cp >= JUNGSUNG && cp < JUNGSUNG + JUNGSUNGS
-              pend << cp - JUNGSUNG
-              next
-            elsif cp >= JONGSUNG && cp < JONGSUNG + JONGSUNGS
-              pend << cp - JONGSUNG
-              next
-            else
-              omap[-1] = omap[-1] + 1
-              ret << to_nfc(pend)
-              pend.clear
-            end
-          end
-          if cp >= CHOSUNG && cp < CHOSUNG + CHOSUNGS
-            pend << cp - CHOSUNG
-          else
-            ret << c
-          end
-        end
-        ret << to_nfc(pend) unless pend.empty?
-        return [ret,
-                offsets.map { |pair|
-                  b, e = pair
-                  [omap[b] || 0, omap[e] || ((omap.last || 0) + 1)] }]
-      end
-    end
-
-    def convert_item item
-      UConv.nfc(*item)
-    end
-
-    class Matcher
-      def query_chars q
-        UConv.nfd(q)
-      end
-
-      def sanitize q
-        UConv.nfd(q).join
-      end
-    end
-  else
-    def convert_item item
-      item
-    end
-
-    class Matcher
-      def query_chars q
-        q.split(//)
-      end
-
-      def sanitize q
-        q
-      end
-    end
   end
 
   def emit event
@@ -792,7 +677,7 @@ class FZF
         row           = cursor_y(idx + 2)
         chosen        = idx == vcursor
         selected      = @selects.include?([*item][0])
-        line, offsets = convert_item item
+        line, offsets = item
         tokens        = format line, maxc, offsets
         print_item row, tokens, chosen, selected
       end
@@ -1176,7 +1061,7 @@ class FZF
     def fuzzy_regex q
       @regexp[q] ||= begin
         q = q.downcase if @rxflag == Regexp::IGNORECASE
-        Regexp.new(query_chars(q).inject('') { |sum, e|
+        Regexp.new(q.split(//).inject('') { |sum, e|
           e = Regexp.escape e
           sum << (e.length > 1 ? "(?:#{e}).*?" :  # FIXME: not equivalent
                                  "#{e}[^#{e}]*?")
@@ -1234,7 +1119,7 @@ class FZF
             when ''
               nil
             when /^\^(.*)\$$/
-              Regexp.new('^' << sanitize(Regexp.escape($1)) << '$', rxflag_for(w))
+              Regexp.new('^' << Regexp.escape($1) << '$', rxflag_for(w))
             when /^'/
               if @mode == :fuzzy && w.length > 1
                 exact_regex w[1..-1]
@@ -1243,10 +1128,10 @@ class FZF
               end
             when /^\^/
               w.length > 1 ?
-                Regexp.new('^' << sanitize(Regexp.escape(w[1..-1])), rxflag_for(w)) : nil
+                Regexp.new('^' << Regexp.escape(w[1..-1]), rxflag_for(w)) : nil
             when /\$$/
               w.length > 1 ?
-                Regexp.new(sanitize(Regexp.escape(w[0..-2])) << '$', rxflag_for(w)) : nil
+                Regexp.new(Regexp.escape(w[0..-2]) << '$', rxflag_for(w)) : nil
             else
               @mode == :fuzzy ? fuzzy_regex(w) : exact_regex(w)
             end, invert ]
@@ -1254,7 +1139,7 @@ class FZF
     end
 
     def exact_regex w
-      Regexp.new(sanitize(Regexp.escape(w)), rxflag_for(w))
+      Regexp.new(Regexp.escape(w), rxflag_for(w))
     end
 
     def match list, q, prefix, suffix
