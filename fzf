@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (May 29, 2014)
+# Version: 0.8.5 (Jun 7, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -443,7 +443,7 @@ class FZF
       width = width str
       diff  = 0
       while width > len
-        width -= (left ? str[0, 1] : str[-1, 1]) =~ @@wrx ? 2 : 1
+        width -= ((left ? str[0, 1] : str[-1, 1]) =~ @@wrx ? 2 : 1) rescue 1
         str    = left ? str[1..-1] : str[0...-1]
         diff  += 1
       end
