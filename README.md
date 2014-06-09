@@ -395,20 +395,20 @@ handy mapping that selects an open buffer.
 
 ```vim
 " List of buffers
-function! g:buflist()
+function! BufList()
   redir => ls
   silent ls
   redir END
   return split(ls, '\n')
 endfunction
 
-function! g:bufopen(e)
+function! BufOpen(e)
   execute 'buffer '. matchstr(a:e, '^[ 0-9]*')
 endfunction
 
 nnoremap <silent> <Leader><Enter> :call fzf#run({
-\   'source':      reverse(g:buflist()),
-\   'sink':        function('g:bufopen'),
+\   'source':      reverse(BufList()),
+\   'sink':        function('BufOpen'),
 \   'options':     '+m',
 \   'tmux_height': '40%'
 \ })<CR>
