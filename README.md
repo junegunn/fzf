@@ -123,6 +123,7 @@ The following readline key bindings should also work as expected.
 
 - CTRL-A / CTRL-E
 - CTRL-B / CTRL-F
+- CTRL-H / CTRL-D
 - CTRL-W / CTRL-U / CTRL-Y
 - ALT-B / ALT-F
 

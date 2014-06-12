@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (Jun 7, 2014)
+# Version: 0.8.5 (Jun 12, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -881,7 +881,13 @@ class FZF
       }
       actions = {
         :esc     => proc { exit 1 },
-        ctrl(:d) => proc { exit 1 if input.empty? },
+        ctrl(:d) => proc {
+          if input.empty?
+            exit 1
+          elsif cursor < input.length
+            input = input[0...cursor] + input[(cursor + 1)..-1]
+          end
+        },
         ctrl(:m) => proc {
           got = pick
           exit 0
