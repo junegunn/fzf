@@ -60,7 +60,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.select1
     assert_equal true,    fzf.exit0
     assert_equal true,    fzf.reverse
-    assert_equal [3, -1, 2], fzf.nth
+    assert_equal [2..2, -1..-1, 1..1], fzf.nth
   end
 
   def test_option_parser
@@ -80,7 +80,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.exit0
     assert_equal 'howdy', fzf.filter
     assert_equal :exact,  fzf.extended
-    assert_equal [1],     fzf.nth
+    assert_equal [0..0],  fzf.nth
     assert_equal true,    fzf.reverse
 
     # Long opts (left-to-right)
@@ -101,7 +101,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.select1
     assert_equal false,   fzf.exit0
     assert_equal nil,     fzf.extended
-    assert_equal [-2],    fzf.nth
+    assert_equal [-2..-2], fzf.nth
     assert_equal false,   fzf.reverse
 
     # Short opts
@@ -114,7 +114,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 'hello', fzf.query.get
     assert_equal 'howdy', fzf.filter
     assert_equal :fuzzy,  fzf.extended
-    assert_equal [3],     fzf.nth
+    assert_equal [2..2],  fzf.nth
     assert_equal true,    fzf.select1
     assert_equal true,    fzf.exit0
 
@@ -134,22 +134,27 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.exit0
     assert_equal 'world', fzf.filter
     assert_equal nil,     fzf.extended
-    assert_equal [4, 5],  fzf.nth
+    assert_equal [3..3, 4..4], fzf.nth
   rescue SystemExit => e
     assert false, "Exited"
   end
 
   def test_invalid_option
-    [%w[--unknown], %w[yo dawg]].each do |argv|
+    [
+      %w[--unknown],
+      %w[yo dawg],
+      %w[--nth=0],
+      %w[-n 0],
+      %w[-n 1..2..3],
+      %w[-n 1....],
+      %w[-n ....3],
+      %w[-n 1....3],
+      %w[-n 1..0],
+      %w[--nth ..0],
+    ].each do |argv|
       assert_raises(SystemExit) do
         fzf = FZF.new argv
       end
-    end
-    assert_raises(SystemExit) do
-      fzf = FZF.new %w[--nth=0]
-    end
-    assert_raises(SystemExit) do
-      fzf = FZF.new %w[-n 0]
     end
   end
 
@@ -487,41 +492,65 @@ class TestFZF < MiniTest::Unit::TestCase
       [list[0], [[2,  5]]],
       [list[1], [[9, 17]]]], matcher.match(list, 'is', '', '')
 
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2]
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1..1]
     assert_equal [[list[1], [[8, 9]]]], matcher.match(list, 'f', '', '')
     assert_equal [[list[0], [[8, 9]]]], matcher.match(list, 's', '', '')
 
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [3]
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2..2]
     assert_equal [[list[0], [[19, 20]]]], matcher.match(list, 'r', '', '')
 
     # Comma-separated
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [3, 1]
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2..2, 0..0]
     assert_equal [[list[0], [[19, 20]]], [list[1], [[3, 4]]]], matcher.match(list, 'r', '', '')
 
     # Ordered
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1, 3]
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [0..0, 2..2]
     assert_equal [[list[0], [[3, 4]]], [list[1], [[3, 4]]]], matcher.match(list, 'r', '', '')
 
     regex = FZF.build_delim_regex "\t"
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1], regex
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [0..0], regex
     assert_equal [[list[0], [[3, 10]]]], matcher.match(list, 're', '', '')
 
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2], regex
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1..1], regex
     assert_equal [], matcher.match(list, 'r', '', '')
     assert_equal [[list[1], [[9, 17]]]], matcher.match(list, 'is', '', '')
 
     # Negative indexing
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [-1], regex
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [-1..-1], regex
     assert_equal [[list[0], [[3, 6]]]], matcher.match(list, 'rt', '', '')
     assert_equal [[list[0], [[2, 5]]], [list[1], [[9, 17]]]], matcher.match(list, 'is', '', '')
 
     # Regex delimiter
     regex = FZF.build_delim_regex "[ \t]+"
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1], regex
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [0..0], regex
     assert_equal [list[1]], matcher.match(list, 'f', '', '').map(&:first)
 
-    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [2], regex
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1..1], regex
     assert_equal [[list[0], [[1, 2]]], [list[1], [[8, 9]]]], matcher.match(list, 'f', '', '')
+  end
+
+  def test_nth_match_range
+    list = [
+      ' first  second  third',
+      'fourth	 fifth   sixth',
+    ]
+
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1..2]
+    assert_equal [[list[0], [[8, 20]]]], matcher.match(list, 'sr', '', '')
+    assert_equal [], matcher.match(list, 'fo', '', '')
+
+    matcher = FZF::FuzzyMatcher.new Regexp::IGNORECASE, [1..-1, 0..0]
+    assert_equal [[list[0], [[8, 20]]]], matcher.match(list, 'sr', '', '')
+    assert_equal [[list[1], [[0, 2]]]], matcher.match(list, 'fo', '', '')
+
+    matcher = FZF::ExtendedFuzzyMatcher.new Regexp::IGNORECASE, :fuzzy, [0..0, 1..2]
+    assert_equal [], matcher.match(list, '^t', '', '')
+
+    matcher = FZF::ExtendedFuzzyMatcher.new Regexp::IGNORECASE, :fuzzy, [0..1, 2..2]
+    assert_equal [[list[0], [[16, 17]]]], matcher.match(list, '^t', '', '')
+
+    matcher = FZF::ExtendedFuzzyMatcher.new Regexp::IGNORECASE, :fuzzy, [1..-1]
+    assert_equal [[list[0], [[8, 9]]]], matcher.match(list, '^s', '', '')
   end
 
   def stream_for str

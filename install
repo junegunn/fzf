@@ -140,7 +140,7 @@ if [ -z "$(set -o | grep '^vi.*on')" ]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
+  bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s +m -n..,1,2.. | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u$(__fcd)\e\C-e\er\C-m"'
@@ -157,7 +157,7 @@ else
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
+  bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s +m -n..,1,2.. | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": "\eddi$(__fcd)\C-x\C-e\C-x\C-r\C-m"'
@@ -216,7 +216,7 @@ bindkey '\ec' fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
-  LBUFFER=$(fc -l 1 | fzf +s | sed "s/ *[0-9*]* *//")
+  LBUFFER=$(fc -l 1 | fzf +s +m -n..,1,2.. | sed "s/ *[0-9*]* *//")
   zle redisplay
 }
 zle     -N   fzf-history-widget

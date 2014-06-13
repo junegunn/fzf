@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (Jun 12, 2014)
+# Version: 0.8.5 (Jun 14, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -133,10 +133,9 @@ class FZF
       when /^-f(.*)$/, /^--filter=(.*)$/
         @filter = $1
       when '-n', '--nth'
-        usage 1, 'field number required' unless nth = argv.shift
-        usage 1, 'invalid field number' if nth.to_i == 0
+        usage 1, 'field expression required' unless nth = argv.shift
         @nth = parse_nth nth
-      when /^-n([0-9,-]+)$/, /^--nth=([0-9,-]+)$/
+      when /^-n([0-9,-\.]+)$/, /^--nth=([0-9,-\.]+)$/
         @nth = parse_nth $1
       when '-d', '--delimiter'
         usage 1, 'delimiter required' unless delim = argv.shift
@@ -179,10 +178,20 @@ class FZF
   end
 
   def parse_nth nth
-    nth.split(',').map { |n|
-      ni = n.to_i
-      usage 1, "invalid field number: #{n}" if ni == 0
-      ni
+    nth.split(',').map { |expr|
+      x = proc { usage 1, "invalid field expression: #{expr}" }
+      first, second = expr.split('..', 2)
+      x.call if !first.empty? && first.to_i == 0 ||
+        second && !second.empty? && (second.to_i == 0 || second.include?('.'))
+
+      first  = first.empty? ? 1 : first.to_i
+      second = case second
+               when nil then first
+               when ''  then -1
+               else second.to_i
+               end
+
+      Range.new(*[first, second].map { |e| e > 0 ? e - 1 : e })
     }
   end
 
@@ -281,8 +290,9 @@ class FZF
     -e, --extended-exact Extended-search mode (exact match)
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
-    -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
-                         search scope (positive or negative integers)
+    -n, --nth=N[,..]     Comma-separated list of field index expressions
+                         for limiting search scope. Each can be a non-zero
+                         integer or a range expression ([BEGIN]..[END])
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
 
   Search result
@@ -1011,7 +1021,7 @@ class FZF
     end
 
     def initialize nth, delim
-      @nth = nth && nth.map { |n| n > 0 ? n - 1 : n }
+      @nth = nth
       @delim = delim
       @tokens_cache = {}
     end
@@ -1033,8 +1043,9 @@ class FZF
         prefix_length, tokens = tokenize str
 
         @nth.each do |n|
-          if (token = tokens[n]) && (md = token.match(pat) rescue nil)
-            prefix_length += (tokens[0...n] || []).join.length
+          if (range = tokens[n]) && (token = range.join) &&
+                (md = token.sub(/\s+$/, '').match(pat) rescue nil)
+            prefix_length += (tokens[0...(n.begin)] || []).join.length
             offset = md.offset(0).map { |o| o + prefix_length }
             return MatchData.new(offset)
           end

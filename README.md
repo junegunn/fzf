@@ -65,8 +65,9 @@ usage: fzf [options]
     -e, --extended-exact Extended-search mode (exact match)
     -i                   Case-insensitive match (default: smart-case match)
     +i                   Case-sensitive match
-    -n, --nth=[-]N[,..]  Comma-separated list of field indexes for limiting
-                         search scope (positive or negative integers)
+    -n, --nth=N[,..]     Comma-separated list of field index expressions
+                         for limiting search scope. Each can be a non-zero
+                         integer or a range expression ([BEGIN]..[END])
     -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
 
   Search result
