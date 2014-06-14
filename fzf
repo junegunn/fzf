@@ -954,6 +954,7 @@ class FZF
             case event
             when :click, :release
               x, y, shift = val.values_at :x, :y, :shift
+              y = @reverse ? (C.lines - 1 - y) : y
               if y == cursor_y
                 cursor = [0, [input.length, x - 2].min].max
               elsif x > 1 && y <= max_items
