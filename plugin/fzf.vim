@@ -24,6 +24,7 @@
 let s:min_tmux_width  = 10
 let s:min_tmux_height = 3
 let s:default_tmux_height = '40%'
+let s:gui_supported = executable('bash') && executable('xterm')
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -42,6 +43,10 @@ else
 endif
 
 function! s:tmux_enabled()
+  if has('gui_running')
+    return 0
+  endif
+
   if exists('s:tmux')
     return s:tmux
   endif
@@ -63,11 +68,12 @@ function! s:escape(path)
 endfunction
 
 function! fzf#run(...) abort
-  if has('gui_running')
+  if has('gui_running') && !s:gui_supported
     echohl Error
-    echo 'GVim is not supported'
+    echo 'bash and xterm required to run fzf in GVim'
     return []
   endif
+
   let dict   = exists('a:1') ? a:1 : {}
   let temps  = { 'result': tempname() }
   let optstr = get(dict, 'options', '')
@@ -118,7 +124,11 @@ endfunction
 function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
   silent !clear
-  execute 'silent !'.a:command
+  if has('gui_running')
+    execute "silent !xterm -e bash -ic '".substitute(a:command, "'", "'\"'\"'", 'g')."'"
+  else
+    execute 'silent !'.a:command
+  endif
   redraw!
   if v:shell_error
     return []

@@ -287,7 +287,7 @@ TODO :smiley:
 Usage as Vim plugin
 -------------------
 
-(fzf is a command-line utility, naturally it is only accessible in terminal Vim)
+Note: To use fzf in GVim, bash and xterm are required.
 
 ### `:FZF[!]`
 
