@@ -125,7 +125,9 @@ function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
   silent !clear
   if has('gui_running')
-    execute "silent !xterm -e bash -ic '".substitute(a:command, "'", "'\"'\"'", 'g')."'"
+    let xterm_options = get(a:dict, 'xterm_options', get(g:, 'fzf_xterm_options', ''))
+    execute "silent !xterm ".xterm_options.
+          \ " -e bash -ic '".substitute(a:command, "'", "'\"'\"'", 'g')."'"
   else
     execute 'silent !'.a:command
   endif

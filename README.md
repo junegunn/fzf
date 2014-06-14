@@ -287,7 +287,7 @@ TODO :smiley:
 Usage as Vim plugin
 -------------------
 
-Note: To use fzf in GVim, bash and xterm are required.
+(Note: To use fzf in GVim, bash and xterm are required.)
 
 ### `:FZF[!]`
 
@@ -311,6 +311,13 @@ If you're on a tmux session, `:FZF` will launch fzf in a new split-window whose
 height can be adjusted with `g:fzf_tmux_height` (default: '40%'). However, the
 bang version (`:FZF!`) will always start in fullscreen.
 
+In GVim, `xterm` command will be used to launch fzf. You can set options to
+`xterm` command with `g:fzf_xterm_options`. For example,
+
+```vim
+let g:fzf_xterm_options = '-geometry 120x30'
+```
+
 ### `fzf#run([options])`
 
 For more advanced uses, you can call `fzf#run()` function which returns the list
@@ -318,16 +325,17 @@ of the selected items.
 
 `fzf#run()` may take an options-dictionary:
 
-| Option name   | Type          | Description                                                        |
-| ------------- | ------------- | ------------------------------------------------------------------ |
-| `source`      | string        | External command to generate input to fzf (e.g. `find .`)          |
-| `source`      | list          | Vim list as input to fzf                                           |
-| `sink`        | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)         |
-| `sink`        | funcref       | Reference to function to process each selected item                |
-| `options`     | string        | Options to fzf                                                     |
-| `dir`         | string        | Working directory                                                  |
-| `tmux_width`  | number/string | Use tmux vertical split with the given height (e.g. `20`, `50%`)   |
-| `tmux_height` | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
+| Option name     | Type          | Description                                                        |
+| --------------- | ------------- | ------------------------------------------------------------------ |
+| `source`        | string        | External command to generate input to fzf (e.g. `find .`)          |
+| `source`        | list          | Vim list as input to fzf                                           |
+| `sink`          | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)         |
+| `sink`          | funcref       | Reference to function to process each selected item                |
+| `options`       | string        | Options to fzf                                                     |
+| `dir`           | string        | Working directory                                                  |
+| `tmux_width`    | number/string | Use tmux vertical split with the given height (e.g. `20`, `50%`)   |
+| `tmux_height`   | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
+| `xterm_options` | string        | Options to `xterm` command (Only used in GVim)                     |
 
 #### Examples
 
@@ -353,9 +361,10 @@ nnoremap <silent> <Leader>C :call fzf#run({
 \   'source':
 \     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
 \         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
-\   'sink':       'colo',
-\   'options':    '+m',
-\   'tmux_width': 20
+\   'sink':          'colo',
+\   'options':       '+m',
+\   'tmux_width':    20,
+\   'xterm_options': '-geometry 20x30'
 \ })<CR>
 ```
 
