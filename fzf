@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (Jun 14, 2014)
+# Version: 0.8.5 (Jun 15, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -629,7 +629,10 @@ class FZF
                 found.concat(q.empty? ? list :
                              matcher.match(list, q, q[0, cx], q[cx..-1]))
               end
-              next if skip
+              if skip
+                sleep 0.1
+                next
+              end
               matches = @sort ? found : found.reverse
               if !empty && @sort && matches.length <= @sort
                 matches = FZF.sort(matches)
