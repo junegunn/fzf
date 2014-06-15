@@ -287,7 +287,7 @@ TODO :smiley:
 Usage as Vim plugin
 -------------------
 
-(Note: To use fzf in GVim, bash and xterm are required.)
+(Note: To use fzf in GVim, an external terminal emulator is required.)
 
 ### `:FZF[!]`
 
@@ -311,11 +311,15 @@ If you're on a tmux session, `:FZF` will launch fzf in a new split-window whose
 height can be adjusted with `g:fzf_tmux_height` (default: '40%'). However, the
 bang version (`:FZF!`) will always start in fullscreen.
 
-In GVim, `xterm` command will be used to launch fzf. You can set options to
-`xterm` command with `g:fzf_xterm_options`. For example,
+In GVim, you need an external terminal emulator to start fzf with. `xterm`
+command is used by default, but you can customize it with `g:fzf_launcher`.
 
 ```vim
-let g:fzf_xterm_options = '-geometry 120x30'
+" This is the default. %s is replaced with fzf command
+let g:fzf_launcher = 'xterm -e bash -ic %s'
+
+" Use urxvt instead
+let g:fzf_launcher = 'urxvt -geometry 120x30 -e sh -c %s'
 ```
 
 ### `fzf#run([options])`
@@ -335,7 +339,7 @@ of the selected items.
 | `dir`           | string        | Working directory                                                  |
 | `tmux_width`    | number/string | Use tmux vertical split with the given height (e.g. `20`, `50%`)   |
 | `tmux_height`   | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
-| `xterm_options` | string        | Options to `xterm` command (Only used in GVim)                     |
+| `launcher`      | string        | External terminal emulator to start fzf with (Only used in GVim)   |
 
 #### Examples
 
@@ -361,10 +365,10 @@ nnoremap <silent> <Leader>C :call fzf#run({
 \   'source':
 \     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
 \         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
-\   'sink':          'colo',
-\   'options':       '+m',
-\   'tmux_width':    20,
-\   'xterm_options': '-geometry 20x30'
+\   'sink':       'colo',
+\   'options':    '+m',
+\   'tmux_width': 20,
+\   'launcher':   'xterm -geometry 20x30 -e bash -ic %s'
 \ })<CR>
 ```
 

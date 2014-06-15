@@ -24,7 +24,7 @@
 let s:min_tmux_width  = 10
 let s:min_tmux_height = 3
 let s:default_tmux_height = '40%'
-let s:gui_supported = executable('bash') && executable('xterm')
+let s:launcher = 'xterm -e bash -ic %s'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -68,12 +68,6 @@ function! s:escape(path)
 endfunction
 
 function! fzf#run(...) abort
-  if has('gui_running') && !s:gui_supported
-    echohl Error
-    echo 'bash and xterm required to run fzf in GVim'
-    return []
-  endif
-
   let dict   = exists('a:1') ? a:1 : {}
   let temps  = { 'result': tempname() }
   let optstr = get(dict, 'options', '')
@@ -125,14 +119,16 @@ function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
   silent !clear
   if has('gui_running')
-    let xterm_options = get(a:dict, 'xterm_options', get(g:, 'fzf_xterm_options', ''))
-    execute "silent !xterm ".xterm_options.
-          \ " -e bash -ic '".substitute(a:command, "'", "'\"'\"'", 'g')."'"
+    let launcher = get(a:dict, 'launcher', get(g:, 'fzf_launcher', s:launcher))
+    let command = printf(launcher, "'".substitute(a:command, "'", "'\"'\"'", 'g')."'")
   else
-    execute 'silent !'.a:command
+    let command = a:command
   endif
+  execute 'silent !'.command
   redraw!
   if v:shell_error
+    echohl Error
+    echo 'Error running ' . command
     return []
   else
     return s:callback(a:dict, a:temps, 0)
