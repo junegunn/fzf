@@ -330,7 +330,7 @@ append_line() {
 
 echo
 for shell in bash zsh; do
-  append_line "source ~/.fzf.${shell}" ~/.${shell}rc
+  append_line "[[ -f ~/.fzf.${shell} ]] && source ~/.fzf.${shell}" ~/.${shell}rc
 done
 
 if [ $key_bindings -eq 0 -a $has_fish -eq 1 ]; then
