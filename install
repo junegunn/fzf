@@ -206,7 +206,7 @@ else
   fzf-file-widget() {
     # if starting a new argument, call __fsel w/o arguments
     # otherwise pass it the current argument.
-    if [[ $LBUFFER == *" " ]]; then
+    if [[ $LBUFFER == *" " || -z $LBUFFER ]]; then
       LBUFFER="${LBUFFER}$(__fsel)"
     else
       autoload -U modify-current-argument
