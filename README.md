@@ -322,6 +322,11 @@ let g:fzf_launcher = 'xterm -e bash -ic %s'
 let g:fzf_launcher = 'urxvt -geometry 120x30 -e sh -c %s'
 ```
 
+If you're running MacVim on OSX, I recommend you to use iTerm2 as the launcher.
+Refer to the [this wiki
+page](https://github.com/junegunn/fzf/wiki/fzf-with-MacVim-and-iTerm2) to see
+how to set up.
+
 ### `fzf#run([options])`
 
 For more advanced uses, you can call `fzf#run()` function which returns the list
