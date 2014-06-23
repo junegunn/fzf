@@ -155,12 +155,15 @@ else
   else
     bind '"\C-t": "\e$a \eddi$(__fsel)\C-x\C-e\e0Px$a \C-x\C-r\exa "'
   fi
+  bind -m vi-command '"\C-t": "i\C-t"'
 
   # CTRL-R - Paste the selected command from history into the command line
   bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s +m -n..,1,2.. | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
+  bind -m vi-command '"\C-r": "i\C-r"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": "\eddi$(__fcd)\C-x\C-e\C-x\C-r\C-m"'
+  bind -m vi-command '"\ec": "i\ec"'
 fi
 
 unset __use_tmux
