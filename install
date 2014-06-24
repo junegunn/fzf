@@ -249,63 +249,85 @@ EOFZF
   if [ $key_bindings -eq 0 ]; then
     echo -n "Generate ~/.config/fish/functions/fzf_key_bindings.fish ... "
     cat > ~/.config/fish/functions/fzf_key_bindings.fish << "EOFZF"
-function fzf_key_bindings
-  function __fzf_select
-    command find * -path '*/\.*' -prune \
+function fzf_key_bindings --description 'create fzf keybindings'
+  function __fzf_wrap --description 'wrap stdin as an argument to a command'
+    read -l stdin; test -n "$stdin"; or return
+
+    # OH GOD WHY
+    if test "$argv[1]" = 'noescape'
+      set argv (echo $argv | sed 's/noescape //')
+    else
+      set stdin (echo $stdin | sed 's/\\\\/\\\\\\\\\\\/g')
+      set stdin (echo $stdin | sed 's/\"/\\\\\"/g')
+    end
+
+    eval "$argv \"$stdin\""
+  end
+
+  function __fzf_select --description 'select a tree with fzf'
+    command find * \
+      -path '*/\.*' \
+      -prune \
       -o -type f -print \
       -o -type d -print \
-      -o -type l -print 2> /dev/null | fzf -m | while read item
-      echo -n (echo -n "$item" | sed 's/ /\\\\ /g')' '
+      -o -type l -print \
+      ^/dev/null |\
+    fzf -m |\
+    while read item
+      set item (bash -c "printf '%q' '$item'")
+      set item (echo $item | sed 's/\"/\\\\\\\"/g')
+
+      echo -n "$item "
     end
-    echo
   end
 
-  function __fzf_ctrl_t
-    if [ -n "$TMUX_PANE" -a "$FZF_TMUX" != "0" ]
+  function __fzf_ctrl_t --description 'insert __fzf_select into the commandline'
+    function __fzf_tmux_height --description 'determine a good tmux split size'
+      set -l height 40%
+      set -q FZF_TMUX_HEIGHT; and set height $FZF_TMUX_HEIGHT
+
+      if echo $height | grep -q -E '%$'
+        set height (echo $height | sed 's/%$//')
+        echo -n "-p $height"
+      else
+        echo -n "-l $height"
+      end
+    end
+
+    if test -n "$TMUX_PANE" -a -z "$FZF_TMUX"
       tmux split-window (__fzf_tmux_height) "fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
     else
-      __fzf_select > $TMPDIR/fzf.result
-      and commandline -i (cat $TMPDIR/fzf.result)
-      rm -f $TMPDIR/fzf.result
+      __fzf_select |\
+      __fzf_wrap noescape commandline -i
     end
-  end
 
-  function __fzf_ctrl_t_tmux
-    __fzf_select > $TMPDIR/fzf.result
-    and tmux send-keys -t $argv[1] (cat $TMPDIR/fzf.result)
-    rm -f $TMPDIR/fzf.result
-  end
-
-  function __fzf_ctrl_r
-    if history | fzf +s +m > $TMPDIR/fzf.result
-      commandline (cat $TMPDIR/fzf.result)
-    else
-      commandline -f repaint
-    end
-    rm -f $TMPDIR/fzf.result
-  end
-
-  function __fzf_alt_c
-    command find * -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m > $TMPDIR/fzf.result
-    if [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
-      cd (cat $TMPDIR/fzf.result)
-    end
     commandline -f repaint
-    rm -f $TMPDIR/fzf.result
   end
 
-  function __fzf_tmux_height
-    if set -q FZF_TMUX_HEIGHT
-      set height $FZF_TMUX_HEIGHT
-    else
-      set height 40%
-    end
-    if echo $height | grep -q -E '%$'
-      echo "-p "(echo $height | sed 's/%$//')
-    else
-      echo "-l $height"
-    end
-    set -e height
+  function __fzf_ctrl_t_tmux --description 'callback in tmux split'
+    __fzf_select |\
+    __fzf_wrap noescape tmux send-keys -t \\$argv[1]
+  end
+
+  function __fzf_ctrl_r --description 'set the commandline to shell history'
+    history |\
+    fzf +s +m |\
+    __fzf_wrap commandline
+
+    commandline -f repaint
+  end
+
+  function __fzf_alt_c --description 'cd to a directory'
+    command find * \
+      -path '*/\.*' \
+      -prune \
+      -o \
+      -type d -print \
+      ^/dev/null |\
+    fzf +m |\
+    __fzf_wrap cd
+
+    commandline -f repaint
   end
 
   bind \ct '__fzf_ctrl_t'
