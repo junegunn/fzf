@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.6 (Jun 26, 2014)
+# Version: 0.8.6 (Jun 27, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -1005,7 +1005,7 @@ class FZF
             when :click, :release
               x, y, shift = val.values_at :x, :y, :shift
               y = @reverse ? (C.lines - 1 - y) : y
-              if y == cursor_y
+              if y == C.lines - 1
                 cursor = [0, [input.length, x - 2].min].max
               elsif x > 1 && y <= max_items
                 tv = get(:@yoff) + max_items - y - 1
