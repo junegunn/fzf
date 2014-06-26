@@ -72,7 +72,7 @@ class FZF
   def set name, value = nil
     sync do
       instance_variable_set name,
-        (block_given? ? yield(instance_variable_get name) : value)
+        (block_given? ? yield(instance_variable_get(name)) : value)
     end
   end
 
@@ -172,7 +172,7 @@ class FZF
       @query   ||= ''
       @matches   = []
       @count     = 0
-      @xcur      = get(:@query).length
+      @xcur      = @query.length
       @ycur      = 0
       @yoff      = 0
       @dirty     = Set.new
