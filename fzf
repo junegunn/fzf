@@ -1026,6 +1026,7 @@ class FZF
               actions[ctrl(:i)].call(:sclick) if shift
               actions[ctrl(diff > 0 ? :j : :k)].call
             end
+            nil
           end
         }
       }
