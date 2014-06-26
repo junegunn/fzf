@@ -677,25 +677,37 @@ class FZF
     end
   end
 
+  def constrain offset, cursor, count, height
+    original = [offset, cursor]
+    diffpos = cursor - offset
+
+    # Constrain cursor
+    cursor = [0, [cursor, count - 1].min].max
+
+    # Ceil
+    if cursor > offset + (height - 1)
+      offset = cursor - (height - 1)
+    # Floor
+    elsif offset > cursor
+      offset = cursor
+    end
+
+    # Adjustment
+    if count - offset < height
+      offset = [0, count - height].max
+      cursor = [0, [offset + diffpos, count - 1].min].max
+    end
+
+    [[offset, cursor] != original, offset, cursor]
+  end
+
   def update_list wipe
     render do
       offset, ycur, items = sync {
-        cnt = @matches.length
-        pos = @ycur - @yoff
-        @ycur = [0, [@ycur, cnt - 1].min].max
+        changed, @yoff, @ycur =
+            constrain(@yoff, @ycur, @matches.length, max_items)
+        wipe ||= changed
 
-        if @ycur - @yoff >= max_items
-          @yoff = @ycur - max_items + 1
-          wipe = true
-        elsif @yoff >= @ycur
-          @yoff = @ycur
-          wipe = true
-        end
-        if cnt - @yoff < max_items
-          @yoff = [0, cnt - max_items].max
-          wipe = true
-          @ycur = [0, [@yoff + pos, cnt - 1].min].max
-        end
         [@yoff, @ycur, @matches[@yoff, max_items]]
       }
 

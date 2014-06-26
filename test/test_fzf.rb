@@ -648,5 +648,39 @@ class TestFZF < MiniTest::Unit::TestCase
       ['1           3   4      2', [[0, 24], [12, 17]]],
     ], FZF.sort(FZF::ExtendedFuzzyMatcher.new(nil).match(list, '12 34', '', ''))
   end
+
+  def test_constrain
+    fzf = FZF.new []
+
+    # [#****             ]
+    assert_equal [false, 0, 0], fzf.constrain(0, 0, 5, 100)
+
+    # *****[**#**  ...   ] => [**#*******  ... ]
+    assert_equal [true, 0, 2], fzf.constrain(5, 7, 10, 100)
+
+    # [**********]**#** => ***[*********#]**
+    assert_equal [true, 3, 12], fzf.constrain(0, 12, 15, 10)
+
+    # *****[**#**  ] => ***[**#****]
+    assert_equal [true, 3, 5], fzf.constrain(5, 7, 10, 7)
+
+    # *****[**#** ] => ****[**#***]
+    assert_equal [true, 4, 6], fzf.constrain(5, 7, 10, 6)
+
+    # *****  [#] => ****[#]
+    assert_equal [true, 4, 4], fzf.constrain(10, 10, 5, 1)
+
+    # [ ] #**** => [#]****
+    assert_equal [true, 0, 0], fzf.constrain(-5, 0, 5, 1)
+
+    # [ ] **#** => **[#]**
+    assert_equal [true, 2, 2], fzf.constrain(-5, 2, 5, 1)
+
+    # [*****  #] => [****#   ]
+    assert_equal [true, 0, 4], fzf.constrain(0, 7, 5, 10)
+
+    # **[*****  #] => [******# ]
+    assert_equal [true, 0, 6], fzf.constrain(2, 10, 7, 10)
+  end
 end
 
