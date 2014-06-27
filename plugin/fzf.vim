@@ -25,22 +25,27 @@ let s:min_tmux_width  = 10
 let s:min_tmux_height = 3
 let s:default_tmux_height = '40%'
 let s:launcher = 'xterm -e bash -ic %s'
+let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
 
 let s:cpo_save = &cpo
 set cpo&vim
 
-call system('type fzf')
-if v:shell_error
-  let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
-  if executable(s:fzf_rb)
-    let s:exec = s:fzf_rb
+function! s:fzf_exec()
+  if !exists('s:exec')
+    call system('type fzf')
+    if v:shell_error
+      let s:exec = executable(s:fzf_rb) ? s:fzf_rb : ''
+    else
+      let s:exec = 'fzf'
+    endif
+    return s:fzf_exec()
+  elseif empty(s:exec)
+    unlet s:exec
+    throw 'fzf executable not found'
   else
-    echoerr 'fzf executable not found'
-    finish
+    return s:exec
   endif
-else
-  let s:exec = 'fzf'
-endif
+endfunction
 
 function! s:tmux_enabled()
   if has('gui_running')
@@ -71,6 +76,11 @@ function! fzf#run(...) abort
   let dict   = exists('a:1') ? a:1 : {}
   let temps  = { 'result': tempname() }
   let optstr = get(dict, 'options', '')
+  try
+    let fzf_exec = s:fzf_exec()
+  catch
+    throw v:exception
+  endtry
 
   if has_key(dict, 'source')
     let source = dict.source
@@ -87,7 +97,7 @@ function! fzf#run(...) abort
   else
     let prefix = ''
   endif
-  let command = prefix.s:exec.' '.optstr.' > '.temps.result
+  let command = prefix.fzf_exec.' '.optstr.' > '.temps.result
 
   if s:tmux_enabled() && s:tmux_splittable(dict)
     return s:execute_tmux(dict, command, temps)
