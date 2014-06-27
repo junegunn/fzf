@@ -703,12 +703,12 @@ class FZF
 
   def update_list wipe
     render do
-      offset, ycur, items = sync {
+      pos, items = sync {
         changed, @yoff, @ycur =
             constrain(@yoff, @ycur, @matches.length, max_items)
         wipe ||= changed
 
-        [@yoff, @ycur, @matches[@yoff, max_items]]
+        [@ycur - @yoff, @matches[@yoff, max_items]]
       }
 
       # Wipe
@@ -720,20 +720,18 @@ class FZF
       end
       @plcount = items.length
 
-      maxc    = C.cols - 3
-      cline   = ycur - offset
-      cleanse = Set[cline]
+      dirty = Set[pos]
       set(:@dirty) do |vs|
-        cleanse.merge vs
+        dirty.merge vs
         Set.new
       end
       items.each_with_index do |item, idx|
-        next unless wipe || cleanse.include?(idx)
+        next unless wipe || dirty.include?(idx)
         row           = cursor_y(idx + 2)
-        chosen        = idx == cline
+        chosen        = idx == pos
         selected      = @selects.include?([*item][0])
         line, offsets = item
-        tokens        = format line, maxc, offsets
+        tokens        = format line, C.cols - 3, offsets
         print_item row, tokens, chosen, selected
       end
       print_info
