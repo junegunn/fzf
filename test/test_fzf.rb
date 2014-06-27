@@ -27,7 +27,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,  fzf.color
     assert_equal false, fzf.black
     assert_equal true,  fzf.ansi256
-    assert_equal '',    fzf.query.get
+    assert_equal '',    fzf.query
     assert_equal false, fzf.select1
     assert_equal false, fzf.exit0
     assert_equal nil,   fzf.filter
@@ -48,7 +48,7 @@ class TestFZF < MiniTest::Unit::TestCase
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
-                          fzf.query.get
+                          fzf.query
     assert_equal 'goodbye world',
                           fzf.filter
     assert_equal :fuzzy,  fzf.extended
@@ -75,7 +75,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.black
     assert_equal false,   fzf.mouse
     assert_equal 0,       fzf.rxflag
-    assert_equal 'hello', fzf.query.get
+    assert_equal 'hello', fzf.query
     assert_equal true,    fzf.select1
     assert_equal true,    fzf.exit0
     assert_equal 'howdy', fzf.filter
@@ -97,7 +97,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.mouse
     assert_equal 1,       fzf.rxflag
     assert_equal 'b',     fzf.filter
-    assert_equal 'hello', fzf.query.get
+    assert_equal 'hello', fzf.query
     assert_equal false,   fzf.select1
     assert_equal false,   fzf.exit0
     assert_equal nil,     fzf.extended
@@ -111,7 +111,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal false,   fzf.color
     assert_equal false,   fzf.ansi256
     assert_equal 0,       fzf.rxflag
-    assert_equal 'hello', fzf.query.get
+    assert_equal 'hello', fzf.query
     assert_equal 'howdy', fzf.filter
     assert_equal :fuzzy,  fzf.extended
     assert_equal [2..2],  fzf.nth
@@ -129,7 +129,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.ansi256
     assert_equal false,   fzf.black
     assert_equal 1,       fzf.rxflag
-    assert_equal 'world', fzf.query.get
+    assert_equal 'world', fzf.query
     assert_equal false,   fzf.select1
     assert_equal false,   fzf.exit0
     assert_equal 'world', fzf.filter
@@ -647,6 +647,40 @@ class TestFZF < MiniTest::Unit::TestCase
       ['1           2   3    4',   [[0, 13], [16, 22]]],
       ['1           3   4      2', [[0, 24], [12, 17]]],
     ], FZF.sort(FZF::ExtendedFuzzyMatcher.new(nil).match(list, '12 34', '', ''))
+  end
+
+  def test_constrain
+    fzf = FZF.new []
+
+    # [#****             ]
+    assert_equal [false, 0, 0], fzf.constrain(0, 0, 5, 100)
+
+    # *****[**#**  ...   ] => [**#*******  ... ]
+    assert_equal [true, 0, 2], fzf.constrain(5, 7, 10, 100)
+
+    # [**********]**#** => ***[*********#]**
+    assert_equal [true, 3, 12], fzf.constrain(0, 12, 15, 10)
+
+    # *****[**#**  ] => ***[**#****]
+    assert_equal [true, 3, 5], fzf.constrain(5, 7, 10, 7)
+
+    # *****[**#** ] => ****[**#***]
+    assert_equal [true, 4, 6], fzf.constrain(5, 7, 10, 6)
+
+    # *****  [#] => ****[#]
+    assert_equal [true, 4, 4], fzf.constrain(10, 10, 5, 1)
+
+    # [ ] #**** => [#]****
+    assert_equal [true, 0, 0], fzf.constrain(-5, 0, 5, 1)
+
+    # [ ] **#** => **[#]**
+    assert_equal [true, 2, 2], fzf.constrain(-5, 2, 5, 1)
+
+    # [*****  #] => [****#   ]
+    assert_equal [true, 0, 4], fzf.constrain(0, 7, 5, 10)
+
+    # **[*****  #] => [******# ]
+    assert_equal [true, 0, 6], fzf.constrain(2, 10, 7, 10)
   end
 end
 

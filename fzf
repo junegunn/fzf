@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.5 (Jun 15, 2014)
+# Version: 0.8.6 (Jun 27, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -53,24 +53,26 @@ class FZF
   attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse,
               :mouse, :multi, :query, :select1, :exit0, :filter, :extended
 
-  class AtomicVar
-    def initialize value
-      @value = value
-      @mutex = Mutex.new
-    end
+  def sync
+    @shr_mtx.synchronize { yield }
+  end
 
-    def get
-      @mutex.synchronize { @value }
-    end
+  def get name
+    sync { instance_variable_get name }
+  end
 
-    def set value = nil
-      @mutex.synchronize do
-        @value = block_given? ? yield(@value) : value
-      end
-    end
+  def geta(*names)
+    sync { names.map { |name| instance_variable_get name } }
+  end
 
-    def method_missing sym, *args, &blk
-      @mutex.synchronize { @value.send(sym, *args, &blk) }
+  def call(name, method, *args)
+    sync { instance_variable_get(name).send(method, *args) }
+  end
+
+  def set name, value = nil
+    sync do
+      instance_variable_set name,
+        (block_given? ? yield(instance_variable_get(name)) : value)
     end
   end
 
@@ -89,6 +91,7 @@ class FZF
     @nth      = nil
     @delim    = nil
     @reverse  = false
+    @shr_mtx  = Mutex.new
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -124,9 +127,9 @@ class FZF
       when '+0', '--no-exit-0'   then @exit0    = false
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
-        @query = AtomicVar.new query.dup
+        @query = query.dup
       when /^-q(.*)$/, /^--query=(.*)$/
-        @query = AtomicVar.new($1)
+        @query = $1
       when '-f', '--filter'
         usage 1, 'query string required' unless query = argv.shift
         @filter = query
@@ -155,25 +158,29 @@ class FZF
       end
     end
 
-    @source   = source.clone
-    @mtx      = Mutex.new
-    @cv       = ConditionVariable.new
-    @events   = {}
-    @new      = []
-    @queue    = Queue.new
-    @pending  = nil
+    @source  = source.clone
+    @evt_mtx = Mutex.new
+    @cv      = ConditionVariable.new
+    @events  = {}
+    @new     = []
+    @queue   = Queue.new
+    @pending = nil
+    @rev_dir = @reverse ? -1 : 1
 
     unless @filter
-      @query  ||= AtomicVar.new('')
-      @cursor_x = AtomicVar.new(@query.length)
-      @matches  = AtomicVar.new([])
-      @count    = AtomicVar.new(0)
-      @vcursor  = AtomicVar.new(0)
-      @vcursors = AtomicVar.new(Set.new)
-      @spinner  = AtomicVar.new('-\|/-\|/'.split(//))
-      @selects  = AtomicVar.new({}) # ordered >= 1.9
-      @main     = Thread.current
-      @plcount  = 0
+      # Shared variables: needs protection
+      @query   ||= ''
+      @matches   = []
+      @count     = 0
+      @xcur      = @query.length
+      @ycur      = 0
+      @yoff      = 0
+      @dirty     = Set.new
+      @spinner   = '-\|/-\|/'.split(//)
+      @selects   = {} # ordered >= 1.9
+
+      @main      = Thread.current
+      @plcount   = 0
     end
   end
 
@@ -206,10 +213,11 @@ class FZF
       filter_list @new
     else
       start_reader
-      emit(:key) { q = @query.get; [q, q.length] } unless empty = @query.empty?
+      query = get(:@query)
+      emit(:key) { [query, query.length] } unless empty = query.empty?
       if @select1 || @exit0
         start_search do |loaded, matches|
-          len = empty ? @count.get : matches.length
+          len = empty ? get(:@count) : matches.length
           if loaded
             if @select1 && len == 1
               puts empty ? matches.first : matches.first.first
@@ -320,7 +328,7 @@ class FZF
   end
 
   def emit event
-    @mtx.synchronize do
+    @evt_mtx.synchronize do
       @events[event] = yield
       @cv.broadcast
     end
@@ -346,31 +354,35 @@ class FZF
     C.clrtoeol
     cprint '> ', color(:prompt, true)
     C.attron(C::A_BOLD) do
-      C.addstr @query.get
+      C.addstr get(:@query)
     end
   end
 
   def print_info msg = nil
     C.setpos cursor_y(1), 0
     C.clrtoeol
+
     prefix =
-      if spinner = @spinner.first
-        cprint spinner, color(:spinner, true)
+      if spin_char = call(:@spinner, :first)
+        cprint spin_char, color(:spinner, true)
         ' '
       else
         '  '
       end
     C.attron color(:info, false) do
-      C.addstr "#{prefix}#{@matches.length}/#{@count.get}"
-      if (selected = @selects.length) > 0
-        C.addstr " (#{selected})"
+      sync do
+        C.addstr "#{prefix}#{@matches.length}/#{@count}"
+        if (selected = @selects.length) > 0
+          C.addstr " (#{selected})"
+        end
       end
       C.addstr msg if msg
     end
   end
 
   def refresh
-    C.setpos cursor_y, 2 + width(@query[0, @cursor_x.get])
+    query, xcur = geta(:@query, :@xcur)
+    C.setpos cursor_y, 2 + width(query[0, xcur])
     C.refresh
   end
 
@@ -580,12 +592,12 @@ class FZF
 
       begin
         while true
-          @mtx.synchronize do
+          @evt_mtx.synchronize do
             while true
               events.merge! @events
 
               if @events.empty? # No new events
-                @cv.wait @mtx
+                @cv.wait @evt_mtx
                 next
               end
               @events.clear
@@ -594,8 +606,8 @@ class FZF
 
             if events[:new]
               lists << @new
-              @count.set { |c| c + @new.length }
-              @spinner.set { |spinner|
+              set(:@count) { |c| c + @new.length }
+              set(:@spinner) { |spinner|
                 if e = spinner.shift
                   spinner.push e
                 end; spinner
@@ -619,10 +631,10 @@ class FZF
               cnt   = 0
               lists.each do |list|
                 cnt += list.length
-                skip = @mtx.synchronize { @events[:key] }
+                skip = @evt_mtx.synchronize { @events[:key] }
                 break if skip
 
-                if !empty && (progress = 100 * cnt / @count.get) < 100 && Time.now - started_at > 0.5
+                if !empty && (progress = 100 * cnt / get(:@count)) < 100 && Time.now - started_at > 0.5
                   render { print_info " (#{progress}%)" }
                 end
 
@@ -641,7 +653,7 @@ class FZF
             end
 
             # Atomic update
-            @matches.set matches
+            set(:@matches, matches)
           end#new_search
 
           callback = nil if callback &&
@@ -660,14 +672,44 @@ class FZF
   end
 
   def pick
-    items = @matches[0, max_items]
-    curr = [0, [@vcursor.get, items.length - 1].min].max
-    [*items.fetch(curr, [])][0]
+    sync do
+      [*@matches.fetch(@ycur, [])][0]
+    end
+  end
+
+  def constrain offset, cursor, count, height
+    original = [offset, cursor]
+    diffpos = cursor - offset
+
+    # Constrain cursor
+    cursor = [0, [cursor, count - 1].min].max
+
+    # Ceil
+    if cursor > offset + (height - 1)
+      offset = cursor - (height - 1)
+    # Floor
+    elsif offset > cursor
+      offset = cursor
+    end
+
+    # Adjustment
+    if count - offset < height
+      offset = [0, count - height].max
+      cursor = [0, [offset + diffpos, count - 1].min].max
+    end
+
+    [[offset, cursor] != original, offset, cursor]
   end
 
   def update_list wipe
     render do
-      items = @matches[0, max_items]
+      pos, items = sync {
+        changed, @yoff, @ycur =
+            constrain(@yoff, @ycur, @matches.length, max_items)
+        wipe ||= changed
+
+        [@ycur - @yoff, @matches[@yoff, max_items]]
+      }
 
       # Wipe
       if items.length < @plcount
@@ -678,20 +720,18 @@ class FZF
       end
       @plcount = items.length
 
-      maxc    = C.cols - 3
-      vcursor = @vcursor.set { |v| [0, [v, items.length - 1].min].max }
-      cleanse = Set[vcursor]
-      @vcursors.set { |vs|
-        cleanse.merge vs
+      dirty = Set[pos]
+      set(:@dirty) do |vs|
+        dirty.merge vs
         Set.new
-      }
+      end
       items.each_with_index do |item, idx|
-        next unless wipe || cleanse.include?(idx)
+        next unless wipe || dirty.include?(idx)
         row           = cursor_y(idx + 2)
-        chosen        = idx == vcursor
+        chosen        = idx == pos
         selected      = @selects.include?([*item][0])
         line, offsets = item
-        tokens        = format line, maxc, offsets
+        tokens        = format line, C.cols - 3, offsets
         print_item row, tokens, chosen, selected
       end
       print_info
@@ -720,7 +760,10 @@ class FZF
   end
 
   def vselect &prc
-    @vcursor.set { |v| @vcursors << v; prc.call v }
+    sync do
+      @dirty << @ycur - @yoff
+      @ycur = prc.call @ycur
+    end
     update_list false
   end
 
@@ -885,7 +928,7 @@ class FZF
   def start_loop
     got = nil
     begin
-      input = @query.get.dup
+      input  = call(:@query, :dup)
       cursor = input.length
       yanked = ''
       mouse_event = MouseEvent.new
@@ -912,8 +955,8 @@ class FZF
         },
         ctrl(:a) => proc { cursor = 0; nil },
         ctrl(:e) => proc { cursor = input.length; nil },
-        ctrl(:j) => proc { vselect { |v| v - (@reverse ? -1 : 1) } },
-        ctrl(:k) => proc { vselect { |v| v + (@reverse ? -1 : 1) } },
+        ctrl(:j) => proc { vselect { |v| v - @rev_dir } },
+        ctrl(:k) => proc { vselect { |v| v + @rev_dir } },
         ctrl(:w) => proc {
           pcursor = cursor
           backword.call
@@ -924,26 +967,28 @@ class FZF
         ctrl(:h) => proc { input[cursor -= 1] = '' if cursor > 0 },
         ctrl(:i) => proc { |o|
           if @multi && sel = pick
-            if @selects.has_key? sel
-              @selects.delete sel
-            else
-              @selects[sel] = 1
+            sync do
+              if @selects.has_key? sel
+                @selects.delete sel
+              else
+                @selects[sel] = 1
+              end
             end
             vselect { |v| v + case o
                               when :stab then 1
                               when :sclick then 0
                               else -1
-                              end * (@reverse ? -1 : 1) }
+                              end * @rev_dir }
           end
         },
         ctrl(:b) => proc { cursor = [0, cursor - 1].max; nil },
         ctrl(:f) => proc { cursor = [input.length, cursor + 1].min; nil },
         ctrl(:l) => proc { render { C.clear; C.refresh }; update_list true },
-        :del   => proc { input[cursor] = '' if input.length > cursor },
-        :pgup  => proc { vselect { |_| max_items } },
-        :pgdn  => proc { vselect { |_| 0 } },
-        :alt_b => proc { backword.call; nil },
-        :alt_f => proc {
+        :del     => proc { input[cursor] = '' if input.length > cursor },
+        :pgup    => proc { vselect { |v| v + @rev_dir * (max_items - 1) } },
+        :pgdn    => proc { vselect { |v| v - @rev_dir * (max_items - 1) } },
+        :alt_b   => proc { backword.call; nil },
+        :alt_f   => proc {
           cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
           nil
         },
@@ -958,10 +1003,10 @@ class FZF
             when :click, :release
               x, y, shift = val.values_at :x, :y, :shift
               y = @reverse ? (C.lines - 1 - y) : y
-              if y == cursor_y
+              if y == C.lines - 1
                 cursor = [0, [input.length, x - 2].min].max
               elsif x > 1 && y <= max_items
-                tv = max_items - y - 1
+                tv = get(:@yoff) + max_items - y - 1
 
                 case event
                 when :click
@@ -979,6 +1024,7 @@ class FZF
               actions[ctrl(:i)].call(:sclick) if shift
               actions[ctrl(diff > 0 ? :j : :k)].call
             end
+            nil
           end
         }
       }
@@ -989,23 +1035,24 @@ class FZF
       actions[ctrl(:q)] = actions[ctrl(:g)] = actions[ctrl(:c)] = actions[:esc]
 
       while true
-        @cursor_x.set cursor
+        set(:@xcur, cursor)
         render { print_input }
 
         if key = get_input(actions)
           upd = actions.fetch(key, actions[:default]).call(key)
 
           # Dispatch key event
-          emit(:key) { [@query.set(input.dup), cursor] } if upd
+          emit(:key) { [set(:@query, input.dup), cursor] } if upd
         end
       end
     ensure
       C.close_screen
       if got
-        if @selects.empty?
+        selects = call(:@selects, :dup)
+        if selects.empty?
           @stdout.puts got
         else
-          @selects.each do |sel, _|
+          selects.each do |sel, _|
             @stdout.puts sel
           end
         end
