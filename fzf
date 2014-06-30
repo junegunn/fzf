@@ -51,7 +51,8 @@ end
 class FZF
   C = Curses
   attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse, :prompt,
-              :mouse, :multi, :query, :select1, :exit0, :filter, :extended
+              :mouse, :multi, :query, :select1, :exit0, :filter, :extended,
+              :print_query
 
   def sync
     @shr_mtx.synchronize { yield }
@@ -93,6 +94,7 @@ class FZF
     @reverse  = false
     @prompt   = '> '
     @shr_mtx  = Mutex.new
+    @print_query = false
 
     argv =
       if opts = ENV['FZF_DEFAULT_OPTS']
@@ -157,6 +159,8 @@ class FZF
         @prompt = prompt
       when /^--prompt=(.*)$/
         @prompt = $1
+      when '--print-query'             then @print_query = true
+      when '--no-print-query'          then @print_query = false
       when '-e', '--extended-exact'    then @extended = :exact
       when '+e', '--no-extended-exact' then @extended = nil
       else
@@ -226,9 +230,11 @@ class FZF
           len = empty ? get(:@count) : matches.length
           if loaded
             if @select1 && len == 1
+              puts @query if @print_query
               puts empty ? matches.first : matches.first.first
               exit 0
             elsif @exit0 && len == 0
+              puts @query if @print_query
               exit 0
             end
           end
@@ -249,6 +255,7 @@ class FZF
   end
 
   def filter_list list
+    puts @filter if @print_query
     matches = matcher.match(list, @filter, '', '')
     if @sort && matches.length <= @sort
       matches = FZF.sort(matches)
@@ -327,6 +334,7 @@ class FZF
     -1, --select-1       Automatically select the only match
     -0, --exit-0         Exit immediately when there's no match
     -f, --filter=STR     Filter mode. Do not start interactive finder.
+        --print-query    Print query as the first line
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
@@ -1054,8 +1062,9 @@ class FZF
       end
     ensure
       C.close_screen
+      q, selects = geta(:@query, :@selects)
+      @stdout.puts q if @print_query
       if got
-        selects = call(:@selects, :dup)
         if selects.empty?
           @stdout.puts got
         else
