@@ -33,6 +33,8 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.filter
     assert_equal nil,   fzf.extended
     assert_equal false, fzf.reverse
+    assert_equal '> ',  fzf.prompt
+    assert_equal false, fzf.print_query
   end
 
   def test_environment_variables
@@ -43,8 +45,8 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.nth
 
     ENV['FZF_DEFAULT_OPTS'] =
-      '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' +
-      '--no-mouse -f "goodbye world" --black --nth=3,-1,2 --reverse'
+      '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' <<
+      '--no-mouse -f "goodbye world" --black --nth=3,-1,2 --reverse --print-query'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -60,6 +62,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.select1
     assert_equal true,    fzf.exit0
     assert_equal true,    fzf.reverse
+    assert_equal true,    fzf.print_query
     assert_equal [2..2, -1..-1, 1..1], fzf.nth
   end
 
@@ -67,7 +70,8 @@ class TestFZF < MiniTest::Unit::TestCase
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
                      --exit-0 --filter=howdy --extended-exact
-                     --no-mouse --no-256 --nth=1 --reverse]
+                     --no-mouse --no-256 --nth=1 --reverse --prompt (hi)
+                     --print-query]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -82,13 +86,16 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal :exact,  fzf.extended
     assert_equal [0..0],  fzf.nth
     assert_equal true,    fzf.reverse
+    assert_equal '(hi)',  fzf.prompt
+    assert_equal true,    fzf.print_query
 
     # Long opts (left-to-right)
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query=hello
                      --filter a --filter b --no-256 --black --nth -1 --nth -2
                      --select-1 --exit-0 --no-select-1 --no-exit-0
                      --no-sort -i --color --no-multi --256
-                     --reverse --no-reverse]
+                     --reverse --no-reverse --prompt (hi) --prompt=(HI)
+                     --print-query --no-print-query]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
@@ -103,6 +110,8 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,     fzf.extended
     assert_equal [-2..-2], fzf.nth
     assert_equal false,   fzf.reverse
+    assert_equal '(HI)',  fzf.prompt
+    assert_equal false,    fzf.print_query
 
     # Short opts
     fzf = FZF.new %w[-s2000 +c -m +i -qhello -x -fhowdy +2 -n3 -1 -0]
@@ -565,34 +574,41 @@ class TestFZF < MiniTest::Unit::TestCase
     end
   end
 
-  def test_select_1
-    stream = stream_for "Hello\nWorld"
+  def assert_fzf_output opts, given, expected
+    stream = stream_for given
     output = StringIO.new
 
     begin
       $stdout = output
-      FZF.new(%w[--query=ol --select-1], stream).start
+      FZF.new(opts, stream).start
     rescue SystemExit => e
       assert_equal 0, e.status
-      assert_equal 'World', output.string.chomp
+      assert_equal expected, output.string.chomp
     ensure
       $stdout = STDOUT
     end
   end
 
-  def test_select_1_without_query
-    stream = stream_for "Hello World"
-    output = StringIO.new
-
-    begin
-      $stdout = output
-      FZF.new(%w[--select-1], stream).start
-    rescue SystemExit => e
-      assert_equal 0, e.status
-      assert_equal 'Hello World', output.string.chomp
-    ensure
-      $stdout = STDOUT
+  def test_filter
+    {
+      %w[--filter=ol] => 'World',
+      %w[--filter=ol --print-query] => "ol\nWorld",
+    }.each do |opts, expected|
+      assert_fzf_output opts, "Hello\nWorld", expected
     end
+  end
+
+  def test_select_1
+    {
+      %w[--query=ol --select-1] => 'World',
+      %w[--query=ol --select-1 --print-query] => "ol\nWorld",
+    }.each do |opts, expected|
+      assert_fzf_output opts, "Hello\nWorld", expected
+    end
+  end
+
+  def test_select_1_without_query
+    assert_fzf_output %w[--select-1], 'Hello World', 'Hello World'
   end
 
   def test_select_1_ambiguity
@@ -609,33 +625,16 @@ class TestFZF < MiniTest::Unit::TestCase
   end
 
   def test_exit_0
-    stream = stream_for "Hello\nWorld"
-    output = StringIO.new
-
-    begin
-      $stdout = output
-      FZF.new(%w[--query=zz --exit-0], stream).start
-    rescue SystemExit => e
-      assert_equal 0, e.status
-      assert_equal '', output.string
-    ensure
-      $stdout = STDOUT
+    {
+      %w[--query=zz --exit-0] => '',
+      %w[--query=zz --exit-0 --print-query] => 'zz',
+    }.each do |opts, expected|
+      assert_fzf_output opts, "Hello\nWorld", expected
     end
   end
 
   def test_exit_0_without_query
-    stream = stream_for ""
-    output = StringIO.new
-
-    begin
-      $stdout = output
-      FZF.new(%w[--exit-0], stream).start
-    rescue SystemExit => e
-      assert_equal 0, e.status
-      assert_equal '', output.string
-    ensure
-      $stdout = STDOUT
-    end
+    assert_fzf_output %w[--exit-0], '', ''
   end
 
   def test_ranking_overlap_match_regions

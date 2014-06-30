@@ -81,12 +81,14 @@ usage: fzf [options]
     +2, --no-256         Disable 256-color
         --black          Use black background
         --reverse        Reverse orientation
+        --prompt=STR     Input prompt (default: '> ')
 
   Scripting
     -q, --query=STR      Start the finder with the given query
     -1, --select-1       Automatically select the only match
     -0, --exit-0         Exit immediately when there's no match
     -f, --filter=STR     Filter mode. Do not start interactive finder.
+        --print-query    Print query as the first line
 
   Environment variables
     FZF_DEFAULT_COMMAND  Default command to use when input is tty
