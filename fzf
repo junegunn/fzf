@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.6 (Jun 27, 2014)
+# Version: 0.8.6 (Jun 30, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -50,7 +50,7 @@ end
 
 class FZF
   C = Curses
-  attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse,
+  attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse, :prompt,
               :mouse, :multi, :query, :select1, :exit0, :filter, :extended
 
   def sync
@@ -91,6 +91,7 @@ class FZF
     @nth      = nil
     @delim    = nil
     @reverse  = false
+    @prompt   = '> '
     @shr_mtx  = Mutex.new
 
     argv =
@@ -127,7 +128,7 @@ class FZF
       when '+0', '--no-exit-0'   then @exit0    = false
       when '-q', '--query'
         usage 1, 'query string required' unless query = argv.shift
-        @query = query.dup
+        @query = query
       when /^-q(.*)$/, /^--query=(.*)$/
         @query = $1
       when '-f', '--filter'
@@ -151,6 +152,11 @@ class FZF
         @sort = sort.to_i
       when /^-s([0-9]+)$/, /^--sort=([0-9]+)$/
         @sort = $1.to_i
+      when '--prompt'
+        usage 1, 'prompt string required' unless prompt = argv.shift
+        @prompt = prompt
+      when /^--prompt=(.*)$/
+        @prompt = $1
       when '-e', '--extended-exact'    then @extended = :exact
       when '+e', '--no-extended-exact' then @extended = nil
       else
@@ -314,6 +320,7 @@ class FZF
     +2, --no-256         Disable 256-color
         --black          Use black background
         --reverse        Reverse orientation
+        --prompt=STR     Input prompt (default: '> ')
 
   Scripting
     -q, --query=STR      Start the finder with the given query
@@ -352,7 +359,7 @@ class FZF
   def print_input
     C.setpos cursor_y, 0
     C.clrtoeol
-    cprint '> ', color(:prompt, true)
+    cprint @prompt, color(:prompt, true)
     C.attron(C::A_BOLD) do
       C.addstr get(:@query)
     end
@@ -382,7 +389,7 @@ class FZF
 
   def refresh
     query, xcur = geta(:@query, :@xcur)
-    C.setpos cursor_y, 2 + width(query[0, xcur])
+    C.setpos cursor_y, @prompt.length + width(query[0, xcur])
     C.refresh
   end
 
@@ -1004,7 +1011,7 @@ class FZF
               x, y, shift = val.values_at :x, :y, :shift
               y = @reverse ? (C.lines - 1 - y) : y
               if y == C.lines - 1
-                cursor = [0, [input.length, x - 2].min].max
+                cursor = [0, [input.length, x - @prompt.length].min].max
               elsif x > 1 && y <= max_items
                 tv = get(:@yoff) + max_items - y - 1
 

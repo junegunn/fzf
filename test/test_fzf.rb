@@ -33,6 +33,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.filter
     assert_equal nil,   fzf.extended
     assert_equal false, fzf.reverse
+    assert_equal '> ',  fzf.prompt
   end
 
   def test_environment_variables
@@ -67,7 +68,7 @@ class TestFZF < MiniTest::Unit::TestCase
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
                      --exit-0 --filter=howdy --extended-exact
-                     --no-mouse --no-256 --nth=1 --reverse]
+                     --no-mouse --no-256 --nth=1 --reverse --prompt (hi)]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
     assert_equal false,   fzf.color
@@ -82,13 +83,14 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal :exact,  fzf.extended
     assert_equal [0..0],  fzf.nth
     assert_equal true,    fzf.reverse
+    assert_equal '(hi)',  fzf.prompt
 
     # Long opts (left-to-right)
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query=hello
                      --filter a --filter b --no-256 --black --nth -1 --nth -2
                      --select-1 --exit-0 --no-select-1 --no-exit-0
                      --no-sort -i --color --no-multi --256
-                     --reverse --no-reverse]
+                     --reverse --no-reverse --prompt (hi) --prompt=(HI)]
     assert_equal nil,     fzf.sort
     assert_equal false,   fzf.multi
     assert_equal true,    fzf.color
@@ -103,6 +105,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,     fzf.extended
     assert_equal [-2..-2], fzf.nth
     assert_equal false,   fzf.reverse
+    assert_equal '(HI)',  fzf.prompt
 
     # Short opts
     fzf = FZF.new %w[-s2000 +c -m +i -qhello -x -fhowdy +2 -n3 -1 -0]

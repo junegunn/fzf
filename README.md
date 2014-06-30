@@ -81,6 +81,7 @@ usage: fzf [options]
     +2, --no-256         Disable 256-color
         --black          Use black background
         --reverse        Reverse orientation
+        --prompt=STR     Input prompt (default: '> ')
 
   Scripting
     -q, --query=STR      Start the finder with the given query
