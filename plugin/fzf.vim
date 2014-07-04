@@ -137,8 +137,11 @@ function! s:execute(dict, command, temps)
   execute 'silent !'.command
   redraw!
   if v:shell_error
-    echohl Error
-    echo 'Error running ' . command
+    " Do not print error message on exit status 1
+    if v:shell_error > 1
+      echohl ErrorMsg
+      echo 'Error running ' . command
+    endif
     return []
   else
     return s:callback(a:dict, a:temps, 0)
