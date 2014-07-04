@@ -31,7 +31,8 @@ _fzf_opts_completion() {
 }
 
 _fzf_generic_completion() {
-  local cur base dir leftover matches trigger
+  local cur base dir leftover matches trigger cmd orig
+  cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER:-**}
   cur="${COMP_WORDS[COMP_CWORD]}"
@@ -61,25 +62,30 @@ _fzf_generic_completion() {
       dir=$(dirname "$dir")
       [[ "$dir" =~ /$ ]] || dir="$dir"/
     done
+  else
+    shift
+    shift
+    orig=$(eval "echo \$_fzf_orig_completion_$cmd")
+    [ -n "$orig" ] && type "$orig" > /dev/null && $orig "$@"
   fi
 }
 
 _fzf_all_completion() {
   _fzf_generic_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print -o -type f -print -o -type l -print" \
-    "-m"
+    "-m" "$@"
 }
 
 _fzf_file_completion() {
   _fzf_generic_completion \
     "-name .git -prune -o -name .svn -prune -o -type f -print -o -type l -print" \
-    "-m"
+    "-m" "$@"
 }
 
 _fzf_dir_completion() {
   _fzf_generic_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print" \
-    ""
+    "" "$@"
 }
 
 _fzf_kill_completion() {
@@ -133,28 +139,43 @@ _fzf_ssh_completion() {
   fi
 }
 
+# fzf options
 complete -F _fzf_opts_completion fzf
 
+d_cmds="cd pushd rmdir"
+f_cmds="
+  awk cat diff diff3
+  emacs ex file ftp g++ gcc gvim head hg java
+  javac ld less more mvim patch perl python ruby
+  sed sftp sort source tail tee uniq vi view vim wc"
+a_cmds="
+  basename bunzip2 bzip2 chmod chown curl cp dirname du
+  find git grep gunzip gzip hg jar
+  ln ls mv open rm rsync scp
+  svn tar unzip zip"
+
+# Preserve existing completion
+if [ "$_fzf_completion_loaded" != '0.8.6' ]; then
+  # Really wish I could use associative array but OSX comes with bash 3.2 :(
+  eval $(complete | grep '\-F' | grep -v _fzf_ |
+    grep -E -w "$(echo $d_cmds $f_cmds $a_cmds | sed 's/ /|/g' | sed 's/+/\\+/g')" |
+    sed -E 's/.*-F *([^ ]*).* ([^ ]*)$/_fzf_orig_completion_\2=\1/' |
+    sed 's/[^a-z0-9_=]/_/g')
+  export _fzf_completion_loaded=0.8.6
+fi
+
 # Directory
-for cmd in "cd pushd rmdir"; do
+for cmd in $d_cmds; do
   complete -F _fzf_dir_completion -o default -o bashdefault $cmd
 done
 
 # File
-for cmd in "
-  awk cat diff diff3
-  emacs ex file ftp g++ gcc gvim head hg java
-  javac ld less more mvim patch perl python ruby
-  sed sftp sort source tail tee uniq vi view vim wc"; do
+for cmd in $f_cmds; do
   complete -F _fzf_file_completion -o default -o bashdefault $cmd
 done
 
 # Anything
-for cmd in "
-  basename bunzip2 bzip2 chmod chown curl cp dirname du
-  find git grep gunzip gzip hg jar
-  ln ls mv open rm rsync scp
-  svn tar unzip zip"; do
+for cmd in $a_cmds; do
   complete -F _fzf_all_completion -o default -o bashdefault $cmd
 done
 
@@ -165,3 +186,4 @@ complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
 complete -F _fzf_ssh_completion -o default -o bashdefault ssh
 complete -F _fzf_telnet_completion -o default -o bashdefault telnet
 
+unset cmd d_cmds f_cmds a_cmds
