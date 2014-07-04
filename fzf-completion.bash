@@ -157,13 +157,10 @@ a_cmds="
 # Preserve existing completion
 if [ "$_fzf_completion_loaded" != '0.8.6' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
-  while read line; do
-    eval $line
-  done < <(complete | grep '\-F' | grep -v _fzf_ |
+  eval $(complete | grep '\-F' | grep -v _fzf_ |
     grep -E -w "$(echo $d_cmds $f_cmds $a_cmds | sed 's/ /|/g' | sed 's/+/\\+/g')" |
     sed -E 's/.*-F *([^ ]*).* ([^ ]*)$/_fzf_orig_completion_\2=\1/' |
     sed 's/[^a-z0-9_=]/_/g')
-  unset line
   export _fzf_completion_loaded=0.8.6
 fi
 
