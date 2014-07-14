@@ -13,7 +13,25 @@ _fzf_opts_completion() {
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  opts="-m --multi -x --extended -s --sort +s +i +c --no-color"
+  opts="
+    -x --extended
+    -e --extended-exact
+    -i +i
+    -n --nth
+    -d --delimiter
+    -s --sort +s
+    -m --multi
+    --no-mouse
+    +c --no-color
+    +2 --no-256
+    --black
+    --reverse
+    --prompt
+    -q --query
+    -1 --select-1
+    -0 --exit-0
+    -f --filter
+    --print-query"
 
   case "${prev}" in
   --sort|-s)
@@ -30,7 +48,7 @@ _fzf_opts_completion() {
   return 0
 }
 
-_fzf_generic_completion() {
+_fzf_path_completion() {
   local cur base dir leftover matches trigger cmd orig
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
@@ -70,20 +88,45 @@ _fzf_generic_completion() {
   fi
 }
 
+_fzf_list_completion() {
+  local cur selected trigger cmd src
+  read -r src
+  cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
+  trigger=${FZF_COMPLETION_TRIGGER:-**}
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  if [[ ${cur} == *"$trigger" ]]; then
+    cur=${cur:0:${#cur}-${#trigger}}
+
+    tput sc
+    selected=$(eval "$src | fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
+    selected=${selected% }
+    tput rc
+
+    if [ -n "$selected" ]; then
+      COMPREPLY=("$selected")
+      return 0
+    fi
+  else
+    shift
+    orig=$(eval "echo \$_fzf_orig_completion_$cmd")
+    [ -n "$orig" ] && type "$orig" > /dev/null && $orig "$@"
+  fi
+}
+
 _fzf_all_completion() {
-  _fzf_generic_completion \
+  _fzf_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print -o -type f -print -o -type l -print" \
     "-m" "$@"
 }
 
 _fzf_file_completion() {
-  _fzf_generic_completion \
+  _fzf_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type f -print -o -type l -print" \
     "-m" "$@"
 }
 
 _fzf_dir_completion() {
-  _fzf_generic_completion \
+  _fzf_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print" \
     "" "$@"
 }
@@ -103,40 +146,27 @@ _fzf_kill_completion() {
 }
 
 _fzf_telnet_completion() {
-  local cur selected trigger
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
-  cur="${COMP_WORDS[COMP_CWORD]}"
-  [[ ${cur} == *"$trigger" ]] || return 1
-  cur=${cur:0:${#cur}-${#trigger}}
-
-  tput sc
-  selected=$(grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
-  tput rc
-
-  if [ -n "$selected" ]; then
-    COMPREPLY=("$selected")
-    return 0
-  fi
+  _fzf_list_completion '+m' "$@" << "EOF"
+  grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{if (length($2) > 0) {print $2}}' | sort -u
+EOF
 }
 
 _fzf_ssh_completion() {
-  local cur selected trigger
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
-  cur="${COMP_WORDS[COMP_CWORD]}"
-  [[ ${cur} == *"$trigger" ]] || return 1
-  cur=${cur:0:${#cur}-${#trigger}}
+  _fzf_list_completion '+m' "$@" << "EOF"
+    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | grep -i ^host) <(grep -v '^\s*\(#\|$\)' /etc/hosts) | awk '{print $2}' | sort -u
+EOF
+}
 
-  tput sc
-  selected=$(cat \
-    <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | grep -i ^host) \
-    <(grep -v '^\s*\(#\|$\)' /etc/hosts) | \
-    awk '{print $2}' | sort -u | fzf $FZF_COMPLETION_OPTS -q "$cur")
-  tput rc
+_fzf_env_var_completion() {
+  _fzf_list_completion '-m' "$@" << "EOF"
+  declare -xp | sed 's/=.*//' | sed 's/.* //'
+EOF
+}
 
-  if [ -n "$selected" ]; then
-    COMPREPLY=("$selected")
-    return 0
-  fi
+_fzf_alias_completion() {
+  _fzf_list_completion '-m' "$@" << "EOF"
+  alias | sed 's/=.*//' | sed 's/.* //'
+EOF
 }
 
 # fzf options
@@ -153,15 +183,16 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
+x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
 if [ "$_fzf_completion_loaded" != '0.8.6' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
   eval $(complete | grep '\-F' | grep -v _fzf_ |
-    grep -E -w "$(echo $d_cmds $f_cmds $a_cmds | sed 's/ /|/g' | sed 's/+/\\+/g')" |
+    grep -E -w "$(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g')" |
     sed 's/.*-F *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\2=\1;/' |
     sed 's/[^a-z0-9_= ;]/_/g')
-  export _fzf_completion_loaded=0.8.6
+  export _fzf_completion_loaded=0.8.6.1
 fi
 
 # Directory
@@ -186,4 +217,9 @@ complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
 complete -F _fzf_ssh_completion -o default -o bashdefault ssh
 complete -F _fzf_telnet_completion -o default -o bashdefault telnet
 
-unset cmd d_cmds f_cmds a_cmds
+# Environment variables / Aliases
+complete -F _fzf_env_var_completion -o default -o bashdefault unset
+complete -F _fzf_env_var_completion -o default -o bashdefault export
+complete -F _fzf_alias_completion -o default -o bashdefault unalias
+
+unset cmd d_cmds f_cmds a_cmds x_cmds

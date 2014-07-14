@@ -270,6 +270,14 @@ ssh **<TAB>
 telnet **<TAB>
 ```
 
+#### Environment variables / Aliases
+
+```sh
+unset **<TAB>
+export **<TAB>
+unalias **<TAB>
+```
+
 #### Settings
 
 ```sh
