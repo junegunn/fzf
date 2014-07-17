@@ -89,7 +89,7 @@ _fzf_path_completion() {
     shift
     shift
     orig=$(eval "echo \$_fzf_orig_completion_$cmd")
-    [ -n "$orig" ] && type "$orig" > /dev/null && $orig "$@"
+    [ -n "$orig" ] && type "$orig" > /dev/null 2>&1 && $orig "$@"
   fi
 }
 
@@ -206,7 +206,7 @@ if [ "$_fzf_completion_loaded" != '0.8.6-1' ]; then
   export _fzf_completion_loaded=0.8.6-1
 fi
 
-if type _completion_loader > /dev/null; then
+if type _completion_loader > /dev/null 2>&1; then
   _fzf_completion_loader=1
 fi
 
