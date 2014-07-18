@@ -882,6 +882,8 @@ class FZF
             case read_nbs
             when [59, 50, 68] then ctrl(:a)
             when [59, 50, 67] then ctrl(:e)
+            when [59, 53, 68] then :alt_b
+            when [59, 53, 67] then :alt_f
             when [126]        then ctrl(:a)
             end
           when 52 then read_nb; ctrl(:e)
