@@ -29,9 +29,9 @@ else
   echo "Not found"
   echo "Installing 'curses' gem ... "
   if (( EUID )); then
-    /usr/bin/env gem install curses -v 1.0.0 --user-install
+    /usr/bin/env gem install curses --user-install
   else
-    /usr/bin/env gem install curses -v 1.0.0
+    /usr/bin/env gem install curses
   fi
   if [ $? -ne 0 ]; then
     echo

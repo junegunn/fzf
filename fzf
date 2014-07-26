@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.7 (Jul 18, 2014)
+# Version: 0.8.7 (Jul 27, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -36,8 +36,13 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+begin
+  require 'curses'
+rescue LoadError
+  $stderr.puts 'curses gem is not installed. Try `gem install curses`.'
+  exit 1
+end
 require 'thread'
-require 'curses'
 require 'set'
 
 unless String.method_defined? :force_encoding
