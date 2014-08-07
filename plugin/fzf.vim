@@ -148,11 +148,18 @@ function! s:execute(dict, command, temps)
   endif
 endfunction
 
-function! s:execute_tmux(dict, command, temps)
-  if has_key(a:dict, 'dir')
-    let command = 'cd '.s:escape(a:dict.dir).' && '.a:command
+function! s:env_var(name)
+  if exists('$'.a:name)
+    return a:name . "='". substitute(expand('$'.a:name), "'", "'\\\\''", 'g') . "' "
   else
-    let command = a:command
+    return ''
+  endif
+endfunction
+
+function! s:execute_tmux(dict, command, temps)
+  let command = s:env_var('FZF_DEFAULT_OPTS').s:env_var('FZF_DEFAULT_COMMAND').a:command
+  if has_key(a:dict, 'dir')
+    let command = 'cd '.s:escape(a:dict.dir).' && '.command
   endif
 
   let splitopt = '-v'
