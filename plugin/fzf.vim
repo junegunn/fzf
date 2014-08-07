@@ -149,15 +149,10 @@ function! s:execute(dict, command, temps)
 endfunction
 
 function! s:execute_tmux(dict, command, temps)
-  let command = a:command
-  if exists('$FZF_DEFAULT_OPTS')
-    let command = expand('FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS" ') . command
-  endif
-  if exists('$FZF_DEFAULT_COMMAND')
-    let command = expand('FZF_DEFAULT_COMMAND="$FZF_DEFAULT_COMMAND" ') . command
-  endif
   if has_key(a:dict, 'dir')
-    let command = 'cd '.s:escape(a:dict.dir).' && '.command
+    let command = 'cd '.s:escape(a:dict.dir).' && '.a:command
+  else
+    let command = a:command
   endif
 
   let splitopt = '-v'
