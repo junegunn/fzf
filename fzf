@@ -1106,15 +1106,18 @@ class FZF
           unless @delim
             # AWK default
             prefix_length = str.index(/\S/) || 0
-            tokens = str.strip.scan(/\S+\s*/) rescue []
+            tokens = str.scan(/\S+\s*/) rescue []
           else
             prefix_length = 0
             tokens = str.scan(@delim) rescue []
           end
           @nth.map { |n|
-            (part = tokens[n]) &&
+            if n.begin == 0 && n.end == -1
+              [prefix_length, tokens.join]
+            elsif part = tokens[n]
               [prefix_length + (tokens[0...(n.begin)] || []).join.length,
-               part.join.sub(/\s+$/, '')]
+               part.join]
+            end
           }.compact
         end
     end
