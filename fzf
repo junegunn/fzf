@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.7 (Jul 27, 2014)
+# Version: 0.8.7 (Aug 15, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -1102,26 +1102,29 @@ class FZF
 
     def tokenize str
       @tokens_cache[str] ||=
-        unless @delim
-          # AWK default
-          prefix_length = str[/^\s+/].length rescue 0
-          [prefix_length, (str.strip.scan(/\S+\s*/) rescue [])]
-        else
-          prefix_length = 0
-          [prefix_length, (str.scan(@delim) rescue [])]
+        begin
+          unless @delim
+            # AWK default
+            prefix_length = str.index(/\S/) || 0
+            tokens = str.strip.scan(/\S+\s*/) rescue []
+          else
+            prefix_length = 0
+            tokens = str.scan(@delim) rescue []
+          end
+          @nth.map { |n|
+            (part = tokens[n]) &&
+              [prefix_length + (tokens[0...(n.begin)] || []).join.length,
+               part.join.sub(/\s+$/, '')]
+          }.compact
         end
     end
 
     def do_match str, pat
       if @nth
-        prefix_length, tokens = tokenize str
-
-        @nth.each do |n|
-          if (range = tokens[n]) && (token = range.join) &&
-                (md = token.sub(/\s+$/, '').match(pat) rescue nil)
-            prefix_length += (tokens[0...(n.begin)] || []).join.length
-            offset = md.offset(0).map { |o| o + prefix_length }
-            return MatchData.new(offset)
+        tokenize(str).each do |pair|
+          prefix_length, token = pair
+          if md = token.match(pat) rescue nil
+            return MatchData.new(md.offset(0).map { |o| o + prefix_length })
           end
         end
         nil
