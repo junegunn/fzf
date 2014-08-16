@@ -366,7 +366,8 @@ class FZF
     end if str
   end
   def addstr_safe str
-    C.addstr str.gsub("\0", '')
+    str = str.gsub("\0", '') rescue str
+    C.addstr str
   end
 
   def print_input
@@ -1105,7 +1106,7 @@ class FZF
         begin
           unless @delim
             # AWK default
-            prefix_length = (str.index(/\S/) rescue 0)|| 0
+            prefix_length = (str.index(/\S/) || 0) rescue 0
             tokens = str.scan(/\S+\s*/) rescue []
           else
             prefix_length = 0

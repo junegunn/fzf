@@ -5,6 +5,7 @@ require 'curses'
 require 'timeout'
 require 'stringio'
 require 'minitest/autorun'
+require 'tempfile'
 $LOAD_PATH.unshift File.expand_path('../..', __FILE__)
 ENV['FZF_EXECUTABLE'] = '0'
 load 'fzf'
@@ -614,7 +615,7 @@ class TestFZF < MiniTest::Unit::TestCase
   def test_select_1_ambiguity
     stream = stream_for "Hello\nWorld"
     begin
-      Timeout::timeout(3) do
+      Timeout::timeout(2) do
         FZF.new(%w[--query=o --select-1], stream).start
       end
       flunk 'Should not reach here'
@@ -680,6 +681,20 @@ class TestFZF < MiniTest::Unit::TestCase
 
     # **[*****  #] => [******# ]
     assert_equal [true, 0, 6], fzf.constrain(2, 10, 7, 10)
+  end
+
+  def test_invalid_utf8
+    tmp = Tempfile.new('fzf')
+    tmp << 'hello ' << [0xff].pack('C*') << ' world' << $/ << [0xff].pack('C*')
+    tmp.close
+    begin
+      Timeout::timeout(1) do
+        FZF.new(%w[-n..,1,2.. -q^ -x], File.open(tmp.path)).start
+      end
+    rescue Timeout::Error
+    end
+  ensure
+    tmp.unlink
   end
 end
 
