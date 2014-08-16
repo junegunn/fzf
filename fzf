@@ -1105,7 +1105,7 @@ class FZF
         begin
           unless @delim
             # AWK default
-            prefix_length = str.index(/\S/) || 0
+            prefix_length = (str.index(/\S/) rescue 0)|| 0
             tokens = str.scan(/\S+\s*/) rescue []
           else
             prefix_length = 0
