@@ -126,7 +126,7 @@ __fsel_tmux() {
 
 __fcd() {
   local dir
-  dir=$(command find ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) && printf 'cd %q' "$dir"
+  dir=$(command find -L ${1:-*} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) && printf 'cd %q' "$dir"
 }
 
 __use_tmux=0
@@ -214,7 +214,7 @@ bindkey '^T' fzf-file-widget
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
-  cd "${$(set -o nonomatch; command find * -path '*/\.*' -prune \
+  cd "${$(set -o nonomatch; command find -L * -path '*/\.*' -prune \
           -o -type d -print 2> /dev/null | fzf):-.}"
   zle reset-prompt
 }
@@ -268,7 +268,7 @@ function fzf_key_bindings
   end
 
   function __fzf_list_dir
-    command find * -path '*/\.*' -prune -o -type d -print 2> /dev/null
+    command find -L * -path '*/\.*' -prune -o -type d -print 2> /dev/null
   end
 
   function __fzf_escape
