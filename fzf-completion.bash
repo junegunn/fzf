@@ -70,7 +70,7 @@ _fzf_path_completion() {
         leftover=${leftover/#\/}
         [ "$dir" = './' ] && dir=''
         tput sc
-        matches=$(find "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
+        matches=$(find -L "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
           printf '%q ' "$item"
         done)
         matches=${matches% }
