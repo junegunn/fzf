@@ -51,8 +51,12 @@ Once you have cloned the repository, add the following line to your .vimrc.
 set rtp+=~/.fzf
 ```
 
-Or you may use any Vim plugin manager, such as
-[vim-plug](https://github.com/junegunn/vim-plug).
+Or you may use [vim-plug](https://github.com/junegunn/vim-plug) to manage fzf
+inside Vim:
+
+```vim
+Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
+```
 
 Usage
 -----
