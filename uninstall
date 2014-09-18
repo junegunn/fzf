@@ -50,7 +50,7 @@ remove_line() {
 
 for shell in bash zsh; do
   remove ~/.fzf.${shell}
-  remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
+  # remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
 done
 
 bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
