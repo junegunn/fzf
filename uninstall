@@ -18,18 +18,24 @@ remove() {
 }
 
 remove_line() {
-  src=$(readlink "$2")
+  src=$(readlink "$1")
   if [ $? -eq 0 ]; then
-    echo "Remove from $2 ($src):"
+    echo "Remove from $1 ($src):"
   else
-    src=$2
-    echo "Remove from $2:"
+    src=$1
+    echo "Remove from $1:"
   fi
 
+  shift
   line_no=1
   match=0
-  while [ 1 ]; do
-    line=$(sed -n "$line_no,\$p" "$src" | \grep -m1 -nF "$1") || break
+  while [ -n "$1" ]; do
+    line=$(sed -n "$line_no,\$p" "$src" | \grep -m1 -nF "$1")
+    if [ $? -ne 0 ]; then
+      shift
+      line_no=1
+      continue
+    fi
     line_no=$(( $(sed 's/:.*//' <<< "$line") + line_no - 1 ))
     content=$(sed 's/^[0-9]*://' <<< "$line")
     match=1
@@ -50,12 +56,14 @@ remove_line() {
 
 for shell in bash zsh; do
   remove ~/.fzf.${shell}
-  # remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
+  remove_line ~/.${shell}rc \
+    "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" \
+    "source ~/.fzf.${shell}"
 done
 
 bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
 if [ -f "$bind_file" ]; then
-  remove_line "fzf_key_bindings" "$bind_file"
+  remove_line "$bind_file" "fzf_key_bindings"
 fi
 
 if [ -d ~/.config/fish/functions ]; then
