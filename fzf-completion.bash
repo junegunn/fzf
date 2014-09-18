@@ -119,7 +119,7 @@ _fzf_list_completion() {
     elif [ -n "$_fzf_completion_loader" ]; then
       _completion_loader "$@"
       ret=$?
-      eval $(complete | grep "\-F.* $cmd$" | _fzf_orig_completion_filter)
+      eval $(complete | \grep "\-F.* $cmd$" | _fzf_orig_completion_filter)
       source $BASH_SOURCE
       return $ret
     fi
@@ -160,13 +160,13 @@ _fzf_kill_completion() {
 
 _fzf_telnet_completion() {
   _fzf_list_completion '+m' "$@" << "EOF"
-  grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{if (length($2) > 0) {print $2}}' | sort -u
+  \grep -v '^\s*\(#\|$\)' /etc/hosts | awk '{if (length($2) > 0) {print $2}}' | sort -u
 EOF
 }
 
 _fzf_ssh_completion() {
   _fzf_list_completion '+m' "$@" << "EOF"
-    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | grep -i ^host | grep -v '*') <(grep -v '^\s*\(#\|$\)' /etc/hosts) | awk '{print $2}' | sort -u
+    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i ^host | \grep -v '*') <(\grep -v '^\s*\(#\|$\)' /etc/hosts) | awk '{print $2}' | sort -u
 EOF
 }
 
@@ -201,8 +201,8 @@ x_cmds="kill ssh telnet unset unalias export"
 # Preserve existing completion
 if [ "$_fzf_completion_loaded" != '0.8.6-1' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
-  eval $(complete | grep '\-F' | grep -v _fzf_ |
-    grep -E " ($(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
+  eval $(complete | \grep '\-F' | \grep -v _fzf_ |
+    \grep -E " ($(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
   export _fzf_completion_loaded=0.8.6-1
 fi
 

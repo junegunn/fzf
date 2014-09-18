@@ -29,7 +29,7 @@ remove_line() {
   line_no=1
   match=0
   while [ 1 ]; do
-    line=$(sed -n "$line_no,\$p" "$src" | grep -m1 -nF "$1") || break
+    line=$(sed -n "$line_no,\$p" "$src" | \grep -m1 -nF "$1") || break
     line_no=$(( $(sed 's/:.*//' <<< "$line") + line_no - 1 ))
     content=$(sed 's/^[0-9]*://' <<< "$line")
     match=1
@@ -50,7 +50,7 @@ remove_line() {
 
 for shell in bash zsh; do
   remove ~/.fzf.${shell}
-  remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
+  # remove_line "source ~/.fzf.${shell}" ~/.${shell}rc
 done
 
 bind_file=~/.config/fish/functions/fish_user_key_bindings.fish

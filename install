@@ -132,7 +132,7 @@ __fcd() {
 __use_tmux=0
 [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ] && __use_tmux=1
 
-if [ -z "$(set -o | grep '^vi.*on')" ]; then
+if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
 
@@ -316,7 +316,7 @@ function fzf_key_bindings
     else
       set height 40%
     end
-    if echo $height | grep -q -E '%$'
+    if echo $height | \grep -q -E '%$'
       echo "-p "(echo $height | sed 's/%$//')
     else
       echo "-l $height"
@@ -337,7 +337,11 @@ append_line() {
   echo "Update $2:"
   echo "  - $1"
   [ -f "$2" ] || touch "$2"
-  line=$(grep -nF "$1" "$2" | sed 's/:.*//')
+  if [ $# -lt 3 ]; then
+    line=$(\grep -nF "$1" "$2" | sed 's/:.*//')
+  else
+    line=$(\grep -nF "$3" "$2" | sed 's/:.*//')
+  fi
   if [ -n "$line" ]; then
     echo "    - Already exists (line #$line)"
   else
@@ -349,7 +353,7 @@ append_line() {
 
 echo
 for shell in bash zsh; do
-  append_line "source ~/.fzf.${shell}" ~/.${shell}rc
+  append_line "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" ~/.${shell}rc "~/.fzf.${shell}"
 done
 
 if [ $key_bindings -eq 0 -a $has_fish -eq 1 ]; then

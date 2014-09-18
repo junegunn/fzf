@@ -476,7 +476,7 @@ speed of the traversal.
 ```sh
 # Copy the original fzf function to __fzf
 declare -f __fzf > /dev/null ||
-  eval "$(echo "__fzf() {"; declare -f fzf | grep -v '^{' | tail -n +2)"
+  eval "$(echo "__fzf() {"; declare -f fzf | \grep -v '^{' | tail -n +2)"
 
 # Use git ls-tree when possible
 fzf() {
