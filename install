@@ -338,15 +338,15 @@ append_line() {
   echo "  - $1"
   [ -f "$2" ] || touch "$2"
   if [ $# -lt 3 ]; then
-    line=$(\grep -nF "$1" "$2" | sed 's/:.*//')
+    line=$(\grep -nF "$1" "$2" | sed 's/:.*//' | tr '\n' ' ')
   else
-    line=$(\grep -nF "$3" "$2" | sed 's/:.*//')
+    line=$(\grep -nF "$3" "$2" | sed 's/:.*//' | tr '\n' ' ')
   fi
   if [ -n "$line" ]; then
-    echo "    - Already exists (line #$line)"
+    echo "    - Already exists: line #$line"
   else
     echo "$1" >> "$2"
-    echo "    - Added"
+    echo "    + Added"
   fi
   echo
 }
