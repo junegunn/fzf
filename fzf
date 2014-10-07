@@ -841,7 +841,13 @@ class FZF
   end
 
   def get_input actions
-    @tty ||= IO.open(IO.sysopen('/dev/tty'), 'r')
+    @tty ||=
+      begin
+        require 'io/console'
+        IO.console
+      rescue LoadError
+        IO.open(IO.sysopen('/dev/tty'), 'r')
+      end
 
     if pending = @pending
       @pending = nil
