@@ -113,7 +113,7 @@ function! s:tmux_splittable(dict)
 endfunction
 
 function! s:pushd(dict)
-  if has_key(a:dict, 'dir')
+  if !empty(get(a:dict, 'dir', ''))
     let a:dict.prev_dir = getcwd()
     execute 'chdir '.s:escape(a:dict.dir)
   endif
@@ -158,7 +158,7 @@ endfunction
 
 function! s:execute_tmux(dict, command, temps)
   let command = s:env_var('FZF_DEFAULT_OPTS').s:env_var('FZF_DEFAULT_COMMAND').a:command
-  if has_key(a:dict, 'dir')
+  if !empty(get(a:dict, 'dir', ''))
     let command = 'cd '.s:escape(a:dict.dir).' && '.command
   endif
 
