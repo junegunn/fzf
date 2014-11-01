@@ -172,13 +172,12 @@ class TestFZF < MiniTest::Unit::TestCase
     end
   end
 
-  # FIXME Only on 1.9 or above
   def test_width
     fzf = FZF.new []
     assert_equal 5, fzf.width('abcde')
     assert_equal 4, fzf.width('한글')
     assert_equal 5, fzf.width('한글.')
-  end
+  end if RUBY_VERSION >= '1.9'
 
   def test_trim
     fzf = FZF.new []
@@ -191,7 +190,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal ['가나a',   6], fzf.trim('가나ab라마바사.', 5, false)
     assert_equal ['가나ab',  5], fzf.trim('가나ab라마바사.', 6, false)
     assert_equal ['가나ab',  5], fzf.trim('가나ab라마바사.', 7, false)
-  end
+  end if RUBY_VERSION >= '1.9'
 
   def test_format
     fzf = FZF.new []
