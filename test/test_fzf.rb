@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+require 'rubygems'
 require 'curses'
 require 'timeout'
 require 'stringio'
@@ -25,6 +26,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.rxflag
     assert_equal true,  fzf.mouse
     assert_equal nil,   fzf.nth
+    assert_equal nil,   fzf.with_nth
     assert_equal true,  fzf.color
     assert_equal false, fzf.black
     assert_equal true,  fzf.ansi256
@@ -47,7 +49,7 @@ class TestFZF < MiniTest::Unit::TestCase
 
     ENV['FZF_DEFAULT_OPTS'] =
       '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' <<
-      '--no-mouse -f "goodbye world" --black --nth=3,-1,2 --reverse --print-query'
+      '--no-mouse -f "goodbye world" --black --with-nth=3,-3..,2 --nth=3,-1,2 --reverse --print-query'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -65,13 +67,14 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.reverse
     assert_equal true,    fzf.print_query
     assert_equal [2..2, -1..-1, 1..1], fzf.nth
+    assert_equal [2..2, -3..-1, 1..1], fzf.with_nth
   end
 
   def test_option_parser
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
                      --exit-0 --filter=howdy --extended-exact
-                     --no-mouse --no-256 --nth=1 --reverse --prompt (hi)
+                     --no-mouse --no-256 --nth=1 --with-nth=.. --reverse --prompt (hi)
                      --print-query]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
@@ -86,6 +89,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 'howdy', fzf.filter
     assert_equal :exact,  fzf.extended
     assert_equal [0..0],  fzf.nth
+    assert_equal nil,     fzf.with_nth
     assert_equal true,    fzf.reverse
     assert_equal '(hi)',  fzf.prompt
     assert_equal true,    fzf.print_query
@@ -636,6 +640,32 @@ class TestFZF < MiniTest::Unit::TestCase
 
   def test_exit_0_without_query
     assert_fzf_output %w[--exit-0], '', ''
+  end
+
+  def test_with_nth
+    source = "hello world\nbatman"
+    assert_fzf_output %w[-0 -1 --with-nth=2,1 -x -q ^worl],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=2,1 -x -q llo$],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=.. -x -q llo$],
+      source, ''
+    assert_fzf_output %w[-0 -1 --with-nth=2,2,2,..,1 -x -q worlworlworlhellworlhell],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=1,1,-1,1 -x -q batbatbatbat],
+      source, 'batman'
+  end
+
+  def test_with_nth_transform
+    fzf = FZF.new %w[--with-nth 2..,1]
+    assert_equal 'my world hello', fzf.transform('hello my world')
+    assert_equal 'my   world hello', fzf.transform('hello   my   world')
+    assert_equal 'my   world  hello', fzf.transform('hello   my   world  ')
+
+    fzf = FZF.new %w[--with-nth 2,-1,2]
+    assert_equal 'my world my', fzf.transform('hello my world')
+    assert_equal 'world world world', fzf.transform('hello world')
+    assert_equal 'world  world  world', fzf.transform('hello world  ')
   end
 
   def test_ranking_overlap_match_regions

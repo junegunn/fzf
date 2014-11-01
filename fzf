@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.7 (Aug 17, 2014)
+# Version: 0.8.8 (Nov 1, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -53,11 +53,34 @@ unless String.method_defined? :force_encoding
   end
 end
 
+class String
+  attr_accessor :orig
+
+  def tokenize delim, nth
+    unless delim
+      # AWK default
+      prefix_length = (index(/\S/) || 0) rescue 0
+      tokens = scan(/\S+\s*/) rescue []
+    else
+      prefix_length = 0
+      tokens = scan(delim) rescue []
+    end
+    nth.map { |n|
+      if n.begin == 0 && n.end == -1
+        [prefix_length, tokens.join]
+      elsif part = tokens[n]
+        [prefix_length + (tokens[0...(n.begin)] || []).join.length,
+         part.join]
+      end
+    }.compact
+  end
+end
+
 class FZF
   C = Curses
   attr_reader :rxflag, :sort, :nth, :color, :black, :ansi256, :reverse, :prompt,
               :mouse, :multi, :query, :select1, :exit0, :filter, :extended,
-              :print_query
+              :print_query, :with_nth
 
   def sync
     @shr_mtx.synchronize { yield }
@@ -95,6 +118,7 @@ class FZF
     @exit0    = false
     @filter   = nil
     @nth      = nil
+    @with_nth = nil
     @delim    = nil
     @reverse  = false
     @prompt   = '> '
@@ -148,6 +172,11 @@ class FZF
         @nth = parse_nth nth
       when /^-n([0-9,-\.]+)$/, /^--nth=([0-9,-\.]+)$/
         @nth = parse_nth $1
+      when '--with-nth'
+        usage 1, 'field expression required' unless nth = argv.shift
+        @with_nth = parse_nth nth
+      when /^--with-nth=([0-9,-\.]+)$/
+        @with_nth = parse_nth $1
       when '-d', '--delimiter'
         usage 1, 'delimiter required' unless delim = argv.shift
         @delim = FZF.build_delim_regex delim
@@ -181,6 +210,7 @@ class FZF
     @queue   = Queue.new
     @pending = nil
     @rev_dir = @reverse ? -1 : 1
+    @stdout  = $stdout.clone
 
     unless @filter
       # Shared variables: needs protection
@@ -200,7 +230,7 @@ class FZF
   end
 
   def parse_nth nth
-    nth.split(',').map { |expr|
+    ranges = nth.split(',').map { |expr|
       x = proc { usage 1, "invalid field expression: #{expr}" }
       first, second = expr.split('..', 2)
       x.call if !first.empty? && first.to_i == 0 ||
@@ -215,11 +245,16 @@ class FZF
 
       Range.new(*[first, second].map { |e| e > 0 ? e - 1 : e })
     }
+    ranges == [0..-1] ? nil : ranges
   end
 
   def FZF.build_delim_regex delim
     Regexp.compile(delim) rescue (delim = Regexp.escape(delim))
     Regexp.compile "(?:.*?#{delim})|(?:.+?$)"
+  end
+
+  def burp string
+    @stdout.puts(string.orig || string)
   end
 
   def start
@@ -236,7 +271,7 @@ class FZF
           if loaded
             if @select1 && len == 1
               puts @query if @print_query
-              puts empty ? matches.first : matches.first.first
+              burp(empty ? matches.first : matches.first.first)
               exit 0
             elsif @exit0 && len == 0
               puts @query if @print_query
@@ -312,39 +347,40 @@ class FZF
     $stderr.puts %[usage: fzf [options]
 
   Search
-    -x, --extended       Extended-search mode
-    -e, --extended-exact Extended-search mode (exact match)
-    -i                   Case-insensitive match (default: smart-case match)
-    +i                   Case-sensitive match
-    -n, --nth=N[,..]     Comma-separated list of field index expressions
-                         for limiting search scope. Each can be a non-zero
-                         integer or a range expression ([BEGIN]..[END])
-    -d, --delimiter=STR  Field delimiter regex for --nth (default: AWK-style)
+    -x, --extended        Extended-search mode
+    -e, --extended-exact  Extended-search mode (exact match)
+    -i                    Case-insensitive match (default: smart-case match)
+    +i                    Case-sensitive match
+    -n, --nth=N[,..]      Comma-separated list of field index expressions
+                          for limiting search scope. Each can be a non-zero
+                          integer or a range expression ([BEGIN]..[END])
+        --with-nth=N[,..] Transform the item using index expressions for search
+    -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
 
   Search result
-    -s, --sort=MAX       Maximum number of matched items to sort (default: 1000)
-    +s, --no-sort        Do not sort the result. Keep the sequence unchanged.
+    -s, --sort=MAX        Maximum number of matched items to sort (default: 1000)
+    +s, --no-sort         Do not sort the result. Keep the sequence unchanged.
 
   Interface
-    -m, --multi          Enable multi-select with tab/shift-tab
-        --no-mouse       Disable mouse
-    +c, --no-color       Disable colors
-    +2, --no-256         Disable 256-color
-        --black          Use black background
-        --reverse        Reverse orientation
-        --prompt=STR     Input prompt (default: '> ')
+    -m, --multi           Enable multi-select with tab/shift-tab
+        --no-mouse        Disable mouse
+    +c, --no-color        Disable colors
+    +2, --no-256          Disable 256-color
+        --black           Use black background
+        --reverse         Reverse orientation
+        --prompt=STR      Input prompt (default: '> ')
 
   Scripting
-    -q, --query=STR      Start the finder with the given query
-    -1, --select-1       Automatically select the only match
-    -0, --exit-0         Exit immediately when there's no match
-    -f, --filter=STR     Filter mode. Do not start interactive finder.
-        --print-query    Print query as the first line
+    -q, --query=STR       Start the finder with the given query
+    -1, --select-1        Automatically select the only match
+    -0, --exit-0          Exit immediately when there's no match
+    -f, --filter=STR      Filter mode. Do not start interactive finder.
+        --print-query     Print query as the first line
 
   Environment variables
-    FZF_DEFAULT_COMMAND  Default command to use when input is tty
-    FZF_DEFAULT_OPTS     Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
-    exit x
+    FZF_DEFAULT_COMMAND   Default command to use when input is tty
+    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
+   exit x
   end
 
   def emit event
@@ -520,7 +556,6 @@ class FZF
   end
 
   def init_screen
-    @stdout = $stdout.clone
     $stdout.reopen($stderr)
 
     C.init_screen
@@ -595,12 +630,26 @@ class FZF
       end
 
     Thread.new do
-      while line = stream.gets
-        emit(:new) { @new << line.chomp }
+      if @with_nth
+        while line = stream.gets
+          emit(:new) { @new << transform(line) }
+        end
+      else
+        while line = stream.gets
+          emit(:new) { @new << line.chomp }
+        end
       end
       emit(:loaded) { true }
       @spinner.clear if @spinner
     end
+  end
+
+  def transform line
+    line = line.chomp
+    mut = (line =~ / $/ ? line : line + ' ').
+      tokenize(@delim, @with_nth).map { |e| e.last }.join('').sub(/ *$/, '')
+    mut.orig = line
+    mut
   end
 
   def start_search &callback
@@ -1080,10 +1129,10 @@ class FZF
       @stdout.puts q if @print_query
       if got
         if selects.empty?
-          @stdout.puts got
+          burp got
         else
           selects.each do |sel, _|
-            @stdout.puts sel
+            burp sel
           end
         end
       end
@@ -1108,25 +1157,7 @@ class FZF
     end
 
     def tokenize str
-      @tokens_cache[str] ||=
-        begin
-          unless @delim
-            # AWK default
-            prefix_length = (str.index(/\S/) || 0) rescue 0
-            tokens = str.scan(/\S+\s*/) rescue []
-          else
-            prefix_length = 0
-            tokens = str.scan(@delim) rescue []
-          end
-          @nth.map { |n|
-            if n.begin == 0 && n.end == -1
-              [prefix_length, tokens.join]
-            elsif part = tokens[n]
-              [prefix_length + (tokens[0...(n.begin)] || []).join.length,
-               part.join]
-            end
-          }.compact
-        end
+      @tokens_cache[str] ||= str.tokenize(@delim, @nth)
     end
 
     def do_match str, pat
