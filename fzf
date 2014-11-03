@@ -743,7 +743,8 @@ class FZF
 
   def pick
     sync do
-      [*@matches.fetch(@ycur, [])][0]
+      item = @matches[@ycur]
+      item.is_a?(Array) ? item[0] : item
     end
   end
 
