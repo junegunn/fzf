@@ -253,8 +253,8 @@ class FZF
     Regexp.compile "(?:.*?#{delim})|(?:.+?$)"
   end
 
-  def burp string
-    @stdout.puts(string.orig || string)
+  def burp string, orig = nil
+    @stdout.puts(orig || string.orig || string)
   end
 
   def start
@@ -1050,7 +1050,7 @@ class FZF
               if @selects.has_key? sel
                 @selects.delete sel
               else
-                @selects[sel] = 1
+                @selects[sel] = sel.orig
               end
             end
             vselect { |v| v + case o
@@ -1132,8 +1132,8 @@ class FZF
         if selects.empty?
           burp got
         else
-          selects.each do |sel, _|
-            burp sel
+          selects.each do |sel, orig|
+            burp sel, orig
           end
         end
       end
