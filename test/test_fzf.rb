@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+require 'rubygems'
 require 'curses'
 require 'timeout'
 require 'stringio'
@@ -9,6 +10,48 @@ require 'tempfile'
 $LOAD_PATH.unshift File.expand_path('../..', __FILE__)
 ENV['FZF_EXECUTABLE'] = '0'
 load 'fzf'
+
+class MockTTY
+  def initialize
+    @buffer = ''
+    @mutex = Mutex.new
+    @condv = ConditionVariable.new
+  end
+
+  def read_nonblock sz
+    @mutex.synchronize do
+      take sz
+    end
+  end
+
+  def take sz
+    if @buffer.length >= sz
+      ret = @buffer[0, sz]
+      @buffer = @buffer[sz..-1]
+      ret
+    end
+  end
+
+  def getc
+    sleep 0.1
+    while true
+      @mutex.synchronize do
+        if char = take(1)
+          return char
+        else
+          @condv.wait(@mutex)
+        end
+      end
+    end
+  end
+
+  def << str
+    @mutex.synchronize do
+      @buffer << str
+      @condv.broadcast
+    end
+  end
+end
 
 class TestFZF < MiniTest::Unit::TestCase
   def setup
@@ -25,6 +68,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal nil,   fzf.rxflag
     assert_equal true,  fzf.mouse
     assert_equal nil,   fzf.nth
+    assert_equal nil,   fzf.with_nth
     assert_equal true,  fzf.color
     assert_equal false, fzf.black
     assert_equal true,  fzf.ansi256
@@ -47,7 +91,7 @@ class TestFZF < MiniTest::Unit::TestCase
 
     ENV['FZF_DEFAULT_OPTS'] =
       '-x -m -s 10000 -q "  hello  world  " +c +2 --select-1 -0 ' <<
-      '--no-mouse -f "goodbye world" --black --nth=3,-1,2 --reverse --print-query'
+      '--no-mouse -f "goodbye world" --black --with-nth=3,-3..,2 --nth=3,-1,2 --reverse --print-query'
     fzf = FZF.new []
     assert_equal 10000,   fzf.sort
     assert_equal '  hello  world  ',
@@ -65,13 +109,14 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal true,    fzf.reverse
     assert_equal true,    fzf.print_query
     assert_equal [2..2, -1..-1, 1..1], fzf.nth
+    assert_equal [2..2, -3..-1, 1..1], fzf.with_nth
   end
 
   def test_option_parser
     # Long opts
     fzf = FZF.new %w[--sort=2000 --no-color --multi +i --query hello --select-1
                      --exit-0 --filter=howdy --extended-exact
-                     --no-mouse --no-256 --nth=1 --reverse --prompt (hi)
+                     --no-mouse --no-256 --nth=1 --with-nth=.. --reverse --prompt (hi)
                      --print-query]
     assert_equal 2000,    fzf.sort
     assert_equal true,    fzf.multi
@@ -86,6 +131,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal 'howdy', fzf.filter
     assert_equal :exact,  fzf.extended
     assert_equal [0..0],  fzf.nth
+    assert_equal nil,     fzf.with_nth
     assert_equal true,    fzf.reverse
     assert_equal '(hi)',  fzf.prompt
     assert_equal true,    fzf.print_query
@@ -168,13 +214,12 @@ class TestFZF < MiniTest::Unit::TestCase
     end
   end
 
-  # FIXME Only on 1.9 or above
   def test_width
     fzf = FZF.new []
     assert_equal 5, fzf.width('abcde')
     assert_equal 4, fzf.width('한글')
     assert_equal 5, fzf.width('한글.')
-  end
+  end if RUBY_VERSION >= '1.9'
 
   def test_trim
     fzf = FZF.new []
@@ -187,7 +232,7 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal ['가나a',   6], fzf.trim('가나ab라마바사.', 5, false)
     assert_equal ['가나ab',  5], fzf.trim('가나ab라마바사.', 6, false)
     assert_equal ['가나ab',  5], fzf.trim('가나ab라마바사.', 7, false)
-  end
+  end if RUBY_VERSION >= '1.9'
 
   def test_format
     fzf = FZF.new []
@@ -563,28 +608,41 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal [[list[0], [[8, 9]]]], matcher.match(list, '^s', '', '')
   end
 
-  def stream_for str
+  def stream_for str, delay = 0
     StringIO.new(str).tap do |sio|
       sio.instance_eval do
         alias org_gets gets
 
         def gets
-          org_gets.tap { |e| sleep 0.5 unless e.nil? }
+          org_gets.tap { |e| sleep(@delay) unless e.nil? }
+        end
+
+        def reopen _
         end
       end
+      sio.instance_variable_set :@delay, delay
     end
   end
 
   def assert_fzf_output opts, given, expected
     stream = stream_for given
-    output = StringIO.new
+    output = stream_for ''
+
+    def sorted_lines line
+      line.split($/).sort
+    end
 
     begin
+      tty = MockTTY.new
       $stdout = output
-      FZF.new(opts, stream).start
+      fzf = FZF.new(opts, stream)
+      fzf.instance_variable_set :@tty, tty
+      thr = block_given? && Thread.new { yield tty }
+      fzf.start
+      thr && thr.join
     rescue SystemExit => e
       assert_equal 0, e.status
-      assert_equal expected, output.string.chomp
+      assert_equal sorted_lines(expected), sorted_lines(output.string)
     ensure
       $stdout = STDOUT
     end
@@ -613,15 +671,12 @@ class TestFZF < MiniTest::Unit::TestCase
   end
 
   def test_select_1_ambiguity
-    stream = stream_for "Hello\nWorld"
     begin
-      Timeout::timeout(2) do
-        FZF.new(%w[--query=o --select-1], stream).start
+      Timeout::timeout(0.5) do
+        assert_fzf_output %w[--query=o --select-1], "hello\nworld", "should not match"
       end
-      flunk 'Should not reach here'
-    rescue Exception => e
+    rescue Timeout::Error
       Curses.close_screen
-      assert_instance_of Timeout::Error, e
     end
   end
 
@@ -636,6 +691,32 @@ class TestFZF < MiniTest::Unit::TestCase
 
   def test_exit_0_without_query
     assert_fzf_output %w[--exit-0], '', ''
+  end
+
+  def test_with_nth
+    source = "hello world\nbatman"
+    assert_fzf_output %w[-0 -1 --with-nth=2,1 -x -q ^worl],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=2,1 -x -q llo$],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=.. -x -q llo$],
+      source, ''
+    assert_fzf_output %w[-0 -1 --with-nth=2,2,2,..,1 -x -q worlworlworlhellworlhell],
+      source, 'hello world'
+    assert_fzf_output %w[-0 -1 --with-nth=1,1,-1,1 -x -q batbatbatbat],
+      source, 'batman'
+  end
+
+  def test_with_nth_transform
+    fzf = FZF.new %w[--with-nth 2..,1]
+    assert_equal 'my world hello', fzf.transform('hello my world')
+    assert_equal 'my   world hello', fzf.transform('hello   my   world')
+    assert_equal 'my   world  hello', fzf.transform('hello   my   world  ')
+
+    fzf = FZF.new %w[--with-nth 2,-1,2]
+    assert_equal 'my world my', fzf.transform('hello my world')
+    assert_equal 'world world world', fzf.transform('hello world')
+    assert_equal 'world  world  world', fzf.transform('hello world  ')
   end
 
   def test_ranking_overlap_match_regions
@@ -688,13 +769,42 @@ class TestFZF < MiniTest::Unit::TestCase
     tmp << 'hello ' << [0xff].pack('C*') << ' world' << $/ << [0xff].pack('C*')
     tmp.close
     begin
-      Timeout::timeout(1) do
+      Timeout::timeout(0.5) do
         FZF.new(%w[-n..,1,2.. -q^ -x], File.open(tmp.path)).start
       end
     rescue Timeout::Error
+      Curses.close_screen
     end
   ensure
     tmp.unlink
+  end
+
+  def test_with_nth_mock_tty
+    # Manual selection with input
+    assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
+      tty << "world"
+      tty << "hell"
+      tty << "\r"
+    end
+
+    # Manual selection without input
+    assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
+      tty << "\r"
+    end
+
+    # Manual selection with input and --multi
+    lines = "hello world\ngoodbye world"
+    assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
+      tty << "o"
+      tty << "\e[Z\e[Z"
+      tty << "\r"
+    end
+
+    # Manual selection without input and --multi
+    assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
+      tty << "\e[Z\e[Z"
+      tty << "\r"
+    end
   end
 end
 
