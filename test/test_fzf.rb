@@ -11,6 +11,47 @@ $LOAD_PATH.unshift File.expand_path('../..', __FILE__)
 ENV['FZF_EXECUTABLE'] = '0'
 load 'fzf'
 
+class MockTTY
+  def initialize
+    @buffer = ''
+    @mutex = Mutex.new
+    @condv = ConditionVariable.new
+  end
+
+  def read_nonblock sz
+    @mutex.synchronize do
+      take sz
+    end
+  end
+
+  def take sz
+    if @buffer.length >= sz
+      ret = @buffer[0, sz]
+      @buffer = @buffer[sz..-1]
+      ret
+    end
+  end
+
+  def getc
+    while true
+      @mutex.synchronize do
+        if char = take(1)
+          return char
+        else
+          @condv.wait(@mutex)
+        end
+      end
+    end
+  end
+
+  def << str
+    @mutex.synchronize do
+      @buffer << str
+      @condv.broadcast
+    end
+  end
+end
+
 class TestFZF < MiniTest::Unit::TestCase
   def setup
     ENV.delete 'FZF_DEFAULT_SORT'
@@ -566,25 +607,34 @@ class TestFZF < MiniTest::Unit::TestCase
     assert_equal [[list[0], [[8, 9]]]], matcher.match(list, '^s', '', '')
   end
 
-  def stream_for str
+  def stream_for str, delay = 0
     StringIO.new(str).tap do |sio|
       sio.instance_eval do
         alias org_gets gets
 
         def gets
-          org_gets.tap { |e| sleep 0.5 unless e.nil? }
+          org_gets.tap { |e| sleep(@delay) unless e.nil? }
+        end
+
+        def reopen _
         end
       end
+      sio.instance_variable_set :@delay, delay
     end
   end
 
   def assert_fzf_output opts, given, expected
     stream = stream_for given
-    output = StringIO.new
+    output = stream_for ''
 
     begin
+      tty = MockTTY.new
       $stdout = output
-      FZF.new(opts, stream).start
+      fzf = FZF.new(opts, stream)
+      fzf.instance_variable_set :@tty, tty
+      thr = block_given? && Thread.new { yield tty }
+      fzf.start
+      thr && thr.join
     rescue SystemExit => e
       assert_equal 0, e.status
       assert_equal expected, output.string.chomp
@@ -616,15 +666,12 @@ class TestFZF < MiniTest::Unit::TestCase
   end
 
   def test_select_1_ambiguity
-    stream = stream_for "Hello\nWorld"
     begin
-      Timeout::timeout(2) do
-        FZF.new(%w[--query=o --select-1], stream).start
+      Timeout::timeout(0.5) do
+        assert_fzf_output %w[--query=o --select-1], "hello\nworld", "should not match"
       end
-      flunk 'Should not reach here'
-    rescue Exception => e
+    rescue Timeout::Error
       Curses.close_screen
-      assert_instance_of Timeout::Error, e
     end
   end
 
@@ -717,13 +764,50 @@ class TestFZF < MiniTest::Unit::TestCase
     tmp << 'hello ' << [0xff].pack('C*') << ' world' << $/ << [0xff].pack('C*')
     tmp.close
     begin
-      Timeout::timeout(1) do
+      Timeout::timeout(0.5) do
         FZF.new(%w[-n..,1,2.. -q^ -x], File.open(tmp.path)).start
       end
     rescue Timeout::Error
+      Curses.close_screen
     end
   ensure
     tmp.unlink
+  end
+
+  def test_with_nth_mock_tty
+    d = 0.1
+    # Manual selection with input
+    assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
+      tty << "world"
+      tty << "hell"
+      sleep d
+      tty << "\r"
+    end
+
+    # Manual selection without input
+    assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
+      sleep d
+      tty << "\r"
+    end
+
+    # Manual selection with input and --multi
+    lines = "hello world\ngoodbye world"
+    assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
+      sleep d
+      tty << "o"
+      sleep d
+      tty << "\e[Z\e[Z"
+      sleep d
+      tty << "\r"
+    end
+
+    # Manual selection without input and --multi
+    assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
+      sleep d
+      tty << "\e[Z\e[Z"
+      sleep d
+      tty << "\r"
+    end
   end
 end
 
