@@ -33,6 +33,7 @@ class MockTTY
   end
 
   def getc
+    sleep 0.1
     while true
       @mutex.synchronize do
         if char = take(1)
@@ -627,6 +628,10 @@ class TestFZF < MiniTest::Unit::TestCase
     stream = stream_for given
     output = stream_for ''
 
+    def sorted_lines line
+      line.split($/).sort
+    end
+
     begin
       tty = MockTTY.new
       $stdout = output
@@ -637,7 +642,7 @@ class TestFZF < MiniTest::Unit::TestCase
       thr && thr.join
     rescue SystemExit => e
       assert_equal 0, e.status
-      assert_equal expected, output.string.chomp
+      assert_equal sorted_lines(expected), sorted_lines(output.string)
     ensure
       $stdout = STDOUT
     end
@@ -775,37 +780,29 @@ class TestFZF < MiniTest::Unit::TestCase
   end
 
   def test_with_nth_mock_tty
-    d = 0.1
     # Manual selection with input
     assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
       tty << "world"
       tty << "hell"
-      sleep d
       tty << "\r"
     end
 
     # Manual selection without input
     assert_fzf_output ["--with-nth=2,1"], "hello world", "hello world" do |tty|
-      sleep d
       tty << "\r"
     end
 
     # Manual selection with input and --multi
     lines = "hello world\ngoodbye world"
     assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
-      sleep d
       tty << "o"
-      sleep d
       tty << "\e[Z\e[Z"
-      sleep d
       tty << "\r"
     end
 
     # Manual selection without input and --multi
     assert_fzf_output %w[-m --with-nth=2,1], lines, lines do |tty|
-      sleep d
       tty << "\e[Z\e[Z"
-      sleep d
       tty << "\r"
     end
   end
