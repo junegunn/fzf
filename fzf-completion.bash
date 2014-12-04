@@ -53,8 +53,25 @@ _fzf_opts_completion() {
   return 0
 }
 
+_fzf_handle_dynamic_completion() {
+  local cmd orig ret
+  cmd="$1"
+  shift
+
+  orig=$(eval "echo \$_fzf_orig_completion_$cmd")
+  if [ -n "$orig" ] && type "$orig" > /dev/null 2>&1; then
+    $orig "$@"
+  elif [ -n "$_fzf_completion_loader" ]; then
+    _completion_loader "$@"
+    ret=$?
+    eval $(complete | \grep "\-F.* $cmd$" | _fzf_orig_completion_filter)
+    source $BASH_SOURCE
+    return $ret
+  fi
+}
+
 _fzf_path_completion() {
-  local cur base dir leftover matches trigger cmd orig
+  local cur base dir leftover matches trigger cmd
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -88,13 +105,12 @@ _fzf_path_completion() {
   else
     shift
     shift
-    orig=$(eval "echo \$_fzf_orig_completion_$cmd")
-    [ -n "$orig" ] && type "$orig" > /dev/null 2>&1 && $orig "$@"
+    _fzf_handle_dynamic_completion "$cmd" "$@"
   fi
 }
 
 _fzf_list_completion() {
-  local cur selected trigger cmd src ret
+  local cur selected trigger cmd src
   read -r src
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -113,16 +129,7 @@ _fzf_list_completion() {
     fi
   else
     shift
-    orig=$(eval "echo \$_fzf_orig_completion_$cmd")
-    if [ -n "$orig" ] && type "$orig" > /dev/null; then
-      $orig "$@"
-    elif [ -n "$_fzf_completion_loader" ]; then
-      _completion_loader "$@"
-      ret=$?
-      eval $(complete | \grep "\-F.* $cmd$" | _fzf_orig_completion_filter)
-      source $BASH_SOURCE
-      return $ret
-    fi
+    _fzf_handle_dynamic_completion "$cmd" "$@"
   fi
 }
 
