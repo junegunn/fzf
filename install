@@ -294,8 +294,16 @@ function fzf_key_bindings
     rm -f $TMPDIR/fzf.result
   end
 
+  function __fzf_reverse
+    if which tac > /dev/null
+      tac $argv
+    else
+      tail -r $argv
+    end
+  end
+
   function __fzf_ctrl_r
-    history | fzf +s +m > $TMPDIR/fzf.result
+    history | __fzf_reverse | fzf +s +m > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
