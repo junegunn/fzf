@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.8 (Nov 4, 2014)
+# Version: 0.8.9 (Dec 23, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -955,8 +955,10 @@ class FZF
             get_mouse
           end
         when 'b',  98 then :alt_b
+        when 'd', 100 then :alt_d
         when 'f', 102 then :alt_f
         when :esc     then :esc
+        when 127      then ctrl(:w)
         else          next
         end if ord == 27
 
@@ -1013,6 +1015,11 @@ class FZF
       mouse_event = MouseEvent.new
       backword = proc {
         cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
+        nil
+      }
+      forward = proc {
+        cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
+        nil
       }
       actions = {
         :esc     => proc { exit 1 },
@@ -1039,8 +1046,10 @@ class FZF
         ctrl(:w) => proc {
           pcursor = cursor
           backword.call
-          yanked = input[cursor...pcursor] if pcursor > cursor
-          input = input[0...cursor] + input[pcursor..-1]
+          if pcursor > cursor
+            yanked = input[cursor...pcursor]
+            input = input[0...cursor] + input[pcursor..-1]
+          end
         },
         ctrl(:y) => proc { actions[:default].call yanked },
         ctrl(:h) => proc { input[cursor -= 1] = '' if cursor > 0 },
@@ -1066,10 +1075,18 @@ class FZF
         :del     => proc { input[cursor] = '' if input.length > cursor },
         :pgup    => proc { vselect { |v| v + @rev_dir * (max_items - 1) } },
         :pgdn    => proc { vselect { |v| v - @rev_dir * (max_items - 1) } },
-        :alt_b   => proc { backword.call; nil },
+        :alt_b   => proc { backword.call },
+        :alt_d   => proc {
+          pcursor = cursor
+          forward.call
+          if cursor > pcursor
+            yanked = input[pcursor...cursor]
+            input = input[0...pcursor] + input[cursor..-1]
+            cursor = pcursor
+          end
+        },
         :alt_f   => proc {
-          cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
-          nil
+          forward.call
         },
         :default => proc { |val|
           case val

@@ -50,6 +50,7 @@ class MockTTY
       @buffer << str
       @condv.broadcast
     end
+    self
   end
 end
 
@@ -805,6 +806,30 @@ class TestFZF < MiniTest::Unit::TestCase
       tty << "\e[Z\e[Z"
       tty << "\r"
     end
+
+    # ALT-D
+    assert_fzf_output %w[--print-query], "", "hello  baby = world" do |tty|
+      tty << "hello world baby"
+      tty << alt(:b) << alt(:b) << alt(:d)
+      tty << ctrl(:e) << " = " << ctrl(:y)
+      tty << "\r"
+    end
+
+    # ALT-BACKSPACE
+    assert_fzf_output %w[--print-query], "", "hello baby = world " do |tty|
+      tty << "hello world baby"
+      tty << alt(:b) << alt(127.chr)
+      tty << ctrl(:e) << " = " << ctrl(:y)
+      tty << "\r"
+    end
+  end
+
+  def alt chr
+    "\e#{chr}"
+  end
+
+  def ctrl char
+    char.to_s.ord - 'a'.ord + 1
   end
 end
 
