@@ -7,7 +7,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/    Fuzzy finder for your shell
 #
-# Version: 0.8.9 (Dec 23, 2014)
+# Version: 0.8.9 (Dec 24, 2014)
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
@@ -958,7 +958,7 @@ class FZF
         when 'd', 100 then :alt_d
         when 'f', 102 then :alt_f
         when :esc     then :esc
-        when 127      then ctrl(:w)
+        when 127      then :alt_bs
         else          next
         end if ord == 27
 
@@ -1014,12 +1014,20 @@ class FZF
       yanked = ''
       mouse_event = MouseEvent.new
       backword = proc {
-        cursor = (input[0, cursor].rindex(/\s\S/) || -1) + 1
+        cursor = (input[0, cursor].rindex(/[^[:alnum:]][[:alnum:]]/) || -1) + 1
         nil
       }
       forward = proc {
-        cursor += (input[cursor..-1].index(/(\S\s)|(.$)/) || -1) + 1
+        cursor += (input[cursor..-1].index(/([[:alnum:]][^[:alnum:]])|(.$)/) || -1) + 1
         nil
+      }
+      rubout = proc { |regex|
+        pcursor = cursor
+        cursor = (input[0, cursor].rindex(regex) || -1) + 1
+        if pcursor > cursor
+          yanked = input[cursor...pcursor]
+          input = input[0...cursor] + input[pcursor..-1]
+        end
       }
       actions = {
         :esc     => proc { exit 1 },
@@ -1043,14 +1051,7 @@ class FZF
         ctrl(:e) => proc { cursor = input.length; nil },
         ctrl(:j) => proc { vselect { |v| v - @rev_dir } },
         ctrl(:k) => proc { vselect { |v| v + @rev_dir } },
-        ctrl(:w) => proc {
-          pcursor = cursor
-          backword.call
-          if pcursor > cursor
-            yanked = input[cursor...pcursor]
-            input = input[0...cursor] + input[pcursor..-1]
-          end
-        },
+        ctrl(:w) => proc { rubout.call /\s\S/ },
         ctrl(:y) => proc { actions[:default].call yanked },
         ctrl(:h) => proc { input[cursor -= 1] = '' if cursor > 0 },
         ctrl(:i) => proc { |o|
@@ -1075,6 +1076,7 @@ class FZF
         :del     => proc { input[cursor] = '' if input.length > cursor },
         :pgup    => proc { vselect { |v| v + @rev_dir * (max_items - 1) } },
         :pgdn    => proc { vselect { |v| v - @rev_dir * (max_items - 1) } },
+        :alt_bs  => proc { rubout.call /[^[:alnum:]][[:alnum:]]/ },
         :alt_b   => proc { backword.call },
         :alt_d   => proc {
           pcursor = cursor

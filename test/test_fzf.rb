@@ -822,6 +822,21 @@ class TestFZF < MiniTest::Unit::TestCase
       tty << ctrl(:e) << " = " << ctrl(:y)
       tty << "\r"
     end
+
+    # Word-movements
+    assert_fzf_output %w[--print-query], "", "ello!_orld!~ foo=?" do |tty|
+      tty << "hello_world==baby?"
+      tty << alt(:b) << ctrl(:d)
+      tty << alt(:b) << ctrl(:d)
+      tty << alt(:b) << ctrl(:d)
+      tty << alt(:f) << '!'
+      tty << alt(:f) << '!'
+      tty << alt(:d) << '~'
+      tty << " foo=bar foo=bar"
+      tty << ctrl(:w)
+      tty << alt(127.chr)
+      tty << "\r"
+    end
   end
 
   def alt chr
