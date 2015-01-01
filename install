@@ -3,60 +3,81 @@
 cd `dirname $BASH_SOURCE`
 fzf_base=`pwd`
 
-# ruby executable
-echo -n "Checking Ruby executable ... "
-ruby=`which ruby`
-if [ $? -ne 0 ]; then
-  echo "ruby executable not found!"
-  exit 1
-fi
+ARCHI=$(uname -sm)
 
-# System ruby is preferred
-system_ruby=/usr/bin/ruby
-if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
-  $system_ruby --disable-gems -rcurses -e0 2> /dev/null
-  [ $? -eq 0 ] && ruby=$system_ruby
-fi
-
-echo "OK ($ruby)"
-
-# Curses-support
-echo -n "Checking Curses support ... "
-"$ruby" -rcurses -e0 2> /dev/null
-if [ $? -eq 0 ]; then
-  echo "OK"
-else
-  echo "Not found"
-  echo "Installing 'curses' gem ... "
-  if (( EUID )); then
-    /usr/bin/env gem install curses --user-install
+download() {
+  echo "Downloading fzf executable ($1) ..."
+  if curl -fLo "$fzf_base"/bin/fzf https://github.com/junegunn/fzf-bin/releases/download/snapshot/$1; then
+    chmod +x "$fzf_base"/bin/fzf
   else
-    /usr/bin/env gem install curses
-  fi
-  if [ $? -ne 0 ]; then
-    echo
-    echo "Failed to install 'curses' gem."
-    if [[ $(uname -r) =~ 'ARCH' ]]; then
-      echo "Make sure that base-devel package group is installed."
-    fi
+    echo "Failed to download $1"
     exit 1
   fi
-fi
+}
 
-# Ruby version
-echo -n "Checking Ruby version ... "
-"$ruby" -e 'exit RUBY_VERSION >= "1.9"'
-if [ $? -eq 0 ]; then
-  echo ">= 1.9"
-  "$ruby" --disable-gems -rcurses -e0 2> /dev/null
+mkdir -p "$fzf_base"/bin
+if [ "$ARCHI" = "Darwin x86_64" ]; then
+  download fzf_darwin_amd64
+elif [ "$ARCHI" = "Linux x86_64" ]; then
+  download fzf_linux_amd64
+else # No prebuilt executable
+  echo "No prebuilt binary for $ARCHI ... Installing legacy Ruby version ..."
+
+  # ruby executable
+  echo -n "Checking Ruby executable ... "
+  ruby=`which ruby`
+  if [ $? -ne 0 ]; then
+    echo "ruby executable not found!"
+    exit 1
+  fi
+
+  # System ruby is preferred
+  system_ruby=/usr/bin/ruby
+  if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
+    $system_ruby --disable-gems -rcurses -e0 2> /dev/null
+    [ $? -eq 0 ] && ruby=$system_ruby
+  fi
+
+  echo "OK ($ruby)"
+
+  # Curses-support
+  echo -n "Checking Curses support ... "
+  "$ruby" -rcurses -e0 2> /dev/null
   if [ $? -eq 0 ]; then
-    fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+    echo "OK"
   else
+    echo "Not found"
+    echo "Installing 'curses' gem ... "
+    if (( EUID )); then
+      /usr/bin/env gem install curses --user-install
+    else
+      /usr/bin/env gem install curses
+    fi
+    if [ $? -ne 0 ]; then
+      echo
+      echo "Failed to install 'curses' gem."
+      if [[ $(uname -r) =~ 'ARCH' ]]; then
+        echo "Make sure that base-devel package group is installed."
+      fi
+      exit 1
+    fi
+  fi
+
+  # Ruby version
+  echo -n "Checking Ruby version ... "
+  "$ruby" -e 'exit RUBY_VERSION >= "1.9"'
+  if [ $? -eq 0 ]; then
+    echo ">= 1.9"
+    "$ruby" --disable-gems -rcurses -e0 2> /dev/null
+    if [ $? -eq 0 ]; then
+      fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+    else
+      fzf_cmd="$ruby $fzf_base/fzf"
+    fi
+  else
+    echo "< 1.9"
     fzf_cmd="$ruby $fzf_base/fzf"
   fi
-else
-  echo "< 1.9"
-  fzf_cmd="$ruby $fzf_base/fzf"
 fi
 
 # Auto-completion
@@ -85,10 +106,17 @@ for shell in bash zsh; do
 # Setup fzf function
 # ------------------
 unalias fzf 2> /dev/null
-fzf() {
-  $fzf_cmd "\$@"
-}
-export -f fzf > /dev/null
+unset fzf 2> /dev/null
+if [ -x "$fzf_base/bin/fzf" ]; then
+  if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
+    export PATH="$fzf_base/bin:\$PATH"
+  fi
+else
+  fzf() {
+    $fzf_cmd "\$@"
+  }
+  export -f fzf > /dev/null
+fi
 
 # Auto-completion
 # ---------------

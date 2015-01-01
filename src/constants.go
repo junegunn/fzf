@@ -1,0 +1,12 @@
+package fzf
+
+const VERSION = "0.9.0"
+
+const (
+	EVT_READ_NEW EventType = iota
+	EVT_READ_FIN
+	EVT_SEARCH_NEW
+	EVT_SEARCH_PROGRESS
+	EVT_SEARCH_FIN
+	EVT_CLOSE
+)
