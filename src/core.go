@@ -77,6 +77,7 @@ func Run(options *Options) {
 		pattern := patternBuilder([]rune(patternString))
 
 		looping := true
+		eventBox.Unwatch(EVT_READ_NEW)
 		for looping {
 			eventBox.Wait(func(events *Events) {
 				for evt, _ := range *events {
@@ -87,7 +88,6 @@ func Run(options *Options) {
 					}
 				}
 			})
-			time.Sleep(COORDINATOR_DELAY)
 		}
 
 		matches, cancelled := matcher.scan(MatchRequest{
@@ -116,6 +116,7 @@ func Run(options *Options) {
 	// Event coordination
 	reading := true
 	ticks := 0
+	eventBox.Watch(EVT_READ_NEW)
 	for {
 		delay := true
 		ticks += 1
