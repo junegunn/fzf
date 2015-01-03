@@ -6,27 +6,49 @@ fzf_base=`pwd`
 ARCHI=$(uname -sm)
 
 download() {
-  mkdir -p "$fzf_base"/bin
-  cd "$fzf_base"/bin
   echo "Downloading fzf executable ($1) ..."
-  if curl -fL \
-    https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tar.gz |
-    tar -xz; then
-    mv $1 fzf
-    chmod +x fzf
-  else
-    echo "Failed to download $1"
-    exit 1
+  mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
+  if [ $? -ne 0 ]; then
+    echo "- Failed to create bin directory."
+    return 1
   fi
-  cd - > /dev/null
+
+  local url=https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tar.gz
+  if which curl > /dev/null; then
+    curl -fL $url | tar -xz
+  elif which wget > /dev/null; then
+    wget -O - $url | tar -xz
+  else
+    echo "- curl or wget required to download fzf executable."
+    return 1
+  fi
+
+  if [ ! -f $1 ]; then
+    echo "- Failed to download ${1}."
+    return 1
+  fi
+
+  mv $1 fzf && chmod +x fzf && cd - > /dev/null && echo
 }
 
+# Try to download binary executable
+binary_available=0
+downloaded=0
 if [ "$ARCHI" = "Darwin x86_64" ]; then
-  download fzf_darwin_amd64
+  binary_available=1
+  download fzf_darwin_amd64 && downloaded=1
 elif [ "$ARCHI" = "Linux x86_64" ]; then
-  download fzf_linux_amd64
-else # No prebuilt executable
-  echo "No prebuilt binary for $ARCHI ... Installing legacy Ruby version ..."
+  binary_available=1
+  download fzf_linux_amd64 && downloaded=1
+fi
+
+if [ $downloaded -ne 1 ]; then
+  if [ $binary_available -eq 0 ]; then
+    echo -n "No prebuilt binary for $ARCHI ... "
+  else
+    echo -n "Failed to download binary executable ... "
+  fi
+  echo "Installing legacy Ruby version ..."
 
   # ruby executable
   echo -n "Checking Ruby executable ... "
