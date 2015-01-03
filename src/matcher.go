@@ -150,7 +150,7 @@ func (m *Matcher) scan(request MatchRequest, limit int) ([]*Item, bool) {
 				if cancelled.Get() {
 					return
 				}
-				countChan <- len(sliceMatches)
+				countChan <- len(matches)
 			}
 			if !empty && m.sort {
 				sort.Sort(ByRelevance(sliceMatches))
