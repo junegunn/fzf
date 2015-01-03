@@ -94,7 +94,8 @@ func Run(options *Options) {
 			chunks:  chunkList.Snapshot(),
 			pattern: pattern}, limit)
 
-		if !cancelled && (filtering || opts.Exit0) {
+		if !cancelled && (filtering ||
+			opts.Exit0 && len(matches) == 0 || opts.Select1 && len(matches) == 1) {
 			if opts.PrintQuery {
 				fmt.Println(patternString)
 			}
