@@ -25,7 +25,10 @@ SOURCES = $(wildcard *.go fzf/*.go)
 
 all: build
 
-build: $(BINARY)
+build: $(BINARY).tar.gz
+
+$(BINARY).tar.gz: $(BINARY)
+	cd fzf && tar -czf $(notdir $(BINARY)).tar.gz $(notdir $(BINARY))
 
 $(BINARY): $(SOURCES)
 	go get
@@ -37,7 +40,7 @@ install: $(BINARY)
 	cp -f $(BINARY) $(BINDIR)/fzf
 
 clean:
-	rm -f $(BINARY)
+	rm -f $(BINARY) $(BINARY).tar.gz
 
 docker:
 	docker build -t junegunn/ubuntu-sandbox .

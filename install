@@ -6,16 +6,21 @@ fzf_base=`pwd`
 ARCHI=$(uname -sm)
 
 download() {
+  mkdir -p "$fzf_base"/bin
+  cd "$fzf_base"/bin
   echo "Downloading fzf executable ($1) ..."
-  if curl -fLo "$fzf_base"/bin/fzf https://github.com/junegunn/fzf-bin/releases/download/snapshot/$1; then
-    chmod +x "$fzf_base"/bin/fzf
+  if curl -fL \
+    https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tar.gz |
+    tar -xz; then
+    mv $1 fzf
+    chmod +x fzf
   else
     echo "Failed to download $1"
     exit 1
   fi
+  cd - > /dev/null
 }
 
-mkdir -p "$fzf_base"/bin
 if [ "$ARCHI" = "Darwin x86_64" ]; then
   download fzf_darwin_amd64
 elif [ "$ARCHI" = "Linux x86_64" ]; then
