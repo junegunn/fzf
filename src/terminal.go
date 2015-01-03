@@ -297,7 +297,6 @@ func (t *Terminal) printAll() {
 }
 
 func (t *Terminal) refresh() {
-	t.placeCursor()
 	C.Refresh()
 }
 
@@ -353,6 +352,7 @@ func (t *Terminal) Loop() {
 		t.initFunc()
 		t.printInfo()
 		t.printPrompt()
+		t.placeCursor()
 		t.refresh()
 		t.mutex.Unlock()
 	}
@@ -382,6 +382,7 @@ func (t *Terminal) Loop() {
 						os.Exit(1)
 					}
 				}
+				t.placeCursor()
 				t.mutex.Unlock()
 			})
 			t.refresh()
