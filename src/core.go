@@ -90,8 +90,9 @@ func Run(options *Options) {
 			})
 		}
 
+		snapshot, _ := chunkList.Snapshot()
 		matches, cancelled := matcher.scan(MatchRequest{
-			chunks:  chunkList.Snapshot(),
+			chunks:  snapshot,
 			pattern: pattern}, limit)
 
 		if !cancelled && (filtering ||
@@ -127,11 +128,13 @@ func Run(options *Options) {
 
 				case EVT_READ_NEW, EVT_READ_FIN:
 					reading = reading && evt == EVT_READ_NEW
-					terminal.UpdateCount(chunkList.Count(), !reading)
-					matcher.Reset(chunkList.Snapshot(), terminal.Input(), false)
+					snapshot, count := chunkList.Snapshot()
+					terminal.UpdateCount(count, !reading)
+					matcher.Reset(snapshot, terminal.Input(), false)
 
 				case EVT_SEARCH_NEW:
-					matcher.Reset(chunkList.Snapshot(), terminal.Input(), true)
+					snapshot, _ := chunkList.Snapshot()
+					matcher.Reset(snapshot, terminal.Input(), true)
 					delay = false
 
 				case EVT_SEARCH_PROGRESS:

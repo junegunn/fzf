@@ -42,14 +42,6 @@ func CountItems(cs []*Chunk) int {
 	return CHUNK_SIZE*(len(cs)-1) + len(*(cs[len(cs)-1]))
 }
 
-func (cl *ChunkList) Count() int {
-	return cl.count
-}
-
-func (cl *ChunkList) Chunks() []*Chunk {
-	return cl.chunks
-}
-
 func (cl *ChunkList) Push(data string) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
@@ -63,11 +55,24 @@ func (cl *ChunkList) Push(data string) {
 	cl.count += 1
 }
 
-func (cl *ChunkList) Snapshot() []*Chunk {
+func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
 	ret := make([]*Chunk, len(cl.chunks))
 	copy(ret, cl.chunks)
-	return ret
+
+	// Duplicate the last chunk
+	if cnt := len(ret); cnt > 0 {
+		ret[cnt-1] = ret[cnt-1].dupe()
+	}
+	return ret, cl.count
+}
+
+func (c *Chunk) dupe() *Chunk {
+	newChunk := make(Chunk, len(*c))
+	for idx, ptr := range *c {
+		newChunk[idx] = ptr
+	}
+	return &newChunk
 }
