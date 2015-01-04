@@ -526,7 +526,7 @@ func (t *Terminal) Loop() {
 					req(REQ_PROMPT)
 				} else if my >= 2 {
 					// List
-					t.cy = my - 2
+					t.cy = t.offset + my - 2
 					if me.Mod {
 						toggle()
 					}
