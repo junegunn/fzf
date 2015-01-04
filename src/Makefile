@@ -1,52 +1,51 @@
-BINARY := fzf/fzf
-
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-	BINARY := $(BINARY)_darwin
+	SUFFIX := darwin
 else ifeq ($(UNAME_S),Linux)
-	BINARY := $(BINARY)_linux
+	SUFFIX := linux
 endif
 
 UNAME_M := $(shell uname -m)
-ifneq ($(filter i386 i686,$(UNAME_M)),)
-$(error "filtered is not supported, yet.")
-endif
-
 ifeq ($(UNAME_M),x86_64)
-	BINARY := $(BINARY)_amd64
+	SUFFIX := $(SUFFIX)_amd64
 else ifneq ($(filter i386 i686,$(UNAME_M)),)
-	BINARY := $(BINARY)_386
+	SUFFIX := $(SUFFIX)_386
 else # TODO
 $(error "$(UNAME_M) is not supported, yet.")
 endif
 
-BINDIR  = ../bin
-SOURCES = $(wildcard *.go fzf/*.go)
+BINARY  := fzf-$(SUFFIX)
+BINDIR  := ../bin
+SOURCES := $(wildcard *.go fzf/*.go)
+RELEASE  = fzf-$(shell fzf/$(BINARY) --version)-$(SUFFIX)
 
-all: build
+all: release
 
-build: $(BINARY).tar.gz
+release: build
+	cd fzf && \
+	cp $(BINARY) $(RELEASE) && \
+	tar -czf $(RELEASE).tgz $(RELEASE) && \
+	rm $(RELEASE)
 
-$(BINARY).tar.gz: $(BINARY)
-	cd fzf && tar -czf $(notdir $(BINARY)).tar.gz $(notdir $(BINARY))
+build: fzf/$(BINARY)
 
-$(BINARY): $(SOURCES)
+fzf/$(BINARY): $(SOURCES)
 	go get
 	go test -v
-	cd fzf && go build -o $(notdir $(BINARY))
+	cd fzf && go build -o $(BINARY)
 
-install: $(BINARY)
+install: fzf/$(BINARY)
 	mkdir -p $(BINDIR)
-	cp -f $(BINARY) $(BINDIR)/fzf
+	cp -f fzf/$(BINARY) $(BINDIR)/fzf
 
 clean:
-	rm -f $(BINARY) $(BINARY).tar.gz
+	cd fzf && rm -f $(BINARY) $(RELEASE).tgz
 
 docker:
 	docker build -t junegunn/ubuntu-sandbox .
 
 linux64:
 	docker run -i -t -u jg -v $(shell cd ..; pwd):/fzf junegunn/ubuntu-sandbox \
-		/bin/bash -ci 'cd ~jg/go/src/github.com/junegunn/fzf/src; make build'
+		/bin/bash -ci 'cd ~jg/go/src/github.com/junegunn/fzf/src; make'
 
-.PHONY: build install linux64 clean docker run
+.PHONY: build release install linux64 clean docker run

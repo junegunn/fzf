@@ -3,8 +3,6 @@
 cd `dirname $BASH_SOURCE`
 fzf_base=`pwd`
 
-ARCHI=$(uname -sm)
-
 ask() {
   read -p "$1 ([y]/n) " -n 1 -r
   echo
@@ -22,7 +20,7 @@ download() {
     return 1
   fi
 
-  local url=https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tar.gz
+  local url=https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tgz
   if which curl > /dev/null; then
     curl -fL $url | tar -xz
   elif which wget > /dev/null; then
@@ -41,19 +39,20 @@ download() {
 }
 
 # Try to download binary executable
-binary_available=0
+archi=$(uname -sm)
 downloaded=0
-if [ "$ARCHI" = "Darwin x86_64" ]; then
+binary_available=0
+if [ "$archi" = "Darwin x86_64" ]; then
   binary_available=1
-  download fzf_darwin_amd64 && downloaded=1
-elif [ "$ARCHI" = "Linux x86_64" ]; then
+  download fzf-0.9.0-darwin_amd64 && downloaded=1
+elif [ "$archi" = "Linux x86_64" ]; then
   binary_available=1
-  download fzf_linux_amd64 && downloaded=1
+  download fzf-0.9.0-linux_amd64 && downloaded=1
 fi
 
 if [ $downloaded -ne 1 ]; then
   if [ $binary_available -eq 0 ]; then
-    echo -n "No prebuilt binary for $ARCHI ... "
+    echo -n "No prebuilt binary for $archi ... "
   else
     echo -n "Failed to download binary executable ... "
   fi
