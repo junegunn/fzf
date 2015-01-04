@@ -8,11 +8,6 @@ fzf is a general-purpose fuzzy finder for your shell.
 It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim) and
 the likes.
 
-Requirements
-------------
-
-fzf requires Ruby (>= 1.8.5).
-
 Installation
 ------------
 
@@ -436,21 +431,6 @@ If you have any rendering issues, check the followings:
   option. And if it solves your problem, I recommend including it in
   `FZF_DEFAULT_OPTS` for further convenience.
 4. If you still have problem, try `--no-256` option or even `--no-color`.
-5. Ruby 1.9 or above is required for correctly displaying unicode characters.
-
-### Ranking algorithm
-
-fzf sorts the result first by the length of the matched substring, then by the
-length of the whole string. However it only does so when the number of matches
-is less than the limit which is by default 1000, in order to avoid the cost of
-sorting a large list and limit the response time of the query.
-
-This limit can be adjusted with `-s` option, or with the environment variable
-`FZF_DEFAULT_OPTS`.
-
-```sh
-export FZF_DEFAULT_OPTS="--sort 20000"
-```
 
 ### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
 
@@ -544,12 +524,6 @@ function fe
   end
 end
 ```
-
-### Windows
-
-fzf works on [Cygwin](http://www.cygwin.com/) and
-[MSYS2](http://sourceforge.net/projects/msys2/). You may need to use `--black`
-option on MSYS2 to avoid rendering issues.
 
 ### Handling UTF-8 NFD paths on OSX
 
