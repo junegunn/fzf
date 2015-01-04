@@ -303,11 +303,19 @@ if [ -n "$(which fish)" ]; then
   has_fish=1
   echo -n "Generate ~/.config/fish/functions/fzf.fish ... "
   mkdir -p ~/.config/fish/functions
-  cat > ~/.config/fish/functions/fzf.fish << EOFZF
+  if [ $downloaded -eq 0 ]; then
+    cat > ~/.config/fish/functions/fzf.fish << EOFZF
 function fzf
   $fzf_cmd \$argv
 end
 EOFZF
+  else
+    cat > ~/.config/fish/functions/fzf.fish << EOFZF
+function fzf
+  $fzf_base/bin/fzf \$argv
+end
+EOFZF
+  fi
   echo "OK"
 
   if [ $key_bindings -eq 0 ]; then
