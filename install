@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+version=0.9.0
+
 cd `dirname $BASH_SOURCE`
 fzf_base=`pwd`
 
@@ -44,10 +46,10 @@ downloaded=0
 binary_available=0
 if [ "$archi" = "Darwin x86_64" ]; then
   binary_available=1
-  download fzf-0.9.0-darwin_amd64 && downloaded=1
+  download fzf-$version-darwin_amd64 && downloaded=1
 elif [ "$archi" = "Linux x86_64" ]; then
   binary_available=1
-  download fzf-0.9.0-linux_amd64 && downloaded=1
+  download fzf-$version-linux_amd64 && downloaded=1
 fi
 
 if [ $downloaded -ne 1 ]; then
