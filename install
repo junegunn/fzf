@@ -5,8 +5,17 @@ fzf_base=`pwd`
 
 ARCHI=$(uname -sm)
 
+ask() {
+  read -p "$1 ([y]/n) " -n 1 -r
+  echo
+  [[ ! $REPLY =~ ^[Nn]$ ]]
+}
+
 download() {
   echo "Downloading fzf executable ($1) ..."
+  if [ -x "$fzf_base"/bin/fzf ]; then
+    ask "- fzf already exists. Download it again?" || return 0
+  fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
     echo "- Failed to create bin directory."
@@ -108,15 +117,11 @@ if [ $downloaded -ne 1 ]; then
 fi
 
 # Auto-completion
-read -p "Do you want to add auto-completion support? ([y]/n) " -n 1 -r
-echo
-[[ ! $REPLY =~ ^[Nn]$ ]]
+ask "Do you want to add auto-completion support?"
 auto_completion=$?
 
 # Key-bindings
-read -p "Do you want to add key bindings? ([y]/n) " -n 1 -r
-echo
-[[ ! $REPLY =~ ^[Nn]$ ]]
+ask "Do you want to add key bindings?"
 key_bindings=$?
 
 echo
