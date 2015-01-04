@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -181,7 +180,6 @@ func (p *Pattern) CacheKey() string {
 		}
 		cacheableTerms = append(cacheableTerms, string(term.origText))
 	}
-	sort.Strings(cacheableTerms)
 	return strings.Join(cacheableTerms, " ")
 }
 
