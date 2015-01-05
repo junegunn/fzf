@@ -95,3 +95,7 @@ func TestTransform(t *testing.T) {
 		}
 	}
 }
+
+func TestTransformIndexOutOfBounds(t *testing.T) {
+	Transform([]Token{}, splitNth("1"))
+}

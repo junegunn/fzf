@@ -186,7 +186,13 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 			}
 		}
 		whole += part
-		transTokens[idx] = Token{&part, tokens[minIdx].prefixLength}
+		var prefixLength int
+		if minIdx < numTokens {
+			prefixLength = tokens[minIdx].prefixLength
+		} else {
+			prefixLength = 0
+		}
+		transTokens[idx] = Token{&part, prefixLength}
 	}
 	return &Transformed{
 		whole: &whole,
