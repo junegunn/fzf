@@ -1,51 +1,68 @@
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-	SUFFIX := darwin
+	GOOS := darwin
 else ifeq ($(UNAME_S),Linux)
-	SUFFIX := linux
+	GOOS := linux
 endif
 
-UNAME_M := $(shell uname -m)
-ifeq ($(UNAME_M),x86_64)
-	SUFFIX := $(SUFFIX)_amd64
-else ifneq ($(filter i386 i686,$(UNAME_M)),)
-	SUFFIX := $(SUFFIX)_386
-else # TODO
-$(error "$(UNAME_M) is not supported, yet.")
+ifneq ($(shell uname -m),x86_64)
+$(error "Build on $(UNAME_M) is not supported, yet.")
 endif
 
-BINARY  := fzf-$(SUFFIX)
-BINDIR  := ../bin
-SOURCES := $(wildcard *.go fzf/*.go)
-RELEASE  = fzf-$(shell fzf/$(BINARY) --version)-$(SUFFIX)
+SOURCES   := $(wildcard *.go fzf/*.go)
+BINDIR    := ../bin
+
+BINARY32  := fzf-$(GOOS)_386
+BINARY64  := fzf-$(GOOS)_amd64
+RELEASE32  = fzf-$(shell fzf/$(BINARY64) --version)-$(GOOS)_386
+RELEASE64  = fzf-$(shell fzf/$(BINARY64) --version)-$(GOOS)_amd64
 
 all: release
 
 release: build
 	cd fzf && \
-	cp $(BINARY) $(RELEASE) && \
-	tar -czf $(RELEASE).tgz $(RELEASE) && \
-	rm $(RELEASE)
+	cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32) && \
+	cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64) && \
+	rm $(RELEASE32) $(RELEASE64)
 
-build: fzf/$(BINARY)
+build: fzf/$(BINARY32) fzf/$(BINARY64)
 
-fzf/$(BINARY): $(SOURCES)
+test: $(SOURCES)
 	go get
 	go test -v
-	cd fzf && go build -o $(BINARY)
 
-install: fzf/$(BINARY)
+fzf/$(BINARY32): test
+	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -o $(BINARY32)
+
+fzf/$(BINARY64): test
+	cd fzf && go build -o $(BINARY64)
+
+install: fzf/$(BINARY64)
 	mkdir -p $(BINDIR)
-	cp -f fzf/$(BINARY) $(BINDIR)/fzf
+	cp -f fzf/$(BINARY64) $(BINDIR)/fzf
 
 clean:
-	cd fzf && rm -f $(BINARY) $(RELEASE).tgz
+	cd fzf && rm -f $(BINARY32) $(BINARY64) $(RELEASE32).tgz $(RELEASE64).tgz
+
+DISTRO := ubuntu
 
 docker:
-	docker build -t junegunn/ubuntu-sandbox .
+	docker build -t junegunn/$(DISTRO)-sandbox - < Dockerfile.$(DISTRO)
 
-linux64: docker
-	docker run -i -t -u jg -v $(shell cd ..; pwd):/fzf junegunn/ubuntu-sandbox \
-		/bin/bash -ci 'cd ~jg/go/src/github.com/junegunn/fzf/src; make'
+linux: docker
+	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/$(DISTRO)-sandbox \
+		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make'
 
-.PHONY: build release install linux64 clean docker
+$(DISTRO): docker
+	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/$(DISTRO)-sandbox \
+		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
+
+arch: docker
+	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/arch-sandbox \
+		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
+
+centos: docker
+	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/centos-sandbox \
+		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
+
+.PHONY: build release install linux clean docker $(DISTRO)

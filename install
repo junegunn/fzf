@@ -55,13 +55,13 @@ download() {
 archi=$(uname -sm)
 binary_available=1
 binary_error=""
-if [ "$archi" = "Darwin x86_64" ]; then
-  download fzf-$version-darwin_amd64
-elif [ "$archi" = "Linux x86_64" ]; then
-  download fzf-$version-linux_amd64
-else
-  binary_available=0
-fi
+case "$archi" in
+  "Darwin x86_64")  download fzf-$version-darwin_amd64 ;;
+# "Darwin i[36]86") download fzf-$version-darwin_386   ;;
+  "Linux x86_64")   download fzf-$version-linux_amd64  ;;
+# "Linux i[36]86")  download fzf-$version-linux_386    ;;
+  *)                binary_available=0                 ;;
+esac
 
 cd "$fzf_base"
 if [ -n "$binary_error" ]; then

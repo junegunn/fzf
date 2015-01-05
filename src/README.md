@@ -22,8 +22,8 @@ make
 # Install the executable to ../bin directory
 make install
 
-# Build executable for Linux x86_64 using Docker
-make linux64
+# Build executables for Linux using Docker
+make linux
 ```
 
 System requirements
