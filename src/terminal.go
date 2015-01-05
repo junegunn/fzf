@@ -523,7 +523,6 @@ func (t *Terminal) Loop() {
 				if my == 0 && mx >= 0 {
 					// Prompt
 					t.cx = mx
-					req(REQ_PROMPT)
 				} else if my >= 2 {
 					// List
 					t.cy = t.offset + my - 2
