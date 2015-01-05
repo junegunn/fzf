@@ -2,8 +2,8 @@
 
 version=0.9.0
 
-cd `dirname $BASH_SOURCE`
-fzf_base=`pwd`
+cd $(dirname $BASH_SOURCE)
+fzf_base=$(pwd)
 
 ask() {
   read -p "$1 ([y]/n) " -n 1 -r
@@ -11,15 +11,26 @@ ask() {
   [[ ! $REPLY =~ ^[Nn]$ ]]
 }
 
+check_binary() {
+  echo "- Checking fzf executable"
+  echo -n "  - "
+  if ! "$fzf_base"/bin/fzf --version; then
+    binary_error="Error occurred"
+  fi
+}
+
 download() {
   echo "Downloading fzf executable ($1) ..."
   if [ -x "$fzf_base"/bin/fzf ]; then
-    ask "- fzf already exists. Download it again?" || return 0
+    if ! ask "- fzf already exists. Download it again?"; then
+      check_binary
+      return
+    fi
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
-    echo "- Failed to create bin directory."
-    return 1
+    binary_error="Failed to create bin directory"
+    return
   fi
 
   local url=https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tgz
@@ -28,35 +39,36 @@ download() {
   elif which wget > /dev/null; then
     wget -O - $url | tar -xz
   else
-    echo "- curl or wget required to download fzf executable."
-    return 1
+    binary_error="curl or wget not found"
+    return
   fi
 
   if [ ! -f $1 ]; then
-    echo "- Failed to download ${1}."
-    return 1
+    binary_error="Failed to download ${1}"
+    return
   fi
 
-  mv $1 fzf && chmod +x fzf && cd - > /dev/null && echo
+  mv $1 fzf && chmod +x fzf && check_binary
 }
 
 # Try to download binary executable
 archi=$(uname -sm)
-downloaded=0
-binary_available=0
+binary_available=1
+binary_error=""
 if [ "$archi" = "Darwin x86_64" ]; then
-  binary_available=1
-  download fzf-$version-darwin_amd64 && downloaded=1
+  download fzf-$version-darwin_amd64
 elif [ "$archi" = "Linux x86_64" ]; then
-  binary_available=1
-  download fzf-$version-linux_amd64 && downloaded=1
+  download fzf-$version-linux_amd64
+else
+  binary_available=0
 fi
 
-if [ $downloaded -ne 1 ]; then
+cd "$fzf_base"
+if [ -n "$binary_error" ]; then
   if [ $binary_available -eq 0 ]; then
-    echo -n "No prebuilt binary for $archi ... "
+    echo "No prebuilt binary for $archi ... "
   else
-    echo -n "Failed to download binary executable ... "
+    echo "  - $binary_error ... "
   fi
   echo "Installing legacy Ruby version ..."
 
@@ -304,7 +316,7 @@ if [ -n "$(which fish)" ]; then
   has_fish=1
   echo -n "Generate ~/.config/fish/functions/fzf.fish ... "
   mkdir -p ~/.config/fish/functions
-  if [ $downloaded -eq 0 ]; then
+  if [ -n "$binary_error" ]; then
     cat > ~/.config/fish/functions/fzf.fish << EOFZF
 function fzf
   $fzf_cmd \$argv

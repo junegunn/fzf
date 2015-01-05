@@ -44,8 +44,8 @@ clean:
 docker:
 	docker build -t junegunn/ubuntu-sandbox .
 
-linux64:
+linux64: docker
 	docker run -i -t -u jg -v $(shell cd ..; pwd):/fzf junegunn/ubuntu-sandbox \
 		/bin/bash -ci 'cd ~jg/go/src/github.com/junegunn/fzf/src; make'
 
-.PHONY: build release install linux64 clean docker run
+.PHONY: build release install linux64 clean docker
