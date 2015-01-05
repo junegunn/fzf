@@ -44,6 +44,7 @@ install: fzf/$(BINARY64)
 clean:
 	cd fzf && rm -f $(BINARY32) $(BINARY64) $(RELEASE32).tgz $(RELEASE64).tgz
 
+# Linux distribution to build fzf on
 DISTRO := ubuntu
 
 docker:
@@ -55,14 +56,6 @@ linux: docker
 
 $(DISTRO): docker
 	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/$(DISTRO)-sandbox \
-		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
-
-arch: docker
-	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/arch-sandbox \
-		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
-
-centos: docker
-	docker run -i -t -v $(shell cd ..; pwd):/fzf junegunn/centos-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
 
 .PHONY: build release install linux clean docker $(DISTRO)
