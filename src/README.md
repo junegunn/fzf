@@ -1,8 +1,9 @@
 fzf in Go
 =========
 
-This directory contains the source code for the new fzf implementation in Go.
-This new version has the following benefits over the previous Ruby version.
+This directory contains the source code for the new fzf implementation in
+[Go][go]. This new version has the following benefits over the previous Ruby
+version.
 
 - Immensely faster
     - No GIL. Performance is linearly proportional to the number of cores.
@@ -25,17 +26,28 @@ make install
 make linux64
 ```
 
+System requirements
+-------------------
 
-Prebuilt binaries
------------------
+Currently prebuilt binaries are provided only for 64 bit OS X and Linux.
+The install script will fall back to the legacy Ruby version on the other
+systems, but if you have Go installed, you can try building it yourself.
+(`make install`)
 
-- Darwin x86_64
-- Linux x86_64
+However, as pointed out in [golang.org/doc/install][req], the Go version will
+not run on CentOS/RHEL 5.x and thus the install script will choose the Ruby
+version instead.
+
+The Go version depends on [ncurses][ncurses] and some Unix system calls, so it
+shouldn't run natively on Windows at the moment. But it should be not
+impossible to support Windows by falling back to a cross-platform alternative
+such as [termbox][termbox] only on Windows. If you're interested in making fzf
+work on Windows, please let me know.
 
 Third-party libraries used
 --------------------------
 
-- [ncurses](https://www.gnu.org/software/ncurses/)
+- [ncurses][ncurses]
 - [mattn/go-runewidth](https://github.com/mattn/go-runewidth)
     - Licensed under [MIT](http://mattn.mit-license.org/2013)
 - [mattn/go-shellwords](https://github.com/mattn/go-shellwords)
@@ -56,4 +68,9 @@ still don't have a quantitative measure of the performance.
 License
 -------
 
-- [MIT](LICENSE)
+[MIT](LICENSE)
+
+[go]:      https://golang.org/
+[ncurses]: https://www.gnu.org/software/ncurses/
+[req]:     http://golang.org/doc/install
+[termbox]: https://github.com/nsf/termbox-go
