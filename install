@@ -15,6 +15,7 @@ check_binary() {
   echo "- Checking fzf executable"
   echo -n "  - "
   if ! "$fzf_base"/bin/fzf --version; then
+    rm -v "$fzf_base"/bin/fzf
     binary_error="Error occurred"
   fi
 }
@@ -33,7 +34,7 @@ download() {
     return
   fi
 
-  local url=https://github.com/junegunn/fzf-bin/releases/download/snapshot/${1}.tgz
+  local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
   if which curl > /dev/null; then
     curl -fL $url | tar -xz
   elif which wget > /dev/null; then
@@ -56,11 +57,11 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  "Darwin x86_64")  download fzf-$version-darwin_amd64 ;;
-# "Darwin i[36]86") download fzf-$version-darwin_386   ;;
-  "Linux x86_64")   download fzf-$version-linux_amd64  ;;
-# "Linux i[36]86")  download fzf-$version-linux_386    ;;
-  *)                binary_available=0                 ;;
+  Darwin\ x86_64) download fzf-$version-darwin_amd64 ;;
+  Darwin\ i*86)   download fzf-$version-darwin_386   ;;
+  Linux\ x86_64)  download fzf-$version-linux_amd64  ;;
+  Linux\ i*86)    download fzf-$version-linux_386    ;;
+  *)              binary_available=0                 ;;
 esac
 
 cd "$fzf_base"

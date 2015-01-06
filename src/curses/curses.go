@@ -1,8 +1,15 @@
 package curses
 
-// #include <ncurses.h>
-// #include <locale.h>
-// #cgo LDFLAGS: -lncurses
+/*
+#include <ncurses.h>
+#include <locale.h>
+#cgo LDFLAGS: -lncurses
+void swapOutput() {
+  FILE* temp = stdout;
+  stdout = stderr;
+  stderr = temp;
+}
+*/
 import "C"
 
 import (
@@ -162,7 +169,7 @@ func Init(color bool, color256 bool, black bool, mouse bool) {
 		// syscall.Dup2(int(in.Fd()), int(os.Stdin.Fd()))
 	}
 
-	swapOutput()
+	C.swapOutput()
 
 	C.setlocale(C.LC_ALL, C.CString(""))
 	C.initscr()
@@ -218,13 +225,7 @@ func Init(color bool, color256 bool, black bool, mouse bool) {
 
 func Close() {
 	C.endwin()
-	swapOutput()
-}
-
-func swapOutput() {
-	syscall.Dup2(2, 3)
-	syscall.Dup2(1, 2)
-	syscall.Dup2(3, 1)
+	C.swapOutput()
 }
 
 func GetBytes() []byte {

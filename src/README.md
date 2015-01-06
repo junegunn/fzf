@@ -29,10 +29,9 @@ make linux
 System requirements
 -------------------
 
-Currently prebuilt binaries are provided only for 64 bit OS X and Linux.
-The install script will fall back to the legacy Ruby version on the other
-systems, but if you have Go installed, you can try building it yourself.
-(`make install`)
+Currently prebuilt binaries are provided only for OS X and Linux. The install
+script will fall back to the legacy Ruby version on the other systems, but if
+you have Go installed, you can try building it yourself. (`make install`)
 
 However, as pointed out in [golang.org/doc/install][req], the Go version will
 not run on CentOS/RHEL 5.x and thus the install script will choose the Ruby

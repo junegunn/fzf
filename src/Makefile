@@ -45,7 +45,7 @@ clean:
 	cd fzf && rm -f $(BINARY32) $(BINARY64) $(RELEASE32).tgz $(RELEASE64).tgz
 
 # Linux distribution to build fzf on
-DISTRO := ubuntu
+DISTRO := arch
 
 docker:
 	docker build -t junegunn/$(DISTRO)-sandbox - < Dockerfile.$(DISTRO)
