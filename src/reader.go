@@ -5,13 +5,12 @@ import "C"
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 )
 
-const DEFAULT_COMMAND = "find * -path '*/\\.*' -prune -o -type f -print -o -type l -print 2> /dev/null"
+const DEFAULT_COMMAND = `find * -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null`
 
 type Reader struct {
 	pusher   func(string)
@@ -45,8 +44,7 @@ func (r *Reader) readFromStdin() {
 }
 
 func (r *Reader) readFromCommand(cmd string) {
-	arg := fmt.Sprintf("%q", cmd)
-	listCommand := exec.Command("sh", "-c", arg[1:len(arg)-1])
+	listCommand := exec.Command("sh", "-c", cmd)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
 		return
