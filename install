@@ -12,21 +12,25 @@ ask() {
 }
 
 check_binary() {
-  echo "- Checking fzf executable"
-  echo -n "  - "
+  echo -n "  - Checking fzf executable ... "
   if ! "$fzf_base"/bin/fzf --version; then
-    rm -v "$fzf_base"/bin/fzf
+    rm -f "$fzf_base"/bin/fzf
     binary_error="Error occurred"
   fi
 }
 
+symlink() {
+  echo "  - Creating symlink: bin/$1 -> bin/fzf"
+  rm -f "$fzf_base"/bin/fzf
+  ln -sf "$fzf_base"/bin/$1 "$fzf_base"/bin/fzf
+}
+
 download() {
-  echo "Downloading fzf executable ($1) ..."
-  if [ -x "$fzf_base"/bin/fzf ]; then
-    if ! ask "- fzf already exists. Download it again?"; then
-      check_binary
-      return
-    fi
+  echo "Downloading bin/$1 ..."
+  if [ -x "$fzf_base"/bin/$1 ]; then
+    echo "  - Already exists"
+    symlink $1
+    check_binary && return
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
@@ -49,7 +53,7 @@ download() {
     return
   fi
 
-  mv $1 fzf && chmod +x fzf && check_binary
+  chmod +x $1 && symlink $1 && check_binary
 }
 
 # Try to download binary executable
@@ -69,7 +73,7 @@ if [ -n "$binary_error" ]; then
   if [ $binary_available -eq 0 ]; then
     echo "No prebuilt binary for $archi ... "
   else
-    echo "  - $binary_error ... "
+    echo "  - $binary_error !!!"
   fi
   echo "Installing legacy Ruby version ..."
 
@@ -77,7 +81,7 @@ if [ -n "$binary_error" ]; then
   echo -n "Checking Ruby executable ... "
   ruby=`which ruby`
   if [ $? -ne 0 ]; then
-    echo "ruby executable not found!"
+    echo "ruby executable not found !!!"
     exit 1
   fi
 
