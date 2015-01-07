@@ -31,6 +31,7 @@ type Terminal struct {
 	eventBox   *EventBox
 	mutex      sync.Mutex
 	initFunc   func()
+	suppress   bool
 }
 
 var _spinner []string = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
@@ -39,9 +40,15 @@ const (
 	REQ_PROMPT EventType = iota
 	REQ_INFO
 	REQ_LIST
+	REQ_REFRESH
 	REQ_REDRAW
 	REQ_CLOSE
 	REQ_QUIT
+)
+
+const (
+	INITIAL_DELAY    = 100 * time.Millisecond
+	SPINNER_DURATION = 200 * time.Millisecond
 )
 
 func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
@@ -62,6 +69,7 @@ func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
 		reqBox:     NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
+		suppress:   true,
 		initFunc: func() {
 			C.Init(opts.Color, opts.Color256, opts.Black, opts.Mouse)
 		}}
@@ -79,6 +87,9 @@ func (t *Terminal) UpdateCount(cnt int, final bool) {
 	t.reading = !final
 	t.mutex.Unlock()
 	t.reqBox.Set(REQ_INFO, nil)
+	if final {
+		t.reqBox.Set(REQ_REFRESH, nil)
+	}
 }
 
 func (t *Terminal) UpdateProgress(progress float32) {
@@ -158,7 +169,7 @@ func (t *Terminal) printPrompt() {
 func (t *Terminal) printInfo() {
 	t.move(1, 0, true)
 	if t.reading {
-		duration := int64(200) * int64(time.Millisecond)
+		duration := int64(SPINNER_DURATION)
 		idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
 		C.CPrint(C.COL_SPINNER, true, _spinner[idx])
 	}
@@ -297,7 +308,9 @@ func (t *Terminal) printAll() {
 }
 
 func (t *Terminal) refresh() {
-	C.Refresh()
+	if !t.suppress {
+		C.Refresh()
+	}
 }
 
 func (t *Terminal) delChar() bool {
@@ -350,11 +363,16 @@ func (t *Terminal) Loop() {
 	{ // Late initialization
 		t.mutex.Lock()
 		t.initFunc()
-		t.printInfo()
 		t.printPrompt()
 		t.placeCursor()
-		t.refresh()
+		C.Refresh()
+		t.printInfo()
 		t.mutex.Unlock()
+		go func() {
+			timer := time.NewTimer(INITIAL_DELAY)
+			<-timer.C
+			t.reqBox.Set(REQ_REFRESH, nil)
+		}()
 	}
 
 	go func() {
@@ -370,6 +388,8 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case REQ_LIST:
 						t.printList()
+					case REQ_REFRESH:
+						t.suppress = false
 					case REQ_REDRAW:
 						C.Clear()
 						t.printAll()
