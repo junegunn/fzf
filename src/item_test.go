@@ -23,8 +23,7 @@ func TestRankComparison(t *testing.T) {
 	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}) ||
 		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}) ||
 		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}) ||
-		!compareRanks(NilRank, Rank{0, 0, 0}) ||
-		compareRanks(Rank{0, 0, 0}, NilRank) {
+		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}) {
 		t.Error("Invalid order")
 	}
 }
@@ -32,13 +31,13 @@ func TestRankComparison(t *testing.T) {
 // Match length, string length, index
 func TestItemRank(t *testing.T) {
 	strs := []string{"foo", "foobar", "bar", "baz"}
-	item1 := Item{text: &strs[0], index: 1, offsets: []Offset{}}
+	item1 := Item{text: &strs[0], rank: Rank{0, 0, 1}, offsets: []Offset{}}
 	rank1 := item1.Rank()
-	if rank1[0] != 0 || rank1[1] != 3 || rank1[2] != 1 {
+	if rank1.matchlen != 0 || rank1.strlen != 3 || rank1.index != 1 {
 		t.Error(item1.Rank())
 	}
 	// Only differ in index
-	item2 := Item{text: &strs[0], index: 0, offsets: []Offset{}}
+	item2 := Item{text: &strs[0], rank: Rank{0, 0, 0}, offsets: []Offset{}}
 
 	items := []*Item{&item1, &item2}
 	sort.Sort(ByRelevance(items))
@@ -54,10 +53,10 @@ func TestItemRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := Item{text: &strs[1], index: 2, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item4 := Item{text: &strs[1], index: 2, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
-	item5 := Item{text: &strs[2], index: 2, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item6 := Item{text: &strs[2], index: 2, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item3 := Item{text: &strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item4 := Item{text: &strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item5 := Item{text: &strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item6 := Item{text: &strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
 	items = []*Item{&item1, &item2, &item3, &item4, &item5, &item6}
 	sort.Sort(ByRelevance(items))
 	if items[0] != &item2 || items[1] != &item1 ||

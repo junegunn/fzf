@@ -5,31 +5,32 @@ import (
 	"sort"
 )
 
-type Offset [2]int
+type Offset [2]int32
 
 type Item struct {
 	text        *string
 	origText    *string
 	offsets     []Offset
-	index       int
 	rank        Rank
 	transformed *Transformed
 }
 
-type Rank [3]int
-
-var NilRank = Rank{-1, 0, 0}
+type Rank struct {
+	matchlen uint16
+	strlen   uint16
+	index    uint32
+}
 
 func (i *Item) Rank() Rank {
-	if i.rank[0] > 0 {
+	if i.rank.matchlen > 0 || i.rank.strlen > 0 {
 		return i.rank
 	}
 	sort.Sort(ByOrder(i.offsets))
 	matchlen := 0
 	prevEnd := 0
 	for _, offset := range i.offsets {
-		begin := offset[0]
-		end := offset[1]
+		begin := int(offset[0])
+		end := int(offset[1])
 		if prevEnd > begin {
 			begin = prevEnd
 		}
@@ -40,7 +41,7 @@ func (i *Item) Rank() Rank {
 			matchlen += end - begin
 		}
 	}
-	i.rank = Rank{matchlen, len(*i.text), i.index}
+	i.rank = Rank{uint16(matchlen), uint16(len(*i.text)), i.rank.index}
 	return i.rank
 }
 
@@ -86,14 +87,22 @@ func (a ByRelevance) Less(i, j int) bool {
 }
 
 func compareRanks(irank Rank, jrank Rank) bool {
-	for idx := range irank {
-		if irank[idx] < jrank[idx] {
-			return true
-		} else if irank[idx] > jrank[idx] {
-			return false
-		}
+	if irank.matchlen < jrank.matchlen {
+		return true
+	} else if irank.matchlen > jrank.matchlen {
+		return false
 	}
-	return true
+
+	if irank.strlen < jrank.strlen {
+		return true
+	} else if irank.strlen > jrank.strlen {
+		return false
+	}
+
+	if irank.index <= jrank.index {
+		return true
+	}
+	return false
 }
 
 func SortMerge(partialResults [][]*Item) []*Item {

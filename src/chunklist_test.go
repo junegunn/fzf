@@ -7,7 +7,7 @@ import (
 
 func TestChunkList(t *testing.T) {
 	cl := NewChunkList(func(s *string, i int) *Item {
-		return &Item{text: s, index: i * 2}
+		return &Item{text: s, rank: Rank{0, 0, uint32(i * 2)}}
 	})
 
 	// Snapshot
@@ -36,8 +36,8 @@ func TestChunkList(t *testing.T) {
 	if len(*chunk1) != 2 {
 		t.Error("Snapshot should contain only two items")
 	}
-	if *(*chunk1)[0].text != "hello" || (*chunk1)[0].index != 0 ||
-		*(*chunk1)[1].text != "world" || (*chunk1)[1].index != 2 {
+	if *(*chunk1)[0].text != "hello" || (*chunk1)[0].rank.index != 0 ||
+		*(*chunk1)[1].text != "world" || (*chunk1)[1].rank.index != 2 {
 		t.Error("Invalid data")
 	}
 	if chunk1.IsFull() {

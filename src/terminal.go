@@ -232,9 +232,9 @@ func trimRight(runes []rune, width int) ([]rune, int) {
 	return runes, trimmed
 }
 
-func trimLeft(runes []rune, width int) ([]rune, int) {
+func trimLeft(runes []rune, width int) ([]rune, int32) {
 	currentWidth := displayWidth(runes)
-	trimmed := 0
+	var trimmed int32 = 0
 
 	for currentWidth > width && len(runes) > 0 {
 		currentWidth -= runewidth.RuneWidth(runes[0])
@@ -245,7 +245,7 @@ func trimLeft(runes []rune, width int) ([]rune, int) {
 }
 
 func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
-	maxe := 0
+	var maxe int32 = 0
 	for _, offset := range item.offsets {
 		if offset[1] > maxe {
 			maxe = offset[1]
@@ -269,7 +269,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 				text = append(text[:maxe], []rune("..")...)
 			}
 			// ..ri..
-			var diff int
+			var diff int32
 			text, diff = trimLeft(text, maxWidth-2)
 
 			// Transform offsets
@@ -278,7 +278,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 				b, e := offset[0], offset[1]
 				b += 2 - diff
 				e += 2 - diff
-				b = Max(b, 2)
+				b = Max32(b, 2)
 				if b < e {
 					offsets[idx] = Offset{b, e}
 				}
@@ -288,15 +288,15 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 	}
 
 	sort.Sort(ByOrder(offsets))
-	index := 0
+	var index int32 = 0
 	for _, offset := range offsets {
-		b := Max(index, offset[0])
-		e := Max(index, offset[1])
+		b := Max32(index, offset[0])
+		e := Max32(index, offset[1])
 		C.CPrint(col1, bold, string(text[index:b]))
 		C.CPrint(col2, bold, string(text[b:e]))
 		index = e
 	}
-	if index < len(text) {
+	if index < int32(len(text)) {
 		C.CPrint(col1, bold, string(text[index:]))
 	}
 }

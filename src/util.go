@@ -12,6 +12,13 @@ func Max(first int, items ...int) int {
 	return max
 }
 
+func Max32(first int32, second int32) int32 {
+	if first > second {
+		return first
+	}
+	return second
+}
+
 func Min(first int, items ...int) int {
 	min := first
 	for _, item := range items {
