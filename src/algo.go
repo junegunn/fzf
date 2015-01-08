@@ -90,7 +90,7 @@ func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, in
 	runes := []rune(*input)
 	numRunes := len(runes)
 	plen := len(pattern)
-	if len(runes) < plen {
+	if numRunes < plen {
 		return -1, -1
 	}
 

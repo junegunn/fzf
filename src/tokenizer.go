@@ -118,14 +118,13 @@ func awkTokenizer(input *string) ([]string, int) {
 }
 
 func Tokenize(str *string, delimiter *regexp.Regexp) []Token {
-	prefixLength := 0
 	if delimiter == nil {
 		// AWK-style (\S+\s*)
 		tokens, prefixLength := awkTokenizer(str)
 		return withPrefixLengths(tokens, prefixLength)
 	} else {
 		tokens := delimiter.FindAllString(*str, -1)
-		return withPrefixLengths(tokens, prefixLength)
+		return withPrefixLengths(tokens, 0)
 	}
 }
 
