@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-const COORDINATOR_DELAY time.Duration = 100 * time.Millisecond
+const COORDINATOR_DELAY_MAX time.Duration = 100 * time.Millisecond
+const COORDINATOR_DELAY_STEP time.Duration = 10 * time.Millisecond
 
 func initProcs() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -151,8 +152,11 @@ func Run(options *Options) {
 				}
 			}
 		})
-		if ticks > 3 && delay && reading {
-			time.Sleep(COORDINATOR_DELAY)
+		if delay && reading {
+			dur := DurWithin(
+				time.Duration(ticks)*COORDINATOR_DELAY_STEP,
+				0, COORDINATOR_DELAY_MAX)
+			time.Sleep(dur)
 		}
 	}
 }

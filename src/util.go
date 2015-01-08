@@ -1,5 +1,7 @@
 package fzf
 
+import "time"
+
 func Max(first int, items ...int) int {
 	max := first
 	for _, item := range items {
@@ -18,4 +20,15 @@ func Min(first int, items ...int) int {
 		}
 	}
 	return min
+}
+
+func DurWithin(
+	val time.Duration, min time.Duration, max time.Duration) time.Duration {
+	if val < min {
+		return min
+	}
+	if val > max {
+		return max
+	}
+	return val
 }
