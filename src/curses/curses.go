@@ -178,8 +178,7 @@ func Init(color bool, color256 bool, black bool, mouse bool) {
 	}
 	C.cbreak()
 	C.noecho()
-	C.raw()          // stty dsusp undef
-	C.set_tabsize(4) // FIXME
+	C.raw() // stty dsusp undef
 
 	intChan := make(chan os.Signal, 1)
 	signal.Notify(intChan, os.Interrupt, os.Kill)
