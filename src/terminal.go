@@ -434,6 +434,7 @@ func (t *Terminal) Loop() {
 		}
 		switch event.Type {
 		case C.INVALID:
+			t.mutex.Unlock()
 			continue
 		case C.CTRL_A:
 			t.cx = 0
