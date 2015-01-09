@@ -25,7 +25,7 @@ type Terminal struct {
 	count      int
 	progress   int
 	reading    bool
-	list       []*Item
+	merger     *Merger
 	selected   map[*string]*string
 	reqBox     *EventBox
 	eventBox   *EventBox
@@ -64,7 +64,7 @@ func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
 		input:      input,
 		multi:      opts.Multi,
 		printQuery: opts.PrintQuery,
-		list:       []*Item{},
+		merger:     EmptyMerger,
 		selected:   make(map[*string]*string),
 		reqBox:     NewEventBox(),
 		eventBox:   eventBox,
@@ -99,10 +99,10 @@ func (t *Terminal) UpdateProgress(progress float32) {
 	t.reqBox.Set(REQ_INFO, nil)
 }
 
-func (t *Terminal) UpdateList(list []*Item) {
+func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Lock()
 	t.progress = 100
-	t.list = list
+	t.merger = merger
 	t.mutex.Unlock()
 	t.reqBox.Set(REQ_INFO, nil)
 	t.reqBox.Set(REQ_LIST, nil)
@@ -110,7 +110,7 @@ func (t *Terminal) UpdateList(list []*Item) {
 
 func (t *Terminal) listIndex(y int) int {
 	if t.tac {
-		return len(t.list) - y - 1
+		return t.merger.Length() - y - 1
 	} else {
 		return y
 	}
@@ -121,8 +121,8 @@ func (t *Terminal) output() {
 		fmt.Println(string(t.input))
 	}
 	if len(t.selected) == 0 {
-		if len(t.list) > t.cy {
-			t.list[t.listIndex(t.cy)].Print()
+		if t.merger.Length() > t.cy {
+			t.merger.Get(t.listIndex(t.cy)).Print()
 		}
 	} else {
 		for ptr, orig := range t.selected {
@@ -175,7 +175,7 @@ func (t *Terminal) printInfo() {
 	}
 
 	t.move(1, 2, false)
-	output := fmt.Sprintf("%d/%d", len(t.list), t.count)
+	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
 	if t.multi && len(t.selected) > 0 {
 		output += fmt.Sprintf(" (%d)", len(t.selected))
 	}
@@ -189,11 +189,11 @@ func (t *Terminal) printList() {
 	t.constrain()
 
 	maxy := maxItems()
-	count := len(t.list) - t.offset
+	count := t.merger.Length() - t.offset
 	for i := 0; i < maxy; i++ {
 		t.move(i+2, 0, true)
 		if i < count {
-			t.printItem(t.list[t.listIndex(i+t.offset)], i == t.cy-t.offset)
+			t.printItem(t.merger.Get(t.listIndex(i+t.offset)), i == t.cy-t.offset)
 		}
 	}
 }
@@ -417,7 +417,7 @@ func (t *Terminal) Loop() {
 		previousInput := t.input
 		events := []EventType{REQ_PROMPT}
 		toggle := func() {
-			item := t.list[t.listIndex(t.cy)]
+			item := t.merger.Get(t.listIndex(t.cy))
 			if _, found := t.selected[item.text]; !found {
 				t.selected[item.text] = item.origText
 			} else {
@@ -460,13 +460,13 @@ func (t *Terminal) Loop() {
 				t.cx -= 1
 			}
 		case C.TAB:
-			if t.multi && len(t.list) > 0 {
+			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(-1)
 				req(REQ_LIST, REQ_INFO)
 			}
 		case C.BTAB:
-			if t.multi && len(t.list) > 0 {
+			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(1)
 				req(REQ_LIST, REQ_INFO)
@@ -567,7 +567,7 @@ func (t *Terminal) Loop() {
 }
 
 func (t *Terminal) constrain() {
-	count := len(t.list)
+	count := t.merger.Length()
 	height := C.MaxY() - 2
 	diffpos := t.cy - t.offset
 

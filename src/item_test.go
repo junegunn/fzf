@@ -64,14 +64,4 @@ func TestItemRank(t *testing.T) {
 		items[4] != &item5 || items[5] != &item3 {
 		t.Error(items)
 	}
-
-	// Sort merged lists
-	lists := [][]*Item{
-		[]*Item{&item2, &item4, &item5}, []*Item{&item1, &item6}, []*Item{&item3}}
-	items = SortMerge(lists)
-	if items[0] != &item2 || items[1] != &item1 ||
-		items[2] != &item6 || items[3] != &item4 ||
-		items[4] != &item5 || items[5] != &item3 {
-		t.Error(items)
-	}
 }

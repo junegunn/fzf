@@ -18,7 +18,7 @@ type Matcher struct {
 	eventBox       *EventBox
 	reqBox         *EventBox
 	partitions     int
-	queryCache     QueryCache
+	mergerCache    map[string]*Merger
 }
 
 const (
@@ -44,7 +44,7 @@ func NewMatcher(patternBuilder func([]rune) *Pattern,
 		eventBox:       eventBox,
 		reqBox:         NewEventBox(),
 		partitions:     runtime.NumCPU(),
-		queryCache:     make(QueryCache)}
+		mergerCache:    make(map[string]*Merger)}
 }
 
 func (m *Matcher) Loop() {
@@ -67,30 +67,30 @@ func (m *Matcher) Loop() {
 
 		// Restart search
 		patternString := request.pattern.AsString()
-		allMatches := []*Item{}
+		var merger *Merger
 		cancelled := false
 		count := CountItems(request.chunks)
 
 		foundCache := false
 		if count == prevCount {
-			// Look up queryCache
-			if cached, found := m.queryCache[patternString]; found {
+			// Look up mergerCache
+			if cached, found := m.mergerCache[patternString]; found {
 				foundCache = true
-				allMatches = cached
+				merger = cached
 			}
 		} else {
-			// Invalidate queryCache
+			// Invalidate mergerCache
 			prevCount = count
-			m.queryCache = make(QueryCache)
+			m.mergerCache = make(map[string]*Merger)
 		}
 
 		if !foundCache {
-			allMatches, cancelled = m.scan(request, 0)
+			merger, cancelled = m.scan(request, 0)
 		}
 
 		if !cancelled {
-			m.queryCache[patternString] = allMatches
-			m.eventBox.Set(EVT_SEARCH_FIN, allMatches)
+			m.mergerCache[patternString] = merger
+			m.eventBox.Set(EVT_SEARCH_FIN, merger)
 		}
 	}
 }
@@ -120,12 +120,12 @@ type partialResult struct {
 	matches []*Item
 }
 
-func (m *Matcher) scan(request MatchRequest, limit int) ([]*Item, bool) {
+func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
 	startedAt := time.Now()
 
 	numChunks := len(request.chunks)
 	if numChunks == 0 {
-		return []*Item{}, false
+		return EmptyMerger, false
 	}
 	pattern := request.pattern
 	empty := pattern.IsEmpty()
@@ -188,18 +188,7 @@ func (m *Matcher) scan(request MatchRequest, limit int) ([]*Item, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-
-	var allMatches []*Item
-	if empty || !m.sort {
-		allMatches = []*Item{}
-		for _, matches := range partialResults {
-			allMatches = append(allMatches, matches...)
-		}
-	} else {
-		allMatches = SortMerge(partialResults)
-	}
-
-	return allMatches, false
+	return NewMerger(partialResults, !empty && m.sort), false
 }
 
 func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool) {

@@ -93,17 +93,18 @@ func Run(options *Options) {
 		}
 
 		snapshot, _ := chunkList.Snapshot()
-		matches, cancelled := matcher.scan(MatchRequest{
+		merger, cancelled := matcher.scan(MatchRequest{
 			chunks:  snapshot,
 			pattern: pattern}, limit)
 
 		if !cancelled && (filtering ||
-			opts.Exit0 && len(matches) == 0 || opts.Select1 && len(matches) == 1) {
+			opts.Exit0 && merger.Length() == 0 ||
+			opts.Select1 && merger.Length() == 1) {
 			if opts.PrintQuery {
 				fmt.Println(patternString)
 			}
-			for _, item := range matches {
-				item.Print()
+			for i := 0; i < merger.Length(); i++ {
+				merger.Get(i).Print()
 			}
 			os.Exit(0)
 		}
@@ -147,7 +148,7 @@ func Run(options *Options) {
 
 				case EVT_SEARCH_FIN:
 					switch val := value.(type) {
-					case []*Item:
+					case *Merger:
 						terminal.UpdateList(val)
 					}
 				}
