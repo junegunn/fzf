@@ -2,12 +2,13 @@ fzf in Go
 =========
 
 This directory contains the source code for the new fzf implementation in
-[Go][go]. This new version has the following benefits over the previous Ruby
+[Go][go]. The new version has the following benefits over the previous Ruby
 version.
 
 - Immensely faster
     - No GIL. Performance is linearly proportional to the number of cores.
-    - It's so fast that I even decided to remove the sort limit (`--sort=N`)
+    - It's so fast that I even decided to remove the sort limit. `--sort=N` is
+      no longer required.
 - Does not require Ruby and distributed as an executable binary
     - Ruby dependency is especially painful on Ruby 2.1 or above which
       ships without curses gem
@@ -16,7 +17,7 @@ Build
 -----
 
 ```sh
-# Build fzf executable
+# Build fzf executables
 make
 
 # Install the executable to ../bin directory
@@ -31,9 +32,9 @@ System requirements
 
 Currently prebuilt binaries are provided only for OS X and Linux. The install
 script will fall back to the legacy Ruby version on the other systems, but if
-you have Go installed, you can try building it yourself. (`make install`)
+you have Go 1.4 installed, you can try building it yourself. (`make install`)
 
-However, as pointed out in [golang.org/doc/install][req], the Go version will
+However, as pointed out in [golang.org/doc/install][req], the Go version may
 not run on CentOS/RHEL 5.x and thus the install script will choose the Ruby
 version instead.
 
