@@ -602,6 +602,7 @@ func (t *Terminal) vmove(o int) {
 	} else {
 		t.cy += o
 	}
+	t.cy = Max(0, Min(t.cy, t.merger.Length()-1))
 }
 
 func maxItems() int {
