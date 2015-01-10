@@ -194,24 +194,19 @@ func (p *Pattern) Match(chunk *Chunk) []*Item {
 		}
 	}
 
-	// ChunkCache: Prefix match
-	foundPrefixCache := false
-	for idx := len(cacheKey) - 1; idx > 0; idx-- {
-		if cached, found := _cache.Find(chunk, cacheKey[:idx]); found {
-			cachedChunk := Chunk(cached)
-			space = &cachedChunk
-			foundPrefixCache = true
-			break
-		}
-	}
-
-	// ChunkCache: Suffix match
-	if !foundPrefixCache {
-		for idx := 1; idx < len(cacheKey); idx++ {
-			if cached, found := _cache.Find(chunk, cacheKey[idx:]); found {
+	// ChunkCache: Prefix/suffix match
+Loop:
+	for idx := 1; idx < len(cacheKey); idx++ {
+		// [---------| ] | [ |---------]
+		// [--------|  ] | [  |--------]
+		// [-------|   ] | [   |-------]
+		prefix := cacheKey[:len(cacheKey)-idx]
+		suffix := cacheKey[idx:]
+		for _, substr := range [2]*string{&prefix, &suffix} {
+			if cached, found := _cache.Find(chunk, *substr); found {
 				cachedChunk := Chunk(cached)
 				space = &cachedChunk
-				break
+				break Loop
 			}
 		}
 	}
