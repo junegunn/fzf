@@ -85,3 +85,21 @@ func TestCaseSensitivity(t *testing.T) {
 		t.Error("Invalid case conversion")
 	}
 }
+
+func TestOrigText(t *testing.T) {
+	strptr := func(str string) *string {
+		return &str
+	}
+
+	pattern := BuildPattern(MODE_EXTENDED, CASE_SMART, []Range{}, nil, []rune("jg"))
+	for _, fun := range []func(*Chunk) []*Item{pattern.fuzzyMatch, pattern.extendedMatch} {
+		chunk := Chunk{
+			&Item{text: strptr("junegunn"), origText: strptr("junegunn.choi")},
+		}
+		matches := fun(&chunk)
+		if *matches[0].text != "junegunn" || *matches[0].origText != "junegunn.choi" ||
+			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 {
+			t.Error("Invalid match result", matches)
+		}
+	}
+}
