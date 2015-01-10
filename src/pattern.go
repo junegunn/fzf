@@ -255,12 +255,11 @@ func (p *Pattern) extendedMatch(chunk *Chunk) []*Item {
 	for _, item := range *chunk {
 		input := p.prepareInput(item)
 		offsets := []Offset{}
-	Loop:
 		for _, term := range p.terms {
 			pfun := p.procFun[term.typ]
 			if sidx, eidx := p.iter(pfun, input, term.text); sidx >= 0 {
 				if term.inv {
-					break Loop
+					break
 				}
 				offsets = append(offsets, Offset{int32(sidx), int32(eidx)})
 			} else if term.inv {
