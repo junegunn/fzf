@@ -544,7 +544,9 @@ func (t *Terminal) Loop() {
 				// Double-click
 				if my >= 2 {
 					t.cy = my - 2
-					req(REQ_CLOSE)
+					if t.listIndex(t.cy) < t.merger.Length() {
+						req(REQ_CLOSE)
+					}
 				}
 			} else if me.Down {
 				if my == 0 && mx >= 0 {
