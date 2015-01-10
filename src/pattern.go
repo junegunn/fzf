@@ -229,16 +229,22 @@ func (p *Pattern) Match(chunk *Chunk) []*Item {
 	return matches
 }
 
+func dupItem(item *Item, offsets []Offset) *Item {
+	return &Item{
+		text:        item.text,
+		origText:    item.origText,
+		transformed: item.transformed,
+		offsets:     offsets,
+		rank:        Rank{0, 0, item.rank.index}}
+}
+
 func (p *Pattern) fuzzyMatch(chunk *Chunk) []*Item {
 	matches := []*Item{}
 	for _, item := range *chunk {
 		input := p.prepareInput(item)
 		if sidx, eidx := p.iter(FuzzyMatch, input, p.text); sidx >= 0 {
-			matches = append(matches, &Item{
-				text:     item.text,
-				origText: item.origText,
-				offsets:  []Offset{Offset{int32(sidx), int32(eidx)}},
-				rank:     Rank{0, 0, item.rank.index}})
+			matches = append(matches,
+				dupItem(item, []Offset{Offset{int32(sidx), int32(eidx)}}))
 		}
 	}
 	return matches
@@ -262,11 +268,7 @@ func (p *Pattern) extendedMatch(chunk *Chunk) []*Item {
 			}
 		}
 		if len(offsets) == len(p.terms) {
-			matches = append(matches, &Item{
-				text:     item.text,
-				origText: item.origText,
-				offsets:  offsets,
-				rank:     Rank{0, 0, item.rank.index}})
+			matches = append(matches, dupItem(item, offsets))
 		}
 	}
 	return matches

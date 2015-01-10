@@ -10,9 +10,9 @@ type Offset [2]int32
 type Item struct {
 	text        *string
 	origText    *string
+	transformed *Transformed
 	offsets     []Offset
 	rank        Rank
-	transformed *Transformed
 }
 
 type Rank struct {
