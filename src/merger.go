@@ -1,12 +1,15 @@
 package fzf
 
+import "fmt"
+
 var EmptyMerger *Merger = NewMerger([][]*Item{}, false)
 
 type Merger struct {
 	lists   [][]*Item
 	merged  []*Item
 	cursors []int
-	done    bool
+	sorted  bool
+	count   int
 }
 
 func NewMerger(lists [][]*Item, sorted bool) *Merger {
@@ -14,41 +17,37 @@ func NewMerger(lists [][]*Item, sorted bool) *Merger {
 		lists:   lists,
 		merged:  []*Item{},
 		cursors: make([]int, len(lists)),
-		done:    false}
-	if !sorted {
-		for _, list := range lists {
-			mg.merged = append(mg.merged, list...)
-		}
-		mg.done = true
+		sorted:  sorted,
+		count:   0}
+
+	for _, list := range mg.lists {
+		mg.count += len(list)
 	}
 	return &mg
 }
 
 func (mg *Merger) Length() int {
-	cnt := 0
-	for _, list := range mg.lists {
-		cnt += len(list)
-	}
-	return cnt
+	return mg.count
 }
 
 func (mg *Merger) Get(idx int) *Item {
-	if mg.done {
-		return mg.merged[idx]
-	} else if len(mg.lists) == 1 {
+	if len(mg.lists) == 1 {
 		return mg.lists[0][idx]
+	} else if !mg.sorted {
+		for _, list := range mg.lists {
+			numItems := len(list)
+			if idx < numItems {
+				return list[idx]
+			}
+			idx -= numItems
+		}
+		panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
 	}
-	mg.buildUpto(idx)
-	return mg.merged[idx]
+	return mg.mergedGet(idx)
 }
 
-func (mg *Merger) buildUpto(upto int) {
-	numBuilt := len(mg.merged)
-	if numBuilt > upto {
-		return
-	}
-
-	for i := numBuilt; i <= upto; i++ {
+func (mg *Merger) mergedGet(idx int) *Item {
+	for i := len(mg.merged); i <= idx; i++ {
 		minRank := Rank{0, 0, 0}
 		minIdx := -1
 		for listIdx, list := range mg.lists {
@@ -72,8 +71,8 @@ func (mg *Merger) buildUpto(upto int) {
 			mg.merged = append(mg.merged, chosen[mg.cursors[minIdx]])
 			mg.cursors[minIdx] += 1
 		} else {
-			mg.done = true
-			return
+			panic(fmt.Sprintf("Index out of bounds (sorted, %d/%d)", i, mg.count))
 		}
 	}
+	return mg.merged[idx]
 }

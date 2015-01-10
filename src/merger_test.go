@@ -19,6 +19,9 @@ func randItem() *Item {
 
 func TestEmptyMerger(t *testing.T) {
 	assert(t, EmptyMerger.Length() == 0, "Not empty")
+	assert(t, EmptyMerger.count == 0, "Invalid count")
+	assert(t, len(EmptyMerger.lists) == 0, "Invalid lists")
+	assert(t, len(EmptyMerger.merged) == 0, "Invalid merged list")
 }
 
 func buildLists(partiallySorted bool) ([][]*Item, []*Item) {
@@ -72,7 +75,7 @@ func TestMergerSorted(t *testing.T) {
 
 	// Inverse order
 	mg2 := NewMerger(lists, true)
-	for i := cnt - 1; i >= cnt; i-- {
+	for i := cnt - 1; i >= 0; i-- {
 		if items[i] != mg2.Get(i) {
 			t.Error("Not sorted", items[i], mg2.Get(i))
 		}
