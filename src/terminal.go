@@ -416,20 +416,24 @@ func (t *Terminal) Loop() {
 		t.mutex.Lock()
 		previousInput := t.input
 		events := []EventType{REQ_PROMPT}
-		toggle := func() {
-			item := t.merger.Get(t.listIndex(t.cy))
-			if _, found := t.selected[item.text]; !found {
-				t.selected[item.text] = item.origText
-			} else {
-				delete(t.selected, item.text)
-			}
-		}
 		req := func(evts ...EventType) {
 			for _, event := range evts {
 				events = append(events, event)
 				if event == REQ_CLOSE || event == REQ_QUIT {
 					looping = false
 				}
+			}
+		}
+		toggle := func() {
+			idx := t.listIndex(t.cy)
+			if idx < t.merger.Length() {
+				item := t.merger.Get(idx)
+				if _, found := t.selected[item.text]; !found {
+					t.selected[item.text] = item.origText
+				} else {
+					delete(t.selected, item.text)
+				}
+				req(REQ_INFO)
 			}
 		}
 		switch event.Type {
@@ -463,13 +467,13 @@ func (t *Terminal) Loop() {
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(-1)
-				req(REQ_LIST, REQ_INFO)
+				req(REQ_LIST)
 			}
 		case C.BTAB:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(1)
-				req(REQ_LIST, REQ_INFO)
+				req(REQ_LIST)
 			}
 		case C.CTRL_J, C.CTRL_N:
 			t.vmove(-1)
@@ -529,11 +533,13 @@ func (t *Terminal) Loop() {
 			}
 			if me.S != 0 {
 				// Scroll
-				if me.Mod {
-					toggle()
+				if t.merger.Length() > 0 {
+					if t.multi && me.Mod {
+						toggle()
+					}
+					t.vmove(me.S)
+					req(REQ_LIST)
 				}
-				t.vmove(me.S)
-				req(REQ_LIST)
 			} else if me.Double {
 				// Double-click
 				if my >= 2 {
@@ -547,7 +553,7 @@ func (t *Terminal) Loop() {
 				} else if my >= 2 {
 					// List
 					t.cy = t.offset + my - 2
-					if me.Mod {
+					if t.multi && me.Mod {
 						toggle()
 					}
 					req(REQ_LIST)
