@@ -543,8 +543,7 @@ func (t *Terminal) Loop() {
 			} else if me.Double {
 				// Double-click
 				if my >= 2 {
-					t.cy = my - 2
-					if t.listIndex(t.cy) < t.merger.Length() {
+					if t.vset(my-2) && t.listIndex(t.cy) < t.merger.Length() {
 						req(REQ_CLOSE)
 					}
 				}
@@ -554,8 +553,7 @@ func (t *Terminal) Loop() {
 					t.cx = mx
 				} else if my >= 2 {
 					// List
-					t.cy = t.offset + my - 2
-					if t.multi && me.Mod {
+					if t.vset(t.offset+my-2) && t.multi && me.Mod {
 						toggle()
 					}
 					req(REQ_LIST)
@@ -598,11 +596,15 @@ func (t *Terminal) constrain() {
 
 func (t *Terminal) vmove(o int) {
 	if t.reverse {
-		t.cy -= o
+		t.vset(t.cy - o)
 	} else {
-		t.cy += o
+		t.vset(t.cy + o)
 	}
-	t.cy = Max(0, Min(t.cy, t.merger.Length()-1))
+}
+
+func (t *Terminal) vset(o int) bool {
+	t.cy = Max(0, Min(o, t.merger.Length()-1))
+	return t.cy == o
 }
 
 func maxItems() int {
