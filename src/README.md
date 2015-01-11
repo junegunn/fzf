@@ -5,34 +5,44 @@ This directory contains the source code for the new fzf implementation in
 [Go][go]. The new version has the following benefits over the previous Ruby
 version.
 
-- Immensely faster
-    - No GIL. Performance is linearly proportional to the number of cores.
-    - It's so fast that I even decided to remove the sort limit. `--sort=N` is
-      no longer required.
-- Does not require Ruby and distributed as an executable binary
-    - Ruby dependency is especially painful on Ruby 2.1 or above which
-      ships without curses gem
+Motivation
+----------
 
-Build
------
+### No Ruby dependency
 
-```sh
-# Build fzf executables
-make
+There have always been complaints about fzf being a Ruby script. To make
+matters worse, Ruby 2.1 dropped ncurses support from its standard libary.
+Because of the change, users running Ruby 2.1 or above were forced to build C
+extensions of curses gem to meet the requirement of fzf. The new Go version
+will be distributed as an executable binary so it will be much more accessible
+and easier to setup.
 
-# Install the executable to ../bin directory
-make install
+### Performance
 
-# Build executables for Linux using Docker
-make linux
-```
+With the presence of [GIL][gil], Ruby cannot utilize multiple CPU cores. Even
+though the Ruby version of fzf was pretty responsive even for 100k+ lines,
+which is well above the size of the usual input, it was obvious that we could
+do better. Now with the Go version, GIL is gone, and the search performance
+scales proportional to the number of cores. On my Macbook Pro (Mid 2012), it
+was shown to be an order of magnitude faster on certain cases. It also starts
+much faster than before though the difference shouldn't be really noticeable.
+
+Differences with Ruby version
+-----------------------------
+
+The Go version is designed to be perfectly compatible with the previous Ruby
+version. The only behavioral difference is that the new version ignores the
+numeric argument to `--sort=N` option and always sorts the result regardless
+of the number of matches. The value was introduced to limit the response time
+of the query, but the Go version is blazingly fast (almost instant response
+even for 1M+ items) so I decided that it's no longer required.
 
 System requirements
 -------------------
 
 Currently prebuilt binaries are provided only for OS X and Linux. The install
 script will fall back to the legacy Ruby version on the other systems, but if
-you have Go 1.4 installed, you can try building it yourself. (`make install`)
+you have Go 1.4 installed, you can try building it yourself.
 
 However, as pointed out in [golang.org/doc/install][req], the Go version may
 not run on CentOS/RHEL 5.x and thus the install script will choose the Ruby
@@ -43,6 +53,20 @@ shouldn't run natively on Windows at the moment. But it should be not
 impossible to support Windows by falling back to a cross-platform alternative
 such as [termbox][termbox] only on Windows. If you're interested in making fzf
 work on Windows, please let me know.
+
+Build
+-----
+
+```sh
+# Build fzf executables and tarballs
+make
+
+# Install the executable to ../bin directory
+make install
+
+# Build executables and tarballs for Linux using Docker
+make linux
+```
 
 Third-party libraries used
 --------------------------
@@ -56,8 +80,8 @@ Third-party libraries used
 Contribution
 ------------
 
-For the moment, I will not add or accept any new features until we can be sure
-that the implementation is stable and we have a sufficient number of test
+For the time being, I will not add or accept any new features until we can be
+sure that the implementation is stable and we have a sufficient number of test
 cases. However, fixes for obvious bugs and new test cases are welcome.
 
 I also care much about the performance of the implementation (that's the
@@ -71,6 +95,7 @@ License
 [MIT](LICENSE)
 
 [go]:      https://golang.org/
+[gil]:     http://en.wikipedia.org/wiki/Global_Interpreter_Lock
 [ncurses]: https://www.gnu.org/software/ncurses/
 [req]:     http://golang.org/doc/install
 [termbox]: https://github.com/nsf/termbox-go
