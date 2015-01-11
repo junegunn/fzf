@@ -94,9 +94,14 @@ func (t *Terminal) UpdateCount(cnt int, final bool) {
 
 func (t *Terminal) UpdateProgress(progress float32) {
 	t.mutex.Lock()
-	t.progress = int(progress * 100)
+	newProgress := int(progress * 100)
+	changed := t.progress != newProgress
+	t.progress = newProgress
 	t.mutex.Unlock()
-	t.reqBox.Set(REQ_INFO, nil)
+
+	if changed {
+		t.reqBox.Set(REQ_INFO, nil)
+	}
 }
 
 func (t *Terminal) UpdateList(merger *Merger) {
