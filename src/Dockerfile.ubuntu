@@ -18,12 +18,8 @@ ENV PATH /go1.4/bin:$PATH
 RUN apt-get install -y lib32ncurses5-dev && \
     cd $GOROOT/src && GOARCH=386 ./make.bash
 
-# Symlink fzf directory
-RUN mkdir -p /go/src/github.com/junegunn && \
-    ln -s /fzf /go/src/github.com/junegunn/fzf
-
 # Volume
-VOLUME /fzf
+VOLUME /go
 
 # Default CMD
 CMD cd /go/src/github.com/junegunn/fzf/src && /bin/bash
