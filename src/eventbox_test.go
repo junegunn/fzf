@@ -9,16 +9,16 @@ func TestEventBox(t *testing.T) {
 	ch := make(chan bool)
 
 	go func() {
-		eb.Set(EVT_READ_NEW, 10)
+		eb.Set(EvtReadNew, 10)
 		ch <- true
 		<-ch
-		eb.Set(EVT_SEARCH_NEW, 10)
-		eb.Set(EVT_SEARCH_NEW, 15)
-		eb.Set(EVT_SEARCH_NEW, 20)
-		eb.Set(EVT_SEARCH_PROGRESS, 30)
+		eb.Set(EvtSearchNew, 10)
+		eb.Set(EvtSearchNew, 15)
+		eb.Set(EvtSearchNew, 20)
+		eb.Set(EvtSearchProgress, 30)
 		ch <- true
 		<-ch
-		eb.Set(EVT_SEARCH_FIN, 40)
+		eb.Set(EvtSearchFin, 40)
 		ch <- true
 		<-ch
 	}()
@@ -39,7 +39,7 @@ func TestEventBox(t *testing.T) {
 			events.Clear()
 		})
 		ch <- true
-		count += 1
+		count++
 	}
 
 	if count != 3 {

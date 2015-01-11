@@ -6,14 +6,14 @@ func TestParseRange(t *testing.T) {
 	{
 		i := ".."
 		r, _ := ParseRange(&i)
-		if r.begin != RANGE_ELLIPSIS || r.end != RANGE_ELLIPSIS {
+		if r.begin != rangeEllipsis || r.end != rangeEllipsis {
 			t.Errorf("%s", r)
 		}
 	}
 	{
 		i := "3.."
 		r, _ := ParseRange(&i)
-		if r.begin != 3 || r.end != RANGE_ELLIPSIS {
+		if r.begin != 3 || r.end != rangeEllipsis {
 			t.Errorf("%s", r)
 		}
 	}

@@ -10,6 +10,7 @@ import "strings"
  * In short: They try to do as little work as possible.
  */
 
+// FuzzyMatch performs fuzzy-match
 func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	runes := []rune(*input)
 
@@ -36,7 +37,7 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 			if sidx < 0 {
 				sidx = index
 			}
-			if pidx += 1; pidx == len(pattern) {
+			if pidx++; pidx == len(pattern) {
 				eidx = index + 1
 				break
 			}
@@ -44,14 +45,14 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	}
 
 	if sidx >= 0 && eidx >= 0 {
-		pidx -= 1
+		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
 			char := runes[index]
 			if !caseSensitive && char >= 65 && char <= 90 {
 				char += 32
 			}
 			if char == pattern[pidx] {
-				if pidx -= 1; pidx < 0 {
+				if pidx--; pidx < 0 {
 					sidx = index
 					break
 				}
@@ -62,6 +63,8 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	return -1, -1
 }
 
+// ExactMatchStrings performs exact-match using strings package.
+// Currently not used.
 func ExactMatchStrings(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	var str string
 	if caseSensitive {
@@ -77,15 +80,13 @@ func ExactMatchStrings(caseSensitive bool, input *string, pattern []rune) (int, 
 	return -1, -1
 }
 
-/*
- * This is a basic string searching algorithm that handles case sensitivity.
- * Although naive, it still performs better than the combination of
- * strings.ToLower + strings.Index for typical fzf use cases where input
- * strings and patterns are not very long.
- *
- * We might try to implement better algorithms in the future:
- * http://en.wikipedia.org/wiki/String_searching_algorithm
- */
+// ExactMatchNaive is a basic string searching algorithm that handles case
+// sensitivity. Although naive, it still performs better than the combination
+// of strings.ToLower + strings.Index for typical fzf use cases where input
+// strings and patterns are not very long.
+//
+// We might try to implement better algorithms in the future:
+// http://en.wikipedia.org/wiki/String_searching_algorithm
 func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	runes := []rune(*input)
 	numRunes := len(runes)
@@ -101,7 +102,7 @@ func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, in
 			char += 32
 		}
 		if pattern[pidx] == char {
-			pidx += 1
+			pidx++
 			if pidx == plen {
 				return index - plen + 1, index + 1
 			}
@@ -113,6 +114,7 @@ func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, in
 	return -1, -1
 }
 
+// PrefixMatch performs prefix-match
 func PrefixMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	runes := []rune(*input)
 	if len(runes) < len(pattern) {
@@ -131,6 +133,7 @@ func PrefixMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	return 0, len(pattern)
 }
 
+// SuffixMatch performs suffix-match
 func SuffixMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	runes := []rune(strings.TrimRight(*input, " "))
 	trimmedLen := len(runes)

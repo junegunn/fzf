@@ -3,17 +3,17 @@ package fzf
 import "testing"
 
 func TestParseTermsExtended(t *testing.T) {
-	terms := parseTerms(MODE_EXTENDED,
+	terms := parseTerms(ModeExtended,
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
-		terms[0].typ != TERM_FUZZY || terms[0].inv ||
-		terms[1].typ != TERM_EXACT || terms[1].inv ||
-		terms[2].typ != TERM_PREFIX || terms[2].inv ||
-		terms[3].typ != TERM_SUFFIX || terms[3].inv ||
-		terms[4].typ != TERM_FUZZY || !terms[4].inv ||
-		terms[5].typ != TERM_EXACT || !terms[5].inv ||
-		terms[6].typ != TERM_PREFIX || !terms[6].inv ||
-		terms[7].typ != TERM_SUFFIX || !terms[7].inv {
+		terms[0].typ != termFuzzy || terms[0].inv ||
+		terms[1].typ != termExact || terms[1].inv ||
+		terms[2].typ != termPrefix || terms[2].inv ||
+		terms[3].typ != termSuffix || terms[3].inv ||
+		terms[4].typ != termFuzzy || !terms[4].inv ||
+		terms[5].typ != termExact || !terms[5].inv ||
+		terms[6].typ != termPrefix || !terms[6].inv ||
+		terms[7].typ != termSuffix || !terms[7].inv {
 		t.Errorf("%s", terms)
 	}
 	for idx, term := range terms {
@@ -27,23 +27,23 @@ func TestParseTermsExtended(t *testing.T) {
 }
 
 func TestParseTermsExtendedExact(t *testing.T) {
-	terms := parseTerms(MODE_EXTENDED_EXACT,
+	terms := parseTerms(ModeExtendedExact,
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
-		terms[0].typ != TERM_EXACT || terms[0].inv || len(terms[0].text) != 3 ||
-		terms[1].typ != TERM_EXACT || terms[1].inv || len(terms[1].text) != 4 ||
-		terms[2].typ != TERM_PREFIX || terms[2].inv || len(terms[2].text) != 3 ||
-		terms[3].typ != TERM_SUFFIX || terms[3].inv || len(terms[3].text) != 3 ||
-		terms[4].typ != TERM_EXACT || !terms[4].inv || len(terms[4].text) != 3 ||
-		terms[5].typ != TERM_EXACT || !terms[5].inv || len(terms[5].text) != 4 ||
-		terms[6].typ != TERM_PREFIX || !terms[6].inv || len(terms[6].text) != 3 ||
-		terms[7].typ != TERM_SUFFIX || !terms[7].inv || len(terms[7].text) != 3 {
+		terms[0].typ != termExact || terms[0].inv || len(terms[0].text) != 3 ||
+		terms[1].typ != termExact || terms[1].inv || len(terms[1].text) != 4 ||
+		terms[2].typ != termPrefix || terms[2].inv || len(terms[2].text) != 3 ||
+		terms[3].typ != termSuffix || terms[3].inv || len(terms[3].text) != 3 ||
+		terms[4].typ != termExact || !terms[4].inv || len(terms[4].text) != 3 ||
+		terms[5].typ != termExact || !terms[5].inv || len(terms[5].text) != 4 ||
+		terms[6].typ != termPrefix || !terms[6].inv || len(terms[6].text) != 3 ||
+		terms[7].typ != termSuffix || !terms[7].inv || len(terms[7].text) != 3 {
 		t.Errorf("%s", terms)
 	}
 }
 
 func TestParseTermsEmpty(t *testing.T) {
-	terms := parseTerms(MODE_EXTENDED, "' $ ^ !' !^ !$")
+	terms := parseTerms(ModeExtended, "' $ ^ !' !^ !$")
 	if len(terms) != 0 {
 		t.Errorf("%s", terms)
 	}
@@ -52,7 +52,7 @@ func TestParseTermsEmpty(t *testing.T) {
 func TestExact(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pattern := BuildPattern(MODE_EXTENDED, CASE_SMART,
+	pattern := BuildPattern(ModeExtended, CaseSmart,
 		[]Range{}, nil, []rune("'abc"))
 	str := "aabbcc abc"
 	sidx, eidx := ExactMatchNaive(pattern.caseSensitive, &str, pattern.terms[0].text)
@@ -64,17 +64,17 @@ func TestExact(t *testing.T) {
 func TestCaseSensitivity(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pat1 := BuildPattern(MODE_FUZZY, CASE_SMART, []Range{}, nil, []rune("abc"))
+	pat1 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, nil, []rune("abc"))
 	clearPatternCache()
-	pat2 := BuildPattern(MODE_FUZZY, CASE_SMART, []Range{}, nil, []rune("Abc"))
+	pat2 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, nil, []rune("Abc"))
 	clearPatternCache()
-	pat3 := BuildPattern(MODE_FUZZY, CASE_IGNORE, []Range{}, nil, []rune("abc"))
+	pat3 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, nil, []rune("abc"))
 	clearPatternCache()
-	pat4 := BuildPattern(MODE_FUZZY, CASE_IGNORE, []Range{}, nil, []rune("Abc"))
+	pat4 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, nil, []rune("Abc"))
 	clearPatternCache()
-	pat5 := BuildPattern(MODE_FUZZY, CASE_RESPECT, []Range{}, nil, []rune("abc"))
+	pat5 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, nil, []rune("abc"))
 	clearPatternCache()
-	pat6 := BuildPattern(MODE_FUZZY, CASE_RESPECT, []Range{}, nil, []rune("Abc"))
+	pat6 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, nil, []rune("Abc"))
 
 	if string(pat1.text) != "abc" || pat1.caseSensitive != false ||
 		string(pat2.text) != "Abc" || pat2.caseSensitive != true ||
@@ -90,7 +90,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 	strptr := func(str string) *string {
 		return &str
 	}
-	pattern := BuildPattern(MODE_EXTENDED, CASE_SMART, []Range{}, nil, []rune("jg"))
+	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("jg"))
 	tokens := Tokenize(strptr("junegunn"), nil)
 	trans := Transform(tokens, []Range{Range{1, 1}})
 

@@ -1,9 +1,9 @@
 package fzf
 
-import "fmt"
-
+// Offset holds two 32-bit integers denoting the offsets of a matched substring
 type Offset [2]int32
 
+// Item represents each input line
 type Item struct {
 	text        *string
 	origText    *string
@@ -13,12 +13,14 @@ type Item struct {
 	rank        Rank
 }
 
+// Rank is used to sort the search result
 type Rank struct {
 	matchlen uint16
 	strlen   uint16
 	index    uint32
 }
 
+// Rank calculates rank of the Item
 func (i *Item) Rank(cache bool) Rank {
 	if cache && (i.rank.matchlen > 0 || i.rank.strlen > 0) {
 		return i.rank
@@ -45,14 +47,15 @@ func (i *Item) Rank(cache bool) Rank {
 	return rank
 }
 
-func (i *Item) Print() {
+// AsString returns the original string
+func (i *Item) AsString() string {
 	if i.origText != nil {
-		fmt.Println(*i.origText)
-	} else {
-		fmt.Println(*i.text)
+		return *i.origText
 	}
+	return *i.text
 }
 
+// ByOrder is for sorting substring offsets
 type ByOrder []Offset
 
 func (a ByOrder) Len() int {
@@ -69,6 +72,7 @@ func (a ByOrder) Less(i, j int) bool {
 	return (ioff[0] < joff[0]) || (ioff[0] == joff[0]) && (ioff[1] <= joff[1])
 }
 
+// ByRelevance is for sorting Items
 type ByRelevance []*Item
 
 func (a ByRelevance) Len() int {

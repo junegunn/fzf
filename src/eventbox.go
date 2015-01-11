@@ -2,16 +2,17 @@ package fzf
 
 import "sync"
 
-type EventType int
-
+// Events is a type that associates EventType to any data
 type Events map[EventType]interface{}
 
+// EventBox is used for coordinating events
 type EventBox struct {
 	events Events
 	cond   *sync.Cond
 	ignore map[EventType]bool
 }
 
+// NewEventBox returns a new EventBox
 func NewEventBox() *EventBox {
 	return &EventBox{
 		events: make(Events),
@@ -19,6 +20,7 @@ func NewEventBox() *EventBox {
 		ignore: make(map[EventType]bool)}
 }
 
+// Wait blocks the goroutine until signaled
 func (b *EventBox) Wait(callback func(*Events)) {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()
@@ -30,6 +32,7 @@ func (b *EventBox) Wait(callback func(*Events)) {
 	callback(&b.events)
 }
 
+// Set turns on the event type on the box
 func (b *EventBox) Set(event EventType, value interface{}) {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()
@@ -39,6 +42,7 @@ func (b *EventBox) Set(event EventType, value interface{}) {
 	}
 }
 
+// Clear clears the events
 // Unsynchronized; should be called within Wait routine
 func (events *Events) Clear() {
 	for event := range *events {
@@ -46,6 +50,7 @@ func (events *Events) Clear() {
 	}
 }
 
+// Peak peaks at the event box if the given event is set
 func (b *EventBox) Peak(event EventType) bool {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()
@@ -53,6 +58,7 @@ func (b *EventBox) Peak(event EventType) bool {
 	return ok
 }
 
+// Watch deletes the events from the ignore list
 func (b *EventBox) Watch(events ...EventType) {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()
@@ -61,6 +67,7 @@ func (b *EventBox) Watch(events ...EventType) {
 	}
 }
 
+// Unwatch adds the events to the ignore list
 func (b *EventBox) Unwatch(events ...EventType) {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()

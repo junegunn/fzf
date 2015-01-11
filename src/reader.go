@@ -10,31 +10,33 @@ import (
 	"os/exec"
 )
 
-const DEFAULT_COMMAND = `find * -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null`
+const defaultCommand = `find * -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null`
 
+// Reader reads from command or standard input
 type Reader struct {
 	pusher   func(string)
 	eventBox *EventBox
 }
 
+// ReadSource reads data from the default command or from standard input
 func (r *Reader) ReadSource() {
 	if int(C.isatty(C.int(os.Stdin.Fd()))) != 0 {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			cmd = DEFAULT_COMMAND
+			cmd = defaultCommand
 		}
 		r.readFromCommand(cmd)
 	} else {
 		r.readFromStdin()
 	}
-	r.eventBox.Set(EVT_READ_FIN, nil)
+	r.eventBox.Set(EvtReadFin, nil)
 }
 
 func (r *Reader) feed(src io.Reader) {
 	if scanner := bufio.NewScanner(src); scanner != nil {
 		for scanner.Scan() {
 			r.pusher(scanner.Text())
-			r.eventBox.Set(EVT_READ_NEW, nil)
+			r.eventBox.Set(EvtReadNew, nil)
 		}
 	}
 }

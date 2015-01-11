@@ -4,7 +4,7 @@ import "testing"
 
 func TestChunkCache(t *testing.T) {
 	cache := NewChunkCache()
-	chunk2 := make(Chunk, CHUNK_SIZE)
+	chunk2 := make(Chunk, ChunkSize)
 	chunk1p := &Chunk{}
 	chunk2p := &chunk2
 	items1 := []*Item{&Item{}}

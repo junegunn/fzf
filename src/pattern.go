@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // fuzzy
 // 'exact
@@ -17,31 +17,32 @@ const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 // !^not-exact-prefix
 // !not-exact-suffix$
 
-type TermType int
+type termType int
 
 const (
-	TERM_FUZZY TermType = iota
-	TERM_EXACT
-	TERM_PREFIX
-	TERM_SUFFIX
+	termFuzzy termType = iota
+	termExact
+	termPrefix
+	termSuffix
 )
 
-type Term struct {
-	typ      TermType
+type term struct {
+	typ      termType
 	inv      bool
 	text     []rune
 	origText []rune
 }
 
+// Pattern represents search pattern
 type Pattern struct {
 	mode          Mode
 	caseSensitive bool
 	text          []rune
-	terms         []Term
+	terms         []term
 	hasInvTerm    bool
 	delimiter     *regexp.Regexp
 	nth           []Range
-	procFun       map[TermType]func(bool, *string, []rune) (int, int)
+	procFun       map[termType]func(bool, *string, []rune) (int, int)
 }
 
 var (
@@ -62,12 +63,13 @@ func clearPatternCache() {
 	_patternCache = make(map[string]*Pattern)
 }
 
+// BuildPattern builds Pattern object from the given arguments
 func BuildPattern(mode Mode, caseMode Case,
 	nth []Range, delimiter *regexp.Regexp, runes []rune) *Pattern {
 
 	var asString string
 	switch mode {
-	case MODE_EXTENDED, MODE_EXTENDED_EXACT:
+	case ModeExtended, ModeExtendedExact:
 		asString = strings.Trim(string(runes), " ")
 	default:
 		asString = string(runes)
@@ -79,19 +81,19 @@ func BuildPattern(mode Mode, caseMode Case,
 	}
 
 	caseSensitive, hasInvTerm := true, false
-	terms := []Term{}
+	terms := []term{}
 
 	switch caseMode {
-	case CASE_SMART:
-		if !strings.ContainsAny(asString, UPPERCASE) {
+	case CaseSmart:
+		if !strings.ContainsAny(asString, uppercaseLetters) {
 			runes, caseSensitive = []rune(strings.ToLower(asString)), false
 		}
-	case CASE_IGNORE:
+	case CaseIgnore:
 		runes, caseSensitive = []rune(strings.ToLower(asString)), false
 	}
 
 	switch mode {
-	case MODE_EXTENDED, MODE_EXTENDED_EXACT:
+	case ModeExtended, ModeExtendedExact:
 		terms = parseTerms(mode, string(runes))
 		for _, term := range terms {
 			if term.inv {
@@ -108,25 +110,25 @@ func BuildPattern(mode Mode, caseMode Case,
 		hasInvTerm:    hasInvTerm,
 		nth:           nth,
 		delimiter:     delimiter,
-		procFun:       make(map[TermType]func(bool, *string, []rune) (int, int))}
+		procFun:       make(map[termType]func(bool, *string, []rune) (int, int))}
 
-	ptr.procFun[TERM_FUZZY] = FuzzyMatch
-	ptr.procFun[TERM_EXACT] = ExactMatchNaive
-	ptr.procFun[TERM_PREFIX] = PrefixMatch
-	ptr.procFun[TERM_SUFFIX] = SuffixMatch
+	ptr.procFun[termFuzzy] = FuzzyMatch
+	ptr.procFun[termExact] = ExactMatchNaive
+	ptr.procFun[termPrefix] = PrefixMatch
+	ptr.procFun[termSuffix] = SuffixMatch
 
 	_patternCache[asString] = ptr
 	return ptr
 }
 
-func parseTerms(mode Mode, str string) []Term {
+func parseTerms(mode Mode, str string) []term {
 	tokens := _splitRegex.Split(str, -1)
-	terms := []Term{}
+	terms := []term{}
 	for _, token := range tokens {
-		typ, inv, text := TERM_FUZZY, false, token
+		typ, inv, text := termFuzzy, false, token
 		origText := []rune(text)
-		if mode == MODE_EXTENDED_EXACT {
-			typ = TERM_EXACT
+		if mode == ModeExtendedExact {
+			typ = termExact
 		}
 
 		if strings.HasPrefix(text, "!") {
@@ -135,20 +137,20 @@ func parseTerms(mode Mode, str string) []Term {
 		}
 
 		if strings.HasPrefix(text, "'") {
-			if mode == MODE_EXTENDED {
-				typ = TERM_EXACT
+			if mode == ModeExtended {
+				typ = termExact
 				text = text[1:]
 			}
 		} else if strings.HasPrefix(text, "^") {
-			typ = TERM_PREFIX
+			typ = termPrefix
 			text = text[1:]
 		} else if strings.HasSuffix(text, "$") {
-			typ = TERM_SUFFIX
+			typ = termSuffix
 			text = text[:len(text)-1]
 		}
 
 		if len(text) > 0 {
-			terms = append(terms, Term{
+			terms = append(terms, term{
 				typ:      typ,
 				inv:      inv,
 				text:     []rune(text),
@@ -158,20 +160,22 @@ func parseTerms(mode Mode, str string) []Term {
 	return terms
 }
 
+// IsEmpty returns true if the pattern is effectively empty
 func (p *Pattern) IsEmpty() bool {
-	if p.mode == MODE_FUZZY {
+	if p.mode == ModeFuzzy {
 		return len(p.text) == 0
-	} else {
-		return len(p.terms) == 0
 	}
+	return len(p.terms) == 0
 }
 
+// AsString returns the search query in string type
 func (p *Pattern) AsString() string {
 	return string(p.text)
 }
 
+// CacheKey is used to build string to be used as the key of result cache
 func (p *Pattern) CacheKey() string {
-	if p.mode == MODE_FUZZY {
+	if p.mode == ModeFuzzy {
 		return p.AsString()
 	}
 	cacheableTerms := []string{}
@@ -184,6 +188,7 @@ func (p *Pattern) CacheKey() string {
 	return strings.Join(cacheableTerms, " ")
 }
 
+// Match returns the list of matches Items in the given Chunk
 func (p *Pattern) Match(chunk *Chunk) []*Item {
 	space := chunk
 
@@ -213,7 +218,7 @@ Loop:
 	}
 
 	var matches []*Item
-	if p.mode == MODE_FUZZY {
+	if p.mode == ModeFuzzy {
 		matches = p.fuzzyMatch(space)
 	} else {
 		matches = p.extendedMatch(space)

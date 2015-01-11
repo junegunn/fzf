@@ -1,12 +1,17 @@
 package fzf
 
-const VERSION = "0.9.0"
+// Current version
+const Version = "0.9.0"
 
+// EventType is the type for fzf events
+type EventType int
+
+// fzf events
 const (
-	EVT_READ_NEW EventType = iota
-	EVT_READ_FIN
-	EVT_SEARCH_NEW
-	EVT_SEARCH_PROGRESS
-	EVT_SEARCH_FIN
-	EVT_CLOSE
+	EvtReadNew EventType = iota
+	EvtReadFin
+	EvtSearchNew
+	EvtSearchProgress
+	EvtSearchFin
+	EvtClose
 )

@@ -6,40 +6,42 @@ import (
 	"strings"
 )
 
-const RANGE_ELLIPSIS = 0
+const rangeEllipsis = 0
 
+// Range represents nth-expression
 type Range struct {
 	begin int
 	end   int
 }
 
+// Transformed holds the result of tokenization and transformation
 type Transformed struct {
 	whole *string
 	parts []Token
 }
 
+// Token contains the tokenized part of the strings and its prefix length
 type Token struct {
 	text         *string
 	prefixLength int
 }
 
+// ParseRange parses nth-expression and returns the corresponding Range object
 func ParseRange(str *string) (Range, bool) {
 	if (*str) == ".." {
-		return Range{RANGE_ELLIPSIS, RANGE_ELLIPSIS}, true
+		return Range{rangeEllipsis, rangeEllipsis}, true
 	} else if strings.HasPrefix(*str, "..") {
 		end, err := strconv.Atoi((*str)[2:])
 		if err != nil || end == 0 {
 			return Range{}, false
-		} else {
-			return Range{RANGE_ELLIPSIS, end}, true
 		}
+		return Range{rangeEllipsis, end}, true
 	} else if strings.HasSuffix(*str, "..") {
 		begin, err := strconv.Atoi((*str)[:len(*str)-2])
 		if err != nil || begin == 0 {
 			return Range{}, false
-		} else {
-			return Range{begin, RANGE_ELLIPSIS}, true
 		}
+		return Range{begin, rangeEllipsis}, true
 	} else if strings.Contains(*str, "..") {
 		ns := strings.Split(*str, "..")
 		if len(ns) != 2 {
@@ -75,9 +77,9 @@ func withPrefixLengths(tokens []string, begin int) []Token {
 }
 
 const (
-	AWK_NIL = iota
-	AWK_BLACK
-	AWK_WHITE
+	awkNil = iota
+	awkBlack
+	awkWhite
 )
 
 func awkTokenizer(input *string) ([]string, int) {
@@ -85,28 +87,28 @@ func awkTokenizer(input *string) ([]string, int) {
 	ret := []string{}
 	str := []rune{}
 	prefixLength := 0
-	state := AWK_NIL
+	state := awkNil
 	for _, r := range []rune(*input) {
 		white := r == 9 || r == 32
 		switch state {
-		case AWK_NIL:
+		case awkNil:
 			if white {
 				prefixLength++
 			} else {
-				state = AWK_BLACK
+				state = awkBlack
 				str = append(str, r)
 			}
-		case AWK_BLACK:
+		case awkBlack:
 			str = append(str, r)
 			if white {
-				state = AWK_WHITE
+				state = awkWhite
 			}
-		case AWK_WHITE:
+		case awkWhite:
 			if white {
 				str = append(str, r)
 			} else {
 				ret = append(ret, string(str))
-				state = AWK_BLACK
+				state = awkBlack
 				str = []rune{r}
 			}
 		}
@@ -117,15 +119,15 @@ func awkTokenizer(input *string) ([]string, int) {
 	return ret, prefixLength
 }
 
+// Tokenize tokenizes the given string with the delimiter
 func Tokenize(str *string, delimiter *regexp.Regexp) []Token {
 	if delimiter == nil {
 		// AWK-style (\S+\s*)
 		tokens, prefixLength := awkTokenizer(str)
 		return withPrefixLengths(tokens, prefixLength)
-	} else {
-		tokens := delimiter.FindAllString(*str, -1)
-		return withPrefixLengths(tokens, 0)
 	}
+	tokens := delimiter.FindAllString(*str, -1)
+	return withPrefixLengths(tokens, 0)
 }
 
 func joinTokens(tokens []Token) string {
@@ -136,6 +138,7 @@ func joinTokens(tokens []Token) string {
 	return ret
 }
 
+// Transform is used to transform the input when --with-nth option is given
 func Transform(tokens []Token, withNth []Range) *Transformed {
 	transTokens := make([]Token, len(withNth))
 	numTokens := len(tokens)
@@ -145,7 +148,7 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 		minIdx := 0
 		if r.begin == r.end {
 			idx := r.begin
-			if idx == RANGE_ELLIPSIS {
+			if idx == rangeEllipsis {
 				part += joinTokens(tokens)
 			} else {
 				if idx < 0 {
@@ -158,12 +161,12 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 			}
 		} else {
 			var begin, end int
-			if r.begin == RANGE_ELLIPSIS { // ..N
+			if r.begin == rangeEllipsis { // ..N
 				begin, end = 1, r.end
 				if end < 0 {
 					end += numTokens + 1
 				}
-			} else if r.end == RANGE_ELLIPSIS { // N..
+			} else if r.end == rangeEllipsis { // N..
 				begin, end = r.begin, numTokens
 				if begin < 0 {
 					begin += numTokens + 1

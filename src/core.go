@@ -32,28 +32,29 @@ import (
 	"time"
 )
 
-const COORDINATOR_DELAY_MAX time.Duration = 100 * time.Millisecond
-const COORDINATOR_DELAY_STEP time.Duration = 10 * time.Millisecond
+const coordinatorDelayMax time.Duration = 100 * time.Millisecond
+const coordinatorDelayStep time.Duration = 10 * time.Millisecond
 
 func initProcs() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 /*
-Reader   -> EVT_READ_FIN
-Reader   -> EVT_READ_NEW        -> Matcher  (restart)
-Terminal -> EVT_SEARCH_NEW      -> Matcher  (restart)
-Matcher  -> EVT_SEARCH_PROGRESS -> Terminal (update info)
-Matcher  -> EVT_SEARCH_FIN      -> Terminal (update list)
+Reader   -> EvtReadFin
+Reader   -> EvtReadNew        -> Matcher  (restart)
+Terminal -> EvtSearchNew      -> Matcher  (restart)
+Matcher  -> EvtSearchProgress -> Terminal (update info)
+Matcher  -> EvtSearchFin      -> Terminal (update list)
 */
 
+// Run starts fzf
 func Run(options *Options) {
 	initProcs()
 
 	opts := ParseOptions()
 
 	if opts.Version {
-		fmt.Println(VERSION)
+		fmt.Println(Version)
 		os.Exit(0)
 	}
 
@@ -108,12 +109,12 @@ func Run(options *Options) {
 		pattern := patternBuilder([]rune(patternString))
 
 		looping := true
-		eventBox.Unwatch(EVT_READ_NEW)
+		eventBox.Unwatch(EvtReadNew)
 		for looping {
 			eventBox.Wait(func(events *Events) {
-				for evt, _ := range *events {
+				for evt := range *events {
 					switch evt {
-					case EVT_READ_FIN:
+					case EvtReadFin:
 						looping = false
 						return
 					}
@@ -133,7 +134,7 @@ func Run(options *Options) {
 				fmt.Println(patternString)
 			}
 			for i := 0; i < merger.Length(); i++ {
-				merger.Get(i).Print()
+				fmt.Println(merger.Get(i).AsString())
 			}
 			os.Exit(0)
 		}
@@ -149,33 +150,33 @@ func Run(options *Options) {
 	// Event coordination
 	reading := true
 	ticks := 0
-	eventBox.Watch(EVT_READ_NEW)
+	eventBox.Watch(EvtReadNew)
 	for {
 		delay := true
-		ticks += 1
+		ticks++
 		eventBox.Wait(func(events *Events) {
 			defer events.Clear()
 			for evt, value := range *events {
 				switch evt {
 
-				case EVT_READ_NEW, EVT_READ_FIN:
-					reading = reading && evt == EVT_READ_NEW
+				case EvtReadNew, EvtReadFin:
+					reading = reading && evt == EvtReadNew
 					snapshot, count := chunkList.Snapshot()
 					terminal.UpdateCount(count, !reading)
 					matcher.Reset(snapshot, terminal.Input(), false)
 
-				case EVT_SEARCH_NEW:
+				case EvtSearchNew:
 					snapshot, _ := chunkList.Snapshot()
 					matcher.Reset(snapshot, terminal.Input(), true)
 					delay = false
 
-				case EVT_SEARCH_PROGRESS:
+				case EvtSearchProgress:
 					switch val := value.(type) {
 					case float32:
 						terminal.UpdateProgress(val)
 					}
 
-				case EVT_SEARCH_FIN:
+				case EvtSearchFin:
 					switch val := value.(type) {
 					case *Merger:
 						terminal.UpdateList(val)
@@ -185,8 +186,8 @@ func Run(options *Options) {
 		})
 		if delay && reading {
 			dur := DurWithin(
-				time.Duration(ticks)*COORDINATOR_DELAY_STEP,
-				0, COORDINATOR_DELAY_MAX)
+				time.Duration(ticks)*coordinatorDelayStep,
+				0, coordinatorDelayMax)
 			time.Sleep(dur)
 		}
 	}

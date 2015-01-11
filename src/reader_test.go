@@ -10,8 +10,8 @@ func TestReadFromCommand(t *testing.T) {
 		eventBox: eb}
 
 	// Check EventBox
-	if eb.Peak(EVT_READ_NEW) {
-		t.Error("EVT_READ_NEW should not be set yet")
+	if eb.Peak(EvtReadNew) {
+		t.Error("EvtReadNew should not be set yet")
 	}
 
 	// Normal command
@@ -21,21 +21,21 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Check EventBox again
-	if !eb.Peak(EVT_READ_NEW) {
-		t.Error("EVT_READ_NEW should be set yet")
+	if !eb.Peak(EvtReadNew) {
+		t.Error("EvtReadNew should be set yet")
 	}
 
 	// Wait should return immediately
 	eb.Wait(func(events *Events) {
-		if _, found := (*events)[EVT_READ_NEW]; !found {
+		if _, found := (*events)[EvtReadNew]; !found {
 			t.Errorf("%s", events)
 		}
 		events.Clear()
 	})
 
 	// EventBox is cleared
-	if eb.Peak(EVT_READ_NEW) {
-		t.Error("EVT_READ_NEW should not be set yet")
+	if eb.Peak(EvtReadNew) {
+		t.Error("EvtReadNew should not be set yet")
 	}
 
 	// Failing command
@@ -46,7 +46,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Check EventBox again
-	if eb.Peak(EVT_READ_NEW) {
-		t.Error("Command failed. EVT_READ_NEW should be set")
+	if eb.Peak(EvtReadNew) {
+		t.Error("Command failed. EvtReadNew should be set")
 	}
 }

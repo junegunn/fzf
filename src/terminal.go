@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// Terminal represents terminal input/output
 type Terminal struct {
 	prompt     string
 	reverse    bool
@@ -34,23 +35,24 @@ type Terminal struct {
 	suppress   bool
 }
 
-var _spinner []string = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
+var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 
 const (
-	REQ_PROMPT EventType = iota
-	REQ_INFO
-	REQ_LIST
-	REQ_REFRESH
-	REQ_REDRAW
-	REQ_CLOSE
-	REQ_QUIT
+	reqPrompt EventType = iota
+	reqInfo
+	reqList
+	reqRefresh
+	reqRedraw
+	reqClose
+	reqQuit
 )
 
 const (
-	INITIAL_DELAY    = 100 * time.Millisecond
-	SPINNER_DURATION = 200 * time.Millisecond
+	initialDelay    = 100 * time.Millisecond
+	spinnerDuration = 200 * time.Millisecond
 )
 
+// NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
 	input := []rune(opts.Query)
 	return &Terminal{
@@ -75,23 +77,26 @@ func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
 		}}
 }
 
+// Input returns current query string
 func (t *Terminal) Input() []rune {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	return copySlice(t.input)
 }
 
+// UpdateCount updates the count information
 func (t *Terminal) UpdateCount(cnt int, final bool) {
 	t.mutex.Lock()
 	t.count = cnt
 	t.reading = !final
 	t.mutex.Unlock()
-	t.reqBox.Set(REQ_INFO, nil)
+	t.reqBox.Set(reqInfo, nil)
 	if final {
-		t.reqBox.Set(REQ_REFRESH, nil)
+		t.reqBox.Set(reqRefresh, nil)
 	}
 }
 
+// UpdateProgress updates the search progress
 func (t *Terminal) UpdateProgress(progress float32) {
 	t.mutex.Lock()
 	newProgress := int(progress * 100)
@@ -100,25 +105,25 @@ func (t *Terminal) UpdateProgress(progress float32) {
 	t.mutex.Unlock()
 
 	if changed {
-		t.reqBox.Set(REQ_INFO, nil)
+		t.reqBox.Set(reqInfo, nil)
 	}
 }
 
+// UpdateList updates Merger to display the list
 func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Lock()
 	t.progress = 100
 	t.merger = merger
 	t.mutex.Unlock()
-	t.reqBox.Set(REQ_INFO, nil)
-	t.reqBox.Set(REQ_LIST, nil)
+	t.reqBox.Set(reqInfo, nil)
+	t.reqBox.Set(reqList, nil)
 }
 
 func (t *Terminal) listIndex(y int) int {
 	if t.tac {
 		return t.merger.Length() - y - 1
-	} else {
-		return y
 	}
+	return y
 }
 
 func (t *Terminal) output() {
@@ -127,7 +132,7 @@ func (t *Terminal) output() {
 	}
 	if len(t.selected) == 0 {
 		if t.merger.Length() > t.cy {
-			t.merger.Get(t.listIndex(t.cy)).Print()
+			fmt.Println(t.merger.Get(t.listIndex(t.cy)).AsString())
 		}
 	} else {
 		for ptr, orig := range t.selected {
@@ -167,16 +172,16 @@ func (t *Terminal) placeCursor() {
 
 func (t *Terminal) printPrompt() {
 	t.move(0, 0, true)
-	C.CPrint(C.COL_PROMPT, true, t.prompt)
-	C.CPrint(C.COL_NORMAL, true, string(t.input))
+	C.CPrint(C.ColPrompt, true, t.prompt)
+	C.CPrint(C.ColNormal, true, string(t.input))
 }
 
 func (t *Terminal) printInfo() {
 	t.move(1, 0, true)
 	if t.reading {
-		duration := int64(SPINNER_DURATION)
+		duration := int64(spinnerDuration)
 		idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-		C.CPrint(C.COL_SPINNER, true, _spinner[idx])
+		C.CPrint(C.ColSpinner, true, _spinner[idx])
 	}
 
 	t.move(1, 2, false)
@@ -187,7 +192,7 @@ func (t *Terminal) printInfo() {
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
-	C.CPrint(C.COL_INFO, false, output)
+	C.CPrint(C.ColInfo, false, output)
 }
 
 func (t *Terminal) printList() {
@@ -206,21 +211,21 @@ func (t *Terminal) printList() {
 func (t *Terminal) printItem(item *Item, current bool) {
 	_, selected := t.selected[item.text]
 	if current {
-		C.CPrint(C.COL_CURSOR, true, ">")
+		C.CPrint(C.ColCursor, true, ">")
 		if selected {
-			C.CPrint(C.COL_CURRENT, true, ">")
+			C.CPrint(C.ColCurrent, true, ">")
 		} else {
-			C.CPrint(C.COL_CURRENT, true, " ")
+			C.CPrint(C.ColCurrent, true, " ")
 		}
-		t.printHighlighted(item, true, C.COL_CURRENT, C.COL_CURRENT_MATCH)
+		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch)
 	} else {
-		C.CPrint(C.COL_CURSOR, true, " ")
+		C.CPrint(C.ColCursor, true, " ")
 		if selected {
-			C.CPrint(C.COL_SELECTED, true, ">")
+			C.CPrint(C.ColSelected, true, ">")
 		} else {
 			C.Print(" ")
 		}
-		t.printHighlighted(item, false, 0, C.COL_MATCH)
+		t.printHighlighted(item, false, 0, C.ColMatch)
 	}
 }
 
@@ -232,25 +237,25 @@ func trimRight(runes []rune, width int) ([]rune, int) {
 		sz := len(runes)
 		currentWidth -= runewidth.RuneWidth(runes[sz-1])
 		runes = runes[:sz-1]
-		trimmed += 1
+		trimmed++
 	}
 	return runes, trimmed
 }
 
 func trimLeft(runes []rune, width int) ([]rune, int32) {
 	currentWidth := displayWidth(runes)
-	var trimmed int32 = 0
+	var trimmed int32
 
 	for currentWidth > width && len(runes) > 0 {
 		currentWidth -= runewidth.RuneWidth(runes[0])
 		runes = runes[1:]
-		trimmed += 1
+		trimmed++
 	}
 	return runes, trimmed
 }
 
 func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
-	var maxe int32 = 0
+	var maxe int32
 	for _, offset := range item.offsets {
 		if offset[1] > maxe {
 			maxe = offset[1]
@@ -293,7 +298,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 	}
 
 	sort.Sort(ByOrder(offsets))
-	var index int32 = 0
+	var index int32
 	for _, offset := range offsets {
 		b := Max32(index, offset[0])
 		e := Max32(index, offset[1])
@@ -364,6 +369,7 @@ func (t *Terminal) rubout(pattern string) {
 	t.input = append(t.input[:t.cx], after...)
 }
 
+// Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	{ // Late initialization
 		t.mutex.Lock()
@@ -374,9 +380,9 @@ func (t *Terminal) Loop() {
 		t.printInfo()
 		t.mutex.Unlock()
 		go func() {
-			timer := time.NewTimer(INITIAL_DELAY)
+			timer := time.NewTimer(initialDelay)
 			<-timer.C
-			t.reqBox.Set(REQ_REFRESH, nil)
+			t.reqBox.Set(reqRefresh, nil)
 		}()
 	}
 
@@ -387,22 +393,22 @@ func (t *Terminal) Loop() {
 				t.mutex.Lock()
 				for req := range *events {
 					switch req {
-					case REQ_PROMPT:
+					case reqPrompt:
 						t.printPrompt()
-					case REQ_INFO:
+					case reqInfo:
 						t.printInfo()
-					case REQ_LIST:
+					case reqList:
 						t.printList()
-					case REQ_REFRESH:
+					case reqRefresh:
 						t.suppress = false
-					case REQ_REDRAW:
+					case reqRedraw:
 						C.Clear()
 						t.printAll()
-					case REQ_CLOSE:
+					case reqClose:
 						C.Close()
 						t.output()
 						os.Exit(0)
-					case REQ_QUIT:
+					case reqQuit:
 						C.Close()
 						os.Exit(1)
 					}
@@ -420,11 +426,11 @@ func (t *Terminal) Loop() {
 
 		t.mutex.Lock()
 		previousInput := t.input
-		events := []EventType{REQ_PROMPT}
+		events := []EventType{reqPrompt}
 		req := func(evts ...EventType) {
 			for _, event := range evts {
 				events = append(events, event)
-				if event == REQ_CLOSE || event == REQ_QUIT {
+				if event == reqClose || event == reqQuit {
 					looping = false
 				}
 			}
@@ -438,99 +444,99 @@ func (t *Terminal) Loop() {
 				} else {
 					delete(t.selected, item.text)
 				}
-				req(REQ_INFO)
+				req(reqInfo)
 			}
 		}
 		switch event.Type {
-		case C.INVALID:
+		case C.Invalid:
 			t.mutex.Unlock()
 			continue
-		case C.CTRL_A:
+		case C.CtrlA:
 			t.cx = 0
-		case C.CTRL_B:
+		case C.CtrlB:
 			if t.cx > 0 {
-				t.cx -= 1
+				t.cx--
 			}
-		case C.CTRL_C, C.CTRL_G, C.CTRL_Q, C.ESC:
-			req(REQ_QUIT)
-		case C.CTRL_D:
+		case C.CtrlC, C.CtrlG, C.CtrlQ, C.ESC:
+			req(reqQuit)
+		case C.CtrlD:
 			if !t.delChar() && t.cx == 0 {
-				req(REQ_QUIT)
+				req(reqQuit)
 			}
-		case C.CTRL_E:
+		case C.CtrlE:
 			t.cx = len(t.input)
-		case C.CTRL_F:
+		case C.CtrlF:
 			if t.cx < len(t.input) {
-				t.cx += 1
+				t.cx++
 			}
-		case C.CTRL_H:
+		case C.CtrlH:
 			if t.cx > 0 {
 				t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
-				t.cx -= 1
+				t.cx--
 			}
-		case C.TAB:
+		case C.Tab:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(-1)
-				req(REQ_LIST)
+				req(reqList)
 			}
-		case C.BTAB:
+		case C.BTab:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(1)
-				req(REQ_LIST)
+				req(reqList)
 			}
-		case C.CTRL_J, C.CTRL_N:
+		case C.CtrlJ, C.CtrlN:
 			t.vmove(-1)
-			req(REQ_LIST)
-		case C.CTRL_K, C.CTRL_P:
+			req(reqList)
+		case C.CtrlK, C.CtrlP:
 			t.vmove(1)
-			req(REQ_LIST)
-		case C.CTRL_M:
-			req(REQ_CLOSE)
-		case C.CTRL_L:
-			req(REQ_REDRAW)
-		case C.CTRL_U:
+			req(reqList)
+		case C.CtrlM:
+			req(reqClose)
+		case C.CtrlL:
+			req(reqRedraw)
+		case C.CtrlU:
 			if t.cx > 0 {
 				t.yanked = copySlice(t.input[:t.cx])
 				t.input = t.input[t.cx:]
 				t.cx = 0
 			}
-		case C.CTRL_W:
+		case C.CtrlW:
 			if t.cx > 0 {
 				t.rubout("\\s\\S")
 			}
-		case C.ALT_BS:
+		case C.AltBS:
 			if t.cx > 0 {
 				t.rubout("[^[:alnum:]][[:alnum:]]")
 			}
-		case C.CTRL_Y:
+		case C.CtrlY:
 			t.input = append(append(t.input[:t.cx], t.yanked...), t.input[t.cx:]...)
 			t.cx += len(t.yanked)
-		case C.DEL:
+		case C.Del:
 			t.delChar()
-		case C.PGUP:
+		case C.PgUp:
 			t.vmove(maxItems() - 1)
-			req(REQ_LIST)
-		case C.PGDN:
+			req(reqList)
+		case C.PgDn:
 			t.vmove(-(maxItems() - 1))
-			req(REQ_LIST)
-		case C.ALT_B:
+			req(reqList)
+		case C.AltB:
 			t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
-		case C.ALT_F:
+		case C.AltF:
 			t.cx += findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
-		case C.ALT_D:
+		case C.AltD:
 			ncx := t.cx +
 				findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
 			if ncx > t.cx {
 				t.yanked = copySlice(t.input[t.cx:ncx])
 				t.input = append(t.input[:t.cx], t.input[ncx:]...)
 			}
-		case C.RUNE:
+		case C.Rune:
 			prefix := copySlice(t.input[:t.cx])
 			t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
-			t.cx += 1
-		case C.MOUSE:
+			t.cx++
+		case C.Mouse:
 			me := event.MouseEvent
 			mx, my := Min(len(t.input), Max(0, me.X-len(t.prompt))), me.Y
 			if !t.reverse {
@@ -543,13 +549,13 @@ func (t *Terminal) Loop() {
 						toggle()
 					}
 					t.vmove(me.S)
-					req(REQ_LIST)
+					req(reqList)
 				}
 			} else if me.Double {
 				// Double-click
 				if my >= 2 {
 					if t.vset(my-2) && t.listIndex(t.cy) < t.merger.Length() {
-						req(REQ_CLOSE)
+						req(reqClose)
 					}
 				}
 			} else if me.Down {
@@ -561,7 +567,7 @@ func (t *Terminal) Loop() {
 					if t.vset(t.offset+my-2) && t.multi && me.Mod {
 						toggle()
 					}
-					req(REQ_LIST)
+					req(reqList)
 				}
 			}
 		}
@@ -569,7 +575,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
-			t.eventBox.Set(EVT_SEARCH_NEW, nil)
+			t.eventBox.Set(EvtSearchNew, nil)
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)

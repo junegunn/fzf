@@ -2,12 +2,17 @@ package fzf
 
 import "sync"
 
-const CHUNK_SIZE int = 100
+// Capacity of each chunk
+const ChunkSize int = 100
 
+// Chunk is a list of Item pointers whose size has the upper limit of ChunkSize
 type Chunk []*Item // >>> []Item
 
+// Transformer is a closure type that builds Item object from a pointer to a
+// string and an integer
 type Transformer func(*string, int) *Item
 
+// ChunkList is a list of Chunks
 type ChunkList struct {
 	chunks []*Chunk
 	count  int
@@ -15,6 +20,7 @@ type ChunkList struct {
 	trans  Transformer
 }
 
+// NewChunkList returns a new ChunkList
 func NewChunkList(trans Transformer) *ChunkList {
 	return &ChunkList{
 		chunks: []*Chunk{},
@@ -27,34 +33,38 @@ func (c *Chunk) push(trans Transformer, data *string, index int) {
 	*c = append(*c, trans(data, index))
 }
 
+// IsFull returns true if the Chunk is full
 func (c *Chunk) IsFull() bool {
-	return len(*c) == CHUNK_SIZE
+	return len(*c) == ChunkSize
 }
 
 func (cl *ChunkList) lastChunk() *Chunk {
 	return cl.chunks[len(cl.chunks)-1]
 }
 
+// CountItems returns the total number of Items
 func CountItems(cs []*Chunk) int {
 	if len(cs) == 0 {
 		return 0
 	}
-	return CHUNK_SIZE*(len(cs)-1) + len(*(cs[len(cs)-1]))
+	return ChunkSize*(len(cs)-1) + len(*(cs[len(cs)-1]))
 }
 
+// Push adds the item to the list
 func (cl *ChunkList) Push(data string) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
 	if len(cl.chunks) == 0 || cl.lastChunk().IsFull() {
-		newChunk := Chunk(make([]*Item, 0, CHUNK_SIZE))
+		newChunk := Chunk(make([]*Item, 0, ChunkSize))
 		cl.chunks = append(cl.chunks, &newChunk)
 	}
 
 	cl.lastChunk().push(cl.trans, &data, cl.count)
-	cl.count += 1
+	cl.count++
 }
 
+// Snapshot returns immutable snapshot of the ChunkList
 func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()

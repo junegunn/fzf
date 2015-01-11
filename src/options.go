@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const USAGE = `usage: fzf [options]
+const usage = `usage: fzf [options]
 
   Search
     -x, --extended        Extended-search mode
@@ -47,22 +47,27 @@ const USAGE = `usage: fzf [options]
 
 `
 
+// Mode denotes the current search mode
 type Mode int
 
+// Search modes
 const (
-	MODE_FUZZY Mode = iota
-	MODE_EXTENDED
-	MODE_EXTENDED_EXACT
+	ModeFuzzy Mode = iota
+	ModeExtended
+	ModeExtendedExact
 )
 
+// Case denotes case-sensitivity of search
 type Case int
 
+// Case-sensitivities
 const (
-	CASE_SMART Case = iota
-	CASE_IGNORE
-	CASE_RESPECT
+	CaseSmart Case = iota
+	CaseIgnore
+	CaseRespect
 )
 
+// Options stores the values of command-line options
 type Options struct {
 	Mode       Mode
 	Case       Case
@@ -85,10 +90,10 @@ type Options struct {
 	Version    bool
 }
 
-func DefaultOptions() *Options {
+func defaultOptions() *Options {
 	return &Options{
-		Mode:       MODE_FUZZY,
-		Case:       CASE_SMART,
+		Mode:       ModeFuzzy,
+		Case:       CaseSmart,
 		Nth:        make([]Range, 0),
 		WithNth:    make([]Range, 0),
 		Delimiter:  nil,
@@ -109,7 +114,7 @@ func DefaultOptions() *Options {
 }
 
 func help(ok int) {
-	os.Stderr.WriteString(USAGE)
+	os.Stderr.WriteString(usage)
 	os.Exit(ok)
 }
 
@@ -123,9 +128,8 @@ func optString(arg string, prefix string) (bool, string) {
 	matches := rx.FindStringSubmatch(arg)
 	if len(matches) > 1 {
 		return true, matches[1]
-	} else {
-		return false, ""
 	}
+	return false, ""
 }
 
 func nextString(args []string, i *int, message string) string {
@@ -183,11 +187,11 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-h", "--help":
 			help(0)
 		case "-x", "--extended":
-			opts.Mode = MODE_EXTENDED
+			opts.Mode = ModeExtended
 		case "-e", "--extended-exact":
-			opts.Mode = MODE_EXTENDED_EXACT
+			opts.Mode = ModeExtendedExact
 		case "+x", "--no-extended", "+e", "--no-extended-exact":
-			opts.Mode = MODE_FUZZY
+			opts.Mode = ModeFuzzy
 		case "-q", "--query":
 			opts.Query = nextString(allArgs, &i, "query string required")
 		case "-f", "--filter":
@@ -204,9 +208,9 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "+s", "--no-sort":
 			opts.Sort = 0
 		case "-i":
-			opts.Case = CASE_IGNORE
+			opts.Case = CaseIgnore
 		case "+i":
-			opts.Case = CASE_RESPECT
+			opts.Case = CaseRespect
 		case "-m", "--multi":
 			opts.Multi = true
 		case "+m", "--no-multi":
@@ -263,8 +267,9 @@ func parseOptions(opts *Options, allArgs []string) {
 	}
 }
 
+// ParseOptions parses command-line options
 func ParseOptions() *Options {
-	opts := DefaultOptions()
+	opts := defaultOptions()
 
 	// Options from Env var
 	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))

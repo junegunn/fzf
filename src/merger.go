@@ -2,8 +2,11 @@ package fzf
 
 import "fmt"
 
-var EmptyMerger *Merger = NewMerger([][]*Item{}, false)
+// Merger with no data
+var EmptyMerger = NewMerger([][]*Item{}, false)
 
+// Merger holds a set of locally sorted lists of items and provides the view of
+// a single, globally-sorted list
 type Merger struct {
 	lists   [][]*Item
 	merged  []*Item
@@ -12,6 +15,7 @@ type Merger struct {
 	count   int
 }
 
+// NewMerger returns a new Merger
 func NewMerger(lists [][]*Item, sorted bool) *Merger {
 	mg := Merger{
 		lists:   lists,
@@ -26,10 +30,12 @@ func NewMerger(lists [][]*Item, sorted bool) *Merger {
 	return &mg
 }
 
+// Length returns the number of items
 func (mg *Merger) Length() int {
 	return mg.count
 }
 
+// Get returns the pointer to the Item object indexed by the given integer
 func (mg *Merger) Get(idx int) *Item {
 	if len(mg.lists) == 1 {
 		return mg.lists[0][idx]
@@ -69,7 +75,7 @@ func (mg *Merger) mergedGet(idx int) *Item {
 		if minIdx >= 0 {
 			chosen := mg.lists[minIdx]
 			mg.merged = append(mg.merged, chosen[mg.cursors[minIdx]])
-			mg.cursors[minIdx] += 1
+			mg.cursors[minIdx]++
 		} else {
 			panic(fmt.Sprintf("Index out of bounds (sorted, %d/%d)", i, mg.count))
 		}

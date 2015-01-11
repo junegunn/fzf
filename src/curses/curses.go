@@ -20,66 +20,68 @@ import (
 	"unicode/utf8"
 )
 
+// Types of user action
 const (
-	RUNE = iota
+	Rune = iota
 
-	CTRL_A
-	CTRL_B
-	CTRL_C
-	CTRL_D
-	CTRL_E
-	CTRL_F
-	CTRL_G
-	CTRL_H
-	TAB
-	CTRL_J
-	CTRL_K
-	CTRL_L
-	CTRL_M
-	CTRL_N
-	CTRL_O
-	CTRL_P
-	CTRL_Q
-	CTRL_R
-	CTRL_S
-	CTRL_T
-	CTRL_U
-	CTRL_V
-	CTRL_W
-	CTRL_X
-	CTRL_Y
-	CTRL_Z
+	CtrlA
+	CtrlB
+	CtrlC
+	CtrlD
+	CtrlE
+	CtrlF
+	CtrlG
+	CtrlH
+	Tab
+	CtrlJ
+	CtrlK
+	CtrlL
+	CtrlM
+	CtrlN
+	CtrlO
+	CtrlP
+	CtrlQ
+	CtrlR
+	CtrlS
+	CtrlT
+	CtrlU
+	CtrlV
+	CtrlW
+	CtrlX
+	CtrlY
+	CtrlZ
 	ESC
 
-	INVALID
-	MOUSE
+	Invalid
+	Mouse
 
-	BTAB
+	BTab
 
-	DEL
-	PGUP
-	PGDN
+	Del
+	PgUp
+	PgDn
 
-	ALT_B
-	ALT_F
-	ALT_D
-	ALT_BS
+	AltB
+	AltF
+	AltD
+	AltBS
+)
+
+// Pallete
+const (
+	ColNormal = iota
+	ColPrompt
+	ColMatch
+	ColCurrent
+	ColCurrentMatch
+	ColSpinner
+	ColInfo
+	ColCursor
+	ColSelected
 )
 
 const (
-	COL_NORMAL = iota
-	COL_PROMPT
-	COL_MATCH
-	COL_CURRENT
-	COL_CURRENT_MATCH
-	COL_SPINNER
-	COL_INFO
-	COL_CURSOR
-	COL_SELECTED
-)
-
-const (
-	DOUBLE_CLICK_DURATION = 500 * time.Millisecond
+	doubleClickDuration = 500 * time.Millisecond
 )
 
 type Event struct {
@@ -112,8 +114,8 @@ func init() {
 }
 
 func attrColored(pair int, bold bool) C.int {
-	var attr C.int = 0
-	if pair > COL_NORMAL {
+	var attr C.int
+	if pair > ColNormal {
 		attr = C.COLOR_PAIR(C.int(pair))
 	}
 	if bold {
@@ -123,15 +125,15 @@ func attrColored(pair int, bold bool) C.int {
 }
 
 func attrMono(pair int, bold bool) C.int {
-	var attr C.int = 0
+	var attr C.int
 	switch pair {
-	case COL_CURRENT:
+	case ColCurrent:
 		if bold {
 			attr = C.A_REVERSE
 		}
-	case COL_MATCH:
+	case ColMatch:
 		attr = C.A_UNDERLINE
-	case COL_CURRENT_MATCH:
+	case ColCurrentMatch:
 		attr = C.A_UNDERLINE | C.A_REVERSE
 	}
 	if bold {
@@ -198,23 +200,23 @@ func Init(color bool, color256 bool, black bool, mouse bool) {
 			bg = -1
 		}
 		if color256 {
-			C.init_pair(COL_PROMPT, 110, bg)
-			C.init_pair(COL_MATCH, 108, bg)
-			C.init_pair(COL_CURRENT, 254, 236)
-			C.init_pair(COL_CURRENT_MATCH, 151, 236)
-			C.init_pair(COL_SPINNER, 148, bg)
-			C.init_pair(COL_INFO, 144, bg)
-			C.init_pair(COL_CURSOR, 161, 236)
-			C.init_pair(COL_SELECTED, 168, 236)
+			C.init_pair(ColPrompt, 110, bg)
+			C.init_pair(ColMatch, 108, bg)
+			C.init_pair(ColCurrent, 254, 236)
+			C.init_pair(ColCurrentMatch, 151, 236)
+			C.init_pair(ColSpinner, 148, bg)
+			C.init_pair(ColInfo, 144, bg)
+			C.init_pair(ColCursor, 161, 236)
+			C.init_pair(ColSelected, 168, 236)
 		} else {
-			C.init_pair(COL_PROMPT, C.COLOR_BLUE, bg)
-			C.init_pair(COL_MATCH, C.COLOR_GREEN, bg)
-			C.init_pair(COL_CURRENT, C.COLOR_YELLOW, C.COLOR_BLACK)
-			C.init_pair(COL_CURRENT_MATCH, C.COLOR_GREEN, C.COLOR_BLACK)
-			C.init_pair(COL_SPINNER, C.COLOR_GREEN, bg)
-			C.init_pair(COL_INFO, C.COLOR_WHITE, bg)
-			C.init_pair(COL_CURSOR, C.COLOR_RED, C.COLOR_BLACK)
-			C.init_pair(COL_SELECTED, C.COLOR_MAGENTA, C.COLOR_BLACK)
+			C.init_pair(ColPrompt, C.COLOR_BLUE, bg)
+			C.init_pair(ColMatch, C.COLOR_GREEN, bg)
+			C.init_pair(ColCurrent, C.COLOR_YELLOW, C.COLOR_BLACK)
+			C.init_pair(ColCurrentMatch, C.COLOR_GREEN, C.COLOR_BLACK)
+			C.init_pair(ColSpinner, C.COLOR_GREEN, bg)
+			C.init_pair(ColInfo, C.COLOR_WHITE, bg)
+			C.init_pair(ColCursor, C.COLOR_RED, C.COLOR_BLACK)
+			C.init_pair(ColSelected, C.COLOR_MAGENTA, C.COLOR_BLACK)
 		}
 		_color = attrColored
 	} else {
@@ -245,7 +247,7 @@ func GetBytes() []byte {
 // 27 (91 79) 77 type x y
 func mouseSequence(sz *int) Event {
 	if len(_buf) < 6 {
-		return Event{INVALID, 0, nil}
+		return Event{Invalid, 0, nil}
 	}
 	*sz = 6
 	switch _buf[3] {
@@ -258,7 +260,7 @@ func mouseSequence(sz *int) Event {
 		double := false
 		if down {
 			now := time.Now()
-			if now.Sub(_prevDownTime) < DOUBLE_CLICK_DURATION {
+			if now.Sub(_prevDownTime) < doubleClickDuration {
 				_clickY = append(_clickY, y)
 			} else {
 				_clickY = []int{y}
@@ -266,18 +268,18 @@ func mouseSequence(sz *int) Event {
 			_prevDownTime = now
 		} else {
 			if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
-				time.Now().Sub(_prevDownTime) < DOUBLE_CLICK_DURATION {
+				time.Now().Sub(_prevDownTime) < doubleClickDuration {
 				double = true
 			}
 		}
-		return Event{MOUSE, 0, &MouseEvent{y, x, 0, down, double, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, 0, down, double, mod}}
 	case 96, 100, 104, 112, // scroll-up / shift / cmd / ctrl
 		97, 101, 105, 113: // scroll-down / shift / cmd / ctrl
 		mod := _buf[3] >= 100
 		s := 1 - int(_buf[3]%2)*2
-		return Event{MOUSE, 0, &MouseEvent{0, 0, s, false, false, mod}}
+		return Event{Mouse, 0, &MouseEvent{0, 0, s, false, false, mod}}
 	}
-	return Event{INVALID, 0, nil}
+	return Event{Invalid, 0, nil}
 }
 
 func escSequence(sz *int) Event {
@@ -287,81 +289,81 @@ func escSequence(sz *int) Event {
 	*sz = 2
 	switch _buf[1] {
 	case 98:
-		return Event{ALT_B, 0, nil}
+		return Event{AltB, 0, nil}
 	case 100:
-		return Event{ALT_D, 0, nil}
+		return Event{AltD, 0, nil}
 	case 102:
-		return Event{ALT_F, 0, nil}
+		return Event{AltF, 0, nil}
 	case 127:
-		return Event{ALT_BS, 0, nil}
+		return Event{AltBS, 0, nil}
 	case 91, 79:
 		if len(_buf) < 3 {
-			return Event{INVALID, 0, nil}
+			return Event{Invalid, 0, nil}
 		}
 		*sz = 3
 		switch _buf[2] {
 		case 68:
-			return Event{CTRL_B, 0, nil}
+			return Event{CtrlB, 0, nil}
 		case 67:
-			return Event{CTRL_F, 0, nil}
+			return Event{CtrlF, 0, nil}
 		case 66:
-			return Event{CTRL_J, 0, nil}
+			return Event{CtrlJ, 0, nil}
 		case 65:
-			return Event{CTRL_K, 0, nil}
+			return Event{CtrlK, 0, nil}
 		case 90:
-			return Event{BTAB, 0, nil}
+			return Event{BTab, 0, nil}
 		case 72:
-			return Event{CTRL_A, 0, nil}
+			return Event{CtrlA, 0, nil}
 		case 70:
-			return Event{CTRL_E, 0, nil}
+			return Event{CtrlE, 0, nil}
 		case 77:
 			return mouseSequence(sz)
 		case 49, 50, 51, 52, 53, 54:
 			if len(_buf) < 4 {
-				return Event{INVALID, 0, nil}
+				return Event{Invalid, 0, nil}
 			}
 			*sz = 4
 			switch _buf[2] {
 			case 50:
-				return Event{INVALID, 0, nil} // INS
+				return Event{Invalid, 0, nil} // INS
 			case 51:
-				return Event{DEL, 0, nil}
+				return Event{Del, 0, nil}
 			case 52:
-				return Event{CTRL_E, 0, nil}
+				return Event{CtrlE, 0, nil}
 			case 53:
-				return Event{PGUP, 0, nil}
+				return Event{PgUp, 0, nil}
 			case 54:
-				return Event{PGDN, 0, nil}
+				return Event{PgDn, 0, nil}
 			case 49:
 				switch _buf[3] {
 				case 126:
-					return Event{CTRL_A, 0, nil}
+					return Event{CtrlA, 0, nil}
 				case 59:
 					if len(_buf) != 6 {
-						return Event{INVALID, 0, nil}
+						return Event{Invalid, 0, nil}
 					}
 					*sz = 6
 					switch _buf[4] {
 					case 50:
 						switch _buf[5] {
 						case 68:
-							return Event{CTRL_A, 0, nil}
+							return Event{CtrlA, 0, nil}
 						case 67:
-							return Event{CTRL_E, 0, nil}
+							return Event{CtrlE, 0, nil}
 						}
 					case 53:
 						switch _buf[5] {
 						case 68:
-							return Event{ALT_B, 0, nil}
+							return Event{AltB, 0, nil}
 						case 67:
-							return Event{ALT_F, 0, nil}
+							return Event{AltF, 0, nil}
 						}
 					} // _buf[4]
 				} // _buf[3]
 			} // _buf[2]
 		} // _buf[2]
 	} // _buf[1]
-	return Event{INVALID, 0, nil}
+	return Event{Invalid, 0, nil}
 }
 
 func GetChar() Event {
@@ -378,21 +380,21 @@ func GetChar() Event {
 	}()
 
 	switch _buf[0] {
-	case CTRL_C, CTRL_G, CTRL_Q:
-		return Event{CTRL_C, 0, nil}
+	case CtrlC, CtrlG, CtrlQ:
+		return Event{CtrlC, 0, nil}
 	case 127:
-		return Event{CTRL_H, 0, nil}
+		return Event{CtrlH, 0, nil}
 	case ESC:
 		return escSequence(&sz)
 	}
 
 	// CTRL-A ~ CTRL-Z
-	if _buf[0] <= CTRL_Z {
+	if _buf[0] <= CtrlZ {
 		return Event{int(_buf[0]), 0, nil}
 	}
 	r, rsz := utf8.DecodeRune(_buf)
 	sz = rsz
-	return Event{RUNE, r, nil}
+	return Event{Rune, r, nil}
 }
 
 func Move(y int, x int) {
