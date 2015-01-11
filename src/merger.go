@@ -57,7 +57,7 @@ func (mg *Merger) mergedGet(idx int) *Item {
 				continue
 			}
 			if cursor >= 0 {
-				rank := list[cursor].Rank()
+				rank := list[cursor].Rank(false)
 				if minIdx < 0 || compareRanks(rank, minRank) {
 					minRank = rank
 					minIdx = listIdx

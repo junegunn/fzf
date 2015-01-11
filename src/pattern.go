@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -225,12 +226,14 @@ Loop:
 }
 
 func dupItem(item *Item, offsets []Offset) *Item {
+	sort.Sort(ByOrder(offsets))
 	return &Item{
 		text:        item.text,
 		origText:    item.origText,
 		transformed: item.transformed,
+		index:       item.index,
 		offsets:     offsets,
-		rank:        Rank{0, 0, item.rank.index}}
+		rank:        Rank{0, 0, item.index}}
 }
 
 func (p *Pattern) fuzzyMatch(chunk *Chunk) []*Item {

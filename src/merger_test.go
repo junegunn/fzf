@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 	"testing"
@@ -13,8 +14,17 @@ func assert(t *testing.T, cond bool, msg ...string) {
 }
 
 func randItem() *Item {
+	str := fmt.Sprintf("%d", rand.Uint32())
+	offsets := make([]Offset, rand.Int()%3)
+	for idx := range offsets {
+		sidx := int32(rand.Uint32() % 20)
+		eidx := sidx + int32(rand.Uint32()%20)
+		offsets[idx] = Offset{sidx, eidx}
+	}
 	return &Item{
-		rank: Rank{uint16(rand.Uint32()), uint16(rand.Uint32()), rand.Uint32()}}
+		text:    &str,
+		index:   rand.Uint32(),
+		offsets: offsets}
 }
 
 func TestEmptyMerger(t *testing.T) {

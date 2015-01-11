@@ -31,13 +31,13 @@ func TestRankComparison(t *testing.T) {
 // Match length, string length, index
 func TestItemRank(t *testing.T) {
 	strs := []string{"foo", "foobar", "bar", "baz"}
-	item1 := Item{text: &strs[0], rank: Rank{0, 0, 1}, offsets: []Offset{}}
-	rank1 := item1.Rank()
+	item1 := Item{text: &strs[0], index: 1, offsets: []Offset{}}
+	rank1 := item1.Rank(true)
 	if rank1.matchlen != 0 || rank1.strlen != 3 || rank1.index != 1 {
-		t.Error(item1.Rank())
+		t.Error(item1.Rank(true))
 	}
 	// Only differ in index
-	item2 := Item{text: &strs[0], rank: Rank{0, 0, 0}, offsets: []Offset{}}
+	item2 := Item{text: &strs[0], index: 0, offsets: []Offset{}}
 
 	items := []*Item{&item1, &item2}
 	sort.Sort(ByRelevance(items))

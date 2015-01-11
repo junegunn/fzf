@@ -64,7 +64,10 @@ func Run(options *Options) {
 	var chunkList *ChunkList
 	if len(opts.WithNth) == 0 {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
-			return &Item{text: data, rank: Rank{0, 0, uint32(index)}}
+			return &Item{
+				text:  data,
+				index: uint32(index),
+				rank:  Rank{0, 0, uint32(index)}}
 		})
 	} else {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
@@ -72,6 +75,7 @@ func Run(options *Options) {
 			item := Item{
 				text:     Transform(tokens, opts.WithNth).whole,
 				origText: data,
+				index:    uint32(index),
 				rank:     Rank{0, 0, uint32(index)}}
 			return &item
 		})

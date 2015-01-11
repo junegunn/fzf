@@ -1,9 +1,6 @@
 package fzf
 
-import (
-	"fmt"
-	"sort"
-)
+import "fmt"
 
 type Offset [2]int32
 
@@ -11,6 +8,7 @@ type Item struct {
 	text        *string
 	origText    *string
 	transformed *Transformed
+	index       uint32
 	offsets     []Offset
 	rank        Rank
 }
@@ -21,11 +19,10 @@ type Rank struct {
 	index    uint32
 }
 
-func (i *Item) Rank() Rank {
-	if i.rank.matchlen > 0 || i.rank.strlen > 0 {
+func (i *Item) Rank(cache bool) Rank {
+	if cache && (i.rank.matchlen > 0 || i.rank.strlen > 0) {
 		return i.rank
 	}
-	sort.Sort(ByOrder(i.offsets))
 	matchlen := 0
 	prevEnd := 0
 	for _, offset := range i.offsets {
@@ -41,8 +38,11 @@ func (i *Item) Rank() Rank {
 			matchlen += end - begin
 		}
 	}
-	i.rank = Rank{uint16(matchlen), uint16(len(*i.text)), i.rank.index}
-	return i.rank
+	rank := Rank{uint16(matchlen), uint16(len(*i.text)), i.index}
+	if cache {
+		i.rank = rank
+	}
+	return rank
 }
 
 func (i *Item) Print() {
@@ -80,8 +80,8 @@ func (a ByRelevance) Swap(i, j int) {
 }
 
 func (a ByRelevance) Less(i, j int) bool {
-	irank := a[i].Rank()
-	jrank := a[j].Rank()
+	irank := a[i].Rank(true)
+	jrank := a[j].Rank(true)
 
 	return compareRanks(irank, jrank)
 }
