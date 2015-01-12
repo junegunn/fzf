@@ -152,20 +152,29 @@ for shell in bash zsh; do
     fzf_completion="# $fzf_completion"
   fi
 
-  cat > $src << EOF
+  if [ -n "$binary_error" ]; then
+    cat > $src << EOF
 # Setup fzf function
 # ------------------
 unalias fzf 2> /dev/null
+fzf() {
+  $fzf_cmd "\$@"
+}
+export -f fzf > /dev/null
+
+# Auto-completion
+# ---------------
+$fzf_completion
+
+EOF
+  else
+    cat > $src << EOF
+# Setup fzf
+# ---------
+unalias fzf 2> /dev/null
 unset fzf 2> /dev/null
-if [ -x "$fzf_base/bin/fzf" ]; then
-  if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
-    export PATH="$fzf_base/bin:\$PATH"
-  fi
-else
-  fzf() {
-    $fzf_cmd "\$@"
-  }
-  export -f fzf > /dev/null
+if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
+  export PATH="$fzf_base/bin:\$PATH"
 fi
 
 # Auto-completion
@@ -173,6 +182,7 @@ fi
 $fzf_completion
 
 EOF
+  fi
 
   if [ $key_bindings -eq 0 ]; then
     if [ $shell = bash ]; then
