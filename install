@@ -1,74 +1,145 @@
 #!/usr/bin/env bash
 
-cd `dirname $BASH_SOURCE`
-fzf_base=`pwd`
+version=0.9.0
 
-# ruby executable
-echo -n "Checking Ruby executable ... "
-ruby=`which ruby`
-if [ $? -ne 0 ]; then
-  echo "ruby executable not found!"
-  exit 1
-fi
+cd $(dirname $BASH_SOURCE)
+fzf_base=$(pwd)
 
-# System ruby is preferred
-system_ruby=/usr/bin/ruby
-if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
-  $system_ruby --disable-gems -rcurses -e0 2> /dev/null
-  [ $? -eq 0 ] && ruby=$system_ruby
-fi
+ask() {
+  read -p "$1 ([y]/n) " -n 1 -r
+  echo
+  [[ ! $REPLY =~ ^[Nn]$ ]]
+}
 
-echo "OK ($ruby)"
-
-# Curses-support
-echo -n "Checking Curses support ... "
-"$ruby" -rcurses -e0 2> /dev/null
-if [ $? -eq 0 ]; then
-  echo "OK"
-else
-  echo "Not found"
-  echo "Installing 'curses' gem ... "
-  if (( EUID )); then
-    /usr/bin/env gem install curses --user-install
-  else
-    /usr/bin/env gem install curses
+check_binary() {
+  echo -n "  - Checking fzf executable ... "
+  if ! "$fzf_base"/bin/fzf --version; then
+    rm -f "$fzf_base"/bin/fzf
+    binary_error="Error occurred"
   fi
+}
+
+symlink() {
+  echo "  - Creating symlink: bin/$1 -> bin/fzf"
+  rm -f "$fzf_base"/bin/fzf
+  ln -sf "$fzf_base"/bin/$1 "$fzf_base"/bin/fzf
+}
+
+download() {
+  echo "Downloading bin/$1 ..."
+  if [ -x "$fzf_base"/bin/$1 ]; then
+    echo "  - Already exists"
+    symlink $1
+    check_binary && return
+  fi
+  mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
-    echo
-    echo "Failed to install 'curses' gem."
-    if [[ $(uname -r) =~ 'ARCH' ]]; then
-      echo "Make sure that base-devel package group is installed."
-    fi
+    binary_error="Failed to create bin directory"
+    return
+  fi
+
+  local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
+  if which curl > /dev/null; then
+    curl -fL $url | tar -xz
+  elif which wget > /dev/null; then
+    wget -O - $url | tar -xz
+  else
+    binary_error="curl or wget not found"
+    return
+  fi
+
+  if [ ! -f $1 ]; then
+    binary_error="Failed to download ${1}"
+    return
+  fi
+
+  chmod +x $1 && symlink $1 && check_binary
+}
+
+# Try to download binary executable
+archi=$(uname -sm)
+binary_available=1
+binary_error=""
+case "$archi" in
+  Darwin\ x86_64) download fzf-$version-darwin_amd64 ;;
+  Darwin\ i*86)   download fzf-$version-darwin_386   ;;
+  Linux\ x86_64)  download fzf-$version-linux_amd64  ;;
+  Linux\ i*86)    download fzf-$version-linux_386    ;;
+  *)              binary_available=0                 ;;
+esac
+
+cd "$fzf_base"
+if [ -n "$binary_error" ]; then
+  if [ $binary_available -eq 0 ]; then
+    echo "No prebuilt binary for $archi ... "
+  else
+    echo "  - $binary_error !!!"
+  fi
+  echo "Installing legacy Ruby version ..."
+
+  # ruby executable
+  echo -n "Checking Ruby executable ... "
+  ruby=`which ruby`
+  if [ $? -ne 0 ]; then
+    echo "ruby executable not found !!!"
     exit 1
   fi
-fi
 
-# Ruby version
-echo -n "Checking Ruby version ... "
-"$ruby" -e 'exit RUBY_VERSION >= "1.9"'
-if [ $? -eq 0 ]; then
-  echo ">= 1.9"
-  "$ruby" --disable-gems -rcurses -e0 2> /dev/null
+  # System ruby is preferred
+  system_ruby=/usr/bin/ruby
+  if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
+    $system_ruby --disable-gems -rcurses -e0 2> /dev/null
+    [ $? -eq 0 ] && ruby=$system_ruby
+  fi
+
+  echo "OK ($ruby)"
+
+  # Curses-support
+  echo -n "Checking Curses support ... "
+  "$ruby" -rcurses -e0 2> /dev/null
   if [ $? -eq 0 ]; then
-    fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+    echo "OK"
   else
+    echo "Not found"
+    echo "Installing 'curses' gem ... "
+    if (( EUID )); then
+      /usr/bin/env gem install curses --user-install
+    else
+      /usr/bin/env gem install curses
+    fi
+    if [ $? -ne 0 ]; then
+      echo
+      echo "Failed to install 'curses' gem."
+      if [[ $(uname -r) =~ 'ARCH' ]]; then
+        echo "Make sure that base-devel package group is installed."
+      fi
+      exit 1
+    fi
+  fi
+
+  # Ruby version
+  echo -n "Checking Ruby version ... "
+  "$ruby" -e 'exit RUBY_VERSION >= "1.9"'
+  if [ $? -eq 0 ]; then
+    echo ">= 1.9"
+    "$ruby" --disable-gems -rcurses -e0 2> /dev/null
+    if [ $? -eq 0 ]; then
+      fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
+    else
+      fzf_cmd="$ruby $fzf_base/fzf"
+    fi
+  else
+    echo "< 1.9"
     fzf_cmd="$ruby $fzf_base/fzf"
   fi
-else
-  echo "< 1.9"
-  fzf_cmd="$ruby $fzf_base/fzf"
 fi
 
 # Auto-completion
-read -p "Do you want to add auto-completion support? ([y]/n) " -n 1 -r
-echo
-[[ ! $REPLY =~ ^[Nn]$ ]]
+ask "Do you want to add auto-completion support?"
 auto_completion=$?
 
 # Key-bindings
-read -p "Do you want to add key bindings? ([y]/n) " -n 1 -r
-echo
-[[ ! $REPLY =~ ^[Nn]$ ]]
+ask "Do you want to add key bindings?"
 key_bindings=$?
 
 echo
@@ -81,7 +152,8 @@ for shell in bash zsh; do
     fzf_completion="# $fzf_completion"
   fi
 
-  cat > $src << EOF
+  if [ -n "$binary_error" ]; then
+    cat > $src << EOF
 # Setup fzf function
 # ------------------
 unalias fzf 2> /dev/null
@@ -95,6 +167,22 @@ export -f fzf > /dev/null
 $fzf_completion
 
 EOF
+  else
+    cat > $src << EOF
+# Setup fzf
+# ---------
+unalias fzf 2> /dev/null
+unset fzf 2> /dev/null
+if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
+  export PATH="$fzf_base/bin:\$PATH"
+fi
+
+# Auto-completion
+# ---------------
+$fzf_completion
+
+EOF
+  fi
 
   if [ $key_bindings -eq 0 ]; then
     if [ $shell = bash ]; then
@@ -243,11 +331,19 @@ if [ -n "$(which fish)" ]; then
   has_fish=1
   echo -n "Generate ~/.config/fish/functions/fzf.fish ... "
   mkdir -p ~/.config/fish/functions
-  cat > ~/.config/fish/functions/fzf.fish << EOFZF
+  if [ -n "$binary_error" ]; then
+    cat > ~/.config/fish/functions/fzf.fish << EOFZF
 function fzf
   $fzf_cmd \$argv
 end
 EOFZF
+  else
+    cat > ~/.config/fish/functions/fzf.fish << EOFZF
+function fzf
+  $fzf_base/bin/fzf \$argv
+end
+EOFZF
+  fi
   echo "OK"
 
   if [ $key_bindings -eq 0 ]; then
