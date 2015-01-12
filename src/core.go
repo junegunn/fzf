@@ -30,6 +30,8 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 const coordinatorDelayMax time.Duration = 100 * time.Millisecond
@@ -59,7 +61,7 @@ func Run(options *Options) {
 	}
 
 	// Event channel
-	eventBox := NewEventBox()
+	eventBox := util.NewEventBox()
 
 	// Chunk list
 	var chunkList *ChunkList
@@ -111,7 +113,7 @@ func Run(options *Options) {
 		looping := true
 		eventBox.Unwatch(EvtReadNew)
 		for looping {
-			eventBox.Wait(func(events *Events) {
+			eventBox.Wait(func(events *util.Events) {
 				for evt := range *events {
 					switch evt {
 					case EvtReadFin:
@@ -154,7 +156,7 @@ func Run(options *Options) {
 	for {
 		delay := true
 		ticks++
-		eventBox.Wait(func(events *Events) {
+		eventBox.Wait(func(events *util.Events) {
 			defer events.Clear()
 			for evt, value := range *events {
 				switch evt {
@@ -185,7 +187,7 @@ func Run(options *Options) {
 			}
 		})
 		if delay && reading {
-			dur := DurWithin(
+			dur := util.DurWithin(
 				time.Duration(ticks)*coordinatorDelayStep,
 				0, coordinatorDelayMax)
 			time.Sleep(dur)

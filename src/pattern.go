@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/junegunn/fzf/src/algo"
 )
 
 const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -112,10 +114,10 @@ func BuildPattern(mode Mode, caseMode Case,
 		delimiter:     delimiter,
 		procFun:       make(map[termType]func(bool, *string, []rune) (int, int))}
 
-	ptr.procFun[termFuzzy] = FuzzyMatch
-	ptr.procFun[termExact] = ExactMatchNaive
-	ptr.procFun[termPrefix] = PrefixMatch
-	ptr.procFun[termSuffix] = SuffixMatch
+	ptr.procFun[termFuzzy] = algo.FuzzyMatch
+	ptr.procFun[termExact] = algo.ExactMatchNaive
+	ptr.procFun[termPrefix] = algo.PrefixMatch
+	ptr.procFun[termSuffix] = algo.SuffixMatch
 
 	_patternCache[asString] = ptr
 	return ptr
@@ -245,7 +247,7 @@ func (p *Pattern) fuzzyMatch(chunk *Chunk) []*Item {
 	matches := []*Item{}
 	for _, item := range *chunk {
 		input := p.prepareInput(item)
-		if sidx, eidx := p.iter(FuzzyMatch, input, p.text); sidx >= 0 {
+		if sidx, eidx := p.iter(algo.FuzzyMatch, input, p.text); sidx >= 0 {
 			matches = append(matches,
 				dupItem(item, []Offset{Offset{int32(sidx), int32(eidx)}}))
 		}

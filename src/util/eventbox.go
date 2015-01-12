@@ -1,6 +1,9 @@
-package fzf
+package util
 
 import "sync"
+
+// EventType is the type for fzf events
+type EventType int
 
 // Events is a type that associates EventType to any data
 type Events map[EventType]interface{}

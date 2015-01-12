@@ -1,4 +1,4 @@
-package fzf
+package algo
 
 import (
 	"strings"

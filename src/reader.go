@@ -1,13 +1,12 @@
 package fzf
 
-// #include <unistd.h>
-import "C"
-
 import (
 	"bufio"
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 const defaultCommand = `find * -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null`
@@ -15,12 +14,12 @@ const defaultCommand = `find * -path '*/\.*' -prune -o -type f -print -o -type l
 // Reader reads from command or standard input
 type Reader struct {
 	pusher   func(string)
-	eventBox *EventBox
+	eventBox *util.EventBox
 }
 
 // ReadSource reads data from the default command or from standard input
 func (r *Reader) ReadSource() {
-	if int(C.isatty(C.int(os.Stdin.Fd()))) != 0 {
+	if util.IsTty() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			cmd = defaultCommand

@@ -1,6 +1,16 @@
-package fzf
+package util
 
 import "testing"
+
+// fzf events
+const (
+	EvtReadNew EventType = iota
+	EvtReadFin
+	EvtSearchNew
+	EvtSearchProgress
+	EvtSearchFin
+	EvtClose
+)
 
 func TestEventBox(t *testing.T) {
 	eb := NewEventBox()

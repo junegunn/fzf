@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 const rangeEllipsis = 0
@@ -180,7 +182,7 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 					end += numTokens + 1
 				}
 			}
-			minIdx = Max(0, begin-1)
+			minIdx = util.Max(0, begin-1)
 			for idx := begin; idx <= end; idx++ {
 				if idx >= 1 && idx <= numTokens {
 					part += *tokens[idx-1].text

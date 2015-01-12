@@ -1,10 +1,14 @@
 package fzf
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/junegunn/fzf/src/util"
+)
 
 func TestReadFromCommand(t *testing.T) {
 	strs := []string{}
-	eb := NewEventBox()
+	eb := util.NewEventBox()
 	reader := Reader{
 		pusher:   func(s string) { strs = append(strs, s) },
 		eventBox: eb}
@@ -26,7 +30,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Wait should return immediately
-	eb.Wait(func(events *Events) {
+	eb.Wait(func(events *util.Events) {
 		if _, found := (*events)[EvtReadNew]; !found {
 			t.Errorf("%s", events)
 		}

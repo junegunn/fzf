@@ -33,7 +33,7 @@ build: fzf/$(BINARY32) fzf/$(BINARY64)
 
 test:
 	go get
-	go test -v
+	go test -v ./...
 
 install: $(BINDIR)/fzf
 

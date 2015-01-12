@@ -1,6 +1,12 @@
-package fzf
+package util
 
-import "time"
+// #include <unistd.h>
+import "C"
+
+import (
+	"os"
+	"time"
+)
 
 // Max returns the largest integer
 func Max(first int, items ...int) int {
@@ -21,15 +27,15 @@ func Max32(first int32, second int32) int32 {
 	return second
 }
 
-// Min returns the smallest integer
-func Min(first int, items ...int) int {
-	min := first
-	for _, item := range items {
-		if item < min {
-			min = item
-		}
+// Constrain limits the given integer with the upper and lower bounds
+func Constrain(val int, min int, max int) int {
+	if val < min {
+		return min
 	}
-	return min
+	if val > max {
+		return max
+	}
+	return val
 }
 
 // DurWithin limits the given time.Duration with the upper and lower bounds
@@ -42,4 +48,9 @@ func DurWithin(
 		return max
 	}
 	return val
+}
+
+// IsTty returns true is stdin is a terminal
+func IsTty() bool {
+	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
 }

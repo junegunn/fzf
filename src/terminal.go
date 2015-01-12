@@ -2,13 +2,16 @@ package fzf
 
 import (
 	"fmt"
-	C "github.com/junegunn/fzf/src/curses"
-	"github.com/junegunn/go-runewidth"
 	"os"
 	"regexp"
 	"sort"
 	"sync"
 	"time"
+
+	C "github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/util"
+
+	"github.com/junegunn/go-runewidth"
 )
 
 // Terminal represents terminal input/output
@@ -28,8 +31,8 @@ type Terminal struct {
 	reading    bool
 	merger     *Merger
 	selected   map[*string]*string
-	reqBox     *EventBox
-	eventBox   *EventBox
+	reqBox     *util.EventBox
+	eventBox   *util.EventBox
 	mutex      sync.Mutex
 	initFunc   func()
 	suppress   bool
@@ -38,7 +41,7 @@ type Terminal struct {
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 
 const (
-	reqPrompt EventType = iota
+	reqPrompt util.EventType = iota
 	reqInfo
 	reqList
 	reqRefresh
@@ -53,7 +56,7 @@ const (
 )
 
 // NewTerminal returns new Terminal object
-func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
+func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
 	return &Terminal{
 		prompt:     opts.Prompt,
@@ -68,7 +71,7 @@ func NewTerminal(opts *Options, eventBox *EventBox) *Terminal {
 		printQuery: opts.PrintQuery,
 		merger:     EmptyMerger,
 		selected:   make(map[*string]*string),
-		reqBox:     NewEventBox(),
+		reqBox:     util.NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
 		suppress:   true,
@@ -288,7 +291,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 				b, e := offset[0], offset[1]
 				b += 2 - diff
 				e += 2 - diff
-				b = Max32(b, 2)
+				b = util.Max32(b, 2)
 				if b < e {
 					offsets[idx] = Offset{b, e}
 				}
@@ -300,8 +303,8 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 	sort.Sort(ByOrder(offsets))
 	var index int32
 	for _, offset := range offsets {
-		b := Max32(index, offset[0])
-		e := Max32(index, offset[1])
+		b := util.Max32(index, offset[0])
+		e := util.Max32(index, offset[1])
 		C.CPrint(col1, bold, string(text[index:b]))
 		C.CPrint(col2, bold, string(text[b:e]))
 		index = e
@@ -388,7 +391,7 @@ func (t *Terminal) Loop() {
 
 	go func() {
 		for {
-			t.reqBox.Wait(func(events *Events) {
+			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
 				t.mutex.Lock()
 				for req := range *events {
@@ -426,8 +429,8 @@ func (t *Terminal) Loop() {
 
 		t.mutex.Lock()
 		previousInput := t.input
-		events := []EventType{reqPrompt}
-		req := func(evts ...EventType) {
+		events := []util.EventType{reqPrompt}
+		req := func(evts ...util.EventType) {
 			for _, event := range evts {
 				events = append(events, event)
 				if event == reqClose || event == reqQuit {
@@ -538,7 +541,7 @@ func (t *Terminal) Loop() {
 			t.cx++
 		case C.Mouse:
 			me := event.MouseEvent
-			mx, my := Min(len(t.input), Max(0, me.X-len(t.prompt))), me.Y
+			mx, my := util.Constrain(me.X-len(t.prompt), 0, len(t.input)), me.Y
 			if !t.reverse {
 				my = C.MaxY() - my - 1
 			}
@@ -588,7 +591,7 @@ func (t *Terminal) constrain() {
 	height := C.MaxY() - 2
 	diffpos := t.cy - t.offset
 
-	t.cy = Max(0, Min(t.cy, count-1))
+	t.cy = util.Constrain(t.cy, 0, count-1)
 
 	if t.cy > t.offset+(height-1) {
 		// Ceil
@@ -600,8 +603,8 @@ func (t *Terminal) constrain() {
 
 	// Adjustment
 	if count-t.offset < height {
-		t.offset = Max(0, count-height)
-		t.cy = Max(0, Min(t.offset+diffpos, count-1))
+		t.offset = util.Max(0, count-height)
+		t.cy = util.Constrain(t.offset+diffpos, 0, count-1)
 	}
 }
 
@@ -614,7 +617,7 @@ func (t *Terminal) vmove(o int) {
 }
 
 func (t *Terminal) vset(o int) bool {
-	t.cy = Max(0, Min(o, t.merger.Length()-1))
+	t.cy = util.Constrain(o, 0, t.merger.Length()-1)
 	return t.cy == o
 }
 

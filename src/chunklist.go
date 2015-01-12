@@ -8,20 +8,20 @@ const ChunkSize int = 100
 // Chunk is a list of Item pointers whose size has the upper limit of ChunkSize
 type Chunk []*Item // >>> []Item
 
-// Transformer is a closure type that builds Item object from a pointer to a
+// ItemBuilder is a closure type that builds Item object from a pointer to a
 // string and an integer
-type Transformer func(*string, int) *Item
+type ItemBuilder func(*string, int) *Item
 
 // ChunkList is a list of Chunks
 type ChunkList struct {
 	chunks []*Chunk
 	count  int
 	mutex  sync.Mutex
-	trans  Transformer
+	trans  ItemBuilder
 }
 
 // NewChunkList returns a new ChunkList
-func NewChunkList(trans Transformer) *ChunkList {
+func NewChunkList(trans ItemBuilder) *ChunkList {
 	return &ChunkList{
 		chunks: []*Chunk{},
 		count:  0,
@@ -29,7 +29,7 @@ func NewChunkList(trans Transformer) *ChunkList {
 		trans:  trans}
 }
 
-func (c *Chunk) push(trans Transformer, data *string, index int) {
+func (c *Chunk) push(trans ItemBuilder, data *string, index int) {
 	*c = append(*c, trans(data, index))
 }
 

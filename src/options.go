@@ -2,10 +2,11 @@ package fzf
 
 import (
 	"fmt"
-	"github.com/junegunn/go-shellwords"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/junegunn/go-shellwords"
 )
 
 const usage = `usage: fzf [options]

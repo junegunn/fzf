@@ -6,6 +6,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 // MatchRequest represents a search request
@@ -18,14 +20,14 @@ type MatchRequest struct {
 type Matcher struct {
 	patternBuilder func([]rune) *Pattern
 	sort           bool
-	eventBox       *EventBox
-	reqBox         *EventBox
+	eventBox       *util.EventBox
+	reqBox         *util.EventBox
 	partitions     int
 	mergerCache    map[string]*Merger
 }
 
 const (
-	reqRetry EventType = iota
+	reqRetry util.EventType = iota
 	reqReset
 )
 
@@ -35,12 +37,12 @@ const (
 
 // NewMatcher returns a new Matcher
 func NewMatcher(patternBuilder func([]rune) *Pattern,
-	sort bool, eventBox *EventBox) *Matcher {
+	sort bool, eventBox *util.EventBox) *Matcher {
 	return &Matcher{
 		patternBuilder: patternBuilder,
 		sort:           sort,
 		eventBox:       eventBox,
-		reqBox:         NewEventBox(),
+		reqBox:         util.NewEventBox(),
 		partitions:     runtime.NumCPU(),
 		mergerCache:    make(map[string]*Merger)}
 }
@@ -52,7 +54,7 @@ func (m *Matcher) Loop() {
 	for {
 		var request MatchRequest
 
-		m.reqBox.Wait(func(events *Events) {
+		m.reqBox.Wait(func(events *util.Events) {
 			for _, val := range *events {
 				switch val := val.(type) {
 				case MatchRequest:
@@ -128,7 +130,7 @@ func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
 	}
 	pattern := request.pattern
 	empty := pattern.IsEmpty()
-	cancelled := NewAtomicBool(false)
+	cancelled := util.NewAtomicBool(false)
 
 	slices := m.sliceChunks(request.chunks)
 	numSlices := len(slices)
@@ -202,7 +204,7 @@ func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
 func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool) {
 	pattern := m.patternBuilder(patternRunes)
 
-	var event EventType
+	var event util.EventType
 	if cancel {
 		event = reqReset
 	} else {

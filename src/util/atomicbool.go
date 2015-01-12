@@ -1,4 +1,4 @@
-package fzf
+package util
 
 import "sync"
 

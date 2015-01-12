@@ -1,6 +1,10 @@
 package fzf
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/junegunn/fzf/src/algo"
+)
 
 func TestParseTermsExtended(t *testing.T) {
 	terms := parseTerms(ModeExtended,
@@ -55,7 +59,7 @@ func TestExact(t *testing.T) {
 	pattern := BuildPattern(ModeExtended, CaseSmart,
 		[]Range{}, nil, []rune("'abc"))
 	str := "aabbcc abc"
-	sidx, eidx := ExactMatchNaive(pattern.caseSensitive, &str, pattern.terms[0].text)
+	sidx, eidx := algo.ExactMatchNaive(pattern.caseSensitive, &str, pattern.terms[0].text)
 	if sidx != 7 || eidx != 10 {
 		t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
 	}
