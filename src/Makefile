@@ -21,26 +21,29 @@ BINARY64  := fzf-$(GOOS)_amd64
 VERSION    = $(shell fzf/$(BINARY64) --version)
 RELEASE32  = fzf-$(VERSION)-$(GOOS)_386
 RELEASE64  = fzf-$(VERSION)-$(GOOS)_amd64
-ARCHIVE64  = fzf-$(VERSION)-$(GOOS)_amd64-archive
+BREW       = fzf-$(VERSION)-homebrew.tgz
 
 all: test release
 
-archive: ../$(ARCHIVE64).tar.gz
+brew: ../$(BREW)
 
-../$(ARCHIVE64).tar.gz: release
-	cd ../ && yes | ./install && \
-	git archive HEAD --output=$(ARCHIVE64).tar --prefix fzf-$(VERSION)/ && \
-	rm -rf fzf-$(VERSION)/bin && mkdir -p fzf-$(VERSION)/bin && \
-	cp -a bin/* fzf-$(VERSION)/bin/ && \
-	tar --append --file $(ARCHIVE64).tar fzf-$(VERSION)/bin/* && \
-	gzip -f $(ARCHIVE64).tar && rm -rf fzf-$(VERSION) && \
+../$(BREW): release
+ifneq ($(UNAME_S),Darwin)
+$(error brew package must be built on OS X)
+endif
+	mkdir -p ../bin && \
+	cp fzf/$(RELEASE64) fzf/$(RELEASE32) ../bin && \
+	cd .. && ln -sf . fzf-$(VERSION) && \
+	tar -cvzf $(BREW) \
+		fzf-$(VERSION)/{{,un}install,fzf-completion.{ba,z}sh,LICENSE} \
+		fzf-$(VERSION)/{plugin/fzf.vim,bin/{$(RELEASE64),$(RELEASE32)}} && \
+	rm fzf-$(VERSION) && \
 	openssl sha1 $(notdir $@)
 
 release: build
 	cd fzf && \
 	cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32) && \
-	cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64) && \
-	rm $(RELEASE32) $(RELEASE64)
+	cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64)
 
 build: fzf/$(BINARY32) fzf/$(BINARY64)
 
@@ -83,4 +86,4 @@ $(DISTRO): docker
 	docker run -i -t -v $(GOPATH):/go junegunn/$(DISTRO)-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
 
-.PHONY: all archive build release test install uninstall clean docker linux $(DISTRO)
+.PHONY: all brew build release test install uninstall clean docker linux $(DISTRO)

@@ -536,7 +536,7 @@ find . | iconv -f utf-8-mac -t utf8//ignore | fzf
 License
 -------
 
-MIT
+[MIT](LICENSE)
 
 Author
 ------

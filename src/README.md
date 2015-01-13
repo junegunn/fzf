@@ -83,7 +83,7 @@ make install
 make linux
 
 # Build tarball for Homebrew release
-make archive
+make brew
 ```
 
 Contribution

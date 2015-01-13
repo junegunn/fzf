@@ -13,9 +13,14 @@ ask() {
 
 check_binary() {
   echo -n "  - Checking fzf executable ... "
-  if ! "$fzf_base"/bin/fzf --version; then
+  local output=$("$fzf_base"/bin/fzf --version 2>&1)
+  if [ "$version" = "$output" ]; then
+    echo "$output"
+  else
+    echo "$output != $version"
     rm -f "$fzf_base"/bin/fzf
-    binary_error="Error occurred"
+    binary_error="Invalid binary"
+    return 1
   fi
 }
 
@@ -27,9 +32,11 @@ symlink() {
 }
 
 download() {
-  echo "Downloading bin/$1 ..."
-  if [ -x "$fzf_base"/bin/$1 ]; then
+  echo "Downloading bin/fzf ..."
+  if [ -x "$fzf_base"/bin/fzf ]; then
     echo "  - Already exists"
+    check_binary && return
+  elif [ -x "$fzf_base"/bin/$1 ]; then
     symlink $1
     check_binary && return
   fi
