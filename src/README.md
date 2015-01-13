@@ -1,6 +1,8 @@
 fzf in Go
 =========
 
+<img src="https://cloud.githubusercontent.com/assets/700826/5725028/028ea834-9b93-11e4-9198-43088c3f295d.gif" height="463" alt="fzf in go">
+
 This directory contains the source code for the new fzf implementation in
 [Go][go].
 
