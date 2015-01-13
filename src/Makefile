@@ -18,10 +18,23 @@ BINDIR    := ../bin
 
 BINARY32  := fzf-$(GOOS)_386
 BINARY64  := fzf-$(GOOS)_amd64
-RELEASE32  = fzf-$(shell fzf/$(BINARY64) --version)-$(GOOS)_386
-RELEASE64  = fzf-$(shell fzf/$(BINARY64) --version)-$(GOOS)_amd64
+VERSION    = $(shell fzf/$(BINARY64) --version)
+RELEASE32  = fzf-$(VERSION)-$(GOOS)_386
+RELEASE64  = fzf-$(VERSION)-$(GOOS)_amd64
+ARCHIVE64  = fzf-$(VERSION)-$(GOOS)_amd64-archive
 
 all: test release
+
+archive: ../$(ARCHIVE64).tar.gz
+
+../$(ARCHIVE64).tar.gz: release
+	cd ../ && yes | ./install && \
+	git archive HEAD --output=$(ARCHIVE64).tar --prefix fzf-$(VERSION)/ && \
+	rm -rf fzf-$(VERSION)/bin && mkdir -p fzf-$(VERSION)/bin && \
+	cp -a bin/* fzf-$(VERSION)/bin/ && \
+	tar --append --file $(ARCHIVE64).tar fzf-$(VERSION)/bin/* && \
+	gzip -f $(ARCHIVE64).tar && rm -rf fzf-$(VERSION) && \
+	openssl sha1 $(notdir $@)
 
 release: build
 	cd fzf && \
@@ -70,4 +83,4 @@ $(DISTRO): docker
 	docker run -i -t -v $(GOPATH):/go junegunn/$(DISTRO)-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
 
-.PHONY: all build release test install uninstall clean docker linux $(DISTRO)
+.PHONY: all archive build release test install uninstall clean docker linux $(DISTRO)

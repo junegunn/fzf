@@ -21,8 +21,9 @@ check_binary() {
 
 symlink() {
   echo "  - Creating symlink: bin/$1 -> bin/fzf"
-  rm -f "$fzf_base"/bin/fzf
-  ln -sf "$fzf_base"/bin/$1 "$fzf_base"/bin/fzf
+  (cd "$fzf_base"/bin &&
+   rm -f fzf
+   ln -sf $1 fzf)
 }
 
 download() {

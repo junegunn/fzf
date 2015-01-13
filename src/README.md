@@ -81,6 +81,9 @@ make install
 
 # Build executables and tarballs for Linux using Docker
 make linux
+
+# Build tarball for Homebrew release
+make archive
 ```
 
 Contribution
