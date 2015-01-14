@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version=0.9.0
+version=0.9.1-dev
 
 cd $(dirname $BASH_SOURCE)
 fzf_base=$(pwd)
@@ -33,7 +33,7 @@ symlink() {
 
 download() {
   echo "Downloading bin/fzf ..."
-  if [ -x "$fzf_base"/bin/fzf ]; then
+  if [[ ! $1 =~ dev && -x "$fzf_base"/bin/fzf ]]; then
     echo "  - Already exists"
     check_binary && return
   elif [ -x "$fzf_base"/bin/$1 ]; then

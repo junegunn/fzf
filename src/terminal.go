@@ -134,7 +134,8 @@ func (t *Terminal) output() {
 		fmt.Println(string(t.input))
 	}
 	if len(t.selected) == 0 {
-		if t.merger.Length() > t.cy {
+		cnt := t.merger.Length()
+		if cnt > 0 && cnt > t.cy {
 			fmt.Println(t.merger.Get(t.listIndex(t.cy)).AsString())
 		}
 	} else {
