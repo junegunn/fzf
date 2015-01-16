@@ -1,19 +1,25 @@
 language: ruby
-rvm:
-  - "2.1.1"
 
-before_script: |
-  sudo apt-get install -y tmux libncurses-dev lib32ncurses5-dev
+install:
+- sudo apt-get install -y libncurses-dev lib32ncurses5-dev
+- sudo add-apt-repository -y ppa:pi-rho/dev
+- sudo apt-get update
+- sudo apt-get install -y tmux=1.9a-1~ppa1~p
 
+script: |
   export GOROOT=~/go1.4
   export GOPATH=~/go
+  export FZF_BASE=~/go/src/github.com/junegunn/fzf
 
   mkdir -p ~/go/src/github.com/junegunn
-  ln -s $(pwd) ~/go/src/github.com/junegunn/fzf
+  ln -s $(pwd) $FZF_BASE
 
-  curl https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz | tar -xz
+  curl https://storage.googleapis.com/golang/go1.4.1.linux-amd64.tar.gz | tar -xz
   mv go $GOROOT
-  cd $GOROOT/src && GOARCH=386 ./make.bash
+  cd $GOROOT/src
+  GOARCH=386 ./make.bash
 
-  cd ~/go/src/github.com/junegunn/fzf/src && make install && cd .. &&
-  yes | ./install && tmux
+  cd $FZF_BASE/src && make install &&
+  cd $FZF_BASE/bin && ln -sf fzf-linux_amd64 fzf-$(./fzf --version)-linux_amd64 &&
+  cd $FZF_BASE && yes | ./install &&
+  tmux new "rake test > out && touch ok" && cat out && [ -e ok ]

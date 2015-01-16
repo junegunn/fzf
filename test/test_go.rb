@@ -10,6 +10,7 @@ class Tmux
 
   def initialize shell = 'bash'
     @win = go("new-window -P -F '#I' 'bash --rcfile ~/.fzf.#{shell}'").first
+    @lines = `tput lines`.chomp.to_i
   end
 
   def self.current
@@ -25,7 +26,7 @@ class Tmux
   end
 
   def close timeout = 1
-    send_keys 'C-c', 'C-u', 'C-d'
+    send_keys 'C-c', 'C-u', 'exit', :Enter
     wait(timeout) { closed? }
   end
 
@@ -41,7 +42,7 @@ class Tmux
   def capture
     go("capture-pane -t #{win} \\; save-buffer #{TEMPNAME}")
     raise "Window not found" if $?.exitstatus != 0
-    File.read(TEMPNAME).split($/)
+    File.read(TEMPNAME).split($/)[0, @lines]
   end
 
   def until timeout = 1
@@ -54,7 +55,15 @@ private
     until yield
       waited += 0.1
       sleep 0.1
-      raise "timeout" if waited > timeout
+      if waited > timeout
+        hl = '=' * 10
+        puts hl
+        capture.each_with_index do |line, idx|
+          puts [idx.to_s.rjust(2), line].join(': ')
+        end
+        puts hl
+        raise "timeout"
+      end
     end
   end
 
@@ -85,7 +94,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
   def test_vanilla
     tmux.send_keys "seq 1 100000 | fzf > #{tempname}", :Enter
-    tmux.until { |lines| lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
+    tmux.until(10) { |lines| lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
     lines = tmux.capture
     assert_equal '  2',             lines[-4]
     assert_equal '> 1',             lines[-3]
@@ -94,7 +103,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
     # Testing basic key bindings
     tmux.send_keys '99', 'C-a', '1', 'C-f', '3', 'C-b', 'C-h', 'C-u', 'C-e', 'C-y', 'C-k', 'Tab', 'BTab'
-    tmux.until { |lines| lines.last == '> 391' }
+    tmux.until { |lines| lines[-2] == '  856/100000' }
     lines = tmux.capture
     assert_equal '> 1391',       lines[-4]
     assert_equal '  391',        lines[-3]
@@ -117,7 +126,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
   def test_fzf_prompt
     tmux.send_keys "fzf -q 'foo bar foo-bar'", :Enter
-    tmux.until { |lines| lines.last =~ /foo-bar/ }
+    tmux.until { |lines| lines.last =~ /^>/ }
 
     # CTRL-A
     tmux.send_keys "C-A", "("
