@@ -515,7 +515,8 @@ func (t *Terminal) Loop() {
 				t.rubout("[^[:alnum:]][[:alnum:]]")
 			}
 		case C.CtrlY:
-			t.input = append(append(t.input[:t.cx], t.yanked...), t.input[t.cx:]...)
+			suffix := copySlice(t.input[t.cx:])
+			t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
 			t.cx += len(t.yanked)
 		case C.Del:
 			t.delChar()

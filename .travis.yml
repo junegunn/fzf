@@ -1,10 +1,19 @@
 language: ruby
-sudo: false
 rvm:
-  - "1.8.7"
-  - "1.9.3"
-  - "2.0.0"
   - "2.1.1"
 
-install: gem install curses minitest
+before_script: |
+  sudo apt-get install -y tmux libncurses-dev lib32ncurses5-dev
 
+  export GOROOT=~/go1.4
+  export GOPATH=~/go
+
+  mkdir -p ~/go/src/github.com/junegunn
+  ln -s $(pwd) ~/go/src/github.com/junegunn/fzf
+
+  curl https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz | tar -xz
+  mv go $GOROOT
+  cd $GOROOT/src && GOARCH=386 ./make.bash
+
+  cd ~/go/src/github.com/junegunn/fzf/src && make install && cd .. &&
+  yes | ./install && tmux
