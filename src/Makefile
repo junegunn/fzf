@@ -36,7 +36,7 @@ test:
 	go get
 	go test -v ./...
 
-install: build $(BINDIR)/fzf
+install: $(BINDIR)/fzf
 
 uninstall:
 	rm -f $(BINDIR)/fzf $(BINDIR)/$(BINARY64)
