@@ -40,7 +40,7 @@ class Tmux
   def capture
     go("capture-pane -t #{win} \\; save-buffer #{TEMPNAME}")
     raise "Window not found" if $?.exitstatus != 0
-    File.read(TEMPNAME).split($/)[0, @lines]
+    File.read(TEMPNAME).split($/)[0, @lines].reverse.drop_while(&:empty?).reverse
   end
 
   def until timeout = 1
