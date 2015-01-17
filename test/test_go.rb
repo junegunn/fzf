@@ -3,6 +3,12 @@
 
 require 'minitest/autorun'
 
+class NilClass
+  def include? str
+    false
+  end
+end
+
 class Tmux
   TEMPNAME = '/tmp/fzf-test.txt'
 
@@ -79,6 +85,19 @@ class TestGoFZF < MiniTest::Unit::TestCase
     '/tmp/output'
   end
 
+  def readtemp
+    waited = 0
+    while waited < 5
+      begin
+        return File.read(tempname)
+      rescue
+        sleep 0.1
+        waited += 0.1
+      end
+    end
+    raise "failed to read tempfile"
+  end
+
   def setup
     ENV.delete 'FZF_DEFAULT_OPTS'
     ENV.delete 'FZF_DEFAULT_COMMAND'
@@ -112,7 +131,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
     tmux.send_keys :Enter
     tmux.close
-    assert_equal '1391', File.read(tempname).chomp
+    assert_equal '1391', readtemp.chomp
   end
 
   def test_fzf_default_command
@@ -121,7 +140,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
     tmux.send_keys :Enter
     tmux.close
-    assert_equal 'hello', File.read(tempname).chomp
+    assert_equal 'hello', readtemp.chomp
   end
 
   def test_key_bindings
@@ -199,7 +218,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
                    :PgUp, 'C-J', :Down, :Tab, :Tab # 8, 7
     tmux.until { |lines| lines[-2].include? '(6)' }
     tmux.send_keys "C-M"
-    assert_equal %w[3 2 5 6 8 7], File.read(tempname).split($/)
+    assert_equal %w[3 2 5 6 8 7], readtemp.split($/)
     tmux.close
   end
 
@@ -209,7 +228,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
                        echo '  first second third/') |
                       fzf #{"--multi" if multi} -x --nth 2 --with-nth 2,-1,1 > #{tempname}",
                       :Enter
-      tmux.until { |lines| lines[-2] && lines[-2].include?('2/2') }
+      tmux.until { |lines| lines[-2].include?('2/2') }
 
       # Transformed list
       lines = tmux.capture
@@ -219,14 +238,14 @@ class TestGoFZF < MiniTest::Unit::TestCase
       # However, the output must not be transformed
       if multi
         tmux.send_keys :BTab, :BTab, :Enter
-        assert_equal ['  1st 2nd 3rd/', '  first second third/'], File.read(tempname).split($/)
+        assert_equal ['  1st 2nd 3rd/', '  first second third/'], readtemp.split($/)
       else
         tmux.send_keys '^', '3'
         tmux.until { |lines| lines[-2].include?('1/2') }
         tmux.send_keys :Enter
         tmux.send_keys 'echo -n done', :Enter
         tmux.until { |lines| lines[-1].include?('done') }
-        assert_equal ['  1st 2nd 3rd/'], File.read(tempname).split($/)
+        assert_equal ['  1st 2nd 3rd/'], readtemp.split($/)
       end
     end
   end
@@ -242,8 +261,20 @@ class TestGoFZF < MiniTest::Unit::TestCase
       tmux.send_keys :Enter
       tmux.send_keys 'echo -n done', :Enter
       tmux.until { |lines| lines[-1].include?('done') }
-      assert_equal '100', File.read(tempname).chomp
+      assert_equal '100', readtemp.chomp
     end
+  end
+
+  def test_select_1
+    tmux.send_keys "seq 1 100 | fzf --with-nth ..,.. --print-query -q 5555 -1 > #{tempname} && echo -n done", :Enter
+    tmux.until { |lines| lines[-1].include?('done') }
+    assert_equal ['5555', '55'], readtemp.split($/)
+  end
+
+  def test_exit_0
+    tmux.send_keys "seq 1 100 | fzf --with-nth ..,.. --print-query -q 555555 -0 > #{tempname} && echo -n done", :Enter
+    tmux.until { |lines| lines[-1].include?('done') }
+    assert_equal ['555555'], readtemp.split($/)
   end
 end
 
