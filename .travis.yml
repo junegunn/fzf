@@ -1,10 +1,23 @@
 language: ruby
-sudo: false
-rvm:
-  - "1.8.7"
-  - "1.9.3"
-  - "2.0.0"
-  - "2.1.1"
 
-install: gem install curses minitest
+install:
+- sudo apt-get install -y libncurses-dev lib32ncurses5-dev
+- sudo add-apt-repository -y ppa:pi-rho/dev
+- sudo apt-get update
+- sudo apt-get install -y tmux=1.9a-1~ppa1~p
 
+script: |
+  export GOROOT=~/go1.4
+  export GOPATH=~/go
+  export FZF_BASE=~/go/src/github.com/junegunn/fzf
+
+  mkdir -p ~/go/src/github.com/junegunn
+  ln -s $(pwd) $FZF_BASE
+
+  curl https://storage.googleapis.com/golang/go1.4.1.linux-amd64.tar.gz | tar -xz
+  mv go $GOROOT
+
+  cd $FZF_BASE/src && make test fzf/fzf-linux_amd64 install &&
+  cd $FZF_BASE/bin && ln -sf fzf-linux_amd64 fzf-$(./fzf --version)-linux_amd64 &&
+  cd $FZF_BASE && yes | ./install &&
+  tmux new "rake test > out && touch ok" && cat out && [ -e ok ]

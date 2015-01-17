@@ -22,7 +22,7 @@ VERSION    = $(shell fzf/$(BINARY64) --version)
 RELEASE32  = fzf-$(VERSION)-$(GOOS)_386
 RELEASE64  = fzf-$(VERSION)-$(GOOS)_amd64
 
-all: test release
+all: release
 
 release: build
 	cd fzf && \
@@ -30,7 +30,7 @@ release: build
 	cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64) && \
 	rm $(RELEASE32) $(RELEASE64)
 
-build: fzf/$(BINARY32) fzf/$(BINARY64)
+build: test fzf/$(BINARY32) fzf/$(BINARY64)
 
 test:
 	go get
