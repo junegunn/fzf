@@ -16,6 +16,7 @@ check_binary() {
   local output=$("$fzf_base"/bin/fzf --version 2>&1)
   if [ "$version" = "$output" ]; then
     echo "$output"
+    binary_error=""
   else
     echo "$output != $version"
     rm -f "$fzf_base"/bin/fzf
@@ -27,8 +28,12 @@ check_binary() {
 symlink() {
   echo "  - Creating symlink: bin/$1 -> bin/fzf"
   (cd "$fzf_base"/bin &&
-   rm -f fzf
+   rm -f fzf &&
    ln -sf $1 fzf)
+  if [ $? -ne 0 ]; then
+    binary_error="Failed to create symlink"
+    return 1
+  fi
 }
 
 download() {
@@ -37,8 +42,7 @@ download() {
     echo "  - Already exists"
     check_binary && return
   elif [ -x "$fzf_base"/bin/$1 ]; then
-    symlink $1
-    check_binary && return
+    symlink $1 && check_binary && return
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
