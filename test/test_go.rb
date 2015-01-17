@@ -15,16 +15,8 @@ class Tmux
   attr_reader :win
 
   def initialize shell = 'bash'
-    @win = go("new-window -P -F '#I' 'bash --rcfile ~/.fzf.#{shell}'").first
+    @win = go("new-window -d -P -F '#I' 'PS1= bash --rcfile ~/.fzf.#{shell}'").first
     @lines = `tput lines`.chomp.to_i
-  end
-
-  def self.current
-    `tmux display-message -p '#I'`.split($/).first
-  end
-
-  def self.select id
-    system "tmux select-window -t #{id}"
   end
 
   def closed?
@@ -85,6 +77,12 @@ class TestGoFZF < MiniTest::Unit::TestCase
     '/tmp/output'
   end
 
+  def rmtemp
+    while File.exists? tempname
+      File.unlink tempname rescue nil
+    end
+  end
+
   def readtemp
     waited = 0
     while waited < 5
@@ -101,14 +99,12 @@ class TestGoFZF < MiniTest::Unit::TestCase
   def setup
     ENV.delete 'FZF_DEFAULT_OPTS'
     ENV.delete 'FZF_DEFAULT_COMMAND'
-    @prev = Tmux.current
     @tmux = Tmux.new
-    File.unlink tempname rescue nil
+    rmtemp
   end
 
   def teardown
     @tmux.kill
-    Tmux.select @prev
   end
 
   def test_vanilla
@@ -210,7 +206,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
   end
 
   def test_multi_order
-    tmux.send_keys "seq 1 10 | fzf --multi > #{tempname}", :Enter
+    tmux.send_keys "seq 1 10 | fzf --multi > #{tempname} && echo -n done", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
     tmux.send_keys :Tab, :Up, :Up, :Tab, :Tab, :Tab, # 3, 2
@@ -218,15 +214,18 @@ class TestGoFZF < MiniTest::Unit::TestCase
                    :PgUp, 'C-J', :Down, :Tab, :Tab # 8, 7
     tmux.until { |lines| lines[-2].include? '(6)' }
     tmux.send_keys "C-M"
+    tmux.until { |lines| lines[-1].include?('done') }
     assert_equal %w[3 2 5 6 8 7], readtemp.split($/)
     tmux.close
   end
 
   def test_with_nth
     [true, false].each do |multi|
+      rmtemp
+
       tmux.send_keys "(echo '  1st 2nd 3rd/';
                        echo '  first second third/') |
-                      fzf #{"--multi" if multi} -x --nth 2 --with-nth 2,-1,1 > #{tempname}",
+                      fzf #{"--multi" if multi} -x --nth 2 --with-nth 2,-1,1 > #{tempname} && echo -n done",
                       :Enter
       tmux.until { |lines| lines[-2].include?('2/2') }
 
@@ -238,12 +237,12 @@ class TestGoFZF < MiniTest::Unit::TestCase
       # However, the output must not be transformed
       if multi
         tmux.send_keys :BTab, :BTab, :Enter
+        tmux.until { |lines| lines[-1].include?('done') }
         assert_equal ['  1st 2nd 3rd/', '  first second third/'], readtemp.split($/)
       else
         tmux.send_keys '^', '3'
         tmux.until { |lines| lines[-2].include?('1/2') }
         tmux.send_keys :Enter
-        tmux.send_keys 'echo -n done', :Enter
         tmux.until { |lines| lines[-1].include?('done') }
         assert_equal ['  1st 2nd 3rd/'], readtemp.split($/)
       end
@@ -252,14 +251,13 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
   def test_scroll
     [true, false].each do |rev|
-      tmux.send_keys "seq 1 100 | fzf #{'--reverse' if rev} > #{tempname}", :Enter
-      tmux.until { |lines| rev ? lines.first == '>' : lines.last == '>' }
+      rmtemp
 
-      110.times do
-        tmux.send_keys rev ? :Down : :Up
-      end
+      tmux.send_keys "seq 1 100 | fzf #{'--reverse' if rev} > #{tempname} && echo -n done", :Enter
+      tmux.until { |lines| rev ? lines.first == '>' : lines.last == '>' }
+      tmux.send_keys *110.times.map { rev ? :Down : :Up }
+      tmux.until { |lines| lines.include? '> 100' }
       tmux.send_keys :Enter
-      tmux.send_keys 'echo -n done', :Enter
       tmux.until { |lines| lines[-1].include?('done') }
       assert_equal '100', readtemp.chomp
     end
