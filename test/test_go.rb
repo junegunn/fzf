@@ -124,7 +124,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
     assert_equal 'hello', File.read(tempname).chomp
   end
 
-  def test_fzf_prompt
+  def test_key_bindings
     tmux.send_keys "fzf -q 'foo bar foo-bar'", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
@@ -190,7 +190,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
     tmux.close
   end
 
-  def test_fzf_multi_order
+  def test_multi_order
     tmux.send_keys "seq 1 10 | fzf --multi > #{tempname}", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
@@ -201,6 +201,32 @@ class TestGoFZF < MiniTest::Unit::TestCase
     tmux.send_keys "C-M"
     assert_equal %w[3 2 5 6 8 7], File.read(tempname).split($/)
     tmux.close
+  end
+
+  def test_with_nth
+    [true, false].each do |multi|
+      tmux.send_keys "(echo '  1st 2nd 3rd/';
+                       echo '  first second third/') |
+                      fzf #{"--multi" if multi} -x --nth 2 --with-nth 2,-1,1 > #{tempname}",
+                      :Enter
+      tmux.until { |lines| lines[-2] && lines[-2].include?('2/2') }
+
+      # Transformed list
+      lines = tmux.capture
+      assert_equal '  second third/first', lines[-4]
+      assert_equal '> 2nd 3rd/1st',        lines[-3]
+
+      # However, the output must not be transformed
+      if multi
+        tmux.send_keys :BTab, :BTab, :Enter
+        assert_equal ['  1st 2nd 3rd/', '  first second third/'], File.read(tempname).split($/)
+      else
+        tmux.send_keys '^', '3'
+        tmux.until { |lines| lines[-2].include?('1/2') }
+        tmux.send_keys :Enter
+        assert_equal ['  1st 2nd 3rd/'], File.read(tempname).split($/)
+      end
+    end
   end
 end
 
