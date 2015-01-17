@@ -30,12 +30,31 @@ type Terminal struct {
 	progress   int
 	reading    bool
 	merger     *Merger
-	selected   map[*string]*string
+	selected   map[*string]selectedItem
 	reqBox     *util.EventBox
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
 	initFunc   func()
 	suppress   bool
+}
+
+type selectedItem struct {
+	at   time.Time
+	text *string
+}
+
+type ByTimeOrder []selectedItem
+
+func (a ByTimeOrder) Len() int {
+	return len(a)
+}
+
+func (a ByTimeOrder) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByTimeOrder) Less(i, j int) bool {
+	return a[i].at.Before(a[j].at)
 }
 
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
@@ -70,7 +89,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		multi:      opts.Multi,
 		printQuery: opts.PrintQuery,
 		merger:     EmptyMerger,
-		selected:   make(map[*string]*string),
+		selected:   make(map[*string]selectedItem),
 		reqBox:     util.NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -139,12 +158,13 @@ func (t *Terminal) output() {
 			fmt.Println(t.merger.Get(t.listIndex(t.cy)).AsString())
 		}
 	} else {
-		for ptr, orig := range t.selected {
-			if orig != nil {
-				fmt.Println(*orig)
-			} else {
-				fmt.Println(*ptr)
-			}
+		sels := make([]selectedItem, 0, len(t.selected))
+		for _, sel := range t.selected {
+			sels = append(sels, sel)
+		}
+		sort.Sort(ByTimeOrder(sels))
+		for _, sel := range sels {
+			fmt.Println(*sel.text)
 		}
 	}
 }
@@ -444,7 +464,13 @@ func (t *Terminal) Loop() {
 			if idx < t.merger.Length() {
 				item := t.merger.Get(idx)
 				if _, found := t.selected[item.text]; !found {
-					t.selected[item.text] = item.origText
+					var strptr *string
+					if item.origText != nil {
+						strptr = item.origText
+					} else {
+						strptr = item.text
+					}
+					t.selected[item.text] = selectedItem{time.Now(), strptr}
 				} else {
 					delete(t.selected, item.text)
 				}

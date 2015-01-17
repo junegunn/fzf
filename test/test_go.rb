@@ -189,5 +189,18 @@ class TestGoFZF < MiniTest::Unit::TestCase
     tmux.until { |lines| lines.last !~ /^>/ }
     tmux.close
   end
+
+  def test_fzf_multi_order
+    tmux.send_keys "seq 1 10 | fzf --multi > #{tempname}", :Enter
+    tmux.until { |lines| lines.last =~ /^>/ }
+
+    tmux.send_keys :Tab, :Up, :Up, :Tab, :Tab, :Tab, # 3, 2
+                   'C-K', 'C-K', 'C-K', 'C-K', :BTab, :BTab, # 5, 6
+                   :PgUp, 'C-J', :Down, :Tab, :Tab # 8, 7
+    tmux.until { |lines| lines[-2].include? '(6)' }
+    tmux.send_keys "C-M"
+    assert_equal %w[3 2 5 6 8 7], File.read(tempname).split($/)
+    tmux.close
+  end
 end
 
