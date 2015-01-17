@@ -224,8 +224,25 @@ class TestGoFZF < MiniTest::Unit::TestCase
         tmux.send_keys '^', '3'
         tmux.until { |lines| lines[-2].include?('1/2') }
         tmux.send_keys :Enter
+        tmux.send_keys 'echo -n done', :Enter
+        tmux.until { |lines| lines[-1].include?('done') }
         assert_equal ['  1st 2nd 3rd/'], File.read(tempname).split($/)
       end
+    end
+  end
+
+  def test_scroll
+    [true, false].each do |rev|
+      tmux.send_keys "seq 1 100 | fzf #{'--reverse' if rev} > #{tempname}", :Enter
+      tmux.until { |lines| rev ? lines.first == '>' : lines.last == '>' }
+
+      110.times do
+        tmux.send_keys rev ? :Down : :Up
+      end
+      tmux.send_keys :Enter
+      tmux.send_keys 'echo -n done', :Enter
+      tmux.until { |lines| lines[-1].include?('done') }
+      assert_equal '100', File.read(tempname).chomp
     end
   end
 end
