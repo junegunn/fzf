@@ -19,6 +19,9 @@ git pull
 ./install
 ```
 
+Otherwise, simply follow [the instruction][install] as before. You can also
+install fzf using Homebrew if you prefer that way.
+
 Motivations
 -----------
 
@@ -110,6 +113,7 @@ License
 
 [MIT](LICENSE)
 
+[install]: https://github.com/junegunn/fzf#installation
 [go]:      https://golang.org/
 [gil]:     http://en.wikipedia.org/wiki/Global_Interpreter_Lock
 [ncurses]: https://www.gnu.org/software/ncurses/
