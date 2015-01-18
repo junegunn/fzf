@@ -19,8 +19,8 @@ git pull
 ./install
 ```
 
-Otherwise, simply follow [the instruction][install] as before. You can also
-install fzf using Homebrew if you prefer that way.
+Otherwise, follow [the instruction][install] as before. You can also install
+fzf using Homebrew if you prefer that way.
 
 Motivations
 -----------
