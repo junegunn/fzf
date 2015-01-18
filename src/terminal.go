@@ -1,10 +1,12 @@
 package fzf
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -169,10 +171,18 @@ func (t *Terminal) output() {
 	}
 }
 
+func runeWidth(r rune, prefixWidth int) int {
+	if r == '\t' {
+		return 8 - prefixWidth%8
+	} else {
+		return runewidth.RuneWidth(r)
+	}
+}
+
 func displayWidth(runes []rune) int {
 	l := 0
 	for _, r := range runes {
-		l += runewidth.RuneWidth(r)
+		l += runeWidth(r, l)
 	}
 	return l
 }
@@ -254,16 +264,27 @@ func (t *Terminal) printItem(item *Item, current bool) {
 }
 
 func trimRight(runes []rune, width int) ([]rune, int) {
-	currentWidth := displayWidth(runes)
-	trimmed := 0
-
-	for currentWidth > width && len(runes) > 0 {
-		sz := len(runes)
-		currentWidth -= runewidth.RuneWidth(runes[sz-1])
-		runes = runes[:sz-1]
-		trimmed++
+	// We start from the beginning to handle tab characters
+	l := 0
+	for idx, r := range runes {
+		l += runeWidth(r, l)
+		if idx > 0 && l > width {
+			return runes[:idx], len(runes) - idx
+		}
 	}
-	return runes, trimmed
+	return runes, 0
+}
+
+func displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
+	l := 0
+	for _, r := range runes {
+		l += runeWidth(r, l+prefixWidth)
+		if l > limit {
+			// Early exit
+			return l
+		}
+	}
+	return l
 }
 
 func trimLeft(runes []rune, width int) ([]rune, int32) {
@@ -271,9 +292,9 @@ func trimLeft(runes []rune, width int) ([]rune, int32) {
 	var trimmed int32
 
 	for currentWidth > width && len(runes) > 0 {
-		currentWidth -= runewidth.RuneWidth(runes[0])
 		runes = runes[1:]
 		trimmed++
+		currentWidth = displayWidthWithLimit(runes, 2, width)
 	}
 	return runes, trimmed
 }
@@ -323,16 +344,39 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 
 	sort.Sort(ByOrder(offsets))
 	var index int32
+	var substr string
+	var prefixWidth int
 	for _, offset := range offsets {
 		b := util.Max32(index, offset[0])
 		e := util.Max32(index, offset[1])
-		C.CPrint(col1, bold, string(text[index:b]))
-		C.CPrint(col2, bold, string(text[b:e]))
+
+		substr, prefixWidth = processTabs(text[index:b], prefixWidth)
+		C.CPrint(col1, bold, substr)
+
+		substr, prefixWidth = processTabs(text[b:e], prefixWidth)
+		C.CPrint(col2, bold, substr)
+
 		index = e
 	}
 	if index < int32(len(text)) {
-		C.CPrint(col1, bold, string(text[index:]))
+		substr, _ = processTabs(text[index:], prefixWidth)
+		C.CPrint(col1, bold, substr)
 	}
+}
+
+func processTabs(runes []rune, prefixWidth int) (string, int) {
+	var strbuf bytes.Buffer
+	l := prefixWidth
+	for _, r := range runes {
+		w := runeWidth(r, l)
+		l += w
+		if r == '\t' {
+			strbuf.WriteString(strings.Repeat(" ", w))
+		} else {
+			strbuf.WriteRune(r)
+		}
+	}
+	return strbuf.String(), l
 }
 
 func (t *Terminal) printAll() {
