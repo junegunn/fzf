@@ -266,6 +266,17 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		}
 	}
+
+	// If we're not using extended search mode, --nth option becomes irrelevant
+	// if it contains the whole range
+	if opts.Mode == ModeFuzzy || len(opts.Nth) == 1 {
+		for _, r := range opts.Nth {
+			if r.begin == rangeEllipsis && r.end == rangeEllipsis {
+				opts.Nth = make([]Range, 0)
+				return
+			}
+		}
+	}
 }
 
 // ParseOptions parses command-line options

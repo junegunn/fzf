@@ -28,22 +28,32 @@ type Token struct {
 	prefixLength int
 }
 
+func newRange(begin int, end int) Range {
+	if begin == 1 {
+		begin = rangeEllipsis
+	}
+	if end == -1 {
+		end = rangeEllipsis
+	}
+	return Range{begin, end}
+}
+
 // ParseRange parses nth-expression and returns the corresponding Range object
 func ParseRange(str *string) (Range, bool) {
 	if (*str) == ".." {
-		return Range{rangeEllipsis, rangeEllipsis}, true
+		return newRange(rangeEllipsis, rangeEllipsis), true
 	} else if strings.HasPrefix(*str, "..") {
 		end, err := strconv.Atoi((*str)[2:])
 		if err != nil || end == 0 {
 			return Range{}, false
 		}
-		return Range{rangeEllipsis, end}, true
+		return newRange(rangeEllipsis, end), true
 	} else if strings.HasSuffix(*str, "..") {
 		begin, err := strconv.Atoi((*str)[:len(*str)-2])
 		if err != nil || begin == 0 {
 			return Range{}, false
 		}
-		return Range{begin, rangeEllipsis}, true
+		return newRange(begin, rangeEllipsis), true
 	} else if strings.Contains(*str, "..") {
 		ns := strings.Split(*str, "..")
 		if len(ns) != 2 {
@@ -51,17 +61,17 @@ func ParseRange(str *string) (Range, bool) {
 		}
 		begin, err1 := strconv.Atoi(ns[0])
 		end, err2 := strconv.Atoi(ns[1])
-		if err1 != nil || err2 != nil {
+		if err1 != nil || err2 != nil || begin == 0 || end == 0 {
 			return Range{}, false
 		}
-		return Range{begin, end}, true
+		return newRange(begin, end), true
 	}
 
 	n, err := strconv.Atoi(*str)
 	if err != nil || n == 0 {
 		return Range{}, false
 	}
-	return Range{n, n}, true
+	return newRange(n, n), true
 }
 
 func withPrefixLengths(tokens []string, begin int) []Token {
