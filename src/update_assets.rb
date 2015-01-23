@@ -5,6 +5,7 @@ require 'rest_client'
 
 if ARGV.length < 3
   puts "usage: #$0 <token> <version> <files...>"
+  exit 1
 end
 
 token, version, *files = ARGV
