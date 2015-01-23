@@ -421,6 +421,10 @@ func Clear() {
 	C.clear()
 }
 
+func Endwin() {
+	C.endwin()
+}
+
 func Refresh() {
 	C.refresh()
 }

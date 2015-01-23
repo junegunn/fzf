@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	C "github.com/junegunn/fzf/src/curses"
@@ -452,6 +454,15 @@ func (t *Terminal) Loop() {
 			<-timer.C
 			t.reqBox.Set(reqRefresh, nil)
 		}()
+
+		resizeChan := make(chan os.Signal, 1)
+		signal.Notify(resizeChan, syscall.SIGWINCH)
+		go func() {
+			for {
+				<-resizeChan
+				t.reqBox.Set(reqRedraw, nil)
+			}
+		}()
 	}
 
 	go func() {
@@ -471,6 +482,8 @@ func (t *Terminal) Loop() {
 						t.suppress = false
 					case reqRedraw:
 						C.Clear()
+						C.Endwin()
+						C.Refresh()
 						t.printAll()
 					case reqClose:
 						C.Close()
