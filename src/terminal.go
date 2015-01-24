@@ -62,6 +62,7 @@ func (a ByTimeOrder) Less(i, j int) bool {
 }
 
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
+var _runeWidths = make(map[rune]int)
 
 const (
 	reqPrompt util.EventType = iota
@@ -176,8 +177,12 @@ func (t *Terminal) output() {
 func runeWidth(r rune, prefixWidth int) int {
 	if r == '\t' {
 		return 8 - prefixWidth%8
+	} else if w, found := _runeWidths[r]; found {
+		return w
 	} else {
-		return runewidth.RuneWidth(r)
+		w := runewidth.RuneWidth(r)
+		_runeWidths[r] = w
+		return w
 	}
 }
 
