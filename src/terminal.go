@@ -86,7 +86,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		prompt:     opts.Prompt,
 		tac:        opts.Sort == 0,
 		reverse:    opts.Reverse,
-		cx:         displayWidth(input),
+		cx:         len(input),
 		cy:         0,
 		offset:     0,
 		yanked:     []rune{},

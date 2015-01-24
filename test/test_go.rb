@@ -273,5 +273,13 @@ class TestGoFZF < MiniTest::Unit::TestCase
     tmux.until { |lines| lines[-1].include?('FIN') }
     assert_equal ['555555'], readonce.split($/)
   end
+
+  def test_query_unicode
+    tmux.send_keys "(echo abc; echo 가나다) | fzf --query 가다 > #{TEMPNAME}", :Enter
+    tmux.until { |lines| lines.last.start_with? '>' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1].include?('FIN') }
+    assert_equal ['가나다'], readonce.split($/)
+  end
 end
 
