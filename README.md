@@ -30,13 +30,13 @@ curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
 
 The script will setup:
 
-- `fzf` function (bash, zsh, fish)
+- `fzf` command
 - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
 - Fuzzy auto-completion (bash)
 
-If you don't use any of the aforementioned shells, you have to manually place
-fzf executable in a directory included in `$PATH`. Key bindings and
-auto-completion will not be available in that case.
+If you don't need the extra goodies, you can simply download
+[fzf executable](https://github.com/junegunn/fzf-bin/releases)
+and place it in a directory included in `$PATH`.
 
 ### Install as Vim plugin
 
@@ -542,4 +542,3 @@ Author
 ------
 
 Junegunn Choi
-
