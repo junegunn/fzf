@@ -71,7 +71,7 @@ usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
 
   Search result
-    -s, --sort=MAX        Maximum number of matched items to sort (default: 1000)
+    -s, --sort            Sort the result
     +s, --no-sort         Do not sort the result. Keep the sequence unchanged.
 
   Interface
@@ -92,7 +92,7 @@ usage: fzf [options]
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m --sort 10000")
+    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m")
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
