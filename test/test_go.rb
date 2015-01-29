@@ -38,7 +38,7 @@ class Tmux
   attr_reader :win
 
   def initialize shell = 'bash'
-    @win = go("new-window -d -P -F '#I' 'PS1=FIN PROMPT_COMMAND= bash --rcfile ~/.fzf.#{shell}'").first
+    @win = go("new-window -d -P -F '#I' 'PS1= PROMPT_COMMAND= bash --rcfile ~/.fzf.#{shell}'").first
     @lines = `tput lines`.chomp.to_i
   end
 
@@ -96,6 +96,7 @@ end
 class TestGoFZF < MiniTest::Unit::TestCase
   include Temp
 
+  FIN = 'FIN'
   TEMPNAME = '/tmp/output'
 
   attr_reader :tmux
@@ -110,8 +111,23 @@ class TestGoFZF < MiniTest::Unit::TestCase
     @tmux.kill
   end
 
+  def fzf(*opts)
+    opts = opts.map { |o|
+      case o
+      when Symbol
+        o = o.to_s
+        o.length > 1 ? "--#{o.gsub('_', '-')}" : "-#{o}"
+      when String, Numeric
+        o.to_s
+      else
+        nil
+      end
+    }.compact
+    "fzf #{opts.join ' '} > #{TEMPNAME} && echo #{FIN}"
+  end
+
   def test_vanilla
-    tmux.send_keys "seq 1 100000 | fzf > #{TEMPNAME}", :Enter
+    tmux.send_keys "seq 1 100000 | #{fzf}", :Enter
     tmux.until(10) { |lines| lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
     lines = tmux.capture
     assert_equal '  2',             lines[-4]
@@ -134,7 +150,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
   end
 
   def test_fzf_default_command
-    tmux.send_keys "FZF_DEFAULT_COMMAND='echo hello' fzf > #{TEMPNAME}", :Enter
+    tmux.send_keys "FZF_DEFAULT_COMMAND='echo hello' #{fzf}", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
     tmux.send_keys :Enter
@@ -209,7 +225,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
   end
 
   def test_multi_order
-    tmux.send_keys "seq 1 10 | fzf --multi > #{TEMPNAME}", :Enter
+    tmux.send_keys "seq 1 10 | #{fzf :multi}", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
     tmux.send_keys :Tab, :Up, :Up, :Tab, :Tab, :Tab, # 3, 2
@@ -217,7 +233,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
                    :PgUp, 'C-J', :Down, :Tab, :Tab # 8, 7
     tmux.until { |lines| lines[-2].include? '(6)' }
     tmux.send_keys "C-M"
-    tmux.until { |lines| lines[-1].include?('FIN') }
+    tmux.until { |lines| lines[-1].include?(FIN) }
     assert_equal %w[3 2 5 6 8 7], readonce.split($/)
     tmux.close
   end
@@ -226,7 +242,7 @@ class TestGoFZF < MiniTest::Unit::TestCase
     [true, false].each do |multi|
       tmux.send_keys "(echo '  1st 2nd 3rd/';
                        echo '  first second third/') |
-                      fzf #{"--multi" if multi} -x --nth 2 --with-nth 2,-1,1 > #{TEMPNAME}",
+                       #{fzf multi && :multi, :x, :nth, 2, :with_nth, '2,-1,1'}",
                       :Enter
       tmux.until { |lines| lines[-2].include?('2/2') }
 
@@ -238,13 +254,13 @@ class TestGoFZF < MiniTest::Unit::TestCase
       # However, the output must not be transformed
       if multi
         tmux.send_keys :BTab, :BTab, :Enter
-        tmux.until { |lines| lines[-1].include?('FIN') }
+        tmux.until { |lines| lines[-1].include?(FIN) }
         assert_equal ['  1st 2nd 3rd/', '  first second third/'], readonce.split($/)
       else
         tmux.send_keys '^', '3'
         tmux.until { |lines| lines[-2].include?('1/2') }
         tmux.send_keys :Enter
-        tmux.until { |lines| lines[-1].include?('FIN') }
+        tmux.until { |lines| lines[-1].include?(FIN) }
         assert_equal ['  1st 2nd 3rd/'], readonce.split($/)
       end
     end
@@ -252,33 +268,33 @@ class TestGoFZF < MiniTest::Unit::TestCase
 
   def test_scroll
     [true, false].each do |rev|
-      tmux.send_keys "seq 1 100 | fzf #{'--reverse' if rev} > #{TEMPNAME}", :Enter
+      tmux.send_keys "seq 1 100 | #{fzf rev && :reverse}", :Enter
       tmux.until { |lines| lines.include? '  100/100' }
       tmux.send_keys *110.times.map { rev ? :Down : :Up }
       tmux.until { |lines| lines.include? '> 100' }
       tmux.send_keys :Enter
-      tmux.until { |lines| lines[-1].include?('FIN') }
+      tmux.until { |lines| lines[-1].include?(FIN) }
       assert_equal '100', readonce.chomp
     end
   end
 
   def test_select_1
-    tmux.send_keys "seq 1 100 | fzf --with-nth ..,.. --print-query -q 5555 -1 > #{TEMPNAME}", :Enter
-    tmux.until { |lines| lines[-1].include?('FIN') }
+    tmux.send_keys "seq 1 100 | #{fzf :with_nth, '..,..', :print_query, :q, 5555, :'1'}", :Enter
+    tmux.until { |lines| lines[-1].include?(FIN) }
     assert_equal ['5555', '55'], readonce.split($/)
   end
 
   def test_exit_0
-    tmux.send_keys "seq 1 100 | fzf --with-nth ..,.. --print-query -q 555555 -0 > #{TEMPNAME}", :Enter
-    tmux.until { |lines| lines[-1].include?('FIN') }
+    tmux.send_keys "seq 1 100 | #{fzf :with_nth, '..,..', :print_query, :q, 555555, :'0'}", :Enter
+    tmux.until { |lines| lines[-1].include?(FIN) }
     assert_equal ['555555'], readonce.split($/)
   end
 
   def test_query_unicode
-    tmux.send_keys "(echo abc; echo 가나다) | fzf --query 가다 > #{TEMPNAME}", :Enter
+    tmux.send_keys "(echo abc; echo 가나다) | #{fzf :query, '가다'}", :Enter
     tmux.until { |lines| lines.last.start_with? '>' }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1].include?('FIN') }
+    tmux.until { |lines| lines[-1].include?(FIN) }
     assert_equal ['가나다'], readonce.split($/)
   end
 end
