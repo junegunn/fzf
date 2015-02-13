@@ -41,10 +41,12 @@ const usage = `usage: fzf [options]
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
         --print-query     Print query as the first line
+        --sync            Synchronous search for multi-staged filtering
+                          (e.g. 'fzf --multi | fzf --sync')
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m")
+    FZF_DEFAULT_OPTS      Defaults options. (e.g. '-x -m')
 
 `
 
@@ -88,6 +90,7 @@ type Options struct {
 	Exit0      bool
 	Filter     *string
 	PrintQuery bool
+	Sync       bool
 	Version    bool
 }
 
@@ -111,6 +114,7 @@ func defaultOptions() *Options {
 		Exit0:      false,
 		Filter:     nil,
 		PrintQuery: false,
+		Sync:       false,
 		Version:    false}
 }
 
@@ -244,6 +248,12 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
+		case "--sync":
+			opts.Sync = true
+		case "--no-sync":
+			opts.Sync = false
+		case "--async":
+			opts.Sync = false
 		case "--version":
 			opts.Version = true
 		default:

@@ -78,3 +78,18 @@ func (b *EventBox) Unwatch(events ...EventType) {
 		b.ignore[event] = true
 	}
 }
+
+func (b *EventBox) WaitFor(event EventType) {
+	looping := true
+	for looping {
+		b.Wait(func(events *Events) {
+			for evt := range *events {
+				switch evt {
+				case event:
+					looping = false
+					return
+				}
+			}
+		})
+	}
+}

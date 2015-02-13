@@ -89,10 +89,12 @@ usage: fzf [options]
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
         --print-query     Print query as the first line
+        --sync            Synchronous search for multi-staged filtering
+                          (e.g. 'fzf --multi | fzf --sync')
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m")
+    FZF_DEFAULT_OPTS      Defaults options. (e.g. '-x -m')
 ```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the

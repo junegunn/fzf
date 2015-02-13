@@ -110,19 +110,8 @@ func Run(options *Options) {
 		}
 		pattern := patternBuilder([]rune(patternString))
 
-		looping := true
 		eventBox.Unwatch(EvtReadNew)
-		for looping {
-			eventBox.Wait(func(events *util.Events) {
-				for evt := range *events {
-					switch evt {
-					case EvtReadFin:
-						looping = false
-						return
-					}
-				}
-			})
-		}
+		eventBox.WaitFor(EvtReadFin)
 
 		snapshot, _ := chunkList.Snapshot()
 		merger, cancelled := matcher.scan(MatchRequest{
@@ -140,6 +129,12 @@ func Run(options *Options) {
 			}
 			os.Exit(0)
 		}
+	}
+
+	// Synchronous search
+	if opts.Sync {
+		eventBox.Unwatch(EvtReadNew)
+		eventBox.WaitFor(EvtReadFin)
 	}
 
 	// Go interactive
