@@ -14,7 +14,7 @@ func TestReadFromCommand(t *testing.T) {
 		eventBox: eb}
 
 	// Check EventBox
-	if eb.Peak(EvtReadNew) {
+	if eb.Peek(EvtReadNew) {
 		t.Error("EvtReadNew should not be set yet")
 	}
 
@@ -25,7 +25,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Check EventBox again
-	if !eb.Peak(EvtReadNew) {
+	if !eb.Peek(EvtReadNew) {
 		t.Error("EvtReadNew should be set yet")
 	}
 
@@ -38,7 +38,7 @@ func TestReadFromCommand(t *testing.T) {
 	})
 
 	// EventBox is cleared
-	if eb.Peak(EvtReadNew) {
+	if eb.Peek(EvtReadNew) {
 		t.Error("EvtReadNew should not be set yet")
 	}
 
@@ -50,7 +50,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Check EventBox again
-	if eb.Peak(EvtReadNew) {
+	if eb.Peek(EvtReadNew) {
 		t.Error("Command failed. EvtReadNew should be set")
 	}
 }

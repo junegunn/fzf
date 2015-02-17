@@ -53,8 +53,8 @@ func (events *Events) Clear() {
 	}
 }
 
-// Peak peaks at the event box if the given event is set
-func (b *EventBox) Peak(event EventType) bool {
+// Peek peeks at the event box if the given event is set
+func (b *EventBox) Peek(event EventType) bool {
 	b.cond.L.Lock()
 	defer b.cond.L.Unlock()
 	_, ok := b.events[event]

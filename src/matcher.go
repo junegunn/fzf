@@ -183,7 +183,7 @@ func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
 			break
 		}
 
-		if !empty && m.reqBox.Peak(reqReset) {
+		if !empty && m.reqBox.Peek(reqReset) {
 			return nil, wait()
 		}
 
