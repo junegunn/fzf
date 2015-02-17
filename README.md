@@ -11,6 +11,20 @@ the likes.
 Installation
 ------------
 
+fzf project consists of the followings:
+
+- `fzf` executable
+- Shell extensions
+    - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
+    - Fuzzy auto-completion (bash)
+
+You can [download fzf executable][bin] alone, but it's recommended that you
+install the extra stuff using the attached install script.
+
+[bin]: https://github.com/junegunn/fzf-bin/releases
+
+### Using git (recommended)
+
 Clone this repository and run
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
@@ -18,6 +32,8 @@ Clone this repository and run
 git clone https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
+
+### Using curl
 
 In case you don't have git installed:
 
@@ -28,15 +44,16 @@ curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
 ~/.fzf/install
 ```
 
-The script will setup:
+### Using Homebrew
 
-- `fzf` command
-- Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
-- Fuzzy auto-completion (bash)
+On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 
-If you don't need the extra goodies, you can simply download
-[fzf executable](https://github.com/junegunn/fzf-bin/releases)
-and place it in a directory included in `$PATH`.
+```sh
+brew install fzf
+
+# Install shell extensions
+/usr/local/Cellar/fzf/0.9.2/install
+```
 
 ### Install as Vim plugin
 
@@ -46,8 +63,7 @@ Once you have cloned the repository, add the following line to your .vimrc.
 set rtp+=~/.fzf
 ```
 
-Or you may use [vim-plug](https://github.com/junegunn/vim-plug) to manage fzf
-inside Vim:
+Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf:
 
 ```vim
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
