@@ -51,8 +51,8 @@ On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 ```sh
 brew install fzf
 
-# Install shell extensions
-/usr/local/Cellar/fzf/0.9.2/install
+# Install shell extensions - this should be done whenever fzf is updated
+/usr/local/Cellar/fzf/$(fzf --version)/install
 ```
 
 ### Install as Vim plugin
