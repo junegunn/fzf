@@ -40,6 +40,7 @@ type Terminal struct {
 	mutex      sync.Mutex
 	initFunc   func()
 	suppress   bool
+	startChan  chan bool
 }
 
 type selectedItem struct {
@@ -99,6 +100,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
 		suppress:   true,
+		startChan:  make(chan bool, 1),
 		initFunc: func() {
 			C.Init(opts.Color, opts.Color256, opts.Black, opts.Mouse)
 		}}
@@ -446,6 +448,7 @@ func (t *Terminal) rubout(pattern string) {
 
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
+	<-t.startChan
 	{ // Late initialization
 		t.mutex.Lock()
 		t.initFunc()

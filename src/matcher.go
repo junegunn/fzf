@@ -86,7 +86,7 @@ func (m *Matcher) Loop() {
 		}
 
 		if !foundCache {
-			merger, cancelled = m.scan(request, 0)
+			merger, cancelled = m.scan(request)
 		}
 
 		if !cancelled {
@@ -121,7 +121,7 @@ type partialResult struct {
 	matches []*Item
 }
 
-func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
+func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 	startedAt := time.Now()
 
 	numChunks := len(request.chunks)
@@ -174,10 +174,6 @@ func (m *Matcher) scan(request MatchRequest, limit int) (*Merger, bool) {
 	for matchesInChunk := range countChan {
 		count++
 		matchCount += matchesInChunk
-
-		if limit > 0 && matchCount > limit {
-			return nil, wait() // For --select-1 and --exit-0
-		}
 
 		if count == numChunks {
 			break
