@@ -12,6 +12,7 @@ type Merger struct {
 	merged  []*Item
 	cursors []int
 	sorted  bool
+	final   bool
 	count   int
 }
 
@@ -22,6 +23,7 @@ func NewMerger(lists [][]*Item, sorted bool) *Merger {
 		merged:  []*Item{},
 		cursors: make([]int, len(lists)),
 		sorted:  sorted,
+		final:   false,
 		count:   0}
 
 	for _, list := range mg.lists {

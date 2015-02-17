@@ -149,11 +149,11 @@ func Run(options *Options) {
 					reading = reading && evt == EvtReadNew
 					snapshot, count := chunkList.Snapshot()
 					terminal.UpdateCount(count, !reading)
-					matcher.Reset(snapshot, terminal.Input(), false)
+					matcher.Reset(snapshot, terminal.Input(), false, !reading)
 
 				case EvtSearchNew:
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, terminal.Input(), true)
+					matcher.Reset(snapshot, terminal.Input(), true, !reading)
 					delay = false
 
 				case EvtSearchProgress:
@@ -170,7 +170,7 @@ func Run(options *Options) {
 							if opts.Select1 && count > 1 || opts.Exit0 && !opts.Select1 && count > 0 {
 								deferred = false
 								terminal.startChan <- true
-							} else if !reading {
+							} else if val.final {
 								if opts.Exit0 && count == 0 || opts.Select1 && count == 1 {
 									if opts.PrintQuery {
 										fmt.Println(opts.Query)

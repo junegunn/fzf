@@ -290,6 +290,16 @@ class TestGoFZF < MiniTest::Unit::TestCase
     assert_equal ['555555'], readonce.split($/)
   end
 
+  def test_select_1_exit_0_fail
+    [:'0', :'1', [:'1', :'0']].each do |opt|
+      tmux.send_keys "seq 1 100 | #{fzf :print_query, :multi, :q, 5, *opt}", :Enter
+      tmux.until { |lines| lines.last =~ /^> 5/ }
+      tmux.send_keys :BTab, :BTab, :BTab, :Enter
+      tmux.until { |lines| lines[-1].include?(FIN) }
+      assert_equal ['5', '5', '15', '25'], readonce.split($/)
+    end
+  end
+
   def test_query_unicode
     tmux.send_keys "(echo abc; echo 가나다) | #{fzf :query, '가다'}", :Enter
     tmux.until { |lines| lines.last.start_with? '>' }
