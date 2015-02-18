@@ -7,16 +7,16 @@ Execute (fzf#run with dir option):
   AssertEqual ['fzf.vader'], result
 
   let result = sort(fzf#run({ 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_fzf.rb'], result
+  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], result
 
 Execute (fzf#run with Funcref command):
   let g:ret = []
-  function! g:proc(e)
+  function! g:FzfTest(e)
     call add(g:ret, a:e)
   endfunction
-  let result = sort(fzf#run({ 'sink': function('g:proc'), 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_fzf.rb'], result
-  AssertEqual ['fzf.vader', 'test_fzf.rb'], sort(g:ret)
+  let result = sort(fzf#run({ 'sink': function('g:FzfTest'), 'options': '--filter e', 'dir': g:dir }))
+  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], result
+  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], sort(g:ret)
 
 Execute (fzf#run with string source):
   let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
