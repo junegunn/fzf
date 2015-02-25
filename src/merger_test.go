@@ -62,7 +62,7 @@ func TestMergerUnsorted(t *testing.T) {
 	cnt := len(items)
 
 	// Not sorted: same order
-	mg := NewMerger(lists, false)
+	mg := NewMerger(lists, false, false)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	for i := 0; i < cnt; i++ {
 		assert(t, items[i] == mg.Get(i), "Invalid Get")
@@ -74,7 +74,7 @@ func TestMergerSorted(t *testing.T) {
 	cnt := len(items)
 
 	// Sorted sorted order
-	mg := NewMerger(lists, true)
+	mg := NewMerger(lists, true, false)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	sort.Sort(ByRelevance(items))
 	for i := 0; i < cnt; i++ {
@@ -84,7 +84,7 @@ func TestMergerSorted(t *testing.T) {
 	}
 
 	// Inverse order
-	mg2 := NewMerger(lists, true)
+	mg2 := NewMerger(lists, true, false)
 	for i := cnt - 1; i >= 0; i-- {
 		if items[i] != mg2.Get(i) {
 			t.Error("Not sorted", items[i], mg2.Get(i))

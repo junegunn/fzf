@@ -93,7 +93,7 @@ func Run(options *Options) {
 		return BuildPattern(
 			opts.Mode, opts.Case, opts.Nth, opts.Delimiter, runes)
 	}
-	matcher := NewMatcher(patternBuilder, opts.Sort > 0, eventBox)
+	matcher := NewMatcher(patternBuilder, opts.Sort > 0, opts.Tac, eventBox)
 
 	// Filtering mode
 	if opts.Filter != nil {

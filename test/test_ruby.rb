@@ -54,7 +54,7 @@ class MockTTY
   end
 end
 
-class TestRubyFZF < MiniTest::Unit::TestCase
+class TestRubyFZF < Minitest::Test
   def setup
     ENV.delete 'FZF_DEFAULT_SORT'
     ENV.delete 'FZF_DEFAULT_OPTS'

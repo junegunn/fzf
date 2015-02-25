@@ -15,7 +15,7 @@ module Temp
     waited = 0
     while waited < 5
       begin
-        data = File.read(name)
+        data = `cat #{name}`
         return data unless data.empty?
       rescue
         sleep 0.1
@@ -93,7 +93,7 @@ private
   end
 end
 
-class TestGoFZF < MiniTest::Unit::TestCase
+class TestGoFZF < Minitest::Test
   include Temp
 
   FIN = 'FIN'
@@ -321,6 +321,29 @@ class TestGoFZF < MiniTest::Unit::TestCase
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 'C-K', :Enter
     assert_equal ['1919'], readonce.split($/)
+  end
+
+  def test_tac
+    tmux.send_keys "seq 1 1000 | #{fzf :tac, :multi}", :Enter
+    tmux.until { |lines| lines[-2].include? '1000/1000' }
+    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    assert_equal %w[1000 999 998], readonce.split($/)
+  end
+
+  def test_tac_sort
+    tmux.send_keys "seq 1 1000 | #{fzf :tac, :multi}", :Enter
+    tmux.until { |lines| lines[-2].include? '1000/1000' }
+    tmux.send_keys '99'
+    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    assert_equal %w[99 999 998], readonce.split($/)
+  end
+
+  def test_tac_nosort
+    tmux.send_keys "seq 1 1000 | #{fzf :tac, :no_sort, :multi}", :Enter
+    tmux.until { |lines| lines[-2].include? '1000/1000' }
+    tmux.send_keys '00'
+    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    assert_equal %w[1000 900 800], readonce.split($/)
   end
 end
 

@@ -21,6 +21,7 @@ type MatchRequest struct {
 type Matcher struct {
 	patternBuilder func([]rune) *Pattern
 	sort           bool
+	tac            bool
 	eventBox       *util.EventBox
 	reqBox         *util.EventBox
 	partitions     int
@@ -38,10 +39,11 @@ const (
 
 // NewMatcher returns a new Matcher
 func NewMatcher(patternBuilder func([]rune) *Pattern,
-	sort bool, eventBox *util.EventBox) *Matcher {
+	sort bool, tac bool, eventBox *util.EventBox) *Matcher {
 	return &Matcher{
 		patternBuilder: patternBuilder,
 		sort:           sort,
+		tac:            tac,
 		eventBox:       eventBox,
 		reqBox:         util.NewEventBox(),
 		partitions:     runtime.NumCPU(),
@@ -159,7 +161,11 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 				countChan <- len(matches)
 			}
 			if !empty && m.sort {
-				sort.Sort(ByRelevance(sliceMatches))
+				if m.tac {
+					sort.Sort(ByRelevanceTac(sliceMatches))
+				} else {
+					sort.Sort(ByRelevance(sliceMatches))
+				}
 			}
 			resultChan <- partialResult{idx, sliceMatches}
 		}(idx, chunks)
@@ -195,7 +201,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-	return NewMerger(partialResults, !empty && m.sort), false
+	return NewMerger(partialResults, !empty && m.sort, m.tac), false
 }
 
 // Reset is called to interrupt/signal the ongoing search

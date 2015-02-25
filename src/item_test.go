@@ -20,11 +20,18 @@ func TestOffsetSort(t *testing.T) {
 }
 
 func TestRankComparison(t *testing.T) {
-	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}) ||
-		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}) ||
-		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}) ||
-		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}) {
+	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}, false) ||
+		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}, false) ||
+		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}, false) ||
+		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}, false) {
 		t.Error("Invalid order")
+	}
+
+	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}, true) ||
+		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}, false) ||
+		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}, true) ||
+		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}, false) {
+		t.Error("Invalid order (tac)")
 	}
 }
 
