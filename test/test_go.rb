@@ -2,9 +2,18 @@
 # encoding: utf-8
 
 require 'minitest/autorun'
+require 'fileutils'
 
 class NilClass
   def include? str
+    false
+  end
+
+  def start_with? str
+    false
+  end
+
+  def end_with? str
     false
   end
 end
@@ -30,6 +39,20 @@ module Temp
   end
 end
 
+class Shell
+  class << self
+    def bash
+      'PS1= PROMPT_COMMAND= bash --rcfile ~/.fzf.bash'
+    end
+
+    def zsh
+      FileUtils.mkdir_p '/tmp/fzf-zsh'
+      FileUtils.cp File.expand_path('~/.fzf.zsh'), '/tmp/fzf-zsh/.zshrc'
+      'PS1= PROMPT_COMMAND= HISTSIZE=100 ZDOTDIR=/tmp/fzf-zsh zsh'
+    end
+  end
+end
+
 class Tmux
   include Temp
 
@@ -37,18 +60,33 @@ class Tmux
 
   attr_reader :win
 
-  def initialize shell = 'bash'
-    @win = go("new-window -d -P -F '#I' 'PS1= PROMPT_COMMAND= bash --rcfile ~/.fzf.#{shell}'").first
+  def initialize shell = :bash
+    @win =
+      case shell
+      when :bash
+        go("new-window -d -P -F '#I' '#{Shell.bash}'").first
+      when :zsh
+        go("new-window -d -P -F '#I' '#{Shell.zsh}'").first
+      when :fish
+        go("new-window -d -P -F '#I' 'fish'").first
+      else
+        raise "Unknown shell: #{shell}"
+      end
     @lines = `tput lines`.chomp.to_i
+
+    if shell == :fish
+      send_keys('function fish_prompt; end; clear', :Enter)
+      self.until { |lines| lines.empty? }
+    end
   end
 
   def closed?
     !go("list-window -F '#I'").include?(win)
   end
 
-  def close timeout = 1
+  def close
     send_keys 'C-c', 'C-u', 'exit', :Enter
-    wait(timeout) { closed? }
+    wait { closed? }
   end
 
   def kill
@@ -56,35 +94,68 @@ class Tmux
   end
 
   def send_keys *args
+    target =
+      if args.last.is_a?(Hash)
+        hash = args.pop
+        go("select-window -t #{win}")
+        "#{win}.#{hash[:pane]}"
+      else
+        win
+      end
     args = args.map { |a| %{"#{a}"} }.join ' '
-    go("send-keys -t #{win} #{args}")
+    go("send-keys -t #{target} #{args}")
   end
 
-  def capture
-    go("capture-pane -t #{win} \\; save-buffer #{TEMPNAME}")
-    raise "Window not found" if $?.exitstatus != 0
+  def capture opts = {}
+    timeout, pane = defaults(opts).values_at(:timeout, :pane)
+    waited = 0
+    loop do
+      go("capture-pane -t #{win}.#{pane} \\; save-buffer #{TEMPNAME}")
+      break if $?.exitstatus == 0
+
+      if waited > timeout
+        raise "Window not found"
+      end
+      waited += 0.1
+      sleep 0.1
+    end
     readonce.split($/)[0, @lines].reverse.drop_while(&:empty?).reverse
   end
 
-  def until timeout = 1
-    wait(timeout) { yield capture }
+  def until opts = {}
+    lines = nil
+    wait(opts) do
+      yield lines = capture(opts)
+    end
+    lines
   end
 
+  def prepare
+    self.send_keys 'echo hello', :Enter
+    self.until { |lines| lines[-1].start_with?('hello') }
+    self.send_keys 'clear', :Enter
+    self.until { |lines| lines.empty? }
+  end
 private
-  def wait timeout = 1
+  def defaults opts
+    { timeout: 5, pane: 0 }.merge(opts)
+  end
+
+  def wait opts = {}
+    timeout, pane = defaults(opts).values_at(:timeout, :pane)
     waited = 0
     until yield
-      waited += 0.1
-      sleep 0.1
       if waited > timeout
         hl = '=' * 10
         puts hl
-        capture.each_with_index do |line, idx|
+        capture(opts).each_with_index do |line, idx|
           puts [idx.to_s.rjust(2), line].join(': ')
         end
         puts hl
         raise "timeout"
       end
+      waited += 0.1
+      sleep 0.1
     end
   end
 
@@ -93,7 +164,7 @@ private
   end
 end
 
-class TestGoFZF < Minitest::Test
+class TestBase < Minitest::Test
   include Temp
 
   FIN = 'FIN'
@@ -104,11 +175,6 @@ class TestGoFZF < Minitest::Test
   def setup
     ENV.delete 'FZF_DEFAULT_OPTS'
     ENV.delete 'FZF_DEFAULT_COMMAND'
-    @tmux = Tmux.new
-  end
-
-  def teardown
-    @tmux.kill
   end
 
   def fzf(*opts)
@@ -129,10 +195,22 @@ class TestGoFZF < Minitest::Test
     }.compact
     "fzf #{opts.join ' '}"
   end
+end
+
+class TestGoFZF < TestBase
+  def setup
+    super
+    @tmux = Tmux.new
+  end
+
+  def teardown
+    @tmux.kill
+  end
 
   def test_vanilla
     tmux.send_keys "seq 1 100000 | #{fzf}", :Enter
-    tmux.until(10) { |lines| lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
+    tmux.until(timeout: 10) { |lines|
+      lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
     lines = tmux.capture
     assert_equal '  2',             lines[-4]
     assert_equal '> 1',             lines[-3]
@@ -344,6 +422,144 @@ class TestGoFZF < Minitest::Test
     tmux.send_keys '00'
     tmux.send_keys :BTab, :BTab, :BTab, :Enter
     assert_equal %w[1000 900 800], readonce.split($/)
+  end
+end
+
+module TestShell
+  def setup
+    super
+  end
+
+  def teardown
+    @tmux.kill
+  end
+
+  def test_ctrl_t
+    tmux.prepare
+    tmux.send_keys 'C-t', pane: 0
+    lines = tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
+    tmux.send_keys :BTab, :BTab, :Enter, pane: 1
+    tmux.until(pane: 0) { |lines| lines[-1].include? expected }
+    tmux.send_keys 'C-c'
+
+    # FZF_TMUX=0
+    new_shell
+    tmux.send_keys 'C-t', pane: 0
+    lines = tmux.until(pane: 0) { |lines| lines[-1].start_with? '>' }
+    expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
+    tmux.send_keys :BTab, :BTab, :Enter, pane: 0
+    tmux.until(pane: 0) { |lines| lines[-1].include? expected }
+    tmux.send_keys 'C-c', 'C-d'
+  end
+
+  def test_alt_c
+    tmux.prepare
+    tmux.send_keys :Escape, :c
+    lines = tmux.until { |lines| lines[-1].start_with? '>' }
+    expected = lines[-3][2..-1]
+    p expected
+    tmux.send_keys :Enter
+    tmux.prepare
+    tmux.send_keys :pwd, :Enter
+    tmux.until { |lines| p lines; lines[-1].end_with?(expected) }
+  end
+
+  def test_ctrl_r
+    tmux.prepare
+    tmux.send_keys 'echo 1st', :Enter; tmux.prepare
+    tmux.send_keys 'echo 2nd', :Enter; tmux.prepare
+    tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
+    tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
+    tmux.send_keys 'echo 4th', :Enter; tmux.prepare
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys '3d'
+    tmux.until { |lines| lines[-3].end_with? 'echo 3rd' } # --no-sort
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == 'echo 3rd' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == '3rd' }
+  end
+end
+
+class TestBash < TestBase
+  include TestShell
+
+  def new_shell
+    tmux.send_keys "FZF_TMUX=0 #{Shell.bash}", :Enter
+    tmux.prepare
+  end
+
+  def setup
+    super
+    @tmux = Tmux.new :bash
+  end
+
+  def test_file_completion
+    tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}', :Enter
+    tmux.prepare
+    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
+    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys :BTab, :BTab, :Enter
+    tmux.until { |lines|
+      lines[-1].include?('/tmp/fzf-test/10') &&
+      lines[-1].include?('/tmp/fzf-test/100')
+    }
+  end
+
+  def test_dir_completion
+    tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}', :Enter
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
+    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys :BTab, :BTab # BTab does not work here
+    tmux.send_keys 55
+    tmux.until { |lines| lines[-2].start_with? '  1/' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55' }
+  end
+
+  def test_process_completion
+    tmux.send_keys 'sleep 12345 &', :Enter
+    lines = tmux.until { |lines| lines[-1].start_with? '[1]' }
+    pid = lines[-1].split.last
+    tmux.prepare
+    tmux.send_keys 'kill ', :Tab
+    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys 'sleep12345'
+    tmux.until { |lines| lines[-3].include? 'sleep 12345' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == "kill #{pid}" }
+  end
+end
+
+class TestZsh < TestBase
+  include TestShell
+
+  def new_shell
+    tmux.send_keys "FZF_TMUX=0 #{Shell.zsh}", :Enter
+    tmux.prepare
+  end
+
+  def setup
+    super
+    @tmux = Tmux.new :zsh
+  end
+end
+
+class TestFish < TestBase
+  include TestShell
+
+  def new_shell
+    tmux.send_keys 'env FZF_TMUX=0 fish', :Enter
+    tmux.send_keys 'function fish_prompt; end; clear', :Enter
+    tmux.until { |lines| lines.empty? }
+  end
+
+  def setup
+    super
+    @tmux = Tmux.new :fish
   end
 end
 
