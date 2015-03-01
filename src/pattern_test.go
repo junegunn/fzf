@@ -98,14 +98,15 @@ func TestOrigTextAndTransformed(t *testing.T) {
 	tokens := Tokenize(strptr("junegunn"), nil)
 	trans := Transform(tokens, []Range{Range{1, 1}})
 
-	for _, fun := range []func(*Chunk) []*Item{pattern.fuzzyMatch, pattern.extendedMatch} {
+	for _, mode := range []Mode{ModeFuzzy, ModeExtended} {
 		chunk := Chunk{
 			&Item{
 				text:        strptr("junegunn"),
 				origText:    strptr("junegunn.choi"),
 				transformed: trans},
 		}
-		matches := fun(&chunk)
+		pattern.mode = mode
+		matches := pattern.matchChunk(&chunk)
 		if *matches[0].text != "junegunn" || *matches[0].origText != "junegunn.choi" ||
 			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 ||
 			matches[0].transformed != trans {
