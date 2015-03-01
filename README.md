@@ -75,7 +75,7 @@ Usage
 ```
 usage: fzf [options]
 
-  Search
+  Search mode
     -x, --extended        Extended-search mode
     -e, --extended-exact  Extended-search mode (exact match)
     -i                    Case-insensitive match (default: smart-case match)
@@ -87,8 +87,9 @@ usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
 
   Search result
-    -s, --sort            Sort the result
-    +s, --no-sort         Do not sort the result. Keep the sequence unchanged.
+    +s, --no-sort         Do not sort the result
+        --tac             Reverse the order of the input
+                          (e.g. 'history | fzf --tac --no-sort')
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
@@ -126,13 +127,6 @@ files excluding hidden ones. (You can override the default command with
 
 ```sh
 vim $(fzf)
-```
-
-If you want to preserve the exact sequence of the input, provide `--no-sort` (or
-`+s`) option.
-
-```sh
-history | fzf +s
 ```
 
 ### Keys
@@ -197,7 +191,7 @@ fd() {
 
 # fh - repeat history
 fh() {
-  eval $(([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s | sed 's/ *[0-9]* *//')
+  eval $(([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed 's/ *[0-9]* *//')
 }
 
 # fkill - kill process

@@ -11,7 +11,7 @@ import (
 
 const usage = `usage: fzf [options]
 
-  Search
+  Search mode
     -x, --extended        Extended-search mode
     -e, --extended-exact  Extended-search mode (exact match)
     -i                    Case-insensitive match (default: smart-case match)
@@ -23,8 +23,9 @@ const usage = `usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
 
   Search result
-    -s, --sort            Sort the result
-    +s, --no-sort         Do not sort the result. Keep the sequence unchanged.
+    +s, --no-sort         Do not sort the result
+        --tac             Reverse the order of the input
+                          (e.g. 'history | fzf --tac --no-sort')
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
@@ -78,6 +79,7 @@ type Options struct {
 	WithNth    []Range
 	Delimiter  *regexp.Regexp
 	Sort       int
+	Tac        bool
 	Multi      bool
 	Mouse      bool
 	Color      bool
@@ -102,6 +104,7 @@ func defaultOptions() *Options {
 		WithNth:    make([]Range, 0),
 		Delimiter:  nil,
 		Sort:       1000,
+		Tac:        false,
 		Multi:      false,
 		Mouse:      true,
 		Color:      true,
@@ -212,6 +215,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Sort = optionalNumeric(allArgs, &i)
 		case "+s", "--no-sort":
 			opts.Sort = 0
+		case "--tac":
+			opts.Tac = true
+		case "--no-tac":
+			opts.Tac = false
 		case "-i":
 			opts.Case = CaseIgnore
 		case "+i":

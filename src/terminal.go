@@ -22,7 +22,6 @@ import (
 type Terminal struct {
 	prompt     string
 	reverse    bool
-	tac        bool
 	cx         int
 	cy         int
 	offset     int
@@ -85,7 +84,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
 	return &Terminal{
 		prompt:     opts.Prompt,
-		tac:        opts.Sort == 0,
 		reverse:    opts.Reverse,
 		cx:         len(input),
 		cy:         0,
@@ -148,13 +146,6 @@ func (t *Terminal) UpdateList(merger *Merger) {
 	t.reqBox.Set(reqList, nil)
 }
 
-func (t *Terminal) listIndex(y int) int {
-	if t.tac {
-		return t.merger.Length() - y - 1
-	}
-	return y
-}
-
 func (t *Terminal) output() {
 	if t.printQuery {
 		fmt.Println(string(t.input))
@@ -162,7 +153,7 @@ func (t *Terminal) output() {
 	if len(t.selected) == 0 {
 		cnt := t.merger.Length()
 		if cnt > 0 && cnt > t.cy {
-			fmt.Println(t.merger.Get(t.listIndex(t.cy)).AsString())
+			fmt.Println(t.merger.Get(t.cy).AsString())
 		}
 	} else {
 		sels := make([]selectedItem, 0, len(t.selected))
@@ -246,7 +237,7 @@ func (t *Terminal) printList() {
 	for i := 0; i < maxy; i++ {
 		t.move(i+2, 0, true)
 		if i < count {
-			t.printItem(t.merger.Get(t.listIndex(i+t.offset)), i == t.cy-t.offset)
+			t.printItem(t.merger.Get(i+t.offset), i == t.cy-t.offset)
 		}
 	}
 }
@@ -525,9 +516,8 @@ func (t *Terminal) Loop() {
 			}
 		}
 		toggle := func() {
-			idx := t.listIndex(t.cy)
-			if idx < t.merger.Length() {
-				item := t.merger.Get(idx)
+			if t.cy < t.merger.Length() {
+				item := t.merger.Get(t.cy)
 				if _, found := t.selected[item.text]; !found {
 					var strptr *string
 					if item.origText != nil {
@@ -650,7 +640,7 @@ func (t *Terminal) Loop() {
 			} else if me.Double {
 				// Double-click
 				if my >= 2 {
-					if t.vset(my-2) && t.listIndex(t.cy) < t.merger.Length() {
+					if t.vset(my-2) && t.cy < t.merger.Length() {
 						req(reqClose)
 					}
 				}

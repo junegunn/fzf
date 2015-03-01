@@ -3,7 +3,7 @@ package fzf
 import "fmt"
 
 // Merger with no data
-var EmptyMerger = NewMerger([][]*Item{}, false)
+var EmptyMerger = NewMerger([][]*Item{}, false, false)
 
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
@@ -12,17 +12,19 @@ type Merger struct {
 	merged  []*Item
 	cursors []int
 	sorted  bool
+	tac     bool
 	final   bool
 	count   int
 }
 
 // NewMerger returns a new Merger
-func NewMerger(lists [][]*Item, sorted bool) *Merger {
+func NewMerger(lists [][]*Item, sorted bool, tac bool) *Merger {
 	mg := Merger{
 		lists:   lists,
 		merged:  []*Item{},
 		cursors: make([]int, len(lists)),
 		sorted:  sorted,
+		tac:     tac,
 		final:   false,
 		count:   0}
 
@@ -39,19 +41,21 @@ func (mg *Merger) Length() int {
 
 // Get returns the pointer to the Item object indexed by the given integer
 func (mg *Merger) Get(idx int) *Item {
-	if len(mg.lists) == 1 {
-		return mg.lists[0][idx]
-	} else if !mg.sorted {
-		for _, list := range mg.lists {
-			numItems := len(list)
-			if idx < numItems {
-				return list[idx]
-			}
-			idx -= numItems
-		}
-		panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
+	if mg.sorted {
+		return mg.mergedGet(idx)
 	}
-	return mg.mergedGet(idx)
+
+	if mg.tac {
+		idx = mg.Length() - idx - 1
+	}
+	for _, list := range mg.lists {
+		numItems := len(list)
+		if idx < numItems {
+			return list[idx]
+		}
+		idx -= numItems
+	}
+	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
 }
 
 func (mg *Merger) mergedGet(idx int) *Item {
@@ -66,7 +70,7 @@ func (mg *Merger) mergedGet(idx int) *Item {
 			}
 			if cursor >= 0 {
 				rank := list[cursor].Rank(false)
-				if minIdx < 0 || compareRanks(rank, minRank) {
+				if minIdx < 0 || compareRanks(rank, minRank, mg.tac) {
 					minRank = rank
 					minIdx = listIdx
 				}

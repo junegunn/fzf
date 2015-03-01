@@ -87,10 +87,28 @@ func (a ByRelevance) Less(i, j int) bool {
 	irank := a[i].Rank(true)
 	jrank := a[j].Rank(true)
 
-	return compareRanks(irank, jrank)
+	return compareRanks(irank, jrank, false)
 }
 
-func compareRanks(irank Rank, jrank Rank) bool {
+// ByRelevanceTac is for sorting Items
+type ByRelevanceTac []*Item
+
+func (a ByRelevanceTac) Len() int {
+	return len(a)
+}
+
+func (a ByRelevanceTac) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByRelevanceTac) Less(i, j int) bool {
+	irank := a[i].Rank(true)
+	jrank := a[j].Rank(true)
+
+	return compareRanks(irank, jrank, true)
+}
+
+func compareRanks(irank Rank, jrank Rank, tac bool) bool {
 	if irank.matchlen < jrank.matchlen {
 		return true
 	} else if irank.matchlen > jrank.matchlen {
@@ -103,8 +121,5 @@ func compareRanks(irank Rank, jrank Rank) bool {
 		return false
 	}
 
-	if irank.index <= jrank.index {
-		return true
-	}
-	return false
+	return (irank.index <= jrank.index) != tac
 }

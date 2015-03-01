@@ -7,7 +7,7 @@ RUN apt-get update && apt-get -y upgrade && \
 
 # Install Go 1.4
 RUN cd / && curl \
-    https://storage.googleapis.com/golang/go1.4.1.linux-amd64.tar.gz | \
+    https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | \
     tar -xz && mv go go1.4
 
 ENV GOPATH /go

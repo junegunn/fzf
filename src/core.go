@@ -85,33 +85,47 @@ func Run(options *Options) {
 	}
 
 	// Reader
-	reader := Reader{func(str string) { chunkList.Push(str) }, eventBox}
-	go reader.ReadSource()
+	streamingFilter := opts.Filter != nil && opts.Sort == 0 && !opts.Tac && !opts.Sync
+	if !streamingFilter {
+		reader := Reader{func(str string) { chunkList.Push(str) }, eventBox}
+		go reader.ReadSource()
+	}
 
 	// Matcher
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(
 			opts.Mode, opts.Case, opts.Nth, opts.Delimiter, runes)
 	}
-	matcher := NewMatcher(patternBuilder, opts.Sort > 0, eventBox)
+	matcher := NewMatcher(patternBuilder, opts.Sort > 0, opts.Tac, eventBox)
 
 	// Filtering mode
 	if opts.Filter != nil {
-		pattern := patternBuilder([]rune(*opts.Filter))
-
-		eventBox.Unwatch(EvtReadNew)
-		eventBox.WaitFor(EvtReadFin)
-
-		snapshot, _ := chunkList.Snapshot()
-		merger, _ := matcher.scan(MatchRequest{
-			chunks:  snapshot,
-			pattern: pattern})
-
 		if opts.PrintQuery {
 			fmt.Println(*opts.Filter)
 		}
-		for i := 0; i < merger.Length(); i++ {
-			fmt.Println(merger.Get(i).AsString())
+
+		pattern := patternBuilder([]rune(*opts.Filter))
+
+		if streamingFilter {
+			reader := Reader{
+				func(str string) {
+					item := chunkList.trans(&str, 0)
+					if pattern.MatchItem(item) {
+						fmt.Println(*item.text)
+					}
+				}, eventBox}
+			reader.ReadSource()
+		} else {
+			eventBox.Unwatch(EvtReadNew)
+			eventBox.WaitFor(EvtReadFin)
+
+			snapshot, _ := chunkList.Snapshot()
+			merger, _ := matcher.scan(MatchRequest{
+				chunks:  snapshot,
+				pattern: pattern})
+			for i := 0; i < merger.Length(); i++ {
+				fmt.Println(merger.Get(i).AsString())
+			}
 		}
 		os.Exit(0)
 	}

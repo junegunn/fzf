@@ -219,17 +219,41 @@ Loop:
 		}
 	}
 
-	var matches []*Item
-	if p.mode == ModeFuzzy {
-		matches = p.fuzzyMatch(space)
-	} else {
-		matches = p.extendedMatch(space)
-	}
+	matches := p.matchChunk(space)
 
 	if !p.hasInvTerm {
 		_cache.Add(chunk, cacheKey, matches)
 	}
 	return matches
+}
+
+func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
+	matches := []*Item{}
+	if p.mode == ModeFuzzy {
+		for _, item := range *chunk {
+			if sidx, eidx := p.fuzzyMatch(item); sidx >= 0 {
+				matches = append(matches,
+					dupItem(item, []Offset{Offset{int32(sidx), int32(eidx)}}))
+			}
+		}
+	} else {
+		for _, item := range *chunk {
+			if offsets := p.extendedMatch(item); len(offsets) == len(p.terms) {
+				matches = append(matches, dupItem(item, offsets))
+			}
+		}
+	}
+	return matches
+}
+
+// MatchItem returns true if the Item is a match
+func (p *Pattern) MatchItem(item *Item) bool {
+	if p.mode == ModeFuzzy {
+		sidx, _ := p.fuzzyMatch(item)
+		return sidx >= 0
+	}
+	offsets := p.extendedMatch(item)
+	return len(offsets) == len(p.terms)
 }
 
 func dupItem(item *Item, offsets []Offset) *Item {
@@ -243,39 +267,26 @@ func dupItem(item *Item, offsets []Offset) *Item {
 		rank:        Rank{0, 0, item.index}}
 }
 
-func (p *Pattern) fuzzyMatch(chunk *Chunk) []*Item {
-	matches := []*Item{}
-	for _, item := range *chunk {
-		input := p.prepareInput(item)
-		if sidx, eidx := p.iter(algo.FuzzyMatch, input, p.text); sidx >= 0 {
-			matches = append(matches,
-				dupItem(item, []Offset{Offset{int32(sidx), int32(eidx)}}))
-		}
-	}
-	return matches
+func (p *Pattern) fuzzyMatch(item *Item) (int, int) {
+	input := p.prepareInput(item)
+	return p.iter(algo.FuzzyMatch, input, p.text)
 }
 
-func (p *Pattern) extendedMatch(chunk *Chunk) []*Item {
-	matches := []*Item{}
-	for _, item := range *chunk {
-		input := p.prepareInput(item)
-		offsets := []Offset{}
-		for _, term := range p.terms {
-			pfun := p.procFun[term.typ]
-			if sidx, eidx := p.iter(pfun, input, term.text); sidx >= 0 {
-				if term.inv {
-					break
-				}
-				offsets = append(offsets, Offset{int32(sidx), int32(eidx)})
-			} else if term.inv {
-				offsets = append(offsets, Offset{0, 0})
+func (p *Pattern) extendedMatch(item *Item) []Offset {
+	input := p.prepareInput(item)
+	offsets := []Offset{}
+	for _, term := range p.terms {
+		pfun := p.procFun[term.typ]
+		if sidx, eidx := p.iter(pfun, input, term.text); sidx >= 0 {
+			if term.inv {
+				break
 			}
-		}
-		if len(offsets) == len(p.terms) {
-			matches = append(matches, dupItem(item, offsets))
+			offsets = append(offsets, Offset{int32(sidx), int32(eidx)})
+		} else if term.inv {
+			offsets = append(offsets, Offset{0, 0})
 		}
 	}
-	return matches
+	return offsets
 }
 
 func (p *Pattern) prepareInput(item *Item) *Transformed {
