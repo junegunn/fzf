@@ -29,7 +29,7 @@ Clone this repository and run
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
 ```sh
-git clone https://github.com/junegunn/fzf.git ~/.fzf
+git clone --depth 1 git://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
