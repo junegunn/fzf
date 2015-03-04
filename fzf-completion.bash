@@ -220,7 +220,7 @@ fi
 
 # Directory
 for cmd in $d_cmds; do
-  complete -F _fzf_dir_completion -o nospace -o default -o bashdefault $cmd
+  complete -F _fzf_dir_completion -o nospace -o plusdirs $cmd
 done
 
 # File
