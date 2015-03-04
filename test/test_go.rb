@@ -509,7 +509,7 @@ class TestBash < TestBase
   end
 
   def test_dir_completion
-    tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}', :Enter
+    tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}; touch /tmp/fzf-test/d55/xxx', :Enter
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
     tmux.until { |lines| lines[-1].start_with? '>' }
@@ -520,6 +520,16 @@ class TestBash < TestBase
     tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
     tmux.send_keys :xx
     tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+
+    # Should not match regular files
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+
+    # Fail back to plusdirs
+    tmux.send_keys :BSpace, :BSpace, :BSpace
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
   end
 
   def test_process_completion
