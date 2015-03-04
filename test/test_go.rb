@@ -517,7 +517,9 @@ class TestBash < TestBase
     tmux.send_keys 55
     tmux.until { |lines| lines[-2].start_with? '  1/' }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55' }
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
+    tmux.send_keys :xx
+    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
   end
 
   def test_process_completion
