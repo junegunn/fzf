@@ -8,6 +8,8 @@
 # /_/   /___/_/    Fuzzy finder for your shell
 #
 # Version: 0.8.9 (Dec 24, 2014)
+# Deprecation alert:
+#          This script is no longer maintained. Use the new Go version.
 #
 # Author:  Junegunn Choi
 # URL:     https://github.com/junegunn/fzf
