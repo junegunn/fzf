@@ -14,16 +14,17 @@ Installation
 fzf project consists of the followings:
 
 - `fzf` executable
+- `fzf-tmux` script for launching fzf in a tmux split
 - Shell extensions
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
-    - Fuzzy auto-completion (bash)
+    - Fuzzy auto-completion (bash only)
 
 You can [download fzf executable][bin] alone, but it's recommended that you
 install the extra stuff using the attached install script.
 
 [bin]: https://github.com/junegunn/fzf-bin/releases
 
-### Using git (recommended)
+#### Using git (recommended)
 
 Clone this repository and run
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
@@ -33,7 +34,7 @@ git clone https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-### Using curl
+#### Using curl
 
 In case you don't have git installed:
 
@@ -44,7 +45,7 @@ curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
 ~/.fzf/install
 ```
 
-### Using Homebrew
+#### Using Homebrew
 
 On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 
@@ -55,7 +56,7 @@ brew install fzf
 /usr/local/Cellar/fzf/$(fzf --version)/install
 ```
 
-### Install as Vim plugin
+#### Install as Vim plugin
 
 Once you have cloned the repository, add the following line to your .vimrc.
 
@@ -63,7 +64,8 @@ Once you have cloned the repository, add the following line to your .vimrc.
 set rtp+=~/.fzf
 ```
 
-Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf:
+Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf
+(recommended):
 
 ```vim
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
@@ -71,48 +73,6 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
 
 Usage
 -----
-
-```
-usage: fzf [options]
-
-  Search mode
-    -x, --extended        Extended-search mode
-    -e, --extended-exact  Extended-search mode (exact match)
-    -i                    Case-insensitive match (default: smart-case match)
-    +i                    Case-sensitive match
-    -n, --nth=N[,..]      Comma-separated list of field index expressions
-                          for limiting search scope. Each can be a non-zero
-                          integer or a range expression ([BEGIN]..[END])
-        --with-nth=N[,..] Transform the item using index expressions for search
-    -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
-
-  Search result
-    +s, --no-sort         Do not sort the result
-        --tac             Reverse the order of the input
-                          (e.g. 'history | fzf --tac --no-sort')
-
-  Interface
-    -m, --multi           Enable multi-select with tab/shift-tab
-        --no-mouse        Disable mouse
-    +c, --no-color        Disable colors
-    +2, --no-256          Disable 256-color
-        --black           Use black background
-        --reverse         Reverse orientation
-        --prompt=STR      Input prompt (default: '> ')
-
-  Scripting
-    -q, --query=STR       Start the finder with the given query
-    -1, --select-1        Automatically select the only match
-    -0, --exit-0          Exit immediately when there's no match
-    -f, --filter=STR      Filter mode. Do not start interactive finder.
-        --print-query     Print query as the first line
-        --sync            Synchronous search for multi-staged filtering
-                          (e.g. 'fzf --multi | fzf --sync')
-
-  Environment variables
-    FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. '-x -m')
-```
 
 fzf will launch curses-based finder, read the list from STDIN, and write the
 selected item to STDOUT.
@@ -129,27 +89,16 @@ files excluding hidden ones. (You can override the default command with
 vim $(fzf)
 ```
 
-### Keys
+#### Using the finder
 
-Use CTRL-J and CTRL-K (or CTRL-N and CTRL-P) to change the selection, press
-enter key to select the item. CTRL-C, CTRL-G, or ESC will terminate the finder.
+- `CTRL-J` / `CTRL-K` (or `CTRL-N` / `CTRL-P)` to move cursor up and down
+- `Enter` key to select the item, `CTRL-C` / `CTRL-G` / `ESC` to exit
+- On multi-select mode (`-m`), `TAB` and `Shift-TAB` to mark multiple items
+- Emacs style key bindings
+- Mouse: scroll, click, double-click; shift-click and shift-scroll on
+  multi-select mode
 
-The following readline key bindings should also work as expected.
-
-- CTRL-A / CTRL-E
-- CTRL-B / CTRL-F
-- CTRL-H / CTRL-D
-- CTRL-W / CTRL-U / CTRL-Y
-- ALT-B / ALT-F
-
-If you enable multi-select mode with `-m` option, you can select multiple items
-with TAB or Shift-TAB key.
-
-You can also use mouse. Double-click on an item to select it or shift-click (or
-ctrl-click) to select multiple items. Use mouse wheel to move the cursor up and
-down.
-
-### Extended-search mode
+#### Extended-search mode
 
 With `-x` or `--extended` option, fzf will start in "extended-search mode".
 
@@ -168,40 +117,12 @@ such as: `^music .mp3$ sbtrkt !rmx`
 If you don't need fuzzy matching and do not wish to "quote" every word, start
 fzf with `-e` or `--extended-exact` option.
 
-Useful examples
----------------
+Examples
+--------
 
-```sh
-# fe [FUZZY PATTERN] - Open the selected file with the default editor
-#   - Bypass fuzzy finder if there's only one match (--select-1)
-#   - Exit if there's no match (--exit-0)
-fe() {
-  local file
-  file=$(fzf --query="$1" --select-1 --exit-0)
-  [ -n "$file" ] && ${EDITOR:-vim} "$file"
-}
-
-# fd - cd to selected directory
-fd() {
-  local dir
-  dir=$(find ${1:-*} -path '*/\.*' -prune \
-                  -o -type d -print 2> /dev/null | fzf +m) &&
-  cd "$dir"
-}
-
-# fh - repeat history
-fh() {
-  eval $(([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed 's/ *[0-9]* *//')
-}
-
-# fkill - kill process
-fkill() {
-  ps -ef | sed 1d | fzf -m | awk '{print $2}' | xargs kill -${1:-9}
-}
-```
-
-For more examples, see [the wiki
-page](https://github.com/junegunn/fzf/wiki/examples).
+Many useful examples can be found on [the wiki
+page](https://github.com/junegunn/fzf/wiki/examples). Feel free to add your
+own as well.
 
 Key bindings for command line
 -----------------------------
@@ -225,13 +146,26 @@ If you want to customize the key bindings, consider editing the
 installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 `~/.config/fish/functions/fzf_key_bindings.fish`.
 
-Auto-completion
----------------
+`fzf-tmux` script
+-----------------
 
-Disclaimer: *Auto-completion feature is currently experimental, it can change
-over time*
+[fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux split.
 
-### bash
+```sh
+# usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
+
+# select git branches in horizontal split (15 lines)
+git branch | fzf-tmux -h 15
+
+# select multiple words in vertical split (20% of screen width)
+cat /usr/share/dict/words | fzf-tmux -w 20% --multi
+```
+
+It will still work even when you're not on tmux, silently ignoring `-h` and
+`-w` options, so you can invariably use `fzf-tmux` in your scripts.
+
+Fuzzy completion for bash
+-------------------------
 
 #### Files and directories
 
@@ -300,18 +234,12 @@ export FZF_COMPLETION_TRIGGER='~~'
 export FZF_COMPLETION_OPTS='+c -x'
 ```
 
-### zsh
-
-TODO :smiley:
-
-(Pull requests are appreciated.)
-
 Usage as Vim plugin
 -------------------
 
 (Note: To use fzf in GVim, an external terminal emulator is required.)
 
-### `:FZF[!]`
+#### `:FZF[!]`
 
 If you have set up fzf for Vim, `:FZF` command will be added.
 
@@ -349,7 +277,7 @@ Refer to the [this wiki
 page](https://github.com/junegunn/fzf/wiki/fzf-with-MacVim-and-iTerm2) to see
 how to set up.
 
-### `fzf#run([options])`
+#### `fzf#run([options])`
 
 For more advanced uses, you can call `fzf#run()` function which returns the list
 of the selected items.
@@ -368,7 +296,7 @@ of the selected items.
 | `tmux_height`   | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
 | `launcher`      | string        | External terminal emulator to start fzf with (Only used in GVim)   |
 
-#### Examples
+##### Examples
 
 If `sink` option is not given, `fzf#run` will simply return the list.
 
@@ -423,14 +351,17 @@ nnoremap <silent> <Leader><Enter> :call fzf#run({
 \ })<CR>
 ```
 
-### Articles
+More examples can be found on [the wiki
+page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
+
+#### Articles
 
 - [fzf+vim+tmux](http://junegunn.kr/2014/04/fzf+vim+tmux)
 
 Tips
 ----
 
-### Rendering issues
+#### Rendering issues
 
 If you have any rendering issues, check the followings:
 
@@ -444,7 +375,7 @@ If you have any rendering issues, check the followings:
   `FZF_DEFAULT_OPTS` for further convenience.
 4. If you still have problem, try `--no-256` option or even `--no-color`.
 
-### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
+#### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
 
 [ag](https://github.com/ggreer/the_silver_searcher) or
 [pt](https://github.com/monochromegane/the_platinum_searcher) will do the
@@ -461,7 +392,7 @@ export FZF_DEFAULT_COMMAND='ag -l -g ""'
 fzf
 ```
 
-### `git ls-tree` for fast traversal
+#### `git ls-tree` for fast traversal
 
 If you're running fzf in a large git repository, `git ls-tree` can boost up the
 speed of the traversal.
@@ -481,10 +412,12 @@ fzf() {
 }
 ```
 
-### Using fzf with tmux splits
+#### Using fzf with tmux splits
 
-It isn't too hard to write your own fzf-tmux combo like the default
-CTRL-T key binding. (Or is it?)
+The supplied [fzf-tmux](bin/fzf-tmux) script should suffice in most of the
+cases, but if you want to be able to update command line like the default
+`CTRL-T` key binding, you'll have to use `send-keys` command of tmux. The
+following example will show you how it can be done.
 
 ```sh
 # This is a helper function that splits the current pane to start the given
@@ -514,7 +447,7 @@ fzf_tmux_dir() {
 bind '"\C-x\C-d": "$(fzf_tmux_dir)\e\C-e"'
 ```
 
-### Fish shell
+#### Fish shell
 
 It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
 that it doesn't allow reading from STDIN in command substitution, which means
@@ -537,7 +470,7 @@ function fe
 end
 ```
 
-### Handling UTF-8 NFD paths on OSX
+#### Handling UTF-8 NFD paths on OSX
 
 Use iconv to convert NFD paths to NFC:
 
