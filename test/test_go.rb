@@ -138,7 +138,7 @@ class Tmux
   end
 private
   def defaults opts
-    { timeout: 5, pane: 0 }.merge(opts)
+    { timeout: 10, pane: 0 }.merge(opts)
   end
 
   def wait opts = {}
@@ -209,7 +209,7 @@ class TestGoFZF < TestBase
 
   def test_vanilla
     tmux.send_keys "seq 1 100000 | #{fzf}", :Enter
-    tmux.until(timeout: 10) { |lines|
+    tmux.until(timeout: 20) { |lines|
       lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
     lines = tmux.capture
     assert_equal '  2',             lines[-4]
