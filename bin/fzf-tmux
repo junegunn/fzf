@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# fzf-tmux: starts fzf in a tmux pane
+# usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
+
+args=()
+opt=""
+while [ $# -gt 0 ]; do
+  arg="$1"
+  case "$arg" in
+    -w*|-h*)
+      if [ ${#arg} -gt 2 ]; then
+        size="${arg:2}"
+      else
+        shift
+        size="$1"
+      fi
+      [[ "$arg"  =~ ^-w ]] && opt="-h"
+      [[ "$size" =~ %$  ]] && opt="$opt -p ${size:0:-1}" ||
+                              opt="$opt -l $size"
+      ;;
+    --)
+      # "--" can be used to separate fzf-tmux options from fzf options to
+      # avoid conflicts
+      break
+      ;;
+    *)
+      args+=("$1")
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$TMUX_PANE" ]; then
+  fzf "${args[@]}"
+  exit $?
+fi
+
+set -e
+
+# Build arguments to fzf
+[ ${#args[@]} -gt 0 ] && fzf_args=$(printf '\\"%s\\" ' "${args[@]}"; echo '')
+
+# Clean up named pipes on exit
+id=$RANDOM
+fifo1=/tmp/fzf-fifo1-$id
+fifo2=/tmp/fzf-fifo2-$id
+fifo3=/tmp/fzf-fifo3-$id
+cleanup() {
+  rm -f $fifo1 $fifo2 $fifo3
+}
+trap cleanup EXIT SIGINT SIGTERM
+
+fail() {
+  >&2 echo "$1"
+  exit 1
+}
+fzf=$(which fzf 2> /dev/null) || fail "fzf executable not found"
+
+mkfifo $fifo2
+mkfifo $fifo3
+if [ -t 0 ]; then
+  tmux split-window $opt 'sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3'"'
+else
+  mkfifo $fifo1
+  tmux split-window $opt 'sh -c "'$fzf' '"$fzf_args"' < '$fifo1' > '$fifo2'; echo \$? > '$fifo3'"'
+  cat <&0 > $fifo1 &
+fi
+cat $fifo2
+[ "$(cat $fifo3)" = '0' ]
+
