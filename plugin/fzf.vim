@@ -33,17 +33,24 @@ set cpo&vim
 
 function! s:fzf_exec()
   if !exists('s:exec')
-    call system('type fzf')
-    if v:shell_error
-      let s:exec = executable(s:fzf_go) ?
-            \ s:fzf_go : (executable(s:fzf_rb) ? s:fzf_rb : '')
+    if executable(s:fzf_go)
+      let s:exec = s:fzf_go
     else
-      let s:exec = 'fzf'
+      let path = split(system('which fzf 2> /dev/null'), '\n')
+      if !v:shell_error && !empty(path)
+        let s:exec = path[0]
+      elseif executable(s:fzf_rb)
+        let s:exec = s:fzf_rb
+      else
+        call system('type fzf')
+        if v:shell_error
+          throw 'fzf executable not found'
+        else
+          let s:exec = 'fzf'
+        endif
+      endif
     endif
-    return s:fzf_exec()
-  elseif empty(s:exec)
-    unlet s:exec
-    throw 'fzf executable not found'
+    return s:exec
   else
     return s:exec
   endif
