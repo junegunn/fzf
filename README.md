@@ -14,7 +14,7 @@ Installation
 fzf project consists of the followings:
 
 - `fzf` executable
-- `fzf-tmux` script for launching fzf in a tmux split
+- `fzf-tmux` script for launching fzf in a tmux pane
 - Shell extensions
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
     - Fuzzy auto-completion (bash only)
@@ -149,7 +149,7 @@ installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 `fzf-tmux` script
 -----------------
 
-[fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux split.
+[fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux pane.
 
 ```sh
 # usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
@@ -412,7 +412,7 @@ fzf() {
 }
 ```
 
-#### Using fzf with tmux splits
+#### Using fzf with tmux panes
 
 The supplied [fzf-tmux](bin/fzf-tmux) script should suffice in most of the
 cases, but if you want to be able to update command line like the default

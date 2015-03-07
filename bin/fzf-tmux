@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fzf-tmux: starts fzf in a tmux split
+# fzf-tmux: starts fzf in a tmux pane
 # usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
 
 args=()
