@@ -15,7 +15,7 @@ while [ $# -gt 0 ]; do
         size="$1"
       fi
       [[ "$arg"  =~ ^-w ]] && opt="-h"
-      [[ "$size" =~ %$  ]] && opt="$opt -p ${size:0:-1}" ||
+      [[ "$size" =~ %$  ]] && opt="$opt -p ${size:0:((${#size}-1))}" ||
                               opt="$opt -l $size"
       ;;
     --)
