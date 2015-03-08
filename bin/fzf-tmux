@@ -22,7 +22,8 @@ while [ $# -gt 0 ]; do
         if [[ "$1" =~ ^[0-9]+%?$ ]]; then
           size="$1"
         else
-          [ -n "$1" ] && args+=("$1")
+          [ -n "$1" -a "$1" != "--" ] && args+=("$1")
+          shift
           continue
         fi
       fi
