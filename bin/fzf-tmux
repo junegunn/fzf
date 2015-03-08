@@ -4,10 +4,16 @@
 
 args=()
 opt=""
+skip=""
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
     -w*|-h*)
+      if [ -n "$skip" ]; then
+        args+=("$1")
+        shift
+        continue
+      fi
       [[ "$arg" =~ ^-w ]] && opt="-h" || opt=""
       if [ ${#arg} -gt 2 ]; then
         size="${arg:2}"
@@ -26,7 +32,7 @@ while [ $# -gt 0 ]; do
     --)
       # "--" can be used to separate fzf-tmux options from fzf options to
       # avoid conflicts
-      break
+      skip=1
       ;;
     *)
       args+=("$1")
