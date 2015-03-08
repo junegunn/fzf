@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # fzf-tmux: starts fzf in a tmux pane
-# usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
+# usage: fzf-tmux [-h [HEIGHT[%]]] [-w [WIDTH[%]]] [--] [FZF OPTIONS]
 
 args=()
 opt=""
@@ -8,15 +8,20 @@ while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
     -w*|-h*)
+      [[ "$arg" =~ ^-w ]] && opt="-h" || opt=""
       if [ ${#arg} -gt 2 ]; then
         size="${arg:2}"
       else
         shift
-        size="$1"
+        if [[ "$1" =~ ^[0-9]+%?$ ]]; then
+          size="$1"
+        else
+          [ -n "$1" ] && args+=("$1")
+          continue
+        fi
       fi
-      [[ "$arg"  =~ ^-w ]] && opt="-h"
-      [[ "$size" =~ %$  ]] && opt="$opt -p ${size:0:((${#size}-1))}" ||
-                              opt="$opt -l $size"
+      [[ "$size" =~ %$ ]] && opt="$opt -p ${size:0:((${#size}-1))}" ||
+                             opt="$opt -l $size"
       ;;
     --)
       # "--" can be used to separate fzf-tmux options from fzf options to

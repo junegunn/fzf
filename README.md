@@ -152,7 +152,7 @@ installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 [fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux pane.
 
 ```sh
-# usage: fzf-tmux [-h HEIGHT[%]] [-w WIDTH[%]] [--] [FZF OPTIONS]
+# usage: fzf-tmux [-h [HEIGHT[%]]] [-w [WIDTH[%]]] [--] [FZF OPTIONS]
 
 # select git branches in horizontal split (15 lines)
 git branch | fzf-tmux -h 15
