@@ -152,17 +152,17 @@ installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 [fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux pane.
 
 ```sh
-# usage: fzf-tmux [-h [HEIGHT[%]]] [-w [WIDTH[%]]] [--] [FZF OPTIONS]
+# usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
 
-# select git branches in horizontal split (15 lines)
-git branch | fzf-tmux -h 15
+# select git branches in horizontal split below (15 lines)
+git branch | fzf-tmux -d 15
 
-# select multiple words in vertical split (20% of screen width)
-cat /usr/share/dict/words | fzf-tmux -w 20% --multi
+# select multiple words in vertical split on the left (20% of screen width)
+cat /usr/share/dict/words | fzf-tmux -l 20% --multi --reverse
 ```
 
-It will still work even when you're not on tmux, silently ignoring `-h` and
-`-w` options, so you can invariably use `fzf-tmux` in your scripts.
+It will still work even when you're not on tmux, silently ignoring `-[udlr]`
+options, so you can invariably use `fzf-tmux` in your scripts.
 
 Fuzzy completion for bash
 -------------------------

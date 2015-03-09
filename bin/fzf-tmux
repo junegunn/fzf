@@ -1,20 +1,36 @@
 #!/usr/bin/env bash
 # fzf-tmux: starts fzf in a tmux pane
-# usage: fzf-tmux [-h [HEIGHT[%]]] [-w [WIDTH[%]]] [--] [FZF OPTIONS]
+# usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
 
 args=()
 opt=""
 skip=""
+swap=""
+close=""
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
-    -w*|-h*)
+    -w*|-h*|-d*|-u*|-r*|-l*)
       if [ -n "$skip" ]; then
         args+=("$1")
         shift
         continue
       fi
-      [[ "$arg" =~ ^-w ]] && opt="-h" || opt=""
+      if [[ "$arg" =~ ^.[lrw] ]]; then
+        opt="-h"
+        if [[ "$arg" =~ ^.l ]]; then
+          opt="$opt -d"
+          swap="; swap-pane -D ; select-pane -L"
+          close="; tmux swap-pane -D"
+        fi
+      else
+        opt=""
+        if [[ "$arg" =~ ^.u ]]; then
+          opt="$opt -d"
+          swap="; swap-pane -D ; select-pane -U"
+          close="; tmux swap-pane -D"
+        fi
+      fi
       if [ ${#arg} -gt 2 ]; then
         size="${arg:2}"
       else
@@ -27,8 +43,24 @@ while [ $# -gt 0 ]; do
           continue
         fi
       fi
-      [[ "$size" =~ %$ ]] && opt="$opt -p ${size:0:((${#size}-1))}" ||
-                             opt="$opt -l $size"
+
+      if [[ "$size" =~ %$ ]]; then
+        size=${size:0:((${#size}-1))}
+        if [ -n "$swap" ]; then
+          opt="$opt -p $(( 100 - size ))"
+        else
+          opt="$opt -p $size"
+        fi
+      else
+        if [ -n "$swap" ]; then
+          [[ "$arg" =~ ^.l ]] && max=$(tput cols) || max=$(tput lines)
+          size=$(( max - size ))
+          [ $size -lt 0 ] && size=0
+          opt="$opt -l $size"
+        else
+          opt="$opt -l $size"
+        fi
+      fi
       ;;
     --)
       # "--" can be used to separate fzf-tmux options from fzf options to
@@ -71,10 +103,12 @@ fzf=$(which fzf 2> /dev/null) || fail "fzf executable not found"
 mkfifo $fifo2
 mkfifo $fifo3
 if [ -t 0 ]; then
-  tmux split-window $opt 'sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3'"'
+  tmux set-window-option -q synchronize-panes off \;\
+    split-window $opt 'sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3' '"$close"'"' $swap
 else
   mkfifo $fifo1
-  tmux split-window $opt 'sh -c "'$fzf' '"$fzf_args"' < '$fifo1' > '$fifo2'; echo \$? > '$fifo3'"'
+  tmux set-window-option -q synchronize-panes off \;\
+    split-window $opt 'sh -c "'$fzf' '"$fzf_args"' < '$fifo1' > '$fifo2'; echo \$? > '$fifo3' '"$close"'"' $swap
   cat <&0 > $fifo1 &
 fi
 cat $fifo2
