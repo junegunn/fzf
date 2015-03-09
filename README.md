@@ -53,7 +53,7 @@ On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 brew install fzf
 
 # Install shell extensions - this should be done whenever fzf is updated
-/usr/local/Cellar/fzf/$(fzf --version)/install
+$(brew info fzf | grep /install)
 ```
 
 #### Install as Vim plugin
@@ -153,6 +153,7 @@ installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
 
 ```sh
 # usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
+#        (-[udlr]: up/down/left/right)
 
 # select git branches in horizontal split below (15 lines)
 git branch | fzf-tmux -d 15
