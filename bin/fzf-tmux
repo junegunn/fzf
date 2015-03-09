@@ -7,9 +7,13 @@ opt=""
 skip=""
 swap=""
 close=""
+term=""
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
+    -)
+      term=1
+      ;;
     -w*|-h*|-d*|-u*|-r*|-l*)
       if [ -n "$skip" ]; then
         args+=("$1")
@@ -53,7 +57,11 @@ while [ $# -gt 0 ]; do
         fi
       else
         if [ -n "$swap" ]; then
-          [[ "$arg" =~ ^.l ]] && max=$(tput cols) || max=$(tput lines)
+          if [[ "$arg" =~ ^.l ]]; then
+            [ -n "$COLUMNS" ] && max=$COLUMNS || max=$(tput cols)
+          else
+            [ -n "$LINES" ] && max=$LINES || max=$(tput lines)
+          fi
           size=$(( max - size ))
           [ $size -lt 0 ] && size=0
           opt="$opt -l $size"
@@ -103,7 +111,7 @@ envs="FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") FZF_DEFAULT_COMMAND=$(pr
 
 mkfifo $fifo2
 mkfifo $fifo3
-if [ -t 0 ]; then
+if [ -n "$term" -o -t 0 ]; then
   tmux set-window-option -q synchronize-panes off \;\
     split-window $opt "$envs"' sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3' '"$close"'"' $swap
 else

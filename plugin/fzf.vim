@@ -21,12 +21,11 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-let s:min_tmux_width  = 10
-let s:min_tmux_height = 3
 let s:default_tmux_height = '40%'
 let s:launcher = 'xterm -e bash -ic %s'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
+let s:fzf_tmux = expand('<sfile>:h:h').'/bin/fzf-tmux'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -66,7 +65,7 @@ function! s:tmux_enabled()
   endif
 
   let s:tmux = 0
-  if exists('$TMUX')
+  if exists('$TMUX') && executable(s:fzf_tmux)
     let output = system('tmux -V')
     let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   endif
@@ -81,8 +80,23 @@ function! s:escape(path)
   return substitute(a:path, ' ', '\\ ', 'g')
 endfunction
 
+" Upgrade legacy options
+function! s:upgrade(dict)
+  let copy = copy(a:dict)
+  if has_key(copy, 'tmux')
+    let copy.down = remove(copy, 'tmux')
+  endif
+  if has_key(copy, 'tmux_height')
+    let copy.down = remove(copy, 'tmux_height')
+  endif
+  if has_key(copy, 'tmux_width')
+    let copy.right = remove(copy, 'tmux_width')
+  endif
+  return copy
+endfunction
+
 function! fzf#run(...) abort
-  let dict   = exists('a:1') ? a:1 : {}
+  let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': tempname() }
   let optstr = get(dict, 'options', '')
   try
@@ -106,26 +120,41 @@ function! fzf#run(...) abort
   else
     let prefix = ''
   endif
-  let command = prefix.fzf_exec.' '.optstr.' > '.temps.result
+  let split = s:tmux_enabled() && s:tmux_splittable(dict)
+  let command = prefix.(split ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  if s:tmux_enabled() && s:tmux_splittable(dict)
+  if split
     return s:execute_tmux(dict, command, temps)
   else
     return s:execute(dict, command, temps)
   endif
 endfunction
 
+function! s:fzf_tmux(dict)
+  let size = ''
+  for o in ['up', 'down', 'left', 'right']
+    if has_key(a:dict, o)
+      let size = '-'.o[0].a:dict[o]
+    endif
+  endfor
+  return printf('LINES=%d COLUMNS=%d %s %s %s --',
+    \ &lines, &columns, s:fzf_tmux, size, (has_key(a:dict, 'source') ? '' : '-'))
+endfunction
+
 function! s:tmux_splittable(dict)
-  return
-  \ min([&columns, get(a:dict, 'tmux_width', 0)]) >= s:min_tmux_width ||
-  \ min([&lines, get(a:dict, 'tmux_height', get(a:dict, 'tmux', 0))]) >= s:min_tmux_height
+  return has_key(a:dict, 'up')   ||
+       \ has_key(a:dict, 'down') ||
+       \ has_key(a:dict, 'left') ||
+       \ has_key(a:dict, 'right')
 endfunction
 
 function! s:pushd(dict)
   if !empty(get(a:dict, 'dir', ''))
     let a:dict.prev_dir = getcwd()
     execute 'chdir '.s:escape(a:dict.dir)
+    return 1
   endif
+  return 0
 endfunction
 
 function! s:popd(dict)
@@ -153,7 +182,7 @@ function! s:execute(dict, command, temps)
     endif
     return []
   else
-    return s:callback(a:dict, a:temps, 0)
+    return s:callback(a:dict, a:temps)
   endif
 endfunction
 
@@ -166,58 +195,20 @@ function! s:env_var(name)
 endfunction
 
 function! s:execute_tmux(dict, command, temps)
-  let command = s:env_var('FZF_DEFAULT_OPTS').s:env_var('FZF_DEFAULT_COMMAND').a:command
-  if !empty(get(a:dict, 'dir', ''))
+  let command = a:command
+  if s:pushd(a:dict)
+    " -c '#{pane_current_path}' is only available on tmux 1.9 or above
     let command = 'cd '.s:escape(a:dict.dir).' && '.command
   endif
 
-  let splitopt = '-v'
-  if has_key(a:dict, 'tmux_width')
-    let splitopt = '-h'
-    let size = a:dict.tmux_width
-  else
-    let size = get(a:dict, 'tmux_height', get(a:dict, 'tmux'))
-  endif
-
-  if type(size) == 1 && size =~ '%$'
-    let sizeopt = '-p '.size[0:-2]
-  else
-    let sizeopt = '-l '.size
-  endif
-
-  let s:pane = substitute(
-    \ system(
-      \ printf(
-        \ 'tmux split-window %s %s -P -F "#{pane_id}" %s',
-        \ splitopt, sizeopt, s:shellesc(command))), '\n', '', 'g')
-  let s:dict = a:dict
-  let s:temps = a:temps
-
-  augroup fzf_tmux
-    autocmd!
-    autocmd VimResized * nested call s:tmux_check()
-  augroup END
+  call system(command)
+  call s:callback(a:dict, a:temps)
 endfunction
 
-function! s:tmux_check()
-  let panes = split(system('tmux list-panes -a -F "#{pane_id}"'), '\n')
-
-  if index(panes, s:pane) < 0
-    augroup fzf_tmux
-      autocmd!
-    augroup END
-
-    call s:callback(s:dict, s:temps, 1)
-    redraw
-  endif
-endfunction
-
-function! s:callback(dict, temps, cd)
+function! s:callback(dict, temps)
   if !filereadable(a:temps.result)
     let lines = []
   else
-    if a:cd | call s:pushd(a:dict) | endif
-
     let lines = readfile(a:temps.result)
     if has_key(a:dict, 'sink')
       for line in lines
@@ -246,7 +237,7 @@ function! s:cmd(bang, ...) abort
     let opts.dir = remove(args, -1)
   endif
   if !a:bang
-    let opts.tmux = get(g:, 'fzf_tmux_height', s:default_tmux_height)
+    let opts.down = get(g:, 'fzf_tmux_height', s:default_tmux_height)
   endif
   call fzf#run(extend({ 'sink': 'e', 'options': join(args) }, opts))
 endfunction

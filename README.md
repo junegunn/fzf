@@ -285,17 +285,16 @@ of the selected items.
 
 `fzf#run()` may take an options-dictionary:
 
-| Option name     | Type          | Description                                                        |
-| --------------- | ------------- | ------------------------------------------------------------------ |
-| `source`        | string        | External command to generate input to fzf (e.g. `find .`)          |
-| `source`        | list          | Vim list as input to fzf                                           |
-| `sink`          | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)         |
-| `sink`          | funcref       | Reference to function to process each selected item                |
-| `options`       | string        | Options to fzf                                                     |
-| `dir`           | string        | Working directory                                                  |
-| `tmux_width`    | number/string | Use tmux vertical split with the given height (e.g. `20`, `50%`)   |
-| `tmux_height`   | number/string | Use tmux horizontal split with the given height (e.g. `20`, `50%`) |
-| `launcher`      | string        | External terminal emulator to start fzf with (Only used in GVim)   |
+| Option name                | Type          | Description                                                      |
+| -------------------------- | ------------- | ---------------------------------------------------------------- |
+| `source`                   | string        | External command to generate input to fzf (e.g. `find .`)        |
+| `source`                   | list          | Vim list as input to fzf                                         |
+| `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)       |
+| `sink`                     | funcref       | Reference to function to process each selected item              |
+| `options`                  | string        | Options to fzf                                                   |
+| `dir`                      | string        | Working directory                                                |
+| `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
+| `launcher`                 | string        | External terminal emulator to start fzf with (Only used in GVim) |
 
 ##### Examples
 
@@ -321,10 +320,10 @@ nnoremap <silent> <Leader>C :call fzf#run({
 \   'source':
 \     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
 \         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
-\   'sink':       'colo',
-\   'options':    '+m',
-\   'tmux_width': 20,
-\   'launcher':   'xterm -geometry 20x30 -e bash -ic %s'
+\   'sink':     'colo',
+\   'options':  '+m',
+\   'left':     20,
+\   'launcher': 'xterm -geometry 20x30 -e bash -ic %s'
 \ })<CR>
 ```
 
@@ -345,10 +344,10 @@ function! BufOpen(e)
 endfunction
 
 nnoremap <silent> <Leader><Enter> :call fzf#run({
-\   'source':      reverse(BufList()),
-\   'sink':        function('BufOpen'),
-\   'options':     '+m',
-\   'tmux_height': '40%'
+\   'source':  reverse(BufList()),
+\   'sink':    function('BufOpen'),
+\   'options': '+m',
+\   'down':    '40%'
 \ })<CR>
 ```
 
