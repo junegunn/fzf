@@ -200,6 +200,8 @@ class FZF
       when '--no-print-query'          then @print_query = false
       when '-e', '--extended-exact'    then @extended = :exact
       when '+e', '--no-extended-exact' then @extended = nil
+      when '--tac', '--sync'
+        # XXX
       else
         usage 1, "illegal option: #{o}"
       end
