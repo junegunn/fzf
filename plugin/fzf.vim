@@ -202,7 +202,7 @@ function! s:execute_tmux(dict, command, temps)
   endif
 
   call system(command)
-  call s:callback(a:dict, a:temps)
+  return s:callback(a:dict, a:temps)
 endfunction
 
 function! s:callback(dict, temps)
