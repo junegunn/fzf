@@ -25,4 +25,4 @@ script: |
   cd $FZF_BASE/src && make test fzf/fzf-linux_amd64 install &&
   cd $FZF_BASE/bin && ln -sf fzf-linux_amd64 fzf-$(./fzf --version)-linux_amd64 &&
   cd $FZF_BASE && yes | ./install &&
-  tmux new "rake test > out && touch ok" && cat out && [ -e ok ]
+  tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]
