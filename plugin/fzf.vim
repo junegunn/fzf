@@ -130,11 +130,20 @@ function! fzf#run(...) abort
   endif
 endfunction
 
+function! s:present(dict, ...)
+  for key in a:000
+    if !empty(get(a:dict, key, ''))
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 function! s:fzf_tmux(dict)
   let size = ''
   for o in ['up', 'down', 'left', 'right']
-    if has_key(a:dict, o)
-      let size = '-'.o[0].a:dict[o]
+    if s:present(a:dict, o)
+      let size = '-'.o[0].(a:dict[o] == 1 ? '' : a:dict[o])
     endif
   endfor
   return printf('LINES=%d COLUMNS=%d %s %s %s --',
@@ -142,14 +151,11 @@ function! s:fzf_tmux(dict)
 endfunction
 
 function! s:tmux_splittable(dict)
-  return has_key(a:dict, 'up')   ||
-       \ has_key(a:dict, 'down') ||
-       \ has_key(a:dict, 'left') ||
-       \ has_key(a:dict, 'right')
+  return s:present(a:dict, 'up', 'down', 'left', 'right')
 endfunction
 
 function! s:pushd(dict)
-  if !empty(get(a:dict, 'dir', ''))
+  if s:present(a:dict, 'dir')
     let a:dict.prev_dir = getcwd()
     execute 'chdir '.s:escape(a:dict.dir)
     return 1
