@@ -71,6 +71,16 @@ Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
 ```
 
+#### Upgrading fzf
+
+fzf is being actively developed and you might want to upgrade it once in a
+while. Please follow the instruction below depending on the installation
+method.
+
+- git: `cd ~/.fzf && git pull && ./install`
+- brew: `brew update && brew upgrade fzf && $(brew info fzf | grep /install)`
+- vim-plug: `:PlugUpdate fzf`
+
 Usage
 -----
 
