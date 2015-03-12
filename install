@@ -326,7 +326,12 @@ bindkey '\ec' fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
-  LBUFFER=$(fc -l 1 | fzf +s --tac +m -n2..,.. | sed "s/ *[0-9*]* *//")
+  local selected
+  if selected=$(fc -l 1 | fzf +s --tac +m -n2..,.. -q "$LBUFFER"); then
+    num=$(echo "$selected" | head -1 | awk '{print $1}' | sed 's/[^0-9]//g')
+    LBUFFER=!$num
+    zle expand-history
+  fi
   zle redisplay
 }
 zle     -N   fzf-history-widget
