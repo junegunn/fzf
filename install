@@ -77,7 +77,7 @@ case "$archi" in
   Darwin\ i*86)   download fzf-$version-darwin_386   ;;
   Linux\ x86_64)  download fzf-$version-linux_amd64  ;;
   Linux\ i*86)    download fzf-$version-linux_386    ;;
-  *)              binary_available=0                 ;;
+  *)              binary_available=0 binary_error=1  ;;
 esac
 
 cd "$fzf_base"
@@ -173,6 +173,9 @@ fzf() {
   $fzf_cmd "\$@"
 }
 export -f fzf > /dev/null
+if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
+  export PATH="$fzf_base/bin:\$PATH"
+fi
 
 # Auto-completion
 # ---------------
