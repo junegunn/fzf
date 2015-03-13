@@ -171,7 +171,7 @@ endfunction
 
 function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
-  silent !clear
+  silent! !clear 2> /dev/null
   if has('gui_running')
     let launcher = get(a:dict, 'launcher', get(g:, 'fzf_launcher', s:launcher))
     let command = printf(launcher, "'".substitute(a:command, "'", "'\"'\"'", 'g')."'")
