@@ -68,6 +68,7 @@ fi
 
 if [ -d ~/.config/fish/functions ]; then
   remove ~/.config/fish/functions/fzf.fish
+  remove ~/.config/fish/functions/fzf_key_bindings.fish
 
   if [ "$(ls -A ~/.config/fish/functions)" ]; then
     echo "Can't delete non-empty directory: \"~/.config/fish/functions\""
