@@ -144,6 +144,14 @@ if [ -n "$binary_error" ]; then
     echo "< 1.9"
     fzf_cmd="$ruby $fzf_base/fzf"
   fi
+
+  # Create fzf script
+  echo -n "Creating wrapper script for fzf ... "
+  rm -f "$fzf_base"/bin/fzf
+  echo "#!/bin/sh" > "$fzf_base"/bin/fzf
+  echo "$fzf_cmd \"\$@\"" >> "$fzf_base"/bin/fzf
+  chmod +x "$fzf_base"/bin/fzf
+  echo "OK"
 fi
 
 # Auto-completion
@@ -159,35 +167,19 @@ for shell in bash zsh; do
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
 
-  fzf_completion="[[ \$- =~ i ]] && source \"$fzf_base/fzf-completion.${shell}\""
-  if [ $auto_completion -ne 0 ]; then
+  fzf_completion="[[ \$- =~ i ]] && source \"$fzf_base/shell/completion.${shell}\""
+  if [ $shell != bash -o $auto_completion -ne 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 
-  if [ -n "$binary_error" ]; then
-    cat > $src << EOF
-# Setup fzf function
-# ------------------
-unalias fzf 2> /dev/null
-fzf() {
-  $fzf_cmd "\$@"
-}
-export -f fzf > /dev/null
-if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
-  export PATH="$fzf_base/bin:\$PATH"
-fi
+  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
+  if [ $key_bindings -ne 0 ]; then
+    fzf_key_bindings="# $fzf_key_bindings"
+  fi
 
-# Auto-completion
-# ---------------
-$fzf_completion
-
-EOF
-  else
-    cat > $src << EOF
+  cat > $src << EOF
 # Setup fzf
 # ---------
-unalias fzf 2> /dev/null
-unset fzf 2> /dev/null
 if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
   export PATH="$fzf_base/bin:\$PATH"
 fi
@@ -196,265 +188,35 @@ fi
 # ---------------
 $fzf_completion
 
+# Key bindings
+# ------------
+$fzf_key_bindings
+
 EOF
-  fi
-
-  if [ $key_bindings -eq 0 ]; then
-    if [ $shell = bash ]; then
-      cat >> $src << "EOFZF"
-# Key bindings
-# ------------
-__fsel() {
-  command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed 1d | cut -b3- | fzf -m | while read item; do
-    printf '%q ' "$item"
-  done
-  echo
-}
-
-if [[ $- =~ i ]]; then
-
-__fsel_tmux() {
-  local height
-  height=${FZF_TMUX_HEIGHT:-40%}
-  if [[ $height =~ %$ ]]; then
-    height="-p ${height%\%}"
-  else
-    height="-l $height"
-  fi
-  tmux split-window $height "bash -c 'source ~/.fzf.bash; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
-}
-
-__fcd() {
-  local dir
-  dir=$(command find -L ${1:-.} \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type d -print 2> /dev/null | sed 1d | cut -b3- | fzf +m) && printf 'cd %q' "$dir"
-}
-
-__use_tmux=0
-[ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ] && __use_tmux=1
-
-if [ -z "$(set -o | \grep '^vi.*on')" ]; then
-  # Required to refresh the prompt after fzf
-  bind '"\er": redraw-current-line'
-
-  # CTRL-T - Paste the selected file path into the command line
-  if [ $__use_tmux -eq 1 ]; then
-    bind '"\C-t": " \C-u \C-a\C-k$(__fsel_tmux)\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
-  else
-    bind '"\C-t": " \C-u \C-a\C-k$(__fsel)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
-  fi
-
-  # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u$(HISTTIMEFORMAT= history | fzf +s --tac +m -n2..,.. | sed \"s/ *[0-9]* *//\")\e\C-e\er"'
-
-  # ALT-C - cd into the selected directory
-  bind '"\ec": " \C-e\C-u$(__fcd)\e\C-e\er\C-m"'
-else
-  bind '"\C-x\C-e": shell-expand-line'
-  bind '"\C-x\C-r": redraw-current-line'
-
-  # CTRL-T - Paste the selected file path into the command line
-  # - FIXME: Selected items are attached to the end regardless of cursor position
-  if [ $__use_tmux -eq 1 ]; then
-    bind '"\C-t": "\e$a \eddi$(__fsel_tmux)\C-x\C-e\e0P$xa"'
-  else
-    bind '"\C-t": "\e$a \eddi$(__fsel)\C-x\C-e\e0Px$a \C-x\C-r\exa "'
-  fi
-  bind -m vi-command '"\C-t": "i\C-t"'
-
-  # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": "\eddi$(HISTTIMEFORMAT= history | fzf +s --tac +m -n2..,.. | sed \"s/ *[0-9]* *//\")\C-x\C-e\e$a\C-x\C-r"'
-  bind -m vi-command '"\C-r": "i\C-r"'
-
-  # ALT-C - cd into the selected directory
-  bind '"\ec": "\eddi$(__fcd)\C-x\C-e\C-x\C-r\C-m"'
-  bind -m vi-command '"\ec": "i\ec"'
-fi
-
-unset __use_tmux
-
-fi
-EOFZF
-    else  # zsh
-      cat >> $src << "EOFZF"
-# Key bindings
-# ------------
-# CTRL-T - Paste the selected file path(s) into the command line
-__fsel() {
-  command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed 1d | cut -b3- | fzf -m | while read item; do
-    printf '%q ' "$item"
-  done
-  echo
-}
-
-if [[ $- =~ i ]]; then
-
-if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
-  fzf-file-widget() {
-    local height
-    height=${FZF_TMUX_HEIGHT:-40%}
-    if [[ $height =~ %$ ]]; then
-      height="-p ${height%\%}"
-    else
-      height="-l $height"
-    fi
-    tmux split-window $height "zsh -c 'source ~/.fzf.zsh; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
-  }
-else
-  fzf-file-widget() {
-    LBUFFER="${LBUFFER}$(__fsel)"
-    zle redisplay
-  }
-fi
-zle     -N   fzf-file-widget
-bindkey '^T' fzf-file-widget
-
-# ALT-C - cd into the selected directory
-fzf-cd-widget() {
-  cd "${$(command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type d -print 2> /dev/null | sed 1d | cut -b3- | fzf +m):-.}"
-  zle reset-prompt
-}
-zle     -N    fzf-cd-widget
-bindkey '\ec' fzf-cd-widget
-
-# CTRL-R - Paste the selected command from history into the command line
-fzf-history-widget() {
-  local selected
-  if selected=$(fc -l 1 | fzf +s --tac +m -n2..,.. -q "$LBUFFER"); then
-    num=$(echo "$selected" | head -1 | awk '{print $1}' | sed 's/[^0-9]//g')
-    LBUFFER=!$num
-    zle expand-history
-  fi
-  zle redisplay
-}
-zle     -N   fzf-history-widget
-bindkey '^R' fzf-history-widget
-
-fi
-EOFZF
-    fi
-  fi
-
   echo "OK"
 done
 
 # fish
 has_fish=0
-if [ -n "$(which fish)" ]; then
+if [ -n "$(which fish 2> /dev/null)" ]; then
   has_fish=1
-  echo -n "Generate ~/.config/fish/functions/fzf.fish ... "
+  echo -n "Update fish_user_paths ... "
+  fish << EOF
+  echo \$fish_user_paths | grep $fzf_base/bin > /dev/null
+  or set --universal fish_user_paths \$fish_user_paths $fzf_base/bin
+EOF
+  [ $? -eq 0 ] && echo "OK" || echo "Failed"
+
   mkdir -p ~/.config/fish/functions
-  if [ -n "$binary_error" ]; then
-    cat > ~/.config/fish/functions/fzf.fish << EOFZF
-function fzf
-  $fzf_cmd \$argv
-end
-EOFZF
-  else
-    cat > ~/.config/fish/functions/fzf.fish << EOFZF
-function fzf
-  $fzf_base/bin/fzf \$argv
-end
-EOFZF
+  if [ -e ~/.config/fish/functions/fzf.fish ]; then
+    echo -n "Remove unnecessary ~/.config/fish/functions/fzf.fish ... "
+    rm -f ~/.config/fish/functions/fzf.fish && echo "OK" || echo "Failed"
   fi
-  echo "OK"
 
   if [ $key_bindings -eq 0 ]; then
-    echo -n "Generate ~/.config/fish/functions/fzf_key_bindings.fish ... "
-    cat > ~/.config/fish/functions/fzf_key_bindings.fish << "EOFZF"
-function fzf_key_bindings
-  # Due to a bug of fish, we cannot use command substitution,
-  # so we use temporary file instead
-  if [ -z "$TMPDIR" ]
-    set -g TMPDIR /tmp
-  end
-
-  function __fzf_list
-    command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-      -o -type f -print \
-      -o -type d -print \
-      -o -type l -print 2> /dev/null | sed 1d | cut -b3-
-  end
-
-  function __fzf_list_dir
-    command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) \
-      -prune -o -type d -print 2> /dev/null | sed 1d | cut -b3-
-  end
-
-  function __fzf_escape
-    while read item
-      echo -n (echo -n "$item" | sed -E 's/([ "$~'\''([{<>})])/\\\\\\1/g')' '
-    end
-  end
-
-  function __fzf_ctrl_t
-    if [ -n "$TMUX_PANE" -a "$FZF_TMUX" != "0" ]
-      tmux split-window (__fzf_tmux_height) "fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
-    else
-      __fzf_list | fzf -m > $TMPDIR/fzf.result
-      and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
-      commandline -f repaint
-      rm -f $TMPDIR/fzf.result
-    end
-  end
-
-  function __fzf_ctrl_t_tmux
-    __fzf_list | fzf -m > $TMPDIR/fzf.result
-    and tmux send-keys -t $argv[1] (cat $TMPDIR/fzf.result | __fzf_escape)
-    rm -f $TMPDIR/fzf.result
-  end
-
-  function __fzf_reverse
-    if which tac > /dev/null
-      tac $argv
-    else
-      tail -r $argv
-    end
-  end
-
-  function __fzf_ctrl_r
-    history | __fzf_reverse | fzf +s --tac +m > $TMPDIR/fzf.result
-    and commandline (cat $TMPDIR/fzf.result)
-    commandline -f repaint
-    rm -f $TMPDIR/fzf.result
-  end
-
-  function __fzf_alt_c
-    # Fish hangs if the command before pipe redirects (2> /dev/null)
-    __fzf_list_dir | fzf +m > $TMPDIR/fzf.result
-    [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
-    and cd (cat $TMPDIR/fzf.result)
-    commandline -f repaint
-    rm -f $TMPDIR/fzf.result
-  end
-
-  function __fzf_tmux_height
-    if set -q FZF_TMUX_HEIGHT
-      set height $FZF_TMUX_HEIGHT
-    else
-      set height 40%
-    end
-    if echo $height | \grep -q -E '%$'
-      echo "-p "(echo $height | sed 's/%$//')
-    else
-      echo "-l $height"
-    end
-    set -e height
-  end
-
-  bind \ct '__fzf_ctrl_t'
-  bind \cr '__fzf_ctrl_r'
-  bind \ec '__fzf_alt_c'
-end
-EOFZF
-    echo "OK"
+    echo -n "Symlink ~/.config/fish/functions/fzf_key_bindings.fish ... "
+    ln -sf $fzf_base/shell/key-bindings.fish \
+           ~/.config/fish/functions/fzf_key_bindings.fish && echo "OK" || echo "Failed"
   fi
 fi
 
@@ -484,12 +246,6 @@ done
 if [ $key_bindings -eq 0 -a $has_fish -eq 1 ]; then
   bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
   append_line "fzf_key_bindings" "$bind_file"
-
-  echo '  * Due to a known bug of fish, you may have issues running fzf on fish.'
-  echo '  * If that happens, try the following:'
-  echo '    - Remove ~/.config/fish/functions/fzf.fish'
-  echo '    - Place fzf executable in a directory included in $PATH'
-  echo
 fi
 
 cat << EOF
