@@ -27,7 +27,8 @@ function fzf_key_bindings
 
   function __fzf_ctrl_t
     if [ -n "$TMUX_PANE" -a "$FZF_TMUX" != "0" ]
-      tmux split-window (__fzf_tmux_height) "fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
+      # FIXME need to handle directory with double-quotes
+      tmux split-window (__fzf_tmux_height) "cd \"$PWD\";fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
     else
       __fzf_list | fzf -m > $TMPDIR/fzf.result
       and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)

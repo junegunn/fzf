@@ -115,7 +115,7 @@ mkfifo $fifo2
 mkfifo $fifo3
 if [ -n "$term" -o -t 0 ]; then
   tmux set-window-option -q synchronize-panes off \;\
-    split-window $opt "$envs"' sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3' '"$close"'"' $swap
+    split-window $opt "cd $(printf %q "$PWD");$envs"' sh -c "'$fzf' '"$fzf_args"' > '$fifo2'; echo \$? > '$fifo3' '"$close"'"' $swap
 else
   mkfifo $fifo1
   tmux set-window-option -q synchronize-panes off \;\
