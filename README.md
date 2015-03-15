@@ -1,12 +1,22 @@
-fzf - Fuzzy finder for your shell
+fzf - a command-line fuzzy finder
 =================================
 
-fzf is a general-purpose fuzzy finder for your shell.
+fzf is a general-purpose command-line fuzzy finder.
 
 ![](https://raw.github.com/junegunn/i/master/fzf.gif)
 
-It was heavily inspired by [ctrlp.vim](https://github.com/kien/ctrlp.vim) and
-the likes.
+Pros
+----
+
+- No dependency
+- Blazingly fast
+    - e.g. `locate / | fzf`
+- Flexible layout
+    - Runs in fullscreen or in horizontal/vertical split using tmux
+- The most comprehensive feature set
+    - Try `fzf --help` and be surprised
+- Batteries included
+    - Vim plugin, key bindings and fuzzy auto-completion
 
 Installation
 ------------
