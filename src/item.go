@@ -1,7 +1,17 @@
 package fzf
 
+import (
+	"github.com/junegunn/fzf/src/curses"
+)
+
 // Offset holds two 32-bit integers denoting the offsets of a matched substring
 type Offset [2]int32
+
+type ColorOffset struct {
+	offset [2]int32
+	color  int
+	bold   bool
+}
 
 // Item represents each input line
 type Item struct {
@@ -10,6 +20,7 @@ type Item struct {
 	transformed *Transformed
 	index       uint32
 	offsets     []Offset
+	colors      []AnsiOffset
 	rank        Rank
 }
 
@@ -53,6 +64,79 @@ func (i *Item) AsString() string {
 		return *i.origText
 	}
 	return *i.text
+}
+
+func (item *Item) ColorOffsets(color int, bold bool, current bool) []ColorOffset {
+	if len(item.colors) == 0 {
+		offsets := make([]ColorOffset, 0)
+		for _, off := range item.offsets {
+			offsets = append(offsets, ColorOffset{offset: off, color: color, bold: bold})
+		}
+		return offsets
+	}
+
+	// Find max column
+	var maxCol int32 = 0
+	for _, off := range item.offsets {
+		if off[1] > maxCol {
+			maxCol = off[1]
+		}
+	}
+	for _, ansi := range item.colors {
+		if ansi.offset[1] > maxCol {
+			maxCol = ansi.offset[1]
+		}
+	}
+	cols := make([]int, maxCol)
+
+	for colorIndex, ansi := range item.colors {
+		for i := ansi.offset[0]; i < ansi.offset[1]; i++ {
+			cols[i] = colorIndex + 1 // XXX
+		}
+	}
+
+	for _, off := range item.offsets {
+		for i := off[0]; i < off[1]; i++ {
+			cols[i] = -1
+		}
+	}
+
+	// sort.Sort(ByOrder(offsets))
+
+	// Merge offsets
+	// ------------  ----  --  ----
+	//   ++++++++      ++++++++++
+	// --++++++++--  --++++++++++---
+	curr := 0
+	start := 0
+	offsets := make([]ColorOffset, 0)
+	add := func(idx int) {
+		if curr != 0 && idx > start {
+			if curr == -1 {
+				offsets = append(offsets, ColorOffset{
+					offset: Offset{int32(start), int32(idx)}, color: color, bold: bold})
+			} else {
+				ansi := item.colors[curr-1]
+				bg := ansi.color.bg
+				if current {
+					bg = int(curses.DarkBG)
+				}
+				offsets = append(offsets, ColorOffset{
+					offset: Offset{int32(start), int32(idx)},
+					color:  curses.PairFor(ansi.color.fg, bg),
+					bold:   ansi.color.bold || bold})
+			}
+		}
+	}
+	for idx, col := range cols {
+		if col != curr {
+			add(idx)
+			start = idx
+			curr = col
+		}
+	}
+	add(int(maxCol))
+	return offsets
 }
 
 // ByOrder is for sorting substring offsets

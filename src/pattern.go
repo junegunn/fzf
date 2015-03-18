@@ -264,6 +264,7 @@ func dupItem(item *Item, offsets []Offset) *Item {
 		transformed: item.transformed,
 		index:       item.index,
 		offsets:     offsets,
+		colors:      item.colors,
 		rank:        Rank{0, 0, item.index}}
 }
 

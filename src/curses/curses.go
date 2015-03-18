@@ -78,6 +78,7 @@ const (
 	ColInfo
 	ColCursor
 	ColSelected
+	ColUser
 )
 
 const (
@@ -103,14 +104,17 @@ var (
 	_buf          []byte
 	_in           *os.File
 	_color        func(int, bool) C.int
+	_colorMap     map[int]int
 	_prevDownTime time.Time
 	_prevDownY    int
 	_clickY       []int
+	DarkBG        C.short
 )
 
 func init() {
 	_prevDownTime = time.Unix(0, 0)
 	_clickY = []int{}
+	_colorMap = make(map[int]int)
 }
 
 func attrColored(pair int, bold bool) C.int {
@@ -200,23 +204,25 @@ func Init(color bool, color256 bool, black bool, mouse bool) {
 			bg = -1
 		}
 		if color256 {
+			DarkBG = 236
 			C.init_pair(ColPrompt, 110, bg)
 			C.init_pair(ColMatch, 108, bg)
-			C.init_pair(ColCurrent, 254, 236)
-			C.init_pair(ColCurrentMatch, 151, 236)
+			C.init_pair(ColCurrent, 254, DarkBG)
+			C.init_pair(ColCurrentMatch, 151, DarkBG)
 			C.init_pair(ColSpinner, 148, bg)
 			C.init_pair(ColInfo, 144, bg)
-			C.init_pair(ColCursor, 161, 236)
-			C.init_pair(ColSelected, 168, 236)
+			C.init_pair(ColCursor, 161, DarkBG)
+			C.init_pair(ColSelected, 168, DarkBG)
 		} else {
+			DarkBG = C.COLOR_BLACK
 			C.init_pair(ColPrompt, C.COLOR_BLUE, bg)
 			C.init_pair(ColMatch, C.COLOR_GREEN, bg)
-			C.init_pair(ColCurrent, C.COLOR_YELLOW, C.COLOR_BLACK)
-			C.init_pair(ColCurrentMatch, C.COLOR_GREEN, C.COLOR_BLACK)
+			C.init_pair(ColCurrent, C.COLOR_YELLOW, DarkBG)
+			C.init_pair(ColCurrentMatch, C.COLOR_GREEN, DarkBG)
 			C.init_pair(ColSpinner, C.COLOR_GREEN, bg)
 			C.init_pair(ColInfo, C.COLOR_WHITE, bg)
-			C.init_pair(ColCursor, C.COLOR_RED, C.COLOR_BLACK)
-			C.init_pair(ColSelected, C.COLOR_MAGENTA, C.COLOR_BLACK)
+			C.init_pair(ColCursor, C.COLOR_RED, DarkBG)
+			C.init_pair(ColSelected, C.COLOR_MAGENTA, DarkBG)
 		}
 		_color = attrColored
 	} else {
@@ -427,4 +433,16 @@ func Endwin() {
 
 func Refresh() {
 	C.refresh()
+}
+
+func PairFor(fg int, bg int) int {
+	key := (fg << 8) + bg
+	if found, prs := _colorMap[key]; prs {
+		return found
+	}
+
+	id := len(_colorMap) + ColUser
+	C.init_pair(C.short(id), C.short(fg), C.short(bg))
+	_colorMap[key] = id
+	return id
 }
