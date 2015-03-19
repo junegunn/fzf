@@ -29,6 +29,7 @@ const usage = `usage: fzf [options]
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
+        --ansi            Interpret ANSI color codes and remove from output
         --no-mouse        Disable mouse
     +c, --no-color        Disable colors
     +2, --no-256          Disable 256-color
@@ -81,6 +82,7 @@ type Options struct {
 	Sort       int
 	Tac        bool
 	Multi      bool
+	Ansi       bool
 	Mouse      bool
 	Color      bool
 	Color256   bool
@@ -106,6 +108,7 @@ func defaultOptions() *Options {
 		Sort:       1000,
 		Tac:        false,
 		Multi:      false,
+		Ansi:       false,
 		Mouse:      true,
 		Color:      true,
 		Color256:   strings.Contains(os.Getenv("TERM"), "256"),
@@ -227,6 +230,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Multi = true
 		case "+m", "--no-multi":
 			opts.Multi = false
+		case "--ansi":
+			opts.Ansi = true
+		case "--no-ansi":
+			opts.Ansi = false
 		case "--no-mouse":
 			opts.Mouse = false
 		case "+c", "--no-color":

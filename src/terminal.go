@@ -251,7 +251,7 @@ func (t *Terminal) printItem(item *Item, current bool) {
 		} else {
 			C.CPrint(C.ColCurrent, true, " ")
 		}
-		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch)
+		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch, true)
 	} else {
 		C.CPrint(C.ColCursor, true, " ")
 		if selected {
@@ -259,7 +259,7 @@ func (t *Terminal) printItem(item *Item, current bool) {
 		} else {
 			C.Print(" ")
 		}
-		t.printHighlighted(item, false, 0, C.ColMatch)
+		t.printHighlighted(item, false, 0, C.ColMatch, false)
 	}
 }
 
@@ -299,7 +299,7 @@ func trimLeft(runes []rune, width int) ([]rune, int32) {
 	return runes, trimmed
 }
 
-func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
+func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
 	var maxe int32
 	for _, offset := range item.offsets {
 		if offset[1] > maxe {
@@ -309,7 +309,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 
 	// Overflow
 	text := []rune(*item.text)
-	offsets := item.offsets
+	offsets := item.ColorOffsets(col2, bold, current)
 	maxWidth := C.MaxX() - 3
 	fullWidth := displayWidth(text)
 	if fullWidth > maxWidth {
@@ -328,37 +328,40 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int) {
 			text, diff = trimLeft(text, maxWidth-2)
 
 			// Transform offsets
-			offsets = make([]Offset, len(item.offsets))
-			for idx, offset := range item.offsets {
-				b, e := offset[0], offset[1]
+			for idx, offset := range offsets {
+				b, e := offset.offset[0], offset.offset[1]
 				b += 2 - diff
 				e += 2 - diff
 				b = util.Max32(b, 2)
-				if b < e {
-					offsets[idx] = Offset{b, e}
-				}
+				offsets[idx].offset[0] = b
+				offsets[idx].offset[1] = util.Max32(b, e)
 			}
 			text = append([]rune(".."), text...)
 		}
 	}
 
-	sort.Sort(ByOrder(offsets))
 	var index int32
 	var substr string
 	var prefixWidth int
+	maxOffset := int32(len(text))
 	for _, offset := range offsets {
-		b := util.Max32(index, offset[0])
-		e := util.Max32(index, offset[1])
+		b := util.Constrain32(offset.offset[0], index, maxOffset)
+		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
 		substr, prefixWidth = processTabs(text[index:b], prefixWidth)
 		C.CPrint(col1, bold, substr)
 
-		substr, prefixWidth = processTabs(text[b:e], prefixWidth)
-		C.CPrint(col2, bold, substr)
+		if b < e {
+			substr, prefixWidth = processTabs(text[b:e], prefixWidth)
+			C.CPrint(offset.color, bold, substr)
+		}
 
 		index = e
+		if index >= maxOffset {
+			break
+		}
 	}
-	if index < int32(len(text)) {
+	if index < maxOffset {
 		substr, _ = processTabs(text[index:], prefixWidth)
 		C.CPrint(col1, bold, substr)
 	}

@@ -42,3 +42,11 @@ func TestSuffixMatch(t *testing.T) {
 	assertMatch(t, SuffixMatch, false, "fooBarbaz", "baz", 6, 9)
 	assertMatch(t, SuffixMatch, true, "fooBarbaz", "Baz", -1, -1)
 }
+
+func TestEmptyPattern(t *testing.T) {
+	assertMatch(t, FuzzyMatch, true, "foobar", "", 0, 0)
+	assertMatch(t, ExactMatchStrings, true, "foobar", "", 0, 0)
+	assertMatch(t, ExactMatchNaive, true, "foobar", "", 0, 0)
+	assertMatch(t, PrefixMatch, true, "foobar", "", 0, 0)
+	assertMatch(t, SuffixMatch, true, "foobar", "", 6, 6)
+}
