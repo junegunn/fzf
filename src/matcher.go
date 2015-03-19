@@ -134,6 +134,10 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 	}
 	pattern := request.pattern
 	empty := pattern.IsEmpty()
+	if empty {
+		return PassMerger(&request.chunks, m.tac), false
+	}
+
 	cancelled := util.NewAtomicBool(false)
 
 	slices := m.sliceChunks(request.chunks)

@@ -10,6 +10,7 @@ var EmptyMerger = NewMerger([][]*Item{}, false, false)
 type Merger struct {
 	lists   [][]*Item
 	merged  []*Item
+	chunks  *[]*Chunk
 	cursors []int
 	sorted  bool
 	tac     bool
@@ -17,11 +18,24 @@ type Merger struct {
 	count   int
 }
 
+func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
+	mg := Merger{
+		chunks: chunks,
+		tac:    tac,
+		count:  0}
+
+	for _, chunk := range *mg.chunks {
+		mg.count += len(*chunk)
+	}
+	return &mg
+}
+
 // NewMerger returns a new Merger
 func NewMerger(lists [][]*Item, sorted bool, tac bool) *Merger {
 	mg := Merger{
 		lists:   lists,
 		merged:  []*Item{},
+		chunks:  nil,
 		cursors: make([]int, len(lists)),
 		sorted:  sorted,
 		tac:     tac,
@@ -41,12 +55,20 @@ func (mg *Merger) Length() int {
 
 // Get returns the pointer to the Item object indexed by the given integer
 func (mg *Merger) Get(idx int) *Item {
+	if mg.chunks != nil {
+		if mg.tac {
+			idx = mg.count - idx - 1
+		}
+		chunk := (*mg.chunks)[idx/ChunkSize]
+		return (*chunk)[idx%ChunkSize]
+	}
+
 	if mg.sorted {
 		return mg.mergedGet(idx)
 	}
 
 	if mg.tac {
-		idx = mg.Length() - idx - 1
+		idx = mg.count - idx - 1
 	}
 	for _, list := range mg.lists {
 		numItems := len(list)
