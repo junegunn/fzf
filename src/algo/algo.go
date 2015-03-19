@@ -12,6 +12,10 @@ import "strings"
 
 // FuzzyMatch performs fuzzy-match
 func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
+	if len(pattern) == 0 {
+		return 0, 0
+	}
+
 	runes := []rune(*input)
 
 	// 0. (FIXME) How to find the shortest match?
@@ -66,6 +70,10 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 // ExactMatchStrings performs exact-match using strings package.
 // Currently not used.
 func ExactMatchStrings(caseSensitive bool, input *string, pattern []rune) (int, int) {
+	if len(pattern) == 0 {
+		return 0, 0
+	}
+
 	var str string
 	if caseSensitive {
 		str = *input
@@ -88,6 +96,10 @@ func ExactMatchStrings(caseSensitive bool, input *string, pattern []rune) (int, 
 // We might try to implement better algorithms in the future:
 // http://en.wikipedia.org/wiki/String_searching_algorithm
 func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, int) {
+	if len(pattern) == 0 {
+		return 0, 0
+	}
+
 	runes := []rune(*input)
 	numRunes := len(runes)
 	plen := len(pattern)
