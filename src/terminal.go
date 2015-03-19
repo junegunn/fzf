@@ -333,10 +333,8 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, cur
 				b += 2 - diff
 				e += 2 - diff
 				b = util.Max32(b, 2)
-				if b < e {
-					offsets[idx].offset[0] = b
-					offsets[idx].offset[1] = e
-				}
+				offsets[idx].offset[0] = b
+				offsets[idx].offset[1] = util.Max32(b, e)
 			}
 			text = append([]rune(".."), text...)
 		}
@@ -353,8 +351,10 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, cur
 		substr, prefixWidth = processTabs(text[index:b], prefixWidth)
 		C.CPrint(col1, bold, substr)
 
-		substr, prefixWidth = processTabs(text[b:e], prefixWidth)
-		C.CPrint(offset.color, bold, substr)
+		if b < e {
+			substr, prefixWidth = processTabs(text[b:e], prefixWidth)
+			C.CPrint(offset.color, bold, substr)
+		}
 
 		index = e
 		if index >= maxOffset {
