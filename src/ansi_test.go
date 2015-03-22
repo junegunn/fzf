@@ -45,6 +45,14 @@ func TestExtractColor(t *testing.T) {
 		assert(offsets[0], 0, 11, -1, -1, true)
 	})
 
+	src = "\x1b[1mhello \x1b[mworld"
+	check(func(offsets []ansiOffset) {
+		if len(offsets) != 1 {
+			t.Fail()
+		}
+		assert(offsets[0], 0, 6, -1, -1, true)
+	})
+
 	src = "hello \x1b[34;45;1mworld"
 	check(func(offsets []ansiOffset) {
 		if len(offsets) != 1 {

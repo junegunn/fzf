@@ -99,6 +99,9 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	}
 
 	ansiCode = ansiCode[2 : len(ansiCode)-1]
+	if len(ansiCode) == 0 {
+		init()
+	}
 	for _, code := range strings.Split(ansiCode, ";") {
 		if num, err := strconv.Atoi(code); err == nil {
 			switch state256 {
