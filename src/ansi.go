@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 type ansiOffset struct {
@@ -44,7 +45,6 @@ func extractColor(str *string) (*string, []ansiOffset) {
 	idx := 0
 	for _, offset := range ansiRegex.FindAllStringIndex(*str, -1) {
 		output.WriteString((*str)[idx:offset[0]])
-		newLen := int32(output.Len())
 		newState := interpretCode((*str)[offset[0]:offset[1]], state)
 
 		if !newState.equals(state) {
@@ -56,6 +56,7 @@ func extractColor(str *string) (*string, []ansiOffset) {
 			if newState.colored() {
 				// Append new offset
 				state = newState
+				newLen := int32(utf8.RuneCount(output.Bytes()))
 				offsets = append(offsets, ansiOffset{[2]int32{newLen, newLen}, *state})
 			} else {
 				// Discard state
@@ -71,7 +72,7 @@ func extractColor(str *string) (*string, []ansiOffset) {
 		output.WriteString(rest)
 		if state != nil {
 			// Update last offset
-			(&offsets[len(offsets)-1]).offset[1] = int32(output.Len())
+			(&offsets[len(offsets)-1]).offset[1] = int32(utf8.RuneCount(output.Bytes()))
 		}
 	}
 	outputStr := output.String()
