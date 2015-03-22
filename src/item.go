@@ -7,7 +7,7 @@ import (
 // Offset holds two 32-bit integers denoting the offsets of a matched substring
 type Offset [2]int32
 
-type ColorOffset struct {
+type colorOffset struct {
 	offset [2]int32
 	color  int
 	bold   bool
@@ -20,7 +20,7 @@ type Item struct {
 	transformed *Transformed
 	index       uint32
 	offsets     []Offset
-	colors      []AnsiOffset
+	colors      []ansiOffset
 	rank        Rank
 }
 
@@ -66,17 +66,17 @@ func (i *Item) AsString() string {
 	return *i.text
 }
 
-func (item *Item) ColorOffsets(color int, bold bool, current bool) []ColorOffset {
+func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset {
 	if len(item.colors) == 0 {
-		offsets := make([]ColorOffset, 0)
+		var offsets []colorOffset
 		for _, off := range item.offsets {
-			offsets = append(offsets, ColorOffset{offset: off, color: color, bold: bold})
+			offsets = append(offsets, colorOffset{offset: off, color: color, bold: bold})
 		}
 		return offsets
 	}
 
 	// Find max column
-	var maxCol int32 = 0
+	var maxCol int32
 	for _, off := range item.offsets {
 		if off[1] > maxCol {
 			maxCol = off[1]
@@ -109,11 +109,11 @@ func (item *Item) ColorOffsets(color int, bold bool, current bool) []ColorOffset
 	// --++++++++--  --++++++++++---
 	curr := 0
 	start := 0
-	offsets := make([]ColorOffset, 0)
+	var offsets []colorOffset
 	add := func(idx int) {
 		if curr != 0 && idx > start {
 			if curr == -1 {
-				offsets = append(offsets, ColorOffset{
+				offsets = append(offsets, colorOffset{
 					offset: Offset{int32(start), int32(idx)}, color: color, bold: bold})
 			} else {
 				ansi := item.colors[curr-1]
@@ -121,7 +121,7 @@ func (item *Item) ColorOffsets(color int, bold bool, current bool) []ColorOffset
 				if current {
 					bg = int(curses.DarkBG)
 				}
-				offsets = append(offsets, ColorOffset{
+				offsets = append(offsets, colorOffset{
 					offset: Offset{int32(start), int32(idx)},
 					color:  curses.PairFor(ansi.color.fg, bg),
 					bold:   ansi.color.bold || bold})

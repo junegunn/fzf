@@ -64,20 +64,20 @@ func Run(options *Options) {
 	eventBox := util.NewEventBox()
 
 	// ANSI code processor
-	extractColors := func(data *string) (*string, []AnsiOffset) {
+	ansiProcessor := func(data *string) (*string, []ansiOffset) {
 		// By default, we do nothing
 		return data, nil
 	}
 	if opts.Ansi {
 		if opts.Color {
-			extractColors = func(data *string) (*string, []AnsiOffset) {
-				return ExtractColor(data)
+			ansiProcessor = func(data *string) (*string, []ansiOffset) {
+				return extractColor(data)
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
-			extractColors = func(data *string) (*string, []AnsiOffset) {
-				trimmed, _ := ExtractColor(data)
+			ansiProcessor = func(data *string) (*string, []ansiOffset) {
+				trimmed, _ := extractColor(data)
 				return trimmed, nil
 			}
 		}
@@ -87,7 +87,7 @@ func Run(options *Options) {
 	var chunkList *ChunkList
 	if len(opts.WithNth) == 0 {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
-			data, colors := extractColors(data)
+			data, colors := ansiProcessor(data)
 			return &Item{
 				text:   data,
 				index:  uint32(index),
@@ -104,7 +104,7 @@ func Run(options *Options) {
 				colors:   nil,
 				rank:     Rank{0, 0, uint32(index)}}
 
-			trimmed, colors := extractColors(item.text)
+			trimmed, colors := ansiProcessor(item.text)
 			item.text = trimmed
 			item.colors = colors
 			return &item

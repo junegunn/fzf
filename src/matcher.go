@@ -133,8 +133,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		return EmptyMerger, false
 	}
 	pattern := request.pattern
-	empty := pattern.IsEmpty()
-	if empty {
+	if pattern.IsEmpty() {
 		return PassMerger(&request.chunks, m.tac), false
 	}
 
@@ -152,19 +151,14 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 			defer func() { waitGroup.Done() }()
 			sliceMatches := []*Item{}
 			for _, chunk := range chunks {
-				var matches []*Item
-				if empty {
-					matches = *chunk
-				} else {
-					matches = request.pattern.Match(chunk)
-				}
+				matches := request.pattern.Match(chunk)
 				sliceMatches = append(sliceMatches, matches...)
 				if cancelled.Get() {
 					return
 				}
 				countChan <- len(matches)
 			}
-			if !empty && m.sort {
+			if m.sort {
 				if m.tac {
 					sort.Sort(ByRelevanceTac(sliceMatches))
 				} else {
@@ -191,7 +185,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 			break
 		}
 
-		if !empty && m.reqBox.Peek(reqReset) {
+		if m.reqBox.Peek(reqReset) {
 			return nil, wait()
 		}
 
@@ -205,7 +199,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-	return NewMerger(partialResults, !empty && m.sort, m.tac), false
+	return NewMerger(partialResults, m.sort, m.tac), false
 }
 
 // Reset is called to interrupt/signal the ongoing search

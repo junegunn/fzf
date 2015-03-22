@@ -6,7 +6,7 @@ import (
 )
 
 func TestExtractColor(t *testing.T) {
-	assert := func(offset AnsiOffset, b int32, e int32, fg int, bg int, bold bool) {
+	assert := func(offset ansiOffset, b int32, e int32, fg int, bg int, bold bool) {
 		if offset.offset[0] != b || offset.offset[1] != e ||
 			offset.color.fg != fg || offset.color.bg != bg || offset.color.bold != bold {
 			t.Error(offset, b, e, fg, bg, bold)
@@ -15,8 +15,8 @@ func TestExtractColor(t *testing.T) {
 
 	src := "hello world"
 	clean := "\x1b[0m"
-	check := func(assertion func(ansiOffsets []AnsiOffset)) {
-		output, ansiOffsets := ExtractColor(&src)
+	check := func(assertion func(ansiOffsets []ansiOffset)) {
+		output, ansiOffsets := extractColor(&src)
 		if *output != "hello world" {
 			t.Errorf("Invalid output: {}", output)
 		}
@@ -24,21 +24,21 @@ func TestExtractColor(t *testing.T) {
 		assertion(ansiOffsets)
 	}
 
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) > 0 {
 			t.Fail()
 		}
 	})
 
 	src = "\x1b[0mhello world"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) > 0 {
 			t.Fail()
 		}
 	})
 
 	src = "\x1b[1mhello world"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 1 {
 			t.Fail()
 		}
@@ -46,7 +46,7 @@ func TestExtractColor(t *testing.T) {
 	})
 
 	src = "hello \x1b[34;45;1mworld"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 1 {
 			t.Fail()
 		}
@@ -54,7 +54,7 @@ func TestExtractColor(t *testing.T) {
 	})
 
 	src = "hello \x1b[34;45;1mwor\x1b[34;45;1mld"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 1 {
 			t.Fail()
 		}
@@ -62,7 +62,7 @@ func TestExtractColor(t *testing.T) {
 	})
 
 	src = "hello \x1b[34;45;1mwor\x1b[0mld"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 1 {
 			t.Fail()
 		}
@@ -70,7 +70,7 @@ func TestExtractColor(t *testing.T) {
 	})
 
 	src = "hello \x1b[34;48;5;233;1mwo\x1b[38;5;161mr\x1b[0ml\x1b[38;5;161md"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 3 {
 			t.Fail()
 		}
@@ -81,7 +81,7 @@ func TestExtractColor(t *testing.T) {
 
 	// {38,48};5;{38,48}
 	src = "hello \x1b[38;5;38;48;5;48;1mwor\x1b[38;5;48;48;5;38ml\x1b[0md"
-	check(func(offsets []AnsiOffset) {
+	check(func(offsets []ansiOffset) {
 		if len(offsets) != 2 {
 			t.Fail()
 		}

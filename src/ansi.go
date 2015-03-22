@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type AnsiOffset struct {
+type ansiOffset struct {
 	offset [2]int32
 	color  ansiState
 }
@@ -35,8 +35,8 @@ func init() {
 	ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*m")
 }
 
-func ExtractColor(str *string) (*string, []AnsiOffset) {
-	offsets := make([]AnsiOffset, 0)
+func extractColor(str *string) (*string, []ansiOffset) {
+	var offsets []ansiOffset
 
 	var output bytes.Buffer
 	var state *ansiState
@@ -56,7 +56,7 @@ func ExtractColor(str *string) (*string, []AnsiOffset) {
 			if newState.colored() {
 				// Append new offset
 				state = newState
-				offsets = append(offsets, AnsiOffset{[2]int32{newLen, newLen}, *state})
+				offsets = append(offsets, ansiOffset{[2]int32{newLen, newLen}, *state})
 			} else {
 				// Discard state
 				state = nil

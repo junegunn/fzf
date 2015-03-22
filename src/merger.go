@@ -18,6 +18,8 @@ type Merger struct {
 	count   int
 }
 
+// PassMerger returns a new Merger that simply returns the items in the
+// original order
 func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 	mg := Merger{
 		chunks: chunks,

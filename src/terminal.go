@@ -47,17 +47,17 @@ type selectedItem struct {
 	text *string
 }
 
-type ByTimeOrder []selectedItem
+type byTimeOrder []selectedItem
 
-func (a ByTimeOrder) Len() int {
+func (a byTimeOrder) Len() int {
 	return len(a)
 }
 
-func (a ByTimeOrder) Swap(i, j int) {
+func (a byTimeOrder) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
-func (a ByTimeOrder) Less(i, j int) bool {
+func (a byTimeOrder) Less(i, j int) bool {
 	return a[i].at.Before(a[j].at)
 }
 
@@ -160,7 +160,7 @@ func (t *Terminal) output() {
 		for _, sel := range t.selected {
 			sels = append(sels, sel)
 		}
-		sort.Sort(ByTimeOrder(sels))
+		sort.Sort(byTimeOrder(sels))
 		for _, sel := range sels {
 			fmt.Println(*sel.text)
 		}
@@ -309,7 +309,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, cur
 
 	// Overflow
 	text := []rune(*item.text)
-	offsets := item.ColorOffsets(col2, bold, current)
+	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := C.MaxX() - 3
 	fullWidth := displayWidth(text)
 	if fullWidth > maxWidth {

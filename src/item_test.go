@@ -81,14 +81,14 @@ func TestColorOffset(t *testing.T) {
 	// --++++++++--    --++++++++++---
 	item := Item{
 		offsets: []Offset{Offset{5, 15}, Offset{25, 35}},
-		colors: []AnsiOffset{
-			AnsiOffset{[2]int32{0, 20}, ansiState{1, 5, false}},
-			AnsiOffset{[2]int32{22, 27}, ansiState{2, 6, true}},
-			AnsiOffset{[2]int32{30, 32}, ansiState{3, 7, false}},
-			AnsiOffset{[2]int32{33, 40}, ansiState{4, 8, true}}}}
+		colors: []ansiOffset{
+			ansiOffset{[2]int32{0, 20}, ansiState{1, 5, false}},
+			ansiOffset{[2]int32{22, 27}, ansiState{2, 6, true}},
+			ansiOffset{[2]int32{30, 32}, ansiState{3, 7, false}},
+			ansiOffset{[2]int32{33, 40}, ansiState{4, 8, true}}}}
 	// [{[0 5] 9 false} {[5 15] 99 false} {[15 20] 9 false} {[22 25] 10 true} {[25 35] 99 false} {[35 40] 11 true}]
 
-	offsets := item.ColorOffsets(99, false, true)
+	offsets := item.colorOffsets(99, false, true)
 	assert := func(idx int, b int32, e int32, c int, bold bool) {
 		o := offsets[idx]
 		if o.offset[0] != b || o.offset[1] != e || o.color != c || o.bold != bold {

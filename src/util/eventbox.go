@@ -79,6 +79,7 @@ func (b *EventBox) Unwatch(events ...EventType) {
 	}
 }
 
+// WaitFor blocks the execution until the event is received
 func (b *EventBox) WaitFor(event EventType) {
 	looping := true
 	for looping {
