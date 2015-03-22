@@ -1,6 +1,30 @@
 CHANGELOG
 =========
 
+0.9.5
+-----
+
+### New features
+
+#### Added `--ansi` option (#150)
+
+If you give `--ansi` option to fzf, fzf will interpret ANSI color codes from
+the input, display the item with the ANSI colors (true colors are not
+supported), and strips the codes from the output. This option is off by
+default as it entails some overhead.
+
+### Improvements
+
+#### Reduced initial memory footprint (#151)
+
+By removing unnecessary copy of pointers, fzf will use significantly smaller
+amount of memory when it's started. The difference is hugely noticeable when
+the input is extremely large. (e.g. `locate / | fzf`)
+
+### Bug fixes
+
+- Fixed panic on `--no-sort --filter ''` (#149)
+
 0.9.4
 -----
 
