@@ -353,7 +353,7 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, cur
 
 		if b < e {
 			substr, prefixWidth = processTabs(text[b:e], prefixWidth)
-			C.CPrint(offset.color, bold, substr)
+			C.CPrint(offset.color, offset.bold, substr)
 		}
 
 		index = e
