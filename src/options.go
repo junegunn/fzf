@@ -29,7 +29,7 @@ const usage = `usage: fzf [options]
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
-        --ansi            Interpret ANSI color codes and remove from output
+        --ansi            Enable processing of ANSI color codes
         --no-mouse        Disable mouse
     +c, --no-color        Disable colors
     +2, --no-256          Disable 256-color
