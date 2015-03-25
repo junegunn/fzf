@@ -181,7 +181,7 @@ for shell in bash zsh; do
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
-  export PATH="$fzf_base/bin:\$PATH"
+  export PATH="\$PATH:$fzf_base/bin"
 fi
 
 # Man path
