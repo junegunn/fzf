@@ -1,0 +1,186 @@
+.ig
+The MIT License (MIT)
+
+Copyright (c) 2015 Junegunn Choi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+..
+.TH fzf 1 "March 2015" "fzf 0.9.5" "fzf - a command-line fuzzy finder"
+
+.SH NAME
+fzf - a command-line fuzzy finder
+
+.SH SYNOPSIS
+fzf [options]
+
+.SH DESCRIPTION
+fzf is a general-purpose command-line fuzzy finder.
+
+.SH OPTIONS
+.SS Search mode
+.TP
+.B "-x, --extended"
+Extended-search mode
+.TP
+.B "-e, --extended-exact"
+Extended-search mode (exact match)
+.TP
+.B "-i"
+Case-insensitive match (default: smart-case match)
+.TP
+.B "+i"
+Case-sensitive match
+.TP
+.BI "-n, --nth=" "N[,..]"
+Comma-separated list of field index expressions for limiting search scope.
+See \fBFIELD INDEX EXPRESSION\fR for details.
+.TP
+.BI "--with-nth=" "N[,..]"
+Transform the item using the list of index expressions for search
+.TP
+.BI "-d, --delimiter=" "STR"
+Field delimiter regex for \fI--nth\fR and \fI--with-nth\fR (default: AWK-style)
+.SS Search result
+.TP
+.B "+s, --no-sort"
+Do not sort the result
+.TP
+.B "--tac"
+Reverse the order of the input
+.RS
+e.g. \fBhistory | fzf --tac --no-sort\fR
+.RE
+.SS Interface
+.TP
+.B "-m, --multi"
+Enable multi-select with tab/shift-tab
+.TP
+.B "--ansi"
+Enable processing of ANSI color codes
+.TP
+.B "--no-mouse"
+Disable mouse
+.TP
+.B "+c, --no-color"
+Disable colors
+.TP
+.B "+2, --no-256"
+Disable 256-color
+.TP
+.B "--black"
+Use black background
+.TP
+.B "--reverse"
+Reverse orientation
+.TP
+.BI "--prompt=" "STR"
+Input prompt (default: '> ')
+.SS Scripting
+.TP
+.BI "-q, --query=" "STR"
+Start the finder with the given query
+.TP
+.B "-1, --select-1"
+Automatically select the only match
+.TP
+.B "-0, --exit-0"
+Exit immediately when there's no match
+.TP
+.BI "-f, --filter=" "STR"
+Filter mode. Do not start interactive finder.
+.TP
+.B "--print-query"
+Print query as the first line
+.TP
+.B "--sync"
+Synchronous search for multi-staged filtering
+.RS
+e.g. \fBfzf --multi | fzf --sync\fR
+.RE
+
+.SH ENVIRONMENT
+.TP
+.B FZF_DEFAULT_COMMAND
+Default command to use when input is tty
+.TP
+.B FZF_DEFAULT_OPTS
+Default options. e.g. \fB--extended --ansi\fR
+
+.SH EXIT STATUS
+.BR 0 "      Normal exit"
+.br
+.BR 1 "      Interrupted with \fBCTRL-C\fR or \fBESC\fR"
+
+.SH FIELD INDEX EXPRESSION
+
+A field index expression can be a non-zero integer or a range expression
+([BEGIN]..[END]). \fI--nth\fR and \fI--with-nth\fR take a comma-separated list
+of field index expressions.
+
+.SS Examples
+.BR 1 "      The 1st field"
+.br
+.BR 2 "      The 2nd field"
+.br
+.BR -1 "     The last field"
+.br
+.BR -2 "     The 2nd to last field"
+.br
+.BR 3..5 "   From the 3rd field to the 5th field"
+.br
+.BR 2.. "    From the 2nd field to the last field"
+.br
+.BR ..-3 "   From the 1st field to the 3rd to the last field"
+.br
+.BR .. "     All the fields"
+.br
+
+.SH EXTENDED SEARCH MODE
+
+With \fI-x\fR or \fI--extended\fR option, fzf will start in "extended-search
+mode". In this mode, you can specify multiple patterns delimited by spaces,
+such as: \fB^music .mp3$ sbtrkt !rmx\fR
+
+.SS Exact-match (quoted)
+A term that is prefixed by a single-quote character (') is interpreted as an
+"exact-match" (or "non-fuzzy") term. fzf will search for the exact occurrence
+of the string.
+
+.SS Anchored-match
+A term can be prefixed by ^, or suffixed by $ to become an anchored-match term
+and used to search items that starts with or ends with the given string.
+An anchored-match term is also an exact-match term.
+
+.SS Negation
+If a term is prefixed by !, fzf will exclude the items that matches the term
+from the result.
+
+.SS Extended-exact mode
+If you don't need fuzzy matching at all and do not wish to "quote" every word,
+start fzf with \fI-e\fR or \fI--extended-exact\fR option (instead of \fI-x\fR or
+\fI--extended\fR).
+
+.SH AUTHOR
+Junegunn Choi (junegunn.c@gmail.com)
+
+.SH SEE ALSO
+https://github.com/junegunn/fzf
+
+.SH LICENSE
+MIT

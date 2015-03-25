@@ -184,6 +184,10 @@ if [[ ! "\$PATH" =~ "$fzf_base/bin" ]]; then
   export PATH="$fzf_base/bin:\$PATH"
 fi
 
+# Man path
+# --------
+export MANPATH="\$MANPATH:$fzf_base/man"
+
 # Auto-completion
 # ---------------
 $fzf_completion
