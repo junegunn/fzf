@@ -186,7 +186,7 @@ fi
 
 # Man path
 # --------
-if [ -d "$fzf_base/man" ]; then
+if [[ ! "\$MANPATH" =~ "$fzf_base/man" && -d "$fzf_base/man" ]]; then
   export MANPATH="\$MANPATH:$fzf_base/man"
 fi
 
