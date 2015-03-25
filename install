@@ -186,7 +186,9 @@ fi
 
 # Man path
 # --------
-export MANPATH="\$MANPATH:$fzf_base/man"
+if [ -d "$fzf_base/man" ]; then
+  export MANPATH="\$MANPATH:$fzf_base/man"
+fi
 
 # Auto-completion
 # ---------------
