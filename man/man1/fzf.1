@@ -155,26 +155,26 @@ of field index expressions.
 
 With \fI-x\fR or \fI--extended\fR option, fzf will start in "extended-search
 mode". In this mode, you can specify multiple patterns delimited by spaces,
-such as: \fB^music .mp3$ sbtrkt !rmx\fR
+such as: \fB'wild ^music .mp3$ sbtrkt !rmx\fR
 
 .SS Exact-match (quoted)
 A term that is prefixed by a single-quote character (') is interpreted as an
-"exact-match" (or "non-fuzzy") term. fzf will search for the exact occurrence
+"exact-match" (or "non-fuzzy") term. fzf will search for the exact occurrences
 of the string.
 
 .SS Anchored-match
-A term can be prefixed by ^, or suffixed by $ to become an anchored-match term
-and used to search items that starts with or ends with the given string.
-An anchored-match term is also an exact-match term.
+A term can be prefixed by ^, or suffixed by $ to become an anchored-match term.
+Then fzf will search for the items that start with or end with the given
+string. An anchored-match term is also an exact-match term.
 
 .SS Negation
 If a term is prefixed by !, fzf will exclude the items that matches the term
 from the result.
 
 .SS Extended-exact mode
-If you don't need fuzzy matching at all and do not wish to "quote" every word,
-start fzf with \fI-e\fR or \fI--extended-exact\fR option (instead of \fI-x\fR or
-\fI--extended\fR).
+If you don't need fuzzy matching at all and do not wish to "quote" (prefixing
+with ') every word, start fzf with \fI-e\fR or \fI--extended-exact\fR option
+(instead of \fI-x\fR or \fI--extended\fR).
 
 .SH AUTHOR
 Junegunn Choi (junegunn.c@gmail.com)
