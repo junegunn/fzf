@@ -295,7 +295,8 @@ let g:fzf_launcher = 'urxvt -geometry 120x30 -e sh -c %s'
 
 If you're running MacVim on OSX, I recommend you to use iTerm2 as the launcher.
 Refer to the [this wiki
-page](https://github.com/junegunn/fzf/wiki/fzf-with-MacVim-and-iTerm2) to see
+page](https://github.com/junegunn/fzf/wiki/On-MacVim-with-iTerm2) to see
+
 how to set up.
 
 #### `fzf#run([options])`
