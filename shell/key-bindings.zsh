@@ -11,6 +11,31 @@ __fsel() {
   echo
 }
 
+fzf-current-word-widget() {
+    local current
+    current="${LBUFFER/* /}${RBUFFER/ */}"
+    if [[ -n $current && ${current[0,1]} = '~' ]] ; then
+        printf %q ${HOME}${current[2,${#current}]}
+    else
+        printf %q $current
+    fi
+}
+zle -N fzf-current-word-widget
+
+fzf-dir-at-point() {
+    local current_word
+    local current_dir
+    current_word=$(fzf-current-word-widget)
+    if [[ -d $current_word ]] ; then
+        current_dir="$current_word"
+    elif [[ -d ${current_word:h} ]] ; then
+        current_dir=${current_word:h}
+    else
+        current_dir="$PWD"
+    fi
+    printf %q $current_dir
+}
+
 if [[ $- =~ i ]]; then
 
 if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
@@ -22,7 +47,7 @@ if [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
     else
       height="-l $height"
     fi
-    tmux split-window $height "cd $(printf %q "$PWD");zsh -c 'source ~/.fzf.zsh; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
+    tmux split-window $height "cd $(printf %q "$(fzf-dir-at-point)");zsh -c 'source ~/.fzf.zsh; tmux send-keys -t $TMUX_PANE \"\$(__fsel)\"'"
   }
 else
   fzf-file-widget() {
