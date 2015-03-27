@@ -18,7 +18,7 @@ BINDIR    := ../bin
 
 BINARY32  := fzf-$(GOOS)_386
 BINARY64  := fzf-$(GOOS)_amd64
-VERSION    = $(shell fzf/$(BINARY64) --version)
+VERSION    = $(shell fzf/$(BINARY64) --version | sed 's/-p[0-9]*//')
 RELEASE32  = fzf-$(VERSION)-$(GOOS)_386
 RELEASE64  = fzf-$(VERSION)-$(GOOS)_amd64
 
