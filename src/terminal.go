@@ -28,6 +28,8 @@ type Terminal struct {
 	yanked     []rune
 	input      []rune
 	multi      bool
+	expect     []int
+	pressed    int
 	printQuery bool
 	count      int
 	progress   int
@@ -91,6 +93,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		yanked:     []rune{},
 		input:      input,
 		multi:      opts.Multi,
+		expect:     opts.Expect,
+		pressed:    0,
 		printQuery: opts.PrintQuery,
 		merger:     EmptyMerger,
 		selected:   make(map[*string]selectedItem),
@@ -149,6 +153,19 @@ func (t *Terminal) UpdateList(merger *Merger) {
 func (t *Terminal) output() {
 	if t.printQuery {
 		fmt.Println(string(t.input))
+	}
+	if len(t.expect) > 0 {
+		if t.pressed == 0 {
+			fmt.Println()
+		} else if util.Between(t.pressed, C.AltA, C.AltZ) {
+			fmt.Printf("alt-%c\n", t.pressed+'a'-C.AltA)
+		} else if util.Between(t.pressed, C.F1, C.F4) {
+			fmt.Printf("f%c\n", t.pressed+'1'-C.F1)
+		} else if util.Between(t.pressed, C.CtrlA, C.CtrlZ) {
+			fmt.Printf("ctrl-%c\n", t.pressed+'a'-C.CtrlA)
+		} else {
+			fmt.Printf("%c\n", t.pressed-C.AltZ)
+		}
 	}
 	if len(t.selected) == 0 {
 		cnt := t.merger.Length()
@@ -533,6 +550,13 @@ func (t *Terminal) Loop() {
 					delete(t.selected, item.text)
 				}
 				req(reqInfo)
+			}
+		}
+		for _, key := range t.expect {
+			if event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ {
+				t.pressed = key
+				req(reqClose)
+				break
 			}
 		}
 		switch event.Type {

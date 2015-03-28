@@ -425,6 +425,33 @@ class TestGoFZF < TestBase
     tmux.send_keys :BTab, :BTab, :BTab, :Enter
     assert_equal %w[1000 900 800], readonce.split($/)
   end
+
+  def test_expect
+    test = lambda do |key, feed, expected = key|
+      tmux.send_keys "seq 1 100 | #{fzf :expect, key}", :Enter
+      tmux.until { |lines| lines[-2].include? '100/100' }
+      tmux.send_keys '55'
+      tmux.send_keys *feed
+      assert_equal [expected, '55'], readonce.split($/)
+    end
+    test.call 'ctrl-t', 'C-T'
+    test.call 'ctrl-t', 'Enter', ''
+    test.call 'alt-c', [:Escape, :c]
+    test.call 'f1', 'f1'
+    test.call 'f2', 'f2'
+    test.call 'f3', 'f3'
+    test.call 'f2,f4', 'f2', 'f2'
+    test.call 'f2,f4', 'f4', 'f4'
+    test.call '@', '@'
+  end
+
+  def test_expect_print_query
+    tmux.send_keys "seq 1 100 | #{fzf '--expect=alt-z', :print_query}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys '55'
+    tmux.send_keys :Escape, :z
+    assert_equal ['55', 'alt-z', '55'], readonce.split($/)
+  end
 end
 
 module TestShell

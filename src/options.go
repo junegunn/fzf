@@ -5,6 +5,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/junegunn/fzf/src/curses"
 
 	"github.com/junegunn/go-shellwords"
 )
@@ -43,6 +46,7 @@ const usage = `usage: fzf [options]
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
         --print-query     Print query as the first line
+        --expect=KEYS     Comma-separated list of keys to complete fzf
         --sync            Synchronous search for multi-staged filtering
                           (e.g. 'fzf --multi | fzf --sync')
 
@@ -93,6 +97,7 @@ type Options struct {
 	Select1    bool
 	Exit0      bool
 	Filter     *string
+	Expect     []int
 	PrintQuery bool
 	Sync       bool
 	Version    bool
@@ -119,6 +124,7 @@ func defaultOptions() *Options {
 		Select1:    false,
 		Exit0:      false,
 		Filter:     nil,
+		Expect:     []int{},
 		PrintQuery: false,
 		Sync:       false,
 		Version:    false}
@@ -191,6 +197,29 @@ func delimiterRegexp(str string) *regexp.Regexp {
 	return rx
 }
 
+func isAlphabet(char uint8) bool {
+	return char >= 'a' && char <= 'z'
+}
+
+func parseKeyChords(str string) []int {
+	var chords []int
+	for _, key := range strings.Split(str, ",") {
+		lkey := strings.ToLower(key)
+		if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
+			chords = append(chords, curses.CtrlA+int(lkey[5])-'a')
+		} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
+			chords = append(chords, curses.AltA+int(lkey[4])-'a')
+		} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '4' {
+			chords = append(chords, curses.F1+int(key[1])-'1')
+		} else if utf8.RuneCountInString(key) == 1 {
+			chords = append(chords, curses.AltZ+int([]rune(key)[0]))
+		} else {
+			errorExit("unsupported key: " + key)
+		}
+	}
+	return chords
+}
+
 func parseOptions(opts *Options, allArgs []string) {
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
@@ -208,6 +237,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-f", "--filter":
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
+		case "--expect":
+			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"))
 		case "-d", "--delimiter":
 			opts.Delimiter = delimiterRegexp(nextString(allArgs, &i, "delimiter required"))
 		case "-n", "--nth":
@@ -285,6 +316,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.WithNth = splitNth(value)
 			} else if match, _ := optString(arg, "-s|--sort="); match {
 				opts.Sort = 1 // Don't care
+			} else if match, value := optString(arg, "--expect="); match {
+				opts.Expect = parseKeyChords(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

@@ -61,10 +61,20 @@ const (
 	PgUp
 	PgDn
 
-	AltB
-	AltF
-	AltD
+	F1
+	F2
+	F3
+	F4
+
 	AltBS
+	AltA
+	AltB
+	AltC
+	AltD
+	AltE
+	AltF
+
+	AltZ = AltA + 'z' - 'a'
 )
 
 // Pallete
@@ -324,6 +334,14 @@ func escSequence(sz *int) Event {
 			return Event{CtrlE, 0, nil}
 		case 77:
 			return mouseSequence(sz)
+		case 80:
+			return Event{F1, 0, nil}
+		case 81:
+			return Event{F2, 0, nil}
+		case 82:
+			return Event{F3, 0, nil}
+		case 83:
+			return Event{F4, 0, nil}
 		case 49, 50, 51, 52, 53, 54:
 			if len(_buf) < 4 {
 				return Event{Invalid, 0, nil}
@@ -369,6 +387,9 @@ func escSequence(sz *int) Event {
 			} // _buf[2]
 		} // _buf[2]
 	} // _buf[1]
+	if _buf[1] >= 'a' && _buf[1] <= 'z' {
+		return Event{AltA + int(_buf[1]) - 'a', 0, nil}
+	}
 	return Event{Invalid, 0, nil}
 }
 

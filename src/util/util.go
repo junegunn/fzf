@@ -61,6 +61,10 @@ func DurWithin(
 	return val
 }
 
+func Between(val int, min int, max int) bool {
+	return val >= min && val <= max
+}
+
 // IsTty returns true is stdin is a terminal
 func IsTty() bool {
 	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
