@@ -103,7 +103,8 @@ Automatically select the only match
 Exit immediately when there's no match
 .TP
 .BI "-f, --filter=" "STR"
-Filter mode. Do not start interactive finder.
+Filter mode. Do not start interactive finder. When used with \fB--no-sort\fR,
+fzf becomes a fuzzy-version of grep.
 .TP
 .B "--print-query"
 Print query as the first line
@@ -120,7 +121,8 @@ e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 .RE
 .TP
 .B "--sync"
-Synchronous search for multi-staged filtering
+Synchronous search for multi-staged filtering. If specified, fzf will launch
+ncurses finder only after the input stream is complete.
 .RS
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
