@@ -275,6 +275,10 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 :FZF --no-sort -m /tmp
 ```
 
+Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
+`CTRL-T`, `CTRL-X` or `CTRL-V` to open selected files in the current window,
+in new tabs, in horizontal splits, or in vertical splits respectively.
+
 Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
 
