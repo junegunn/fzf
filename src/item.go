@@ -118,7 +118,7 @@ func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset
 			} else {
 				ansi := item.colors[curr-1]
 				bg := ansi.color.bg
-				if current {
+				if current && bg == -1 {
 					bg = int(curses.DarkBG)
 				}
 				offsets = append(offsets, colorOffset{
