@@ -4,6 +4,8 @@
 require 'minitest/autorun'
 require 'fileutils'
 
+Dir.chdir File.expand_path('../../', __FILE__)
+
 class NilClass
   def include? str
     false
