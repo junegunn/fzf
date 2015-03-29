@@ -241,7 +241,7 @@ endfunction
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
   if !s:legacy
-    let args = add(args, '--expect=ctrl-t,ctrl-x,ctrl-v')
+    let args = insert(args, '--expect=ctrl-t,ctrl-x,ctrl-v', 0)
   endif
   let opts = {}
   if len(args) > 0 && isdirectory(expand(args[-1]))
@@ -264,9 +264,14 @@ function! s:cmd(bang, ...) abort
     elseif key == 'ctrl-v' | let cmd = 'vsplit'
     else                   | let cmd = 'e'
     endif
-    for item in output
-      execute cmd s:escape(item)
-    endfor
+    try
+      call s:pushd(opts)
+      for item in output
+        execute cmd s:escape(item)
+      endfor
+    finally
+      call s:popd(opts)
+    endtry
   endif
 endfunction
 
