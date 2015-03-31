@@ -126,6 +126,7 @@ class FZF
     @reverse  = false
     @prompt   = '> '
     @shr_mtx  = Mutex.new
+    @expect   = false
     @print_query = false
 
     argv =
@@ -200,6 +201,11 @@ class FZF
       when '--no-print-query'          then @print_query = false
       when '-e', '--extended-exact'    then @extended = :exact
       when '+e', '--no-extended-exact' then @extended = nil
+      when '--expect'
+        argv.shift
+        @expect = true
+      when /^--expect=(.*)$/
+        @expect = true
       when '--tac', '--sync'
         # XXX
       else
@@ -276,10 +282,12 @@ class FZF
           if loaded
             if @select1 && len == 1
               puts @query if @print_query
+              puts if @expect
               burp(empty ? matches.first : matches.first.first)
               exit 0
             elsif @exit0 && len == 0
               puts @query if @print_query
+              puts if @expect
               exit 0
             end
           end
@@ -1153,6 +1161,7 @@ class FZF
       C.close_screen
       q, selects = geta(:@query, :@selects)
       @stdout.puts q if @print_query
+      @stdout.puts if @expect
       if got
         if selects.empty?
           burp got
