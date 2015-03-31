@@ -152,7 +152,7 @@ fish.
 
 - `CTRL-T` - Paste the selected file path(s) into the command line
 - `CTRL-R` - Paste the selected command from history into the command line
-    - Sort is disabled by default. Press `CTRL-R` again to toggle sort
+    - Sort is disabled by default. Press `CTRL-R` again to toggle sort.
 - `ALT-C` - cd into the selected directory
 
 If you're on a tmux session, `CTRL-T` will launch fzf in a new split-window. You
