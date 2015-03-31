@@ -206,7 +206,9 @@ class FZF
         @expect = true
       when /^--expect=(.*)$/
         @expect = true
-      when '--tac', '--sync'
+      when '--toggle-sort'
+        argv.shift
+      when '--tac', '--sync', '--toggle-sort', /^--toggle-sort=(.*)$/
         # XXX
       else
         usage 1, "illegal option: #{o}"

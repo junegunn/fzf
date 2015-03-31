@@ -54,15 +54,19 @@ var (
 )
 
 func init() {
-	// We can uniquely identify the pattern for a given string since
-	// mode and caseMode do not change while the program is running
-	_patternCache = make(map[string]*Pattern)
 	_splitRegex = regexp.MustCompile("\\s+")
-	_cache = NewChunkCache()
+	clearPatternCache()
+	clearChunkCache()
 }
 
 func clearPatternCache() {
+	// We can uniquely identify the pattern for a given string since
+	// mode and caseMode do not change while the program is running
 	_patternCache = make(map[string]*Pattern)
+}
+
+func clearChunkCache() {
+	_cache = NewChunkCache()
 }
 
 // BuildPattern builds Pattern object from the given arguments

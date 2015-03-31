@@ -44,7 +44,7 @@ function fzf_key_bindings
   end
 
   function __fzf_ctrl_r
-    history | fzf +s +m > $TMPDIR/fzf.result
+    history | fzf +s +m --toggle-sort=ctrl-r > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result

@@ -111,7 +111,7 @@ Print query as the first line
 .TP
 .BI "--expect=" "KEY[,..]"
 Comma-separated list of keys (\fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR,
-or a single character) that can be used to complete fzf in addition to the
+or any single character) that can be used to complete fzf in addition to the
 default enter key. When this option is set, fzf will print the name of the key
 pressed as the first line of its output (or as the second line if
 \fB--print-query\fR is also used). The line will be empty if fzf is completed
@@ -119,6 +119,10 @@ with the default enter key.
 .RS
 e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 .RE
+.TP
+.BI "--toggle-sort=" "KEY"
+Key to toggle sort (\fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR,
+or any single character)
 .TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch

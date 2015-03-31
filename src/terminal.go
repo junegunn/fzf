@@ -28,6 +28,7 @@ type Terminal struct {
 	yanked     []rune
 	input      []rune
 	multi      bool
+	toggleSort int
 	expect     []int
 	pressed    int
 	printQuery bool
@@ -93,6 +94,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		yanked:     []rune{},
 		input:      input,
 		multi:      opts.Multi,
+		toggleSort: opts.ToggleSort,
 		expect:     opts.Expect,
 		pressed:    0,
 		printQuery: opts.PrintQuery,
@@ -457,6 +459,10 @@ func (t *Terminal) rubout(pattern string) {
 	t.input = append(t.input[:t.cx], after...)
 }
 
+func keyMatch(key int, event C.Event) bool {
+	return event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	<-t.startChan
@@ -553,10 +559,17 @@ func (t *Terminal) Loop() {
 			}
 		}
 		for _, key := range t.expect {
-			if event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ {
+			if keyMatch(key, event) {
 				t.pressed = key
 				req(reqClose)
 				break
+			}
+		}
+		if t.toggleSort > 0 {
+			if keyMatch(t.toggleSort, event) {
+				t.eventBox.Set(EvtSearchNew, true)
+				t.mutex.Unlock()
+				continue
 			}
 		}
 		switch event.Type {
@@ -688,7 +701,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
-			t.eventBox.Set(EvtSearchNew, nil)
+			t.eventBox.Set(EvtSearchNew, false)
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)

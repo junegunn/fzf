@@ -47,6 +47,7 @@ const usage = `usage: fzf [options]
     -f, --filter=STR      Filter mode. Do not start interactive finder.
         --print-query     Print query as the first line
         --expect=KEYS     Comma-separated list of keys to complete fzf
+        --toggle-sort=KEY Key to toggle sort
         --sync            Synchronous search for multi-staged filtering
                           (e.g. 'fzf --multi | fzf --sync')
 
@@ -97,6 +98,7 @@ type Options struct {
 	Select1    bool
 	Exit0      bool
 	Filter     *string
+	ToggleSort int
 	Expect     []int
 	PrintQuery bool
 	Sync       bool
@@ -124,6 +126,7 @@ func defaultOptions() *Options {
 		Select1:    false,
 		Exit0:      false,
 		Filter:     nil,
+		ToggleSort: 0,
 		Expect:     []int{},
 		PrintQuery: false,
 		Sync:       false,
@@ -201,9 +204,21 @@ func isAlphabet(char uint8) bool {
 	return char >= 'a' && char <= 'z'
 }
 
-func parseKeyChords(str string) []int {
+func parseKeyChords(str string, message string) []int {
+	if len(str) == 0 {
+		errorExit(message)
+	}
+
+	tokens := strings.Split(str, ",")
+	if str == "," || strings.HasPrefix(str, ",,") || strings.HasSuffix(str, ",,") || strings.Index(str, ",,,") >= 0 {
+		tokens = append(tokens, ",")
+	}
+
 	var chords []int
-	for _, key := range strings.Split(str, ",") {
+	for _, key := range tokens {
+		if len(key) == 0 {
+			continue // ignore
+		}
 		lkey := strings.ToLower(key)
 		if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 			chords = append(chords, curses.CtrlA+int(lkey[5])-'a')
@@ -218,6 +233,14 @@ func parseKeyChords(str string) []int {
 		}
 	}
 	return chords
+}
+
+func checkToggleSort(str string) int {
+	keys := parseKeyChords(str, "key name required")
+	if len(keys) != 1 {
+		errorExit("multiple keys specified")
+	}
+	return keys[0]
 }
 
 func parseOptions(opts *Options, allArgs []string) {
@@ -238,7 +261,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
 		case "--expect":
-			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"))
+			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
+		case "--toggle-sort":
+			opts.ToggleSort = checkToggleSort(nextString(allArgs, &i, "key name required"))
 		case "-d", "--delimiter":
 			opts.Delimiter = delimiterRegexp(nextString(allArgs, &i, "delimiter required"))
 		case "-n", "--nth":
@@ -316,8 +341,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.WithNth = splitNth(value)
 			} else if match, _ := optString(arg, "-s|--sort="); match {
 				opts.Sort = 1 // Don't care
+			} else if match, value := optString(arg, "--toggle-sort="); match {
+				opts.ToggleSort = checkToggleSort(value)
 			} else if match, value := optString(arg, "--expect="); match {
-				opts.Expect = parseKeyChords(value)
+				opts.Expect = parseKeyChords(value, "key names required")
 			} else {
 				errorExit("unknown option: " + arg)
 			}

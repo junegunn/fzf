@@ -44,7 +44,7 @@ func initProcs() {
 /*
 Reader   -> EvtReadFin
 Reader   -> EvtReadNew        -> Matcher  (restart)
-Terminal -> EvtSearchNew      -> Matcher  (restart)
+Terminal -> EvtSearchNew:bool -> Matcher  (restart)
 Matcher  -> EvtSearchProgress -> Terminal (update info)
 Matcher  -> EvtSearchFin      -> Terminal (update list)
 */
@@ -54,6 +54,7 @@ func Run(options *Options) {
 	initProcs()
 
 	opts := ParseOptions()
+	sort := opts.Sort > 0
 
 	if opts.Version {
 		fmt.Println(Version)
@@ -112,7 +113,7 @@ func Run(options *Options) {
 	}
 
 	// Reader
-	streamingFilter := opts.Filter != nil && opts.Sort == 0 && !opts.Tac && !opts.Sync
+	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	if !streamingFilter {
 		reader := Reader{func(str string) { chunkList.Push(str) }, eventBox}
 		go reader.ReadSource()
@@ -123,7 +124,7 @@ func Run(options *Options) {
 		return BuildPattern(
 			opts.Mode, opts.Case, opts.Nth, opts.Delimiter, runes)
 	}
-	matcher := NewMatcher(patternBuilder, opts.Sort > 0, opts.Tac, eventBox)
+	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox)
 
 	// Filtering mode
 	if opts.Filter != nil {
@@ -190,11 +191,14 @@ func Run(options *Options) {
 					reading = reading && evt == EvtReadNew
 					snapshot, count := chunkList.Snapshot()
 					terminal.UpdateCount(count, !reading)
-					matcher.Reset(snapshot, terminal.Input(), false, !reading)
+					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
 
 				case EvtSearchNew:
+					if value.(bool) {
+						sort = !sort
+					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, terminal.Input(), true, !reading)
+					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)
 					delay = false
 
 				case EvtSearchProgress:

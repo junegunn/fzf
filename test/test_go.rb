@@ -457,6 +457,19 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 100 | #{fzf '-q55 -1 --expect=alt-z --print-query'}", :Enter
     assert_equal ['55', '', '55'], readonce.split($/)
   end
+
+  def test_toggle_sort
+    tmux.send_keys "seq 1 111 | #{fzf '-m +s --tac --toggle-sort=ctrl-r -q11'}", :Enter
+    tmux.until { |lines| lines[-3].include? '> 111' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-2].include? '4/111 (1)' }
+    tmux.send_keys 'C-R'
+    tmux.until { |lines| lines[-3].include? '> 11' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-2].include? '4/111 (2)' }
+    tmux.send_keys :Enter
+    assert_equal ['111', '11'], readonce.split($/)
+  end
 end
 
 module TestShell

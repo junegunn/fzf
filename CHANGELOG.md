@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.9.7
+-----
+
+### New features
+
+- Added `--toggle-sort` option (#173)
+    - `--toggle-sort=ctrl-r` is applied to `CTRL-R` shell extension
+
+### Bug fixes
+
+- Fixed to print empty line if `--expect` is set and fzf is completed by
+  `--select-1` or `--exit-0` (#172)
+- Fixed to allow comma character as an argument to `--expect` option
+
 0.9.6
 -----
 
