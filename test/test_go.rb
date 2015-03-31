@@ -452,6 +452,11 @@ class TestGoFZF < TestBase
     tmux.send_keys :Escape, :z
     assert_equal ['55', 'alt-z', '55'], readonce.split($/)
   end
+
+  def test_expect_print_query_select_1
+    tmux.send_keys "seq 1 100 | #{fzf '-q55 -1 --expect=alt-z --print-query'}", :Enter
+    assert_equal ['55', '', '55'], readonce.split($/)
+  end
 end
 
 module TestShell

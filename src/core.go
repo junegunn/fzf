@@ -216,6 +216,9 @@ func Run(options *Options) {
 									if opts.PrintQuery {
 										fmt.Println(opts.Query)
 									}
+									if len(opts.Expect) > 0 {
+										fmt.Println()
+									}
 									for i := 0; i < count; i++ {
 										fmt.Println(val.Get(i).AsString())
 									}
