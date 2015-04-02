@@ -60,10 +60,10 @@ curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
 On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 
 ```sh
-brew install fzf
+brew reinstall --HEAD fzf
 
-# Install shell extensions - this should be done whenever fzf is updated
-$(brew info fzf | grep /install)
+# Install shell extensions
+/usr/local/Cellar/fzf/HEAD/install
 ```
 
 #### Install as Vim plugin
