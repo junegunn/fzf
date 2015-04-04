@@ -160,6 +160,7 @@ function! s:pushd(dict)
   if s:present(a:dict, 'dir')
     let a:dict.prev_dir = getcwd()
     execute 'chdir '.s:escape(a:dict.dir)
+    let a:dict.dir = getcwd()
     return 1
   endif
   return 0
