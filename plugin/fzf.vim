@@ -125,11 +125,15 @@ function! fzf#run(...) abort
   let split = s:tmux_enabled() && s:tmux_splittable(dict)
   let command = prefix.(split ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  if split
-    return s:execute_tmux(dict, command, temps)
-  else
-    return s:execute(dict, command, temps)
-  endif
+  try
+    if split
+      return s:execute_tmux(dict, command, temps)
+    else
+      return s:execute(dict, command, temps)
+    endif
+  finally
+    call s:popd(dict)
+  endtry
 endfunction
 
 function! s:present(dict, ...)
@@ -195,14 +199,6 @@ function! s:execute(dict, command, temps)
   endif
 endfunction
 
-function! s:env_var(name)
-  if exists('$'.a:name)
-    return a:name . "='". substitute(expand('$'.a:name), "'", "'\\\\''", 'g') . "' "
-  else
-    return ''
-  endif
-endfunction
-
 function! s:execute_tmux(dict, command, temps)
   let command = a:command
   if s:pushd(a:dict)
@@ -233,8 +229,6 @@ function! s:callback(dict, temps)
   for tf in values(a:temps)
     silent! call delete(tf)
   endfor
-
-  call s:popd(a:dict)
 
   return lines
 endfunction

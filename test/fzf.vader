@@ -3,11 +3,14 @@ Execute (Setup):
   Log 'Test directory: ' . g:dir
 
 Execute (fzf#run with dir option):
+  let cwd = getcwd()
   let result = fzf#run({ 'options': '--filter=vdr', 'dir': g:dir })
   AssertEqual ['fzf.vader'], result
+  AssertEqual getcwd(), cwd
 
   let result = sort(fzf#run({ 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], result
+  AssertEqual ['fzf.vader', 'test_go.rb'], result
+  AssertEqual getcwd(), cwd
 
 Execute (fzf#run with Funcref command):
   let g:ret = []
@@ -15,8 +18,8 @@ Execute (fzf#run with Funcref command):
     call add(g:ret, a:e)
   endfunction
   let result = sort(fzf#run({ 'sink': function('g:FzfTest'), 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], result
-  AssertEqual ['fzf.vader', 'test_go.rb', 'test_ruby.rb'], sort(g:ret)
+  AssertEqual ['fzf.vader', 'test_go.rb'], result
+  AssertEqual ['fzf.vader', 'test_go.rb'], sort(g:ret)
 
 Execute (fzf#run with string source):
   let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
