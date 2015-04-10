@@ -317,10 +317,15 @@ of the selected items.
 | `source`                   | list          | Vim list as input to fzf                                         |
 | `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)       |
 | `sink`                     | funcref       | Reference to function to process each selected item              |
+| `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once    |
 | `options`                  | string        | Options to fzf                                                   |
 | `dir`                      | string        | Working directory                                                |
 | `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
+| `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
 | `launcher`                 | string        | External terminal emulator to start fzf with (Only used in GVim) |
+
+*However on Neovim `fzf#run` is asynchronous and does not return values so you
+should use `sink` or `sink+` to process the output from fzf.*
 
 ##### Examples
 

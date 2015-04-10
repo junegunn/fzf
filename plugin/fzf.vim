@@ -122,12 +122,14 @@ function! fzf#run(...) abort
   else
     let prefix = ''
   endif
-  let split = s:tmux_enabled() && s:tmux_splittable(dict)
-  let command = prefix.(split ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+  let tmux = !has('nvim') && s:tmux_enabled() && s:splittable(dict)
+  let command = prefix.(tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   try
-    if split
+    if tmux
       return s:execute_tmux(dict, command, temps)
+    elseif has('nvim')
+      return s:execute_term(dict, command, temps)
     else
       return s:execute(dict, command, temps)
     endif
@@ -150,19 +152,24 @@ function! s:fzf_tmux(dict)
   for o in ['up', 'down', 'left', 'right']
     if s:present(a:dict, o)
       let size = '-'.o[0].(a:dict[o] == 1 ? '' : a:dict[o])
+      break
     endif
   endfor
   return printf('LINES=%d COLUMNS=%d %s %s %s --',
     \ &lines, &columns, s:fzf_tmux, size, (has_key(a:dict, 'source') ? '' : '-'))
 endfunction
 
-function! s:tmux_splittable(dict)
+function! s:splittable(dict)
   return s:present(a:dict, 'up', 'down', 'left', 'right')
 endfunction
 
 function! s:pushd(dict)
   if s:present(a:dict, 'dir')
-    let a:dict.prev_dir = getcwd()
+    let cwd = getcwd()
+    if get(a:dict, 'prev_dir', '') ==# cwd
+      return 1
+    endif
+    let a:dict.prev_dir = cwd
     execute 'chdir '.s:escape(a:dict.dir)
     let a:dict.dir = getcwd()
     return 1
@@ -210,6 +217,60 @@ function! s:execute_tmux(dict, command, temps)
   return s:callback(a:dict, a:temps)
 endfunction
 
+function! s:calc_size(max, val)
+  if a:val =~ '%$'
+    return a:max * str2nr(a:val[:-2]) / 100
+  else
+    return min([a:max, a:val])
+  endif
+endfunction
+
+function! s:split(dict)
+  let directions = {
+  \ 'up':    ['topleft', &lines],
+  \ 'down':  ['botright', &lines],
+  \ 'left':  ['vertical topleft', &columns],
+  \ 'right': ['vertical botright', &columns] }
+  try
+    for [dir, pair] in items(directions)
+      let val = get(a:dict, dir, '')
+      if !empty(val)
+        let [cmd, max] = pair
+        execute cmd s:calc_size(max, val).'new'
+        return
+      endif
+    endfor
+    if s:present(a:dict, 'window')
+      execute a:dict.window
+    else
+      tabnew
+    endif
+  finally
+    setlocal winfixwidth winfixheight
+  endtry
+endfunction
+
+function! s:execute_term(dict, command, temps)
+  call s:pushd(a:dict)
+  call s:split(a:dict)
+
+  let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
+  function! fzf.on_exit(id, code)
+    execute 'bd!' self.buf
+    call s:pushd(self.dict)
+    try
+      call s:callback(self.dict, self.temps)
+    finally
+      call s:popd(self.dict)
+    endtry
+  endfunction
+
+  call termopen(a:command, fzf)
+  file [FZF]
+  startinsert
+  return []
+endfunction
+
 function! s:callback(dict, temps)
   if !filereadable(a:temps.result)
     let lines = []
@@ -224,6 +285,9 @@ function! s:callback(dict, temps)
         endif
       endfor
     endif
+    if has_key(a:dict, 'sink*')
+      call a:dict['sink*'](lines)
+    endif
   endif
 
   for tf in values(a:temps)
@@ -231,6 +295,26 @@ function! s:callback(dict, temps)
   endfor
 
   return lines
+endfunction
+
+function! s:cmd_callback(lines) abort
+  if empty(a:lines)
+    return
+  endif
+  let key = remove(a:lines, 0)
+  if     key == 'ctrl-t' | let cmd = 'tabedit'
+  elseif key == 'ctrl-x' | let cmd = 'split'
+  elseif key == 'ctrl-v' | let cmd = 'vsplit'
+  else                   | let cmd = 'e'
+  endif
+  call s:pushd(s:opts)
+  try
+    for item in a:lines
+      execute cmd s:escape(item)
+    endfor
+  finally
+    call s:popd(s:opts)
+  endtry
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -247,26 +331,10 @@ function! s:cmd(bang, ...) abort
   endif
 
   if s:legacy
-    call fzf#run(extend({ 'sink': 'e', 'options': join(args) }, opts))
+    call fzf#run(extend({ 'options': join(args), 'sink': 'e' }, opts))
   else
-    let output = fzf#run(extend({ 'options': join(args) }, opts))
-    if empty(output)
-      return
-    endif
-    let key = remove(output, 0)
-    if     key == 'ctrl-t' | let cmd = 'tabedit'
-    elseif key == 'ctrl-x' | let cmd = 'split'
-    elseif key == 'ctrl-v' | let cmd = 'vsplit'
-    else                   | let cmd = 'e'
-    endif
-    try
-      call s:pushd(opts)
-      for item in output
-        execute cmd s:escape(item)
-      endfor
-    finally
-      call s:popd(opts)
-    endtry
+    let s:opts = opts
+    call fzf#run(extend({ 'options': join(args), 'sink*': function('<sid>cmd_callback') }, opts))
   endif
 endfunction
 
