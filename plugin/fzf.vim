@@ -318,6 +318,12 @@ function! s:cmd_callback(lines) abort
 endfunction
 
 function! s:cmd(bang, ...) abort
+  if bufexists('[FZF]')
+    echohl WarningMsg
+    echomsg 'FZF is already running!'
+    echohl NONE
+    return
+  endif
   let args = copy(a:000)
   if !s:legacy
     let args = insert(args, '--expect=ctrl-t,ctrl-x,ctrl-v', 0)
