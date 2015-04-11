@@ -254,8 +254,8 @@ function! s:split(dict)
 endfunction
 
 function! s:execute_term(dict, command, temps)
-  call s:pushd(a:dict)
   call s:split(a:dict)
+  call s:pushd(a:dict)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
   function! fzf.on_exit(id, code)
