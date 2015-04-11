@@ -324,8 +324,8 @@ of the selected items.
 | `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
 | `launcher`                 | string        | External terminal emulator to start fzf with (Only used in GVim) |
 
-*However on Neovim `fzf#run` is asynchronous and does not return values so you
-should use `sink` or `sink+` to process the output from fzf.*
+_However on Neovim `fzf#run` is asynchronous and does not return values so you
+should use `sink` or `sink*` to process the output from fzf._
 
 ##### Examples
 
