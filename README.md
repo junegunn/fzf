@@ -28,6 +28,7 @@ fzf project consists of the followings:
 - Shell extensions
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
     - Fuzzy auto-completion (bash only)
+- Vim/Neovim plugin
 
 You can [download fzf executable][bin] alone, but it's recommended that you
 install the extra stuff using the attached install script.
