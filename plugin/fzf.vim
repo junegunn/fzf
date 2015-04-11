@@ -266,7 +266,7 @@ function! s:execute_term(dict, command, temps)
   endfunction
 
   call termopen(a:command, fzf)
-  file [FZF]
+  silent file [FZF]
   startinsert
   return []
 endfunction
