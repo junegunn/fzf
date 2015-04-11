@@ -106,7 +106,9 @@ fail() {
   >&2 echo "$1"
   exit 1
 }
-fzf=$(which fzf 2> /dev/null) || fail "fzf executable not found"
+fzf="$(which fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
+[ -x "$fzf" ] || fail "fzf executable not found"
+
 envs=""
 [ -n "$FZF_DEFAULT_OPTS"    ] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
 [ -n "$FZF_DEFAULT_COMMAND" ] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
