@@ -227,16 +227,19 @@ endfunction
 
 function! s:split(dict)
   let directions = {
-  \ 'up':    ['topleft', &lines],
-  \ 'down':  ['botright', &lines],
-  \ 'left':  ['vertical topleft', &columns],
-  \ 'right': ['vertical botright', &columns] }
+  \ 'up':    ['topleft', 'resize', &lines],
+  \ 'down':  ['botright', 'resize', &lines],
+  \ 'left':  ['vertical topleft', 'vertical resize', &columns],
+  \ 'right': ['vertical botright', 'vertical resize', &columns] }
+  let s:ptab = tabpagenr()
   try
-    for [dir, pair] in items(directions)
+    for [dir, triple] in items(directions)
       let val = get(a:dict, dir, '')
       if !empty(val)
-        let [cmd, max] = pair
-        execute cmd s:calc_size(max, val).'new'
+        let [cmd, resz, max] = triple
+        let sz = s:calc_size(max, val)
+        execute cmd sz.'new'
+        execute resz sz
         return
       endif
     endfor
@@ -256,7 +259,11 @@ function! s:execute_term(dict, command, temps)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
   function! fzf.on_exit(id, code)
+    let tab = tabpagenr()
     execute 'bd!' self.buf
+    if s:ptab == tab
+      wincmd p
+    endif
     call s:pushd(self.dict)
     try
       call s:callback(self.dict, self.temps)
