@@ -256,9 +256,6 @@ export FZF_COMPLETION_TRIGGER='~~'
 
 # Options to fzf command
 export FZF_COMPLETION_OPTS='+c -x'
-
-# Not to use tmux pane
-export FZF_COMPLETION_TMUX=0
 ```
 
 Usage as Vim plugin

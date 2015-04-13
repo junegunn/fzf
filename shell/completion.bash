@@ -5,8 +5,9 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.bash
 #
+# - $FZF_TMUX               (default: 1)
+# - $FZF_TMUX_HEIGHT        (default: '40%')
 # - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_TMUX    (default: 1)
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
 _fzf_orig_completion_filter() {
@@ -67,7 +68,7 @@ _fzf_handle_dynamic_completion() {
 
 _fzf_path_completion() {
   local cur base dir leftover matches trigger cmd fzf
-  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
+  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -108,7 +109,7 @@ _fzf_path_completion() {
 
 _fzf_list_completion() {
   local cur selected trigger cmd src fzf
-  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
+  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   read -r src
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -153,7 +154,7 @@ _fzf_kill_completion() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
   local selected fzf
-  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
+  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   tput sc
   selected=$(ps -ef | sed 1d | $fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
   tput rc
