@@ -546,25 +546,29 @@ class TestBash < TestBase
   def test_file_completion
     tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}', :Enter
     tmux.prepare
-    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
-    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
+    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
     tmux.send_keys :BTab, :BTab, :Enter
-    tmux.until { |lines|
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
       lines[-1].include?('/tmp/fzf-test/10') &&
       lines[-1].include?('/tmp/fzf-test/100')
-    }
+    end
   end
 
   def test_dir_completion
     tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}; touch /tmp/fzf-test/d55/xxx', :Enter
     tmux.prepare
-    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
-    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab, pane: 0
+    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
     tmux.send_keys :BTab, :BTab # BTab does not work here
     tmux.send_keys 55
-    tmux.until { |lines| lines[-2].start_with? '  1/' }
+    tmux.until(pane: 1) { |lines| lines[-2].start_with? '  1/' }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
+      lines[-1] == 'cd /tmp/fzf-test/d55/'
+    end
     tmux.send_keys :xx
     tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
 
@@ -584,12 +588,15 @@ class TestBash < TestBase
     lines = tmux.until { |lines| lines[-1].start_with? '[1]' }
     pid = lines[-1].split.last
     tmux.prepare
-    tmux.send_keys 'kill ', :Tab
-    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys 'kill ', :Tab, pane: 0
+    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
     tmux.send_keys 'sleep12345'
-    tmux.until { |lines| lines[-3].include? 'sleep 12345' }
+    tmux.until(pane: 1) { |lines| lines[-3].include? 'sleep 12345' }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1] == "kill #{pid}" }
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
+      lines[-1] == "kill #{pid}"
+    end
   end
 end
 
