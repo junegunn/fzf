@@ -6,6 +6,7 @@
 # /_/   /___/_/-completion.bash
 #
 # - $FZF_COMPLETION_TRIGGER (default: '**')
+# - $FZF_COMPLETION_TMUX    (default: 1)
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
 _fzf_orig_completion_filter() {
@@ -65,7 +66,8 @@ _fzf_handle_dynamic_completion() {
 }
 
 _fzf_path_completion() {
-  local cur base dir leftover matches trigger cmd
+  local cur base dir leftover matches trigger cmd fzf
+  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -81,7 +83,7 @@ _fzf_path_completion() {
         leftover=${leftover/#\/}
         [ "$dir" = './' ] && dir=''
         tput sc
-        matches=$(find -L "$dir"* $1 2> /dev/null | fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
+        matches=$(find -L "$dir"* $1 2> /dev/null | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -105,7 +107,8 @@ _fzf_path_completion() {
 }
 
 _fzf_list_completion() {
-  local cur selected trigger cmd src
+  local cur selected trigger cmd src fzf
+  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
   read -r src
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   trigger=${FZF_COMPLETION_TRIGGER:-**}
@@ -114,7 +117,7 @@ _fzf_list_completion() {
     cur=${cur:0:${#cur}-${#trigger}}
 
     tput sc
-    selected=$(eval "$src | fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
+    selected=$(eval "$src | $fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
     selected=${selected% }
     tput rc
 
@@ -149,9 +152,10 @@ _fzf_dir_completion() {
 _fzf_kill_completion() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
-  local selected
+  local selected fzf
+  [ ${FZF_COMPLETION_TMUX:-1} -eq 1 ] && fzf="fzf-tmux" || fzf="fzf"
   tput sc
-  selected=$(ps -ef | sed 1d | fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
+  selected=$(ps -ef | sed 1d | $fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
   tput rc
 
   if [ -n "$selected" ]; then
