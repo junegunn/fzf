@@ -470,6 +470,13 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     assert_equal ['111', '11'], readonce.split($/)
   end
+
+  def test_unicode_case
+    assert_equal %w[СТРОКА2 Строка4],
+      `printf "строКА1\\nСТРОКА2\\nстрока3\\nСтрока4" | fzf -fС`.split($/)
+    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4],
+      `printf "строКА1\\nСТРОКА2\\nстрока3\\nСтрока4" | fzf -fс`.split($/)
+  end
 end
 
 module TestShell

@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.9.8
+-----
+
+### Bug fixes
+
+- Fixed Unicode case handling (#186)
+
 0.9.7
 -----
 

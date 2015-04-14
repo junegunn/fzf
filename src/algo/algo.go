@@ -1,6 +1,9 @@
 package algo
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
 
 /*
  * String matching algorithms here do not use strings.ToLower to avoid
@@ -34,8 +37,17 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 	for index, char := range runes {
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string
-		if !caseSensitive && char >= 65 && char <= 90 {
-			char += 32
+		if !caseSensitive {
+			// Partially inlining `unicode.ToLower`. Ugly, but makes a noticeable
+			// difference in CPU cost. (Measured on Go 1.4.1. Also note that the Go
+			// compiler as of now does not inline non-leaf functions.)
+			if char >= 'A' && char <= 'Z' {
+				char += 32
+				runes[index] = char
+			} else if char > unicode.MaxASCII {
+				char = unicode.To(unicode.LowerCase, char)
+				runes[index] = char
+			}
 		}
 		if char == pattern[pidx] {
 			if sidx < 0 {
@@ -52,9 +64,6 @@ func FuzzyMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
 			char := runes[index]
-			if !caseSensitive && char >= 65 && char <= 90 {
-				char += 32
-			}
 			if char == pattern[pidx] {
 				if pidx--; pidx < 0 {
 					sidx = index
@@ -110,8 +119,12 @@ func ExactMatchNaive(caseSensitive bool, input *string, pattern []rune) (int, in
 	pidx := 0
 	for index := 0; index < numRunes; index++ {
 		char := runes[index]
-		if !caseSensitive && char >= 65 && char <= 90 {
-			char += 32
+		if !caseSensitive {
+			if char >= 'A' && char <= 'Z' {
+				char += 32
+			} else if char > unicode.MaxASCII {
+				char = unicode.To(unicode.LowerCase, char)
+			}
 		}
 		if pattern[pidx] == char {
 			pidx++
@@ -135,8 +148,8 @@ func PrefixMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 
 	for index, r := range pattern {
 		char := runes[index]
-		if !caseSensitive && char >= 65 && char <= 90 {
-			char += 32
+		if !caseSensitive {
+			char = unicode.ToLower(char)
 		}
 		if char != r {
 			return -1, -1
@@ -156,8 +169,8 @@ func SuffixMatch(caseSensitive bool, input *string, pattern []rune) (int, int) {
 
 	for index, r := range pattern {
 		char := runes[index+diff]
-		if !caseSensitive && char >= 65 && char <= 90 {
-			char += 32
+		if !caseSensitive {
+			char = unicode.ToLower(char)
 		}
 		if char != r {
 			return -1, -1

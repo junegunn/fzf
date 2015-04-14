@@ -4,11 +4,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/junegunn/fzf/src/algo"
 )
-
-const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // fuzzy
 // 'exact
@@ -91,7 +90,14 @@ func BuildPattern(mode Mode, caseMode Case,
 
 	switch caseMode {
 	case CaseSmart:
-		if !strings.ContainsAny(asString, uppercaseLetters) {
+		hasUppercase := false
+		for _, r := range runes {
+			if unicode.IsUpper(r) {
+				hasUppercase = true
+				break
+			}
+		}
+		if !hasUppercase {
 			runes, caseSensitive = []rune(strings.ToLower(asString)), false
 		}
 	case CaseIgnore:
