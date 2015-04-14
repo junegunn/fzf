@@ -320,14 +320,9 @@ function! s:cmd_callback(lines) abort
   elseif key == 'ctrl-v' | let cmd = 'vsplit'
   else                   | let cmd = 'e'
   endif
-  call s:pushd(s:opts)
-  try
-    for item in a:lines
-      execute cmd s:escape(item)
-    endfor
-  finally
-    call s:popd(s:opts)
-  endtry
+  for item in a:lines
+    execute cmd s:escape(item)
+  endfor
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -346,7 +341,6 @@ function! s:cmd(bang, ...) abort
   if s:legacy
     call fzf#run(extend({ 'options': join(args), 'sink': 'e' }, opts))
   else
-    let s:opts = opts
     call fzf#run(extend({ 'options': join(args), 'sink*': function('<sid>cmd_callback') }, opts))
   endif
 endfunction
