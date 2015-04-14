@@ -5,8 +5,15 @@ version=0.9.7
 cd $(dirname $BASH_SOURCE)
 fzf_base=$(pwd)
 
+# If stdin is a tty, we are "interactive".
+[ -t 0 ] && interactive=yes
+
 ask() {
-  read -p "$1 ([y]/n) " -n 1 -r
+  # non-interactive shell: wait for a linefeed
+  #     interactive shell: continue after a single keypress
+  [ -n "$interactive" ] && read_n='-n 1' || read_n=
+
+  read -p "$1 ([y]/n) " $read_n -r
   echo
   [[ ! $REPLY =~ ^[Nn]$ ]]
 }
