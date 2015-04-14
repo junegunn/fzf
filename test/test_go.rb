@@ -4,7 +4,9 @@
 require 'minitest/autorun'
 require 'fileutils'
 
-Dir.chdir File.expand_path('../../', __FILE__)
+base = File.expand_path('../../', __FILE__)
+Dir.chdir base
+FZF = "#{base}/bin/fzf"
 
 class NilClass
   def include? str
@@ -26,7 +28,8 @@ module Temp
     waited = 0
     while waited < 5
       begin
-        data = `cat #{name}`
+        system 'sync'
+        data = File.read(name)
         return data unless data.empty?
       rescue
         sleep 0.1
@@ -195,7 +198,7 @@ class TestBase < Minitest::Test
         nil
       end
     }.compact
-    "fzf #{opts.join ' '}"
+    "#{FZF} #{opts.join ' '}"
   end
 end
 
@@ -243,7 +246,7 @@ class TestGoFZF < TestBase
   end
 
   def test_key_bindings
-    tmux.send_keys "fzf -q 'foo bar foo-bar'", :Enter
+    tmux.send_keys "#{FZF} -q 'foo bar foo-bar'", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
 
     # CTRL-A
@@ -472,10 +475,19 @@ class TestGoFZF < TestBase
   end
 
   def test_unicode_case
-    assert_equal %w[СТРОКА2 Строка4],
-      `ruby -e "puts %w[строКА1 СТРОКА2 строка3 Строка4]" | fzf -fС`.split($/)
-    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4],
-      `ruby -e "puts %w[строКА1 СТРОКА2 строка3 Строка4]" | fzf -fс`.split($/)
+    tempname = TEMPNAME + Time.now.to_f.to_s
+    File.open(tempname, 'w') do |f|
+      f << %w[строКА1 СТРОКА2 строка3 Строка4].join($/)
+      f.sync
+    end
+    since = Time.now
+    while `cat #{tempname}`.split($/).length != 4 && (Time.now - since) < 10
+      sleep 0.1
+    end
+    assert_equal %w[СТРОКА2 Строка4], `cat #{tempname} | #{FZF} -fС`.split($/)
+    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `cat #{tempname} | #{FZF} -fс`.split($/)
+  rescue
+    File.unlink tempname
   end
 end
 

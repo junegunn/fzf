@@ -12,17 +12,13 @@ install:
 - sudo apt-get install -y zsh fish
 
 script: |
-  export GOROOT=~/go1.4
   export GOPATH=~/go
-  export FZF_BASE=~/go/src/github.com/junegunn/fzf
+  export FZF_BASE=$GOPATH/src/github.com/junegunn/fzf
 
-  mkdir -p ~/go/src/github.com/junegunn
+  mkdir -p $GOPATH/src/github.com/junegunn
   ln -s $(pwd) $FZF_BASE
-
-  curl https://storage.googleapis.com/golang/go1.4.1.linux-amd64.tar.gz | tar -xz
-  mv go $GOROOT
 
   cd $FZF_BASE/src && make test fzf/fzf-linux_amd64 install &&
   cd $FZF_BASE/bin && ln -sf fzf-linux_amd64 fzf-$(./fzf --version)-linux_amd64 &&
-  cd $FZF_BASE && yes | ./install &&
+  cd $FZF_BASE && yes | ./install && rm -f fzf &&
   tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]
