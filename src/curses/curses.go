@@ -420,6 +420,9 @@ func GetChar() Event {
 		return Event{int(_buf[0]), 0, nil}
 	}
 	r, rsz := utf8.DecodeRune(_buf)
+	if r == utf8.RuneError {
+		return Event{ESC, 0, nil}
+	}
 	sz = rsz
 	return Event{Rune, r, nil}
 }

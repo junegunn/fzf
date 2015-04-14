@@ -7,6 +7,7 @@ CHANGELOG
 ### Bug fixes
 
 - Fixed Unicode case handling (#186)
+- Fixed to terminate on RuneError (#185)
 
 0.9.7
 -----
