@@ -473,9 +473,9 @@ class TestGoFZF < TestBase
 
   def test_unicode_case
     assert_equal %w[СТРОКА2 Строка4],
-      `printf "строКА1\\nСТРОКА2\\nстрока3\\nСтрока4" | fzf -fС`.split($/)
+      `ruby -e "puts %w[строКА1 СТРОКА2 строка3 Строка4]" | fzf -fС`.split($/)
     assert_equal %w[строКА1 СТРОКА2 строка3 Строка4],
-      `printf "строКА1\\nСТРОКА2\\nстрока3\\nСтрока4" | fzf -fс`.split($/)
+      `ruby -e "puts %w[строКА1 СТРОКА2 строка3 Строка4]" | fzf -fс`.split($/)
   end
 end
 
