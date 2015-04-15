@@ -286,7 +286,10 @@ Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
 in new tabs, in horizontal splits, or in vertical splits respectively.
 
 Note that the environment variables `FZF_DEFAULT_COMMAND` and
-`FZF_DEFAULT_OPTS` also apply here.
+`FZF_DEFAULT_OPTS` also apply here. Refer to [the wiki page][vim-examples] for
+customization.
+
+[vim-examples]: https://github.com/junegunn/fzf/wiki/Examples-(vim)
 
 #### `fzf#run([options])`
 
