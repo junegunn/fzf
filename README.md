@@ -282,6 +282,19 @@ Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
 `CTRL-T`, `CTRL-X` or `CTRL-V` to open selected files in the current window,
 in new tabs, in horizontal splits, or in vertical splits respectively.
 
+The type of splitting can be overriden using
+`g:fzf_default_split_style`.  The split characters can be overridden
+using `g:fzf_tab_char`, `g:fzf_split_char`, and `g:fzf_vsplit_char',
+
+For example:
+```vim
+let g:fzf_default_split_style = 'tabedit'
+let g:fzf_tab_char = 'alt-t'
+```
+
+See the `--extend` section of the fzf man page for a description of
+the syntax of these character options.
+
 Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
 

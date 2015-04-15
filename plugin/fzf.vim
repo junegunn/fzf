@@ -26,6 +26,10 @@ let s:launcher = 'xterm -e bash -ic %s'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
 let s:fzf_tmux = expand('<sfile>:h:h').'/bin/fzf-tmux'
+let s:default_split_style = 'e'
+let s:tab_char = 'ctrl-t'
+let s:split_char = 'ctrl-x'
+let s:vsplit_char = 'ctrl-v'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -313,10 +317,10 @@ function! s:cmd_callback(lines) abort
     return
   endif
   let key = remove(a:lines, 0)
-  if     key == 'ctrl-t' | let cmd = 'tabedit'
-  elseif key == 'ctrl-x' | let cmd = 'split'
-  elseif key == 'ctrl-v' | let cmd = 'vsplit'
-  else                   | let cmd = 'e'
+  if     key == get(g:, 'fzf_tab_char', s:tab_char)             | let cmd = 'tabedit'
+  elseif key == get(g:, 'fzf_split_char', s:split_char)         | let cmd = 'split'
+  elseif key == get(g:, 'fzf_vsplit_char', s:vsplit_char)       | let cmd = 'vsplit'
+  else                                                          | let cmd = get(g:, 'fzf_default_split_style', s:default_split_style)
   endif
   for item in a:lines
     execute cmd s:escape(item)
@@ -324,7 +328,8 @@ function! s:cmd_callback(lines) abort
 endfunction
 
 function! s:cmd(bang, ...) abort
-  let args = extend(['--expect=ctrl-t,ctrl-x,ctrl-v'], a:000)
+  let chars = [ get(g:, 'fzf_tab_char', s:tab_char), get(g:, 'fzf_split_char', s:split_char), get(g:, 'fzf_vsplit_char', s:vsplit_char) ]
+  let args = extend(['--expect='.join(chars,',')], a:000)
   let opts = {}
   if len(args) > 0 && isdirectory(expand(args[-1]))
     let opts.dir = remove(args, -1)
