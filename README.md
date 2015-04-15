@@ -285,9 +285,9 @@ in new tabs, in horizontal splits, or in vertical splits respectively.
 Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
 also apply here.
 
-If you're on a tmux session, `:FZF` will launch fzf in a new split-window whose
-height can be adjusted with `g:fzf_tmux_height` (default: '40%'). However, the
-bang version (`:FZF!`) will always start in fullscreen.
+If you're on a tmux session or using Neovim, `:FZF` will launch fzf in a
+split-window whose height can be adjusted with `g:fzf_height` (default:
+'40%'). However, the bang version (`:FZF!`) will always start in fullscreen.
 
 In GVim, you need an external terminal emulator to start fzf with. `xterm`
 command is used by default, but you can customize it with `g:fzf_launcher`.

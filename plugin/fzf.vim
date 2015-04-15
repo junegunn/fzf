@@ -21,7 +21,7 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-let s:default_tmux_height = '40%'
+let s:default_height = '40%'
 let s:launcher = 'xterm -e bash -ic %s'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
@@ -330,7 +330,7 @@ function! s:cmd(bang, ...) abort
     let opts.dir = remove(args, -1)
   endif
   if !a:bang
-    let opts.down = get(g:, 'fzf_tmux_height', s:default_tmux_height)
+    let opts.down = get(g:, 'fzf_height', get(g:, 'fzf_tmux_height', s:default_height))
   endif
   call fzf#run(extend({'options': join(args), 'sink*': function('<sid>cmd_callback')}, opts))
 endfunction
