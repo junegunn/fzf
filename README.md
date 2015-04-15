@@ -276,34 +276,17 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 
 " With options
 :FZF --no-sort -m /tmp
+
+" Bang version starts in fullscreen instead of using tmux pane or Neovim split
+:FZF!
 ```
 
 Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
 `CTRL-T`, `CTRL-X` or `CTRL-V` to open selected files in the current window,
 in new tabs, in horizontal splits, or in vertical splits respectively.
 
-Note that the environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS`
-also apply here.
-
-If you're on a tmux session or using Neovim, `:FZF` will launch fzf in a
-split-window whose height can be adjusted with `g:fzf_height` (default:
-'40%'). However, the bang version (`:FZF!`) will always start in fullscreen.
-
-In GVim, you need an external terminal emulator to start fzf with. `xterm`
-command is used by default, but you can customize it with `g:fzf_launcher`.
-
-```vim
-" This is the default. %s is replaced with fzf command
-let g:fzf_launcher = 'xterm -e bash -ic %s'
-
-" Use urxvt instead
-let g:fzf_launcher = 'urxvt -geometry 120x30 -e sh -c %s'
-```
-
-If you're running MacVim on OSX, I recommend you to use iTerm2 as the launcher.
-Refer to the [this wiki
-page](https://github.com/junegunn/fzf/wiki/On-MacVim-with-iTerm2) to see how
-to set up.
+Note that the environment variables `FZF_DEFAULT_COMMAND` and
+`FZF_DEFAULT_OPTS` also apply here.
 
 #### `fzf#run([options])`
 

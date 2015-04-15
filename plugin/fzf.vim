@@ -308,23 +308,26 @@ function! s:callback(dict, temps)
   return lines
 endfunction
 
+let s:default_action = {
+  \ 'ctrl-m': 'e',
+  \ 'ctrl-t': 'tabedit',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+
 function! s:cmd_callback(lines) abort
   if empty(a:lines)
     return
   endif
   let key = remove(a:lines, 0)
-  if     key == 'ctrl-t' | let cmd = 'tabedit'
-  elseif key == 'ctrl-x' | let cmd = 'split'
-  elseif key == 'ctrl-v' | let cmd = 'vsplit'
-  else                   | let cmd = 'e'
-  endif
+  let cmd = get(s:action, key, 'e')
   for item in a:lines
     execute cmd s:escape(item)
   endfor
 endfunction
 
 function! s:cmd(bang, ...) abort
-  let args = extend(['--expect=ctrl-t,ctrl-x,ctrl-v'], a:000)
+  let s:action = get(g:, 'fzf_action', s:default_action)
+  let args = extend(['--expect='.join(keys(s:action), ',')], a:000)
   let opts = {}
   if len(args) > 0 && isdirectory(expand(args[-1]))
     let opts.dir = remove(args, -1)
