@@ -723,7 +723,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
-			t.eventBox.Set(EvtSearchNew, false)
+			t.eventBox.Set(EvtSearchNew, t.sort)
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)
