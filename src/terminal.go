@@ -29,6 +29,7 @@ type Terminal struct {
 	yanked     []rune
 	input      []rune
 	multi      bool
+	sort       bool
 	toggleSort int
 	expect     []int
 	pressed    int
@@ -96,6 +97,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		yanked:     []rune{},
 		input:      input,
 		multi:      opts.Multi,
+		sort:       opts.Sort > 0,
 		toggleSort: opts.ToggleSort,
 		expect:     opts.Expect,
 		pressed:    0,
@@ -241,6 +243,13 @@ func (t *Terminal) printInfo() {
 
 	t.move(1, 2, false)
 	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
+	if t.toggleSort > 0 {
+		if t.sort {
+			output += "/S"
+		} else {
+			output += "  "
+		}
+	}
 	if t.multi && len(t.selected) > 0 {
 		output += fmt.Sprintf(" (%d)", len(t.selected))
 	}
@@ -579,7 +588,8 @@ func (t *Terminal) Loop() {
 		}
 		if t.toggleSort > 0 {
 			if keyMatch(t.toggleSort, event) {
-				t.eventBox.Set(EvtSearchNew, true)
+				t.sort = !t.sort
+				t.eventBox.Set(EvtSearchNew, t.sort)
 				t.mutex.Unlock()
 				continue
 			}

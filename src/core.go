@@ -195,8 +195,9 @@ func Run(options *Options) {
 					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
 
 				case EvtSearchNew:
-					if value.(bool) {
-						sort = !sort
+					switch val := value.(type) {
+					case bool:
+						sort = val
 					}
 					snapshot, _ := chunkList.Snapshot()
 					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)

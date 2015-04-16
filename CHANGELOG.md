@@ -8,6 +8,7 @@ CHANGELOG
 
 - Added `--tiebreak` option (#191)
 - Added `--no-hscroll` option (#193)
+- Visual indication of `--toggle-sort` (#194)
 
 0.9.8
 -----
