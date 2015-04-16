@@ -38,6 +38,7 @@ const usage = `usage: fzf [options]
     +2, --no-256          Disable 256-color
         --black           Use black background
         --reverse         Reverse orientation
+        --no-hscroll      Disable horizontal scroll
         --prompt=STR      Input prompt (default: '> ')
 
   Scripting
@@ -93,6 +94,7 @@ type Options struct {
 	Color256   bool
 	Black      bool
 	Reverse    bool
+	Hscroll    bool
 	Prompt     string
 	Query      string
 	Select1    bool
@@ -121,6 +123,7 @@ func defaultOptions() *Options {
 		Color256:   strings.Contains(os.Getenv("TERM"), "256"),
 		Black:      false,
 		Reverse:    false,
+		Hscroll:    true,
 		Prompt:     "> ",
 		Query:      "",
 		Select1:    false,
@@ -304,6 +307,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Reverse = true
 		case "--no-reverse":
 			opts.Reverse = false
+		case "--hscroll":
+			opts.Hscroll = true
+		case "--no-hscroll":
+			opts.Hscroll = false
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":

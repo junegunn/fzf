@@ -19,6 +19,14 @@ func Max(first int, items ...int) int {
 	return max
 }
 
+// Max32 returns the smallest 32-bit integer
+func Min32(first int32, second int32) int32 {
+	if first <= second {
+		return first
+	}
+	return second
+}
+
 // Max32 returns the largest 32-bit integer
 func Max32(first int32, second int32) int32 {
 	if first > second {

@@ -22,6 +22,7 @@ import (
 type Terminal struct {
 	prompt     string
 	reverse    bool
+	hscroll    bool
 	cx         int
 	cy         int
 	offset     int
@@ -88,6 +89,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	return &Terminal{
 		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
+		hscroll:    opts.Hscroll,
 		cx:         len(input),
 		cy:         0,
 		offset:     0,
@@ -318,7 +320,7 @@ func trimLeft(runes []rune, width int) ([]rune, int32) {
 	return runes, trimmed
 }
 
-func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
+func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
 	var maxe int32
 	for _, offset := range item.offsets {
 		if offset[1] > maxe {
@@ -332,30 +334,40 @@ func (*Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, cur
 	maxWidth := C.MaxX() - 3
 	fullWidth := displayWidth(text)
 	if fullWidth > maxWidth {
-		// Stri..
-		matchEndWidth := displayWidth(text[:maxe])
-		if matchEndWidth <= maxWidth-2 {
+		if t.hscroll {
+			// Stri..
+			matchEndWidth := displayWidth(text[:maxe])
+			if matchEndWidth <= maxWidth-2 {
+				text, _ = trimRight(text, maxWidth-2)
+				text = append(text, []rune("..")...)
+			} else {
+				// Stri..
+				if matchEndWidth < fullWidth-2 {
+					text = append(text[:maxe], []rune("..")...)
+				}
+				// ..ri..
+				var diff int32
+				text, diff = trimLeft(text, maxWidth-2)
+
+				// Transform offsets
+				for idx, offset := range offsets {
+					b, e := offset.offset[0], offset.offset[1]
+					b += 2 - diff
+					e += 2 - diff
+					b = util.Max32(b, 2)
+					offsets[idx].offset[0] = b
+					offsets[idx].offset[1] = util.Max32(b, e)
+				}
+				text = append([]rune(".."), text...)
+			}
+		} else {
 			text, _ = trimRight(text, maxWidth-2)
 			text = append(text, []rune("..")...)
-		} else {
-			// Stri..
-			if matchEndWidth < fullWidth-2 {
-				text = append(text[:maxe], []rune("..")...)
-			}
-			// ..ri..
-			var diff int32
-			text, diff = trimLeft(text, maxWidth-2)
 
-			// Transform offsets
 			for idx, offset := range offsets {
-				b, e := offset.offset[0], offset.offset[1]
-				b += 2 - diff
-				e += 2 - diff
-				b = util.Max32(b, 2)
-				offsets[idx].offset[0] = b
-				offsets[idx].offset[1] = util.Max32(b, e)
+				offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-2))
+				offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 			}
-			text = append([]rune(".."), text...)
 		}
 	}
 
