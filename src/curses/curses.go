@@ -116,7 +116,6 @@ var (
 	_color        func(int, bool) C.int
 	_colorMap     map[int]int
 	_prevDownTime time.Time
-	_prevDownY    int
 	_clickY       []int
 	DarkBG        C.short
 )
