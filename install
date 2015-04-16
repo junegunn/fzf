@@ -161,6 +161,8 @@ if [ -n "$binary_error" ]; then
   echo "OK"
 fi
 
+[[ "$*" =~ "--bin" ]] && exit 0
+
 # Auto-completion
 ask "Do you want to add auto-completion support?"
 auto_completion=$?
