@@ -28,7 +28,8 @@ const usage = `usage: fzf [options]
   Search result
     +s, --no-sort         Do not sort the result
         --tac             Reverse the order of the input
-                          (e.g. 'history | fzf --tac --no-sort')
+        --tiebreak=CRI    Sort criterion when the scores are tied;
+                          [length|begin|end|index] (default: length)
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
@@ -50,7 +51,6 @@ const usage = `usage: fzf [options]
         --expect=KEYS     Comma-separated list of keys to complete fzf
         --toggle-sort=KEY Key to toggle sort
         --sync            Synchronous search for multi-staged filtering
-                          (e.g. 'fzf --multi | fzf --sync')
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
@@ -78,6 +78,16 @@ const (
 	CaseRespect
 )
 
+// Sort criteria
+type tiebreak int
+
+const (
+	byLength tiebreak = iota
+	byBegin
+	byEnd
+	byIndex
+)
+
 // Options stores the values of command-line options
 type Options struct {
 	Mode       Mode
@@ -87,6 +97,7 @@ type Options struct {
 	Delimiter  *regexp.Regexp
 	Sort       int
 	Tac        bool
+	Tiebreak   tiebreak
 	Multi      bool
 	Ansi       bool
 	Mouse      bool
@@ -116,6 +127,7 @@ func defaultOptions() *Options {
 		Delimiter:  nil,
 		Sort:       1000,
 		Tac:        false,
+		Tiebreak:   byLength,
 		Multi:      false,
 		Ansi:       false,
 		Mouse:      true,
@@ -238,6 +250,22 @@ func parseKeyChords(str string, message string) []int {
 	return chords
 }
 
+func parseTiebreak(str string) tiebreak {
+	switch strings.ToLower(str) {
+	case "length":
+		return byLength
+	case "index":
+		return byIndex
+	case "begin":
+		return byBegin
+	case "end":
+		return byEnd
+	default:
+		errorExit("invalid sort criterion: " + str)
+	}
+	return byLength
+}
+
 func checkToggleSort(str string) int {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
@@ -265,6 +293,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Filter = &filter
 		case "--expect":
 			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
+		case "--tiebreak":
+			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--toggle-sort":
 			opts.ToggleSort = checkToggleSort(nextString(allArgs, &i, "key name required"))
 		case "-d", "--delimiter":
@@ -352,6 +382,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.ToggleSort = checkToggleSort(value)
 			} else if match, value := optString(arg, "--expect="); match {
 				opts.Expect = parseKeyChords(value, "key names required")
+			} else if match, value := optString(arg, "--tiebreak="); match {
+				opts.Tiebreak = parseTiebreak(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

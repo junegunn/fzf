@@ -66,6 +66,20 @@ Reverse the order of the input
 .RS
 e.g. \fBhistory | fzf --tac --no-sort\fR
 .RE
+.TP
+.BI "--tiebreak=" "STR"
+Sort criterion to use when the scores are tied
+.br
+.R ""
+.br
+.BR length "  Prefers item with shorter length"
+.br
+.BR begin "   Prefers item with matched substring closer to the beginning"
+.br
+.BR end "     Prefers item with matched substring closer to the end""
+.br
+.BR index "   Prefers item that appeared earlier in the input stream"
+.br
 .SS Interface
 .TP
 .B "-m, --multi"

@@ -42,7 +42,7 @@ func TestItemRank(t *testing.T) {
 	strs := []string{"foo", "foobar", "bar", "baz"}
 	item1 := Item{text: &strs[0], index: 1, offsets: []Offset{}}
 	rank1 := item1.Rank(true)
-	if rank1.matchlen != 0 || rank1.strlen != 3 || rank1.index != 1 {
+	if rank1.matchlen != 0 || rank1.tiebreak != 3 || rank1.index != 1 {
 		t.Error(item1.Rank(true))
 	}
 	// Only differ in index

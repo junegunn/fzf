@@ -1,6 +1,8 @@
 package fzf
 
 import (
+	"math"
+
 	"github.com/junegunn/fzf/src/curses"
 )
 
@@ -27,17 +29,21 @@ type Item struct {
 // Rank is used to sort the search result
 type Rank struct {
 	matchlen uint16
-	strlen   uint16
+	tiebreak uint16
 	index    uint32
 }
 
+// Tiebreak criterion to use. Never changes once fzf is started.
+var rankTiebreak tiebreak
+
 // Rank calculates rank of the Item
 func (i *Item) Rank(cache bool) Rank {
-	if cache && (i.rank.matchlen > 0 || i.rank.strlen > 0) {
+	if cache && (i.rank.matchlen > 0 || i.rank.tiebreak > 0) {
 		return i.rank
 	}
 	matchlen := 0
 	prevEnd := 0
+	minBegin := math.MaxUint16
 	for _, offset := range i.offsets {
 		begin := int(offset[0])
 		end := int(offset[1])
@@ -48,10 +54,30 @@ func (i *Item) Rank(cache bool) Rank {
 			prevEnd = end
 		}
 		if end > begin {
+			if begin < minBegin {
+				minBegin = begin
+			}
 			matchlen += end - begin
 		}
 	}
-	rank := Rank{uint16(matchlen), uint16(len(*i.text)), i.index}
+	var tiebreak uint16
+	switch rankTiebreak {
+	case byLength:
+		tiebreak = uint16(len(*i.text))
+	case byBegin:
+		// We can't just look at i.offsets[0][0] because it can be an inverse term
+		tiebreak = uint16(minBegin)
+	case byEnd:
+		if prevEnd > 0 {
+			tiebreak = uint16(1 + len(*i.text) - prevEnd)
+		} else {
+			// Empty offsets due to inverse terms.
+			tiebreak = 1
+		}
+	case byIndex:
+		tiebreak = 1
+	}
+	rank := Rank{uint16(matchlen), tiebreak, i.index}
 	if cache {
 		i.rank = rank
 	}
@@ -199,9 +225,9 @@ func compareRanks(irank Rank, jrank Rank, tac bool) bool {
 		return false
 	}
 
-	if irank.strlen < jrank.strlen {
+	if irank.tiebreak < jrank.tiebreak {
 		return true
-	} else if irank.strlen > jrank.strlen {
+	} else if irank.tiebreak > jrank.tiebreak {
 		return false
 	}
 

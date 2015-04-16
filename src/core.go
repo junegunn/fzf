@@ -55,6 +55,7 @@ func Run(options *Options) {
 
 	opts := ParseOptions()
 	sort := opts.Sort > 0
+	rankTiebreak = opts.Tiebreak
 
 	if opts.Version {
 		fmt.Println(Version)

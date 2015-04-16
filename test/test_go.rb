@@ -476,18 +476,65 @@ class TestGoFZF < TestBase
 
   def test_unicode_case
     tempname = TEMPNAME + Time.now.to_f.to_s
-    File.open(tempname, 'w') do |f|
-      f << %w[строКА1 СТРОКА2 строка3 Строка4].join($/)
-      f.sync
-    end
-    since = Time.now
-    while `cat #{tempname}`.split($/).length != 4 && (Time.now - since) < 10
-      sleep 0.1
-    end
+    writelines tempname, %w[строКА1 СТРОКА2 строка3 Строка4]
     assert_equal %w[СТРОКА2 Строка4], `cat #{tempname} | #{FZF} -fС`.split($/)
     assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `cat #{tempname} | #{FZF} -fс`.split($/)
   rescue
     File.unlink tempname
+  end
+
+  def test_tiebreak
+    tempname = TEMPNAME + Time.now.to_f.to_s
+    input = %w[
+      --foobar--------
+      -----foobar---
+      ----foobar--
+      -------foobar-
+    ]
+    writelines tempname, input
+
+    assert_equal input, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=index`.split($/)
+
+    by_length = %w[
+      ----foobar--
+      -----foobar---
+      -------foobar-
+      --foobar--------
+    ]
+    assert_equal by_length, `cat #{tempname} | #{FZF} -ffoobar`.split($/)
+    assert_equal by_length, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=length`.split($/)
+
+    by_begin = %w[
+      --foobar--------
+      ----foobar--
+      -----foobar---
+      -------foobar-
+    ]
+    assert_equal by_begin, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=begin`.split($/)
+    assert_equal by_begin, `cat #{tempname} | #{FZF} -f"!z foobar" -x --tiebreak begin`.split($/)
+
+    assert_equal %w[
+      -------foobar-
+      ----foobar--
+      -----foobar---
+      --foobar--------
+    ], `cat #{tempname} | #{FZF} -ffoobar --tiebreak end`.split($/)
+
+    assert_equal input, `cat #{tempname} | #{FZF} -f"!z" -x --tiebreak end`.split($/)
+  rescue
+    File.unlink tempname
+  end
+
+private
+  def writelines path, lines, timeout = 10
+    File.open(path, 'w') do |f|
+      f << lines.join($/)
+      f.sync
+    end
+    since = Time.now
+    while `cat #{path}`.split($/).length != lines.length && (Time.now - since) < 10
+      sleep 0.1
+    end
   end
 end
 
