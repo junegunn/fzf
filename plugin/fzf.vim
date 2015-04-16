@@ -24,6 +24,8 @@
 let s:default_height = '40%'
 let s:launcher = 'xterm -e bash -ic %s'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
+let s:install = expand('<sfile>:h:h').'/install'
+let s:installed = 0
 let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
 let s:fzf_tmux = expand('<sfile>:h:h').'/bin/fzf-tmux'
 
@@ -34,6 +36,13 @@ function! s:fzf_exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
       let s:exec = s:fzf_go
+    elseif !s:installed && executable(s:install)
+      echohl WarningMsg
+      echo 'Downloading fzf binary. Please wait ...'
+      echohl None
+      let s:installed = 1
+      call system(s:install.' --bin')
+      return s:fzf_exec()
     else
       let path = split(system('which fzf 2> /dev/null'), '\n')
       if !v:shell_error && !empty(path)
@@ -99,7 +108,7 @@ function! fzf#run(...) abort
   if has('nvim') && bufexists('[FZF]')
     echohl WarningMsg
     echomsg 'FZF is already running!'
-    echohl NONE
+    echohl None
     return []
   endif
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
