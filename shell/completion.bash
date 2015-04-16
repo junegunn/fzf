@@ -16,9 +16,10 @@ _fzf_orig_completion_filter() {
 }
 
 _fzf_opts_completion() {
-  local cur opts
+  local cur prev opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="
     -x --extended
     -e --extended-exact
@@ -27,19 +28,30 @@ _fzf_opts_completion() {
     -d --delimiter
     +s --no-sort
     --tac
+    --tiebreak
     -m --multi
     --no-mouse
     +c --no-color
     +2 --no-256
     --black
     --reverse
+    --no-hscroll
     --prompt
     -q --query
     -1 --select-1
     -0 --exit-0
     -f --filter
     --print-query
+    --expect
+    --toggle-sort
     --sync"
+
+  case "${prev}" in
+  --tiebreak)
+    COMPREPLY=( $(compgen -W "length begin end index" -- ${cur}) )
+    return 0
+    ;;
+  esac
 
   if [[ ${cur} =~ ^-|\+ ]]; then
     COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )

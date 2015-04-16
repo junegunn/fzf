@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.9.9
+-----
+
+### New features
+
+- Added `--tiebreak` option (#191)
+- Added `--no-hscroll` option (#193)
+
 0.9.8
 -----
 

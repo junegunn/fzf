@@ -5,7 +5,7 @@ import (
 )
 
 // Current version
-const Version = "0.9.8"
+const Version = "0.9.9"
 
 // fzf events
 const (
