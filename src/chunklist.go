@@ -2,10 +2,7 @@ package fzf
 
 import "sync"
 
-// Capacity of each chunk
-const ChunkSize int = 100
-
-// Chunk is a list of Item pointers whose size has the upper limit of ChunkSize
+// Chunk is a list of Item pointers whose size has the upper limit of chunkSize
 type Chunk []*Item // >>> []Item
 
 // ItemBuilder is a closure type that builds Item object from a pointer to a
@@ -35,7 +32,7 @@ func (c *Chunk) push(trans ItemBuilder, data *string, index int) {
 
 // IsFull returns true if the Chunk is full
 func (c *Chunk) IsFull() bool {
-	return len(*c) == ChunkSize
+	return len(*c) == chunkSize
 }
 
 func (cl *ChunkList) lastChunk() *Chunk {
@@ -47,7 +44,7 @@ func CountItems(cs []*Chunk) int {
 	if len(cs) == 0 {
 		return 0
 	}
-	return ChunkSize*(len(cs)-1) + len(*(cs[len(cs)-1]))
+	return chunkSize*(len(cs)-1) + len(*(cs[len(cs)-1]))
 }
 
 // Push adds the item to the list
@@ -56,7 +53,7 @@ func (cl *ChunkList) Push(data string) {
 	defer cl.mutex.Unlock()
 
 	if len(cl.chunks) == 0 || cl.lastChunk().IsFull() {
-		newChunk := Chunk(make([]*Item, 0, ChunkSize))
+		newChunk := Chunk(make([]*Item, 0, chunkSize))
 		cl.chunks = append(cl.chunks, &newChunk)
 	}
 

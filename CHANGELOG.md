@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.9.10
+------
+
+### Improvements
+
+- Performance optimization
+- Less aggressive memoization to limit memory usage
+
 0.9.9
 -----
 

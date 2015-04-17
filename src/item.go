@@ -19,7 +19,7 @@ type colorOffset struct {
 type Item struct {
 	text        *string
 	origText    *string
-	transformed *Transformed
+	transformed *[]Token
 	index       uint32
 	offsets     []Offset
 	colors      []ansiOffset

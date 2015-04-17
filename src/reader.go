@@ -9,8 +9,6 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-const defaultCommand = `find * -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null`
-
 // Reader reads from command or standard input
 type Reader struct {
 	pusher   func(string)

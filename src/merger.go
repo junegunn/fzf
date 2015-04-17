@@ -61,8 +61,8 @@ func (mg *Merger) Get(idx int) *Item {
 		if mg.tac {
 			idx = mg.count - idx - 1
 		}
-		chunk := (*mg.chunks)[idx/ChunkSize]
-		return (*chunk)[idx%ChunkSize]
+		chunk := (*mg.chunks)[idx/chunkSize]
+		return (*chunk)[idx%chunkSize]
 	}
 
 	if mg.sorted {
@@ -80,6 +80,10 @@ func (mg *Merger) Get(idx int) *Item {
 		idx -= numItems
 	}
 	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
+}
+
+func (mg *Merger) Cacheable() bool {
+	return mg.count < mergerCacheMax
 }
 
 func (mg *Merger) mergedGet(idx int) *Item {

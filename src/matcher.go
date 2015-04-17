@@ -34,10 +34,6 @@ const (
 	reqReset
 )
 
-const (
-	progressMinDuration = 200 * time.Millisecond
-)
-
 // NewMatcher returns a new Matcher
 func NewMatcher(patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox) *Matcher {
@@ -100,7 +96,9 @@ func (m *Matcher) Loop() {
 		}
 
 		if !cancelled {
-			m.mergerCache[patternString] = merger
+			if merger.Cacheable() {
+				m.mergerCache[patternString] = merger
+			}
 			merger.final = request.final
 			m.eventBox.Set(EvtSearchFin, merger)
 		}

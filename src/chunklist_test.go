@@ -45,7 +45,7 @@ func TestChunkList(t *testing.T) {
 	}
 
 	// Add more data
-	for i := 0; i < ChunkSize*2; i++ {
+	for i := 0; i < chunkSize*2; i++ {
 		cl.Push(fmt.Sprintf("item %d", i))
 	}
 
@@ -57,7 +57,7 @@ func TestChunkList(t *testing.T) {
 	// New snapshot
 	snapshot, count = cl.Snapshot()
 	if len(snapshot) != 3 || !snapshot[0].IsFull() ||
-		!snapshot[1].IsFull() || snapshot[2].IsFull() || count != ChunkSize*2+2 {
+		!snapshot[1].IsFull() || snapshot[2].IsFull() || count != chunkSize*2+2 {
 		t.Error("Expected two full chunks and one more chunk")
 	}
 	if len(*snapshot[2]) != 2 {

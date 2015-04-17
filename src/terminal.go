@@ -38,7 +38,7 @@ type Terminal struct {
 	progress   int
 	reading    bool
 	merger     *Merger
-	selected   map[*string]selectedItem
+	selected   map[uint32]selectedItem
 	reqBox     *util.EventBox
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
@@ -79,11 +79,6 @@ const (
 	reqQuit
 )
 
-const (
-	initialDelay    = 100 * time.Millisecond
-	spinnerDuration = 200 * time.Millisecond
-)
-
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
@@ -103,7 +98,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		pressed:    0,
 		printQuery: opts.PrintQuery,
 		merger:     EmptyMerger,
-		selected:   make(map[*string]selectedItem),
+		selected:   make(map[uint32]selectedItem),
 		reqBox:     util.NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -273,7 +268,7 @@ func (t *Terminal) printList() {
 }
 
 func (t *Terminal) printItem(item *Item, current bool) {
-	_, selected := t.selected[item.text]
+	_, selected := t.selected[item.index]
 	if current {
 		C.CPrint(C.ColCursor, true, ">")
 		if selected {
@@ -565,16 +560,16 @@ func (t *Terminal) Loop() {
 		toggle := func() {
 			if t.cy < t.merger.Length() {
 				item := t.merger.Get(t.cy)
-				if _, found := t.selected[item.text]; !found {
+				if _, found := t.selected[item.index]; !found {
 					var strptr *string
 					if item.origText != nil {
 						strptr = item.origText
 					} else {
 						strptr = item.text
 					}
-					t.selected[item.text] = selectedItem{time.Now(), strptr}
+					t.selected[item.index] = selectedItem{time.Now(), strptr}
 				} else {
-					delete(t.selected, item.text)
+					delete(t.selected, item.index)
 				}
 				req(reqInfo)
 			}

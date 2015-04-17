@@ -34,9 +34,6 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-const coordinatorDelayMax time.Duration = 100 * time.Millisecond
-const coordinatorDelayStep time.Duration = 10 * time.Millisecond
-
 func initProcs() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
@@ -99,8 +96,9 @@ func Run(options *Options) {
 	} else {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
 			tokens := Tokenize(data, opts.Delimiter)
+			trans := Transform(tokens, opts.WithNth)
 			item := Item{
-				text:     Transform(tokens, opts.WithNth).whole,
+				text:     joinTokens(trans),
 				origText: data,
 				index:    uint32(index),
 				colors:   nil,

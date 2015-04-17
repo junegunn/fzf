@@ -16,15 +16,9 @@ type Range struct {
 	end   int
 }
 
-// Transformed holds the result of tokenization and transformation
-type Transformed struct {
-	whole *string
-	parts []Token
-}
-
 // Token contains the tokenized part of the strings and its prefix length
 type Token struct {
-	text         *string
+	text         *[]rune
 	prefixLength int
 }
 
@@ -81,8 +75,8 @@ func withPrefixLengths(tokens []string, begin int) []Token {
 	for idx, token := range tokens {
 		// Need to define a new local variable instead of the reused token to take
 		// the pointer to it
-		str := token
-		ret[idx] = Token{text: &str, prefixLength: prefixLength}
+		runes := []rune(token)
+		ret[idx] = Token{text: &runes, prefixLength: prefixLength}
 		prefixLength += len([]rune(token))
 	}
 	return ret
@@ -142,33 +136,40 @@ func Tokenize(str *string, delimiter *regexp.Regexp) []Token {
 	return withPrefixLengths(tokens, 0)
 }
 
-func joinTokens(tokens []Token) string {
+func joinTokens(tokens *[]Token) *string {
 	ret := ""
-	for _, token := range tokens {
-		ret += *token.text
+	for _, token := range *tokens {
+		ret += string(*token.text)
 	}
-	return ret
+	return &ret
+}
+
+func joinTokensAsRunes(tokens *[]Token) *[]rune {
+	ret := []rune{}
+	for _, token := range *tokens {
+		ret = append(ret, *token.text...)
+	}
+	return &ret
 }
 
 // Transform is used to transform the input when --with-nth option is given
-func Transform(tokens []Token, withNth []Range) *Transformed {
+func Transform(tokens []Token, withNth []Range) *[]Token {
 	transTokens := make([]Token, len(withNth))
 	numTokens := len(tokens)
-	whole := ""
 	for idx, r := range withNth {
-		part := ""
+		part := []rune{}
 		minIdx := 0
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				part += joinTokens(tokens)
+				part = append(part, *joinTokensAsRunes(&tokens)...)
 			} else {
 				if idx < 0 {
 					idx += numTokens + 1
 				}
 				if idx >= 1 && idx <= numTokens {
 					minIdx = idx - 1
-					part += *tokens[idx-1].text
+					part = append(part, *tokens[idx-1].text...)
 				}
 			}
 		} else {
@@ -195,11 +196,10 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 			minIdx = util.Max(0, begin-1)
 			for idx := begin; idx <= end; idx++ {
 				if idx >= 1 && idx <= numTokens {
-					part += *tokens[idx-1].text
+					part = append(part, *tokens[idx-1].text...)
 				}
 			}
 		}
-		whole += part
 		var prefixLength int
 		if minIdx < numTokens {
 			prefixLength = tokens[minIdx].prefixLength
@@ -208,7 +208,5 @@ func Transform(tokens []Token, withNth []Range) *Transformed {
 		}
 		transTokens[idx] = Token{&part, prefixLength}
 	}
-	return &Transformed{
-		whole: &whole,
-		parts: transTokens}
+	return &transTokens
 }
