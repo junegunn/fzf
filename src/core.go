@@ -68,7 +68,7 @@ func Run(options *Options) {
 		return data, nil
 	}
 	if opts.Ansi {
-		if opts.Color {
+		if opts.Theme != nil {
 			ansiProcessor = func(data *string) (*string, []ansiOffset) {
 				return extractColor(data)
 			}

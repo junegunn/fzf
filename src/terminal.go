@@ -105,7 +105,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		suppress:   true,
 		startChan:  make(chan bool, 1),
 		initFunc: func() {
-			C.Init(opts.Color, opts.Color256, opts.Black, opts.Mouse)
+			C.Init(opts.Theme, opts.Black, opts.Mouse)
 		}}
 }
 

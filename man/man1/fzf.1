@@ -91,11 +91,21 @@ Enable processing of ANSI color codes
 .B "--no-mouse"
 Disable mouse
 .TP
-.B "+c, --no-color"
-Disable colors
-.TP
-.B "+2, --no-256"
-Disable 256-color
+.B "--color=COL"
+Color scheme: [dark|light|16|bw]
+.br
+(default: dark on 256-color terminal, otherwise 16)
+.br
+.R ""
+.br
+.BR dark "    Dark color scheme for 256-color terminal"
+.br
+.BR light "   Light color scheme for 256-color terminal"
+.br
+.BR 16 "      Default color scheme for 16-color terminal"
+.br
+.BR bw "      No colors"
+.br
 .TP
 .B "--black"
 Use black background

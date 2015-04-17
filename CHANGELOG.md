@@ -9,6 +9,10 @@ CHANGELOG
 - Performance optimization
 - Less aggressive memoization to limit memory usage
 
+### New features
+
+- Added color scheme for light background: `--color=light`
+
 0.9.9
 -----
 

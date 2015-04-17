@@ -35,8 +35,8 @@ const usage = `usage: fzf [options]
     -m, --multi           Enable multi-select with tab/shift-tab
         --ansi            Enable processing of ANSI color codes
         --no-mouse        Disable mouse
-    +c, --no-color        Disable colors
-    +2, --no-256          Disable 256-color
+        --color=COL       Color scheme [dark|light|16|bw]
+                          (default: dark on 256-color terminal, otherwise 16)
         --black           Use black background
         --reverse         Reverse orientation
         --no-hscroll      Disable horizontal scroll
@@ -101,8 +101,7 @@ type Options struct {
 	Multi      bool
 	Ansi       bool
 	Mouse      bool
-	Color      bool
-	Color256   bool
+	Theme      *curses.ColorTheme
 	Black      bool
 	Reverse    bool
 	Hscroll    bool
@@ -119,6 +118,13 @@ type Options struct {
 }
 
 func defaultOptions() *Options {
+	var defaultTheme *curses.ColorTheme
+	if strings.Contains(os.Getenv("TERM"), "256") {
+		defaultTheme = curses.Dark256
+	} else {
+		defaultTheme = curses.Default16
+	}
+
 	return &Options{
 		Mode:       ModeFuzzy,
 		Case:       CaseSmart,
@@ -131,8 +137,7 @@ func defaultOptions() *Options {
 		Multi:      false,
 		Ansi:       false,
 		Mouse:      true,
-		Color:      true,
-		Color256:   strings.Contains(os.Getenv("TERM"), "256"),
+		Theme:      defaultTheme,
 		Black:      false,
 		Reverse:    false,
 		Hscroll:    true,
@@ -266,6 +271,22 @@ func parseTiebreak(str string) tiebreak {
 	return byLength
 }
 
+func parseTheme(str string) *curses.ColorTheme {
+	switch strings.ToLower(str) {
+	case "dark":
+		return curses.Dark256
+	case "light":
+		return curses.Light256
+	case "16":
+		return curses.Default16
+	case "bw", "off", "no", "none":
+		return nil
+	default:
+		errorExit("invalid color scheme: " + str)
+	}
+	return nil
+}
+
 func checkToggleSort(str string) int {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
@@ -295,6 +316,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
 		case "--tiebreak":
 			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
+		case "--color":
+			opts.Theme = parseTheme(nextString(allArgs, &i, "color scheme name required"))
 		case "--toggle-sort":
 			opts.ToggleSort = checkToggleSort(nextString(allArgs, &i, "key name required"))
 		case "-d", "--delimiter":
@@ -326,9 +349,9 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--no-mouse":
 			opts.Mouse = false
 		case "+c", "--no-color":
-			opts.Color = false
+			opts.Theme = nil
 		case "+2", "--no-256":
-			opts.Color256 = false
+			opts.Theme = curses.Default16
 		case "--black":
 			opts.Black = true
 		case "--no-black":
@@ -384,6 +407,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Expect = parseKeyChords(value, "key names required")
 			} else if match, value := optString(arg, "--tiebreak="); match {
 				opts.Tiebreak = parseTiebreak(value)
+			} else if match, value := optString(arg, "--color="); match {
+				opts.Theme = parseTheme(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

@@ -206,10 +206,10 @@ class FZF
         @expect = true
       when /^--expect=(.*)$/
         @expect = true
-      when '--toggle-sort', '--tiebreak'
+      when '--toggle-sort', '--tiebreak', '--color'
         argv.shift
       when '--tac', '--no-tac', '--sync', '--no-sync', '--hscroll', '--no-hscroll',
-           /^--toggle-sort=(.*)$/, /^--tiebreak=(.*)$/
+           /^--color=(.*)$/, /^--toggle-sort=(.*)$/, /^--tiebreak=(.*)$/
         # XXX
       else
         usage 1, "illegal option: #{o}"
