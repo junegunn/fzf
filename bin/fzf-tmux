@@ -101,14 +101,11 @@ cleanup() {
 trap cleanup EXIT SIGINT SIGTERM
 
 # Build arguments to fzf
-touch $argsf
-if [ ${#args[@]} -gt 0 ]; then
-  str=""
-  for arg in "${args[@]}"; do
-    str="$str \"${arg//\"/\\\"}\""
-  done
-  cat <<< "$str" > $argsf
-fi
+str=""
+for arg in "${args[@]}"; do
+  str="$str \"${arg//\"/\\\"}\""
+done
+cat <<< "$str" > $argsf
 
 fail() {
   >&2 echo "$1"
