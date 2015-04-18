@@ -35,7 +35,7 @@ const usage = `usage: fzf [options]
     -m, --multi           Enable multi-select with tab/shift-tab
         --ansi            Enable processing of ANSI color codes
         --no-mouse        Disable mouse
-        --color=COL       Color scheme [dark|light|16|bw]
+        --color=COL       Color scheme; [dark|light|16|bw]
                           (default: dark on 256-color terminal, otherwise 16)
         --black           Use black background
         --reverse         Reverse orientation
@@ -279,7 +279,7 @@ func parseTheme(str string) *curses.ColorTheme {
 		return curses.Light256
 	case "16":
 		return curses.Default16
-	case "bw", "off", "no", "none":
+	case "bw", "no":
 		return nil
 	default:
 		errorExit("invalid color scheme: " + str)
