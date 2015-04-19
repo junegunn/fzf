@@ -36,17 +36,17 @@ function! s:fzf_exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
       let s:exec = s:fzf_go
-    elseif !s:installed && executable(s:install)
-      echohl WarningMsg
-      echo 'Downloading fzf binary. Please wait ...'
-      echohl None
-      let s:installed = 1
-      call system(s:install.' --bin')
-      return s:fzf_exec()
     else
       let path = split(system('which fzf 2> /dev/null'), '\n')
       if !v:shell_error && !empty(path)
         let s:exec = path[0]
+      elseif !s:installed && executable(s:install)
+        echohl WarningMsg
+        echo 'Downloading fzf binary. Please wait ...'
+        echohl None
+        let s:installed = 1
+        call system(s:install.' --bin')
+        return s:fzf_exec()
       elseif executable(s:fzf_rb)
         let s:exec = s:fzf_rb
       else
