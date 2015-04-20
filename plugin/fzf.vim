@@ -105,6 +105,9 @@ function! s:upgrade(dict)
 endfunction
 
 function! fzf#run(...) abort
+try
+  let oshell = &shell
+  set shell=sh
   if has('nvim') && bufexists('[FZF]')
     echohl WarningMsg
     echomsg 'FZF is already running!'
@@ -149,6 +152,9 @@ function! fzf#run(...) abort
   finally
     call s:popd(dict)
   endtry
+finally
+  let &shell = oshell
+endtry
 endfunction
 
 function! s:present(dict, ...)
