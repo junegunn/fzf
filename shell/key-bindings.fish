@@ -26,25 +26,14 @@ function fzf_key_bindings
   end
 
   function __fzf_ctrl_t
-    if [ -n "$TMUX_PANE" -a "$FZF_TMUX" != "0" ]
-      # FIXME need to handle directory with double-quotes
-      tmux split-window (__fzf_tmux_height) "cd \"$PWD\";fish -c 'fzf_key_bindings; __fzf_ctrl_t_tmux \\$TMUX_PANE'"
-    else
-      __fzf_list | fzf -m > $TMPDIR/fzf.result
-      and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
-      commandline -f repaint
-      rm -f $TMPDIR/fzf.result
-    end
-  end
-
-  function __fzf_ctrl_t_tmux
-    __fzf_list | fzf -m > $TMPDIR/fzf.result
-    and tmux send-keys -t $argv[1] (cat $TMPDIR/fzf.result | __fzf_escape)
+    __fzf_list | fzf-tmux (__fzf_tmux_height) -m > $TMPDIR/fzf.result
+    and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
+    commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_ctrl_r
-    history | fzf +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
+    history | fzf-tmux (__fzf_tmux_height) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
@@ -52,7 +41,7 @@ function fzf_key_bindings
 
   function __fzf_alt_c
     # Fish hangs if the command before pipe redirects (2> /dev/null)
-    __fzf_list_dir | fzf +m > $TMPDIR/fzf.result
+    __fzf_list_dir | fzf-tmux (__fzf_tmux_height) +m > $TMPDIR/fzf.result
     [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
     and cd (cat $TMPDIR/fzf.result)
     commandline -f repaint
@@ -61,16 +50,10 @@ function fzf_key_bindings
 
   function __fzf_tmux_height
     if set -q FZF_TMUX_HEIGHT
-      set height $FZF_TMUX_HEIGHT
+      echo "-d$FZF_TMUX_HEIGHT"
     else
-      set height 40%
+      echo "-d40%"
     end
-    if echo $height | \grep -q -E '%$'
-      echo "-p "(echo $height | sed 's/%$//')
-    else
-      echo "-l $height"
-    end
-    set -e height
   end
 
   bind \ct '__fzf_ctrl_t'
