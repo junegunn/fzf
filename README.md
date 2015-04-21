@@ -357,13 +357,6 @@ nnoremap <silent> <Leader><Enter> :call fzf#run({
 More examples can be found on [the wiki
 page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
 
-#### Articles
-
-- [fzf+vim+tmux](http://junegunn.kr/2014/04/fzf+vim+tmux)
-- [Browsing git commits with fzf](http://junegunn.kr/2015/03/browsing-git-commits-with-fzf/)
-- [Browsing Chrome history with fzf](http://junegunn.kr/2015/04/browsing-chrome-history-with-fzf/)
-- [Browsing Chrome bookmarks with fzf](http://junegunn.kr/2015/04/browsing-chrome-bookmarks-with-fzf/)
-
 Tips
 ----
 
