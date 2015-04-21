@@ -12,6 +12,10 @@ __fzf_select__() {
 
 if [[ $- =~ i ]]; then
 
+__fzfcmd() {
+  [ ${FZF_TMUX:-1} -eq 1 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+}
+
 __fzf_select_tmux__() {
   local height
   height=${FZF_TMUX_HEIGHT:-40%}
@@ -26,11 +30,11 @@ __fzf_select_tmux__() {
 __fzf_cd__() {
   local dir
   dir=$(command find -L ${1:-.} \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type d -print 2> /dev/null | sed 1d | cut -b3- | fzf-tmux -d${FZF_TMUX_HEIGHT:-40%} +m) && printf 'cd %q' "$dir"
+    -o -type d -print 2> /dev/null | sed 1d | cut -b3- | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
 __fzf_history__() {
-  HISTTIMEFORMAT= history | fzf-tmux -d${FZF_TMUX_HEIGHT:-40%} +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r | sed "s/ *[0-9]* *//"
+  HISTTIMEFORMAT= history | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r | sed "s/ *[0-9]* *//"
 }
 
 __use_tmux=0

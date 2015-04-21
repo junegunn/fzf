@@ -26,14 +26,14 @@ function fzf_key_bindings
   end
 
   function __fzf_ctrl_t
-    __fzf_list | fzf-tmux (__fzf_tmux_height) -m > $TMPDIR/fzf.result
+    __fzf_list | eval (__fzfcmd) -m > $TMPDIR/fzf.result
     and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_ctrl_r
-    history | fzf-tmux (__fzf_tmux_height) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
+    history | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
@@ -41,18 +41,24 @@ function fzf_key_bindings
 
   function __fzf_alt_c
     # Fish hangs if the command before pipe redirects (2> /dev/null)
-    __fzf_list_dir | fzf-tmux (__fzf_tmux_height) +m > $TMPDIR/fzf.result
+    __fzf_list_dir | eval (__fzfcmd) +m > $TMPDIR/fzf.result
     [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
     and cd (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
 
-  function __fzf_tmux_height
-    if set -q FZF_TMUX_HEIGHT
-      echo "-d$FZF_TMUX_HEIGHT"
+  function __fzfcmd
+    set -q FZF_TMUX; or set FZF_TMUX 1
+
+    if [ $FZF_TMUX -eq 1 ]
+      if set -q FZF_TMUX_HEIGHT
+        echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
+      else
+        echo "fzf-tmux -d40%"
+      end
     else
-      echo "-d40%"
+      echo "fzf"
     end
   end
 
