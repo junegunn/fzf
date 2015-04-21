@@ -535,6 +535,10 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_smart_case_for_each_term
+    assert_equal 1, `echo Foo bar | #{FZF} -x -f "foo Fbar" | wc -l`.to_i
+  end
+
 private
   def writelines path, lines, timeout = 10
     File.open(path, 'w') do |f|

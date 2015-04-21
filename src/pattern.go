@@ -4,7 +4,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"unicode"
 
 	"github.com/junegunn/fzf/src/algo"
 )
@@ -28,10 +27,11 @@ const (
 )
 
 type term struct {
-	typ      termType
-	inv      bool
-	text     []rune
-	origText []rune
+	typ           termType
+	inv           bool
+	text          []rune
+	caseSensitive bool
+	origText      []rune
 }
 
 // Pattern represents search pattern
@@ -88,36 +88,27 @@ func BuildPattern(mode Mode, caseMode Case,
 	caseSensitive, hasInvTerm := true, false
 	terms := []term{}
 
-	switch caseMode {
-	case CaseSmart:
-		hasUppercase := false
-		for _, r := range runes {
-			if unicode.IsUpper(r) {
-				hasUppercase = true
-				break
-			}
-		}
-		if !hasUppercase {
-			runes, caseSensitive = []rune(strings.ToLower(asString)), false
-		}
-	case CaseIgnore:
-		runes, caseSensitive = []rune(strings.ToLower(asString)), false
-	}
-
 	switch mode {
 	case ModeExtended, ModeExtendedExact:
-		terms = parseTerms(mode, string(runes))
+		terms = parseTerms(mode, caseMode, asString)
 		for _, term := range terms {
 			if term.inv {
 				hasInvTerm = true
 			}
+		}
+	default:
+		lowerString := strings.ToLower(asString)
+		caseSensitive = caseMode == CaseRespect ||
+			caseMode == CaseSmart && lowerString != asString
+		if !caseSensitive {
+			asString = lowerString
 		}
 	}
 
 	ptr := &Pattern{
 		mode:          mode,
 		caseSensitive: caseSensitive,
-		text:          runes,
+		text:          []rune(asString),
 		terms:         terms,
 		hasInvTerm:    hasInvTerm,
 		nth:           nth,
@@ -133,11 +124,17 @@ func BuildPattern(mode Mode, caseMode Case,
 	return ptr
 }
 
-func parseTerms(mode Mode, str string) []term {
+func parseTerms(mode Mode, caseMode Case, str string) []term {
 	tokens := _splitRegex.Split(str, -1)
 	terms := []term{}
 	for _, token := range tokens {
 		typ, inv, text := termFuzzy, false, token
+		lowerText := strings.ToLower(text)
+		caseSensitive := caseMode == CaseRespect ||
+			caseMode == CaseSmart && text != lowerText
+		if !caseSensitive {
+			text = lowerText
+		}
 		origText := []rune(text)
 		if mode == ModeExtendedExact {
 			typ = termExact
@@ -163,10 +160,11 @@ func parseTerms(mode Mode, str string) []term {
 
 		if len(text) > 0 {
 			terms = append(terms, term{
-				typ:      typ,
-				inv:      inv,
-				text:     []rune(text),
-				origText: origText})
+				typ:           typ,
+				inv:           inv,
+				text:          []rune(text),
+				caseSensitive: caseSensitive,
+				origText:      origText})
 		}
 	}
 	return terms
@@ -280,7 +278,7 @@ func dupItem(item *Item, offsets []Offset) *Item {
 
 func (p *Pattern) fuzzyMatch(item *Item) (int, int) {
 	input := p.prepareInput(item)
-	return p.iter(algo.FuzzyMatch, input, p.text)
+	return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.text)
 }
 
 func (p *Pattern) extendedMatch(item *Item) []Offset {
@@ -288,7 +286,7 @@ func (p *Pattern) extendedMatch(item *Item) []Offset {
 	offsets := []Offset{}
 	for _, term := range p.terms {
 		pfun := p.procFun[term.typ]
-		if sidx, eidx := p.iter(pfun, input, term.text); sidx >= 0 {
+		if sidx, eidx := p.iter(pfun, input, term.caseSensitive, term.text); sidx >= 0 {
 			if term.inv {
 				break
 			}
@@ -319,10 +317,10 @@ func (p *Pattern) prepareInput(item *Item) *[]Token {
 }
 
 func (p *Pattern) iter(pfun func(bool, *[]rune, []rune) (int, int),
-	tokens *[]Token, pattern []rune) (int, int) {
+	tokens *[]Token, caseSensitive bool, pattern []rune) (int, int) {
 	for _, part := range *tokens {
 		prefixLength := part.prefixLength
-		if sidx, eidx := pfun(p.caseSensitive, part.text, pattern); sidx >= 0 {
+		if sidx, eidx := pfun(caseSensitive, part.text, pattern); sidx >= 0 {
 			return sidx + prefixLength, eidx + prefixLength
 		}
 	}
