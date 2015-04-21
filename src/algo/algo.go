@@ -42,10 +42,8 @@ func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 			// compiler as of now does not inline non-leaf functions.)
 			if char >= 'A' && char <= 'Z' {
 				char += 32
-				(*runes)[index] = char
 			} else if char > unicode.MaxASCII {
 				char = unicode.To(unicode.LowerCase, char)
-				(*runes)[index] = char
 			}
 		}
 		if char == pattern[pidx] {
@@ -63,6 +61,13 @@ func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
 			char := (*runes)[index]
+			if !caseSensitive {
+				if char >= 'A' && char <= 'Z' {
+					char += 32
+				} else if char > unicode.MaxASCII {
+					char = unicode.To(unicode.LowerCase, char)
+				}
+			}
 			if char == pattern[pidx] {
 				if pidx--; pidx < 0 {
 					sidx = index

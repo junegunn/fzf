@@ -525,6 +525,16 @@ class TestGoFZF < TestBase
     File.unlink tempname
   end
 
+  def test_invalid_cache
+    tmux.send_keys "(echo d; echo D; echo x) | #{fzf '-q d'}", :Enter
+    tmux.until { |lines| lines[-2].include? '2/3' }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-2].include? '3/3' }
+    tmux.send_keys :D
+    tmux.until { |lines| lines[-2].include? '1/3' }
+    tmux.send_keys :Enter
+  end
+
 private
   def writelines path, lines, timeout = 10
     File.open(path, 'w') do |f|
