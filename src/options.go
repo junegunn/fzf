@@ -40,6 +40,7 @@ const usage = `usage: fzf [options]
         --black           Use black background
         --reverse         Reverse orientation
         --no-hscroll      Disable horizontal scroll
+        --inline-info     Display finder info inline with the query
         --prompt=STR      Input prompt (default: '> ')
 
   Scripting
@@ -105,6 +106,7 @@ type Options struct {
 	Black      bool
 	Reverse    bool
 	Hscroll    bool
+	InlineInfo bool
 	Prompt     string
 	Query      string
 	Select1    bool
@@ -141,6 +143,7 @@ func defaultOptions() *Options {
 		Black:      false,
 		Reverse:    false,
 		Hscroll:    true,
+		InlineInfo: false,
 		Prompt:     "> ",
 		Query:      "",
 		Select1:    false,
@@ -364,6 +367,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Hscroll = true
 		case "--no-hscroll":
 			opts.Hscroll = false
+		case "--inline-info":
+			opts.InlineInfo = true
+		case "--no-inline-info":
+			opts.InlineInfo = false
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":

@@ -20,6 +20,7 @@ import (
 
 // Terminal represents terminal input/output
 type Terminal struct {
+	inlineInfo bool
 	prompt     string
 	reverse    bool
 	hscroll    bool
@@ -83,6 +84,7 @@ const (
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
 	return &Terminal{
+		inlineInfo: opts.InlineInfo,
 		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
 		hscroll:    opts.Hscroll,
@@ -229,14 +231,23 @@ func (t *Terminal) printPrompt() {
 }
 
 func (t *Terminal) printInfo() {
-	t.move(1, 0, true)
-	if t.reading {
-		duration := int64(spinnerDuration)
-		idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-		C.CPrint(C.ColSpinner, true, _spinner[idx])
+	if t.inlineInfo {
+		t.move(0, len(t.prompt)+displayWidth(t.input)+1, true)
+		if t.reading {
+			C.CPrint(C.ColSpinner, true, " < ")
+		} else {
+			C.CPrint(C.ColPrompt, true, " < ")
+		}
+	} else {
+		t.move(1, 0, true)
+		if t.reading {
+			duration := int64(spinnerDuration)
+			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
+			C.CPrint(C.ColSpinner, true, _spinner[idx])
+		}
+		t.move(1, 2, false)
 	}
 
-	t.move(1, 2, false)
 	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
 	if t.toggleSort > 0 {
 		if t.sort {
@@ -257,10 +268,16 @@ func (t *Terminal) printInfo() {
 func (t *Terminal) printList() {
 	t.constrain()
 
-	maxy := maxItems()
+	maxy := t.maxItems()
 	count := t.merger.Length() - t.offset
 	for i := 0; i < maxy; i++ {
-		t.move(i+2, 0, true)
+		var line int
+		if t.inlineInfo {
+			line = i + 1
+		} else {
+			line = i + 2
+		}
+		t.move(line, 0, true)
 		if i < count {
 			t.printItem(t.merger.Get(i+t.offset), i == t.cy-t.offset)
 		}
@@ -515,6 +532,9 @@ func (t *Terminal) Loop() {
 					switch req {
 					case reqPrompt:
 						t.printPrompt()
+						if t.inlineInfo {
+							t.printInfo()
+						}
 					case reqInfo:
 						t.printInfo()
 					case reqList:
@@ -659,10 +679,10 @@ func (t *Terminal) Loop() {
 		case C.Del:
 			t.delChar()
 		case C.PgUp:
-			t.vmove(maxItems() - 1)
+			t.vmove(t.maxItems() - 1)
 			req(reqList)
 		case C.PgDn:
-			t.vmove(-(maxItems() - 1))
+			t.vmove(-(t.maxItems() - 1))
 			req(reqList)
 		case C.AltB:
 			t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
@@ -685,6 +705,10 @@ func (t *Terminal) Loop() {
 			if !t.reverse {
 				my = C.MaxY() - my - 1
 			}
+			min := 2
+			if t.inlineInfo {
+				min = 1
+			}
 			if me.S != 0 {
 				// Scroll
 				if t.merger.Length() > 0 {
@@ -696,8 +720,8 @@ func (t *Terminal) Loop() {
 				}
 			} else if me.Double {
 				// Double-click
-				if my >= 2 {
-					if t.vset(t.offset+my-2) && t.cy < t.merger.Length() {
+				if my >= min {
+					if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
 						req(reqClose)
 					}
 				}
@@ -705,9 +729,9 @@ func (t *Terminal) Loop() {
 				if my == 0 && mx >= 0 {
 					// Prompt
 					t.cx = mx
-				} else if my >= 2 {
+				} else if my >= min {
 					// List
-					if t.vset(t.offset+my-2) && t.multi && me.Mod {
+					if t.vset(t.offset+my-min) && t.multi && me.Mod {
 						toggle()
 					}
 					req(reqList)
@@ -728,7 +752,7 @@ func (t *Terminal) Loop() {
 
 func (t *Terminal) constrain() {
 	count := t.merger.Length()
-	height := C.MaxY() - 2
+	height := t.maxItems()
 	diffpos := t.cy - t.offset
 
 	t.cy = util.Constrain(t.cy, 0, count-1)
@@ -761,6 +785,10 @@ func (t *Terminal) vset(o int) bool {
 	return t.cy == o
 }
 
-func maxItems() int {
-	return C.MaxY() - 2
+func (t *Terminal) maxItems() int {
+	if t.inlineInfo {
+		return C.MaxY() - 1
+	} else {
+		return C.MaxY() - 2
+	}
 }
