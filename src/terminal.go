@@ -697,7 +697,7 @@ func (t *Terminal) Loop() {
 			} else if me.Double {
 				// Double-click
 				if my >= 2 {
-					if t.vset(my-2) && t.cy < t.merger.Length() {
+					if t.vset(t.offset+my-2) && t.cy < t.merger.Length() {
 						req(reqClose)
 					}
 				}
