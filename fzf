@@ -209,6 +209,7 @@ class FZF
       when '--toggle-sort', '--tiebreak', '--color'
         argv.shift
       when '--tac', '--no-tac', '--sync', '--no-sync', '--hscroll', '--no-hscroll',
+           '--inline-info', '--no-inline-info',
            /^--color=(.*)$/, /^--toggle-sort=(.*)$/, /^--tiebreak=(.*)$/
         # XXX
       else

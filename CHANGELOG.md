@@ -1,6 +1,21 @@
 CHANGELOG
 =========
 
+0.9.11
+------
+
+### New features
+
+- Added `--inline-info` option for saving screen estate (#202)
+     - Useful inside Neovim
+     - e.g. `let $FZF_DEFAULT_OPTS = $FZF_DEFAULT_OPTS.' --inline-info'`
+
+### Bug fixes
+
+- Invalid mutation of input on case conversion (#209)
+- Smart-case for each term in extended-search mode (#208)
+- Fixed double-click result when scroll offset is positive
+
 0.9.10
 ------
 
