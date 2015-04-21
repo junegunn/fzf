@@ -45,17 +45,6 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-#### Using curl
-
-In case you don't have git installed:
-
-```sh
-mkdir -p ~/.fzf
-curl -L https://github.com/junegunn/fzf/archive/master.tar.gz |
-    tar xz --strip-components 1 -C ~/.fzf
-~/.fzf/install
-```
-
 #### Using Homebrew
 
 On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
@@ -157,17 +146,13 @@ fish.
     - Press `CTRL-R` again to toggle sort
 - `ALT-C` - cd into the selected directory
 
-If you're on a tmux session, `CTRL-T` will launch fzf in a new split-window. You
-may disable this tmux integration by setting `FZF_TMUX` to 0, or change the
-height of the window with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
+If you're on a tmux session, fzf will start in a split pane. You may disable
+this tmux integration by setting `FZF_TMUX` to 0, or change the height of the
+pane with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
 
 If you use vi mode on bash, you need to add `set -o vi` *before* `source
 ~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
 mode.
-
-If you want to customize the key bindings, consider editing the
-installer-generated source code: `~/.fzf.bash`, `~/.fzf.zsh`, and
-`~/.config/fish/functions/fzf_key_bindings.fish`.
 
 `fzf-tmux` script
 -----------------
@@ -286,10 +271,10 @@ Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
 in new tabs, in horizontal splits, or in vertical splits respectively.
 
 Note that the environment variables `FZF_DEFAULT_COMMAND` and
-`FZF_DEFAULT_OPTS` also apply here. Refer to [the wiki page][vim-examples] for
+`FZF_DEFAULT_OPTS` also apply here. Refer to [the wiki page][fzf-config] for
 customization.
 
-[vim-examples]: https://github.com/junegunn/fzf/wiki/Examples-(vim)
+[fzf-config]: https://github.com/junegunn/fzf/wiki/Configuring-FZF-command-(vim)
 
 #### `fzf#run([options])`
 
@@ -375,6 +360,9 @@ page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
 #### Articles
 
 - [fzf+vim+tmux](http://junegunn.kr/2014/04/fzf+vim+tmux)
+- [Browsing git commits with fzf](http://junegunn.kr/2015/03/browsing-git-commits-with-fzf/)
+- [Browsing Chrome history with fzf](http://junegunn.kr/2015/04/browsing-chrome-history-with-fzf/)
+- [Browsing Chrome bookmarks with fzf](http://junegunn.kr/2015/04/browsing-chrome-bookmarks-with-fzf/)
 
 Tips
 ----
@@ -384,13 +372,13 @@ Tips
 If you have any rendering issues, check the followings:
 
 1. Make sure `$TERM` is correctly set. fzf will use 256-color only if it
-  contains `256` (e.g. `xterm-256color`)
+   contains `256` (e.g. `xterm-256color`)
 2. If you're on screen or tmux, `$TERM` should be either `screen` or
-  `screen-256color`
+   `screen-256color`
 3. Some terminal emulators (e.g. mintty) have problem displaying default
-  background color and make some text unable to read. In that case, try `--black`
-  option. And if it solves your problem, I recommend including it in
-  `FZF_DEFAULT_OPTS` for further convenience.
+   background color and make some text unable to read. In that case, try
+   `--black` option. And if it solves your problem, I recommend including it
+   in `FZF_DEFAULT_OPTS` for further convenience.
 4. If you still have problem, try `--no-256` option or even `--no-color`.
 
 #### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
@@ -421,41 +409,6 @@ export FZF_DEFAULT_COMMAND='
    find * -name ".*" -prune -o -type f -print -o -type l -print) 2> /dev/null'
 ```
 
-#### Using fzf with tmux panes
-
-The supplied [fzf-tmux](bin/fzf-tmux) script should suffice in most of the
-cases, but if you want to be able to update command line like the default
-`CTRL-T` key binding, you'll have to use `send-keys` command of tmux. The
-following example will show you how it can be done.
-
-```sh
-# This is a helper function that splits the current pane to start the given
-# command ($1) and sends its output back to the original pane with any number of
-# optional keys (shift; $*).
-fzf_tmux_helper() {
-  [ -n "$TMUX_PANE" ] || return
-  local cmd=$1
-  shift
-  tmux split-window -p 40 \
-    "bash -c \"\$(tmux send-keys -t $TMUX_PANE \"\$(source ~/.fzf.bash; $cmd)\" $*)\""
-}
-
-# This is the function we are going to run in the split pane.
-# - "find" to list the directories
-# - "sed" will escape spaces in the paths.
-# - "paste" will join the selected paths into a single line
-fzf_tmux_dir() {
-  fzf_tmux_helper \
-    'find * -path "*/\.*" -prune -o -type d -print 2> /dev/null |
-     fzf --multi |
-     sed "s/ /\\\\ /g" |
-     paste -sd" " -' Space
-}
-
-# Bind CTRL-X-CTRL-D to fzf_tmux_dir
-bind '"\C-x\C-d": "$(fzf_tmux_dir)\e\C-e"'
-```
-
 #### Fish shell
 
 It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
@@ -464,19 +417,7 @@ simple `vim (fzf)` won't work as expected. The workaround is to store the result
 of fzf to a temporary file.
 
 ```sh
-function vimf
-  if fzf > $TMPDIR/fzf.result
-    vim (cat $TMPDIR/fzf.result)
-  end
-end
-
-function fe
-  set tmp $TMPDIR/fzf.result
-  fzf --query="$argv[1]" --select-1 --exit-0 > $tmp
-  if [ (cat $tmp | wc -l) -gt 0 ]
-    vim (cat $tmp)
-  end
-end
+fzf > $TMPDIR/fzf.result; and vim (cat $TMPDIR/fzf.result)
 ```
 
 #### Handling UTF-8 NFD paths on OSX
