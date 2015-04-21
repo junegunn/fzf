@@ -582,11 +582,11 @@ module TestShell
 
   def test_alt_c
     tmux.prepare
-    tmux.send_keys :Escape, :c
-    lines = tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys :Escape, :c, pane: 0
+    lines = tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
     expected = lines[-3][2..-1]
     p expected
-    tmux.send_keys :Enter
+    tmux.send_keys :Enter, pane: 1
     tmux.prepare
     tmux.send_keys :pwd, :Enter
     tmux.until { |lines| p lines; lines[-1].end_with?(expected) }
@@ -599,11 +599,11 @@ module TestShell
     tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
     tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
     tmux.send_keys 'echo 4th', :Enter; tmux.prepare
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| lines[-1].start_with? '>' }
-    tmux.send_keys '3d'
-    tmux.until { |lines| lines[-3].end_with? 'echo 3rd' } # --no-sort
-    tmux.send_keys :Enter
+    tmux.send_keys 'C-r', pane: 0
+    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys '3d', pane: 1
+    tmux.until(pane: 1) { |lines| lines[-3].end_with? 'echo 3rd' } # --no-sort
+    tmux.send_keys :Enter, pane: 1
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '3rd' }
