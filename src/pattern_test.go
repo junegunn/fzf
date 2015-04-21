@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseTermsExtended(t *testing.T) {
-	terms := parseTerms(ModeExtended,
+	terms := parseTerms(ModeExtended, CaseSmart,
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
 		terms[0].typ != termFuzzy || terms[0].inv ||
@@ -31,7 +31,7 @@ func TestParseTermsExtended(t *testing.T) {
 }
 
 func TestParseTermsExtendedExact(t *testing.T) {
-	terms := parseTerms(ModeExtendedExact,
+	terms := parseTerms(ModeExtendedExact, CaseSmart,
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
 		terms[0].typ != termExact || terms[0].inv || len(terms[0].text) != 3 ||
@@ -47,7 +47,7 @@ func TestParseTermsExtendedExact(t *testing.T) {
 }
 
 func TestParseTermsEmpty(t *testing.T) {
-	terms := parseTerms(ModeExtended, "' $ ^ !' !^ !$")
+	terms := parseTerms(ModeExtended, CaseSmart, "' $ ^ !' !^ !$")
 	if len(terms) != 0 {
 		t.Errorf("%s", terms)
 	}
