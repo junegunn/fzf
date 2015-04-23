@@ -31,11 +31,11 @@ _fzf_opts_completion() {
     --tiebreak
     -m --multi
     --no-mouse
-    +c --no-color
-    +2 --no-256
+    --color
     --black
     --reverse
     --no-hscroll
+    --inline-info
     --prompt
     -q --query
     -1 --select-1
@@ -49,6 +49,10 @@ _fzf_opts_completion() {
   case "${prev}" in
   --tiebreak)
     COMPREPLY=( $(compgen -W "length begin end index" -- ${cur}) )
+    return 0
+    ;;
+  --color)
+    COMPREPLY=( $(compgen -W "dark light 16 bw" -- ${cur}) )
     return 0
     ;;
   esac
