@@ -294,7 +294,8 @@ of the selected items.
 | `dir`                      | string        | Working directory                                                |
 | `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
 | `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
-| `launcher`                 | string        | External terminal emulator to start fzf with (Only used in GVim) |
+| `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
+| `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
 
 _However on Neovim `fzf#run` is asynchronous and does not return values so you
 should use `sink` or `sink*` to process the output from fzf._
