@@ -234,6 +234,7 @@ function! s:execute_tmux(dict, command, temps)
   endif
 
   call system(command)
+  redraw!
   return s:callback(a:dict, a:temps)
 endfunction
 
