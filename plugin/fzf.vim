@@ -300,6 +300,7 @@ function! s:execute_term(dict, command, temps)
 endfunction
 
 function! s:callback(dict, temps)
+try
   if !filereadable(a:temps.result)
     let lines = []
   else
@@ -323,6 +324,11 @@ function! s:callback(dict, temps)
   endfor
 
   return lines
+catch
+  if stridx(v:exception, ':E325:') < 0
+    echoerr v:exception
+  endif
+endtry
 endfunction
 
 let s:default_action = {
