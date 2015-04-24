@@ -22,7 +22,6 @@
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 let s:default_height = '40%'
-let s:launcher = 'xterm -e bash -ic %s'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:install = expand('<sfile>:h:h').'/install'
 let s:installed = 0
@@ -201,6 +200,15 @@ function! s:popd(dict)
     execute 'chdir '.s:escape(remove(a:dict, 'prev_dir'))
   endif
 endfunction
+
+function! s:xterm_launcher()
+  return printf('xterm -T [fzf]'
+    \ .' -bg "\%s" -fg "\%s"'
+    \ .' -geometry %dx%d+%d+%d -e bash -ic %%s',
+    \ synIDattr(hlID("Normal"), "bg"), synIDattr(hlID("Normal"), "fg"),
+    \ &columns, &lines/2, getwinposx(), getwinposy())
+endfunction
+let s:launcher = function('s:xterm_launcher')
 
 function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
