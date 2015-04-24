@@ -130,16 +130,26 @@ class Tmux
   def until opts = {}
     lines = nil
     wait(opts) do
-      yield lines = capture(opts)
+      lines = capture(opts)
+      class << lines
+        def item_count
+          self[-2] ? self[-2].strip.split('/').last.to_i : 0
+        end
+      end
+      yield lines
     end
     lines
   end
 
   def prepare
-    self.send_keys 'echo hello', :Enter
-    self.until { |lines| lines[-1].start_with?('hello') }
-    self.send_keys 'clear', :Enter
-    self.until { |lines| lines.empty? }
+    tries = 0
+    begin
+      self.send_keys 'C-u', 'hello'
+      self.until { |lines| lines[-1].end_with?('hello') }
+    rescue Exception
+      (tries += 1) < 5 ? retry : raise
+    end
+    self.send_keys 'C-u'
   end
 private
   def defaults opts
@@ -389,7 +399,7 @@ class TestGoFZF < TestBase
 
   def test_query_unicode
     tmux.send_keys "(echo abc; echo 가나다) | #{fzf :query, '가다'}", :Enter
-    tmux.until { |lines| lines.last.start_with? '>' }
+    tmux.until { |lines| lines[-2].include? '1/2' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include?(FIN) }
     assert_equal ['가나다'], readonce.split($/)
@@ -564,7 +574,7 @@ module TestShell
   def test_ctrl_t
     tmux.prepare
     tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    lines = tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
     tmux.send_keys :BTab, :BTab, :Enter, pane: 1
     tmux.until(pane: 0) { |lines| lines[-1].include? expected }
@@ -573,7 +583,7 @@ module TestShell
     # FZF_TMUX=0
     new_shell
     tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(pane: 0) { |lines| lines[-1].start_with? '>' }
+    lines = tmux.until(pane: 0) { |lines| lines.item_count > 0 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
     tmux.send_keys :BTab, :BTab, :Enter, pane: 0
     tmux.until(pane: 0) { |lines| lines[-1].include? expected }
@@ -583,7 +593,7 @@ module TestShell
   def test_alt_c
     tmux.prepare
     tmux.send_keys :Escape, :c, pane: 0
-    lines = tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    lines = tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     expected = lines[-3][2..-1]
     p expected
     tmux.send_keys :Enter, pane: 1
@@ -600,7 +610,7 @@ module TestShell
     tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
     tmux.send_keys 'echo 4th', :Enter; tmux.prepare
     tmux.send_keys 'C-r', pane: 0
-    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     tmux.send_keys '3d', pane: 1
     tmux.until(pane: 1) { |lines| lines[-3].end_with? 'echo 3rd' } # --no-sort
     tmux.send_keys :Enter, pane: 1
@@ -627,7 +637,7 @@ class TestBash < TestBase
     tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}', :Enter
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
-    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     tmux.send_keys :BTab, :BTab, :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -640,7 +650,7 @@ class TestBash < TestBase
     tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}; touch /tmp/fzf-test/d55/xxx', :Enter
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test/**', :Tab, pane: 0
-    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     tmux.send_keys :BTab, :BTab # BTab does not work here
     tmux.send_keys 55
     tmux.until(pane: 1) { |lines| lines[-2].start_with? '  1/' }
@@ -669,7 +679,7 @@ class TestBash < TestBase
     pid = lines[-1].split.last
     tmux.prepare
     tmux.send_keys 'kill ', :Tab, pane: 0
-    tmux.until(pane: 1) { |lines| lines[-1].start_with? '>' }
+    tmux.until(pane: 1) { |lines| lines.item_count > 0 }
     tmux.send_keys 'sleep12345'
     tmux.until(pane: 1) { |lines| lines[-3].include? 'sleep 12345' }
     tmux.send_keys :Enter
