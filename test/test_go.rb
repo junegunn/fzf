@@ -389,6 +389,7 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 1000 | #{fzf :tac, :no_sort, :multi}", :Enter
     tmux.until { |lines| lines[-2].include? '1000/1000' }
     tmux.send_keys '00'
+    tmux.until { |lines| lines[-2].include? '10/1000' }
     tmux.send_keys :BTab, :BTab, :BTab, :Enter
     assert_equal %w[1000 900 800], readonce.split($/)
   end
@@ -398,6 +399,7 @@ class TestGoFZF < TestBase
       tmux.send_keys "seq 1 100 | #{fzf :expect, key}", :Enter
       tmux.until { |lines| lines[-2].include? '100/100' }
       tmux.send_keys '55'
+      tmux.until { |lines| lines[-2].include? '1/100' }
       tmux.send_keys *feed
       assert_equal [expected, '55'], readonce.split($/)
     end
@@ -416,6 +418,7 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 100 | #{fzf '--expect=alt-z', :print_query}", :Enter
     tmux.until { |lines| lines[-2].include? '100/100' }
     tmux.send_keys '55'
+    tmux.until { |lines| lines[-2].include? '1/100' }
     tmux.send_keys :Escape, :z
     assert_equal ['55', 'alt-z', '55'], readonce.split($/)
   end
@@ -543,11 +546,10 @@ module TestShell
     tmux.send_keys :Escape, :c, pane: 0
     lines = tmux.until(1) { |lines| lines.item_count > 0 }
     expected = lines[-3][2..-1]
-    p expected
     tmux.send_keys :Enter, pane: 1
     tmux.prepare
     tmux.send_keys :pwd, :Enter
-    tmux.until { |lines| p lines; lines[-1].end_with?(expected) }
+    tmux.until { |lines| lines[-1].end_with?(expected) }
   end
 
   def test_ctrl_r
