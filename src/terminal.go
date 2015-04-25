@@ -436,8 +436,8 @@ func processTabs(runes []rune, prefixWidth int) (string, int) {
 
 func (t *Terminal) printAll() {
 	t.printList()
-	t.printInfo()
 	t.printPrompt()
+	t.printInfo()
 }
 
 func (t *Terminal) refresh() {
