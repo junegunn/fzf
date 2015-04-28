@@ -208,6 +208,7 @@ function! s:xterm_launcher()
     \ synIDattr(hlID("Normal"), "bg"), synIDattr(hlID("Normal"), "fg"),
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
+unlet! s:launcher
 let s:launcher = function('s:xterm_launcher')
 
 function! s:execute(dict, command, temps)
