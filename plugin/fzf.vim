@@ -25,7 +25,6 @@ let s:default_height = '40%'
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:install = expand('<sfile>:h:h').'/install'
 let s:installed = 0
-let s:fzf_rb = expand('<sfile>:h:h').'/fzf'
 let s:fzf_tmux = expand('<sfile>:h:h').'/bin/fzf-tmux'
 
 let s:cpo_save = &cpo
@@ -35,32 +34,24 @@ function! s:fzf_exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
       let s:exec = s:fzf_go
+    elseif executable('fzf')
+      let s:exec = 'fzf'
+    elseif !s:installed && executable(s:install) &&
+          \ input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
+      redraw
+      echo
+      echohl WarningMsg
+      echo 'Downloading fzf binary. Please wait ...'
+      echohl None
+      let s:installed = 1
+      call system(s:install.' --bin')
+      return s:fzf_exec()
     else
-      let path = split(system('which fzf 2> /dev/null'), '\n')
-      if !v:shell_error && !empty(path)
-        let s:exec = path[0]
-      elseif !s:installed && executable(s:install)
-        echohl WarningMsg
-        echo 'Downloading fzf binary. Please wait ...'
-        echohl None
-        let s:installed = 1
-        call system(s:install.' --bin')
-        return s:fzf_exec()
-      elseif executable(s:fzf_rb)
-        let s:exec = s:fzf_rb
-      else
-        call system('type fzf')
-        if v:shell_error
-          throw 'fzf executable not found'
-        else
-          let s:exec = 'fzf'
-        endif
-      endif
+      redraw
+      throw 'fzf executable not found'
     endif
-    return s:exec
-  else
-    return s:exec
   endif
+  return s:exec
 endfunction
 
 function! s:tmux_enabled()
