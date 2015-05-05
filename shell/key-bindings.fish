@@ -17,7 +17,7 @@ function fzf_key_bindings
     command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
       -o -type f -print \
       -o -type d -print \
-      -o -type l -print 2> /dev/null | sed 1d | cut -b3- | eval (__fzfcmd) -m > $TMPDIR/fzf.result
+      -o -type l -print | sed 1d | cut -b3- | eval (__fzfcmd) -m > $TMPDIR/fzf.result
     and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
