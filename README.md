@@ -8,7 +8,7 @@ fzf is a general-purpose command-line fuzzy finder.
 Pros
 ----
 
-- No dependency
+- No dependencies
 - Blazingly fast
     - e.g. `locate / | fzf`
 - Flexible layout
