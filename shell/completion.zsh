@@ -26,7 +26,7 @@ _fzf_path_completion() {
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
       [ "$dir" = './' ] && dir=''
-      matches=$(find -L ${~dir}* ${=find_opts} 2> /dev/null | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
+      matches=$(\find -L ${~dir}* ${=find_opts} 2> /dev/null | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
         printf "%q$suffix " "$item"
       done)
       matches=${matches% }
