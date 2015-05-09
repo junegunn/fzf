@@ -77,8 +77,10 @@ class Tmux
   end
 
   def close
-    send_keys 'C-c', 'C-u', 'exit', :Enter
-    wait { closed? }
+    wait do
+      send_keys 'C-c', 'C-u', 'exit', :Enter
+      closed?
+    end
   end
 
   def kill
