@@ -47,12 +47,6 @@ _fzf_all_completion() {
     "-m" "" " "
 }
 
-_fzf_file_completion() {
-  _fzf_path_completion "$1" "$2" \
-    "-name .git -prune -o -name .svn -prune -o -type f -print -o -type l -print" \
-    "-m" "" " "
-}
-
 _fzf_dir_completion() {
   _fzf_path_completion "$1" "$2" \
     "-name .git -prune -o -name .svn -prune -o -type d -print" \
@@ -99,7 +93,7 @@ EOF
 }
 
 fzf-zsh-completion() {
-  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds f_cmds a_cmds
+  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   tokens=(${=LBUFFER})
@@ -115,25 +109,11 @@ fzf-zsh-completion() {
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
   if [ ${#tokens} -gt 1 -a $tail = $trigger ]; then
     d_cmds=(cd pushd rmdir)
-    f_cmds=(
-      awk cat diff diff3
-      emacs ex file ftp g++ gcc gvim head hg java
-      javac ld less more mvim patch perl python ruby
-      sed sftp sort source tail tee uniq vi view vim wc)
-    a_cmds=(
-      basename bunzip2 bzip2 chmod chown curl cp dirname du
-      find git grep gunzip gzip hg jar
-      ln ls mv open rm rsync scp
-      svn tar unzip zip)
 
     prefix=${tokens[-1]:0:-${#trigger}}
     lbuf=${LBUFFER:0:-${#tokens[-1]}}
     if [ ${d_cmds[(i)$cmd]} -le ${#d_cmds} ]; then
       _fzf_dir_completion "$prefix" $lbuf
-    elif [ ${f_cmds[(i)$cmd]} -le ${#f_cmds} ]; then
-      _fzf_file_completion "$prefix" $lbuf
-    elif [ ${a_cmds[(i)$cmd]} -le ${#a_cmds} ]; then
-      _fzf_all_completion "$prefix" $lbuf
     elif [ $cmd = telnet ]; then
       _fzf_telnet_completion "$prefix" $lbuf
     elif [ $cmd = ssh ]; then
@@ -142,6 +122,8 @@ fzf-zsh-completion() {
       _fzf_env_var_completion "$prefix" $lbuf
     elif [ $cmd = unalias ]; then
       _fzf_alias_completion "$prefix" $lbuf
+    else
+      _fzf_all_completion "$prefix" $lbuf
     fi
   # Kill completion (do not require trigger sequence)
   elif [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
