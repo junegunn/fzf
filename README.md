@@ -27,7 +27,7 @@ fzf project consists of the followings:
 - `fzf-tmux` script for launching fzf in a tmux pane
 - Shell extensions
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
-    - Fuzzy auto-completion (bash only)
+    - Fuzzy auto-completion (bash, zsh)
 - Vim/Neovim plugin
 
 You can [download fzf executable][bin] alone, but it's recommended that you
@@ -173,8 +173,8 @@ cat /usr/share/dict/words | fzf-tmux -l 20% --multi --reverse
 It will still work even when you're not on tmux, silently ignoring `-[udlr]`
 options, so you can invariably use `fzf-tmux` in your scripts.
 
-Fuzzy completion for bash
--------------------------
+Fuzzy completion for bash and zsh
+---------------------------------
 
 #### Files and directories
 

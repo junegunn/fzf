@@ -177,7 +177,7 @@ for shell in bash zsh; do
   src=~/.fzf.${shell}
 
   fzf_completion="[[ \$- =~ i ]] && source \"$fzf_base/shell/completion.${shell}\""
-  if [ $shell != bash -o $auto_completion -ne 0 ]; then
+  if [ $auto_completion -ne 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 

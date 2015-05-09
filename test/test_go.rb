@@ -570,19 +570,7 @@ module TestShell
   end
 end
 
-class TestBash < TestBase
-  include TestShell
-
-  def new_shell
-    tmux.send_keys "FZF_TMUX=0 #{Shell.bash}", :Enter
-    tmux.prepare
-  end
-
-  def setup
-    super
-    @tmux = Tmux.new :bash
-  end
-
+module CompletionTest
   def test_file_completion
     tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}', :Enter
     tmux.prepare
@@ -612,9 +600,11 @@ class TestBash < TestBase
     tmux.send_keys :xx
     tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
 
-    # Should not match regular files
-    tmux.send_keys :Tab
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+    # Should not match regular files (bash-only)
+    if self.class == TestBash
+      tmux.send_keys :Tab
+      tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+    end
 
     # Fail back to plusdirs
     tmux.send_keys :BSpace, :BSpace, :BSpace
@@ -640,8 +630,24 @@ class TestBash < TestBase
   end
 end
 
+class TestBash < TestBase
+  include TestShell
+  include CompletionTest
+
+  def new_shell
+    tmux.send_keys "FZF_TMUX=0 #{Shell.bash}", :Enter
+    tmux.prepare
+  end
+
+  def setup
+    super
+    @tmux = Tmux.new :bash
+  end
+end
+
 class TestZsh < TestBase
   include TestShell
+  include CompletionTest
 
   def new_shell
     tmux.send_keys "FZF_TMUX=0 #{Shell.zsh}", :Enter
