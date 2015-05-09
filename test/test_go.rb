@@ -111,14 +111,22 @@ class Tmux
 
   def until pane = 0
     lines = nil
-    wait do
-      lines = capture(pane)
-      class << lines
-        def item_count
-          self[-2] ? self[-2].strip.split('/').last.to_i : 0
+    begin
+      wait do
+        lines = capture(pane)
+        class << lines
+          def item_count
+            self[-2] ? self[-2].strip.split('/').last.to_i : 0
+          end
         end
+        yield lines
       end
-      yield lines
+    rescue Exception
+      puts $!.backtrace
+      puts '>' * 80
+      puts lines
+      puts '<' * 80
+      raise
     end
     lines
   end
@@ -527,7 +535,7 @@ module TestShell
   def test_ctrl_t
     tmux.prepare
     tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count > 0 }
+    lines = tmux.until(1) { |lines| lines.item_count > 1 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
     tmux.send_keys :BTab, :BTab, :Enter, pane: 1
     tmux.until(0) { |lines| lines[-1].include? expected }
@@ -536,7 +544,7 @@ module TestShell
     # FZF_TMUX=0
     new_shell
     tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(0) { |lines| lines.item_count > 0 }
+    lines = tmux.until(0) { |lines| lines.item_count > 1 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
     tmux.send_keys :BTab, :BTab, :Enter, pane: 0
     tmux.until(0) { |lines| lines[-1].include? expected }
