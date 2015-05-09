@@ -11,7 +11,7 @@
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
 _fzf_path_completion() {
-  local base lbuf find_opts fzf_opts suffix tail fzf dir leftover matches
+  local base lbuf find_opts fzf_opts suffix tail fzf dir leftover matches nnm
   base=$1
   lbuf=$2
   find_opts=$3
@@ -20,6 +20,10 @@ _fzf_path_completion() {
   tail=$6
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
+  if ! setopt | grep nonomatch > /dev/null; then
+    nnm=1
+    setopt nonomatch
+  fi
   dir="$base"
   while [ 1 ]; do
     if [ -z "$dir" -o -d ${~dir} ]; then
@@ -35,11 +39,12 @@ _fzf_path_completion() {
         LBUFFER="$lbuf$matches$tail"
         zle redisplay
       fi
-      return
+      break
     fi
     dir=$(dirname "$dir")
     dir=${dir%/}/
   done
+  [ -n "$nnm" ] && unsetopt nonomatch
 }
 
 _fzf_all_completion() {
