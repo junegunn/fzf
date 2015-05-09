@@ -614,6 +614,8 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1].end_with?('no~such~user')
     end
+  ensure
+    File.unlink 'no~such~user'
   end
 
   def test_dir_completion
@@ -659,6 +661,7 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1] == "kill #{pid}"
     end
+    tmux.send_keys :Enter
   end
 end
 
