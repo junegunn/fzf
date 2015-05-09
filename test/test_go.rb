@@ -574,7 +574,7 @@ end
 
 module CompletionTest
   def test_file_completion
-    tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}', :Enter
+    tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}; touch ~/fzf-home', :Enter
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
@@ -583,6 +583,18 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1].include?('/tmp/fzf-test/10') &&
       lines[-1].include?('/tmp/fzf-test/100')
+    end
+
+    # ~USERNAME**<TAB>
+    tmux.send_keys 'C-u'
+    tmux.send_keys "cat ~#{ENV['USER']}**", :Tab, pane: 0
+    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys 'fzf-home'
+    tmux.until(1) { |lines| lines[-3].end_with? 'fzf-home' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
+      lines[-1].include?('fzf-home')
     end
   end
 
