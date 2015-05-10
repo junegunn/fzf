@@ -109,7 +109,7 @@ fzf-zsh-completion() {
   fi
 
   cmd=${tokens[1]}
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
 
   # Trigger sequence given
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
