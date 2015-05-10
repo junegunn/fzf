@@ -110,6 +110,8 @@ fzf-zsh-completion() {
   fi
 
   cmd=${tokens[1]}
+
+  # Explicitly allow for empty trigger.
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
 
   # Trigger sequence given
