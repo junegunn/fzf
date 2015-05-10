@@ -661,7 +661,8 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1] == "kill #{pid}"
     end
-    tmux.send_keys :Enter
+  ensure
+    Process.kill 'KILL', pid.to_i rescue nil if pid
   end
 end
 
