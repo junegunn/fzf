@@ -9,6 +9,7 @@
 # - $FZF_TMUX_HEIGHT        (default: '40%')
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_COMPLETION_KEY     (default: '^I')
 
 _fzf_path_completion() {
   local base lbuf find_opts fzf_opts suffix tail fzf dir leftover matches nnm
@@ -109,7 +110,9 @@ fzf-zsh-completion() {
   fi
 
   cmd=${tokens[1]}
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
+
+  # Explicitly allow for empty trigger.
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
 
   # Trigger sequence given
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
@@ -145,6 +148,8 @@ fzf-zsh-completion() {
   fi
 }
 
-zle     -N   fzf-zsh-completion
-bindkey '^I' fzf-zsh-completion
+zle -N fzf-zsh-completion
+
+completion_key=${FZF_COMPLETION_KEY:-'^I'}
+bindkey ${completion_key} fzf-zsh-completion
 
