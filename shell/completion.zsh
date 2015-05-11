@@ -12,7 +12,7 @@
 
 _fzf_path_completion() {
   local base lbuf find_opts fzf_opts suffix tail fzf dir leftover matches nnm
-  base=$1
+  base=${(Q)1}
   lbuf=$2
   find_opts=$3
   fzf_opts=$4
@@ -102,7 +102,8 @@ fzf-completion() {
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
-  tokens=(${=LBUFFER})
+  # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
+  tokens=(${(z)LBUFFER})
   if [ ${#tokens} -lt 1 ]; then
     eval "zle ${fzf_default_completion:-expand-or-complete}"
     return

@@ -582,7 +582,12 @@ end
 
 module CompletionTest
   def test_file_completion
-    tmux.send_keys 'mkdir -p /tmp/fzf-test; touch /tmp/fzf-test/{1..100}; touch ~/fzf-home no~such~user', :Enter
+    FileUtils.mkdir_p '/tmp/fzf-test'
+    FileUtils.mkdir_p '/tmp/fzf test'
+    (1..100).each { |i| FileUtils.touch "/tmp/fzf-test/#{i}" }
+    ['no~such~user', '/tmp/fzf test/foobar', '~/fzf-home'].each do |f|
+      FileUtils.touch File.expand_path(f)
+    end
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
@@ -614,8 +619,20 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1].end_with?('no~such~user')
     end
+
+    # /tmp/fzf\ test**<TAB>
+    tmux.send_keys 'C-u'
+    tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
+      lines[-1].end_with?('/tmp/fzf\ test/foobar')
+    end
   ensure
-    File.unlink 'no~such~user'
+    ['/tmp/fzf-test', '/tmp/fzf test', '~/fzf-home', 'no~such~user'].each do |f|
+      FileUtils.rm_rf File.expand_path(f)
+    end
   end
 
   def test_dir_completion
