@@ -104,7 +104,7 @@ fzf-completion() {
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   tokens=(${=LBUFFER})
   if [ ${#tokens} -lt 1 ]; then
-    zle expand-or-complete
+    eval "zle ${fzf_default_completion:-expand-or-complete}"
     return
   fi
 
@@ -145,9 +145,11 @@ fzf-completion() {
     fi
   # Fall back to default completion
   else
-    zle expand-or-complete
+    eval "zle ${fzf_default_completion:-expand-or-complete}"
   fi
 }
+
+fzf_default_completion=$(bindkey '^I' | grep -v undefined-key | awk '{print $2}')
 
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
