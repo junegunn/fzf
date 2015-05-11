@@ -98,7 +98,7 @@ _fzf_alias_completion() {
 EOF
 }
 
-fzf-zsh-completion() {
+fzf-completion() {
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
@@ -149,6 +149,6 @@ fzf-zsh-completion() {
   fi
 }
 
-zle     -N   fzf-zsh-completion
-bindkey '^I' fzf-zsh-completion
+zle     -N   fzf-completion
+bindkey '^I' fzf-completion
 
