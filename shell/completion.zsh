@@ -112,14 +112,24 @@ fzf-zsh-completion() {
 
   # Explicitly allow for empty trigger.
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
-  # Trigger sequence given
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
-  if [ ${#tokens} -gt 1 -a $tail = $trigger ]; then
+  # Kill completion (do not require trigger sequence)
+  if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
+    [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+    matches=$(ps -ef | sed 1d | ${=fzf} ${=FZF_COMPLETION_OPTS} -m | awk '{print $2}' | tr '\n' ' ')
+    if [ -n "$matches" ]; then
+      LBUFFER="$LBUFFER$matches"
+      zle redisplay
+    fi
+  # Trigger sequence given
+  elif [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(cd pushd rmdir)
 
-    prefix=${tokens[-1]:0:-${#trigger}}
-    lbuf=${LBUFFER:0:-${#tokens[-1]}}
+    [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
+    [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER        || lbuf=${LBUFFER:0:-${#tokens[-1]}}
+
     if [ ${d_cmds[(i)$cmd]} -le ${#d_cmds} ]; then
       _fzf_dir_completion "$prefix" $lbuf
     elif [ $cmd = telnet ]; then
@@ -132,14 +142,6 @@ fzf-zsh-completion() {
       _fzf_alias_completion "$prefix" $lbuf
     else
       _fzf_all_completion "$prefix" $lbuf
-    fi
-  # Kill completion (do not require trigger sequence)
-  elif [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
-    [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
-    matches=$(ps -ef | sed 1d | ${=fzf} ${=FZF_COMPLETION_OPTS} -m | awk '{print $2}' | tr '\n' ' ')
-    if [ -n "$matches" ]; then
-      LBUFFER="$LBUFFER$matches"
-      zle redisplay
     fi
   # Fall back to default completion
   else
