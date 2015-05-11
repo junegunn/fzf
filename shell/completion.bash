@@ -87,7 +87,7 @@ _fzf_path_completion() {
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ ${cur} == *"$trigger" ]]; then
     base=${cur:0:${#cur}-${#trigger}}
@@ -128,7 +128,7 @@ _fzf_list_completion() {
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   read -r src
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
-  trigger=${FZF_COMPLETION_TRIGGER:-**}
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ ${cur} == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
