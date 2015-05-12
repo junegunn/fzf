@@ -176,7 +176,7 @@ for shell in bash zsh; do
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
 
-  fzf_completion="[[ \$- =~ i ]] && source \"$fzf_base/shell/completion.${shell}\""
+  fzf_completion="[[ \$- =~ i ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
   if [ $auto_completion -ne 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
