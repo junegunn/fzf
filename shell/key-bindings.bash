@@ -34,7 +34,11 @@ __fzf_cd__() {
 }
 
 __fzf_history__() {
-  HISTTIMEFORMAT= history | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r | sed "s/ *[0-9]* *//"
+  local line
+  line=$(
+    HISTTIMEFORMAT= history |
+    $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r |
+    \grep '^ *[0-9]') && sed 's/ *\([0-9]*\) .*/!\1/' <<< "$line"
 }
 
 __use_tmux=0
@@ -43,6 +47,7 @@ __use_tmux=0
 if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
+  bind '"\e^": history-expand-line'
 
   # CTRL-T - Paste the selected file path into the command line
   if [ $__use_tmux -eq 1 ]; then
@@ -52,13 +57,14 @@ if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u$(__fzf_history__)\e\C-e\er"'
+  bind '"\C-r": " \C-e\C-u$(__fzf_history__)\e\C-e\e^\er"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u$(__fzf_cd__)\e\C-e\er\C-m"'
 else
   bind '"\C-x\C-e": shell-expand-line'
   bind '"\C-x\C-r": redraw-current-line'
+  bind '"\C-x^": history-expand-line'
 
   # CTRL-T - Paste the selected file path into the command line
   # - FIXME: Selected items are attached to the end regardless of cursor position
@@ -70,7 +76,7 @@ else
   bind -m vi-command '"\C-t": "i\C-t"'
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": "\eddi$(__fzf_history__)\C-x\C-e\e$a\C-x\C-r"'
+  bind '"\C-r": "\eddi$(__fzf_history__)\C-x\C-e\C-x^\e$a\C-x\C-r"'
   bind -m vi-command '"\C-r": "i\C-r"'
 
   # ALT-C - cd into the selected directory
