@@ -283,12 +283,17 @@ function! s:execute_term(dict, command, temps)
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
   function! fzf.on_exit(id, code)
     let tab = tabpagenr()
+    let wnr = winnr()
     execute 'bd!' self.buf
+    if winnr() == wnr
+      close
+    endif
     if s:ptab == tab
       wincmd p
     endif
     call s:pushd(self.dict)
     try
+      redraw!
       call s:callback(self.dict, self.temps)
     finally
       call s:popd(self.dict)
