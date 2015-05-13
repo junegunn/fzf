@@ -285,7 +285,7 @@ function! s:execute_term(dict, command, temps)
     let tab = tabpagenr()
     let wnr = winnr()
     execute 'bd!' self.buf
-    if winnr() == wnr
+    if winnr() == wnr && tabpagenr() == tab
       close
     endif
     if s:ptab == tab
