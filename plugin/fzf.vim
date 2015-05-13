@@ -76,7 +76,7 @@ function! s:shellesc(arg)
 endfunction
 
 function! s:escape(path)
-  return substitute(a:path, ' ', '\\ ', 'g')
+  return escape(a:path, ' %#\')
 endfunction
 
 " Upgrade legacy options
