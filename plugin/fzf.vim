@@ -193,9 +193,11 @@ function! s:popd(dict)
 endfunction
 
 function! s:xterm_launcher()
-  return printf('xterm -T [fzf]'
-    \ .' -bg "\%s" -fg "\%s"'
-    \ .' -geometry %dx%d+%d+%d -e bash -ic %%s',
+  let fmt = 'xterm -T "[fzf]" -bg "\%s" -fg "\%s" -geometry %dx%d+%d+%d -e bash -ic %%s'
+  if has('gui_macvim')
+    let fmt .= '; osascript -e "tell application \"MacVim\" to activate"'
+  endif
+  return printf(fmt,
     \ synIDattr(hlID("Normal"), "bg"), synIDattr(hlID("Normal"), "fg"),
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
