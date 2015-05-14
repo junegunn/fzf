@@ -272,7 +272,7 @@ function! s:split(dict)
       tabnew
     endif
   finally
-    setlocal winfixwidth winfixheight
+    setlocal winfixwidth winfixheight buftype=nofile bufhidden=wipe nobuflisted
   endtry
 endfunction
 
@@ -283,10 +283,14 @@ function! s:execute_term(dict, command, temps)
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
   function! fzf.on_exit(id, code)
     let tab = tabpagenr()
-    let wnr = winnr()
-    execute 'bd!' self.buf
-    if winnr() == wnr && tabpagenr() == tab
+    if bufnr('') == self.buf
+      " We use close instead of bd! since Vim does not close the split when
+      " there's no other listed buffer
       close
+      " FIXME This should be unnecessary due to `bufhidden=wipe` but in some
+      " cases Neovim fails to clean up the buffer and `bufexists('[FZF]')
+      " returns 1 even when it cannot be seen anywhere else. e.g. `FZF!`
+      silent! execute 'bd!' self.buf
     endif
     if s:ptab == tab
       wincmd p
