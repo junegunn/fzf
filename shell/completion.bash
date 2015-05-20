@@ -29,6 +29,7 @@ _fzf_opts_completion() {
     +s --no-sort
     --tac
     --tiebreak
+    --bind
     -m --multi
     --no-mouse
     --color
@@ -222,11 +223,11 @@ a_cmds="
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
-if [ "$_fzf_completion_loaded" != '0.8.6-1' ]; then
+if [ "$_fzf_completion_loaded" != '0.9.12' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
   eval $(complete | \grep '\-F' | \grep -v _fzf_ |
     \grep -E " ($(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
-  export _fzf_completion_loaded=0.8.6-1
+  export _fzf_completion_loaded=0.9.12
 fi
 
 if type _completion_loader > /dev/null 2>&1; then

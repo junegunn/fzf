@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.9.12
+------
+
+### New features
+
+- Added `--bind` option for custom key bindings
+
+### Bug fixes
+
+- Fixed to update "inline-info" immediately after terminal resize
+
 0.9.11
 ------
 
