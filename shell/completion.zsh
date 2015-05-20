@@ -37,8 +37,8 @@ _fzf_path_completion() {
       matches=${matches% }
       if [ -n "$matches" ]; then
         LBUFFER="$lbuf$matches$tail"
-        zle redisplay
       fi
+      zle redisplay
       break
     fi
     dir=$(dirname "$dir")
@@ -70,8 +70,8 @@ _fzf_list_completion() {
   matches=$(eval "$src" | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$prefix")
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches "
-    zle redisplay
   fi
+  zle redisplay
 }
 
 _fzf_telnet_completion() {
@@ -122,8 +122,8 @@ fzf-completion() {
     matches=$(ps -ef | sed 1d | ${=fzf} ${=FZF_COMPLETION_OPTS} -m | awk '{print $2}' | tr '\n' ' ')
     if [ -n "$matches" ]; then
       LBUFFER="$LBUFFER$matches"
-      zle redisplay
     fi
+    zle redisplay
   # Trigger sequence given
   elif [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(cd pushd rmdir)
