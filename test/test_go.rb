@@ -585,7 +585,7 @@ module CompletionTest
     FileUtils.mkdir_p '/tmp/fzf-test'
     FileUtils.mkdir_p '/tmp/fzf test'
     (1..100).each { |i| FileUtils.touch "/tmp/fzf-test/#{i}" }
-    ['no~such~user', '/tmp/fzf test/foobar', '~/fzf-home'].each do |f|
+    ['no~such~user', '/tmp/fzf test/foobar', '~/.fzf-home'].each do |f|
       FileUtils.touch File.expand_path(f)
     end
     tmux.prepare
@@ -602,12 +602,12 @@ module CompletionTest
     tmux.send_keys 'C-u'
     tmux.send_keys "cat ~#{ENV['USER']}**", :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys 'fzf-home'
-    tmux.until(1) { |lines| lines[-3].end_with? 'fzf-home' }
+    tmux.send_keys '.fzf-home'
+    tmux.until(1) { |lines| lines[-3].end_with? '.fzf-home' }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
-      lines[-1].end_with?('fzf-home')
+      lines[-1].end_with?('.fzf-home')
     end
 
     # ~INVALID_USERNAME**<TAB>
@@ -630,7 +630,7 @@ module CompletionTest
       lines[-1].end_with?('/tmp/fzf\ test/foobar')
     end
   ensure
-    ['/tmp/fzf-test', '/tmp/fzf test', '~/fzf-home', 'no~such~user'].each do |f|
+    ['/tmp/fzf-test', '/tmp/fzf test', '~/.fzf-home', 'no~such~user'].each do |f|
       FileUtils.rm_rf File.expand_path(f)
     end
   end
