@@ -38,7 +38,7 @@ __fzf_history__() {
   line=$(
     HISTTIMEFORMAT= history |
     $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r |
-    \grep '^ *[0-9]') && sed 's/ *\([0-9]*\) .*/!\1/' <<< "$line"
+    \grep '^ *[0-9]') && sed 's/ *\([0-9]*\)\** .*/!\1/' <<< "$line"
 }
 
 __use_tmux=0
