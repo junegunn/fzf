@@ -129,3 +129,29 @@ func TestParseKeysWithComma(t *testing.T) {
 	check(len(keys), 1)
 	check(keys[0], curses.AltZ+',')
 }
+
+func TestBind(t *testing.T) {
+	check := func(action actionType, expected actionType) {
+		if action != expected {
+			t.Errorf("%d != %d", action, expected)
+		}
+	}
+	keymap := defaultKeymap()
+	check(actBeginningOfLine, keymap[curses.CtrlA])
+	keymap, toggleSort :=
+		parseKeymap(keymap, false,
+			"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down")
+	if !toggleSort {
+		t.Errorf("toggleSort not set")
+	}
+	check(actKillLine, keymap[curses.CtrlA])
+	check(actToggleSort, keymap[curses.CtrlB])
+	check(actPageUp, keymap[curses.AltZ+'c'])
+	check(actPageDown, keymap[curses.AltZ])
+
+	keymap, toggleSort = parseKeymap(keymap, false, "f1:abort")
+	if toggleSort {
+		t.Errorf("toggleSort set")
+	}
+	check(actAbort, keymap[curses.F1])
+}

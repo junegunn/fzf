@@ -154,6 +154,46 @@ e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 Key to toggle sort (\fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR,
 or any single character)
 .TP
+.BI "--bind=" "KEYBINDS"
+Comma-separated list of custom key bindings. Each key binding expression
+follows the following format: \fBKEY:ACTION\fR
+.RS
+e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
+.RE
+
+.RS
+.B KEY:
+    \fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR, or any single character
+.RE
+
+.RS
+.B ACTION:
+    abort
+    accept
+    backward-char
+    backward-delete-char
+    backward-kill-word
+    backward-word
+    beginning-of-line
+    clear-screen
+    delete-char
+    down
+    end-of-line
+    forward-char
+    forward-word
+    kill-line
+    kill-word
+    page-down
+    page-up
+    toggle-down
+    toggle-sort
+    toggle-up
+    unix-line-discard
+    unix-word-rubout
+    up
+    yank
+.RE
+.TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.

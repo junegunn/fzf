@@ -516,6 +516,12 @@ class TestGoFZF < TestBase
     assert_equal 1, `echo Foo bar | #{FZF} -x -f "foo Fbar" | wc -l`.to_i
   end
 
+  def test_bind
+    tmux.send_keys "seq 1 1000 | #{fzf '-m --bind=ctrl-j:accept,z:up,x:toggle-up'}", :Enter
+    tmux.until { |lines| lines[-2].end_with? '/1000' }
+    tmux.send_keys 'zzz', 'xx', 'C-j'
+    assert_equal %w[4 5], readonce.split($/)
+  end
 private
   def writelines path, lines
     File.unlink path while File.exists? path

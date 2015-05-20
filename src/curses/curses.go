@@ -61,6 +61,16 @@ const (
 	PgUp
 	PgDn
 
+	Up
+	Down
+	Left
+	Right
+	Home
+	End
+
+	SLeft
+	SRight
+
 	F1
 	F2
 	F3
@@ -356,19 +366,19 @@ func escSequence(sz *int) Event {
 		*sz = 3
 		switch _buf[2] {
 		case 68:
-			return Event{CtrlB, 0, nil}
+			return Event{Left, 0, nil}
 		case 67:
-			return Event{CtrlF, 0, nil}
+			return Event{Right, 0, nil}
 		case 66:
-			return Event{CtrlJ, 0, nil}
+			return Event{Down, 0, nil}
 		case 65:
-			return Event{CtrlK, 0, nil}
+			return Event{Up, 0, nil}
 		case 90:
 			return Event{BTab, 0, nil}
 		case 72:
-			return Event{CtrlA, 0, nil}
+			return Event{Home, 0, nil}
 		case 70:
-			return Event{CtrlE, 0, nil}
+			return Event{End, 0, nil}
 		case 77:
 			return mouseSequence(sz)
 		case 80:
@@ -390,7 +400,7 @@ func escSequence(sz *int) Event {
 			case 51:
 				return Event{Del, 0, nil}
 			case 52:
-				return Event{CtrlE, 0, nil}
+				return Event{End, 0, nil}
 			case 53:
 				return Event{PgUp, 0, nil}
 			case 54:
@@ -398,7 +408,7 @@ func escSequence(sz *int) Event {
 			case 49:
 				switch _buf[3] {
 				case 126:
-					return Event{CtrlA, 0, nil}
+					return Event{Home, 0, nil}
 				case 59:
 					if len(_buf) != 6 {
 						return Event{Invalid, 0, nil}
@@ -408,16 +418,16 @@ func escSequence(sz *int) Event {
 					case 50:
 						switch _buf[5] {
 						case 68:
-							return Event{CtrlA, 0, nil}
+							return Event{Home, 0, nil}
 						case 67:
-							return Event{CtrlE, 0, nil}
+							return Event{End, 0, nil}
 						}
 					case 53:
 						switch _buf[5] {
 						case 68:
-							return Event{AltB, 0, nil}
+							return Event{SLeft, 0, nil}
 						case 67:
-							return Event{AltF, 0, nil}
+							return Event{SRight, 0, nil}
 						}
 					} // _buf[4]
 				} // _buf[3]

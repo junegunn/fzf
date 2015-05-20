@@ -31,8 +31,9 @@ type Terminal struct {
 	input      []rune
 	multi      bool
 	sort       bool
-	toggleSort int
+	toggleSort bool
 	expect     []int
+	keymap     map[int]actionType
 	pressed    int
 	printQuery bool
 	count      int
@@ -80,6 +81,87 @@ const (
 	reqQuit
 )
 
+type actionType int
+
+const (
+	actIgnore actionType = iota
+	actInvalid
+	actRune
+	actMouse
+	actBeginningOfLine
+	actAbort
+	actAccept
+	actBackwardChar
+	actBackwardDeleteChar
+	actBackwardWord
+	actClearScreen
+	actDeleteChar
+	actEndOfLine
+	actForwardChar
+	actForwardWord
+	actKillLine
+	actKillWord
+	actUnixLineDiscard
+	actUnixWordRubout
+	actYank
+	actBackwardKillWord
+	actToggleDown
+	actToggleUp
+	actDown
+	actUp
+	actPageUp
+	actPageDown
+	actToggleSort
+)
+
+func defaultKeymap() map[int]actionType {
+	keymap := make(map[int]actionType)
+	keymap[C.Invalid] = actInvalid
+	keymap[C.CtrlA] = actBeginningOfLine
+	keymap[C.CtrlB] = actBackwardChar
+	keymap[C.CtrlC] = actAbort
+	keymap[C.CtrlG] = actAbort
+	keymap[C.CtrlQ] = actAbort
+	keymap[C.ESC] = actAbort
+	keymap[C.CtrlD] = actDeleteChar
+	keymap[C.CtrlE] = actEndOfLine
+	keymap[C.CtrlF] = actForwardChar
+	keymap[C.CtrlH] = actBackwardDeleteChar
+	keymap[C.Tab] = actToggleDown
+	keymap[C.BTab] = actToggleUp
+	keymap[C.CtrlJ] = actDown
+	keymap[C.CtrlK] = actUp
+	keymap[C.CtrlL] = actClearScreen
+	keymap[C.CtrlM] = actAccept
+	keymap[C.CtrlN] = actDown
+	keymap[C.CtrlP] = actUp
+	keymap[C.CtrlU] = actUnixLineDiscard
+	keymap[C.CtrlW] = actUnixWordRubout
+	keymap[C.CtrlY] = actYank
+
+	keymap[C.AltB] = actBackwardWord
+	keymap[C.SLeft] = actBackwardWord
+	keymap[C.AltF] = actForwardWord
+	keymap[C.SRight] = actForwardWord
+	keymap[C.AltD] = actKillWord
+	keymap[C.AltBS] = actBackwardKillWord
+
+	keymap[C.Up] = actUp
+	keymap[C.Down] = actDown
+	keymap[C.Left] = actBackwardChar
+	keymap[C.Right] = actForwardChar
+
+	keymap[C.Home] = actBeginningOfLine
+	keymap[C.End] = actEndOfLine
+	keymap[C.Del] = actDeleteChar // FIXME Del vs. CTRL-D
+	keymap[C.PgUp] = actPageUp
+	keymap[C.PgDn] = actPageDown
+
+	keymap[C.Rune] = actRune
+	keymap[C.Mouse] = actMouse
+	return keymap
+}
+
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
@@ -97,6 +179,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		sort:       opts.Sort > 0,
 		toggleSort: opts.ToggleSort,
 		expect:     opts.Expect,
+		keymap:     opts.Keymap,
 		pressed:    0,
 		printQuery: opts.PrintQuery,
 		merger:     EmptyMerger,
@@ -249,7 +332,7 @@ func (t *Terminal) printInfo() {
 	}
 
 	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
-	if t.toggleSort > 0 {
+	if t.toggleSort {
 		if t.sort {
 			output += "/S"
 		} else {
@@ -601,105 +684,113 @@ func (t *Terminal) Loop() {
 				break
 			}
 		}
-		if t.toggleSort > 0 {
-			if keyMatch(t.toggleSort, event) {
-				t.sort = !t.sort
-				t.eventBox.Set(EvtSearchNew, t.sort)
-				t.mutex.Unlock()
-				continue
+
+		action := t.keymap[event.Type]
+		if event.Type == C.Rune {
+			code := int(event.Char) + int(C.AltZ)
+			if act, prs := t.keymap[code]; prs {
+				action = act
 			}
 		}
-		switch event.Type {
-		case C.Invalid:
+		switch action {
+		case actInvalid:
 			t.mutex.Unlock()
 			continue
-		case C.CtrlA:
+		case actToggleSort:
+			t.sort = !t.sort
+			t.eventBox.Set(EvtSearchNew, t.sort)
+			t.mutex.Unlock()
+			continue
+		case actBeginningOfLine:
 			t.cx = 0
-		case C.CtrlB:
+		case actBackwardChar:
 			if t.cx > 0 {
 				t.cx--
 			}
-		case C.CtrlC, C.CtrlG, C.CtrlQ, C.ESC:
+		case actAbort:
 			req(reqQuit)
-		case C.CtrlD:
+		case actDeleteChar:
 			if !t.delChar() && t.cx == 0 {
 				req(reqQuit)
 			}
-		case C.CtrlE:
+		case actEndOfLine:
 			t.cx = len(t.input)
-		case C.CtrlF:
+		case actForwardChar:
 			if t.cx < len(t.input) {
 				t.cx++
 			}
-		case C.CtrlH:
+		case actBackwardDeleteChar:
 			if t.cx > 0 {
 				t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
 				t.cx--
 			}
-		case C.Tab:
+		case actToggleDown:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(-1)
 				req(reqList)
 			}
-		case C.BTab:
+		case actToggleUp:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				t.vmove(1)
 				req(reqList)
 			}
-		case C.CtrlJ, C.CtrlN:
+		case actDown:
 			t.vmove(-1)
 			req(reqList)
-		case C.CtrlK, C.CtrlP:
+		case actUp:
 			t.vmove(1)
 			req(reqList)
-		case C.CtrlM:
+		case actAccept:
 			req(reqClose)
-		case C.CtrlL:
+		case actClearScreen:
 			req(reqRedraw)
-		case C.CtrlU:
+		case actUnixLineDiscard:
 			if t.cx > 0 {
 				t.yanked = copySlice(t.input[:t.cx])
 				t.input = t.input[t.cx:]
 				t.cx = 0
 			}
-		case C.CtrlW:
+		case actUnixWordRubout:
 			if t.cx > 0 {
 				t.rubout("\\s\\S")
 			}
-		case C.AltBS:
+		case actBackwardKillWord:
 			if t.cx > 0 {
 				t.rubout("[^[:alnum:]][[:alnum:]]")
 			}
-		case C.CtrlY:
+		case actYank:
 			suffix := copySlice(t.input[t.cx:])
 			t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
 			t.cx += len(t.yanked)
-		case C.Del:
-			t.delChar()
-		case C.PgUp:
+		case actPageUp:
 			t.vmove(t.maxItems() - 1)
 			req(reqList)
-		case C.PgDn:
+		case actPageDown:
 			t.vmove(-(t.maxItems() - 1))
 			req(reqList)
-		case C.AltB:
+		case actBackwardWord:
 			t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
-		case C.AltF:
+		case actForwardWord:
 			t.cx += findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
-		case C.AltD:
+		case actKillWord:
 			ncx := t.cx +
 				findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
 			if ncx > t.cx {
 				t.yanked = copySlice(t.input[t.cx:ncx])
 				t.input = append(t.input[:t.cx], t.input[ncx:]...)
 			}
-		case C.Rune:
+		case actKillLine:
+			if t.cx < len(t.input) {
+				t.yanked = copySlice(t.input[t.cx:])
+				t.input = t.input[:t.cx]
+			}
+		case actRune:
 			prefix := copySlice(t.input[:t.cx])
 			t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 			t.cx++
-		case C.Mouse:
+		case actMouse:
 			me := event.MouseEvent
 			mx, my := util.Constrain(me.X-len(t.prompt), 0, len(t.input)), me.Y
 			if !t.reverse {
