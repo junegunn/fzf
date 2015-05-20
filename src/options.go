@@ -42,6 +42,8 @@ const usage = `usage: fzf [options]
         --no-hscroll      Disable horizontal scroll
         --inline-info     Display finder info inline with the query
         --prompt=STR      Input prompt (default: '> ')
+        --toggle-sort=KEY Key to toggle sort
+        --bind=KEYBINDS   Custom key bindings. Refer to the man page.
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -50,8 +52,6 @@ const usage = `usage: fzf [options]
     -f, --filter=STR      Filter mode. Do not start interactive finder.
         --print-query     Print query as the first line
         --expect=KEYS     Comma-separated list of keys to complete fzf
-        --toggle-sort=KEY Key to toggle sort
-        --bind=KEYBINDS   Custom key bindings. Refer to the man page.
         --sync            Synchronous search for multi-staged filtering
 
   Environment variables
