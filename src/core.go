@@ -47,10 +47,9 @@ Matcher  -> EvtSearchFin      -> Terminal (update list)
 */
 
 // Run starts fzf
-func Run(options *Options) {
+func Run(opts *Options) {
 	initProcs()
 
-	opts := ParseOptions()
 	sort := opts.Sort > 0
 	rankTiebreak = opts.Tiebreak
 
