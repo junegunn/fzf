@@ -105,6 +105,7 @@ const (
 	actUnixWordRubout
 	actYank
 	actBackwardKillWord
+	actToggle
 	actToggleDown
 	actToggleUp
 	actDown
@@ -723,6 +724,11 @@ func (t *Terminal) Loop() {
 			if t.cx > 0 {
 				t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
 				t.cx--
+			}
+		case actToggle:
+			if t.multi && t.merger.Length() > 0 {
+				toggle()
+				req(reqList)
 			}
 		case actToggleDown:
 			if t.multi && t.merger.Length() > 0 {
