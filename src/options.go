@@ -295,17 +295,20 @@ func parseTheme(str string) *curses.ColorTheme {
 
 func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[int]actionType, bool) {
 	for _, pairStr := range strings.Split(str, ",") {
+		fail := func() {
+			errorExit("invalid key binding: " + pairStr)
+		}
 		pair := strings.Split(pairStr, ":")
 		if len(pair) != 2 {
-			errorExit("invalid key binding: " + pairStr)
+			fail()
 		}
 		keys := parseKeyChords(pair[0], "key name required")
 		if len(keys) != 1 {
-			errorExit("invalid key binding: " + pairStr)
+			fail()
 		}
 		key := keys[0]
 		act := strings.ToLower(pair[1])
-		switch strings.ToLower(pair[1]) {
+		switch act {
 		case "beginning-of-line":
 			keymap[key] = actBeginningOfLine
 		case "abort":
