@@ -11,6 +11,7 @@ CHANGELOG
 ### Bug fixes
 
 - Fixed to update "inline-info" immediately after terminal resize
+- Fixed ANSI code offset calculation
 
 0.9.11
 ------
