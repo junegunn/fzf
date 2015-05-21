@@ -50,7 +50,7 @@ func extractColor(str *string) (*string, []ansiOffset) {
 		if !newState.equals(state) {
 			if state != nil {
 				// Update last offset
-				(&offsets[len(offsets)-1]).offset[1] = int32(output.Len())
+				(&offsets[len(offsets)-1]).offset[1] = int32(utf8.RuneCount(output.Bytes()))
 			}
 
 			if newState.colored() {
