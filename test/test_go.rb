@@ -439,16 +439,18 @@ class TestGoFZF < TestBase
   end
 
   def test_toggle_sort
-    tmux.send_keys "seq 1 111 | #{fzf '-m +s --tac --toggle-sort=ctrl-r -q11'}", :Enter
-    tmux.until { |lines| lines[-3].include? '> 111' }
-    tmux.send_keys :Tab
-    tmux.until { |lines| lines[-2].include? '4/111   (1)' }
-    tmux.send_keys 'C-R'
-    tmux.until { |lines| lines[-3].include? '> 11' }
-    tmux.send_keys :Tab
-    tmux.until { |lines| lines[-2].include? '4/111/S (2)' }
-    tmux.send_keys :Enter
-    assert_equal ['111', '11'], readonce.split($/)
+    ['--toggle-sort=ctrl-r', '--bind=ctrl-r:toggle-sort'].each do |opt|
+      tmux.send_keys "seq 1 111 | #{fzf "-m +s --tac #{opt} -q11"}", :Enter
+      tmux.until { |lines| lines[-3].include? '> 111' }
+      tmux.send_keys :Tab
+      tmux.until { |lines| lines[-2].include? '4/111   (1)' }
+      tmux.send_keys 'C-R'
+      tmux.until { |lines| lines[-3].include? '> 11' }
+      tmux.send_keys :Tab
+      tmux.until { |lines| lines[-2].include? '4/111/S (2)' }
+      tmux.send_keys :Enter
+      assert_equal ['111', '11'], readonce.split($/)
+    end
   end
 
   def test_unicode_case
@@ -517,10 +519,11 @@ class TestGoFZF < TestBase
   end
 
   def test_bind
-    tmux.send_keys "seq 1 1000 | #{fzf '-m --bind=ctrl-j:accept,z:up,x:toggle-up'}", :Enter
+    tmux.send_keys "seq 1 1000 | #{
+      fzf '-m --bind=ctrl-j:accept,u:up,T:toggle-up,t:toggle'}", :Enter
     tmux.until { |lines| lines[-2].end_with? '/1000' }
-    tmux.send_keys 'zzz', 'xx', 'C-j'
-    assert_equal %w[4 5], readonce.split($/)
+    tmux.send_keys 'uuu', 'TTT', 'tt', 'uu', 'ttt', 'C-j'
+    assert_equal %w[4 5 6 9], readonce.split($/)
   end
 private
   def writelines path, lines
