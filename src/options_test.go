@@ -155,3 +155,49 @@ func TestBind(t *testing.T) {
 	}
 	check(actAbort, keymap[curses.F1])
 }
+
+func TestColorSpec(t *testing.T) {
+	theme := curses.Dark256
+	dark := parseTheme(theme, "dark")
+	if *dark != *theme {
+		t.Errorf("colors should be equivalent")
+	}
+	if dark == theme {
+		t.Errorf("point should not be equivalent")
+	}
+
+	light := parseTheme(theme, "dark,light")
+	if *light == *theme {
+		t.Errorf("should not be equivalent")
+	}
+	if *light != *curses.Light256 {
+		t.Errorf("colors should be equivalent")
+	}
+	if light == theme {
+		t.Errorf("point should not be equivalent")
+	}
+
+	customized := parseTheme(theme, "fg:231,bg:232")
+	if customized.Fg != 231 || customized.Bg != 232 {
+		t.Errorf("color not customized")
+	}
+	if *curses.Dark256 == *customized {
+		t.Errorf("colors should not be equivalent")
+	}
+	customized.Fg = curses.Dark256.Fg
+	customized.Bg = curses.Dark256.Bg
+	if *curses.Dark256 == *customized {
+		t.Errorf("colors should now be equivalent")
+	}
+
+	customized = parseTheme(theme, "fg:231,dark,bg:232")
+	if customized.Fg != curses.Dark256.Fg || customized.Bg == curses.Dark256.Bg {
+		t.Errorf("color not customized")
+	}
+	if customized.UseDefault {
+		t.Errorf("not using default colors")
+	}
+	if !curses.Dark256.UseDefault {
+		t.Errorf("using default colors")
+	}
+}

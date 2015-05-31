@@ -143,13 +143,25 @@ func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset
 					offset: Offset{int32(start), int32(idx)}, color: color, bold: bold})
 			} else {
 				ansi := item.colors[curr-1]
+				fg := ansi.color.fg
+				if fg == -1 {
+					if current {
+						fg = curses.CurrentFG
+					} else {
+						fg = curses.FG
+					}
+				}
 				bg := ansi.color.bg
-				if current && bg == -1 {
-					bg = int(curses.DarkBG)
+				if bg == -1 {
+					if current {
+						bg = curses.DarkBG
+					} else {
+						bg = curses.BG
+					}
 				}
 				offsets = append(offsets, colorOffset{
 					offset: Offset{int32(start), int32(idx)},
-					color:  curses.PairFor(ansi.color.fg, bg),
+					color:  curses.PairFor(fg, bg),
 					bold:   ansi.color.bold || bold})
 			}
 		}

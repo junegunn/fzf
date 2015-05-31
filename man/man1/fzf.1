@@ -91,21 +91,38 @@ Enable processing of ANSI color codes
 .B "--no-mouse"
 Disable mouse
 .TP
-.B "--color=COL"
-Color scheme: [dark|light|16|bw]
-.br
-(default: dark on 256-color terminal, otherwise 16)
-.br
-.R ""
-.br
-.BR dark "    Color scheme for dark 256-color terminal"
-.br
-.BR light "   Color scheme for light 256-color terminal"
-.br
-.BR 16 "      Color scheme for 16-color terminal"
-.br
-.BR bw "      No colors"
-.br
+.BI "--color=" "[BASE_SCHEME][,COLOR:ANSI]"
+Color configuration. The name of the base color scheme is followed by custom
+color mappings. Ansi color code of -1 denotes terminal default
+foreground/background color.
+
+.RS
+e.g. \fBfzf --color=bg+:24\fR
+     \fBfzf --color=light,fg:232,bg:255,bg+:116,info:27\fR
+.RE
+
+.RS
+.B BASE SCHEME:
+    (default: dark on 256-color terminal, otherwise 16)
+
+    \fBdark    \fRColor scheme for dark 256-color terminal
+    \fBlight   \fRColor scheme for light 256-color terminal
+    \fB16      \fRColor scheme for 16-color terminal
+    \fBbw      \fRNo colors
+
+.B COLOR:
+    \fBfg      \fRText
+    \fBbg      \fRBackground
+    \fBhl      \fRHighlighted substrings
+    \fBfg+     \fRText (current line)
+    \fBbg+     \fRBackground (current line)
+    \fBhl+     \fRHighlighted substrings (current line)
+    \fBinfo    \fRInfo
+    \fBprompt  \fRPrompt
+    \fBpointer \fRPointer to the current line
+    \fBmarker  \fRMulti-select marker
+    \fBspinner \fRStreaming input indicator
+.RE
 .TP
 .B "--black"
 Use black background

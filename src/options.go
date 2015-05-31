@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -35,8 +36,7 @@ const usage = `usage: fzf [options]
     -m, --multi           Enable multi-select with tab/shift-tab
         --ansi            Enable processing of ANSI color codes
         --no-mouse        Disable mouse
-        --color=COL       Color scheme; [dark|light|16|bw]
-                          (default: dark on 256-color terminal, otherwise 16)
+        --color=COLSPEC   Base scheme (dark|light|16|bw) and/or custom colors
         --black           Use black background
         --reverse         Reverse orientation
         --no-hscroll      Disable horizontal scroll
@@ -121,14 +121,14 @@ type Options struct {
 	Version    bool
 }
 
-func defaultOptions() *Options {
-	var defaultTheme *curses.ColorTheme
+func defaultTheme() *curses.ColorTheme {
 	if strings.Contains(os.Getenv("TERM"), "256") {
-		defaultTheme = curses.Dark256
-	} else {
-		defaultTheme = curses.Default16
+		return curses.Dark256
 	}
+	return curses.Default16
+}
 
+func defaultOptions() *Options {
 	return &Options{
 		Mode:       ModeFuzzy,
 		Case:       CaseSmart,
@@ -141,7 +141,7 @@ func defaultOptions() *Options {
 		Multi:      false,
 		Ansi:       false,
 		Mouse:      true,
-		Theme:      defaultTheme,
+		Theme:      defaultTheme(),
 		Black:      false,
 		Reverse:    false,
 		Hscroll:    true,
@@ -185,6 +185,14 @@ func nextString(args []string, i *int, message string) string {
 		errorExit(message)
 	}
 	return args[*i]
+}
+
+func optionalNextString(args []string, i *int) string {
+	if len(args) > *i+1 {
+		*i++
+		return args[*i]
+	}
+	return ""
 }
 
 func optionalNumeric(args []string, i *int) int {
@@ -277,20 +285,72 @@ func parseTiebreak(str string) tiebreak {
 	return byLength
 }
 
-func parseTheme(str string) *curses.ColorTheme {
-	switch strings.ToLower(str) {
-	case "dark":
-		return curses.Dark256
-	case "light":
-		return curses.Light256
-	case "16":
-		return curses.Default16
-	case "bw", "no":
-		return nil
-	default:
-		errorExit("invalid color scheme: " + str)
+func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
+	dupe := *theme
+	return &dupe
+}
+
+func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme {
+	theme := dupeTheme(defaultTheme)
+	for _, str := range strings.Split(strings.ToLower(str), ",") {
+		switch str {
+		case "dark":
+			theme = dupeTheme(curses.Dark256)
+		case "light":
+			theme = dupeTheme(curses.Light256)
+		case "16":
+			theme = dupeTheme(curses.Default16)
+		case "bw", "no":
+			theme = nil
+		default:
+			fail := func() {
+				errorExit("invalid color specification: " + str)
+			}
+			// Color is disabled
+			if theme == nil {
+				errorExit("colors disabled; cannot customize colors")
+			}
+
+			pair := strings.Split(str, ":")
+			if len(pair) != 2 {
+				fail()
+			}
+			ansi32, err := strconv.Atoi(pair[1])
+			if err != nil || ansi32 < -1 || ansi32 > 255 {
+				fail()
+			}
+			ansi := int16(ansi32)
+			switch pair[0] {
+			case "fg":
+				theme.Fg = ansi
+				theme.UseDefault = theme.UseDefault && ansi < 0
+			case "bg":
+				theme.Bg = ansi
+				theme.UseDefault = theme.UseDefault && ansi < 0
+			case "fg+":
+				theme.Current = ansi
+			case "bg+":
+				theme.DarkBg = ansi
+			case "hl":
+				theme.Match = ansi
+			case "hl+":
+				theme.CurrentMatch = ansi
+			case "prompt":
+				theme.Prompt = ansi
+			case "spinner":
+				theme.Spinner = ansi
+			case "info":
+				theme.Info = ansi
+			case "pointer":
+				theme.Cursor = ansi
+			case "marker":
+				theme.Selected = ansi
+			default:
+				fail()
+			}
+		}
 	}
-	return nil
+	return theme
 }
 
 func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[int]actionType, bool) {
@@ -400,7 +460,12 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--bind":
 			opts.Keymap, opts.ToggleSort = parseKeymap(opts.Keymap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
 		case "--color":
-			opts.Theme = parseTheme(nextString(allArgs, &i, "color scheme name required"))
+			spec := optionalNextString(allArgs, &i)
+			if len(spec) == 0 {
+				opts.Theme = defaultTheme()
+			} else {
+				opts.Theme = parseTheme(opts.Theme, spec)
+			}
 		case "--toggle-sort":
 			opts.Keymap = checkToggleSort(opts.Keymap, nextString(allArgs, &i, "key name required"))
 			opts.ToggleSort = true
@@ -497,7 +562,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--tiebreak="); match {
 				opts.Tiebreak = parseTiebreak(value)
 			} else if match, value := optString(arg, "--color="); match {
-				opts.Theme = parseTheme(value)
+				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {
 				opts.Keymap, opts.ToggleSort = parseKeymap(opts.Keymap, opts.ToggleSort, value)
 			} else {
