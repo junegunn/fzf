@@ -525,6 +525,17 @@ class TestGoFZF < TestBase
     tmux.send_keys 'uuu', 'TTT', 'tt', 'uu', 'ttt', 'C-j'
     assert_equal %w[4 5 6 9], readonce.split($/)
   end
+
+  def test_long_line
+    tempname = TEMPNAME + Time.now.to_f.to_s
+    data = '.' * 256 * 1024
+    File.open(tempname, 'w') do |f|
+      f << data
+    end
+    assert_equal data, `cat #{tempname} | #{FZF} -f .`.chomp
+  ensure
+    File.unlink tempname
+  end
 private
   def writelines path, lines
     File.unlink path while File.exists? path

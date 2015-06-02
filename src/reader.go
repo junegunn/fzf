@@ -30,9 +30,29 @@ func (r *Reader) ReadSource() {
 }
 
 func (r *Reader) feed(src io.Reader) {
-	if scanner := bufio.NewScanner(src); scanner != nil {
-		for scanner.Scan() {
-			r.pusher(scanner.Text())
+	reader := bufio.NewReader(src)
+	eof := false
+Loop:
+	for !eof {
+		buf := []byte{}
+		iter := 0 // TODO: max size?
+		for {
+			// "ReadLine either returns a non-nil line or it returns an error, never both"
+			line, isPrefix, err := reader.ReadLine()
+			eof = err == io.EOF
+			if eof {
+				break
+			} else if err != nil {
+				break Loop
+			}
+			iter++
+			buf = append(buf, line...)
+			if !isPrefix {
+				break
+			}
+		}
+		if iter > 0 {
+			r.pusher(string(buf))
 			r.eventBox.Set(EvtReadNew, nil)
 		}
 	}
