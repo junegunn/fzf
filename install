@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version=0.9.12
+version=0.9.13
 
 cd $(dirname $BASH_SOURCE)
 fzf_base=$(pwd)

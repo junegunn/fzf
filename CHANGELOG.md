@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+0.9.13
+------
+
+### New features
+
+- Color customization with the extended `--color` option
+
+### Bug fixes
+
+- Fixed premature termination of Reader in the presence of a long line which
+  is longer than 64KB
+
 0.9.12
 ------
 
