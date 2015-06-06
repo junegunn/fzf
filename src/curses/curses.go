@@ -4,11 +4,6 @@ package curses
 #include <ncurses.h>
 #include <locale.h>
 #cgo LDFLAGS: -lncurses
-void swapOutput() {
-  FILE* temp = stdout;
-  stdout = stderr;
-  stderr = temp;
-}
 */
 import "C"
 
@@ -142,6 +137,7 @@ var (
 	_colorMap     map[int]int
 	_prevDownTime time.Time
 	_clickY       []int
+	_screen       *C.SCREEN
 	Default16     *ColorTheme
 	Dark256       *ColorTheme
 	Light256      *ColorTheme
@@ -254,10 +250,9 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 		// syscall.Dup2(int(in.Fd()), int(os.Stdin.Fd()))
 	}
 
-	C.swapOutput()
-
 	C.setlocale(C.LC_ALL, C.CString(""))
-	C.initscr()
+	_screen = C.newterm(nil, C.stderr, C.stdin)
+	C.set_term(_screen)
 	if mouse {
 		C.mousemask(C.ALL_MOUSE_EVENTS, nil)
 	}
@@ -316,7 +311,7 @@ func initPairs(theme *ColorTheme, black bool) {
 
 func Close() {
 	C.endwin()
-	C.swapOutput()
+	C.delscreen(_screen)
 }
 
 func GetBytes() []byte {
