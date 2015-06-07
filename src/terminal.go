@@ -373,7 +373,7 @@ func (t *Terminal) printItem(item *Item, current bool) {
 	if current {
 		C.CPrint(C.ColCursor, true, ">")
 		if selected {
-			C.CPrint(C.ColCurrent, true, ">")
+			C.CPrint(C.ColSelected, true, ">")
 		} else {
 			C.CPrint(C.ColCurrent, true, " ")
 		}
