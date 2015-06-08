@@ -536,6 +536,13 @@ class TestGoFZF < TestBase
   ensure
     File.unlink tempname
   end
+
+  def test_null
+    lines = `find .`.split($/)
+    assert_equal lines.last, `find . | #{FZF} -e -f "^#{lines.last}$"`.chomp
+    assert_equal lines.last, `find . -print0 | #{FZF} --null -e -f "^#{lines.last}$"`.chomp
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
