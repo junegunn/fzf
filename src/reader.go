@@ -13,6 +13,7 @@ import (
 type Reader struct {
 	pusher   func(string)
 	eventBox *util.EventBox
+	delimNil bool
 }
 
 // ReadSource reads data from the default command or from standard input
@@ -30,30 +31,23 @@ func (r *Reader) ReadSource() {
 }
 
 func (r *Reader) feed(src io.Reader) {
+	delim := byte('\n')
+	if r.delimNil {
+		delim = '\000'
+	}
 	reader := bufio.NewReader(src)
-	eof := false
-Loop:
-	for !eof {
-		buf := []byte{}
-		iter := 0 // TODO: max size?
-		for {
-			// "ReadLine either returns a non-nil line or it returns an error, never both"
-			line, isPrefix, err := reader.ReadLine()
-			eof = err == io.EOF
-			if eof {
-				break
-			} else if err != nil {
-				break Loop
+	for {
+		line, err := reader.ReadString(delim)
+		if line != "" {
+			// "ReadString returns err != nil if and only if the returned data does not end in delim."
+			if err == nil {
+				line = line[:len(line)-1]
 			}
-			iter++
-			buf = append(buf, line...)
-			if !isPrefix {
-				break
-			}
-		}
-		if iter > 0 {
-			r.pusher(string(buf))
+			r.pusher(line)
 			r.eventBox.Set(EvtReadNew, nil)
+		}
+		if err != nil {
+			break
 		}
 	}
 }

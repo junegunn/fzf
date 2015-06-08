@@ -50,7 +50,8 @@ const usage = `usage: fzf [options]
     -1, --select-1        Automatically select the only match
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
-        --print-query     Print query as the first line
+		--null            Read null-byte separated strings from input.
+		--print-query     Print query as the first line
         --expect=KEYS     Comma-separated list of keys to complete fzf
         --sync            Synchronous search for multi-staged filtering
 
@@ -117,6 +118,7 @@ type Options struct {
 	Expect     []int
 	Keymap     map[int]actionType
 	PrintQuery bool
+	ReadZero   bool
 	Sync       bool
 	Version    bool
 }
@@ -155,6 +157,7 @@ func defaultOptions() *Options {
 		Expect:     []int{},
 		Keymap:     defaultKeymap(),
 		PrintQuery: false,
+		ReadZero:   false,
 		Sync:       false,
 		Version:    false}
 }
@@ -525,6 +528,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Exit0 = true
 		case "+0", "--no-exit-0":
 			opts.Exit0 = false
+		case "--null":
+			opts.ReadZero = true
 		case "--print-query":
 			opts.PrintQuery = true
 		case "--no-print-query":
