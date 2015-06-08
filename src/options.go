@@ -15,7 +15,7 @@ import (
 
 const usage = `usage: fzf [options]
 
-  Search mode
+  Search
     -x, --extended        Extended-search mode
     -e, --extended-exact  Extended-search mode (exact match)
     -i                    Case-insensitive match (default: smart-case match)
@@ -25,8 +25,6 @@ const usage = `usage: fzf [options]
                           integer or a range expression ([BEGIN]..[END])
         --with-nth=N[,..] Transform the item using index expressions for search
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
-
-  Search result
     +s, --no-sort         Do not sort the result
         --tac             Reverse the order of the input
         --tiebreak=CRI    Sort criterion when the scores are tied;
