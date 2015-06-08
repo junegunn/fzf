@@ -113,7 +113,7 @@ func Run(opts *Options) {
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	if !streamingFilter {
-		reader := Reader{func(str string) { chunkList.Push(str) }, eventBox}
+		reader := Reader{func(str string) { chunkList.Push(str) }, eventBox, opts.ReadZero}
 		go reader.ReadSource()
 	}
 
@@ -139,7 +139,7 @@ func Run(opts *Options) {
 					if pattern.MatchItem(item) {
 						fmt.Println(*item.text)
 					}
-				}, eventBox}
+				}, eventBox, opts.ReadZero}
 			reader.ReadSource()
 		} else {
 			eventBox.Unwatch(EvtReadNew)
