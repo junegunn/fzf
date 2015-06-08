@@ -8,8 +8,8 @@ import (
 
 func TestParseTermsExtended(t *testing.T) {
 	terms := parseTerms(ModeExtended, CaseSmart,
-		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
-	if len(terms) != 8 ||
+		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$ ^iii$")
+	if len(terms) != 9 ||
 		terms[0].typ != termFuzzy || terms[0].inv ||
 		terms[1].typ != termExact || terms[1].inv ||
 		terms[2].typ != termPrefix || terms[2].inv ||
@@ -17,7 +17,8 @@ func TestParseTermsExtended(t *testing.T) {
 		terms[4].typ != termFuzzy || !terms[4].inv ||
 		terms[5].typ != termExact || !terms[5].inv ||
 		terms[6].typ != termPrefix || !terms[6].inv ||
-		terms[7].typ != termSuffix || !terms[7].inv {
+		terms[7].typ != termSuffix || !terms[7].inv ||
+		terms[8].typ != termEqual || terms[8].inv {
 		t.Errorf("%s", terms)
 	}
 	for idx, term := range terms {
@@ -63,6 +64,22 @@ func TestExact(t *testing.T) {
 	if sidx != 7 || eidx != 10 {
 		t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
 	}
+}
+
+func TestEqual(t *testing.T) {
+	defer clearPatternCache()
+	clearPatternCache()
+	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("^AbC$"))
+
+	match := func(str string, sidxExpected int, eidxExpected int) {
+		runes := []rune(str)
+		sidx, eidx := algo.EqualMatch(pattern.caseSensitive, &runes, pattern.terms[0].text)
+		if sidx != sidxExpected || eidx != eidxExpected {
+			t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
+		}
+	}
+	match("ABC", -1, -1)
+	match("AbC", 0, 3)
 }
 
 func TestCaseSensitivity(t *testing.T) {

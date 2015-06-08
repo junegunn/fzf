@@ -24,6 +24,7 @@ const (
 	termExact
 	termPrefix
 	termSuffix
+	termEqual
 )
 
 type term struct {
@@ -116,6 +117,7 @@ func BuildPattern(mode Mode, caseMode Case,
 		procFun:       make(map[termType]func(bool, *[]rune, []rune) (int, int))}
 
 	ptr.procFun[termFuzzy] = algo.FuzzyMatch
+	ptr.procFun[termEqual] = algo.EqualMatch
 	ptr.procFun[termExact] = algo.ExactMatchNaive
 	ptr.procFun[termPrefix] = algo.PrefixMatch
 	ptr.procFun[termSuffix] = algo.SuffixMatch
@@ -151,8 +153,13 @@ func parseTerms(mode Mode, caseMode Case, str string) []term {
 				text = text[1:]
 			}
 		} else if strings.HasPrefix(text, "^") {
-			typ = termPrefix
-			text = text[1:]
+			if strings.HasSuffix(text, "$") {
+				typ = termEqual
+				text = text[1 : len(text)-1]
+			} else {
+				typ = termPrefix
+				text = text[1:]
+			}
 		} else if strings.HasSuffix(text, "$") {
 			typ = termSuffix
 			text = text[:len(text)-1]

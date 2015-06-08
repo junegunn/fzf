@@ -1,6 +1,7 @@
 package algo
 
 import (
+	"strings"
 	"unicode"
 
 	"github.com/junegunn/fzf/src/util"
@@ -158,4 +159,18 @@ func SuffixMatch(caseSensitive bool, input *[]rune, pattern []rune) (int, int) {
 		}
 	}
 	return trimmedLen - len(pattern), trimmedLen
+}
+
+func EqualMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
+	if len(*runes) != len(pattern) {
+		return -1, -1
+	}
+	runesStr := string(*runes)
+	if !caseSensitive {
+		runesStr = strings.ToLower(runesStr)
+	}
+	if runesStr == string(pattern) {
+		return 0, len(pattern)
+	}
+	return -1, -1
 }
