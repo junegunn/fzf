@@ -543,6 +543,29 @@ class TestGoFZF < TestBase
     assert_equal lines.last, `find . -print0 | #{FZF} --null -e -f "^#{lines.last}$"`.chomp
   end
 
+  def test_select_all_deselect_all_toggle_all
+    tmux.send_keys "seq 100 | #{fzf '--bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all --multi'}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| lines[-2].include? '(3)' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| lines[-2].include? '(97)' }
+    tmux.send_keys 'C-a'
+    tmux.until { |lines| lines[-2].include? '(100)' }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| lines[-2].include? '(98)' }
+    tmux.send_keys 'C-d'
+    tmux.until { |lines| !lines[-2].include? '(' }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| lines[-2].include? '(2)' }
+    tmux.send_keys 0
+    tmux.until { |lines| lines[-2].include? '10/100' }
+    tmux.send_keys 'C-a'
+    tmux.until { |lines| lines[-2].include? '(12)' }
+    tmux.send_keys :Enter
+    assert_equal %w[2 1 10 20 30 40 50 60 70 80 90 100], readonce.split($/)
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

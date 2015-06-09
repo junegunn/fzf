@@ -105,7 +105,10 @@ const (
 	actUnixWordRubout
 	actYank
 	actBackwardKillWord
+	actSelectAll
+	actDeselectAll
 	actToggle
+	actToggleAll
 	actToggleDown
 	actToggleUp
 	actDown
@@ -661,20 +664,28 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}
+		selectItem := func(item *Item) bool {
+			if _, found := t.selected[item.index]; !found {
+				var strptr *string
+				if item.origText != nil {
+					strptr = item.origText
+				} else {
+					strptr = item.text
+				}
+				t.selected[item.index] = selectedItem{time.Now(), strptr}
+				return true
+			}
+			return false
+		}
+		toggleY := func(y int) {
+			item := t.merger.Get(y)
+			if !selectItem(item) {
+				delete(t.selected, item.index)
+			}
+		}
 		toggle := func() {
 			if t.cy < t.merger.Length() {
-				item := t.merger.Get(t.cy)
-				if _, found := t.selected[item.index]; !found {
-					var strptr *string
-					if item.origText != nil {
-						strptr = item.origText
-					} else {
-						strptr = item.text
-					}
-					t.selected[item.index] = selectedItem{time.Now(), strptr}
-				} else {
-					delete(t.selected, item.index)
-				}
+				toggleY(t.cy)
 				req(reqInfo)
 			}
 		}
@@ -725,10 +736,33 @@ func (t *Terminal) Loop() {
 				t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
 				t.cx--
 			}
+		case actSelectAll:
+			if t.multi {
+				for i := 0; i < t.merger.Length(); i++ {
+					item := t.merger.Get(i)
+					selectItem(item)
+				}
+				req(reqList, reqInfo)
+			}
+		case actDeselectAll:
+			if t.multi {
+				for i := 0; i < t.merger.Length(); i++ {
+					item := t.merger.Get(i)
+					delete(t.selected, item.index)
+				}
+				req(reqList, reqInfo)
+			}
 		case actToggle:
 			if t.multi && t.merger.Length() > 0 {
 				toggle()
 				req(reqList)
+			}
+		case actToggleAll:
+			if t.multi {
+				for i := 0; i < t.merger.Length(); i++ {
+					toggleY(i)
+				}
+				req(reqList, reqInfo)
 			}
 		case actToggleDown:
 			if t.multi && t.merger.Length() > 0 {
