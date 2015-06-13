@@ -943,7 +943,6 @@ func (t *Terminal) vset(o int) bool {
 func (t *Terminal) maxItems() int {
 	if t.inlineInfo {
 		return C.MaxY() - 1
-	} else {
-		return C.MaxY() - 2
 	}
+	return C.MaxY() - 2
 }
