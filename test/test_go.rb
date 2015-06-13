@@ -72,17 +72,6 @@ class Tmux
     end
   end
 
-  def closed?
-    !go("list-window -F '#I'").include?(win)
-  end
-
-  def close
-    wait do
-      send_keys 'C-c', 'C-u', 'exit', :Enter
-      closed?
-    end
-  end
-
   def kill
     go("kill-window -t #{win} 2> /dev/null")
   end
@@ -152,21 +141,25 @@ class TestBase < Minitest::Test
 
   attr_reader :tmux
 
+  def tempname
+    [TEMPNAME,
+     caller_locations.map(&:label).find { |l| l =~ /^test_/ }].join '-'
+  end
+
   def setup
     ENV.delete 'FZF_DEFAULT_OPTS'
     ENV.delete 'FZF_DEFAULT_COMMAND'
-    File.unlink TEMPNAME while File.exists?(TEMPNAME)
   end
 
   def readonce
-    wait { File.exists?(TEMPNAME) }
-    File.read(TEMPNAME)
+    wait { File.exists?(tempname) }
+    File.read(tempname)
   ensure
-    File.unlink TEMPNAME while File.exists?(TEMPNAME)
+    File.unlink tempname while File.exists?(tempname)
   end
 
   def fzf(*opts)
-    fzf!(*opts) + " > #{TEMPNAME}.tmp; mv #{TEMPNAME}.tmp #{TEMPNAME}"
+    fzf!(*opts) + " > #{tempname}.tmp; mv #{tempname}.tmp #{tempname}"
   end
 
   def fzf!(*opts)
@@ -214,7 +207,6 @@ class TestGoFZF < TestBase
     assert_equal '> 391',        lines[-1]
 
     tmux.send_keys :Enter
-    tmux.close
     assert_equal '1391', readonce.chomp
   end
 
@@ -223,7 +215,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.last =~ /^>/ }
 
     tmux.send_keys :Enter
-    tmux.close
     assert_equal 'hello', readonce.chomp
   end
 
@@ -290,7 +281,6 @@ class TestGoFZF < TestBase
     # CTRL-M
     tmux.send_keys "C-M"
     tmux.until { |lines| lines.last !~ /^>/ }
-    tmux.close
   end
 
   def test_multi_order
@@ -303,7 +293,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include? '(6)' }
     tmux.send_keys "C-M"
     assert_equal %w[3 2 5 6 8 7], readonce.split($/)
-    tmux.close
   end
 
   def test_with_nth
@@ -454,16 +443,12 @@ class TestGoFZF < TestBase
   end
 
   def test_unicode_case
-    tempname = TEMPNAME + Time.now.to_f.to_s
     writelines tempname, %w[строКА1 СТРОКА2 строка3 Строка4]
     assert_equal %w[СТРОКА2 Строка4], `cat #{tempname} | #{FZF} -fС`.split($/)
     assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `cat #{tempname} | #{FZF} -fс`.split($/)
-  rescue
-    File.unlink tempname
   end
 
   def test_tiebreak
-    tempname = TEMPNAME + Time.now.to_f.to_s
     input = %w[
       --foobar--------
       -----foobar---
@@ -500,8 +485,6 @@ class TestGoFZF < TestBase
     ], `cat #{tempname} | #{FZF} -ffoobar --tiebreak end`.split($/)
 
     assert_equal input, `cat #{tempname} | #{FZF} -f"!z" -x --tiebreak end`.split($/)
-  rescue
-    File.unlink tempname
   end
 
   def test_invalid_cache
@@ -527,14 +510,11 @@ class TestGoFZF < TestBase
   end
 
   def test_long_line
-    tempname = TEMPNAME + Time.now.to_f.to_s
     data = '.' * 256 * 1024
     File.open(tempname, 'w') do |f|
       f << data
     end
     assert_equal data, `cat #{tempname} | #{FZF} -f .`.chomp
-  ensure
-    File.unlink tempname
   end
 
   def test_null
