@@ -98,7 +98,7 @@ function! fzf#run(...) abort
 try
   let oshell = &shell
   set shell=sh
-  if has('nvim') && bufexists('[FZF]')
+  if has('nvim') && bufexists('term://*:FZF')
     echohl WarningMsg
     echomsg 'FZF is already running!'
     echohl None
@@ -280,17 +280,13 @@ function! s:execute_term(dict, command, temps)
   call s:split(a:dict)
   call s:pushd(a:dict)
 
-  let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps }
+  let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
   function! fzf.on_exit(id, code)
     let tab = tabpagenr()
     if bufnr('') == self.buf
       " We use close instead of bd! since Vim does not close the split when
       " there's no other listed buffer
       close
-      " FIXME This should be unnecessary due to `bufhidden=wipe` but in some
-      " cases Neovim fails to clean up the buffer and `bufexists('[FZF]')
-      " returns 1 even when it cannot be seen anywhere else. e.g. `FZF!`
-      silent! execute 'bd!' self.buf
     endif
     if s:ptab == tab
       wincmd p
@@ -305,7 +301,6 @@ function! s:execute_term(dict, command, temps)
   endfunction
 
   call termopen(a:command, fzf)
-  silent file [FZF]
   startinsert
   return []
 endfunction
