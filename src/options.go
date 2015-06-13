@@ -42,6 +42,8 @@ const usage = `usage: fzf [options]
         --prompt=STR      Input prompt (default: '> ')
         --toggle-sort=KEY Key to toggle sort
         --bind=KEYBINDS   Custom key bindings. Refer to the man page.
+        --history=FILE    History file
+        --history-max=N   Maximum number of history entries (default: 1000)
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -118,6 +120,7 @@ type Options struct {
 	PrintQuery bool
 	ReadZero   bool
 	Sync       bool
+	History    *History
 	Version    bool
 }
 
@@ -157,6 +160,7 @@ func defaultOptions() *Options {
 		PrintQuery: false,
 		ReadZero:   false,
 		Sync:       false,
+		History:    nil,
 		Version:    false}
 }
 
@@ -194,6 +198,23 @@ func optionalNextString(args []string, i *int) string {
 		return args[*i]
 	}
 	return ""
+}
+
+func atoi(str string) int {
+	num, err := strconv.Atoi(str)
+	if err != nil {
+		errorExit("not a valid integer: " + str)
+	}
+	return num
+}
+
+func nextInt(args []string, i *int, message string) int {
+	if len(args) > *i+1 {
+		*i++
+	} else {
+		errorExit(message)
+	}
+	return atoi(args[*i])
 }
 
 func optionalNumeric(args []string, i *int) int {
@@ -424,6 +445,10 @@ func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[in
 			keymap[key] = actPageUp
 		case "page-down":
 			keymap[key] = actPageDown
+		case "previous-history":
+			keymap[key] = actPreviousHistory
+		case "next-history":
+			keymap[key] = actNextHistory
 		case "toggle-sort":
 			keymap[key] = actToggleSort
 			toggleSort = true
@@ -444,6 +469,29 @@ func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
 }
 
 func parseOptions(opts *Options, allArgs []string) {
+	keymap := make(map[int]actionType)
+	var historyMax int
+	if opts.History == nil {
+		historyMax = defaultHistoryMax
+	} else {
+		historyMax = opts.History.maxSize
+	}
+	setHistory := func(path string) {
+		h, e := NewHistory(path, historyMax)
+		if e != nil {
+			errorExit(e.Error())
+		}
+		opts.History = h
+	}
+	setHistoryMax := func(max int) {
+		historyMax = max
+		if historyMax < 1 {
+			errorExit("history max must be a positive integer")
+		}
+		if opts.History != nil {
+			opts.History.maxSize = historyMax
+		}
+	}
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -465,7 +513,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--tiebreak":
 			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
-			opts.Keymap, opts.ToggleSort = parseKeymap(opts.Keymap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
+			keymap, opts.ToggleSort = parseKeymap(keymap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
 		case "--color":
 			spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
@@ -474,7 +522,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Theme = parseTheme(opts.Theme, spec)
 			}
 		case "--toggle-sort":
-			opts.Keymap = checkToggleSort(opts.Keymap, nextString(allArgs, &i, "key name required"))
+			keymap = checkToggleSort(keymap, nextString(allArgs, &i, "key name required"))
 			opts.ToggleSort = true
 		case "-d", "--delimiter":
 			opts.Delimiter = delimiterRegexp(nextString(allArgs, &i, "delimiter required"))
@@ -546,6 +594,12 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Sync = false
 		case "--async":
 			opts.Sync = false
+		case "--no-history":
+			opts.History = nil
+		case "--history":
+			setHistory(nextString(allArgs, &i, "history file path required"))
+		case "--history-max":
+			setHistoryMax(nextInt(allArgs, &i, "history max size required"))
 		case "--version":
 			opts.Version = true
 		default:
@@ -564,7 +618,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, _ := optString(arg, "-s|--sort="); match {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "--toggle-sort="); match {
-				opts.Keymap = checkToggleSort(opts.Keymap, value)
+				keymap = checkToggleSort(keymap, value)
 				opts.ToggleSort = true
 			} else if match, value := optString(arg, "--expect="); match {
 				opts.Expect = parseKeyChords(value, "key names required")
@@ -573,11 +627,30 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--color="); match {
 				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {
-				opts.Keymap, opts.ToggleSort = parseKeymap(opts.Keymap, opts.ToggleSort, value)
+				keymap, opts.ToggleSort = parseKeymap(keymap, opts.ToggleSort, value)
+			} else if match, value := optString(arg, "--history="); match {
+				setHistory(value)
+			} else if match, value := optString(arg, "--history-max="); match {
+				setHistoryMax(atoi(value))
 			} else {
 				errorExit("unknown option: " + arg)
 			}
 		}
+	}
+
+	// Change default actions for CTRL-N / CTRL-P when --history is used
+	if opts.History != nil {
+		if _, prs := keymap[curses.CtrlP]; !prs {
+			keymap[curses.CtrlP] = actPreviousHistory
+		}
+		if _, prs := keymap[curses.CtrlN]; !prs {
+			keymap[curses.CtrlN] = actNextHistory
+		}
+	}
+
+	// Override default key bindings
+	for key, act := range keymap {
+		opts.Keymap[key] = act
 	}
 
 	// If we're not using extended search mode, --nth option becomes irrelevant

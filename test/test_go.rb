@@ -566,6 +566,52 @@ class TestGoFZF < TestBase
     assert_equal %w[2 1 10 20 30 40 50 60 70 80 90 100], readonce.split($/)
   end
 
+  def test_history
+    history_file = '/tmp/fzf-test-history'
+
+    # History with limited number of entries
+    File.unlink history_file rescue nil
+    opts = "--history=#{history_file} --history-max=4"
+    input = %w[00 11 22 33 44].map { |e| e + $/ }
+    input.each do |keys|
+      tmux.send_keys "seq 100 | #{fzf opts}", :Enter
+      tmux.until { |lines| lines[-2].include? '100/100' }
+      tmux.send_keys keys
+      tmux.until { |lines| lines[-2].include? '1/100' }
+      tmux.send_keys :Enter
+    end
+    assert_equal input[1..-1], File.readlines(history_file)
+
+    # Update history entries (not changed on disk)
+    tmux.send_keys "seq 100 | #{fzf opts}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys 'C-p'
+    tmux.until { |lines| lines[-1].end_with? '> 44' }
+    tmux.send_keys 'C-p'
+    tmux.until { |lines| lines[-1].end_with? '> 33' }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-1].end_with? '> 3' }
+    tmux.send_keys 1
+    tmux.until { |lines| lines[-1].end_with? '> 31' }
+    tmux.send_keys 'C-p'
+    tmux.until { |lines| lines[-1].end_with? '> 22' }
+    tmux.send_keys 'C-n'
+    tmux.until { |lines| lines[-1].end_with? '> 31' }
+    tmux.send_keys 0
+    tmux.until { |lines| lines[-1].end_with? '> 310' }
+    tmux.send_keys :Enter
+    assert_equal %w[22 33 44 310].map { |e| e + $/ }, File.readlines(history_file)
+
+    # Respect --bind option
+    tmux.send_keys "seq 100 | #{fzf opts + ' --bind ctrl-p:next-history,ctrl-n:previous-history'}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys 'C-n', 'C-n', 'C-n', 'C-n', 'C-p'
+    tmux.until { |lines| lines[-1].end_with?('33') }
+    tmux.send_keys :Enter
+  ensure
+    File.unlink history_file
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

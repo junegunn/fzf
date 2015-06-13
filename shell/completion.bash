@@ -45,7 +45,10 @@ _fzf_opts_completion() {
     --print-query
     --expect
     --toggle-sort
-    --sync"
+    --sync
+    --null
+    --history
+    --history-max"
 
   case "${prev}" in
   --tiebreak)
@@ -54,6 +57,10 @@ _fzf_opts_completion() {
     ;;
   --color)
     COMPREPLY=( $(compgen -W "dark light 16 bw" -- ${cur}) )
+    return 0
+    ;;
+  --history)
+    COMPREPLY=()
     return 0
     ;;
   esac
@@ -207,7 +214,7 @@ EOF
 }
 
 # fzf options
-complete -F _fzf_opts_completion fzf
+complete -o default -F _fzf_opts_completion fzf
 
 d_cmds="cd pushd rmdir"
 f_cmds="

@@ -32,6 +32,9 @@ const (
 
 	// Not to cache mergers with large lists
 	mergerCacheMax int = 100000
+
+	// History
+	defaultHistoryMax int = 1000
 )
 
 // fzf events

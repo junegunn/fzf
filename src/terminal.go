@@ -36,6 +36,7 @@ type Terminal struct {
 	keymap     map[int]actionType
 	pressed    int
 	printQuery bool
+	history    *History
 	count      int
 	progress   int
 	reading    bool
@@ -116,6 +117,8 @@ const (
 	actPageUp
 	actPageDown
 	actToggleSort
+	actPreviousHistory
+	actNextHistory
 )
 
 func defaultKeymap() map[int]actionType {
@@ -186,6 +189,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		keymap:     opts.Keymap,
 		pressed:    0,
 		printQuery: opts.PrintQuery,
+		history:    opts.History,
 		merger:     EmptyMerger,
 		selected:   make(map[uint32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -610,6 +614,13 @@ func (t *Terminal) Loop() {
 		}()
 	}
 
+	exit := func(code int) {
+		if code == 0 && t.history != nil {
+			t.history.append(string(t.input))
+		}
+		os.Exit(code)
+	}
+
 	go func() {
 		for {
 			t.reqBox.Wait(func(events *util.Events) {
@@ -636,10 +647,10 @@ func (t *Terminal) Loop() {
 					case reqClose:
 						C.Close()
 						t.output()
-						os.Exit(0)
+						exit(0)
 					case reqQuit:
 						C.Close()
-						os.Exit(1)
+						exit(1)
 					}
 				}
 				t.placeCursor()
@@ -830,6 +841,18 @@ func (t *Terminal) Loop() {
 			prefix := copySlice(t.input[:t.cx])
 			t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 			t.cx++
+		case actPreviousHistory:
+			if t.history != nil {
+				t.history.override(string(t.input))
+				t.input = []rune(t.history.previous())
+				t.cx = len(t.input)
+			}
+		case actNextHistory:
+			if t.history != nil {
+				t.history.override(string(t.input))
+				t.input = []rune(t.history.next())
+				t.cx = len(t.input)
+			}
 		case actMouse:
 			me := event.MouseEvent
 			mx, my := util.Constrain(me.X-len(t.prompt), 0, len(t.input)), me.Y
