@@ -559,8 +559,8 @@ class TestGoFZF < TestBase
       tmux.send_keys keys
       tmux.until { |lines| lines[-2].include? '1/100' }
       tmux.send_keys :Enter
+      readonce
     end
-    readonce
     assert_equal input[1..-1], File.readlines(history_file)
 
     # Update history entries (not changed on disk)
