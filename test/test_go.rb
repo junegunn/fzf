@@ -580,6 +580,7 @@ class TestGoFZF < TestBase
       tmux.until { |lines| lines[-2].include? '1/100' }
       tmux.send_keys :Enter
     end
+    readonce
     assert_equal input[1..-1], File.readlines(history_file)
 
     # Update history entries (not changed on disk)
@@ -600,6 +601,7 @@ class TestGoFZF < TestBase
     tmux.send_keys 0
     tmux.until { |lines| lines[-1].end_with? '> 310' }
     tmux.send_keys :Enter
+    readonce
     assert_equal %w[22 33 44 310].map { |e| e + $/ }, File.readlines(history_file)
 
     # Respect --bind option
