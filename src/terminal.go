@@ -716,6 +716,9 @@ func (t *Terminal) Loop() {
 			}
 		}
 		switch action {
+		case actIgnore:
+			t.mutex.Unlock()
+			continue
 		case actInvalid:
 			t.mutex.Unlock()
 			continue

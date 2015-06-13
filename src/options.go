@@ -391,6 +391,8 @@ func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[in
 		key := keys[0]
 		act := strings.ToLower(pair[1])
 		switch act {
+		case "ignore":
+			keymap[key] = actIgnore
 		case "beginning-of-line":
 			keymap[key] = actBeginningOfLine
 		case "abort":
