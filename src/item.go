@@ -86,10 +86,15 @@ func (i *Item) Rank(cache bool) Rank {
 
 // AsString returns the original string
 func (i *Item) AsString() string {
+	return *i.StringPtr()
+}
+
+// StringPtr returns the pointer to the original string
+func (i *Item) StringPtr() *string {
 	if i.origText != nil {
-		return *i.origText
+		return i.origText
 	}
-	return *i.text
+	return i.text
 }
 
 func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset {

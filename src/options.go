@@ -117,6 +117,7 @@ type Options struct {
 	ToggleSort bool
 	Expect     []int
 	Keymap     map[int]actionType
+	Execmap    map[int]string
 	PrintQuery bool
 	ReadZero   bool
 	Sync       bool
@@ -157,6 +158,7 @@ func defaultOptions() *Options {
 		ToggleSort: false,
 		Expect:     []int{},
 		Keymap:     defaultKeymap(),
+		Execmap:    make(map[int]string),
 		PrintQuery: false,
 		ReadZero:   false,
 		Sync:       false,
@@ -375,12 +377,22 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 	return theme
 }
 
-func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[int]actionType, bool) {
-	for _, pairStr := range strings.Split(str, ",") {
+func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort bool, str string) (map[int]actionType, map[int]string, bool) {
+	rx := regexp.MustCompile(
+		":execute(\\([^)]*\\)|\\[[^\\]]*\\]|/[^/]*/|:[^:]*:|;[^;]*;|@[^@]*@|~[^~]*~|%[^%]*%|\\?[^?]*\\?)")
+	masked := rx.ReplaceAllStringFunc(str, func(src string) string {
+		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
+	})
+
+	idx := 0
+	for _, pairStr := range strings.Split(masked, ",") {
+		pairStr = str[idx : idx+len(pairStr)]
+		idx += len(pairStr) + 1
+
 		fail := func() {
 			errorExit("invalid key binding: " + pairStr)
 		}
-		pair := strings.Split(pairStr, ":")
+		pair := strings.SplitN(pairStr, ":", 2)
 		if len(pair) != 2 {
 			fail()
 		}
@@ -455,10 +467,28 @@ func parseKeymap(keymap map[int]actionType, toggleSort bool, str string) (map[in
 			keymap[key] = actToggleSort
 			toggleSort = true
 		default:
-			errorExit("unknown action: " + act)
+			if isExecuteAction(act) {
+				keymap[key] = actExecute
+				execmap[key] = pair[1][8 : len(act)-1]
+			} else {
+				errorExit("unknown action: " + act)
+			}
 		}
 	}
-	return keymap, toggleSort
+	return keymap, execmap, toggleSort
+}
+
+func isExecuteAction(str string) bool {
+	if !strings.HasPrefix(str, "execute") || len(str) < 9 {
+		return false
+	}
+	b := str[7]
+	e := str[len(str)-1]
+	if b == e && strings.ContainsAny(string(b), "/:;@~%?") ||
+		b == '(' && e == ')' || b == '[' && e == ']' {
+		return true
+	}
+	return false
 }
 
 func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
@@ -515,7 +545,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--tiebreak":
 			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
-			keymap, opts.ToggleSort = parseKeymap(keymap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
+			keymap, opts.Execmap, opts.ToggleSort =
+				parseKeymap(keymap, opts.Execmap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
 		case "--color":
 			spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
@@ -629,7 +660,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--color="); match {
 				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {
-				keymap, opts.ToggleSort = parseKeymap(keymap, opts.ToggleSort, value)
+				keymap, opts.Execmap, opts.ToggleSort =
+					parseKeymap(keymap, opts.Execmap, opts.ToggleSort, value)
 			} else if match, value := optString(arg, "--history="); match {
 				setHistory(value)
 			} else if match, value := optString(arg, "--history-max="); match {

@@ -136,11 +136,19 @@ func TestBind(t *testing.T) {
 			t.Errorf("%d != %d", action, expected)
 		}
 	}
+	checkString := func(action string, expected string) {
+		if action != expected {
+			t.Errorf("%d != %d", action, expected)
+		}
+	}
 	keymap := defaultKeymap()
+	execmap := make(map[int]string)
 	check(actBeginningOfLine, keymap[curses.CtrlA])
-	keymap, toggleSort :=
-		parseKeymap(keymap, false,
-			"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down")
+	keymap, execmap, toggleSort :=
+		parseKeymap(keymap, execmap, false,
+			"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down,"+
+				"f1:execute(ls {}),f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute:less {}:,"+
+				"alt-a:execute@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};")
 	if !toggleSort {
 		t.Errorf("toggleSort not set")
 	}
@@ -148,8 +156,18 @@ func TestBind(t *testing.T) {
 	check(actToggleSort, keymap[curses.CtrlB])
 	check(actPageUp, keymap[curses.AltZ+'c'])
 	check(actPageDown, keymap[curses.AltZ])
+	check(actExecute, keymap[curses.F1])
+	check(actExecute, keymap[curses.F2])
+	check(actExecute, keymap[curses.F3])
+	check(actExecute, keymap[curses.F4])
+	checkString("ls {}", execmap[curses.F1])
+	checkString("echo {}, {}, {}", execmap[curses.F2])
+	checkString("echo '({})'", execmap[curses.F3])
+	checkString("less {}", execmap[curses.F4])
+	checkString("echo (,),[,],/,:,;,%,{}", execmap[curses.AltA])
+	checkString("echo (,),[,],/,:,@,%,{}", execmap[curses.AltB])
 
-	keymap, toggleSort = parseKeymap(keymap, false, "f1:abort")
+	keymap, execmap, toggleSort = parseKeymap(keymap, execmap, false, "f1:abort")
 	if toggleSort {
 		t.Errorf("toggleSort set")
 	}

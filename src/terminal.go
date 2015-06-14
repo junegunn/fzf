@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"regexp"
 	"sort"
@@ -34,6 +35,7 @@ type Terminal struct {
 	toggleSort bool
 	expect     []int
 	keymap     map[int]actionType
+	execmap    map[int]string
 	pressed    int
 	printQuery bool
 	history    *History
@@ -119,6 +121,7 @@ const (
 	actToggleSort
 	actPreviousHistory
 	actNextHistory
+	actExecute
 )
 
 func defaultKeymap() map[int]actionType {
@@ -187,6 +190,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		toggleSort: opts.ToggleSort,
 		expect:     opts.Expect,
 		keymap:     opts.Keymap,
+		execmap:    opts.Execmap,
 		pressed:    0,
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
@@ -587,6 +591,17 @@ func keyMatch(key int, event C.Event) bool {
 	return event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ
 }
 
+func executeCommand(template string, current string) {
+	command := strings.Replace(template, "{}", fmt.Sprintf("%q", current), -1)
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	C.Endwin()
+	cmd.Run()
+	C.Refresh()
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	<-t.startChan
@@ -677,13 +692,7 @@ func (t *Terminal) Loop() {
 		}
 		selectItem := func(item *Item) bool {
 			if _, found := t.selected[item.index]; !found {
-				var strptr *string
-				if item.origText != nil {
-					strptr = item.origText
-				} else {
-					strptr = item.text
-				}
-				t.selected[item.index] = selectedItem{time.Now(), strptr}
+				t.selected[item.index] = selectedItem{time.Now(), item.StringPtr()}
 				return true
 			}
 			return false
@@ -709,14 +718,20 @@ func (t *Terminal) Loop() {
 		}
 
 		action := t.keymap[event.Type]
+		mapkey := event.Type
 		if event.Type == C.Rune {
-			code := int(event.Char) + int(C.AltZ)
-			if act, prs := t.keymap[code]; prs {
+			mapkey = int(event.Char) + int(C.AltZ)
+			if act, prs := t.keymap[mapkey]; prs {
 				action = act
 			}
 		}
 		switch action {
 		case actIgnore:
+		case actExecute:
+			if t.cy >= 0 && t.cy < t.merger.Length() {
+				item := t.merger.Get(t.cy)
+				executeCommand(t.execmap[mapkey], item.AsString())
+			}
 		case actInvalid:
 			t.mutex.Unlock()
 			continue
