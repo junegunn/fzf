@@ -787,6 +787,7 @@ class TestBash < TestBase
   include CompletionTest
 
   def new_shell
+    tmux.prepare
     tmux.send_keys "FZF_TMUX=0 #{Shell.bash}", :Enter
     tmux.prepare
   end
