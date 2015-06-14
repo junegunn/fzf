@@ -262,7 +262,7 @@ func isAlphabet(char uint8) bool {
 	return char >= 'a' && char <= 'z'
 }
 
-func parseKeyChords(str string, message string) []int {
+func parseKeyChords(str string, message string, bind bool) []int {
 	if len(str) == 0 {
 		errorExit(message)
 	}
@@ -278,16 +278,44 @@ func parseKeyChords(str string, message string) []int {
 			continue // ignore
 		}
 		lkey := strings.ToLower(key)
-		if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
-			chords = append(chords, curses.CtrlA+int(lkey[5])-'a')
-		} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
-			chords = append(chords, curses.AltA+int(lkey[4])-'a')
-		} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '4' {
-			chords = append(chords, curses.F1+int(key[1])-'1')
-		} else if utf8.RuneCountInString(key) == 1 {
-			chords = append(chords, curses.AltZ+int([]rune(key)[0]))
-		} else {
-			errorExit("unsupported key: " + key)
+		chord := 0
+		if bind {
+			switch lkey {
+			case "up":
+				chord = curses.Up
+			case "down":
+				chord = curses.Down
+			case "left":
+				chord = curses.Left
+			case "right":
+				chord = curses.Right
+			case "enter", "return":
+				chord = curses.CtrlM
+			case "space":
+				chord = curses.AltZ + int(' ')
+			case "tab":
+				chord = curses.Tab
+			case "btab":
+				chord = curses.BTab
+			case "esc":
+				chord = curses.ESC
+			}
+		}
+		if chord == 0 {
+			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
+				chord = curses.CtrlA + int(lkey[5]) - 'a'
+			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
+				chord = curses.AltA + int(lkey[4]) - 'a'
+			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '4' {
+				chord = curses.F1 + int(key[1]) - '1'
+			} else if utf8.RuneCountInString(key) == 1 {
+				chord = curses.AltZ + int([]rune(key)[0])
+			} else {
+				errorExit("unsupported key: " + key)
+			}
+		}
+		if chord > 0 {
+			chords = append(chords, chord)
 		}
 	}
 	return chords
@@ -402,7 +430,7 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		if len(pair) != 2 {
 			fail()
 		}
-		keys := parseKeyChords(pair[0], "key name required")
+		keys := parseKeyChords(pair[0], "key name required", true)
 		if len(keys) != 1 {
 			fail()
 		}
@@ -498,7 +526,7 @@ func isExecuteAction(str string) bool {
 }
 
 func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
-	keys := parseKeyChords(str, "key name required")
+	keys := parseKeyChords(str, "key name required", true)
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
 	}
@@ -547,7 +575,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
 		case "--expect":
-			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
+			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required", false)
 		case "--tiebreak":
 			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
@@ -660,7 +688,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				keymap = checkToggleSort(keymap, value)
 				opts.ToggleSort = true
 			} else if match, value := optString(arg, "--expect="); match {
-				opts.Expect = parseKeyChords(value, "key names required")
+				opts.Expect = parseKeyChords(value, "key names required", false)
 			} else if match, value := optString(arg, "--tiebreak="); match {
 				opts.Tiebreak = parseTiebreak(value)
 			} else if match, value := optString(arg, "--color="); match {

@@ -72,7 +72,7 @@ func TestIrrelevantNth(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	keys := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g", "")
+	keys := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g", "", false)
 	check := func(key int, expected int) {
 		if key != expected {
 			t.Errorf("%d != %d", key, expected)
@@ -88,6 +88,20 @@ func TestParseKeys(t *testing.T) {
 	check(keys[6], curses.CtrlA+'g'-'a')
 	check(keys[7], curses.AltZ+'J')
 	check(keys[8], curses.AltZ+'g')
+
+	// Synonyms
+	keys = parseKeyChords("enter,return,space,tab,btab,esc,up,down,left,right", "", true)
+	check(len(keys), 10)
+	check(keys[0], curses.CtrlM)
+	check(keys[1], curses.CtrlM)
+	check(keys[2], curses.AltZ+' ')
+	check(keys[3], curses.Tab)
+	check(keys[4], curses.BTab)
+	check(keys[5], curses.ESC)
+	check(keys[6], curses.Up)
+	check(keys[7], curses.Down)
+	check(keys[8], curses.Left)
+	check(keys[9], curses.Right)
 }
 
 func TestParseKeysWithComma(t *testing.T) {
@@ -97,36 +111,36 @@ func TestParseKeysWithComma(t *testing.T) {
 		}
 	}
 
-	keys := parseKeyChords(",", "")
+	keys := parseKeyChords(",", "", false)
 	check(len(keys), 1)
 	check(keys[0], curses.AltZ+',')
 
-	keys = parseKeyChords(",,a,b", "")
+	keys = parseKeyChords(",,a,b", "", false)
 	check(len(keys), 3)
 	check(keys[0], curses.AltZ+'a')
 	check(keys[1], curses.AltZ+'b')
 	check(keys[2], curses.AltZ+',')
 
-	keys = parseKeyChords("a,b,,", "")
+	keys = parseKeyChords("a,b,,", "", false)
 	check(len(keys), 3)
 	check(keys[0], curses.AltZ+'a')
 	check(keys[1], curses.AltZ+'b')
 	check(keys[2], curses.AltZ+',')
 
-	keys = parseKeyChords("a,,,b", "")
+	keys = parseKeyChords("a,,,b", "", false)
 	check(len(keys), 3)
 	check(keys[0], curses.AltZ+'a')
 	check(keys[1], curses.AltZ+'b')
 	check(keys[2], curses.AltZ+',')
 
-	keys = parseKeyChords("a,,,b,c", "")
+	keys = parseKeyChords("a,,,b,c", "", false)
 	check(len(keys), 4)
 	check(keys[0], curses.AltZ+'a')
 	check(keys[1], curses.AltZ+'b')
 	check(keys[2], curses.AltZ+'c')
 	check(keys[3], curses.AltZ+',')
 
-	keys = parseKeyChords(",,,", "")
+	keys = parseKeyChords(",,,", "", false)
 	check(len(keys), 1)
 	check(keys[0], curses.AltZ+',')
 }
