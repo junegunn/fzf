@@ -377,10 +377,16 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 	return theme
 }
 
+var executeRegexp *regexp.Regexp
+
 func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort bool, str string) (map[int]actionType, map[int]string, bool) {
-	rx := regexp.MustCompile(
-		":execute(\\([^)]*\\)|\\[[^\\]]*\\]|/[^/]*/|:[^:]*:|;[^;]*;|@[^@]*@|~[^~]*~|%[^%]*%|\\?[^?]*\\?)")
-	masked := rx.ReplaceAllStringFunc(str, func(src string) string {
+	if executeRegexp == nil {
+		// Backreferences are not supported.
+		// "~!@#$%^&*:;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
+		executeRegexp = regexp.MustCompile(
+			":execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|:[^:]*:|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
+	}
+	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
 	})
 
@@ -484,7 +490,7 @@ func isExecuteAction(str string) bool {
 	}
 	b := str[7]
 	e := str[len(str)-1]
-	if b == e && strings.ContainsAny(string(b), "/:;@~%?") ||
+	if b == e && strings.ContainsAny(string(b), "~!@#$%^&*:;/|") ||
 		b == '(' && e == ')' || b == '[' && e == ']' {
 		return true
 	}

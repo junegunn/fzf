@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/junegunn/fzf/src/curses"
@@ -166,6 +167,12 @@ func TestBind(t *testing.T) {
 	checkString("less {}", execmap[curses.F4])
 	checkString("echo (,),[,],/,:,;,%,{}", execmap[curses.AltA])
 	checkString("echo (,),[,],/,:,@,%,{}", execmap[curses.AltB])
+
+	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ':', ';', '/'} {
+		keymap, execmap, toggleSort =
+			parseKeymap(keymap, execmap, false, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
+		checkString("foobar", execmap[curses.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0])])
+	}
 
 	keymap, execmap, toggleSort = parseKeymap(keymap, execmap, false, "f1:abort")
 	if toggleSort {
