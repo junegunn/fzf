@@ -174,11 +174,11 @@ func errorExit(msg string) {
 	help(1)
 }
 
-func optString(arg string, prefix string) (bool, string) {
-	rx, _ := regexp.Compile(fmt.Sprintf("^(?:%s)(.*)$", prefix))
-	matches := rx.FindStringSubmatch(arg)
-	if len(matches) > 1 {
-		return true, matches[1]
+func optString(arg string, prefixes ...string) (bool, string) {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(arg, prefix) {
+			return true, arg[len(prefix):]
+		}
 	}
 	return false, ""
 }
@@ -605,19 +605,19 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--version":
 			opts.Version = true
 		default:
-			if match, value := optString(arg, "-q|--query="); match {
+			if match, value := optString(arg, "-q", "--query="); match {
 				opts.Query = value
-			} else if match, value := optString(arg, "-f|--filter="); match {
+			} else if match, value := optString(arg, "-f", "--filter="); match {
 				opts.Filter = &value
-			} else if match, value := optString(arg, "-d|--delimiter="); match {
+			} else if match, value := optString(arg, "-d", "--delimiter="); match {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
-			} else if match, value := optString(arg, "-n|--nth="); match {
+			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
 				opts.WithNth = splitNth(value)
-			} else if match, _ := optString(arg, "-s|--sort="); match {
+			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				keymap = checkToggleSort(keymap, value)
