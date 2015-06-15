@@ -412,7 +412,7 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		// Backreferences are not supported.
 		// "~!@#$%^&*:;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 		executeRegexp = regexp.MustCompile(
-			":execute=.*|:execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|:[^:]*:|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
+			"(?s):execute=.*|:execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|:[^:]*:|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
 	}
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
