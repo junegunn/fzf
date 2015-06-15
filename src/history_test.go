@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"os/user"
 	"testing"
 )
 
@@ -8,7 +9,12 @@ func TestHistory(t *testing.T) {
 	maxHistory := 50
 
 	// Invalid arguments
-	for _, path := range []string{"/etc", "/proc", "/etc/sudoers"} {
+	user, _ := user.Current()
+	paths := []string{"/etc", "/proc"}
+	if user.Name != "root" {
+		paths = append(paths, "/etc/sudoers")
+	}
+	for _, path := range paths {
 		if _, e := NewHistory(path, maxHistory); e == nil {
 			t.Error("Error expected for: " + path)
 		}
