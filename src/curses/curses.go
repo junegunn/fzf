@@ -51,6 +51,7 @@ const (
 	Mouse
 
 	BTab
+	BSpace
 
 	Del
 	PgUp
@@ -483,7 +484,7 @@ func GetChar() Event {
 	case CtrlQ:
 		return Event{CtrlQ, 0, nil}
 	case 127:
-		return Event{CtrlH, 0, nil}
+		return Event{BSpace, 0, nil}
 	case ESC:
 		return escSequence(&sz)
 	}

@@ -293,6 +293,8 @@ func parseKeyChords(str string, message string, bind bool) []int {
 				chord = curses.CtrlM
 			case "space":
 				chord = curses.AltZ + int(' ')
+			case "bspace":
+				chord = curses.BSpace
 			case "tab":
 				chord = curses.Tab
 			case "btab":

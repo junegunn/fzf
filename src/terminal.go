@@ -137,6 +137,7 @@ func defaultKeymap() map[int]actionType {
 	keymap[C.CtrlE] = actEndOfLine
 	keymap[C.CtrlF] = actForwardChar
 	keymap[C.CtrlH] = actBackwardDeleteChar
+	keymap[C.BSpace] = actBackwardDeleteChar
 	keymap[C.Tab] = actToggleDown
 	keymap[C.BTab] = actToggleUp
 	keymap[C.CtrlJ] = actDown
