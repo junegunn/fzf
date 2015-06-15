@@ -410,9 +410,9 @@ var executeRegexp *regexp.Regexp
 func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort bool, str string) (map[int]actionType, map[int]string, bool) {
 	if executeRegexp == nil {
 		// Backreferences are not supported.
-		// "~!@#$%^&*:;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
+		// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 		executeRegexp = regexp.MustCompile(
-			"(?s):execute=.*|:execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|:[^:]*:|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
+			"(?s):execute:.*|:execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
 	}
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
@@ -503,7 +503,7 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		default:
 			if isExecuteAction(act) {
 				keymap[key] = actExecute
-				if pair[1][7] == '=' {
+				if pair[1][7] == ':' {
 					execmap[key] = pair[1][8:]
 				} else {
 					execmap[key] = pair[1][8 : len(act)-1]
@@ -522,8 +522,8 @@ func isExecuteAction(str string) bool {
 	}
 	b := str[7]
 	e := str[len(str)-1]
-	if b == '=' || b == '(' && e == ')' || b == '[' && e == ']' ||
-		b == e && strings.ContainsAny(string(b), "~!@#$%^&*:;/|") {
+	if b == ':' || b == '(' && e == ')' || b == '[' && e == ']' ||
+		b == e && strings.ContainsAny(string(b), "~!@#$%^&*;/|") {
 		return true
 	}
 	return false

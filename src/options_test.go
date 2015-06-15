@@ -162,9 +162,9 @@ func TestBind(t *testing.T) {
 	keymap, execmap, toggleSort :=
 		parseKeymap(keymap, execmap, false,
 			"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down,"+
-				"f1:execute(ls {}),f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute:less {}:,"+
+				"f1:execute(ls {}),f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 				"alt-a:execute@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};"+
-				",X:execute=\nfoobar,Y:execute(baz)")
+				",X:execute:\nfoobar,Y:execute(baz)")
 	if !toggleSort {
 		t.Errorf("toggleSort not set")
 	}
@@ -184,7 +184,7 @@ func TestBind(t *testing.T) {
 	checkString("echo (,),[,],/,:,@,%,{}", execmap[curses.AltB])
 	checkString("\nfoobar,Y:execute(baz)", execmap[curses.AltZ+'X'])
 
-	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ':', ';', '/'} {
+	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ';', '/'} {
 		keymap, execmap, toggleSort =
 			parseKeymap(keymap, execmap, false, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
 		checkString("foobar", execmap[curses.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0])])

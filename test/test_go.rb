@@ -596,7 +596,7 @@ class TestGoFZF < TestBase
 
   def test_execute
     output = '/tmp/fzf-test-execute'
-    opts = %[--bind \\"alt-a:execute(echo '[{}]' >> #{output}),alt-b:execute[echo '({}), ({})' >> #{output}],C:execute:echo '({}), [{}], @{}@' >> #{output}:\\"]
+    opts = %[--bind \\"alt-a:execute(echo '[{}]' >> #{output}),alt-b:execute[echo '({}), ({})' >> #{output}],C:execute:echo '({}), [{}], @{}@' >> #{output}\\"]
     tmux.send_keys "seq 100 | #{fzf opts}", :Enter
     tmux.until { |lines| lines[-2].include? '100/100' }
     tmux.send_keys :Escape, :a, :Escape, :a
