@@ -615,6 +615,25 @@ class TestGoFZF < TestBase
     File.unlink output rescue nil
   end
 
+  def test_cycle
+    tmux.send_keys "seq 8 | #{fzf :cycle}", :Enter
+    tmux.until { |lines| lines[-2].include? '8/8' }
+    tmux.send_keys :Down
+    tmux.until { |lines| lines[-10].start_with? '>' }
+    tmux.send_keys :Down
+    tmux.until { |lines| lines[-9].start_with? '>' }
+    tmux.send_keys :PgUp
+    tmux.until { |lines| lines[-10].start_with? '>' }
+    tmux.send_keys :PgUp
+    tmux.until { |lines| lines[-3].start_with? '>' }
+    tmux.send_keys :Up
+    tmux.until { |lines| lines[-4].start_with? '>' }
+    tmux.send_keys :PgDn
+    tmux.until { |lines| lines[-3].start_with? '>' }
+    tmux.send_keys :PgDn
+    tmux.until { |lines| lines[-10].start_with? '>' }
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

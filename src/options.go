@@ -37,6 +37,7 @@ const usage = `usage: fzf [options]
         --color=COLSPEC   Base scheme (dark|light|16|bw) and/or custom colors
         --black           Use black background
         --reverse         Reverse orientation
+        --cycle           Enable cyclic scroll
         --no-hscroll      Disable horizontal scroll
         --inline-info     Display finder info inline with the query
         --prompt=STR      Input prompt (default: '> ')
@@ -107,6 +108,7 @@ type Options struct {
 	Theme      *curses.ColorTheme
 	Black      bool
 	Reverse    bool
+	Cycle      bool
 	Hscroll    bool
 	InlineInfo bool
 	Prompt     string
@@ -148,6 +150,7 @@ func defaultOptions() *Options {
 		Theme:      defaultTheme(),
 		Black:      false,
 		Reverse:    false,
+		Cycle:      false,
 		Hscroll:    true,
 		InlineInfo: false,
 		Prompt:     "> ",
@@ -637,6 +640,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Reverse = true
 		case "--no-reverse":
 			opts.Reverse = false
+		case "--cycle":
+			opts.Cycle = true
+		case "--no-cycle":
+			opts.Cycle = false
 		case "--hscroll":
 			opts.Hscroll = true
 		case "--no-hscroll":

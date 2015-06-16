@@ -39,6 +39,7 @@ type Terminal struct {
 	pressed    int
 	printQuery bool
 	history    *History
+	cycle      bool
 	count      int
 	progress   int
 	reading    bool
@@ -195,6 +196,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		pressed:    0,
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
+		cycle:      opts.Cycle,
 		merger:     EmptyMerger,
 		selected:   make(map[uint32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -945,10 +947,22 @@ func (t *Terminal) constrain() {
 
 func (t *Terminal) vmove(o int) {
 	if t.reverse {
-		t.vset(t.cy - o)
-	} else {
-		t.vset(t.cy + o)
+		o *= -1
 	}
+	dest := t.cy + o
+	if t.cycle {
+		max := t.merger.Length() - 1
+		if dest > max {
+			if t.cy == max {
+				dest = 0
+			}
+		} else if dest < 0 {
+			if t.cy == 0 {
+				dest = max
+			}
+		}
+	}
+	t.vset(dest)
 }
 
 func (t *Terminal) vset(o int) bool {
