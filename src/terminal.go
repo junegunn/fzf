@@ -197,6 +197,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
 		cycle:      opts.Cycle,
+		reading:    true,
 		merger:     EmptyMerger,
 		selected:   make(map[uint32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -628,6 +629,20 @@ func (t *Terminal) Loop() {
 			for {
 				<-resizeChan
 				t.reqBox.Set(reqRedraw, nil)
+			}
+		}()
+
+		// Keep the spinner spinning
+		go func() {
+			for {
+				t.mutex.Lock()
+				reading := t.reading
+				t.mutex.Unlock()
+				if !reading {
+					break
+				}
+				time.Sleep(spinnerDuration)
+				t.reqBox.Set(reqInfo, nil)
 			}
 		}()
 	}
