@@ -422,6 +422,18 @@ Use iconv to convert NFD paths to NFC:
 find . | iconv -f utf-8-mac -t utf8//ignore | fzf
 ```
 
+Related projects
+----------------
+
+- [canything by @keiji0](https://github.com/keiji0/canything)
+  - A seminal work in interactive grep tools.
+- [zaw by @nakamuray](https://github.com/zsh-users/zaw)
+  - A zsh-friendly interactive grep tool.
+- [peco by @lestrrat](https://github.com/lestrrat/peco)
+  - An interactive grep tool written in Go language.
+- [percol by @mooz](https://github.com/mooz/percol)
+  - An interactive grep tool written in Python language.
+
 License
 -------
 
