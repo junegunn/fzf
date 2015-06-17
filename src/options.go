@@ -298,12 +298,28 @@ func parseKeyChords(str string, message string, bind bool) []int {
 				chord = curses.AltZ + int(' ')
 			case "bspace":
 				chord = curses.BSpace
+			case "alt-bs", "alt-bspace":
+				chord = curses.AltBS
 			case "tab":
 				chord = curses.Tab
 			case "btab":
 				chord = curses.BTab
 			case "esc":
 				chord = curses.ESC
+			case "del":
+				chord = curses.Del
+			case "home":
+				chord = curses.Home
+			case "end":
+				chord = curses.End
+			case "pgup", "page-up":
+				chord = curses.PgUp
+			case "pgdn", "page-down":
+				chord = curses.PgDn
+			case "shift-left":
+				chord = curses.SLeft
+			case "shift-right":
+				chord = curses.SRight
 			}
 		}
 		if chord == 0 {
