@@ -156,6 +156,7 @@ class TestBase < Minitest::Test
     File.read(tempname)
   ensure
     File.unlink tempname while File.exists?(tempname)
+    tmux.prepare
   end
 
   def fzf(*opts)
@@ -672,7 +673,7 @@ module TestShell
   def test_alt_c
     tmux.prepare
     tmux.send_keys :Escape, :c, pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count > 0 }
+    lines = tmux.until(1) { |lines| lines.item_count > 0 && lines[-3][2..-1] }
     expected = lines[-3][2..-1]
     tmux.send_keys :Enter, pane: 1
     tmux.prepare
