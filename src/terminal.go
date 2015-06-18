@@ -33,10 +33,10 @@ type Terminal struct {
 	multi      bool
 	sort       bool
 	toggleSort bool
-	expect     []int
+	expect     map[int]string
 	keymap     map[int]actionType
 	execmap    map[int]string
-	pressed    int
+	pressed    string
 	printQuery bool
 	history    *History
 	cycle      bool
@@ -193,7 +193,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		expect:     opts.Expect,
 		keymap:     opts.Keymap,
 		execmap:    opts.Execmap,
-		pressed:    0,
+		pressed:    "",
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
 		cycle:      opts.Cycle,
@@ -257,17 +257,7 @@ func (t *Terminal) output() {
 		fmt.Println(string(t.input))
 	}
 	if len(t.expect) > 0 {
-		if t.pressed == 0 {
-			fmt.Println()
-		} else if util.Between(t.pressed, C.AltA, C.AltZ) {
-			fmt.Printf("alt-%c\n", t.pressed+'a'-C.AltA)
-		} else if util.Between(t.pressed, C.F1, C.F4) {
-			fmt.Printf("f%c\n", t.pressed+'1'-C.F1)
-		} else if util.Between(t.pressed, C.CtrlA, C.CtrlZ) {
-			fmt.Printf("ctrl-%c\n", t.pressed+'a'-C.CtrlA)
-		} else {
-			fmt.Printf("%c\n", t.pressed-C.AltZ)
-		}
+		fmt.Println(t.pressed)
 	}
 	if len(t.selected) == 0 {
 		cnt := t.merger.Length()
@@ -727,9 +717,9 @@ func (t *Terminal) Loop() {
 				req(reqInfo)
 			}
 		}
-		for _, key := range t.expect {
+		for key, ret := range t.expect {
 			if keyMatch(key, event) {
-				t.pressed = key
+				t.pressed = ret
 				req(reqClose)
 				break
 			}

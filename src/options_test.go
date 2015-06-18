@@ -72,77 +72,101 @@ func TestIrrelevantNth(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	keys := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g", "", false)
-	check := func(key int, expected int) {
-		if key != expected {
-			t.Errorf("%d != %d", key, expected)
+	pairs := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g", "")
+	check := func(i int, s string) {
+		if pairs[i] != s {
+			t.Errorf("%s != %s", pairs[i], s)
 		}
 	}
-	check(len(keys), 9)
-	check(keys[0], curses.CtrlZ)
-	check(keys[1], curses.AltZ)
-	check(keys[2], curses.F2)
-	check(keys[3], curses.AltZ+'@')
-	check(keys[4], curses.AltA)
-	check(keys[5], curses.AltZ+'!')
-	check(keys[6], curses.CtrlA+'g'-'a')
-	check(keys[7], curses.AltZ+'J')
-	check(keys[8], curses.AltZ+'g')
+	if len(pairs) != 9 {
+		t.Error(9)
+	}
+	check(curses.CtrlZ, "ctrl-z")
+	check(curses.AltZ, "alt-z")
+	check(curses.F2, "f2")
+	check(curses.AltZ+'@', "@")
+	check(curses.AltA, "Alt-a")
+	check(curses.AltZ+'!', "!")
+	check(curses.CtrlA+'g'-'a', "ctrl-G")
+	check(curses.AltZ+'J', "J")
+	check(curses.AltZ+'g', "g")
 
 	// Synonyms
-	keys = parseKeyChords("enter,return,space,tab,btab,esc,up,down,left,right", "", true)
-	check(len(keys), 10)
-	check(keys[0], curses.CtrlM)
-	check(keys[1], curses.CtrlM)
-	check(keys[2], curses.AltZ+' ')
-	check(keys[3], curses.Tab)
-	check(keys[4], curses.BTab)
-	check(keys[5], curses.ESC)
-	check(keys[6], curses.Up)
-	check(keys[7], curses.Down)
-	check(keys[8], curses.Left)
-	check(keys[9], curses.Right)
+	pairs = parseKeyChords("enter,Return,space,tab,btab,esc,up,down,left,right", "")
+	if len(pairs) != 9 {
+		t.Error(9)
+	}
+	check(curses.CtrlM, "Return")
+	check(curses.AltZ+' ', "space")
+	check(curses.Tab, "tab")
+	check(curses.BTab, "btab")
+	check(curses.ESC, "esc")
+	check(curses.Up, "up")
+	check(curses.Down, "down")
+	check(curses.Left, "left")
+	check(curses.Right, "right")
+
+	pairs = parseKeyChords("Tab,Ctrl-I,PgUp,page-up,pgdn,Page-Down,Home,End,Alt-BS,Alt-BSpace,shift-left,shift-right,btab,shift-tab,return,Enter,bspace", "")
+	if len(pairs) != 11 {
+		t.Error(11)
+	}
+	check(curses.Tab, "Ctrl-I")
+	check(curses.PgUp, "page-up")
+	check(curses.PgDn, "Page-Down")
+	check(curses.Home, "Home")
+	check(curses.End, "End")
+	check(curses.AltBS, "Alt-BSpace")
+	check(curses.SLeft, "shift-left")
+	check(curses.SRight, "shift-right")
+	check(curses.BTab, "shift-tab")
+	check(curses.CtrlM, "Enter")
+	check(curses.BSpace, "bspace")
 }
 
 func TestParseKeysWithComma(t *testing.T) {
-	check := func(key int, expected int) {
-		if key != expected {
-			t.Errorf("%d != %d", key, expected)
+	checkN := func(a int, b int) {
+		if a != b {
+			t.Errorf("%d != %d", a, b)
+		}
+	}
+	check := func(pairs map[int]string, i int, s string) {
+		if pairs[i] != s {
+			t.Errorf("%s != %s", pairs[i], s)
 		}
 	}
 
-	keys := parseKeyChords(",", "", false)
-	check(len(keys), 1)
-	check(keys[0], curses.AltZ+',')
+	pairs := parseKeyChords(",", "")
+	checkN(len(pairs), 1)
+	check(pairs, curses.AltZ+',', ",")
 
-	keys = parseKeyChords(",,a,b", "", false)
-	check(len(keys), 3)
-	check(keys[0], curses.AltZ+'a')
-	check(keys[1], curses.AltZ+'b')
-	check(keys[2], curses.AltZ+',')
+	pairs = parseKeyChords(",,a,b", "")
+	checkN(len(pairs), 3)
+	check(pairs, curses.AltZ+'a', "a")
+	check(pairs, curses.AltZ+'b', "b")
+	check(pairs, curses.AltZ+',', ",")
 
-	keys = parseKeyChords("a,b,,", "", false)
-	check(len(keys), 3)
-	check(keys[0], curses.AltZ+'a')
-	check(keys[1], curses.AltZ+'b')
-	check(keys[2], curses.AltZ+',')
+	pairs = parseKeyChords("a,b,,", "")
+	checkN(len(pairs), 3)
+	check(pairs, curses.AltZ+'a', "a")
+	check(pairs, curses.AltZ+'b', "b")
+	check(pairs, curses.AltZ+',', ",")
 
-	keys = parseKeyChords("a,,,b", "", false)
-	check(len(keys), 3)
-	check(keys[0], curses.AltZ+'a')
-	check(keys[1], curses.AltZ+'b')
-	check(keys[2], curses.AltZ+',')
+	pairs = parseKeyChords("a,,,b", "")
+	checkN(len(pairs), 3)
+	check(pairs, curses.AltZ+'a', "a")
+	check(pairs, curses.AltZ+'b', "b")
+	check(pairs, curses.AltZ+',', ",")
 
-	keys = parseKeyChords("a,,,b,c", "", false)
-	check(len(keys), 4)
-	check(keys[0], curses.AltZ+'a')
-	check(keys[1], curses.AltZ+'b')
-	check(keys[2], curses.AltZ+'c')
-	check(keys[3], curses.AltZ+',')
+	pairs = parseKeyChords("a,,,b,c", "")
+	checkN(len(pairs), 4)
+	check(pairs, curses.AltZ+'a', "a")
+	check(pairs, curses.AltZ+'b', "b")
+	check(pairs, curses.AltZ+'c', "c")
+	check(pairs, curses.AltZ+',', ",")
 
-	keys = parseKeyChords(",,,", "", false)
-	check(len(keys), 1)
-	check(keys[0], curses.AltZ+',')
+	pairs = parseKeyChords(",,,", "")
+	checkN(len(pairs), 1)
+	check(pairs, curses.AltZ+',', ",")
 }
 
 func TestBind(t *testing.T) {
