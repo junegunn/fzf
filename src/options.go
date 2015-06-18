@@ -41,7 +41,6 @@ const usage = `usage: fzf [options]
         --no-hscroll      Disable horizontal scroll
         --inline-info     Display finder info inline with the query
         --prompt=STR      Input prompt (default: '> ')
-        --toggle-sort=KEY Key to toggle sort
         --bind=KEYBINDS   Custom key bindings. Refer to the man page.
         --history=FILE    History file
         --history-size=N  Maximum number of history entries (default: 1000)
