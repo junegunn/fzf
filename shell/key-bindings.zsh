@@ -36,7 +36,8 @@ bindkey '\ec' fzf-cd-widget
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local selected restore_no_bang_hist
-  if selected=$(fc -l 1 | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r -q "$LBUFFER"); then
+  selected=$(fc -l 1 | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r -q "$LBUFFER")
+  if [ -n $selected ]; then
     num=$(echo "$selected" | head -n1 | awk '{print $1}' | sed 's/[^0-9]//g')
     if [ -n "$num" ]; then
       LBUFFER=!$num
