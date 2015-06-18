@@ -44,7 +44,7 @@ const usage = `usage: fzf [options]
         --toggle-sort=KEY Key to toggle sort
         --bind=KEYBINDS   Custom key bindings. Refer to the man page.
         --history=FILE    History file
-        --history-max=N   Maximum number of history entries (default: 1000)
+        --history-size=N  Maximum number of history entries (default: 1000)
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -698,7 +698,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.History = nil
 		case "--history":
 			setHistory(nextString(allArgs, &i, "history file path required"))
-		case "--history-max":
+		case "--history-size":
 			setHistoryMax(nextInt(allArgs, &i, "history max size required"))
 		case "--version":
 			opts.Version = true
@@ -731,7 +731,7 @@ func parseOptions(opts *Options, allArgs []string) {
 					parseKeymap(keymap, opts.Execmap, opts.ToggleSort, value)
 			} else if match, value := optString(arg, "--history="); match {
 				setHistory(value)
-			} else if match, value := optString(arg, "--history-max="); match {
+			} else if match, value := optString(arg, "--history-size="); match {
 				setHistoryMax(atoi(value))
 			} else {
 				errorExit("unknown option: " + arg)

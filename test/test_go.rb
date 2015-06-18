@@ -552,7 +552,7 @@ class TestGoFZF < TestBase
 
     # History with limited number of entries
     File.unlink history_file rescue nil
-    opts = "--history=#{history_file} --history-max=4"
+    opts = "--history=#{history_file} --history-size=4"
     input = %w[00 11 22 33 44].map { |e| e + $/ }
     input.each do |keys|
       tmux.send_keys "seq 100 | #{fzf opts}", :Enter
