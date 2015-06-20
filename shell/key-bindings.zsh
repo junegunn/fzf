@@ -26,7 +26,7 @@ bindkey '^T' fzf-file-widget
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
-  cd "${$(command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
+  cd "${$(command \find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3- | $(__fzfcmd) +m):-.}"
   zle reset-prompt
 }
@@ -36,16 +36,10 @@ bindkey '\ec' fzf-cd-widget
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local selected restore_no_bang_hist
-  if selected=$(fc -l 1 | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r -q "$LBUFFER"); then
-    num=$(echo "$selected" | head -n1 | awk '{print $1}' | sed 's/[^0-9]//g')
+  if selected=( $(fc -l 1 | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r -q "$LBUFFER") ); then
+    num=$selected[1]
     if [ -n "$num" ]; then
-      LBUFFER=!$num
-      if setopt | grep nobanghist > /dev/null; then
-        restore_no_bang_hist=1
-        unsetopt no_bang_hist
-      fi
-      zle expand-history
-      [ -n "$restore_no_bang_hist" ] && setopt no_bang_hist
+      zle vi-fetch-history -n $num
     fi
   fi
   zle redisplay
