@@ -518,10 +518,10 @@ class TestGoFZF < TestBase
     assert_equal data, `cat #{tempname} | #{FZF} -f .`.chomp
   end
 
-  def test_null
+  def test_read0
     lines = `find .`.split($/)
     assert_equal lines.last, `find . | #{FZF} -e -f "^#{lines.last}$"`.chomp
-    assert_equal lines.last, `find . -print0 | #{FZF} --null -e -f "^#{lines.last}$"`.chomp
+    assert_equal lines.last, `find . -print0 | #{FZF} --read0 -e -f "^#{lines.last}$"`.chomp
   end
 
   def test_select_all_deselect_all_toggle_all
