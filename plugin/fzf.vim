@@ -248,13 +248,17 @@ function! s:calc_size(max, val)
   endif
 endfunction
 
+function! s:getpos()
+  return {'tab': tabpagenr(), 'win': winnr()}
+endfunction
+
 function! s:split(dict)
   let directions = {
   \ 'up':    ['topleft', 'resize', &lines],
   \ 'down':  ['botright', 'resize', &lines],
   \ 'left':  ['vertical topleft', 'vertical resize', &columns],
   \ 'right': ['vertical botright', 'vertical resize', &columns] }
-  let s:ptab = tabpagenr()
+  let s:ppos = s:getpos()
   try
     for [dir, triple] in items(directions)
       let val = get(a:dict, dir, '')
@@ -282,19 +286,30 @@ function! s:execute_term(dict, command, temps)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
   function! fzf.on_exit(id, code)
-    let tab = tabpagenr()
-    if bufnr('') == self.buf
-      " We use close instead of bd! since Vim does not close the split when
-      " there's no other listed buffer
-      close
-    endif
-    if s:ptab == tab
-      wincmd p
+    let pos = s:getpos()
+    let inplace = pos == s:ppos " {'window': 'enew'}
+    if !inplace
+      if bufnr('') == self.buf
+        " We use close instead of bd! since Vim does not close the split when
+        " there's no other listed buffer (nvim +'set nobuflisted')
+        close
+      endif
+      if pos.tab == s:ppos.tab
+        wincmd p
+      endif
     endif
     call s:pushd(self.dict)
     try
       redraw!
       call s:callback(self.dict, self.temps)
+
+      if inplace && bufnr('') == self.buf
+        execute "normal! \<c-^>"
+        " No other listed buffer
+        if bufnr('') == self.buf
+          bd!
+        endif
+      endif
     finally
       call s:popd(self.dict)
     endtry
