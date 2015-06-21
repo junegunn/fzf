@@ -127,6 +127,13 @@ such as: `^music .mp3$ sbtrkt !rmx`
 If you don't need fuzzy matching and do not wish to "quote" every word, start
 fzf with `-e` or `--extended-exact` option.
 
+#### Environment variables
+
+- `FZF_DEFAULT_COMMAND`
+    - Default command to use when input is tty
+- `FZF_DEFAULT_OPTS`
+    - Default options. e.g. `export FZF_DEFAULT_OPTS="--extended --cycle"`
+
 Examples
 --------
 
