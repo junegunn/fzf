@@ -1,6 +1,56 @@
 CHANGELOG
 =========
 
+0.10.0
+------
+
+### New features
+
+- More actions for `--bind`
+    - `select-all`
+    - `deselect-all`
+    - `toggle-all`
+    - `ignore`
+- `execute(...)` action for running arbitrary command without leaving fzf
+    - `fzf --bind "ctrl-m:execute(less {})"`
+    - `fzf --bind "ctrl-t:execute(tmux new-window -d 'vim {}')"`
+    - If the command contains parentheses, use any of the follows alternative
+      notations to avoid parse errors
+        - `execute[...]`
+        - `execute~...~`
+        - `execute!...!`
+        - `execute@...@`
+        - `execute#...#`
+        - `execute$...$`
+        - `execute%...%`
+        - `execute^...^`
+        - `execute&...&`
+        - `execute*...*`
+        - `execute;...;`
+        - `execute/.../`
+        - `execute|...|`
+        - `execute:...`
+            - This is the special form that frees you from parse errors as it
+              does not expect the closing character
+            - The catch is that it should be the last one in the
+              comma-separated list
+- Added support for optional search history
+    - `--history HISTORY_FILE`
+        - When used, `CTRL-N` and `CTRL-P` are automatically remapped to
+          `next-history` and `previous-history`
+    - `--history-size MAX_ENTRIES` (default: 1000)
+- Cyclic scrolling can be enabled with `--cycle`
+- Fixed the bug where the spinner was not spinning on idle input stream
+    - e.g. `sleep 100 | fzf`
+
+### Minor improvements/fixes
+
+- Added synonyms for key names that can be specified for `--bind`,
+  `--toggle-sort`, and `--expect`
+- Fixed the color of multi-select marker on the current line
+- Fixed to allow `^pattern$` in extended-search mode
+
+
 0.9.13
 ------
 

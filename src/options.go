@@ -23,7 +23,7 @@ const usage = `usage: fzf [options]
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
                           integer or a range expression ([BEGIN]..[END])
-        --with-nth=N[,..] Transform the item using index expressions for search
+        --with-nth=N[,..] Transform item using index expressions within finder
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
     +s, --no-sort         Do not sort the result
         --tac             Reverse the order of the input

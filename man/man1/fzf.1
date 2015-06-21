@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "June 2015" "fzf 0.9.13" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "June 2015" "fzf 0.10.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -52,10 +52,10 @@ Comma-separated list of field index expressions for limiting search scope.
 See \fBFIELD INDEX EXPRESSION\fR for details.
 .TP
 .BI "--with-nth=" "N[,..]"
-Transform the item using the list of index expressions for search
+Transform each item using index expressions within finder
 .TP
 .BI "-d, --delimiter=" "STR"
-Field delimiter regex for \fI--nth\fR and \fI--with-nth\fR (default: AWK-style)
+Field delimiter regex for \fB--nth\fR and \fB--with-nth\fR (default: AWK-style)
 .SS Search result
 .TP
 .B "+s, --no-sort"
@@ -130,6 +130,9 @@ Use black background
 .B "--reverse"
 Reverse orientation
 .TP
+.B "--cycle"
+Enable cyclic scroll
+.TP
 .B "--no-hscroll"
 Disable horizontal scroll
 .TP
@@ -140,8 +143,7 @@ Display finder info inline with the query
 Input prompt (default: '> ')
 .TP
 .BI "--toggle-sort=" "KEY"
-Key to toggle sort (\fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR,
-or any single character)
+Key to toggle sort. For the list of the allowed key names, see \fB--bind\fR.
 .TP
 .BI "--bind=" "KEYBINDS"
 Comma-separated list of custom key bindings. Each key binding expression
@@ -151,38 +153,109 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
 .RE
 
 .RS
-.B KEY:
-    \fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR, or any single character
+.B AVAILABLE KEYS:
+    \fIctrl-[a-z]\fR
+    \fIalt-[a-z]\fR
+    \fIf[1-4]\fR
+    \fIenter\fR       (\fIreturn\fR)
+    \fIspace\fR
+    \fIbspace\fR      (\fIbs\fR)
+    \fIalt-bspace\fR  (\fIalt-bs\fR)
+    \fItab\fR
+    \fIbtab\fR        (\fIshift-tab\fR)
+    \fIesc\fR
+    \fIdel\fR
+    \fIup\fR
+    \fIdown\fR
+    \fIleft\fR
+    \fIright\fR
+    \fIhome\fR
+    \fIend\fR
+    \fIpgup\fR        (\fIpage-up\fR)
+    \fIpgdn\fR        (\fIpage-down\fR)
+    \fIshift-left\fR
+    \fIshift-right\fR
+    or any single character
 .RE
 
 .RS
-.B ACTION:
-    abort
-    accept
-    backward-char
-    backward-delete-char
-    backward-kill-word
-    backward-word
-    beginning-of-line
-    clear-screen
-    delete-char
-    down
-    end-of-line
-    forward-char
-    forward-word
-    kill-line (not bound)
-    kill-word
-    page-down
-    page-up
-    toggle (not bound)
-    toggle-down
-    toggle-sort (not bound; equivalent to \fB--toggle-sort\fR)
-    toggle-up
-    unix-line-discard
-    unix-word-rubout
-    up
-    yank
+  \fBACTION:               DEFAULT BINDINGS:
+    \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
+    \fBaccept\fR                \fIctrl-m  (enter)\fR
+    \fBbackward-char\fR         \fIctrl-b  left\fR
+    \fBbackward-delete-char\fR  \fIctrl-h  bspace\fR
+    \fBbackward-kill-word\fR    \fIalt-bs\fR
+    \fBbackward-word\fR         \fIalt-b   shift-left\fR
+    \fBbeginning-of-line\fR     \fIctrl-a  home\fR
+    \fBclear-screen\fR          \fIctrl-l\fR
+    \fBdelete-char\fR           \fIctrl-d  del\fR
+    \fBdeselect-all\fR
+    \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
+    \fBend-of-line\fR           \fIctrl-e  end\fR
+    \fBexecute(...)\fR          (see below for the details)
+    \fBforward-char\fR          \fIctrl-f  right\fR
+    \fBforward-word\fR          \fIalt-f   shift-right\fR
+    \fBignore\fR
+    \fBkill-line\fR
+    \fBkill-word\fR             \fIalt-d\fR
+    \fBnext-history\fR          (\fIctrl-n\fR on \fB--history\fR)
+    \fBpage-down\fR             \fIpgdn\fR
+    \fBpage-up\fR               \fIpgup\fR
+    \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
+    \fBselect-all\fR
+    \fBtoggle\fR
+    \fBtoggle-all\fR
+    \fBtoggle-down\fR           \fIctrl-i  (tab)\fR
+    \fBtoggle-sort\fR           (equivalent to \fB--toggle-sort\fR)
+    \fBtoggle-up\fR             \fIbtab    (shift-tab)\fR
+    \fBunix-line-discard\fR     \fIctrl-u\fR
+    \fBunix-word-rubout\fR      \fIctrl-w\fR
+    \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
+    \fByank\fR                  \fIctrl-y\fR
 .RE
+
+.RS
+With \fBexecute(...)\fR action, you can execute arbitrary commands without
+leaving fzf. For example, you can turn fzf into a simple file browser by
+binding \fBenter\fR key to \fBless\fR command like follows.
+
+.RS
+\fBfzf --bind "enter:execute(less {})"\fR
+.RE
+
+\fB{}\fR is the placeholder for the double-quoted string of the current line.
+If the command contains parentheses, you can use any of the following
+alternative notations to avoid parse errors.
+
+    \fBexecute[...]\fR
+    \fBexecute~...~\fR
+    \fBexecute!...!\fR
+    \fBexecute@...@\fR
+    \fBexecute#...#\fR
+    \fBexecute$...$\fR
+    \fBexecute%...%\fR
+    \fBexecute^...^\fR
+    \fBexecute&...&\fR
+    \fBexecute*...*\fR
+    \fBexecute;...;\fR
+    \fBexecute/.../\fR
+    \fBexecute|...|\fR
+    \fBexecute:...\fR
+.RS
+This is the special form that frees you from parse errors as it does not expect
+the closing character. The catch is that it should be the last one in the
+comma-separated list.
+.RE
+.RE
+.TP
+.BI "--history=" "HISTORY_FILE"
+Load search history from the specified file and update the file on completion.
+When enabled, \fBCTRL-N\fR and \fBCTRL-P\fR are automatically remapped to
+\fBnext-history\fR and \fBprevious-history\fR.
+.TP
+.BI "--history-size=" "N"
+Maximum number of entries in the history file (default: 1000). The file is
+automatically truncated when the number of the lines exceeds the value.
 .SS Scripting
 .TP
 .BI "-q, --query=" "STR"
@@ -202,10 +275,9 @@ fzf becomes a fuzzy-version of grep.
 Print query as the first line
 .TP
 .BI "--expect=" "KEY[,..]"
-Comma-separated list of keys (\fIctrl-[a-z]\fR, \fIalt-[a-z]\fR, \fIf[1-4]\fR,
-or any single character) that can be used to complete fzf in addition to the
-default enter key. When this option is set, fzf will print the name of the key
-pressed as the first line of its output (or as the second line if
+Comma-separated list of keys that can be used to complete fzf in addition to
+the default enter key. When this option is set, fzf will print the name of the
+key pressed as the first line of its output (or as the second line if
 \fB--print-query\fR is also used). The line will be empty if fzf is completed
 with the default enter key.
 .RS
@@ -235,7 +307,7 @@ Default options. e.g. \fB--extended --ansi\fR
 .SH FIELD INDEX EXPRESSION
 
 A field index expression can be a non-zero integer or a range expression
-([BEGIN]..[END]). \fI--nth\fR and \fI--with-nth\fR take a comma-separated list
+([BEGIN]..[END]). \fB--nth\fR and \fB--with-nth\fR take a comma-separated list
 of field index expressions.
 
 .SS Examples
@@ -258,7 +330,7 @@ of field index expressions.
 
 .SH EXTENDED SEARCH MODE
 
-With \fI-x\fR or \fI--extended\fR option, fzf will start in "extended-search
+With \fB-x\fR or \fB--extended\fR option, fzf will start in "extended-search
 mode". In this mode, you can specify multiple patterns delimited by spaces,
 such as: \fB'wild ^music .mp3$ sbtrkt !rmx\fR
 
@@ -278,8 +350,8 @@ from the result.
 
 .SS Extended-exact mode
 If you don't need fuzzy matching at all and do not wish to "quote" (prefixing
-with ') every word, start fzf with \fI-e\fR or \fI--extended-exact\fR option
-(instead of \fI-x\fR or \fI--extended\fR).
+with ') every word, start fzf with \fB-e\fR or \fB--extended-exact\fR option
+(instead of \fB-x\fR or \fB--extended\fR).
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)

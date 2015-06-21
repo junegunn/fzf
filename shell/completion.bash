@@ -46,9 +46,9 @@ _fzf_opts_completion() {
     --expect
     --toggle-sort
     --sync
-    --null
+    --cycle
     --history
-    --history-max"
+    --history-size"
 
   case "${prev}" in
   --tiebreak)
