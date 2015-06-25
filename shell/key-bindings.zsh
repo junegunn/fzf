@@ -1,5 +1,7 @@
 # Key bindings
 # ------------
+if [[ $- =~ i ]]; then
+
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
   command find -L . \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
@@ -14,8 +16,6 @@ __fsel() {
 __fzfcmd() {
   [ ${FZF_TMUX:-1} -eq 1 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
-
-if [[ $- =~ i ]]; then
 
 fzf-file-widget() {
   LBUFFER="${LBUFFER}$(__fsel)"
