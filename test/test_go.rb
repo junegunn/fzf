@@ -148,6 +148,7 @@ class TestBase < Minitest::Test
 
   def setup
     ENV.delete 'FZF_DEFAULT_OPTS'
+    ENV.delete 'FZF_CTRL_T_COMMAND'
     ENV.delete 'FZF_DEFAULT_COMMAND'
   end
 
@@ -651,6 +652,12 @@ module TestShell
     @tmux.kill
   end
 
+  def set_var name, val
+    tmux.prepare
+    tmux.send_keys "export #{name}='#{val}'", :Enter
+    tmux.prepare
+  end
+
   def test_ctrl_t
     tmux.prepare
     tmux.send_keys 'C-t', pane: 0
@@ -668,6 +675,14 @@ module TestShell
     tmux.send_keys :BTab, :BTab, :Enter, pane: 0
     tmux.until(0) { |lines| lines[-1].include? expected }
     tmux.send_keys 'C-c', 'C-d'
+  end
+
+  def test_ctrl_t_command
+    set_var "FZF_CTRL_T_COMMAND", "seq 100"
+    tmux.send_keys 'C-t', pane: 0
+    lines = tmux.until(1) { |lines| lines.item_count == 100 }
+    tmux.send_keys :BTab, :BTab, :BTab, :Enter, pane: 1
+    tmux.until(0) { |lines| lines[-1].include? '1 2 3' }
   end
 
   def test_alt_c
@@ -840,6 +855,12 @@ class TestFish < TestBase
     tmux.send_keys 'env FZF_TMUX=0 fish', :Enter
     tmux.send_keys 'function fish_prompt; end; clear', :Enter
     tmux.until { |lines| lines.empty? }
+  end
+
+  def set_var name, val
+    tmux.prepare
+    tmux.send_keys "set -l #{name} '#{val}'", :Enter
+    tmux.prepare
   end
 
   def setup

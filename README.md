@@ -147,8 +147,9 @@ Key bindings for command line
 The install script will setup the following key bindings for bash, zsh, and
 fish.
 
-- `CTRL-T` - Paste the selected file path(s) into the command line
-- `CTRL-R` - Paste the selected command from history into the command line
+- `CTRL-T` - Paste the selected files and directories onto the command line
+    - Set `FZF_CTRL_T_COMMAND` to override the default command
+- `CTRL-R` - Paste the selected command from history onto the command line
     - Sort is disabled by default to respect chronological ordering
     - Press `CTRL-R` again to toggle sort
 - `ALT-C` - cd into the selected directory
