@@ -249,7 +249,7 @@ function! s:calc_size(max, val)
 endfunction
 
 function! s:getpos()
-  return {'tab': tabpagenr(), 'win': winnr()}
+  return {'tab': tabpagenr(), 'win': winnr(), 'cnt': winnr('$')}
 endfunction
 
 function! s:split(dict)
