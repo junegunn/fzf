@@ -398,6 +398,9 @@ export FZF_DEFAULT_COMMAND='ag -l -g ""'
 
 # Now fzf (w/o pipe) will use ag instead of find
 fzf
+
+# To apply the command to CTRL-T as well
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 ```
 
 #### `git ls-tree` for fast traversal
