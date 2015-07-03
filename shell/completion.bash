@@ -74,9 +74,10 @@ _fzf_opts_completion() {
 }
 
 _fzf_handle_dynamic_completion() {
-  local cmd orig ret
+  local cmd orig ret orig_cmd
   cmd="$1"
   shift
+  orig_cmd="$1"
 
   orig=$(eval "echo \$_fzf_orig_completion_$cmd")
   if [ -n "$orig" ] && type "$orig" > /dev/null 2>&1; then
@@ -84,7 +85,7 @@ _fzf_handle_dynamic_completion() {
   elif [ -n "$_fzf_completion_loader" ]; then
     _completion_loader "$@"
     ret=$?
-    eval $(complete | \grep "\-F.* $cmd$" | _fzf_orig_completion_filter)
+    eval $(complete | \grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)
     source $BASH_SOURCE
     return $ret
   fi
