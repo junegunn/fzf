@@ -34,13 +34,19 @@ __fzf_cd__() {
     -o -type d -print 2> /dev/null | sed 1d | cut -b3- | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
-__fzf_history__() {
+__fzf_history__() (
   local line
+  shopt -u nocaseglob nocasematch
   line=$(
     HISTTIMEFORMAT= history |
     $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r |
-    \grep '^ *[0-9]') && sed 's/ *\([0-9]*\)\** .*/!\1/' <<< "$line"
-}
+    \grep '^ *[0-9]') &&
+    if [[ $- =~ H ]]; then
+      sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
+    else
+      sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
+    fi
+)
 
 __use_tmux=0
 [ -n "$TMUX_PANE" -a ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ] && __use_tmux=1
