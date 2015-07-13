@@ -312,7 +312,9 @@ class TestGoFZF < TestBase
 
       # However, the output must not be transformed
       if multi
-        tmux.send_keys :BTab, :BTab, :Enter
+        tmux.send_keys :BTab, :BTab
+        tmux.until { |lines| lines[-2].include?('(2)') }
+        tmux.send_keys :Enter
         assert_equal ['  1st 2nd 3rd/', '  first second third/'], readonce.split($/)
       else
         tmux.send_keys '^', '3'
@@ -348,7 +350,9 @@ class TestGoFZF < TestBase
     [:'0', :'1', [:'1', :'0']].each do |opt|
       tmux.send_keys "seq 1 100 | #{fzf :print_query, :multi, :q, 5, *opt}", :Enter
       tmux.until { |lines| lines.last =~ /^> 5/ }
-      tmux.send_keys :BTab, :BTab, :BTab, :Enter
+      tmux.send_keys :BTab, :BTab, :BTab
+      tmux.until { |lines| lines[-2].include?('(3)') }
+      tmux.send_keys :Enter
       assert_equal ['5', '5', '15', '25'], readonce.split($/)
     end
   end
@@ -365,7 +369,9 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 9
     tmux.until { |lines| lines[-2] == '  19/100' }
-    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| lines[-2].include?('(3)') }
+    tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 'C-K', :Enter
     assert_equal ['1919'], readonce.split($/)
@@ -374,7 +380,9 @@ class TestGoFZF < TestBase
   def test_tac
     tmux.send_keys "seq 1 1000 | #{fzf :tac, :multi}", :Enter
     tmux.until { |lines| lines[-2].include? '1000/1000' }
-    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| lines[-2].include?('(3)') }
+    tmux.send_keys :Enter
     assert_equal %w[1000 999 998], readonce.split($/)
   end
 
@@ -382,7 +390,9 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 1000 | #{fzf :tac, :multi}", :Enter
     tmux.until { |lines| lines[-2].include? '1000/1000' }
     tmux.send_keys '99'
-    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| lines[-2].include?('(3)') }
+    tmux.send_keys :Enter
     assert_equal %w[99 999 998], readonce.split($/)
   end
 
@@ -391,7 +401,9 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include? '1000/1000' }
     tmux.send_keys '00'
     tmux.until { |lines| lines[-2].include? '10/1000' }
-    tmux.send_keys :BTab, :BTab, :BTab, :Enter
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| lines[-2].include?('(3)') }
+    tmux.send_keys :Enter
     assert_equal %w[1000 900 800], readonce.split($/)
   end
 
@@ -663,7 +675,9 @@ module TestShell
     tmux.send_keys 'C-t', pane: 0
     lines = tmux.until(1) { |lines| lines.item_count > 1 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
-    tmux.send_keys :BTab, :BTab, :Enter, pane: 1
+    tmux.send_keys :BTab, :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include?('(2)') }
+    tmux.send_keys :Enter, pane: 1
     tmux.until(0) { |lines| lines[-1].include? expected }
     tmux.send_keys 'C-c'
 
@@ -672,7 +686,9 @@ module TestShell
     tmux.send_keys 'C-t', pane: 0
     lines = tmux.until(0) { |lines| lines.item_count > 1 }
     expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
-    tmux.send_keys :BTab, :BTab, :Enter, pane: 0
+    tmux.send_keys :BTab, :BTab, pane: 0
+    tmux.until(0) { |lines| lines[-2].include?('(2)') }
+    tmux.send_keys :Enter, pane: 0
     tmux.until(0) { |lines| lines[-1].include? expected }
     tmux.send_keys 'C-c', 'C-d'
   end
@@ -681,7 +697,9 @@ module TestShell
     set_var "FZF_CTRL_T_COMMAND", "seq 100"
     tmux.send_keys 'C-t', pane: 0
     lines = tmux.until(1) { |lines| lines.item_count == 100 }
-    tmux.send_keys :BTab, :BTab, :BTab, :Enter, pane: 1
+    tmux.send_keys :BTab, :BTab, :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include?('(3)') }
+    tmux.send_keys :Enter, pane: 1
     tmux.until(0) { |lines| lines[-1].include? '1 2 3' }
   end
 
@@ -725,7 +743,9 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys :BTab, :BTab, :Enter
+    tmux.send_keys :BTab, :BTab
+    tmux.until(1) { |lines| lines[-2].include?('(2)') }
+    tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
       lines[-1].include?('/tmp/fzf-test/10') &&
@@ -859,7 +879,7 @@ class TestFish < TestBase
 
   def set_var name, val
     tmux.prepare
-    tmux.send_keys "set -l #{name} '#{val}'", :Enter
+    tmux.send_keys "set -g #{name} '#{val}'", :Enter
     tmux.prepare
   end
 
