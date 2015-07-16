@@ -430,6 +430,11 @@ func firstKey(keymap map[int]string) int {
 	return 0
 }
 
+const (
+	escapedColon = 0
+	escapedComma = 1
+)
+
 func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort bool, str string) (map[int]actionType, map[int]string, bool) {
 	if executeRegexp == nil {
 		// Backreferences are not supported.
@@ -440,10 +445,12 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
 	})
+	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
+	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
 
 	idx := 0
 	for _, pairStr := range strings.Split(masked, ",") {
-		pairStr = str[idx : idx+len(pairStr)]
+		origPairStr := str[idx : idx+len(pairStr)]
 		idx += len(pairStr) + 1
 
 		fail := func() {
@@ -453,13 +460,22 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		if len(pair) != 2 {
 			fail()
 		}
-		keys := parseKeyChords(pair[0], "key name required")
-		if len(keys) != 1 {
-			fail()
+		var key int
+		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
+			key = ':' + curses.AltZ
+		} else if len(pair[0]) == 1 && pair[0][0] == escapedComma {
+			key = ',' + curses.AltZ
+		} else {
+			keys := parseKeyChords(pair[0], "key name required")
+			if len(keys) != 1 {
+				fail()
+			}
+			key = firstKey(keys)
 		}
-		key := firstKey(keys)
-		act := strings.ToLower(pair[1])
-		switch act {
+
+		act := origPairStr[len(pair[0])+1 : len(origPairStr)]
+		actLower := strings.ToLower(act)
+		switch actLower {
 		case "ignore":
 			keymap[key] = actIgnore
 		case "beginning-of-line":
@@ -524,12 +540,12 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			keymap[key] = actToggleSort
 			toggleSort = true
 		default:
-			if isExecuteAction(act) {
+			if isExecuteAction(actLower) {
 				keymap[key] = actExecute
-				if pair[1][7] == ':' {
-					execmap[key] = pair[1][8:]
+				if act[7] == ':' {
+					execmap[key] = act[8:]
 				} else {
-					execmap[key] = pair[1][8 : len(act)-1]
+					execmap[key] = act[8 : len(act)-1]
 				}
 			} else {
 				errorExit("unknown action: " + act)

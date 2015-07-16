@@ -188,13 +188,15 @@ func TestBind(t *testing.T) {
 			"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down,"+
 				"f1:execute(ls {}),f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 				"alt-a:execute@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};"+
-				",X:execute:\nfoobar,Y:execute(baz)")
+				",,:abort,::accept,X:execute:\nfoobar,Y:execute(baz)")
 	if !toggleSort {
 		t.Errorf("toggleSort not set")
 	}
 	check(actKillLine, keymap[curses.CtrlA])
 	check(actToggleSort, keymap[curses.CtrlB])
 	check(actPageUp, keymap[curses.AltZ+'c'])
+	check(actAbort, keymap[curses.AltZ+','])
+	check(actAccept, keymap[curses.AltZ+':'])
 	check(actPageDown, keymap[curses.AltZ])
 	check(actExecute, keymap[curses.F1])
 	check(actExecute, keymap[curses.F2])
