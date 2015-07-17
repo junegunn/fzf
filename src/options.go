@@ -453,12 +453,9 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		origPairStr := str[idx : idx+len(pairStr)]
 		idx += len(pairStr) + 1
 
-		fail := func() {
-			errorExit("invalid key binding: " + pairStr)
-		}
 		pair := strings.SplitN(pairStr, ":", 2)
-		if len(pair) != 2 {
-			fail()
+		if len(pair) < 2 {
+			errorExit("bind action not specified: " + origPairStr)
 		}
 		var key int
 		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
@@ -467,9 +464,6 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			key = ',' + curses.AltZ
 		} else {
 			keys := parseKeyChords(pair[0], "key name required")
-			if len(keys) != 1 {
-				fail()
-			}
 			key = firstKey(keys)
 		}
 
