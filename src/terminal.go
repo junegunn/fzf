@@ -551,6 +551,7 @@ func (t *Terminal) printAll() {
 	t.printList()
 	t.printPrompt()
 	t.printInfo()
+	t.printHeader()
 }
 
 func (t *Terminal) refresh() {
