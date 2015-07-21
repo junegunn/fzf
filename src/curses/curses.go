@@ -94,6 +94,7 @@ const (
 	ColInfo
 	ColCursor
 	ColSelected
+	ColHeader
 	ColUser
 )
 
@@ -114,6 +115,7 @@ type ColorTheme struct {
 	Info         int16
 	Cursor       int16
 	Selected     int16
+	Header       int16
 }
 
 type Event struct {
@@ -164,7 +166,8 @@ func init() {
 		Spinner:      C.COLOR_GREEN,
 		Info:         C.COLOR_WHITE,
 		Cursor:       C.COLOR_RED,
-		Selected:     C.COLOR_MAGENTA}
+		Selected:     C.COLOR_MAGENTA,
+		Header:       C.COLOR_CYAN}
 	Dark256 = &ColorTheme{
 		UseDefault:   true,
 		Fg:           15,
@@ -177,7 +180,8 @@ func init() {
 		Spinner:      148,
 		Info:         144,
 		Cursor:       161,
-		Selected:     168}
+		Selected:     168,
+		Header:       110}
 	Light256 = &ColorTheme{
 		UseDefault:   true,
 		Fg:           15,
@@ -190,7 +194,8 @@ func init() {
 		Spinner:      65,
 		Info:         101,
 		Cursor:       161,
-		Selected:     168}
+		Selected:     168,
+		Header:       31}
 }
 
 func attrColored(pair int, bold bool) C.int {
@@ -308,6 +313,7 @@ func initPairs(theme *ColorTheme, black bool) {
 	C.init_pair(ColInfo, C.short(theme.Info), bg)
 	C.init_pair(ColCursor, C.short(theme.Cursor), darkBG)
 	C.init_pair(ColSelected, C.short(theme.Selected), darkBG)
+	C.init_pair(ColHeader, C.short(theme.Header), bg)
 }
 
 func Close() {

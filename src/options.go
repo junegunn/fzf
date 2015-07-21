@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -44,6 +45,7 @@ const usage = `usage: fzf [options]
         --bind=KEYBINDS   Custom key bindings. Refer to the man page.
         --history=FILE    History file
         --history-size=N  Maximum number of history entries (default: 1000)
+        --header-file=N   Header file
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -122,6 +124,7 @@ type Options struct {
 	ReadZero   bool
 	Sync       bool
 	History    *History
+	Header     []string
 	Version    bool
 }
 
@@ -164,6 +167,7 @@ func defaultOptions() *Options {
 		ReadZero:   false,
 		Sync:       false,
 		History:    nil,
+		Header:     make([]string, 0),
 		Version:    false}
 }
 
@@ -413,6 +417,8 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 				theme.Cursor = ansi
 			case "marker":
 				theme.Selected = ansi
+			case "header":
+				theme.Header = ansi
 			default:
 				fail()
 			}
@@ -571,6 +577,14 @@ func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
 	return keymap
 }
 
+func readHeaderFile(filename string) []string {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		errorExit("failed to read header file: " + filename)
+	}
+	return strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
+}
+
 func parseOptions(opts *Options, allArgs []string) {
 	keymap := make(map[int]actionType)
 	var historyMax int
@@ -710,6 +724,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			setHistory(nextString(allArgs, &i, "history file path required"))
 		case "--history-size":
 			setHistoryMax(nextInt(allArgs, &i, "history max size required"))
+		case "--header-file":
+			opts.Header = readHeaderFile(
+				nextString(allArgs, &i, "header file name required"))
 		case "--version":
 			opts.Version = true
 		default:
@@ -743,6 +760,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				setHistory(value)
 			} else if match, value := optString(arg, "--history-size="); match {
 				setHistoryMax(atoi(value))
+			} else if match, value := optString(arg, "--header-file="); match {
+				opts.Header = readHeaderFile(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

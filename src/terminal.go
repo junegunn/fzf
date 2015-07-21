@@ -40,6 +40,7 @@ type Terminal struct {
 	printQuery bool
 	history    *History
 	cycle      bool
+	header     []string
 	count      int
 	progress   int
 	reading    bool
@@ -197,6 +198,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
 		cycle:      opts.Cycle,
+		header:     opts.Header,
 		reading:    true,
 		merger:     EmptyMerger,
 		selected:   make(map[uint32]selectedItem),
@@ -354,17 +356,39 @@ func (t *Terminal) printInfo() {
 	C.CPrint(C.ColInfo, false, output)
 }
 
+func (t *Terminal) printHeader() {
+	if len(t.header) == 0 {
+		return
+	}
+	for idx, lineStr := range t.header {
+		if !t.reverse {
+			idx = len(t.header) - idx - 1
+		}
+		trimmed, colors := extractColor(&lineStr)
+		item := &Item{
+			text:   trimmed,
+			index:  0,
+			colors: colors,
+			rank:   Rank{0, 0, 0}}
+
+		line := idx + 2
+		if t.inlineInfo {
+			line -= 1
+		}
+		t.move(line, 2, true)
+		t.printHighlighted(item, false, C.ColHeader, 0, false)
+	}
+}
+
 func (t *Terminal) printList() {
 	t.constrain()
 
 	maxy := t.maxItems()
 	count := t.merger.Length() - t.offset
 	for i := 0; i < maxy; i++ {
-		var line int
+		line := i + 2 + len(t.header)
 		if t.inlineInfo {
-			line = i + 1
-		} else {
-			line = i + 2
+			line -= 1
 		}
 		t.move(line, 0, true)
 		if i < count {
@@ -606,6 +630,7 @@ func (t *Terminal) Loop() {
 		t.placeCursor()
 		C.Refresh()
 		t.printInfo()
+		t.printHeader()
 		t.mutex.Unlock()
 		go func() {
 			timer := time.NewTimer(initialDelay)
@@ -883,9 +908,9 @@ func (t *Terminal) Loop() {
 			if !t.reverse {
 				my = C.MaxY() - my - 1
 			}
-			min := 2
+			min := 2 + len(t.header)
 			if t.inlineInfo {
-				min = 1
+				min -= 1
 			}
 			if me.S != 0 {
 				// Scroll
@@ -977,7 +1002,7 @@ func (t *Terminal) vset(o int) bool {
 
 func (t *Terminal) maxItems() int {
 	if t.inlineInfo {
-		return C.MaxY() - 1
+		return C.MaxY() - 1 - len(t.header)
 	}
-	return C.MaxY() - 2
+	return C.MaxY() - 2 - len(t.header)
 }
