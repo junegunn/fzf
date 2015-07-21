@@ -46,6 +46,7 @@ const usage = `usage: fzf [options]
     --history=FILE        History file
     --history-size=N      Maximum number of history entries (default: 1000)
     --header-file=FILE    The file whose content to be printed as header
+    --header-lines=N      The first N lines of the input are treated as header
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -94,38 +95,39 @@ const (
 
 // Options stores the values of command-line options
 type Options struct {
-	Mode       Mode
-	Case       Case
-	Nth        []Range
-	WithNth    []Range
-	Delimiter  *regexp.Regexp
-	Sort       int
-	Tac        bool
-	Tiebreak   tiebreak
-	Multi      bool
-	Ansi       bool
-	Mouse      bool
-	Theme      *curses.ColorTheme
-	Black      bool
-	Reverse    bool
-	Cycle      bool
-	Hscroll    bool
-	InlineInfo bool
-	Prompt     string
-	Query      string
-	Select1    bool
-	Exit0      bool
-	Filter     *string
-	ToggleSort bool
-	Expect     map[int]string
-	Keymap     map[int]actionType
-	Execmap    map[int]string
-	PrintQuery bool
-	ReadZero   bool
-	Sync       bool
-	History    *History
-	Header     []string
-	Version    bool
+	Mode        Mode
+	Case        Case
+	Nth         []Range
+	WithNth     []Range
+	Delimiter   *regexp.Regexp
+	Sort        int
+	Tac         bool
+	Tiebreak    tiebreak
+	Multi       bool
+	Ansi        bool
+	Mouse       bool
+	Theme       *curses.ColorTheme
+	Black       bool
+	Reverse     bool
+	Cycle       bool
+	Hscroll     bool
+	InlineInfo  bool
+	Prompt      string
+	Query       string
+	Select1     bool
+	Exit0       bool
+	Filter      *string
+	ToggleSort  bool
+	Expect      map[int]string
+	Keymap      map[int]actionType
+	Execmap     map[int]string
+	PrintQuery  bool
+	ReadZero    bool
+	Sync        bool
+	History     *History
+	Header      []string
+	HeaderLines int
+	Version     bool
 }
 
 func defaultTheme() *curses.ColorTheme {
@@ -137,38 +139,39 @@ func defaultTheme() *curses.ColorTheme {
 
 func defaultOptions() *Options {
 	return &Options{
-		Mode:       ModeFuzzy,
-		Case:       CaseSmart,
-		Nth:        make([]Range, 0),
-		WithNth:    make([]Range, 0),
-		Delimiter:  nil,
-		Sort:       1000,
-		Tac:        false,
-		Tiebreak:   byLength,
-		Multi:      false,
-		Ansi:       false,
-		Mouse:      true,
-		Theme:      defaultTheme(),
-		Black:      false,
-		Reverse:    false,
-		Cycle:      false,
-		Hscroll:    true,
-		InlineInfo: false,
-		Prompt:     "> ",
-		Query:      "",
-		Select1:    false,
-		Exit0:      false,
-		Filter:     nil,
-		ToggleSort: false,
-		Expect:     make(map[int]string),
-		Keymap:     defaultKeymap(),
-		Execmap:    make(map[int]string),
-		PrintQuery: false,
-		ReadZero:   false,
-		Sync:       false,
-		History:    nil,
-		Header:     make([]string, 0),
-		Version:    false}
+		Mode:        ModeFuzzy,
+		Case:        CaseSmart,
+		Nth:         make([]Range, 0),
+		WithNth:     make([]Range, 0),
+		Delimiter:   nil,
+		Sort:        1000,
+		Tac:         false,
+		Tiebreak:    byLength,
+		Multi:       false,
+		Ansi:        false,
+		Mouse:       true,
+		Theme:       defaultTheme(),
+		Black:       false,
+		Reverse:     false,
+		Cycle:       false,
+		Hscroll:     true,
+		InlineInfo:  false,
+		Prompt:      "> ",
+		Query:       "",
+		Select1:     false,
+		Exit0:       false,
+		Filter:      nil,
+		ToggleSort:  false,
+		Expect:      make(map[int]string),
+		Keymap:      defaultKeymap(),
+		Execmap:     make(map[int]string),
+		PrintQuery:  false,
+		ReadZero:    false,
+		Sync:        false,
+		History:     nil,
+		Header:      make([]string, 0),
+		HeaderLines: 0,
+		Version:     false}
 }
 
 func help(ok int) {
@@ -724,9 +727,18 @@ func parseOptions(opts *Options, allArgs []string) {
 			setHistory(nextString(allArgs, &i, "history file path required"))
 		case "--history-size":
 			setHistoryMax(nextInt(allArgs, &i, "history max size required"))
+		case "--no-header-file":
+			opts.Header = []string{}
+		case "--no-header-lines":
+			opts.HeaderLines = 0
 		case "--header-file":
 			opts.Header = readHeaderFile(
 				nextString(allArgs, &i, "header file name required"))
+			opts.HeaderLines = 0
+		case "--header-lines":
+			opts.Header = []string{}
+			opts.HeaderLines = atoi(
+				nextString(allArgs, &i, "number of header lines required"))
 		case "--version":
 			opts.Version = true
 		default:
@@ -762,6 +774,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				setHistoryMax(atoi(value))
 			} else if match, value := optString(arg, "--header-file="); match {
 				opts.Header = readHeaderFile(value)
+				opts.HeaderLines = 0
+			} else if match, value := optString(arg, "--header-lines="); match {
+				opts.Header = []string{}
+				opts.HeaderLines = atoi(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

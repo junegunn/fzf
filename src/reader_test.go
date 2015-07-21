@@ -10,7 +10,7 @@ func TestReadFromCommand(t *testing.T) {
 	strs := []string{}
 	eb := util.NewEventBox()
 	reader := Reader{
-		pusher:   func(s string) { strs = append(strs, s) },
+		pusher:   func(s string) bool { strs = append(strs, s); return true },
 		eventBox: eb}
 
 	// Check EventBox

@@ -44,6 +44,7 @@ Reader   -> EvtReadNew        -> Matcher  (restart)
 Terminal -> EvtSearchNew:bool -> Matcher  (restart)
 Matcher  -> EvtSearchProgress -> Terminal (update info)
 Matcher  -> EvtSearchFin      -> Terminal (update list)
+Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
 // Run starts fzf
@@ -83,8 +84,14 @@ func Run(opts *Options) {
 
 	// Chunk list
 	var chunkList *ChunkList
+	header := make([]string, 0, opts.HeaderLines)
 	if len(opts.WithNth) == 0 {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
+			if len(header) < opts.HeaderLines {
+				header = append(header, *data)
+				eventBox.Set(EvtHeader, header)
+				return nil
+			}
 			data, colors := ansiProcessor(data)
 			return &Item{
 				text:   data,
@@ -94,6 +101,11 @@ func Run(opts *Options) {
 		})
 	} else {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
+			if len(header) < opts.HeaderLines {
+				header = append(header, *data)
+				eventBox.Set(EvtHeader, header)
+				return nil
+			}
 			tokens := Tokenize(data, opts.Delimiter)
 			trans := Transform(tokens, opts.WithNth)
 			item := Item{
@@ -113,7 +125,9 @@ func Run(opts *Options) {
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	if !streamingFilter {
-		reader := Reader{func(str string) { chunkList.Push(str) }, eventBox, opts.ReadZero}
+		reader := Reader{func(str string) bool {
+			return chunkList.Push(str)
+		}, eventBox, opts.ReadZero}
 		go reader.ReadSource()
 	}
 
@@ -134,11 +148,12 @@ func Run(opts *Options) {
 
 		if streamingFilter {
 			reader := Reader{
-				func(str string) {
+				func(str string) bool {
 					item := chunkList.trans(&str, 0)
-					if pattern.MatchItem(item) {
+					if item != nil && pattern.MatchItem(item) {
 						fmt.Println(*item.text)
 					}
+					return false
 				}, eventBox, opts.ReadZero}
 			reader.ReadSource()
 		} else {
@@ -205,6 +220,9 @@ func Run(opts *Options) {
 					case float32:
 						terminal.UpdateProgress(val)
 					}
+
+				case EvtHeader:
+					terminal.UpdateHeader(value.([]string), opts.HeaderLines)
 
 				case EvtSearchFin:
 					switch val := value.(type) {

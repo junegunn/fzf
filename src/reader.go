@@ -11,7 +11,7 @@ import (
 
 // Reader reads from command or standard input
 type Reader struct {
-	pusher   func(string)
+	pusher   func(string) bool
 	eventBox *util.EventBox
 	delimNil bool
 }
@@ -43,8 +43,9 @@ func (r *Reader) feed(src io.Reader) {
 			if err == nil {
 				line = line[:len(line)-1]
 			}
-			r.pusher(line)
-			r.eventBox.Set(EvtReadNew, nil)
+			if r.pusher(line) {
+				r.eventBox.Set(EvtReadNew, nil)
+			}
 		}
 		if err != nil {
 			break

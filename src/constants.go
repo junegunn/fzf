@@ -44,5 +44,6 @@ const (
 	EvtSearchNew
 	EvtSearchProgress
 	EvtSearchFin
+	EvtHeader
 	EvtClose
 )

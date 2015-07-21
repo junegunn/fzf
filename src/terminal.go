@@ -79,6 +79,7 @@ var _runeWidths = make(map[rune]int)
 const (
 	reqPrompt util.EventType = iota
 	reqInfo
+	reqHeader
 	reqList
 	reqRefresh
 	reqRedraw
@@ -229,6 +230,22 @@ func (t *Terminal) UpdateCount(cnt int, final bool) {
 	if final {
 		t.reqBox.Set(reqRefresh, nil)
 	}
+}
+
+// UpdateHeader updates the header
+func (t *Terminal) UpdateHeader(header []string, lines int) {
+	t.mutex.Lock()
+	t.header = make([]string, lines)
+	copy(t.header, header)
+	if !t.reverse {
+		reversed := make([]string, lines)
+		for idx, str := range t.header {
+			reversed[lines-idx-1] = str
+		}
+		t.header = reversed
+	}
+	t.mutex.Unlock()
+	t.reqBox.Set(reqHeader, nil)
 }
 
 // UpdateProgress updates the search progress
@@ -686,6 +703,8 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case reqList:
 						t.printList()
+					case reqHeader:
+						t.printHeader()
 					case reqRefresh:
 						t.suppress = false
 					case reqRedraw:
