@@ -24,37 +24,37 @@ const usage = `usage: fzf [options]
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
                           integer or a range expression ([BEGIN]..[END])
-        --with-nth=N[,..] Transform item using index expressions within finder
+    --with-nth=N[,..]     Transform item using index expressions within finder
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
     +s, --no-sort         Do not sort the result
-        --tac             Reverse the order of the input
-        --tiebreak=CRI    Sort criterion when the scores are tied;
+    --tac                 Reverse the order of the input
+    --tiebreak=CRITERION  Sort criterion when the scores are tied;
                           [length|begin|end|index] (default: length)
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
-        --ansi            Enable processing of ANSI color codes
-        --no-mouse        Disable mouse
-        --color=COLSPEC   Base scheme (dark|light|16|bw) and/or custom colors
-        --black           Use black background
-        --reverse         Reverse orientation
-        --cycle           Enable cyclic scroll
-        --no-hscroll      Disable horizontal scroll
-        --inline-info     Display finder info inline with the query
-        --prompt=STR      Input prompt (default: '> ')
-        --bind=KEYBINDS   Custom key bindings. Refer to the man page.
-        --history=FILE    History file
-        --history-size=N  Maximum number of history entries (default: 1000)
-        --header-file=N   Header file
+    --ansi                Enable processing of ANSI color codes
+    --no-mouse            Disable mouse
+    --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
+    --black               Use black background
+    --reverse             Reverse orientation
+    --cycle               Enable cyclic scroll
+    --no-hscroll          Disable horizontal scroll
+    --inline-info         Display finder info inline with the query
+    --prompt=STR          Input prompt (default: '> ')
+    --bind=KEYBINDS       Custom key bindings. Refer to the man page.
+    --history=FILE        History file
+    --history-size=N      Maximum number of history entries (default: 1000)
+    --header-file=FILE    The file whose content to be printed as header
 
   Scripting
     -q, --query=STR       Start the finder with the given query
     -1, --select-1        Automatically select the only match
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
-        --print-query     Print query as the first line
-        --expect=KEYS     Comma-separated list of keys to complete fzf
-        --sync            Synchronous search for multi-staged filtering
+    --print-query         Print query as the first line
+    --expect=KEYS         Comma-separated list of keys to complete fzf
+    --sync                Synchronous search for multi-staged filtering
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty

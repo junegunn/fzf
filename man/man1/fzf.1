@@ -257,6 +257,10 @@ When enabled, \fBCTRL-N\fR and \fBCTRL-P\fR are automatically remapped to
 .BI "--history-size=" "N"
 Maximum number of entries in the history file (default: 1000). The file is
 automatically truncated when the number of the lines exceeds the value.
+.TP
+.BI "--header-file=" "FILE"
+The content of the file will be printed as the "sticky" header. The file can
+span multiple lines and can contain ANSI color codes.
 .SS Scripting
 .TP
 .BI "-q, --query=" "STR"
