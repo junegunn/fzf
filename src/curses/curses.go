@@ -181,7 +181,7 @@ func init() {
 		Info:         144,
 		Cursor:       161,
 		Selected:     168,
-		Header:       110}
+		Header:       109}
 	Light256 = &ColorTheme{
 		UseDefault:   true,
 		Fg:           15,
