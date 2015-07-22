@@ -377,9 +377,17 @@ func (t *Terminal) printHeader() {
 	if len(t.header) == 0 {
 		return
 	}
+	max := C.MaxY()
 	for idx, lineStr := range t.header {
 		if !t.reverse {
 			idx = len(t.header) - idx - 1
+		}
+		line := idx + 2
+		if t.inlineInfo {
+			line -= 1
+		}
+		if line >= max {
+			break
 		}
 		trimmed, colors := extractColor(&lineStr)
 		item := &Item{
@@ -388,10 +396,6 @@ func (t *Terminal) printHeader() {
 			colors: colors,
 			rank:   Rank{0, 0, 0}}
 
-		line := idx + 2
-		if t.inlineInfo {
-			line -= 1
-		}
 		t.move(line, 2, true)
 		t.printHighlighted(item, false, C.ColHeader, 0, false)
 	}
@@ -993,6 +997,7 @@ func (t *Terminal) constrain() {
 		t.offset = util.Max(0, count-height)
 		t.cy = util.Constrain(t.offset+diffpos, 0, count-1)
 	}
+	t.offset = util.Max(0, t.offset)
 }
 
 func (t *Terminal) vmove(o int) {
@@ -1021,8 +1026,9 @@ func (t *Terminal) vset(o int) bool {
 }
 
 func (t *Terminal) maxItems() int {
+	max := C.MaxY() - 2 - len(t.header)
 	if t.inlineInfo {
-		return C.MaxY() - 1 - len(t.header)
+		max += 1
 	}
-	return C.MaxY() - 2 - len(t.header)
+	return util.Max(max, 0)
 }

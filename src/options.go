@@ -784,6 +784,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		}
 	}
 
+	if opts.HeaderLines < 0 {
+		errorExit("header lines must be a non-negative integer")
+	}
+
 	// Change default actions for CTRL-N / CTRL-P when --history is used
 	if opts.History != nil {
 		if _, prs := keymap[curses.CtrlP]; !prs {

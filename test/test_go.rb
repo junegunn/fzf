@@ -648,6 +648,61 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-10].start_with? '>' }
   end
 
+  def test_header_lines
+    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5'}", :Enter
+    2.times do
+      tmux.until do |lines|
+        lines[-2].include?('/90') &&
+        lines[-3]  == '  1' &&
+        lines[-4]  == '  2' &&
+        lines[-13] == '> 15'
+      end
+      tmux.send_keys :Down
+    end
+    tmux.send_keys :Enter
+    assert_equal '15', readonce.chomp
+  end
+
+  def test_header_lines_reverse
+    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5 --reverse'}", :Enter
+    2.times do
+      tmux.until do |lines|
+        lines[1].include?('/90') &&
+        lines[2]  == '  1' &&
+        lines[3]  == '  2' &&
+        lines[12] == '> 15'
+      end
+      tmux.send_keys :Up
+    end
+    tmux.send_keys :Enter
+    assert_equal '15', readonce.chomp
+  end
+
+  def test_header_lines_overflow
+    tmux.send_keys "seq 100 | #{fzf '--header-lines=200'}", :Enter
+    tmux.until { |lines| lines[-2].include?('0/0') }
+    tmux.send_keys :Enter
+    assert_equal '', readonce.chomp
+  end
+
+  def test_header_file
+    tmux.send_keys "seq 100 | #{fzf "--header-file <(head -5 #{__FILE__})"}", :Enter
+    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.until do |lines|
+      lines[-2].include?('100/100') &&
+      lines[-7..-3].map(&:strip) == header
+    end
+  end
+
+  def test_header_file_reverse
+    tmux.send_keys "seq 100 | #{fzf "--header-file <(head -5 #{__FILE__}) --reverse"}", :Enter
+    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.until do |lines|
+      lines[1].include?('100/100') &&
+      lines[2..6].map(&:strip) == header
+    end
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
