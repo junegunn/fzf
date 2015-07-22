@@ -688,6 +688,18 @@ class TestGoFZF < TestBase
     assert_equal '', readonce.chomp
   end
 
+  def test_header_lines_with_nth
+    tmux.send_keys "seq 100 | #{fzf "--header-lines 5 --with-nth 1,1,1,1,1"}", :Enter
+    tmux.until do |lines|
+      lines[-2].include?('95/95') &&
+      lines[-3] == '  11111' &&
+      lines[-7] == '  55555' &&
+      lines[-8] == '> 66666'
+    end
+    tmux.send_keys :Enter
+    assert_equal '6', readonce.chomp
+  end
+
   def test_header_file
     tmux.send_keys "seq 100 | #{fzf "--header-file <(head -5 #{__FILE__})"}", :Enter
     header = File.readlines(__FILE__).take(5).map(&:strip)
@@ -698,7 +710,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_file_reverse
-    tmux.send_keys "seq 100 | #{fzf "--header-file <(head -5 #{__FILE__}) --reverse"}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--header-file=<(head -5 #{__FILE__}) --reverse"}", :Enter
     header = File.readlines(__FILE__).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('100/100') &&

@@ -104,13 +104,13 @@ func Run(opts *Options) {
 		})
 	} else {
 		chunkList = NewChunkList(func(data *string, index int) *Item {
+			tokens := Tokenize(data, opts.Delimiter)
+			trans := Transform(tokens, opts.WithNth)
 			if len(header) < opts.HeaderLines {
-				header = append(header, *data)
+				header = append(header, *joinTokens(trans))
 				eventBox.Set(EvtHeader, header)
 				return nil
 			}
-			tokens := Tokenize(data, opts.Delimiter)
-			trans := Transform(tokens, opts.WithNth)
 			item := Item{
 				text:     joinTokens(trans),
 				origText: data,
