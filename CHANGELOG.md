@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.10.1
+------
+
+### New features
+
+- Added options for sticky header
+    - `--header-file`
+    - `--header-lines`
+
+### Minor improvements/fixes
+
+- Fixed to allow binding colon and comma keys
+- Fixed ANSI processor to handle color regions spanning multiple lines
+
 0.10.0
 ------
 
