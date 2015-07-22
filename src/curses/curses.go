@@ -262,7 +262,6 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	if mouse {
 		C.mousemask(C.ALL_MOUSE_EVENTS, nil)
 	}
-	C.cbreak()
 	C.noecho()
 	C.raw() // stty dsusp undef
 
