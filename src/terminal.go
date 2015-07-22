@@ -103,6 +103,7 @@ const (
 	actClearScreen
 	actDeleteChar
 	actEndOfLine
+	actEof
 	actForwardChar
 	actForwardWord
 	actKillLine
@@ -813,6 +814,10 @@ func (t *Terminal) Loop() {
 			}
 		case actEndOfLine:
 			t.cx = len(t.input)
+		case actEof:
+			if len(t.input) == 0 {
+				req(reqQuit)
+			}
 		case actForwardChar:
 			if t.cx < len(t.input) {
 				t.cx++

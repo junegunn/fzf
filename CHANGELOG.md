@@ -9,6 +9,8 @@ CHANGELOG
 - Added options for sticky header
     - `--header-file`
     - `--header-lines`
+- Added `eof` action which closes the finder only when the input is empty
+    - e.g. `export FZF_DEFAULT_OPTS="--bind esc:eof"`
 
 ### Minor improvements/fixes
 
