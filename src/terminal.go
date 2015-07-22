@@ -378,6 +378,7 @@ func (t *Terminal) printHeader() {
 		return
 	}
 	max := C.MaxY()
+	var state *ansiState
 	for idx, lineStr := range t.header {
 		if !t.reverse {
 			idx = len(t.header) - idx - 1
@@ -389,7 +390,8 @@ func (t *Terminal) printHeader() {
 		if line >= max {
 			break
 		}
-		trimmed, colors := extractColor(&lineStr)
+		trimmed, colors, newState := extractColor(&lineStr, state)
+		state = newState
 		item := &Item{
 			text:   trimmed,
 			index:  0,

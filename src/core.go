@@ -69,14 +69,17 @@ func Run(opts *Options) {
 	}
 	if opts.Ansi {
 		if opts.Theme != nil {
+			var state *ansiState
 			ansiProcessor = func(data *string) (*string, []ansiOffset) {
-				return extractColor(data)
+				trimmed, offsets, newState := extractColor(data, state)
+				state = newState
+				return trimmed, offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
 			ansiProcessor = func(data *string) (*string, []ansiOffset) {
-				trimmed, _ := extractColor(data)
+				trimmed, _, _ := extractColor(data, nil)
 				return trimmed, nil
 			}
 		}
