@@ -48,7 +48,9 @@ _fzf_opts_completion() {
     --sync
     --cycle
     --history
-    --history-size"
+    --history-size
+    --header-file
+    --header-lines"
 
   case "${prev}" in
   --tiebreak)
@@ -59,7 +61,7 @@ _fzf_opts_completion() {
     COMPREPLY=( $(compgen -W "dark light 16 bw" -- ${cur}) )
     return 0
     ;;
-  --history)
+  --history|--header-file)
     COMPREPLY=()
     return 0
     ;;
