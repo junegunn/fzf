@@ -680,7 +680,10 @@ class TestGoFZF < TestBase
 
   def test_header_lines_overflow
     tmux.send_keys "seq 100 | #{fzf '--header-lines=200'}", :Enter
-    tmux.until { |lines| lines[-2].include?('0/0') }
+    tmux.until do |lines|
+      lines[-2].include?('0/0') &&
+      lines[-3].include?('  1')
+    end
     tmux.send_keys :Enter
     assert_equal '', readonce.chomp
   end

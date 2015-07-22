@@ -388,7 +388,7 @@ func (t *Terminal) printHeader() {
 			line -= 1
 		}
 		if line >= max {
-			break
+			continue
 		}
 		trimmed, colors, newState := extractColor(&lineStr, state)
 		state = newState
