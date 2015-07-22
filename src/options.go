@@ -497,6 +497,8 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			keymap[key] = actClearScreen
 		case "delete-char":
 			keymap[key] = actDeleteChar
+		case "delete-char/eof":
+			keymap[key] = actDeleteCharEof
 		case "end-of-line":
 			keymap[key] = actEndOfLine
 		case "eof":

@@ -11,6 +11,7 @@ CHANGELOG
     - `--header-lines`
 - Added `eof` action which closes the finder only when the input is empty
     - e.g. `export FZF_DEFAULT_OPTS="--bind esc:eof"`
+- Added `delete-char/eof` action to differentiate `CTRL-D` and `DEL`
 
 ### Minor improvements/fixes
 

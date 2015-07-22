@@ -102,6 +102,7 @@ const (
 	actBackwardWord
 	actClearScreen
 	actDeleteChar
+	actDeleteCharEof
 	actEndOfLine
 	actEof
 	actForwardChar
@@ -137,7 +138,7 @@ func defaultKeymap() map[int]actionType {
 	keymap[C.CtrlG] = actAbort
 	keymap[C.CtrlQ] = actAbort
 	keymap[C.ESC] = actAbort
-	keymap[C.CtrlD] = actDeleteChar
+	keymap[C.CtrlD] = actDeleteCharEof
 	keymap[C.CtrlE] = actEndOfLine
 	keymap[C.CtrlF] = actForwardChar
 	keymap[C.CtrlH] = actBackwardDeleteChar
@@ -168,7 +169,7 @@ func defaultKeymap() map[int]actionType {
 
 	keymap[C.Home] = actBeginningOfLine
 	keymap[C.End] = actEndOfLine
-	keymap[C.Del] = actDeleteChar // FIXME Del vs. CTRL-D
+	keymap[C.Del] = actDeleteChar
 	keymap[C.PgUp] = actPageUp
 	keymap[C.PgDn] = actPageDown
 
@@ -809,6 +810,8 @@ func (t *Terminal) Loop() {
 		case actAbort:
 			req(reqQuit)
 		case actDeleteChar:
+			t.delChar()
+		case actDeleteCharEof:
 			if !t.delChar() && t.cx == 0 {
 				req(reqQuit)
 			}
