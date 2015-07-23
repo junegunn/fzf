@@ -718,14 +718,14 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_eof
-    tmux.send_keys "seq 100 | #{fzf "--bind 2:eof"}", :Enter
-    tmux.until { |lines| lines[-2].include?('100/100') }
+  def test_canel
+    tmux.send_keys "seq 10 | #{fzf "--bind 2:cancel"}", :Enter
+    tmux.until { |lines| lines[-2].include?('10/10') }
     tmux.send_keys '123'
-    tmux.until do |lines|
-      lines[-1] == '> 13' && lines[-2].include?('1/100')
-    end
-    tmux.send_keys :BSpace, :BSpace
+    tmux.until { |lines| lines[-1] == '> 3' && lines[-2].include?('1/10') }
+    tmux.send_keys 'C-y', 'C-y'
+    tmux.until { |lines| lines[-1] == '> 311' }
+    tmux.send_keys 2
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 2
     tmux.prepare

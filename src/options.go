@@ -501,8 +501,8 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			keymap[key] = actDeleteCharEof
 		case "end-of-line":
 			keymap[key] = actEndOfLine
-		case "eof":
-			keymap[key] = actEof
+		case "cancel":
+			keymap[key] = actCancel
 		case "forward-char":
 			keymap[key] = actForwardChar
 		case "forward-word":

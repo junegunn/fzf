@@ -9,8 +9,9 @@ CHANGELOG
 - Added options for sticky header
     - `--header-file`
     - `--header-lines`
-- Added `eof` action which closes the finder only when the input is empty
-    - e.g. `export FZF_DEFAULT_OPTS="--bind esc:eof"`
+- Added `cancel` action which clears the input or closes the finder when the
+  input is already empty
+    - e.g. `export FZF_DEFAULT_OPTS="--bind esc:cancel"`
 - Added `delete-char/eof` action to differentiate `CTRL-D` and `DEL`
 
 ### Minor improvements/fixes
