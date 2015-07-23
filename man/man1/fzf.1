@@ -261,10 +261,10 @@ Maximum number of entries in the history file (default: 1000). The file is
 automatically truncated when the number of the lines exceeds the value.
 .TP
 .BI "--header-file=" "FILE"
-The content of the file will be printed as the sticky header. The file can
-span multiple lines and can contain ANSI color codes. The lines in the file are
-displayed from top to bottom regardless of \fB--reverse\fR, and are
-not affected by \fB--with-nth\fR.
+The content of the file will be printed as the sticky header. The lines in the
+file are displayed in order from top to bottom regardless of \fB--reverse\fR,
+and are not affected by \fB--with-nth\fR. ANSI color codes are processed even
+when \fB--ansi\fR is not set.
 .TP
 .BI "--header-lines=" "N"
 The first N lines of the input are treated as the sticky header. When
