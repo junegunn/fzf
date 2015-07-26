@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -41,6 +42,8 @@ type Terminal struct {
 	history    *History
 	cycle      bool
 	header     []string
+	margin     [4]string
+	marginInt  [4]int
 	count      int
 	progress   int
 	reading    bool
@@ -200,6 +203,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		pressed:    "",
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
+		margin:     opts.Margin,
+		marginInt:  [4]int{0, 0, 0, 0},
 		cycle:      opts.Cycle,
 		header:     opts.Header,
 		reading:    true,
@@ -317,10 +322,50 @@ func displayWidth(runes []rune) int {
 	return l
 }
 
+const minWidth = 16
+const minHeight = 4
+
+func (t *Terminal) calculateMargins() {
+	screenWidth := C.MaxX()
+	screenHeight := C.MaxY()
+	for idx, str := range t.margin {
+		if str == "0" {
+			t.marginInt[idx] = 0
+		} else if strings.HasSuffix(str, "%") {
+			num, _ := strconv.ParseFloat(str[:len(str)-1], 64)
+			var val float64
+			if idx%2 == 0 {
+				val = float64(screenHeight)
+			} else {
+				val = float64(screenWidth)
+			}
+			t.marginInt[idx] = int(val * num * 0.01)
+		} else {
+			num, _ := strconv.Atoi(str)
+			t.marginInt[idx] = num
+		}
+	}
+	adjust := func(idx1 int, idx2 int, max int, min int) {
+		if max >= min {
+			margin := t.marginInt[idx1] + t.marginInt[idx2]
+			if max-margin < min {
+				desired := max - min
+				t.marginInt[idx1] = desired * t.marginInt[idx1] / margin
+				t.marginInt[idx2] = desired * t.marginInt[idx2] / margin
+			}
+		}
+	}
+	adjust(1, 3, screenWidth, minWidth)
+	adjust(0, 2, screenHeight, minHeight)
+}
+
 func (t *Terminal) move(y int, x int, clear bool) {
+	x += t.marginInt[3]
 	maxy := C.MaxY()
 	if !t.reverse {
-		y = maxy - y - 1
+		y = maxy - y - 1 - t.marginInt[2]
+	} else {
+		y += t.marginInt[0]
 	}
 
 	if clear {
@@ -375,11 +420,15 @@ func (t *Terminal) printInfo() {
 	C.CPrint(C.ColInfo, false, output)
 }
 
+func (t *Terminal) maxHeight() int {
+	return C.MaxY() - t.marginInt[0] - t.marginInt[2]
+}
+
 func (t *Terminal) printHeader() {
 	if len(t.header) == 0 {
 		return
 	}
-	max := C.MaxY()
+	max := t.maxHeight()
 	var state *ansiState
 	for idx, lineStr := range t.header {
 		if !t.reverse {
@@ -490,7 +539,7 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	// Overflow
 	text := []rune(*item.text)
 	offsets := item.colorOffsets(col2, bold, current)
-	maxWidth := C.MaxX() - 3
+	maxWidth := C.MaxX() - 3 - t.marginInt[1] - t.marginInt[3]
 	fullWidth := displayWidth(text)
 	if fullWidth > maxWidth {
 		if t.hscroll {
@@ -573,6 +622,7 @@ func processTabs(runes []rune, prefixWidth int) (string, int) {
 }
 
 func (t *Terminal) printAll() {
+	t.calculateMargins()
 	t.printList()
 	t.printPrompt()
 	t.printInfo()
@@ -652,6 +702,7 @@ func (t *Terminal) Loop() {
 	{ // Late initialization
 		t.mutex.Lock()
 		t.initFunc()
+		t.calculateMargins()
 		t.printPrompt()
 		t.placeCursor()
 		C.Refresh()
@@ -942,40 +993,46 @@ func (t *Terminal) Loop() {
 			}
 		case actMouse:
 			me := event.MouseEvent
-			mx, my := util.Constrain(me.X-len(t.prompt), 0, len(t.input)), me.Y
-			if !t.reverse {
-				my = C.MaxY() - my - 1
-			}
-			min := 2 + len(t.header)
-			if t.inlineInfo {
-				min -= 1
-			}
-			if me.S != 0 {
-				// Scroll
-				if t.merger.Length() > 0 {
-					if t.multi && me.Mod {
-						toggle()
-					}
-					t.vmove(me.S)
-					req(reqList)
+			mx, my := me.X, me.Y
+			if mx >= t.marginInt[3] && mx < C.MaxX()-t.marginInt[1] &&
+				my >= t.marginInt[0] && my < C.MaxY()-t.marginInt[2] {
+				mx -= t.marginInt[3]
+				my -= t.marginInt[0]
+				mx = util.Constrain(mx-len(t.prompt), 0, len(t.input))
+				if !t.reverse {
+					my = t.maxHeight() - my - 1
 				}
-			} else if me.Double {
-				// Double-click
-				if my >= min {
-					if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-						req(reqClose)
-					}
+				min := 2 + len(t.header)
+				if t.inlineInfo {
+					min -= 1
 				}
-			} else if me.Down {
-				if my == 0 && mx >= 0 {
-					// Prompt
-					t.cx = mx
-				} else if my >= min {
-					// List
-					if t.vset(t.offset+my-min) && t.multi && me.Mod {
-						toggle()
+				if me.S != 0 {
+					// Scroll
+					if t.merger.Length() > 0 {
+						if t.multi && me.Mod {
+							toggle()
+						}
+						t.vmove(me.S)
+						req(reqList)
 					}
-					req(reqList)
+				} else if me.Double {
+					// Double-click
+					if my >= min {
+						if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
+							req(reqClose)
+						}
+					}
+				} else if me.Down {
+					if my == 0 && mx >= 0 {
+						// Prompt
+						t.cx = mx
+					} else if my >= min {
+						// List
+						if t.vset(t.offset+my-min) && t.multi && me.Mod {
+							toggle()
+						}
+						req(reqList)
+					}
 				}
 			}
 		}
@@ -1040,7 +1097,7 @@ func (t *Terminal) vset(o int) bool {
 }
 
 func (t *Terminal) maxItems() int {
-	max := C.MaxY() - 2 - len(t.header)
+	max := t.maxHeight() - 2 - len(t.header)
 	if t.inlineInfo {
 		max += 1
 	}

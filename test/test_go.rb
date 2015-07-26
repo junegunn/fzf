@@ -731,6 +731,18 @@ class TestGoFZF < TestBase
     tmux.prepare
   end
 
+  def test_margin
+    tmux.send_keys "yes | head -1000 | #{fzf "--margin 5,3"}", :Enter
+    tmux.until { |lines| lines[4] == '' && lines[5] == '     y' }
+    tmux.send_keys :Enter
+  end
+
+  def test_margin_reverse
+    tmux.send_keys "seq 1000 | #{fzf "--margin 7,5 --reverse"}", :Enter
+    tmux.until { |lines| lines[1 + 7] == '       1000/1000' }
+    tmux.send_keys :Enter
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

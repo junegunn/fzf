@@ -6,6 +6,7 @@ CHANGELOG
 
 ### New features
 
+- Added `--margin` option
 - Added options for sticky header
     - `--header-file`
     - `--header-lines`

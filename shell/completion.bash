@@ -50,7 +50,8 @@ _fzf_opts_completion() {
     --history
     --history-size
     --header-file
-    --header-lines"
+    --header-lines
+    --margin"
 
   case "${prev}" in
   --tiebreak)

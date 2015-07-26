@@ -38,6 +38,7 @@ const usage = `usage: fzf [options]
     --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
     --black               Use black background
     --reverse             Reverse orientation
+    --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --cycle               Enable cyclic scroll
     --no-hscroll          Disable horizontal scroll
     --inline-info         Display finder info inline with the query
@@ -93,6 +94,10 @@ const (
 	byIndex
 )
 
+func defaultMargin() [4]string {
+	return [4]string{"0", "0", "0", "0"}
+}
+
 // Options stores the values of command-line options
 type Options struct {
 	Mode        Mode
@@ -127,6 +132,7 @@ type Options struct {
 	History     *History
 	Header      []string
 	HeaderLines int
+	Margin      [4]string
 	Version     bool
 }
 
@@ -171,6 +177,7 @@ func defaultOptions() *Options {
 		History:     nil,
 		Header:      make([]string, 0),
 		HeaderLines: 0,
+		Margin:      defaultMargin(),
 		Version:     false}
 }
 
@@ -214,6 +221,14 @@ func atoi(str string) int {
 	num, err := strconv.Atoi(str)
 	if err != nil {
 		errorExit("not a valid integer: " + str)
+	}
+	return num
+}
+
+func atof(str string) float64 {
+	num, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		errorExit("not a valid number: " + str)
 	}
 	return num
 }
@@ -592,6 +607,48 @@ func readHeaderFile(filename string) []string {
 	return strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
 }
 
+func parseMargin(margin string) [4]string {
+	margins := strings.Split(margin, ",")
+	checked := func(str string) string {
+		if strings.HasSuffix(str, "%") {
+			val := atof(str[:len(str)-1])
+			if val < 0 {
+				errorExit("margin must be non-negative")
+			}
+			if val > 100 {
+				errorExit("margin too large")
+			}
+		} else {
+			val := atoi(str)
+			if val < 0 {
+				errorExit("margin must be non-negative")
+			}
+		}
+		return str
+	}
+	switch len(margins) {
+	case 1:
+		m := checked(margins[0])
+		return [4]string{m, m, m, m}
+	case 2:
+		tb := checked(margins[0])
+		rl := checked(margins[1])
+		return [4]string{tb, rl, tb, rl}
+	case 3:
+		t := checked(margins[0])
+		rl := checked(margins[1])
+		b := checked(margins[2])
+		return [4]string{t, rl, b, rl}
+	case 4:
+		return [4]string{
+			checked(margins[0]), checked(margins[1]),
+			checked(margins[2]), checked(margins[3])}
+	default:
+		errorExit("invalid margin: " + margin)
+	}
+	return defaultMargin()
+}
+
 func parseOptions(opts *Options, allArgs []string) {
 	keymap := make(map[int]actionType)
 	var historyMax int
@@ -743,6 +800,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Header = []string{}
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
+		case "--no-margin":
+			opts.Margin = defaultMargin()
+		case "--margin":
+			opts.Margin = parseMargin(
+				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--version":
 			opts.Version = true
 		default:
@@ -782,6 +844,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.Header = []string{}
 				opts.HeaderLines = atoi(value)
+			} else if match, value := optString(arg, "--margin="); match {
+				opts.Margin = parseMargin(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}

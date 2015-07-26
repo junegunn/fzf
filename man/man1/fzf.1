@@ -131,6 +131,31 @@ Use black background
 .B "--reverse"
 Reverse orientation
 .TP
+.BI "--margin=" MARGIN
+Comma-separated expression for margins around the finder.
+.br
+.R ""
+.br
+.RS
+.BR TRBL "     Same margin for top, right, bottom, and left"
+.br
+.BR TB,RL "    Vertical, horizontal margin"
+.br
+.BR T,RL,B "   Top, horizontal, bottom margin"
+.br
+.BR T,R,B,L "  Top, right, bottom, left margin"
+.br
+.R ""
+.br
+Each part can be given in absolute number or in percentage relative to the
+terminal size with \fB%\fR suffix.
+.br
+.R ""
+.br
+e.g. \fBfzf --margin 10%\fR
+     \fBfzf --margin 1,5%\fR
+.RE
+.TP
 .B "--cycle"
 Enable cyclic scroll
 .TP
