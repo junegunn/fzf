@@ -994,7 +994,16 @@ func (t *Terminal) Loop() {
 		case actMouse:
 			me := event.MouseEvent
 			mx, my := me.X, me.Y
-			if mx >= t.marginInt[3] && mx < C.MaxX()-t.marginInt[1] &&
+			if me.S != 0 {
+				// Scroll
+				if t.merger.Length() > 0 {
+					if t.multi && me.Mod {
+						toggle()
+					}
+					t.vmove(me.S)
+					req(reqList)
+				}
+			} else if mx >= t.marginInt[3] && mx < C.MaxX()-t.marginInt[1] &&
 				my >= t.marginInt[0] && my < C.MaxY()-t.marginInt[2] {
 				mx -= t.marginInt[3]
 				my -= t.marginInt[0]
@@ -1006,16 +1015,7 @@ func (t *Terminal) Loop() {
 				if t.inlineInfo {
 					min -= 1
 				}
-				if me.S != 0 {
-					// Scroll
-					if t.merger.Length() > 0 {
-						if t.multi && me.Mod {
-							toggle()
-						}
-						t.vmove(me.S)
-						req(reqList)
-					}
-				} else if me.Double {
+				if me.Double {
 					// Double-click
 					if my >= min {
 						if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
