@@ -181,7 +181,7 @@ func help(ok int) {
 
 func errorExit(msg string) {
 	os.Stderr.WriteString(msg + "\n")
-	help(1)
+	os.Exit(1)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
