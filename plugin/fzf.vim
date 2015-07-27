@@ -54,14 +54,17 @@ function! s:fzf_exec()
   return s:exec
 endfunction
 
+function! s:tmux_not_zoomed()
+  return system('tmux list-panes -F "#F"') !~# 'Z'
+endfunction
+
 function! s:tmux_enabled()
   if has('gui_running')
     return 0
   endif
 
-  let not_zoomed = system('tmux list-panes -F "#F"') !~# 'Z'
   if exists('s:tmux')
-    return s:tmux && not_zoomed
+    return s:tmux && s:tmux_not_zoomed()
   endif
 
   let s:tmux = 0
@@ -69,7 +72,7 @@ function! s:tmux_enabled()
     let output = system('tmux -V')
     let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   endif
-  return s:tmux && not_zoomed
+  return s:tmux && s:tmux_not_zoomed()
 endfunction
 
 function! s:shellesc(arg)
