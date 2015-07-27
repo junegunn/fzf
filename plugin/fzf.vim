@@ -64,7 +64,8 @@ function! s:tmux_enabled()
   endif
 
   let s:tmux = 0
-  if exists('$TMUX') && executable(s:fzf_tmux)
+  let panes = system('tmux list-panes -F "#F"')
+  if exists('$TMUX') && executable(s:fzf_tmux) && panes !~# 'Z'
     let output = system('tmux -V')
     let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   endif
