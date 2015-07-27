@@ -59,17 +59,17 @@ function! s:tmux_enabled()
     return 0
   endif
 
+  let not_zoomed = system('tmux list-panes -F "#F"') !~# 'Z'
   if exists('s:tmux')
-    return s:tmux
+    return s:tmux && not_zoomed
   endif
 
   let s:tmux = 0
-  let panes = system('tmux list-panes -F "#F"')
-  if exists('$TMUX') && executable(s:fzf_tmux) && panes !~# 'Z'
+  if exists('$TMUX') && executable(s:fzf_tmux)
     let output = system('tmux -V')
     let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   endif
-  return s:tmux
+  return s:tmux && not_zoomed
 endfunction
 
 function! s:shellesc(arg)
