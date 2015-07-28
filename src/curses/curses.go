@@ -8,6 +8,7 @@ package curses
 import "C"
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -258,6 +259,10 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 
 	C.setlocale(C.LC_ALL, C.CString(""))
 	_screen = C.newterm(nil, C.stderr, C.stdin)
+	if _screen == nil {
+		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
+		os.Exit(1)
+	}
 	C.set_term(_screen)
 	if mouse {
 		C.mousemask(C.ALL_MOUSE_EVENTS, nil)

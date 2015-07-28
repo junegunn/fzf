@@ -743,6 +743,11 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_invalid_term
+    tmux.send_keys "TERM=xxx fzf", :Enter
+    tmux.until { |lines| lines.any? { |l| l.include? 'Invalid $TERM: xxx' } }
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
