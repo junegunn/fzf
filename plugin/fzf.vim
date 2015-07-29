@@ -368,9 +368,15 @@ function! s:cmd_callback(lines) abort
   endif
   let key = remove(a:lines, 0)
   let cmd = get(s:action, key, 'e')
-  for item in a:lines
-    execute cmd s:escape(item)
-  endfor
+  try
+    let autochdir = &autochdir
+    set noautochdir
+    for item in a:lines
+      execute cmd s:escape(item)
+    endfor
+  finally
+    let &autochdir = autochdir
+  endtry
 endfunction
 
 function! s:cmd(bang, ...) abort
