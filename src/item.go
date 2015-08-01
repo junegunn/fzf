@@ -63,7 +63,16 @@ func (i *Item) Rank(cache bool) Rank {
 	var tiebreak uint16
 	switch rankTiebreak {
 	case byLength:
-		tiebreak = uint16(len(*i.text))
+		// It is guaranteed that .transformed in not null in normal execution
+		if i.transformed != nil {
+			lenSum := 0
+			for _, token := range *i.transformed {
+				lenSum += len(*token.text)
+			}
+			tiebreak = uint16(lenSum)
+		} else {
+			tiebreak = uint16(len(*i.text))
+		}
 	case byBegin:
 		// We can't just look at i.offsets[0][0] because it can be an inverse term
 		tiebreak = uint16(minBegin)
