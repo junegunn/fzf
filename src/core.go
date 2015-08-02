@@ -55,7 +55,7 @@ func Run(opts *Options) {
 	rankTiebreak = opts.Tiebreak
 
 	if opts.Version {
-		fmt.Println(Version)
+		fmt.Println(version)
 		os.Exit(0)
 	}
 

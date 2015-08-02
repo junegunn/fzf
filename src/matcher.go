@@ -96,7 +96,7 @@ func (m *Matcher) Loop() {
 		}
 
 		if !cancelled {
-			if merger.Cacheable() {
+			if merger.cacheable() {
 				m.mergerCache[patternString] = merger
 			}
 			merger.final = request.final

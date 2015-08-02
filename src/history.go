@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// History struct represents input history
 type History struct {
 	path     string
 	lines    []string
@@ -15,6 +16,7 @@ type History struct {
 	cursor   int
 }
 
+// NewHistory returns the pointer to a new History struct
 func NewHistory(path string, maxSize int) (*History, error) {
 	fmtError := func(e error) error {
 		if os.IsPermission(e) {

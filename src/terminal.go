@@ -106,7 +106,7 @@ const (
 	actCancel
 	actClearScreen
 	actDeleteChar
-	actDeleteCharEof
+	actDeleteCharEOF
 	actEndOfLine
 	actForwardChar
 	actForwardWord
@@ -141,7 +141,7 @@ func defaultKeymap() map[int]actionType {
 	keymap[C.CtrlG] = actAbort
 	keymap[C.CtrlQ] = actAbort
 	keymap[C.ESC] = actAbort
-	keymap[C.CtrlD] = actDeleteCharEof
+	keymap[C.CtrlD] = actDeleteCharEOF
 	keymap[C.CtrlE] = actEndOfLine
 	keymap[C.CtrlF] = actForwardChar
 	keymap[C.CtrlH] = actBackwardDeleteChar
@@ -436,7 +436,7 @@ func (t *Terminal) printHeader() {
 		}
 		line := idx + 2
 		if t.inlineInfo {
-			line -= 1
+			line--
 		}
 		if line >= max {
 			continue
@@ -462,7 +462,7 @@ func (t *Terminal) printList() {
 	for i := 0; i < maxy; i++ {
 		line := i + 2 + len(t.header)
 		if t.inlineInfo {
-			line -= 1
+			line--
 		}
 		t.move(line, 0, true)
 		if i < count {
@@ -862,7 +862,7 @@ func (t *Terminal) Loop() {
 			req(reqQuit)
 		case actDeleteChar:
 			t.delChar()
-		case actDeleteCharEof:
+		case actDeleteCharEOF:
 			if !t.delChar() && t.cx == 0 {
 				req(reqQuit)
 			}
@@ -1013,7 +1013,7 @@ func (t *Terminal) Loop() {
 				}
 				min := 2 + len(t.header)
 				if t.inlineInfo {
-					min -= 1
+					min--
 				}
 				if me.Double {
 					// Double-click
@@ -1099,7 +1099,7 @@ func (t *Terminal) vset(o int) bool {
 func (t *Terminal) maxItems() int {
 	max := t.maxHeight() - 2 - len(t.header)
 	if t.inlineInfo {
-		max += 1
+		max++
 	}
 	return util.Max(max, 0)
 }

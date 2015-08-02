@@ -82,7 +82,7 @@ func (mg *Merger) Get(idx int) *Item {
 	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
 }
 
-func (mg *Merger) Cacheable() bool {
+func (mg *Merger) cacheable() bool {
 	return mg.count < mergerCacheMax
 }
 
