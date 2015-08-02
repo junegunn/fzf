@@ -16,7 +16,7 @@ import (
  */
 
 // FuzzyMatch performs fuzzy-match
-func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
+func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 	if len(pattern) == 0 {
 		return 0, 0
 	}
@@ -34,7 +34,7 @@ func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 	sidx := -1
 	eidx := -1
 
-	for index, char := range *runes {
+	for index, char := range runes {
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string
 		if !caseSensitive {
@@ -61,7 +61,7 @@ func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 	if sidx >= 0 && eidx >= 0 {
 		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
-			char := (*runes)[index]
+			char := runes[index]
 			if !caseSensitive {
 				if char >= 'A' && char <= 'Z' {
 					char += 32
@@ -88,12 +88,12 @@ func FuzzyMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 //
 // We might try to implement better algorithms in the future:
 // http://en.wikipedia.org/wiki/String_searching_algorithm
-func ExactMatchNaive(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
+func ExactMatchNaive(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 	if len(pattern) == 0 {
 		return 0, 0
 	}
 
-	numRunes := len(*runes)
+	numRunes := len(runes)
 	plen := len(pattern)
 	if numRunes < plen {
 		return -1, -1
@@ -101,7 +101,7 @@ func ExactMatchNaive(caseSensitive bool, runes *[]rune, pattern []rune) (int, in
 
 	pidx := 0
 	for index := 0; index < numRunes; index++ {
-		char := (*runes)[index]
+		char := runes[index]
 		if !caseSensitive {
 			if char >= 'A' && char <= 'Z' {
 				char += 32
@@ -123,13 +123,13 @@ func ExactMatchNaive(caseSensitive bool, runes *[]rune, pattern []rune) (int, in
 }
 
 // PrefixMatch performs prefix-match
-func PrefixMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
-	if len(*runes) < len(pattern) {
+func PrefixMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+	if len(runes) < len(pattern) {
 		return -1, -1
 	}
 
 	for index, r := range pattern {
-		char := (*runes)[index]
+		char := runes[index]
 		if !caseSensitive {
 			char = unicode.ToLower(char)
 		}
@@ -141,7 +141,7 @@ func PrefixMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
 }
 
 // SuffixMatch performs suffix-match
-func SuffixMatch(caseSensitive bool, input *[]rune, pattern []rune) (int, int) {
+func SuffixMatch(caseSensitive bool, input []rune, pattern []rune) (int, int) {
 	runes := util.TrimRight(input)
 	trimmedLen := len(runes)
 	diff := trimmedLen - len(pattern)
@@ -161,11 +161,11 @@ func SuffixMatch(caseSensitive bool, input *[]rune, pattern []rune) (int, int) {
 	return trimmedLen - len(pattern), trimmedLen
 }
 
-func EqualMatch(caseSensitive bool, runes *[]rune, pattern []rune) (int, int) {
-	if len(*runes) != len(pattern) {
+func EqualMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+	if len(runes) != len(pattern) {
 		return -1, -1
 	}
-	runesStr := string(*runes)
+	runesStr := string(runes)
 	if !caseSensitive {
 		runesStr = strings.ToLower(runesStr)
 	}

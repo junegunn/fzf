@@ -5,13 +5,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/util"
 )
 
 // Reader reads from command or standard input
 type Reader struct {
-	pusher   func(string) bool
+	pusher   func([]rune) bool
 	eventBox *util.EventBox
 	delimNil bool
 }
@@ -37,13 +38,25 @@ func (r *Reader) feed(src io.Reader) {
 	}
 	reader := bufio.NewReader(src)
 	for {
-		line, err := reader.ReadString(delim)
-		if line != "" {
-			// "ReadString returns err != nil if and only if the returned data does not end in delim."
-			if err == nil {
-				line = line[:len(line)-1]
+		// ReadBytes returns err != nil if and only if the returned data does not
+		// end in delim.
+		bytea, err := reader.ReadBytes(delim)
+		if len(bytea) > 0 {
+			runes := make([]rune, 0, len(bytea))
+			for i := 0; i < len(bytea); {
+				if bytea[i] < utf8.RuneSelf {
+					runes = append(runes, rune(bytea[i]))
+					i++
+				} else {
+					r, sz := utf8.DecodeRune(bytea[i:])
+					i += sz
+					runes = append(runes, r)
+				}
 			}
-			if r.pusher(line) {
+			if err == nil {
+				runes = runes[:len(runes)-1]
+			}
+			if r.pusher(runes) {
 				r.eventBox.Set(EvtReadNew, nil)
 			}
 		}

@@ -43,14 +43,14 @@ func TestParseRange(t *testing.T) {
 func TestTokenize(t *testing.T) {
 	// AWK-style
 	input := "  abc:  def:  ghi  "
-	tokens := Tokenize(&input, nil)
-	if string(*tokens[0].text) != "abc:  " || tokens[0].prefixLength != 2 {
+	tokens := Tokenize([]rune(input), nil)
+	if string(tokens[0].text) != "abc:  " || tokens[0].prefixLength != 2 {
 		t.Errorf("%s", tokens)
 	}
 
 	// With delimiter
-	tokens = Tokenize(&input, delimiterRegexp(":"))
-	if string(*tokens[0].text) != "  abc:" || tokens[0].prefixLength != 0 {
+	tokens = Tokenize([]rune(input), delimiterRegexp(":"))
+	if string(tokens[0].text) != "  abc:" || tokens[0].prefixLength != 0 {
 		t.Errorf("%s", tokens)
 	}
 }
@@ -58,39 +58,39 @@ func TestTokenize(t *testing.T) {
 func TestTransform(t *testing.T) {
 	input := "  abc:  def:  ghi:  jkl"
 	{
-		tokens := Tokenize(&input, nil)
+		tokens := Tokenize([]rune(input), nil)
 		{
 			ranges := splitNth("1,2,3")
 			tx := Transform(tokens, ranges)
-			if *joinTokens(tx) != "abc:  def:  ghi:  " {
-				t.Errorf("%s", *tx)
+			if string(joinTokens(tx)) != "abc:  def:  ghi:  " {
+				t.Errorf("%s", tx)
 			}
 		}
 		{
 			ranges := splitNth("1..2,3,2..,1")
 			tx := Transform(tokens, ranges)
-			if *joinTokens(tx) != "abc:  def:  ghi:  def:  ghi:  jklabc:  " ||
-				len(*tx) != 4 ||
-				string(*(*tx)[0].text) != "abc:  def:  " || (*tx)[0].prefixLength != 2 ||
-				string(*(*tx)[1].text) != "ghi:  " || (*tx)[1].prefixLength != 14 ||
-				string(*(*tx)[2].text) != "def:  ghi:  jkl" || (*tx)[2].prefixLength != 8 ||
-				string(*(*tx)[3].text) != "abc:  " || (*tx)[3].prefixLength != 2 {
-				t.Errorf("%s", *tx)
+			if string(joinTokens(tx)) != "abc:  def:  ghi:  def:  ghi:  jklabc:  " ||
+				len(tx) != 4 ||
+				string(tx[0].text) != "abc:  def:  " || tx[0].prefixLength != 2 ||
+				string(tx[1].text) != "ghi:  " || tx[1].prefixLength != 14 ||
+				string(tx[2].text) != "def:  ghi:  jkl" || tx[2].prefixLength != 8 ||
+				string(tx[3].text) != "abc:  " || tx[3].prefixLength != 2 {
+				t.Errorf("%s", tx)
 			}
 		}
 	}
 	{
-		tokens := Tokenize(&input, delimiterRegexp(":"))
+		tokens := Tokenize([]rune(input), delimiterRegexp(":"))
 		{
 			ranges := splitNth("1..2,3,2..,1")
 			tx := Transform(tokens, ranges)
-			if *joinTokens(tx) != "  abc:  def:  ghi:  def:  ghi:  jkl  abc:" ||
-				len(*tx) != 4 ||
-				string(*(*tx)[0].text) != "  abc:  def:" || (*tx)[0].prefixLength != 0 ||
-				string(*(*tx)[1].text) != "  ghi:" || (*tx)[1].prefixLength != 12 ||
-				string(*(*tx)[2].text) != "  def:  ghi:  jkl" || (*tx)[2].prefixLength != 6 ||
-				string(*(*tx)[3].text) != "  abc:" || (*tx)[3].prefixLength != 0 {
-				t.Errorf("%s", *tx)
+			if string(joinTokens(tx)) != "  abc:  def:  ghi:  def:  ghi:  jkl  abc:" ||
+				len(tx) != 4 ||
+				string(tx[0].text) != "  abc:  def:" || tx[0].prefixLength != 0 ||
+				string(tx[1].text) != "  ghi:" || tx[1].prefixLength != 12 ||
+				string(tx[2].text) != "  def:  ghi:  jkl" || tx[2].prefixLength != 6 ||
+				string(tx[3].text) != "  abc:" || tx[3].prefixLength != 0 {
+				t.Errorf("%s", tx)
 			}
 		}
 	}

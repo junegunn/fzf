@@ -5,12 +5,11 @@ import (
 	"testing"
 )
 
-func assertMatch(t *testing.T, fun func(bool, *[]rune, []rune) (int, int), caseSensitive bool, input string, pattern string, sidx int, eidx int) {
+func assertMatch(t *testing.T, fun func(bool, []rune, []rune) (int, int), caseSensitive bool, input string, pattern string, sidx int, eidx int) {
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
-	runes := []rune(input)
-	s, e := fun(caseSensitive, &runes, []rune(pattern))
+	s, e := fun(caseSensitive, []rune(input), []rune(pattern))
 	if s != sidx {
 		t.Errorf("Invalid start index: %d (expected: %d, %s / %s)", s, sidx, input, pattern)
 	}

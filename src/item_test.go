@@ -39,14 +39,14 @@ func TestRankComparison(t *testing.T) {
 
 // Match length, string length, index
 func TestItemRank(t *testing.T) {
-	strs := []string{"foo", "foobar", "bar", "baz"}
-	item1 := Item{text: &strs[0], index: 1, offsets: []Offset{}}
+	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
+	item1 := Item{text: strs[0], index: 1, offsets: []Offset{}}
 	rank1 := item1.Rank(true)
 	if rank1.matchlen != 0 || rank1.tiebreak != 3 || rank1.index != 1 {
 		t.Error(item1.Rank(true))
 	}
 	// Only differ in index
-	item2 := Item{text: &strs[0], index: 0, offsets: []Offset{}}
+	item2 := Item{text: strs[0], index: 0, offsets: []Offset{}}
 
 	items := []*Item{&item1, &item2}
 	sort.Sort(ByRelevance(items))
@@ -62,10 +62,10 @@ func TestItemRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := Item{text: &strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item4 := Item{text: &strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
-	item5 := Item{text: &strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item6 := Item{text: &strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item3 := Item{text: strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item4 := Item{text: strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item5 := Item{text: strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item6 := Item{text: strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
 	items = []*Item{&item1, &item2, &item3, &item4, &item5, &item6}
 	sort.Sort(ByRelevance(items))
 	if items[0] != &item2 || items[1] != &item1 ||

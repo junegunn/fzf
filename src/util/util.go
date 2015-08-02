@@ -78,13 +78,13 @@ func IsTty() bool {
 	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
 }
 
-func TrimRight(runes *[]rune) []rune {
+func TrimRight(runes []rune) []rune {
 	var i int
-	for i = len(*runes) - 1; i >= 0; i-- {
-		char := (*runes)[i]
+	for i = len(runes) - 1; i >= 0; i-- {
+		char := runes[i]
 		if char != ' ' && char != '\t' {
 			break
 		}
 	}
-	return (*runes)[0 : i+1]
+	return runes[0 : i+1]
 }

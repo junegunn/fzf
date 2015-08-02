@@ -17,9 +17,9 @@ type colorOffset struct {
 
 // Item represents each input line
 type Item struct {
-	text        *string
-	origText    *string
-	transformed *[]Token
+	text        []rune
+	origText    *[]rune
+	transformed []Token
 	index       uint32
 	offsets     []Offset
 	colors      []ansiOffset
@@ -66,19 +66,19 @@ func (i *Item) Rank(cache bool) Rank {
 		// It is guaranteed that .transformed in not null in normal execution
 		if i.transformed != nil {
 			lenSum := 0
-			for _, token := range *i.transformed {
-				lenSum += len(*token.text)
+			for _, token := range i.transformed {
+				lenSum += len(token.text)
 			}
 			tiebreak = uint16(lenSum)
 		} else {
-			tiebreak = uint16(len(*i.text))
+			tiebreak = uint16(len(i.text))
 		}
 	case byBegin:
 		// We can't just look at i.offsets[0][0] because it can be an inverse term
 		tiebreak = uint16(minBegin)
 	case byEnd:
 		if prevEnd > 0 {
-			tiebreak = uint16(1 + len(*i.text) - prevEnd)
+			tiebreak = uint16(1 + len(i.text) - prevEnd)
 		} else {
 			// Empty offsets due to inverse terms.
 			tiebreak = 1
@@ -100,10 +100,12 @@ func (i *Item) AsString() string {
 
 // StringPtr returns the pointer to the original string
 func (i *Item) StringPtr() *string {
+	runes := i.text
 	if i.origText != nil {
-		return i.origText
+		runes = *i.origText
 	}
-	return i.text
+	str := string(runes)
+	return &str
 }
 
 func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset {

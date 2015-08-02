@@ -441,10 +441,10 @@ func (t *Terminal) printHeader() {
 		if line >= max {
 			continue
 		}
-		trimmed, colors, newState := extractColor(&lineStr, state)
+		trimmed, colors, newState := extractColor(lineStr, state)
 		state = newState
 		item := &Item{
-			text:   trimmed,
+			text:   []rune(trimmed),
 			index:  0,
 			colors: colors,
 			rank:   Rank{0, 0, 0}}
@@ -537,7 +537,7 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	}
 
 	// Overflow
-	text := []rune(*item.text)
+	text := item.text
 	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := C.MaxX() - 3 - t.marginInt[1] - t.marginInt[3]
 	fullWidth := displayWidth(text)

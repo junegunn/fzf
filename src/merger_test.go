@@ -22,7 +22,7 @@ func randItem() *Item {
 		offsets[idx] = Offset{sidx, eidx}
 	}
 	return &Item{
-		text:    &str,
+		text:    []rune(str),
 		index:   rand.Uint32(),
 		offsets: offsets}
 }

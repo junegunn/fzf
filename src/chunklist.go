@@ -7,7 +7,7 @@ type Chunk []*Item // >>> []Item
 
 // ItemBuilder is a closure type that builds Item object from a pointer to a
 // string and an integer
-type ItemBuilder func(*string, int) *Item
+type ItemBuilder func([]rune, int) *Item
 
 // ChunkList is a list of Chunks
 type ChunkList struct {
@@ -26,7 +26,7 @@ func NewChunkList(trans ItemBuilder) *ChunkList {
 		trans:  trans}
 }
 
-func (c *Chunk) push(trans ItemBuilder, data *string, index int) bool {
+func (c *Chunk) push(trans ItemBuilder, data []rune, index int) bool {
 	item := trans(data, index)
 	if item != nil {
 		*c = append(*c, item)
@@ -53,7 +53,7 @@ func CountItems(cs []*Chunk) int {
 }
 
 // Push adds the item to the list
-func (cl *ChunkList) Push(data string) bool {
+func (cl *ChunkList) Push(data []rune) bool {
 	cl.mutex.Lock()
 	defer cl.mutex.Unlock()
 
@@ -62,7 +62,7 @@ func (cl *ChunkList) Push(data string) bool {
 		cl.chunks = append(cl.chunks, &newChunk)
 	}
 
-	if cl.lastChunk().push(cl.trans, &data, cl.count) {
+	if cl.lastChunk().push(cl.trans, data, cl.count) {
 		cl.count++
 		return true
 	}

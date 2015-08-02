@@ -44,7 +44,7 @@ type Pattern struct {
 	hasInvTerm    bool
 	delimiter     *regexp.Regexp
 	nth           []Range
-	procFun       map[termType]func(bool, *[]rune, []rune) (int, int)
+	procFun       map[termType]func(bool, []rune, []rune) (int, int)
 }
 
 var (
@@ -114,7 +114,7 @@ func BuildPattern(mode Mode, caseMode Case,
 		hasInvTerm:    hasInvTerm,
 		nth:           nth,
 		delimiter:     delimiter,
-		procFun:       make(map[termType]func(bool, *[]rune, []rune) (int, int))}
+		procFun:       make(map[termType]func(bool, []rune, []rune) (int, int))}
 
 	ptr.procFun[termFuzzy] = algo.FuzzyMatch
 	ptr.procFun[termEqual] = algo.EqualMatch
@@ -305,27 +305,25 @@ func (p *Pattern) extendedMatch(item *Item) []Offset {
 	return offsets
 }
 
-func (p *Pattern) prepareInput(item *Item) *[]Token {
+func (p *Pattern) prepareInput(item *Item) []Token {
 	if item.transformed != nil {
 		return item.transformed
 	}
 
-	var ret *[]Token
+	var ret []Token
 	if len(p.nth) > 0 {
 		tokens := Tokenize(item.text, p.delimiter)
 		ret = Transform(tokens, p.nth)
 	} else {
-		runes := []rune(*item.text)
-		trans := []Token{Token{text: &runes, prefixLength: 0}}
-		ret = &trans
+		ret = []Token{Token{text: item.text, prefixLength: 0}}
 	}
 	item.transformed = ret
 	return ret
 }
 
-func (p *Pattern) iter(pfun func(bool, *[]rune, []rune) (int, int),
-	tokens *[]Token, caseSensitive bool, pattern []rune) (int, int) {
-	for _, part := range *tokens {
+func (p *Pattern) iter(pfun func(bool, []rune, []rune) (int, int),
+	tokens []Token, caseSensitive bool, pattern []rune) (int, int) {
+	for _, part := range tokens {
 		prefixLength := part.prefixLength
 		if sidx, eidx := pfun(caseSensitive, part.text, pattern); sidx >= 0 {
 			return sidx + prefixLength, eidx + prefixLength

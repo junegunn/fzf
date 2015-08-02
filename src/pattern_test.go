@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/junegunn/fzf/src/algo"
@@ -59,8 +60,8 @@ func TestExact(t *testing.T) {
 	clearPatternCache()
 	pattern := BuildPattern(ModeExtended, CaseSmart,
 		[]Range{}, nil, []rune("'abc"))
-	runes := []rune("aabbcc abc")
-	sidx, eidx := algo.ExactMatchNaive(pattern.caseSensitive, &runes, pattern.terms[0].text)
+	sidx, eidx := algo.ExactMatchNaive(
+		pattern.caseSensitive, []rune("aabbcc abc"), pattern.terms[0].text)
 	if sidx != 7 || eidx != 10 {
 		t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
 	}
@@ -72,8 +73,8 @@ func TestEqual(t *testing.T) {
 	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("^AbC$"))
 
 	match := func(str string, sidxExpected int, eidxExpected int) {
-		runes := []rune(str)
-		sidx, eidx := algo.EqualMatch(pattern.caseSensitive, &runes, pattern.terms[0].text)
+		sidx, eidx := algo.EqualMatch(
+			pattern.caseSensitive, []rune(str), pattern.terms[0].text)
 		if sidx != sidxExpected || eidx != eidxExpected {
 			t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
 		}
@@ -108,25 +109,23 @@ func TestCaseSensitivity(t *testing.T) {
 }
 
 func TestOrigTextAndTransformed(t *testing.T) {
-	strptr := func(str string) *string {
-		return &str
-	}
 	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("jg"))
-	tokens := Tokenize(strptr("junegunn"), nil)
+	tokens := Tokenize([]rune("junegunn"), nil)
 	trans := Transform(tokens, []Range{Range{1, 1}})
 
+	origRunes := []rune("junegunn.choi")
 	for _, mode := range []Mode{ModeFuzzy, ModeExtended} {
 		chunk := Chunk{
 			&Item{
-				text:        strptr("junegunn"),
-				origText:    strptr("junegunn.choi"),
+				text:        []rune("junegunn"),
+				origText:    &origRunes,
 				transformed: trans},
 		}
 		pattern.mode = mode
 		matches := pattern.matchChunk(&chunk)
-		if *matches[0].text != "junegunn" || *matches[0].origText != "junegunn.choi" ||
+		if string(matches[0].text) != "junegunn" || string(*matches[0].origText) != "junegunn.choi" ||
 			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 ||
-			matches[0].transformed != trans {
+			!reflect.DeepEqual(matches[0].transformed, trans) {
 			t.Error("Invalid match result", matches)
 		}
 	}
