@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-version=0.10.1
-[[ "$@" =~ --pre ]] && version=0.10.2
+[[ "$@" =~ --pre ]] && version=0.10.2 pre=1 ||
+                       version=0.10.1 pre=0
 
 cd $(dirname $BASH_SOURCE)
 fzf_base=$(pwd)
@@ -46,11 +46,13 @@ symlink() {
 
 download() {
   echo "Downloading bin/fzf ..."
-  if [[ ! $1 =~ dev && -x "$fzf_base"/bin/fzf ]]; then
-    echo "  - Already exists"
-    check_binary && return
-  elif [ -x "$fzf_base"/bin/$1 ]; then
-    symlink $1 && check_binary && return
+  if [ $pre = 0 ]; then
+    if [ -x "$fzf_base"/bin/fzf ]; then
+      echo "  - Already exists"
+      check_binary && return
+    elif [ -x "$fzf_base"/bin/$1 ]; then
+      symlink $1 && check_binary && return
+    fi
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
