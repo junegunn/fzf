@@ -537,7 +537,8 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	}
 
 	// Overflow
-	text := item.text
+	text := make([]rune, len(item.text))
+	copy(text, item.text)
 	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := C.MaxX() - 3 - t.marginInt[1] - t.marginInt[3]
 	fullWidth := displayWidth(text)
