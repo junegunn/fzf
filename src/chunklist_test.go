@@ -6,8 +6,8 @@ import (
 )
 
 func TestChunkList(t *testing.T) {
-	cl := NewChunkList(func(s []rune, i int) *Item {
-		return &Item{text: s, rank: Rank{0, 0, uint32(i * 2)}}
+	cl := NewChunkList(func(s []byte, i int) *Item {
+		return &Item{text: []rune(string(s)), rank: Rank{0, 0, uint32(i * 2)}}
 	})
 
 	// Snapshot
@@ -17,8 +17,8 @@ func TestChunkList(t *testing.T) {
 	}
 
 	// Add some data
-	cl.Push([]rune("hello"))
-	cl.Push([]rune("world"))
+	cl.Push([]byte("hello"))
+	cl.Push([]byte("world"))
 
 	// Previously created snapshot should remain the same
 	if len(snapshot) > 0 {
@@ -46,7 +46,7 @@ func TestChunkList(t *testing.T) {
 
 	// Add more data
 	for i := 0; i < chunkSize*2; i++ {
-		cl.Push([]rune(fmt.Sprintf("item %d", i)))
+		cl.Push([]byte(fmt.Sprintf("item %d", i)))
 	}
 
 	// Previous snapshot should remain the same
@@ -64,8 +64,8 @@ func TestChunkList(t *testing.T) {
 		t.Error("Unexpected number of items")
 	}
 
-	cl.Push([]rune("hello"))
-	cl.Push([]rune("world"))
+	cl.Push([]byte("hello"))
+	cl.Push([]byte("world"))
 
 	lastChunkCount := len(*snapshot[len(snapshot)-1])
 	if lastChunkCount != 2 {

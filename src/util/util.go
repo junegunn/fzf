@@ -6,6 +6,7 @@ import "C"
 import (
 	"os"
 	"time"
+	"unicode/utf8"
 )
 
 // Max returns the largest integer
@@ -87,4 +88,19 @@ func TrimRight(runes []rune) []rune {
 		}
 	}
 	return runes[0 : i+1]
+}
+
+func BytesToRunes(bytea []byte) []rune {
+	runes := make([]rune, 0, len(bytea))
+	for i := 0; i < len(bytea); {
+		if bytea[i] < utf8.RuneSelf {
+			runes = append(runes, rune(bytea[i]))
+			i++
+		} else {
+			r, sz := utf8.DecodeRune(bytea[i:])
+			i += sz
+			runes = append(runes, r)
+		}
+	}
+	return runes
 }
