@@ -37,14 +37,14 @@ type Rank struct {
 var rankTiebreak tiebreak
 
 // Rank calculates rank of the Item
-func (i *Item) Rank(cache bool) Rank {
-	if cache && (i.rank.matchlen > 0 || i.rank.tiebreak > 0) {
-		return i.rank
+func (item *Item) Rank(cache bool) Rank {
+	if cache && (item.rank.matchlen > 0 || item.rank.tiebreak > 0) {
+		return item.rank
 	}
 	matchlen := 0
 	prevEnd := 0
 	minBegin := math.MaxUint16
-	for _, offset := range i.offsets {
+	for _, offset := range item.offsets {
 		begin := int(offset[0])
 		end := int(offset[1])
 		if prevEnd > begin {
@@ -64,21 +64,21 @@ func (i *Item) Rank(cache bool) Rank {
 	switch rankTiebreak {
 	case byLength:
 		// It is guaranteed that .transformed in not null in normal execution
-		if i.transformed != nil {
+		if item.transformed != nil {
 			lenSum := 0
-			for _, token := range i.transformed {
+			for _, token := range item.transformed {
 				lenSum += len(token.text)
 			}
 			tiebreak = uint16(lenSum)
 		} else {
-			tiebreak = uint16(len(i.text))
+			tiebreak = uint16(len(item.text))
 		}
 	case byBegin:
-		// We can't just look at i.offsets[0][0] because it can be an inverse term
+		// We can't just look at item.offsets[0][0] because it can be an inverse term
 		tiebreak = uint16(minBegin)
 	case byEnd:
 		if prevEnd > 0 {
-			tiebreak = uint16(1 + len(i.text) - prevEnd)
+			tiebreak = uint16(1 + len(item.text) - prevEnd)
 		} else {
 			// Empty offsets due to inverse terms.
 			tiebreak = 1
@@ -86,23 +86,23 @@ func (i *Item) Rank(cache bool) Rank {
 	case byIndex:
 		tiebreak = 1
 	}
-	rank := Rank{uint16(matchlen), tiebreak, i.index}
+	rank := Rank{uint16(matchlen), tiebreak, item.index}
 	if cache {
-		i.rank = rank
+		item.rank = rank
 	}
 	return rank
 }
 
 // AsString returns the original string
-func (i *Item) AsString() string {
-	return *i.StringPtr()
+func (item *Item) AsString() string {
+	return *item.StringPtr()
 }
 
 // StringPtr returns the pointer to the original string
-func (i *Item) StringPtr() *string {
-	runes := i.text
-	if i.origText != nil {
-		runes = *i.origText
+func (item *Item) StringPtr() *string {
+	runes := item.text
+	if item.origText != nil {
+		runes = *item.origText
 	}
 	str := string(runes)
 	return &str

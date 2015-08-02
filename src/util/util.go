@@ -20,7 +20,7 @@ func Max(first int, items ...int) int {
 	return max
 }
 
-// Max32 returns the smallest 32-bit integer
+// Min32 returns the smallest 32-bit integer
 func Min32(first int32, second int32) int32 {
 	if first <= second {
 		return first
@@ -68,10 +68,6 @@ func DurWithin(
 		return max
 	}
 	return val
-}
-
-func Between(val int, min int, max int) bool {
-	return val >= min && val <= max
 }
 
 // IsTty returns true is stdin is a terminal

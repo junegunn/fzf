@@ -161,6 +161,7 @@ func SuffixMatch(caseSensitive bool, input []rune, pattern []rune) (int, int) {
 	return trimmedLen - len(pattern), trimmedLen
 }
 
+// EqualMatch performs equal-match
 func EqualMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 	if len(runes) != len(pattern) {
 		return -1, -1
