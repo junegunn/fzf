@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+0.10.2
+------
+
+### Fixes and improvements
+
+- Improvement in perceived response time of queries
+    - Eager, efficient rune array conversion
+- Graceful exit when failed to initialize ncurses (invalid $TERM)
+- Improved ranking algorithm when `--nth` option is set
+- Changed the default command not to fail when there are files whose names
+  start with dash
+
 0.10.1
 ------
 
