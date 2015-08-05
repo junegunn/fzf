@@ -250,6 +250,7 @@ append_line() {
   if [ -n "$line" ]; then
     echo "    - Already exists: line #$line"
   else
+    echo >> "$2"
     echo "$1" >> "$2"
     echo "    + Added"
   fi
