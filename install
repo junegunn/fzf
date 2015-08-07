@@ -96,6 +96,7 @@ if [ -n "$binary_error" ]; then
     echo "No prebuilt binary for $archi ... "
   else
     echo "  - $binary_error !!!"
+    exit 1
   fi
   echo "Installing legacy Ruby version ..."
 
