@@ -22,6 +22,12 @@ type Token struct {
 	prefixLength int
 }
 
+// Delimiter for tokenizing the input
+type Delimiter struct {
+	regex *regexp.Regexp
+	str   *string
+}
+
 func newRange(begin int, end int) Range {
 	if begin == 1 {
 		begin = rangeEllipsis
@@ -68,15 +74,15 @@ func ParseRange(str *string) (Range, bool) {
 	return newRange(n, n), true
 }
 
-func withPrefixLengths(tokens []string, begin int) []Token {
+func withPrefixLengths(tokens [][]rune, begin int) []Token {
 	ret := make([]Token, len(tokens))
 
 	prefixLength := begin
 	for idx, token := range tokens {
 		// Need to define a new local variable instead of the reused token to take
 		// the pointer to it
-		ret[idx] = Token{text: []rune(token), prefixLength: prefixLength}
-		prefixLength += len([]rune(token))
+		ret[idx] = Token{text: token, prefixLength: prefixLength}
+		prefixLength += len(token)
 	}
 	return ret
 }
@@ -87,9 +93,9 @@ const (
 	awkWhite
 )
 
-func awkTokenizer(input []rune) ([]string, int) {
+func awkTokenizer(input []rune) ([][]rune, int) {
 	// 9, 32
-	ret := []string{}
+	ret := [][]rune{}
 	str := []rune{}
 	prefixLength := 0
 	state := awkNil
@@ -112,27 +118,40 @@ func awkTokenizer(input []rune) ([]string, int) {
 			if white {
 				str = append(str, r)
 			} else {
-				ret = append(ret, string(str))
+				ret = append(ret, str)
 				state = awkBlack
 				str = []rune{r}
 			}
 		}
 	}
 	if len(str) > 0 {
-		ret = append(ret, string(str))
+		ret = append(ret, str)
 	}
 	return ret, prefixLength
 }
 
 // Tokenize tokenizes the given string with the delimiter
-func Tokenize(runes []rune, delimiter *regexp.Regexp) []Token {
-	if delimiter == nil {
+func Tokenize(runes []rune, delimiter Delimiter) []Token {
+	if delimiter.str == nil && delimiter.regex == nil {
 		// AWK-style (\S+\s*)
 		tokens, prefixLength := awkTokenizer(runes)
 		return withPrefixLengths(tokens, prefixLength)
 	}
-	tokens := delimiter.FindAllString(string(runes), -1)
-	return withPrefixLengths(tokens, 0)
+
+	var tokens []string
+	if delimiter.str != nil {
+		tokens = strings.Split(string(runes), *delimiter.str)
+		for i := 0; i < len(tokens)-1; i++ {
+			tokens[i] = tokens[i] + *delimiter.str
+		}
+	} else if delimiter.regex != nil {
+		tokens = delimiter.regex.FindAllString(string(runes), -1)
+	}
+	asRunes := make([][]rune, len(tokens))
+	for i, token := range tokens {
+		asRunes[i] = []rune(token)
+	}
+	return withPrefixLengths(asRunes, 0)
 }
 
 func joinTokens(tokens []Token) []rune {

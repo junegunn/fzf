@@ -42,7 +42,7 @@ type Pattern struct {
 	text          []rune
 	terms         []term
 	hasInvTerm    bool
-	delimiter     *regexp.Regexp
+	delimiter     Delimiter
 	nth           []Range
 	procFun       map[termType]func(bool, []rune, []rune) (int, int)
 }
@@ -71,7 +71,7 @@ func clearChunkCache() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(mode Mode, caseMode Case,
-	nth []Range, delimiter *regexp.Regexp, runes []rune) *Pattern {
+	nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
 	switch mode {

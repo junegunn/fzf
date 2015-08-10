@@ -104,7 +104,7 @@ type Options struct {
 	Case        Case
 	Nth         []Range
 	WithNth     []Range
-	Delimiter   *regexp.Regexp
+	Delimiter   Delimiter
 	Sort        int
 	Tac         bool
 	Tiebreak    tiebreak
@@ -149,7 +149,7 @@ func defaultOptions() *Options {
 		Case:        CaseSmart,
 		Nth:         make([]Range, 0),
 		WithNth:     make([]Range, 0),
-		Delimiter:   nil,
+		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
 		Tiebreak:    byLength,
@@ -268,17 +268,27 @@ func splitNth(str string) []Range {
 	return ranges
 }
 
-func delimiterRegexp(str string) *regexp.Regexp {
-	rx, e := regexp.Compile(str)
-	if e != nil {
-		str = regexp.QuoteMeta(str)
+func delimiterRegexp(str string) Delimiter {
+	// Special handling of \t
+	str = strings.Replace(str, "\\t", "\t", -1)
+
+	// 1. Pattern does not contain any special character
+	if regexp.QuoteMeta(str) == str {
+		return Delimiter{str: &str}
 	}
 
+	rx, e := regexp.Compile(str)
+	// 2. Pattern is not a valid regular expression
+	if e != nil {
+		return Delimiter{str: &str}
+	}
+
+	// 3. Pattern as regular expression. Slow.
 	rx, e = regexp.Compile(fmt.Sprintf("(?:.*?%s)|(?:.+?$)", str))
 	if e != nil {
 		errorExit("invalid regular expression: " + e.Error())
 	}
-	return rx
+	return Delimiter{regex: rx}
 }
 
 func isAlphabet(char uint8) bool {

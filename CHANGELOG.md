@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.10.3
+------
+
+- Fixed slow performance of `--with-nth` when used with `--delimiter`
+    - Regular expression engine of Golang as of now is very slow, so the fixed
+      version will treat the given delimiter pattern as a plain string instead
+      of a regular expression unless it contains special characters and is
+      a valid regular expression.
+
 0.10.2
 ------
 

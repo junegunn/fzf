@@ -59,7 +59,7 @@ func TestExact(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
 	pattern := BuildPattern(ModeExtended, CaseSmart,
-		[]Range{}, nil, []rune("'abc"))
+		[]Range{}, Delimiter{}, []rune("'abc"))
 	sidx, eidx := algo.ExactMatchNaive(
 		pattern.caseSensitive, []rune("aabbcc abc"), pattern.terms[0].text)
 	if sidx != 7 || eidx != 10 {
@@ -70,7 +70,7 @@ func TestExact(t *testing.T) {
 func TestEqual(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("^AbC$"))
+	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, Delimiter{}, []rune("^AbC$"))
 
 	match := func(str string, sidxExpected int, eidxExpected int) {
 		sidx, eidx := algo.EqualMatch(
@@ -86,17 +86,17 @@ func TestEqual(t *testing.T) {
 func TestCaseSensitivity(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pat1 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, nil, []rune("abc"))
+	pat1 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat2 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, nil, []rune("Abc"))
+	pat2 := BuildPattern(ModeFuzzy, CaseSmart, []Range{}, Delimiter{}, []rune("Abc"))
 	clearPatternCache()
-	pat3 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, nil, []rune("abc"))
+	pat3 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat4 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, nil, []rune("Abc"))
+	pat4 := BuildPattern(ModeFuzzy, CaseIgnore, []Range{}, Delimiter{}, []rune("Abc"))
 	clearPatternCache()
-	pat5 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, nil, []rune("abc"))
+	pat5 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat6 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, nil, []rune("Abc"))
+	pat6 := BuildPattern(ModeFuzzy, CaseRespect, []Range{}, Delimiter{}, []rune("Abc"))
 
 	if string(pat1.text) != "abc" || pat1.caseSensitive != false ||
 		string(pat2.text) != "Abc" || pat2.caseSensitive != true ||
@@ -109,8 +109,8 @@ func TestCaseSensitivity(t *testing.T) {
 }
 
 func TestOrigTextAndTransformed(t *testing.T) {
-	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, nil, []rune("jg"))
-	tokens := Tokenize([]rune("junegunn"), nil)
+	pattern := BuildPattern(ModeExtended, CaseSmart, []Range{}, Delimiter{}, []rune("jg"))
+	tokens := Tokenize([]rune("junegunn"), Delimiter{})
 	trans := Transform(tokens, []Range{Range{1, 1}})
 
 	origRunes := []rune("junegunn.choi")
