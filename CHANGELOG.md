@@ -9,6 +9,7 @@ CHANGELOG
       version will treat the given delimiter pattern as a plain string instead
       of a regular expression unless it contains special characters and is
       a valid regular expression.
+    - Simpler regular expression for delimiter for better performance
 
 0.10.2
 ------

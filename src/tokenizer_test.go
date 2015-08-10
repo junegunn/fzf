@@ -53,6 +53,15 @@ func TestTokenize(t *testing.T) {
 	if string(tokens[0].text) != "  abc:" || tokens[0].prefixLength != 0 {
 		t.Errorf("%s", tokens)
 	}
+
+	// With delimiter regex
+	tokens = Tokenize([]rune(input), delimiterRegexp("\\s+"))
+	if string(tokens[0].text) != "  " || tokens[0].prefixLength != 0 ||
+		string(tokens[1].text) != "abc:  " || tokens[1].prefixLength != 2 ||
+		string(tokens[2].text) != "def:  " || tokens[2].prefixLength != 8 ||
+		string(tokens[3].text) != "ghi  " || tokens[3].prefixLength != 14 {
+		t.Errorf("%s", tokens)
+	}
 }
 
 func TestTransform(t *testing.T) {

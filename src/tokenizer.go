@@ -145,7 +145,16 @@ func Tokenize(runes []rune, delimiter Delimiter) []Token {
 			tokens[i] = tokens[i] + *delimiter.str
 		}
 	} else if delimiter.regex != nil {
-		tokens = delimiter.regex.FindAllString(string(runes), -1)
+		str := string(runes)
+		for len(str) > 0 {
+			loc := delimiter.regex.FindStringIndex(str)
+			if loc == nil {
+				loc = []int{0, len(str)}
+			}
+			last := util.Max(loc[1], 1)
+			tokens = append(tokens, str[:last])
+			str = str[last:]
+		}
 	}
 	asRunes := make([][]rune, len(tokens))
 	for i, token := range tokens {

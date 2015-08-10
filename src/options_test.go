@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/junegunn/fzf/src/curses"
@@ -21,7 +20,7 @@ func TestDelimiterRegex(t *testing.T) {
 	}
 	// Valid regex
 	delim = delimiterRegexp("[0-9]")
-	if strings.Index(delim.regex.String(), "[0-9]") < 0 || delim.str != nil {
+	if delim.regex.String() != "[0-9]" || delim.str != nil {
 		t.Error(delim)
 	}
 	// Tab character
@@ -43,20 +42,25 @@ func TestDelimiterRegex(t *testing.T) {
 
 func TestDelimiterRegexString(t *testing.T) {
 	delim := delimiterRegexp("*")
-	tokens := strings.Split("-*--*---**---", *delim.str)
-	if delim.regex != nil || tokens[0] != "-" || tokens[1] != "--" ||
-		tokens[2] != "---" || tokens[3] != "" || tokens[4] != "---" {
+	tokens := Tokenize([]rune("-*--*---**---"), delim)
+	if delim.regex != nil ||
+		string(tokens[0].text) != "-*" ||
+		string(tokens[1].text) != "--*" ||
+		string(tokens[2].text) != "---*" ||
+		string(tokens[3].text) != "*" ||
+		string(tokens[4].text) != "---" {
 		t.Errorf("%s %s %d", delim, tokens, len(tokens))
 	}
 }
 
 func TestDelimiterRegexRegex(t *testing.T) {
 	delim := delimiterRegexp("--\\*")
-	rx := delim.regex
-	tokens := rx.FindAllString("-*--*---**---", -1)
+	tokens := Tokenize([]rune("-*--*---**---"), delim)
 	if delim.str != nil ||
-		tokens[0] != "-*--*" || tokens[1] != "---*" || tokens[2] != "*---" {
-		t.Errorf("%s %s %d", rx, tokens, len(tokens))
+		string(tokens[0].text) != "-*--*" ||
+		string(tokens[1].text) != "---*" ||
+		string(tokens[2].text) != "*---" {
+		t.Errorf("%s %d", tokens, len(tokens))
 	}
 }
 

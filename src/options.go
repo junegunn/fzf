@@ -1,7 +1,6 @@
 package fzf
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -284,10 +283,6 @@ func delimiterRegexp(str string) Delimiter {
 	}
 
 	// 3. Pattern as regular expression. Slow.
-	rx, e = regexp.Compile(fmt.Sprintf("(?:.*?%s)|(?:.+?$)", str))
-	if e != nil {
-		errorExit("invalid regular expression: " + e.Error())
-	}
 	return Delimiter{regex: rx}
 }
 
