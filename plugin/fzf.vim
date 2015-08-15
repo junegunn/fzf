@@ -80,7 +80,7 @@ function! s:shellesc(arg)
 endfunction
 
 function! s:escape(path)
-  return escape(a:path, ' %#\')
+  return escape(a:path, ' %#''"\')
 endfunction
 
 " Upgrade legacy options
@@ -384,7 +384,7 @@ function! s:cmd(bang, ...) abort
   let args = extend(['--expect='.join(keys(s:action), ',')], a:000)
   let opts = {}
   if len(args) > 0 && isdirectory(expand(args[-1]))
-    let opts.dir = remove(args, -1)
+    let opts.dir = substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g')
   endif
   if !a:bang
     let opts.down = get(g:, 'fzf_height', get(g:, 'fzf_tmux_height', s:default_height))
