@@ -286,10 +286,8 @@ customization.
 
 #### `fzf#run([options])`
 
-For more advanced uses, you can call `fzf#run()` function which returns the list
-of the selected items.
-
-`fzf#run()` may take an options-dictionary:
+For more advanced uses, you can use `fzf#run()` function with the following
+options.
 
 | Option name                | Type          | Description                                                      |
 | -------------------------- | ------------- | ---------------------------------------------------------------- |
@@ -305,65 +303,7 @@ of the selected items.
 | `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
 | `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
 
-_However on Neovim `fzf#run` is asynchronous and does not return values so you
-should use `sink` or `sink*` to process the output from fzf._
-
-##### Examples
-
-If `sink` option is not given, `fzf#run` will simply return the list.
-
-```vim
-let items = fzf#run({ 'options': '-m +c', 'dir': '~', 'source': 'ls' })
-```
-
-But if `sink` is given as a string, the command will be executed for each
-selected item.
-
-```vim
-" Each selected item will be opened in a new tab
-let items = fzf#run({ 'sink': 'tabe', 'options': '-m +c', 'dir': '~', 'source': 'ls' })
-```
-
-We can also use a Vim list as the source as follows:
-
-```vim
-" Choose a color scheme with fzf
-nnoremap <silent> <Leader>C :call fzf#run({
-\   'source':
-\     map(split(globpath(&rtp, "colors/*.vim"), "\n"),
-\         "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
-\   'sink':     'colo',
-\   'options':  '+m',
-\   'left':     20,
-\   'launcher': 'xterm -geometry 20x30 -e bash -ic %s'
-\ })<CR>
-```
-
-`sink` option can be a function reference. The following example creates a
-handy mapping that selects an open buffer.
-
-```vim
-" List of buffers
-function! s:buflist()
-  redir => ls
-  silent ls
-  redir END
-  return split(ls, '\n')
-endfunction
-
-function! s:bufopen(e)
-  execute 'buffer' matchstr(a:e, '^[ 0-9]*')
-endfunction
-
-nnoremap <silent> <Leader><Enter> :call fzf#run({
-\   'source':  reverse(<sid>buflist()),
-\   'sink':    function('<sid>bufopen'),
-\   'options': '+m',
-\   'down':    len(<sid>buflist()) + 2
-\ })<CR>
-```
-
-More examples can be found on [the wiki
+Examples can be found on [the wiki
 page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
 
 Tips
@@ -423,14 +363,6 @@ of fzf to a temporary file.
 
 ```sh
 fzf > $TMPDIR/fzf.result; and vim (cat $TMPDIR/fzf.result)
-```
-
-#### Handling UTF-8 NFD paths on OSX
-
-Use iconv to convert NFD paths to NFC:
-
-```sh
-find . | iconv -f utf-8-mac -t utf8//ignore | fzf
 ```
 
 License
