@@ -21,16 +21,21 @@ ask() {
 
 check_binary() {
   echo -n "  - Checking fzf executable ... "
-  local output=$("$fzf_base"/bin/fzf --version 2>&1)
-  if [ "$version" = "$output" ]; then
+  local output
+  output=$("$fzf_base"/bin/fzf --version 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "Error: $output"
+    binary_error="Invalid binary"
+  elif [ "$version" != "$output" ]; then
+    echo "$output != $version"
+    binary_error="Invalid version"
+  else
     echo "$output"
     binary_error=""
-  else
-    echo "$output != $version"
-    rm -f "$fzf_base"/bin/fzf
-    binary_error="Invalid binary"
-    return 1
+    return 0
   fi
+  rm -f "$fzf_base"/bin/fzf
+  return 1
 }
 
 symlink() {
