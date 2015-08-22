@@ -254,6 +254,9 @@ export FZF_COMPLETION_OPTS='+c -x'
 Usage as Vim plugin
 -------------------
 
+This repository only enables basic integration with Vim. If you're looking for
+more, check out [fzf.vim](https://github.com/junegunn/fzf.vim) project.
+
 (Note: To use fzf in GVim, an external terminal emulator is required.)
 
 #### `:FZF[!]`
