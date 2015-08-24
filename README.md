@@ -346,6 +346,9 @@ fzf
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 ```
 
+If you're using vim and wish to ignore directories listed in your `.gitignore`, you'll need to set fzf to use ag in you're shell's rc file.
+
+
 #### `git ls-tree` for fast traversal
 
 If you're running fzf in a large git repository, `git ls-tree` can boost up the
