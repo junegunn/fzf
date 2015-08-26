@@ -3,7 +3,7 @@ MAINTAINER Junegunn Choi <junegunn.c@gmail.com>
 
 # apt-get
 RUN apt-get update && apt-get -y upgrade && \
-    apt-get install -y --force-yes git curl build-essential libncurses-dev
+    apt-get install -y --force-yes git curl build-essential libncurses-dev libgpm-dev
 
 # Install Go 1.4
 RUN cd / && curl \
