@@ -774,6 +774,16 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.any? { |l| l.include? 'Invalid $TERM: xxx' } }
   end
 
+  def test_with_nth
+    writelines tempname, ['hello world ', 'byebye']
+    assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1`.chomp
+  end
+
+  def test_with_nth_ansi
+    writelines tempname, ["\x1b[33mhello \x1b[34;1mworld\x1b[m ", 'byebye']
+    assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 --ansi`.chomp
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
