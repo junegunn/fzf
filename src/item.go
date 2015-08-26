@@ -100,11 +100,11 @@ func (item *Item) AsString() string {
 
 // StringPtr returns the pointer to the original string
 func (item *Item) StringPtr() *string {
-	runes := item.text
 	if item.origText != nil {
-		runes = *item.origText
+		trimmed, _, _ := extractColor(string(*item.origText), nil)
+		return &trimmed
 	}
-	str := string(runes)
+	str := string(item.text)
 	return &str
 }
 
