@@ -75,7 +75,7 @@ docker-arch:
 	docker build -t junegunn/arch-sandbox - < Dockerfile.arch
 
 docker-ubuntu:
-	docker build -t junegunn/arch-sandbox - < Dockerfile.ubuntu
+	docker build -t junegunn/ubuntu-sandbox - < Dockerfile.ubuntu
 
 arch: docker-arch
 	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \

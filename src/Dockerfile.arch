@@ -2,6 +2,7 @@ FROM base/archlinux:2014.07.03
 MAINTAINER Junegunn Choi <junegunn.c@gmail.com>
 
 # apt-get
+RUN pacman-key --populate archlinux && pacman-key --refresh-keys
 RUN pacman-db-upgrade && pacman -Syu --noconfirm base-devel git
 
 # Install Go 1.4
