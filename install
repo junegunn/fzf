@@ -80,7 +80,12 @@ download() {
     return
   fi
 
-  chmod +x $1 && symlink $1 && check_binary
+  chmod +x $1 && symlink $1 || return 1
+  if [[ $1 =~ linux_amd64$ ]]; then
+    check_binary || download $1-static
+  else
+    check_binary
+  fi
 }
 
 # Try to download binary executable
