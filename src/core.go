@@ -174,7 +174,7 @@ func Run(opts *Options) {
 				chunks:  snapshot,
 				pattern: pattern})
 			for i := 0; i < merger.Length(); i++ {
-				fmt.Println(merger.Get(i).AsString())
+				fmt.Println(merger.Get(i).AsString(opts.Ansi))
 			}
 		}
 		os.Exit(0)
@@ -250,7 +250,7 @@ func Run(opts *Options) {
 										fmt.Println()
 									}
 									for i := 0; i < count; i++ {
-										fmt.Println(val.Get(i).AsString())
+										fmt.Println(val.Get(i).AsString(opts.Ansi))
 									}
 									os.Exit(0)
 								}

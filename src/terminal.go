@@ -42,6 +42,7 @@ type Terminal struct {
 	history    *History
 	cycle      bool
 	header     []string
+	ansi       bool
 	margin     [4]string
 	marginInt  [4]int
 	count      int
@@ -207,6 +208,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		marginInt:  [4]int{0, 0, 0, 0},
 		cycle:      opts.Cycle,
 		header:     opts.Header,
+		ansi:       opts.Ansi,
 		reading:    true,
 		merger:     EmptyMerger,
 		selected:   make(map[uint32]selectedItem),
@@ -288,7 +290,7 @@ func (t *Terminal) output() {
 	if len(t.selected) == 0 {
 		cnt := t.merger.Length()
 		if cnt > 0 && cnt > t.cy {
-			fmt.Println(t.merger.Get(t.cy).AsString())
+			fmt.Println(t.merger.Get(t.cy).AsString(t.ansi))
 		}
 	} else {
 		sels := make([]selectedItem, 0, len(t.selected))
@@ -805,7 +807,7 @@ func (t *Terminal) Loop() {
 		}
 		selectItem := func(item *Item) bool {
 			if _, found := t.selected[item.index]; !found {
-				t.selected[item.index] = selectedItem{time.Now(), item.StringPtr()}
+				t.selected[item.index] = selectedItem{time.Now(), item.StringPtr(t.ansi)}
 				return true
 			}
 			return false
@@ -843,7 +845,7 @@ func (t *Terminal) Loop() {
 		case actExecute:
 			if t.cy >= 0 && t.cy < t.merger.Length() {
 				item := t.merger.Get(t.cy)
-				executeCommand(t.execmap[mapkey], item.AsString())
+				executeCommand(t.execmap[mapkey], item.AsString(t.ansi))
 			}
 		case actInvalid:
 			t.mutex.Unlock()

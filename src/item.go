@@ -94,15 +94,19 @@ func (item *Item) Rank(cache bool) Rank {
 }
 
 // AsString returns the original string
-func (item *Item) AsString() string {
-	return *item.StringPtr()
+func (item *Item) AsString(stripAnsi bool) string {
+	return *item.StringPtr(stripAnsi)
 }
 
 // StringPtr returns the pointer to the original string
-func (item *Item) StringPtr() *string {
+func (item *Item) StringPtr(stripAnsi bool) *string {
 	if item.origText != nil {
-		trimmed, _, _ := extractColor(string(*item.origText), nil)
-		return &trimmed
+		if stripAnsi {
+			trimmed, _, _ := extractColor(string(*item.origText), nil)
+			return &trimmed
+		}
+		orig := string(*item.origText)
+		return &orig
 	}
 	str := string(item.text)
 	return &str

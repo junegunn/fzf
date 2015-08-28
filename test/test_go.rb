@@ -784,6 +784,12 @@ class TestGoFZF < TestBase
     assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 --ansi`.chomp
   end
 
+  def test_with_nth_no_ansi
+    src = "\x1b[33mhello \x1b[34;1mworld\x1b[m "
+    writelines tempname, [src, 'byebye']
+    assert_equal src, `cat #{tempname} | #{FZF} -fhehe -x -n 2.. --with-nth 2,1,1 --no-ansi`.chomp
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
