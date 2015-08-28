@@ -164,7 +164,13 @@ function! s:fzf_tmux(dict)
   let size = ''
   for o in ['up', 'down', 'left', 'right']
     if s:present(a:dict, o)
-      let size = '-'.o[0].(a:dict[o] == 1 ? '' : a:dict[o])
+      let spec = a:dict[o]
+      if (o == 'up' || o == 'down') && spec[0] == '~'
+        let size = '-'.o[0].s:calc_size(&lines, spec[1:], a:dict)
+      else
+        " Legacy boolean option
+        let size = '-'.o[0].(spec == 1 ? '' : spec)
+      endif
       break
     endif
   endfor
@@ -244,12 +250,21 @@ function! s:execute_tmux(dict, command, temps)
   return s:callback(a:dict, a:temps)
 endfunction
 
-function! s:calc_size(max, val)
+function! s:calc_size(max, val, dict)
   if a:val =~ '%$'
-    return a:max * str2nr(a:val[:-2]) / 100
+    let size = a:max * str2nr(a:val[:-2]) / 100
   else
-    return min([a:max, a:val])
+    let size = min([a:max, str2nr(a:val)])
   endif
+
+  let srcsz = -1
+  if type(get(a:dict, 'source', 0)) == type([])
+    let srcsz = len(a:dict.source)
+  endif
+
+  let opts = get(a:dict, 'options', '').$FZF_DEFAULT_OPTS
+  let margin = stridx(opts, '--inline-info') > stridx(opts, '--no-inline-info') ? 1 : 2
+  return srcsz >= 0 ? min([srcsz + margin, size]) : size
 endfunction
 
 function! s:getpos()
@@ -268,7 +283,11 @@ function! s:split(dict)
       let val = get(a:dict, dir, '')
       if !empty(val)
         let [cmd, resz, max] = triple
-        let sz = s:calc_size(max, val)
+        if (dir == 'up' || dir == 'down') && val[0] == '~'
+          let sz = s:calc_size(max, val[1:], a:dict)
+        else
+          let sz = s:calc_size(max, val, {})
+        endif
         execute cmd sz.'new'
         execute resz sz
         return
