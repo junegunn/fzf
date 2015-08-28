@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.10.4
+------
+
+- Fixed to remove ANSI code from output when `--with-nth` is set
+
 0.10.3
 ------
 
