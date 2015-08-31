@@ -224,7 +224,7 @@ function! s:execute(dict, command, temps)
   else
     let command = a:command
   endif
-  execute 'silent !'.escape(command, '%#')
+  execute 'silent !'.escape(substitute(command, '\n', '\\n', 'g'), '%#')
   redraw!
   if v:shell_error
     " Do not print error message on exit status 1
