@@ -217,14 +217,15 @@ let s:launcher = function('s:xterm_launcher')
 function! s:execute(dict, command, temps)
   call s:pushd(a:dict)
   silent! !clear 2> /dev/null
+  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#')
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
-    let command = printf(fmt, "'".substitute(a:command, "'", "'\"'\"'", 'g')."'")
+    let command = printf(fmt, "'".substitute(escaped, "'", "'\"'\"'", 'g')."'")
   else
-    let command = a:command
+    let command = escaped
   endif
-  execute 'silent !'.escape(substitute(command, '\n', '\\n', 'g'), '%#')
+  execute 'silent !'.command
   redraw!
   if v:shell_error
     " Do not print error message on exit status 1
