@@ -117,7 +117,9 @@ mkfifo $fifo3
 # Build arguments to fzf
 opts=""
 for arg in "${args[@]}"; do
-  opts="$opts \"${arg//\"/\\\"}\""
+  arg="${arg//\"/\\\"}"
+  arg="${arg//\`/\\\`}"
+  opts="$opts \"$arg\""
 done
 
 if [ -n "$term" -o -t 0 ]; then
