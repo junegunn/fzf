@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-[[ "$@" =~ --pre ]] && version=0.10.4 pre=1 ||
-                       version=0.10.4 pre=0
+[[ "$@" =~ --pre ]] && version=0.10.5 pre=1 ||
+                       version=0.10.5 pre=0
 
 cd $(dirname $BASH_SOURCE)
 fzf_base=$(pwd)

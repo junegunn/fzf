@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.10.5
+------
+
+- `'`-prefix to unquote the term in `--extended-exact` mode
+- Backward scan when `--tiebreak=end` is set
+
 0.10.4
 ------
 
