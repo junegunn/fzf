@@ -124,9 +124,9 @@ such as: `^music .mp3$ sbtrkt !rmx`
 | `'wild`  | Items that include `wild`        | exact-match (quoted) |
 | `!'fire` | Items that do not include `fire` | inverse-exact-match  |
 
-If you don't need fuzzy matching and do not wish to "quote" every word, start
-fzf with `-e` or `--extended-exact` option. Note that in `--extended-exact`
-mode, `'`-prefix "unquotes" the term.
+If you don't prefer fuzzy matching and do not wish to "quote" every word,
+start fzf with `-e` or `--extended-exact` option. Note that in
+`--extended-exact` mode, `'`-prefix "unquotes" the term.
 
 #### Environment variables
 

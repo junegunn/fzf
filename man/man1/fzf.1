@@ -374,29 +374,40 @@ mode". In this mode, you can specify multiple patterns delimited by spaces,
 such as: \fB'wild ^music .mp3$ sbtrkt !rmx\fR
 
 .SS Exact-match (quoted)
-A term that is prefixed by a single-quote character (') is interpreted as an
-"exact-match" (or "non-fuzzy") term. fzf will search for the exact occurrences
-of the string.
+A term that is prefixed by a single-quote character (\fB'\fR) is interpreted as
+an "exact-match" (or "non-fuzzy") term. fzf will search for the exact
+occurrences of the string.
 
 .SS Anchored-match
-A term can be prefixed by ^, or suffixed by $ to become an anchored-match term.
-Then fzf will search for the items that start with or end with the given
-string. An anchored-match term is also an exact-match term.
+A term can be prefixed by \fB^\fR, or suffixed by \fB$\fR to become an
+anchored-match term. Then fzf will search for the items that start with or end
+with the given string. An anchored-match term is also an exact-match term.
 
 .SS Negation
-If a term is prefixed by !, fzf will exclude the items that satisfy the term
-from the result.
+If a term is prefixed by \fB!\fR, fzf will exclude the items that satisfy the
+term from the result.
 
 .SS Extended-exact mode
-If you don't need fuzzy matching at all and do not wish to "quote" (prefixing
-with ') every word, start fzf with \fB-e\fR or \fB--extended-exact\fR option
-(instead of \fB-x\fR or \fB--extended\fR).
+If you don't prefer fuzzy matching and do not wish to "quote" (prefixing with
+\fB'\fR) every word, start fzf with \fB-e\fR or \fB--extended-exact\fR option
+(instead of \fB-x\fR or \fB--extended\fR). Note that in \fB--extended-exact\fR
+mode, \fB'\fR-prefix "unquotes" the term.
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)
 
 .SH SEE ALSO
+.B Project homepage:
+.RS
 .I https://github.com/junegunn/fzf
+.RE
+.br
+.R ""
+.br
+.B Extra Vim plugin:
+.RS
+.I https://github.com/junegunn/fzf.vim
+.RE
 
 .SH LICENSE
 MIT
