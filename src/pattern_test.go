@@ -37,11 +37,11 @@ func TestParseTermsExtendedExact(t *testing.T) {
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
 		terms[0].typ != termExact || terms[0].inv || len(terms[0].text) != 3 ||
-		terms[1].typ != termExact || terms[1].inv || len(terms[1].text) != 4 ||
+		terms[1].typ != termFuzzy || terms[1].inv || len(terms[1].text) != 3 ||
 		terms[2].typ != termPrefix || terms[2].inv || len(terms[2].text) != 3 ||
 		terms[3].typ != termSuffix || terms[3].inv || len(terms[3].text) != 3 ||
 		terms[4].typ != termExact || !terms[4].inv || len(terms[4].text) != 3 ||
-		terms[5].typ != termExact || !terms[5].inv || len(terms[5].text) != 4 ||
+		terms[5].typ != termFuzzy || !terms[5].inv || len(terms[5].text) != 3 ||
 		terms[6].typ != termPrefix || !terms[6].inv || len(terms[6].text) != 3 ||
 		terms[7].typ != termSuffix || !terms[7].inv || len(terms[7].text) != 3 {
 		t.Errorf("%s", terms)

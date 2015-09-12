@@ -151,6 +151,9 @@ func parseTerms(mode Mode, caseMode Case, str string) []term {
 			if mode == ModeExtended {
 				typ = termExact
 				text = text[1:]
+			} else if mode == ModeExtendedExact {
+				typ = termFuzzy
+				text = text[1:]
 			}
 		} else if strings.HasPrefix(text, "^") {
 			if strings.HasSuffix(text, "$") {
