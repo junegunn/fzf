@@ -39,12 +39,13 @@ type term struct {
 type Pattern struct {
 	mode          Mode
 	caseSensitive bool
+	forward       bool
 	text          []rune
 	terms         []term
 	hasInvTerm    bool
 	delimiter     Delimiter
 	nth           []Range
-	procFun       map[termType]func(bool, []rune, []rune) (int, int)
+	procFun       map[termType]func(bool, bool, []rune, []rune) (int, int)
 }
 
 var (
@@ -70,7 +71,7 @@ func clearChunkCache() {
 }
 
 // BuildPattern builds Pattern object from the given arguments
-func BuildPattern(mode Mode, caseMode Case,
+func BuildPattern(mode Mode, caseMode Case, forward bool,
 	nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
@@ -109,12 +110,13 @@ func BuildPattern(mode Mode, caseMode Case,
 	ptr := &Pattern{
 		mode:          mode,
 		caseSensitive: caseSensitive,
+		forward:       forward,
 		text:          []rune(asString),
 		terms:         terms,
 		hasInvTerm:    hasInvTerm,
 		nth:           nth,
 		delimiter:     delimiter,
-		procFun:       make(map[termType]func(bool, []rune, []rune) (int, int))}
+		procFun:       make(map[termType]func(bool, bool, []rune, []rune) (int, int))}
 
 	ptr.procFun[termFuzzy] = algo.FuzzyMatch
 	ptr.procFun[termEqual] = algo.EqualMatch
@@ -288,7 +290,7 @@ func dupItem(item *Item, offsets []Offset) *Item {
 
 func (p *Pattern) fuzzyMatch(item *Item) (int, int) {
 	input := p.prepareInput(item)
-	return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.text)
+	return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
 }
 
 func (p *Pattern) extendedMatch(item *Item) []Offset {
@@ -296,7 +298,7 @@ func (p *Pattern) extendedMatch(item *Item) []Offset {
 	offsets := []Offset{}
 	for _, term := range p.terms {
 		pfun := p.procFun[term.typ]
-		if sidx, eidx := p.iter(pfun, input, term.caseSensitive, term.text); sidx >= 0 {
+		if sidx, eidx := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
 			if term.inv {
 				break
 			}
@@ -324,11 +326,11 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 	return ret
 }
 
-func (p *Pattern) iter(pfun func(bool, []rune, []rune) (int, int),
-	tokens []Token, caseSensitive bool, pattern []rune) (int, int) {
+func (p *Pattern) iter(pfun func(bool, bool, []rune, []rune) (int, int),
+	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (int, int) {
 	for _, part := range tokens {
 		prefixLength := part.prefixLength
-		if sidx, eidx := pfun(caseSensitive, part.text, pattern); sidx >= 0 {
+		if sidx, eidx := pfun(caseSensitive, forward, part.text, pattern); sidx >= 0 {
 			return sidx + prefixLength, eidx + prefixLength
 		}
 	}

@@ -527,6 +527,17 @@ class TestGoFZF < TestBase
     assert_equal output, `cat #{tempname} | #{FZF} -fh -n2 -d:`.split($/)
   end
 
+  def test_tiebreak_end_backward_scan
+    input = %w[
+      foobar-fb
+      fubar
+    ]
+    writelines tempname, input
+
+    assert_equal input.reverse, `cat #{tempname} | #{FZF} -f fb`.split($/)
+    assert_equal input, `cat #{tempname} | #{FZF} -f fb --tiebreak=end`.split($/)
+  end
+
   def test_invalid_cache
     tmux.send_keys "(echo d; echo D; echo x) | #{fzf '-q d'}", :Enter
     tmux.until { |lines| lines[-2].include? '2/3' }

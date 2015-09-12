@@ -15,8 +15,15 @@ import (
  * In short: They try to do as little work as possible.
  */
 
+func runeAt(runes []rune, index int, max int, forward bool) rune {
+	if forward {
+		return runes[index]
+	}
+	return runes[max-index-1]
+}
+
 // FuzzyMatch performs fuzzy-match
-func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
 	if len(pattern) == 0 {
 		return 0, 0
 	}
@@ -34,7 +41,11 @@ func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 	sidx := -1
 	eidx := -1
 
-	for index, char := range runes {
+	lenRunes := len(runes)
+	lenPattern := len(pattern)
+
+	for index := range runes {
+		char := runeAt(runes, index, lenRunes, forward)
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string
 		if !caseSensitive {
@@ -47,11 +58,12 @@ func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 				char = unicode.To(unicode.LowerCase, char)
 			}
 		}
-		if char == pattern[pidx] {
+		pchar := runeAt(pattern, pidx, lenPattern, forward)
+		if char == pchar {
 			if sidx < 0 {
 				sidx = index
 			}
-			if pidx++; pidx == len(pattern) {
+			if pidx++; pidx == lenPattern {
 				eidx = index + 1
 				break
 			}
@@ -61,7 +73,7 @@ func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 	if sidx >= 0 && eidx >= 0 {
 		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
-			char := runes[index]
+			char := runeAt(runes, index, lenRunes, forward)
 			if !caseSensitive {
 				if char >= 'A' && char <= 'Z' {
 					char += 32
@@ -69,14 +81,19 @@ func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 					char = unicode.To(unicode.LowerCase, char)
 				}
 			}
-			if char == pattern[pidx] {
+
+			pchar := runeAt(pattern, pidx, lenPattern, forward)
+			if char == pchar {
 				if pidx--; pidx < 0 {
 					sidx = index
 					break
 				}
 			}
 		}
-		return sidx, eidx
+		if forward {
+			return sidx, eidx
+		}
+		return lenRunes - eidx, lenRunes - sidx
 	}
 	return -1, -1
 }
@@ -88,20 +105,21 @@ func FuzzyMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 //
 // We might try to implement better algorithms in the future:
 // http://en.wikipedia.org/wiki/String_searching_algorithm
-func ExactMatchNaive(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
 	if len(pattern) == 0 {
 		return 0, 0
 	}
 
-	numRunes := len(runes)
-	plen := len(pattern)
-	if numRunes < plen {
+	lenRunes := len(runes)
+	lenPattern := len(pattern)
+
+	if lenRunes < lenPattern {
 		return -1, -1
 	}
 
 	pidx := 0
-	for index := 0; index < numRunes; index++ {
-		char := runes[index]
+	for index := 0; index < lenRunes; index++ {
+		char := runeAt(runes, index, lenRunes, forward)
 		if !caseSensitive {
 			if char >= 'A' && char <= 'Z' {
 				char += 32
@@ -109,10 +127,14 @@ func ExactMatchNaive(caseSensitive bool, runes []rune, pattern []rune) (int, int
 				char = unicode.To(unicode.LowerCase, char)
 			}
 		}
-		if pattern[pidx] == char {
+		pchar := runeAt(pattern, pidx, lenPattern, forward)
+		if pchar == char {
 			pidx++
-			if pidx == plen {
-				return index - plen + 1, index + 1
+			if pidx == lenPattern {
+				if forward {
+					return index - lenPattern + 1, index + 1
+				}
+				return lenRunes - (index + 1), lenRunes - (index - lenPattern + 1)
 			}
 		} else {
 			index -= pidx
@@ -123,7 +145,7 @@ func ExactMatchNaive(caseSensitive bool, runes []rune, pattern []rune) (int, int
 }
 
 // PrefixMatch performs prefix-match
-func PrefixMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
 	if len(runes) < len(pattern) {
 		return -1, -1
 	}
@@ -141,7 +163,7 @@ func PrefixMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
 }
 
 // SuffixMatch performs suffix-match
-func SuffixMatch(caseSensitive bool, input []rune, pattern []rune) (int, int) {
+func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune) (int, int) {
 	runes := util.TrimRight(input)
 	trimmedLen := len(runes)
 	diff := trimmedLen - len(pattern)
@@ -162,7 +184,7 @@ func SuffixMatch(caseSensitive bool, input []rune, pattern []rune) (int, int) {
 }
 
 // EqualMatch performs equal-match
-func EqualMatch(caseSensitive bool, runes []rune, pattern []rune) (int, int) {
+func EqualMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
 	if len(runes) != len(pattern) {
 		return -1, -1
 	}
