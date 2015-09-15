@@ -280,17 +280,19 @@ func (t *Terminal) UpdateList(merger *Merger) {
 	t.reqBox.Set(reqList, nil)
 }
 
-func (t *Terminal) output() {
+func (t *Terminal) output() bool {
 	if t.printQuery {
 		fmt.Println(string(t.input))
 	}
 	if len(t.expect) > 0 {
 		fmt.Println(t.pressed)
 	}
-	if len(t.selected) == 0 {
+	found := len(t.selected) > 0
+	if !found {
 		cnt := t.merger.Length()
 		if cnt > 0 && cnt > t.cy {
 			fmt.Println(t.merger.Get(t.cy).AsString(t.ansi))
+			found = true
 		}
 	} else {
 		sels := make([]selectedItem, 0, len(t.selected))
@@ -302,6 +304,7 @@ func (t *Terminal) output() {
 			fmt.Println(*sel.text)
 		}
 	}
+	return found
 }
 
 func runeWidth(r rune, prefixWidth int) int {
@@ -743,7 +746,7 @@ func (t *Terminal) Loop() {
 	}
 
 	exit := func(code int) {
-		if code == 0 && t.history != nil {
+		if code <= exitNoMatch && t.history != nil {
 			t.history.append(string(t.input))
 		}
 		os.Exit(code)
@@ -776,11 +779,13 @@ func (t *Terminal) Loop() {
 						t.printAll()
 					case reqClose:
 						C.Close()
-						t.output()
-						exit(0)
+						if t.output() {
+							exit(exitOk)
+						}
+						exit(exitNoMatch)
 					case reqQuit:
 						C.Close()
-						exit(1)
+						exit(exitError)
 					}
 				}
 				t.placeCursor()

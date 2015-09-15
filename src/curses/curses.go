@@ -261,7 +261,7 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	_screen = C.newterm(nil, C.stderr, C.stdin)
 	if _screen == nil {
 		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
-		os.Exit(1)
+		os.Exit(2)
 	}
 	C.set_term(_screen)
 	if mouse {
@@ -275,7 +275,7 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	go func() {
 		<-intChan
 		Close()
-		os.Exit(1)
+		os.Exit(2)
 	}()
 
 	if theme != nil {

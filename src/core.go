@@ -56,7 +56,7 @@ func Run(opts *Options) {
 
 	if opts.Version {
 		fmt.Println(version)
-		os.Exit(0)
+		os.Exit(exitOk)
 	}
 
 	// Event channel
@@ -156,12 +156,14 @@ func Run(opts *Options) {
 
 		pattern := patternBuilder([]rune(*opts.Filter))
 
+		found := false
 		if streamingFilter {
 			reader := Reader{
 				func(runes []byte) bool {
 					item := chunkList.trans(runes, 0)
 					if item != nil && pattern.MatchItem(item) {
 						fmt.Println(string(item.text))
+						found = true
 					}
 					return false
 				}, eventBox, opts.ReadZero}
@@ -176,9 +178,13 @@ func Run(opts *Options) {
 				pattern: pattern})
 			for i := 0; i < merger.Length(); i++ {
 				fmt.Println(merger.Get(i).AsString(opts.Ansi))
+				found = true
 			}
 		}
-		os.Exit(0)
+		if found {
+			os.Exit(exitOk)
+		}
+		os.Exit(exitNoMatch)
 	}
 
 	// Synchronous search
@@ -253,7 +259,10 @@ func Run(opts *Options) {
 									for i := 0; i < count; i++ {
 										fmt.Println(val.Get(i).AsString(opts.Ansi))
 									}
-									os.Exit(0)
+									if count > 0 {
+										os.Exit(exitOk)
+									}
+									os.Exit(exitNoMatch)
 								}
 								deferred = false
 								terminal.startChan <- true

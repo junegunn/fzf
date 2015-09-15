@@ -180,14 +180,14 @@ func defaultOptions() *Options {
 		Version:     false}
 }
 
-func help(ok int) {
+func help(code int) {
 	os.Stderr.WriteString(usage)
-	os.Exit(ok)
+	os.Exit(code)
 }
 
 func errorExit(msg string) {
 	os.Stderr.WriteString(msg + "\n")
-	os.Exit(1)
+	os.Exit(exitError)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -682,7 +682,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		arg := allArgs[i]
 		switch arg {
 		case "-h", "--help":
-			help(0)
+			help(exitOk)
 		case "-x", "--extended":
 			opts.Mode = ModeExtended
 		case "-e", "--extended-exact":

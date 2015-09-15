@@ -47,3 +47,9 @@ const (
 	EvtHeader
 	EvtClose
 )
+
+const (
+	exitOk      = 0
+	exitNoMatch = 1
+	exitError   = 2
+)
