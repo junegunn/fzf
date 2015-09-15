@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+0.10.6
+------
+
+- Replaced `--header-file` with `--header` option
+- `--header` and `--header-lines` can be used together
+- Changed exit status
+    - 0: Okay
+    - 1: No match
+    - 2: Error/Interrupted
+
 0.10.5
 ------
 

@@ -737,8 +737,8 @@ class TestGoFZF < TestBase
     assert_equal '6', readonce.chomp
   end
 
-  def test_header_file
-    tmux.send_keys "seq 100 | #{fzf "--header-file <(head -5 #{__FILE__})"}", :Enter
+  def test_header
+    tmux.send_keys "seq 100 | #{fzf "--header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
     header = File.readlines(__FILE__).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('100/100') &&
@@ -746,12 +746,32 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_header_file_reverse
-    tmux.send_keys "seq 100 | #{fzf "--header-file=<(head -5 #{__FILE__}) --reverse"}", :Enter
+  def test_header_reverse
+    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{__FILE__})\\\" --reverse"}", :Enter
     header = File.readlines(__FILE__).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('100/100') &&
       lines[2..6].map(&:strip) == header
+    end
+  end
+
+  def test_header_and_header_lines
+    tmux.send_keys "seq 100 | #{fzf "--header-lines 10 --header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
+    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.until do |lines|
+      lines[-2].include?('90/90') &&
+      lines[-7...-2].map(&:strip) == header &&
+      lines[-17...-7].map(&:strip) == (1..10).map(&:to_s).reverse
+    end
+  end
+
+  def test_header_and_header_lines_reverse
+    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
+    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.until do |lines|
+      lines[1].include?('90/90') &&
+      lines[2...7].map(&:strip) == header &&
+      lines[7...17].map(&:strip) == (1..10).map(&:to_s)
     end
   end
 

@@ -42,6 +42,7 @@ type Terminal struct {
 	history    *History
 	cycle      bool
 	header     []string
+	header0    []string
 	ansi       bool
 	margin     [4]string
 	marginInt  [4]int
@@ -185,6 +186,12 @@ func defaultKeymap() map[int]actionType {
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := []rune(opts.Query)
+	var header []string
+	if opts.Reverse {
+		header = opts.Header
+	} else {
+		header = reverseStringArray(opts.Header)
+	}
 	return &Terminal{
 		inlineInfo: opts.InlineInfo,
 		prompt:     opts.Prompt,
@@ -207,7 +214,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		margin:     opts.Margin,
 		marginInt:  [4]int{0, 0, 0, 0},
 		cycle:      opts.Cycle,
-		header:     opts.Header,
+		header:     header,
+		header0:    header,
 		ansi:       opts.Ansi,
 		reading:    true,
 		merger:     EmptyMerger,
@@ -241,18 +249,19 @@ func (t *Terminal) UpdateCount(cnt int, final bool) {
 	}
 }
 
-// UpdateHeader updates the header
-func (t *Terminal) UpdateHeader(header []string, lines int) {
-	t.mutex.Lock()
-	t.header = make([]string, lines)
-	copy(t.header, header)
-	if !t.reverse {
-		reversed := make([]string, lines)
-		for idx, str := range t.header {
-			reversed[lines-idx-1] = str
-		}
-		t.header = reversed
+func reverseStringArray(input []string) []string {
+	size := len(input)
+	reversed := make([]string, size)
+	for idx, str := range input {
+		reversed[size-idx-1] = str
 	}
+	return reversed
+}
+
+// UpdateHeader updates the header
+func (t *Terminal) UpdateHeader(header []string) {
+	t.mutex.Lock()
+	t.header = append(append([]string{}, t.header0...), header...)
 	t.mutex.Unlock()
 	t.reqBox.Set(reqHeader, nil)
 }
@@ -436,9 +445,6 @@ func (t *Terminal) printHeader() {
 	max := t.maxHeight()
 	var state *ansiState
 	for idx, lineStr := range t.header {
-		if !t.reverse {
-			idx = len(t.header) - idx - 1
-		}
 		line := idx + 2
 		if t.inlineInfo {
 			line--

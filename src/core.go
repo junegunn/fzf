@@ -238,7 +238,7 @@ func Run(opts *Options) {
 					}
 
 				case EvtHeader:
-					terminal.UpdateHeader(value.([]string), opts.HeaderLines)
+					terminal.UpdateHeader(value.([]string))
 
 				case EvtSearchFin:
 					switch val := value.(type) {

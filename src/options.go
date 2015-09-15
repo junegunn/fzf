@@ -1,7 +1,6 @@
 package fzf
 
 import (
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -45,7 +44,7 @@ const usage = `usage: fzf [options]
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --history=FILE        History file
     --history-size=N      Maximum number of history entries (default: 1000)
-    --header-file=FILE    The file whose content to be printed as header
+    --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
 
   Scripting
@@ -604,12 +603,8 @@ func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
 	return keymap
 }
 
-func readHeaderFile(filename string) []string {
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		errorExit("failed to read header file: " + filename)
-	}
-	return strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
+func strLines(str string) []string {
+	return strings.Split(strings.TrimSuffix(str, "\n"), "\n")
 }
 
 func parseMargin(margin string) [4]string {
@@ -793,16 +788,13 @@ func parseOptions(opts *Options, allArgs []string) {
 			setHistory(nextString(allArgs, &i, "history file path required"))
 		case "--history-size":
 			setHistoryMax(nextInt(allArgs, &i, "history max size required"))
-		case "--no-header-file":
+		case "--no-header":
 			opts.Header = []string{}
 		case "--no-header-lines":
 			opts.HeaderLines = 0
-		case "--header-file":
-			opts.Header = readHeaderFile(
-				nextString(allArgs, &i, "header file name required"))
-			opts.HeaderLines = 0
+		case "--header":
+			opts.Header = strLines(nextString(allArgs, &i, "header string required"))
 		case "--header-lines":
-			opts.Header = []string{}
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
 		case "--no-margin":
@@ -843,11 +835,9 @@ func parseOptions(opts *Options, allArgs []string) {
 				setHistory(value)
 			} else if match, value := optString(arg, "--history-size="); match {
 				setHistoryMax(atoi(value))
-			} else if match, value := optString(arg, "--header-file="); match {
-				opts.Header = readHeaderFile(value)
-				opts.HeaderLines = 0
+			} else if match, value := optString(arg, "--header="); match {
+				opts.Header = strLines(value)
 			} else if match, value := optString(arg, "--header-lines="); match {
-				opts.Header = []string{}
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--margin="); match {
 				opts.Margin = parseMargin(value)

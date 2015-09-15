@@ -49,7 +49,7 @@ _fzf_opts_completion() {
     --cycle
     --history
     --history-size
-    --header-file
+    --header
     --header-lines
     --margin"
 
@@ -62,7 +62,7 @@ _fzf_opts_completion() {
     COMPREPLY=( $(compgen -W "dark light 16 bw" -- ${cur}) )
     return 0
     ;;
-  --history|--header-file)
+  --history)
     COMPREPLY=()
     return 0
     ;;
