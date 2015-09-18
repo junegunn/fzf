@@ -229,7 +229,7 @@ function! s:execute(dict, command, temps)
   redraw!
   if v:shell_error
     " Do not print error message on exit status 1
-    if v:shell_error > 1
+    if v:shell_error > 2
       echohl ErrorMsg
       echo 'Error running ' . command
     endif
