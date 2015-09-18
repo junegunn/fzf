@@ -228,10 +228,11 @@ function! s:execute(dict, command, temps)
   execute 'silent !'.command
   redraw!
   if v:shell_error
-    " Do not print error message on exit status 1
-    if v:shell_error > 2
+    " Do not print error message on exit status 1 (no match) or 130 (interrupt)
+    if v:shell_error == 2
       echohl ErrorMsg
       echo 'Error running ' . command
+      echohl None
     endif
     return []
   else

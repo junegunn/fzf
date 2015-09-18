@@ -791,7 +791,7 @@ func (t *Terminal) Loop() {
 						exit(exitNoMatch)
 					case reqQuit:
 						C.Close()
-						exit(exitError)
+						exit(exitInterrupt)
 					}
 				}
 				t.placeCursor()
