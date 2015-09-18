@@ -102,7 +102,7 @@ trap cleanup EXIT SIGINT SIGTERM
 
 fail() {
   >&2 echo "$1"
-  exit 1
+  exit 2
 }
 fzf="$(which fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
 [ -x "$fzf" ] || fail "fzf executable not found"
@@ -134,5 +134,5 @@ else
   cat <&0 > $fifo1 &
 fi
 cat $fifo2
-[ "$(cat $fifo3)" = '0' ]
+exit "$(cat $fifo3)"
 
