@@ -9,7 +9,10 @@ CHANGELOG
 - Changed exit status
     - 0: Okay
     - 1: No match
-    - 2: Error/Interrupted
+    - 2: Error
+    - 130: Interrupted
+- 64-bit linux binary is statically-linked with ncurses to avoid
+  compatibility issues.
 
 0.10.5
 ------
