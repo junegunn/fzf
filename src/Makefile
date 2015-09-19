@@ -62,6 +62,9 @@ docker-arch:
 docker-ubuntu:
 	docker build -t junegunn/ubuntu-sandbox - < Dockerfile.ubuntu
 
+docker-centos:
+	docker build -t junegunn/centos-sandbox - < Dockerfile.centos
+
 arch: docker-arch
 	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
@@ -70,9 +73,13 @@ ubuntu: docker-ubuntu
 	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
 
-linux: docker-ubuntu
-	docker run -i -t -v $(GOPATH):/go junegunn/ubuntu-sandbox \
+centos: docker-centos
+	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
+		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
+
+linux: docker-centos
+	docker run -i -t -v $(GOPATH):/go junegunn/centos-sandbox \
 		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make'
 
 .PHONY: all build release test install uninstall clean docker \
-	linux arch ubuntu docker-arch docker-ubuntu
+	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos

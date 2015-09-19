@@ -5,7 +5,7 @@ package curses
 #include <locale.h>
 #cgo darwin LDFLAGS: -lncurses
 #cgo linux,386 LDFLAGS: -lncurses
-#cgo linux,amd64 LDFLAGS: -l:libncurses.a -l:libtinfo.a -l:libgpm.a
+#cgo linux,amd64 LDFLAGS: -l:libncurses.a -l:libtinfo.a -l:libgpm.a -ldl
 */
 import "C"
 
