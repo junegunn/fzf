@@ -40,9 +40,7 @@ function! s:fzf_exec()
           \ input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
       redraw
       echo
-      echohl WarningMsg
-      echo 'Downloading fzf binary. Please wait ...'
-      echohl None
+      call s:warn('Downloading fzf binary. Please wait ...')
       let s:installed = 1
       call system(s:install.' --bin')
       return s:fzf_exec()
@@ -98,14 +96,24 @@ function! s:upgrade(dict)
   return copy
 endfunction
 
+function! s:error(msg)
+  echohl ErrorMsg
+  echom a:msg
+  echohl None
+endfunction
+
+function! s:warn(msg)
+  echohl WarningMsg
+  echom a:msg
+  echohl None
+endfunction
+
 function! fzf#run(...) abort
 try
   let oshell = &shell
   set shell=sh
   if has('nvim') && bufexists('term://*:FZF')
-    echohl WarningMsg
-    echomsg 'FZF is already running!'
-    echohl None
+    call s:warn('FZF is already running!')
     return []
   endif
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
@@ -230,9 +238,7 @@ function! s:execute(dict, command, temps)
   if v:shell_error
     " Do not print error message on exit status 1 (no match) or 130 (interrupt)
     if v:shell_error == 2
-      echohl ErrorMsg
-      echo 'Error running ' . command
-      echohl None
+      call s:error('Error running ' . command)
     endif
     return []
   else
@@ -249,6 +255,10 @@ function! s:execute_tmux(dict, command, temps)
 
   call system(command)
   redraw!
+  if v:shell_error == 2
+    call s:error('Error running ' . command)
+    return []
+  endif
   return s:callback(a:dict, a:temps)
 endfunction
 
@@ -310,6 +320,7 @@ function! s:execute_term(dict, command, temps)
   call s:pushd(a:dict)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
+  let s:command = a:command
   function! fzf.on_exit(id, code)
     let pos = s:getpos()
     let inplace = pos == s:ppos " {'window': 'enew'}
@@ -323,6 +334,13 @@ function! s:execute_term(dict, command, temps)
         wincmd p
       endif
     endif
+
+    if a:code == 2
+      call s:error('Error running ' . s:command)
+      sleep
+      return
+    endif
+
     call s:pushd(self.dict)
     try
       redraw!
