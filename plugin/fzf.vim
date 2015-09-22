@@ -343,7 +343,6 @@ function! s:execute_term(dict, command, temps)
 
     call s:pushd(self.dict)
     try
-      redraw!
       call s:callback(self.dict, self.temps)
 
       if inplace && bufnr('') == self.buf
