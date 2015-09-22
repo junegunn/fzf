@@ -44,10 +44,10 @@ clean:
 	cd fzf && rm -f fzf-*
 
 fzf/$(BINARY32): $(SOURCES)
-	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -o $(BINARY32)
+	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -o $(BINARY32)
 
 fzf/$(BINARY64): $(SOURCES)
-	cd fzf && go build $(LDFLAGS) -o $(BINARY64)
+	cd fzf && go build -a -tags "$(TAGS)" -o $(BINARY64)
 
 $(BINDIR)/fzf: fzf/$(BINARY64) | $(BINDIR)
 	cp -f fzf/$(BINARY64) $(BINDIR)
@@ -79,7 +79,7 @@ centos: docker-centos
 
 linux: docker-centos
 	docker run -i -t -v $(GOPATH):/go junegunn/centos-sandbox \
-		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make'
+		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make TAGS=static'
 
 .PHONY: all build release test install uninstall clean docker \
 	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos

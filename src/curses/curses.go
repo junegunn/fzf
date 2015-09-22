@@ -3,9 +3,8 @@ package curses
 /*
 #include <ncurses.h>
 #include <locale.h>
-#cgo darwin LDFLAGS: -lncurses
-#cgo linux,386 LDFLAGS: -lncurses
-#cgo linux,amd64 LDFLAGS: -l:libncurses.a -l:libtinfo.a -l:libgpm.a -ldl
+#cgo !static LDFLAGS: -lncurses
+#cgo static LDFLAGS: -l:libncurses.a -l:libtinfo.a -l:libgpm.a -ldl
 */
 import "C"
 
