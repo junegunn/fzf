@@ -245,6 +245,7 @@ EOF
 fi
 
 append_line() {
+  set -e
   echo "Update $2:"
   echo "  - $1"
   [ -f "$2" ] || touch "$2"
@@ -261,6 +262,7 @@ append_line() {
     echo "    + Added"
   fi
   echo
+  set +e
 }
 
 echo
