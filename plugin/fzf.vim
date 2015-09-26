@@ -213,7 +213,7 @@ endfunction
 function! s:xterm_launcher()
   let fmt = 'xterm -T "[fzf]" -bg "\%s" -fg "\%s" -geometry %dx%d+%d+%d -e bash -ic %%s'
   if has('gui_macvim')
-    let fmt .= '; osascript -e "tell application \"MacVim\" to activate"'
+    let fmt .= '&& osascript -e "tell application \"MacVim\" to activate"'
   endif
   return printf(fmt,
     \ synIDattr(hlID("Normal"), "bg"), synIDattr(hlID("Normal"), "fg"),
@@ -237,7 +237,7 @@ function! s:execute(dict, command, temps)
   redraw!
   if v:shell_error
     " Do not print error message on exit status 1 (no match) or 130 (interrupt)
-    if v:shell_error == 2
+    if index([1, 130], v:shell_error) < 0
       call s:error('Error running ' . command)
     endif
     return []
