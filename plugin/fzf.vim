@@ -235,14 +235,13 @@ function! s:execute(dict, command, temps)
   endif
   execute 'silent !'.command
   redraw!
-  if v:shell_error
-    " Do not print error message on exit status 1 (no match) or 130 (interrupt)
-    if index([1, 130], v:shell_error) < 0
-      call s:error('Error running ' . command)
-    endif
+  if v:shell_error == 0 || v:shell_error == 1
+    return s:callback(a:dict, a:temps)
+    " Do not print error message on exit status 130 (interrupt)
+  elseif v:shell_error == 130
     return []
   else
-    return s:callback(a:dict, a:temps)
+    call s:error('Error running ' . command)
   endif
 endfunction
 
