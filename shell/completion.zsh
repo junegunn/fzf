@@ -86,6 +86,13 @@ _fzf_ssh_completion() {
 EOF
 }
 
+_fzf_pass_completion() {
+  pwdir=${PASSWORD_STORE_DIR-~/.password-store}
+  _fzf_list_completion "$1" "$2" '+m' << "EOF"
+  find "$pwdir" -name "*.gpg" -printf "%P\n" | sed -r 's,(.*)\.gpg,\1,'
+EOF
+}
+
 _fzf_env_var_completion() {
   _fzf_list_completion "$1" "$2" '+m' << "EOF"
   declare -xp | sed 's/=.*//' | sed 's/.* //'
@@ -141,6 +148,8 @@ fzf-completion() {
       _fzf_telnet_completion "$prefix" $lbuf
     elif [ $cmd = ssh ]; then
       _fzf_ssh_completion "$prefix" $lbuf
+    elif [ $cmd = pass ]; then
+      _fzf_pass_completion "$prefix" $lbuf
     elif [ $cmd = unset -o $cmd = export ]; then
       _fzf_env_var_completion "$prefix" $lbuf
     elif [ $cmd = unalias ]; then
