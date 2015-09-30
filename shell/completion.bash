@@ -205,6 +205,13 @@ _fzf_ssh_completion() {
 EOF
 }
 
+_fzf_pass_completion() {
+  pwdir=${PASSWORD_STORE_DIR-~/.password-store}
+  _fzf_list_completion '+m' "$@" << "EOF"
+  find "$pwdir" -name "*.gp"g -printf "%P\n" | sed -r 's,(.*)\.gpg,\1,'
+EOF
+}
+
 _fzf_env_var_completion() {
   _fzf_list_completion '-m' "$@" << "EOF"
   declare -xp | sed 's/=.*//' | sed 's/.* //'
@@ -231,7 +238,7 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
-x_cmds="kill ssh telnet unset unalias export"
+x_cmds="kill ssh telnet unset unalias export pass"
 
 # Preserve existing completion
 if [ "$_fzf_completion_loaded" != '0.9.12' ]; then
@@ -266,6 +273,9 @@ complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
 # Host completion
 complete -F _fzf_ssh_completion -o default -o bashdefault ssh
 complete -F _fzf_telnet_completion -o default -o bashdefault telnet
+
+# Passwordstore completion
+complete -F _fzf_pass_completion -o default -o bashdefault pass
 
 # Environment variables / Aliases
 complete -F _fzf_env_var_completion -o default -o bashdefault unset
