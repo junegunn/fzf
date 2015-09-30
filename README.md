@@ -234,6 +234,15 @@ ssh **<TAB>
 telnet **<TAB>
 ```
 
+#### Password-store
+
+fuzzy search for the standard unix password manager:
+
+```sh
+pass **<TAB>
+pass -c **<TAB>
+```
+
 #### Environment variables / Aliases
 
 ```sh
