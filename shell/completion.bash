@@ -208,7 +208,7 @@ EOF
 _fzf_pass_completion() {
   pwdir=${PASSWORD_STORE_DIR-~/.password-store}
   _fzf_list_completion '+m' "$@" << "EOF"
-  find "$pwdir" -name "*.gp"g -printf "%P\n" | sed -r 's,(.*)\.gpg,\1,'
+  find "$pwdir" -name "*.gpg" -printf "%P\n" | sed -r 's,(.*)\.gpg,\1,'
 EOF
 }
 
