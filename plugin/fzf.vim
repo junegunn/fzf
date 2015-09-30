@@ -405,6 +405,12 @@ function! s:cmd_callback(lines) abort
   endif
   let key = remove(a:lines, 0)
   let cmd = get(s:action, key, 'e')
+  if len(a:lines) > 1
+    augroup fzf_swap
+      autocmd SwapExists * let v:swapchoice='o'
+            \| call s:warn('fzf: E325: swap file exists: '.expand('<afile>'))
+    augroup END
+  endif
   try
     let autochdir = &autochdir
     set noautochdir
@@ -413,6 +419,7 @@ function! s:cmd_callback(lines) abort
     endfor
   finally
     let &autochdir = autochdir
+    silent! autocmd! fzf_swap
   endtry
 endfunction
 
