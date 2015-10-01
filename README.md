@@ -236,7 +236,7 @@ telnet **<TAB>
 
 #### Password-store
 
-fuzzy search for the standard unix password manager:
+fuzzy search for the standard unix [```password manager```](http://www.passwordstore.org):
 
 ```sh
 pass **<TAB>
