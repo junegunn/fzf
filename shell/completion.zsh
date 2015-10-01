@@ -87,9 +87,11 @@ EOF
 }
 
 _fzf_pass_completion() {
-  pwdir=${PASSWORD_STORE_DIR-~/.password-store}
+  local pwdir=${PASSWORD_STORE_DIR-~/.password-store/}
+  local stringsize="${#pwdir}"
+  let "stringsize+=1"
   _fzf_list_completion "$1" "$2" '+m' << "EOF"
-  find "$pwdir" -name "*.gpg" -printf "%P\n" | sed -r 's,(.*)\.gpg,\1,'
+  find "$pwdir" -name "*.gpg" -print | cut -c "$stringsize"- | sed -e 's/\(.*\)\.gpg/\1/'
 EOF
 }
 
