@@ -75,6 +75,7 @@ func IsTty() bool {
 	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
 }
 
+// TrimRight returns rune array with trailing white spaces cut off
 func TrimRight(runes []rune) []rune {
 	var i int
 	for i = len(runes) - 1; i >= 0; i-- {
@@ -86,6 +87,7 @@ func TrimRight(runes []rune) []rune {
 	return runes[0 : i+1]
 }
 
+// BytesToRunes converts byte array into rune array
 func BytesToRunes(bytea []byte) []rune {
 	runes := make([]rune, 0, len(bytea))
 	for i := 0; i < len(bytea); {
@@ -99,4 +101,28 @@ func BytesToRunes(bytea []byte) []rune {
 		}
 	}
 	return runes
+}
+
+// TrimLen returns the length of trimmed rune array
+func TrimLen(runes []rune) int {
+	var i int
+	for i = len(runes) - 1; i >= 0; i-- {
+		char := runes[i]
+		if char != ' ' && char != '\t' {
+			break
+		}
+	}
+	// Completely empty
+	if i < 0 {
+		return 0
+	}
+
+	var j int
+	for j = 0; j < len(runes); j++ {
+		char := runes[j]
+		if char != ' ' && char != '\t' {
+			break
+		}
+	}
+	return i - j + 1
 }
