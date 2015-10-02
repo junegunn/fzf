@@ -234,6 +234,15 @@ ssh **<TAB>
 telnet **<TAB>
 ```
 
+#### Password-store
+
+fuzzy completion for [pass command](http://www.passwordstore.org):
+
+```sh
+pass **<TAB>
+pass -c **<TAB>
+```
+
 #### Environment variables / Aliases
 
 ```sh
