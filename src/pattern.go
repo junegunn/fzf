@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/junegunn/fzf/src/algo"
+	"github.com/junegunn/fzf/src/util"
 )
 
 // fuzzy
@@ -251,9 +252,9 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 	matches := []*Item{}
 	if p.mode == ModeFuzzy {
 		for _, item := range *chunk {
-			if sidx, eidx := p.fuzzyMatch(item); sidx >= 0 {
+			if sidx, eidx, tlen := p.fuzzyMatch(item); sidx >= 0 {
 				matches = append(matches,
-					dupItem(item, []Offset{Offset{int32(sidx), int32(eidx)}}))
+					dupItem(item, []Offset{Offset{int32(sidx), int32(eidx), int32(tlen)}}))
 			}
 		}
 	} else {
@@ -269,7 +270,7 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 // MatchItem returns true if the Item is a match
 func (p *Pattern) MatchItem(item *Item) bool {
 	if p.mode == ModeFuzzy {
-		sidx, _ := p.fuzzyMatch(item)
+		sidx, _, _ := p.fuzzyMatch(item)
 		return sidx >= 0
 	}
 	offsets := p.extendedMatch(item)
@@ -288,7 +289,7 @@ func dupItem(item *Item, offsets []Offset) *Item {
 		rank:        Rank{0, 0, item.index}}
 }
 
-func (p *Pattern) fuzzyMatch(item *Item) (int, int) {
+func (p *Pattern) fuzzyMatch(item *Item) (int, int, int) {
 	input := p.prepareInput(item)
 	return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
 }
@@ -298,13 +299,13 @@ func (p *Pattern) extendedMatch(item *Item) []Offset {
 	offsets := []Offset{}
 	for _, term := range p.terms {
 		pfun := p.procFun[term.typ]
-		if sidx, eidx := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
+		if sidx, eidx, tlen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
 			if term.inv {
 				break
 			}
-			offsets = append(offsets, Offset{int32(sidx), int32(eidx)})
+			offsets = append(offsets, Offset{int32(sidx), int32(eidx), int32(tlen)})
 		} else if term.inv {
-			offsets = append(offsets, Offset{0, 0})
+			offsets = append(offsets, Offset{0, 0, 0})
 		}
 	}
 	return offsets
@@ -320,19 +321,19 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 		tokens := Tokenize(item.text, p.delimiter)
 		ret = Transform(tokens, p.nth)
 	} else {
-		ret = []Token{Token{text: item.text, prefixLength: 0}}
+		ret = []Token{Token{text: item.text, prefixLength: 0, trimLength: util.TrimLen(item.text)}}
 	}
 	item.transformed = ret
 	return ret
 }
 
 func (p *Pattern) iter(pfun func(bool, bool, []rune, []rune) (int, int),
-	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (int, int) {
+	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (int, int, int) {
 	for _, part := range tokens {
 		prefixLength := part.prefixLength
 		if sidx, eidx := pfun(caseSensitive, forward, part.text, pattern); sidx >= 0 {
-			return sidx + prefixLength, eidx + prefixLength
+			return sidx + prefixLength, eidx + prefixLength, part.trimLength
 		}
 	}
-	return -1, -1
+	return -1, -1, -1 // math.MaxUint16
 }

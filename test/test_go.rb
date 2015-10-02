@@ -527,6 +527,53 @@ class TestGoFZF < TestBase
     assert_equal output, `cat #{tempname} | #{FZF} -fh -n2 -d:`.split($/)
   end
 
+  def test_tiebreak_length_with_nth_trim_length
+    input = [
+      "apple juice   bottle 1",
+      "apple  ui     bottle 2",
+      "app     ice   bottle 3",
+      "app     ic    bottle 4",
+    ]
+    writelines tempname, input
+
+    # len(1)
+    output = [
+      "app     ice   bottle 3",
+      "app     ic    bottle 4",
+      "apple juice   bottle 1",
+      "apple  ui     bottle 2",
+    ]
+    assert_equal output, `cat #{tempname} | #{FZF} -fa -n1`.split($/)
+
+    # len(1 ~ 2)
+    output = [
+      "apple  ui     bottle 2",
+      "app     ic    bottle 4",
+      "apple juice   bottle 1",
+      "app     ice   bottle 3",
+    ]
+    assert_equal output, `cat #{tempname} | #{FZF} -fai -n1..2`.split($/)
+
+    # len(1) + len(2)
+    output = [
+      "app     ic    bottle 4",
+      "app     ice   bottle 3",
+      "apple  ui     bottle 2",
+      "apple juice   bottle 1",
+    ]
+    assert_equal output, `cat #{tempname} | #{FZF} -x -f"a i" -n1,2`.split($/)
+
+    # len(2)
+    output = [
+      "apple  ui     bottle 2",
+      "app     ic    bottle 4",
+      "app     ice   bottle 3",
+      "apple juice   bottle 1",
+    ]
+    assert_equal output, `cat #{tempname} | #{FZF} -fi -n2`.split($/)
+    assert_equal output, `cat #{tempname} | #{FZF} -fi -n2,1..2`.split($/)
+  end
+
   def test_tiebreak_end_backward_scan
     input = %w[
       foobar-fb

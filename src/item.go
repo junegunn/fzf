@@ -6,8 +6,8 @@ import (
 	"github.com/junegunn/fzf/src/curses"
 )
 
-// Offset holds two 32-bit integers denoting the offsets of a matched substring
-type Offset [2]int32
+// Offset holds three 32-bit integers denoting the offsets of a matched substring
+type Offset [3]int32
 
 type colorOffset struct {
 	offset [2]int32
@@ -43,10 +43,13 @@ func (item *Item) Rank(cache bool) Rank {
 	}
 	matchlen := 0
 	prevEnd := 0
+	lenSum := 0
 	minBegin := math.MaxUint16
 	for _, offset := range item.offsets {
 		begin := int(offset[0])
 		end := int(offset[1])
+		trimLen := int(offset[2])
+		lenSum += trimLen
 		if prevEnd > begin {
 			begin = prevEnd
 		}
@@ -65,10 +68,7 @@ func (item *Item) Rank(cache bool) Rank {
 	case byLength:
 		// It is guaranteed that .transformed in not null in normal execution
 		if item.transformed != nil {
-			lenSum := 0
-			for _, token := range item.transformed {
-				lenSum += len(token.text)
-			}
+			// If offsets is empty, lenSum will be 0, but we don't care
 			tiebreak = uint16(lenSum)
 		} else {
 			tiebreak = uint16(len(item.text))
@@ -116,7 +116,8 @@ func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset
 	if len(item.colors) == 0 {
 		var offsets []colorOffset
 		for _, off := range item.offsets {
-			offsets = append(offsets, colorOffset{offset: off, color: color, bold: bold})
+
+			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, bold: bold})
 		}
 		return offsets
 	}
@@ -160,7 +161,7 @@ func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset
 		if curr != 0 && idx > start {
 			if curr == -1 {
 				offsets = append(offsets, colorOffset{
-					offset: Offset{int32(start), int32(idx)}, color: color, bold: bold})
+					offset: [2]int32{int32(start), int32(idx)}, color: color, bold: bold})
 			} else {
 				ansi := item.colors[curr-1]
 				fg := ansi.color.fg
@@ -180,7 +181,7 @@ func (item *Item) colorOffsets(color int, bold bool, current bool) []colorOffset
 					}
 				}
 				offsets = append(offsets, colorOffset{
-					offset: Offset{int32(start), int32(idx)},
+					offset: [2]int32{int32(start), int32(idx)},
 					color:  curses.PairFor(fg, bg),
 					bold:   ansi.color.bold || bold})
 			}

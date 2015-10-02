@@ -1,6 +1,6 @@
 # Key bindings
 # ------------
-if [[ $- =~ i ]]; then
+if [[ $- == *i* ]]; then
 
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
