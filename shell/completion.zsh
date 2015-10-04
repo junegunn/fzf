@@ -60,10 +60,9 @@ _fzf_dir_completion() {
 }
 
 _fzf_list_completion() {
-  local prefix lbuf fzf_opts src fzf matches
-  prefix=$1
+  local fzf_opts lbuf src fzf matches
+  fzf_opts=$1
   lbuf=$2
-  fzf_opts=$3
   read -r src
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
@@ -75,26 +74,32 @@ _fzf_list_completion() {
 }
 
 _fzf_telnet_completion() {
-  _fzf_list_completion "$1" "$2" '+m' << "EOF"
-  \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' | awk '{if (length($2) > 0) {print $2}}' | sort -u
+  _fzf_list_completion '+m' "$@" << "EOF"
+    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' | awk '{if (length($2) > 0) {print $2}}' | sort -u
 EOF
 }
 
 _fzf_ssh_completion() {
-  _fzf_list_completion "$1" "$2" '+m' << "EOF"
+  _fzf_list_completion '+m' "$@" << "EOF"
     cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i '^host' | \grep -v '*') <(\grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0') | awk '{if (length($2) > 0) {print $2}}' | sort -u
 EOF
 }
 
-_fzf_env_var_completion() {
-  _fzf_list_completion "$1" "$2" '+m' << "EOF"
-  declare -xp | sed 's/=.*//' | sed 's/.* //'
+_fzf_export_completion() {
+  _fzf_list_completion '+m' "$@" << "EOF"
+    declare -xp | sed 's/=.*//' | sed 's/.* //'
 EOF
 }
 
-_fzf_alias_completion() {
-  _fzf_list_completion "$1" "$2" '+m' << "EOF"
-  alias | sed 's/=.*//'
+_fzf_unset_completion() {
+  _fzf_list_completion '+m' "$@" << "EOF"
+    declare -xp | sed 's/=.*//' | sed 's/.* //'
+EOF
+}
+
+_fzf_unalias_completion() {
+  _fzf_list_completion '+m' "$@" << "EOF"
+    alias | sed 's/=.*//'
 EOF
 }
 
@@ -135,18 +140,12 @@ fzf-completion() {
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER        || lbuf=${LBUFFER:0:-${#tokens[-1]}}
 
-    if [ ${d_cmds[(i)$cmd]} -le ${#d_cmds} ]; then
-      _fzf_dir_completion "$prefix" $lbuf
-    elif [ $cmd = telnet ]; then
-      _fzf_telnet_completion "$prefix" $lbuf
-    elif [ $cmd = ssh ]; then
-      _fzf_ssh_completion "$prefix" $lbuf
-    elif [ $cmd = unset -o $cmd = export ]; then
-      _fzf_env_var_completion "$prefix" $lbuf
-    elif [ $cmd = unalias ]; then
-      _fzf_alias_completion "$prefix" $lbuf
+    if eval "type _fzf_${cmd}_completion > /dev/null"; then
+      eval "prefix=\"$prefix\" _fzf_${cmd}_completion \"$lbuf\""
+    elif [ ${d_cmds[(i)$cmd]} -le ${#d_cmds} ]; then
+      _fzf_dir_completion "$prefix" "$lbuf"
     else
-      _fzf_all_completion "$prefix" $lbuf
+      _fzf_all_completion "$prefix" "$lbuf"
     fi
   # Fall back to default completion
   else

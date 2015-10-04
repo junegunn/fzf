@@ -195,7 +195,7 @@ _fzf_kill_completion() {
 
 _fzf_telnet_completion() {
   _fzf_list_completion '+m' "$@" << "EOF"
-  \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' | awk '{if (length($2) > 0) {print $2}}' | sort -u
+    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' | awk '{if (length($2) > 0) {print $2}}' | sort -u
 EOF
 }
 
@@ -207,13 +207,13 @@ EOF
 
 _fzf_env_var_completion() {
   _fzf_list_completion '-m' "$@" << "EOF"
-  declare -xp | sed 's/=.*//' | sed 's/.* //'
+    declare -xp | sed 's/=.*//' | sed 's/.* //'
 EOF
 }
 
 _fzf_alias_completion() {
   _fzf_list_completion '-m' "$@" << "EOF"
-  alias | sed 's/=.*//' | sed 's/.* //'
+    alias | sed 's/=.*//' | sed 's/.* //'
 EOF
 }
 
