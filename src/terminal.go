@@ -727,6 +727,13 @@ func (t *Terminal) Loop() {
 			t.reqBox.Set(reqRefresh, nil)
 		}()
 
+		intChan := make(chan os.Signal, 1)
+		signal.Notify(intChan, os.Interrupt, os.Kill)
+		go func() {
+			<-intChan
+			t.reqBox.Set(reqQuit, nil)
+		}()
+
 		resizeChan := make(chan os.Signal, 1)
 		signal.Notify(resizeChan, syscall.SIGWINCH)
 		go func() {

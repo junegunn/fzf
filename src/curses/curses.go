@@ -11,7 +11,6 @@ import "C"
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"syscall"
 	"time"
 	"unicode/utf8"
@@ -270,14 +269,6 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	}
 	C.noecho()
 	C.raw() // stty dsusp undef
-
-	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt, os.Kill)
-	go func() {
-		<-intChan
-		Close()
-		os.Exit(2)
-	}()
 
 	if theme != nil {
 		C.start_color()
