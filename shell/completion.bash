@@ -94,7 +94,7 @@ _fzf_handle_dynamic_completion() {
   fi
 }
 
-_fzf_path_completion() {
+__fzf_generic_path_completion() {
   local cur base dir leftover matches trigger cmd fzf
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
@@ -135,20 +135,29 @@ _fzf_path_completion() {
   fi
 }
 
-_fzf_list_completion() {
-  local cur selected trigger cmd src fzf
+_fzf_feed_fifo() (
+  rm -f "$fifo"
+  mkfifo "$fifo"
+  cat <&0 > "$fifo" &
+)
+
+_fzf_complete() {
+  local fifo cur selected trigger cmd fzf
+  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
-  read -r src
+
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ ${cur} == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
+    _fzf_feed_fifo "$fifo"
     tput sc
-    selected=$(eval "$src | $fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
-    selected=${selected% }
+    selected=$(eval "cat '$fifo' | $fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
+    selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     tput rc
+    rm -f "$fifo"
 
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
@@ -160,25 +169,25 @@ _fzf_list_completion() {
   fi
 }
 
-_fzf_all_completion() {
-  _fzf_path_completion \
+_fzf_path_completion() {
+  __fzf_generic_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print -o -type f -print -o -type l -print" \
     "-m" "" "$@"
 }
 
 _fzf_file_completion() {
-  _fzf_path_completion \
+  __fzf_generic_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type f -print -o -type l -print" \
     "-m" "" "$@"
 }
 
 _fzf_dir_completion() {
-  _fzf_path_completion \
+  __fzf_generic_path_completion \
     "-name .git -prune -o -name .svn -prune -o -type d -print" \
     "" "/" "$@"
 }
 
-_fzf_kill_completion() {
+_fzf_complete_kill() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
   local selected fzf
@@ -193,28 +202,37 @@ _fzf_kill_completion() {
   fi
 }
 
-_fzf_telnet_completion() {
-  _fzf_list_completion '+m' "$@" << "EOF"
-    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' | awk '{if (length($2) > 0) {print $2}}' | sort -u
-EOF
+_fzf_complete_telnet() {
+  _fzf_complete '+m' "$@" < <(
+    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' |
+        awk '{if (length($2) > 0) {print $2}}' | sort -u
+  )
 }
 
-_fzf_ssh_completion() {
-  _fzf_list_completion '+m' "$@" << "EOF"
-    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i '^host' | \grep -v '*') <(\grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0') | awk '{if (length($2) > 0) {print $2}}' | sort -u
-EOF
+_fzf_complete_ssh() {
+  _fzf_complete '+m' "$@" < <(
+    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i '^host' | \grep -v '*') \
+        <(\grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0') |
+        awk '{if (length($2) > 0) {print $2}}' | sort -u
+  )
 }
 
-_fzf_env_var_completion() {
-  _fzf_list_completion '-m' "$@" << "EOF"
+_fzf_complete_unset() {
+  _fzf_complete '-m' "$@" < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
-EOF
+  )
 }
 
-_fzf_alias_completion() {
-  _fzf_list_completion '-m' "$@" << "EOF"
+_fzf_complete_export() {
+  _fzf_complete '-m' "$@" < <(
+    declare -xp | sed 's/=.*//' | sed 's/.* //'
+  )
+}
+
+_fzf_complete_unalias() {
+  _fzf_complete '-m' "$@" < <(
     alias | sed 's/=.*//' | sed 's/.* //'
-EOF
+  )
 }
 
 # fzf options
@@ -257,19 +275,19 @@ done
 
 # Anything
 for cmd in $a_cmds; do
-  complete -F _fzf_all_completion -o default -o bashdefault $cmd
+  complete -F _fzf_path_completion -o default -o bashdefault $cmd
 done
 
 # Kill completion
-complete -F _fzf_kill_completion -o nospace -o default -o bashdefault kill
+complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
 
 # Host completion
-complete -F _fzf_ssh_completion -o default -o bashdefault ssh
-complete -F _fzf_telnet_completion -o default -o bashdefault telnet
+complete -F _fzf_complete_ssh -o default -o bashdefault ssh
+complete -F _fzf_complete_telnet -o default -o bashdefault telnet
 
 # Environment variables / Aliases
-complete -F _fzf_env_var_completion -o default -o bashdefault unset
-complete -F _fzf_env_var_completion -o default -o bashdefault export
-complete -F _fzf_alias_completion -o default -o bashdefault unalias
+complete -F _fzf_complete_unset -o default -o bashdefault unset
+complete -F _fzf_complete_export -o default -o bashdefault export
+complete -F _fzf_complete_unalias -o default -o bashdefault unalias
 
 unset cmd d_cmds f_cmds a_cmds x_cmds
