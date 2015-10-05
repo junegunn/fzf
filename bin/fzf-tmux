@@ -91,10 +91,10 @@ set -e
 
 # Clean up named pipes on exit
 id=$RANDOM
-argsf=/tmp/fzf-args-$id
-fifo1=/tmp/fzf-fifo1-$id
-fifo2=/tmp/fzf-fifo2-$id
-fifo3=/tmp/fzf-fifo3-$id
+argsf="${TMPDIR:-/tmp}/fzf-args-$id"
+fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
+fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
+fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
 cleanup() {
   rm -f $argsf $fifo1 $fifo2 $fifo3
 }
