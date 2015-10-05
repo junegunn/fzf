@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.10.7
+------
+
+- Fixed unserialized interrupt handling during execute action which often
+  caused invalid memory access and crash
+- Changed `--tiebreak=length` (default) to use trimmed length when `--nth` is
+  used
+
 0.10.6
 ------
 
