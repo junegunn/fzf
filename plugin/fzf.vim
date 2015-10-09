@@ -416,6 +416,9 @@ function! s:cmd_callback(lines) abort
     set noautochdir
     for item in a:lines
       execute cmd s:escape(item)
+      if exists('#BufEnter') && isdirectory(item)
+        doautocmd BufEnter
+      endif
     endfor
   finally
     let &autochdir = autochdir
