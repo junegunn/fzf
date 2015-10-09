@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.10.8
+------
+
+- Fixed panic when trying to set colors after colors are disabled (#370)
+
 0.10.7
 ------
 
