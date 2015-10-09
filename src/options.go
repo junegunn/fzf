@@ -380,8 +380,11 @@ func parseTiebreak(str string) tiebreak {
 }
 
 func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
-	dupe := *theme
-	return &dupe
+	if theme != nil {
+		dupe := *theme
+		return &dupe
+	}
+	return nil
 }
 
 func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme {
@@ -402,7 +405,7 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 			}
 			// Color is disabled
 			if theme == nil {
-				errorExit("colors disabled; cannot customize colors")
+				continue
 			}
 
 			pair := strings.Split(str, ":")

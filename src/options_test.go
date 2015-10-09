@@ -316,3 +316,15 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("using default colors")
 	}
 }
+
+func TestParseNilTheme(t *testing.T) {
+	var theme *curses.ColorTheme
+	newTheme := parseTheme(theme, "prompt:12")
+	if newTheme != nil {
+		t.Errorf("color is disabled. keep it that way.")
+	}
+	newTheme = parseTheme(theme, "prompt:12,dark,prompt:13")
+	if newTheme.Prompt != 13 {
+		t.Errorf("color should now be enabled and customized")
+	}
+}
