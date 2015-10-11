@@ -11,8 +11,8 @@
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
 _fzf_orig_completion_filter() {
-  sed 's/.*-F *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\2=\1;/' |
-  sed 's/[^a-z0-9_= ;]/_/g'
+  sed 's/^\(.*-F\) *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\3="\1 %s \3 #\2";/' |
+  awk -F= '{gsub(/[^a-z0-9_= ;]/, "_", $1); print $1"="$2}'
 }
 
 _fzf_opts_completion() {
@@ -77,12 +77,12 @@ _fzf_opts_completion() {
 }
 
 _fzf_handle_dynamic_completion() {
-  local cmd orig ret orig_cmd
+  local cmd orig_var orig ret orig_cmd
   cmd="$1"
   shift
   orig_cmd="$1"
-
-  orig=$(eval "echo \$_fzf_orig_completion_$cmd")
+  orig_var="_fzf_orig_completion_$cmd"
+  orig="${!orig_var##*#}"
   if [ -n "$orig" ] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
   elif [ -n "$_fzf_completion_loader" ]; then
@@ -252,31 +252,47 @@ a_cmds="
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
-if [ "$_fzf_completion_loaded" != '0.9.12' ]; then
+if [ "$_fzf_completion_loaded" != '0.10.8' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
   eval $(complete | \grep '\-F' | \grep -v _fzf_ |
     \grep -E " ($(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
-  export _fzf_completion_loaded=0.9.12
+  export _fzf_completion_loaded=0.10.8
 fi
 
 if type _completion_loader > /dev/null 2>&1; then
   _fzf_completion_loader=1
 fi
 
+_fzf_defc() {
+  local cmd func opts orig_var orig
+  cmd="$1"
+  func="$2"
+  opts="$3"
+  orig_var="_fzf_orig_completion_$cmd"
+  orig="${!orig_var}"
+  if [ -n "$orig" ]; then
+    eval "$(printf "$orig" "$func")"
+  else
+    complete -F "$func" $opts "$cmd"
+  fi
+}
+
 # Directory
 for cmd in $d_cmds; do
-  complete -F _fzf_dir_completion -o nospace -o plusdirs $cmd
+  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o plusdirs"
 done
 
 # File
 for cmd in $f_cmds; do
-  complete -F _fzf_file_completion -o default -o bashdefault $cmd
+  _fzf_defc "$cmd" _fzf_file_completion "-o default -o bashdefault"
 done
 
 # Anything
 for cmd in $a_cmds; do
-  complete -F _fzf_path_completion -o default -o bashdefault $cmd
+  _fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
 done
+
+unset _fzf_defc
 
 # Kill completion
 complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
