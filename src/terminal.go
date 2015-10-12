@@ -851,16 +851,8 @@ func (t *Terminal) Loop() {
 			}
 		}
 
-		action := t.keymap[event.Type]
-		mapkey := event.Type
-		if event.Type == C.Rune {
-			mapkey = int(event.Char) + int(C.AltZ)
-			if act, prs := t.keymap[mapkey]; prs {
-				action = act
-			}
-		}
-		var doAction func(actionType) bool
-		doAction = func(action actionType) bool {
+		var doAction func(actionType, int) bool
+		doAction = func(action actionType, mapkey int) bool {
 			switch action {
 			case actIgnore:
 			case actExecute:
@@ -1043,7 +1035,7 @@ func (t *Terminal) Loop() {
 						// Double-click
 						if my >= min {
 							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doAction(t.keymap[C.DoubleClick])
+								return doAction(t.keymap[C.DoubleClick], C.DoubleClick)
 							}
 						}
 					} else if me.Down {
@@ -1062,7 +1054,15 @@ func (t *Terminal) Loop() {
 			}
 			return true
 		}
-		if !doAction(action) {
+		action := t.keymap[event.Type]
+		mapkey := event.Type
+		if event.Type == C.Rune {
+			mapkey = int(event.Char) + int(C.AltZ)
+			if act, prs := t.keymap[mapkey]; prs {
+				action = act
+			}
+		}
+		if !doAction(action, mapkey) {
 			continue
 		}
 		changed := string(previousInput) != string(t.input)
