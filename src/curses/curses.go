@@ -50,6 +50,7 @@ const (
 
 	Invalid
 	Mouse
+	DoubleClick
 
 	BTab
 	BSpace

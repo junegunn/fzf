@@ -343,6 +343,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = curses.SLeft
 		case "shift-right":
 			chord = curses.SRight
+		case "double-click":
+			chord = curses.DoubleClick
 		default:
 			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				chord = curses.CtrlA + int(lkey[5]) - 'a'

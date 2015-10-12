@@ -180,6 +180,7 @@ func defaultKeymap() map[int]actionType {
 
 	keymap[C.Rune] = actRune
 	keymap[C.Mouse] = actMouse
+	keymap[C.DoubleClick] = actAccept
 	return keymap
 }
 
@@ -858,204 +859,211 @@ func (t *Terminal) Loop() {
 				action = act
 			}
 		}
-		switch action {
-		case actIgnore:
-		case actExecute:
-			if t.cy >= 0 && t.cy < t.merger.Length() {
-				item := t.merger.Get(t.cy)
-				executeCommand(t.execmap[mapkey], item.AsString(t.ansi))
-			}
-		case actInvalid:
-			t.mutex.Unlock()
-			continue
-		case actToggleSort:
-			t.sort = !t.sort
-			t.eventBox.Set(EvtSearchNew, t.sort)
-			t.mutex.Unlock()
-			continue
-		case actBeginningOfLine:
-			t.cx = 0
-		case actBackwardChar:
-			if t.cx > 0 {
-				t.cx--
-			}
-		case actAbort:
-			req(reqQuit)
-		case actDeleteChar:
-			t.delChar()
-		case actDeleteCharEOF:
-			if !t.delChar() && t.cx == 0 {
-				req(reqQuit)
-			}
-		case actEndOfLine:
-			t.cx = len(t.input)
-		case actCancel:
-			if len(t.input) == 0 {
-				req(reqQuit)
-			} else {
-				t.yanked = t.input
-				t.input = []rune{}
+		var doAction func(actionType) bool
+		doAction = func(action actionType) bool {
+			switch action {
+			case actIgnore:
+			case actExecute:
+				if t.cy >= 0 && t.cy < t.merger.Length() {
+					item := t.merger.Get(t.cy)
+					executeCommand(t.execmap[mapkey], item.AsString(t.ansi))
+				}
+			case actInvalid:
+				t.mutex.Unlock()
+				return false
+			case actToggleSort:
+				t.sort = !t.sort
+				t.eventBox.Set(EvtSearchNew, t.sort)
+				t.mutex.Unlock()
+				return false
+			case actBeginningOfLine:
 				t.cx = 0
-			}
-		case actForwardChar:
-			if t.cx < len(t.input) {
-				t.cx++
-			}
-		case actBackwardDeleteChar:
-			if t.cx > 0 {
-				t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
-				t.cx--
-			}
-		case actSelectAll:
-			if t.multi {
-				for i := 0; i < t.merger.Length(); i++ {
-					item := t.merger.Get(i)
-					selectItem(item)
+			case actBackwardChar:
+				if t.cx > 0 {
+					t.cx--
 				}
-				req(reqList, reqInfo)
-			}
-		case actDeselectAll:
-			if t.multi {
-				for i := 0; i < t.merger.Length(); i++ {
-					item := t.merger.Get(i)
-					delete(t.selected, item.index)
+			case actAbort:
+				req(reqQuit)
+			case actDeleteChar:
+				t.delChar()
+			case actDeleteCharEOF:
+				if !t.delChar() && t.cx == 0 {
+					req(reqQuit)
 				}
-				req(reqList, reqInfo)
-			}
-		case actToggle:
-			if t.multi && t.merger.Length() > 0 {
-				toggle()
-				req(reqList)
-			}
-		case actToggleAll:
-			if t.multi {
-				for i := 0; i < t.merger.Length(); i++ {
-					toggleY(i)
-				}
-				req(reqList, reqInfo)
-			}
-		case actToggleDown:
-			if t.multi && t.merger.Length() > 0 {
-				toggle()
-				t.vmove(-1)
-				req(reqList)
-			}
-		case actToggleUp:
-			if t.multi && t.merger.Length() > 0 {
-				toggle()
-				t.vmove(1)
-				req(reqList)
-			}
-		case actDown:
-			t.vmove(-1)
-			req(reqList)
-		case actUp:
-			t.vmove(1)
-			req(reqList)
-		case actAccept:
-			req(reqClose)
-		case actClearScreen:
-			req(reqRedraw)
-		case actUnixLineDiscard:
-			if t.cx > 0 {
-				t.yanked = copySlice(t.input[:t.cx])
-				t.input = t.input[t.cx:]
-				t.cx = 0
-			}
-		case actUnixWordRubout:
-			if t.cx > 0 {
-				t.rubout("\\s\\S")
-			}
-		case actBackwardKillWord:
-			if t.cx > 0 {
-				t.rubout("[^[:alnum:]][[:alnum:]]")
-			}
-		case actYank:
-			suffix := copySlice(t.input[t.cx:])
-			t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
-			t.cx += len(t.yanked)
-		case actPageUp:
-			t.vmove(t.maxItems() - 1)
-			req(reqList)
-		case actPageDown:
-			t.vmove(-(t.maxItems() - 1))
-			req(reqList)
-		case actBackwardWord:
-			t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
-		case actForwardWord:
-			t.cx += findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
-		case actKillWord:
-			ncx := t.cx +
-				findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
-			if ncx > t.cx {
-				t.yanked = copySlice(t.input[t.cx:ncx])
-				t.input = append(t.input[:t.cx], t.input[ncx:]...)
-			}
-		case actKillLine:
-			if t.cx < len(t.input) {
-				t.yanked = copySlice(t.input[t.cx:])
-				t.input = t.input[:t.cx]
-			}
-		case actRune:
-			prefix := copySlice(t.input[:t.cx])
-			t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
-			t.cx++
-		case actPreviousHistory:
-			if t.history != nil {
-				t.history.override(string(t.input))
-				t.input = []rune(t.history.previous())
+			case actEndOfLine:
 				t.cx = len(t.input)
-			}
-		case actNextHistory:
-			if t.history != nil {
-				t.history.override(string(t.input))
-				t.input = []rune(t.history.next())
-				t.cx = len(t.input)
-			}
-		case actMouse:
-			me := event.MouseEvent
-			mx, my := me.X, me.Y
-			if me.S != 0 {
-				// Scroll
-				if t.merger.Length() > 0 {
-					if t.multi && me.Mod {
-						toggle()
+			case actCancel:
+				if len(t.input) == 0 {
+					req(reqQuit)
+				} else {
+					t.yanked = t.input
+					t.input = []rune{}
+					t.cx = 0
+				}
+			case actForwardChar:
+				if t.cx < len(t.input) {
+					t.cx++
+				}
+			case actBackwardDeleteChar:
+				if t.cx > 0 {
+					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
+					t.cx--
+				}
+			case actSelectAll:
+				if t.multi {
+					for i := 0; i < t.merger.Length(); i++ {
+						item := t.merger.Get(i)
+						selectItem(item)
 					}
-					t.vmove(me.S)
+					req(reqList, reqInfo)
+				}
+			case actDeselectAll:
+				if t.multi {
+					for i := 0; i < t.merger.Length(); i++ {
+						item := t.merger.Get(i)
+						delete(t.selected, item.index)
+					}
+					req(reqList, reqInfo)
+				}
+			case actToggle:
+				if t.multi && t.merger.Length() > 0 {
+					toggle()
 					req(reqList)
 				}
-			} else if mx >= t.marginInt[3] && mx < C.MaxX()-t.marginInt[1] &&
-				my >= t.marginInt[0] && my < C.MaxY()-t.marginInt[2] {
-				mx -= t.marginInt[3]
-				my -= t.marginInt[0]
-				mx = util.Constrain(mx-len(t.prompt), 0, len(t.input))
-				if !t.reverse {
-					my = t.maxHeight() - my - 1
-				}
-				min := 2 + len(t.header)
-				if t.inlineInfo {
-					min--
-				}
-				if me.Double {
-					// Double-click
-					if my >= min {
-						if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-							req(reqClose)
-						}
+			case actToggleAll:
+				if t.multi {
+					for i := 0; i < t.merger.Length(); i++ {
+						toggleY(i)
 					}
-				} else if me.Down {
-					if my == 0 && mx >= 0 {
-						// Prompt
-						t.cx = mx
-					} else if my >= min {
-						// List
-						if t.vset(t.offset+my-min) && t.multi && me.Mod {
+					req(reqList, reqInfo)
+				}
+			case actToggleDown:
+				if t.multi && t.merger.Length() > 0 {
+					toggle()
+					t.vmove(-1)
+					req(reqList)
+				}
+			case actToggleUp:
+				if t.multi && t.merger.Length() > 0 {
+					toggle()
+					t.vmove(1)
+					req(reqList)
+				}
+			case actDown:
+				t.vmove(-1)
+				req(reqList)
+			case actUp:
+				t.vmove(1)
+				req(reqList)
+			case actAccept:
+				req(reqClose)
+			case actClearScreen:
+				req(reqRedraw)
+			case actUnixLineDiscard:
+				if t.cx > 0 {
+					t.yanked = copySlice(t.input[:t.cx])
+					t.input = t.input[t.cx:]
+					t.cx = 0
+				}
+			case actUnixWordRubout:
+				if t.cx > 0 {
+					t.rubout("\\s\\S")
+				}
+			case actBackwardKillWord:
+				if t.cx > 0 {
+					t.rubout("[^[:alnum:]][[:alnum:]]")
+				}
+			case actYank:
+				suffix := copySlice(t.input[t.cx:])
+				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
+				t.cx += len(t.yanked)
+			case actPageUp:
+				t.vmove(t.maxItems() - 1)
+				req(reqList)
+			case actPageDown:
+				t.vmove(-(t.maxItems() - 1))
+				req(reqList)
+			case actBackwardWord:
+				t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
+			case actForwardWord:
+				t.cx += findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
+			case actKillWord:
+				ncx := t.cx +
+					findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
+				if ncx > t.cx {
+					t.yanked = copySlice(t.input[t.cx:ncx])
+					t.input = append(t.input[:t.cx], t.input[ncx:]...)
+				}
+			case actKillLine:
+				if t.cx < len(t.input) {
+					t.yanked = copySlice(t.input[t.cx:])
+					t.input = t.input[:t.cx]
+				}
+			case actRune:
+				prefix := copySlice(t.input[:t.cx])
+				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
+				t.cx++
+			case actPreviousHistory:
+				if t.history != nil {
+					t.history.override(string(t.input))
+					t.input = []rune(t.history.previous())
+					t.cx = len(t.input)
+				}
+			case actNextHistory:
+				if t.history != nil {
+					t.history.override(string(t.input))
+					t.input = []rune(t.history.next())
+					t.cx = len(t.input)
+				}
+			case actMouse:
+				me := event.MouseEvent
+				mx, my := me.X, me.Y
+				if me.S != 0 {
+					// Scroll
+					if t.merger.Length() > 0 {
+						if t.multi && me.Mod {
 							toggle()
 						}
+						t.vmove(me.S)
 						req(reqList)
+					}
+				} else if mx >= t.marginInt[3] && mx < C.MaxX()-t.marginInt[1] &&
+					my >= t.marginInt[0] && my < C.MaxY()-t.marginInt[2] {
+					mx -= t.marginInt[3]
+					my -= t.marginInt[0]
+					mx = util.Constrain(mx-len(t.prompt), 0, len(t.input))
+					if !t.reverse {
+						my = t.maxHeight() - my - 1
+					}
+					min := 2 + len(t.header)
+					if t.inlineInfo {
+						min--
+					}
+					if me.Double {
+						// Double-click
+						if my >= min {
+							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
+								return doAction(t.keymap[C.DoubleClick])
+							}
+						}
+					} else if me.Down {
+						if my == 0 && mx >= 0 {
+							// Prompt
+							t.cx = mx
+						} else if my >= min {
+							// List
+							if t.vset(t.offset+my-min) && t.multi && me.Mod {
+								toggle()
+							}
+							req(reqList)
+						}
 					}
 				}
 			}
+			return true
+		}
+		if !doAction(action) {
+			continue
 		}
 		changed := string(previousInput) != string(t.input)
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
