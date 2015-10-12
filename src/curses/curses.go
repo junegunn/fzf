@@ -4,7 +4,7 @@ package curses
 #include <ncurses.h>
 #include <locale.h>
 #cgo !static LDFLAGS: -lncurses
-#cgo static LDFLAGS: -l:libncurses.a -l:libtinfo.a -l:libgpm.a -ldl
+#cgo static LDFLAGS: -l:libncursesw.a -l:libtinfo.a -l:libgpm.a -ldl
 */
 import "C"
 
