@@ -11,6 +11,7 @@ import "C"
 import (
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 	"unicode/utf8"
@@ -514,7 +515,12 @@ func MoveAndClear(y int, x int) {
 }
 
 func Print(text string) {
-	C.addstr(C.CString(text))
+	C.addstr(C.CString(strings.Map(func(r rune) rune {
+		if r < 32 {
+			return -1
+		}
+		return r
+	}, text)))
 }
 
 func CPrint(pair int, bold bool, text string) {
