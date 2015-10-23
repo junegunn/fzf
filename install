@@ -1,10 +1,56 @@
 #!/usr/bin/env bash
 
+set -u
+
 [[ "$@" =~ --pre ]] && version=0.10.8 pre=1 ||
                        version=0.10.8 pre=0
 
+auto_completion=
+key_bindings=
+update_config=1
+
+help() {
+  cat << EOF
+usage: $0 [OPTIONS]
+
+    --help               Show this message
+    --bin                Download fzf binary only
+    --all                Download fzf binary and update configuration files
+                         to enable key bindings and fuzzy completion
+    --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
+    --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
+    --[no-]update-rc     Whether or not to update shell configuration files
+
+EOF
+}
+
+for opt in $@; do
+  case $opt in
+    --help)
+      help
+      exit 0
+      ;;
+    --all)
+      auto_completion=1
+      key_bindings=1
+      update_config=1
+      ;;
+    --key-bindings)    key_bindings=1    ;;
+    --no-key-bindings) key_bindings=0    ;;
+    --completion)      auto_completion=1 ;;
+    --no-completion)   auto_completion=0 ;;
+    --update-rc)       update_config=1   ;;
+    --no-update-rc)    update_config=0   ;;
+    *)
+      echo "unknown option: $opt"
+      help
+      exit 1
+      ;;
+  esac
+done
+
 cd $(dirname $BASH_SOURCE)
-fzf_base=$(pwd)
+fzf_base="$(pwd)"
 
 # If stdin is a tty, we are "interactive".
 [ -t 0 ] && interactive=yes
@@ -16,7 +62,7 @@ ask() {
 
   read -p "$1 ([y]/n) " $read_n -r
   echo
-  [[ ! $REPLY =~ ^[Nn]$ ]]
+  [[ $REPLY =~ ^[Nn]$ ]]
 }
 
 check_binary() {
@@ -173,12 +219,16 @@ fi
 [[ "$*" =~ "--bin" ]] && exit 0
 
 # Auto-completion
-ask "Do you want to add auto-completion support?"
-auto_completion=$?
+if [ -z "$auto_completion" ]; then
+  ask "Do you want to enable fuzzy auto-completion?"
+  auto_completion=$?
+fi
 
 # Key-bindings
-ask "Do you want to add key bindings?"
-key_bindings=$?
+if [ -z "$key_bindings" ]; then
+  ask "Do you want to enable key bindings?"
+  key_bindings=$?
+fi
 
 echo
 for shell in bash zsh; do
@@ -186,12 +236,12 @@ for shell in bash zsh; do
   src=~/.fzf.${shell}
 
   fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
-  if [ $auto_completion -ne 0 ]; then
+  if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 
   fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
-  if [ $key_bindings -ne 0 ]; then
+  if [ $key_bindings -eq 0 ]; then
     fzf_key_bindings="# $fzf_key_bindings"
   fi
 
@@ -237,29 +287,45 @@ EOF
     rm -f ~/.config/fish/functions/fzf.fish && echo "OK" || echo "Failed"
   fi
 
-  if [ $key_bindings -eq 0 ]; then
-    echo -n "Symlink ~/.config/fish/functions/fzf_key_bindings.fish ... "
-    ln -sf $fzf_base/shell/key-bindings.fish \
-           ~/.config/fish/functions/fzf_key_bindings.fish && echo "OK" || echo "Failed"
+  fish_binding=~/.config/fish/functions/fzf_key_bindings.fish
+  if [ $key_bindings -ne 0 ]; then
+    echo -n "Symlink $fish_binding ... "
+    ln -sf "$fzf_base/shell/key-bindings.fish" \
+           "$fish_binding" && echo "OK" || echo "Failed"
+  else
+    echo -n "Removing $fish_binding ... "
+    rm -f "$fish_binding"
+    echo "OK"
   fi
 fi
 
 append_line() {
   set -e
-  echo "Update $2:"
-  echo "  - $1"
-  [ -f "$2" ] || touch "$2"
-  if [ $# -lt 3 ]; then
-    line=$(\grep -nF "$1" "$2" | sed 's/:.*//' | tr '\n' ' ')
+
+  local skip line file pat lno
+  skip="$1"
+  line="$2"
+  file="$3"
+  pat="${4:-}"
+
+  echo "Update $file:"
+  echo "  - $line"
+  [ -f "$file" ] || touch "$file"
+  if [ $# -lt 4 ]; then
+    lno=$(\grep -nF "$line" "$file" | sed 's/:.*//' | tr '\n' ' ')
   else
-    line=$(\grep -nF "$3" "$2" | sed 's/:.*//' | tr '\n' ' ')
+    lno=$(\grep -nF "$pat" "$file" | sed 's/:.*//' | tr '\n' ' ')
   fi
-  if [ -n "$line" ]; then
-    echo "    - Already exists: line #$line"
+  if [ -n "$lno" ]; then
+    echo "    - Already exists: line #$lno"
   else
-    echo >> "$2"
-    echo "$1" >> "$2"
-    echo "    + Added"
+    if [ $skip -eq 1 ]; then
+      echo >> "$file"
+      echo "$line" >> "$file"
+      echo "    + Added"
+    else
+      echo "    ~ Skipped"
+    fi
   fi
   echo
   set +e
@@ -267,12 +333,12 @@ append_line() {
 
 echo
 for shell in bash zsh; do
-  append_line "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" ~/.${shell}rc "~/.fzf.${shell}"
+  append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" ~/.${shell}rc "~/.fzf.${shell}"
 done
 
-if [ $key_bindings -eq 0 -a $has_fish -eq 1 ]; then
+if [ $key_bindings -eq 1 -a $has_fish -eq 1 ]; then
   bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
-  append_line "fzf_key_bindings" "$bind_file"
+  append_line $update_config "fzf_key_bindings" "$bind_file"
 fi
 
 cat << EOF

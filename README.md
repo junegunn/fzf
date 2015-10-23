@@ -68,7 +68,7 @@ Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf
 (recommended):
 
 ```vim
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': 'yes \| ./install' }
+Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ```
 
 #### Upgrading fzf
