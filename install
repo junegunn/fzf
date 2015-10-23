@@ -41,6 +41,7 @@ for opt in $@; do
     --no-completion)   auto_completion=0 ;;
     --update-rc)       update_config=1   ;;
     --no-update-rc)    update_config=0   ;;
+    --bin)             ;;
     *)
       echo "unknown option: $opt"
       help
