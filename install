@@ -53,6 +53,7 @@ cd $(dirname $BASH_SOURCE)
 fzf_base="$(pwd)"
 
 # If stdin is a tty, we are "interactive".
+interactive=
 [ -t 0 ] && interactive=yes
 
 ask() {
