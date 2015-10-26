@@ -103,8 +103,15 @@ download() {
     if [ -x "$fzf_base"/bin/fzf ]; then
       echo "  - Already exists"
       check_binary && return
-    elif [ -x "$fzf_base"/bin/$1 ]; then
+    fi
+    if [ -x "$fzf_base"/bin/$1 ]; then
       symlink $1 && check_binary && return
+    fi
+    if which_fzf="$(which fzf 2> /dev/null)"; then
+      echo "  - Found in \$PATH"
+      echo "  - Creating symlink: $which_fzf -> bin/fzf"
+      (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
+      check_binary && return
     fi
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
