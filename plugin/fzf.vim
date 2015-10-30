@@ -357,6 +357,7 @@ function! s:execute_term(dict, command, temps)
   endfunction
 
   call termopen(a:command, fzf)
+  setf fzf
   startinsert
   return []
 endfunction
