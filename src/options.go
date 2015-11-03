@@ -16,7 +16,8 @@ const usage = `usage: fzf [options]
 
   Search
     -x, --extended        Extended-search mode
-    -e, --extended-exact  Extended-search mode (exact match)
+                          (enabled by default; +x or --no-extended to disable)
+    -e, --exact           Enable Exact-match
     -i                    Case-insensitive match (default: smart-case match)
     +i                    Case-sensitive match
     -n, --nth=N[,..]      Comma-separated list of field index expressions
@@ -58,19 +59,9 @@ const usage = `usage: fzf [options]
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. '-x -m')
+    FZF_DEFAULT_OPTS      Defaults options. (e.g. '--reverse --inline-info')
 
 `
-
-// Mode denotes the current search mode
-type Mode int
-
-// Search modes
-const (
-	ModeFuzzy Mode = iota
-	ModeExtended
-	ModeExtendedExact
-)
 
 // Case denotes case-sensitivity of search
 type Case int
@@ -98,7 +89,8 @@ func defaultMargin() [4]string {
 
 // Options stores the values of command-line options
 type Options struct {
-	Mode        Mode
+	Fuzzy       bool
+	Extended    bool
 	Case        Case
 	Nth         []Range
 	WithNth     []Range
@@ -143,7 +135,8 @@ func defaultTheme() *curses.ColorTheme {
 
 func defaultOptions() *Options {
 	return &Options{
-		Mode:        ModeFuzzy,
+		Fuzzy:       true,
+		Extended:    true,
 		Case:        CaseSmart,
 		Nth:         make([]Range, 0),
 		WithNth:     make([]Range, 0),
@@ -684,11 +677,17 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-h", "--help":
 			help(exitOk)
 		case "-x", "--extended":
-			opts.Mode = ModeExtended
-		case "-e", "--extended-exact":
-			opts.Mode = ModeExtendedExact
-		case "+x", "--no-extended", "+e", "--no-extended-exact":
-			opts.Mode = ModeFuzzy
+			opts.Extended = true
+		case "-e", "--exact":
+			opts.Fuzzy = false
+		case "--extended-exact":
+			// Note that we now don't have --no-extended-exact
+			opts.Fuzzy = false
+			opts.Extended = true
+		case "+x", "--no-extended":
+			opts.Extended = false
+		case "+e", "--no-exact":
+			opts.Fuzzy = true
 		case "-q", "--query":
 			opts.Query = nextString(allArgs, &i, "query string required")
 		case "-f", "--filter":
@@ -873,7 +872,7 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	// If we're not using extended search mode, --nth option becomes irrelevant
 	// if it contains the whole range
-	if opts.Mode == ModeFuzzy || len(opts.Nth) == 1 {
+	if !opts.Extended || len(opts.Nth) == 1 {
 		for _, r := range opts.Nth {
 			if r.begin == rangeEllipsis && r.end == rangeEllipsis {
 				opts.Nth = make([]Range, 0)

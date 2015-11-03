@@ -22,7 +22,7 @@ _fzf_opts_completion() {
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="
     -x --extended
-    -e --extended-exact
+    -e --exact
     -i +i
     -n --nth
     -d --delimiter

@@ -110,7 +110,7 @@ vim $(fzf)
 
 #### Extended-search mode
 
-With `-x` or `--extended` option, fzf will start in "extended-search mode".
+Since 0.10.9, fzf starts in "extended-search mode" by default.
 
 In this mode, you can specify multiple patterns delimited by spaces,
 such as: `^music .mp3$ sbtrkt !rmx`
@@ -125,15 +125,15 @@ such as: `^music .mp3$ sbtrkt !rmx`
 | `!'fire` | Items that do not include `fire` | inverse-exact-match  |
 
 If you don't prefer fuzzy matching and do not wish to "quote" every word,
-start fzf with `-e` or `--extended-exact` option. Note that in
-`--extended-exact` mode, `'`-prefix "unquotes" the term.
+start fzf with `-e` or `--exact` option. Note that when  `--exact` is set,
+`'`-prefix "unquotes" the term.
 
 #### Environment variables
 
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
 - `FZF_DEFAULT_OPTS`
-    - Default options. e.g. `export FZF_DEFAULT_OPTS="--extended --cycle"`
+    - Default options. e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
 
 Examples
 --------

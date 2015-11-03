@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Oct 2015" "fzf 0.10.8" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2015" "fzf 0.10.9" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -36,10 +36,11 @@ fzf is a general-purpose command-line fuzzy finder.
 .SS Search mode
 .TP
 .B "-x, --extended"
-Extended-search mode
+Extended-search mode. Since 0.10.9, this is enabled by default. You can disable
+it with \fB+x\fR or \fB--no-extended\fR.
 .TP
-.B "-e, --extended-exact"
-Extended-search mode (exact match)
+.B "-e, --exact"
+Enable exact-match
 .TP
 .B "-i"
 Case-insensitive match (default: smart-case match)
@@ -370,9 +371,9 @@ of field index expressions.
 
 .SH EXTENDED SEARCH MODE
 
-With \fB-x\fR or \fB--extended\fR option, fzf will start in "extended-search
-mode". In this mode, you can specify multiple patterns delimited by spaces,
-such as: \fB'wild ^music .mp3$ sbtrkt !rmx\fR
+Unless specified otherwise, fzf will start in "extended-search mode". In this
+mode, you can specify multiple patterns delimited by spaces, such as: \fB'wild
+^music .mp3$ sbtrkt !rmx\fR
 
 .SS Exact-match (quoted)
 A term that is prefixed by a single-quote character (\fB'\fR) is interpreted as
@@ -388,11 +389,10 @@ with the given string. An anchored-match term is also an exact-match term.
 If a term is prefixed by \fB!\fR, fzf will exclude the items that satisfy the
 term from the result.
 
-.SS Extended-exact mode
+.SS Exact-match by default
 If you don't prefer fuzzy matching and do not wish to "quote" (prefixing with
-\fB'\fR) every word, start fzf with \fB-e\fR or \fB--extended-exact\fR option
-(instead of \fB-x\fR or \fB--extended\fR). Note that in \fB--extended-exact\fR
-mode, \fB'\fR-prefix "unquotes" the term.
+\fB'\fR) every word, start fzf with \fB-e\fR or \fB--exact\fR option. Note that
+when \fB--exact\fR is set, \fB'\fR-prefix "unquotes" the term.
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)

@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.10.9
+------
+
+- Extended-search mode is now enabled by default
+    - `--extended-exact` is deprecated and instead we have `--exact` for
+      orthogonally controlling "exactness" of search
+- Fixed not to display non-printable characters
+- Added `double-click` for `--bind` option
+
 0.10.8
 ------
 

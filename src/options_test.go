@@ -100,7 +100,7 @@ func TestIrrelevantNth(t *testing.T) {
 			t.Errorf("nth should be empty: %s", opts.Nth)
 		}
 	}
-	for _, words := range [][]string{[]string{"--nth", "..,3"}, []string{"--nth", "3,1.."}, []string{"--nth", "..-1,1"}} {
+	for _, words := range [][]string{[]string{"--nth", "..,3", "+x"}, []string{"--nth", "3,1..", "+x"}, []string{"--nth", "..-1,1", "+x"}} {
 		{
 			opts := defaultOptions()
 			parseOptions(opts, words)

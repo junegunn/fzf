@@ -38,7 +38,8 @@ type term struct {
 
 // Pattern represents search pattern
 type Pattern struct {
-	mode          Mode
+	fuzzy         bool
+	extended      bool
 	caseSensitive bool
 	forward       bool
 	text          []rune
@@ -63,7 +64,7 @@ func init() {
 
 func clearPatternCache() {
 	// We can uniquely identify the pattern for a given string since
-	// mode and caseMode do not change while the program is running
+	// search mode and caseMode do not change while the program is running
 	_patternCache = make(map[string]*Pattern)
 }
 
@@ -72,14 +73,13 @@ func clearChunkCache() {
 }
 
 // BuildPattern builds Pattern object from the given arguments
-func BuildPattern(mode Mode, caseMode Case, forward bool,
+func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 	nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
-	switch mode {
-	case ModeExtended, ModeExtendedExact:
+	if extended {
 		asString = strings.Trim(string(runes), " ")
-	default:
+	} else {
 		asString = string(runes)
 	}
 
@@ -91,15 +91,14 @@ func BuildPattern(mode Mode, caseMode Case, forward bool,
 	caseSensitive, hasInvTerm := true, false
 	terms := []term{}
 
-	switch mode {
-	case ModeExtended, ModeExtendedExact:
-		terms = parseTerms(mode, caseMode, asString)
+	if extended {
+		terms = parseTerms(fuzzy, caseMode, asString)
 		for _, term := range terms {
 			if term.inv {
 				hasInvTerm = true
 			}
 		}
-	default:
+	} else {
 		lowerString := strings.ToLower(asString)
 		caseSensitive = caseMode == CaseRespect ||
 			caseMode == CaseSmart && lowerString != asString
@@ -109,7 +108,8 @@ func BuildPattern(mode Mode, caseMode Case, forward bool,
 	}
 
 	ptr := &Pattern{
-		mode:          mode,
+		fuzzy:         fuzzy,
+		extended:      extended,
 		caseSensitive: caseSensitive,
 		forward:       forward,
 		text:          []rune(asString),
@@ -129,7 +129,7 @@ func BuildPattern(mode Mode, caseMode Case, forward bool,
 	return ptr
 }
 
-func parseTerms(mode Mode, caseMode Case, str string) []term {
+func parseTerms(fuzzy bool, caseMode Case, str string) []term {
 	tokens := _splitRegex.Split(str, -1)
 	terms := []term{}
 	for _, token := range tokens {
@@ -141,7 +141,7 @@ func parseTerms(mode Mode, caseMode Case, str string) []term {
 			text = lowerText
 		}
 		origText := []rune(text)
-		if mode == ModeExtendedExact {
+		if !fuzzy {
 			typ = termExact
 		}
 
@@ -151,10 +151,11 @@ func parseTerms(mode Mode, caseMode Case, str string) []term {
 		}
 
 		if strings.HasPrefix(text, "'") {
-			if mode == ModeExtended {
+			// Flip exactness
+			if fuzzy {
 				typ = termExact
 				text = text[1:]
-			} else if mode == ModeExtendedExact {
+			} else {
 				typ = termFuzzy
 				text = text[1:]
 			}
@@ -185,7 +186,7 @@ func parseTerms(mode Mode, caseMode Case, str string) []term {
 
 // IsEmpty returns true if the pattern is effectively empty
 func (p *Pattern) IsEmpty() bool {
-	if p.mode == ModeFuzzy {
+	if !p.extended {
 		return len(p.text) == 0
 	}
 	return len(p.terms) == 0
@@ -198,7 +199,7 @@ func (p *Pattern) AsString() string {
 
 // CacheKey is used to build string to be used as the key of result cache
 func (p *Pattern) CacheKey() string {
-	if p.mode == ModeFuzzy {
+	if !p.extended {
 		return p.AsString()
 	}
 	cacheableTerms := []string{}
@@ -250,9 +251,9 @@ Loop:
 
 func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 	matches := []*Item{}
-	if p.mode == ModeFuzzy {
+	if !p.extended {
 		for _, item := range *chunk {
-			if sidx, eidx, tlen := p.fuzzyMatch(item); sidx >= 0 {
+			if sidx, eidx, tlen := p.basicMatch(item); sidx >= 0 {
 				matches = append(matches,
 					dupItem(item, []Offset{Offset{int32(sidx), int32(eidx), int32(tlen)}}))
 			}
@@ -269,8 +270,8 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 
 // MatchItem returns true if the Item is a match
 func (p *Pattern) MatchItem(item *Item) bool {
-	if p.mode == ModeFuzzy {
-		sidx, _, _ := p.fuzzyMatch(item)
+	if !p.extended {
+		sidx, _, _ := p.basicMatch(item)
 		return sidx >= 0
 	}
 	offsets := p.extendedMatch(item)
@@ -289,9 +290,12 @@ func dupItem(item *Item, offsets []Offset) *Item {
 		rank:        Rank{0, 0, item.index}}
 }
 
-func (p *Pattern) fuzzyMatch(item *Item) (int, int, int) {
+func (p *Pattern) basicMatch(item *Item) (int, int, int) {
 	input := p.prepareInput(item)
-	return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
+	if p.fuzzy {
+		return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
+	}
+	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.forward, p.text)
 }
 
 func (p *Pattern) extendedMatch(item *Item) []Offset {
