@@ -9,6 +9,7 @@ CHANGELOG
       orthogonally controlling "exactness" of search
 - Fixed not to display non-printable characters
 - Added `double-click` for `--bind` option
+- More robust handling of SIGWINCH
 
 0.10.8
 ------

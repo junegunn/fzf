@@ -713,21 +713,6 @@ func executeCommand(template string, current string) {
 func (t *Terminal) Loop() {
 	<-t.startChan
 	{ // Late initialization
-		t.mutex.Lock()
-		t.initFunc()
-		t.calculateMargins()
-		t.printPrompt()
-		t.placeCursor()
-		C.Refresh()
-		t.printInfo()
-		t.printHeader()
-		t.mutex.Unlock()
-		go func() {
-			timer := time.NewTimer(initialDelay)
-			<-timer.C
-			t.reqBox.Set(reqRefresh, nil)
-		}()
-
 		intChan := make(chan os.Signal, 1)
 		signal.Notify(intChan, os.Interrupt, os.Kill)
 		go func() {
@@ -742,6 +727,21 @@ func (t *Terminal) Loop() {
 				<-resizeChan
 				t.reqBox.Set(reqRedraw, nil)
 			}
+		}()
+
+		t.mutex.Lock()
+		t.initFunc()
+		t.calculateMargins()
+		t.printPrompt()
+		t.placeCursor()
+		C.Refresh()
+		t.printInfo()
+		t.printHeader()
+		t.mutex.Unlock()
+		go func() {
+			timer := time.NewTimer(initialDelay)
+			<-timer.C
+			t.reqBox.Set(reqRefresh, nil)
 		}()
 
 		// Keep the spinner spinning
