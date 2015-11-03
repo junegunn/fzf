@@ -108,21 +108,20 @@ vim $(fzf)
 - Mouse: scroll, click, double-click; shift-click and shift-scroll on
   multi-select mode
 
-#### Extended-search mode
+#### Search syntax
 
-Since 0.10.9, fzf starts in "extended-search mode" by default.
+Unless otherwise specified, fzf starts in "extended-search mode" where you can
+type in multiple search terms delimited by spaces. e.g. `^music .mp3$ sbtrkt
+!rmx`
 
-In this mode, you can specify multiple patterns delimited by spaces,
-such as: `^music .mp3$ sbtrkt !rmx`
-
-| Token    | Description                      | Match type           |
-| -------- | -------------------------------- | -------------------- |
-| `^music` | Items that start with `music`    | prefix-exact-match   |
-| `.mp3$`  | Items that end with `.mp3`       | suffix-exact-match   |
-| `sbtrkt` | Items that match `sbtrkt`        | fuzzy-match          |
-| `!rmx`   | Items that do not match `rmx`    | inverse-fuzzy-match  |
-| `'wild`  | Items that include `wild`        | exact-match (quoted) |
-| `!'fire` | Items that do not include `fire` | inverse-exact-match  |
+| Token    | Match type           | Description                      |
+| -------- | -------------------- | -------------------------------- |
+| `sbtrkt` | fuzzy-match          | Items that match `sbtrkt`        |
+| `^music` | prefix-exact-match   | Items that start with `music`    |
+| `.mp3$`  | suffix-exact-match   | Items that end with `.mp3`       |
+| `'wild`  | exact-match (quoted) | Items that include `wild`        |
+| `!rmx`   | inverse-fuzzy-match  | Items that do not match `rmx`    |
+| `!'fire` | inverse-exact-match  | Items that do not include `fire` |
 
 If you don't prefer fuzzy matching and do not wish to "quote" every word,
 start fzf with `-e` or `--exact` option. Note that when  `--exact` is set,
