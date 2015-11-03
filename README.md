@@ -132,8 +132,10 @@ start fzf with `-e` or `--exact` option. Note that when  `--exact` is set,
 
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
+    - e.g. `export FZF_DEFAULT_COMMAND='ag -g ""'`
 - `FZF_DEFAULT_OPTS`
-    - Default options. e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
+    - Default options
+    - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
 
 Examples
 --------
@@ -335,10 +337,10 @@ filtering:
 
 ```sh
 # Feed the output of ag into fzf
-ag -l -g "" | fzf
+ag -g "" | fzf
 
 # Setting ag as the default source for fzf
-export FZF_DEFAULT_COMMAND='ag -l -g ""'
+export FZF_DEFAULT_COMMAND='ag -g ""'
 
 # Now fzf (w/o pipe) will use ag instead of find
 fzf
