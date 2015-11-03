@@ -50,10 +50,10 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 
 ```sh
-brew reinstall --HEAD fzf
+brew install fzf
 
 # Install shell extensions
-/usr/local/Cellar/fzf/HEAD/install
+/usr/local/opt/fzf/install
 ```
 
 #### Install as Vim plugin
@@ -78,7 +78,7 @@ while. Please follow the instruction below depending on the installation
 method.
 
 - git: `cd ~/.fzf && git pull && ./install`
-- brew: `brew reinstall --HEAD fzf`
+- brew: `brew update; brew reinstall fzf`
 - vim-plug: `:PlugUpdate fzf`
 
 Usage
