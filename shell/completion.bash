@@ -242,7 +242,7 @@ d_cmds="cd pushd rmdir"
 f_cmds="
   awk cat diff diff3
   emacs ex file ftp g++ gcc gvim head hg java
-  javac ld less more mvim patch perl python ruby
+  javac ld less more mvim nvim patch perl python ruby
   sed sftp sort source tail tee uniq vi view vim wc"
 a_cmds="
   basename bunzip2 bzip2 chmod chown curl cp dirname du
