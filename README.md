@@ -56,6 +56,19 @@ brew install fzf
 /usr/local/opt/fzf/install
 ```
 
+#### Using Cygwin setup-\*.exe
+
+On Cygwin, you can use the [Cygwin installer](https://cygwin.com/install.html)
+to install fzf.  fzf is split into multiple packages:
+
+-   "fzf" under Utils: the core fzf executables and documentation.
+-   "fzf-bash" and "fzf-bash-completion" under Shells: the Bash key bindings
+    and completion script respectively.
+-   "fzf-zsh" and "fzf-zsh-completion" under Shells: the Z shell key bindings
+    and completion script respectively.
+-   "fzf-fish" under Shells: the fish key bindings.
+-   "fzf-vim" under Editors: the Vim plugin.
+
 #### Install as Vim plugin
 
 Once you have cloned the repository, add the following line to your .vimrc.
