@@ -1,7 +1,7 @@
 # Key bindings
 # ------------
 __fzf_select__() {
-  local cmd="${FZF_CTRL_T_COMMAND:-"command \\find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+  local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 1d | cut -b3-"}"
@@ -29,9 +29,10 @@ __fzf_select_tmux__() {
 }
 
 __fzf_cd__() {
-  local dir
-  dir=$(command \find -L ${1:-.} \( -path '*/\.*' -o -fstype 'dev' -o -fstype 'proc' \) -prune \
-    -o -type d -print 2> /dev/null | sed 1d | cut -b3- | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
+  local cmd dir
+  cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    -o -type d -print 2> /dev/null | sed 1d | cut -b3-"}"
+  dir=$(eval "$cmd" | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
 __fzf_history__() (

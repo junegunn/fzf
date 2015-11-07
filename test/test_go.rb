@@ -981,6 +981,22 @@ module TestShell
     tmux.until { |lines| lines[-1].end_with?(expected) }
   end
 
+  def test_alt_c_command
+    set_var 'FZF_ALT_C_COMMAND', 'echo /tmp'
+
+    tmux.prepare
+    tmux.send_keys 'cd /', :Enter
+
+    tmux.prepare
+    tmux.send_keys :Escape, :c, pane: 0
+    lines = tmux.until(1) { |lines| lines.item_count == 1 }
+    tmux.send_keys :Enter, pane: 1
+
+    tmux.prepare
+    tmux.send_keys :pwd, :Enter
+    tmux.until { |lines| lines[-1].end_with? '/tmp' }
+  end
+
   def test_ctrl_r
     tmux.prepare
     tmux.send_keys 'echo 1st', :Enter; tmux.prepare
