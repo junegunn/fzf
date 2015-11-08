@@ -342,7 +342,8 @@ append_line() {
 
 echo
 for shell in bash zsh; do
-  append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" ~/.${shell}rc "~/.fzf.${shell}"
+  [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
+  append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" "$dest" "~/.fzf.${shell}"
 done
 
 if [ $key_bindings -eq 1 -a $has_fish -eq 1 ]; then
@@ -353,7 +354,7 @@ fi
 cat << EOF
 Finished. Restart your shell or reload config file.
    source ~/.bashrc  # bash
-   source ~/.zshrc   # zsh
+   source ${ZDOTDIR:-~}/.zshrc   # zsh
 EOF
 [ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
 
