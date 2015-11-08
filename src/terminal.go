@@ -132,6 +132,7 @@ const (
 	actPreviousHistory
 	actNextHistory
 	actExecute
+	actExecuteMulti
 )
 
 func defaultKeymap() map[int]actionType {
@@ -305,16 +306,20 @@ func (t *Terminal) output() bool {
 			found = true
 		}
 	} else {
-		sels := make([]selectedItem, 0, len(t.selected))
-		for _, sel := range t.selected {
-			sels = append(sels, sel)
-		}
-		sort.Sort(byTimeOrder(sels))
-		for _, sel := range sels {
+		for _, sel := range t.sortSelected() {
 			fmt.Println(*sel.text)
 		}
 	}
 	return found
+}
+
+func (t *Terminal) sortSelected() []selectedItem {
+	sels := make([]selectedItem, 0, len(t.selected))
+	for _, sel := range t.selected {
+		sels = append(sels, sel)
+	}
+	sort.Sort(byTimeOrder(sels))
+	return sels
 }
 
 func runeWidth(r rune, prefixWidth int) int {
@@ -698,8 +703,12 @@ func keyMatch(key int, event C.Event) bool {
 	return event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ
 }
 
-func executeCommand(template string, current string) {
-	command := strings.Replace(template, "{}", fmt.Sprintf("%q", current), -1)
+func quoteEntry(entry string) string {
+	return fmt.Sprintf("%q", entry)
+}
+
+func executeCommand(template string, replacement string) {
+	command := strings.Replace(template, "{}", replacement, -1)
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -858,7 +867,17 @@ func (t *Terminal) Loop() {
 			case actExecute:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
 					item := t.merger.Get(t.cy)
-					executeCommand(t.execmap[mapkey], item.AsString(t.ansi))
+					executeCommand(t.execmap[mapkey], quoteEntry(item.AsString(t.ansi)))
+				}
+			case actExecuteMulti:
+				if len(t.selected) > 0 {
+					sels := make([]string, len(t.selected))
+					for i, sel := range t.sortSelected() {
+						sels[i] = quoteEntry(*sel.text)
+					}
+					executeCommand(t.execmap[mapkey], strings.Join(sels, " "))
+				} else {
+					return doAction(actExecute, mapkey)
 				}
 			case actInvalid:
 				t.mutex.Unlock()

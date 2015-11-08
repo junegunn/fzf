@@ -223,6 +223,7 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
     \fBend-of-line\fR           \fIctrl-e  end\fR
     \fBexecute(...)\fR          (see below for the details)
+    \fBexecute-multi(...)\fR    (see below for the details)
     \fBforward-char\fR          \fIctrl-f  right\fR
     \fBforward-word\fR          \fIalt-f   shift-right\fR
     \fBignore\fR
@@ -276,6 +277,12 @@ This is the special form that frees you from parse errors as it does not expect
 the closing character. The catch is that it should be the last one in the
 comma-separated list.
 .RE
+
+\fBexecute-multi(...)\fR is an alternative action that executes the command
+with the selected entries when multi-select is enabled (\fB--multi\fR). With
+this action, \fB{}\fR is replaced with the double-quoted strings of the
+selected entries separated by spaces.
+
 .RE
 .TP
 .BI "--history=" "HISTORY_FILE"

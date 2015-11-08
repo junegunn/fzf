@@ -466,10 +466,13 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 		// Backreferences are not supported.
 		// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 		executeRegexp = regexp.MustCompile(
-			"(?s):execute:.*|:execute(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
+			"(?s):execute(-multi)?:.*|:execute(-multi)?(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
 	}
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
-		return ":execute(" + strings.Repeat(" ", len(src)-10) + ")"
+		if strings.HasPrefix(src, ":execute-multi") {
+			return ":execute-multi(" + strings.Repeat(" ", len(src)-len(":execute-multi()")) + ")"
+		}
+		return ":execute(" + strings.Repeat(" ", len(src)-len(":execute()")) + ")"
 	})
 	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
 	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
@@ -565,11 +568,18 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			toggleSort = true
 		default:
 			if isExecuteAction(actLower) {
-				keymap[key] = actExecute
-				if act[7] == ':' {
-					execmap[key] = act[8:]
+				var offset int
+				if strings.HasPrefix(actLower, "execute-multi") {
+					keymap[key] = actExecuteMulti
+					offset = len("execute-multi")
 				} else {
-					execmap[key] = act[8 : len(act)-1]
+					keymap[key] = actExecute
+					offset = len("execute")
+				}
+				if act[offset] == ':' {
+					execmap[key] = act[offset+1:]
+				} else {
+					execmap[key] = act[offset+1 : len(act)-1]
 				}
 			} else {
 				errorExit("unknown action: " + act)
@@ -580,10 +590,16 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 }
 
 func isExecuteAction(str string) bool {
-	if !strings.HasPrefix(str, "execute") || len(str) < 9 {
+	if !strings.HasPrefix(str, "execute") || len(str) < len("execute()") {
 		return false
 	}
-	b := str[7]
+	b := str[len("execute")]
+	if strings.HasPrefix(str, "execute-multi") {
+		if len(str) < len("execute-multi()") {
+			return false
+		}
+		b = str[len("execute-multi")]
+	}
 	e := str[len(str)-1]
 	if b == ':' || b == '(' && e == ')' || b == '[' && e == ']' ||
 		b == e && strings.ContainsAny(string(b), "~!@#$%^&*;/|") {

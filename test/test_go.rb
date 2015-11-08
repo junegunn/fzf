@@ -713,6 +713,24 @@ class TestGoFZF < TestBase
     File.unlink output rescue nil
   end
 
+  def test_execute_multi
+    output = '/tmp/fzf-test-execute-multi'
+    opts = %[--multi --bind \\"alt-a:execute-multi(echo '[{}], @{}@' >> #{output})\\"]
+    tmux.send_keys "seq 100 | #{fzf opts}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys :Escape, :a
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.send_keys :Escape, :a
+    tmux.send_keys :Tab, :Tab
+    tmux.send_keys :Escape, :a
+    tmux.send_keys :Enter
+    readonce
+    assert_equal ['["1"], @"1"@', '["1" "2" "3"], @"1" "2" "3"@', '["1" "2" "4"], @"1" "2" "4"@'],
+      File.readlines(output).map(&:chomp)
+  ensure
+    File.unlink output rescue nil
+  end
+
   def test_cycle
     tmux.send_keys "seq 8 | #{fzf :cycle}", :Enter
     tmux.until { |lines| lines[-2].include? '8/8' }
