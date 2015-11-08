@@ -127,6 +127,14 @@ If you don't prefer fuzzy matching and do not wish to "quote" every word,
 start fzf with `-e` or `--exact` option. Note that when  `--exact` is set,
 `'`-prefix "unquotes" the term.
 
+A single bar character term acts as an OR operator. For example, the following
+query matches entries that start with `core` and end with either `go`, `rb`,
+or `py`.
+
+```
+^core go$ | rb$ | py$
+```
+
 #### Environment variables
 
 - `FZF_DEFAULT_COMMAND`

@@ -9,24 +9,34 @@ import (
 
 func TestParseTermsExtended(t *testing.T) {
 	terms := parseTerms(true, CaseSmart,
-		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$ ^iii$")
+		"| aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$ | ^iii$ ^xxx | 'yyy | | zzz$ | !ZZZ |")
 	if len(terms) != 9 ||
-		terms[0].typ != termFuzzy || terms[0].inv ||
-		terms[1].typ != termExact || terms[1].inv ||
-		terms[2].typ != termPrefix || terms[2].inv ||
-		terms[3].typ != termSuffix || terms[3].inv ||
-		terms[4].typ != termFuzzy || !terms[4].inv ||
-		terms[5].typ != termExact || !terms[5].inv ||
-		terms[6].typ != termPrefix || !terms[6].inv ||
-		terms[7].typ != termSuffix || !terms[7].inv ||
-		terms[8].typ != termEqual || terms[8].inv {
+		terms[0][0].typ != termFuzzy || terms[0][0].inv ||
+		terms[1][0].typ != termExact || terms[1][0].inv ||
+		terms[2][0].typ != termPrefix || terms[2][0].inv ||
+		terms[3][0].typ != termSuffix || terms[3][0].inv ||
+		terms[4][0].typ != termFuzzy || !terms[4][0].inv ||
+		terms[5][0].typ != termExact || !terms[5][0].inv ||
+		terms[6][0].typ != termPrefix || !terms[6][0].inv ||
+		terms[7][0].typ != termSuffix || !terms[7][0].inv ||
+		terms[7][1].typ != termEqual || terms[7][1].inv ||
+		terms[8][0].typ != termPrefix || terms[8][0].inv ||
+		terms[8][1].typ != termExact || terms[8][1].inv ||
+		terms[8][2].typ != termSuffix || terms[8][2].inv ||
+		terms[8][3].typ != termFuzzy || !terms[8][3].inv {
 		t.Errorf("%s", terms)
 	}
-	for idx, term := range terms {
+	for idx, termSet := range terms[:8] {
+		term := termSet[0]
 		if len(term.text) != 3 {
 			t.Errorf("%s", term)
 		}
 		if idx > 0 && len(term.origText) != 4+idx/5 {
+			t.Errorf("%s", term)
+		}
+	}
+	for _, term := range terms[8] {
+		if len(term.origText) != 4 {
 			t.Errorf("%s", term)
 		}
 	}
@@ -36,14 +46,14 @@ func TestParseTermsExtendedExact(t *testing.T) {
 	terms := parseTerms(false, CaseSmart,
 		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$")
 	if len(terms) != 8 ||
-		terms[0].typ != termExact || terms[0].inv || len(terms[0].text) != 3 ||
-		terms[1].typ != termFuzzy || terms[1].inv || len(terms[1].text) != 3 ||
-		terms[2].typ != termPrefix || terms[2].inv || len(terms[2].text) != 3 ||
-		terms[3].typ != termSuffix || terms[3].inv || len(terms[3].text) != 3 ||
-		terms[4].typ != termExact || !terms[4].inv || len(terms[4].text) != 3 ||
-		terms[5].typ != termFuzzy || !terms[5].inv || len(terms[5].text) != 3 ||
-		terms[6].typ != termPrefix || !terms[6].inv || len(terms[6].text) != 3 ||
-		terms[7].typ != termSuffix || !terms[7].inv || len(terms[7].text) != 3 {
+		terms[0][0].typ != termExact || terms[0][0].inv || len(terms[0][0].text) != 3 ||
+		terms[1][0].typ != termFuzzy || terms[1][0].inv || len(terms[1][0].text) != 3 ||
+		terms[2][0].typ != termPrefix || terms[2][0].inv || len(terms[2][0].text) != 3 ||
+		terms[3][0].typ != termSuffix || terms[3][0].inv || len(terms[3][0].text) != 3 ||
+		terms[4][0].typ != termExact || !terms[4][0].inv || len(terms[4][0].text) != 3 ||
+		terms[5][0].typ != termFuzzy || !terms[5][0].inv || len(terms[5][0].text) != 3 ||
+		terms[6][0].typ != termPrefix || !terms[6][0].inv || len(terms[6][0].text) != 3 ||
+		terms[7][0].typ != termSuffix || !terms[7][0].inv || len(terms[7][0].text) != 3 {
 		t.Errorf("%s", terms)
 	}
 }
@@ -61,9 +71,9 @@ func TestExact(t *testing.T) {
 	pattern := BuildPattern(true, true, CaseSmart, true,
 		[]Range{}, Delimiter{}, []rune("'abc"))
 	sidx, eidx := algo.ExactMatchNaive(
-		pattern.caseSensitive, pattern.forward, []rune("aabbcc abc"), pattern.terms[0].text)
+		pattern.caseSensitive, pattern.forward, []rune("aabbcc abc"), pattern.termSets[0][0].text)
 	if sidx != 7 || eidx != 10 {
-		t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
+		t.Errorf("%s / %d / %d", pattern.termSets, sidx, eidx)
 	}
 }
 
@@ -74,9 +84,9 @@ func TestEqual(t *testing.T) {
 
 	match := func(str string, sidxExpected int, eidxExpected int) {
 		sidx, eidx := algo.EqualMatch(
-			pattern.caseSensitive, pattern.forward, []rune(str), pattern.terms[0].text)
+			pattern.caseSensitive, pattern.forward, []rune(str), pattern.termSets[0][0].text)
 		if sidx != sidxExpected || eidx != eidxExpected {
-			t.Errorf("%s / %d / %d", pattern.terms, sidx, eidx)
+			t.Errorf("%s / %d / %d", pattern.termSets, sidx, eidx)
 		}
 	}
 	match("ABC", -1, -1)
@@ -129,4 +139,26 @@ func TestOrigTextAndTransformed(t *testing.T) {
 			t.Error("Invalid match result", matches)
 		}
 	}
+}
+
+func TestCacheKey(t *testing.T) {
+	test := func(extended bool, patStr string, expected string, cacheable bool) {
+		pat := BuildPattern(true, extended, CaseSmart, true, []Range{}, Delimiter{}, []rune(patStr))
+		if pat.CacheKey() != expected {
+			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
+		}
+		if pat.cacheable != cacheable {
+			t.Errorf("Expected: %s, actual: %s (%s)", cacheable, pat.cacheable, patStr)
+		}
+		clearPatternCache()
+	}
+	test(false, "foo !bar", "foo !bar", true)
+	test(false, "foo | bar !baz", "foo | bar !baz", true)
+	test(true, "foo  bar  baz", "foo bar baz", true)
+	test(true, "foo !bar", "foo", false)
+	test(true, "foo !bar   baz", "foo baz", false)
+	test(true, "foo | bar baz", "baz", false)
+	test(true, "foo | bar | baz", "", false)
+	test(true, "foo | bar !baz", "", false)
+	test(true, "| | | foo", "foo", true)
 }

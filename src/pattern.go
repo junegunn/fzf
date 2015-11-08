@@ -36,6 +36,8 @@ type term struct {
 	origText      []rune
 }
 
+type termSet []term
+
 // Pattern represents search pattern
 type Pattern struct {
 	fuzzy         bool
@@ -43,8 +45,8 @@ type Pattern struct {
 	caseSensitive bool
 	forward       bool
 	text          []rune
-	terms         []term
-	hasInvTerm    bool
+	termSets      []termSet
+	cacheable     bool
 	delimiter     Delimiter
 	nth           []Range
 	procFun       map[termType]func(bool, bool, []rune, []rune) (int, int)
@@ -88,14 +90,20 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 		return cached
 	}
 
-	caseSensitive, hasInvTerm := true, false
-	terms := []term{}
+	caseSensitive, cacheable := true, true
+	termSets := []termSet{}
 
 	if extended {
-		terms = parseTerms(fuzzy, caseMode, asString)
-		for _, term := range terms {
-			if term.inv {
-				hasInvTerm = true
+		termSets = parseTerms(fuzzy, caseMode, asString)
+	Loop:
+		for _, termSet := range termSets {
+			for idx, term := range termSet {
+				// If the query contains inverse search terms or OR operators,
+				// we cannot cache the search scope
+				if idx > 0 || term.inv {
+					cacheable = false
+					break Loop
+				}
 			}
 		}
 	} else {
@@ -113,8 +121,8 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 		caseSensitive: caseSensitive,
 		forward:       forward,
 		text:          []rune(asString),
-		terms:         terms,
-		hasInvTerm:    hasInvTerm,
+		termSets:      termSets,
+		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
 		procFun:       make(map[termType]func(bool, bool, []rune, []rune) (int, int))}
@@ -129,9 +137,11 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 	return ptr
 }
 
-func parseTerms(fuzzy bool, caseMode Case, str string) []term {
+func parseTerms(fuzzy bool, caseMode Case, str string) []termSet {
 	tokens := _splitRegex.Split(str, -1)
-	terms := []term{}
+	sets := []termSet{}
+	set := termSet{}
+	switchSet := false
 	for _, token := range tokens {
 		typ, inv, text := termFuzzy, false, token
 		lowerText := strings.ToLower(text)
@@ -143,6 +153,11 @@ func parseTerms(fuzzy bool, caseMode Case, str string) []term {
 		origText := []rune(text)
 		if !fuzzy {
 			typ = termExact
+		}
+
+		if text == "|" {
+			switchSet = false
+			continue
 		}
 
 		if strings.HasPrefix(text, "!") {
@@ -173,15 +188,23 @@ func parseTerms(fuzzy bool, caseMode Case, str string) []term {
 		}
 
 		if len(text) > 0 {
-			terms = append(terms, term{
+			if switchSet {
+				sets = append(sets, set)
+				set = termSet{}
+			}
+			set = append(set, term{
 				typ:           typ,
 				inv:           inv,
 				text:          []rune(text),
 				caseSensitive: caseSensitive,
 				origText:      origText})
+			switchSet = true
 		}
 	}
-	return terms
+	if len(set) > 0 {
+		sets = append(sets, set)
+	}
+	return sets
 }
 
 // IsEmpty returns true if the pattern is effectively empty
@@ -189,7 +212,7 @@ func (p *Pattern) IsEmpty() bool {
 	if !p.extended {
 		return len(p.text) == 0
 	}
-	return len(p.terms) == 0
+	return len(p.termSets) == 0
 }
 
 // AsString returns the search query in string type
@@ -203,11 +226,10 @@ func (p *Pattern) CacheKey() string {
 		return p.AsString()
 	}
 	cacheableTerms := []string{}
-	for _, term := range p.terms {
-		if term.inv {
-			continue
+	for _, termSet := range p.termSets {
+		if len(termSet) == 1 && !termSet[0].inv {
+			cacheableTerms = append(cacheableTerms, string(termSet[0].origText))
 		}
-		cacheableTerms = append(cacheableTerms, string(term.origText))
 	}
 	return strings.Join(cacheableTerms, " ")
 }
@@ -218,7 +240,7 @@ func (p *Pattern) Match(chunk *Chunk) []*Item {
 
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
-	if !p.hasInvTerm { // Because we're excluding Inv-term from cache key
+	if p.cacheable {
 		if cached, found := _cache.Find(chunk, cacheKey); found {
 			return cached
 		}
@@ -243,7 +265,7 @@ Loop:
 
 	matches := p.matchChunk(space)
 
-	if !p.hasInvTerm {
+	if p.cacheable {
 		_cache.Add(chunk, cacheKey, matches)
 	}
 	return matches
@@ -260,7 +282,7 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 		}
 	} else {
 		for _, item := range *chunk {
-			if offsets := p.extendedMatch(item); len(offsets) == len(p.terms) {
+			if offsets := p.extendedMatch(item); len(offsets) == len(p.termSets) {
 				matches = append(matches, dupItem(item, offsets))
 			}
 		}
@@ -275,7 +297,7 @@ func (p *Pattern) MatchItem(item *Item) bool {
 		return sidx >= 0
 	}
 	offsets := p.extendedMatch(item)
-	return len(offsets) == len(p.terms)
+	return len(offsets) == len(p.termSets)
 }
 
 func dupItem(item *Item, offsets []Offset) *Item {
@@ -301,15 +323,20 @@ func (p *Pattern) basicMatch(item *Item) (int, int, int) {
 func (p *Pattern) extendedMatch(item *Item) []Offset {
 	input := p.prepareInput(item)
 	offsets := []Offset{}
-	for _, term := range p.terms {
-		pfun := p.procFun[term.typ]
-		if sidx, eidx, tlen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
-			if term.inv {
+Loop:
+	for _, termSet := range p.termSets {
+		for _, term := range termSet {
+			pfun := p.procFun[term.typ]
+			if sidx, eidx, tlen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
+				if term.inv {
+					break Loop
+				}
+				offsets = append(offsets, Offset{int32(sidx), int32(eidx), int32(tlen)})
+				break
+			} else if term.inv {
+				offsets = append(offsets, Offset{0, 0, 0})
 				break
 			}
-			offsets = append(offsets, Offset{int32(sidx), int32(eidx), int32(tlen)})
-		} else if term.inv {
-			offsets = append(offsets, Offset{0, 0, 0})
 		}
 	}
 	return offsets

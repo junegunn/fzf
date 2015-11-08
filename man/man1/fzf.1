@@ -401,6 +401,13 @@ If you don't prefer fuzzy matching and do not wish to "quote" (prefixing with
 \fB'\fR) every word, start fzf with \fB-e\fR or \fB--exact\fR option. Note that
 when \fB--exact\fR is set, \fB'\fR-prefix "unquotes" the term.
 
+.SS OR operator
+A single bar character term acts as an OR operator. For example, the following
+query matches entries that start with \fBcore\fR and end with either \fBgo\fR,
+\fBrb\fR, or \fBpy\fR.
+
+e.g. \fB^core go$ | rb$ | py$\fR
+
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)
 
