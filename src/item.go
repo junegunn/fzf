@@ -63,6 +63,9 @@ func (item *Item) Rank(cache bool) Rank {
 			matchlen += end - begin
 		}
 	}
+	if matchlen == 0 {
+		matchlen = math.MaxUint16
+	}
 	var tiebreak uint16
 	switch rankTiebreak {
 	case byLength:

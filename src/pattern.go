@@ -323,20 +323,23 @@ func (p *Pattern) basicMatch(item *Item) (int, int, int) {
 func (p *Pattern) extendedMatch(item *Item) []Offset {
 	input := p.prepareInput(item)
 	offsets := []Offset{}
-Loop:
 	for _, termSet := range p.termSets {
+		var offset *Offset
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
 			if sidx, eidx, tlen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
 				if term.inv {
-					break Loop
+					continue
 				}
-				offsets = append(offsets, Offset{int32(sidx), int32(eidx), int32(tlen)})
+				offset = &Offset{int32(sidx), int32(eidx), int32(tlen)}
 				break
 			} else if term.inv {
-				offsets = append(offsets, Offset{0, 0, 0})
-				break
+				offset = &Offset{0, 0, 0}
+				continue
 			}
+		}
+		if offset != nil {
+			offsets = append(offsets, *offset)
 		}
 	}
 	return offsets

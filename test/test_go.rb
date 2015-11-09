@@ -933,6 +933,12 @@ class TestGoFZF < TestBase
     assert_equal 4, `seq 123 | #{FZF} -f 13 +e`.lines.length
   end
 
+  def test_or_operator
+    assert_equal %w[1 5 10], `seq 10 | #{FZF} -f "1 | 5"`.lines.map(&:chomp)
+    assert_equal %w[1 10 2 3 4 5 6 7 8 9],
+      `seq 10 | #{FZF} -f '1 | !1'`.lines.map(&:chomp)
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"math"
 	"sort"
 	"testing"
 
@@ -42,7 +43,7 @@ func TestItemRank(t *testing.T) {
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := Item{text: strs[0], index: 1, offsets: []Offset{}}
 	rank1 := item1.Rank(true)
-	if rank1.matchlen != 0 || rank1.tiebreak != 3 || rank1.index != 1 {
+	if rank1.matchlen != math.MaxUint16 || rank1.tiebreak != 3 || rank1.index != 1 {
 		t.Error(item1.Rank(true))
 	}
 	// Only differ in index
@@ -68,9 +69,9 @@ func TestItemRank(t *testing.T) {
 	item6 := Item{text: strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
 	items = []*Item{&item1, &item2, &item3, &item4, &item5, &item6}
 	sort.Sort(ByRelevance(items))
-	if items[0] != &item2 || items[1] != &item1 ||
-		items[2] != &item6 || items[3] != &item4 ||
-		items[4] != &item5 || items[5] != &item3 {
+	if items[0] != &item6 || items[1] != &item4 ||
+		items[2] != &item5 || items[3] != &item3 ||
+		items[4] != &item2 || items[5] != &item1 {
 		t.Error(items)
 	}
 }
