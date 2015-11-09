@@ -391,7 +391,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 }
 
 func (t *Terminal) placeCursor() {
-	t.move(0, len(t.prompt)+displayWidth(t.input[:t.cx]), false)
+	t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input[:t.cx]), false)
 }
 
 func (t *Terminal) printPrompt() {
@@ -402,7 +402,7 @@ func (t *Terminal) printPrompt() {
 
 func (t *Terminal) printInfo() {
 	if t.inlineInfo {
-		t.move(0, len(t.prompt)+displayWidth(t.input)+1, true)
+		t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input)+1, true)
 		if t.reading {
 			C.CPrint(C.ColSpinner, true, " < ")
 		} else {
@@ -1023,7 +1023,7 @@ func (t *Terminal) Loop() {
 					my >= t.marginInt[0] && my < C.MaxY()-t.marginInt[2] {
 					mx -= t.marginInt[3]
 					my -= t.marginInt[0]
-					mx = util.Constrain(mx-len(t.prompt), 0, len(t.input))
+					mx = util.Constrain(mx-displayWidth([]rune(t.prompt)), 0, len(t.input))
 					if !t.reverse {
 						my = t.maxHeight() - my - 1
 					}
