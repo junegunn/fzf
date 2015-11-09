@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.11.0
+------
+
+- Added OR operator for extended-search mode
+- Added `--execute-multi` action
+- Fixed incorrect cursor position when unicode wide characters are used in
+  `--prompt`
+- Fixes and improvements in shell extensions
+
 0.10.9
 ------
 
