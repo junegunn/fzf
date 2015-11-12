@@ -8,19 +8,22 @@ set -u
 auto_completion=
 key_bindings=
 update_config=1
+binary_arch=
 
 help() {
   cat << EOF
 usage: $0 [OPTIONS]
 
     --help               Show this message
-    --bin                Download fzf binary only
+    --bin                Download fzf binary only; Do not generate ~/.fzf.{bash,zsh}
     --all                Download fzf binary and update configuration files
                          to enable key bindings and fuzzy completion
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files
 
+    --32                 Download 32-bit binary
+    --64                 Download 64-bit binary
 EOF
 }
 
@@ -41,6 +44,8 @@ for opt in $@; do
     --no-completion)   auto_completion=0 ;;
     --update-rc)       update_config=1   ;;
     --no-update-rc)    update_config=0   ;;
+    --32)              binary_arch=386   ;;
+    --64)              binary_arch=amd64 ;;
     --bin)             ;;
     *)
       echo "unknown option: $opt"
@@ -143,10 +148,10 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ x86_64) download fzf-$version-darwin_amd64 ;;
-  Darwin\ i*86)   download fzf-$version-darwin_386   ;;
-  Linux\ x86_64)  download fzf-$version-linux_amd64  ;;
-  Linux\ i*86)    download fzf-$version-linux_386    ;;
+  Darwin\ x86_64) download fzf-$version-darwin_${binary_arch:-amd64} ;;
+  Darwin\ i*86)   download fzf-$version-darwin_${binary_arch:-386}   ;;
+  Linux\ x86_64)  download fzf-$version-linux_${binary_arch:-amd64}  ;;
+  Linux\ i*86)    download fzf-$version-linux_${binary_arch:-386}    ;;
   *)              binary_available=0 binary_error=1  ;;
 esac
 
