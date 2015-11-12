@@ -261,6 +261,17 @@ export FZF_COMPLETION_TRIGGER='~~'
 export FZF_COMPLETION_OPTS='+c -x'
 ```
 
+#### Supported commands
+
+On bash, fuzzy completion is enabled only for a predefined set of commands
+(`complete | grep _fzf` to see the list). But you can enable it for other
+commands as well like follows.
+
+```sh
+# There are also _fzf_path_completion and _fzf_dir_completion
+complete -F _fzf_file_completion -o default -o bashdefault doge
+```
+
 Usage as Vim plugin
 -------------------
 

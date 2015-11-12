@@ -241,9 +241,9 @@ complete -o default -F _fzf_opts_completion fzf
 d_cmds="cd pushd rmdir"
 f_cmds="
   awk cat diff diff3
-  emacs ex file ftp g++ gcc gvim head hg java
+  emacs emacsclient ex file ftp g++ gcc gvim head hg java
   javac ld less more mvim nvim patch perl python ruby
-  sed sftp sort source tail tee uniq vi view vim wc"
+  sed sftp sort source tail tee uniq vi view vim wc xdg-open"
 a_cmds="
   basename bunzip2 bzip2 chmod chown curl cp dirname du
   find git grep gunzip gzip hg jar
