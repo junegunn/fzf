@@ -21,7 +21,7 @@ __fzf_generic_path_completion() {
   tail=$6
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
-  if ! setopt | grep nonomatch > /dev/null; then
+  if ! setopt | \grep nonomatch > /dev/null; then
     nnm=1
     setopt nonomatch
   fi
@@ -117,7 +117,7 @@ _fzf_complete_unalias() {
 
 fzf-completion() {
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds sws
-  if setopt | grep shwordsplit > /dev/null; then
+  if setopt | \grep shwordsplit > /dev/null; then
     sws=1
     unsetopt shwordsplit
   fi
@@ -167,7 +167,7 @@ fzf-completion() {
 }
 
 [ -z "$fzf_default_completion" ] &&
-  fzf_default_completion=$(bindkey '^I' | grep -v undefined-key | awk '{print $2}')
+  fzf_default_completion=$(bindkey '^I' | \grep -v undefined-key | awk '{print $2}')
 
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
