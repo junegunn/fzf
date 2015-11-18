@@ -116,11 +116,8 @@ _fzf_complete_unalias() {
 }
 
 fzf-completion() {
-  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds sws
-  if setopt | \grep shwordsplit > /dev/null; then
-    sws=1
-    unsetopt shwordsplit
-  fi
+  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
+  setopt localoptions noshwordsplit
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
@@ -163,7 +160,6 @@ fzf-completion() {
   else
     eval "zle ${fzf_default_completion:-expand-or-complete}"
   fi
-  [ -n "$sws" ] && setopt shwordsplit
 }
 
 [ -z "$fzf_default_completion" ] &&
@@ -171,4 +167,3 @@ fzf-completion() {
 
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
-
