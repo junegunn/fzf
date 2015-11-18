@@ -364,39 +364,39 @@ class FZF
     $stderr.puts %[usage: fzf [options]
 
   Search
-    -x, --extended        Extended-search mode
-    -e, --extended-exact  Extended-search mode (exact match)
-    -i                    Case-insensitive match (default: smart-case match)
-    +i                    Case-sensitive match
-    -n, --nth=N[,..]      Comma-separated list of field index expressions
-                          for limiting search scope. Each can be a non-zero
-                          integer or a range expression ([BEGIN]..[END])
-        --with-nth=N[,..] Transform the item using index expressions for search
-    -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
+    -x, --extended        Extended-search mode.
+    -e, --extended-exact  Extended-search mode (exact match).
+    -i                    Case-insensitive match (default: smart-case match).
+    +i                    Case-sensitive match.
+    -n, --nth=N[,..]      Comma-separated list of field index expressions.
+                          for limiting search scope. Each can be a non-zero.
+                          integer or a range expression ([BEGIN]..[END]).
+        --with-nth=N[,..] Transform the item using index expressions for search.
+    -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style).
 
   Search result
-    -s, --sort=MAX        Maximum number of matched items to sort (default: 1000)
+    -s, --sort=MAX        Maximum number of matched items to sort (default: 1000).
     +s, --no-sort         Do not sort the result. Keep the sequence unchanged.
 
   Interface
-    -m, --multi           Enable multi-select with tab/shift-tab
-        --no-mouse        Disable mouse
-    +c, --no-color        Disable colors
-    +2, --no-256          Disable 256-color
-        --black           Use black background
-        --reverse         Reverse orientation
-        --prompt=STR      Input prompt (default: '> ')
+    -m, --multi           Enable multi-select with tab/shift-tab.
+        --no-mouse        Disable mouse.
+    +c, --no-color        Disable colors.
+    +2, --no-256          Disable 256-color.
+        --black           Use black background.
+        --reverse         Reverse orientation.
+        --prompt=STR      Input prompt (default: '> ').
 
   Scripting
-    -q, --query=STR       Start the finder with the given query
-    -1, --select-1        Automatically select the only match
-    -0, --exit-0          Exit immediately when there's no match
+    -q, --query=STR       Start the finder with the given query.
+    -1, --select-1        Automatically select the only match.
+    -0, --exit-0          Exit immediately when there's no match.
     -f, --filter=STR      Filter mode. Do not start interactive finder.
-        --print-query     Print query as the first line
+        --print-query     Print query as the first line.
 
   Environment variables
-    FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
+    FZF_DEFAULT_COMMAND   Default command to use when input is tty.
+    FZF_DEFAULT_OPTS      Default options (e.g. "-x -m --sort 10000").] + $/ + $/
    exit x
   end
 
