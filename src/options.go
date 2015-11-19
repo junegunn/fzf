@@ -22,7 +22,7 @@ const usage = `usage: fzf [options]
     +i                    Case-sensitive match
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
-                          integer or a range expression ([BEGIN]..[END])
+                          integer or a range expression ([BEGIN]..[END]).
     --with-nth=N[,..]     Transform item using index expressions within finder
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
     +s, --no-sort         Do not sort the result
@@ -59,7 +59,7 @@ const usage = `usage: fzf [options]
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. '--reverse --inline-info')
+    FZF_DEFAULT_OPTS      Default options (e.g. '--reverse --inline-info')
 
 `
 

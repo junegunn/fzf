@@ -370,7 +370,7 @@ class FZF
     +i                    Case-sensitive match
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
-                          integer or a range expression ([BEGIN]..[END])
+                          integer or a range expression ([BEGIN]..[END]).
         --with-nth=N[,..] Transform the item using index expressions for search
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
 
@@ -396,7 +396,7 @@ class FZF
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Defaults options. (e.g. "-x -m --sort 10000")] + $/ + $/
+    FZF_DEFAULT_OPTS      Default options (e.g. "-x -m --sort 10000")] + $/ + $/
    exit x
   end
 
