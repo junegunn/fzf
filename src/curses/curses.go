@@ -5,6 +5,12 @@ package curses
 #include <locale.h>
 #cgo !static LDFLAGS: -lncurses
 #cgo static LDFLAGS: -l:libncursesw.a -l:libtinfo.a -l:libgpm.a -ldl
+#cgo android static LDFLAGS: -l:libncurses.a -fPIE -march=armv7-a -mfpu=neon -mhard-float -Wl,--no-warn-mismatch
+
+SCREEN *c_newterm () {
+	return newterm(NULL, stderr, stdin);
+}
+
 */
 import "C"
 
@@ -260,7 +266,7 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	}
 
 	C.setlocale(C.LC_ALL, C.CString(""))
-	_screen = C.newterm(nil, C.stderr, C.stdin)
+	_screen = C.c_newterm()
 	if _screen == nil {
 		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
 		os.Exit(2)

@@ -2,11 +2,13 @@ ifndef GOPATH
 $(error GOPATH is undefined)
 endif
 
+ifndef GOOS
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	GOOS := darwin
 else ifeq ($(UNAME_S),Linux)
 	GOOS := linux
+endif
 endif
 
 ifneq ($(shell uname -m),x86_64)
@@ -16,11 +18,13 @@ endif
 SOURCES   := $(wildcard *.go */*.go)
 BINDIR    := ../bin
 
-BINARY32  := fzf-$(GOOS)_386
-BINARY64  := fzf-$(GOOS)_amd64
-VERSION    = $(shell fzf/$(BINARY64) --version)
-RELEASE32  = fzf-$(VERSION)-$(GOOS)_386
-RELEASE64  = fzf-$(VERSION)-$(GOOS)_amd64
+BINARY32    := fzf-$(GOOS)_386
+BINARY64    := fzf-$(GOOS)_amd64
+BINARYARM7  := fzf-$(GOOS)_arm7
+VERSION     := $(shell awk -F= '/version =/ {print $$2}' constants.go | tr -d "\" ")
+RELEASE32   = fzf-$(VERSION)-$(GOOS)_386
+RELEASE64   = fzf-$(VERSION)-$(GOOS)_amd64
+RELEASEARM7 = fzf-$(VERSION)-$(GOOS)_arm7
 
 all: release
 
@@ -30,6 +34,11 @@ release: build
 	rm -f $(RELEASE32) $(RELEASE64)
 
 build: test fzf/$(BINARY32) fzf/$(BINARY64)
+
+android-build:
+	cd fzf && GOARCH=arm GOARM=7 CGO_ENABLED=1 go build -a -ldflags="-extldflags=-pie" -o $(BINARYARM7)
+	cd fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7) && \
+	rm -f $(RELEASEARM7)
 
 test:
 	go get
@@ -65,6 +74,9 @@ docker-ubuntu:
 docker-centos:
 	docker build -t junegunn/centos-sandbox - < Dockerfile.centos
 
+docker-android:
+	docker build -t junegunn/android-sandbox - < Dockerfile.android
+
 arch: docker-arch
 	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
@@ -81,5 +93,14 @@ linux: docker-centos
 	docker run -i -t -v $(GOPATH):/go junegunn/centos-sandbox \
 		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make TAGS=static'
 
+ubuntu-android: docker-android
+	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
+		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
+
+android: docker-android
+	docker run -i -t -v $(GOPATH):/go junegunn/android-sandbox \
+		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; GOOS=android make android-build'
+
 .PHONY: all build release test install uninstall clean docker \
-	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos
+	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos \
+	android-build docker-android ubuntu-android android
