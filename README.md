@@ -71,6 +71,34 @@ Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ```
 
+#### Install as oh-my-zsh plugin
+
+Firstly clone the repository to `oh-my-zsh/custom/plugins`
+
+```sh
+git clone --depth 1 https://github.com/junegunn/fzf.git oh-my-zsh/custom/plugins/fzf
+```
+
+Then follow below command to install fzf binary only
+
+```sh
+oh-my-zsh/custom/plugins/fzf/install --bin
+```
+
+Then add `fzf` to your oh-my-zsh plugins list in your `.zshrc`
+
+```sh
+plugins=(... fzf ...)
+```
+
+When used as oh-my-zsh plugin, only keybindings is enabled default. If you want
+to enable autocompletion, you can uncomment below lines in
+`oh-my-zsh/custom/plugins/fzf/fzf.plugin.zsh`
+
+```sh
+# source "$fzf_path/shell/completion.zsh"
+```
+
 #### Upgrading fzf
 
 fzf is being actively developed and you might want to upgrade it once in a
