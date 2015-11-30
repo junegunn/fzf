@@ -1,0 +1,6 @@
+[submodule "src/vendor/github.com/junegunn/go-shellwords"]
+	path = src/vendor/github.com/junegunn/go-shellwords
+	url = https://github.com/junegunn/go-shellwords.git
+[submodule "src/vendor/github.com/junegunn/go-runewidth"]
+	path = src/vendor/github.com/junegunn/go-runewidth
+	url = https://github.com/junegunn/go-runewidth.git
