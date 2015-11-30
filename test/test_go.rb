@@ -6,6 +6,7 @@ require 'fileutils'
 
 DEFAULT_TIMEOUT = 20
 
+FILE = File.expand_path(__FILE__)
 base = File.expand_path('../../', __FILE__)
 Dir.chdir base
 FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{base}/bin/fzf"
@@ -803,8 +804,8 @@ class TestGoFZF < TestBase
   end
 
   def test_header
-    tmux.send_keys "seq 100 | #{fzf "--header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
-    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.send_keys "seq 100 | #{fzf "--header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('100/100') &&
       lines[-7..-3].map(&:strip) == header
@@ -812,8 +813,8 @@ class TestGoFZF < TestBase
   end
 
   def test_header_reverse
-    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{__FILE__})\\\" --reverse"}", :Enter
-    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --reverse"}", :Enter
+    header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('100/100') &&
       lines[2..6].map(&:strip) == header
@@ -821,8 +822,8 @@ class TestGoFZF < TestBase
   end
 
   def test_header_and_header_lines
-    tmux.send_keys "seq 100 | #{fzf "--header-lines 10 --header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
-    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.send_keys "seq 100 | #{fzf "--header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
       lines[-7...-2].map(&:strip) == header &&
@@ -831,8 +832,8 @@ class TestGoFZF < TestBase
   end
 
   def test_header_and_header_lines_reverse
-    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \\\"\\$(head -5 #{__FILE__})\\\""}", :Enter
-    header = File.readlines(__FILE__).take(5).map(&:strip)
+    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('90/90') &&
       lines[2...7].map(&:strip) == header &&
