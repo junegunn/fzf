@@ -866,6 +866,26 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_tabstop
+    writelines tempname, ["f\too\tba\tr\tbaz\tbarfooq\tux"]
+    {
+      1 => '> f oo ba r baz barfooq ux',
+      2 => '> f oo  ba  r baz barfooq ux',
+      3 => '> f  oo ba r  baz   barfooq  ux',
+      4 => '> f   oo  ba  r   baz barfooq ux',
+      5 => '> f    oo   ba   r    baz  barfooq   ux',
+      6 => '> f     oo    ba    r     baz   barfooq     ux',
+      7 => '> f      oo     ba     r      baz    barfooq       ux',
+      8 => '> f       oo      ba      r       baz     barfooq ux',
+      9 => '> f        oo       ba       r        baz      barfooq  ux',
+    }.each do |ts, exp|
+      tmux.prepare
+      tmux.send_keys %[cat #{tempname} | fzf --tabstop=#{ts}], :Enter
+      tmux.until { |lines| lines[-3] == exp }
+      tmux.send_keys :Enter
+    end
+  end
+
   def test_with_nth
     writelines tempname, ['hello world ', 'byebye']
     assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1`.chomp

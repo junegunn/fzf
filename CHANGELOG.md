@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.11.1
+------
+
+- Added `--tabstop=SPACES` option
+
 0.11.0
 ------
 

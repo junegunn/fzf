@@ -38,6 +38,7 @@ const usage = `usage: fzf [options]
     --black               Use black background
     --reverse             Reverse orientation
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
+    --tabstop=SPACES      Number of spaces for a tab character (default: 8)
     --cycle               Enable cyclic scroll
     --no-hscroll          Disable horizontal scroll
     --inline-info         Display finder info inline with the query
@@ -123,6 +124,7 @@ type Options struct {
 	Header      []string
 	HeaderLines int
 	Margin      [4]string
+	Tabstop     int
 	Version     bool
 }
 
@@ -169,6 +171,7 @@ func defaultOptions() *Options {
 		Header:      make([]string, 0),
 		HeaderLines: 0,
 		Margin:      defaultMargin(),
+		Tabstop:     8,
 		Version:     false}
 }
 
@@ -822,6 +825,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--margin":
 			opts.Margin = parseMargin(
 				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
+		case "--tabstop":
+			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
 		case "--version":
 			opts.Version = true
 		default:
@@ -861,6 +866,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--margin="); match {
 				opts.Margin = parseMargin(value)
+			} else if match, value := optString(arg, "--tabstop="); match {
+				opts.Tabstop = atoi(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}
@@ -869,6 +876,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.HeaderLines < 0 {
 		errorExit("header lines must be a non-negative integer")
+	}
+
+	if opts.Tabstop < 1 {
+		errorExit("tab stop must be a positive integer")
 	}
 
 	// Change default actions for CTRL-N / CTRL-P when --history is used

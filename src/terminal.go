@@ -80,6 +80,7 @@ func (a byTimeOrder) Less(i, j int) bool {
 
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 var _runeWidths = make(map[rune]int)
+var _tabStop int
 
 const (
 	reqPrompt util.EventType = iota
@@ -194,6 +195,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	} else {
 		header = reverseStringArray(opts.Header)
 	}
+	_tabStop = opts.Tabstop
 	return &Terminal{
 		inlineInfo: opts.InlineInfo,
 		prompt:     opts.Prompt,
@@ -324,7 +326,7 @@ func (t *Terminal) sortSelected() []selectedItem {
 
 func runeWidth(r rune, prefixWidth int) int {
 	if r == '\t' {
-		return 8 - prefixWidth%8
+		return _tabStop - prefixWidth%_tabStop
 	} else if w, found := _runeWidths[r]; found {
 		return w
 	} else {
