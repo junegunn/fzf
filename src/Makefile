@@ -41,8 +41,8 @@ android-build:
 	rm -f $(RELEASEARM7)
 
 test:
-	GO15VENDOREXPERIMENT=1 go get
-	GO15VENDOREXPERIMENT=1 SHELL=/bin/sh go test -v ./...
+	go get
+	SHELL=/bin/sh go test -v ./...
 
 install: $(BINDIR)/fzf
 
@@ -53,10 +53,10 @@ clean:
 	cd fzf && rm -f fzf-*
 
 fzf/$(BINARY32): $(SOURCES)
-	cd fzf && GO15VENDOREXPERIMENT=1 GOARCH=386 CGO_ENABLED=1 go build -a -o $(BINARY32)
+	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -o $(BINARY32)
 
 fzf/$(BINARY64): $(SOURCES)
-	cd fzf && GO15VENDOREXPERIMENT=1 go build -a -tags "$(TAGS)" -o $(BINARY64)
+	cd fzf && go build -a -tags "$(TAGS)" -o $(BINARY64)
 
 $(BINDIR)/fzf: fzf/$(BINARY64) | $(BINDIR)
 	cp -f fzf/$(BINARY64) $(BINDIR)
