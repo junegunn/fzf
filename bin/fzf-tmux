@@ -82,9 +82,17 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if [ -z "$TMUX_PANE" ] || tmux list-panes -F '#F' | grep -q Z; then
+if [ -z "$TMUX_PANE" ]; then
   fzf "${args[@]}"
   exit $?
+fi
+
+# Handle zoomed tmux pane by moving it to a temp window
+if tmux list-panes -F '#F' | grep -q Z; then
+  zoomed=1
+  original_window=$(tmux display-message -p "#{window_id}")
+  tmp_window=$(tmux new-window -d -P -F "#{window_id}" "bash -c 'while :; do for c in \\| / - \\\\; do sleep 0.2; printf \"\\r\$c fzf-tmux is running\\r\"; done; done'")
+  tmux swap-pane -t $tmp_window \; select-window -t $tmp_window
 fi
 
 set -e
@@ -97,6 +105,14 @@ fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
 fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
 cleanup() {
   rm -f $argsf $fifo1 $fifo2 $fifo3
+
+  # Remove temp window if we were zoomed
+  if [ -n "$zoomed" ]; then
+    tmux swap-pane -t $original_window \; \
+      select-window -t $original_window \; \
+      kill-window -t $tmp_window \; \
+      resize-pane -Z
+  fi
 }
 trap cleanup EXIT SIGINT SIGTERM
 
