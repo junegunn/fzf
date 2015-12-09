@@ -26,7 +26,7 @@ function fzf_key_bindings
   end
 
   function __fzf_ctrl_r
-    cat ~/.config/fish/fish_history | grep '^- cmd' | cut -d ' ' -f 3- | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
+    cat ~/.config/fish/fish_history | rev | grep '^- cmd' | cut -d ' ' -f 3- | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
     and commandline (printf (cat $TMPDIR/fzf.result))
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
