@@ -26,7 +26,14 @@ function fzf_key_bindings
   end
 
   function __fzf_ctrl_r
-    history | __fzfcmd +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
+    set -l query (commandline|xargs)
+    set -l args +s +m --tiebreak=index --toggle-sort=ctrl-r
+    
+    if test -n $query
+        set args $args '-q' $query
+    end
+
+    history | __fzfcmd $args > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
