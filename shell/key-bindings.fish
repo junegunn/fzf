@@ -19,14 +19,14 @@ function fzf_key_bindings
       -o -type f -print \
       -o -type d -print \
       -o -type l -print 2> /dev/null | sed 1d | cut -b3-"
-    eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m > $TMPDIR/fzf.result"
+    eval "$FZF_CTRL_T_COMMAND" | __fzfcmd -m > $TMPDIR/fzf.result
     and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_ctrl_r
-    history | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
+    history | __fzfcmd +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
     and commandline (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
@@ -37,7 +37,7 @@ function fzf_key_bindings
     command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
       -o -type d -print 2> /dev/null | sed 1d | cut -b3-"
     # Fish hangs if the command before pipe redirects (2> /dev/null)
-    eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m > $TMPDIR/fzf.result"
+    eval "$FZF_ALT_C_COMMAND" | __fzfcmd +m > $TMPDIR/fzf.result
     [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
     and cd (cat $TMPDIR/fzf.result)
     commandline -f repaint
@@ -46,15 +46,14 @@ function fzf_key_bindings
 
   function __fzfcmd
     set -q FZF_TMUX; or set FZF_TMUX 1
-
     if [ $FZF_TMUX -eq 1 ]
       if set -q FZF_TMUX_HEIGHT
-        echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
+        fzf-tmux -d$FZF_TMUX_HEIGHT $argv
       else
-        echo "fzf-tmux -d40%"
+        fzf-tmux -d40% $argv
       end
     else
-      echo "fzf"
+      fzf $argv
     end
   end
 
