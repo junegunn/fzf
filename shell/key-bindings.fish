@@ -33,7 +33,7 @@ function fzf_key_bindings
     set -l args +s +m --tiebreak=index --toggle-sort=ctrl-r
     
     if test -n $query
-        set args $args '-q' $query
+        set args $args '-q' '$query'
     end
 
     history | __fzfcmd $args | read -l selection
