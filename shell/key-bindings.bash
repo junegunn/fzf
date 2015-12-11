@@ -25,7 +25,7 @@ __fzf_select_tmux__() {
   else
     height="-l $height"
   fi
-  tmux split-window $height "cd $(printf %q "$PWD"); FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") bash -c 'source ~/.fzf.bash; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
+  tmux split-window $height "cd $(printf %q "$PWD"); PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
 }
 
 __fzf_cd__() {
