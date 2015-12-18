@@ -409,10 +409,16 @@ function! s:cmd_callback(lines) abort
     augroup END
   endif
   try
+    let empty = empty(expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
     let autochdir = &autochdir
     set noautochdir
     for item in a:lines
-      execute cmd s:escape(item)
+      if empty
+        execute 'e' s:escape(item)
+        let empty = 0
+      else
+        execute cmd s:escape(item)
+      endif
       if exists('#BufEnter') && isdirectory(item)
         doautocmd BufEnter
       endif
