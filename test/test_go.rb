@@ -881,7 +881,7 @@ class TestGoFZF < TestBase
     }.each do |ts, exp|
       tmux.prepare
       tmux.send_keys %[cat #{tempname} | fzf --tabstop=#{ts}], :Enter
-      tmux.until { |lines| lines[-3] == exp }
+      tmux.until { |lines| exp.start_with? lines[-3].to_s.strip.sub(/\.\.$/, '') }
       tmux.send_keys :Enter
     end
   end
