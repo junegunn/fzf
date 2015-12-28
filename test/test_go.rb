@@ -1071,6 +1071,8 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys ' !d'
+    tmux.until(1) { |lines| lines[-2].include?(' 2/') }
     tmux.send_keys :BTab, :BTab
     tmux.until(1) { |lines| lines[-2].include?('(2)') }
     tmux.send_keys :Enter
@@ -1110,6 +1112,16 @@ module CompletionTest
     tmux.until do |lines|
       tmux.send_keys 'C-L'
       lines[-1].end_with?('/tmp/fzf\ test/foobar')
+    end
+
+    # Should include hidden files
+    (1..100).each { |i| FileUtils.touch "/tmp/fzf-test/.hidden-#{i}" }
+    tmux.send_keys 'C-u'
+    tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab, pane: 0
+    tmux.until(1) do |lines|
+      tmux.send_keys 'C-L'
+      lines[-2].include?('100/') &&
+      lines[-3].include?('/tmp/fzf-test/.hidden-')
     end
   ensure
     ['/tmp/fzf-test', '/tmp/fzf test', '~/.fzf-home', 'no~such~user'].each do |f|

@@ -30,9 +30,9 @@ __fzf_generic_path_completion() {
     if [ -z "$dir" -o -d ${~dir} ]; then
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
-      [ "$dir" = './' ] && dir=''
+      [ -z "$dir" ] && dir='.' || dir="${dir/%\//}"
       dir=${~dir}
-      matches=$(\find -L $dir* ${=find_opts} 2> /dev/null | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
+      matches=$(\find -L "$dir" ${=find_opts} -a -not -path "$dir" -print 2> /dev/null | sed 's@^\./@@' | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
         printf "%q$suffix " "$item"
       done)
       matches=${matches% }
@@ -50,13 +50,13 @@ __fzf_generic_path_completion() {
 
 _fzf_path_completion() {
   __fzf_generic_path_completion "$1" "$2" \
-    "-name .git -prune -o -name .svn -prune -o -type d -print -o -type f -print -o -type l -print" \
+    "-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )" \
     "-m" "" " "
 }
 
 _fzf_dir_completion() {
   __fzf_generic_path_completion "$1" "$2" \
-    "-name .git -prune -o -name .svn -prune -o -type d -print" \
+    "-name .git -prune -o -name .svn -prune -o -type d" \
     "" "/" ""
 }
 
