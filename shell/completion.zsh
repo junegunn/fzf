@@ -30,7 +30,8 @@ __fzf_generic_path_completion() {
     if [ -z "$dir" -o -d ${~dir} ]; then
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
-      [ -z "$dir" ] && dir='.' || dir="${dir/%\//}"
+      [ -z "$dir" ] && dir='.'
+      [ "$dir" != "/" ] && dir="${dir/%\//}"
       dir=${~dir}
       matches=$(\find -L "$dir" ${=find_opts} -a -not -path "$dir" -print 2> /dev/null | sed 's@^\./@@' | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
         printf "%q$suffix " "$item"
