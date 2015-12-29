@@ -1129,6 +1129,12 @@ module CompletionTest
     end
   end
 
+  def test_file_completion_root
+    tmux.send_keys 'ls /**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys :Enter
+  end
+
   def test_dir_completion
     tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}; touch /tmp/fzf-test/d55/xxx', :Enter
     tmux.prepare
