@@ -94,7 +94,7 @@ linux: docker-centos
 		/bin/bash -ci 'cd /go/src/github.com/junegunn/fzf/src; make TAGS=static'
 
 ubuntu-android: docker-android
-	docker run -i -t -v $(GOPATH):/go junegunn/$@-sandbox \
+	docker run -i -t -v $(GOPATH):/go junegunn/android-sandbox \
 		sh -c 'cd /go/src/github.com/junegunn/fzf/src; /bin/bash'
 
 android: docker-android
