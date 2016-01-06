@@ -127,8 +127,8 @@ envs="env TERM=$TERM "
 [ -n "$FZF_DEFAULT_OPTS"    ] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
 [ -n "$FZF_DEFAULT_COMMAND" ] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
 
-mkfifo $fifo2
-mkfifo $fifo3
+mkfifo -m o+w $fifo2
+mkfifo -m o+w $fifo3
 
 # Build arguments to fzf
 opts=""
