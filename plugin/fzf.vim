@@ -353,6 +353,7 @@ function! s:execute_term(dict, command, temps)
   endfunction
 
   call termopen(a:command, fzf)
+  setlocal nospell
   setf fzf
   startinsert
   return []
