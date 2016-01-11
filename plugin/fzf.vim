@@ -201,7 +201,7 @@ function! s:pushd(dict)
 endfunction
 
 function! s:popd(dict)
-  if has_key(a:dict, 'prev_dir')
+  if has_key(a:dict, 'prev_dir') && getcwd() ==# a:dict.dir
     execute 'chdir '.s:escape(remove(a:dict, 'prev_dir'))
   endif
 endfunction
