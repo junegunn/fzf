@@ -1,6 +1,7 @@
 Execute (Setup):
   let g:dir = fnamemodify(g:vader_file, ':p:h')
   Log 'Test directory: ' . g:dir
+  Save &acd
 
 Execute (fzf#run with dir option):
   let cwd = getcwd()
@@ -34,6 +35,34 @@ Execute (fzf#run with list source):
 Execute (fzf#run with string source):
   let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
   AssertEqual ['hi'], result
+
+Execute (fzf#run with dir option and noautochdir):
+  set noacd
+  let cwd = getcwd()
+  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  " No change in working directory
+  AssertEqual cwd, getcwd()
+
+Execute (Incomplete fzf#run with dir option and autochdir):
+  set acd
+  let cwd = getcwd()
+  call fzf#run({'source': [], 'sink': 'e', 'dir': '/tmp', 'options': '-0'})
+  " No change in working directory even if &acd is set
+  AssertEqual cwd, getcwd()
+
+Execute (fzf#run with dir option and autochdir):
+  set acd
+  let cwd = getcwd()
+  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  " Working directory changed due to &acd
+  AssertEqual '/', getcwd()
+
+Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
+  set acd
+  cd /tmp
+  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/', 'options': '-1'})
+  " Working directory changed due to &acd
+  AssertEqual '/', getcwd()
 
 Execute (Cleanup):
   unlet g:dir

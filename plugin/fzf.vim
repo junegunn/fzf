@@ -1,4 +1,4 @@
-" Copyright (c) 2015 Junegunn Choi
+" Copyright (c) 2016 Junegunn Choi
 "
 " MIT License
 "
@@ -139,17 +139,13 @@ try
   let tmux = !has('nvim') && s:tmux_enabled() && s:splittable(dict)
   let command = prefix.(tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  try
-    if tmux
-      return s:execute_tmux(dict, command, temps)
-    elseif has('nvim')
-      return s:execute_term(dict, command, temps)
-    else
-      return s:execute(dict, command, temps)
-    endif
-  finally
-    call s:popd(dict)
-  endtry
+  if has('nvim')
+    return s:execute_term(dict, command, temps)
+  endif
+
+  let ret = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
+  call s:popd(dict, ret)
+  return ret
 finally
   let &shell = oshell
 endtry
@@ -193,16 +189,28 @@ function! s:pushd(dict)
       return 1
     endif
     let a:dict.prev_dir = cwd
-    execute 'chdir '.s:escape(a:dict.dir)
+    execute 'chdir' s:escape(a:dict.dir)
     let a:dict.dir = getcwd()
     return 1
   endif
   return 0
 endfunction
 
-function! s:popd(dict)
-  if has_key(a:dict, 'prev_dir') && getcwd() ==# a:dict.dir
-    execute 'chdir '.s:escape(remove(a:dict, 'prev_dir'))
+function! s:popd(dict, lines)
+  " Since anything can be done in the sink function, there is no telling that
+  " the change of the working directory was made by &autochdir setting.
+  "
+  " We use the following heuristic to determine whether to restore CWD:
+  " - Always restore the current directory when &autochdir is disabled.
+  "   FIXME This makes it impossible to change directory from inside the sink
+  "   function when &autochdir is not used.
+  " - In case of an error or an interrupt, a:lines will be empty.
+  "   And it will be an array of a single empty string when fzf was finished
+  "   without a match. In these cases, we presume that the change of the
+  "   directory is not expected and should be undone.
+  if has_key(a:dict, 'prev_dir') &&
+        \ (!&autochdir || (empty(a:lines) || len(a:lines) == 1 && empty(a:lines[0])))
+    execute 'chdir' s:escape(remove(a:dict, 'prev_dir'))
   endif
 endfunction
 
@@ -314,7 +322,6 @@ endfunction
 
 function! s:execute_term(dict, command, temps)
   call s:split(a:dict)
-  call s:pushd(a:dict)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
   let s:command = a:command
@@ -338,7 +345,7 @@ function! s:execute_term(dict, command, temps)
 
     call s:pushd(self.dict)
     try
-      call s:callback(self.dict, self.temps)
+      let ret = s:callback(self.dict, self.temps)
 
       if inplace && bufnr('') == self.buf
         execute "normal! \<c-^>"
@@ -348,11 +355,13 @@ function! s:execute_term(dict, command, temps)
         endif
       endif
     finally
-      call s:popd(self.dict)
+      call s:popd(self.dict, ret)
     endtry
   endfunction
 
+  call s:pushd(a:dict)
   call termopen(a:command, fzf)
+  call s:popd(a:dict, [])
   setlocal nospell
   setf fzf
   startinsert
