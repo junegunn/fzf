@@ -6,8 +6,11 @@ import (
 )
 
 func TestChunkList(t *testing.T) {
+	// FIXME global
+	sortCriteria = []criterion{byMatchLen, byLength, byIndex}
+
 	cl := NewChunkList(func(s []byte, i int) *Item {
-		return &Item{text: []rune(string(s)), rank: Rank{0, 0, uint32(i * 2)}}
+		return &Item{text: []rune(string(s)), rank: buildEmptyRank(int32(i * 2))}
 	})
 
 	// Snapshot
@@ -36,8 +39,11 @@ func TestChunkList(t *testing.T) {
 	if len(*chunk1) != 2 {
 		t.Error("Snapshot should contain only two items")
 	}
-	if string((*chunk1)[0].text) != "hello" || (*chunk1)[0].rank.index != 0 ||
-		string((*chunk1)[1].text) != "world" || (*chunk1)[1].rank.index != 2 {
+	last := func(arr []int32) int32 {
+		return arr[len(arr)-1]
+	}
+	if string((*chunk1)[0].text) != "hello" || last((*chunk1)[0].rank) != 0 ||
+		string((*chunk1)[1].text) != "world" || last((*chunk1)[1].rank) != 2 {
 		t.Error("Invalid data")
 	}
 	if chunk1.IsFull() {

@@ -88,7 +88,7 @@ func (mg *Merger) cacheable() bool {
 
 func (mg *Merger) mergedGet(idx int) *Item {
 	for i := len(mg.merged); i <= idx; i++ {
-		minRank := Rank{0, 0, 0}
+		minRank := buildEmptyRank(0)
 		minIdx := -1
 		for listIdx, list := range mg.lists {
 			cursor := mg.cursors[listIdx]

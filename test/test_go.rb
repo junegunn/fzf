@@ -459,8 +459,8 @@ class TestGoFZF < TestBase
 
   def test_unicode_case
     writelines tempname, %w[строКА1 СТРОКА2 строка3 Строка4]
-    assert_equal %w[СТРОКА2 Строка4], `cat #{tempname} | #{FZF} -fС`.split($/)
-    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `cat #{tempname} | #{FZF} -fс`.split($/)
+    assert_equal %w[СТРОКА2 Строка4], `#{FZF} -fС < #{tempname}`.split($/)
+    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `#{FZF} -fс < #{tempname}`.split($/)
   end
 
   def test_tiebreak
@@ -472,7 +472,7 @@ class TestGoFZF < TestBase
     ]
     writelines tempname, input
 
-    assert_equal input, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=index`.split($/)
+    assert_equal input, `#{FZF} -ffoobar --tiebreak=index < #{tempname}`.split($/)
 
     by_length = %w[
       ----foobar--
@@ -480,8 +480,8 @@ class TestGoFZF < TestBase
       -------foobar-
       --foobar--------
     ]
-    assert_equal by_length, `cat #{tempname} | #{FZF} -ffoobar`.split($/)
-    assert_equal by_length, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=length`.split($/)
+    assert_equal by_length, `#{FZF} -ffoobar < #{tempname}`.split($/)
+    assert_equal by_length, `#{FZF} -ffoobar --tiebreak=length < #{tempname}`.split($/)
 
     by_begin = %w[
       --foobar--------
@@ -489,17 +489,117 @@ class TestGoFZF < TestBase
       -----foobar---
       -------foobar-
     ]
-    assert_equal by_begin, `cat #{tempname} | #{FZF} -ffoobar --tiebreak=begin`.split($/)
-    assert_equal by_begin, `cat #{tempname} | #{FZF} -f"!z foobar" -x --tiebreak begin`.split($/)
+    assert_equal by_begin, `#{FZF} -ffoobar --tiebreak=begin < #{tempname}`.split($/)
+    assert_equal by_begin, `#{FZF} -f"!z foobar" -x --tiebreak begin < #{tempname}`.split($/)
 
     assert_equal %w[
       -------foobar-
       ----foobar--
       -----foobar---
       --foobar--------
-    ], `cat #{tempname} | #{FZF} -ffoobar --tiebreak end`.split($/)
+    ], `#{FZF} -ffoobar --tiebreak end < #{tempname}`.split($/)
 
-    assert_equal input, `cat #{tempname} | #{FZF} -f"!z" -x --tiebreak end`.split($/)
+    assert_equal input, `#{FZF} -f"!z" -x --tiebreak end < #{tempname}`.split($/)
+  end
+
+  # Since 0.11.2
+  def test_tiebreak_list
+    input = %w[
+      f-o-o-b-a-r
+      foobar----
+      --foobar
+      ----foobar
+      foobar--
+      --foobar--
+      foobar
+    ]
+    writelines tempname, input
+
+    assert_equal %w[
+      foobar----
+      --foobar
+      ----foobar
+      foobar--
+      --foobar--
+      foobar
+      f-o-o-b-a-r
+    ], `#{FZF} -ffb --tiebreak=index < #{tempname}`.split($/)
+
+    by_length = %w[
+      foobar
+      --foobar
+      foobar--
+      foobar----
+      ----foobar
+      --foobar--
+      f-o-o-b-a-r
+    ]
+    assert_equal by_length, `#{FZF} -ffb < #{tempname}`.split($/)
+    assert_equal by_length, `#{FZF} -ffb --tiebreak=length < #{tempname}`.split($/)
+
+    assert_equal %w[
+      foobar
+      foobar--
+      --foobar
+      foobar----
+      --foobar--
+      ----foobar
+      f-o-o-b-a-r
+    ], `#{FZF} -ffb --tiebreak=length,begin < #{tempname}`.split($/)
+
+    assert_equal %w[
+      foobar
+      --foobar
+      foobar--
+      ----foobar
+      --foobar--
+      foobar----
+      f-o-o-b-a-r
+    ], `#{FZF} -ffb --tiebreak=length,end < #{tempname}`.split($/)
+
+    assert_equal %w[
+      foobar----
+      foobar--
+      foobar
+      --foobar
+      --foobar--
+      ----foobar
+      f-o-o-b-a-r
+    ], `#{FZF} -ffb --tiebreak=begin < #{tempname}`.split($/)
+
+    by_begin_end = %w[
+      foobar
+      foobar--
+      foobar----
+      --foobar
+      --foobar--
+      ----foobar
+      f-o-o-b-a-r
+    ]
+    assert_equal by_begin_end, `#{FZF} -ffb --tiebreak=begin,length < #{tempname}`.split($/)
+    assert_equal by_begin_end, `#{FZF} -ffb --tiebreak=begin,end < #{tempname}`.split($/)
+
+    assert_equal %w[
+      --foobar
+      ----foobar
+      foobar
+      foobar--
+      --foobar--
+      foobar----
+      f-o-o-b-a-r
+    ], `#{FZF} -ffb --tiebreak=end < #{tempname}`.split($/)
+
+    by_begin_end = %w[
+      foobar
+      --foobar
+      ----foobar
+      foobar--
+      --foobar--
+      foobar----
+      f-o-o-b-a-r
+    ]
+    assert_equal by_begin_end, `#{FZF} -ffb --tiebreak=end,begin < #{tempname}`.split($/)
+    assert_equal by_begin_end, `#{FZF} -ffb --tiebreak=end,length < #{tempname}`.split($/)
   end
 
   def test_tiebreak_length_with_nth
@@ -517,7 +617,7 @@ class TestGoFZF < TestBase
       123:hello
       1234567:h
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -fh`.split($/)
+    assert_equal output, `#{FZF} -fh < #{tempname}`.split($/)
 
     output = %w[
       1234567:h
@@ -525,7 +625,7 @@ class TestGoFZF < TestBase
       1:hell
       123:hello
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -fh -n2 -d:`.split($/)
+    assert_equal output, `#{FZF} -fh -n2 -d: < #{tempname}`.split($/)
   end
 
   def test_tiebreak_length_with_nth_trim_length
@@ -544,7 +644,7 @@ class TestGoFZF < TestBase
       "apple juice   bottle 1",
       "apple  ui     bottle 2",
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -fa -n1`.split($/)
+    assert_equal output, `#{FZF} -fa -n1 < #{tempname}`.split($/)
 
     # len(1 ~ 2)
     output = [
@@ -553,7 +653,7 @@ class TestGoFZF < TestBase
       "apple juice   bottle 1",
       "app     ice   bottle 3",
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -fai -n1..2`.split($/)
+    assert_equal output, `#{FZF} -fai -n1..2 < #{tempname}`.split($/)
 
     # len(1) + len(2)
     output = [
@@ -562,7 +662,7 @@ class TestGoFZF < TestBase
       "apple  ui     bottle 2",
       "apple juice   bottle 1",
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -x -f"a i" -n1,2`.split($/)
+    assert_equal output, `#{FZF} -x -f"a i" -n1,2 < #{tempname}`.split($/)
 
     # len(2)
     output = [
@@ -571,8 +671,8 @@ class TestGoFZF < TestBase
       "app     ice   bottle 3",
       "apple juice   bottle 1",
     ]
-    assert_equal output, `cat #{tempname} | #{FZF} -fi -n2`.split($/)
-    assert_equal output, `cat #{tempname} | #{FZF} -fi -n2,1..2`.split($/)
+    assert_equal output, `#{FZF} -fi -n2 < #{tempname}`.split($/)
+    assert_equal output, `#{FZF} -fi -n2,1..2 < #{tempname}`.split($/)
   end
 
   def test_tiebreak_end_backward_scan
@@ -582,8 +682,8 @@ class TestGoFZF < TestBase
     ]
     writelines tempname, input
 
-    assert_equal input.reverse, `cat #{tempname} | #{FZF} -f fb`.split($/)
-    assert_equal input, `cat #{tempname} | #{FZF} -f fb --tiebreak=end`.split($/)
+    assert_equal input.reverse, `#{FZF} -f fb < #{tempname}`.split($/)
+    assert_equal input, `#{FZF} -f fb --tiebreak=end < #{tempname}`.split($/)
   end
 
   def test_invalid_cache
@@ -613,7 +713,7 @@ class TestGoFZF < TestBase
     File.open(tempname, 'w') do |f|
       f << data
     end
-    assert_equal data, `cat #{tempname} | #{FZF} -f .`.chomp
+    assert_equal data, `#{FZF} -f . < #{tempname}`.chomp
   end
 
   def test_read0
@@ -888,18 +988,18 @@ class TestGoFZF < TestBase
 
   def test_with_nth
     writelines tempname, ['hello world ', 'byebye']
-    assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1`.chomp
+    assert_equal 'hello world ', `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 < #{tempname}`.chomp
   end
 
   def test_with_nth_ansi
     writelines tempname, ["\x1b[33mhello \x1b[34;1mworld\x1b[m ", 'byebye']
-    assert_equal 'hello world ', `cat #{tempname} | #{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 --ansi`.chomp
+    assert_equal 'hello world ', `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 --ansi < #{tempname}`.chomp
   end
 
   def test_with_nth_no_ansi
     src = "\x1b[33mhello \x1b[34;1mworld\x1b[m "
     writelines tempname, [src, 'byebye']
-    assert_equal src, `cat #{tempname} | #{FZF} -fhehe -x -n 2.. --with-nth 2,1,1 --no-ansi`.chomp
+    assert_equal src, `#{FZF} -fhehe -x -n 2.. --with-nth 2,1,1 --no-ansi < #{tempname}`.chomp
   end
 
   def test_exit_0_exit_code

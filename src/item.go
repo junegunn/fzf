@@ -20,25 +20,35 @@ type Item struct {
 	text        []rune
 	origText    *[]rune
 	transformed []Token
-	index       uint32
+	index       int32
 	offsets     []Offset
 	colors      []ansiOffset
-	rank        Rank
+	rank        []int32
 }
 
-// Rank is used to sort the search result
-type Rank struct {
-	matchlen uint16
-	tiebreak uint16
-	index    uint32
+// Sort criteria to use. Never changes once fzf is started.
+var sortCriteria []criterion
+
+func isRankValid(rank []int32) bool {
+	// Exclude ordinal index
+	for i := 0; i < len(rank)-1; i++ {
+		if rank[i] > 0 {
+			return true
+		}
+	}
+	return false
 }
 
-// Tiebreak criterion to use. Never changes once fzf is started.
-var rankTiebreak tiebreak
+func buildEmptyRank(index int32) []int32 {
+	len := len(sortCriteria)
+	arr := make([]int32, len)
+	arr[len-1] = index
+	return arr
+}
 
 // Rank calculates rank of the Item
-func (item *Item) Rank(cache bool) Rank {
-	if cache && (item.rank.matchlen > 0 || item.rank.tiebreak > 0) {
+func (item *Item) Rank(cache bool) []int32 {
+	if cache && isRankValid(item.rank) {
 		return item.rank
 	}
 	matchlen := 0
@@ -64,32 +74,37 @@ func (item *Item) Rank(cache bool) Rank {
 		}
 	}
 	if matchlen == 0 {
-		matchlen = math.MaxUint16
+		matchlen = math.MaxInt32
 	}
-	var tiebreak uint16
-	switch rankTiebreak {
-	case byLength:
-		// It is guaranteed that .transformed in not null in normal execution
-		if item.transformed != nil {
-			// If offsets is empty, lenSum will be 0, but we don't care
-			tiebreak = uint16(lenSum)
-		} else {
-			tiebreak = uint16(len(item.text))
+	rank := make([]int32, len(sortCriteria))
+	for idx, criterion := range sortCriteria {
+		var val int32
+		switch criterion {
+		case byMatchLen:
+			val = int32(matchlen)
+		case byLength:
+			// It is guaranteed that .transformed in not null in normal execution
+			if item.transformed != nil {
+				// If offsets is empty, lenSum will be 0, but we don't care
+				val = int32(lenSum)
+			} else {
+				val = int32(len(item.text))
+			}
+		case byBegin:
+			// We can't just look at item.offsets[0][0] because it can be an inverse term
+			val = int32(minBegin)
+		case byEnd:
+			if prevEnd > 0 {
+				val = int32(1 + len(item.text) - prevEnd)
+			} else {
+				// Empty offsets due to inverse terms.
+				val = 1
+			}
+		case byIndex:
+			val = item.index
 		}
-	case byBegin:
-		// We can't just look at item.offsets[0][0] because it can be an inverse term
-		tiebreak = uint16(minBegin)
-	case byEnd:
-		if prevEnd > 0 {
-			tiebreak = uint16(1 + len(item.text) - prevEnd)
-		} else {
-			// Empty offsets due to inverse terms.
-			tiebreak = 1
-		}
-	case byIndex:
-		tiebreak = 1
+		rank[idx] = val
 	}
-	rank := Rank{uint16(matchlen), tiebreak, item.index}
 	if cache {
 		item.rank = rank
 	}
@@ -254,18 +269,19 @@ func (a ByRelevanceTac) Less(i, j int) bool {
 	return compareRanks(irank, jrank, true)
 }
 
-func compareRanks(irank Rank, jrank Rank, tac bool) bool {
-	if irank.matchlen < jrank.matchlen {
-		return true
-	} else if irank.matchlen > jrank.matchlen {
-		return false
+func compareRanks(irank []int32, jrank []int32, tac bool) bool {
+	lastIdx := len(irank) - 1
+	for idx, left := range irank {
+		right := jrank[idx]
+		if tac && idx == lastIdx {
+			left = left * -1
+			right = right * -1
+		}
+		if left < right {
+			return true
+		} else if left > right {
+			return false
+		}
 	}
-
-	if irank.tiebreak < jrank.tiebreak {
-		return true
-	} else if irank.tiebreak > jrank.tiebreak {
-		return false
-	}
-
-	return (irank.index <= jrank.index) != tac
+	return true
 }

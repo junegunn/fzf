@@ -52,7 +52,7 @@ func Run(opts *Options) {
 	initProcs()
 
 	sort := opts.Sort > 0
-	rankTiebreak = opts.Tiebreak
+	sortCriteria = opts.Criteria
 
 	if opts.Version {
 		fmt.Println(version)
@@ -103,9 +103,9 @@ func Run(opts *Options) {
 			runes, colors := ansiProcessor(data)
 			return &Item{
 				text:   runes,
-				index:  uint32(index),
+				index:  int32(index),
 				colors: colors,
-				rank:   Rank{0, 0, uint32(index)}}
+				rank:   buildEmptyRank(int32(index))}
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) *Item {
@@ -120,9 +120,9 @@ func Run(opts *Options) {
 			item := Item{
 				text:     joinTokens(trans),
 				origText: &runes,
-				index:    uint32(index),
+				index:    int32(index),
 				colors:   nil,
-				rank:     Rank{0, 0, uint32(index)}}
+				rank:     buildEmptyRank(int32(index))}
 
 			trimmed, colors := ansiProcessorRunes(item.text)
 			item.text = trimmed
@@ -141,9 +141,19 @@ func Run(opts *Options) {
 	}
 
 	// Matcher
+	forward := true
+	for _, cri := range opts.Criteria[1:] {
+		if cri == byEnd {
+			forward = false
+			break
+		}
+		if cri == byBegin {
+			break
+		}
+	}
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(
-			opts.Fuzzy, opts.Extended, opts.Case, opts.Tiebreak != byEnd,
+			opts.Fuzzy, opts.Extended, opts.Case, forward,
 			opts.Nth, opts.Delimiter, runes)
 	}
 	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox)

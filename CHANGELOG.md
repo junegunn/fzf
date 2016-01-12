@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.11.2
+------
+
+- `--tiebreak` now accepts comma-separated list of sort criteria.
+    - Each criterion should appear only once in the list
+    - `index` is only allowed at the end of the list
+    - `index` is implicitly appended to the list when not specified
+    - Default is `length` (or equivalently `length,index`)
+
 0.11.1
 ------
 

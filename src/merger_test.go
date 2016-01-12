@@ -23,7 +23,7 @@ func randItem() *Item {
 	}
 	return &Item{
 		text:    []rune(str),
-		index:   rand.Uint32(),
+		index:   rand.Int31(),
 		offsets: offsets}
 }
 

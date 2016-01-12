@@ -27,7 +27,8 @@ const usage = `usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
     +s, --no-sort         Do not sort the result
     --tac                 Reverse the order of the input
-    --tiebreak=CRITERION  Sort criterion when the scores are tied;
+    --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
+                          when the scores are tied;
                           [length|begin|end|index] (default: length)
 
   Interface
@@ -75,10 +76,11 @@ const (
 )
 
 // Sort criteria
-type tiebreak int
+type criterion int
 
 const (
-	byLength tiebreak = iota
+	byMatchLen criterion = iota
+	byLength
 	byBegin
 	byEnd
 	byIndex
@@ -98,7 +100,7 @@ type Options struct {
 	Delimiter   Delimiter
 	Sort        int
 	Tac         bool
-	Tiebreak    tiebreak
+	Criteria    []criterion
 	Multi       bool
 	Ansi        bool
 	Mouse       bool
@@ -145,7 +147,7 @@ func defaultOptions() *Options {
 		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
-		Tiebreak:    byLength,
+		Criteria:    []criterion{byMatchLen, byLength, byIndex},
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
@@ -361,20 +363,43 @@ func parseKeyChords(str string, message string) map[int]string {
 	return chords
 }
 
-func parseTiebreak(str string) tiebreak {
-	switch strings.ToLower(str) {
-	case "length":
-		return byLength
-	case "index":
-		return byIndex
-	case "begin":
-		return byBegin
-	case "end":
-		return byEnd
-	default:
-		errorExit("invalid sort criterion: " + str)
+func parseTiebreak(str string) []criterion {
+	criteria := []criterion{byMatchLen}
+	hasIndex := false
+	hasLength := false
+	hasBegin := false
+	hasEnd := false
+	check := func(notExpected *bool, name string) {
+		if *notExpected {
+			errorExit("duplicate sort criteria: " + name)
+		}
+		if hasIndex {
+			errorExit("index should be the last criterion")
+		}
+		*notExpected = true
 	}
-	return byLength
+	for _, str := range strings.Split(strings.ToLower(str), ",") {
+		switch str {
+		case "index":
+			check(&hasIndex, "index")
+			criteria = append(criteria, byIndex)
+		case "length":
+			check(&hasLength, "length")
+			criteria = append(criteria, byLength)
+		case "begin":
+			check(&hasBegin, "begin")
+			criteria = append(criteria, byBegin)
+		case "end":
+			check(&hasEnd, "end")
+			criteria = append(criteria, byEnd)
+		default:
+			errorExit("invalid sort criterion: " + str)
+		}
+	}
+	if !hasIndex {
+		criteria = append(criteria, byIndex)
+	}
+	return criteria
 }
 
 func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
@@ -715,7 +740,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--expect":
 			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
 		case "--tiebreak":
-			opts.Tiebreak = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
+			opts.Criteria = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
 			keymap, opts.Execmap, opts.ToggleSort =
 				parseKeymap(keymap, opts.Execmap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
@@ -850,7 +875,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--expect="); match {
 				opts.Expect = parseKeyChords(value, "key names required")
 			} else if match, value := optString(arg, "--tiebreak="); match {
-				opts.Tiebreak = parseTiebreak(value)
+				opts.Criteria = parseTiebreak(value)
 			} else if match, value := optString(arg, "--color="); match {
 				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {

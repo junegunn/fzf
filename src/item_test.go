@@ -23,27 +23,30 @@ func TestOffsetSort(t *testing.T) {
 }
 
 func TestRankComparison(t *testing.T) {
-	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}, false) ||
-		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}, false) ||
-		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}, false) ||
-		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}, false) {
+	if compareRanks([]int32{3, 0, 5}, []int32{2, 0, 7}, false) ||
+		!compareRanks([]int32{3, 0, 5}, []int32{3, 0, 6}, false) ||
+		!compareRanks([]int32{1, 2, 3}, []int32{1, 3, 2}, false) ||
+		!compareRanks([]int32{0, 0, 0}, []int32{0, 0, 0}, false) {
 		t.Error("Invalid order")
 	}
 
-	if compareRanks(Rank{3, 0, 5}, Rank{2, 0, 7}, true) ||
-		!compareRanks(Rank{3, 0, 5}, Rank{3, 0, 6}, false) ||
-		!compareRanks(Rank{1, 2, 3}, Rank{1, 3, 2}, true) ||
-		!compareRanks(Rank{0, 0, 0}, Rank{0, 0, 0}, false) {
+	if compareRanks([]int32{3, 0, 5}, []int32{2, 0, 7}, true) ||
+		!compareRanks([]int32{3, 0, 5}, []int32{3, 0, 6}, false) ||
+		!compareRanks([]int32{1, 2, 3}, []int32{1, 3, 2}, true) ||
+		!compareRanks([]int32{0, 0, 0}, []int32{0, 0, 0}, false) {
 		t.Error("Invalid order (tac)")
 	}
 }
 
 // Match length, string length, index
 func TestItemRank(t *testing.T) {
+	// FIXME global
+	sortCriteria = []criterion{byMatchLen, byLength, byIndex}
+
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := Item{text: strs[0], index: 1, offsets: []Offset{}}
 	rank1 := item1.Rank(true)
-	if rank1.matchlen != math.MaxUint16 || rank1.tiebreak != 3 || rank1.index != 1 {
+	if rank1[0] != math.MaxInt32 || rank1[1] != 3 || rank1[2] != 1 {
 		t.Error(item1.Rank(true))
 	}
 	// Only differ in index
@@ -63,10 +66,10 @@ func TestItemRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := Item{text: strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item4 := Item{text: strs[1], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
-	item5 := Item{text: strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item6 := Item{text: strs[2], rank: Rank{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item3 := Item{text: strs[1], rank: []int32{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item4 := Item{text: strs[1], rank: []int32{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item5 := Item{text: strs[2], rank: []int32{0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item6 := Item{text: strs[2], rank: []int32{0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
 	items = []*Item{&item1, &item2, &item3, &item4, &item5, &item6}
 	sort.Sort(ByRelevance(items))
 	if items[0] != &item6 || items[1] != &item4 ||

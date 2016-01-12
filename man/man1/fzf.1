@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2015" "fzf 0.11.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2016" "fzf 0.11.2" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -68,8 +68,8 @@ Reverse the order of the input
 e.g. \fBhistory | fzf --tac --no-sort\fR
 .RE
 .TP
-.BI "--tiebreak=" "CRI"
-Sort criterion to use when the scores are tied
+.BI "--tiebreak=" "CRI[,..]"
+Comma-separated list of sort criteria to apply when the scores are tied.
 .br
 .R ""
 .br
@@ -81,6 +81,15 @@ Sort criterion to use when the scores are tied
 .br
 .BR index "   Prefers item that appeared earlier in the input stream"
 .br
+.R ""
+.br
+- Each criterion should appear only once in the list
+.br
+- \fBindex\fR is only allowed at the end of the list
+.br
+- \fBindex\fR is implicitly appended to the list when not specified
+.br
+- Default is \fBlength\fR (or equivalently \fBlength\fR,index)
 .SS Interface
 .TP
 .B "-m, --multi"

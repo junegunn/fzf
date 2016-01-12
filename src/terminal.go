@@ -50,7 +50,7 @@ type Terminal struct {
 	progress   int
 	reading    bool
 	merger     *Merger
-	selected   map[uint32]selectedItem
+	selected   map[int32]selectedItem
 	reqBox     *util.EventBox
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
@@ -223,7 +223,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ansi:       opts.Ansi,
 		reading:    true,
 		merger:     EmptyMerger,
-		selected:   make(map[uint32]selectedItem),
+		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -466,7 +466,7 @@ func (t *Terminal) printHeader() {
 			text:   []rune(trimmed),
 			index:  0,
 			colors: colors,
-			rank:   Rank{0, 0, 0}}
+			rank:   buildEmptyRank(0)}
 
 		t.move(line, 2, true)
 		t.printHighlighted(item, false, C.ColHeader, 0, false)

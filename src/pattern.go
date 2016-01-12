@@ -309,7 +309,7 @@ func dupItem(item *Item, offsets []Offset) *Item {
 		index:       item.index,
 		offsets:     offsets,
 		colors:      item.colors,
-		rank:        Rank{0, 0, item.index}}
+		rank:        buildEmptyRank(item.index)}
 }
 
 func (p *Pattern) basicMatch(item *Item) (int, int, int) {
