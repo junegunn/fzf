@@ -10,6 +10,9 @@ CHANGELOG
     - `index` is implicitly appended to the list when not specified
     - Default is `length` (or equivalently `length,index`)
 - `begin` criterion will ignore leading whitespaces when calculating the index
+- Added `toggle-in` and `toggle-out` actions
+    - Switch direction depending on `--reverse`-ness
+    - `export FZF_DEFAULT_OPTS="--bind tab:toggle-out,shift-tab:toggle-in"`
 
 0.11.1
 ------
