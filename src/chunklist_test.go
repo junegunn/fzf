@@ -7,7 +7,7 @@ import (
 
 func TestChunkList(t *testing.T) {
 	// FIXME global
-	sortCriteria = []criterion{byMatchLen, byLength, byIndex}
+	sortCriteria = []criterion{byMatchLen, byLength}
 
 	cl := NewChunkList(func(s []byte, i int) *Item {
 		return &Item{text: []rune(string(s)), rank: buildEmptyRank(int32(i * 2))}
@@ -39,7 +39,7 @@ func TestChunkList(t *testing.T) {
 	if len(*chunk1) != 2 {
 		t.Error("Snapshot should contain only two items")
 	}
-	last := func(arr []int32) int32 {
+	last := func(arr [5]int32) int32 {
 		return arr[len(arr)-1]
 	}
 	if string((*chunk1)[0].text) != "hello" || last((*chunk1)[0].rank) != 0 ||

@@ -20,41 +20,41 @@ type Item struct {
 	text        []rune
 	origText    *[]rune
 	transformed []Token
-	index       int32
 	offsets     []Offset
 	colors      []ansiOffset
-	rank        []int32
+	rank        [5]int32
 }
 
 // Sort criteria to use. Never changes once fzf is started.
 var sortCriteria []criterion
 
-func isRankValid(rank []int32) bool {
+func isRankValid(rank [5]int32) bool {
 	// Exclude ordinal index
-	for i := 0; i < len(rank)-1; i++ {
-		if rank[i] > 0 {
+	for _, r := range rank[:4] {
+		if r > 0 {
 			return true
 		}
 	}
 	return false
 }
 
-func buildEmptyRank(index int32) []int32 {
-	len := len(sortCriteria)
-	arr := make([]int32, len)
-	arr[len-1] = index
-	return arr
+func buildEmptyRank(index int32) [5]int32 {
+	return [5]int32{0, 0, 0, 0, index}
+}
+
+func (item *Item) Index() int32 {
+	return item.rank[4]
 }
 
 // Rank calculates rank of the Item
-func (item *Item) Rank(cache bool) []int32 {
+func (item *Item) Rank(cache bool) [5]int32 {
 	if cache && isRankValid(item.rank) {
 		return item.rank
 	}
 	matchlen := 0
 	prevEnd := 0
 	lenSum := 0
-	minBegin := math.MaxUint16
+	minBegin := math.MaxInt32
 	for _, offset := range item.offsets {
 		begin := int(offset[0])
 		end := int(offset[1])
@@ -76,7 +76,7 @@ func (item *Item) Rank(cache bool) []int32 {
 	if matchlen == 0 {
 		matchlen = math.MaxInt32
 	}
-	rank := make([]int32, len(sortCriteria))
+	rank := buildEmptyRank(item.Index())
 	for idx, criterion := range sortCriteria {
 		var val int32
 		switch criterion {
@@ -100,8 +100,6 @@ func (item *Item) Rank(cache bool) []int32 {
 				// Empty offsets due to inverse terms.
 				val = 1
 			}
-		case byIndex:
-			val = item.index
 		}
 		rank[idx] = val
 	}
@@ -269,19 +267,15 @@ func (a ByRelevanceTac) Less(i, j int) bool {
 	return compareRanks(irank, jrank, true)
 }
 
-func compareRanks(irank []int32, jrank []int32, tac bool) bool {
-	lastIdx := len(irank) - 1
-	for idx, left := range irank {
+func compareRanks(irank [5]int32, jrank [5]int32, tac bool) bool {
+	for idx := 0; idx < 4; idx++ {
+		left := irank[idx]
 		right := jrank[idx]
-		if tac && idx == lastIdx {
-			left = left * -1
-			right = right * -1
-		}
 		if left < right {
 			return true
 		} else if left > right {
 			return false
 		}
 	}
-	return true
+	return (irank[4] <= jrank[4]) != tac
 }

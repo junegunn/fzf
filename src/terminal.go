@@ -464,7 +464,6 @@ func (t *Terminal) printHeader() {
 		state = newState
 		item := &Item{
 			text:   []rune(trimmed),
-			index:  0,
 			colors: colors,
 			rank:   buildEmptyRank(0)}
 
@@ -491,7 +490,7 @@ func (t *Terminal) printList() {
 }
 
 func (t *Terminal) printItem(item *Item, current bool) {
-	_, selected := t.selected[item.index]
+	_, selected := t.selected[item.Index()]
 	if current {
 		C.CPrint(C.ColCursor, true, ">")
 		if selected {
@@ -836,8 +835,8 @@ func (t *Terminal) Loop() {
 			}
 		}
 		selectItem := func(item *Item) bool {
-			if _, found := t.selected[item.index]; !found {
-				t.selected[item.index] = selectedItem{time.Now(), item.StringPtr(t.ansi)}
+			if _, found := t.selected[item.Index()]; !found {
+				t.selected[item.Index()] = selectedItem{time.Now(), item.StringPtr(t.ansi)}
 				return true
 			}
 			return false
@@ -845,7 +844,7 @@ func (t *Terminal) Loop() {
 		toggleY := func(y int) {
 			item := t.merger.Get(y)
 			if !selectItem(item) {
-				delete(t.selected, item.index)
+				delete(t.selected, item.Index())
 			}
 		}
 		toggle := func() {
@@ -934,7 +933,7 @@ func (t *Terminal) Loop() {
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
 						item := t.merger.Get(i)
-						delete(t.selected, item.index)
+						delete(t.selected, item.Index())
 					}
 					req(reqList, reqInfo)
 				}

@@ -83,7 +83,6 @@ const (
 	byLength
 	byBegin
 	byEnd
-	byIndex
 )
 
 func defaultMargin() [4]string {
@@ -147,7 +146,7 @@ func defaultOptions() *Options {
 		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
-		Criteria:    []criterion{byMatchLen, byLength, byIndex},
+		Criteria:    []criterion{byMatchLen, byLength},
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
@@ -382,7 +381,6 @@ func parseTiebreak(str string) []criterion {
 		switch str {
 		case "index":
 			check(&hasIndex, "index")
-			criteria = append(criteria, byIndex)
 		case "length":
 			check(&hasLength, "length")
 			criteria = append(criteria, byLength)
@@ -395,9 +393,6 @@ func parseTiebreak(str string) []criterion {
 		default:
 			errorExit("invalid sort criterion: " + str)
 		}
-	}
-	if !hasIndex {
-		criteria = append(criteria, byIndex)
 	}
 	return criteria
 }

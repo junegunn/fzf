@@ -103,7 +103,6 @@ func Run(opts *Options) {
 			runes, colors := ansiProcessor(data)
 			return &Item{
 				text:   runes,
-				index:  int32(index),
 				colors: colors,
 				rank:   buildEmptyRank(int32(index))}
 		})
@@ -120,7 +119,6 @@ func Run(opts *Options) {
 			item := Item{
 				text:     joinTokens(trans),
 				origText: &runes,
-				index:    int32(index),
 				colors:   nil,
 				rank:     buildEmptyRank(int32(index))}
 
