@@ -125,6 +125,8 @@ const (
 	actToggleAll
 	actToggleDown
 	actToggleUp
+	actToggleIn
+	actToggleOut
 	actDown
 	actUp
 	actPageUp
@@ -949,6 +951,16 @@ func (t *Terminal) Loop() {
 					}
 					req(reqList, reqInfo)
 				}
+			case actToggleIn:
+				if t.reverse {
+					return doAction(actToggleUp, mapkey)
+				}
+				return doAction(actToggleDown, mapkey)
+			case actToggleOut:
+				if t.reverse {
+					return doAction(actToggleDown, mapkey)
+				}
+				return doAction(actToggleUp, mapkey)
 			case actToggleDown:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()

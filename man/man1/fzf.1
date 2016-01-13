@@ -219,7 +219,7 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
 .RE
 
 .RS
-  \fBACTION:               DEFAULT BINDINGS:
+  \fBACTION:               DEFAULT BINDINGS (NOTES):
     \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
     \fBaccept\fR                \fIenter   double-click\fR
     \fBbackward-char\fR         \fIctrl-b  left\fR
@@ -249,6 +249,8 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBtoggle\fR
     \fBtoggle-all\fR
     \fBtoggle-down\fR           \fIctrl-i  (tab)\fR
+    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle-up\fR : \fBtoggle-down\fR)
+    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle-down\fR : \fBtoggle-up\fR)
     \fBtoggle-sort\fR           (equivalent to \fB--toggle-sort\fR)
     \fBtoggle-up\fR             \fIbtab    (shift-tab)\fR
     \fBunix-line-discard\fR     \fIctrl-u\fR

@@ -566,6 +566,10 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			keymap[key] = actToggleDown
 		case "toggle-up":
 			keymap[key] = actToggleUp
+		case "toggle-in":
+			keymap[key] = actToggleIn
+		case "toggle-out":
+			keymap[key] = actToggleOut
 		case "toggle-all":
 			keymap[key] = actToggleAll
 		case "select-all":
