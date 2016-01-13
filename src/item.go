@@ -92,7 +92,14 @@ func (item *Item) Rank(cache bool) [5]int32 {
 			}
 		case byBegin:
 			// We can't just look at item.offsets[0][0] because it can be an inverse term
-			val = int32(minBegin)
+			whitePrefixLen := 0
+			for idx, r := range item.text {
+				whitePrefixLen = idx
+				if idx == minBegin || r != ' ' && r != '\t' {
+					break
+				}
+			}
+			val = int32(minBegin - whitePrefixLen)
 		case byEnd:
 			if prevEnd > 0 {
 				val = int32(1 + len(item.text) - prevEnd)

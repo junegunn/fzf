@@ -605,6 +605,64 @@ class TestGoFZF < TestBase
     assert_equal by_begin_end, `#{FZF} -ffb --tiebreak=end,length < #{tempname}`.split($/)
   end
 
+  def test_tiebreak_white_prefix
+    writelines tempname, [
+      'f o o b a r',
+      '    foo bar',
+      '    foobar',
+      '----foo bar',
+      '----foobar',
+      '  foo bar',
+      '  foobar--',
+      '  foobar',
+      '--foo bar',
+      '--foobar',
+      'foobar',
+    ]
+
+    assert_equal [
+      '    foobar',
+      '  foobar',
+      'foobar',
+      '  foobar--',
+      '--foobar',
+      '----foobar',
+      '    foo bar',
+      '  foo bar',
+      '--foo bar',
+      '----foo bar',
+      'f o o b a r',
+    ], `#{FZF} -ffb < #{tempname}`.split($/)
+
+    assert_equal [
+      '    foobar',
+      '  foobar--',
+      '  foobar',
+      'foobar',
+      '--foobar',
+      '----foobar',
+      '    foo bar',
+      '  foo bar',
+      '--foo bar',
+      '----foo bar',
+      'f o o b a r',
+    ], `#{FZF} -ffb --tiebreak=begin < #{tempname}`.split($/)
+
+    assert_equal [
+      '    foobar',
+      '  foobar',
+      'foobar',
+      '  foobar--',
+      '--foobar',
+      '----foobar',
+      '    foo bar',
+      '  foo bar',
+      '--foo bar',
+      '----foo bar',
+      'f o o b a r',
+    ], `#{FZF} -ffb --tiebreak=begin,length < #{tempname}`.split($/)
+  end
+
   def test_tiebreak_length_with_nth
     input = %w[
       1:hell
