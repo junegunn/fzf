@@ -143,8 +143,10 @@ class TestBase < Minitest::Test
   attr_reader :tmux
 
   def tempname
+    @temp_suffix ||= 0
     [TEMPNAME,
-     caller_locations.map(&:label).find { |l| l =~ /^test_/ }].join '-'
+     caller_locations.map(&:label).find { |l| l =~ /^test_/ },
+     @temp_suffix].join '-'
   end
 
   def setup
@@ -158,6 +160,7 @@ class TestBase < Minitest::Test
     File.read(tempname)
   ensure
     File.unlink tempname while File.exists?(tempname)
+    @temp_suffix += 1
     tmux.prepare
   end
 
