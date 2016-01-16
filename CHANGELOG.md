@@ -13,6 +13,7 @@ CHANGELOG
 - Added `toggle-in` and `toggle-out` actions
     - Switch direction depending on `--reverse`-ness
     - `export FZF_DEFAULT_OPTS="--bind tab:toggle-out,shift-tab:toggle-in"`
+- Reduced the initial delay when --tac is not given
 
 0.11.1
 ------
