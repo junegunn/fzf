@@ -18,7 +18,8 @@ const (
 	defaultCommand = `find . -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null | sed s/^..//`
 
 	// Terminal
-	initialDelay    = 100 * time.Millisecond
+	initialDelay    = 20 * time.Millisecond
+	initialDelayTac = 100 * time.Millisecond
 	spinnerDuration = 200 * time.Millisecond
 
 	// Matcher

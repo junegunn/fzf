@@ -22,6 +22,7 @@ import (
 
 // Terminal represents terminal input/output
 type Terminal struct {
+	initDelay  time.Duration
 	inlineInfo bool
 	prompt     string
 	reverse    bool
@@ -198,7 +199,14 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		header = reverseStringArray(opts.Header)
 	}
 	_tabStop = opts.Tabstop
+	var delay time.Duration
+	if opts.Tac {
+		delay = initialDelayTac
+	} else {
+		delay = initialDelay
+	}
 	return &Terminal{
+		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
 		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
@@ -751,7 +759,7 @@ func (t *Terminal) Loop() {
 		t.printHeader()
 		t.mutex.Unlock()
 		go func() {
-			timer := time.NewTimer(initialDelay)
+			timer := time.NewTimer(t.initDelay)
 			<-timer.C
 			t.reqBox.Set(reqRefresh, nil)
 		}()
