@@ -13,7 +13,13 @@ CHANGELOG
 - Added `toggle-in` and `toggle-out` actions
     - Switch direction depending on `--reverse`-ness
     - `export FZF_DEFAULT_OPTS="--bind tab:toggle-out,shift-tab:toggle-in"`
-- Reduced the initial delay when --tac is not given
+- Reduced the initial delay when `--tac` is not given
+    - fzf defers the initial rendering of the screen up to 100ms if the input
+      stream is ongoing to prevent unnecessary redraw during the initial
+      phase. However, 100ms delay is quite noticeable and might give the
+      impression that fzf is not snappy enough. This commit reduces the
+      maximum delay down to 20ms when `--tac` is not specified, in which case
+      the input list quickly fills the entire screen.
 
 0.11.1
 ------
