@@ -1269,7 +1269,7 @@ module CompletionTest
     tmux.send_keys 'C-u'
     tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab, pane: 0
     tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys :Enter
+    tmux.send_keys 'C-K', :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
       lines[-1].end_with?('/tmp/fzf\ test/foobar')
@@ -1338,6 +1338,20 @@ module CompletionTest
     tmux.until do |lines|
       tmux.send_keys 'C-L'
       lines[-1] == "kill #{pid}"
+    end
+
+    def test_custom_completion
+      tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
+      tmux.prepare
+      tmux.send_keys 'ls /tmp/**', :Tab, pane: 0
+      tmux.until(1) { |lines| lines.item_count == 11 }
+      tmux.send_keys :BTab, :BTab, :BTab
+      tmux.until(1) { |lines| lines[-2].include? '(3)' }
+      tmux.send_keys :Enter
+      tmux.until do |lines|
+        tmux.send_keys 'C-L'
+        lines[-1] == "ls /tmp 1 2"
+      end
     end
   ensure
     Process.kill 'KILL', pid.to_i rescue nil if pid

@@ -10,12 +10,32 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
+# To use custom commands instead of find, override _fzf_compgen_{path,dir}
+if ! declare -f _fzf_compgen_path > /dev/null; then
+  _fzf_compgen_path() {
+    echo "$1"
+    \find -L "$1" \
+      -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+  }
+fi
+
+if ! declare -f _fzf_compgen_dir > /dev/null; then
+  _fzf_compgen_dir() {
+    \find -L "$1" \
+      -name .git -prune -o -name .svn -prune -o -type d \
+      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+  }
+fi
+
+###########################################################
+
 __fzf_generic_path_completion() {
-  local base lbuf find_opts fzf_opts suffix tail fzf dir leftover matches nnm
+  local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches nnm
   # (Q) flag removes a quoting level: "foo\ bar" => "foo bar"
   base=${(Q)1}
   lbuf=$2
-  find_opts=$3
+  compgen=$3
   fzf_opts=$4
   suffix=$5
   tail=$6
@@ -33,7 +53,7 @@ __fzf_generic_path_completion() {
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       dir=${~dir}
-      matches=$(\find -L "$dir" ${=find_opts} -a -not -path "$dir" -print 2> /dev/null | sed 's@^\./@@' | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
+      matches=$(eval "$compgen $(printf %q "$dir")" | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
         printf "%q$suffix " "$item"
       done)
       matches=${matches% }
@@ -50,14 +70,12 @@ __fzf_generic_path_completion() {
 }
 
 _fzf_path_completion() {
-  __fzf_generic_path_completion "$1" "$2" \
-    "-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )" \
+  __fzf_generic_path_completion "$1" "$2" _fzf_compgen_path \
     "-m" "" " "
 }
 
 _fzf_dir_completion() {
-  __fzf_generic_path_completion "$1" "$2" \
-    "-name .git -prune -o -name .svn -prune -o -type d" \
+  __fzf_generic_path_completion "$1" "$2" _fzf_compgen_dir \
     "" "/" ""
 }
 
@@ -145,7 +163,7 @@ fzf-completion() {
     zle redisplay
   # Trigger sequence given
   elif [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
-    d_cmds=(cd pushd rmdir)
+    d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir})
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER        || lbuf=${LBUFFER:0:-${#tokens[-1]}}

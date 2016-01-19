@@ -10,6 +10,26 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
+# To use custom commands instead of find, override _fzf_compgen_{path,dir}
+if ! declare -f _fzf_compgen_path > /dev/null; then
+  _fzf_compgen_path() {
+    echo "$1"
+    \find -L "$1" \
+      -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+  }
+fi
+
+if ! declare -f _fzf_compgen_dir > /dev/null; then
+  _fzf_compgen_dir() {
+    \find -L "$1" \
+      -name .git -prune -o -name .svn -prune -o -type d \
+      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+  }
+fi
+
+###########################################################
+
 _fzf_orig_completion_filter() {
   sed 's/^\(.*-F\) *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\3="\1 %s \3 #\2";/' |
   awk -F= '{gsub(/[^a-z0-9_= ;]/, "_", $1); print $1"="$2}'
@@ -113,7 +133,7 @@ __fzf_generic_path_completion() {
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
         tput sc
-        matches=$(\find -L "$dir" $1 -a -not -path "$dir" -print 2> /dev/null | sed 's@^\./@@' | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -171,21 +191,16 @@ _fzf_complete() {
 }
 
 _fzf_path_completion() {
-  __fzf_generic_path_completion \
-    "-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )" \
-    "-m" "" "$@"
+  __fzf_generic_path_completion _fzf_compgen_path "-m" "" "$@"
 }
 
+# Deprecated. No file only completion.
 _fzf_file_completion() {
-  __fzf_generic_path_completion \
-    "-name .git -prune -o -name .svn -prune -o ( -type f -o -type l )" \
-    "-m" "" "$@"
+  _fzf_path_completion "$@"
 }
 
 _fzf_dir_completion() {
-  __fzf_generic_path_completion \
-    "-name .git -prune -o -name .svn -prune -o -type d" \
-    "" "/" "$@"
+  __fzf_generic_path_completion _fzf_compgen_dir "" "/" "$@"
 }
 
 _fzf_complete_kill() {
@@ -239,13 +254,12 @@ _fzf_complete_unalias() {
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
 
-d_cmds="cd pushd rmdir"
-f_cmds="
+d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
+a_cmds="
   awk cat diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg java
   javac ld less more mvim nvim patch perl python ruby
-  sed sftp sort source tail tee uniq vi view vim wc xdg-open"
-a_cmds="
+  sed sftp sort source tail tee uniq vi view vim wc xdg-open
   basename bunzip2 bzip2 chmod chown curl cp dirname du
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
@@ -256,7 +270,7 @@ x_cmds="kill ssh telnet unset unalias export"
 if [ "$_fzf_completion_loaded" != '0.10.8' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
   eval $(complete | \grep '\-F' | \grep -v _fzf_ |
-    \grep -E " ($(echo $d_cmds $f_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
+    \grep -E " ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
   export _fzf_completion_loaded=0.10.8
 fi
 
@@ -278,19 +292,14 @@ _fzf_defc() {
   fi
 }
 
-# Directory
-for cmd in $d_cmds; do
-  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o plusdirs"
-done
-
-# File
-for cmd in $f_cmds; do
-  _fzf_defc "$cmd" _fzf_file_completion "-o default -o bashdefault"
-done
-
 # Anything
 for cmd in $a_cmds; do
   _fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
+done
+
+# Directory
+for cmd in $d_cmds; do
+  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o plusdirs"
 done
 
 unset _fzf_defc
@@ -307,4 +316,4 @@ complete -F _fzf_complete_unset -o default -o bashdefault unset
 complete -F _fzf_complete_export -o default -o bashdefault export
 complete -F _fzf_complete_unalias -o default -o bashdefault unalias
 
-unset cmd d_cmds f_cmds a_cmds x_cmds
+unset cmd d_cmds a_cmds x_cmds
