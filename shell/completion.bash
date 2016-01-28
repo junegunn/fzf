@@ -156,15 +156,10 @@ __fzf_generic_path_completion() {
   fi
 }
 
-_fzf_feed_fifo() (
-  rm -f "$fifo"
-  mkfifo "$fifo"
-  cat <&0 > "$fifo" &
-)
-
 _fzf_complete() {
-  local fifo cur selected trigger cmd fzf
-  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
+  local cur selected trigger cmd fzf post
+  post="$(caller 0 | awk '{print $2}')_post"
+  type -t $post > /dev/null 2>&1 || post=cat
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
   cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
@@ -173,12 +168,10 @@ _fzf_complete() {
   if [[ ${cur} == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    _fzf_feed_fifo "$fifo"
     tput sc
-    selected=$(eval "cat '$fifo' | $fzf $FZF_COMPLETION_OPTS $1 -q '$cur'" | tr '\n' ' ')
+    selected=$(cat | $fzf $FZF_COMPLETION_OPTS $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     tput rc
-    rm -f "$fifo"
 
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
