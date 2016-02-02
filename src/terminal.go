@@ -734,7 +734,7 @@ func (t *Terminal) Loop() {
 	<-t.startChan
 	{ // Late initialization
 		intChan := make(chan os.Signal, 1)
-		signal.Notify(intChan, os.Interrupt, os.Kill)
+		signal.Notify(intChan, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go func() {
 			<-intChan
 			t.reqBox.Set(reqQuit, nil)
