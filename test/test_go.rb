@@ -893,6 +893,22 @@ class TestGoFZF < TestBase
     File.unlink output rescue nil
   end
 
+  def test_execute_shell
+    # Custom script to use as $SHELL
+    output = tempname + '.out'
+    File.unlink output rescue nil
+    writelines tempname, ['#!/usr/bin/env bash', "echo $1 / $2 > #{output}"]
+    system "chmod +x #{tempname}"
+
+    tmux.send_keys "echo foo | SHELL=#{tempname} fzf --bind 'enter:execute:{}bar'", :Enter
+    tmux.until { |lines| lines[-2].include? '1/1' }
+    tmux.send_keys :Enter
+    tmux.send_keys 'C-c'
+    assert_equal ['-c / "foo"bar'], File.readlines(output).map(&:chomp)
+  ensure
+    File.unlink output rescue nil
+  end
+
   def test_cycle
     tmux.send_keys "seq 8 | #{fzf :cycle}", :Enter
     tmux.until { |lines| lines[-2].include? '8/8' }
