@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"regexp"
 	"sort"
@@ -720,11 +719,7 @@ func quoteEntry(entry string) string {
 
 func executeCommand(template string, replacement string) {
 	command := strings.Replace(template, "{}", replacement, -1)
-	shell := os.Getenv("SHELL")
-	if len(shell) == 0 {
-		shell = "sh"
-	}
-	cmd := exec.Command(shell, "-c", command)
+	cmd := util.ExecCommand(command)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

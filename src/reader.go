@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"os/exec"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -59,7 +58,7 @@ func (r *Reader) readFromStdin() {
 }
 
 func (r *Reader) readFromCommand(cmd string) {
-	listCommand := exec.Command("sh", "-c", cmd)
+	listCommand := util.ExecCommand(cmd)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
 		return

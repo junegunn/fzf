@@ -5,6 +5,7 @@ import "C"
 
 import (
 	"os"
+	"os/exec"
 	"time"
 	"unicode/utf8"
 )
@@ -125,4 +126,13 @@ func TrimLen(runes []rune) int {
 		}
 	}
 	return i - j + 1
+}
+
+// ExecCommand executes the given command with $SHELL
+func ExecCommand(command string) *exec.Cmd {
+	shell := os.Getenv("SHELL")
+	if len(shell) == 0 {
+		shell = "sh"
+	}
+	return exec.Command(shell, "-c", command)
 }
