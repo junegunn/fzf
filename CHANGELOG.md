@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+0.11.3
+------
+
+- Graceful exit on SIGTERM (#482)
+- `$SHELL` instead of `sh` for `execute` action and `$FZF_DEFAULT_COMMAND` (#481)
+- Changes in fuzzy completion API
+    - [`_fzf_compgen_{path,dir}`](https://github.com/junegunn/fzf/commit/9617647)
+    - [`_fzf_complete_COMMAND_post`](https://github.com/junegunn/fzf/commit/8206746)
+      for post-processing
+
 0.11.2
 ------
 

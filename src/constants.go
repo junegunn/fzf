@@ -8,7 +8,7 @@ import (
 
 const (
 	// Current version
-	version = "0.11.2"
+	version = "0.11.3"
 
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond

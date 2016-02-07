@@ -260,11 +260,11 @@ a_cmds="
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
-if [ "$_fzf_completion_loaded" != '0.10.8' ]; then
+if [ "$_fzf_completion_loaded" != '0.11.3' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
   eval $(complete | \grep '\-F' | \grep -v _fzf_ |
     \grep -E " ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
-  export _fzf_completion_loaded=0.10.8
+  export _fzf_completion_loaded=0.11.3
 fi
 
 if type _completion_loader > /dev/null 2>&1; then
