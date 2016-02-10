@@ -1,12 +1,6 @@
 # Key bindings
 # ------------
 function fzf_key_bindings
-  # Due to a bug of fish, we cannot use command substitution,
-  # so we use temporary file instead
-  if [ -z "$TMPDIR" ]
-    set -g TMPDIR /tmp
-  end
-
   function __fzf_escape
     while read item
       echo -n (echo -n "$item" | sed -E 's/([ "$~'\''([{<>})])/\\\\\\1/g')' '
@@ -19,18 +13,15 @@ function fzf_key_bindings
       -o -type f -print \
       -o -type d -print \
       -o -type l -print 2> /dev/null | sed 1d | cut -b3-"
-    eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m > $TMPDIR/fzf.result"
-    and sleep 0
-    and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
+    eval "$FZF_CTRL_T_COMMAND" | __fzfcmd -m | __fzf_escape | read -l select
+    and commandline -i "$select"
     commandline -f repaint
-    rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_ctrl_r
-    history | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r > $TMPDIR/fzf.result
-    and commandline (cat $TMPDIR/fzf.result)
+    history | __fzfcmd +s +m --tiebreak=index --toggle-sort=ctrl-r | read -l select
+    and commandline "$select"
     commandline -f repaint
-    rm -f $TMPDIR/fzf.result
   end
 
   function __fzf_alt_c
@@ -38,24 +29,20 @@ function fzf_key_bindings
     command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
       -o -type d -print 2> /dev/null | sed 1d | cut -b3-"
     # Fish hangs if the command before pipe redirects (2> /dev/null)
-    eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m > $TMPDIR/fzf.result"
-    [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
-    and cd (cat $TMPDIR/fzf.result)
+    eval "$FZF_ALT_C_COMMAND" | __fzfcmd +m | read -la select
+    [ (count $select) -gt 0 ]
+    and cd $select
     commandline -f repaint
-    rm -f $TMPDIR/fzf.result
   end
 
   function __fzfcmd
-    set -q FZF_TMUX; or set FZF_TMUX 1
+    set -q FZF_TMUX; or set -l FZF_TMUX 1
+    set -q FZF_TMUX_HEIGHT; or set -l FZF_TMUX_HEIGHT 40%
 
     if [ $FZF_TMUX -eq 1 ]
-      if set -q FZF_TMUX_HEIGHT
-        echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
-      else
-        echo "fzf-tmux -d40%"
-      end
+      fzf-tmux -d$FZF_TMUX_HEIGHT $argv
     else
-      echo "fzf"
+      fzf $argv
     end
   end
 
@@ -69,4 +56,3 @@ function fzf_key_bindings
     bind -M insert \ec '__fzf_alt_c'
   end
 end
-
