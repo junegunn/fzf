@@ -44,19 +44,42 @@ __fzf_cd__() {
   dir=$(eval "$cmd" | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
-__fzf_history__() (
-  local line
+__fzf_history__() {
+  local out key line num cmd keyseq
   shopt -u nocaseglob nocasematch
-  line=$(
+  out=$(
     HISTTIMEFORMAT= history |
-    $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --bind=ctrl-r:up,ctrl-s:down |
-    \grep '^ *[0-9]') &&
-    if [[ $- =~ H ]]; then
-      sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
+    $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --bind ctrl-r:up,ctrl-s:down --expect ctrl-g)
+  key=$(head -1 <<< "$out")
+  line=$(head -2 <<< "$out" | tail -1)
+  num=$(sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line")
+  if [ "$key" == "ctrl-g" ]; then
+    # abort, keep existing line
+    :
+  else
+    # accept the changes
+    cmd=$(history -p ${num} 2>/dev/null)
+    keyseq=""
+    if [ -z "$cmd" ]; then
+        # Won't work if the last command is picked
+        if [[ $- =~ H ]]; then
+             # Can send back ! notation and send a keysequence to escape it
+             READLINE_LINE=${num}
+             # expand history, end of line
+             keyseq="${keyseq}${__history_expand_line}${__end_of_line}"
+         else
+             # Can't use shell to expand sadly, grep it out
+             cmd=$(sed 's/^ *\([0-9]*\)\** *//' <<< "$line")
+             READLINE_LINE=${cmd}
+             READLINE_POINT=${#cmd}
+         fi
     else
-      sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
+        READLINE_LINE=${cmd}
+        READLINE_POINT=${#cmd}
     fi
-)
+    bind '"\C-x\C-f": "'${keyseq}'"'
+  fi
+}
 
 __use_tmux=0
 __use_tmux_auto=0
@@ -97,12 +120,14 @@ if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " '${__end_of_line}''${__unix_line_discard}'$(__fzf_history__)'${__shell_expand_line}''${__history_expand_line}''${__redraw_current_line}'"'
+  bind -x '"\C-x\C-h": "__fzf_history__"'
+  bind '"\C-r": "\C-x\C-h\C-x\C-f"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " '${__end_of_line}''${__unix_line_discard}'$(__fzf_cd__)'${__shell_expand_line}''${__redraw_current_line}''${__accept_line}'"'
 
-  unset -v __redraw_current_line __history_expand_line __beginning_of_line __end_of_line __delete_char __backward_delete_char __unix_line_discard __kill_line __yank __yank_pop __shell_expand_line __accept_line
+  export __history_expand_line __end_of_line
+  unset -v __redraw_current_line __beginning_of_line __delete_char __backward_delete_char __unix_line_discard __kill_line __yank __yank_pop __shell_expand_line __accept_line
 else
   # Required to refresh the prompt after fzf
   __shell_expand_line="\C-x\C-e"     # Expand $() commands
@@ -139,14 +164,18 @@ else
   bind -m vi-command '"\C-t": "i\C-t"'
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": "'${__vi_command_mode}${__kill_whole_line}${__vi_insertion_mode}'$(__fzf_history__)'${__shell_expand_line}''${__history_expand_line}''${__vi_command_mode}${__end_of_line}${__vi_append_mode}''${__redraw_current_line}'"'
+  bind -x '"\C-x\C-h": "__fzf_history__"'
+  bind '"\C-r": "\C-x\C-h\C-x\C-f"'
   bind -m vi-command '"\C-r": "i\C-r"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": "'${__vi_command_mode}${__kill_whole_line}${__vi_insertion_mode}'$(__fzf_cd__)'${__shell_expand_line}''${__redraw_current_line}''${__accept_line}'"'
   bind -m vi-command '"\ec": "i\ec"'
 
-  unset -v __shell_expand_line __redraw_current_line __history_expand_line __vi_command_mode __vi_insertion_mode __vi_append_mode __beginning_of_line __end_of_line __forward_backward_delete_char __kill_whole_line __put_before __accept_line
+  # Make end-of-line work from insert mode (like emacs mode)
+  __end_of_line="${__vi_command_mode}${__end_of_line}${__vi_append_mode}"
+  export __history_expand_line __end_of_line
+  unset -v __shell_expand_line __redraw_current_line __vi_command_mode __vi_insertion_mode __vi_append_mode __beginning_of_line __forward_backward_delete_char __kill_whole_line __put_before __accept_line
 fi
 
 unset -v __use_tmux __use_tmux_auto
