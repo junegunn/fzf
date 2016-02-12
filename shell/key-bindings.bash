@@ -98,6 +98,27 @@ __fzf_history__() {
   fi
 }
 
+__fzf_previous_history__() {
+  if [ -v _fzf_history_scrollable ]; then
+    if [ -v _fzf_history_ctrl_o_difference ]; then
+      let _fzf_history_ctrl_o_difference++
+    else
+      _fzf_history_ctrl_o_difference=0
+    fi
+  fi
+  bind '"\C-x\C-f": previous-history'
+}
+__fzf_next_history__() {
+  if [ -v _fzf_history_scrollable -a -v _fzf_history_ctrl_o_difference ]; then
+    if [ $_fzf_history_ctrl_o_difference -eq 0 ]; then
+      unset -v _fzf_history_ctrl_o_difference
+    else
+      let _fzf_history_ctrl_o_difference--
+    fi
+  fi
+  bind '"\C-x\C-f": next-history'
+}
+
 __fzf_accept_line__() {
   if [ -v _fzf_history_ctrl_o_present ]; then
     # We are inside ctrl-o, but next time we might not
@@ -105,6 +126,7 @@ __fzf_accept_line__() {
   else
     # We are not inside ctrl-o, reset counters
     unset -v _fzf_history_ctrl_o_difference
+    export _fzf_history_scrollable=""
   fi
   bind '"\C-x\C-f": accept-line'
 }
@@ -114,6 +136,7 @@ __fzf_ctrl_o__() {
 
   keyseq=${__accept_line}
   export _fzf_history_ctrl_o_present=1
+  unset -v _fzf_history_scrollable
 
   if [ \! -v _fzf_history_ctrl_o_difference -a -z "$READLINE_LINE" ]; then
     # We have done ctrl-o without typing anything in, just do accept-line
@@ -180,6 +203,11 @@ if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   bind '"\C-o": "\C-x\C-o\C-x\C-f"'
   bind -x '"\C-x'${__accept_line}'": "__fzf_accept_line__"'
   bind '"'${__accept_line}'": "\C-x'${__accept_line}'\C-x\C-f"'
+  bind -x '"\C-x[A": "__fzf_previous_history__"'
+  bind '"\e[A": "\C-x[A\C-x\C-f"'
+  bind -x '"\C-x[B": "__fzf_next_history__"'
+  bind '"\e[B": "\C-x[B\C-x\C-f"'
+  export _fzf_history_scrollable=""
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " '${__end_of_line}''${__unix_line_discard}'$(__fzf_cd__)'${__shell_expand_line}''${__redraw_current_line}''${__accept_line}'"'
