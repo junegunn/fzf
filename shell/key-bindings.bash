@@ -136,13 +136,13 @@ __fzf_ctrl_o__() {
 
   keyseq=${__accept_line}
   export _fzf_history_ctrl_o_present=1
-  unset -v _fzf_history_scrollable
 
   if [ \! -v _fzf_history_ctrl_o_difference -a -z "$READLINE_LINE" ]; then
     # We have done ctrl-o without typing anything in, just do accept-line
     :
   else
     # We have selected back in history
+    unset -v _fzf_history_scrollable
     if [[ $- =~ H ]]; then
       # Can send back ! notation and sequence to excape it
       keyseq="${keyseq}!-$(( ${_fzf_history_ctrl_o_difference} + 1 ))${__history_expand_line}${__end_of_line}"
@@ -208,6 +208,7 @@ if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   bind -x '"\C-x[B": "__fzf_next_history__"'
   bind '"\e[B": "\C-x[B\C-x\C-f"'
   export _fzf_history_scrollable=""
+  trap 'export _fzf_history_scrollable=""; unset -v _fzf_history_ctrl_o_difference' INT
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " '${__end_of_line}''${__unix_line_discard}'$(__fzf_cd__)'${__shell_expand_line}''${__redraw_current_line}''${__accept_line}'"'
