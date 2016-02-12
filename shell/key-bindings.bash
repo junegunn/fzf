@@ -47,9 +47,15 @@ __fzf_cd__() {
 __fzf_history__() {
   local out key line num cmd keyseq
   shopt -u nocaseglob nocasematch
-  out=$(
-    HISTTIMEFORMAT= history |
-    $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --bind ctrl-r:up,ctrl-s:down --expect ctrl-g)
+  if [ -v _fzf_vi_mode ]; then
+    out=$(
+      HISTTIMEFORMAT= history |
+      $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --bind ctrl-r:up,ctrl-s:down --expect ctrl-g)
+  else
+    out=$(
+      HISTTIMEFORMAT= history |
+      $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --bind ctrl-r:up,ctrl-s:down --expect ctrl-g,ctrl-o)
+  fi
   key=$(head -1 <<< "$out")
   line=$(head -2 <<< "$out" | tail -1)
   num=$(sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line")
@@ -77,8 +83,54 @@ __fzf_history__() {
         READLINE_LINE=${cmd}
         READLINE_POINT=${#cmd}
     fi
+    if [ "$key" == "ctrl-o" ]; then
+        : # for now
+        # Get current position, and last entry
+        _fzf_history_ctrl_o_counter=$(sed 's/^\!//' <<< "$num")
+        _fzf_history_ctrl_o_end=$(history 1 | sed 's/^ *\([0-9]*\)\** .*/\1/')
+        # Get difference, and starting difference
+        _fzf_history_ctrl_o_difference=$(( $_fzf_history_ctrl_o_end - $_fzf_history_ctrl_o_counter ))
+        unset -v _fzf_history_ctrl_o_counter _fzf_history_ctrl_o_end
+        export _fzf_history_ctrl_o_difference
+        keyseq="${keyseq}\C-o"
+    fi
     bind '"\C-x\C-f": "'${keyseq}'"'
   fi
+}
+
+__fzf_accept_line__() {
+  if [ -v _fzf_history_ctrl_o_present ]; then
+    # We are inside ctrl-o, but next time we might not
+    unset -v _fzf_history_ctrl_o_present
+  else
+    # We are not inside ctrl-o, reset counters
+    unset -v _fzf_history_ctrl_o_difference
+  fi
+  bind '"\C-x\C-f": accept-line'
+}
+
+__fzf_ctrl_o__() {
+  local keyseq
+
+  keyseq=${__accept_line}
+  export _fzf_history_ctrl_o_present=1
+
+  if [ \! -v _fzf_history_ctrl_o_difference -a -z "$READLINE_LINE" ]; then
+    # We have done ctrl-o without typing anything in, just do accept-line
+    :
+  else
+    # We have selected back in history
+    if [[ $- =~ H ]]; then
+      # Can send back ! notation and sequence to excape it
+      keyseq="${keyseq}!-$(( ${_fzf_history_ctrl_o_difference} + 1 ))${__history_expand_line}${__end_of_line}"
+    else
+      # Can't use shell to expand sadly
+      :
+    fi
+  fi
+
+  bind '"\C-x\C-f": "'${keyseq}'"'
+
 }
 
 __use_tmux=0
@@ -89,6 +141,7 @@ if [ -n "$TMUX_PANE" ]; then
 fi
 
 if [ -z "$(set -o | \grep '^vi.*on')" ]; then
+  unset -v _fzf_vi_mode
   # Required to refresh the prompt after fzf
   __redraw_current_line="\er"    # Redraw current line
   __history_expand_line="\e^"    # Expand !num history commands
@@ -123,12 +176,18 @@ if [ -z "$(set -o | \grep '^vi.*on')" ]; then
   bind -x '"\C-x\C-h": "__fzf_history__"'
   bind '"\C-r": "\C-x\C-h\C-x\C-f"'
 
+  bind -x '"\C-x\C-o": "__fzf_ctrl_o__"'
+  bind '"\C-o": "\C-x\C-o\C-x\C-f"'
+  bind -x '"\C-x'${__accept_line}'": "__fzf_accept_line__"'
+  bind '"'${__accept_line}'": "\C-x'${__accept_line}'\C-x\C-f"'
+
   # ALT-C - cd into the selected directory
   bind '"\ec": " '${__end_of_line}''${__unix_line_discard}'$(__fzf_cd__)'${__shell_expand_line}''${__redraw_current_line}''${__accept_line}'"'
 
-  export __history_expand_line __end_of_line
-  unset -v __redraw_current_line __beginning_of_line __delete_char __backward_delete_char __unix_line_discard __kill_line __yank __yank_pop __shell_expand_line __accept_line
+  export __history_expand_line __end_of_line __accept_line
+  unset -v __redraw_current_line __beginning_of_line __delete_char __backward_delete_char __unix_line_discard __kill_line __yank __yank_pop __shell_expand_line
 else
+  export _fzf_vi_mode=""
   # Required to refresh the prompt after fzf
   __shell_expand_line="\C-x\C-e"     # Expand $() commands
   __redraw_current_line="\C-x\C-r"   # Redraw current line
