@@ -344,6 +344,7 @@ function! s:execute_term(dict, command, temps)
     endif
 
     call s:pushd(self.dict)
+    let ret = []
     try
       let ret = s:callback(self.dict, self.temps)
 
