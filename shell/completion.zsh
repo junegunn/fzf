@@ -80,9 +80,9 @@ _fzf_dir_completion() {
 }
 
 _fzf_feed_fifo() (
-  rm -f "$fifo"
-  mkfifo "$fifo"
-  cat <&0 > "$fifo" &
+  rm -f "$1"
+  mkfifo "$1"
+  cat <&0 > "$1" &
 )
 
 _fzf_complete() {
