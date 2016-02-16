@@ -1140,7 +1140,7 @@ class TestGoFZF < TestBase
 private
   def writelines path, lines
     File.unlink path while File.exists? path
-    File.open(path, 'w') { |f| f << lines.join($/) }
+    File.open(path, 'w') { |f| f << lines.join($/) + $/ }
   end
 end
 
@@ -1355,22 +1355,41 @@ module CompletionTest
       tmux.send_keys 'C-L'
       lines[-1] == "kill #{pid}"
     end
-
-    def test_custom_completion
-      tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
-      tmux.prepare
-      tmux.send_keys 'ls /tmp/**', :Tab, pane: 0
-      tmux.until(1) { |lines| lines.item_count == 11 }
-      tmux.send_keys :BTab, :BTab, :BTab
-      tmux.until(1) { |lines| lines[-2].include? '(3)' }
-      tmux.send_keys :Enter
-      tmux.until do |lines|
-        tmux.send_keys 'C-L'
-        lines[-1] == "ls /tmp 1 2"
-      end
-    end
   ensure
     Process.kill 'KILL', pid.to_i rescue nil if pid
+  end
+
+  def test_custom_completion
+    tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
+    tmux.prepare
+    tmux.send_keys 'ls /tmp/**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines.item_count == 11 }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until(1) { |lines| lines[-2].include? '(3)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      tmux.send_keys 'C-L'
+      lines[-1] == "ls /tmp 1 2"
+    end
+  end
+
+  def test_unset_completion
+    tmux.send_keys 'export FOO=BAR', :Enter
+    tmux.prepare
+
+    # Using tmux
+    tmux.send_keys 'unset FOO**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines[-2].include? ' 1/' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == 'unset FOO' }
+    tmux.send_keys 'C-c'
+
+    # FZF_TMUX=0
+    new_shell
+    tmux.send_keys 'unset FOO**', :Tab
+    tmux.until { |lines| lines[-2].include? ' 1/' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1] == 'unset FOO' }
   end
 end
 

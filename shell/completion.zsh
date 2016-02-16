@@ -79,8 +79,15 @@ _fzf_dir_completion() {
     "" "/" ""
 }
 
+_fzf_feed_fifo() (
+  rm -f "$fifo"
+  mkfifo "$fifo"
+  cat <&0 > "$fifo" &
+)
+
 _fzf_complete() {
-  local fzf_opts lbuf fzf matches post
+  local fifo fzf_opts lbuf fzf matches post
+  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
   fzf_opts=$1
   lbuf=$2
   post="${funcstack[2]}_post"
@@ -88,11 +95,13 @@ _fzf_complete() {
 
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
-  matches=$(cat | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "${(Q)prefix}" | $post | tr '\n' ' ')
+  _fzf_feed_fifo "$fifo"
+  matches=$(cat "$fifo" | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "${(Q)prefix}" | $post | tr '\n' ' ')
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
   zle redisplay
+  rm -f "$fifo"
 }
 
 _fzf_complete_telnet() {
