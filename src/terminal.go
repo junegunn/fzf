@@ -1122,15 +1122,7 @@ func (t *Terminal) constrain() {
 	diffpos := t.cy - t.offset
 
 	t.cy = util.Constrain(t.cy, 0, count-1)
-
-	if t.cy > t.offset+(height-1) {
-		// Ceil
-		t.offset = t.cy - (height - 1)
-	} else if t.offset > t.cy {
-		// Floor
-		t.offset = t.cy
-	}
-
+	t.offset = util.Constrain(t.offset, t.cy-height+1, t.cy)
 	// Adjustment
 	if count-t.offset < height {
 		t.offset = util.Max(0, count-height)

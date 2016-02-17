@@ -163,7 +163,7 @@ func defaultOptions() *Options {
 		Filter:      nil,
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
-		Keymap:      defaultKeymap(),
+		Keymap:      make(map[int]actionType),
 		Execmap:     make(map[int]string),
 		PrintQuery:  false,
 		ReadZero:    false,
@@ -484,7 +484,7 @@ const (
 	escapedComma = 1
 )
 
-func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort bool, str string) (map[int]actionType, map[int]string, bool) {
+func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) {
 	if executeRegexp == nil {
 		// Backreferences are not supported.
 		// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
@@ -592,7 +592,6 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			keymap[key] = actNextHistory
 		case "toggle-sort":
 			keymap[key] = actToggleSort
-			toggleSort = true
 		default:
 			if isExecuteAction(actLower) {
 				var offset int
@@ -613,7 +612,6 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, toggleSort b
 			}
 		}
 	}
-	return keymap, execmap, toggleSort
 }
 
 func isExecuteAction(str string) bool {
@@ -635,13 +633,12 @@ func isExecuteAction(str string) bool {
 	return false
 }
 
-func checkToggleSort(keymap map[int]actionType, str string) map[int]actionType {
+func parseToggleSort(keymap map[int]actionType, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
 	}
 	keymap[firstKey(keys)] = actToggleSort
-	return keymap
 }
 
 func strLines(str string) []string {
@@ -691,7 +688,6 @@ func parseMargin(margin string) [4]string {
 }
 
 func parseOptions(opts *Options, allArgs []string) {
-	keymap := make(map[int]actionType)
 	var historyMax int
 	if opts.History == nil {
 		historyMax = defaultHistoryMax
@@ -741,8 +737,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--tiebreak":
 			opts.Criteria = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
-			keymap, opts.Execmap, opts.ToggleSort =
-				parseKeymap(keymap, opts.Execmap, opts.ToggleSort, nextString(allArgs, &i, "bind expression required"))
+			parseKeymap(opts.Keymap, opts.Execmap, nextString(allArgs, &i, "bind expression required"))
 		case "--color":
 			spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
@@ -751,8 +746,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Theme = parseTheme(opts.Theme, spec)
 			}
 		case "--toggle-sort":
-			keymap = checkToggleSort(keymap, nextString(allArgs, &i, "key name required"))
-			opts.ToggleSort = true
+			parseToggleSort(opts.Keymap, nextString(allArgs, &i, "key name required"))
 		case "-d", "--delimiter":
 			opts.Delimiter = delimiterRegexp(nextString(allArgs, &i, "delimiter required"))
 		case "-n", "--nth":
@@ -869,8 +863,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "--toggle-sort="); match {
-				keymap = checkToggleSort(keymap, value)
-				opts.ToggleSort = true
+				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {
 				opts.Expect = parseKeyChords(value, "key names required")
 			} else if match, value := optString(arg, "--tiebreak="); match {
@@ -878,8 +871,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--color="); match {
 				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {
-				keymap, opts.Execmap, opts.ToggleSort =
-					parseKeymap(keymap, opts.Execmap, opts.ToggleSort, value)
+				parseKeymap(opts.Keymap, opts.Execmap, value)
 			} else if match, value := optString(arg, "--history="); match {
 				setHistory(value)
 			} else if match, value := optString(arg, "--history-size="); match {
@@ -905,21 +897,28 @@ func parseOptions(opts *Options, allArgs []string) {
 	if opts.Tabstop < 1 {
 		errorExit("tab stop must be a positive integer")
 	}
+}
 
-	// Change default actions for CTRL-N / CTRL-P when --history is used
+func postProcessOptions(opts *Options) {
+	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
-		if _, prs := keymap[curses.CtrlP]; !prs {
-			keymap[curses.CtrlP] = actPreviousHistory
+		if _, prs := opts.Keymap[curses.CtrlP]; !prs {
+			opts.Keymap[curses.CtrlP] = actPreviousHistory
 		}
-		if _, prs := keymap[curses.CtrlN]; !prs {
-			keymap[curses.CtrlN] = actNextHistory
+		if _, prs := opts.Keymap[curses.CtrlN]; !prs {
+			opts.Keymap[curses.CtrlN] = actNextHistory
 		}
 	}
 
-	// Override default key bindings
-	for key, act := range keymap {
-		opts.Keymap[key] = act
+	// Extend the default key map
+	keymap := defaultKeymap()
+	for key, act := range opts.Keymap {
+		if act == actToggleSort {
+			opts.ToggleSort = true
+		}
+		keymap[key] = act
 	}
+	opts.Keymap = keymap
 
 	// If we're not using extended search mode, --nth option becomes irrelevant
 	// if it contains the whole range
@@ -939,9 +938,13 @@ func ParseOptions() *Options {
 
 	// Options from Env var
 	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
-	parseOptions(opts, words)
+	if len(words) > 0 {
+		parseOptions(opts, words)
+	}
 
 	// Options from command-line arguments
 	parseOptions(opts, os.Args[1:])
+
+	postProcessOptions(opts)
 	return opts
 }
