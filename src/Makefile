@@ -12,7 +12,9 @@ endif
 endif
 
 ifneq ($(shell uname -m),x86_64)
-$(error "Build on $(UNAME_M) is not supported, yet.")
+ifneq ($(shell uname -s),OpenBSD)
+$(error "Build on $(shell uname -m) is not supported, yet.")
+endif
 endif
 
 SOURCES   := $(wildcard *.go */*.go)
@@ -39,6 +41,9 @@ android-build:
 	cd fzf && GOARCH=arm GOARM=7 CGO_ENABLED=1 go build -a -ldflags="-extldflags=-pie" -o $(BINARYARM7)
 	cd fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7) && \
 	rm -f $(RELEASEARM7)
+
+openbsd-build:
+	cd fzf && go build -a -tags "$(TAGS)" -o fzf-$(GOOS)_$(shell uname -m)
 
 test:
 	go get
