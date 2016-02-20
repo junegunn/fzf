@@ -11,7 +11,6 @@ RUN cd / && curl \
     tar -xz && mv go go1.4 && \
     sed -i 's@#define PTHREAD_KEYS_MAX 128@@' /go1.4/src/runtime/cgo/gcc_android_arm.c
 
-ENV GOPATH /go
 ENV GOROOT /go1.4
 ENV PATH /go1.4/bin:$PATH
 
@@ -37,8 +36,5 @@ RUN cd / && curl \
     make install && \
     mv /ndk/sysroot/usr/lib/libncursesw.a /ndk/sysroot/usr/lib/libncurses.a
 
-# Volume
-VOLUME /go
-
 # Default CMD
-CMD cd /go/src/github.com/junegunn/fzf/src && /bin/bash
+CMD cd /fzf/src && /bin/bash
