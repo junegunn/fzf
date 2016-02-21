@@ -102,6 +102,16 @@ symlink() {
   fi
 }
 
+link_fzf_in_path() {
+  if which_fzf="$(which fzf 2> /dev/null)"; then
+    echo "  - Found in \$PATH"
+    echo "  - Creating symlink: $which_fzf -> bin/fzf"
+    (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
+    check_binary && return
+  fi
+  return 1
+}
+
 download() {
   echo "Downloading bin/fzf ..."
   if [ $pre = 0 ]; then
@@ -112,12 +122,7 @@ download() {
     if [ -x "$fzf_base"/bin/$1 ]; then
       symlink $1 && check_binary && return
     fi
-    if which_fzf="$(which fzf 2> /dev/null)"; then
-      echo "  - Found in \$PATH"
-      echo "  - Creating symlink: $which_fzf -> bin/fzf"
-      (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
-      check_binary && return
-    fi
+    link_fzf_in_path && return
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
@@ -155,14 +160,7 @@ case "$archi" in
   *)              binary_available=0 binary_error=1  ;;
 esac
 
-cd "$fzf_base"
-if [ -n "$binary_error" ]; then
-  if [ $binary_available -eq 0 ]; then
-    echo "No prebuilt binary for $archi ... "
-  else
-    echo "  - $binary_error !!!"
-    exit 1
-  fi
+install_ruby_fzf() {
   echo "Installing legacy Ruby version ..."
 
   # ruby executable
@@ -228,6 +226,29 @@ if [ -n "$binary_error" ]; then
   echo "$fzf_cmd \"\$@\"" >> "$fzf_base"/bin/fzf
   chmod +x "$fzf_base"/bin/fzf
   echo "OK"
+}
+
+cd "$fzf_base"
+if [ -n "$binary_error" ]; then
+  if [ $binary_available -eq 0 ]; then
+    echo "No prebuilt binary for $archi ..."
+    if which go > /dev/null 2>&1; then
+      echo -n "Building binary (go get github.com/junegunn/fzf/src/fzf) ... "
+      if go get github.com/junegunn/fzf/src/fzf; then
+        echo "OK"
+        link_fzf_in_path
+      else
+        echo "Failed to build binary ..."
+        install_ruby_fzf
+      fi
+    else
+      echo "go executable not found. Cannot build binary ..."
+      install_ruby_fzf
+    fi
+  else
+    echo "  - $binary_error !!!"
+    exit 1
+  fi
 fi
 
 [[ "$*" =~ "--bin" ]] && exit 0
