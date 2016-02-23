@@ -239,7 +239,7 @@ function! s:exit_handler(code, command, ...)
   return 1
 endfunction
 
-function! s:execute(dict, command, temps)
+function! s:execute(dict, command, temps) abort
   call s:pushd(a:dict)
   silent! !clear 2> /dev/null
   let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#')
@@ -255,7 +255,7 @@ function! s:execute(dict, command, temps)
   return s:exit_handler(v:shell_error, command) ? s:callback(a:dict, a:temps) : []
 endfunction
 
-function! s:execute_tmux(dict, command, temps)
+function! s:execute_tmux(dict, command, temps) abort
   let command = a:command
   if s:pushd(a:dict)
     " -c '#{pane_current_path}' is only available on tmux 1.9 or above
@@ -320,7 +320,7 @@ function! s:split(dict)
   endtry
 endfunction
 
-function! s:execute_term(dict, command, temps)
+function! s:execute_term(dict, command, temps) abort
   call s:split(a:dict)
 
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
@@ -369,11 +369,10 @@ function! s:execute_term(dict, command, temps)
   return []
 endfunction
 
-function! s:callback(dict, temps)
+function! s:callback(dict, temps) abort
+let lines = []
 try
-  if !filereadable(a:temps.result)
-    let lines = []
-  else
+  if filereadable(a:temps.result)
     let lines = readfile(a:temps.result)
     if has_key(a:dict, 'sink')
       for line in lines
@@ -392,12 +391,12 @@ try
   for tf in values(a:temps)
     silent! call delete(tf)
   endfor
-
-  return lines
 catch
   if stridx(v:exception, ':E325:') < 0
     echoerr v:exception
   endif
+finally
+  return lines
 endtry
 endfunction
 
