@@ -21,6 +21,14 @@ func Max(first int, items ...int) int {
 	return max
 }
 
+// Min returns the smallest integer
+func Min(first int, second int) int {
+	if first <= second {
+		return first
+	}
+	return second
+}
+
 // Min32 returns the smallest 32-bit integer
 func Min32(first int32, second int32) int32 {
 	if first <= second {

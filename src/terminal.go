@@ -26,6 +26,7 @@ type Terminal struct {
 	prompt     string
 	reverse    bool
 	hscroll    bool
+	hscrollOff int
 	cx         int
 	cy         int
 	offset     int
@@ -210,6 +211,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
 		hscroll:    opts.Hscroll,
+		hscrollOff: opts.HscrollOff,
 		cx:         len(input),
 		cy:         0,
 		offset:     0,
@@ -556,11 +558,9 @@ func trimLeft(runes []rune, width int) ([]rune, int32) {
 }
 
 func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
-	var maxe int32
+	var maxe int
 	for _, offset := range item.offsets {
-		if offset[1] > maxe {
-			maxe = offset[1]
-		}
+		maxe = util.Max(maxe, int(offset[1]))
 	}
 
 	// Overflow
@@ -568,6 +568,7 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	copy(text, item.text)
 	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := C.MaxX() - 3 - t.marginInt[1] - t.marginInt[3]
+	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	fullWidth := displayWidth(text)
 	if fullWidth > maxWidth {
 		if t.hscroll {

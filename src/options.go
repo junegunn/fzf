@@ -42,6 +42,8 @@ const usage = `usage: fzf [options]
     --tabstop=SPACES      Number of spaces for a tab character (default: 8)
     --cycle               Enable cyclic scroll
     --no-hscroll          Disable horizontal scroll
+    --hscroll-off=COL     Number of screen columns to keep to the right of the
+                          highlighted substring (default: 10)
     --inline-info         Display finder info inline with the query
     --prompt=STR          Input prompt (default: '> ')
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
@@ -108,6 +110,7 @@ type Options struct {
 	Reverse     bool
 	Cycle       bool
 	Hscroll     bool
+	HscrollOff  int
 	InlineInfo  bool
 	Prompt      string
 	Query       string
@@ -155,6 +158,7 @@ func defaultOptions() *Options {
 		Reverse:     false,
 		Cycle:       false,
 		Hscroll:     true,
+		HscrollOff:  10,
 		InlineInfo:  false,
 		Prompt:      "> ",
 		Query:       "",
@@ -795,6 +799,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Hscroll = true
 		case "--no-hscroll":
 			opts.Hscroll = false
+		case "--hscroll-off":
+			opts.HscrollOff = nextInt(allArgs, &i, "hscroll offset required")
 		case "--inline-info":
 			opts.InlineInfo = true
 		case "--no-inline-info":
@@ -884,6 +890,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Margin = parseMargin(value)
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
+			} else if match, value := optString(arg, "--hscroll-off="); match {
+				opts.HscrollOff = atoi(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}
@@ -892,6 +900,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.HeaderLines < 0 {
 		errorExit("header lines must be a non-negative integer")
+	}
+
+	if opts.HscrollOff < 0 {
+		errorExit("hscroll offset must be a non-negative integer")
 	}
 
 	if opts.Tabstop < 1 {

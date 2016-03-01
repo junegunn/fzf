@@ -1137,6 +1137,18 @@ class TestGoFZF < TestBase
       `seq 10 | #{FZF} -f '1 | !1'`.lines.map(&:chomp)
   end
 
+  def test_hscroll_off
+    writelines tempname, ['=' * 10000 + '0123456789']
+    [0, 3, 6].each do |off|
+      tmux.prepare
+      tmux.send_keys "#{FZF} --hscroll-off=#{off} -q 0 < #{tempname}", :Enter
+      tmux.until { |lines| lines[-3].end_with?((0..off).to_a.join + '..') }
+      tmux.send_keys '9'
+      tmux.until { |lines| lines[-3].end_with? '789' }
+      tmux.send_keys :Enter
+    end
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
