@@ -897,13 +897,15 @@ class TestGoFZF < TestBase
     # Custom script to use as $SHELL
     output = tempname + '.out'
     File.unlink output rescue nil
-    writelines tempname, ['#!/usr/bin/env bash', "echo $1 / $2 > #{output}"]
+    writelines tempname, ['#!/usr/bin/env bash', "echo $1 / $2 > #{output}", "sync"]
     system "chmod +x #{tempname}"
 
     tmux.send_keys "echo foo | SHELL=#{tempname} fzf --bind 'enter:execute:{}bar'", :Enter
     tmux.until { |lines| lines[-2].include? '1/1' }
     tmux.send_keys :Enter
+    tmux.until { |lines| lines[-2].include? '1/1' }
     tmux.send_keys 'C-c'
+    tmux.prepare
     assert_equal ['-c / "foo"bar'], File.readlines(output).map(&:chomp)
   ensure
     File.unlink output rescue nil
