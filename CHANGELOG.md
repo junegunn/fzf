@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.11.4
+------
+
+- Added `--hscroll-off=COL` option (default: 10) (#513)
+- Some fixes in Vim plugin and shell extensions
+
 0.11.3
 ------
 
