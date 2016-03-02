@@ -75,11 +75,11 @@ _fzf_opts_completion() {
 
   case "${prev}" in
   --tiebreak)
-    COMPREPLY=( $(compgen -W "length begin end index" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "length begin end index" -- "$cur") )
     return 0
     ;;
   --color)
-    COMPREPLY=( $(compgen -W "dark light 16 bw" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "dark light 16 bw" -- "$cur") )
     return 0
     ;;
   --history)
@@ -88,8 +88,8 @@ _fzf_opts_completion() {
     ;;
   esac
 
-  if [[ ${cur} =~ ^-|\+ ]]; then
-    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+  if [[ "$cur" =~ ^-|\+ ]]; then
+    COMPREPLY=( $(compgen -W "${opts}" -- "$cur") )
     return 0
   fi
 
@@ -108,32 +108,32 @@ _fzf_handle_dynamic_completion() {
   elif [ -n "$_fzf_completion_loader" ]; then
     _completion_loader "$@"
     ret=$?
-    eval $(complete | \grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)
-    source $BASH_SOURCE
+    eval "$(complete | \grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)"
+    source "${BASH_SOURCE[0]}"
     return $ret
   fi
 }
 
 __fzf_generic_path_completion() {
   local cur base dir leftover matches trigger cmd fzf
-  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
-  cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
+  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  cmd=$(echo "${COMP_WORDS[0]}" | sed 's/[^a-z0-9_=]/_/g')
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ ${cur} == *"$trigger" ]]; then
+  if [[ "$cur" == *"$trigger" ]]; then
     base=${cur:0:${#cur}-${#trigger}}
-    eval base=$base
+    eval "base=$base"
 
     dir="$base"
-    while [ 1 ]; do
-      if [ -z "$dir" -o -d "$dir" ]; then
+    while true; do
+      if [ -z "$dir" ] || [ -d "$dir" ]; then
         leftover=${base/#"$dir"}
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
         tput sc
-        matches=$(eval "$1 $(printf %q "$dir")" | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -159,13 +159,13 @@ __fzf_generic_path_completion() {
 _fzf_complete() {
   local cur selected trigger cmd fzf post
   post="$(caller 0 | awk '{print $2}')_post"
-  type -t $post > /dev/null 2>&1 || post=cat
-  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  type -t "$post" > /dev/null 2>&1 || post=cat
+  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
-  cmd=$(echo ${COMP_WORDS[0]} | sed 's/[^a-z0-9_=]/_/g')
+  cmd=$(echo "${COMP_WORDS[0]}" | sed 's/[^a-z0-9_=]/_/g')
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ ${cur} == *"$trigger" ]]; then
+  if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
     tput sc
@@ -200,7 +200,7 @@ _fzf_complete_kill() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
   local selected fzf
-  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
   tput sc
   selected=$(ps -ef | sed 1d | $fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
   tput rc

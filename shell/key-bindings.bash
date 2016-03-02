@@ -5,7 +5,7 @@ __fzf_select__() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 1d | cut -b3-"}"
-  eval "$cmd" | fzf -m | while read item; do
+  eval "$cmd" | fzf -m | while read -r item; do
     printf '%q ' "$item"
   done
   echo
@@ -14,7 +14,7 @@ __fzf_select__() {
 if [[ $- =~ i ]]; then
 
 __fzfcmd() {
-  [ ${FZF_TMUX:-1} -eq 1 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+  [ "${FZF_TMUX:-1}" != 0 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
 __fzf_select_tmux__() {
@@ -30,10 +30,10 @@ __fzf_select_tmux__() {
 }
 
 __fzf_select_tmux_auto__() {
-  if [ ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ]; then
+  if [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ]; then
     __fzf_select_tmux__
   else
-    tmux send-keys -t $TMUX_PANE "$(__fzf_select__)"
+    tmux send-keys -t "$TMUX_PANE" "$(__fzf_select__)"
   fi
 }
 
@@ -61,7 +61,7 @@ __fzf_history__() (
 __use_tmux=0
 __use_tmux_auto=0
 if [ -n "$TMUX_PANE" ]; then
-  [ ${FZF_TMUX:-1} -ne 0 -a ${LINES:-40} -gt 15 ] && __use_tmux=1
+  [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ] && __use_tmux=1
   [ $BASH_VERSINFO -gt 3 ] && __use_tmux_auto=1
 fi
 
