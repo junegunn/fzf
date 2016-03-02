@@ -1,6 +1,8 @@
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![travis-ci](https://travis-ci.org/junegunn/fzf.svg?branch=master)](https://travis-ci.org/junegunn/fzf)
 ===
 
+[![Join the chat at https://gitter.im/junegunn/fzf](https://badges.gitter.im/junegunn/fzf.svg)](https://gitter.im/junegunn/fzf?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 fzf is a general-purpose command-line fuzzy finder.
 
 ![](https://raw.github.com/junegunn/i/master/fzf.gif)
