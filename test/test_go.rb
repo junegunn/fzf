@@ -394,6 +394,7 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 1000 | #{fzf :tac, :multi}", :Enter
     tmux.until { |lines| lines[-2].include? '1000/1000' }
     tmux.send_keys '99'
+    tmux.until { |lines| lines[-2].include? '28/1000' }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| lines[-2].include?('(3)') }
     tmux.send_keys :Enter
@@ -877,15 +878,19 @@ class TestGoFZF < TestBase
 
   def test_execute_multi
     output = '/tmp/fzf-test-execute-multi'
-    opts = %[--multi --bind \\"alt-a:execute-multi(echo '[{}], @{}@' >> #{output})\\"]
+    opts = %[--multi --bind \\"alt-a:execute-multi(echo '[{}], @{}@' >> #{output}; sync)\\"]
     tmux.send_keys "seq 100 | #{fzf opts}", :Enter
     tmux.until { |lines| lines[-2].include? '100/100' }
     tmux.send_keys :Escape, :a
+    tmux.until { |lines| lines[-2].include? '/100' }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.send_keys :Escape, :a
+    tmux.until { |lines| lines[-2].include? '/100' }
     tmux.send_keys :Tab, :Tab
     tmux.send_keys :Escape, :a
+    tmux.until { |lines| lines[-2].include? '/100' }
     tmux.send_keys :Enter
+    tmux.prepare
     readonce
     assert_equal ['["1"], @"1"@', '["1" "2" "3"], @"1" "2" "3"@', '["1" "2" "4"], @"1" "2" "4"@'],
       File.readlines(output).map(&:chomp)
@@ -1314,6 +1319,7 @@ module CompletionTest
       lines[-2].include?('100/') &&
       lines[-3].include?('/tmp/fzf-test/.hidden-')
     end
+    tmux.send_keys :Enter
   ensure
     ['/tmp/fzf-test', '/tmp/fzf test', '~/.fzf-home', 'no~such~user'].each do |f|
       FileUtils.rm_rf File.expand_path(f)
