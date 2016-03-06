@@ -313,7 +313,7 @@ function! s:split(dict)
     if s:present(a:dict, 'window')
       execute a:dict.window
     else
-      tabnew
+      execute (tabpagenr()-1).'tabnew'
     endif
   finally
     setlocal winfixwidth winfixheight buftype=nofile bufhidden=wipe nobuflisted
