@@ -1,6 +1,7 @@
 <!-- Check all that apply [x] -->
 - Category
     - [ ] fzf binary
+    - [ ] fzf-tmux script
     - [ ] Key bindings
     - [ ] Completion
     - [ ] Vim

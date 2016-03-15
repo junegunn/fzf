@@ -140,15 +140,17 @@ done
 
 if [ -n "$term" -o -t 0 ]; then
   cat <<< "$fzf $opts > $fifo2; echo \$? > $fifo3 $close" > $argsf
-  tmux set-window-option synchronize-panes off 2> /dev/null \;\
-    set-window-option remain-on-exit off 2> /dev/null \;\
-    split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap
+  tmux set-window-option synchronize-panes off \;\
+    set-window-option remain-on-exit off \;\
+    split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap \
+    2>&1 > /dev/null
 else
   mkfifo $fifo1
   cat <<< "$fzf $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" > $argsf
-  tmux set-window-option synchronize-panes off 2> /dev/null \;\
-    set-window-option remain-on-exit off 2> /dev/null \;\
-    split-window $opt "$envs bash $argsf" $swap
+  tmux set-window-option synchronize-panes off \;\
+    set-window-option remain-on-exit off \;\
+    split-window $opt "$envs bash $argsf" $swap \
+    2>&1 > /dev/null
   cat <&0 > $fifo1 &
 fi
 cat $fifo2
