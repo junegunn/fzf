@@ -21,7 +21,7 @@ Pros
 Installation
 ------------
 
-fzf project consists of the followings:
+fzf project consists of the following:
 
 - `fzf` executable
 - `fzf-tmux` script for launching fzf in a tmux pane
@@ -343,7 +343,7 @@ Tips
 
 #### Rendering issues
 
-If you have any rendering issues, check the followings:
+If you have any rendering issues, check the following:
 
 1. Make sure `$TERM` is correctly set. fzf will use 256-color only if it
    contains `256` (e.g. `xterm-256color`)
