@@ -55,8 +55,8 @@ remove_line() {
 }
 
 for shell in bash zsh; do
-  remove ~/.fzf.${shell}
-  remove_line ~/.${shell}rc \
+  [ -f ~/.fzf.${shell} ] && remove ~/.fzf.${shell}
+  [ -f ~/.${shell}rc ] && remove_line ~/.${shell}rc \
     "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" \
     "source ~/.fzf.${shell}"
 done
@@ -76,4 +76,3 @@ if [ -d ~/.config/fish/functions ]; then
     rmdir ~/.config/fish/functions
   fi
 fi
-
