@@ -27,7 +27,7 @@ usage: $0 [OPTIONS]
 EOF
 }
 
-for opt in $@; do
+for opt in "$@"; do
   case $opt in
     --help)
       help
@@ -46,7 +46,7 @@ for opt in $@; do
     --no-update-rc)    update_config=0   ;;
     --32)              binary_arch=386   ;;
     --64)              binary_arch=amd64 ;;
-    --bin)             ;;
+    --bin|--pre)       ;;
     *)
       echo "unknown option: $opt"
       help
@@ -55,17 +55,14 @@ for opt in $@; do
   esac
 done
 
-cd $(dirname $BASH_SOURCE)
+cd "$(dirname "${BASH_SOURCE[0]}")"
 fzf_base="$(pwd)"
 
-# If stdin is a tty, we are "interactive".
-interactive=
-[ -t 0 ] && interactive=yes
-
 ask() {
+  # If stdin is a tty, we are "interactive".
   # non-interactive shell: wait for a linefeed
   #     interactive shell: continue after a single keypress
-  [ -n "$interactive" ] && read_n='-n 1' || read_n=
+  read_n=$([ -t 0 ] && echo "-n 1")
 
   read -p "$1 ([y]/n) " $read_n -r
   echo
@@ -103,7 +100,7 @@ symlink() {
 }
 
 link_fzf_in_path() {
-  if which_fzf="$(which fzf 2> /dev/null)"; then
+  if which_fzf="$(command -v fzf)"; then
     echo "  - Found in \$PATH"
     echo "  - Creating symlink: $which_fzf -> bin/fzf"
     (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
@@ -131,9 +128,9 @@ download() {
   fi
 
   local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
-  if which curl > /dev/null; then
+  if command -v curl > /dev/null; then
     curl -fL $url | tar -xz
-  elif which wget > /dev/null; then
+  elif command -v wget > /dev/null; then
     wget -O - $url | tar -xz
   else
     binary_error="curl or wget not found"
@@ -165,7 +162,7 @@ install_ruby_fzf() {
 
   # ruby executable
   echo -n "Checking Ruby executable ... "
-  ruby=`which ruby`
+  ruby=$(command -v ruby)
   if [ $? -ne 0 ]; then
     echo "ruby executable not found !!!"
     exit 1
@@ -173,7 +170,7 @@ install_ruby_fzf() {
 
   # System ruby is preferred
   system_ruby=/usr/bin/ruby
-  if [ -x $system_ruby -a $system_ruby != "$ruby" ]; then
+  if [ -x $system_ruby ] && [ $system_ruby != "$ruby" ]; then
     $system_ruby --disable-gems -rcurses -e0 2> /dev/null
     [ $? -eq 0 ] && ruby=$system_ruby
   fi
@@ -232,7 +229,7 @@ cd "$fzf_base"
 if [ -n "$binary_error" ]; then
   if [ $binary_available -eq 0 ]; then
     echo "No prebuilt binary for $archi ..."
-    if which go > /dev/null 2>&1; then
+    if command -v go > /dev/null; then
       echo -n "Building binary (go get github.com/junegunn/fzf/src/fzf) ... "
       if go get github.com/junegunn/fzf/src/fzf; then
         echo "OK"
@@ -266,7 +263,9 @@ if [ -z "$key_bindings" ]; then
 fi
 
 echo
-for shell in bash zsh; do
+has_zsh=$(command -v zsh > /dev/null && echo 1 || echo 0)
+shells=$([ $has_zsh -eq 1 ] && echo "bash zsh" || echo "bash")
+for shell in $shells; do
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
 
@@ -306,9 +305,8 @@ EOF
 done
 
 # fish
-has_fish=0
-if [ -n "$(which fish 2> /dev/null)" ]; then
-  has_fish=1
+has_fish=$(command -v fish > /dev/null && echo 1 || echo 0)
+if [ $has_fish -eq 1 ]; then
   echo -n "Update fish_user_paths ... "
   fish << EOF
   echo \$fish_user_paths | grep $fzf_base/bin > /dev/null
@@ -367,12 +365,12 @@ append_line() {
 }
 
 echo
-for shell in bash zsh; do
+for shell in $shells; do
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" "$dest" "~/.fzf.${shell}"
 done
 
-if [ $key_bindings -eq 1 -a $has_fish -eq 1 ]; then
+if [ $key_bindings -eq 1 ] && [ $has_fish -eq 1 ]; then
   bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
   append_line $update_config "fzf_key_bindings" "$bind_file"
 fi
@@ -380,8 +378,8 @@ fi
 cat << EOF
 Finished. Restart your shell or reload config file.
    source ~/.bashrc  # bash
-   source ${ZDOTDIR:-~}/.zshrc   # zsh
 EOF
+[ $has_zsh  -eq 1 ] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
 [ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
 
 Use uninstall script to remove fzf.
