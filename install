@@ -267,6 +267,10 @@ fi
 
 echo
 for shell in bash zsh; do
+  if [ $shell = "zsh" ] && [ ! -n "$(which zsh &>/dev/null)" ]; then
+    break;
+  fi
+
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
 
@@ -368,6 +372,10 @@ append_line() {
 
 echo
 for shell in bash zsh; do
+  if [ $shell = "zsh" ] && [ ! -n "$(which zsh &>/dev/null)" ]; then
+    break;
+  fi
+
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" "$dest" "~/.fzf.${shell}"
 done
@@ -378,14 +386,16 @@ if [ $key_bindings -eq 1 -a $has_fish -eq 1 ]; then
 fi
 
 cat << EOF
-Finished. Restart your shell or reload config file.
-   source ~/.bashrc  # bash
-   source ${ZDOTDIR:-~}/.zshrc   # zsh
+Finished. Restart your shell or load config file.
+   source ~/.fzf.bash  # bash
 EOF
-[ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
+which zsh &>/dev/null && echo "   source ~/.fzf.zsh   # zsh"
+
+[ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"
+
+cat << EOF
 
 Use uninstall script to remove fzf.
 
 For more information, see: https://github.com/junegunn/fzf
 EOF
-
