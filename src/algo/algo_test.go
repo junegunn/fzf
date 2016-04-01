@@ -39,8 +39,8 @@ func TestExactMatchNaive(t *testing.T) {
 }
 
 func TestExactMatchNaiveBackward(t *testing.T) {
-	assertMatch(t, FuzzyMatch, false, true, "foobar foob", "oo", 1, 3)
-	assertMatch(t, FuzzyMatch, false, false, "foobar foob", "oo", 8, 10)
+	assertMatch(t, ExactMatchNaive, false, true, "foobar foob", "oo", 1, 3)
+	assertMatch(t, ExactMatchNaive, false, false, "foobar foob", "oo", 8, 10)
 }
 
 func TestPrefixMatch(t *testing.T) {
