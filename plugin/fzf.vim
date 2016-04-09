@@ -74,7 +74,7 @@ function! s:shellesc(arg)
 endfunction
 
 function! s:escape(path)
-  return escape(a:path, ' %#''"\')
+  return escape(a:path, ' $%#''"\')
 endfunction
 
 " Upgrade legacy options
