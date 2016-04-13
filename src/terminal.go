@@ -711,7 +711,9 @@ func (t *Terminal) rubout(pattern string) {
 }
 
 func keyMatch(key int, event C.Event) bool {
-	return event.Type == key || event.Type == C.Rune && int(event.Char) == key-C.AltZ
+	return event.Type == key ||
+		event.Type == C.Rune && int(event.Char) == key-C.AltZ ||
+		event.Type == C.Mouse && key == C.DoubleClick && event.MouseEvent.Double
 }
 
 func quoteEntry(entry string) string {
