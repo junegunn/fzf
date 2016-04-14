@@ -7,7 +7,7 @@ set -u
 
 auto_completion=
 key_bindings=
-update_config=1
+update_config=2
 binary_arch=
 
 help() {
@@ -335,8 +335,8 @@ fi
 append_line() {
   set -e
 
-  local skip line file pat lno
-  skip="$1"
+  local update line file pat lno
+  update="$1"
   line="$2"
   file="$3"
   pat="${4:-}"
@@ -352,7 +352,7 @@ append_line() {
   if [ -n "$lno" ]; then
     echo "    - Already exists: line #$lno"
   else
-    if [ $skip -eq 1 ]; then
+    if [ $update -eq 1 ]; then
       echo >> "$file"
       echo "$line" >> "$file"
       echo "    + Added"
@@ -364,6 +364,11 @@ append_line() {
   set +e
 }
 
+if [ $update_config -eq 2 ]; then
+  echo
+  ask "Do you want to update your shell configuration files?"
+  update_config=$?
+fi
 echo
 for shell in $shells; do
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
@@ -375,15 +380,14 @@ if [ $key_bindings -eq 1 ] && [ $has_fish -eq 1 ]; then
   append_line $update_config "fzf_key_bindings" "$bind_file"
 fi
 
-cat << EOF
-Finished. Restart your shell or reload config file.
-   source ~/.bashrc  # bash
-EOF
-[ $has_zsh  -eq 1 ] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-[ $has_fish -eq 1 ] && echo "   fzf_key_bindings  # fish"; cat << EOF
-
-Use uninstall script to remove fzf.
-
-For more information, see: https://github.com/junegunn/fzf
-EOF
+if [ $update_config -eq 1 ]; then
+  echo 'Finished. Restart your shell or reload config file.'
+  echo '   source ~/.bashrc  # bash'
+  [ $has_zsh  -eq 1 ] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
+  [ $has_fish -eq 1 ] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
+  echo
+  echo 'Use uninstall script to remove fzf.'
+  echo
+fi
+echo 'For more information, see: https://github.com/junegunn/fzf'
 
