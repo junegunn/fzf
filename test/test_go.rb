@@ -414,11 +414,12 @@ class TestGoFZF < TestBase
 
   def test_expect
     test = lambda do |key, feed, expected = key|
-      tmux.send_keys "seq 1 100 | #{fzf :expect, key}", :Enter
+      tmux.send_keys "seq 1 100 | #{fzf :expect, key}; sync", :Enter
       tmux.until { |lines| lines[-2].include? '100/100' }
       tmux.send_keys '55'
       tmux.until { |lines| lines[-2].include? '1/100' }
       tmux.send_keys *feed
+      tmux.prepare
       assert_equal [expected, '55'], readonce.split($/)
     end
     test.call 'ctrl-t', 'C-T'
