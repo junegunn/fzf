@@ -49,7 +49,7 @@ type Pattern struct {
 	cacheable     bool
 	delimiter     Delimiter
 	nth           []Range
-	procFun       map[termType]func(bool, bool, []rune, []rune) (int, int)
+	procFun       map[termType]func(bool, bool, []rune, []rune) algo.Result
 }
 
 var (
@@ -125,7 +125,7 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
-		procFun:       make(map[termType]func(bool, bool, []rune, []rune) (int, int))}
+		procFun:       make(map[termType]func(bool, bool, []rune, []rune) algo.Result)}
 
 	ptr.procFun[termFuzzy] = algo.FuzzyMatch
 	ptr.procFun[termEqual] = algo.EqualMatch
@@ -275,15 +275,16 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 	matches := []*Item{}
 	if !p.extended {
 		for _, item := range *chunk {
-			if sidx, eidx, tlen := p.basicMatch(item); sidx >= 0 {
+			offset, bonus := p.basicMatch(item)
+			if sidx := offset[0]; sidx >= 0 {
 				matches = append(matches,
-					dupItem(item, []Offset{Offset{int32(sidx), int32(eidx), int32(tlen)}}))
+					dupItem(item, []Offset{offset}, bonus))
 			}
 		}
 	} else {
 		for _, item := range *chunk {
-			if offsets := p.extendedMatch(item); len(offsets) == len(p.termSets) {
-				matches = append(matches, dupItem(item, offsets))
+			if offsets, bonus := p.extendedMatch(item); len(offsets) == len(p.termSets) {
+				matches = append(matches, dupItem(item, offsets, bonus))
 			}
 		}
 	}
@@ -293,25 +294,27 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 // MatchItem returns true if the Item is a match
 func (p *Pattern) MatchItem(item *Item) bool {
 	if !p.extended {
-		sidx, _, _ := p.basicMatch(item)
+		offset, _ := p.basicMatch(item)
+		sidx := offset[0]
 		return sidx >= 0
 	}
-	offsets := p.extendedMatch(item)
+	offsets, _ := p.extendedMatch(item)
 	return len(offsets) == len(p.termSets)
 }
 
-func dupItem(item *Item, offsets []Offset) *Item {
+func dupItem(item *Item, offsets []Offset, bonus int32) *Item {
 	sort.Sort(ByOrder(offsets))
 	return &Item{
 		text:        item.text,
 		origText:    item.origText,
 		transformed: item.transformed,
 		offsets:     offsets,
+		bonus:       bonus,
 		colors:      item.colors,
 		rank:        buildEmptyRank(item.Index())}
 }
 
-func (p *Pattern) basicMatch(item *Item) (int, int, int) {
+func (p *Pattern) basicMatch(item *Item) (Offset, int32) {
 	input := p.prepareInput(item)
 	if p.fuzzy {
 		return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
@@ -319,29 +322,33 @@ func (p *Pattern) basicMatch(item *Item) (int, int, int) {
 	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.forward, p.text)
 }
 
-func (p *Pattern) extendedMatch(item *Item) []Offset {
+func (p *Pattern) extendedMatch(item *Item) ([]Offset, int32) {
 	input := p.prepareInput(item)
 	offsets := []Offset{}
+	var totalBonus int32
 	for _, termSet := range p.termSets {
 		var offset *Offset
+		var bonus int32
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
-			if sidx, eidx, tlen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text); sidx >= 0 {
+			off, pen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text)
+			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
 				}
-				offset = &Offset{int32(sidx), int32(eidx), int32(tlen)}
+				offset, bonus = &off, pen
 				break
 			} else if term.inv {
-				offset = &Offset{0, 0, 0}
+				offset, bonus = &Offset{0, 0, 0}, 0
 				continue
 			}
 		}
 		if offset != nil {
 			offsets = append(offsets, *offset)
+			totalBonus += bonus
 		}
 	}
-	return offsets
+	return offsets, totalBonus
 }
 
 func (p *Pattern) prepareInput(item *Item) []Token {
@@ -360,13 +367,16 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 	return ret
 }
 
-func (p *Pattern) iter(pfun func(bool, bool, []rune, []rune) (int, int),
-	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (int, int, int) {
+func (p *Pattern) iter(pfun func(bool, bool, []rune, []rune) algo.Result,
+	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (Offset, int32) {
 	for _, part := range tokens {
-		prefixLength := part.prefixLength
-		if sidx, eidx := pfun(caseSensitive, forward, part.text, pattern); sidx >= 0 {
-			return sidx + prefixLength, eidx + prefixLength, part.trimLength
+		prefixLength := int32(part.prefixLength)
+		if res := pfun(caseSensitive, forward, part.text, pattern); res.Start >= 0 {
+			var sidx int32 = res.Start + prefixLength
+			var eidx int32 = res.End + prefixLength
+			return Offset{sidx, eidx, int32(part.trimLength)}, res.Bonus
 		}
 	}
-	return -1, -1, -1 // math.MaxUint16
+	// TODO: math.MaxUint16
+	return Offset{-1, -1, -1}, 0.0
 }

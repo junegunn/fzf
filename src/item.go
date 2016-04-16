@@ -23,6 +23,7 @@ type Item struct {
 	offsets     []Offset
 	colors      []ansiOffset
 	rank        [5]int32
+	bonus       int32
 }
 
 // Sort criteria to use. Never changes once fzf is started.
@@ -73,15 +74,17 @@ func (item *Item) Rank(cache bool) [5]int32 {
 			matchlen += end - begin
 		}
 	}
-	if matchlen == 0 {
-		matchlen = math.MaxInt32
-	}
 	rank := buildEmptyRank(item.Index())
 	for idx, criterion := range sortCriteria {
 		var val int32
 		switch criterion {
 		case byMatchLen:
-			val = int32(matchlen)
+			if matchlen == 0 {
+				val = math.MaxInt32
+			} else {
+				// It is extremely unlikely that bonus exceeds 128
+				val = 128*int32(matchlen) - item.bonus
+			}
 		case byLength:
 			// It is guaranteed that .transformed in not null in normal execution
 			if item.transformed != nil {

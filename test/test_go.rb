@@ -207,13 +207,13 @@ class TestGoFZF < TestBase
     tmux.send_keys '99', 'C-a', '1', 'C-f', '3', 'C-b', 'C-h', 'C-u', 'C-e', 'C-y', 'C-k', 'Tab', 'BTab'
     tmux.until { |lines| lines[-2] == '  856/100000' }
     lines = tmux.capture
-    assert_equal '> 1391',       lines[-4]
+    assert_equal '> 3910',       lines[-4]
     assert_equal '  391',        lines[-3]
     assert_equal '  856/100000', lines[-2]
     assert_equal '> 391',        lines[-1]
 
     tmux.send_keys :Enter
-    assert_equal '1391', readonce.chomp
+    assert_equal '3910', readonce.chomp
   end
 
   def test_fzf_default_command
@@ -357,7 +357,7 @@ class TestGoFZF < TestBase
       tmux.send_keys :BTab, :BTab, :BTab
       tmux.until { |lines| lines[-2].include?('(3)') }
       tmux.send_keys :Enter
-      assert_equal ['5', '5', '15', '25'], readonce.split($/)
+      assert_equal ['5', '5', '50', '51'], readonce.split($/)
     end
   end
 
@@ -378,7 +378,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 'C-K', :Enter
-    assert_equal ['1919'], readonce.split($/)
+    assert_equal ['9090'], readonce.split($/)
   end
 
   def test_tac
@@ -711,10 +711,10 @@ class TestGoFZF < TestBase
 
     # len(1 ~ 2)
     output = [
-      "apple  ui     bottle 2",
       "app     ic    bottle 4",
-      "apple juice   bottle 1",
       "app     ice   bottle 3",
+      "apple  ui     bottle 2",
+      "apple juice   bottle 1",
     ]
     assert_equal output, `#{FZF} -fai -n1..2 < #{tempname}`.split($/)
 
@@ -729,9 +729,9 @@ class TestGoFZF < TestBase
 
     # len(2)
     output = [
-      "apple  ui     bottle 2",
       "app     ic    bottle 4",
       "app     ice   bottle 3",
+      "apple  ui     bottle 2",
       "apple juice   bottle 1",
     ]
     assert_equal output, `#{FZF} -fi -n2 < #{tempname}`.split($/)
@@ -943,12 +943,12 @@ class TestGoFZF < TestBase
         lines[-2].include?('/90') &&
         lines[-3]  == '  1' &&
         lines[-4]  == '  2' &&
-        lines[-13] == '> 15'
+        lines[-13] == '> 50'
       end
       tmux.send_keys :Down
     end
     tmux.send_keys :Enter
-    assert_equal '15', readonce.chomp
+    assert_equal '50', readonce.chomp
   end
 
   def test_header_lines_reverse
@@ -958,12 +958,12 @@ class TestGoFZF < TestBase
         lines[1].include?('/90') &&
         lines[2]  == '  1' &&
         lines[3]  == '  2' &&
-        lines[12] == '> 15'
+        lines[12] == '> 50'
       end
       tmux.send_keys :Up
     end
     tmux.send_keys :Enter
-    assert_equal '15', readonce.chomp
+    assert_equal '50', readonce.chomp
   end
 
   def test_header_lines_overflow

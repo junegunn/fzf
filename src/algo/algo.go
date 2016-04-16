@@ -22,10 +22,30 @@ func runeAt(runes []rune, index int, max int, forward bool) rune {
 	return runes[max-index-1]
 }
 
+// Result conatins the results of running a match function.
+type Result struct {
+	Start int32
+	End   int32
+
+	// Items are basically sorted by the lengths of matched substrings.
+	// But we slightly adjust the score with bonus for better results.
+	Bonus int32
+}
+
+type charClass int
+
+const (
+	charNonWord charClass = iota
+	charLower
+	charUpper
+	charLetter
+	charNumber
+)
+
 // FuzzyMatch performs fuzzy-match
-func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
+func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
 	if len(pattern) == 0 {
-		return 0, 0
+		return Result{0, 0, 0}
 	}
 
 	// 0. (FIXME) How to find the shortest match?
@@ -90,12 +110,76 @@ func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) 
 				}
 			}
 		}
-		if forward {
-			return sidx, eidx
+
+		// Calculate the bonus. This can't be done at the same time as the
+		// pattern scan above because 'forward' may be false.
+		if !forward {
+			sidx, eidx = lenRunes-eidx, lenRunes-sidx
 		}
-		return lenRunes - eidx, lenRunes - sidx
+
+		var bonus int32
+		pidx := 0
+		consecutive := false
+		prevClass := charNonWord
+		for index := 0; index < eidx; index++ {
+			char := runes[index]
+			var class charClass
+			if unicode.IsLower(char) {
+				class = charLower
+			} else if unicode.IsUpper(char) {
+				class = charUpper
+			} else if unicode.IsLetter(char) {
+				class = charLetter
+			} else if unicode.IsNumber(char) {
+				class = charNumber
+			} else {
+				class = charNonWord
+			}
+
+			var point int32
+			if prevClass == charNonWord && class != charNonWord {
+				// Word boundary
+				point = 2
+			} else if prevClass == charLower && class == charUpper ||
+				prevClass != charNumber && class == charNumber {
+				// camelCase letter123
+				point = 1
+			}
+			prevClass = class
+
+			if index >= sidx {
+				if !caseSensitive {
+					if char >= 'A' && char <= 'Z' {
+						char += 32
+					} else if char > unicode.MaxASCII {
+						char = unicode.To(unicode.LowerCase, char)
+					}
+				}
+				pchar := pattern[pidx]
+				if pchar == char {
+					// Boost bonus for the first character in the pattern
+					if pidx == 0 {
+						point *= 2
+					}
+					// Bonus to consecutive matching chars
+					if consecutive {
+						point++
+					}
+					bonus += point
+
+					if pidx++; pidx == lenPattern {
+						break
+					}
+					consecutive = true
+				} else {
+					consecutive = false
+				}
+			}
+		}
+
+		return Result{int32(sidx), int32(eidx), bonus}
 	}
-	return -1, -1
+	return Result{-1, -1, 0}
 }
 
 // ExactMatchNaive is a basic string searching algorithm that handles case
@@ -105,16 +189,17 @@ func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) 
 //
 // We might try to implement better algorithms in the future:
 // http://en.wikipedia.org/wiki/String_searching_algorithm
-func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
+func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
+	// Note: ExactMatchNaive always return a zero bonus.
 	if len(pattern) == 0 {
-		return 0, 0
+		return Result{0, 0, 0}
 	}
 
 	lenRunes := len(runes)
 	lenPattern := len(pattern)
 
 	if lenRunes < lenPattern {
-		return -1, -1
+		return Result{-1, -1, 0}
 	}
 
 	pidx := 0
@@ -132,22 +217,23 @@ func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []r
 			pidx++
 			if pidx == lenPattern {
 				if forward {
-					return index - lenPattern + 1, index + 1
+					return Result{int32(index - lenPattern + 1), int32(index + 1), 0}
 				}
-				return lenRunes - (index + 1), lenRunes - (index - lenPattern + 1)
+				return Result{int32(lenRunes - (index + 1)), int32(lenRunes - (index - lenPattern + 1)), 0}
 			}
 		} else {
 			index -= pidx
 			pidx = 0
 		}
 	}
-	return -1, -1
+	return Result{-1, -1, 0}
 }
 
 // PrefixMatch performs prefix-match
-func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
+func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
+	// Note: PrefixMatch always return a zero bonus.
 	if len(runes) < len(pattern) {
-		return -1, -1
+		return Result{-1, -1, 0}
 	}
 
 	for index, r := range pattern {
@@ -156,19 +242,20 @@ func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune)
 			char = unicode.ToLower(char)
 		}
 		if char != r {
-			return -1, -1
+			return Result{-1, -1, 0}
 		}
 	}
-	return 0, len(pattern)
+	return Result{0, int32(len(pattern)), 0}
 }
 
 // SuffixMatch performs suffix-match
-func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune) (int, int) {
+func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune) Result {
+	// Note: SuffixMatch always return a zero bonus.
 	runes := util.TrimRight(input)
 	trimmedLen := len(runes)
 	diff := trimmedLen - len(pattern)
 	if diff < 0 {
-		return -1, -1
+		return Result{-1, -1, 0}
 	}
 
 	for index, r := range pattern {
@@ -177,23 +264,24 @@ func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune)
 			char = unicode.ToLower(char)
 		}
 		if char != r {
-			return -1, -1
+			return Result{-1, -1, 0}
 		}
 	}
-	return trimmedLen - len(pattern), trimmedLen
+	return Result{int32(trimmedLen - len(pattern)), int32(trimmedLen), 0}
 }
 
 // EqualMatch performs equal-match
-func EqualMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) (int, int) {
+func EqualMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
+	// Note: EqualMatch always return a zero bonus.
 	if len(runes) != len(pattern) {
-		return -1, -1
+		return Result{-1, -1, 0}
 	}
 	runesStr := string(runes)
 	if !caseSensitive {
 		runesStr = strings.ToLower(runesStr)
 	}
 	if runesStr == string(pattern) {
-		return 0, len(pattern)
+		return Result{0, int32(len(pattern)), 0}
 	}
-	return -1, -1
+	return Result{-1, -1, 0}
 }
