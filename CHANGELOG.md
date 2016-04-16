@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.12.0
+------
+
+- Enhanced ranking algorithm
+- Minor bug fixes
+
 0.11.4
 ------
 
