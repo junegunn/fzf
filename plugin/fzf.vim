@@ -307,7 +307,7 @@ function! s:split(dict)
         endif
         execute cmd sz.'new'
         execute resz sz
-        return
+        return {}
       endif
     endfor
     if s:present(a:dict, 'window')
@@ -315,20 +315,25 @@ function! s:split(dict)
     else
       execute (tabpagenr()-1).'tabnew'
     endif
+    return { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }
   finally
     setlocal winfixwidth winfixheight buftype=nofile bufhidden=wipe nobuflisted
   endtry
 endfunction
 
 function! s:execute_term(dict, command, temps) abort
-  call s:split(a:dict)
+  let winopts = s:split(a:dict)
 
-  let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF' }
+  let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF', 'winopts': winopts }
   let s:command = a:command
   function! fzf.on_exit(id, code)
     let pos = s:getpos()
     let inplace = pos == s:ppos " {'window': 'enew'}
-    if !inplace
+    if inplace
+      for [opt, val] in items(self.winopts)
+        execute 'let' opt '=' val
+      endfor
+    else
       if bufnr('') == self.buf
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
