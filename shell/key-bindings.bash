@@ -65,7 +65,7 @@ if [ -n "$TMUX_PANE" ]; then
   [ $BASH_VERSINFO -gt 3 ] && __use_tmux_auto=1
 fi
 
-if [ -z "$(set -o | \grep '^vi.*on')" ]; then
+if [[ $'\n'$(set -o) != *$'\n'vi*on* ]]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
   bind '"\e^": history-expand-line'
