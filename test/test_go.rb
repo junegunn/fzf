@@ -31,7 +31,7 @@ def wait
     return if yield
     sleep 0.05
   end
-  throw 'timeout'
+  raise 'timeout'
 end
 
 class Shell
@@ -1117,12 +1117,8 @@ class TestGoFZF < TestBase
 
   def test_exitstatus_empty
     { '99' => '0', '999' => '1' }.each do |query, status|
-      tmux.send_keys "seq 100 | #{FZF} -q #{query}", :Enter
+      tmux.send_keys "seq 100 | #{FZF} -q #{query}; echo --\\$?--", :Enter
       tmux.until { |lines| lines[-2] =~ %r{ [10]/100} }
-      tmux.send_keys :Enter
-
-      tmux.send_keys 'echo --\$?--'
-      tmux.until { |lines| lines.last.include? "echo --$?--" }
       tmux.send_keys :Enter
       tmux.until { |lines| lines.last.include? "--#{status}--" }
     end
