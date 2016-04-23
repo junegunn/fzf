@@ -42,6 +42,70 @@ const (
 	charNumber
 )
 
+func evaluateBonus(caseSensitive bool, runes []rune, pattern []rune, sidx int, eidx int) int32 {
+	var bonus int32
+	pidx := 0
+	lenPattern := len(pattern)
+	consecutive := false
+	prevClass := charNonWord
+	for index := 0; index < eidx; index++ {
+		char := runes[index]
+		var class charClass
+		if unicode.IsLower(char) {
+			class = charLower
+		} else if unicode.IsUpper(char) {
+			class = charUpper
+		} else if unicode.IsLetter(char) {
+			class = charLetter
+		} else if unicode.IsNumber(char) {
+			class = charNumber
+		} else {
+			class = charNonWord
+		}
+
+		var point int32
+		if prevClass == charNonWord && class != charNonWord {
+			// Word boundary
+			point = 2
+		} else if prevClass == charLower && class == charUpper ||
+			prevClass != charNumber && class == charNumber {
+			// camelCase letter123
+			point = 1
+		}
+		prevClass = class
+
+		if index >= sidx {
+			if !caseSensitive {
+				if char >= 'A' && char <= 'Z' {
+					char += 32
+				} else if char > unicode.MaxASCII {
+					char = unicode.To(unicode.LowerCase, char)
+				}
+			}
+			pchar := pattern[pidx]
+			if pchar == char {
+				// Boost bonus for the first character in the pattern
+				if pidx == 0 {
+					point *= 2
+				}
+				// Bonus to consecutive matching chars
+				if consecutive {
+					point++
+				}
+				bonus += point
+
+				if pidx++; pidx == lenPattern {
+					break
+				}
+				consecutive = true
+			} else {
+				consecutive = false
+			}
+		}
+	}
+	return bonus
+}
+
 // FuzzyMatch performs fuzzy-match
 func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
 	if len(pattern) == 0 {
@@ -117,67 +181,8 @@ func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) 
 			sidx, eidx = lenRunes-eidx, lenRunes-sidx
 		}
 
-		var bonus int32
-		pidx := 0
-		consecutive := false
-		prevClass := charNonWord
-		for index := 0; index < eidx; index++ {
-			char := runes[index]
-			var class charClass
-			if unicode.IsLower(char) {
-				class = charLower
-			} else if unicode.IsUpper(char) {
-				class = charUpper
-			} else if unicode.IsLetter(char) {
-				class = charLetter
-			} else if unicode.IsNumber(char) {
-				class = charNumber
-			} else {
-				class = charNonWord
-			}
-
-			var point int32
-			if prevClass == charNonWord && class != charNonWord {
-				// Word boundary
-				point = 2
-			} else if prevClass == charLower && class == charUpper ||
-				prevClass != charNumber && class == charNumber {
-				// camelCase letter123
-				point = 1
-			}
-			prevClass = class
-
-			if index >= sidx {
-				if !caseSensitive {
-					if char >= 'A' && char <= 'Z' {
-						char += 32
-					} else if char > unicode.MaxASCII {
-						char = unicode.To(unicode.LowerCase, char)
-					}
-				}
-				pchar := pattern[pidx]
-				if pchar == char {
-					// Boost bonus for the first character in the pattern
-					if pidx == 0 {
-						point *= 2
-					}
-					// Bonus to consecutive matching chars
-					if consecutive {
-						point++
-					}
-					bonus += point
-
-					if pidx++; pidx == lenPattern {
-						break
-					}
-					consecutive = true
-				} else {
-					consecutive = false
-				}
-			}
-		}
-
-		return Result{int32(sidx), int32(eidx), bonus}
+		return Result{int32(sidx), int32(eidx),
+			evaluateBonus(caseSensitive, runes, pattern, sidx, eidx)}
 	}
 	return Result{-1, -1, 0}
 }
@@ -190,7 +195,6 @@ func FuzzyMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) 
 // We might try to implement better algorithms in the future:
 // http://en.wikipedia.org/wiki/String_searching_algorithm
 func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
-	// Note: ExactMatchNaive always return a zero bonus.
 	if len(pattern) == 0 {
 		return Result{0, 0, 0}
 	}
@@ -216,10 +220,16 @@ func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []r
 		if pchar == char {
 			pidx++
 			if pidx == lenPattern {
+				var sidx, eidx int
 				if forward {
-					return Result{int32(index - lenPattern + 1), int32(index + 1), 0}
+					sidx = index - lenPattern + 1
+					eidx = index + 1
+				} else {
+					sidx = lenRunes - (index + 1)
+					eidx = lenRunes - (index - lenPattern + 1)
 				}
-				return Result{int32(lenRunes - (index + 1)), int32(lenRunes - (index - lenPattern + 1)), 0}
+				return Result{int32(sidx), int32(eidx),
+					evaluateBonus(caseSensitive, runes, pattern, sidx, eidx)}
 			}
 		} else {
 			index -= pidx
@@ -231,7 +241,6 @@ func ExactMatchNaive(caseSensitive bool, forward bool, runes []rune, pattern []r
 
 // PrefixMatch performs prefix-match
 func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune) Result {
-	// Note: PrefixMatch always return a zero bonus.
 	if len(runes) < len(pattern) {
 		return Result{-1, -1, 0}
 	}
@@ -245,12 +254,13 @@ func PrefixMatch(caseSensitive bool, forward bool, runes []rune, pattern []rune)
 			return Result{-1, -1, 0}
 		}
 	}
-	return Result{0, int32(len(pattern)), 0}
+	lenPattern := len(pattern)
+	return Result{0, int32(lenPattern),
+		evaluateBonus(caseSensitive, runes, pattern, 0, lenPattern)}
 }
 
 // SuffixMatch performs suffix-match
 func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune) Result {
-	// Note: SuffixMatch always return a zero bonus.
 	runes := util.TrimRight(input)
 	trimmedLen := len(runes)
 	diff := trimmedLen - len(pattern)
@@ -267,7 +277,11 @@ func SuffixMatch(caseSensitive bool, forward bool, input []rune, pattern []rune)
 			return Result{-1, -1, 0}
 		}
 	}
-	return Result{int32(trimmedLen - len(pattern)), int32(trimmedLen), 0}
+	lenPattern := len(pattern)
+	sidx := trimmedLen - lenPattern
+	eidx := trimmedLen
+	return Result{int32(sidx), int32(eidx),
+		evaluateBonus(caseSensitive, runes, pattern, sidx, eidx)}
 }
 
 // EqualMatch performs equal-match

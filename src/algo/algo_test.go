@@ -51,29 +51,36 @@ func TestFuzzyMatchBackward(t *testing.T) {
 
 func TestExactMatchNaive(t *testing.T) {
 	for _, dir := range []bool{true, false} {
-		assertMatch(t, ExactMatchNaive, false, dir, "fooBarbaz", "oBA", 2, 5, 0)
+		assertMatch(t, ExactMatchNaive, false, dir, "fooBarbaz", "oBA", 2, 5, 3)
 		assertMatch(t, ExactMatchNaive, true, dir, "fooBarbaz", "oBA", -1, -1, 0)
 		assertMatch(t, ExactMatchNaive, true, dir, "fooBarbaz", "fooBarbazz", -1, -1, 0)
+
+		assertMatch(t, ExactMatchNaive, false, dir, "/AutomatorDocument.icns", "rdoc", 9, 13, 4)
+		assertMatch(t, ExactMatchNaive, false, dir, "/man1/zshcompctl.1", "zshc", 6, 10, 7)
+		assertMatch(t, ExactMatchNaive, false, dir, "/.oh-my-zsh/cache", "zsh/c", 8, 13, 10)
 	}
 }
 
 func TestExactMatchNaiveBackward(t *testing.T) {
-	assertMatch(t, ExactMatchNaive, false, true, "foobar foob", "oo", 1, 3, 0)
-	assertMatch(t, ExactMatchNaive, false, false, "foobar foob", "oo", 8, 10, 0)
+	assertMatch(t, ExactMatchNaive, false, true, "foobar foob", "oo", 1, 3, 1)
+	assertMatch(t, ExactMatchNaive, false, false, "foobar foob", "oo", 8, 10, 1)
 }
 
 func TestPrefixMatch(t *testing.T) {
 	for _, dir := range []bool{true, false} {
-		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "Foo", 0, 3, 0)
 		assertMatch(t, PrefixMatch, true, dir, "fooBarbaz", "Foo", -1, -1, 0)
-		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "baz", -1, -1, 0)
+		assertMatch(t, PrefixMatch, false, dir, "fooBarBaz", "baz", -1, -1, 0)
+		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "Foo", 0, 3, 6)
+		assertMatch(t, PrefixMatch, false, dir, "foOBarBaZ", "foo", 0, 3, 7)
+		assertMatch(t, PrefixMatch, false, dir, "f-oBarbaz", "f-o", 0, 3, 8)
 	}
 }
 
 func TestSuffixMatch(t *testing.T) {
 	for _, dir := range []bool{true, false} {
 		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "Foo", -1, -1, 0)
-		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "baz", 6, 9, 0)
+		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "baz", 6, 9, 2)
+		assertMatch(t, SuffixMatch, false, dir, "fooBarBaZ", "baz", 6, 9, 5)
 		assertMatch(t, SuffixMatch, true, dir, "fooBarbaz", "Baz", -1, -1, 0)
 	}
 }
