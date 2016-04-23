@@ -317,7 +317,7 @@ function! s:split(dict)
     endif
     return { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }
   finally
-    setlocal winfixwidth winfixheight buftype=nofile bufhidden=wipe nobuflisted
+    setlocal winfixwidth winfixheight
   endtry
 endfunction
 
@@ -368,7 +368,7 @@ function! s:execute_term(dict, command, temps) abort
   call s:pushd(a:dict)
   call termopen(a:command, fzf)
   call s:popd(a:dict, [])
-  setlocal nospell
+  setlocal nospell bufhidden=wipe nobuflisted
   setf fzf
   startinsert
   return []
