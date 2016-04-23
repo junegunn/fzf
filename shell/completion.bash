@@ -272,14 +272,15 @@ if type _completion_loader > /dev/null 2>&1; then
 fi
 
 _fzf_defc() {
-  local cmd func opts orig_var orig
+  local cmd func opts orig_var orig def
   cmd="$1"
   func="$2"
   opts="$3"
   orig_var="_fzf_orig_completion_$cmd"
   orig="${!orig_var}"
   if [ -n "$orig" ]; then
-    eval "$(printf "$orig" "$func")"
+    printf -v def "$orig" "$func"
+    eval "$def"
   else
     complete -F "$func" $opts "$cmd"
   fi
