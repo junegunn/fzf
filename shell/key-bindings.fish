@@ -20,8 +20,7 @@ function fzf_key_bindings
       -o -type d -print \
       -o -type l -print 2> /dev/null | sed 1d | cut -b3-"
     eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m > $TMPDIR/fzf.result"
-    and sleep 0
-    and commandline -i (cat $TMPDIR/fzf.result | __fzf_escape)
+    and for i in (seq 20); commandline -i (cat $TMPDIR/fzf.result | __fzf_escape) 2> /dev/null; and break; sleep 0.1; end
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
