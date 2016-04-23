@@ -227,7 +227,7 @@ func (p *Pattern) CacheKey() string {
 	}
 	cacheableTerms := []string{}
 	for _, termSet := range p.termSets {
-		if len(termSet) == 1 && !termSet[0].inv {
+		if len(termSet) == 1 && !termSet[0].inv && (p.fuzzy || termSet[0].typ == termExact) {
 			cacheableTerms = append(cacheableTerms, string(termSet[0].origText))
 		}
 	}

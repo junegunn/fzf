@@ -1157,6 +1157,16 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_partial_caching
+    tmux.send_keys 'seq 1000 | fzf -e', :Enter
+    tmux.until { |lines| lines[-2] == '  1000/1000' }
+    tmux.send_keys 11
+    tmux.until { |lines| lines[-2] == '  19/1000' }
+    tmux.send_keys 'C-a', "'"
+    tmux.until { |lines| lines[-2] == '  28/1000' }
+    tmux.send_keys :Enter
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
