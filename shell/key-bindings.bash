@@ -29,11 +29,13 @@ __fzf_select_tmux__() {
   tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
 }
 
-__fzf_select_tmux_auto__() {
-  if [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ]; then
+fzf-file-widget() {
+  if __fzf_use_tmux__; then
     __fzf_select_tmux__
   else
-    tmux send-keys -t "$TMUX_PANE" "$(__fzf_select__)"
+    local selected="$(__fzf_select__)"
+    READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
+    READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
   fi
 }
 
@@ -58,12 +60,12 @@ __fzf_history__() (
     fi
 )
 
-__use_tmux=0
-__use_tmux_auto=0
-if [ -n "$TMUX_PANE" ]; then
-  [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ] && __use_tmux=1
-  [ $BASH_VERSINFO -gt 3 ] && __use_tmux_auto=1
-fi
+__fzf_use_tmux__() {
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ]
+}
+
+[ $BASH_VERSINFO -gt 3 ] && __use_bind_x=1 || __use_bind_x=0
+__fzf_use_tmux__ && __use_tmux=1 || __use_tmux=0
 
 if [[ $'\n'$(set -o) != *$'\n'vi*on* ]]; then
   # Required to refresh the prompt after fzf
@@ -71,8 +73,8 @@ if [[ $'\n'$(set -o) != *$'\n'vi*on* ]]; then
   bind '"\e^": history-expand-line'
 
   # CTRL-T - Paste the selected file path into the command line
-  if [ $__use_tmux_auto -eq 1 ]; then
-    bind -x '"\C-t": "__fzf_select_tmux_auto__"'
+  if [ $__use_bind_x -eq 1 ]; then
+    bind -x '"\C-t": "fzf-file-widget"'
   elif [ $__use_tmux -eq 1 ]; then
     bind '"\C-t": " \C-u \C-a\C-k$(__fzf_select_tmux__)\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
   else
@@ -100,8 +102,8 @@ else
 
   # CTRL-T - Paste the selected file path into the command line
   # - FIXME: Selected items are attached to the end regardless of cursor position
-  if [ $__use_tmux_auto -eq 1 ]; then
-    bind -x '"\C-t": "__fzf_select_tmux_auto__"'
+  if [ $__use_bind_x -eq 1 ]; then
+    bind -x '"\C-t": "fzf-file-widget"'
   elif [ $__use_tmux -eq 1 ]; then
     bind '"\C-t": "\C-x\C-a$a \C-x\C-addi$(__fzf_select_tmux__)\C-x\C-e\C-x\C-a0P$xa"'
   else
@@ -118,6 +120,6 @@ else
   bind -m vi-command '"\ec": "ddi$(__fzf_cd__)\C-x\C-e\C-x\C-r\C-m"'
 fi
 
-unset -v __use_tmux __use_tmux_auto
+unset -v __use_tmux __use_bind_x
 
 fi
