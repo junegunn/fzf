@@ -121,6 +121,10 @@ try
     throw v:exception
   endtry
 
+  if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
+    let dict.source = $FZF_DEFAULT_COMMAND
+  endif
+
   if has_key(dict, 'source')
     let source = dict.source
     let type = type(source)
