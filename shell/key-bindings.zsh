@@ -9,7 +9,7 @@ __fsel() {
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 1d | cut -b3-"}"
   eval "$cmd" | $(__fzfcmd) -m | while read item; do
-    printf '%q ' "$item"
+    echo -n "${(q)item} "
   done
   echo
 }

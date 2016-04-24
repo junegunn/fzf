@@ -1218,6 +1218,22 @@ module TestShell
     tmux.until(0) { |lines| lines[-1].include? '1 2 3' }
   end
 
+  def test_ctrl_t_unicode
+    FileUtils.mkdir_p '/tmp/fzf-test'
+    tmux.send_keys 'cd /tmp/fzf-test; echo -n test1 > "fzf-unicode 테스트1"; echo -n test2 > "fzf-unicode 테스트2"', :Enter
+    tmux.prepare
+    tmux.send_keys 'cat ', 'C-t', pane: 0
+    tmux.until(1) { |lines| lines.item_count >= 1 }
+    tmux.send_keys 'fzf-unicode', pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
+    tmux.send_keys :BTab, :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include? '(2)' }
+    tmux.send_keys :Enter, pane: 1
+    tmux.until { |lines| lines[-1].include? 'cat' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1].include? 'test1test2' }
+  end
+
   def test_alt_c
     tmux.prepare
     tmux.send_keys :Escape, :c, pane: 0
@@ -1417,6 +1433,20 @@ module CompletionTest
     tmux.until { |lines| lines[-2].include? ' 1/' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == 'unset FOO' }
+  end
+
+  def test_file_completion_unicode
+    FileUtils.mkdir_p '/tmp/fzf-test'
+    tmux.send_keys 'cd /tmp/fzf-test; echo -n test3 > "fzf-unicode 테스트1"; echo -n test4 > "fzf-unicode 테스트2"', :Enter
+    tmux.prepare
+    tmux.send_keys 'cat fzf-unicode**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
+    tmux.send_keys :BTab, :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include? '(2)' }
+    tmux.send_keys :Enter, pane: 1
+    tmux.until { |lines| lines[-1].include? 'cat' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1].include? 'test3test4' }
   end
 end
 

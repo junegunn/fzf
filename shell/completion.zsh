@@ -54,7 +54,7 @@ __fzf_generic_path_completion() {
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       dir=${~dir}
       matches=$(eval "$compgen $(printf %q "$dir")" | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "$leftover" | while read item; do
-        printf "%q$suffix " "$item"
+        echo -n "${(q)item}$suffix "
       done)
       matches=${matches% }
       if [ -n "$matches" ]; then
