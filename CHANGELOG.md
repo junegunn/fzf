@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.12.1
+------
+
+- Ranking algorithm introduced in 0.12.0 is now universally applied
+- Fixed invalid cache reference in exact mode
+- Fixes and improvements in Vim plugin and shell extensions
+
 0.12.0
 ------
 
