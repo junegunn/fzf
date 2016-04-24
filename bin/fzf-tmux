@@ -8,6 +8,7 @@ skip=""
 swap=""
 close=""
 term=""
+[ -n "$LINES" ] && lines=$LINES || lines=$(tput lines)
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
@@ -60,7 +61,7 @@ while [ $# -gt 0 ]; do
           if [[ "$arg" =~ ^.l ]]; then
             [ -n "$COLUMNS" ] && max=$COLUMNS || max=$(tput cols)
           else
-            [ -n "$LINES" ] && max=$LINES || max=$(tput lines)
+            max=$lines
           fi
           size=$(( max - size ))
           [ $size -lt 0 ] && size=0
@@ -82,7 +83,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if [ -z "$TMUX" ]; then
+if ! [ -n "$TMUX_PANE" -a $lines -gt 15 ]; then
   fzf "${args[@]}"
   exit $?
 fi
