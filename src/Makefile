@@ -7,11 +7,6 @@ else ifeq ($(UNAME_S),Linux)
 endif
 endif
 
-UNAME_M := $(shell uname -m)
-ifneq ($(UNAME_M),x86_64)
-$(error "Build on $(UNAME_M) is not supported, yet.")
-endif
-
 SOURCES     := $(wildcard *.go */*.go)
 ROOTDIR     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BINDIR      := $(shell dirname $(ROOTDIR))/bin
@@ -27,14 +22,21 @@ RELEASE64   := fzf-$(VERSION)-$(GOOS)_amd64
 RELEASEARM7 := fzf-$(VERSION)-$(GOOS)_arm7
 export GOPATH
 
-all: release
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),i686)
+	BINARY := $(BINARY32)
+else
+$(error "Build on $(UNAME_M) is not supported, yet.")
+endif
 
-release: test build
+all: fzf/$(BINARY)
+
+release: test fzf/$(BINARY32) fzf/$(BINARY64)
 	-cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
 	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64) && \
 	rm -f $(RELEASE32) $(RELEASE64)
-
-build: fzf/$(BINARY32) fzf/$(BINARY64)
 
 $(SRCDIR):
 	mkdir -p $(shell dirname $(SRCDIR))
@@ -55,7 +57,7 @@ test: deps
 install: $(BINDIR)/fzf
 
 uninstall:
-	rm -f $(BINDIR)/fzf $(BINDIR)/$(BINARY64)
+	rm -f $(BINDIR)/fzf $(BINDIR)/$(BINARY)
 
 clean:
 	cd fzf && rm -f fzf-*
@@ -66,9 +68,9 @@ fzf/$(BINARY32): deps
 fzf/$(BINARY64): deps
 	cd fzf && go build -a -tags "$(TAGS)" -o $(BINARY64)
 
-$(BINDIR)/fzf: fzf/$(BINARY64) | $(BINDIR)
-	cp -f fzf/$(BINARY64) $(BINDIR)
-	cd $(BINDIR) && ln -sf $(BINARY64) fzf
+$(BINDIR)/fzf: fzf/$(BINARY) | $(BINDIR)
+	cp -f fzf/$(BINARY) $(BINDIR)
+	cd $(BINDIR) && ln -sf $(BINARY) fzf
 
 $(BINDIR):
 	mkdir -p $@
@@ -99,7 +101,7 @@ centos: docker-centos
 
 linux: docker-centos
 	docker run $(DOCKEROPTS) junegunn/centos-sandbox \
-		/bin/bash -ci 'cd /fzf/src; make TAGS=static'
+		/bin/bash -ci 'cd /fzf/src; make TAGS=static release'
 
 ubuntu-android: docker-android
 	docker run $(DOCKEROPTS) junegunn/android-sandbox \
@@ -109,6 +111,6 @@ android: docker-android
 	docker run $(DOCKEROPTS) junegunn/android-sandbox \
 		/bin/bash -ci 'cd /fzf/src; GOOS=android make android-build'
 
-.PHONY: all build deps release test install uninstall clean \
+.PHONY: all deps release test install uninstall clean \
 	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos \
 	android-build docker-android ubuntu-android android

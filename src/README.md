@@ -79,7 +79,7 @@ Build
 
 ```sh
 # Build fzf executables and tarballs
-make
+make release
 
 # Install the executable to ../bin directory
 make install
