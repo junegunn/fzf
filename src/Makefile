@@ -7,7 +7,8 @@ else ifeq ($(UNAME_S),Linux)
 endif
 endif
 
-ifneq ($(shell uname -m),x86_64)
+UNAME_M := $(shell uname -m)
+ifneq ($(UNAME_M),x86_64)
 $(error "Build on $(UNAME_M) is not supported, yet.")
 endif
 
