@@ -1295,11 +1295,8 @@ class FZF
             when /^\^(.*)\$$/
               Regexp.new('^' << Regexp.escape($1) << '$', rxflag_for(w))
             when /^'/
-              if @mode == :fuzzy && w.length > 1
-                exact_regex w[1..-1]
-              elsif @mode == :exact
-                exact_regex w
-              end
+              w.length > 1 ?
+                @mode == :fuzzy ? exact_regex(w[1..-1]) : fuzzy_regex(w[1..-1]) : nil
             when /^\^/
               w.length > 1 ?
                 Regexp.new('^' << Regexp.escape(w[1..-1]), rxflag_for(w)) : nil
