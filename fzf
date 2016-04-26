@@ -1233,18 +1233,16 @@ class FZF
     end
 
     def fuzzy_regex q
-      @regexp[q] ||= begin
-        q = q.downcase if @rxflag == Regexp::IGNORECASE
-        Regexp.new(q.split(//).inject('') { |sum, e|
-          e = Regexp.escape e
-          sum << (e.length > 1 ? "(?:#{e}).*?" :  # FIXME: not equivalent
-                                 "#{e}[^#{e}]*?")
-        }, rxflag_for(q))
-      end
+      q = q.downcase if @rxflag == Regexp::IGNORECASE
+      Regexp.new(q.split(//).inject('') { |sum, e|
+        e = Regexp.escape e
+        sum << (e.length > 1 ? "(?:#{e}).*?" :  # FIXME: not equivalent
+                               "#{e}[^#{e}]*?")
+      }, rxflag_for(q))
     end
 
     def match list, q, prefix, suffix
-      regexp = fuzzy_regex q
+      regexp = (@regexp[q] ||= fuzzy_regex q)
 
       cache = @caches[list.object_id]
       prefix_cache = nil
