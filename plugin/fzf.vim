@@ -288,17 +288,13 @@ function! s:calc_size(max, val, dict)
   return srcsz >= 0 ? min([srcsz + margin, size]) : size
 endfunction
 
-function! s:getpos()
-  return {'tab': tabpagenr(), 'win': winnr(), 'cnt': winnr('$'), 'tcnt': tabpagenr('$')}
-endfunction
-
 function! s:split(dict)
   let directions = {
   \ 'up':    ['topleft', 'resize', &lines],
   \ 'down':  ['botright', 'resize', &lines],
   \ 'left':  ['vertical topleft', 'vertical resize', &columns],
   \ 'right': ['vertical botright', 'vertical resize', &columns] }
-  let s:ppos = s:getpos()
+  let w:fzf_win_mark = 1
   try
     for [dir, triple] in items(directions)
       let val = get(a:dict, dir, '')
@@ -331,8 +327,7 @@ function! s:execute_term(dict, command, temps) abort
   let fzf = { 'buf': bufnr('%'), 'dict': a:dict, 'temps': a:temps, 'name': 'FZF', 'winopts': winopts }
   let s:command = a:command
   function! fzf.on_exit(id, code)
-    let pos = s:getpos()
-    let inplace = pos == s:ppos " {'window': 'enew'}
+    let inplace = get(w:, 'fzf_win_mark', 0) " {'window': 'enew'}
     if inplace
       for [opt, val] in items(self.winopts)
         execute 'let' opt '=' val
@@ -343,10 +338,19 @@ function! s:execute_term(dict, command, temps) abort
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
       endif
-      if pos.tab == s:ppos.tab
-        wincmd p
+      if !get(w:, 'fzf_win_mark', 0)
+        for w in range(1, winnr('$'))
+          if getwinvar(w, 'fzf_win_mark', 0)
+            exec w 'wincmd w'
+            break
+          endif
+        endfor
       endif
     endif
+    " NOTE: a terminal window might get closed without the exit handler being
+    " called (when not using :bd!)!  The handler would then be called when
+    " exiting Neovim.
+    unlet! w:fzf_win_mark
 
     if !s:exit_handler(a:code, s:command, 1)
       return
