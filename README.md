@@ -151,27 +151,6 @@ Many useful examples can be found on [the wiki
 page](https://github.com/junegunn/fzf/wiki/examples). Feel free to add your
 own as well.
 
-Key bindings for command line
------------------------------
-
-The install script will setup the following key bindings for bash, zsh, and
-fish.
-
-- `CTRL-T` - Paste the selected files and directories onto the command line
-    - Set `FZF_CTRL_T_COMMAND` to override the default command
-- `CTRL-R` - Paste the selected command from history onto the command line
-    - Sort is disabled by default to respect chronological ordering
-    - Press `CTRL-R` again to toggle sort
-- `ALT-C` - cd into the selected directory
-
-If you're on a tmux session, fzf will start in a split pane. You may disable
-this tmux integration by setting `FZF_TMUX` to 0, or change the height of the
-pane with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
-
-If you use vi mode on bash, you need to add `set -o vi` *before* `source
-~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
-mode.
-
 `fzf-tmux` script
 -----------------
 
@@ -190,6 +169,28 @@ cat /usr/share/dict/words | fzf-tmux -l 20% --multi --reverse
 
 It will still work even when you're not on tmux, silently ignoring `-[udlr]`
 options, so you can invariably use `fzf-tmux` in your scripts.
+
+Key bindings for command line
+-----------------------------
+
+The install script will setup the following key bindings for bash, zsh, and
+fish.
+
+- `CTRL-T` - Paste the selected files and directories onto the command line
+    - Set `FZF_CTRL_T_COMMAND` to override the default command
+- `CTRL-R` - Paste the selected command from history onto the command line
+    - Sort is disabled by default to respect chronological ordering
+    - Press `CTRL-R` again to toggle sort
+- `ALT-C` - cd into the selected directory
+    - Set `FZF_ALT_C_COMMAND` to override the default command
+
+If you're on a tmux session, fzf will start in a split pane. You may disable
+this tmux integration by setting `FZF_TMUX` to 0, or change the height of the
+pane with `FZF_TMUX_HEIGHT` (e.g. `20`, `50%`).
+
+If you use vi mode on bash, you need to add `set -o vi` *before* `source
+~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
+mode.
 
 Fuzzy completion for bash and zsh
 ---------------------------------
