@@ -231,9 +231,13 @@ if [ -n "$binary_error" ]; then
     echo "No prebuilt binary for $archi ..."
     if command -v go > /dev/null; then
       echo -n "Building binary (go get github.com/junegunn/fzf/src/fzf) ... "
+      if [ -z "${GOPATH-}" ]; then
+        export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
+        mkdir -p "$GOPATH"
+      fi
       if go get github.com/junegunn/fzf/src/fzf; then
         echo "OK"
-        link_fzf_in_path
+        cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
       else
         echo "Failed to build binary ..."
         install_ruby_fzf
