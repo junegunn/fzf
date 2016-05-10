@@ -1444,7 +1444,7 @@ module CompletionTest
     tmux.send_keys :BTab, :BTab, pane: 1
     tmux.until(1) { |lines| lines[-2].include? '(2)' }
     tmux.send_keys :Enter, pane: 1
-    tmux.until { |lines| lines[-1].include? 'cat' }
+    tmux.until { |lines| lines[-1].include?('cat') || lines[-2].include?('cat') }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'test3test4' }
   end
