@@ -859,16 +859,27 @@ class TestGoFZF < TestBase
   def test_execute
     output = '/tmp/fzf-test-execute'
     opts = %[--bind \\"alt-a:execute(echo '[{}]' >> #{output}),alt-b:execute[echo '({}), ({})' >> #{output}],C:execute:echo '({}), [{}], @{}@' >> #{output}\\"]
-    tmux.send_keys "seq 100 | #{fzf opts}", :Enter
-    tmux.until { |lines| lines[-2].include? '100/100' }
-    tmux.send_keys :Escape, :a, :Escape, :a
+    wait = lambda { |exp| tmux.until { |lines| lines[-2].include? exp } }
+    tmux.send_keys "seq 100 | #{fzf opts}; sync", :Enter
+    wait['100/100']
+    tmux.send_keys :Escape, :a
+    wait['/100']
+    tmux.send_keys :Escape, :a
+    wait['/100']
     tmux.send_keys :Up
-    tmux.send_keys :Escape, :b, :Escape, :b
+    tmux.send_keys :Escape, :b
+    wait['/100']
+    tmux.send_keys :Escape, :b
+    wait['/100']
     tmux.send_keys :Up
     tmux.send_keys :C
+    wait['100/100']
     tmux.send_keys 'foobar'
-    tmux.until { |lines| lines[-2].include? '0/100' }
-    tmux.send_keys :Escape, :a, :Escape, :b, :Escape, :c
+    wait['0/100']
+    tmux.send_keys :Escape, :a
+    wait['/100']
+    tmux.send_keys :Escape, :b
+    wait['/100']
     tmux.send_keys :Enter
     readonce
     assert_equal ['["1"]', '["1"]', '("2"), ("2")', '("2"), ("2")', '("3"), ["3"], @"3"@'],
