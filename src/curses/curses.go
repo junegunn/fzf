@@ -109,6 +109,8 @@ const (
 
 const (
 	doubleClickDuration = 500 * time.Millisecond
+	colDefault          = -1
+	colUndefined        = -2
 )
 
 type ColorTheme struct {
@@ -158,6 +160,23 @@ var (
 	BG            int
 	DarkBG        int
 )
+
+func EmptyTheme() *ColorTheme {
+	return &ColorTheme{
+		UseDefault:   true,
+		Fg:           colUndefined,
+		Bg:           colUndefined,
+		DarkBg:       colUndefined,
+		Prompt:       colUndefined,
+		Match:        colUndefined,
+		Current:      colUndefined,
+		CurrentMatch: colUndefined,
+		Spinner:      colUndefined,
+		Info:         colUndefined,
+		Cursor:       colUndefined,
+		Selected:     colUndefined,
+		Header:       colUndefined}
+}
 
 func init() {
 	_prevDownTime = time.Unix(0, 0)
@@ -280,44 +299,58 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 
 	if theme != nil {
 		C.start_color()
-		initPairs(theme, black)
+		var baseTheme *ColorTheme
+		if C.tigetnum(C.CString("colors")) >= 256 {
+			baseTheme = Dark256
+		} else {
+			baseTheme = Default16
+		}
+		initPairs(baseTheme, theme, black)
 		_color = attrColored
 	} else {
 		_color = attrMono
 	}
 }
 
-func initPairs(theme *ColorTheme, black bool) {
-	fg := C.short(theme.Fg)
-	bg := C.short(theme.Bg)
+func override(a int16, b int16) C.short {
+	if b == colUndefined {
+		return C.short(a)
+	}
+	return C.short(b)
+}
+
+func initPairs(baseTheme *ColorTheme, theme *ColorTheme, black bool) {
+	fg := override(baseTheme.Fg, theme.Fg)
+	bg := override(baseTheme.Bg, theme.Bg)
 	if black {
 		bg = C.COLOR_BLACK
 	} else if theme.UseDefault {
-		fg = -1
-		bg = -1
+		fg = colDefault
+		bg = colDefault
 		C.use_default_colors()
 	}
 	if theme.UseDefault {
-		FG = -1
-		BG = -1
+		FG = colDefault
+		BG = colDefault
 	} else {
 		FG = int(fg)
 		BG = int(bg)
-		C.assume_default_colors(C.int(theme.Fg), C.int(bg))
+		C.assume_default_colors(C.int(override(baseTheme.Fg, theme.Fg)), C.int(bg))
 	}
 
-	CurrentFG = int(theme.Current)
-	DarkBG = int(theme.DarkBg)
-	darkBG := C.short(DarkBG)
-	C.init_pair(ColPrompt, C.short(theme.Prompt), bg)
-	C.init_pair(ColMatch, C.short(theme.Match), bg)
-	C.init_pair(ColCurrent, C.short(theme.Current), darkBG)
-	C.init_pair(ColCurrentMatch, C.short(theme.CurrentMatch), darkBG)
-	C.init_pair(ColSpinner, C.short(theme.Spinner), bg)
-	C.init_pair(ColInfo, C.short(theme.Info), bg)
-	C.init_pair(ColCursor, C.short(theme.Cursor), darkBG)
-	C.init_pair(ColSelected, C.short(theme.Selected), darkBG)
-	C.init_pair(ColHeader, C.short(theme.Header), bg)
+	currentFG := override(baseTheme.Current, theme.Current)
+	darkBG := override(baseTheme.DarkBg, theme.DarkBg)
+	CurrentFG = int(currentFG)
+	DarkBG = int(darkBG)
+	C.init_pair(ColPrompt, override(baseTheme.Prompt, theme.Prompt), bg)
+	C.init_pair(ColMatch, override(baseTheme.Match, theme.Match), bg)
+	C.init_pair(ColCurrent, currentFG, darkBG)
+	C.init_pair(ColCurrentMatch, override(baseTheme.CurrentMatch, theme.CurrentMatch), darkBG)
+	C.init_pair(ColSpinner, override(baseTheme.Spinner, theme.Spinner), bg)
+	C.init_pair(ColInfo, override(baseTheme.Info, theme.Info), bg)
+	C.init_pair(ColCursor, override(baseTheme.Cursor, theme.Cursor), darkBG)
+	C.init_pair(ColSelected, override(baseTheme.Selected, theme.Selected), darkBG)
+	C.init_pair(ColHeader, override(baseTheme.Header, theme.Header), bg)
 }
 
 func Close() {

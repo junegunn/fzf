@@ -132,13 +132,6 @@ type Options struct {
 	Version     bool
 }
 
-func defaultTheme() *curses.ColorTheme {
-	if strings.Contains(os.Getenv("TERM"), "256") {
-		return curses.Dark256
-	}
-	return curses.Default16
-}
-
 func defaultOptions() *Options {
 	return &Options{
 		Fuzzy:       true,
@@ -153,7 +146,7 @@ func defaultOptions() *Options {
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
-		Theme:       defaultTheme(),
+		Theme:       curses.EmptyTheme(),
 		Black:       false,
 		Reverse:     false,
 		Cycle:       false,
@@ -745,7 +738,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--color":
 			spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
-				opts.Theme = defaultTheme()
+				opts.Theme = curses.EmptyTheme()
 			} else {
 				opts.Theme = parseTheme(opts.Theme, spec)
 			}
