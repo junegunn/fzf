@@ -83,7 +83,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if ! [ -n "$TMUX_PANE" -a $lines -gt 15 ]; then
+if ! [ -n "$TMUX" -a "$lines" -gt 15 ]; then
   fzf "${args[@]}"
   exit $?
 fi
