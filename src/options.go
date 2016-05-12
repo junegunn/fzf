@@ -315,6 +315,10 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = curses.AltZ + int(' ')
 		case "bspace", "bs":
 			chord = curses.BSpace
+		case "alt-enter", "alt-return":
+			chord = curses.AltEnter
+		case "alt-space":
+			chord = curses.AltSpace
 		case "alt-bs", "alt-bspace":
 			chord = curses.AltBS
 		case "tab":

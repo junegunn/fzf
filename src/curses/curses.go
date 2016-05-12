@@ -81,6 +81,8 @@ const (
 	F3
 	F4
 
+	AltEnter
+	AltSpace
 	AltBS
 	AltA
 	AltB
@@ -417,6 +419,10 @@ func escSequence(sz *int) Event {
 	}
 	*sz = 2
 	switch _buf[1] {
+	case 13:
+		return Event{AltEnter, 0, nil}
+	case 32:
+		return Event{AltSpace, 0, nil}
 	case 98:
 		return Event{AltB, 0, nil}
 	case 100:
