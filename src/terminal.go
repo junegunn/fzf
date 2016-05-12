@@ -91,6 +91,7 @@ const (
 	reqRefresh
 	reqRedraw
 	reqClose
+	reqPrintQuery
 	reqQuit
 )
 
@@ -132,6 +133,7 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actPrintQuery
 	actToggleSort
 	actPreviousHistory
 	actNextHistory
@@ -819,6 +821,10 @@ func (t *Terminal) Loop() {
 							exit(exitOk)
 						}
 						exit(exitNoMatch)
+					case reqPrintQuery:
+						C.Close()
+						fmt.Println(string(t.input))
+						exit(exitOk)
 					case reqQuit:
 						C.Close()
 						exit(exitInterrupt)
@@ -906,6 +912,8 @@ func (t *Terminal) Loop() {
 				if t.cx > 0 {
 					t.cx--
 				}
+			case actPrintQuery:
+				req(reqPrintQuery)
 			case actAbort:
 				req(reqQuit)
 			case actDeleteChar:

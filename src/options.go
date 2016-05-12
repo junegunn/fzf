@@ -531,6 +531,8 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actAbort
 		case "accept":
 			keymap[key] = actAccept
+		case "print-query":
+			keymap[key] = actPrintQuery
 		case "backward-char":
 			keymap[key] = actBackwardChar
 		case "backward-delete-char":

@@ -771,6 +771,13 @@ class TestGoFZF < TestBase
     assert_equal %w[4 5 6 9], readonce.split($/)
   end
 
+  def test_bind_print_query
+    tmux.send_keys "seq 1 1000 | #{fzf '-m --bind=ctrl-j:print-query'}", :Enter
+    tmux.until { |lines| lines[-2].end_with? '/1000' }
+    tmux.send_keys 'print-my-query', 'C-j'
+    assert_equal %w[print-my-query], readonce.split($/)
+  end
+
   def test_long_line
     data = '.' * 256 * 1024
     File.open(tempname, 'w') do |f|
