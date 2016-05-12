@@ -1037,7 +1037,7 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_canel
+  def test_cancel
     tmux.send_keys "seq 10 | #{fzf "--bind 2:cancel"}", :Enter
     tmux.until { |lines| lines[-2].include?('10/10') }
     tmux.send_keys '123'
