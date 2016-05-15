@@ -134,6 +134,7 @@ mkfifo -m o+w $fifo3
 # Build arguments to fzf
 opts=""
 for arg in "${args[@]}"; do
+  arg="${arg//\\/\\\\}"
   arg="${arg//\"/\\\"}"
   arg="${arg//\`/\\\`}"
   opts="$opts \"$arg\""
