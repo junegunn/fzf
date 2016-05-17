@@ -52,16 +52,24 @@ type Terminal struct {
 	reading    bool
 	merger     *Merger
 	selected   map[int32]selectedItem
+	quickmatched  map[int]quickmatchItem
+	quickmatchLabels string
 	reqBox     *util.EventBox
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
 	initFunc   func()
 	suppress   bool
+	quickMatch  bool
 	startChan  chan bool
 }
 
 type selectedItem struct {
 	at   time.Time
+	text *string
+}
+
+type quickmatchItem struct {
+	index int32
 	text *string
 }
 
@@ -90,6 +98,7 @@ const (
 	reqList
 	reqRefresh
 	reqRedraw
+	reqQuickMatch
 	reqClose
 	reqPrintQuery
 	reqQuit
@@ -135,6 +144,7 @@ const (
 	actPageDown
 	actPrintQuery
 	actToggleSort
+	actToggleQuickMatch
 	actPreviousHistory
 	actNextHistory
 	actExecute
@@ -237,6 +247,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reading:    true,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
+		quickmatched:   make(map[int]quickmatchItem),
+		quickmatchLabels: opts.QuickmatchLabels,
 		reqBox:     util.NewEventBox(),
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -497,12 +509,12 @@ func (t *Terminal) printList() {
 		}
 		t.move(line, 0, true)
 		if i < count {
-			t.printItem(t.merger.Get(i+t.offset), i == t.cy-t.offset)
+			t.printItem(t.merger.Get(i+t.offset), i+t.offset, i == t.cy-t.offset)
 		}
 	}
 }
 
-func (t *Terminal) printItem(item *Item, current bool) {
+func (t *Terminal) printItem(item *Item, pos int, current bool) {
 	_, selected := t.selected[item.Index()]
 	if current {
 		C.CPrint(C.ColCursor, true, ">")
@@ -513,7 +525,12 @@ func (t *Terminal) printItem(item *Item, current bool) {
 		}
 		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch, true)
 	} else {
-		C.CPrint(C.ColCursor, true, " ")
+		if t.quickMatch && len(t.quickmatchLabels) > pos {
+			label := t.quickmatchLabels[pos]
+			C.CPrint(C.ColCursor, true, string(label))
+			t.quickmatched[pos] = quickmatchItem{item.Index(), item.StringPtr(t.ansi)}
+		}
+
 		if selected {
 			C.CPrint(C.ColSelected, true, ">")
 		} else {
@@ -810,6 +827,9 @@ func (t *Terminal) Loop() {
 						t.printHeader()
 					case reqRefresh:
 						t.suppress = false
+					case reqQuickMatch:
+						t.quickMatch = !t.quickMatch
+						t.printList()
 					case reqRedraw:
 						C.Clear()
 						C.Endwin()
@@ -906,6 +926,8 @@ func (t *Terminal) Loop() {
 				t.eventBox.Set(EvtSearchNew, t.sort)
 				t.mutex.Unlock()
 				return false
+			case actToggleQuickMatch:
+				req(reqQuickMatch)
 			case actBeginningOfLine:
 				t.cx = 0
 			case actBackwardChar:
@@ -1042,6 +1064,14 @@ func (t *Terminal) Loop() {
 					t.input = t.input[:t.cx]
 				}
 			case actRune:
+				if t.quickMatch {
+					if idx := strings.Index(t.quickmatchLabels, string(event.Char)); idx != -1 {
+						if item, ok := t.quickmatched[idx]; ok {
+							t.selected[item.index] = selectedItem{time.Now(), item.text}
+							req(reqClose)
+						}
+					}
+				}
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++

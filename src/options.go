@@ -130,6 +130,7 @@ type Options struct {
 	Margin      [4]string
 	Tabstop     int
 	Version     bool
+	QuickmatchLabels string
 }
 
 func defaultOptions() *Options {
@@ -170,7 +171,8 @@ func defaultOptions() *Options {
 		HeaderLines: 0,
 		Margin:      defaultMargin(),
 		Tabstop:     8,
-		Version:     false}
+		Version:     false,
+		QuickmatchLabels: " asdfghjkqwertyuiozxcvbnm.12345,ASDFGQWERTZXCVB/"}
 }
 
 func help(code int) {
@@ -595,6 +597,9 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actNextHistory
 		case "toggle-sort":
 			keymap[key] = actToggleSort
+		case "quickmatch":
+			keymap[key] = actToggleQuickMatch
+
 		default:
 			if isExecuteAction(actLower) {
 				var offset int
@@ -891,6 +896,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
+			} else if match, value := optString(arg, "--quickmatch-labels="); match {
+				opts.QuickmatchLabels = " " + value
 			} else {
 				errorExit("unknown option: " + arg)
 			}
