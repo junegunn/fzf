@@ -36,6 +36,9 @@ const (
 
 	// History
 	defaultHistoryMax int = 1000
+
+	// Jump labels
+	defaultJumpLabels string = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM"
 )
 
 // fzf events

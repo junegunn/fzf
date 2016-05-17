@@ -1181,6 +1181,43 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_jump
+    tmux.send_keys "seq 1000 | #{fzf "--multi --jump-labels 12345 --bind 'ctrl-j:jump'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  1000/1000' }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| lines[-7] == '5 5' }
+    tmux.until { |lines| lines[-8] == '  6' }
+    tmux.send_keys '5'
+    tmux.until { |lines| lines[-7] == '> 5' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-7] == ' >5' }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| lines[-7] == '5>5' }
+    tmux.send_keys '2'
+    tmux.until { |lines| lines[-4] == '> 2' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-4] == ' >2' }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| lines[-7] == '5>5' }
+
+    # Press any key other than jump labels to cancel jump
+    tmux.send_keys '6'
+    tmux.until { |lines| lines[-3] == '> 1' }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-3] == '>>1' }
+    tmux.send_keys :Enter
+    assert_equal %w[5 2 1], readonce.split($/)
+  end
+
+  def test_jump_accept
+    tmux.send_keys "seq 1000 | #{fzf "--multi --jump-labels 12345 --bind 'ctrl-j:jump-accept'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  1000/1000' }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| lines[-7] == '5 5' }
+    tmux.send_keys '3'
+    assert_equal '3', readonce.chomp
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path

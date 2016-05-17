@@ -45,6 +45,7 @@ const usage = `usage: fzf [options]
     --hscroll-off=COL     Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
     --inline-info         Display finder info inline with the query
+    --jump-labels=CHARS   Label characters for jump and jump-accept
     --prompt=STR          Input prompt (default: '> ')
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --history=FILE        History file
@@ -112,6 +113,7 @@ type Options struct {
 	Hscroll     bool
 	HscrollOff  int
 	InlineInfo  bool
+	JumpLabels  string
 	Prompt      string
 	Query       string
 	Select1     bool
@@ -153,6 +155,7 @@ func defaultOptions() *Options {
 		Hscroll:     true,
 		HscrollOff:  10,
 		InlineInfo:  false,
+		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
 		Query:       "",
 		Select1:     false,
@@ -553,6 +556,10 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actForwardChar
 		case "forward-word":
 			keymap[key] = actForwardWord
+		case "jump":
+			keymap[key] = actJump
+		case "jump-accept":
+			keymap[key] = actJumpAccept
 		case "kill-line":
 			keymap[key] = actKillLine
 		case "kill-word":
@@ -804,6 +811,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.InlineInfo = true
 		case "--no-inline-info":
 			opts.InlineInfo = false
+		case "--jump-labels":
+			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":
@@ -891,6 +900,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
+			} else if match, value := optString(arg, "--jump-labels="); match {
+				opts.JumpLabels = value
 			} else {
 				errorExit("unknown option: " + arg)
 			}
@@ -907,6 +918,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.Tabstop < 1 {
 		errorExit("tab stop must be a positive integer")
+	}
+
+	if len(opts.JumpLabels) == 0 {
+		errorExit("empty jump labels")
 	}
 }
 

@@ -19,6 +19,14 @@ import (
 	"github.com/junegunn/go-runewidth"
 )
 
+type jumpMode int
+
+const (
+	jumpDisabled jumpMode = iota
+	jumpEnabled
+	jumpAcceptEnabled
+)
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay  time.Duration
@@ -50,6 +58,8 @@ type Terminal struct {
 	count      int
 	progress   int
 	reading    bool
+	jumping    jumpMode
+	jumpLabels string
 	merger     *Merger
 	selected   map[int32]selectedItem
 	reqBox     *util.EventBox
@@ -88,6 +98,7 @@ const (
 	reqInfo
 	reqHeader
 	reqList
+	reqJump
 	reqRefresh
 	reqRedraw
 	reqClose
@@ -133,6 +144,8 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actJump
+	actJumpAccept
 	actPrintQuery
 	actToggleSort
 	actPreviousHistory
@@ -235,6 +248,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		header0:    header,
 		ansi:       opts.Ansi,
 		reading:    true,
+		jumping:    jumpDisabled,
+		jumpLabels: opts.JumpLabels,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -497,15 +512,25 @@ func (t *Terminal) printList() {
 		}
 		t.move(line, 0, true)
 		if i < count {
-			t.printItem(t.merger.Get(i+t.offset), i == t.cy-t.offset)
+			t.printItem(t.merger.Get(i+t.offset), i, i == t.cy-t.offset)
 		}
 	}
 }
 
-func (t *Terminal) printItem(item *Item, current bool) {
+func (t *Terminal) printItem(item *Item, i int, current bool) {
 	_, selected := t.selected[item.Index()]
+	label := " "
+	if t.jumping != jumpDisabled {
+		if i < len(t.jumpLabels) {
+			// Striped
+			current = i%2 == 0
+			label = t.jumpLabels[i : i+1]
+		}
+	} else if current {
+		label = ">"
+	}
+	C.CPrint(C.ColCursor, true, label)
 	if current {
-		C.CPrint(C.ColCursor, true, ">")
 		if selected {
 			C.CPrint(C.ColSelected, true, ">")
 		} else {
@@ -513,7 +538,6 @@ func (t *Terminal) printItem(item *Item, current bool) {
 		}
 		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch, true)
 	} else {
-		C.CPrint(C.ColCursor, true, " ")
 		if selected {
 			C.CPrint(C.ColSelected, true, ">")
 		} else {
@@ -806,6 +830,11 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case reqList:
 						t.printList()
+					case reqJump:
+						if t.merger.Length() == 0 {
+							t.jumping = jumpDisabled
+						}
+						t.printList()
 					case reqHeader:
 						t.printHeader()
 					case reqRefresh:
@@ -1025,6 +1054,12 @@ func (t *Terminal) Loop() {
 			case actPageDown:
 				t.vmove(-(t.maxItems() - 1))
 				req(reqList)
+			case actJump:
+				t.jumping = jumpEnabled
+				req(reqJump)
+			case actJumpAccept:
+				t.jumping = jumpAcceptEnabled
+				req(reqJump)
 			case actBackwardWord:
 				t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
 			case actForwardWord:
@@ -1104,18 +1139,32 @@ func (t *Terminal) Loop() {
 			}
 			return true
 		}
-		action := t.keymap[event.Type]
+		changed := false
 		mapkey := event.Type
-		if event.Type == C.Rune {
-			mapkey = int(event.Char) + int(C.AltZ)
-			if act, prs := t.keymap[mapkey]; prs {
-				action = act
+		if t.jumping == jumpDisabled {
+			action := t.keymap[mapkey]
+			if mapkey == C.Rune {
+				mapkey = int(event.Char) + int(C.AltZ)
+				if act, prs := t.keymap[mapkey]; prs {
+					action = act
+				}
 			}
+			if !doAction(action, mapkey) {
+				continue
+			}
+			changed = string(previousInput) != string(t.input)
+		} else {
+			if mapkey == C.Rune {
+				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 {
+					t.cy = idx + t.offset
+					if t.jumping == jumpAcceptEnabled {
+						req(reqClose)
+					}
+				}
+			}
+			t.jumping = jumpDisabled
+			req(reqList)
 		}
-		if !doAction(action, mapkey) {
-			continue
-		}
-		changed := string(previousInput) != string(t.input)
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
