@@ -8,7 +8,7 @@ import (
 
 const (
 	// Current version
-	version = "0.12.1"
+	version = "0.12.2"
 
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
@@ -38,7 +38,7 @@ const (
 	defaultHistoryMax int = 1000
 
 	// Jump labels
-	defaultJumpLabels string = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM"
+	defaultJumpLabels string = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM,<.>/?!@#$%^&*<>/?()[{]}"
 )
 
 // fzf events
