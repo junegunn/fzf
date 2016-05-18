@@ -1155,7 +1155,7 @@ func (t *Terminal) Loop() {
 			changed = string(previousInput) != string(t.input)
 		} else {
 			if mapkey == C.Rune {
-				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 {
+				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 && idx < t.maxItems() && idx < t.merger.Length() {
 					t.cy = idx + t.offset
 					if t.jumping == jumpAcceptEnabled {
 						req(reqClose)
