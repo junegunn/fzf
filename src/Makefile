@@ -47,7 +47,7 @@ deps: $(SRCDIR) $(SOURCES)
 
 android-build: $(SRCDIR)
 	cd $(SRCDIR) && GOARCH=arm GOARM=7 CGO_ENABLED=1 go get
-	cd $(SRCDIR)/fzf && GOARCH=arm GOARM=7 CGO_ENABLED=1 go build -a -ldflags="-extldflags=-pie" -o $(BINARYARM7)
+	cd $(SRCDIR)/fzf && GOARCH=arm GOARM=7 CGO_ENABLED=1 go build -a -ldflags="-w -extldflags=-pie" -o $(BINARYARM7)
 	cd $(SRCDIR)/fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7) && \
 	rm -f $(RELEASEARM7)
 
@@ -63,10 +63,10 @@ clean:
 	cd fzf && rm -f fzf-*
 
 fzf/$(BINARY32): deps
-	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -tags "$(TAGS)" -o $(BINARY32)
+	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -ldflags -w -tags "$(TAGS)" -o $(BINARY32)
 
 fzf/$(BINARY64): deps
-	cd fzf && go build -a -tags "$(TAGS)" -o $(BINARY64)
+	cd fzf && go build -a -ldflags -w -tags "$(TAGS)" -o $(BINARY64)
 
 $(BINDIR)/fzf: fzf/$(BINARY) | $(BINDIR)
 	cp -f fzf/$(BINARY) $(BINDIR)
