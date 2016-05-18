@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2016" "fzf 0.12.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "May 2016" "fzf 0.12.2" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -183,6 +183,9 @@ on the center of the screen.
 .B "--inline-info"
 Display finder info inline with the query
 .TP
+.BI "--jump-labels=" "CHARS"
+Label characters for \fBjump\fR and \fBjump-accept\fR
+.TP
 .BI "--prompt=" "STR"
 Input prompt (default: '> ')
 .TP
@@ -200,11 +203,14 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
 .B AVAILABLE KEYS:    (SYNONYMS)
     \fIctrl-[a-z]\fR
     \fIalt-[a-z]\fR
-    \fIf[1-4]\fR
+    \fIf[1-10]\fR
     \fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
     \fIspace\fR
     \fIbspace\fR      (\fIbs\fR)
+    \fIalt-enter\fR
+    \fIalt-space\fR
     \fIalt-bspace\fR  (\fIalt-bs\fR)
+    \fIalt-/\fR
     \fItab\fR
     \fIbtab\fR        (\fIshift-tab\fR)
     \fIesc\fR
@@ -244,12 +250,15 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBforward-char\fR          \fIctrl-f  right\fR
     \fBforward-word\fR          \fIalt-f   shift-right\fR
     \fBignore\fR
+    \fBjump\fR                  (EasyMotion-like 2-keystroke movement)
+    \fBjump-accept\fR           (jump and accept)
     \fBkill-line\fR
     \fBkill-word\fR             \fIalt-d\fR
     \fBnext-history\fR          (\fIctrl-n\fR on \fB--history\fR)
     \fBpage-down\fR             \fIpgdn\fR
     \fBpage-up\fR               \fIpgup\fR
     \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
+    \fBprint-query\fR           (print query and exit)
     \fBselect-all\fR
     \fBtoggle\fR
     \fBtoggle-all\fR

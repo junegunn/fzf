@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.12.2
+------
+
+- 256-color capability detection does not require `256` in `$TERM`
+- Added `print-query` action
+- More named keys for binding; <kbd>F1</kbd> ~ <kbd>F10</kbd>,
+  <kbd>ALT-/</kbd>, <kbd>ALT-space</kbd>, and <kbd>ALT-enter</kbd>
+- Added `jump` and `jump-accept` actions that implement [EasyMotion][em]-like
+  movement
+  ![][jump]
+
+[em]: https://github.com/easymotion/vim-easymotion
+[jump]: https://cloud.githubusercontent.com/assets/700826/15367574/b3999dc4-1d64-11e6-85da-28ceeb1a9bc2.png
+
 0.12.1
 ------
 
