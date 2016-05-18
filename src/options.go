@@ -724,6 +724,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.History.maxSize = historyMax
 		}
 	}
+	validateJumpLabels := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -817,6 +818,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.InlineInfo = false
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
+			validateJumpLabels = true
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":
@@ -926,6 +928,14 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if len(opts.JumpLabels) == 0 {
 		errorExit("empty jump labels")
+	}
+
+	if validateJumpLabels {
+		for _, r := range opts.JumpLabels {
+			if r < 32 || r > 126 {
+				errorExit("non-ascii jump labels are not allowed")
+			}
+		}
 	}
 }
 

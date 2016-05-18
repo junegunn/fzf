@@ -38,7 +38,7 @@ const (
 	defaultHistoryMax int = 1000
 
 	// Jump labels
-	defaultJumpLabels string = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPASDFGHJKLZXCVBNM,<.>/?!@#$%^&*<>/?()[{]}"
+	defaultJumpLabels string = "asdfghjklqwertyuiopzxcvbnm1234567890ASDFGHJKLQWERTYUIOPZXCVBNM`~;:,<.>/?'\"!@#$%^&*()[{]}-_=+"
 )
 
 // fzf events
