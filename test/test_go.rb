@@ -430,6 +430,10 @@ class TestGoFZF < TestBase
     test.call 'f3', 'f3'
     test.call 'f2,f4', 'f2', 'f2'
     test.call 'f2,f4', 'f4', 'f4'
+    test.call 'alt-/', [:Escape, :/]
+    %w[f5 f6 f7 f8 f9 f10].each do |key|
+      test.call 'f5,f6,f7,f8,f9,f10', key, key
+    end
     test.call '@', '@'
   end
 

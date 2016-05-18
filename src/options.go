@@ -322,6 +322,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = curses.AltEnter
 		case "alt-space":
 			chord = curses.AltSpace
+		case "alt-/":
+			chord = curses.AltSlash
 		case "alt-bs", "alt-bspace":
 			chord = curses.AltBS
 		case "tab":
@@ -346,12 +348,14 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = curses.SRight
 		case "double-click":
 			chord = curses.DoubleClick
+		case "f10":
+			chord = curses.F10
 		default:
 			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				chord = curses.CtrlA + int(lkey[5]) - 'a'
 			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
 				chord = curses.AltA + int(lkey[4]) - 'a'
-			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '4' {
+			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '9' {
 				chord = curses.F1 + int(key[1]) - '1'
 			} else if utf8.RuneCountInString(key) == 1 {
 				chord = curses.AltZ + int([]rune(key)[0])

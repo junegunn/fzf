@@ -80,9 +80,16 @@ const (
 	F2
 	F3
 	F4
+	F5
+	F6
+	F7
+	F8
+	F9
+	F10
 
 	AltEnter
 	AltSpace
+	AltSlash
 	AltBS
 	AltA
 	AltB
@@ -423,6 +430,8 @@ func escSequence(sz *int) Event {
 		return Event{AltEnter, 0, nil}
 	case 32:
 		return Event{AltSpace, 0, nil}
+	case 47:
+		return Event{AltSlash, 0, nil}
 	case 98:
 		return Event{AltB, 0, nil}
 	case 100:
@@ -468,6 +477,15 @@ func escSequence(sz *int) Event {
 			*sz = 4
 			switch _buf[2] {
 			case 50:
+				if len(_buf) == 5 && _buf[4] == 126 {
+					*sz = 5
+					switch _buf[3] {
+					case 48:
+						return Event{F9, 0, nil}
+					case 49:
+						return Event{F10, 0, nil}
+					}
+				}
 				return Event{Invalid, 0, nil} // INS
 			case 51:
 				return Event{Del, 0, nil}
@@ -481,6 +499,21 @@ func escSequence(sz *int) Event {
 				switch _buf[3] {
 				case 126:
 					return Event{Home, 0, nil}
+				case 53, 55, 56, 57:
+					if len(_buf) == 5 && _buf[4] == 126 {
+						*sz = 5
+						switch _buf[3] {
+						case 53:
+							return Event{F5, 0, nil}
+						case 55:
+							return Event{F6, 0, nil}
+						case 56:
+							return Event{F7, 0, nil}
+						case 57:
+							return Event{F8, 0, nil}
+						}
+					}
+					return Event{Invalid, 0, nil}
 				case 59:
 					if len(_buf) != 6 {
 						return Event{Invalid, 0, nil}
