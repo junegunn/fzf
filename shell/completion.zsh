@@ -31,7 +31,7 @@ fi
 ###########################################################
 
 __fzf_generic_path_completion() {
-  local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches nnm
+  local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
   # (Q) flag removes a quoting level: "foo\ bar" => "foo bar"
   base=${(Q)1}
   lbuf=$2
@@ -41,10 +41,7 @@ __fzf_generic_path_completion() {
   tail=$6
   [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
 
-  if ! setopt | \grep nonomatch > /dev/null; then
-    nnm=1
-    setopt nonomatch
-  fi
+  setopt localoptions nonomatch
   dir="$base"
   while [ 1 ]; do
     if [ -z "$dir" -o -d ${~dir} ]; then
@@ -66,7 +63,6 @@ __fzf_generic_path_completion() {
     dir=$(dirname "$dir")
     dir=${dir%/}/
   done
-  [ -n "$nnm" ] && unsetopt nonomatch
 }
 
 _fzf_path_completion() {
