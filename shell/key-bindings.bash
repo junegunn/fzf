@@ -67,7 +67,7 @@ __fzf_use_tmux__() {
 [ $BASH_VERSINFO -gt 3 ] && __use_bind_x=1 || __use_bind_x=0
 __fzf_use_tmux__ && __use_tmux=1 || __use_tmux=0
 
-if [[ $'\n'$(set -o) != *$'\n'vi*on* ]]; then
+if [[ ! -o vi ]]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
   bind '"\e^": history-expand-line'
@@ -82,10 +82,10 @@ if [[ $'\n'$(set -o) != *$'\n'vi*on* ]]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u$(__fzf_history__)\e\C-e\e^\er"'
+  bind '"\C-r": " \C-e\C-u`__fzf_history__`\e\C-e\e^\er"'
 
   # ALT-C - cd into the selected directory
-  bind '"\ec": " \C-e\C-u$(__fzf_cd__)\e\C-e\er\C-m"'
+  bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
 else
   # We'd usually use "\e" to enter vi-movement-mode so we can do our magic,
   # but this incurs a very noticeable delay of a half second or so,
