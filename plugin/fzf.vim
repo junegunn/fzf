@@ -49,7 +49,7 @@ function! s:fzf_exec()
       throw 'fzf executable not found'
     endif
   endif
-  return s:exec
+  return s:shellesc(s:exec)
 endfunction
 
 function! s:tmux_enabled()
@@ -179,7 +179,7 @@ function! s:fzf_tmux(dict)
     endif
   endfor
   return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, s:fzf_tmux, size, (has_key(a:dict, 'source') ? '' : '-'))
+    \ &lines, &columns, s:shellesc(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
 endfunction
 
 function! s:splittable(dict)
