@@ -27,6 +27,13 @@ const (
 	jumpAcceptEnabled
 )
 
+type jumpRender int
+
+const (
+	jumpRenderLeft jumpRender = iota
+	jumpRenderRight
+)
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay  time.Duration
@@ -60,6 +67,7 @@ type Terminal struct {
 	reading    bool
 	jumping    jumpMode
 	jumpLabels string
+	jumpRender map[jumpRender]bool
 	merger     *Merger
 	selected   map[int32]selectedItem
 	reqBox     *util.EventBox
@@ -250,6 +258,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reading:    true,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
+		jumpRender: opts.JumpRender,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -524,12 +533,14 @@ func (t *Terminal) printItem(item *Item, i int, current bool) {
 		if i < len(t.jumpLabels) {
 			// Striped
 			current = i%2 == 0
-			label = t.jumpLabels[i : i+1]
+            label = t.jumpLabels[i : i+1]
+            if t.jumpRender[jumpRenderLeft] {
+                C.CPrint(C.ColCursor, true, label)
+            }
 		}
 	} else if current {
-		label = ">"
+        C.CPrint(C.ColCursor, true, ">")
 	}
-	C.CPrint(C.ColCursor, true, label)
 	if current {
 		if selected {
 			C.CPrint(C.ColSelected, true, ">")
@@ -545,6 +556,10 @@ func (t *Terminal) printItem(item *Item, i int, current bool) {
 		}
 		t.printHighlighted(item, false, 0, C.ColMatch, false)
 	}
+	if t.jumping != jumpDisabled && (t.jumpRender[jumpRenderRight]) {
+        C.Print(" ")
+        C.CPrint(C.ColCursor, true, label)
+    }
 }
 
 func trimRight(runes []rune, width int) ([]rune, int) {
