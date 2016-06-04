@@ -46,6 +46,8 @@ const usage = `usage: fzf [options]
                           highlighted substring (default: 10)
     --inline-info         Display finder info inline with the query
     --jump-labels=CHARS   Label characters for jump and jump-accept
+    --jump-render=R[,..]  Specify the placement of column with jump labels
+                          Can be 'left', 'right' or both at the same time (default: left)
     --prompt=STR          Input prompt (default: '> ')
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --history=FILE        History file
@@ -114,6 +116,7 @@ type Options struct {
 	HscrollOff  int
 	InlineInfo  bool
 	JumpLabels  string
+	JumpRender  map[jumpRender]bool
 	Prompt      string
 	Query       string
 	Select1     bool
@@ -156,6 +159,7 @@ func defaultOptions() *Options {
 		HscrollOff:  10,
 		InlineInfo:  false,
 		JumpLabels:  defaultJumpLabels,
+		JumpRender:  map[jumpRender]bool{jumpRenderLeft: true},
 		Prompt:      "> ",
 		Query:       "",
 		Select1:     false,
@@ -403,6 +407,31 @@ func parseTiebreak(str string) []criterion {
 		}
 	}
 	return criteria
+}
+
+func parseJumpRender(str string) map[jumpRender]bool {
+	render := make(map[jumpRender]bool)
+	hasLeft := false
+	hasRight := false
+	check := func(notExpected *bool, name string) {
+		if *notExpected {
+			errorExit("duplicate jump render type: " + name)
+		}
+		*notExpected = true
+	}
+	for _, str := range strings.Split(strings.ToLower(str), ",") {
+		switch str {
+		case "left":
+			check(&hasLeft, "left")
+			render[jumpRenderLeft] = true
+		case "right":
+			check(&hasRight, "right")
+			render[jumpRenderRight] = true
+		default:
+			errorExit("invalid render type: " + str)
+		}
+	}
+	return render
 }
 
 func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
@@ -819,6 +848,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true
+		case "--jump-render":
+			opts.JumpRender = parseJumpRender(nextString(allArgs, &i, "render type required"))
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":
