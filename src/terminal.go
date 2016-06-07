@@ -743,7 +743,7 @@ func keyMatch(key int, event C.Event) bool {
 }
 
 func quoteEntry(entry string) string {
-	return fmt.Sprintf("%q", entry)
+	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
 func executeCommand(template string, replacement string) {

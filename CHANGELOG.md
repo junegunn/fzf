@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.12.3
+------
+- `{}` in execute action is replaced to the single-quoted string of the
+  current line
+
 0.12.2
 ------
 
