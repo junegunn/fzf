@@ -39,7 +39,7 @@ bindkey '\ec' fzf-cd-widget
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst
-  selected=( $(fc -l 1 | $(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r ${=FZF_CTRL_R_OPTS} -q "${LBUFFER//$/\\$}") )
+  selected=( $(fc -l 1 | eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
   if [ -n "$selected" ]; then
     num=$selected[1]
     if [ -n "$num" ]; then
