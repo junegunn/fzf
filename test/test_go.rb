@@ -904,21 +904,24 @@ class TestGoFZF < TestBase
 
   def test_execute_multi
     output = '/tmp/fzf-test-execute-multi'
-    opts = %[--multi --bind \\"alt-a:execute-multi(echo '[{}], @{}@' >> #{output}; sync)\\"]
-    tmux.send_keys "seq 100 | #{fzf opts}", :Enter
-    tmux.until { |lines| lines[-2].include? '100/100' }
+    opts = %[--multi --bind \\"alt-a:execute-multi(echo {}/{} >> #{output}; sync)\\"]
+    writelines tempname, %w[foo'bar foo"bar foo$bar foobar]
+    tmux.send_keys "cat #{tempname} | #{fzf opts}", :Enter
+    tmux.until { |lines| lines[-2].include? '4/4' }
     tmux.send_keys :Escape, :a
-    tmux.until { |lines| lines[-2].include? '/100' }
+    tmux.until { |lines| lines[-2].include? '/4' }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.send_keys :Escape, :a
-    tmux.until { |lines| lines[-2].include? '/100' }
+    tmux.until { |lines| lines[-2].include? '/4' }
     tmux.send_keys :Tab, :Tab
     tmux.send_keys :Escape, :a
-    tmux.until { |lines| lines[-2].include? '/100' }
+    tmux.until { |lines| lines[-2].include? '/4' }
     tmux.send_keys :Enter
     tmux.prepare
     readonce
-    assert_equal ['["1"], @"1"@', '["1" "2" "3"], @"1" "2" "3"@', '["1" "2" "4"], @"1" "2" "4"@'],
+    assert_equal [%[foo'bar/foo'bar],
+                  %[foo'bar foo"bar foo$bar/foo'bar foo"bar foo$bar],
+                  %[foo'bar foo"bar foobar/foo'bar foo"bar foobar]],
       File.readlines(output).map(&:chomp)
   ensure
     File.unlink output rescue nil
