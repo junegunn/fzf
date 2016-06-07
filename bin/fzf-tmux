@@ -137,6 +137,7 @@ for arg in "${args[@]}"; do
   arg="${arg//\\/\\\\}"
   arg="${arg//\"/\\\"}"
   arg="${arg//\`/\\\`}"
+  arg="${arg//$/\\$}"
   opts="$opts \"$arg\""
 done
 
