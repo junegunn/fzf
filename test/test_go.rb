@@ -940,7 +940,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include? '1/1' }
     tmux.send_keys 'C-c'
     tmux.prepare
-    assert_equal ['-c / "foo"bar'], File.readlines(output).map(&:chomp)
+    assert_equal ["-c / 'foo'bar"], File.readlines(output).map(&:chomp)
   ensure
     File.unlink output rescue nil
   end
