@@ -140,14 +140,17 @@ try
   else
     let prefix = ''
   endif
-  let tmux = !has('nvim') && s:tmux_enabled() && s:splittable(dict)
+  let tmux = s:tmux_enabled() && s:splittable(dict)
   let command = prefix.(tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  if has('nvim')
+  if tmux
+    let ret = s:execute_tmux(dict, command, temps)
+  elseif has('nvim')
     return s:execute_term(dict, command, temps)
+  else
+    let ret = s:execute(dict, command, temps)
   endif
 
-  let ret = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
   call s:popd(dict, ret)
   return ret
 finally
