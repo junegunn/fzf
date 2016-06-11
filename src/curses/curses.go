@@ -486,6 +486,11 @@ func escSequence(sz *int) Event {
 						return Event{F10, 0, nil}
 					}
 				}
+				// Bracketed paste mode \e[200~ / \e[201
+				if _buf[3] == 48 && (_buf[4] == 48 || _buf[4] == 49) && _buf[5] == 126 {
+					*sz = 6
+					return Event{Invalid, 0, nil}
+				}
 				return Event{Invalid, 0, nil} // INS
 			case 51:
 				return Event{Del, 0, nil}
