@@ -181,8 +181,11 @@ fzf-completion() {
   fi
 }
 
-[ -z "$fzf_default_completion" ] &&
-  fzf_default_completion=$(bindkey '^I' | \grep -v undefined-key | awk '{print $2}')
+[ -z "$fzf_default_completion" ] && {
+  binding=$(bindkey '^I')
+  [[ $binding =~ 'undefined-key' ]] || fzf_default_completion=$binding[(w)2]
+  unset binding
+}
 
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
