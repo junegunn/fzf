@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "May 2016" "fzf 0.12.2" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2016" "fzf 0.13.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -50,10 +50,10 @@ Case-sensitive match
 .TP
 .BI "-n, --nth=" "N[,..]"
 Comma-separated list of field index expressions for limiting search scope.
-See \fBFIELD INDEX EXPRESSION\fR for details.
+See \fBFIELD INDEX EXPRESSION\fR for the details.
 .TP
 .BI "--with-nth=" "N[,..]"
-Transform each item using index expressions within finder
+Transform the presentation of each line using field index expressions
 .TP
 .BI "-d, --delimiter=" "STR"
 Field delimiter regex for \fB--nth\fR and \fB--with-nth\fR (default: AWK-style)
@@ -64,6 +64,7 @@ Do not sort the result
 .TP
 .B "--tac"
 Reverse the order of the input
+
 .RS
 e.g. \fBhistory | fzf --tac --no-sort\fR
 .RE
@@ -73,13 +74,13 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 .br
 
 .br
-.BR length "  Prefers item with shorter length"
+.BR length "  Prefers line with shorter length"
 .br
-.BR begin "   Prefers item with matched substring closer to the beginning"
+.BR begin "   Prefers line with matched substring closer to the beginning"
 .br
-.BR end "     Prefers item with matched substring closer to the end"
+.BR end "     Prefers line with matched substring closer to the end"
 .br
-.BR index "   Prefers item that appeared earlier in the input stream"
+.BR index "   Prefers line that appeared earlier in the input stream"
 .br
 
 .br
@@ -90,16 +91,86 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 - \fBindex\fR is implicitly appended to the list when not specified
 .br
 - Default is \fBlength\fR (or equivalently \fBlength\fR,index)
+.br
+- If \fBend\fR is found in the list, fzf will scan each line backwards
 .SS Interface
 .TP
 .B "-m, --multi"
 Enable multi-select with tab/shift-tab
 .TP
+.B "--no-mouse"
+Disable mouse
+.TP
+.BI "--bind=" "KEYBINDS"
+Comma-separated list of custom key bindings. See \fBKEY BINDINGS\fR for the
+details.
+.TP
+.B "--cycle"
+Enable cyclic scroll
+.TP
+.B "--no-hscroll"
+Disable horizontal scroll
+.TP
+.BI "--hscroll-off=" "COL"
+Number of screen columns to keep to the right of the highlighted substring
+(default: 10). Setting it to a large value will cause the text to be positioned
+on the center of the screen.
+.TP
+.BI "--jump-labels=" "CHARS"
+Label characters for \fBjump\fR and \fBjump-accept\fR
+.SS Layout
+.TP
+.B "--reverse"
+Reverse orientation
+.TP
+.BI "--margin=" MARGIN
+Comma-separated expression for margins around the finder.
+.br
+
+.br
+.RS
+.BR TRBL "     Same margin for top, right, bottom, and left"
+.br
+.BR TB,RL "    Vertical, horizontal margin"
+.br
+.BR T,RL,B "   Top, horizontal, bottom margin"
+.br
+.BR T,R,B,L "  Top, right, bottom, left margin"
+.br
+
+.br
+Each part can be given in absolute number or in percentage relative to the
+terminal size with \fB%\fR suffix.
+.br
+
+.br
+e.g. \fBfzf --margin 10%\fR
+     \fBfzf --margin 1,5%\fR
+.RE
+.TP
+.B "--inline-info"
+Display finder info inline with the query
+.TP
+.BI "--prompt=" "STR"
+Input prompt (default: '> ')
+.TP
+.BI "--header=" "STR"
+The given string will be printed as the sticky header. The lines are displayed
+in the given order from top to bottom regardless of \fB--reverse\fR option, and
+are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
+\fB--ansi\fR is not set.
+.TP
+.BI "--header-lines=" "N"
+The first N lines of the input are treated as the sticky header. When
+\fB--with-nth\fR is set, the lines are transformed just like the other
+lines that follow.
+.SS Display
+.TP
 .B "--ansi"
 Enable processing of ANSI color codes
 .TP
-.B "--no-mouse"
-Disable mouse
+.BI "--tabstop=" SPACES
+Number of spaces for a tab character (default: 8)
 .TP
 .BI "--color=" "[BASE_SCHEME][,COLOR:ANSI]"
 Color configuration. The name of the base color scheme is followed by custom
@@ -137,181 +208,7 @@ e.g. \fBfzf --color=bg+:24\fR
 .TP
 .B "--black"
 Use black background
-.TP
-.B "--reverse"
-Reverse orientation
-.TP
-.BI "--margin=" MARGIN
-Comma-separated expression for margins around the finder.
-.br
-
-.br
-.RS
-.BR TRBL "     Same margin for top, right, bottom, and left"
-.br
-.BR TB,RL "    Vertical, horizontal margin"
-.br
-.BR T,RL,B "   Top, horizontal, bottom margin"
-.br
-.BR T,R,B,L "  Top, right, bottom, left margin"
-.br
-
-.br
-Each part can be given in absolute number or in percentage relative to the
-terminal size with \fB%\fR suffix.
-.br
-
-.br
-e.g. \fBfzf --margin 10%\fR
-     \fBfzf --margin 1,5%\fR
-.RE
-.TP
-.BI "--tabstop=" SPACES
-Number of spaces for a tab character (default: 8)
-.TP
-.B "--cycle"
-Enable cyclic scroll
-.TP
-.B "--no-hscroll"
-Disable horizontal scroll
-.TP
-.BI "--hscroll-off=" "COL"
-Number of screen columns to keep to the right of the highlighted substring
-(default: 10). Setting it to a large value will cause the text to be positioned
-on the center of the screen.
-.TP
-.B "--inline-info"
-Display finder info inline with the query
-.TP
-.BI "--jump-labels=" "CHARS"
-Label characters for \fBjump\fR and \fBjump-accept\fR
-.TP
-.BI "--prompt=" "STR"
-Input prompt (default: '> ')
-.TP
-.BI "--toggle-sort=" "KEY"
-Key to toggle sort. For the list of the allowed key names, see \fB--bind\fR.
-.TP
-.BI "--bind=" "KEYBINDS"
-Comma-separated list of custom key bindings. Each key binding expression
-follows the following format: \fBKEY:ACTION\fR
-.RS
-e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
-.RE
-
-.RS
-.B AVAILABLE KEYS:    (SYNONYMS)
-    \fIctrl-[a-z]\fR
-    \fIalt-[a-z]\fR
-    \fIf[1-10]\fR
-    \fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
-    \fIspace\fR
-    \fIbspace\fR      (\fIbs\fR)
-    \fIalt-enter\fR
-    \fIalt-space\fR
-    \fIalt-bspace\fR  (\fIalt-bs\fR)
-    \fIalt-/\fR
-    \fItab\fR
-    \fIbtab\fR        (\fIshift-tab\fR)
-    \fIesc\fR
-    \fIdel\fR
-    \fIup\fR
-    \fIdown\fR
-    \fIleft\fR
-    \fIright\fR
-    \fIhome\fR
-    \fIend\fR
-    \fIpgup\fR        (\fIpage-up\fR)
-    \fIpgdn\fR        (\fIpage-down\fR)
-    \fIshift-left\fR
-    \fIshift-right\fR
-    \fIdouble-click\fR
-    or any single character
-.RE
-
-.RS
-  \fBACTION:               DEFAULT BINDINGS (NOTES):
-    \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
-    \fBaccept\fR                \fIenter   double-click\fR
-    \fBbackward-char\fR         \fIctrl-b  left\fR
-    \fBbackward-delete-char\fR  \fIctrl-h  bspace\fR
-    \fBbackward-kill-word\fR    \fIalt-bs\fR
-    \fBbackward-word\fR         \fIalt-b   shift-left\fR
-    \fBbeginning-of-line\fR     \fIctrl-a  home\fR
-    \fBcancel\fR
-    \fBclear-screen\fR          \fIctrl-l\fR
-    \fBdelete-char\fR           \fIdel\fR
-    \fBdelete-char/eof\fR       \fIctrl-d\fR
-    \fBdeselect-all\fR
-    \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
-    \fBend-of-line\fR           \fIctrl-e  end\fR
-    \fBexecute(...)\fR          (see below for the details)
-    \fBexecute-multi(...)\fR    (see below for the details)
-    \fBforward-char\fR          \fIctrl-f  right\fR
-    \fBforward-word\fR          \fIalt-f   shift-right\fR
-    \fBignore\fR
-    \fBjump\fR                  (EasyMotion-like 2-keystroke movement)
-    \fBjump-accept\fR           (jump and accept)
-    \fBkill-line\fR
-    \fBkill-word\fR             \fIalt-d\fR
-    \fBnext-history\fR          (\fIctrl-n\fR on \fB--history\fR)
-    \fBpage-down\fR             \fIpgdn\fR
-    \fBpage-up\fR               \fIpgup\fR
-    \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
-    \fBprint-query\fR           (print query and exit)
-    \fBselect-all\fR
-    \fBtoggle\fR
-    \fBtoggle-all\fR
-    \fBtoggle-down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle-up\fR : \fBtoggle-down\fR)
-    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle-down\fR : \fBtoggle-up\fR)
-    \fBtoggle-sort\fR           (equivalent to \fB--toggle-sort\fR)
-    \fBtoggle-up\fR             \fIbtab    (shift-tab)\fR
-    \fBunix-line-discard\fR     \fIctrl-u\fR
-    \fBunix-word-rubout\fR      \fIctrl-w\fR
-    \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
-    \fByank\fR                  \fIctrl-y\fR
-.RE
-
-.RS
-With \fBexecute(...)\fR action, you can execute arbitrary commands without
-leaving fzf. For example, you can turn fzf into a simple file browser by
-binding \fBenter\fR key to \fBless\fR command like follows.
-
-.RS
-\fBfzf --bind "enter:execute(less {})"\fR
-.RE
-
-\fB{}\fR is the placeholder for the double-quoted string of the current line.
-If the command contains parentheses, you can use any of the following
-alternative notations to avoid parse errors.
-
-    \fBexecute[...]\fR
-    \fBexecute~...~\fR
-    \fBexecute!...!\fR
-    \fBexecute@...@\fR
-    \fBexecute#...#\fR
-    \fBexecute$...$\fR
-    \fBexecute%...%\fR
-    \fBexecute^...^\fR
-    \fBexecute&...&\fR
-    \fBexecute*...*\fR
-    \fBexecute;...;\fR
-    \fBexecute/.../\fR
-    \fBexecute|...|\fR
-    \fBexecute:...\fR
-.RS
-This is the special form that frees you from parse errors as it does not expect
-the closing character. The catch is that it should be the last one in the
-comma-separated list.
-.RE
-
-\fBexecute-multi(...)\fR is an alternative action that executes the command
-with the selected entries when multi-select is enabled (\fB--multi\fR). With
-this action, \fB{}\fR is replaced with the double-quoted strings of the
-selected entries separated by spaces.
-
-.RE
+.SS History
 .TP
 .BI "--history=" "HISTORY_FILE"
 Load search history from the specified file and update the file on completion.
@@ -321,17 +218,34 @@ When enabled, \fBCTRL-N\fR and \fBCTRL-P\fR are automatically remapped to
 .BI "--history-size=" "N"
 Maximum number of entries in the history file (default: 1000). The file is
 automatically truncated when the number of the lines exceeds the value.
+.SS Preview
 .TP
-.BI "--header=" "STR"
-The given string will be printed as the sticky header. The lines are displayed
-in the given order from top to bottom regardless of \fB--reverse\fR option, and
-are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
-\fB--ansi\fR is not set.
+.BI "--preview=" "COMMAND"
+Execute the given command for the current line and display the result on the
+preview window. \fB{}\fR is the placeholder for the quoted string of the
+current line.
+
+.RS
+e.g. \fBfzf --preview="head -$LINES {}"\fR
+.RE
 .TP
-.BI "--header-lines=" "N"
-The first N lines of the input are treated as the sticky header. When
-\fB--with-nth\fR is set, the lines are transformed just like the other
-lines that follow.
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:hidden]"
+Determine the layout of the preview window. If the argument ends with
+\fB:hidden\fR, the preview window will be hidden by default until
+\fBtoggle-preview\fR action is triggered.
+
+.RS
+.B POSITION: (default: right)
+    \fBup
+    \fBdown
+    \fBleft
+    \fBright
+.RE
+
+.RS
+e.g. \fBfzf --preview="head {}" --preview-window=up:30%\fR
+     \fBfzf --preview="file {}" --preview-window=down:1\fR
+.RE
 .SS Scripting
 .TP
 .BI "-q, --query=" "STR"
@@ -356,6 +270,7 @@ the default enter key. When this option is set, fzf will print the name of the
 key pressed as the first line of its output (or as the second line if
 \fB--print-query\fR is also used). The line will be empty if fzf is completed
 with the default enter key.
+
 .RS
 e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 .RE
@@ -363,11 +278,12 @@ e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.
+
 .RS
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 
-.SH ENVIRONMENT
+.SH ENVIRONMENT VARIABLES
 .TP
 .B FZF_DEFAULT_COMMAND
 Default command to use when input is tty
@@ -421,11 +337,11 @@ occurrences of the string.
 
 .SS Anchored-match
 A term can be prefixed by \fB^\fR, or suffixed by \fB$\fR to become an
-anchored-match term. Then fzf will search for the items that start with or end
+anchored-match term. Then fzf will search for the lines that start with or end
 with the given string. An anchored-match term is also an exact-match term.
 
 .SS Negation
-If a term is prefixed by \fB!\fR, fzf will exclude the items that satisfy the
+If a term is prefixed by \fB!\fR, fzf will exclude the lines that satisfy the
 term from the result.
 
 .SS Exact-match by default
@@ -439,6 +355,119 @@ query matches entries that start with \fBcore\fR and end with either \fBgo\fR,
 \fBrb\fR, or \fBpy\fR.
 
 e.g. \fB^core go$ | rb$ | py$\fR
+
+.SH KEY BINDINGS
+You can customize key bindings of fzf with \fB--bind\fR option which takes
+a comma-separated list of key binding expressions. Each key binding expression
+follows the following format: \fBKEY:ACTION\fR
+
+e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
+
+.B AVAILABLE KEYS:    (SYNONYMS)
+    \fIctrl-[a-z]\fR
+    \fIalt-[a-z]\fR
+    \fIf[1-10]\fR
+    \fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
+    \fIspace\fR
+    \fIbspace\fR      (\fIbs\fR)
+    \fIalt-enter\fR
+    \fIalt-space\fR
+    \fIalt-bspace\fR  (\fIalt-bs\fR)
+    \fIalt-/\fR
+    \fItab\fR
+    \fIbtab\fR        (\fIshift-tab\fR)
+    \fIesc\fR
+    \fIdel\fR
+    \fIup\fR
+    \fIdown\fR
+    \fIleft\fR
+    \fIright\fR
+    \fIhome\fR
+    \fIend\fR
+    \fIpgup\fR        (\fIpage-up\fR)
+    \fIpgdn\fR        (\fIpage-down\fR)
+    \fIshift-left\fR
+    \fIshift-right\fR
+    \fIdouble-click\fR
+    or any single character
+
+  \fBACTION:               DEFAULT BINDINGS (NOTES):
+    \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
+    \fBaccept\fR                \fIenter   double-click\fR
+    \fBbackward-char\fR         \fIctrl-b  left\fR
+    \fBbackward-delete-char\fR  \fIctrl-h  bspace\fR
+    \fBbackward-kill-word\fR    \fIalt-bs\fR
+    \fBbackward-word\fR         \fIalt-b   shift-left\fR
+    \fBbeginning-of-line\fR     \fIctrl-a  home\fR
+    \fBcancel\fR
+    \fBclear-screen\fR          \fIctrl-l\fR
+    \fBdelete-char\fR           \fIdel\fR
+    \fBdelete-char/eof\fR       \fIctrl-d\fR
+    \fBdeselect-all\fR
+    \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
+    \fBend-of-line\fR           \fIctrl-e  end\fR
+    \fBexecute(...)\fR          (see below for the details)
+    \fBexecute-multi(...)\fR    (see below for the details)
+    \fBforward-char\fR          \fIctrl-f  right\fR
+    \fBforward-word\fR          \fIalt-f   shift-right\fR
+    \fBignore\fR
+    \fBjump\fR                  (EasyMotion-like 2-keystroke movement)
+    \fBjump-accept\fR           (jump and accept)
+    \fBkill-line\fR
+    \fBkill-word\fR             \fIalt-d\fR
+    \fBnext-history\fR          (\fIctrl-n\fR on \fB--history\fR)
+    \fBpage-down\fR             \fIpgdn\fR
+    \fBpage-up\fR               \fIpgup\fR
+    \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
+    \fBprint-query\fR           (print query and exit)
+    \fBselect-all\fR
+    \fBtoggle\fR
+    \fBtoggle-all\fR
+    \fBtoggle-down\fR           \fIctrl-i  (tab)\fR
+    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle-up\fR : \fBtoggle-down\fR)
+    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle-down\fR : \fBtoggle-up\fR)
+    \fBtoggle-preview\fR
+    \fBtoggle-sort\fR           (equivalent to \fB--toggle-sort\fR)
+    \fBtoggle-up\fR             \fIbtab    (shift-tab)\fR
+    \fBunix-line-discard\fR     \fIctrl-u\fR
+    \fBunix-word-rubout\fR      \fIctrl-w\fR
+    \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
+    \fByank\fR                  \fIctrl-y\fR
+
+With \fBexecute(...)\fR action, you can execute arbitrary commands without
+leaving fzf. For example, you can turn fzf into a simple file browser by
+binding \fBenter\fR key to \fBless\fR command like follows.
+
+    \fBfzf --bind "enter:execute(less {})"\fR
+
+\fB{}\fR is the placeholder for the quoted string of the current line.
+If the command contains parentheses, you can use any of the following
+alternative notations to avoid parse errors.
+
+    \fBexecute[...]\fR
+    \fBexecute~...~\fR
+    \fBexecute!...!\fR
+    \fBexecute@...@\fR
+    \fBexecute#...#\fR
+    \fBexecute$...$\fR
+    \fBexecute%...%\fR
+    \fBexecute^...^\fR
+    \fBexecute&...&\fR
+    \fBexecute*...*\fR
+    \fBexecute;...;\fR
+    \fBexecute/.../\fR
+    \fBexecute|...|\fR
+    \fBexecute:...\fR
+.RS
+This is the special form that frees you from parse errors as it does not expect
+the closing character. The catch is that it should be the last one in the
+comma-separated list.
+.RE
+
+\fBexecute-multi(...)\fR is an alternative action that executes the command
+with the selected entries when multi-select is enabled (\fB--multi\fR). With
+this action, \fB{}\fR is replaced with the quoted strings of the selected
+entries separated by spaces.
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)
