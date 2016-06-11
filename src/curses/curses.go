@@ -113,7 +113,8 @@ const (
 	ColCursor
 	ColSelected
 	ColHeader
-	ColUser
+	ColBorder
+	ColUser // Should be the last entry
 )
 
 const (
@@ -136,6 +137,7 @@ type ColorTheme struct {
 	Cursor       int16
 	Selected     int16
 	Header       int16
+	Border       int16
 }
 
 type Event struct {
@@ -170,6 +172,31 @@ var (
 	DarkBG        int
 )
 
+type Window struct {
+	win    *C.WINDOW
+	Top    int
+	Left   int
+	Width  int
+	Height int
+}
+
+func NewWindow(top int, left int, width int, height int, border bool) *Window {
+	win := C.newwin(C.int(height), C.int(width), C.int(top), C.int(left))
+	if border {
+		attr := _color(ColBorder, false)
+		C.wattron(win, attr)
+		C.box(win, 0, 0)
+		C.wattroff(win, attr)
+	}
+	return &Window{
+		win:    win,
+		Top:    top,
+		Left:   left,
+		Width:  width,
+		Height: height,
+	}
+}
+
 func EmptyTheme() *ColorTheme {
 	return &ColorTheme{
 		UseDefault:   true,
@@ -184,7 +211,8 @@ func EmptyTheme() *ColorTheme {
 		Info:         colUndefined,
 		Cursor:       colUndefined,
 		Selected:     colUndefined,
-		Header:       colUndefined}
+		Header:       colUndefined,
+		Border:       colUndefined}
 }
 
 func init() {
@@ -204,7 +232,8 @@ func init() {
 		Info:         C.COLOR_WHITE,
 		Cursor:       C.COLOR_RED,
 		Selected:     C.COLOR_MAGENTA,
-		Header:       C.COLOR_CYAN}
+		Header:       C.COLOR_CYAN,
+		Border:       C.COLOR_BLACK}
 	Dark256 = &ColorTheme{
 		UseDefault:   true,
 		Fg:           15,
@@ -218,7 +247,8 @@ func init() {
 		Info:         144,
 		Cursor:       161,
 		Selected:     168,
-		Header:       109}
+		Header:       109,
+		Border:       59}
 	Light256 = &ColorTheme{
 		UseDefault:   true,
 		Fg:           15,
@@ -232,7 +262,8 @@ func init() {
 		Info:         101,
 		Cursor:       161,
 		Selected:     168,
-		Header:       31}
+		Header:       31,
+		Border:       145}
 }
 
 func attrColored(pair int, bold bool) C.int {
@@ -360,6 +391,7 @@ func initPairs(baseTheme *ColorTheme, theme *ColorTheme, black bool) {
 	C.init_pair(ColCursor, override(baseTheme.Cursor, theme.Cursor), darkBG)
 	C.init_pair(ColSelected, override(baseTheme.Selected, theme.Selected), darkBG)
 	C.init_pair(ColHeader, override(baseTheme.Header, theme.Header), bg)
+	C.init_pair(ColBorder, override(baseTheme.Border, theme.Border), bg)
 }
 
 func Close() {
@@ -415,7 +447,9 @@ func mouseSequence(sz *int) Event {
 		97, 101, 105, 113: // scroll-down / shift / cmd / ctrl
 		mod := _buf[3] >= 100
 		s := 1 - int(_buf[3]%2)*2
-		return Event{Mouse, 0, &MouseEvent{0, 0, s, false, false, mod}}
+		x := int(_buf[4] - 33)
+		y := int(_buf[5] - 33)
+		return Event{Mouse, 0, &MouseEvent{y, x, s, false, false, mod}}
 	}
 	return Event{Invalid, 0, nil}
 }
@@ -588,17 +622,25 @@ func GetChar() Event {
 	return Event{Rune, r, nil}
 }
 
-func Move(y int, x int) {
-	C.move(C.int(y), C.int(x))
+func (w *Window) Close() {
+	C.delwin(w.win)
 }
 
-func MoveAndClear(y int, x int) {
-	Move(y, x)
-	C.clrtoeol()
+func (w *Window) Enclose(y int, x int) bool {
+	return bool(C.wenclose(w.win, C.int(y), C.int(x)))
 }
 
-func Print(text string) {
-	C.addstr(C.CString(strings.Map(func(r rune) rune {
+func (w *Window) Move(y int, x int) {
+	C.wmove(w.win, C.int(y), C.int(x))
+}
+
+func (w *Window) MoveAndClear(y int, x int) {
+	w.Move(y, x)
+	C.wclrtoeol(w.win)
+}
+
+func (w *Window) Print(text string) {
+	C.waddstr(w.win, C.CString(strings.Map(func(r rune) rune {
 		if r < 32 {
 			return -1
 		}
@@ -606,11 +648,11 @@ func Print(text string) {
 	}, text)))
 }
 
-func CPrint(pair int, bold bool, text string) {
+func (w *Window) CPrint(pair int, bold bool, text string) {
 	attr := _color(pair, bold)
-	C.attron(attr)
-	Print(text)
-	C.attroff(attr)
+	C.wattron(w.win, attr)
+	w.Print(text)
+	C.wattroff(w.win, attr)
 }
 
 func Clear() {
@@ -623,6 +665,30 @@ func Endwin() {
 
 func Refresh() {
 	C.refresh()
+}
+
+func (w *Window) Erase() {
+	C.werase(w.win)
+}
+
+func (w *Window) Fill(str string) bool {
+	return C.waddstr(w.win, C.CString(str)) == C.OK
+}
+
+func (w *Window) CFill(str string, fg int, bg int, bold bool) bool {
+	attr := _color(PairFor(fg, bg), bold)
+	C.wattron(w.win, attr)
+	ret := w.Fill(str)
+	C.wattroff(w.win, attr)
+	return ret
+}
+
+func (w *Window) Refresh() {
+	C.wnoutrefresh(w.win)
+}
+
+func DoUpdate() {
+	C.doupdate()
 }
 
 func PairFor(fg int, bg int) int {

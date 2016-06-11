@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -23,35 +24,46 @@ const usage = `usage: fzf [options]
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
                           integer or a range expression ([BEGIN]..[END]).
-    --with-nth=N[,..]     Transform item using index expressions within finder
-    -d, --delimiter=STR   Field delimiter regex for --nth (default: AWK-style)
+    --with-nth=N[,..]     Transform the presentation of each line using
+                          field index expressions
+    -d, --delimiter=STR   Field delimiter regex (default: AWK-style)
     +s, --no-sort         Do not sort the result
     --tac                 Reverse the order of the input
     --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
-                          when the scores are tied;
-                          [length|begin|end|index] (default: length)
+                          when the scores are tied [length|begin|end|index]
+                          (default: length)
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
-    --ansi                Enable processing of ANSI color codes
     --no-mouse            Disable mouse
-    --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
-    --black               Use black background
-    --reverse             Reverse orientation
-    --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
-    --tabstop=SPACES      Number of spaces for a tab character (default: 8)
+    --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
     --no-hscroll          Disable horizontal scroll
     --hscroll-off=COL     Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
-    --inline-info         Display finder info inline with the query
     --jump-labels=CHARS   Label characters for jump and jump-accept
+
+  Layout
+    --reverse             Reverse orientation
+    --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
+    --inline-info         Display finder info inline with the query
     --prompt=STR          Input prompt (default: '> ')
-    --bind=KEYBINDS       Custom key bindings. Refer to the man page.
-    --history=FILE        History file
-    --history-size=N      Maximum number of history entries (default: 1000)
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
+
+  Display
+    --ansi                Enable processing of ANSI color codes
+    --tabstop=SPACES      Number of spaces for a tab character (default: 8)
+    --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
+
+  History
+    --history=FILE        History file
+    --history-size=N      Maximum number of history entries (default: 1000)
+
+  Preview
+    --preview=COMMAND     Command to preview highlighted line ({})
+    --preview-window=OPT  Preview window layout (default: right:50%)
+                          [up|down|left|right][:SIZE[%]][:hidden]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -88,8 +100,29 @@ const (
 	byEnd
 )
 
-func defaultMargin() [4]string {
-	return [4]string{"0", "0", "0", "0"}
+type sizeSpec struct {
+	size    float64
+	percent bool
+}
+
+func defaultMargin() [4]sizeSpec {
+	return [4]sizeSpec{}
+}
+
+type windowPosition int
+
+const (
+	posUp windowPosition = iota
+	posDown
+	posLeft
+	posRight
+)
+
+type previewOpts struct {
+	command  string
+	position windowPosition
+	size     sizeSpec
+	hidden   bool
 }
 
 // Options stores the values of command-line options
@@ -123,13 +156,14 @@ type Options struct {
 	Expect      map[int]string
 	Keymap      map[int]actionType
 	Execmap     map[int]string
+	Preview     previewOpts
 	PrintQuery  bool
 	ReadZero    bool
 	Sync        bool
 	History     *History
 	Header      []string
 	HeaderLines int
-	Margin      [4]string
+	Margin      [4]sizeSpec
 	Tabstop     int
 	Version     bool
 }
@@ -165,6 +199,7 @@ func defaultOptions() *Options {
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int]actionType),
 		Execmap:     make(map[int]string),
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Sync:        false,
@@ -458,6 +493,8 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 				theme.Match = ansi
 			case "hl+":
 				theme.CurrentMatch = ansi
+			case "border":
+				theme.Border = ansi
 			case "prompt":
 				theme.Prompt = ansi
 			case "spinner":
@@ -604,6 +641,8 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actPreviousHistory
 		case "next-history":
 			keymap[key] = actNextHistory
+		case "toggle-preview":
+			keymap[key] = actTogglePreview
 		case "toggle-sort":
 			keymap[key] = actToggleSort
 		default:
@@ -659,40 +698,86 @@ func strLines(str string) []string {
 	return strings.Split(strings.TrimSuffix(str, "\n"), "\n")
 }
 
-func parseMargin(margin string) [4]string {
-	margins := strings.Split(margin, ",")
-	checked := func(str string) string {
-		if strings.HasSuffix(str, "%") {
-			val := atof(str[:len(str)-1])
-			if val < 0 {
-				errorExit("margin must be non-negative")
-			}
-			if val > 100 {
-				errorExit("margin too large")
-			}
-		} else {
-			val := atoi(str)
-			if val < 0 {
-				errorExit("margin must be non-negative")
-			}
+func parseSize(str string, maxPercent float64, label string) sizeSpec {
+	var val float64
+	percent := strings.HasSuffix(str, "%")
+	if percent {
+		val = atof(str[:len(str)-1])
+		if val < 0 {
+			errorExit(label + " must be non-negative")
 		}
-		return str
+		if val > maxPercent {
+			errorExit(fmt.Sprintf("%s too large (max: %d%%)", label, int(maxPercent)))
+		}
+	} else {
+		if strings.Contains(str, ".") {
+			errorExit(label + " (without %) must be a non-negative integer")
+		}
+
+		val = float64(atoi(str))
+		if val < 0 {
+			errorExit(label + " must be non-negative")
+		}
+	}
+	return sizeSpec{val, percent}
+}
+
+func parsePreviewWindow(opts *previewOpts, input string) {
+	layout := input
+	if strings.HasSuffix(layout, ":hidden") {
+		opts.hidden = true
+		layout = strings.TrimSuffix(layout, ":hidden")
+	}
+
+	tokens := strings.Split(layout, ":")
+	if len(tokens) == 0 || len(tokens) > 2 {
+		errorExit("invalid window layout: " + input)
+	}
+
+	if len(tokens) > 1 {
+		opts.size = parseSize(tokens[1], 99, "window size")
+	} else {
+		opts.size = sizeSpec{50, true}
+	}
+	if !opts.size.percent && opts.size.size > 0 {
+		// Adjust size for border
+		opts.size.size += 2
+	}
+
+	switch tokens[0] {
+	case "up":
+		opts.position = posUp
+	case "down":
+		opts.position = posDown
+	case "left":
+		opts.position = posLeft
+	case "right":
+		opts.position = posRight
+	default:
+		errorExit("invalid window position: " + input)
+	}
+}
+
+func parseMargin(margin string) [4]sizeSpec {
+	margins := strings.Split(margin, ",")
+	checked := func(str string) sizeSpec {
+		return parseSize(str, 49, "margin")
 	}
 	switch len(margins) {
 	case 1:
 		m := checked(margins[0])
-		return [4]string{m, m, m, m}
+		return [4]sizeSpec{m, m, m, m}
 	case 2:
 		tb := checked(margins[0])
 		rl := checked(margins[1])
-		return [4]string{tb, rl, tb, rl}
+		return [4]sizeSpec{tb, rl, tb, rl}
 	case 3:
 		t := checked(margins[0])
 		rl := checked(margins[1])
 		b := checked(margins[2])
-		return [4]string{t, rl, b, rl}
+		return [4]sizeSpec{t, rl, b, rl}
 	case 4:
-		return [4]string{
+		return [4]sizeSpec{
 			checked(margins[0]), checked(margins[1]),
 			checked(margins[2]), checked(margins[3])}
 	default:
@@ -858,6 +943,13 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--header-lines":
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
+		case "--preview":
+			opts.Preview.command = nextString(allArgs, &i, "preview command required")
+		case "--no-preview":
+			opts.Preview.command = ""
+		case "--preview-window":
+			parsePreviewWindow(&opts.Preview,
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]]"))
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--margin":
@@ -900,6 +992,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Header = strLines(value)
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.HeaderLines = atoi(value)
+			} else if match, value := optString(arg, "--preview="); match {
+				opts.Preview.command = value
+			} else if match, value := optString(arg, "--preview-window="); match {
+				parsePreviewWindow(&opts.Preview, value)
 			} else if match, value := optString(arg, "--margin="); match {
 				opts.Margin = parseMargin(value)
 			} else if match, value := optString(arg, "--tabstop="); match {

@@ -1228,6 +1228,28 @@ class TestGoFZF < TestBase
     assert_equal '3', readonce.chomp
   end
 
+  def test_preview
+    tmux.send_keys %[seq 1000 | #{FZF} --preview 'echo {{}-{}}' --bind ?:toggle-preview], :Enter
+    tmux.until { |lines| lines[1].include?(' {1-1}') }
+    tmux.send_keys '555'
+    tmux.until { |lines| lines[1].include?(' {555-555}') }
+    tmux.send_keys '?'
+    tmux.until { |lines| !lines[1].include?(' {555-555}') }
+    tmux.send_keys '?'
+    tmux.until { |lines| lines[1].include?(' {555-555}') }
+  end
+
+  def test_preview_hidden
+    tmux.send_keys %[seq 1000 | #{FZF} --preview 'echo {{}-{}}' --preview-window down:1:hidden --bind ?:toggle-preview], :Enter
+    tmux.until { |lines| lines[-1] == '>' }
+    tmux.send_keys '?'
+    tmux.until { |lines| lines[-2].include?(' {1-1}') }
+    tmux.send_keys '555'
+    tmux.until { |lines| lines[-2].include?(' {555-555}') }
+    tmux.send_keys '?'
+    tmux.until { |lines| lines[-1] == '> 555' }
+  end
+
 private
   def writelines path, lines
     File.unlink path while File.exists? path
