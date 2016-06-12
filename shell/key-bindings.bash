@@ -5,7 +5,7 @@ __fzf_select__() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 1d | cut -b3-"}"
-  eval "$cmd" | fzf -m | while read -r item; do
+  eval "$cmd | fzf -m $FZF_CTRL_T_OPTS" | while read -r item; do
     printf '%q ' "$item"
   done
   echo
@@ -26,7 +26,7 @@ __fzf_select_tmux__() {
     height="-l $height"
   fi
 
-  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
+  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
 }
 
 fzf-file-widget() {
@@ -43,7 +43,7 @@ __fzf_cd__() {
   local cmd dir
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3-"}"
-  dir=$(eval "$cmd" | $(__fzfcmd) +m) && printf 'cd %q' "$dir"
+  dir=$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS") && printf 'cd %q' "$dir"
 }
 
 __fzf_history__() (

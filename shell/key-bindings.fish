@@ -19,7 +19,7 @@ function fzf_key_bindings
       -o -type f -print \
       -o -type d -print \
       -o -type l -print 2> /dev/null | sed 1d | cut -b3-"
-    eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m > $TMPDIR/fzf.result"
+    eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m $FZF_CTRL_T_OPTS > $TMPDIR/fzf.result"
     and for i in (seq 20); commandline -i (cat $TMPDIR/fzf.result | __fzf_escape) 2> /dev/null; and break; sleep 0.1; end
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
@@ -37,7 +37,7 @@ function fzf_key_bindings
     command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
       -o -type d -print 2> /dev/null | sed 1d | cut -b3-"
     # Fish hangs if the command before pipe redirects (2> /dev/null)
-    eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m > $TMPDIR/fzf.result"
+    eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m $FZF_ALT_C_OPTS > $TMPDIR/fzf.result"
     [ (cat $TMPDIR/fzf.result | wc -l) -gt 0 ]
     and cd (cat $TMPDIR/fzf.result)
     commandline -f repaint

@@ -8,7 +8,7 @@ __fsel() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 1d | cut -b3-"}"
-  eval "$cmd" | $(__fzfcmd) -m | while read item; do
+  eval "$cmd | $(__fzfcmd) -m $FZF_CTRL_T_OPTS" | while read item; do
     echo -n "${(q)item} "
   done
   echo
@@ -29,7 +29,7 @@ bindkey '^T' fzf-file-widget
 fzf-cd-widget() {
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3-"}"
-  cd "${$(eval "$cmd" | $(__fzfcmd) +m):-.}"
+  cd "${$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS"):-.}"
   zle reset-prompt
 }
 zle     -N    fzf-cd-widget

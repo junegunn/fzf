@@ -178,11 +178,14 @@ fish.
 
 - `CTRL-T` - Paste the selected files and directories onto the command line
     - Set `FZF_CTRL_T_COMMAND` to override the default command
+    - Set `FZF_CTRL_T_OPTS` to pass additional options
 - `CTRL-R` - Paste the selected command from history onto the command line
     - Sort is disabled by default to respect chronological ordering
     - Press `CTRL-R` again to toggle sort
+    - Set `FZF_CTRL_R_OPTS` to pass additional options
 - `ALT-C` - cd into the selected directory
     - Set `FZF_ALT_C_COMMAND` to override the default command
+    - Set `FZF_ALT_C_OPTS` to pass additional options
 
 If you're on a tmux session, fzf will start in a split pane. You may disable
 this tmux integration by setting `FZF_TMUX` to 0, or change the height of the
