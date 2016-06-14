@@ -556,7 +556,7 @@ func (t *Terminal) printHeader() {
 		if line >= max {
 			continue
 		}
-		trimmed, colors, newState := extractColor(lineStr, state)
+		trimmed, colors, newState := extractColor(lineStr, state, nil)
 		state = newState
 		item := &Item{
 			text:   []rune(trimmed),
@@ -730,25 +730,13 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 }
 
 func (t *Terminal) printPreview() {
-	trimmed, ansiOffsets, _ := extractColor(t.previewTxt, nil)
-	var index int32
 	t.pwindow.Erase()
-	for _, o := range ansiOffsets {
-		b := o.offset[0]
-		e := o.offset[1]
-		if b > index {
-			if !t.pwindow.Fill(trimmed[index:b]) {
-				return
-			}
+	extractColor(t.previewTxt, nil, func(str string, ansi *ansiState) bool {
+		if ansi != nil && ansi.colored() {
+			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.bold)
 		}
-		if !t.pwindow.CFill(trimmed[b:e], o.color.fg, o.color.bg, o.color.bold) {
-			return
-		}
-		index = e
-	}
-	if int(index) < len(trimmed) {
-		t.pwindow.Fill(trimmed[index:])
-	}
+		return t.pwindow.Fill(str)
+	})
 }
 
 func processTabs(runes []rune, prefixWidth int) (string, int) {

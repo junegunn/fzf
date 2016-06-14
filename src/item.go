@@ -128,7 +128,7 @@ func (item *Item) AsString(stripAnsi bool) string {
 func (item *Item) StringPtr(stripAnsi bool) *string {
 	if item.origText != nil {
 		if stripAnsi {
-			trimmed, _, _ := extractColor(string(*item.origText), nil)
+			trimmed, _, _ := extractColor(string(*item.origText), nil, nil)
 			return &trimmed
 		}
 		orig := string(*item.origText)
