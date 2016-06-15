@@ -1229,14 +1229,20 @@ class TestGoFZF < TestBase
   end
 
   def test_preview
-    tmux.send_keys %[seq 1000 | #{FZF} --preview 'echo {{}-{}}' --bind ?:toggle-preview], :Enter
+    tmux.send_keys %[seq 1000 | sed s/^2$// | #{FZF} --preview 'sleep 0.2; echo {{}-{}}' --bind ?:toggle-preview], :Enter
     tmux.until { |lines| lines[1].include?(' {1-1}') }
+    tmux.send_keys :Up
+    tmux.until { |lines| lines[1].include?(' {-}') }
     tmux.send_keys '555'
     tmux.until { |lines| lines[1].include?(' {555-555}') }
     tmux.send_keys '?'
     tmux.until { |lines| !lines[1].include?(' {555-555}') }
     tmux.send_keys '?'
     tmux.until { |lines| lines[1].include?(' {555-555}') }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-2].start_with? '  28/1000' }
+    tmux.send_keys 'foobar'
+    tmux.until { |lines| !lines[1].include?('{') }
   end
 
   def test_preview_hidden
