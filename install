@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -u
+set -o pipefail
 
 [[ "$@" =~ --pre ]] && version=0.13.2 pre=1 ||
                        version=0.13.2 pre=0
@@ -109,6 +110,14 @@ link_fzf_in_path() {
   return 1
 }
 
+try_curl() {
+  command -v curl > /dev/null && curl -fL $1 | tar -xz
+}
+
+try_wget() {
+  command -v wget > /dev/null && wget -O - $1 | tar -xz
+}
+
 download() {
   echo "Downloading bin/fzf ..."
   if [ $pre = 0 ]; then
@@ -128,12 +137,8 @@ download() {
   fi
 
   local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
-  if command -v curl > /dev/null; then
-    curl -fL $url | tar -xz
-  elif command -v wget > /dev/null; then
-    wget -O - $url | tar -xz
-  else
-    binary_error="curl or wget not found"
+  if ! (try_curl $url || try_wget $url); then
+    binary_error="Failed to download with curl and wget"
     return
   fi
 
