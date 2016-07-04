@@ -58,6 +58,7 @@ __fzf_generic_path_completion() {
         LBUFFER="$lbuf$matches$tail"
       fi
       zle redisplay
+      typeset -f zle-line-init >/dev/null && zle zle-line-init
       break
     fi
     dir=$(dirname "$dir")
@@ -97,6 +98,7 @@ _fzf_complete() {
     LBUFFER="$lbuf$matches"
   fi
   zle redisplay
+  typeset -f zle-line-init >/dev/null && zle zle-line-init
   rm -f "$fifo"
 }
 
@@ -161,6 +163,7 @@ fzf-completion() {
       LBUFFER="$LBUFFER$matches"
     fi
     zle redisplay
+    typeset -f zle-line-init >/dev/null && zle zle-line-init
   # Trigger sequence given
   elif [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir})
