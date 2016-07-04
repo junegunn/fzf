@@ -138,6 +138,7 @@ download() {
   local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
+    set +o pipefail
     binary_error="Failed to download with curl and wget"
     return
   fi
