@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -u
-set -o pipefail
 
 [[ "$@" =~ --pre ]] && version=0.13.2 pre=1 ||
                        version=0.13.2 pre=0
@@ -137,10 +136,12 @@ download() {
   fi
 
   local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
+  set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     binary_error="Failed to download with curl and wget"
     return
   fi
+  set +o pipefail
 
   if [ ! -f $1 ]; then
     binary_error="Failed to download ${1}"
