@@ -52,7 +52,7 @@ __fzf_history__() (
   line=$(
     HISTTIMEFORMAT= history |
     eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS" |
-    \grep '^ *[0-9]') &&
+    command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
     else

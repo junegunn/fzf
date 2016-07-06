@@ -14,7 +14,7 @@
 if ! declare -f _fzf_compgen_path > /dev/null; then
   _fzf_compgen_path() {
     echo "$1"
-    \find -L "$1" \
+    command find -L "$1" \
       -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
@@ -22,7 +22,7 @@ fi
 
 if ! declare -f _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
-    \find -L "$1" \
+    command find -L "$1" \
       -name .git -prune -o -name .svn -prune -o -type d \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
@@ -77,7 +77,7 @@ _fzf_dir_completion() {
 }
 
 _fzf_feed_fifo() (
-  rm -f "$1"
+  command rm -f "$1"
   mkfifo "$1"
   cat <&0 > "$1" &
 )
@@ -99,21 +99,21 @@ _fzf_complete() {
   fi
   zle redisplay
   typeset -f zle-line-init >/dev/null && zle zle-line-init
-  rm -f "$fifo"
+  command rm -f "$fifo"
 }
 
 _fzf_complete_telnet() {
   _fzf_complete '+m' "$@" < <(
-    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' |
+    command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i '^host' | \grep -v '*') \
-        <(\grep -oE '^[^ ]+' ~/.ssh/known_hosts | tr ',' '\n' | awk '{ print $1 " " $1 }') \
-        <(\grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0') |
+    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*') \
+        <(command grep -oE '^[^ ]+' ~/.ssh/known_hosts | tr ',' '\n' | awk '{ print $1 " " $1 }') \
+        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }

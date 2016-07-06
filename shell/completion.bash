@@ -14,7 +14,7 @@
 if ! declare -f _fzf_compgen_path > /dev/null; then
   _fzf_compgen_path() {
     echo "$1"
-    \find -L "$1" \
+    command find -L "$1" \
       -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
@@ -22,7 +22,7 @@ fi
 
 if ! declare -f _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
-    \find -L "$1" \
+    command find -L "$1" \
       -name .git -prune -o -name .svn -prune -o -type d \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
@@ -108,7 +108,7 @@ _fzf_handle_dynamic_completion() {
   elif [ -n "$_fzf_completion_loader" ]; then
     _completion_loader "$@"
     ret=$?
-    eval "$(complete | \grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)"
+    eval "$(complete | command grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)"
     source "${BASH_SOURCE[0]}"
     return $ret
   fi
@@ -213,16 +213,16 @@ _fzf_complete_kill() {
 
 _fzf_complete_telnet() {
   _fzf_complete '+m' "$@" < <(
-    \grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0' |
+    command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | \grep -i '^host' | \grep -v '*') \
-        <(\grep -oE '^[^ ]+' ~/.ssh/known_hosts | tr ',' '\n' | awk '{ print $1 " " $1 }') \
-        <(\grep -v '^\s*\(#\|$\)' /etc/hosts | \grep -Fv '0.0.0.0') |
+    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*') \
+        <(command grep -oE '^[^ ]+' ~/.ssh/known_hosts | tr ',' '\n' | awk '{ print $1 " " $1 }') \
+        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
@@ -263,8 +263,8 @@ x_cmds="kill ssh telnet unset unalias export"
 # Preserve existing completion
 if [ "$_fzf_completion_loaded" != '0.11.3' ]; then
   # Really wish I could use associative array but OSX comes with bash 3.2 :(
-  eval $(complete | \grep '\-F' | \grep -v _fzf_ |
-    \grep -E " ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
+  eval $(complete | command grep '\-F' | command grep -v _fzf_ |
+    command grep -E " ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g' | sed 's/+/\\+/g'))$" | _fzf_orig_completion_filter)
   export _fzf_completion_loaded=0.11.3
 fi
 
