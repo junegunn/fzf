@@ -43,6 +43,11 @@ Execute (fzf#run with dir option and noautochdir):
   " No change in working directory
   AssertEqual cwd, getcwd()
 
+  call fzf#run({'source': ['/foobar'], 'sink': 'tabe', 'dir': '/tmp', 'options': '-1'})
+  AssertEqual cwd, getcwd()
+  tabclose
+  AssertEqual cwd, getcwd()
+
 Execute (Incomplete fzf#run with dir option and autochdir):
   set acd
   let cwd = getcwd()

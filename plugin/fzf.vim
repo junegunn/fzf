@@ -147,9 +147,9 @@ try
     return s:execute_term(dict, command, temps)
   endif
 
-  let ret = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
-  call s:popd(dict, ret)
-  return ret
+  let lines = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
+  call s:callback(dict, lines)
+  return lines
 finally
   let &shell = oshell
 endtry
@@ -200,22 +200,17 @@ function! s:pushd(dict)
   return 0
 endfunction
 
-function! s:popd(dict, lines)
-  " Since anything can be done in the sink function, there is no telling that
-  " the change of the working directory was made by &autochdir setting.
-  "
-  " We use the following heuristic to determine whether to restore CWD:
-  " - Always restore the current directory when &autochdir is disabled.
-  "   FIXME This makes it impossible to change directory from inside the sink
-  "   function when &autochdir is not used.
-  " - In case of an error or an interrupt, a:lines will be empty.
-  "   And it will be an array of a single empty string when fzf was finished
-  "   without a match. In these cases, we presume that the change of the
-  "   directory is not expected and should be undone.
-  if has_key(a:dict, 'prev_dir') &&
-        \ (!&autochdir || (empty(a:lines) || len(a:lines) == 1 && empty(a:lines[0])))
-    execute 'lcd' s:escape(remove(a:dict, 'prev_dir'))
+augroup fzf_popd
+  autocmd!
+  autocmd WinEnter * call s:dopopd()
+augroup END
+
+function! s:dopopd()
+  if !exists('w:fzf_prev_dir') || exists('*haslocaldir') && !haslocaldir()
+    return
   endif
+  execute 'lcd' s:escape(w:fzf_prev_dir)
+  unlet w:fzf_prev_dir
 endfunction
 
 function! s:xterm_launcher()
@@ -256,7 +251,7 @@ function! s:execute(dict, command, temps) abort
   endif
   execute 'silent !'.command
   redraw!
-  return s:exit_handler(v:shell_error, command) ? s:callback(a:dict, a:temps) : []
+  return s:exit_handler(v:shell_error, command) ? s:collect(a:temps) : []
 endfunction
 
 function! s:execute_tmux(dict, command, temps) abort
@@ -268,7 +263,7 @@ function! s:execute_tmux(dict, command, temps) abort
 
   call system(command)
   redraw!
-  return s:exit_handler(v:shell_error, command) ? s:callback(a:dict, a:temps) : []
+  return s:exit_handler(v:shell_error, command) ? s:collect(a:temps) : []
 endfunction
 
 function! s:calc_size(max, val, dict)
@@ -361,31 +356,58 @@ function! s:execute_term(dict, command, temps) abort
     endif
 
     call s:pushd(self.dict)
-    let ret = []
-    try
-      let ret = s:callback(self.dict, self.temps)
-      call self.switch_back(s:getpos() == self.ppos)
-    finally
-      call s:popd(self.dict, ret)
-    endtry
+    let lines = s:collect(self.temps)
+    call s:callback(self.dict, lines)
+    call self.switch_back(s:getpos() == self.ppos)
   endfunction
 
-  call s:pushd(a:dict)
-  call termopen(a:command, fzf)
-  call s:popd(a:dict, [])
+  try
+    if s:present(a:dict, 'dir')
+      execute 'lcd' s:escape(a:dict.dir)
+    endif
+    call termopen(a:command, fzf)
+  finally
+    if s:present(a:dict, 'dir')
+      lcd -
+    endif
+  endtry
   setlocal nospell bufhidden=wipe nobuflisted
   setf fzf
   startinsert
   return []
 endfunction
 
-function! s:callback(dict, temps) abort
-let lines = []
-try
-  if filereadable(a:temps.result)
-    let lines = readfile(a:temps.result)
+function! s:collect(temps) abort
+  try
+    return filereadable(a:temps.result) ? readfile(a:temps.result) : []
+  finally
+    for tf in values(a:temps)
+      silent! call delete(tf)
+    endfor
+  endtry
+endfunction
+
+function! s:callback(dict, lines) abort
+  " Since anything can be done in the sink function, there is no telling that
+  " the change of the working directory was made by &autochdir setting.
+  "
+  " We use the following heuristic to determine whether to restore CWD:
+  " - Always restore the current directory when &autochdir is disabled.
+  "   FIXME This makes it impossible to change directory from inside the sink
+  "   function when &autochdir is not used.
+  " - In case of an error or an interrupt, a:lines will be empty.
+  "   And it will be an array of a single empty string when fzf was finished
+  "   without a match. In these cases, we presume that the change of the
+  "   directory is not expected and should be undone.
+  let popd = has_key(a:dict, 'prev_dir') &&
+        \ (!&autochdir || (empty(a:lines) || len(a:lines) == 1 && empty(a:lines[0])))
+  if popd
+    let w:fzf_prev_dir = a:dict.prev_dir
+  endif
+
+  try
     if has_key(a:dict, 'sink')
-      for line in lines
+      for line in a:lines
         if type(a:dict.sink) == 2
           call a:dict.sink(line)
         else
@@ -394,20 +416,19 @@ try
       endfor
     endif
     if has_key(a:dict, 'sink*')
-      call a:dict['sink*'](lines)
+      call a:dict['sink*'](a:lines)
     endif
-  endif
+  catch
+    if stridx(v:exception, ':E325:') < 0
+      echoerr v:exception
+    endif
+  endtry
 
-  for tf in values(a:temps)
-    silent! call delete(tf)
-  endfor
-catch
-  if stridx(v:exception, ':E325:') < 0
-    echoerr v:exception
+  " We may have opened a new window or tab
+  if popd
+    let w:fzf_prev_dir = a:dict.prev_dir
+    call s:dopopd()
   endif
-finally
-  return lines
-endtry
 endfunction
 
 let s:default_action = {
