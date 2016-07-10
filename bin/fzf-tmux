@@ -2,6 +2,14 @@
 # fzf-tmux: starts fzf in a tmux pane
 # usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
 
+fail() {
+  >&2 echo "$1"
+  exit 2
+}
+
+fzf="$(command -v fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
+[[ -x "$fzf" ]] || fail 'fzf executable not found'
+
 args=()
 opt=""
 skip=""
@@ -116,13 +124,6 @@ cleanup() {
   fi
 }
 trap cleanup EXIT SIGINT SIGTERM
-
-fail() {
-  >&2 echo "$1"
-  exit 2
-}
-fzf="$(which fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
-[ -x "$fzf" ] || fail "fzf executable not found"
 
 envs="env TERM=$TERM "
 [ -n "$FZF_DEFAULT_OPTS"    ] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
