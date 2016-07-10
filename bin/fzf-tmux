@@ -16,7 +16,7 @@ skip=""
 swap=""
 close=""
 term=""
-[ -n "$LINES" ] && lines=$LINES || lines=$(tput lines)
+[[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines)
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
@@ -91,8 +91,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if ! [ -n "$TMUX" -a "$lines" -gt 15 ]; then
-  fzf "${args[@]}"
+if [[ -z "$TMUX" ]] || [[ "$lines" -le 15 ]]; then
+  "$fzf" "${args[@]}"
   exit $?
 fi
 
@@ -116,7 +116,7 @@ cleanup() {
   rm -f $argsf $fifo1 $fifo2 $fifo3
 
   # Remove temp window if we were zoomed
-  if [ -n "$zoomed" ]; then
+  if [[ -n "$zoomed" ]]; then
     tmux swap-pane -t $original_window \; \
       select-window -t $original_window \; \
       kill-window -t $tmp_window \; \
@@ -126,8 +126,8 @@ cleanup() {
 trap cleanup EXIT SIGINT SIGTERM
 
 envs="env TERM=$TERM "
-[ -n "$FZF_DEFAULT_OPTS"    ] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
-[ -n "$FZF_DEFAULT_COMMAND" ] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
+[[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
+[[ -n "$FZF_DEFAULT_COMMAND" ]] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
 
 mkfifo -m o+w $fifo2
 mkfifo -m o+w $fifo3
@@ -142,7 +142,7 @@ for arg in "${args[@]}"; do
   opts="$opts \"$arg\""
 done
 
-if [ -n "$term" -o -t 0 ]; then
+if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" > $argsf
   tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
