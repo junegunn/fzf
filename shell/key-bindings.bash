@@ -26,7 +26,7 @@ __fzf_select_tmux__() {
     height="-l $height"
   fi
 
-  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux send-keys -t $TMUX_PANE \"\$(__fzf_select__)\"'"
+  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; tmux setb -b \"fzf\" \"\$(__fzf_select__)\"; tmux pasteb -b \"fzf\" -t $TMUX_PANE; tmux deleteb -b \"fzf\"'"
 }
 
 fzf-file-widget() {
