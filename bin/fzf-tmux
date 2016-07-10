@@ -17,18 +17,36 @@ swap=""
 close=""
 term=""
 [[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines)
-while [ $# -gt 0 ]; do
+
+help() {
+  >&2 echo 'usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
+
+  Layout
+    -u [HEIGHT[%]]  Split above (up)
+    -d [HEIGHT[%]]  Split below (down)
+    -l [WIDTH[%]]   Split left
+    -r [WIDTH[%]]   Split right
+
+    (default: -d 50%)
+'
+  exit
+}
+
+while [[ $# -gt 0 ]]; do
   arg="$1"
-  case "$arg" in
+  shift
+  [[ -z "$skip" ]] && case "$arg" in
     -)
       term=1
       ;;
+    --help)
+      help
+      ;;
+    --version)
+      echo "fzf-tmux (with fzf $("$fzf" --version))"
+      exit
+      ;;
     -w*|-h*|-d*|-u*|-r*|-l*)
-      if [ -n "$skip" ]; then
-        args+=("$1")
-        shift
-        continue
-      fi
       if [[ "$arg" =~ ^.[lrw] ]]; then
         opt="-h"
         if [[ "$arg" =~ ^.l ]]; then
@@ -44,35 +62,33 @@ while [ $# -gt 0 ]; do
           close="; tmux swap-pane -D"
         fi
       fi
-      if [ ${#arg} -gt 2 ]; then
+      if [[ ${#arg} -gt 2 ]]; then
         size="${arg:2}"
       else
-        shift
         if [[ "$1" =~ ^[0-9]+%?$ ]]; then
           size="$1"
-        else
-          [ -n "$1" -a "$1" != "--" ] && args+=("$1")
           shift
+        else
           continue
         fi
       fi
 
       if [[ "$size" =~ %$ ]]; then
         size=${size:0:((${#size}-1))}
-        if [ -n "$swap" ]; then
+        if [[ -n "$swap" ]]; then
           opt="$opt -p $(( 100 - size ))"
         else
           opt="$opt -p $size"
         fi
       else
-        if [ -n "$swap" ]; then
+        if [[ -n "$swap" ]]; then
           if [[ "$arg" =~ ^.l ]]; then
-            [ -n "$COLUMNS" ] && max=$COLUMNS || max=$(tput cols)
+            [[ -n "$COLUMNS" ]] && max=$COLUMNS || max=$(tput cols)
           else
             max=$lines
           fi
           size=$(( max - size ))
-          [ $size -lt 0 ] && size=0
+          [[ $size -lt 0 ]] && size=0
           opt="$opt -l $size"
         else
           opt="$opt -l $size"
@@ -83,12 +99,13 @@ while [ $# -gt 0 ]; do
       # "--" can be used to separate fzf-tmux options from fzf options to
       # avoid conflicts
       skip=1
+      continue
       ;;
     *)
-      args+=("$1")
+      args+=("$arg")
       ;;
   esac
-  shift
+  [[ -n "$skip" ]] && args+=("$arg")
 done
 
 if [[ -z "$TMUX" ]] || [[ "$lines" -le 15 ]]; then
