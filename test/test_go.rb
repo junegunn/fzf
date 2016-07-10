@@ -1323,8 +1323,20 @@ module TestShell
     tmux.until(1) { |lines| lines.item_count >= 1 }
     tmux.send_keys 'fzf-unicode', pane: 1
     tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
-    tmux.send_keys :BTab, :BTab, pane: 1
+
+    tmux.send_keys '1', pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  1/' }
+    tmux.send_keys :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include? '(1)' }
+
+    tmux.send_keys :BSpace, pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
+
+    tmux.send_keys '2', pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  1/' }
+    tmux.send_keys :BTab, pane: 1
     tmux.until(1) { |lines| lines[-2].include? '(2)' }
+
     tmux.send_keys :Enter, pane: 1
     tmux.until { |lines| lines[-1].include?('cat') || lines[-2].include?('cat') }
     tmux.until { |lines| lines[-1].include?('fzf-unicode') || lines[-2].include?('fzf-unicode') }
@@ -1539,8 +1551,20 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cat fzf-unicode**', :Tab, pane: 0
     tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
-    tmux.send_keys :BTab, :BTab, pane: 1
+
+    tmux.send_keys '1', pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  1/' }
+    tmux.send_keys :BTab, pane: 1
+    tmux.until(1) { |lines| lines[-2].include? '(1)' }
+
+    tmux.send_keys :BSpace, pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  2/' }
+
+    tmux.send_keys '2', pane: 1
+    tmux.until(1) { |lines| lines[-2].start_with? '  1/' }
+    tmux.send_keys :BTab, pane: 1
     tmux.until(1) { |lines| lines[-2].include? '(2)' }
+
     tmux.send_keys :Enter, pane: 1
     tmux.until { |lines| lines[-1].include?('cat') || lines[-2].include?('cat') }
     tmux.send_keys :Enter
