@@ -122,7 +122,9 @@ try
   endtry
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
-    let dict.source = $FZF_DEFAULT_COMMAND
+    let temps.source = tempname()
+    call writefile(split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
+    let dict.source = (empty($SHELL) ? 'sh' : $SHELL) . ' ' . s:shellesc(temps.source)
   endif
 
   if has_key(dict, 'source')
