@@ -282,6 +282,7 @@ function! s:calc_size(max, val, dict)
 
   let opts = get(a:dict, 'options', '').$FZF_DEFAULT_OPTS
   let margin = stridx(opts, '--inline-info') > stridx(opts, '--no-inline-info') ? 1 : 2
+  let margin += stridx(opts, '--header') > stridx(opts, '--no-header')
   return srcsz >= 0 ? min([srcsz + margin, size]) : size
 endfunction
 
