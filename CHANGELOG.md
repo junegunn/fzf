@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.13.3
+------
+- Fixed duplicate rendering of the last line in preview window
+
 0.13.2
 ------
 - Fixed race condition where preview window is not properly cleared
