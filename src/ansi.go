@@ -49,7 +49,7 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 		prev := str[idx:offset[0]]
 		output.WriteString(prev)
 		if proc != nil && !proc(prev, state) {
-			break
+			return "", nil, nil
 		}
 		newState := interpretCode(str[offset[0]:offset[1]], state)
 
