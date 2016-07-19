@@ -528,18 +528,19 @@ endfunction
 if has('nvim')
 	rsh
 else
-	" todo
+	execute 'set viminfo=!,'.&viminfo
+	rv
 endif
 
-if exists('g:FZF_MRU_FILE_LIST_JSON')
-	let g:fzf_mru_file_list = split(g:FZF_MRU_FILE_LIST_JSON, ";")
+if exists('g:FZF_MRU_FILE_LIST')
+	let g:fzf_mru_file_list = split(g:FZF_MRU_FILE_LIST, ";")
 else
 	let g:fzf_mru_file_list = []
 endif
 
 autocmd! BufEnter * call s:ClearCurrentFile()
 autocmd! BufWinLeave,BufWritePost * call s:RecordMruFile()
-autocmd! VimLeavePre * let g:FZF_MRU_FILE_LIST_JSON = join(g:fzf_mru_file_list, ";")
+autocmd! VimLeavePre * let g:FZF_MRU_FILE_LIST = join(g:fzf_mru_file_list, ";")
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
 command! FZFMru call s:ListMruFile()
