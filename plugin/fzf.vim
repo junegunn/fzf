@@ -486,7 +486,63 @@ function! s:cmd(bang, ...) abort
   call fzf#run(extend({'options': join(args), 'sink*': function('<sid>cmd_callback')}, opts))
 endfunction
 
+function! s:ListMruFile()
+	let files = map(copy(g:fzf_mru_file_list), 'fnamemodify(v:val, ":~:.")')
+	let file_len = len(files)
+	if file_len == 0
+		return
+	elseif file_len > 10
+		let file_len = 10
+	endif
+	let file_len = file_len + 2
+	call fzf#run({
+			\ 'source': files,
+			\ 'sink': 'edit',
+			\ 'options': '-m -x +s',
+			\ 'down': file_len})
+endfunction
+
+function! s:RecordMruFile()
+	let cpath = expand('%:p')
+	if !filereadable(cpath)
+		return
+	endif
+	if cpath =~ 'fugitive'
+		return
+	endif
+	let idx = index(g:fzf_mru_file_list, cpath)
+	if idx >= 0
+		call filter(g:fzf_mru_file_list, 'v:val !=# cpath')
+	endif
+	call insert(g:fzf_mru_file_list, cpath)
+endfunction
+
+function! s:ClearCurrentFile()
+	let cpath = expand('%:p')
+	let idx = index(g:fzf_mru_file_list, cpath)
+	if idx >= 0
+		call remove(g:fzf_mru_file_list, idx)
+	end
+endfunction
+
+if has('nvim')
+	rsh
+else
+	" todo
+endif
+
+if exists('g:FZF_MRU_FILE_LIST_JSON')
+	let g:fzf_mru_file_list = split(g:FZF_MRU_FILE_LIST_JSON, ";")
+else
+	let g:fzf_mru_file_list = []
+endif
+
+autocmd! BufEnter * call s:ClearCurrentFile()
+autocmd! BufWinLeave,BufWritePost * call s:RecordMruFile()
+autocmd! VimLeavePre * let g:FZF_MRU_FILE_LIST_JSON = join(g:fzf_mru_file_list, ";")
+
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
+command! FZFMru call s:ListMruFile()
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
