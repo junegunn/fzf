@@ -21,7 +21,7 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-let s:default_height = '40%'
+let s:default_layout = { 'down': '~40%' }
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:install = expand('<sfile>:h:h').'/install'
 let s:installed = 0
@@ -481,7 +481,12 @@ function! s:cmd(bang, ...) abort
     let opts.dir = substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g')
   endif
   if !a:bang
-    let opts.down = get(g:, 'fzf_height', get(g:, 'fzf_tmux_height', s:default_height))
+    " For backward compatibility
+    if !exists('g:fzf_layout') && exists('g:fzf_height')
+      let opts.down = g:fzf_height
+    else
+      let opts = extend(opts, get(g:, 'fzf_layout', s:default_layout))
+    endif
   endif
   call fzf#run(extend({'options': join(args), 'sink*': function('<sid>cmd_callback')}, opts))
 endfunction
