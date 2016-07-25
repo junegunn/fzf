@@ -320,10 +320,10 @@ customization.
 
 [fzf-config]: https://github.com/junegunn/fzf/wiki/Configuring-FZF-command-(vim)
 
-#### `fzf#run([options])`
+#### `fzf#run`
 
-For more advanced uses, you can use `fzf#run()` function with the following
-options.
+For more advanced uses, you can use `fzf#run([options])` function with the
+following options.
 
 | Option name                | Type          | Description                                                      |
 | -------------------------- | ------------- | ---------------------------------------------------------------- |
@@ -341,6 +341,17 @@ options.
 
 Examples can be found on [the wiki
 page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
+
+#### `fzf#wrap`
+
+`fzf#wrap(name string, [opts dict, [fullscreen boolean]])` is a helper
+function that decorates the options dictionary so that it understands
+`g:fzf_layout`, `g:fzf_action`, and `g:fzf_history_dir` like `:FZF`.
+
+```vim
+command! -bang MyStuff
+  \ call fzf#run(fzf#wrap('my-stuff', {'dir': '~/my-stuff'}, <bang>0))
+```
 
 Tips
 ----

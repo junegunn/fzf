@@ -22,6 +22,7 @@
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 let s:default_layout = { 'down': '~40%' }
+let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
 let s:install = expand('<sfile>:h:h').'/install'
 let s:installed = 0
@@ -104,6 +105,101 @@ function! s:warn(msg)
   echohl None
 endfunction
 
+function! s:has_any(dict, keys)
+  for key in a:keys
+    if has_key(a:dict, key)
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
+function! s:open(cmd, target)
+  if stridx('edit', a:cmd) == 0 && fnamemodify(a:target, ':p') ==# expand('%:p')
+    return
+  endif
+  execute a:cmd s:escape(a:target)
+endfunction
+
+function! s:common_sink(action, lines) abort
+  if len(a:lines) < 2
+    return
+  endif
+  let key = remove(a:lines, 0)
+  let cmd = get(a:action, key, 'e')
+  if len(a:lines) > 1
+    augroup fzf_swap
+      autocmd SwapExists * let v:swapchoice='o'
+            \| call s:warn('fzf: E325: swap file exists: '.expand('<afile>'))
+    augroup END
+  endif
+  try
+    let empty = empty(expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
+    let autochdir = &autochdir
+    set noautochdir
+    for item in a:lines
+      if empty
+        execute 'e' s:escape(item)
+        let empty = 0
+      else
+        call s:open(cmd, item)
+      endif
+      if exists('#BufEnter') && isdirectory(item)
+        doautocmd BufEnter
+      endif
+    endfor
+  finally
+    let &autochdir = autochdir
+    silent! autocmd! fzf_swap
+  endtry
+endfunction
+
+" name string, [opts dict, [fullscreen boolean]]
+function! fzf#wrap(name, ...)
+  if type(a:name) != type('')
+    throw 'invalid name type: string expected'
+  endif
+  let opts = copy(get(a:000, 0, {}))
+  let bang = get(a:000, 1, 0)
+
+  " Layout: g:fzf_layout (and deprecated g:fzf_height)
+  if bang
+    for key in s:layout_keys
+      if has_key(opts, key)
+        call remove(opts, key)
+      endif
+    endfor
+  elseif !s:has_any(opts, s:layout_keys)
+    if !exists('g:fzf_layout') && exists('g:fzf_height')
+      let opts.down = g:fzf_height
+    else
+      let opts = extend(opts, get(g:, 'fzf_layout', s:default_layout))
+    endif
+  endif
+
+  " History: g:fzf_history_dir
+  let opts.options = get(opts, 'options', '')
+  if len(get(g:, 'fzf_history_dir', ''))
+    let dir = expand(g:fzf_history_dir)
+    if !isdirectory(dir)
+      call mkdir(dir, 'p')
+    endif
+    let opts.options = join(['--history', s:escape(dir.'/'.a:name), opts.options])
+  endif
+
+  " Action: g:fzf_action
+  if !s:has_any(opts, ['sink', 'sink*'])
+    let opts._action = get(g:, 'fzf_action', s:default_action)
+    let opts.options .= ' --expect='.join(keys(opts._action), ',')
+    function! opts.sink(lines) abort
+      return s:common_sink(self._action, a:lines)
+    endfunction
+    let opts['sink*'] = remove(opts, 'sink')
+  endif
+
+  return opts
+endfunction
+
 function! fzf#run(...) abort
 try
   let oshell = &shell
@@ -137,7 +233,7 @@ try
       call writefile(source, temps.input)
       let prefix = 'cat '.s:shellesc(temps.input).'|'
     else
-      throw 'Invalid source type'
+      throw 'invalid source type'
     endif
   else
     let prefix = ''
@@ -435,60 +531,17 @@ function! s:callback(dict, lines) abort
 endfunction
 
 let s:default_action = {
-  \ 'ctrl-m': 'e',
   \ 'ctrl-t': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
-function! s:cmd_callback(lines) abort
-  if empty(a:lines)
-    return
-  endif
-  let key = remove(a:lines, 0)
-  let cmd = get(s:action, key, 'e')
-  if len(a:lines) > 1
-    augroup fzf_swap
-      autocmd SwapExists * let v:swapchoice='o'
-            \| call s:warn('fzf: E325: swap file exists: '.expand('<afile>'))
-    augroup END
-  endif
-  try
-    let empty = empty(expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
-    let autochdir = &autochdir
-    set noautochdir
-    for item in a:lines
-      if empty
-        execute 'e' s:escape(item)
-        let empty = 0
-      else
-        execute cmd s:escape(item)
-      endif
-      if exists('#BufEnter') && isdirectory(item)
-        doautocmd BufEnter
-      endif
-    endfor
-  finally
-    let &autochdir = autochdir
-    silent! autocmd! fzf_swap
-  endtry
-endfunction
-
 function! s:cmd(bang, ...) abort
-  let s:action = get(g:, 'fzf_action', s:default_action)
-  let args = extend(['--expect='.join(keys(s:action), ',')], a:000)
+  let args = copy(a:000)
   let opts = {}
-  if len(args) > 0 && isdirectory(expand(args[-1]))
+  if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g')
   endif
-  if !a:bang
-    " For backward compatibility
-    if !exists('g:fzf_layout') && exists('g:fzf_height')
-      let opts.down = g:fzf_height
-    else
-      let opts = extend(opts, get(g:, 'fzf_layout', s:default_layout))
-    endif
-  endif
-  call fzf#run(extend({'options': join(args), 'sink*': function('<sid>cmd_callback')}, opts))
+  call fzf#run(fzf#wrap('FZF', extend({'options': join(args)}, opts), a:bang))
 endfunction
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)

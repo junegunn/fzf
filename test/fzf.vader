@@ -1,5 +1,6 @@
 Execute (Setup):
   let g:dir = fnamemodify(g:vader_file, ':p:h')
+  unlet! g:fzf_layout g:fzf_action g:fzf_history_dir
   Log 'Test directory: ' . g:dir
   Save &acd
 
@@ -68,6 +69,79 @@ Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
   call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/', 'options': '-1'})
   " Working directory changed due to &acd
   AssertEqual '/', getcwd()
+
+Execute (fzf#wrap):
+  AssertThrows fzf#wrap({'foo': 'bar'})
+
+  let opts = fzf#wrap('foobar')
+  Log opts
+  AssertEqual '~40%', opts.down
+  Assert opts.options =~ '--expect='
+  Assert !has_key(opts, 'sink')
+  Assert has_key(opts, 'sink*')
+
+  let opts = fzf#wrap('foobar', {}, 0)
+  Log opts
+  AssertEqual '~40%', opts.down
+
+  let opts = fzf#wrap('foobar', {}, 1)
+  Log opts
+  Assert !has_key(opts, 'down')
+
+  let opts = fzf#wrap('foobar', {'down': '50%'})
+  Log opts
+  AssertEqual '50%', opts.down
+
+  let opts = fzf#wrap('foobar', {'down': '50%'}, 1)
+  Log opts
+  Assert !has_key(opts, 'down')
+
+  let opts = fzf#wrap('foobar', {'sink': 'e'})
+  Log opts
+  AssertEqual 'e', opts.sink
+  Assert !has_key(opts, 'sink*')
+
+  let opts = fzf#wrap('foobar', {'options': '--reverse'})
+  Log opts
+  Assert opts.options =~ '--expect='
+  Assert opts.options =~ '--reverse'
+
+  let g:fzf_layout = {'window': 'enew'}
+  let opts = fzf#wrap('foobar')
+  Log opts
+  AssertEqual 'enew', opts.window
+
+  let opts = fzf#wrap('foobar', {}, 1)
+  Log opts
+  Assert !has_key(opts, 'window')
+
+  let opts = fzf#wrap('foobar', {'right': '50%'})
+  Log opts
+  Assert !has_key(opts, 'window')
+  AssertEqual '50%', opts.right
+
+  let opts = fzf#wrap('foobar', {'right': '50%'}, 1)
+  Log opts
+  Assert !has_key(opts, 'window')
+  Assert !has_key(opts, 'right')
+
+  let g:fzf_action = {'a': 'tabe'}
+  let opts = fzf#wrap('foobar')
+  Log opts
+  Assert opts.options =~ '--expect=a'
+  Assert !has_key(opts, 'sink')
+  Assert has_key(opts, 'sink*')
+
+  let opts = fzf#wrap('foobar', {'sink': 'e'})
+  Log opts
+  AssertEqual 'e', opts.sink
+  Assert !has_key(opts, 'sink*')
+
+  let g:fzf_history_dir = '/tmp'
+  let opts = fzf#wrap('foobar', {'options': '--color light'})
+  Log opts
+  Assert opts.options =~ '--history /tmp/foobar'
+  Assert opts.options =~ '--color light'
 
 Execute (Cleanup):
   unlet g:dir
