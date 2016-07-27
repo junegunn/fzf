@@ -348,8 +348,9 @@ function! s:execute(dict, command, temps) abort
     let command = escaped
   endif
   execute 'silent !'.command
+  let exit_status = v:shell_error
   redraw!
-  return s:exit_handler(v:shell_error, command) ? s:collect(a:temps) : []
+  return s:exit_handler(exit_status, command) ? s:collect(a:temps) : []
 endfunction
 
 function! s:execute_tmux(dict, command, temps) abort
@@ -360,8 +361,9 @@ function! s:execute_tmux(dict, command, temps) abort
   endif
 
   call system(command)
+  let exit_status = v:shell_error
   redraw!
-  return s:exit_handler(v:shell_error, command) ? s:collect(a:temps) : []
+  return s:exit_handler(exit_status, command) ? s:collect(a:temps) : []
 endfunction
 
 function! s:calc_size(max, val, dict)
