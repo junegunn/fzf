@@ -204,7 +204,7 @@ function! fzf#run(...) abort
 try
   let oshell = &shell
   set shell=sh
-  if has('nvim') && bufexists('term://*:FZF')
+  if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"'))
     call s:warn('FZF is already running!')
     return []
   endif
@@ -424,7 +424,7 @@ endfunction
 function! s:execute_term(dict, command, temps) abort
   let [ppos, winopts] = s:split(a:dict)
   let fzf = { 'buf': bufnr('%'), 'ppos': ppos, 'dict': a:dict, 'temps': a:temps,
-            \ 'name': 'FZF', 'winopts': winopts, 'command': a:command }
+            \ 'winopts': winopts, 'command': a:command }
   function! fzf.switch_back(inplace)
     if a:inplace && bufnr('') == self.buf
       " FIXME: Can't re-enter normal mode from terminal mode
@@ -466,7 +466,7 @@ function! s:execute_term(dict, command, temps) abort
     if s:present(a:dict, 'dir')
       execute 'lcd' s:escape(a:dict.dir)
     endif
-    call termopen(a:command, fzf)
+    call termopen(a:command . ';#FZF', fzf)
   finally
     if s:present(a:dict, 'dir')
       lcd -
@@ -550,4 +550,3 @@ command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
