@@ -456,6 +456,10 @@ function! s:execute_term(dict, command, temps) abort
       return
     endif
 
+    if bufexists(self.buf)
+      execute 'bd!' self.buf
+    endif
+
     call s:pushd(self.dict)
     let lines = s:collect(self.temps)
     call s:callback(self.dict, lines)
