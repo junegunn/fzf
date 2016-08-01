@@ -452,12 +452,12 @@ function! s:execute_term(dict, command, temps) abort
       execute self.ppos.win.'wincmd w'
     endif
 
-    if !s:exit_handler(a:code, self.command, 1)
-      return
-    endif
-
     if bufexists(self.buf)
       execute 'bd!' self.buf
+    endif
+
+    if !s:exit_handler(a:code, self.command, 1)
+      return
     endif
 
     call s:pushd(self.dict)
