@@ -352,14 +352,14 @@ func TestDefaultCtrlNP(t *testing.T) {
 	check([]string{hist, "--bind=ctrl-p:accept"}, curses.CtrlP, actAccept)
 }
 
-func TestToggle(t *testing.T) {
-	optsFor := func(words ...string) *Options {
-		opts := defaultOptions()
-		parseOptions(opts, words)
-		postProcessOptions(opts)
-		return opts
-	}
+func optsFor(words ...string) *Options {
+	opts := defaultOptions()
+	parseOptions(opts, words)
+	postProcessOptions(opts)
+	return opts
+}
 
+func TestToggle(t *testing.T) {
 	opts := optsFor()
 	if opts.ToggleSort {
 		t.Error()
@@ -373,5 +373,33 @@ func TestToggle(t *testing.T) {
 	opts = optsFor("--bind=a:toggle-sort", "--bind=a:up")
 	if opts.ToggleSort {
 		t.Error()
+	}
+}
+
+func TestPreviewOpts(t *testing.T) {
+	opts := optsFor()
+	if !(opts.Preview.command == "" &&
+		opts.Preview.hidden == false &&
+		opts.Preview.position == posRight &&
+		opts.Preview.size.percent == true &&
+		opts.Preview.size.size == 50) {
+		t.Error()
+	}
+	opts = optsFor("--preview", "cat {}", "--preview-window=left:15:hidden")
+	if !(opts.Preview.command == "cat {}" &&
+		opts.Preview.hidden == true &&
+		opts.Preview.position == posLeft &&
+		opts.Preview.size.percent == false &&
+		opts.Preview.size.size == 15+2) {
+		t.Error(opts.Preview)
+	}
+
+	opts = optsFor("--preview-window=left:15:hidden", "--preview-window=down")
+	if !(opts.Preview.command == "" &&
+		opts.Preview.hidden == false &&
+		opts.Preview.position == posDown &&
+		opts.Preview.size.percent == true &&
+		opts.Preview.size.size == 50) {
+		t.Error(opts.Preview)
 	}
 }

@@ -724,6 +724,7 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 
 func parsePreviewWindow(opts *previewOpts, input string) {
 	layout := input
+	opts.hidden = false
 	if strings.HasSuffix(layout, ":hidden") {
 		opts.hidden = true
 		layout = strings.TrimSuffix(layout, ":hidden")
