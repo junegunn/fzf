@@ -34,3 +34,24 @@ func TestCharsToString(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestTrimLength(t *testing.T) {
+	check := func(str string, exp int) {
+		chars := ToChars([]byte(str))
+		trimmed := chars.TrimLength()
+		if trimmed != exp {
+			t.Errorf("Invalid TrimLength result for '%s': %d (expected %d)",
+				str, trimmed, exp)
+		}
+	}
+	check("hello", 5)
+	check("hello ", 5)
+	check("hello  ", 5)
+	check(" hello", 5)
+	check("  hello", 5)
+	check(" hello ", 5)
+	check("  hello  ", 5)
+	check("h   o", 5)
+	check("  h   o  ", 5)
+	check("         ", 0)
+}

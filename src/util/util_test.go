@@ -20,23 +20,3 @@ func TestContrain(t *testing.T) {
 		t.Error("Expected", 3)
 	}
 }
-
-func TestTrimLen(t *testing.T) {
-	check := func(str string, exp int) {
-		trimmed := TrimLen([]rune(str))
-		if trimmed != exp {
-			t.Errorf("Invalid TrimLen result for '%s': %d (expected %d)",
-				str, trimmed, exp)
-		}
-	}
-	check("hello", 5)
-	check("hello ", 5)
-	check("hello  ", 5)
-	check(" hello", 5)
-	check("  hello", 5)
-	check(" hello ", 5)
-	check("  hello  ", 5)
-	check("h   o", 5)
-	check("  h   o  ", 5)
-	check("         ", 0)
-}

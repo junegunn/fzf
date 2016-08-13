@@ -111,3 +111,10 @@ func (chars *Chars) ToRunes() []rune {
 	}
 	return runes
 }
+
+func (chars *Chars) Slice(b int, e int) Chars {
+	if chars.runes != nil {
+		return Chars{runes: chars.runes[b:e]}
+	}
+	return Chars{bytes: chars.bytes[b:e]}
+}

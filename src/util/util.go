@@ -83,30 +83,6 @@ func IsTty() bool {
 	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
 }
 
-// TrimLen returns the length of trimmed rune array
-func TrimLen(runes []rune) int {
-	var i int
-	for i = len(runes) - 1; i >= 0; i-- {
-		char := runes[i]
-		if char != ' ' && char != '\t' {
-			break
-		}
-	}
-	// Completely empty
-	if i < 0 {
-		return 0
-	}
-
-	var j int
-	for j = 0; j < len(runes); j++ {
-		char := runes[j]
-		if char != ' ' && char != '\t' {
-			break
-		}
-	}
-	return i - j + 1
-}
-
 // ExecCommand executes the given command with $SHELL
 func ExecCommand(command string) *exec.Cmd {
 	shell := os.Getenv("SHELL")
