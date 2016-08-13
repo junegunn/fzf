@@ -63,29 +63,29 @@ func Run(opts *Options) {
 	eventBox := util.NewEventBox()
 
 	// ANSI code processor
-	ansiProcessor := func(data []byte) ([]rune, []ansiOffset) {
-		return util.BytesToRunes(data), nil
+	ansiProcessor := func(data []byte) (util.Chars, []ansiOffset) {
+		return util.ToChars(data), nil
 	}
-	ansiProcessorRunes := func(data []rune) ([]rune, []ansiOffset) {
-		return data, nil
+	ansiProcessorRunes := func(data []rune) (util.Chars, []ansiOffset) {
+		return util.RunesToChars(data), nil
 	}
 	if opts.Ansi {
 		if opts.Theme != nil {
 			var state *ansiState
-			ansiProcessor = func(data []byte) ([]rune, []ansiOffset) {
+			ansiProcessor = func(data []byte) (util.Chars, []ansiOffset) {
 				trimmed, offsets, newState := extractColor(string(data), state, nil)
 				state = newState
-				return []rune(trimmed), offsets
+				return util.RunesToChars([]rune(trimmed)), offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
-			ansiProcessor = func(data []byte) ([]rune, []ansiOffset) {
+			ansiProcessor = func(data []byte) (util.Chars, []ansiOffset) {
 				trimmed, _, _ := extractColor(string(data), nil, nil)
-				return []rune(trimmed), nil
+				return util.RunesToChars([]rune(trimmed)), nil
 			}
 		}
-		ansiProcessorRunes = func(data []rune) ([]rune, []ansiOffset) {
+		ansiProcessorRunes = func(data []rune) (util.Chars, []ansiOffset) {
 			return ansiProcessor([]byte(string(data)))
 		}
 	}
@@ -100,29 +100,30 @@ func Run(opts *Options) {
 				eventBox.Set(EvtHeader, header)
 				return nil
 			}
-			runes, colors := ansiProcessor(data)
+			chars, colors := ansiProcessor(data)
 			return &Item{
-				text:   runes,
+				text:   chars,
 				colors: colors,
 				rank:   buildEmptyRank(int32(index))}
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) *Item {
-			runes := util.BytesToRunes(data)
-			tokens := Tokenize(runes, opts.Delimiter)
+			chars := util.ToChars(data)
+			tokens := Tokenize(chars, opts.Delimiter)
 			trans := Transform(tokens, opts.WithNth)
 			if len(header) < opts.HeaderLines {
 				header = append(header, string(joinTokens(trans)))
 				eventBox.Set(EvtHeader, header)
 				return nil
 			}
+			textRunes := joinTokens(trans)
 			item := Item{
-				text:     joinTokens(trans),
-				origText: &runes,
+				text:     util.RunesToChars(textRunes),
+				origText: &data,
 				colors:   nil,
 				rank:     buildEmptyRank(int32(index))}
 
-			trimmed, colors := ansiProcessorRunes(item.text)
+			trimmed, colors := ansiProcessorRunes(textRunes)
 			item.text = trimmed
 			item.colors = colors
 			return &item
@@ -170,7 +171,7 @@ func Run(opts *Options) {
 				func(runes []byte) bool {
 					item := chunkList.trans(runes, 0)
 					if item != nil && pattern.MatchItem(item) {
-						fmt.Println(string(item.text))
+						fmt.Println(item.text.ToString())
 						found = true
 					}
 					return false

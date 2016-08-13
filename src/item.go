@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/util"
 )
 
 // Offset holds three 32-bit integers denoting the offsets of a matched substring
@@ -17,8 +18,8 @@ type colorOffset struct {
 
 // Item represents each input line
 type Item struct {
-	text        []rune
-	origText    *[]rune
+	text        util.Chars
+	origText    *[]byte
 	transformed []Token
 	offsets     []Offset
 	colors      []ansiOffset
@@ -91,12 +92,14 @@ func (item *Item) Rank(cache bool) [5]int32 {
 				// If offsets is empty, lenSum will be 0, but we don't care
 				val = int32(lenSum)
 			} else {
-				val = int32(len(item.text))
+				val = int32(item.text.Length())
 			}
 		case byBegin:
 			// We can't just look at item.offsets[0][0] because it can be an inverse term
 			whitePrefixLen := 0
-			for idx, r := range item.text {
+			numChars := item.text.Length()
+			for idx := 0; idx < numChars; idx++ {
+				r := item.text.Get(idx)
 				whitePrefixLen = idx
 				if idx == minBegin || r != ' ' && r != '\t' {
 					break
@@ -105,7 +108,7 @@ func (item *Item) Rank(cache bool) [5]int32 {
 			val = int32(minBegin - whitePrefixLen)
 		case byEnd:
 			if prevEnd > 0 {
-				val = int32(1 + len(item.text) - prevEnd)
+				val = int32(1 + item.text.Length() - prevEnd)
 			} else {
 				// Empty offsets due to inverse terms.
 				val = 1
@@ -134,7 +137,7 @@ func (item *Item) StringPtr(stripAnsi bool) *string {
 		orig := string(*item.origText)
 		return &orig
 	}
-	str := string(item.text)
+	str := item.text.ToString()
 	return &str
 }
 

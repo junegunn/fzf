@@ -49,7 +49,7 @@ type Pattern struct {
 	cacheable     bool
 	delimiter     Delimiter
 	nth           []Range
-	procFun       map[termType]func(bool, bool, []rune, []rune) algo.Result
+	procFun       map[termType]func(bool, bool, util.Chars, []rune) algo.Result
 }
 
 var (
@@ -125,7 +125,7 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
-		procFun:       make(map[termType]func(bool, bool, []rune, []rune) algo.Result)}
+		procFun:       make(map[termType]func(bool, bool, util.Chars, []rune) algo.Result)}
 
 	ptr.procFun[termFuzzy] = algo.FuzzyMatch
 	ptr.procFun[termEqual] = algo.EqualMatch
@@ -361,13 +361,13 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 		tokens := Tokenize(item.text, p.delimiter)
 		ret = Transform(tokens, p.nth)
 	} else {
-		ret = []Token{Token{text: item.text, prefixLength: 0, trimLength: util.TrimLen(item.text)}}
+		ret = []Token{Token{text: item.text, prefixLength: 0, trimLength: item.text.TrimLength()}}
 	}
 	item.transformed = ret
 	return ret
 }
 
-func (p *Pattern) iter(pfun func(bool, bool, []rune, []rune) algo.Result,
+func (p *Pattern) iter(pfun func(bool, bool, util.Chars, []rune) algo.Result,
 	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (Offset, int32) {
 	for _, part := range tokens {
 		prefixLength := int32(part.prefixLength)

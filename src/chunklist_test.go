@@ -3,6 +3,8 @@ package fzf
 import (
 	"fmt"
 	"testing"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 func TestChunkList(t *testing.T) {
@@ -10,7 +12,7 @@ func TestChunkList(t *testing.T) {
 	sortCriteria = []criterion{byMatchLen, byLength}
 
 	cl := NewChunkList(func(s []byte, i int) *Item {
-		return &Item{text: []rune(string(s)), rank: buildEmptyRank(int32(i * 2))}
+		return &Item{text: util.ToChars(s), rank: buildEmptyRank(int32(i * 2))}
 	})
 
 	// Snapshot
@@ -42,8 +44,8 @@ func TestChunkList(t *testing.T) {
 	last := func(arr [5]int32) int32 {
 		return arr[len(arr)-1]
 	}
-	if string((*chunk1)[0].text) != "hello" || last((*chunk1)[0].rank) != 0 ||
-		string((*chunk1)[1].text) != "world" || last((*chunk1)[1].rank) != 2 {
+	if (*chunk1)[0].text.ToString() != "hello" || last((*chunk1)[0].rank) != 0 ||
+		(*chunk1)[1].text.ToString() != "world" || last((*chunk1)[1].rank) != 2 {
 		t.Error("Invalid data")
 	}
 	if chunk1.IsFull() {

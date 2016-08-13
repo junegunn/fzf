@@ -564,7 +564,7 @@ func (t *Terminal) printHeader() {
 		trimmed, colors, newState := extractColor(lineStr, state, nil)
 		state = newState
 		item := &Item{
-			text:   []rune(trimmed),
+			text:   util.RunesToChars([]rune(trimmed)),
 			colors: colors,
 			rank:   buildEmptyRank(0)}
 
@@ -663,8 +663,8 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	}
 
 	// Overflow
-	text := make([]rune, len(item.text))
-	copy(text, item.text)
+	text := make([]rune, item.text.Length())
+	copy(text, item.text.ToRunes())
 	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))

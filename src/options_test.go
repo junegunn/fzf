@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/util"
 )
 
 func TestDelimiterRegex(t *testing.T) {
@@ -42,24 +43,24 @@ func TestDelimiterRegex(t *testing.T) {
 
 func TestDelimiterRegexString(t *testing.T) {
 	delim := delimiterRegexp("*")
-	tokens := Tokenize([]rune("-*--*---**---"), delim)
+	tokens := Tokenize(util.RunesToChars([]rune("-*--*---**---")), delim)
 	if delim.regex != nil ||
-		string(tokens[0].text) != "-*" ||
-		string(tokens[1].text) != "--*" ||
-		string(tokens[2].text) != "---*" ||
-		string(tokens[3].text) != "*" ||
-		string(tokens[4].text) != "---" {
+		tokens[0].text.ToString() != "-*" ||
+		tokens[1].text.ToString() != "--*" ||
+		tokens[2].text.ToString() != "---*" ||
+		tokens[3].text.ToString() != "*" ||
+		tokens[4].text.ToString() != "---" {
 		t.Errorf("%s %s %d", delim, tokens, len(tokens))
 	}
 }
 
 func TestDelimiterRegexRegex(t *testing.T) {
 	delim := delimiterRegexp("--\\*")
-	tokens := Tokenize([]rune("-*--*---**---"), delim)
+	tokens := Tokenize(util.RunesToChars([]rune("-*--*---**---")), delim)
 	if delim.str != nil ||
-		string(tokens[0].text) != "-*--*" ||
-		string(tokens[1].text) != "---*" ||
-		string(tokens[2].text) != "*---" {
+		tokens[0].text.ToString() != "-*--*" ||
+		tokens[1].text.ToString() != "---*" ||
+		tokens[2].text.ToString() != "*---" {
 		t.Errorf("%s %d", tokens, len(tokens))
 	}
 }

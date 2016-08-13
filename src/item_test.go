@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/util"
 )
 
 func TestOffsetSort(t *testing.T) {
@@ -44,13 +45,13 @@ func TestItemRank(t *testing.T) {
 	sortCriteria = []criterion{byMatchLen, byLength}
 
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
-	item1 := Item{text: strs[0], offsets: []Offset{}, rank: [5]int32{0, 0, 0, 0, 1}}
+	item1 := Item{text: util.RunesToChars(strs[0]), offsets: []Offset{}, rank: [5]int32{0, 0, 0, 0, 1}}
 	rank1 := item1.Rank(true)
 	if rank1[0] != math.MaxInt32 || rank1[1] != 3 || rank1[4] != 1 {
 		t.Error(item1.Rank(true))
 	}
 	// Only differ in index
-	item2 := Item{text: strs[0], offsets: []Offset{}}
+	item2 := Item{text: util.RunesToChars(strs[0]), offsets: []Offset{}}
 
 	items := []*Item{&item1, &item2}
 	sort.Sort(ByRelevance(items))
@@ -66,10 +67,10 @@ func TestItemRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := Item{text: strs[1], rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item4 := Item{text: strs[1], rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
-	item5 := Item{text: strs[2], rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
-	item6 := Item{text: strs[2], rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item3 := Item{text: util.RunesToChars(strs[1]), rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item4 := Item{text: util.RunesToChars(strs[1]), rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
+	item5 := Item{text: util.RunesToChars(strs[2]), rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 3}, Offset{5, 7}}}
+	item6 := Item{text: util.RunesToChars(strs[2]), rank: [5]int32{0, 0, 0, 0, 2}, offsets: []Offset{Offset{1, 2}, Offset{6, 7}}}
 	items = []*Item{&item1, &item2, &item3, &item4, &item5, &item6}
 	sort.Sort(ByRelevance(items))
 	if items[0] != &item6 || items[1] != &item4 ||

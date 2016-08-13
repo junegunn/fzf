@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"time"
-	"unicode/utf8"
 )
 
 // Max returns the largest integer
@@ -82,34 +81,6 @@ func DurWithin(
 // IsTty returns true is stdin is a terminal
 func IsTty() bool {
 	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
-}
-
-// TrimRight returns rune array with trailing white spaces cut off
-func TrimRight(runes []rune) []rune {
-	var i int
-	for i = len(runes) - 1; i >= 0; i-- {
-		char := runes[i]
-		if char != ' ' && char != '\t' {
-			break
-		}
-	}
-	return runes[0 : i+1]
-}
-
-// BytesToRunes converts byte array into rune array
-func BytesToRunes(bytea []byte) []rune {
-	runes := make([]rune, 0, len(bytea))
-	for i := 0; i < len(bytea); {
-		if bytea[i] < utf8.RuneSelf {
-			runes = append(runes, rune(bytea[i]))
-			i++
-		} else {
-			r, sz := utf8.DecodeRune(bytea[i:])
-			i += sz
-			runes = append(runes, r)
-		}
-	}
-	return runes
 }
 
 // TrimLen returns the length of trimmed rune array

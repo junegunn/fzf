@@ -3,13 +3,15 @@ package algo
 import (
 	"strings"
 	"testing"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
-func assertMatch(t *testing.T, fun func(bool, bool, []rune, []rune) Result, caseSensitive, forward bool, input, pattern string, sidx int32, eidx int32, bonus int32) {
+func assertMatch(t *testing.T, fun func(bool, bool, util.Chars, []rune) Result, caseSensitive, forward bool, input, pattern string, sidx int32, eidx int32, bonus int32) {
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
-	res := fun(caseSensitive, forward, []rune(input), []rune(pattern))
+	res := fun(caseSensitive, forward, util.RunesToChars([]rune(input)), []rune(pattern))
 	if res.Start != sidx {
 		t.Errorf("Invalid start index: %d (expected: %d, %s / %s)", res.Start, sidx, input, pattern)
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/junegunn/fzf/src/algo"
+	"github.com/junegunn/fzf/src/util"
 )
 
 func TestParseTermsExtended(t *testing.T) {
@@ -71,7 +72,7 @@ func TestExact(t *testing.T) {
 	pattern := BuildPattern(true, true, CaseSmart, true,
 		[]Range{}, Delimiter{}, []rune("'abc"))
 	res := algo.ExactMatchNaive(
-		pattern.caseSensitive, pattern.forward, []rune("aabbcc abc"), pattern.termSets[0][0].text)
+		pattern.caseSensitive, pattern.forward, util.RunesToChars([]rune("aabbcc abc")), pattern.termSets[0][0].text)
 	if res.Start != 7 || res.End != 10 {
 		t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
 	}
@@ -84,7 +85,7 @@ func TestEqual(t *testing.T) {
 
 	match := func(str string, sidxExpected int32, eidxExpected int32) {
 		res := algo.EqualMatch(
-			pattern.caseSensitive, pattern.forward, []rune(str), pattern.termSets[0][0].text)
+			pattern.caseSensitive, pattern.forward, util.RunesToChars([]rune(str)), pattern.termSets[0][0].text)
 		if res.Start != sidxExpected || res.End != eidxExpected {
 			t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
 		}
@@ -120,20 +121,20 @@ func TestCaseSensitivity(t *testing.T) {
 
 func TestOrigTextAndTransformed(t *testing.T) {
 	pattern := BuildPattern(true, true, CaseSmart, true, []Range{}, Delimiter{}, []rune("jg"))
-	tokens := Tokenize([]rune("junegunn"), Delimiter{})
+	tokens := Tokenize(util.RunesToChars([]rune("junegunn")), Delimiter{})
 	trans := Transform(tokens, []Range{Range{1, 1}})
 
-	origRunes := []rune("junegunn.choi")
+	origBytes := []byte("junegunn.choi")
 	for _, extended := range []bool{false, true} {
 		chunk := Chunk{
 			&Item{
-				text:        []rune("junegunn"),
-				origText:    &origRunes,
+				text:        util.RunesToChars([]rune("junegunn")),
+				origText:    &origBytes,
 				transformed: trans},
 		}
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk)
-		if string(matches[0].text) != "junegunn" || string(*matches[0].origText) != "junegunn.choi" ||
+		if matches[0].text.ToString() != "junegunn" || string(*matches[0].origText) != "junegunn.choi" ||
 			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 ||
 			!reflect.DeepEqual(matches[0].transformed, trans) {
 			t.Error("Invalid match result", matches)

@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"sort"
 	"testing"
+
+	"github.com/junegunn/fzf/src/util"
 )
 
 func assert(t *testing.T, cond bool, msg ...string) {
@@ -22,7 +24,7 @@ func randItem() *Item {
 		offsets[idx] = Offset{sidx, eidx}
 	}
 	return &Item{
-		text:    []rune(str),
+		text:    util.RunesToChars([]rune(str)),
 		rank:    buildEmptyRank(rand.Int31()),
 		offsets: offsets}
 }
