@@ -36,6 +36,10 @@ end
 
 class Shell
   class << self
+    def unsets
+      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_CTRL_R_OPTS;'
+    end
+
     def bash
       'PS1= PROMPT_COMMAND= bash --rcfile ~/.fzf.bash'
     end
@@ -44,6 +48,10 @@ class Shell
       FileUtils.mkdir_p '/tmp/fzf-zsh'
       FileUtils.cp File.expand_path('~/.fzf.zsh'), '/tmp/fzf-zsh/.zshrc'
       'PS1= PROMPT_COMMAND= HISTSIZE=100 ZDOTDIR=/tmp/fzf-zsh zsh'
+    end
+
+    def fish
+      'fish'
     end
   end
 end
@@ -57,11 +65,11 @@ class Tmux
     @win =
       case shell
       when :bash
-        go("new-window -d -P -F '#I' '#{Shell.bash}'").first
+        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.bash}'").first
       when :zsh
-        go("new-window -d -P -F '#I' '#{Shell.zsh}'").first
+        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.zsh}'").first
       when :fish
-        go("new-window -d -P -F '#I' 'fish'").first
+        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.fish}'").first
       else
         raise "Unknown shell: #{shell}"
       end
@@ -151,12 +159,6 @@ class TestBase < Minitest::Test
     [TEMPNAME,
      caller_locations.map(&:label).find { |l| l =~ /^test_/ },
      @temp_suffix].join '-'
-  end
-
-  def setup
-    ENV.delete 'FZF_DEFAULT_OPTS'
-    ENV.delete 'FZF_CTRL_T_COMMAND'
-    ENV.delete 'FZF_DEFAULT_COMMAND'
   end
 
   def readonce
