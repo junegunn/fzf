@@ -140,13 +140,13 @@ func Tokenize(text util.Chars, delimiter Delimiter) []Token {
 		return withPrefixLengths(tokens, prefixLength)
 	}
 
-	var tokens []string
 	if delimiter.str != nil {
-		tokens = strings.Split(text.ToString(), *delimiter.str)
-		for i := 0; i < len(tokens)-1; i++ {
-			tokens[i] = tokens[i] + *delimiter.str
-		}
-	} else if delimiter.regex != nil {
+		return withPrefixLengths(text.Split(*delimiter.str), 0)
+	}
+
+	// FIXME performance
+	var tokens []string
+	if delimiter.regex != nil {
 		str := text.ToString()
 		for len(str) > 0 {
 			loc := delimiter.regex.FindStringIndex(str)

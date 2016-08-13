@@ -55,3 +55,28 @@ func TestTrimLength(t *testing.T) {
 	check("  h   o  ", 5)
 	check("         ", 0)
 }
+
+func TestSplit(t *testing.T) {
+	check := func(str string, delim string, tokens ...string) {
+		input := ToChars([]byte(str))
+		result := input.Split(delim)
+		if len(result) != len(tokens) {
+			t.Errorf("Invalid Split result for '%s': %d tokens found (expected %d): %s",
+				str, len(result), len(tokens), result)
+		}
+		for idx, token := range tokens {
+			if result[idx].ToString() != token {
+				t.Errorf("Invalid Split result for '%s': %s (expected %s)",
+					str, result[idx].ToString(), token)
+			}
+		}
+	}
+	check("abc:def::", ":", "abc:", "def:", ":")
+	check("abc:def::", "-", "abc:def::")
+	check("abc", "", "a", "b", "c")
+	check("abc", "a", "a", "bc")
+	check("abc", "ab", "ab", "c")
+	check("abc", "abc", "abc")
+	check("abc", "abcd", "abc")
+	check("", "abcd", "")
+}
