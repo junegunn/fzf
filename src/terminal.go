@@ -656,6 +656,17 @@ func trimLeft(runes []rune, width int) ([]rune, int32) {
 	return runes, trimmed
 }
 
+func overflow(runes []rune, max int) bool {
+	l := 0
+	for _, r := range runes {
+		l += runeWidth(r, l)
+		if l > max {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
 	var maxe int
 	for _, offset := range item.offsets {
@@ -668,17 +679,15 @@ func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, c
 	offsets := item.colorOffsets(col2, bold, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
-	fullWidth := displayWidth(text)
-	if fullWidth > maxWidth {
+	if overflow(text, maxWidth) {
 		if t.hscroll {
 			// Stri..
-			matchEndWidth := displayWidth(text[:maxe])
-			if matchEndWidth <= maxWidth-2 {
+			if !overflow(text[:maxe], maxWidth-2) {
 				text, _ = trimRight(text, maxWidth-2)
 				text = append(text, []rune("..")...)
 			} else {
 				// Stri..
-				if matchEndWidth < fullWidth-2 {
+				if overflow(text[maxe:], 2) {
 					text = append(text[:maxe], []rune("..")...)
 				}
 				// ..ri..
