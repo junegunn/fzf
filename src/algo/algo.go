@@ -55,7 +55,7 @@ func evaluateBonus(caseSensitive bool, text util.Chars, pattern []rune, sidx int
 	lenPattern := len(pattern)
 	consecutive := false
 	prevClass := charNonWord
-	for index := 0; index < eidx; index++ {
+	for index := util.Max(0, sidx-1); index < eidx; index++ {
 		char := text.Get(index)
 		var class charClass
 		if unicode.IsLower(char) {

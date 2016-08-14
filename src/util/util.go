@@ -10,14 +10,11 @@ import (
 )
 
 // Max returns the largest integer
-func Max(first int, items ...int) int {
-	max := first
-	for _, item := range items {
-		if item > max {
-			max = item
-		}
+func Max(first int, second int) int {
+	if first >= second {
+		return first
 	}
-	return max
+	return second
 }
 
 // Min returns the smallest integer

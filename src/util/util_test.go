@@ -3,7 +3,7 @@ package util
 import "testing"
 
 func TestMax(t *testing.T) {
-	if Max(-2, 5, 1, 4, 3) != 5 {
+	if Max(-2, 5) != 5 {
 		t.Error("Invalid result")
 	}
 }
