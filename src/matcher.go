@@ -200,7 +200,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 	}
 
 	partialResults := make([][]*Item, numSlices)
-	for _, _ = range slices {
+	for _ = range slices {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}

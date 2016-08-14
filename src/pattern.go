@@ -372,8 +372,8 @@ func (p *Pattern) iter(pfun func(bool, bool, util.Chars, []rune) algo.Result,
 	for _, part := range tokens {
 		prefixLength := int32(part.prefixLength)
 		if res := pfun(caseSensitive, forward, part.text, pattern); res.Start >= 0 {
-			var sidx int32 = res.Start + prefixLength
-			var eidx int32 = res.End + prefixLength
+			sidx := res.Start + prefixLength
+			eidx := res.End + prefixLength
 			return Offset{sidx, eidx, int32(part.trimLength)}, res.Bonus
 		}
 	}

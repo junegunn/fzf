@@ -44,6 +44,7 @@ func buildEmptyRank(index int32) [5]int32 {
 	return [5]int32{0, 0, 0, 0, index}
 }
 
+// Index returns ordinal index of the Item
 func (item *Item) Index() int32 {
 	return item.rank[4]
 }

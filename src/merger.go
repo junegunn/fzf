@@ -2,7 +2,7 @@ package fzf
 
 import "fmt"
 
-// Merger with no data
+// EmptyMerger is a Merger with no data
 var EmptyMerger = NewMerger([][]*Item{}, false, false)
 
 // Merger holds a set of locally sorted lists of items and provides the view of
