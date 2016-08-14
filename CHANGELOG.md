@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.13.4
+------
+- Performance optimization
+    - Memory footprint for ascii string is reduced by 60%
+    - 15 to 20% improvement of query performance
+    - Up to 45% better performance of `--nth` with non-regex delimiters
+- Fixed invalid handling of `hidden` property of `--preview-window`
+
 0.13.3
 ------
 - Fixed duplicate rendering of the last line in preview window
