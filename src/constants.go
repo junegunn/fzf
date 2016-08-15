@@ -15,7 +15,8 @@ const (
 	coordinatorDelayStep time.Duration = 10 * time.Millisecond
 
 	// Reader
-	defaultCommand = `find . -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null | sed s/^..//`
+	defaultCommand   = `find . -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null | sed s/^..//`
+	readerBufferSize = 64 * 1024
 
 	// Terminal
 	initialDelay    = 20 * time.Millisecond

@@ -34,7 +34,7 @@ func (r *Reader) feed(src io.Reader) {
 	if r.delimNil {
 		delim = '\000'
 	}
-	reader := bufio.NewReader(src)
+	reader := bufio.NewReaderSize(src, readerBufferSize)
 	for {
 		// ReadBytes returns err != nil if and only if the returned data does not
 		// end in delim.
