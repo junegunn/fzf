@@ -28,15 +28,10 @@ package fzf
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
 )
-
-func initProcs() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-}
 
 /*
 Reader   -> EvtReadFin
@@ -49,8 +44,6 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 
 // Run starts fzf
 func Run(opts *Options) {
-	initProcs()
-
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
