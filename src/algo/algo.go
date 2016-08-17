@@ -22,13 +22,6 @@ func indexAt(index int, max int, forward bool) int {
 	return max - index - 1
 }
 
-func runeAt(text util.Chars, index int, max int, forward bool) rune {
-	if forward {
-		return text.Get(index)
-	}
-	return text.Get(max - index - 1)
-}
-
 // Result conatins the results of running a match function.
 type Result struct {
 	Start int32
@@ -136,7 +129,7 @@ func FuzzyMatch(caseSensitive bool, forward bool, text util.Chars, pattern []run
 	lenPattern := len(pattern)
 
 	for index := 0; index < lenRunes; index++ {
-		char := runeAt(text, index, lenRunes, forward)
+		char := text.Get(indexAt(index, lenRunes, forward))
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string
 		if !caseSensitive {
@@ -164,7 +157,7 @@ func FuzzyMatch(caseSensitive bool, forward bool, text util.Chars, pattern []run
 	if sidx >= 0 && eidx >= 0 {
 		pidx--
 		for index := eidx - 1; index >= sidx; index-- {
-			char := runeAt(text, index, lenRunes, forward)
+			char := text.Get(indexAt(index, lenRunes, forward))
 			if !caseSensitive {
 				if char >= 'A' && char <= 'Z' {
 					char += 32
@@ -215,7 +208,7 @@ func ExactMatchNaive(caseSensitive bool, forward bool, text util.Chars, pattern 
 
 	pidx := 0
 	for index := 0; index < lenRunes; index++ {
-		char := runeAt(text, index, lenRunes, forward)
+		char := text.Get(indexAt(index, lenRunes, forward))
 		if !caseSensitive {
 			if char >= 'A' && char <= 'Z' {
 				char += 32
