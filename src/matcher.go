@@ -43,7 +43,7 @@ func NewMatcher(patternBuilder func([]rune) *Pattern,
 		tac:            tac,
 		eventBox:       eventBox,
 		reqBox:         util.NewEventBox(),
-		partitions:     runtime.NumCPU(),
+		partitions:     16 * runtime.NumCPU(),
 		mergerCache:    make(map[string]*Merger)}
 }
 
@@ -106,18 +106,19 @@ func (m *Matcher) Loop() {
 }
 
 func (m *Matcher) sliceChunks(chunks []*Chunk) [][]*Chunk {
-	perSlice := len(chunks) / m.partitions
+	partitions := m.partitions
+	perSlice := len(chunks) / partitions
 
-	// No need to parallelize
 	if perSlice == 0 {
-		return [][]*Chunk{chunks}
+		partitions = len(chunks)
+		perSlice = 1
 	}
 
-	slices := make([][]*Chunk, m.partitions)
-	for i := 0; i < m.partitions; i++ {
+	slices := make([][]*Chunk, partitions)
+	for i := 0; i < partitions; i++ {
 		start := i * perSlice
 		end := start + perSlice
-		if i == m.partitions-1 {
+		if i == partitions-1 {
 			end = len(chunks)
 		}
 		slices[i] = chunks[start:end]
