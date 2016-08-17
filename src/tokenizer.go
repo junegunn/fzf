@@ -173,14 +173,6 @@ func joinTokens(tokens []Token) []rune {
 	return ret
 }
 
-func joinTokensAsRunes(tokens []Token) []rune {
-	ret := []rune{}
-	for _, token := range tokens {
-		ret = append(ret, token.text.ToRunes()...)
-	}
-	return ret
-}
-
 // Transform is used to transform the input when --with-nth option is given
 func Transform(tokens []Token, withNth []Range) []Token {
 	transTokens := make([]Token, len(withNth))
@@ -191,7 +183,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				parts = append(parts, util.RunesToChars(joinTokensAsRunes(tokens)))
+				parts = append(parts, util.RunesToChars(joinTokens(tokens)))
 			} else {
 				if idx < 0 {
 					idx += numTokens + 1
