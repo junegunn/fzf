@@ -344,7 +344,7 @@ page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
 
 #### `fzf#wrap`
 
-`fzf#wrap(name string, [opts dict, [fullscreen boolean]])` is a helper
+`fzf#wrap([name string,] [opts dict,] [fullscreen boolean])` is a helper
 function that decorates the options dictionary so that it understands
 `g:fzf_layout`, `g:fzf_action`, and `g:fzf_history_dir` like `:FZF`.
 
