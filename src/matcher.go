@@ -43,7 +43,7 @@ func NewMatcher(patternBuilder func([]rune) *Pattern,
 		tac:            tac,
 		eventBox:       eventBox,
 		reqBox:         util.NewEventBox(),
-		partitions:     16 * runtime.NumCPU(),
+		partitions:     util.Min(8*runtime.NumCPU(), 32),
 		mergerCache:    make(map[string]*Merger)}
 }
 
