@@ -95,6 +95,7 @@ type criterion int
 
 const (
 	byMatchLen criterion = iota
+	byBonus
 	byLength
 	byBegin
 	byEnd
@@ -178,7 +179,7 @@ func defaultOptions() *Options {
 		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
-		Criteria:    []criterion{byMatchLen, byLength},
+		Criteria:    []criterion{byMatchLen, byBonus, byLength},
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
@@ -406,7 +407,7 @@ func parseKeyChords(str string, message string) map[int]string {
 }
 
 func parseTiebreak(str string) []criterion {
-	criteria := []criterion{byMatchLen}
+	criteria := []criterion{byMatchLen, byBonus}
 	hasIndex := false
 	hasLength := false
 	hasBegin := false

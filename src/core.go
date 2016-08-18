@@ -56,16 +56,16 @@ func Run(opts *Options) {
 	eventBox := util.NewEventBox()
 
 	// ANSI code processor
-	ansiProcessor := func(data []byte) (util.Chars, []ansiOffset) {
+	ansiProcessor := func(data []byte) (util.Chars, *[]ansiOffset) {
 		return util.ToChars(data), nil
 	}
-	ansiProcessorRunes := func(data []rune) (util.Chars, []ansiOffset) {
+	ansiProcessorRunes := func(data []rune) (util.Chars, *[]ansiOffset) {
 		return util.RunesToChars(data), nil
 	}
 	if opts.Ansi {
 		if opts.Theme != nil {
 			var state *ansiState
-			ansiProcessor = func(data []byte) (util.Chars, []ansiOffset) {
+			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				trimmed, offsets, newState := extractColor(string(data), state, nil)
 				state = newState
 				return util.RunesToChars([]rune(trimmed)), offsets
@@ -73,12 +73,12 @@ func Run(opts *Options) {
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
-			ansiProcessor = func(data []byte) (util.Chars, []ansiOffset) {
+			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				trimmed, _, _ := extractColor(string(data), nil, nil)
 				return util.RunesToChars([]rune(trimmed)), nil
 			}
 		}
-		ansiProcessorRunes = func(data []rune) (util.Chars, []ansiOffset) {
+		ansiProcessorRunes = func(data []rune) (util.Chars, *[]ansiOffset) {
 			return ansiProcessor([]byte(string(data)))
 		}
 	}
@@ -95,14 +95,13 @@ func Run(opts *Options) {
 			}
 			chars, colors := ansiProcessor(data)
 			return &Item{
+				index:  int32(index),
 				text:   chars,
-				colors: colors,
-				rank:   buildEmptyRank(int32(index))}
+				colors: colors}
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) *Item {
-			chars := util.ToChars(data)
-			tokens := Tokenize(chars, opts.Delimiter)
+			tokens := Tokenize(util.ToChars(data), opts.Delimiter)
 			trans := Transform(tokens, opts.WithNth)
 			if len(header) < opts.HeaderLines {
 				header = append(header, string(joinTokens(trans)))
@@ -111,10 +110,9 @@ func Run(opts *Options) {
 			}
 			textRunes := joinTokens(trans)
 			item := Item{
-				text:     util.RunesToChars(textRunes),
+				index:    int32(index),
 				origText: &data,
-				colors:   nil,
-				rank:     buildEmptyRank(int32(index))}
+				colors:   nil}
 
 			trimmed, colors := ansiProcessorRunes(textRunes)
 			item.text = trimmed
@@ -163,7 +161,7 @@ func Run(opts *Options) {
 			reader := Reader{
 				func(runes []byte) bool {
 					item := chunkList.trans(runes, 0)
-					if item != nil && pattern.MatchItem(item) {
+					if item != nil && pattern.MatchItem(item) != nil {
 						fmt.Println(item.text.ToString())
 						found = true
 					}
@@ -179,7 +177,7 @@ func Run(opts *Options) {
 				chunks:  snapshot,
 				pattern: pattern})
 			for i := 0; i < merger.Length(); i++ {
-				fmt.Println(merger.Get(i).AsString(opts.Ansi))
+				fmt.Println(merger.Get(i).item.AsString(opts.Ansi))
 				found = true
 			}
 		}
@@ -259,7 +257,7 @@ func Run(opts *Options) {
 										fmt.Println()
 									}
 									for i := 0; i < count; i++ {
-										fmt.Println(val.Get(i).AsString(opts.Ansi))
+										fmt.Println(val.Get(i).item.AsString(opts.Ansi))
 									}
 									if count > 0 {
 										os.Exit(exitOk)

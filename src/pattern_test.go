@@ -83,7 +83,7 @@ func TestEqual(t *testing.T) {
 	clearPatternCache()
 	pattern := BuildPattern(true, true, CaseSmart, true, []Range{}, Delimiter{}, []rune("^AbC$"))
 
-	match := func(str string, sidxExpected int32, eidxExpected int32) {
+	match := func(str string, sidxExpected int, eidxExpected int) {
 		res := algo.EqualMatch(
 			pattern.caseSensitive, pattern.forward, util.RunesToChars([]rune(str)), pattern.termSets[0][0].text)
 		if res.Start != sidxExpected || res.End != eidxExpected {
@@ -133,10 +133,10 @@ func TestOrigTextAndTransformed(t *testing.T) {
 				transformed: trans},
 		}
 		pattern.extended = extended
-		matches := pattern.matchChunk(&chunk)
-		if matches[0].text.ToString() != "junegunn" || string(*matches[0].origText) != "junegunn.choi" ||
+		matches := pattern.matchChunk(&chunk, nil) // No cache
+		if matches[0].item.text.ToString() != "junegunn" || string(*matches[0].item.origText) != "junegunn.choi" ||
 			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 ||
-			!reflect.DeepEqual(matches[0].transformed, trans) {
+			!reflect.DeepEqual(matches[0].item.transformed, trans) {
 			t.Error("Invalid match result", matches)
 		}
 	}

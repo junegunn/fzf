@@ -4,6 +4,7 @@ package util
 import "C"
 
 import (
+	"math"
 	"os"
 	"os/exec"
 	"time"
@@ -61,6 +62,15 @@ func Constrain(val int, min int, max int) int {
 		return max
 	}
 	return val
+}
+
+func AsUint16(val int) uint16 {
+	if val > math.MaxUint16 {
+		return math.MaxUint16
+	} else if val < 0 {
+		return 0
+	}
+	return uint16(val)
 }
 
 // DurWithin limits the given time.Duration with the upper and lower bounds

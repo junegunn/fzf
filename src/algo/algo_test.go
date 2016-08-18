@@ -7,7 +7,7 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-func assertMatch(t *testing.T, fun func(bool, bool, util.Chars, []rune) Result, caseSensitive, forward bool, input, pattern string, sidx int32, eidx int32, bonus int32) {
+func assertMatch(t *testing.T, fun func(bool, bool, util.Chars, []rune) Result, caseSensitive, forward bool, input, pattern string, sidx int, eidx int, bonus int) {
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}

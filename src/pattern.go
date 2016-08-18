@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/junegunn/fzf/src/algo"
@@ -235,9 +234,7 @@ func (p *Pattern) CacheKey() string {
 }
 
 // Match returns the list of matches Items in the given Chunk
-func (p *Pattern) Match(chunk *Chunk) []*Item {
-	space := chunk
-
+func (p *Pattern) Match(chunk *Chunk) []*Result {
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
 	if p.cacheable {
@@ -246,7 +243,8 @@ func (p *Pattern) Match(chunk *Chunk) []*Item {
 		}
 	}
 
-	// ChunkCache: Prefix/suffix match
+	// Prefix/suffix cache
+	var space []*Result
 Loop:
 	for idx := 1; idx < len(cacheKey); idx++ {
 		// [---------| ] | [ |---------]
@@ -256,14 +254,13 @@ Loop:
 		suffix := cacheKey[idx:]
 		for _, substr := range [2]*string{&prefix, &suffix} {
 			if cached, found := _cache.Find(chunk, *substr); found {
-				cachedChunk := Chunk(cached)
-				space = &cachedChunk
+				space = cached
 				break Loop
 			}
 		}
 	}
 
-	matches := p.matchChunk(space)
+	matches := p.matchChunk(chunk, space)
 
 	if p.cacheable {
 		_cache.Add(chunk, cacheKey, matches)
@@ -271,20 +268,19 @@ Loop:
 	return matches
 }
 
-func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
-	matches := []*Item{}
-	if !p.extended {
+func (p *Pattern) matchChunk(chunk *Chunk, space []*Result) []*Result {
+	matches := []*Result{}
+
+	if space == nil {
 		for _, item := range *chunk {
-			offset, bonus := p.basicMatch(item)
-			if sidx := offset[0]; sidx >= 0 {
-				matches = append(matches,
-					dupItem(item, []Offset{offset}, bonus))
+			if match := p.MatchItem(item); match != nil {
+				matches = append(matches, match)
 			}
 		}
 	} else {
-		for _, item := range *chunk {
-			if offsets, bonus := p.extendedMatch(item); len(offsets) == len(p.termSets) {
-				matches = append(matches, dupItem(item, offsets, bonus))
+		for _, result := range space {
+			if match := p.MatchItem(result.item); match != nil {
+				matches = append(matches, match)
 			}
 		}
 	}
@@ -292,29 +288,21 @@ func (p *Pattern) matchChunk(chunk *Chunk) []*Item {
 }
 
 // MatchItem returns true if the Item is a match
-func (p *Pattern) MatchItem(item *Item) bool {
-	if !p.extended {
-		offset, _ := p.basicMatch(item)
-		sidx := offset[0]
-		return sidx >= 0
+func (p *Pattern) MatchItem(item *Item) *Result {
+	if p.extended {
+		if offsets, bonus, trimLen := p.extendedMatch(item); len(offsets) == len(p.termSets) {
+			return buildResult(item, offsets, bonus, trimLen)
+		}
+		return nil
 	}
-	offsets, _ := p.extendedMatch(item)
-	return len(offsets) == len(p.termSets)
+	offset, bonus, trimLen := p.basicMatch(item)
+	if sidx := offset[0]; sidx >= 0 {
+		return buildResult(item, []Offset{offset}, bonus, trimLen)
+	}
+	return nil
 }
 
-func dupItem(item *Item, offsets []Offset, bonus int32) *Item {
-	sort.Sort(ByOrder(offsets))
-	return &Item{
-		text:        item.text,
-		origText:    item.origText,
-		transformed: item.transformed,
-		offsets:     offsets,
-		bonus:       bonus,
-		colors:      item.colors,
-		rank:        buildEmptyRank(item.Index())}
-}
-
-func (p *Pattern) basicMatch(item *Item) (Offset, int32) {
+func (p *Pattern) basicMatch(item *Item) (Offset, int, int) {
 	input := p.prepareInput(item)
 	if p.fuzzy {
 		return p.iter(algo.FuzzyMatch, input, p.caseSensitive, p.forward, p.text)
@@ -322,33 +310,39 @@ func (p *Pattern) basicMatch(item *Item) (Offset, int32) {
 	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.forward, p.text)
 }
 
-func (p *Pattern) extendedMatch(item *Item) ([]Offset, int32) {
+func (p *Pattern) extendedMatch(item *Item) ([]Offset, int, int) {
 	input := p.prepareInput(item)
 	offsets := []Offset{}
-	var totalBonus int32
+	var totalBonus int
+	var totalTrimLen int
 	for _, termSet := range p.termSets {
-		var offset *Offset
-		var bonus int32
+		var offset Offset
+		var bonus int
+		var trimLen int
+		matched := false
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
-			off, pen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text)
+			off, pen, tLen := p.iter(pfun, input, term.caseSensitive, p.forward, term.text)
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
 				}
-				offset, bonus = &off, pen
+				offset, bonus, trimLen = off, pen, tLen
+				matched = true
 				break
 			} else if term.inv {
-				offset, bonus = &Offset{0, 0, 0}, 0
+				offset, bonus, trimLen = Offset{0, 0}, 0, 0
+				matched = true
 				continue
 			}
 		}
-		if offset != nil {
-			offsets = append(offsets, *offset)
+		if matched {
+			offsets = append(offsets, offset)
 			totalBonus += bonus
+			totalTrimLen += trimLen
 		}
 	}
-	return offsets, totalBonus
+	return offsets, totalBonus, totalTrimLen
 }
 
 func (p *Pattern) prepareInput(item *Item) []Token {
@@ -357,26 +351,24 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 	}
 
 	var ret []Token
-	if len(p.nth) > 0 {
+	if len(p.nth) == 0 {
+		ret = []Token{Token{text: &item.text, prefixLength: 0, trimLength: int32(item.text.TrimLength())}}
+	} else {
 		tokens := Tokenize(item.text, p.delimiter)
 		ret = Transform(tokens, p.nth)
-	} else {
-		ret = []Token{Token{text: item.text, prefixLength: 0, trimLength: item.text.TrimLength()}}
 	}
 	item.transformed = ret
 	return ret
 }
 
 func (p *Pattern) iter(pfun func(bool, bool, util.Chars, []rune) algo.Result,
-	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (Offset, int32) {
+	tokens []Token, caseSensitive bool, forward bool, pattern []rune) (Offset, int, int) {
 	for _, part := range tokens {
-		prefixLength := int32(part.prefixLength)
-		if res := pfun(caseSensitive, forward, part.text, pattern); res.Start >= 0 {
-			sidx := res.Start + prefixLength
-			eidx := res.End + prefixLength
-			return Offset{sidx, eidx, int32(part.trimLength)}, res.Bonus
+		if res := pfun(caseSensitive, forward, *part.text, pattern); res.Start >= 0 {
+			sidx := int32(res.Start) + part.prefixLength
+			eidx := int32(res.End) + part.prefixLength
+			return Offset{sidx, eidx}, res.Bonus, int(part.trimLength)
 		}
 	}
-	// TODO: math.MaxUint16
-	return Offset{-1, -1, -1}, 0.0
+	return Offset{-1, -1}, 0, -1
 }

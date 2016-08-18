@@ -15,7 +15,7 @@ func assert(t *testing.T, cond bool, msg ...string) {
 	}
 }
 
-func randItem() *Item {
+func randResult() *Result {
 	str := fmt.Sprintf("%d", rand.Uint32())
 	offsets := make([]Offset, rand.Int()%3)
 	for idx := range offsets {
@@ -23,10 +23,10 @@ func randItem() *Item {
 		eidx := sidx + int32(rand.Uint32()%20)
 		offsets[idx] = Offset{sidx, eidx}
 	}
-	return &Item{
-		text:    util.RunesToChars([]rune(str)),
-		rank:    buildEmptyRank(rand.Int31()),
-		offsets: offsets}
+	return &Result{
+		item:    &Item{text: util.RunesToChars([]rune(str))},
+		offsets: offsets,
+		rank:    rank{index: rand.Int31()}}
 }
 
 func TestEmptyMerger(t *testing.T) {
@@ -36,23 +36,23 @@ func TestEmptyMerger(t *testing.T) {
 	assert(t, len(EmptyMerger.merged) == 0, "Invalid merged list")
 }
 
-func buildLists(partiallySorted bool) ([][]*Item, []*Item) {
+func buildLists(partiallySorted bool) ([][]*Result, []*Result) {
 	numLists := 4
-	lists := make([][]*Item, numLists)
+	lists := make([][]*Result, numLists)
 	cnt := 0
 	for i := 0; i < numLists; i++ {
-		numItems := rand.Int() % 20
-		cnt += numItems
-		lists[i] = make([]*Item, numItems)
-		for j := 0; j < numItems; j++ {
-			item := randItem()
+		numResults := rand.Int() % 20
+		cnt += numResults
+		lists[i] = make([]*Result, numResults)
+		for j := 0; j < numResults; j++ {
+			item := randResult()
 			lists[i][j] = item
 		}
 		if partiallySorted {
 			sort.Sort(ByRelevance(lists[i]))
 		}
 	}
-	items := []*Item{}
+	items := []*Result{}
 	for _, list := range lists {
 		items = append(items, list...)
 	}

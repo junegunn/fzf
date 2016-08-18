@@ -18,9 +18,9 @@ type Range struct {
 
 // Token contains the tokenized part of the strings and its prefix length
 type Token struct {
-	text         util.Chars
-	prefixLength int
-	trimLength   int
+	text         *util.Chars
+	prefixLength int32
+	trimLength   int32
 }
 
 // Delimiter for tokenizing the input
@@ -80,9 +80,8 @@ func withPrefixLengths(tokens []util.Chars, begin int) []Token {
 
 	prefixLength := begin
 	for idx, token := range tokens {
-		// Need to define a new local variable instead of the reused token to take
-		// the pointer to it
-		ret[idx] = Token{token, prefixLength, token.TrimLength()}
+		// NOTE: &tokens[idx] instead of &tokens
+		ret[idx] = Token{&tokens[idx], int32(prefixLength), int32(token.TrimLength())}
 		prefixLength += token.Length()
 	}
 	return ret
@@ -178,12 +177,13 @@ func Transform(tokens []Token, withNth []Range) []Token {
 	transTokens := make([]Token, len(withNth))
 	numTokens := len(tokens)
 	for idx, r := range withNth {
-		parts := []util.Chars{}
+		parts := []*util.Chars{}
 		minIdx := 0
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				parts = append(parts, util.RunesToChars(joinTokens(tokens)))
+				chars := util.RunesToChars(joinTokens(tokens))
+				parts = append(parts, &chars)
 			} else {
 				if idx < 0 {
 					idx += numTokens + 1
@@ -227,7 +227,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		case 0:
 			merged = util.RunesToChars([]rune{})
 		case 1:
-			merged = parts[0]
+			merged = *parts[0]
 		default:
 			runes := []rune{}
 			for _, part := range parts {
@@ -236,13 +236,13 @@ func Transform(tokens []Token, withNth []Range) []Token {
 			merged = util.RunesToChars(runes)
 		}
 
-		var prefixLength int
+		var prefixLength int32
 		if minIdx < numTokens {
 			prefixLength = tokens[minIdx].prefixLength
 		} else {
 			prefixLength = 0
 		}
-		transTokens[idx] = Token{merged, prefixLength, merged.TrimLength()}
+		transTokens[idx] = Token{&merged, prefixLength, int32(merged.TrimLength())}
 	}
 	return transTokens
 }

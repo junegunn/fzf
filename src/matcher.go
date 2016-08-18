@@ -128,7 +128,7 @@ func (m *Matcher) sliceChunks(chunks []*Chunk) [][]*Chunk {
 
 type partialResult struct {
 	index   int
-	matches []*Item
+	matches []*Result
 }
 
 func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
@@ -155,14 +155,20 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		waitGroup.Add(1)
 		go func(idx int, chunks []*Chunk) {
 			defer func() { waitGroup.Done() }()
-			sliceMatches := []*Item{}
-			for _, chunk := range chunks {
+			count := 0
+			allMatches := make([][]*Result, len(chunks))
+			for idx, chunk := range chunks {
 				matches := request.pattern.Match(chunk)
-				sliceMatches = append(sliceMatches, matches...)
+				allMatches[idx] = matches
+				count += len(matches)
 				if cancelled.Get() {
 					return
 				}
 				countChan <- len(matches)
+			}
+			sliceMatches := make([]*Result, 0, count)
+			for _, matches := range allMatches {
+				sliceMatches = append(sliceMatches, matches...)
 			}
 			if m.sort {
 				if m.tac {
@@ -200,7 +206,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		}
 	}
 
-	partialResults := make([][]*Item, numSlices)
+	partialResults := make([][]*Result, numSlices)
 	for _ = range slices {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches

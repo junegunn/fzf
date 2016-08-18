@@ -77,7 +77,7 @@ type Terminal struct {
 
 type selectedItem struct {
 	at   time.Time
-	text *string
+	text string
 }
 
 type byTimeOrder []selectedItem
@@ -357,7 +357,7 @@ func (t *Terminal) output() bool {
 		}
 	} else {
 		for _, sel := range t.sortSelected() {
-			fmt.Println(*sel.text)
+			fmt.Println(sel.text)
 		}
 	}
 	return found
@@ -565,11 +565,10 @@ func (t *Terminal) printHeader() {
 		state = newState
 		item := &Item{
 			text:   util.RunesToChars([]rune(trimmed)),
-			colors: colors,
-			rank:   buildEmptyRank(0)}
+			colors: colors}
 
 		t.move(line, 2, true)
-		t.printHighlighted(item, false, C.ColHeader, 0, false)
+		t.printHighlighted(&Result{item: item}, false, C.ColHeader, 0, false)
 	}
 }
 
@@ -590,7 +589,8 @@ func (t *Terminal) printList() {
 	}
 }
 
-func (t *Terminal) printItem(item *Item, i int, current bool) {
+func (t *Terminal) printItem(result *Result, i int, current bool) {
+	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := " "
 	if t.jumping != jumpDisabled {
@@ -609,14 +609,14 @@ func (t *Terminal) printItem(item *Item, i int, current bool) {
 		} else {
 			t.window.CPrint(C.ColCurrent, true, " ")
 		}
-		t.printHighlighted(item, true, C.ColCurrent, C.ColCurrentMatch, true)
+		t.printHighlighted(result, true, C.ColCurrent, C.ColCurrentMatch, true)
 	} else {
 		if selected {
 			t.window.CPrint(C.ColSelected, true, ">")
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(item, false, 0, C.ColMatch, false)
+		t.printHighlighted(result, false, 0, C.ColMatch, false)
 	}
 }
 
@@ -667,16 +667,17 @@ func overflow(runes []rune, max int) bool {
 	return false
 }
 
-func (t *Terminal) printHighlighted(item *Item, bold bool, col1 int, col2 int, current bool) {
+func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 int, current bool) {
+	item := result.item
 	var maxe int
-	for _, offset := range item.offsets {
+	for _, offset := range result.offsets {
 		maxe = util.Max(maxe, int(offset[1]))
 	}
 
 	// Overflow
 	text := make([]rune, item.text.Length())
 	copy(text, item.text.ToRunes())
-	offsets := item.colorOffsets(col2, bold, current)
+	offsets := result.colorOffsets(col2, bold, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	if overflow(text, maxWidth) {
@@ -866,7 +867,7 @@ func (t *Terminal) isPreviewEnabled() bool {
 }
 
 func (t *Terminal) current() string {
-	return t.merger.Get(t.cy).AsString(t.ansi)
+	return t.merger.Get(t.cy).item.AsString(t.ansi)
 }
 
 // Loop is called to start Terminal I/O
@@ -1037,13 +1038,13 @@ func (t *Terminal) Loop() {
 		}
 		selectItem := func(item *Item) bool {
 			if _, found := t.selected[item.Index()]; !found {
-				t.selected[item.Index()] = selectedItem{time.Now(), item.StringPtr(t.ansi)}
+				t.selected[item.Index()] = selectedItem{time.Now(), item.AsString(t.ansi)}
 				return true
 			}
 			return false
 		}
 		toggleY := func(y int) {
-			item := t.merger.Get(y)
+			item := t.merger.Get(y).item
 			if !selectItem(item) {
 				delete(t.selected, item.Index())
 			}
@@ -1068,14 +1069,14 @@ func (t *Terminal) Loop() {
 			case actIgnore:
 			case actExecute:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
-					item := t.merger.Get(t.cy)
+					item := t.merger.Get(t.cy).item
 					t.executeCommand(t.execmap[mapkey], quoteEntry(item.AsString(t.ansi)))
 				}
 			case actExecuteMulti:
 				if len(t.selected) > 0 {
 					sels := make([]string, len(t.selected))
 					for i, sel := range t.sortSelected() {
-						sels[i] = quoteEntry(*sel.text)
+						sels[i] = quoteEntry(sel.text)
 					}
 					t.executeCommand(t.execmap[mapkey], strings.Join(sels, " "))
 				} else {
@@ -1137,7 +1138,7 @@ func (t *Terminal) Loop() {
 			case actSelectAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
-						item := t.merger.Get(i)
+						item := t.merger.Get(i).item
 						selectItem(item)
 					}
 					req(reqList, reqInfo)
