@@ -211,7 +211,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-	return NewMerger(partialResults, m.sort, m.tac), false
+	return NewMerger(pattern, partialResults, m.sort, m.tac), false
 }
 
 // Reset is called to interrupt/signal the ongoing search

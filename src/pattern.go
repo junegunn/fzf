@@ -273,13 +273,13 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []*Result) []*Result {
 
 	if space == nil {
 		for _, item := range *chunk {
-			if match := p.MatchItem(item); match != nil {
+			if match, _ := p.MatchItem(item); match != nil {
 				matches = append(matches, match)
 			}
 		}
 	} else {
 		for _, result := range space {
-			if match := p.MatchItem(result.item); match != nil {
+			if match, _ := p.MatchItem(result.item); match != nil {
 				matches = append(matches, match)
 			}
 		}
@@ -288,18 +288,19 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []*Result) []*Result {
 }
 
 // MatchItem returns true if the Item is a match
-func (p *Pattern) MatchItem(item *Item) *Result {
+func (p *Pattern) MatchItem(item *Item) (*Result, []Offset) {
 	if p.extended {
 		if offsets, bonus, trimLen := p.extendedMatch(item); len(offsets) == len(p.termSets) {
-			return buildResult(item, offsets, bonus, trimLen)
+			return buildResult(item, offsets, bonus, trimLen), offsets
 		}
-		return nil
+		return nil, nil
 	}
 	offset, bonus, trimLen := p.basicMatch(item)
 	if sidx := offset[0]; sidx >= 0 {
-		return buildResult(item, []Offset{offset}, bonus, trimLen)
+		offsets := []Offset{offset}
+		return buildResult(item, offsets, bonus, trimLen), offsets
 	}
-	return nil
+	return nil, nil
 }
 
 func (p *Pattern) basicMatch(item *Item) (Offset, int, int) {

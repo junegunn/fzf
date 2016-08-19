@@ -3,11 +3,12 @@ package fzf
 import "fmt"
 
 // EmptyMerger is a Merger with no data
-var EmptyMerger = NewMerger([][]*Result{}, false, false)
+var EmptyMerger = NewMerger(nil, [][]*Result{}, false, false)
 
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
 type Merger struct {
+	pattern *Pattern
 	lists   [][]*Result
 	merged  []*Result
 	chunks  *[]*Chunk
@@ -22,9 +23,10 @@ type Merger struct {
 // original order
 func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 	mg := Merger{
-		chunks: chunks,
-		tac:    tac,
-		count:  0}
+		pattern: nil,
+		chunks:  chunks,
+		tac:     tac,
+		count:   0}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += len(*chunk)
@@ -33,8 +35,9 @@ func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 }
 
 // NewMerger returns a new Merger
-func NewMerger(lists [][]*Result, sorted bool, tac bool) *Merger {
+func NewMerger(pattern *Pattern, lists [][]*Result, sorted bool, tac bool) *Merger {
 	mg := Merger{
+		pattern: pattern,
 		lists:   lists,
 		merged:  []*Result{},
 		chunks:  nil,

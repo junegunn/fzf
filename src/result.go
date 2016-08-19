@@ -19,15 +19,14 @@ type colorOffset struct {
 }
 
 type rank struct {
-	index int32
 	// byMatchLen, byBonus, ...
 	points [5]uint16
+	index  int32
 }
 
 type Result struct {
-	item    *Item
-	offsets []Offset
-	rank    rank
+	item *Item
+	rank rank
 }
 
 func buildResult(item *Item, offsets []Offset, bonus int, trimLen int) *Result {
@@ -35,7 +34,7 @@ func buildResult(item *Item, offsets []Offset, bonus int, trimLen int) *Result {
 		sort.Sort(ByOrder(offsets))
 	}
 
-	result := Result{item: item, offsets: offsets, rank: rank{index: item.index}}
+	result := Result{item: item, rank: rank{index: item.index}}
 
 	matchlen := 0
 	prevEnd := 0
@@ -110,12 +109,12 @@ func minRank() rank {
 	return rank{index: 0, points: [5]uint16{0, math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(color int, bold bool, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, color int, bold bool, current bool) []colorOffset {
 	itemColors := result.item.Colors()
 
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
-		for _, off := range result.offsets {
+		for _, off := range matchOffsets {
 
 			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, bold: bold})
 		}
@@ -124,7 +123,7 @@ func (result *Result) colorOffsets(color int, bold bool, current bool) []colorOf
 
 	// Find max column
 	var maxCol int32
-	for _, off := range result.offsets {
+	for _, off := range matchOffsets {
 		if off[1] > maxCol {
 			maxCol = off[1]
 		}
@@ -142,7 +141,7 @@ func (result *Result) colorOffsets(color int, bold bool, current bool) []colorOf
 		}
 	}
 
-	for _, off := range result.offsets {
+	for _, off := range matchOffsets {
 		for i := off[0]; i < off[1]; i++ {
 			cols[i] = -1
 		}

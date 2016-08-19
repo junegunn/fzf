@@ -669,15 +669,19 @@ func overflow(runes []rune, max int) bool {
 
 func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 int, current bool) {
 	item := result.item
-	var maxe int
-	for _, offset := range result.offsets {
-		maxe = util.Max(maxe, int(offset[1]))
-	}
 
 	// Overflow
 	text := make([]rune, item.text.Length())
 	copy(text, item.text.ToRunes())
-	offsets := result.colorOffsets(col2, bold, current)
+	matchOffsets := []Offset{}
+	if t.merger.pattern != nil {
+		_, matchOffsets = t.merger.pattern.MatchItem(item)
+	}
+	var maxe int
+	for _, offset := range matchOffsets {
+		maxe = util.Max(maxe, int(offset[1]))
+	}
+	offsets := result.colorOffsets(matchOffsets, col2, bold, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	if overflow(text, maxWidth) {

@@ -161,9 +161,11 @@ func Run(opts *Options) {
 			reader := Reader{
 				func(runes []byte) bool {
 					item := chunkList.trans(runes, 0)
-					if item != nil && pattern.MatchItem(item) != nil {
-						fmt.Println(item.text.ToString())
-						found = true
+					if item != nil {
+						if result, _ := pattern.MatchItem(item); result != nil {
+							fmt.Println(item.text.ToString())
+							found = true
+						}
 					}
 					return false
 				}, eventBox, opts.ReadZero}

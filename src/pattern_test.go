@@ -135,9 +135,15 @@ func TestOrigTextAndTransformed(t *testing.T) {
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk, nil) // No cache
 		if matches[0].item.text.ToString() != "junegunn" || string(*matches[0].item.origText) != "junegunn.choi" ||
-			matches[0].offsets[0][0] != 0 || matches[0].offsets[0][1] != 5 ||
 			!reflect.DeepEqual(matches[0].item.transformed, trans) {
 			t.Error("Invalid match result", matches)
+		}
+
+		match, offsets := pattern.MatchItem(chunk[0])
+		if match.item.text.ToString() != "junegunn" || string(*match.item.origText) != "junegunn.choi" ||
+			offsets[0][0] != 0 || offsets[0][1] != 5 ||
+			!reflect.DeepEqual(match.item.transformed, trans) {
+			t.Error("Invalid match result", match)
 		}
 	}
 }
