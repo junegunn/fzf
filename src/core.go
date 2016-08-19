@@ -143,7 +143,7 @@ func Run(opts *Options) {
 	}
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(
-			opts.Fuzzy, opts.Extended, opts.Case, forward,
+			opts.Fuzzy, opts.Extended, opts.Case, forward, opts.Filter == nil,
 			opts.Nth, opts.Delimiter, runes)
 	}
 	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox)

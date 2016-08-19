@@ -75,7 +75,7 @@ func clearChunkCache() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
-	nth []Range, delimiter Delimiter, runes []rune) *Pattern {
+	cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
 	if extended {
@@ -89,7 +89,7 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 		return cached
 	}
 
-	caseSensitive, cacheable := true, true
+	caseSensitive := true
 	termSets := []termSet{}
 
 	if extended {
@@ -99,7 +99,7 @@ func BuildPattern(fuzzy bool, extended bool, caseMode Case, forward bool,
 			for idx, term := range termSet {
 				// If the query contains inverse search terms or OR operators,
 				// we cannot cache the search scope
-				if idx > 0 || term.inv {
+				if !cacheable || idx > 0 || term.inv {
 					cacheable = false
 					break Loop
 				}
