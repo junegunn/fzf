@@ -166,6 +166,7 @@ function! fzf#wrap(...)
     endif
     let args[tidx] = arg
     let tidx += 1
+    unlet arg
   endfor
   let [name, opts, bang] = args
 
