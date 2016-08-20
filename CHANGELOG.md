@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.13.5
+------
+- Memory and performance optimization
+    - Up to 2x performance with half the amount of memory
+
 0.13.4
 ------
 - Performance optimization

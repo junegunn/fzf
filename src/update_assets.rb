@@ -2,6 +2,7 @@
 
 # http://www.rubydoc.info/github/rest-client/rest-client/RestClient
 require 'rest_client'
+require 'json'
 
 if ARGV.length < 3
   puts "usage: #$0 <token> <version> <files...>"
