@@ -11,18 +11,18 @@ RUN cd / && curl \
     https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | \
     tar -xz && mv go go1.4
 
-# Install Go 1.5
+# Install Go 1.7
 RUN cd / && curl \
-    https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz | \
-    tar -xz && mv go go1.5
+    https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz | \
+    tar -xz && mv go go1.7
 
 # Install RPMs for building static 32-bit binary
-RUN curl ftp://ftp.pbone.net/mirror/ftp.centos.org/6.7/os/i386/Packages/ncurses-static-5.7-4.20090207.el6.i686.rpm -o rpm && rpm -i rpm && \
-    curl ftp://ftp.pbone.net/mirror/ftp.centos.org/6.7/os/i386/Packages/gpm-static-1.20.6-12.el6.i686.rpm -o rpm && rpm -i rpm
+RUN curl ftp://ftp.pbone.net/mirror/ftp.centos.org/6.8/os/i386/Packages/ncurses-static-5.7-4.20090207.el6.i686.rpm -o rpm && rpm -i rpm && \
+    curl ftp://ftp.pbone.net/mirror/ftp.centos.org/6.8/os/i386/Packages/gpm-static-1.20.6-12.el6.i686.rpm -o rpm && rpm -i rpm
 
 ENV GOROOT_BOOTSTRAP /go1.4
-ENV GOROOT /go1.5
-ENV PATH /go1.5/bin:$PATH
+ENV GOROOT /go1.7
+ENV PATH /go1.7/bin:$PATH
 
 # For i386 build
 RUN cd $GOROOT/src && GOARCH=386 ./make.bash
