@@ -276,10 +276,10 @@ function! s:fzf_tmux(dict)
     if s:present(a:dict, o)
       let spec = a:dict[o]
       if (o == 'up' || o == 'down') && spec[0] == '~'
-        let size = '-'.o[0].s:calc_size(&lines, spec[1:], a:dict)
+        let size = '-'.o[0].s:calc_size(&lines, spec, a:dict)
       else
         " Legacy boolean option
-        let size = '-'.o[0].(spec == 1 ? '' : spec)
+        let size = '-'.o[0].(spec == 1 ? '' : substitute(spec, '^\~', '', ''))
       endif
       break
     endif
@@ -375,10 +375,11 @@ function! s:execute_tmux(dict, command, temps) abort
 endfunction
 
 function! s:calc_size(max, val, dict)
-  if a:val =~ '%$'
-    let size = a:max * str2nr(a:val[:-2]) / 100
+  let val = substitute(a:val, '^\~', '', '')
+  if val =~ '%$'
+    let size = a:max * str2nr(val[:-2]) / 100
   else
-    let size = min([a:max, str2nr(a:val)])
+    let size = min([a:max, str2nr(val)])
   endif
 
   let srcsz = -1
@@ -409,7 +410,7 @@ function! s:split(dict)
       if !empty(val)
         let [cmd, resz, max] = triple
         if (dir == 'up' || dir == 'down') && val[0] == '~'
-          let sz = s:calc_size(max, val[1:], a:dict)
+          let sz = s:calc_size(max, val, a:dict)
         else
           let sz = s:calc_size(max, val, {})
         endif
