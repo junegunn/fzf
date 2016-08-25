@@ -431,9 +431,10 @@ function! s:split(dict)
 endfunction
 
 function! s:execute_term(dict, command, temps) abort
+  let winres = [winrestcmd(), &lines, winnr('$')]
   let [ppos, winopts] = s:split(a:dict)
   let fzf = { 'buf': bufnr('%'), 'ppos': ppos, 'dict': a:dict, 'temps': a:temps,
-            \ 'winopts': winopts, 'command': a:command }
+            \ 'winopts': winopts, 'command': a:command, 'winres': winres }
   function! fzf.switch_back(inplace)
     if a:inplace && bufnr('') == self.buf
       " FIXME: Can't re-enter normal mode from terminal mode
@@ -463,6 +464,10 @@ function! s:execute_term(dict, command, temps) abort
 
     if bufexists(self.buf)
       execute 'bd!' self.buf
+    endif
+
+    if self.winres[1] >= &lines && self.winres[2] == winnr('$')
+      execute self.winres[0].self.winres[0]
     endif
 
     if !s:exit_handler(a:code, self.command, 1)
