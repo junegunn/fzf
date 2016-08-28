@@ -467,7 +467,7 @@ function! s:execute_term(dict, command, temps) abort
       execute 'bd!' self.buf
     endif
 
-    if &lines <= self.lines && &columns <= self.columns && s:getpos() == self.ppos
+    if &lines == self.lines && &columns == self.columns && s:getpos() == self.ppos
       execute self.winrest
     endif
 
