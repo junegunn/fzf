@@ -161,14 +161,14 @@ done
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" > $argsf
-  TMUX='' tmux set-window-option synchronize-panes off \;\
+  tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
     split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap \
     > /dev/null 2>&1
 else
   mkfifo $fifo1
   cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" > $argsf
-  TMUX='' tmux set-window-option synchronize-panes off \;\
+  tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
     split-window $opt "$envs bash $argsf" $swap \
     > /dev/null 2>&1
