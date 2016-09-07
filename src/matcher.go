@@ -26,6 +26,7 @@ type Matcher struct {
 	eventBox       *util.EventBox
 	reqBox         *util.EventBox
 	partitions     int
+	slab           []*util.Slab
 	mergerCache    map[string]*Merger
 }
 
@@ -37,13 +38,15 @@ const (
 // NewMatcher returns a new Matcher
 func NewMatcher(patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox) *Matcher {
+	partitions := util.Min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
 	return &Matcher{
 		patternBuilder: patternBuilder,
 		sort:           sort,
 		tac:            tac,
 		eventBox:       eventBox,
 		reqBox:         util.NewEventBox(),
-		partitions:     util.Min(8*runtime.NumCPU(), 32),
+		partitions:     partitions,
+		slab:           make([]*util.Slab, partitions),
 		mergerCache:    make(map[string]*Merger)}
 }
 
@@ -153,12 +156,15 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 
 	for idx, chunks := range slices {
 		waitGroup.Add(1)
-		go func(idx int, chunks []*Chunk) {
+		if m.slab[idx] == nil {
+			m.slab[idx] = util.MakeSlab(slab16Size, slab32Size)
+		}
+		go func(idx int, slab *util.Slab, chunks []*Chunk) {
 			defer func() { waitGroup.Done() }()
 			count := 0
 			allMatches := make([][]*Result, len(chunks))
 			for idx, chunk := range chunks {
-				matches := request.pattern.Match(chunk)
+				matches := request.pattern.Match(chunk, slab)
 				allMatches[idx] = matches
 				count += len(matches)
 				if cancelled.Get() {
@@ -178,7 +184,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 				}
 			}
 			resultChan <- partialResult{idx, sliceMatches}
-		}(idx, chunks)
+		}(idx, m.slab[idx], chunks)
 	}
 
 	wait := func() bool {

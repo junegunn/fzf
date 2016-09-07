@@ -61,6 +61,23 @@ make install
 make linux
 ```
 
+Test
+----
+
+Unit tests can be run with `make test`. Integration tests are written in Ruby
+script that should be run on tmux.
+
+```sh
+# Unit tests
+make test
+
+# Install the executable to ../bin directory
+make install
+
+# Integration tests
+ruby ../test/test_go.rb
+```
+
 Third-party libraries used
 --------------------------
 

@@ -19,8 +19,7 @@ type colorOffset struct {
 }
 
 type rank struct {
-	// byMatchLen, byBonus, ...
-	points [5]uint16
+	points [4]uint16
 	index  int32
 }
 
@@ -29,66 +28,49 @@ type Result struct {
 	rank rank
 }
 
-func buildResult(item *Item, offsets []Offset, bonus int, trimLen int) *Result {
+func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 	if len(offsets) > 1 {
 		sort.Sort(ByOrder(offsets))
 	}
 
 	result := Result{item: item, rank: rank{index: item.index}}
-
-	matchlen := 0
-	prevEnd := 0
-	minBegin := math.MaxInt32
 	numChars := item.text.Length()
+	minBegin := math.MaxUint16
+	maxEnd := 0
+	validOffsetFound := false
 	for _, offset := range offsets {
-		begin := int(offset[0])
-		end := int(offset[1])
-		if prevEnd > begin {
-			begin = prevEnd
-		}
-		if end > prevEnd {
-			prevEnd = end
-		}
-		if end > begin {
-			if begin < minBegin {
-				minBegin = begin
-			}
-			matchlen += end - begin
+		b, e := int(offset[0]), int(offset[1])
+		if b < e {
+			minBegin = util.Min(b, minBegin)
+			maxEnd = util.Max(e, maxEnd)
+			validOffsetFound = true
 		}
 	}
 
 	for idx, criterion := range sortCriteria {
-		var val uint16
+		val := uint16(math.MaxUint16)
 		switch criterion {
-		case byMatchLen:
-			if matchlen == 0 {
-				val = math.MaxUint16
-			} else {
-				val = util.AsUint16(matchlen)
-			}
-		case byBonus:
+		case byScore:
 			// Higher is better
-			val = math.MaxUint16 - util.AsUint16(bonus)
+			val = math.MaxUint16 - util.AsUint16(score)
 		case byLength:
 			// If offsets is empty, trimLen will be 0, but we don't care
 			val = util.AsUint16(trimLen)
 		case byBegin:
-			// We can't just look at item.offsets[0][0] because it can be an inverse term
-			whitePrefixLen := 0
-			for idx := 0; idx < numChars; idx++ {
-				r := item.text.Get(idx)
-				whitePrefixLen = idx
-				if idx == minBegin || r != ' ' && r != '\t' {
-					break
+			if validOffsetFound {
+				whitePrefixLen := 0
+				for idx := 0; idx < numChars; idx++ {
+					r := item.text.Get(idx)
+					whitePrefixLen = idx
+					if idx == minBegin || r != ' ' && r != '\t' {
+						break
+					}
 				}
+				val = util.AsUint16(minBegin - whitePrefixLen)
 			}
-			val = util.AsUint16(minBegin - whitePrefixLen)
 		case byEnd:
-			if prevEnd > 0 {
-				val = util.AsUint16(1 + numChars - prevEnd)
-			} else {
-				// Empty offsets due to inverse terms.
-				val = 1
+			if validOffsetFound {
+				val = util.AsUint16(1 + numChars - maxEnd)
 			}
 		}
 		result.rank.points[idx] = val
@@ -106,7 +88,7 @@ func (result *Result) Index() int32 {
 }
 
 func minRank() rank {
-	return rank{index: 0, points: [5]uint16{0, math.MaxUint16, 0, 0, 0}}
+	return rank{index: 0, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
 func (result *Result) colorOffsets(matchOffsets []Offset, color int, bold bool, current bool) []colorOffset {
@@ -245,7 +227,7 @@ func (a ByRelevanceTac) Less(i, j int) bool {
 }
 
 func compareRanks(irank rank, jrank rank, tac bool) bool {
-	for idx := 0; idx < 5; idx++ {
+	for idx := 0; idx < 4; idx++ {
 		left := irank.points[idx]
 		right := jrank.points[idx]
 		if left < right {

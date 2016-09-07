@@ -26,7 +26,7 @@ func TestOffsetSort(t *testing.T) {
 func TestRankComparison(t *testing.T) {
 	rank := func(vals ...uint16) rank {
 		return rank{
-			points: [5]uint16{vals[0], 0, vals[1], vals[2], vals[3]},
+			points: [4]uint16{vals[0], vals[1], vals[2], vals[3]},
 			index:  int32(vals[4])}
 	}
 	if compareRanks(rank(3, 0, 0, 0, 5), rank(2, 0, 0, 0, 7), false) ||
@@ -47,11 +47,15 @@ func TestRankComparison(t *testing.T) {
 // Match length, string length, index
 func TestResultRank(t *testing.T) {
 	// FIXME global
-	sortCriteria = []criterion{byMatchLen, byBonus, byLength}
+	sortCriteria = []criterion{byScore, byLength}
 
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := buildResult(&Item{text: util.RunesToChars(strs[0]), index: 1}, []Offset{}, 2, 3)
-	if item1.rank.points[0] != math.MaxUint16 || item1.rank.points[1] != math.MaxUint16-2 || item1.rank.points[2] != 3 || item1.item.index != 1 {
+	if item1.rank.points[0] != math.MaxUint16-2 || // Bonus
+		item1.rank.points[1] != 3 || // Length
+		item1.rank.points[2] != 0 || // Unused
+		item1.rank.points[3] != 0 || // Unused
+		item1.item.index != 1 {
 		t.Error(item1.rank)
 	}
 	// Only differ in index
@@ -71,16 +75,16 @@ func TestResultRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 0, 0)
-	item4 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 0, 0)
-	item5 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 0, 0)
-	item6 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 0, 0)
+	item3 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 3, 0)
+	item4 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 4, 0)
+	item5 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 5, 0)
+	item6 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 6, 0)
 	items = []*Result{item1, item2, item3, item4, item5, item6}
 	sort.Sort(ByRelevance(items))
-	if items[0] != item6 || items[1] != item4 ||
-		items[2] != item5 || items[3] != item3 ||
-		items[4] != item2 || items[5] != item1 {
-		t.Error(items)
+	if !(items[0] == item6 && items[1] == item5 &&
+		items[2] == item4 && items[3] == item3 &&
+		items[4] == item2 && items[5] == item1) {
+		t.Error(items, item1, item2, item3, item4, item5, item6)
 	}
 }
 

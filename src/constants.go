@@ -8,7 +8,7 @@ import (
 
 const (
 	// Current version
-	version = "0.13.5"
+	version = "0.15.0"
 
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
@@ -24,10 +24,16 @@ const (
 	spinnerDuration = 200 * time.Millisecond
 
 	// Matcher
-	progressMinDuration = 200 * time.Millisecond
+	numPartitionsMultiplier = 8
+	maxPartitions           = 32
+	progressMinDuration     = 200 * time.Millisecond
 
 	// Capacity of each chunk
 	chunkSize int = 100
+
+	// Pre-allocated memory slices to minimize GC
+	slab16Size int = 100 * 1024 // 200KB * 32 = 12.8MB
+	slab32Size int = 2048       // 8KB * 32 = 256KB
 
 	// Do not cache results of low selectivity queries
 	queryCacheMax int = chunkSize / 5

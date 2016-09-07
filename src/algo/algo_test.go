@@ -1,95 +1,154 @@
 package algo
 
 import (
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/junegunn/fzf/src/util"
 )
 
-func assertMatch(t *testing.T, fun func(bool, bool, util.Chars, []rune) Result, caseSensitive, forward bool, input, pattern string, sidx int, eidx int, bonus int) {
+func assertMatch(t *testing.T, fun Algo, caseSensitive, forward bool, input, pattern string, sidx int, eidx int, score int) {
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
-	res := fun(caseSensitive, forward, util.RunesToChars([]rune(input)), []rune(pattern))
-	if res.Start != sidx {
-		t.Errorf("Invalid start index: %d (expected: %d, %s / %s)", res.Start, sidx, input, pattern)
+	res, pos := fun(caseSensitive, forward, util.RunesToChars([]rune(input)), []rune(pattern), true, nil)
+	var start, end int
+	if pos == nil || len(*pos) == 0 {
+		start = res.Start
+		end = res.End
+	} else {
+		sort.Ints(*pos)
+		start = (*pos)[0]
+		end = (*pos)[len(*pos)-1] + 1
 	}
-	if res.End != eidx {
-		t.Errorf("Invalid end index: %d (expected: %d, %s / %s)", res.End, eidx, input, pattern)
+	if start != sidx {
+		t.Errorf("Invalid start index: %d (expected: %d, %s / %s)", start, sidx, input, pattern)
 	}
-	if res.Bonus != bonus {
-		t.Errorf("Invalid bonus: %d (expected: %d, %s / %s)", res.Bonus, bonus, input, pattern)
+	if end != eidx {
+		t.Errorf("Invalid end index: %d (expected: %d, %s / %s)", end, eidx, input, pattern)
+	}
+	if res.Score != score {
+		t.Errorf("Invalid score: %d (expected: %d, %s / %s)", res.Score, score, input, pattern)
 	}
 }
 
 func TestFuzzyMatch(t *testing.T) {
-	assertMatch(t, FuzzyMatch, false, true, "fooBarbaz", "oBZ", 2, 9, 2)
-	assertMatch(t, FuzzyMatch, false, true, "foo bar baz", "fbb", 0, 9, 8)
-	assertMatch(t, FuzzyMatch, false, true, "/AutomatorDocument.icns", "rdoc", 9, 13, 4)
-	assertMatch(t, FuzzyMatch, false, true, "/man1/zshcompctl.1", "zshc", 6, 10, 7)
-	assertMatch(t, FuzzyMatch, false, true, "/.oh-my-zsh/cache", "zshc", 8, 13, 8)
-	assertMatch(t, FuzzyMatch, false, true, "ab0123 456", "12356", 3, 10, 3)
-	assertMatch(t, FuzzyMatch, false, true, "abc123 456", "12356", 3, 10, 5)
+	for _, fn := range []Algo{FuzzyMatchV1, FuzzyMatchV2} {
+		for _, forward := range []bool{true, false} {
+			assertMatch(t, fn, false, forward, "fooBarbaz1", "oBZ", 2, 9,
+				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtention*3)
+			assertMatch(t, fn, false, forward, "foo bar baz", "fbb", 0, 9,
+				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
+					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtention)
+			assertMatch(t, fn, false, forward, "/AutomatorDocument.icns", "rdoc", 9, 13,
+				scoreMatch*4+bonusCamel123+bonusConsecutive*2)
+			assertMatch(t, fn, false, forward, "/man1/zshcompctl.1", "zshc", 6, 10,
+				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*3)
+			assertMatch(t, fn, false, forward, "/.oh-my-zsh/cache", "zshc", 8, 13,
+				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*3+scoreGapStart)
+			assertMatch(t, fn, false, forward, "ab0123 456", "12356", 3, 10,
+				scoreMatch*5+bonusConsecutive*3+scoreGapStart+scoreGapExtention)
+			assertMatch(t, fn, false, forward, "abc123 456", "12356", 3, 10,
+				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+bonusConsecutive+scoreGapStart+scoreGapExtention)
+			assertMatch(t, fn, false, forward, "foo/bar/baz", "fbb", 0, 9,
+				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
+					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtention)
+			assertMatch(t, fn, false, forward, "fooBarBaz", "fbb", 0, 7,
+				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
+					bonusCamel123*2+2*scoreGapStart+2*scoreGapExtention)
+			assertMatch(t, fn, false, forward, "foo barbaz", "fbb", 0, 8,
+				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary+
+					scoreGapStart*2+scoreGapExtention*3)
+			assertMatch(t, fn, false, forward, "fooBar Baz", "foob", 0, 4,
+				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*3)
+			assertMatch(t, fn, false, forward, "xFoo-Bar Baz", "foo-b", 1, 6,
+				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+
+					bonusNonWord+bonusBoundary)
 
-	assertMatch(t, FuzzyMatch, false, true, "foo/bar/baz", "fbb", 0, 9, 8)
-	assertMatch(t, FuzzyMatch, false, true, "fooBarBaz", "fbb", 0, 7, 6)
-	assertMatch(t, FuzzyMatch, false, true, "foo barbaz", "fbb", 0, 8, 6)
-	assertMatch(t, FuzzyMatch, false, true, "fooBar Baz", "foob", 0, 4, 8)
-	assertMatch(t, FuzzyMatch, true, true, "fooBarbaz", "oBZ", -1, -1, 0)
-	assertMatch(t, FuzzyMatch, true, true, "fooBarbaz", "oBz", 2, 9, 2)
-	assertMatch(t, FuzzyMatch, true, true, "Foo Bar Baz", "fbb", -1, -1, 0)
-	assertMatch(t, FuzzyMatch, true, true, "Foo/Bar/Baz", "FBB", 0, 9, 8)
-	assertMatch(t, FuzzyMatch, true, true, "FooBarBaz", "FBB", 0, 7, 6)
-	assertMatch(t, FuzzyMatch, true, true, "foo BarBaz", "fBB", 0, 8, 7)
-	assertMatch(t, FuzzyMatch, true, true, "FooBar Baz", "FooB", 0, 4, 8)
-	assertMatch(t, FuzzyMatch, true, true, "fooBarbaz", "fooBarbazz", -1, -1, 0)
+			assertMatch(t, fn, true, forward, "fooBarbaz", "oBz", 2, 9,
+				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtention*3)
+			assertMatch(t, fn, true, forward, "Foo/Bar/Baz", "FBB", 0, 9,
+				scoreMatch*3+bonusBoundary*(bonusFirstCharMultiplier+2)+
+					scoreGapStart*2+scoreGapExtention*4)
+			assertMatch(t, fn, true, forward, "FooBarBaz", "FBB", 0, 7,
+				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+bonusCamel123*2+
+					scoreGapStart*2+scoreGapExtention*2)
+			assertMatch(t, fn, true, forward, "FooBar Baz", "FooB", 0, 4,
+				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*2+
+					util.Max(bonusCamel123, bonusBoundary))
+
+			// Consecutive bonus updated
+			assertMatch(t, fn, true, forward, "foo-bar", "o-ba", 2, 6,
+				scoreMatch*4+bonusBoundary*3)
+
+			// Non-match
+			assertMatch(t, fn, true, forward, "fooBarbaz", "oBZ", -1, -1, 0)
+			assertMatch(t, fn, true, forward, "Foo Bar Baz", "fbb", -1, -1, 0)
+			assertMatch(t, fn, true, forward, "fooBarbaz", "fooBarbazz", -1, -1, 0)
+		}
+	}
 }
 
 func TestFuzzyMatchBackward(t *testing.T) {
-	assertMatch(t, FuzzyMatch, false, true, "foobar fb", "fb", 0, 4, 4)
-	assertMatch(t, FuzzyMatch, false, false, "foobar fb", "fb", 7, 9, 5)
+	assertMatch(t, FuzzyMatchV1, false, true, "foobar fb", "fb", 0, 4,
+		scoreMatch*2+bonusBoundary*bonusFirstCharMultiplier+
+			scoreGapStart+scoreGapExtention)
+	assertMatch(t, FuzzyMatchV1, false, false, "foobar fb", "fb", 7, 9,
+		scoreMatch*2+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary)
 }
 
 func TestExactMatchNaive(t *testing.T) {
 	for _, dir := range []bool{true, false} {
-		assertMatch(t, ExactMatchNaive, false, dir, "fooBarbaz", "oBA", 2, 5, 3)
 		assertMatch(t, ExactMatchNaive, true, dir, "fooBarbaz", "oBA", -1, -1, 0)
 		assertMatch(t, ExactMatchNaive, true, dir, "fooBarbaz", "fooBarbazz", -1, -1, 0)
 
-		assertMatch(t, ExactMatchNaive, false, dir, "/AutomatorDocument.icns", "rdoc", 9, 13, 4)
-		assertMatch(t, ExactMatchNaive, false, dir, "/man1/zshcompctl.1", "zshc", 6, 10, 7)
-		assertMatch(t, ExactMatchNaive, false, dir, "/.oh-my-zsh/cache", "zsh/c", 8, 13, 10)
+		assertMatch(t, ExactMatchNaive, false, dir, "fooBarbaz", "oBA", 2, 5,
+			scoreMatch*3+bonusCamel123+bonusConsecutive)
+		assertMatch(t, ExactMatchNaive, false, dir, "/AutomatorDocument.icns", "rdoc", 9, 13,
+			scoreMatch*4+bonusCamel123+bonusConsecutive*2)
+		assertMatch(t, ExactMatchNaive, false, dir, "/man1/zshcompctl.1", "zshc", 6, 10,
+			scoreMatch*4+bonusBoundary*(bonusFirstCharMultiplier+3))
+		assertMatch(t, ExactMatchNaive, false, dir, "/.oh-my-zsh/cache", "zsh/c", 8, 13,
+			scoreMatch*5+bonusBoundary*(bonusFirstCharMultiplier+4))
 	}
 }
 
 func TestExactMatchNaiveBackward(t *testing.T) {
-	assertMatch(t, ExactMatchNaive, false, true, "foobar foob", "oo", 1, 3, 1)
-	assertMatch(t, ExactMatchNaive, false, false, "foobar foob", "oo", 8, 10, 1)
+	assertMatch(t, ExactMatchNaive, false, true, "foobar foob", "oo", 1, 3,
+		scoreMatch*2+bonusConsecutive)
+	assertMatch(t, ExactMatchNaive, false, false, "foobar foob", "oo", 8, 10,
+		scoreMatch*2+bonusConsecutive)
 }
 
 func TestPrefixMatch(t *testing.T) {
+	score := (scoreMatch+bonusBoundary)*3 + bonusBoundary*(bonusFirstCharMultiplier-1)
+
 	for _, dir := range []bool{true, false} {
 		assertMatch(t, PrefixMatch, true, dir, "fooBarbaz", "Foo", -1, -1, 0)
 		assertMatch(t, PrefixMatch, false, dir, "fooBarBaz", "baz", -1, -1, 0)
-		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "Foo", 0, 3, 6)
-		assertMatch(t, PrefixMatch, false, dir, "foOBarBaZ", "foo", 0, 3, 7)
-		assertMatch(t, PrefixMatch, false, dir, "f-oBarbaz", "f-o", 0, 3, 8)
+		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "Foo", 0, 3, score)
+		assertMatch(t, PrefixMatch, false, dir, "foOBarBaZ", "foo", 0, 3, score)
+		assertMatch(t, PrefixMatch, false, dir, "f-oBarbaz", "f-o", 0, 3, score)
 	}
 }
 
 func TestSuffixMatch(t *testing.T) {
 	for _, dir := range []bool{true, false} {
-		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "Foo", -1, -1, 0)
-		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "baz", 6, 9, 2)
-		assertMatch(t, SuffixMatch, false, dir, "fooBarBaZ", "baz", 6, 9, 5)
 		assertMatch(t, SuffixMatch, true, dir, "fooBarbaz", "Baz", -1, -1, 0)
+		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "Foo", -1, -1, 0)
+
+		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz", "baz", 6, 9,
+			scoreMatch*3+bonusConsecutive*2)
+		assertMatch(t, SuffixMatch, false, dir, "fooBarBaZ", "baz", 6, 9,
+			(scoreMatch+bonusCamel123)*3+bonusCamel123*(bonusFirstCharMultiplier-1))
 	}
 }
 
 func TestEmptyPattern(t *testing.T) {
 	for _, dir := range []bool{true, false} {
-		assertMatch(t, FuzzyMatch, true, dir, "foobar", "", 0, 0, 0)
+		assertMatch(t, FuzzyMatchV1, true, dir, "foobar", "", 0, 0, 0)
+		assertMatch(t, FuzzyMatchV2, true, dir, "foobar", "", 0, 0, 0)
 		assertMatch(t, ExactMatchNaive, true, dir, "foobar", "", 0, 0, 0)
 		assertMatch(t, PrefixMatch, true, dir, "foobar", "", 0, 0, 0)
 		assertMatch(t, SuffixMatch, true, dir, "foobar", "", 6, 6, 0)

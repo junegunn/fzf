@@ -143,8 +143,8 @@ func Run(opts *Options) {
 	}
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(
-			opts.Fuzzy, opts.Extended, opts.Case, forward, opts.Filter == nil,
-			opts.Nth, opts.Delimiter, runes)
+			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, forward,
+			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
 	}
 	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox)
 
@@ -158,11 +158,12 @@ func Run(opts *Options) {
 
 		found := false
 		if streamingFilter {
+			slab := util.MakeSlab(slab16Size, slab32Size)
 			reader := Reader{
 				func(runes []byte) bool {
 					item := chunkList.trans(runes, 0)
 					if item != nil {
-						if result, _ := pattern.MatchItem(item); result != nil {
+						if result, _, _ := pattern.MatchItem(item, false, slab); result != nil {
 							fmt.Println(item.text.ToString())
 							found = true
 						}

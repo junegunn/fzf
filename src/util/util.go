@@ -18,6 +18,22 @@ func Max(first int, second int) int {
 	return second
 }
 
+// Max16 returns the largest integer
+func Max16(first int16, second int16) int16 {
+	if first >= second {
+		return first
+	}
+	return second
+}
+
+// Max32 returns the largest 32-bit integer
+func Max32(first int32, second int32) int32 {
+	if first > second {
+		return first
+	}
+	return second
+}
+
 // Min returns the smallest integer
 func Min(first int, second int) int {
 	if first <= second {
@@ -29,14 +45,6 @@ func Min(first int, second int) int {
 // Min32 returns the smallest 32-bit integer
 func Min32(first int32, second int32) int32 {
 	if first <= second {
-		return first
-	}
-	return second
-}
-
-// Max32 returns the largest 32-bit integer
-func Max32(first int32, second int32) int32 {
-	if first > second {
 		return first
 	}
 	return second

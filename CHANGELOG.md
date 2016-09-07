@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.15.0
+------
+- Improved fuzzy search algorithm
+    - Added `--algo=[v1|v2]` option so one can still choose the old algorithm
+      which values the search performance over the quality of the result
+- Advanced scoring criteria
+
 0.13.5
 ------
 - Memory and performance optimization

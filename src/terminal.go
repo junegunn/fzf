@@ -18,6 +18,8 @@ import (
 	"github.com/junegunn/go-runewidth"
 )
 
+// import "github.com/pkg/profile"
+
 type jumpMode int
 
 const (
@@ -73,6 +75,7 @@ type Terminal struct {
 	initFunc   func()
 	suppress   bool
 	startChan  chan bool
+	slab       *util.Slab
 }
 
 type selectedItem struct {
@@ -276,6 +279,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
 		suppress:   true,
+		slab:       util.MakeSlab(slab16Size, slab32Size),
 		startChan:  make(chan bool, 1),
 		initFunc: func() {
 			C.Init(opts.Theme, opts.Black, opts.Mouse)
@@ -674,14 +678,25 @@ func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 in
 	text := make([]rune, item.text.Length())
 	copy(text, item.text.ToRunes())
 	matchOffsets := []Offset{}
+	var pos *[]int
 	if t.merger.pattern != nil {
-		_, matchOffsets = t.merger.pattern.MatchItem(item)
+		_, matchOffsets, pos = t.merger.pattern.MatchItem(item, true, t.slab)
+	}
+	charOffsets := matchOffsets
+	if pos != nil {
+		charOffsets = make([]Offset, len(*pos))
+		for idx, p := range *pos {
+			offset := Offset{int32(p), int32(p + 1)}
+			charOffsets[idx] = offset
+		}
+		sort.Sort(ByOrder(charOffsets))
 	}
 	var maxe int
-	for _, offset := range matchOffsets {
+	for _, offset := range charOffsets {
 		maxe = util.Max(maxe, int(offset[1]))
 	}
-	offsets := result.colorOffsets(matchOffsets, col2, bold, current)
+
+	offsets := result.colorOffsets(charOffsets, col2, bold, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	if overflow(text, maxWidth) {
@@ -876,6 +891,7 @@ func (t *Terminal) current() string {
 
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
+	// prof := profile.Start(profile.ProfilePath("/tmp/"))
 	<-t.startChan
 	{ // Late initialization
 		intChan := make(chan os.Signal, 1)
@@ -953,6 +969,7 @@ func (t *Terminal) Loop() {
 		if code <= exitNoMatch && t.history != nil {
 			t.history.append(string(t.input))
 		}
+		// prof.Stop()
 		os.Exit(code)
 	}
 
