@@ -22,7 +22,7 @@ func indexAt(index int, max int, forward bool) int {
 	return max - index - 1
 }
 
-// Result conatins the results of running a match function.
+// Result contains the results of running a match function.
 type Result struct {
 	Start int
 	End   int
