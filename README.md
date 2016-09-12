@@ -10,18 +10,15 @@ Pros
 
 - No dependencies
 - Blazingly fast
-    - e.g. `locate / | fzf`
-- Flexible layout
-    - Runs in fullscreen or in horizontal/vertical split using tmux
 - The most comprehensive feature set
-    - Try `fzf --help` and be surprised
+- Flexible layout using tmux panes
 - Batteries included
     - Vim/Neovim plugin, key bindings and fuzzy auto-completion
 
 Installation
 ------------
 
-fzf project consists of the following:
+fzf project consists of the following components:
 
 - `fzf` executable
 - `fzf-tmux` script for launching fzf in a tmux pane
@@ -30,12 +27,12 @@ fzf project consists of the following:
     - Fuzzy auto-completion (bash, zsh)
 - Vim/Neovim plugin
 
-You can [download fzf executable][bin] alone, but it's recommended that you
-install the extra stuff using the attached install script.
+You can [download fzf executable][bin] alone if you don't need the extra
+stuff.
 
 [bin]: https://github.com/junegunn/fzf-bin/releases
 
-#### Using git (recommended)
+### Using git
 
 Clone this repository and run
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
@@ -45,7 +42,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-#### Using Homebrew
+### Using Homebrew
 
 On OS X, you can use [Homebrew](http://brew.sh/) to install fzf.
 
@@ -56,26 +53,30 @@ brew install fzf
 /usr/local/opt/fzf/install
 ```
 
-#### Install as Vim plugin
+### Vim plugin
 
-Once you have cloned the repository, add the following line to your .vimrc.
+You can manually add the directory to `&runtimepath` as follows,
 
 ```vim
+" If installed using git
 set rtp+=~/.fzf
+
+" If installed using Homebrew
+set rtp+=/usr/local/opt/fzf
 ```
 
-Or you can have [vim-plug](https://github.com/junegunn/vim-plug) manage fzf
-(recommended):
+But it's recommended that you use a plugin manager like
+[vim-plug](https://github.com/junegunn/vim-plug).
 
 ```vim
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ```
 
-#### Upgrading fzf
+### Upgrading fzf
 
 fzf is being actively developed and you might want to upgrade it once in a
 while. Please follow the instruction below depending on the installation
-method.
+method used.
 
 - git: `cd ~/.fzf && git pull && ./install`
 - brew: `brew update; brew reinstall fzf`
@@ -388,6 +389,12 @@ fzf
 
 # To apply the command to CTRL-T as well
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+```
+
+If you don't want to exclude hidden files, use the following command:
+
+```sh
+export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
 ```
 
 #### `git ls-tree` for fast traversal
