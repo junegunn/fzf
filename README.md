@@ -5,6 +5,9 @@ fzf is a general-purpose command-line fuzzy finder.
 
 ![](https://raw.github.com/junegunn/i/master/fzf.gif)
 
+This is a modified version that adds the `CTRL-G` binding that also searches
+from '~/' regardless or what your current directory is.
+
 Pros
 ----
 
