@@ -53,6 +53,7 @@ fzf-file-widget-global() {
   typeset -f zle-line-init >/dev/null && zle zle-line-init
   return $ret
 }
+zle     -N   fzf-file-widget-global
 bindkey '^G' fzf-file-widget-global
 
 # ALT-C - cd into the selected directory
