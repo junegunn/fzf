@@ -1079,8 +1079,9 @@ func (t *Terminal) Loop() {
 		for key, ret := range t.expect {
 			if keyMatch(key, event) {
 				t.pressed = ret
-				req(reqClose)
-				break
+				t.reqBox.Set(reqClose, nil)
+				t.mutex.Unlock()
+				return
 			}
 		}
 

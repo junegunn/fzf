@@ -452,6 +452,15 @@ class TestGoFZF < TestBase
     assert_equal ['55', 'alt-z', '55'], readonce.split($/)
   end
 
+  def test_expect_printable_character_print_query
+    tmux.send_keys "seq 1 100 | #{fzf '--expect=z --print-query'}", :Enter
+    tmux.until { |lines| lines[-2].include? '100/100' }
+    tmux.send_keys '55'
+    tmux.until { |lines| lines[-2].include? '1/100' }
+    tmux.send_keys 'z'
+    assert_equal ['55', 'z', '55'], readonce.split($/)
+  end
+
   def test_expect_print_query_select_1
     tmux.send_keys "seq 1 100 | #{fzf '-q55 -1 --expect=alt-z --print-query'}", :Enter
     assert_equal ['55', '', '55'], readonce.split($/)
