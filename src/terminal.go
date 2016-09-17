@@ -63,6 +63,7 @@ type Terminal struct {
 	reading    bool
 	jumping    jumpMode
 	jumpLabels string
+	printer    func(string)
 	merger     *Merger
 	selected   map[int32]selectedItem
 	reqBox     *util.EventBox
@@ -269,6 +270,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reading:    true,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
+		printer:    opts.Printer,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -347,21 +349,21 @@ func (t *Terminal) UpdateList(merger *Merger) {
 
 func (t *Terminal) output() bool {
 	if t.printQuery {
-		fmt.Println(string(t.input))
+		t.printer(string(t.input))
 	}
 	if len(t.expect) > 0 {
-		fmt.Println(t.pressed)
+		t.printer(t.pressed)
 	}
 	found := len(t.selected) > 0
 	if !found {
 		cnt := t.merger.Length()
 		if cnt > 0 && cnt > t.cy {
-			fmt.Println(t.current())
+			t.printer(t.current())
 			found = true
 		}
 	} else {
 		for _, sel := range t.sortSelected() {
-			fmt.Println(sel.text)
+			t.printer(sel.text)
 		}
 	}
 	return found
@@ -1028,7 +1030,7 @@ func (t *Terminal) Loop() {
 						t.printPreview()
 					case reqPrintQuery:
 						C.Close()
-						fmt.Println(string(t.input))
+						t.printer(string(t.input))
 						exit(exitOk)
 					case reqQuit:
 						C.Close()

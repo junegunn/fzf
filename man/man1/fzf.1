@@ -285,6 +285,12 @@ with the default enter key.
 e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
 .RE
 .TP
+.B "--read0"
+Read input delimited by ASCII NUL character instead of newline character
+.TP
+.B "--print0"
+Print output delimited by ASCII NUL character instead of newline character
+.TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.

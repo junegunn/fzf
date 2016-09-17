@@ -7,6 +7,8 @@ CHANGELOG
     - Added `--algo=[v1|v2]` option so one can still choose the old algorithm
       which values the search performance over the quality of the result
 - Advanced scoring criteria
+- `--read0` to read input delimited by ASCII NUL character
+- `--print0` to print output delimited by ASCII NUL character
 
 0.13.5
 ------
