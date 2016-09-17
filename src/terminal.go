@@ -1337,6 +1337,11 @@ func (t *Terminal) Loop() {
 			if !doAction(action, mapkey) {
 				continue
 			}
+			// Truncate the query if it's too long
+			if len(t.input) > maxPatternLength {
+				t.input = t.input[:maxPatternLength]
+				t.cx = util.Constrain(t.cx, 0, maxPatternLength)
+			}
 			changed = string(previousInput) != string(t.input)
 		} else {
 			if mapkey == C.Rune {
