@@ -342,7 +342,7 @@ func TestDefaultCtrlNP(t *testing.T) {
 	check([]string{"--bind=ctrl-n:accept"}, curses.CtrlN, actAccept)
 	check([]string{"--bind=ctrl-p:accept"}, curses.CtrlP, actAccept)
 
-	hist := "--history=/tmp/foo"
+	hist := "--history=/tmp/fzf-history"
 	check([]string{hist}, curses.CtrlN, actNextHistory)
 	check([]string{hist}, curses.CtrlP, actPreviousHistory)
 
