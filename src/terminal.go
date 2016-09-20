@@ -401,6 +401,8 @@ func displayWidth(runes []rune) int {
 const (
 	minWidth  = 16
 	minHeight = 4
+
+	maxDisplayWidthCalc = 1024
 )
 
 func calculateSize(base int, size sizeSpec, margin int, minSize int) int {
@@ -651,6 +653,11 @@ func displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
 }
 
 func trimLeft(runes []rune, width int) ([]rune, int32) {
+	if len(runes) > maxDisplayWidthCalc && len(runes) > width {
+		trimmed := len(runes) - width
+		return runes[trimmed:], int32(trimmed)
+	}
+
 	currentWidth := displayWidth(runes)
 	var trimmed int32
 
