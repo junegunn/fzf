@@ -1,6 +1,7 @@
 package algo
 
 import (
+	"math"
 	"sort"
 	"strings"
 	"testing"
@@ -153,4 +154,13 @@ func TestEmptyPattern(t *testing.T) {
 		assertMatch(t, PrefixMatch, true, dir, "foobar", "", 0, 0, 0)
 		assertMatch(t, SuffixMatch, true, dir, "foobar", "", 6, 6, 0)
 	}
+}
+
+func TestLongString(t *testing.T) {
+	bytes := make([]byte, math.MaxUint16*2)
+	for i := range bytes {
+		bytes[i] = 'x'
+	}
+	bytes[math.MaxUint16] = 'z'
+	assertMatch(t, FuzzyMatchV2, true, true, string(bytes), "zx", math.MaxUint16, math.MaxUint16+2, scoreMatch*2+bonusConsecutive)
 }

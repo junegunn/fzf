@@ -257,13 +257,14 @@ func FuzzyMatchV2(caseSensitive bool, forward bool, input util.Chars, pattern []
 	}
 
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
-	offset := 0
+	offset16 := 0
+	offset32 := 0
 	// Bonus point for each position
-	offset, B := alloc16(offset, slab, N, false)
+	offset16, B := alloc16(offset16, slab, N, false)
 	// The first occurrence of each character in the pattern
-	offset, F := alloc16(offset, slab, M, false)
+	offset32, F := alloc32(offset32, slab, M, false)
 	// Rune array
-	_, T := alloc32(0, slab, N, false)
+	offset32, T := alloc32(offset32, slab, N, false)
 
 	// Phase 1. Check if there's a match and calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
@@ -291,7 +292,7 @@ func FuzzyMatchV2(caseSensitive bool, forward bool, input util.Chars, pattern []
 		if pidx < M {
 			if char == pattern[pidx] {
 				lastIdx = idx
-				F[pidx] = int16(idx)
+				F[pidx] = int32(idx)
 				pidx++
 			}
 		} else {
@@ -307,10 +308,10 @@ func FuzzyMatchV2(caseSensitive bool, forward bool, input util.Chars, pattern []
 	// Phase 2. Fill in score matrix (H)
 	// Unlike the original algorithm, we do not allow omission.
 	width := lastIdx - int(F[0]) + 1
-	offset, H := alloc16(offset, slab, width*M, false)
+	offset16, H := alloc16(offset16, slab, width*M, false)
 
 	// Possible length of consecutive chunk at each position.
-	offset, C := alloc16(offset, slab, width*M, false)
+	offset16, C := alloc16(offset16, slab, width*M, false)
 
 	maxScore, maxScorePos := int16(0), 0
 	for i := 0; i < M; i++ {
