@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.15.1
+------
+- Fixed panic when the pattern occurs after 2^15-th column
+- Fixed rendering delay when displaying extremely long lines
+
 0.15.0
 ------
 - Improved fuzzy search algorithm
