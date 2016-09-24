@@ -667,6 +667,10 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actPreviewUp
 		case "preview-down":
 			keymap[key] = actPreviewDown
+		case "preview-page-up":
+			keymap[key] = actPreviewPageUp
+		case "preview-page-down":
+			keymap[key] = actPreviewPageDown
 		default:
 			if isExecuteAction(actLower) {
 				var offset int

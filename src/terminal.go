@@ -174,6 +174,8 @@ const (
 	actTogglePreview
 	actPreviewUp
 	actPreviewDown
+	actPreviewPageUp
+	actPreviewPageDown
 	actPreviousHistory
 	actNextHistory
 	actExecute
@@ -1123,6 +1125,11 @@ func (t *Terminal) Loop() {
 				req(reqInfo)
 			}
 		}
+		scrollPreview := func(amount int) {
+			t.previewer.offset = util.Constrain(
+				t.previewer.offset+amount, 0, t.previewer.lines-t.pwindow.Height)
+			req(reqPreviewRefresh)
+		}
 		for key, ret := range t.expect {
 			if keyMatch(key, event) {
 				t.pressed = ret
@@ -1171,15 +1178,19 @@ func (t *Terminal) Loop() {
 				return false
 			case actPreviewUp:
 				if t.isPreviewEnabled() {
-					t.previewer.offset = util.Constrain(
-						t.previewer.offset-1, 0, t.previewer.lines-t.pwindow.Height)
-					req(reqPreviewRefresh)
+					scrollPreview(-1)
 				}
 			case actPreviewDown:
 				if t.isPreviewEnabled() {
-					t.previewer.offset = util.Constrain(
-						t.previewer.offset+1, 0, t.previewer.lines-t.pwindow.Height)
-					req(reqPreviewRefresh)
+					scrollPreview(1)
+				}
+			case actPreviewPageUp:
+				if t.isPreviewEnabled() {
+					scrollPreview(-t.pwindow.Height)
+				}
+			case actPreviewPageDown:
+				if t.isPreviewEnabled() {
+					scrollPreview(t.pwindow.Height)
 				}
 			case actBeginningOfLine:
 				t.cx = 0
@@ -1350,9 +1361,7 @@ func (t *Terminal) Loop() {
 						t.vmove(me.S)
 						req(reqList)
 					} else if t.isPreviewEnabled() && t.pwindow.Enclose(my, mx) {
-						t.previewer.offset = util.Constrain(
-							t.previewer.offset-me.S, 0, t.previewer.lines-t.pwindow.Height)
-						req(reqPreviewRefresh)
+						scrollPreview(-me.S)
 					}
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left
