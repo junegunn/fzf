@@ -28,6 +28,13 @@ const (
 	jumpAcceptEnabled
 )
 
+type previewer struct {
+	text    string
+	lines   int
+	offset  int
+	enabled bool
+}
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay  time.Duration
@@ -68,8 +75,7 @@ type Terminal struct {
 	selected   map[int32]selectedItem
 	reqBox     *util.EventBox
 	preview    previewOpts
-	previewing bool
-	previewTxt string
+	previewer  previewer
 	previewBox *util.EventBox
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
@@ -119,6 +125,7 @@ const (
 	reqPrintQuery
 	reqPreviewEnqueue
 	reqPreviewDisplay
+	reqPreviewRefresh
 	reqQuit
 )
 
@@ -165,6 +172,8 @@ const (
 	actPrintQuery
 	actToggleSort
 	actTogglePreview
+	actPreviewUp
+	actPreviewDown
 	actPreviousHistory
 	actNextHistory
 	actExecute
@@ -275,8 +284,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
 		preview:    opts.Preview,
-		previewing: previewBox != nil && !opts.Preview.hidden,
-		previewTxt: "",
+		previewer:  previewer{"", 0, 0, previewBox != nil && !opts.Preview.hidden},
 		previewBox: previewBox,
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -772,9 +780,35 @@ func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 in
 	}
 }
 
+func numLinesMax(str string, max int) int {
+	lines := 0
+	for lines < max {
+		idx := strings.Index(str, "\n")
+		if idx < 0 {
+			break
+		}
+		str = str[idx+1:]
+		lines++
+	}
+	return lines
+}
+
 func (t *Terminal) printPreview() {
 	t.pwindow.Erase()
-	extractColor(t.previewTxt, nil, func(str string, ansi *ansiState) bool {
+	skip := t.previewer.offset
+	extractColor(t.previewer.text, nil, func(str string, ansi *ansiState) bool {
+		if skip > 0 {
+			newlines := numLinesMax(str, skip)
+			if skip <= newlines {
+				for i := 0; i < skip; i++ {
+					str = str[strings.Index(str, "\n")+1:]
+				}
+				skip = 0
+			} else {
+				skip -= newlines
+				return true
+			}
+		}
 		if ansi != nil && ansi.colored() {
 			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.bold)
 		}
@@ -891,7 +925,7 @@ func (t *Terminal) hasPreviewWindow() bool {
 }
 
 func (t *Terminal) isPreviewEnabled() bool {
-	return t.previewBox != nil && t.previewing
+	return t.previewBox != nil && t.previewer.enabled
 }
 
 func (t *Terminal) current() string {
@@ -1033,7 +1067,11 @@ func (t *Terminal) Loop() {
 						}
 						exit(exitNoMatch)
 					case reqPreviewDisplay:
-						t.previewTxt = value.(string)
+						t.previewer.text = value.(string)
+						t.previewer.lines = strings.Count(t.previewer.text, "\n")
+						t.previewer.offset = 0
+						t.printPreview()
+					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPrintQuery:
 						C.Close()
@@ -1118,10 +1156,10 @@ func (t *Terminal) Loop() {
 				return false
 			case actTogglePreview:
 				if t.hasPreviewWindow() {
-					t.previewing = !t.previewing
+					t.previewer.enabled = !t.previewer.enabled
 					t.resizeWindows()
 					cnt := t.merger.Length()
-					if t.previewing && cnt > 0 && cnt > t.cy {
+					if t.previewer.enabled && cnt > 0 && cnt > t.cy {
 						t.previewBox.Set(reqPreviewEnqueue, previewRequest{true, t.current()})
 					}
 					req(reqList, reqInfo)
@@ -1131,6 +1169,18 @@ func (t *Terminal) Loop() {
 				t.eventBox.Set(EvtSearchNew, t.sort)
 				t.mutex.Unlock()
 				return false
+			case actPreviewUp:
+				if t.isPreviewEnabled() {
+					t.previewer.offset = util.Constrain(
+						t.previewer.offset-1, 0, t.previewer.lines-t.pwindow.Height)
+					req(reqPreviewRefresh)
+				}
+			case actPreviewDown:
+				if t.isPreviewEnabled() {
+					t.previewer.offset = util.Constrain(
+						t.previewer.offset+1, 0, t.previewer.lines-t.pwindow.Height)
+					req(reqPreviewRefresh)
+				}
 			case actBeginningOfLine:
 				t.cx = 0
 			case actBackwardChar:
@@ -1299,6 +1349,10 @@ func (t *Terminal) Loop() {
 						}
 						t.vmove(me.S)
 						req(reqList)
+					} else if t.isPreviewEnabled() && t.pwindow.Enclose(my, mx) {
+						t.previewer.offset = util.Constrain(
+							t.previewer.offset-me.S, 0, t.previewer.lines-t.pwindow.Height)
+						req(reqPreviewRefresh)
 					}
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left

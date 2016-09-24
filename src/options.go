@@ -663,6 +663,10 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actTogglePreview
 		case "toggle-sort":
 			keymap[key] = actToggleSort
+		case "preview-up":
+			keymap[key] = actPreviewUp
+		case "preview-down":
+			keymap[key] = actPreviewDown
 		default:
 			if isExecuteAction(actLower) {
 				var offset int
