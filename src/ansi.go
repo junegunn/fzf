@@ -140,6 +140,10 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 						state.fg = num - 30
 					} else if num >= 40 && num <= 47 {
 						state.bg = num - 40
+					} else if num >= 90 && num <= 97 {
+						state.fg = num - 90 + 8
+					} else if num >= 100 && num <= 107 {
+						state.bg = num - 100 + 8
 					}
 				}
 			case 1:
