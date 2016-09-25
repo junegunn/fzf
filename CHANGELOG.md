@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.15.2
+------
+- Preview window is now scrollable
+    - With mouse scroll or with bindable actions
+        - `preview-up`
+        - `preview-down`
+        - `preview-page-up`
+        - `preview-page-down`
+- Updated ANSI processor to support high intensity colors and ignore
+  some VT100-related escape sequences
+
 0.15.1
 ------
 - Fixed panic when the pattern occurs after 2^15-th column

@@ -2,8 +2,8 @@
 
 set -u
 
-[[ "$@" =~ --pre ]] && version=0.15.1 pre=1 ||
-                       version=0.15.1 pre=0
+[[ "$@" =~ --pre ]] && version=0.15.2 pre=1 ||
+                       version=0.15.2 pre=0
 
 auto_completion=
 key_bindings=
