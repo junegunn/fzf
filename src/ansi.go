@@ -33,7 +33,7 @@ func (s *ansiState) equals(t *ansiState) bool {
 var ansiRegex *regexp.Regexp
 
 func init() {
-	ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[mK]")
+	ansiRegex = regexp.MustCompile("\x1b.[0-9;]*.")
 }
 
 func extractColor(str string, state *ansiState, proc func(string, *ansiState) bool) (string, *[]ansiOffset, *ansiState) {
@@ -98,7 +98,7 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	} else {
 		state = &ansiState{prevState.fg, prevState.bg, prevState.bold}
 	}
-	if ansiCode[len(ansiCode)-1] == 'K' {
+	if ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		return state
 	}
 
