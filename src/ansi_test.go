@@ -3,13 +3,19 @@ package fzf
 import (
 	"fmt"
 	"testing"
+
+	"github.com/junegunn/fzf/src/curses"
 )
 
 func TestExtractColor(t *testing.T) {
 	assert := func(offset ansiOffset, b int32, e int32, fg int, bg int, bold bool) {
+		var attr curses.Attr
+		if bold {
+			attr = curses.Bold
+		}
 		if offset.offset[0] != b || offset.offset[1] != e ||
-			offset.color.fg != fg || offset.color.bg != bg || offset.color.bold != bold {
-			t.Error(offset, b, e, fg, bg, bold)
+			offset.color.fg != fg || offset.color.bg != bg || offset.color.attr != attr {
+			t.Error(offset, b, e, fg, bg, attr)
 		}
 	}
 
@@ -121,7 +127,7 @@ func TestExtractColor(t *testing.T) {
 		if len(*offsets) != 1 {
 			t.Fail()
 		}
-		if state.fg != 2 || state.bg != -1 || !state.bold {
+		if state.fg != 2 || state.bg != -1 || state.attr == 0 {
 			t.Fail()
 		}
 		assert((*offsets)[0], 6, 11, 2, -1, true)
@@ -132,7 +138,7 @@ func TestExtractColor(t *testing.T) {
 		if len(*offsets) != 1 {
 			t.Fail()
 		}
-		if state.fg != 2 || state.bg != -1 || !state.bold {
+		if state.fg != 2 || state.bg != -1 || state.attr == 0 {
 			t.Fail()
 		}
 		assert((*offsets)[0], 0, 11, 2, -1, true)
@@ -143,7 +149,7 @@ func TestExtractColor(t *testing.T) {
 		if len(*offsets) != 2 {
 			t.Fail()
 		}
-		if state.fg != 200 || state.bg != 100 || state.bold {
+		if state.fg != 200 || state.bg != 100 || state.attr > 0 {
 			t.Fail()
 		}
 		assert((*offsets)[0], 0, 6, 2, -1, true)
