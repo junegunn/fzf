@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/junegunn/fzf/src/curses"
 )
 
 type ansiOffset struct {
@@ -16,18 +18,18 @@ type ansiOffset struct {
 type ansiState struct {
 	fg   int
 	bg   int
-	bold bool
+	attr curses.Attr
 }
 
 func (s *ansiState) colored() bool {
-	return s.fg != -1 || s.bg != -1 || s.bold
+	return s.fg != -1 || s.bg != -1 || s.attr > 0
 }
 
 func (s *ansiState) equals(t *ansiState) bool {
 	if t == nil {
 		return !s.colored()
 	}
-	return s.fg == t.fg && s.bg == t.bg && s.bold == t.bold
+	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr
 }
 
 var ansiRegex *regexp.Regexp
@@ -94,9 +96,9 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	// State
 	var state *ansiState
 	if prevState == nil {
-		state = &ansiState{-1, -1, false}
+		state = &ansiState{-1, -1, 0}
 	} else {
-		state = &ansiState{prevState.fg, prevState.bg, prevState.bold}
+		state = &ansiState{prevState.fg, prevState.bg, prevState.attr}
 	}
 	if ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		return state
@@ -108,7 +110,7 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	init := func() {
 		state.fg = -1
 		state.bg = -1
-		state.bold = false
+		state.attr = 0
 		state256 = 0
 	}
 
@@ -132,7 +134,15 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 				case 49:
 					state.bg = -1
 				case 1:
-					state.bold = true
+					state.attr = curses.Bold
+				case 2:
+					state.attr = curses.Dim
+				case 4:
+					state.attr = curses.Underline
+				case 5:
+					state.attr = curses.Blink
+				case 7:
+					state.attr = curses.Reverse
 				case 0:
 					init()
 				default:

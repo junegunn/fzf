@@ -23,6 +23,16 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	Bold      = C.A_BOLD
+	Dim       = C.A_DIM
+	Blink     = C.A_BLINK
+	Reverse   = C.A_REVERSE
+	Underline = C.A_UNDERLINE
+)
+
+type Attr C.int
+
 // Types of user action
 const (
 	Rune = iota
@@ -158,7 +168,7 @@ type MouseEvent struct {
 var (
 	_buf          []byte
 	_in           *os.File
-	_color        func(int, bool) C.int
+	_color        func(int, Attr) C.int
 	_colorMap     map[int]int
 	_prevDownTime time.Time
 	_clickY       []int
@@ -183,7 +193,7 @@ type Window struct {
 func NewWindow(top int, left int, width int, height int, border bool) *Window {
 	win := C.newwin(C.int(height), C.int(width), C.int(top), C.int(left))
 	if border {
-		attr := _color(ColBorder, false)
+		attr := _color(ColBorder, 0)
 		C.wattron(win, attr)
 		C.box(win, 0, 0)
 		C.wattroff(win, attr)
@@ -266,22 +276,19 @@ func init() {
 		Border:       145}
 }
 
-func attrColored(pair int, bold bool) C.int {
+func attrColored(pair int, a Attr) C.int {
 	var attr C.int
 	if pair > ColNormal {
 		attr = C.COLOR_PAIR(C.int(pair))
 	}
-	if bold {
-		attr = attr | C.A_BOLD
-	}
-	return attr
+	return attr | C.int(a)
 }
 
-func attrMono(pair int, bold bool) C.int {
+func attrMono(pair int, a Attr) C.int {
 	var attr C.int
 	switch pair {
 	case ColCurrent:
-		if bold {
+		if a&C.A_BOLD == C.A_BOLD {
 			attr = C.A_REVERSE
 		}
 	case ColMatch:
@@ -289,7 +296,7 @@ func attrMono(pair int, bold bool) C.int {
 	case ColCurrentMatch:
 		attr = C.A_UNDERLINE | C.A_REVERSE
 	}
-	if bold {
+	if a&C.A_BOLD == C.A_BOLD {
 		attr = attr | C.A_BOLD
 	}
 	return attr
@@ -648,8 +655,8 @@ func (w *Window) Print(text string) {
 	}, text)))
 }
 
-func (w *Window) CPrint(pair int, bold bool, text string) {
-	attr := _color(pair, bold)
+func (w *Window) CPrint(pair int, a Attr, text string) {
+	attr := _color(pair, a)
 	C.wattron(w.win, attr)
 	w.Print(text)
 	C.wattroff(w.win, attr)
@@ -675,8 +682,8 @@ func (w *Window) Fill(str string) bool {
 	return C.waddstr(w.win, C.CString(str)) == C.OK
 }
 
-func (w *Window) CFill(str string, fg int, bg int, bold bool) bool {
-	attr := _color(PairFor(fg, bg), bold)
+func (w *Window) CFill(str string, fg int, bg int, a Attr) bool {
+	attr := _color(PairFor(fg, bg), a)
 	C.wattron(w.win, attr)
 	ret := w.Fill(str)
 	C.wattroff(w.win, attr)

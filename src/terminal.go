@@ -526,24 +526,24 @@ func (t *Terminal) placeCursor() {
 
 func (t *Terminal) printPrompt() {
 	t.move(0, 0, true)
-	t.window.CPrint(C.ColPrompt, true, t.prompt)
-	t.window.CPrint(C.ColNormal, true, string(t.input))
+	t.window.CPrint(C.ColPrompt, C.Bold, t.prompt)
+	t.window.CPrint(C.ColNormal, C.Bold, string(t.input))
 }
 
 func (t *Terminal) printInfo() {
 	if t.inlineInfo {
 		t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input)+1, true)
 		if t.reading {
-			t.window.CPrint(C.ColSpinner, true, " < ")
+			t.window.CPrint(C.ColSpinner, C.Bold, " < ")
 		} else {
-			t.window.CPrint(C.ColPrompt, true, " < ")
+			t.window.CPrint(C.ColPrompt, C.Bold, " < ")
 		}
 	} else {
 		t.move(1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-			t.window.CPrint(C.ColSpinner, true, _spinner[idx])
+			t.window.CPrint(C.ColSpinner, C.Bold, _spinner[idx])
 		}
 		t.move(1, 2, false)
 	}
@@ -562,7 +562,7 @@ func (t *Terminal) printInfo() {
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
-	t.window.CPrint(C.ColInfo, false, output)
+	t.window.CPrint(C.ColInfo, 0, output)
 }
 
 func (t *Terminal) printHeader() {
@@ -586,7 +586,7 @@ func (t *Terminal) printHeader() {
 			colors: colors}
 
 		t.move(line, 2, true)
-		t.printHighlighted(&Result{item: item}, false, C.ColHeader, 0, false)
+		t.printHighlighted(&Result{item: item}, 0, C.ColHeader, 0, false)
 	}
 }
 
@@ -620,21 +620,21 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 	} else if current {
 		label = ">"
 	}
-	t.window.CPrint(C.ColCursor, true, label)
+	t.window.CPrint(C.ColCursor, C.Bold, label)
 	if current {
 		if selected {
-			t.window.CPrint(C.ColSelected, true, ">")
+			t.window.CPrint(C.ColSelected, C.Bold, ">")
 		} else {
-			t.window.CPrint(C.ColCurrent, true, " ")
+			t.window.CPrint(C.ColCurrent, C.Bold, " ")
 		}
-		t.printHighlighted(result, true, C.ColCurrent, C.ColCurrentMatch, true)
+		t.printHighlighted(result, C.Bold, C.ColCurrent, C.ColCurrentMatch, true)
 	} else {
 		if selected {
-			t.window.CPrint(C.ColSelected, true, ">")
+			t.window.CPrint(C.ColSelected, C.Bold, ">")
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(result, false, 0, C.ColMatch, false)
+		t.printHighlighted(result, 0, 0, C.ColMatch, false)
 	}
 }
 
@@ -690,7 +690,7 @@ func overflow(runes []rune, max int) bool {
 	return false
 }
 
-func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 int, current bool) {
+func (t *Terminal) printHighlighted(result *Result, attr C.Attr, col1 int, col2 int, current bool) {
 	item := result.item
 
 	// Overflow
@@ -715,7 +715,7 @@ func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 in
 		maxe = util.Max(maxe, int(offset[1]))
 	}
 
-	offsets := result.colorOffsets(charOffsets, col2, bold, current)
+	offsets := result.colorOffsets(charOffsets, col2, attr, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	if overflow(text, maxWidth) {
@@ -764,11 +764,11 @@ func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 in
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
 		substr, prefixWidth = processTabs(text[index:b], prefixWidth)
-		t.window.CPrint(col1, bold, substr)
+		t.window.CPrint(col1, attr, substr)
 
 		if b < e {
 			substr, prefixWidth = processTabs(text[b:e], prefixWidth)
-			t.window.CPrint(offset.color, offset.bold, substr)
+			t.window.CPrint(offset.color, offset.attr, substr)
 		}
 
 		index = e
@@ -778,7 +778,7 @@ func (t *Terminal) printHighlighted(result *Result, bold bool, col1 int, col2 in
 	}
 	if index < maxOffset {
 		substr, _ = processTabs(text[index:], prefixWidth)
-		t.window.CPrint(col1, bold, substr)
+		t.window.CPrint(col1, attr, substr)
 	}
 }
 
@@ -812,7 +812,7 @@ func (t *Terminal) printPreview() {
 			}
 		}
 		if ansi != nil && ansi.colored() {
-			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.bold)
+			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.attr)
 		}
 		return t.pwindow.Fill(str)
 	})

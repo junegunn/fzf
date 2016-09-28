@@ -14,7 +14,7 @@ type Offset [2]int32
 type colorOffset struct {
 	offset [2]int32
 	color  int
-	bold   bool
+	attr   curses.Attr
 	index  int32
 }
 
@@ -91,14 +91,14 @@ func minRank() rank {
 	return rank{index: 0, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, color int, bold bool, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, color int, attr curses.Attr, current bool) []colorOffset {
 	itemColors := result.item.Colors()
 
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
 		for _, off := range matchOffsets {
 
-			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, bold: bold})
+			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, attr: attr})
 		}
 		return offsets
 	}
@@ -142,7 +142,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, color int, bold bool, 
 		if curr != 0 && idx > start {
 			if curr == -1 {
 				colors = append(colors, colorOffset{
-					offset: [2]int32{int32(start), int32(idx)}, color: color, bold: bold})
+					offset: [2]int32{int32(start), int32(idx)}, color: color, attr: attr})
 			} else {
 				ansi := itemColors[curr-1]
 				fg := ansi.color.fg
@@ -164,7 +164,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, color int, bold bool, 
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
 					color:  curses.PairFor(fg, bg),
-					bold:   ansi.color.bold || bold})
+					attr:   ansi.color.attr | attr})
 			}
 		}
 	}
