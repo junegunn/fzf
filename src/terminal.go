@@ -796,6 +796,9 @@ func numLinesMax(str string, max int) int {
 }
 
 func (t *Terminal) printPreview() {
+	if !t.isPreviewEnabled() {
+		return
+	}
 	t.pwindow.Erase()
 	skip := t.previewer.offset
 	extractColor(t.previewer.text, nil, func(str string, ansi *ansiState) bool {
@@ -839,9 +842,7 @@ func (t *Terminal) printAll() {
 	t.printPrompt()
 	t.printInfo()
 	t.printHeader()
-	if t.isPreviewEnabled() {
-		t.printPreview()
-	}
+	t.printPreview()
 }
 
 func (t *Terminal) refresh() {

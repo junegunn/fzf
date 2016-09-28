@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.15.3
+------
+- Added support for more ANSI attributes: dim, underline, blink, and reverse
+- Fixed race condition in `toggle-preview`
+
 0.15.2
 ------
 - Preview window is now scrollable
