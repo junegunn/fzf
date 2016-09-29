@@ -3,6 +3,7 @@ package fzf
 import (
 	"math"
 	"sort"
+	"unicode"
 
 	"github.com/junegunn/fzf/src/curses"
 	"github.com/junegunn/fzf/src/util"
@@ -62,7 +63,7 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 				for idx := 0; idx < numChars; idx++ {
 					r := item.text.Get(idx)
 					whitePrefixLen = idx
-					if idx == minBegin || r != ' ' && r != '\t' {
+					if idx == minBegin || !unicode.IsSpace(r) {
 						break
 					}
 				}

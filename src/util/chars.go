@@ -1,6 +1,7 @@
 package util
 
 import (
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -63,7 +64,7 @@ func (chars *Chars) TrimLength() int {
 	len := chars.Length()
 	for i = len - 1; i >= 0; i-- {
 		char := chars.Get(i)
-		if char != ' ' && char != '\t' {
+		if !unicode.IsSpace(char) {
 			break
 		}
 	}
@@ -75,7 +76,7 @@ func (chars *Chars) TrimLength() int {
 	var j int
 	for j = 0; j < len; j++ {
 		char := chars.Get(j)
-		if char != ' ' && char != '\t' {
+		if !unicode.IsSpace(char) {
 			break
 		}
 	}
@@ -86,7 +87,7 @@ func (chars *Chars) TrailingWhitespaces() int {
 	whitespaces := 0
 	for i := chars.Length() - 1; i >= 0; i-- {
 		char := chars.Get(i)
-		if char != ' ' && char != '\t' {
+		if !unicode.IsSpace(char) {
 			break
 		}
 		whitespaces++
