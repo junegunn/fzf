@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+0.15.4
+------
+- Added support for range expression in preview and execute action
+    - e.g. `ls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1`
+    - `{q}` will be replaced to the single-quoted string of the current query
+- Fixed to properly handle unicode whitespace characters
+- Display scroll indicator in preview window
+- Inverse search term will use exact matcher by default
+    - This is a breaking change, but I believe it makes much more sense. It is
+      almost impossible to predict which entries will be filtered out due to
+      a fuzzy inverse term. You can still perform inverse-fuzzy-match by
+      prepending `!'` to the term.
+
 0.15.3
 ------
 - Added support for more ANSI attributes: dim, underline, blink, and reverse
