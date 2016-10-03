@@ -20,6 +20,12 @@ import (
 
 // import "github.com/pkg/profile"
 
+var placeholder *regexp.Regexp
+
+func init() {
+	placeholder = regexp.MustCompile("\\\\?(?:{[0-9,-.]*}|{q})")
+}
+
 type jumpMode int
 
 const (
@@ -51,6 +57,7 @@ type Terminal struct {
 	multi      bool
 	sort       bool
 	toggleSort bool
+	delimiter  Delimiter
 	expect     map[int]string
 	keymap     map[int]actionType
 	execmap    map[int]string
@@ -87,15 +94,10 @@ type Terminal struct {
 
 type selectedItem struct {
 	at   time.Time
-	text string
+	item *Item
 }
 
 type byTimeOrder []selectedItem
-
-type previewRequest struct {
-	ok  bool
-	str string
-}
 
 func (a byTimeOrder) Len() int {
 	return len(a)
@@ -267,6 +269,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		multi:      opts.Multi,
 		sort:       opts.Sort > 0,
 		toggleSort: opts.ToggleSort,
+		delimiter:  opts.Delimiter,
 		expect:     opts.Expect,
 		keymap:     opts.Keymap,
 		execmap:    opts.Execmap,
@@ -373,7 +376,7 @@ func (t *Terminal) output() bool {
 		}
 	} else {
 		for _, sel := range t.sortSelected() {
-			t.printer(sel.text)
+			t.printer(sel.item.AsString(t.ansi))
 		}
 	}
 	return found
@@ -912,8 +915,60 @@ func quoteEntry(entry string) string {
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
-func (t *Terminal) executeCommand(template string, replacement string) {
-	command := strings.Replace(template, "{}", replacement, -1)
+func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, query string, items []*Item) string {
+	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
+		// Escaped pattern
+		if match[0] == '\\' {
+			return match[1:]
+		}
+
+		// Current query
+		if match == "{q}" {
+			return quoteEntry(query)
+		}
+
+		replacements := make([]string, len(items))
+
+		if match == "{}" {
+			for idx, item := range items {
+				replacements[idx] = quoteEntry(item.AsString(stripAnsi))
+			}
+			return strings.Join(replacements, " ")
+		}
+
+		tokens := strings.Split(match[1:len(match)-1], ",")
+		ranges := make([]Range, len(tokens))
+		for idx, s := range tokens {
+			r, ok := ParseRange(&s)
+			if !ok {
+				// Invalid expression, just return the original string in the template
+				return match
+			}
+			ranges[idx] = r
+		}
+
+		for idx, item := range items {
+			chars := util.RunesToChars([]rune(item.AsString(stripAnsi)))
+			tokens := Tokenize(chars, delimiter)
+			trans := Transform(tokens, ranges)
+			str := string(joinTokens(trans))
+			if delimiter.str != nil {
+				str = strings.TrimSuffix(str, *delimiter.str)
+			} else if delimiter.regex != nil {
+				delims := delimiter.regex.FindAllStringIndex(str, -1)
+				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
+					str = str[:delims[len(delims)-1][0]]
+				}
+			}
+			str = strings.TrimSpace(str)
+			replacements[idx] = quoteEntry(str)
+		}
+		return strings.Join(replacements, " ")
+	})
+}
+
+func (t *Terminal) executeCommand(template string, items []*Item) {
+	command := replacePlaceholder(template, t.ansi, t.delimiter, string(t.input), items)
 	cmd := util.ExecCommand(command)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -931,8 +986,12 @@ func (t *Terminal) isPreviewEnabled() bool {
 	return t.previewBox != nil && t.previewer.enabled
 }
 
+func (t *Terminal) currentItem() *Item {
+	return t.merger.Get(t.cy).item
+}
+
 func (t *Terminal) current() string {
-	return t.merger.Get(t.cy).item.AsString(t.ansi)
+	return t.currentItem().AsString(t.ansi)
 }
 
 // Loop is called to start Terminal I/O
@@ -989,18 +1048,19 @@ func (t *Terminal) Loop() {
 	if t.hasPreviewWindow() {
 		go func() {
 			for {
-				request := previewRequest{false, ""}
+				var request *Item
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
 						case reqPreviewEnqueue:
-							request = value.(previewRequest)
+							request = value.(*Item)
 						}
 					}
 					events.Clear()
 				})
-				if request.ok {
-					command := strings.Replace(t.preview.command, "{}", quoteEntry(request.str), -1)
+				if request != nil {
+					command := replacePlaceholder(t.preview.command,
+						t.ansi, t.delimiter, string(t.input), []*Item{request})
 					cmd := util.ExecCommand(command)
 					out, _ := cmd.CombinedOutput()
 					t.reqBox.Set(reqPreviewDisplay, string(out))
@@ -1020,7 +1080,7 @@ func (t *Terminal) Loop() {
 	}
 
 	go func() {
-		focused := previewRequest{false, ""}
+		var focused *Item
 		for {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
@@ -1037,11 +1097,11 @@ func (t *Terminal) Loop() {
 					case reqList:
 						t.printList()
 						cnt := t.merger.Length()
-						var currentFocus previewRequest
+						var currentFocus *Item
 						if cnt > 0 && cnt > t.cy {
-							currentFocus = previewRequest{true, t.current()}
+							currentFocus = t.currentItem()
 						} else {
-							currentFocus = previewRequest{false, ""}
+							currentFocus = nil
 						}
 						if currentFocus != focused {
 							focused = currentFocus
@@ -1109,7 +1169,7 @@ func (t *Terminal) Loop() {
 		}
 		selectItem := func(item *Item) bool {
 			if _, found := t.selected[item.Index()]; !found {
-				t.selected[item.Index()] = selectedItem{time.Now(), item.AsString(t.ansi)}
+				t.selected[item.Index()] = selectedItem{time.Now(), item}
 				return true
 			}
 			return false
@@ -1146,16 +1206,15 @@ func (t *Terminal) Loop() {
 			case actIgnore:
 			case actExecute:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
-					item := t.merger.Get(t.cy).item
-					t.executeCommand(t.execmap[mapkey], quoteEntry(item.AsString(t.ansi)))
+					t.executeCommand(t.execmap[mapkey], []*Item{t.currentItem()})
 				}
 			case actExecuteMulti:
 				if len(t.selected) > 0 {
-					sels := make([]string, len(t.selected))
+					sels := make([]*Item, len(t.selected))
 					for i, sel := range t.sortSelected() {
-						sels[i] = quoteEntry(sel.text)
+						sels[i] = sel.item
 					}
-					t.executeCommand(t.execmap[mapkey], strings.Join(sels, " "))
+					t.executeCommand(t.execmap[mapkey], sels)
 				} else {
 					return doAction(actExecute, mapkey)
 				}
@@ -1168,7 +1227,7 @@ func (t *Terminal) Loop() {
 					t.resizeWindows()
 					cnt := t.merger.Length()
 					if t.previewer.enabled && cnt > 0 && cnt > t.cy {
-						t.previewBox.Set(reqPreviewEnqueue, previewRequest{true, t.current()})
+						t.previewBox.Set(reqPreviewEnqueue, t.currentItem())
 					}
 					req(reqList, reqInfo)
 				}
