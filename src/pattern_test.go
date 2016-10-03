@@ -22,15 +22,15 @@ func TestParseTermsExtended(t *testing.T) {
 		terms[1][0].typ != termExact || terms[1][0].inv ||
 		terms[2][0].typ != termPrefix || terms[2][0].inv ||
 		terms[3][0].typ != termSuffix || terms[3][0].inv ||
-		terms[4][0].typ != termFuzzy || !terms[4][0].inv ||
-		terms[5][0].typ != termExact || !terms[5][0].inv ||
+		terms[4][0].typ != termExact || !terms[4][0].inv ||
+		terms[5][0].typ != termFuzzy || !terms[5][0].inv ||
 		terms[6][0].typ != termPrefix || !terms[6][0].inv ||
 		terms[7][0].typ != termSuffix || !terms[7][0].inv ||
 		terms[7][1].typ != termEqual || terms[7][1].inv ||
 		terms[8][0].typ != termPrefix || terms[8][0].inv ||
 		terms[8][1].typ != termExact || terms[8][1].inv ||
 		terms[8][2].typ != termSuffix || terms[8][2].inv ||
-		terms[8][3].typ != termFuzzy || !terms[8][3].inv {
+		terms[8][3].typ != termExact || !terms[8][3].inv {
 		t.Errorf("%s", terms)
 	}
 	for idx, termSet := range terms[:8] {
