@@ -305,7 +305,7 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 :FZF ~
 
 " With options
-:FZF --no-sort -m /tmp
+:FZF --no-sort --reverse --inline-info /tmp
 
 " Bang version starts in fullscreen instead of using tmux pane or Neovim split
 :FZF!

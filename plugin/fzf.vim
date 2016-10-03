@@ -558,11 +558,15 @@ let s:default_action = {
 
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
-  let opts = {}
+  let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
-    let opts.dir = substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g')
+    let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '/*$', '/', '')
+    let opts.options .= ' --prompt '.shellescape(opts.dir)
+  else
+    let opts.options .= ' --prompt '.shellescape(pathshorten(getcwd()).'/')
   endif
-  call fzf#run(fzf#wrap('FZF', extend({'options': join(args)}, opts), a:bang))
+  let opts.options .= ' '.join(args)
+  call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
