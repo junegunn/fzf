@@ -822,6 +822,11 @@ func (t *Terminal) printPreview() {
 		}
 		return t.pwindow.Fill(str)
 	})
+	if t.previewer.offset > 0 {
+		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
+		t.pwindow.Move(0, t.pwindow.Width-len(offset))
+		t.pwindow.CPrint(C.ColInfo, C.Reverse, offset)
+	}
 }
 
 func processTabs(runes []rune, prefixWidth int) (string, int) {
