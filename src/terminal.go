@@ -1188,7 +1188,7 @@ func (t *Terminal) Loop() {
 		}
 		scrollPreview := func(amount int) {
 			t.previewer.offset = util.Constrain(
-				t.previewer.offset+amount, 0, t.previewer.lines-t.pwindow.Height)
+				t.previewer.offset+amount, 0, t.previewer.lines-1)
 			req(reqPreviewRefresh)
 		}
 		for key, ret := range t.expect {
