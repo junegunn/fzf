@@ -112,11 +112,11 @@ link_fzf_in_path() {
 }
 
 try_curl() {
-  command -v curl > /dev/null && curl -fL $1 | tar -xz
+  command -v curl > /dev/null && curl -sfL $1 | tar -xz
 }
 
 try_wget() {
-  command -v wget > /dev/null && wget -O - $1 | tar -xz
+  command -v wget > /dev/null && wget -qO - $1 | tar -xz
 }
 
 download() {
