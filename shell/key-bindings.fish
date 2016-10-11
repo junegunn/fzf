@@ -26,8 +26,8 @@ function fzf_key_bindings
   end
 
   function fzf-history-widget
-    history | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS > $TMPDIR/fzf.result
-    and commandline (cat $TMPDIR/fzf.result)
+    history | eval (__fzfcmd) +s +m --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q '(commandline)' > $TMPDIR/fzf.result
+    and commandline -- (cat $TMPDIR/fzf.result)
     commandline -f repaint
     rm -f $TMPDIR/fzf.result
   end
