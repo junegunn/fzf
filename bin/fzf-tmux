@@ -17,6 +17,7 @@ swap=""
 close=""
 term=""
 [[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines)
+[[ -n "$COLUMNS" ]] && columns=$COLUMNS || columns=$(tput cols)
 
 help() {
   >&2 echo 'usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
@@ -83,7 +84,7 @@ while [[ $# -gt 0 ]]; do
       else
         if [[ -n "$swap" ]]; then
           if [[ "$arg" =~ ^.l ]]; then
-            [[ -n "$COLUMNS" ]] && max=$COLUMNS || max=$(tput cols)
+            max=$columns
           else
             max=$lines
           fi
@@ -108,7 +109,7 @@ while [[ $# -gt 0 ]]; do
   [[ -n "$skip" ]] && args+=("$arg")
 done
 
-if [[ -z "$TMUX" ]] || [[ "$lines" -le 15 ]]; then
+if [[ -z "$TMUX" ]] || [[ "$opt" =~ ^-h ]] && [[ "$columns" -le 40 ]] || [[ ! "$opt" =~ ^-h ]] && [[ "$lines" -le 15 ]]; then
   "$fzf" "${args[@]}"
   exit $?
 fi

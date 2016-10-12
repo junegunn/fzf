@@ -289,7 +289,8 @@ function! s:fzf_tmux(dict)
 endfunction
 
 function! s:splittable(dict)
-  return s:present(a:dict, 'up', 'down', 'left', 'right')
+  return s:present(a:dict, 'up', 'down') && &lines > 15 ||
+        \ s:present(a:dict, 'left', 'right') && &columns > 40
 endfunction
 
 function! s:pushd(dict)
@@ -405,24 +406,25 @@ function! s:split(dict)
   \ 'right': ['vertical botright', 'vertical resize', &columns] }
   let ppos = s:getpos()
   try
-    for [dir, triple] in items(directions)
-      let val = get(a:dict, dir, '')
-      if !empty(val)
-        let [cmd, resz, max] = triple
-        if (dir == 'up' || dir == 'down') && val[0] == '~'
-          let sz = s:calc_size(max, val, a:dict)
-        else
-          let sz = s:calc_size(max, val, {})
-        endif
-        execute cmd sz.'new'
-        execute resz sz
-        return [ppos, {}]
-      endif
-    endfor
     if s:present(a:dict, 'window')
       execute a:dict.window
-    else
+    elseif !s:splittable(a:dict)
       execute (tabpagenr()-1).'tabnew'
+    else
+      for [dir, triple] in items(directions)
+        let val = get(a:dict, dir, '')
+        if !empty(val)
+          let [cmd, resz, max] = triple
+          if (dir == 'up' || dir == 'down') && val[0] == '~'
+            let sz = s:calc_size(max, val, a:dict)
+          else
+            let sz = s:calc_size(max, val, {})
+          endif
+          execute cmd sz.'new'
+          execute resz sz
+          return [ppos, {}]
+        endif
+      endfor
     endif
     return [ppos, { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }]
   finally
