@@ -10,6 +10,7 @@ import (
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/rawterm"
 
 	"github.com/junegunn/go-shellwords"
 )
@@ -109,6 +110,22 @@ type sizeSpec struct {
 
 func defaultMargin() [4]sizeSpec {
 	return [4]sizeSpec{}
+}
+
+func autoMargin() ([4]sizeSpec, bool) {
+    row, _, err := rawterm.GetCurRowCol(0)
+    totalRows := curses.MaxY() // TODO: This doesn't really work it seems, fix it before submitting
+    margin := defaultMargin()
+    reverse := true
+    if err == nil {
+        if row < totalRows/2 {
+            margin[0].size = float64(row)
+            reverse = true
+        } else {
+            margin[2].size = float64(totalRows-row-1)
+        }
+    }
+    return margin, reverse
 }
 
 type windowPosition int
@@ -988,6 +1005,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--margin":
 			opts.Margin = parseMargin(
 				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
+        case "--auto-margin":
+            opts.Margin, opts.Reverse = autoMargin()
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
 		case "--version":
