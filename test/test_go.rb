@@ -604,8 +604,8 @@ class TestGoFZF < TestBase
     ], `#{FZF} -fo --tiebreak=end < #{tempname}`.split($/)
 
     assert_equal [
-      '  xxxxoxxx',
       'xxxxxoxxx',
+      '  xxxxoxxx',
       'xxxxoxxxx',
       'xxxoxxxxxx',
       'xxoxxxxxxx',

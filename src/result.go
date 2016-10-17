@@ -57,7 +57,7 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 		case byLength:
 			// If offsets is empty, trimLen will be 0, but we don't care
 			val = util.AsUint16(trimLen)
-		case byBegin:
+		case byBegin, byEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
 				for idx := 0; idx < numChars; idx++ {
@@ -67,11 +67,11 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 						break
 					}
 				}
-				val = util.AsUint16(minBegin - whitePrefixLen)
-			}
-		case byEnd:
-			if validOffsetFound {
-				val = util.AsUint16(1 + numChars - maxEnd)
+				if criterion == byBegin {
+					val = util.AsUint16(minBegin - whitePrefixLen)
+				} else {
+					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/trimLen)
+				}
 			}
 		}
 		result.rank.points[idx] = val
