@@ -21,6 +21,11 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+if exists('g:loaded_fzf')
+  finish
+endif
+let g:loaded_fzf = 1
+
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
