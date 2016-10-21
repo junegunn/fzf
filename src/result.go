@@ -92,13 +92,13 @@ func minRank() rank {
 	return rank{index: 0, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, color int, attr curses.Attr, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, theme *curses.ColorTheme, color int, attr curses.Attr, current bool) []colorOffset {
 	itemColors := result.item.Colors()
 
+	// No ANSI code, or --color=no
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
 		for _, off := range matchOffsets {
-
 			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, attr: attr})
 		}
 		return offsets
@@ -149,17 +149,17 @@ func (result *Result) colorOffsets(matchOffsets []Offset, color int, attr curses
 				fg := ansi.color.fg
 				if fg == -1 {
 					if current {
-						fg = curses.CurrentFG
+						fg = int(theme.Current)
 					} else {
-						fg = curses.FG
+						fg = int(theme.Fg)
 					}
 				}
 				bg := ansi.color.bg
 				if bg == -1 {
 					if current {
-						bg = curses.DarkBG
+						bg = int(theme.DarkBg)
 					} else {
-						bg = curses.BG
+						bg = int(theme.Bg)
 					}
 				}
 				colors = append(colors, colorOffset{

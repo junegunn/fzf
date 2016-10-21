@@ -299,19 +299,13 @@ func TestColorSpec(t *testing.T) {
 	}
 	customized.Fg = curses.Dark256.Fg
 	customized.Bg = curses.Dark256.Bg
-	if *curses.Dark256 == *customized {
-		t.Errorf("colors should now be equivalent")
+	if *curses.Dark256 != *customized {
+		t.Errorf("colors should now be equivalent: %v, %v", curses.Dark256, customized)
 	}
 
 	customized = parseTheme(theme, "fg:231,dark,bg:232")
 	if customized.Fg != curses.Dark256.Fg || customized.Bg == curses.Dark256.Bg {
 		t.Errorf("color not customized")
-	}
-	if customized.UseDefault {
-		t.Errorf("not using default colors")
-	}
-	if !curses.Dark256.UseDefault {
-		t.Errorf("using default colors")
 	}
 }
 

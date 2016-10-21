@@ -103,7 +103,7 @@ func TestColorOffset(t *testing.T) {
 				ansiOffset{[2]int32{33, 40}, ansiState{4, 8, curses.Bold}}}}}
 	// [{[0 5] 9 false} {[5 15] 99 false} {[15 20] 9 false} {[22 25] 10 true} {[25 35] 99 false} {[35 40] 11 true}]
 
-	colors := item.colorOffsets(offsets, 99, 0, true)
+	colors := item.colorOffsets(offsets, curses.Dark256, 99, 0, true)
 	assert := func(idx int, b int32, e int32, c int, bold bool) {
 		var attr curses.Attr
 		if bold {

@@ -499,10 +499,8 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 			switch pair[0] {
 			case "fg":
 				theme.Fg = ansi
-				theme.UseDefault = theme.UseDefault && ansi < 0
 			case "bg":
 				theme.Bg = ansi
-				theme.UseDefault = theme.UseDefault && ansi < 0
 			case "fg+":
 				theme.Current = ansi
 			case "bg+":

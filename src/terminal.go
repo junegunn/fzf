@@ -90,6 +90,7 @@ type Terminal struct {
 	suppress   bool
 	startChan  chan bool
 	slab       *util.Slab
+	theme      *C.ColorTheme
 }
 
 type selectedItem struct {
@@ -295,6 +296,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		mutex:      sync.Mutex{},
 		suppress:   true,
 		slab:       util.MakeSlab(slab16Size, slab32Size),
+		theme:      opts.Theme,
 		startChan:  make(chan bool, 1),
 		initFunc: func() {
 			C.Init(opts.Theme, opts.Black, opts.Mouse)
@@ -637,7 +639,7 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(result, 0, 0, C.ColMatch, false)
+		t.printHighlighted(result, 0, C.ColNormal, C.ColMatch, false)
 	}
 }
 
@@ -718,7 +720,7 @@ func (t *Terminal) printHighlighted(result *Result, attr C.Attr, col1 int, col2 
 		maxe = util.Max(maxe, int(offset[1]))
 	}
 
-	offsets := result.colorOffsets(charOffsets, col2, attr, current)
+	offsets := result.colorOffsets(charOffsets, t.theme, col2, attr, current)
 	maxWidth := t.window.Width - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	if overflow(text, maxWidth) {
