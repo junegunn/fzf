@@ -159,6 +159,22 @@ function! s:common_sink(action, lines) abort
   endtry
 endfunction
 
+function! s:get_color(attr, ...)
+  for group in a:000
+    let code = synIDattr(synIDtrans(hlID(group)), a:attr, 'cterm')
+    if code =~ '^[0-9]\+$'
+      return code
+    endif
+  endfor
+  return ''
+endfunction
+
+function! s:defaults()
+  let rules = copy(get(g:, 'fzf_colors', {}))
+  let colors = join(map(items(filter(map(rules, 'call("s:get_color", v:val)'), '!empty(v:val)')), 'join(v:val, ":")'), ',')
+  return empty(colors) ? '' : ('--color='.colors)
+endfunction
+
 " [name string,] [opts dict,] [fullscreen boolean]
 function! fzf#wrap(...)
   let args = ['', {}, 0]
@@ -190,8 +206,10 @@ function! fzf#wrap(...)
     endif
   endif
 
+  " Colors: g:fzf_colors
+  let opts.options = s:defaults() .' '. get(opts, 'options', '')
+
   " History: g:fzf_history_dir
-  let opts.options = get(opts, 'options', '')
   if len(name) && len(get(g:, 'fzf_history_dir', ''))
     let dir = expand(g:fzf_history_dir)
     if !isdirectory(dir)

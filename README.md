@@ -319,7 +319,7 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
 `FZF_DEFAULT_OPTS` also apply here. Refer to [the wiki page][fzf-config] for
 customization.
 
-[fzf-config]: https://github.com/junegunn/fzf/wiki/Configuring-FZF-command-(vim)
+[fzf-config]: https://github.com/junegunn/fzf/wiki/Configuring-Vim-plugin
 
 #### `fzf#run`
 
@@ -347,7 +347,8 @@ page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
 
 `fzf#wrap([name string,] [opts dict,] [fullscreen boolean])` is a helper
 function that decorates the options dictionary so that it understands
-`g:fzf_layout`, `g:fzf_action`, and `g:fzf_history_dir` like `:FZF`.
+`g:fzf_layout`, `g:fzf_action`, `g:fzf_colors`, and `g:fzf_history_dir` like
+`:FZF`.
 
 ```vim
 command! -bang MyStuff

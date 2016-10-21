@@ -143,6 +143,10 @@ Execute (fzf#wrap):
   Assert opts.options =~ '--history /tmp/foobar'
   Assert opts.options =~ '--color light'
 
+  let g:fzf_colors = { 'fg': ['fg', 'Error'] }
+  let opts = fzf#wrap({})
+  Assert opts.options =~ '^--color=fg:'
+
 Execute (Cleanup):
   unlet g:dir
   Restore
