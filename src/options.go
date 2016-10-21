@@ -246,7 +246,7 @@ func nextString(args []string, i *int, message string) string {
 }
 
 func optionalNextString(args []string, i *int) string {
-	if len(args) > *i+1 {
+	if len(args) > *i+1 && !strings.HasPrefix(args[*i+1], "-") {
 		*i++
 		return args[*i]
 	}
