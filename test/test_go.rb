@@ -136,8 +136,10 @@ class Tmux
   def prepare
     tries = 0
     begin
-      self.send_keys 'C-u', 'hello', 'Right'
-      self.until { |lines| lines[-1].end_with?('hello') }
+      self.until do |lines|
+        self.send_keys 'C-u', 'hello'
+        lines[-1].end_with?('hello')
+      end
     rescue Exception
       (tries += 1) < 5 ? retry : raise
     end
