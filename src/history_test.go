@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"io/ioutil"
 	"os/user"
 	"testing"
 )
@@ -19,14 +20,18 @@ func TestHistory(t *testing.T) {
 			t.Error("Error expected for: " + path)
 		}
 	}
+
+	f, _ := ioutil.TempFile("", "fzf-history")
+	f.Close()
+
 	{ // Append lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		for i := 0; i < maxHistory+10; i++ {
 			h.append("foobar")
 		}
 	}
 	{ // Read lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		if len(h.lines) != maxHistory+1 {
 			t.Errorf("Expected: %d, actual: %d\n", maxHistory+1, len(h.lines))
 		}
@@ -37,13 +42,13 @@ func TestHistory(t *testing.T) {
 		}
 	}
 	{ // Append lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		h.append("barfoo")
 		h.append("")
 		h.append("foobarbaz")
 	}
 	{ // Read lines again
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		if len(h.lines) != maxHistory+1 {
 			t.Errorf("Expected: %d, actual: %d\n", maxHistory+1, len(h.lines))
 		}
