@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.15.5
+------
+- Setting foreground color will no longer set background color to black
+    - e.g. `fzf --color fg:153`
+- `--tiebreak=end` will consider relative position instead of absolute distance
+- Updated `fzf#wrap` function to respect `g:fzf_colors`
+
 0.15.4
 ------
 - Added support for range expression in preview and execute action
