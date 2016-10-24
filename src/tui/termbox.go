@@ -336,6 +336,11 @@ func (w *Window) PrintPalette(text string, fg, bg termbox.Attribute) {
 			w.win().LastY++
 			lx = 0
 		} else {
+
+			if r == '\u000D' { // skip carriage return
+				continue
+			}
+
 			termbox.SetCell(w.Left+w.win().LastX+lx, w.Top+w.win().LastY, r, fg, bg)
 			lx++
 		}
