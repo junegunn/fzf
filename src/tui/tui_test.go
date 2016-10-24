@@ -1,4 +1,4 @@
-package curses
+package tui
 
 import (
 	"testing"

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"unicode"
 
-	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 )
 
@@ -14,8 +14,8 @@ type Offset [2]int32
 
 type colorOffset struct {
 	offset [2]int32
-	color  int
-	attr   curses.Attr
+	color  tui.ColorPair
+	attr   tui.Attr
 	index  int32
 }
 
@@ -92,7 +92,7 @@ func minRank() rank {
 	return rank{index: 0, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, theme *curses.ColorTheme, color int, attr curses.Attr, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme, color tui.ColorPair, attr tui.Attr, current bool) []colorOffset {
 	itemColors := result.item.Colors()
 
 	// No ANSI code, or --color=no
@@ -149,23 +149,23 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *curses.ColorThe
 				fg := ansi.color.fg
 				if fg == -1 {
 					if current {
-						fg = int(theme.Current)
+						fg = theme.Current
 					} else {
-						fg = int(theme.Fg)
+						fg = theme.Fg
 					}
 				}
 				bg := ansi.color.bg
 				if bg == -1 {
 					if current {
-						bg = int(theme.DarkBg)
+						bg = theme.DarkBg
 					} else {
-						bg = int(theme.Bg)
+						bg = theme.Bg
 					}
 				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  curses.PairFor(fg, bg),
-					attr:   ansi.color.attr | attr})
+					color:  tui.PairFor(fg, bg),
+					attr:   ansi.color.attr.Merge(attr)})
 			}
 		}
 	}

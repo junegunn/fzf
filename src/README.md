@@ -83,9 +83,11 @@ Third-party libraries used
 
 - [ncurses][ncurses]
 - [mattn/go-runewidth](https://github.com/mattn/go-runewidth)
-    - Licensed under [MIT](http://mattn.mit-license.org/2013)
+    - Licensed under [MIT](http://mattn.mit-license.org)
 - [mattn/go-shellwords](https://github.com/mattn/go-shellwords)
-    - Licensed under [MIT](http://mattn.mit-license.org/2014)
+    - Licensed under [MIT](http://mattn.mit-license.org)
+- [mattn/go-isatty](https://github.com/mattn/go-isatty)
+    - Licensed under [MIT](http://mattn.mit-license.org)
 
 License
 -------

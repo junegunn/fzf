@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	C "github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 
 	"github.com/junegunn/go-runewidth"
@@ -69,9 +69,9 @@ type Terminal struct {
 	header0    []string
 	ansi       bool
 	margin     [4]sizeSpec
-	window     *C.Window
-	bwindow    *C.Window
-	pwindow    *C.Window
+	window     *tui.Window
+	bwindow    *tui.Window
+	pwindow    *tui.Window
 	count      int
 	progress   int
 	reading    bool
@@ -90,7 +90,7 @@ type Terminal struct {
 	suppress   bool
 	startChan  chan bool
 	slab       *util.Slab
-	theme      *C.ColorTheme
+	theme      *tui.ColorTheme
 }
 
 type selectedItem struct {
@@ -187,51 +187,51 @@ const (
 
 func defaultKeymap() map[int]actionType {
 	keymap := make(map[int]actionType)
-	keymap[C.Invalid] = actInvalid
-	keymap[C.CtrlA] = actBeginningOfLine
-	keymap[C.CtrlB] = actBackwardChar
-	keymap[C.CtrlC] = actAbort
-	keymap[C.CtrlG] = actAbort
-	keymap[C.CtrlQ] = actAbort
-	keymap[C.ESC] = actAbort
-	keymap[C.CtrlD] = actDeleteCharEOF
-	keymap[C.CtrlE] = actEndOfLine
-	keymap[C.CtrlF] = actForwardChar
-	keymap[C.CtrlH] = actBackwardDeleteChar
-	keymap[C.BSpace] = actBackwardDeleteChar
-	keymap[C.Tab] = actToggleDown
-	keymap[C.BTab] = actToggleUp
-	keymap[C.CtrlJ] = actDown
-	keymap[C.CtrlK] = actUp
-	keymap[C.CtrlL] = actClearScreen
-	keymap[C.CtrlM] = actAccept
-	keymap[C.CtrlN] = actDown
-	keymap[C.CtrlP] = actUp
-	keymap[C.CtrlU] = actUnixLineDiscard
-	keymap[C.CtrlW] = actUnixWordRubout
-	keymap[C.CtrlY] = actYank
+	keymap[tui.Invalid] = actInvalid
+	keymap[tui.CtrlA] = actBeginningOfLine
+	keymap[tui.CtrlB] = actBackwardChar
+	keymap[tui.CtrlC] = actAbort
+	keymap[tui.CtrlG] = actAbort
+	keymap[tui.CtrlQ] = actAbort
+	keymap[tui.ESC] = actAbort
+	keymap[tui.CtrlD] = actDeleteCharEOF
+	keymap[tui.CtrlE] = actEndOfLine
+	keymap[tui.CtrlF] = actForwardChar
+	keymap[tui.CtrlH] = actBackwardDeleteChar
+	keymap[tui.BSpace] = actBackwardDeleteChar
+	keymap[tui.Tab] = actToggleDown
+	keymap[tui.BTab] = actToggleUp
+	keymap[tui.CtrlJ] = actDown
+	keymap[tui.CtrlK] = actUp
+	keymap[tui.CtrlL] = actClearScreen
+	keymap[tui.CtrlM] = actAccept
+	keymap[tui.CtrlN] = actDown
+	keymap[tui.CtrlP] = actUp
+	keymap[tui.CtrlU] = actUnixLineDiscard
+	keymap[tui.CtrlW] = actUnixWordRubout
+	keymap[tui.CtrlY] = actYank
 
-	keymap[C.AltB] = actBackwardWord
-	keymap[C.SLeft] = actBackwardWord
-	keymap[C.AltF] = actForwardWord
-	keymap[C.SRight] = actForwardWord
-	keymap[C.AltD] = actKillWord
-	keymap[C.AltBS] = actBackwardKillWord
+	keymap[tui.AltB] = actBackwardWord
+	keymap[tui.SLeft] = actBackwardWord
+	keymap[tui.AltF] = actForwardWord
+	keymap[tui.SRight] = actForwardWord
+	keymap[tui.AltD] = actKillWord
+	keymap[tui.AltBS] = actBackwardKillWord
 
-	keymap[C.Up] = actUp
-	keymap[C.Down] = actDown
-	keymap[C.Left] = actBackwardChar
-	keymap[C.Right] = actForwardChar
+	keymap[tui.Up] = actUp
+	keymap[tui.Down] = actDown
+	keymap[tui.Left] = actBackwardChar
+	keymap[tui.Right] = actForwardChar
 
-	keymap[C.Home] = actBeginningOfLine
-	keymap[C.End] = actEndOfLine
-	keymap[C.Del] = actDeleteChar
-	keymap[C.PgUp] = actPageUp
-	keymap[C.PgDn] = actPageDown
+	keymap[tui.Home] = actBeginningOfLine
+	keymap[tui.End] = actEndOfLine
+	keymap[tui.Del] = actDeleteChar
+	keymap[tui.PgUp] = actPageUp
+	keymap[tui.PgDn] = actPageDown
 
-	keymap[C.Rune] = actRune
-	keymap[C.Mouse] = actMouse
-	keymap[C.DoubleClick] = actAccept
+	keymap[tui.Rune] = actRune
+	keymap[tui.Mouse] = actMouse
+	keymap[tui.DoubleClick] = actAccept
 	return keymap
 }
 
@@ -299,7 +299,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:      opts.Theme,
 		startChan:  make(chan bool, 1),
 		initFunc: func() {
-			C.Init(opts.Theme, opts.Black, opts.Mouse)
+			tui.Init(opts.Theme, opts.Black, opts.Mouse)
 		}}
 }
 
@@ -429,8 +429,8 @@ func calculateSize(base int, size sizeSpec, margin int, minSize int) int {
 }
 
 func (t *Terminal) resizeWindows() {
-	screenWidth := C.MaxX()
-	screenHeight := C.MaxY()
+	screenWidth := tui.MaxX()
+	screenHeight := tui.MaxY()
 	marginInt := [4]int{}
 	for idx, sizeSpec := range t.margin {
 		if sizeSpec.percent {
@@ -479,33 +479,33 @@ func (t *Terminal) resizeWindows() {
 	height := screenHeight - marginInt[0] - marginInt[2]
 	if t.isPreviewEnabled() {
 		createPreviewWindow := func(y int, x int, w int, h int) {
-			t.bwindow = C.NewWindow(y, x, w, h, true)
-			t.pwindow = C.NewWindow(y+1, x+2, w-4, h-2, false)
+			t.bwindow = tui.NewWindow(y, x, w, h, true)
+			t.pwindow = tui.NewWindow(y+1, x+2, w-4, h-2, false)
 		}
 		switch t.preview.position {
 		case posUp:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
-			t.window = C.NewWindow(
+			t.window = tui.NewWindow(
 				marginInt[0]+pheight, marginInt[3], width, height-pheight, false)
 			createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
 		case posDown:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
-			t.window = C.NewWindow(
+			t.window = tui.NewWindow(
 				marginInt[0], marginInt[3], width, height-pheight, false)
 			createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 		case posLeft:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
-			t.window = C.NewWindow(
+			t.window = tui.NewWindow(
 				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false)
 			createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 		case posRight:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
-			t.window = C.NewWindow(
+			t.window = tui.NewWindow(
 				marginInt[0], marginInt[3], width-pwidth, height, false)
 			createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
 		}
 	} else {
-		t.window = C.NewWindow(
+		t.window = tui.NewWindow(
 			marginInt[0],
 			marginInt[3],
 			width,
@@ -531,24 +531,24 @@ func (t *Terminal) placeCursor() {
 
 func (t *Terminal) printPrompt() {
 	t.move(0, 0, true)
-	t.window.CPrint(C.ColPrompt, C.Bold, t.prompt)
-	t.window.CPrint(C.ColNormal, C.Bold, string(t.input))
+	t.window.CPrint(tui.ColPrompt, tui.Bold, t.prompt)
+	t.window.CPrint(tui.ColNormal, tui.Bold, string(t.input))
 }
 
 func (t *Terminal) printInfo() {
 	if t.inlineInfo {
 		t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input)+1, true)
 		if t.reading {
-			t.window.CPrint(C.ColSpinner, C.Bold, " < ")
+			t.window.CPrint(tui.ColSpinner, tui.Bold, " < ")
 		} else {
-			t.window.CPrint(C.ColPrompt, C.Bold, " < ")
+			t.window.CPrint(tui.ColPrompt, tui.Bold, " < ")
 		}
 	} else {
 		t.move(1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-			t.window.CPrint(C.ColSpinner, C.Bold, _spinner[idx])
+			t.window.CPrint(tui.ColSpinner, tui.Bold, _spinner[idx])
 		}
 		t.move(1, 2, false)
 	}
@@ -567,7 +567,7 @@ func (t *Terminal) printInfo() {
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
-	t.window.CPrint(C.ColInfo, 0, output)
+	t.window.CPrint(tui.ColInfo, 0, output)
 }
 
 func (t *Terminal) printHeader() {
@@ -591,7 +591,8 @@ func (t *Terminal) printHeader() {
 			colors: colors}
 
 		t.move(line, 2, true)
-		t.printHighlighted(&Result{item: item}, 0, C.ColHeader, 0, false)
+		t.printHighlighted(&Result{item: item},
+			tui.AttrRegular, tui.ColHeader, tui.ColDefault, false)
 	}
 }
 
@@ -625,21 +626,21 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 	} else if current {
 		label = ">"
 	}
-	t.window.CPrint(C.ColCursor, C.Bold, label)
+	t.window.CPrint(tui.ColCursor, tui.Bold, label)
 	if current {
 		if selected {
-			t.window.CPrint(C.ColSelected, C.Bold, ">")
+			t.window.CPrint(tui.ColSelected, tui.Bold, ">")
 		} else {
-			t.window.CPrint(C.ColCurrent, C.Bold, " ")
+			t.window.CPrint(tui.ColCurrent, tui.Bold, " ")
 		}
-		t.printHighlighted(result, C.Bold, C.ColCurrent, C.ColCurrentMatch, true)
+		t.printHighlighted(result, tui.Bold, tui.ColCurrent, tui.ColCurrentMatch, true)
 	} else {
 		if selected {
-			t.window.CPrint(C.ColSelected, C.Bold, ">")
+			t.window.CPrint(tui.ColSelected, tui.Bold, ">")
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(result, 0, C.ColNormal, C.ColMatch, false)
+		t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false)
 	}
 }
 
@@ -695,7 +696,7 @@ func overflow(runes []rune, max int) bool {
 	return false
 }
 
-func (t *Terminal) printHighlighted(result *Result, attr C.Attr, col1 int, col2 int, current bool) {
+func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool) {
 	item := result.item
 
 	// Overflow
@@ -827,7 +828,7 @@ func (t *Terminal) printPreview() {
 	if t.previewer.offset > 0 {
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
 		t.pwindow.Move(0, t.pwindow.Width-len(offset))
-		t.pwindow.CPrint(C.ColInfo, C.Reverse, offset)
+		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, offset)
 	}
 }
 
@@ -858,11 +859,10 @@ func (t *Terminal) printAll() {
 func (t *Terminal) refresh() {
 	if !t.suppress {
 		if t.isPreviewEnabled() {
-			t.bwindow.Refresh()
-			t.pwindow.Refresh()
+			tui.RefreshWindows([]*tui.Window{t.bwindow, t.pwindow, t.window})
+		} else {
+			tui.RefreshWindows([]*tui.Window{t.window})
 		}
-		t.window.Refresh()
-		C.DoUpdate()
 	}
 }
 
@@ -912,10 +912,10 @@ func (t *Terminal) rubout(pattern string) {
 	t.input = append(t.input[:t.cx], after...)
 }
 
-func keyMatch(key int, event C.Event) bool {
+func keyMatch(key int, event tui.Event) bool {
 	return event.Type == key ||
-		event.Type == C.Rune && int(event.Char) == key-C.AltZ ||
-		event.Type == C.Mouse && key == C.DoubleClick && event.MouseEvent.Double
+		event.Type == tui.Rune && int(event.Char) == key-tui.AltZ ||
+		event.Type == tui.Mouse && key == tui.DoubleClick && event.MouseEvent.Double
 }
 
 func quoteEntry(entry string) string {
@@ -980,7 +980,7 @@ func (t *Terminal) executeCommand(template string, items []*Item) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	C.Endwin()
+	tui.Pause()
 	cmd.Run()
 	t.refresh()
 }
@@ -1014,7 +1014,7 @@ func (t *Terminal) Loop() {
 		}()
 
 		resizeChan := make(chan os.Signal, 1)
-		signal.Notify(resizeChan, syscall.SIGWINCH)
+		notifyOnResize(resizeChan) // Non-portable
 		go func() {
 			for {
 				<-resizeChan
@@ -1126,12 +1126,11 @@ func (t *Terminal) Loop() {
 					case reqRefresh:
 						t.suppress = false
 					case reqRedraw:
-						C.Clear()
-						C.Endwin()
-						C.Refresh()
+						tui.Clear()
+						tui.Refresh()
 						t.printAll()
 					case reqClose:
-						C.Close()
+						tui.Close()
 						if t.output() {
 							exit(exitOk)
 						}
@@ -1144,11 +1143,11 @@ func (t *Terminal) Loop() {
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPrintQuery:
-						C.Close()
+						tui.Close()
 						t.printer(string(t.input))
 						exit(exitOk)
 					case reqQuit:
-						C.Close()
+						tui.Close()
 						exit(exitInterrupt)
 					}
 				}
@@ -1161,7 +1160,7 @@ func (t *Terminal) Loop() {
 
 	looping := true
 	for looping {
-		event := C.GetChar()
+		event := tui.GetChar()
 
 		t.mutex.Lock()
 		previousInput := t.input
@@ -1445,7 +1444,7 @@ func (t *Terminal) Loop() {
 						// Double-click
 						if my >= min {
 							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doAction(t.keymap[C.DoubleClick], C.DoubleClick)
+								return doAction(t.keymap[tui.DoubleClick], tui.DoubleClick)
 							}
 						}
 					} else if me.Down {
@@ -1468,8 +1467,8 @@ func (t *Terminal) Loop() {
 		mapkey := event.Type
 		if t.jumping == jumpDisabled {
 			action := t.keymap[mapkey]
-			if mapkey == C.Rune {
-				mapkey = int(event.Char) + int(C.AltZ)
+			if mapkey == tui.Rune {
+				mapkey = int(event.Char) + int(tui.AltZ)
 				if act, prs := t.keymap[mapkey]; prs {
 					action = act
 				}
@@ -1484,7 +1483,7 @@ func (t *Terminal) Loop() {
 			}
 			changed = string(previousInput) != string(t.input)
 		} else {
-			if mapkey == C.Rune {
+			if mapkey == tui.Rune {
 				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 && idx < t.maxItems() && idx < t.merger.Length() {
 					t.cy = idx + t.offset
 					if t.jumping == jumpAcceptEnabled {
