@@ -1,4 +1,4 @@
-// +build !termbox
+// +build !tcell
 
 package fzf
 

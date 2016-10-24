@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"runtime"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -39,9 +40,15 @@ func (r *Reader) feed(src io.Reader) {
 		// ReadBytes returns err != nil if and only if the returned data does not
 		// end in delim.
 		bytea, err := reader.ReadBytes(delim)
+		byteaLen := len(bytea)
 		if len(bytea) > 0 {
 			if err == nil {
-				bytea = bytea[:len(bytea)-1]
+				// get rid of carriage return if under Windows:
+				if runtime.GOOS == "windows" && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
+					bytea = bytea[:byteaLen-2]
+				} else {
+					bytea = bytea[:byteaLen-1]
+				}
 			}
 			if r.pusher(bytea) {
 				r.eventBox.Set(EvtReadNew, nil)
