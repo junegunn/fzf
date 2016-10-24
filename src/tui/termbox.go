@@ -11,7 +11,13 @@ import (
 
 type ColorPair [2]Color
 type Attr termbox.Attribute
-type WindowImpl int // FIXME
+
+type WindowTermbox struct {
+	LastX      int
+	LastY      int
+	MoveCursor bool
+}
+type WindowImpl WindowTermbox // FIXME
 
 const (
 	// TODO
@@ -88,13 +94,17 @@ func MaxY() int {
 	return int(nlines)
 }
 
+func (w *Window) win() *WindowTermbox {
+	return (*WindowTermbox)(w.impl)
+}
+
 func Clear() {
 	//termbox.Clear(ColNormal[0], ColNormal[1])
 	termbox.Clear(termbox.ColorWhite, termbox.ColorBlack)
 }
 
 func Refresh() {
-	termbox.SetCursor(_lastX, _lastY) //not sure if this is needed?
+	//termbox.SetCursor(_lastX, _lastY) //not sure if this is needed?
 }
 
 func GetChar() Event {
@@ -246,13 +256,22 @@ func Close() {
 
 func RefreshWindows(windows []*Window) {
 	// TODO
+	for _, w := range windows {
+		if w.win().MoveCursor {
+			termbox.SetCursor(w.Left+w.win().LastX, w.Top+w.win().LastY)
+			w.win().MoveCursor = false
+		}
+		w.win().LastX = 0
+		w.win().LastY = 0
+	}
 	termbox.Flush()
-	termbox.SetCursor(_lastX, _lastY)
 }
 
 func NewWindow(top int, left int, width int, height int, border bool) *Window {
 	// TODO
+	win := new(WindowTermbox)
 	return &Window{
+		impl:   (*WindowImpl)(win),
 		Top:    top,
 		Left:   left,
 		Width:  width,
@@ -264,15 +283,18 @@ func (w *Window) Close() {
 	// TODO
 }
 
-func (w *Window) Erase() {
-	// TODO
+func fill(x, y, w, h int, cell termbox.Cell) {
+	for ly := 0; ly < h; ly++ {
+		for lx := 0; lx < w; lx++ {
+			termbox.SetCell(x+lx, y+ly, cell.Ch, cell.Fg, cell.Bg)
+		}
+	}
 }
 
-var (
-	_lastX      int
-	_lastY      int
-	_moveCursor = false
-)
+func (w *Window) Erase() {
+	// TODO
+	fill(w.Left, w.Top, w.Width, w.Height, termbox.Cell{Ch: ' '})
+}
 
 func (w *Window) Enclose(y int, x int) bool {
 	return y >= w.Left && y <= (w.Left+w.Width) &&
@@ -280,17 +302,17 @@ func (w *Window) Enclose(y int, x int) bool {
 }
 
 func (w *Window) Move(y int, x int) {
-	_lastX = x
-	_lastY = y
-	_moveCursor = true
+	w.win().LastX = x
+	w.win().LastY = y
+	w.win().MoveCursor = true
 }
 
 func (w *Window) MoveAndClear(y int, x int) {
 	w.Move(y, x)
 	r, _ := utf8.DecodeRuneInString(" ")
-	for i := _lastX; i < MaxX(); i++ {
+	for i := w.win().LastX; i < w.Width; i++ {
 		//TODO: get colors right
-		termbox.SetCell(i, _lastY, r, termbox.ColorWhite, termbox.ColorBlack)
+		termbox.SetCell(i+w.Left, w.win().LastY+w.Top, r, termbox.ColorWhite, termbox.ColorBlack)
 	}
 }
 
@@ -308,13 +330,17 @@ func (w *Window) PrintPalette(text string, fg, bg termbox.Attribute) {
 			break
 		}
 		r, size := utf8.DecodeRuneInString(t)
+
 		t = t[size:]
-
-		termbox.SetCell(_lastX+lx, _lastY, r, fg, bg)
-		lx++
-
+		if r == '\n' {
+			w.win().LastY++
+			lx = 0
+		} else {
+			termbox.SetCell(w.Left+w.win().LastX+lx, w.Top+w.win().LastY, r, fg, bg)
+			lx++
+		}
 	}
-	_lastX += lx
+	w.win().LastX += lx
 }
 
 func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
@@ -324,11 +350,11 @@ func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
 }
 
 func (w *Window) Fill(str string) bool {
-	// TODO
-	return false
+	w.PrintPalette(str, termbox.ColorWhite, termbox.ColorBlack)
+	return true
 }
 
 func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
-	// TODO
-	return false
+	w.PrintPalette(str, termbox.ColorWhite, termbox.ColorBlack)
+	return true
 }
