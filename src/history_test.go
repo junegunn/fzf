@@ -2,7 +2,9 @@ package fzf
 
 import (
 	"io/ioutil"
+	"os"
 	"os/user"
+	"runtime"
 	"testing"
 )
 
@@ -11,10 +13,17 @@ func TestHistory(t *testing.T) {
 
 	// Invalid arguments
 	user, _ := user.Current()
-	paths := []string{"/etc", "/proc"}
-	if user.Name != "root" {
-		paths = append(paths, "/etc/sudoers")
+	var paths []string
+	if runtime.GOOS == "windows" {
+		// GOPATH should exist, so we shouldn't be able to override it
+		paths = []string{os.Getenv("GOPATH")}
+	} else {
+		paths = []string{"/etc", "/proc"}
+		if user.Name != "root" {
+			paths = append(paths, "/etc/sudoers")
+		}
 	}
+
 	for _, path := range paths {
 		if _, e := NewHistory(path, maxHistory); e == nil {
 			t.Error("Error expected for: " + path)
