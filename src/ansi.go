@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 )
 
 type ansiOffset struct {
@@ -16,9 +16,9 @@ type ansiOffset struct {
 }
 
 type ansiState struct {
-	fg   int
-	bg   int
-	attr curses.Attr
+	fg   tui.Color
+	bg   tui.Color
+	attr tui.Attr
 }
 
 func (s *ansiState) colored() bool {
@@ -134,26 +134,26 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 				case 49:
 					state.bg = -1
 				case 1:
-					state.attr = curses.Bold
+					state.attr = tui.Bold
 				case 2:
-					state.attr = curses.Dim
+					state.attr = tui.Dim
 				case 4:
-					state.attr = curses.Underline
+					state.attr = tui.Underline
 				case 5:
-					state.attr = curses.Blink
+					state.attr = tui.Blink
 				case 7:
-					state.attr = curses.Reverse
+					state.attr = tui.Reverse
 				case 0:
 					init()
 				default:
 					if num >= 30 && num <= 37 {
-						state.fg = num - 30
+						state.fg = tui.Color(num - 30)
 					} else if num >= 40 && num <= 47 {
-						state.bg = num - 40
+						state.bg = tui.Color(num - 40)
 					} else if num >= 90 && num <= 97 {
-						state.fg = num - 90 + 8
+						state.fg = tui.Color(num - 90 + 8)
 					} else if num >= 100 && num <= 107 {
-						state.bg = num - 100 + 8
+						state.bg = tui.Color(num - 100 + 8)
 					}
 				}
 			case 1:
@@ -164,7 +164,7 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 					state256 = 0
 				}
 			case 2:
-				*ptr = num
+				*ptr = tui.Color(num)
 				state256 = 0
 			}
 		}

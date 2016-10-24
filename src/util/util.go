@@ -1,13 +1,11 @@
 package util
 
-// #include <unistd.h>
-import "C"
-
 import (
 	"math"
 	"os"
-	"os/exec"
 	"time"
+
+	"github.com/junegunn/go-isatty"
 )
 
 // Max returns the largest integer
@@ -95,14 +93,5 @@ func DurWithin(
 
 // IsTty returns true is stdin is a terminal
 func IsTty() bool {
-	return int(C.isatty(C.int(os.Stdin.Fd()))) != 0
-}
-
-// ExecCommand executes the given command with $SHELL
-func ExecCommand(command string) *exec.Cmd {
-	shell := os.Getenv("SHELL")
-	if len(shell) == 0 {
-		shell = "sh"
-	}
-	return exec.Command(shell, "-c", command)
+	return isatty.IsTerminal(os.Stdin.Fd())
 }

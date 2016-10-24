@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 )
 
 func TestExtractColor(t *testing.T) {
-	assert := func(offset ansiOffset, b int32, e int32, fg int, bg int, bold bool) {
-		var attr curses.Attr
+	assert := func(offset ansiOffset, b int32, e int32, fg tui.Color, bg tui.Color, bold bool) {
+		var attr tui.Attr
 		if bold {
-			attr = curses.Bold
+			attr = tui.Bold
 		}
 		if offset.offset[0] != b || offset.offset[1] != e ||
 			offset.color.fg != fg || offset.color.bg != bg || offset.color.attr != attr {

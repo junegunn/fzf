@@ -1,3 +1,5 @@
+// +build !termbox
+
 package fzf
 
 import (
@@ -5,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 )
 
@@ -98,26 +100,26 @@ func TestColorOffset(t *testing.T) {
 		item: &Item{
 			colors: &[]ansiOffset{
 				ansiOffset{[2]int32{0, 20}, ansiState{1, 5, 0}},
-				ansiOffset{[2]int32{22, 27}, ansiState{2, 6, curses.Bold}},
+				ansiOffset{[2]int32{22, 27}, ansiState{2, 6, tui.Bold}},
 				ansiOffset{[2]int32{30, 32}, ansiState{3, 7, 0}},
-				ansiOffset{[2]int32{33, 40}, ansiState{4, 8, curses.Bold}}}}}
+				ansiOffset{[2]int32{33, 40}, ansiState{4, 8, tui.Bold}}}}}
 	// [{[0 5] 9 false} {[5 15] 99 false} {[15 20] 9 false} {[22 25] 10 true} {[25 35] 99 false} {[35 40] 11 true}]
 
-	colors := item.colorOffsets(offsets, curses.Dark256, 99, 0, true)
-	assert := func(idx int, b int32, e int32, c int, bold bool) {
-		var attr curses.Attr
+	colors := item.colorOffsets(offsets, tui.Dark256, 99, 0, true)
+	assert := func(idx int, b int32, e int32, c tui.ColorPair, bold bool) {
+		var attr tui.Attr
 		if bold {
-			attr = curses.Bold
+			attr = tui.Bold
 		}
 		o := colors[idx]
 		if o.offset[0] != b || o.offset[1] != e || o.color != c || o.attr != attr {
 			t.Error(o)
 		}
 	}
-	assert(0, 0, 5, curses.ColUser, false)
+	assert(0, 0, 5, tui.ColUser, false)
 	assert(1, 5, 15, 99, false)
-	assert(2, 15, 20, curses.ColUser, false)
-	assert(3, 22, 25, curses.ColUser+1, true)
+	assert(2, 15, 20, tui.ColUser, false)
+	assert(3, 22, 25, tui.ColUser+1, true)
 	assert(4, 25, 35, 99, false)
-	assert(5, 35, 40, curses.ColUser+2, true)
+	assert(5, 35, 40, tui.ColUser+2, true)
 }

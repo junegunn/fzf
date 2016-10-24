@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/algo"
-	"github.com/junegunn/fzf/src/curses"
+	"github.com/junegunn/fzf/src/tui"
 
 	"github.com/junegunn/go-shellwords"
 )
@@ -142,7 +142,7 @@ type Options struct {
 	Multi       bool
 	Ansi        bool
 	Mouse       bool
-	Theme       *curses.ColorTheme
+	Theme       *tui.ColorTheme
 	Black       bool
 	Reverse     bool
 	Cycle       bool
@@ -187,7 +187,7 @@ func defaultOptions() *Options {
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
-		Theme:       curses.EmptyTheme(),
+		Theme:       tui.EmptyTheme(),
 		Black:       false,
 		Reverse:     false,
 		Cycle:       false,
@@ -358,60 +358,60 @@ func parseKeyChords(str string, message string) map[int]string {
 		chord := 0
 		switch lkey {
 		case "up":
-			chord = curses.Up
+			chord = tui.Up
 		case "down":
-			chord = curses.Down
+			chord = tui.Down
 		case "left":
-			chord = curses.Left
+			chord = tui.Left
 		case "right":
-			chord = curses.Right
+			chord = tui.Right
 		case "enter", "return":
-			chord = curses.CtrlM
+			chord = tui.CtrlM
 		case "space":
-			chord = curses.AltZ + int(' ')
+			chord = tui.AltZ + int(' ')
 		case "bspace", "bs":
-			chord = curses.BSpace
+			chord = tui.BSpace
 		case "alt-enter", "alt-return":
-			chord = curses.AltEnter
+			chord = tui.AltEnter
 		case "alt-space":
-			chord = curses.AltSpace
+			chord = tui.AltSpace
 		case "alt-/":
-			chord = curses.AltSlash
+			chord = tui.AltSlash
 		case "alt-bs", "alt-bspace":
-			chord = curses.AltBS
+			chord = tui.AltBS
 		case "tab":
-			chord = curses.Tab
+			chord = tui.Tab
 		case "btab", "shift-tab":
-			chord = curses.BTab
+			chord = tui.BTab
 		case "esc":
-			chord = curses.ESC
+			chord = tui.ESC
 		case "del":
-			chord = curses.Del
+			chord = tui.Del
 		case "home":
-			chord = curses.Home
+			chord = tui.Home
 		case "end":
-			chord = curses.End
+			chord = tui.End
 		case "pgup", "page-up":
-			chord = curses.PgUp
+			chord = tui.PgUp
 		case "pgdn", "page-down":
-			chord = curses.PgDn
+			chord = tui.PgDn
 		case "shift-left":
-			chord = curses.SLeft
+			chord = tui.SLeft
 		case "shift-right":
-			chord = curses.SRight
+			chord = tui.SRight
 		case "double-click":
-			chord = curses.DoubleClick
+			chord = tui.DoubleClick
 		case "f10":
-			chord = curses.F10
+			chord = tui.F10
 		default:
 			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
-				chord = curses.CtrlA + int(lkey[5]) - 'a'
+				chord = tui.CtrlA + int(lkey[5]) - 'a'
 			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
-				chord = curses.AltA + int(lkey[4]) - 'a'
+				chord = tui.AltA + int(lkey[4]) - 'a'
 			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '9' {
-				chord = curses.F1 + int(key[1]) - '1'
+				chord = tui.F1 + int(key[1]) - '1'
 			} else if utf8.RuneCountInString(key) == 1 {
-				chord = curses.AltZ + int([]rune(key)[0])
+				chord = tui.AltZ + int([]rune(key)[0])
 			} else {
 				errorExit("unsupported key: " + key)
 			}
@@ -458,7 +458,7 @@ func parseTiebreak(str string) []criterion {
 	return criteria
 }
 
-func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
+func dupeTheme(theme *tui.ColorTheme) *tui.ColorTheme {
 	if theme != nil {
 		dupe := *theme
 		return &dupe
@@ -466,16 +466,16 @@ func dupeTheme(theme *curses.ColorTheme) *curses.ColorTheme {
 	return nil
 }
 
-func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme {
+func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 	theme := dupeTheme(defaultTheme)
 	for _, str := range strings.Split(strings.ToLower(str), ",") {
 		switch str {
 		case "dark":
-			theme = dupeTheme(curses.Dark256)
+			theme = dupeTheme(tui.Dark256)
 		case "light":
-			theme = dupeTheme(curses.Light256)
+			theme = dupeTheme(tui.Light256)
 		case "16":
-			theme = dupeTheme(curses.Default16)
+			theme = dupeTheme(tui.Default16)
 		case "bw", "no":
 			theme = nil
 		default:
@@ -495,7 +495,7 @@ func parseTheme(defaultTheme *curses.ColorTheme, str string) *curses.ColorTheme 
 			if err != nil || ansi32 < -1 || ansi32 > 255 {
 				fail()
 			}
-			ansi := int16(ansi32)
+			ansi := tui.Color(ansi32)
 			switch pair[0] {
 			case "fg":
 				theme.Fg = ansi
@@ -572,9 +572,9 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 		}
 		var key int
 		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
-			key = ':' + curses.AltZ
+			key = ':' + tui.AltZ
 		} else if len(pair[0]) == 1 && pair[0][0] == escapedComma {
-			key = ',' + curses.AltZ
+			key = ',' + tui.AltZ
 		} else {
 			keys := parseKeyChords(pair[0], "key name required")
 			key = firstKey(keys)
@@ -868,7 +868,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--color":
 			spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
-				opts.Theme = curses.EmptyTheme()
+				opts.Theme = tui.EmptyTheme()
 			} else {
 				opts.Theme = parseTheme(opts.Theme, spec)
 			}
@@ -905,7 +905,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "+c", "--no-color":
 			opts.Theme = nil
 		case "+2", "--no-256":
-			opts.Theme = curses.Default16
+			opts.Theme = tui.Default16
 		case "--black":
 			opts.Black = true
 		case "--no-black":
@@ -1071,11 +1071,11 @@ func parseOptions(opts *Options, allArgs []string) {
 func postProcessOptions(opts *Options) {
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
-		if _, prs := opts.Keymap[curses.CtrlP]; !prs {
-			opts.Keymap[curses.CtrlP] = actPreviousHistory
+		if _, prs := opts.Keymap[tui.CtrlP]; !prs {
+			opts.Keymap[tui.CtrlP] = actPreviousHistory
 		}
-		if _, prs := opts.Keymap[curses.CtrlN]; !prs {
-			opts.Keymap[curses.CtrlN] = actNextHistory
+		if _, prs := opts.Keymap[tui.CtrlN]; !prs {
+			opts.Keymap[tui.CtrlN] = actNextHistory
 		}
 	}
 
