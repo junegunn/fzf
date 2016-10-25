@@ -10,6 +10,15 @@ import (
 )
 
 type ColorPair [2]Color
+
+func (p ColorPair) fg() Color {
+	return p[0]
+}
+
+func (p ColorPair) bg() Color {
+	return p[1]
+}
+
 type Attr termbox.Attribute
 
 type WindowTermbox struct {
@@ -48,7 +57,7 @@ var (
 )
 
 func DefaultTheme() *ColorTheme {
-	if termbox.SetOutputMode(termbox.OutputCurrent) == termbox.Output256 {
+	if termbox.SetOutputMode(termbox.Output256) == termbox.Output256 {
 		return Dark256
 	}
 	return Default16
@@ -77,7 +86,7 @@ func (c Color) Attribute() termbox.Attribute {
 	} else if c >= colBlack && c <= colWhite {
 		return _colorToAttribute[int(c)]
 	} else {
-		return termbox.ColorDefault
+		return termbox.Attribute(c)
 	}
 }
 
@@ -124,7 +133,7 @@ func (w *Window) win() *WindowTermbox {
 }
 
 func Clear() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	termbox.Clear(ColDefault.fg().Attribute(), ColDefault.bg().Attribute())
 }
 
 func Refresh() {
@@ -335,7 +344,7 @@ func (w *Window) MoveAndClear(y int, x int) {
 	w.Move(y, x)
 	r, _ := utf8.DecodeRuneInString(" ")
 	for i := w.win().LastX; i < w.Width; i++ {
-		termbox.SetCell(i+w.Left, w.win().LastY+w.Top, r, termbox.ColorWhite, termbox.ColorBlack)
+		termbox.SetCell(i+w.Left, w.win().LastY+w.Top, r, ColDefault.fg().Attribute(), ColDefault.bg().Attribute())
 	}
 }
 
@@ -347,8 +356,8 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 	t := text
 	lx := 0
 
-	fg := pair[0].Attribute() | termbox.Attribute(a)
-	bg := pair[1].Attribute()
+	fg := pair.fg().Attribute() | termbox.Attribute(a)
+	bg := pair.bg().Attribute()
 	for {
 		if len(t) == 0 {
 			break
