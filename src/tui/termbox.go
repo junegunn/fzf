@@ -17,11 +17,9 @@ type WindowTermbox struct {
 	LastY      int
 	MoveCursor bool
 }
-type WindowImpl WindowTermbox // FIXME
+type WindowImpl WindowTermbox
 
 const (
-	// TODO
-	_         = iota
 	Bold      = Attr(termbox.AttrBold)
 	Dim       = Attr(0) // termbox lacks this
 	Blink     = Attr(0) // termbox lacks this
@@ -60,11 +58,38 @@ func PairFor(fg Color, bg Color) ColorPair {
 	return [2]Color{fg, bg}
 }
 
+var (
+	_colorToAttribute = []termbox.Attribute{
+		termbox.ColorBlack,
+		termbox.ColorRed,
+		termbox.ColorGreen,
+		termbox.ColorYellow,
+		termbox.ColorBlue,
+		termbox.ColorMagenta,
+		termbox.ColorCyan,
+		termbox.ColorWhite,
+	}
+)
+
+func (c Color) Attribute() termbox.Attribute {
+	if c <= colDefault {
+		return termbox.ColorDefault
+	} else if c >= colBlack && c <= colWhite {
+		return _colorToAttribute[int(c)]
+	} else {
+		return termbox.ColorDefault
+	}
+}
+
 func (a Attr) Merge(b Attr) Attr {
 	return a | b
 }
 
 func Init(theme *ColorTheme, black bool, mouse bool) {
+	_color = theme != nil
+	if _color {
+		InitTheme(theme, black)
+	}
 	ColNormal = ColorPair{theme.Fg, theme.Bg}
 	ColPrompt = ColorPair{theme.Prompt, theme.Bg}
 	ColMatch = ColorPair{theme.Match, theme.Bg}
@@ -99,12 +124,11 @@ func (w *Window) win() *WindowTermbox {
 }
 
 func Clear() {
-	//termbox.Clear(ColNormal[0], ColNormal[1])
-	termbox.Clear(termbox.ColorWhite, termbox.ColorBlack)
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func Refresh() {
-	//termbox.SetCursor(_lastX, _lastY) //not sure if this is needed?
+	// noop
 }
 
 func GetChar() Event {
@@ -311,20 +335,20 @@ func (w *Window) MoveAndClear(y int, x int) {
 	w.Move(y, x)
 	r, _ := utf8.DecodeRuneInString(" ")
 	for i := w.win().LastX; i < w.Width; i++ {
-		//TODO: get colors right
 		termbox.SetCell(i+w.Left, w.win().LastY+w.Top, r, termbox.ColorWhite, termbox.ColorBlack)
 	}
 }
 
 func (w *Window) Print(text string) {
-	//TODO: get colors right
-	w.PrintPalette(text, termbox.ColorWhite, termbox.ColorBlack)
+	w.PrintString(text, ColDefault, 0)
 }
 
-func (w *Window) PrintPalette(text string, fg, bg termbox.Attribute) {
+func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 	t := text
 	lx := 0
 
+	fg := pair[0].Attribute() | termbox.Attribute(a)
+	bg := pair[1].Attribute()
 	for {
 		if len(t) == 0 {
 			break
@@ -349,17 +373,15 @@ func (w *Window) PrintPalette(text string, fg, bg termbox.Attribute) {
 }
 
 func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
-	//w.PrintPalette(text, Palette[pair].Fg|Color(a), Palette[pair].Bg)
-	//TODO: get colors right
-	w.PrintPalette(text, termbox.ColorWhite|termbox.Attribute(a), termbox.ColorBlack)
+	w.PrintString(text, pair, a)
 }
 
 func (w *Window) Fill(str string) bool {
-	w.PrintPalette(str, termbox.ColorWhite, termbox.ColorBlack)
+	w.PrintString(str, ColDefault, 0)
 	return true
 }
 
 func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
-	w.PrintPalette(str, termbox.ColorWhite, termbox.ColorBlack)
+	w.PrintString(str, ColorPair{fg, bg}, a)
 	return true
 }
