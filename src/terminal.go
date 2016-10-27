@@ -1236,7 +1236,7 @@ func (t *Terminal) Loop() {
 					if t.previewer.enabled && cnt > 0 && cnt > t.cy {
 						t.previewBox.Set(reqPreviewEnqueue, t.currentItem())
 					}
-					req(reqList, reqInfo)
+					req(reqList, reqInfo, reqHeader)
 				}
 			case actToggleSort:
 				t.sort = !t.sort
