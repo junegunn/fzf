@@ -25,6 +25,7 @@ type WindowTermbox struct {
 	LastX      int
 	LastY      int
 	MoveCursor bool
+	Border     bool
 }
 type WindowImpl WindowTermbox
 
@@ -296,6 +297,9 @@ func RefreshWindows(windows []*Window) {
 		}
 		w.win().LastX = 0
 		w.win().LastY = 0
+		if w.win().Border {
+			w.DrawBorder()
+		}
 	}
 	termbox.Flush()
 }
@@ -303,6 +307,7 @@ func RefreshWindows(windows []*Window) {
 func NewWindow(top int, left int, width int, height int, border bool) *Window {
 	// TODO
 	win := new(WindowTermbox)
+	win.Border = border
 	return &Window{
 		impl:   (*WindowImpl)(win),
 		Top:    top,
@@ -374,7 +379,11 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 				continue
 			}
 
-			termbox.SetCell(w.Left+w.win().LastX+lx, w.Top+w.win().LastY, r, fg, bg)
+			var xPos = w.Left + w.win().LastX + lx
+			var yPos = w.Top + w.win().LastY
+			if xPos < (w.Left+w.Width) && yPos < (w.Top+w.Height) {
+				termbox.SetCell(xPos, yPos, r, fg, bg)
+			}
 			lx++
 		}
 	}
@@ -387,6 +396,7 @@ func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
 
 func (w *Window) Fill(str string) bool {
 	w.PrintString(str, ColDefault, 0)
+	//w.win().LastX = 0
 	return true
 }
 
@@ -394,3 +404,35 @@ func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
 	w.PrintString(str, ColorPair{fg, bg}, a)
 	return true
 }
+
+func (w *Window) DrawBorder() {
+	left := w.Left
+	right := left + w.Width
+	top := w.Top
+	bot := top + w.Height
+
+	var border []rune = singleBorder
+
+	fg, bg := ColBorder.fg().Attribute(), ColBorder.bg().Attribute()
+
+	for x := left; x < right; x++ {
+		termbox.SetCell(x, top, border[0], fg, bg)
+		termbox.SetCell(x, bot-1, border[0], fg, bg)
+	}
+
+	for y := top; y < bot; y++ {
+		termbox.SetCell(left, y, border[1], fg, bg)
+		termbox.SetCell(right-1, y, border[1], fg, bg)
+	}
+
+	termbox.SetCell(left, top, border[4], fg, bg)
+	termbox.SetCell(right-1, top, border[5], fg, bg)
+	termbox.SetCell(left, bot-1, border[3], fg, bg)
+	termbox.SetCell(right-1, bot-1, border[2], fg, bg)
+}
+
+var (
+	// sideways, upwards, downright, downleft, upleft, upright
+	singleBorder = []rune{'─', '│', '┘', '└', '┌', '┐'}
+	doubleBorder = []rune{'═', '║', '╝', '╚', '╔', '╗'}
+)
