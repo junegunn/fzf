@@ -682,13 +682,7 @@ func (w *Window) Erase() {
 }
 
 func (w *Window) Fill(str string) bool {
-	return C.waddstr(w.win, C.CString(strings.Map(func(r rune) rune {
-		// Remove ^N and ^O (set and unset altcharset)
-		if r == 14 || r == 15 {
-			return -1
-		}
-		return r
-	}, str))) == C.OK
+	return C.waddstr(w.win, C.CString(str)) == C.OK
 }
 
 func (w *Window) CFill(str string, fg int, bg int, a Attr) bool {
