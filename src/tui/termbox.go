@@ -115,7 +115,10 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	// TODO
 	termbox.Init()
 	if mouse {
-		termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+		termbox.SetInputMode(termbox.InputEsc)
+		//TODO: mouse is not enabled due to bug in termbox-go:
+		// https://github.com/nsf/termbox-go/issues/132
+		//termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 	}
 }
 
@@ -351,6 +354,7 @@ func (w *Window) MoveAndClear(y int, x int) {
 	for i := w.win().LastX; i < w.Width; i++ {
 		termbox.SetCell(i+w.Left, w.win().LastY+w.Top, r, ColDefault.fg().Attribute(), ColDefault.bg().Attribute())
 	}
+	w.win().LastX = 0
 }
 
 func (w *Window) Print(text string) {
@@ -396,12 +400,13 @@ func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
 
 func (w *Window) Fill(str string) bool {
 	w.PrintString(str, ColDefault, 0)
-	//w.win().LastX = 0
+	w.win().LastX = 0
 	return true
 }
 
 func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
 	w.PrintString(str, ColorPair{fg, bg}, a)
+	w.win().LastX = 0
 	return true
 }
 
