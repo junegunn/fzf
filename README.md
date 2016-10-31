@@ -145,6 +145,10 @@ or `py`.
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
 
+#### Options
+
+See the man page (`man fzf`) for the full list of options.
+
 Examples
 --------
 
