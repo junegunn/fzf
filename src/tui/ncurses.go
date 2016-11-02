@@ -1,5 +1,6 @@
 // +build !windows
 // +build !termbox
+// +build !tcell
 
 package tui
 
