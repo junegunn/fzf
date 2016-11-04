@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/encoding"
 )
 
 type ColorPair [2]Color
@@ -65,9 +66,9 @@ var (
 )
 
 func DefaultTheme() *ColorTheme {
-	/*if tcell.SetOutputMode(tcell.Output256) == tcell.Output256 {
+	if _screen.Colors() >= 256 {
 		return Dark256
-	}*/
+	}
 	return Default16
 }
 
@@ -107,6 +108,20 @@ var (
 )
 
 func Init(theme *ColorTheme, black bool, mouse bool) {
+	encoding.Register()
+
+	//s, e := tcell.NewScreen()
+	s, e := tcell.NewTerminfoScreen()
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(1)
+	}
+	if e = s.Init(); e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(1)
+	}
+	_screen = s
+
 	_color = theme != nil
 	if _color {
 		InitTheme(theme, black)
@@ -122,17 +137,6 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	ColSelected = ColorPair{theme.Selected, theme.DarkBg}
 	ColHeader = ColorPair{theme.Header, theme.Bg}
 	ColBorder = ColorPair{theme.Border, theme.Bg}
-
-	s, e := tcell.NewScreen()
-	if e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(1)
-	}
-	if e = s.Init(); e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(1)
-	}
-	_screen = s
 
 	if mouse {
 		_screen.EnableMouse()
@@ -169,7 +173,7 @@ func GetChar() Event {
 	case *tcell.EventResize:
 		return Event{Invalid, 0, nil}
 		// process mouse events:
-		case *tcell.EventMouse:
+		/*case *tcell.EventMouse:
 		down := ev.Key() == tcell.MouseLeft
 		double := false
 		if down {
@@ -425,45 +429,39 @@ func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
 }
 
 func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
-	//t := text
 	lx := 0
 
 	//TODO: respect attr
 	style := pair.style()
 	for _, r := range text {
-		if r == '\u000A' {
+		if r == '\n' {
 			w.win().LastY++
+			w.win().LastX = 0
 			lx = 0
 		} else {
-			if r == '\u000D' { // skip carriage return
-				continue
-			}
-			if r == '\t' {
-				lx += 8
-			}
 			var xPos = w.Left + w.win().LastX + lx
 			var yPos = w.Top + w.win().LastY
-			if xPos < (w.Left+w.Width) && yPos < (w.Top+w.Height) {
+
+			if yPos >= (w.Top + w.Height) {
+				return false
+			}
+			if xPos < (w.Left + w.Width) {
 				_screen.SetContent(xPos, yPos, r, nil, style)
 			}
 			lx++
-			//lx += 4
 		}
 	}
 	w.win().LastX += lx
+
 	return true
 }
 
 func (w *Window) Fill(str string) bool {
-	var result = w.FillString(str, ColDefault, 0)
-	w.win().LastX = 0
-	return result
+	return w.FillString(str, ColDefault, 0)
 }
 
 func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
-	var result = w.FillString(str, ColorPair{fg, bg}, a)
-	w.win().LastX = 0
-	return result
+	return w.FillString(str, ColorPair{fg, bg}, a)
 }
 
 func (w *Window) DrawBorder() {
