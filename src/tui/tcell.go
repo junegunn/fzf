@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"time"
 	"unicode/utf8"
 
 	"fmt"
@@ -172,27 +173,36 @@ func GetChar() Event {
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
 		return Event{Invalid, 0, nil}
-		// process mouse events:
-		/*case *tcell.EventMouse:
-		down := ev.Key() == tcell.MouseLeft
-		double := false
-		if down {
-			now := time.Now()
-			if now.Sub(_prevDownTime) < doubleClickDuration {
-				_clickY = append(_clickY, ev.MouseY)
-			} else {
-				_clickY = []int{ev.MouseY}
-			}
-			_prevDownTime = now
-		} else {
-			if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
-				time.Now().Sub(_prevDownTime) < doubleClickDuration {
-				double = true
-			}
-		}
 
-		return Event{Mouse, 0, &MouseEvent{ev.MouseY, ev.MouseX, 0, down, double, ev.Mod != 0}}
-		*/
+	// process mouse events:
+	case *tcell.EventMouse:
+		x, y := ev.Position()
+		button := ev.Buttons()
+		mod := ev.Modifiers() != 0
+		if button&tcell.WheelDown != 0 {
+			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, mod}}
+		} else if button&tcell.WheelUp != 0 {
+			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, mod}}
+		} else {
+			down := button&tcell.Button1 != 0 // left
+			double := false
+			if down {
+				now := time.Now()
+				if now.Sub(_prevDownTime) < doubleClickDuration {
+					_clickY = append(_clickY, x)
+				} else {
+					_clickY = []int{x}
+				}
+				_prevDownTime = now
+			} else {
+				if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
+					time.Now().Sub(_prevDownTime) < doubleClickDuration {
+					double = true
+				}
+			}
+
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, down, double, mod}}
+		}
 
 		// process keyboard:
 	case *tcell.EventKey:
@@ -364,8 +374,8 @@ func (w *Window) Erase() {
 }
 
 func (w *Window) Enclose(y int, x int) bool {
-	return y >= w.Left && y <= (w.Left+w.Width) &&
-		x >= w.Top && y <= (w.Top+w.Height)
+	return x >= w.Left && x <= (w.Left+w.Width) &&
+		y >= w.Top && y <= (w.Top+w.Height)
 }
 
 func (w *Window) Move(y int, x int) {
