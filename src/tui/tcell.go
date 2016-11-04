@@ -402,7 +402,13 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 	lx := 0
 
 	// TODO respect attr
-	style := pair.style()
+	style := pair.style().
+		Blink(a&Attr(tcell.AttrBlink) != 0).
+		Bold(a&Attr(tcell.AttrBold) != 0).
+		Dim(a&Attr(tcell.AttrDim) != 0).
+		Reverse(a&Attr(tcell.AttrReverse) != 0).
+		Underline(a&Attr(tcell.AttrUnderline) != 0)
+
 	for {
 		if len(t) == 0 {
 			break
@@ -442,7 +448,13 @@ func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 	lx := 0
 
 	//TODO: respect attr
-	style := pair.style()
+	style := pair.style().
+		Blink(a&Attr(tcell.AttrBlink) != 0).
+		Bold(a&Attr(tcell.AttrBold) != 0).
+		Dim(a&Attr(tcell.AttrDim) != 0).
+		Reverse(a&Attr(tcell.AttrReverse) != 0).
+		Underline(a&Attr(tcell.AttrUnderline) != 0)
+
 	for _, r := range text {
 		if r == '\n' {
 			w.win().LastY++
