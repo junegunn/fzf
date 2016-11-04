@@ -360,8 +360,8 @@ func (w *Window) Close() {
 }
 
 func fill(x, y, w, h int, r rune) {
-	for ly := 0; ly < h; ly++ {
-		for lx := 0; lx < w; lx++ {
+	for ly := 0; ly <= h; ly++ {
+		for lx := 0; lx <= w; lx++ {
 			_screen.SetContent(x+lx, y+ly, r, nil, ColDefault.style())
 		}
 	}
@@ -461,14 +461,21 @@ func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 			lx = 0
 		} else {
 			var xPos = w.Left + w.win().LastX + lx
+
+			// word wrap:
+			if xPos > (w.Left + w.Width) {
+				w.win().LastY++
+				w.win().LastX = 0
+				lx = 0
+				xPos = w.Left
+			}
 			var yPos = w.Top + w.win().LastY
 
 			if yPos >= (w.Top + w.Height) {
 				return false
 			}
-			if xPos < (w.Left + w.Width) {
-				_screen.SetContent(xPos, yPos, r, nil, style)
-			}
+
+			_screen.SetContent(xPos, yPos, r, nil, style)
 			lx++
 		}
 	}
