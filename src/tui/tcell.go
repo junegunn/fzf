@@ -1,4 +1,4 @@
-// +build tcell windows
+﻿// +build tcell windows
 
 package tui
 
@@ -111,8 +111,7 @@ var (
 func Init(theme *ColorTheme, black bool, mouse bool) {
 	encoding.Register()
 
-	//s, e := tcell.NewScreen()
-	s, e := tcell.NewTerminfoScreen()
+	s, e := tcell.NewScreen()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
 		os.Exit(1)
