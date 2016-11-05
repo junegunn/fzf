@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 
+	"runtime"
+
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 )
@@ -182,7 +184,11 @@ func GetChar() Event {
 			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, mod}}
 		} else if button&tcell.WheelUp != 0 {
 			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, mod}}
-		} else {
+		} else if runtime.GOOS != "windows" {
+			// double and single taps on Windows don't quite work due to
+			// the console acting on the events and not allowing us
+			// to consume them.
+
 			down := button&tcell.Button1 != 0 // left
 			double := false
 			if down {
