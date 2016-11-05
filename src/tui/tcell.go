@@ -504,28 +504,20 @@ func (w *Window) DrawBorder() {
 	top := w.Top
 	bot := top + w.Height
 
-	var border []rune = singleBorder
-
 	style := ColBorder.style()
 
 	for x := left; x < right; x++ {
-		_screen.SetContent(x, top, border[0], nil, style)
-		_screen.SetContent(x, bot-1, border[0], nil, style)
+		_screen.SetContent(x, top, tcell.RuneHLine, nil, style)
+		_screen.SetContent(x, bot-1, tcell.RuneHLine, nil, style)
 	}
 
 	for y := top; y < bot; y++ {
-		_screen.SetContent(left, y, border[1], nil, style)
-		_screen.SetContent(right-1, y, border[1], nil, style)
+		_screen.SetContent(left, y, tcell.RuneVLine, nil, style)
+		_screen.SetContent(right-1, y, tcell.RuneVLine, nil, style)
 	}
 
-	_screen.SetContent(left, top, border[4], nil, style)
-	_screen.SetContent(right-1, top, border[5], nil, style)
-	_screen.SetContent(left, bot-1, border[3], nil, style)
-	_screen.SetContent(right-1, bot-1, border[2], nil, style)
+	_screen.SetContent(left, top, tcell.RuneULCorner, nil, style)
+	_screen.SetContent(right-1, top, tcell.RuneURCorner, nil, style)
+	_screen.SetContent(left, bot-1, tcell.RuneLLCorner, nil, style)
+	_screen.SetContent(right-1, bot-1, tcell.RuneLRCorner, nil, style)
 }
-
-var (
-	// sideways, upwards, downright, downleft, upleft, upright
-	singleBorder = []rune{'─', '│', '┘', '└', '┌', '┐'}
-	doubleBorder = []rune{'═', '║', '╝', '╚', '╔', '╗'}
-)
