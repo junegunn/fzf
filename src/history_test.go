@@ -1,7 +1,10 @@
 package fzf
 
 import (
+	"io/ioutil"
+	"os"
 	"os/user"
+	"runtime"
 	"testing"
 )
 
@@ -10,23 +13,34 @@ func TestHistory(t *testing.T) {
 
 	// Invalid arguments
 	user, _ := user.Current()
-	paths := []string{"/etc", "/proc"}
-	if user.Name != "root" {
-		paths = append(paths, "/etc/sudoers")
+	var paths []string
+	if runtime.GOOS == "windows" {
+		// GOPATH should exist, so we shouldn't be able to override it
+		paths = []string{os.Getenv("GOPATH")}
+	} else {
+		paths = []string{"/etc", "/proc"}
+		if user.Name != "root" {
+			paths = append(paths, "/etc/sudoers")
+		}
 	}
+
 	for _, path := range paths {
 		if _, e := NewHistory(path, maxHistory); e == nil {
 			t.Error("Error expected for: " + path)
 		}
 	}
+
+	f, _ := ioutil.TempFile("", "fzf-history")
+	f.Close()
+
 	{ // Append lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		for i := 0; i < maxHistory+10; i++ {
 			h.append("foobar")
 		}
 	}
 	{ // Read lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		if len(h.lines) != maxHistory+1 {
 			t.Errorf("Expected: %d, actual: %d\n", maxHistory+1, len(h.lines))
 		}
@@ -37,13 +51,13 @@ func TestHistory(t *testing.T) {
 		}
 	}
 	{ // Append lines
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		h.append("barfoo")
 		h.append("")
 		h.append("foobarbaz")
 	}
 	{ // Read lines again
-		h, _ := NewHistory("/tmp/fzf-history", maxHistory)
+		h, _ := NewHistory(f.Name(), maxHistory)
 		if len(h.lines) != maxHistory+1 {
 			t.Errorf("Expected: %d, actual: %d\n", maxHistory+1, len(h.lines))
 		}

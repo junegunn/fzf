@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/junegunn/fzf/src/tui"
@@ -336,7 +337,9 @@ func TestDefaultCtrlNP(t *testing.T) {
 	check([]string{"--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
 	check([]string{"--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)
 
-	hist := "--history=/tmp/fzf-history"
+	f, _ := ioutil.TempFile("", "fzf-history")
+	f.Close()
+	hist := "--history=" + f.Name()
 	check([]string{hist}, tui.CtrlN, actNextHistory)
 	check([]string{hist}, tui.CtrlP, actPreviousHistory)
 
