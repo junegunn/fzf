@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"runtime"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -44,7 +43,7 @@ func (r *Reader) feed(src io.Reader) {
 		if len(bytea) > 0 {
 			if err == nil {
 				// get rid of carriage return if under Windows:
-				if runtime.GOOS == "windows" && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
+				if util.IsWindows() && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
 					bytea = bytea[:byteaLen-2]
 				} else {
 					bytea = bytea[:byteaLen-1]

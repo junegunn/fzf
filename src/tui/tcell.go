@@ -13,6 +13,8 @@ import (
 
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
+
+	"github.com/junegunn/go-runewidth"
 )
 
 type ColorPair [2]Color
@@ -108,21 +110,32 @@ func (a Attr) Merge(b Attr) Attr {
 
 var (
 	_screen tcell.Screen
+	_mouse  bool
 )
+
+func initScreen() {
+	s, e := tcell.NewScreen()
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(2)
+	}
+	if e = s.Init(); e != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", e)
+		os.Exit(2)
+	}
+	if _mouse {
+		s.EnableMouse()
+	} else {
+		s.DisableMouse()
+	}
+	_screen = s
+}
 
 func Init(theme *ColorTheme, black bool, mouse bool) {
 	encoding.Register()
 
-	s, e := tcell.NewScreen()
-	if e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(1)
-	}
-	if e = s.Init(); e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(1)
-	}
-	_screen = s
+	_mouse = mouse
+	initScreen()
 
 	_color = theme != nil
 	if _color {
@@ -139,12 +152,6 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	ColSelected = ColorPair{theme.Selected, theme.DarkBg}
 	ColHeader = ColorPair{theme.Header, theme.Bg}
 	ColBorder = ColorPair{theme.Border, theme.Bg}
-
-	if mouse {
-		_screen.EnableMouse()
-	} else {
-		_screen.DisableMouse()
-	}
 }
 
 func MaxX() int {
@@ -162,6 +169,7 @@ func (w *Window) win() *WindowTcell {
 }
 
 func Clear() {
+	_screen.Sync()
 	_screen.Clear()
 }
 
@@ -211,6 +219,7 @@ func GetChar() Event {
 
 		// process keyboard:
 	case *tcell.EventKey:
+		alt := (ev.Modifiers() & tcell.ModAlt) > 0
 		switch ev.Key() {
 		case tcell.KeyCtrlA:
 			return Event{CtrlA, 0, nil}
@@ -233,6 +242,9 @@ func GetChar() Event {
 		case tcell.KeyCtrlL:
 			return Event{CtrlL, 0, nil}
 		case tcell.KeyCtrlM:
+			if alt {
+				return Event{AltEnter, 0, nil}
+			}
 			return Event{CtrlM, 0, nil}
 		case tcell.KeyCtrlN:
 			return Event{CtrlN, 0, nil}
@@ -261,6 +273,9 @@ func GetChar() Event {
 		case tcell.KeyCtrlZ:
 			return Event{CtrlZ, 0, nil}
 		case tcell.KeyBackspace, tcell.KeyBackspace2:
+			if alt {
+				return Event{AltBS, 0, nil}
+			}
 			return Event{BSpace, 0, nil}
 
 		case tcell.KeyUp:
@@ -278,13 +293,15 @@ func GetChar() Event {
 			return Event{Del, 0, nil}
 		case tcell.KeyEnd:
 			return Event{End, 0, nil}
-		/*case tcell.KeyPgUp:
+		case tcell.KeyPgUp:
 			return Event{PgUp, 0, nil}
-		case tcell.KeyPgdn:
-			return Event{PgDn, 0, nil}*/
+		case tcell.KeyPgDn:
+			return Event{PgDn, 0, nil}
 
 		case tcell.KeyTab:
 			return Event{Tab, 0, nil}
+		case tcell.KeyBacktab:
+			return Event{BTab, 0, nil}
 
 		case tcell.KeyF1:
 			return Event{F1, 0, nil}
@@ -313,7 +330,19 @@ func GetChar() Event {
 
 		// ev.Ch doesn't work for some reason for space:
 		case tcell.KeyRune:
-			return Event{Rune, ev.Rune(), nil}
+			r := ev.Rune()
+			if alt {
+				switch r {
+				case ' ':
+					return Event{AltSpace, 0, nil}
+				case '/':
+					return Event{AltSlash, 0, nil}
+				}
+				if r >= 'a' && r <= 'z' {
+					return Event{AltA + int(r) - 'a', 0, nil}
+				}
+			}
+			return Event{Rune, r, nil}
 
 		case tcell.KeyEsc:
 			return Event{ESC, 0, nil}
@@ -325,7 +354,12 @@ func GetChar() Event {
 }
 
 func Pause() {
-	// TODO
+	_screen.Fini()
+}
+
+func Resume() bool {
+	initScreen()
+	return true
 }
 
 func Close() {
@@ -391,11 +425,10 @@ func (w *Window) Move(y int, x int) {
 
 func (w *Window) MoveAndClear(y int, x int) {
 	w.Move(y, x)
-	r, _ := utf8.DecodeRuneInString(" ")
 	for i := w.win().LastX; i < w.Width; i++ {
-		_screen.SetContent(i+w.Left, w.win().LastY+w.Top, r, nil, ColDefault.style())
+		_screen.SetContent(i+w.Left, w.win().LastY+w.Top, rune(' '), nil, ColDefault.style())
 	}
-	w.win().LastX = 0
+	w.win().LastX = x
 }
 
 func (w *Window) Print(text string) {
@@ -439,7 +472,7 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 			if xPos < (w.Left+w.Width) && yPos < (w.Top+w.Height) {
 				_screen.SetContent(xPos, yPos, r, nil, style)
 			}
-			lx++
+			lx += runewidth.RuneWidth(r)
 		}
 	}
 	w.win().LastX += lx
@@ -482,7 +515,7 @@ func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 			}
 
 			_screen.SetContent(xPos, yPos, r, nil, style)
-			lx++
+			lx += runewidth.RuneWidth(r)
 		}
 	}
 	w.win().LastX += lx

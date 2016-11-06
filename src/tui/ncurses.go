@@ -138,6 +138,10 @@ func Pause() {
 	C.endwin()
 }
 
+func Resume() bool {
+	return false
+}
+
 func Close() {
 	C.endwin()
 	C.delscreen(_screen)

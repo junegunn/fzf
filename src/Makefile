@@ -52,7 +52,7 @@ android-build: $(SRCDIR)
 	rm -f $(RELEASEARM7)
 
 test: deps
-	SHELL=/bin/sh go test -v ./...
+	SHELL=/bin/sh go test -v -tags "$(TAGS)" ./...
 
 install: $(BINDIR)/fzf
 

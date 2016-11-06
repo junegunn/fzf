@@ -1,6 +1,10 @@
 language: ruby
-rvm:
-- 2.2.0
+matrix:
+  include:
+    - env: TAGS=
+      rvm: 2.2.0
+#   - env: TAGS=tcell
+#     rvm: 2.2.0
 
 install:
 - sudo apt-get update

@@ -15,3 +15,8 @@ func ExecCommand(command string) *exec.Cmd {
 	}
 	return exec.Command(shell, "-c", command)
 }
+
+// IsWindows returns true on Windows
+func IsWindows() bool {
+	return false
+}

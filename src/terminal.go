@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -919,6 +920,9 @@ func keyMatch(key int, event tui.Event) bool {
 }
 
 func quoteEntry(entry string) string {
+	if util.IsWindows() {
+		return strconv.Quote(strings.Replace(entry, "\"", "\\\"", -1))
+	}
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
@@ -982,6 +986,9 @@ func (t *Terminal) executeCommand(template string, items []*Item) {
 	cmd.Stderr = os.Stderr
 	tui.Pause()
 	cmd.Run()
+	if tui.Resume() {
+		t.printAll()
+	}
 	t.refresh()
 }
 
