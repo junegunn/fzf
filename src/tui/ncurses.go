@@ -295,13 +295,24 @@ func getch(nonblock bool) int {
 
 func GetBytes() []byte {
 	c := getch(false)
+	retries := 0
+	if c == 27 {
+		// Wait for additional keys after ESC for 100ms (10 * 10ms)
+		retries = 10
+	}
 	_buf = append(_buf, byte(c))
 
 	for {
 		c = getch(true)
 		if c == -1 {
+			if retries > 0 {
+				retries--
+				time.Sleep(10 * time.Millisecond)
+				continue
+			}
 			break
 		}
+		retries = 0
 		_buf = append(_buf, byte(c))
 	}
 
