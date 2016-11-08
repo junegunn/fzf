@@ -140,6 +140,8 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	_color = theme != nil
 	if _color {
 		InitTheme(theme, black)
+	} else {
+		theme = DefaultTheme()
 	}
 	ColNormal = ColorPair{theme.Fg, theme.Bg}
 	ColPrompt = ColorPair{theme.Prompt, theme.Bg}
@@ -439,13 +441,20 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 	t := text
 	lx := 0
 
-	// TODO respect attr
-	style := pair.style().
+	var style tcell.Style
+	if _color {
+		style = pair.style().
+			Reverse(a&Attr(tcell.AttrReverse) != 0).
+			Underline(a&Attr(tcell.AttrUnderline) != 0)
+	} else {
+		style = ColDefault.style().
+			Reverse(a&Attr(tcell.AttrReverse) != 0 || pair == ColCurrent || pair == ColCurrentMatch).
+			Underline(a&Attr(tcell.AttrUnderline) != 0 || pair == ColMatch || pair == ColCurrentMatch)
+	}
+	style = style.
 		Blink(a&Attr(tcell.AttrBlink) != 0).
 		Bold(a&Attr(tcell.AttrBold) != 0).
-		Dim(a&Attr(tcell.AttrDim) != 0).
-		Reverse(a&Attr(tcell.AttrReverse) != 0).
-		Underline(a&Attr(tcell.AttrUnderline) != 0)
+		Dim(a&Attr(tcell.AttrDim) != 0)
 
 	for {
 		if len(t) == 0 {
@@ -485,8 +494,13 @@ func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
 func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 	lx := 0
 
-	//TODO: respect attr
-	style := pair.style().
+	var style tcell.Style
+	if _color {
+		style = pair.style()
+	} else {
+		style = ColDefault.style()
+	}
+	style = style.
 		Blink(a&Attr(tcell.AttrBlink) != 0).
 		Bold(a&Attr(tcell.AttrBold) != 0).
 		Dim(a&Attr(tcell.AttrDim) != 0).
@@ -537,7 +551,12 @@ func (w *Window) DrawBorder() {
 	top := w.Top
 	bot := top + w.Height
 
-	style := ColBorder.style()
+	var style tcell.Style
+	if _color {
+		style = ColBorder.style()
+	} else {
+		style = ColDefault.style()
+	}
 
 	for x := left; x < right; x++ {
 		_screen.SetContent(x, top, tcell.RuneHLine, nil, style)
