@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.15.6
+------
+- Windows binaries! (@kelleyma49)
+- Fixed the bug where header lines are cleared when preview window is toggled
+- Fixed not to display ^N and ^O on screen
+- Fixed cursor keys (or any key sequence that starts with ESC) on WSL by
+  making fzf wait for additional keystrokes after ESC for up to 100ms
+
 0.15.5
 ------
 - Setting foreground color will no longer set background color to black

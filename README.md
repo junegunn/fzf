@@ -82,6 +82,15 @@ method used.
 - brew: `brew update; brew reinstall fzf`
 - vim-plug: `:PlugUpdate fzf`
 
+### Windows
+
+Pre-built binaries for Windows can be downloaded [here][bin]. However, other
+components of the project may not work on Windows. You might want to consider
+installing fzf on [Windows Subsystem for Linux][wsl] where everything runs
+flawlessly.
+
+[wsl]: https://blogs.msdn.microsoft.com/wsl/
+
 Usage
 -----
 
