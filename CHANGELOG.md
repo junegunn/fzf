@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.15.7
+------
+- Fixed panic when color is disabled and header lines contain ANSI colors
+
 0.15.6
 ------
 - Windows binaries! (@kelleyma49)
