@@ -147,19 +147,21 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 			} else {
 				ansi := itemColors[curr-1]
 				fg := ansi.color.fg
-				if fg == -1 {
-					if current {
-						fg = theme.Current
-					} else {
-						fg = theme.Fg
-					}
-				}
 				bg := ansi.color.bg
-				if bg == -1 {
-					if current {
-						bg = theme.DarkBg
-					} else {
-						bg = theme.Bg
+				if theme != nil {
+					if fg == -1 {
+						if current {
+							fg = theme.Current
+						} else {
+							fg = theme.Fg
+						}
+					}
+					if bg == -1 {
+						if current {
+							bg = theme.DarkBg
+						} else {
+							bg = theme.Bg
+						}
 					}
 				}
 				colors = append(colors, colorOffset{
