@@ -35,7 +35,16 @@ func (s *ansiState) equals(t *ansiState) bool {
 var ansiRegex *regexp.Regexp
 
 func init() {
-	ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*.|[\x0e\x0f]")
+	/*
+		References:
+		- https://github.com/gnachman/iTerm2
+		- http://ascii-table.com/ansi-escape-sequences.php
+		- http://ascii-table.com/ansi-escape-sequences-vt-100.php
+		- http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
+	*/
+	// The following regular expression will include not all but most of the
+	// frequently used ANSI sequences
+	ansiRegex = regexp.MustCompile("\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x08\x0e\x0f]")
 }
 
 func extractColor(str string, state *ansiState, proc func(string, *ansiState) bool) (string, *[]ansiOffset, *ansiState) {
@@ -100,7 +109,7 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	} else {
 		state = &ansiState{prevState.fg, prevState.bg, prevState.attr}
 	}
-	if ansiCode[0] != '\x1b' || ansiCode[len(ansiCode)-1] != 'm' {
+	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		return state
 	}
 
