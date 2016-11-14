@@ -15,7 +15,7 @@ function fzf_key_bindings
 
   function fzf-file-widget
     set -q FZF_CTRL_T_COMMAND; or set -l FZF_CTRL_T_COMMAND "
-    command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
       -o -type f -print \
       -o -type d -print \
       -o -type l -print 2> /dev/null | sed 1d | cut -b3-"
@@ -34,7 +34,7 @@ function fzf_key_bindings
 
   function fzf-cd-widget
     set -q FZF_ALT_C_COMMAND; or set -l FZF_ALT_C_COMMAND "
-    command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
       -o -type d -print 2> /dev/null | sed 1d | cut -b3-"
     # Fish hangs if the command before pipe redirects (2> /dev/null)
     eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m $FZF_ALT_C_OPTS > $TMPDIR/fzf.result"
