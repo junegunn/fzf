@@ -11,6 +11,7 @@
     - [ ] Linux
     - [ ] Mac OS X
     - [ ] Windows
+    - [ ] Windows Subsystem for Linux
     - [ ] Etc.
 - Shell
     - [ ] bash
