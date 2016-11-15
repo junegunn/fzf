@@ -209,6 +209,8 @@ If you use vi mode on bash, you need to add `set -o vi` *before* `source
 ~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
 mode.
 
+More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
+
 Fuzzy completion for bash and zsh
 ---------------------------------
 
