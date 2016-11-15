@@ -30,11 +30,11 @@ type Attr C.int
 type WindowImpl C.WINDOW
 
 const (
-	Bold      = C.A_BOLD
-	Dim       = C.A_DIM
-	Blink     = C.A_BLINK
-	Reverse   = C.A_REVERSE
-	Underline = C.A_UNDERLINE
+	Bold      Attr = C.A_BOLD
+	Dim            = C.A_DIM
+	Blink          = C.A_BLINK
+	Reverse        = C.A_REVERSE
+	Underline      = C.A_UNDERLINE
 )
 
 const (

@@ -43,11 +43,11 @@ type WindowTcell struct {
 type WindowImpl WindowTcell
 
 const (
-	Bold      = Attr(tcell.AttrBold)
-	Dim       = Attr(tcell.AttrDim)
-	Blink     = Attr(tcell.AttrBlink)
-	Reverse   = Attr(tcell.AttrReverse)
-	Underline = Attr(tcell.AttrUnderline)
+	Bold      Attr = Attr(tcell.AttrBold)
+	Dim            = Attr(tcell.AttrDim)
+	Blink          = Attr(tcell.AttrBlink)
+	Reverse        = Attr(tcell.AttrReverse)
+	Underline      = Attr(tcell.AttrUnderline)
 )
 
 const (

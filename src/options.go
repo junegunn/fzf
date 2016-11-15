@@ -57,6 +57,7 @@ const usage = `usage: fzf [options]
     --ansi                Enable processing of ANSI color codes
     --tabstop=SPACES      Number of spaces for a tab character (default: 8)
     --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
+    --no-bold             Do not use bold text
 
   History
     --history=FILE        History file
@@ -144,6 +145,7 @@ type Options struct {
 	Mouse       bool
 	Theme       *tui.ColorTheme
 	Black       bool
+	Bold        bool
 	Reverse     bool
 	Cycle       bool
 	Hscroll     bool
@@ -189,6 +191,7 @@ func defaultOptions() *Options {
 		Mouse:       true,
 		Theme:       tui.EmptyTheme(),
 		Black:       false,
+		Bold:        true,
 		Reverse:     false,
 		Cycle:       false,
 		Hscroll:     true,
@@ -910,6 +913,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Black = true
 		case "--no-black":
 			opts.Black = false
+		case "--bold":
+			opts.Bold = true
+		case "--no-bold":
+			opts.Bold = false
 		case "--reverse":
 			opts.Reverse = true
 		case "--no-reverse":

@@ -70,6 +70,7 @@ type Terminal struct {
 	header0    []string
 	ansi       bool
 	margin     [4]sizeSpec
+	strong     tui.Attr
 	window     *tui.Window
 	bwindow    *tui.Window
 	pwindow    *tui.Window
@@ -256,6 +257,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	if len(opts.Preview.command) > 0 {
 		previewBox = util.NewEventBox()
 	}
+	strongAttr := tui.Bold
+	if !opts.Bold {
+		strongAttr = tui.AttrRegular
+	}
 	return &Terminal{
 		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
@@ -279,6 +284,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
 		margin:     opts.Margin,
+		strong:     strongAttr,
 		cycle:      opts.Cycle,
 		header:     header,
 		header0:    header,
@@ -532,24 +538,24 @@ func (t *Terminal) placeCursor() {
 
 func (t *Terminal) printPrompt() {
 	t.move(0, 0, true)
-	t.window.CPrint(tui.ColPrompt, tui.Bold, t.prompt)
-	t.window.CPrint(tui.ColNormal, tui.Bold, string(t.input))
+	t.window.CPrint(tui.ColPrompt, t.strong, t.prompt)
+	t.window.CPrint(tui.ColNormal, t.strong, string(t.input))
 }
 
 func (t *Terminal) printInfo() {
 	if t.inlineInfo {
 		t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input)+1, true)
 		if t.reading {
-			t.window.CPrint(tui.ColSpinner, tui.Bold, " < ")
+			t.window.CPrint(tui.ColSpinner, t.strong, " < ")
 		} else {
-			t.window.CPrint(tui.ColPrompt, tui.Bold, " < ")
+			t.window.CPrint(tui.ColPrompt, t.strong, " < ")
 		}
 	} else {
 		t.move(1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-			t.window.CPrint(tui.ColSpinner, tui.Bold, _spinner[idx])
+			t.window.CPrint(tui.ColSpinner, t.strong, _spinner[idx])
 		}
 		t.move(1, 2, false)
 	}
@@ -627,17 +633,17 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 	} else if current {
 		label = ">"
 	}
-	t.window.CPrint(tui.ColCursor, tui.Bold, label)
+	t.window.CPrint(tui.ColCursor, t.strong, label)
 	if current {
 		if selected {
-			t.window.CPrint(tui.ColSelected, tui.Bold, ">")
+			t.window.CPrint(tui.ColSelected, t.strong, ">")
 		} else {
-			t.window.CPrint(tui.ColCurrent, tui.Bold, " ")
+			t.window.CPrint(tui.ColCurrent, t.strong, " ")
 		}
-		t.printHighlighted(result, tui.Bold, tui.ColCurrent, tui.ColCurrentMatch, true)
+		t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true)
 	} else {
 		if selected {
-			t.window.CPrint(tui.ColSelected, tui.Bold, ">")
+			t.window.CPrint(tui.ColSelected, t.strong, ">")
 		} else {
 			t.window.Print(" ")
 		}
