@@ -103,8 +103,8 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	C.raw() // stty dsusp undef
 	C.nonl()
 	C.keypad(C.stdscr, true)
-	C.set_escdelay(200)
-	C.timeout(100) // ESCDELAY 200ms + timeout 100ms
+	C.set_escdelay(100)
+	C.timeout(100) // ESCDELAY 100ms + timeout 100ms
 
 	_color = theme != nil
 	if _color {
