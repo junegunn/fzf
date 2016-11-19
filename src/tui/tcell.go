@@ -207,8 +207,8 @@ func GetChar() Event {
 					_clickY = append(_clickY, x)
 				} else {
 					_clickY = []int{x}
+					_prevDownTime = now
 				}
-				_prevDownTime = now
 			} else {
 				if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
 					time.Now().Sub(_prevDownTime) < doubleClickDuration {
@@ -326,9 +326,9 @@ func GetChar() Event {
 		case tcell.KeyF10:
 			return Event{F10, 0, nil}
 		case tcell.KeyF11:
-			return Event{Invalid, 0, nil}
+			return Event{F11, 0, nil}
 		case tcell.KeyF12:
-			return Event{Invalid, 0, nil}
+			return Event{F12, 0, nil}
 
 		// ev.Ch doesn't work for some reason for space:
 		case tcell.KeyRune:
@@ -342,6 +342,9 @@ func GetChar() Event {
 				}
 				if r >= 'a' && r <= 'z' {
 					return Event{AltA + int(r) - 'a', 0, nil}
+				}
+				if r >= '0' && r <= '9' {
+					return Event{Alt0 + int(r) - '0', 0, nil}
 				}
 			}
 			return Event{Rune, r, nil}

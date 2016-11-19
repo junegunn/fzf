@@ -10,8 +10,12 @@ package tui
 #cgo static LDFLAGS: -l:libncursesw.a -l:libtinfo.a -l:libgpm.a -ldl
 #cgo android static LDFLAGS: -l:libncurses.a -fPIE -march=armv7-a -mfpu=neon -mhard-float -Wl,--no-warn-mismatch
 
-SCREEN *c_newterm () {
-	return newterm(NULL, stderr, stdin);
+FILE* c_tty() {
+	return fopen("/dev/tty", "r");
+}
+
+SCREEN* c_newterm(FILE* tty) {
+	return newterm(NULL, stderr, tty);
 }
 */
 import "C"
@@ -20,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"syscall"
 	"time"
 	"unicode/utf8"
 )
@@ -59,7 +62,6 @@ const (
 )
 
 var (
-	_in       *os.File
 	_screen   *C.SCREEN
 	_colorMap map[int]ColorPair
 	_colorFn  func(ColorPair, Attr) C.int
@@ -81,18 +83,13 @@ func DefaultTheme() *ColorTheme {
 }
 
 func Init(theme *ColorTheme, black bool, mouse bool) {
-	{
-		in, err := os.OpenFile("/dev/tty", syscall.O_RDONLY, 0)
-		if err != nil {
-			panic("Failed to open /dev/tty")
-		}
-		_in = in
-		// Break STDIN
-		// syscall.Dup2(int(in.Fd()), int(os.Stdin.Fd()))
-	}
-
 	C.setlocale(C.LC_ALL, C.CString(""))
-	_screen = C.c_newterm()
+	tty := C.c_tty()
+	if tty == nil {
+		fmt.Println("Failed to open /dev/tty")
+		os.Exit(2)
+	}
+	_screen = C.c_newterm(tty)
 	if _screen == nil {
 		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
 		os.Exit(2)
@@ -100,9 +97,14 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	C.set_term(_screen)
 	if mouse {
 		C.mousemask(C.ALL_MOUSE_EVENTS, nil)
+		C.mouseinterval(0)
 	}
 	C.noecho()
 	C.raw() // stty dsusp undef
+	C.nonl()
+	C.keypad(C.stdscr, true)
+	C.set_escdelay(200)
+	C.timeout(100) // ESCDELAY 200ms + timeout 100ms
 
 	_color = theme != nil
 	if _color {
@@ -283,246 +285,167 @@ func PairFor(fg Color, bg Color) ColorPair {
 	return id
 }
 
-func getch(nonblock bool) int {
-	b := make([]byte, 1)
-	syscall.SetNonblock(int(_in.Fd()), nonblock)
-	_, err := _in.Read(b)
-	if err != nil {
-		return -1
-	}
-	return int(b[0])
-}
-
-func GetBytes() []byte {
-	c := getch(false)
-	retries := 0
-	if c == 27 {
-		// Wait for additional keys after ESC for 100ms (10 * 10ms)
-		retries = 10
-	}
-	_buf = append(_buf, byte(c))
-
-	for {
-		c = getch(true)
-		if c == -1 {
-			if retries > 0 {
-				retries--
-				time.Sleep(10 * time.Millisecond)
-				continue
-			}
-			break
+func consume(expects ...rune) bool {
+	for _, r := range expects {
+		if int(C.getch()) != int(r) {
+			return false
 		}
-		retries = 0
-		_buf = append(_buf, byte(c))
 	}
-
-	return _buf
+	return true
 }
 
-// 27 (91 79) 77 type x y
-func mouseSequence(sz *int) Event {
-	if len(_buf) < 6 {
-		return Event{Invalid, 0, nil}
-	}
-	*sz = 6
-	switch _buf[3] {
-	case 32, 36, 40, 48, // mouse-down / shift / cmd / ctrl
-		35, 39, 43, 51: // mouse-up / shift / cmd / ctrl
-		mod := _buf[3] >= 36
-		down := _buf[3]%2 == 0
-		x := int(_buf[4] - 33)
-		y := int(_buf[5] - 33)
-		double := false
-		if down {
-			now := time.Now()
-			if now.Sub(_prevDownTime) < doubleClickDuration {
-				_clickY = append(_clickY, y)
-			} else {
-				_clickY = []int{y}
-			}
-			_prevDownTime = now
-		} else {
-			if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
-				time.Now().Sub(_prevDownTime) < doubleClickDuration {
-				double = true
-			}
-		}
-		return Event{Mouse, 0, &MouseEvent{y, x, 0, down, double, mod}}
-	case 96, 100, 104, 112, // scroll-up / shift / cmd / ctrl
-		97, 101, 105, 113: // scroll-down / shift / cmd / ctrl
-		mod := _buf[3] >= 100
-		s := 1 - int(_buf[3]%2)*2
-		x := int(_buf[4] - 33)
-		y := int(_buf[5] - 33)
-		return Event{Mouse, 0, &MouseEvent{y, x, s, false, false, mod}}
-	}
-	return Event{Invalid, 0, nil}
-}
-
-func escSequence(sz *int) Event {
-	if len(_buf) < 2 {
+func escSequence() Event {
+	// nodelay is not thread-safe (e.g. <ESC><CTRL-P>)
+	// C.nodelay(C.stdscr, true)
+	c := C.getch()
+	switch c {
+	case C.ERR:
 		return Event{ESC, 0, nil}
-	}
-	*sz = 2
-	switch _buf[1] {
-	case 13:
+	case CtrlM:
 		return Event{AltEnter, 0, nil}
-	case 32:
-		return Event{AltSpace, 0, nil}
-	case 47:
+	case '/':
 		return Event{AltSlash, 0, nil}
-	case 98:
-		return Event{AltB, 0, nil}
-	case 100:
-		return Event{AltD, 0, nil}
-	case 102:
-		return Event{AltF, 0, nil}
-	case 127:
+	case ' ':
+		return Event{AltSpace, 0, nil}
+	case 127, C.KEY_BACKSPACE:
 		return Event{AltBS, 0, nil}
-	case 91, 79:
-		if len(_buf) < 3 {
+	case '[':
+		// Bracketed paste mode (printf "\e[?2004h")
+		// \e[200~ TEXT \e[201~
+		if consume('2', '0', '0', '~') {
 			return Event{Invalid, 0, nil}
 		}
-		*sz = 3
-		switch _buf[2] {
-		case 68:
-			return Event{Left, 0, nil}
-		case 67:
-			return Event{Right, 0, nil}
-		case 66:
-			return Event{Down, 0, nil}
-		case 65:
-			return Event{Up, 0, nil}
-		case 90:
-			return Event{BTab, 0, nil}
-		case 72:
-			return Event{Home, 0, nil}
-		case 70:
-			return Event{End, 0, nil}
-		case 77:
-			return mouseSequence(sz)
-		case 80:
-			return Event{F1, 0, nil}
-		case 81:
-			return Event{F2, 0, nil}
-		case 82:
-			return Event{F3, 0, nil}
-		case 83:
-			return Event{F4, 0, nil}
-		case 49, 50, 51, 52, 53, 54:
-			if len(_buf) < 4 {
-				return Event{Invalid, 0, nil}
-			}
-			*sz = 4
-			switch _buf[2] {
-			case 50:
-				if len(_buf) == 5 && _buf[4] == 126 {
-					*sz = 5
-					switch _buf[3] {
-					case 48:
-						return Event{F9, 0, nil}
-					case 49:
-						return Event{F10, 0, nil}
-					}
-				}
-				// Bracketed paste mode \e[200~ / \e[201
-				if _buf[3] == 48 && (_buf[4] == 48 || _buf[4] == 49) && _buf[5] == 126 {
-					*sz = 6
-					return Event{Invalid, 0, nil}
-				}
-				return Event{Invalid, 0, nil} // INS
-			case 51:
-				return Event{Del, 0, nil}
-			case 52:
-				return Event{End, 0, nil}
-			case 53:
-				return Event{PgUp, 0, nil}
-			case 54:
-				return Event{PgDn, 0, nil}
-			case 49:
-				switch _buf[3] {
-				case 126:
-					return Event{Home, 0, nil}
-				case 53, 55, 56, 57:
-					if len(_buf) == 5 && _buf[4] == 126 {
-						*sz = 5
-						switch _buf[3] {
-						case 53:
-							return Event{F5, 0, nil}
-						case 55:
-							return Event{F6, 0, nil}
-						case 56:
-							return Event{F7, 0, nil}
-						case 57:
-							return Event{F8, 0, nil}
-						}
-					}
-					return Event{Invalid, 0, nil}
-				case 59:
-					if len(_buf) != 6 {
-						return Event{Invalid, 0, nil}
-					}
-					*sz = 6
-					switch _buf[4] {
-					case 50:
-						switch _buf[5] {
-						case 68:
-							return Event{Home, 0, nil}
-						case 67:
-							return Event{End, 0, nil}
-						}
-					case 53:
-						switch _buf[5] {
-						case 68:
-							return Event{SLeft, 0, nil}
-						case 67:
-							return Event{SRight, 0, nil}
-						}
-					} // _buf[4]
-				} // _buf[3]
-			} // _buf[2]
-		} // _buf[2]
-	} // _buf[1]
-	if _buf[1] >= 'a' && _buf[1] <= 'z' {
-		return Event{AltA + int(_buf[1]) - 'a', 0, nil}
+	}
+	if c >= 'a' && c <= 'z' {
+		return Event{AltA + int(c) - 'a', 0, nil}
+	}
+
+	if c >= '0' && c <= '9' {
+		return Event{Alt0 + int(c) - '0', 0, nil}
+	}
+
+	// Don't care. Ignore the rest.
+	for ; c != C.ERR; c = C.getch() {
 	}
 	return Event{Invalid, 0, nil}
 }
 
 func GetChar() Event {
-	if len(_buf) == 0 {
-		_buf = GetBytes()
-	}
-	if len(_buf) == 0 {
-		panic("Empty _buffer")
-	}
-
-	sz := 1
-	defer func() {
-		_buf = _buf[sz:]
-	}()
-
-	switch _buf[0] {
-	case CtrlC:
-		return Event{CtrlC, 0, nil}
-	case CtrlG:
-		return Event{CtrlG, 0, nil}
-	case CtrlQ:
-		return Event{CtrlQ, 0, nil}
+	c := C.getch()
+	switch c {
+	case C.ERR:
+		return Event{Invalid, 0, nil}
+	case C.KEY_UP:
+		return Event{Up, 0, nil}
+	case C.KEY_DOWN:
+		return Event{Down, 0, nil}
+	case C.KEY_LEFT:
+		return Event{Left, 0, nil}
+	case C.KEY_RIGHT:
+		return Event{Right, 0, nil}
+	case C.KEY_HOME:
+		return Event{Home, 0, nil}
+	case C.KEY_END:
+		return Event{End, 0, nil}
+	case C.KEY_BACKSPACE:
+		return Event{BSpace, 0, nil}
+	case C.KEY_F0 + 1:
+		return Event{F1, 0, nil}
+	case C.KEY_F0 + 2:
+		return Event{F2, 0, nil}
+	case C.KEY_F0 + 3:
+		return Event{F3, 0, nil}
+	case C.KEY_F0 + 4:
+		return Event{F4, 0, nil}
+	case C.KEY_F0 + 5:
+		return Event{F5, 0, nil}
+	case C.KEY_F0 + 6:
+		return Event{F6, 0, nil}
+	case C.KEY_F0 + 7:
+		return Event{F7, 0, nil}
+	case C.KEY_F0 + 8:
+		return Event{F8, 0, nil}
+	case C.KEY_F0 + 9:
+		return Event{F9, 0, nil}
+	case C.KEY_F0 + 10:
+		return Event{F10, 0, nil}
+	case C.KEY_F0 + 11:
+		return Event{F11, 0, nil}
+	case C.KEY_F0 + 12:
+		return Event{F12, 0, nil}
+	case C.KEY_DC:
+		return Event{Del, 0, nil}
+	case C.KEY_PPAGE:
+		return Event{PgUp, 0, nil}
+	case C.KEY_NPAGE:
+		return Event{PgDn, 0, nil}
+	case C.KEY_BTAB:
+		return Event{BTab, 0, nil}
+	case C.KEY_ENTER:
+		return Event{CtrlM, 0, nil}
+	case C.KEY_SLEFT:
+		return Event{SLeft, 0, nil}
+	case C.KEY_SRIGHT:
+		return Event{SRight, 0, nil}
+	case C.KEY_MOUSE:
+		var me C.MEVENT
+		if C.getmouse(&me) != C.ERR {
+			mod := ((me.bstate & C.BUTTON_SHIFT) | (me.bstate & C.BUTTON_CTRL) | (me.bstate & C.BUTTON_ALT)) > 0
+			x := int(me.x)
+			y := int(me.y)
+			/* Cannot use BUTTON1_DOUBLE_CLICKED due to mouseinterval(0) */
+			if (me.bstate & C.BUTTON1_PRESSED) > 0 {
+				now := time.Now()
+				if now.Sub(_prevDownTime) < doubleClickDuration {
+					_clickY = append(_clickY, y)
+				} else {
+					_clickY = []int{y}
+					_prevDownTime = now
+				}
+				return Event{Mouse, 0, &MouseEvent{y, x, 0, true, false, mod}}
+			} else if (me.bstate & C.BUTTON1_RELEASED) > 0 {
+				double := false
+				if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
+					time.Now().Sub(_prevDownTime) < doubleClickDuration {
+					double = true
+				}
+				return Event{Mouse, 0, &MouseEvent{y, x, 0, false, double, mod}}
+			} else if (me.bstate&0x8000000) > 0 || (me.bstate&0x80) > 0 {
+				return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, mod}}
+			} else if (me.bstate & C.BUTTON4_PRESSED) > 0 {
+				return Event{Mouse, 0, &MouseEvent{y, x, 1, false, false, mod}}
+			}
+		}
+		return Event{Invalid, 0, nil}
+	case C.KEY_RESIZE:
+		return Event{Invalid, 0, nil}
+	case ESC:
+		return escSequence()
 	case 127:
 		return Event{BSpace, 0, nil}
-	case ESC:
-		return escSequence(&sz)
+	}
+	// CTRL-A ~ CTRL-Z
+	if c >= CtrlA && c <= CtrlZ {
+		return Event{int(c), 0, nil}
 	}
 
-	// CTRL-A ~ CTRL-Z
-	if _buf[0] <= CtrlZ {
-		return Event{int(_buf[0]), 0, nil}
+	// Multi-byte character
+	buffer := []byte{byte(c)}
+	for {
+		r, _ := utf8.DecodeRune(buffer)
+		if r != utf8.RuneError {
+			return Event{Rune, r, nil}
+		}
+
+		c := C.getch()
+		if c == C.ERR {
+			break
+		}
+		if c >= C.KEY_CODE_YES {
+			C.ungetch(c)
+			break
+		}
+		buffer = append(buffer, byte(c))
 	}
-	r, rsz := utf8.DecodeRune(_buf)
-	if r == utf8.RuneError {
-		return Event{ESC, 0, nil}
-	}
-	sz = rsz
-	return Event{Rune, r, nil}
+	return Event{Invalid, 0, nil}
 }

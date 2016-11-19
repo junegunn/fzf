@@ -67,18 +67,24 @@ const (
 	F8
 	F9
 	F10
+	F11
+	F12
 
 	AltEnter
 	AltSpace
 	AltSlash
 	AltBS
-	AltA
+
+	Alt0
+)
+
+const ( // Reset iota
+	AltA = Alt0 + 'a' - '0' + iota
 	AltB
 	AltC
 	AltD
 	AltE
 	AltF
-
 	AltZ = AltA + 'z' - 'a'
 )
 
@@ -136,7 +142,6 @@ type MouseEvent struct {
 }
 
 var (
-	_buf          []byte
 	_color        bool
 	_prevDownTime time.Time
 	_clickY       []int

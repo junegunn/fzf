@@ -330,6 +330,10 @@ func isAlphabet(char uint8) bool {
 	return char >= 'a' && char <= 'z'
 }
 
+func isNumeric(char uint8) bool {
+	return char >= '0' && char <= '9'
+}
+
 func parseAlgo(str string) algo.Algo {
 	switch str {
 	case "v1":
@@ -406,11 +410,17 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.DoubleClick
 		case "f10":
 			chord = tui.F10
+		case "f11":
+			chord = tui.F11
+		case "f12":
+			chord = tui.F12
 		default:
 			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				chord = tui.CtrlA + int(lkey[5]) - 'a'
 			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
 				chord = tui.AltA + int(lkey[4]) - 'a'
+			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isNumeric(lkey[4]) {
+				chord = tui.Alt0 + int(lkey[4]) - '0'
 			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '9' {
 				chord = tui.F1 + int(key[1]) - '1'
 			} else if utf8.RuneCountInString(key) == 1 {
