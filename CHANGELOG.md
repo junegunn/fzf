@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.15.8
+------
+- Updated ANSI processor to handle more VT-100 escape sequences
+- Added `--no-bold` (and `--bold`) option
+- Improved escape sequence processing for WSL
+- Added support for `alt-[0-9]`, `f11`, and `f12` for `--bind` and `--expect`
+
 0.15.7
 ------
 - Fixed panic when color is disabled and header lines contain ANSI colors
