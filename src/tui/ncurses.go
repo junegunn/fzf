@@ -182,9 +182,7 @@ func attrMono(pair ColorPair, a Attr) C.int {
 	var attr C.int
 	switch pair {
 	case ColCurrent:
-		if C.int(a)&C.A_BOLD == C.A_BOLD {
-			attr = C.A_REVERSE
-		}
+		attr = C.A_REVERSE
 	case ColMatch:
 		attr = C.A_UNDERLINE
 	case ColCurrentMatch:
