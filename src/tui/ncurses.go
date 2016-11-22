@@ -23,6 +23,7 @@ import "C"
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -103,8 +104,16 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	C.raw() // stty dsusp undef
 	C.nonl()
 	C.keypad(C.stdscr, true)
-	C.set_escdelay(100)
-	C.timeout(100) // ESCDELAY 100ms + timeout 100ms
+
+	delay := 50
+	delayEnv := os.Getenv("ESCDELAY")
+	if len(delayEnv) > 0 {
+		num, err := strconv.Atoi(delayEnv)
+		if err == nil && num >= 0 {
+			delay = num
+		}
+	}
+	C.set_escdelay(C.int(delay))
 
 	_color = theme != nil
 	if _color {
@@ -293,8 +302,10 @@ func consume(expects ...rune) bool {
 }
 
 func escSequence() Event {
-	// nodelay is not thread-safe (e.g. <ESC><CTRL-P>)
-	// C.nodelay(C.stdscr, true)
+	C.nodelay(C.stdscr, true)
+	defer func() {
+		C.nodelay(C.stdscr, false)
+	}()
 	c := C.getch()
 	switch c {
 	case C.ERR:
