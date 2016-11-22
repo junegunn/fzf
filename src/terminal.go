@@ -190,6 +190,7 @@ const (
 func defaultKeymap() map[int]actionType {
 	keymap := make(map[int]actionType)
 	keymap[tui.Invalid] = actInvalid
+	keymap[tui.Resize] = actClearScreen
 	keymap[tui.CtrlA] = actBeginningOfLine
 	keymap[tui.CtrlB] = actBackwardChar
 	keymap[tui.CtrlC] = actAbort

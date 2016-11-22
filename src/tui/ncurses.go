@@ -416,7 +416,7 @@ func GetChar() Event {
 		}
 		return Event{Invalid, 0, nil}
 	case C.KEY_RESIZE:
-		return Event{Invalid, 0, nil}
+		return Event{Resize, 0, nil}
 	case ESC:
 		return escSequence()
 	case 127:

@@ -183,7 +183,7 @@ func GetChar() Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
-		return Event{Invalid, 0, nil}
+		return Event{Resize, 0, nil}
 
 	// process mouse events:
 	case *tcell.EventMouse:

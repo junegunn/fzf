@@ -37,6 +37,7 @@ const (
 	ESC
 
 	Invalid
+	Resize
 	Mouse
 	DoubleClick
 
