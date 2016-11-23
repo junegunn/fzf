@@ -30,7 +30,7 @@ import (
 )
 
 type ColorPair int16
-type Attr C.int
+type Attr C.uint
 type WindowImpl C.WINDOW
 
 const (
@@ -39,6 +39,7 @@ const (
 	Blink          = C.A_BLINK
 	Reverse        = C.A_REVERSE
 	Underline      = C.A_UNDERLINE
+	Italic         = C.A_VERTICAL << 1 // FIXME
 )
 
 const (

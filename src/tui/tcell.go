@@ -48,6 +48,7 @@ const (
 	Blink          = Attr(tcell.AttrBlink)
 	Reverse        = Attr(tcell.AttrReverse)
 	Underline      = Attr(tcell.AttrUnderline)
+	Italic         = Attr(tcell.AttrNone) // Not supported
 )
 
 const (
