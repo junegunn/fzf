@@ -65,7 +65,7 @@ const (
 var (
 	_screen   *C.SCREEN
 	_colorMap map[int]ColorPair
-	_colorFn  func(ColorPair, Attr) C.int
+	_colorFn  func(ColorPair, Attr) (C.short, C.int)
 )
 
 func init() {
@@ -164,10 +164,12 @@ func NewWindow(top int, left int, width int, height int, border bool) *Window {
 		C.wbkgd(win, C.chtype(C.COLOR_PAIR(C.int(ColNormal))))
 	}
 	if border {
-		attr := _colorFn(ColBorder, 0)
+		pair, attr := _colorFn(ColBorder, 0)
+		C.wcolor_set(win, pair, nil)
 		C.wattron(win, attr)
 		C.box(win, 0, 0)
 		C.wattroff(win, attr)
+		C.wcolor_set(win, 0, nil)
 	}
 
 	return &Window{
@@ -179,15 +181,11 @@ func NewWindow(top int, left int, width int, height int, border bool) *Window {
 	}
 }
 
-func attrColored(pair ColorPair, a Attr) C.int {
-	var attr C.int
-	if pair > 0 {
-		attr = C.COLOR_PAIR(C.int(pair))
-	}
-	return attr | C.int(a)
+func attrColored(pair ColorPair, a Attr) (C.short, C.int) {
+	return C.short(pair), C.int(a)
 }
 
-func attrMono(pair ColorPair, a Attr) C.int {
+func attrMono(pair ColorPair, a Attr) (C.short, C.int) {
 	var attr C.int
 	switch pair {
 	case ColCurrent:
@@ -200,7 +198,7 @@ func attrMono(pair ColorPair, a Attr) C.int {
 	if C.int(a)&C.A_BOLD == C.A_BOLD {
 		attr = attr | C.A_BOLD
 	}
-	return attr
+	return 0, attr
 }
 
 func MaxX() int {
@@ -241,11 +239,13 @@ func (w *Window) Print(text string) {
 	}, text)))
 }
 
-func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
-	attr := _colorFn(pair, a)
-	C.wattron(w.win(), attr)
+func (w *Window) CPrint(pair ColorPair, attr Attr, text string) {
+	p, a := _colorFn(pair, attr)
+	C.wcolor_set(w.win(), p, nil)
+	C.wattron(w.win(), a)
 	w.Print(text)
-	C.wattroff(w.win(), attr)
+	C.wattroff(w.win(), a)
+	C.wcolor_set(w.win(), 0, nil)
 }
 
 func Clear() {
@@ -265,11 +265,13 @@ func (w *Window) Fill(str string) bool {
 	return C.waddstr(w.win(), C.CString(str)) == C.OK
 }
 
-func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
-	attr := _colorFn(PairFor(fg, bg), a)
-	C.wattron(w.win(), attr)
+func (w *Window) CFill(str string, fg Color, bg Color, attr Attr) bool {
+	pair := PairFor(fg, bg)
+	C.wcolor_set(w.win(), C.short(pair), nil)
+	C.wattron(w.win(), C.int(attr))
 	ret := w.Fill(str)
-	C.wattroff(w.win(), attr)
+	C.wattroff(w.win(), C.int(attr))
+	C.wcolor_set(w.win(), 0, nil)
 	return ret
 }
 

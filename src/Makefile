@@ -70,10 +70,10 @@ clean:
 	cd fzf && rm -f fzf-*
 
 fzf/$(BINARY32): deps
-	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -ldflags -w -tags "$(TAGS)" -o $(BINARY32)
+	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY32)
 
 fzf/$(BINARY64): deps
-	cd fzf && go build -a -ldflags -w -tags "$(TAGS)" -o $(BINARY64)
+	cd fzf && go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY64)
 
 $(BINDIR)/fzf: fzf/$(BINARY) | $(BINDIR)
 	cp -f fzf/$(BINARY) $(BINDIR)
