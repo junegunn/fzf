@@ -39,8 +39,9 @@ const (
 	Blink          = C.A_BLINK
 	Reverse        = C.A_REVERSE
 	Underline      = C.A_UNDERLINE
-	Italic         = C.A_VERTICAL << 1 // FIXME
 )
+
+var Italic Attr = C.A_VERTICAL << 1 // FIXME
 
 const (
 	AttrRegular Attr = 0
@@ -71,6 +72,9 @@ var (
 
 func init() {
 	_colorMap = make(map[int]ColorPair)
+	if strings.HasPrefix(C.GoString(C.curses_version()), "ncurses 5") {
+		Italic = C.A_NORMAL
+	}
 }
 
 func (a Attr) Merge(b Attr) Attr {
