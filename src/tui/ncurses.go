@@ -130,6 +130,13 @@ func Init(theme *ColorTheme, black bool, mouse bool) {
 	} else {
 		_colorFn = attrMono
 	}
+
+	C.nodelay(C.stdscr, true)
+	ch := C.getch()
+	if ch != C.ERR {
+		C.ungetch(ch)
+	}
+	C.nodelay(C.stdscr, false)
 }
 
 func initPairs(theme *ColorTheme) {
