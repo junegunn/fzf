@@ -295,6 +295,10 @@ func RefreshWindows(windows []*Window) {
 }
 
 func PairFor(fg Color, bg Color) ColorPair {
+	// ncurses does not support 24-bit colors
+	if fg.is24() || bg.is24() {
+		return ColDefault
+	}
 	key := (int(fg) << 8) + int(bg)
 	if found, prs := _colorMap[key]; prs {
 		return found

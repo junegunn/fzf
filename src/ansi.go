@@ -169,6 +169,8 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 				}
 			case 1:
 				switch num {
+				case 2:
+					state256 = 10 // MAGIC
 				case 5:
 					state256++
 				default:
@@ -177,8 +179,20 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 			case 2:
 				*ptr = tui.Color(num)
 				state256 = 0
+			case 10:
+				*ptr = tui.Color(1<<24) | tui.Color(num<<16)
+				state256++
+			case 11:
+				*ptr = *ptr | tui.Color(num<<8)
+				state256++
+			case 12:
+				*ptr = *ptr | tui.Color(num)
+				state256 = 0
 			}
 		}
+	}
+	if state256 > 0 {
+		*ptr = -1
 	}
 	return state
 }

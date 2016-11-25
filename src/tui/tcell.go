@@ -11,8 +11,9 @@ import (
 
 	"runtime"
 
-	"github.com/gdamore/tcell"
-	"github.com/gdamore/tcell/encoding"
+	// https://github.com/gdamore/tcell/pull/135
+	"github.com/junegunn/tcell"
+	"github.com/junegunn/tcell/encoding"
 
 	"github.com/junegunn/go-runewidth"
 )

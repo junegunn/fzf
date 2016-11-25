@@ -93,7 +93,11 @@ const (
 	doubleClickDuration = 500 * time.Millisecond
 )
 
-type Color int16
+type Color int32
+
+func (c Color) is24() bool {
+	return c > 0 && (c&(1<<24)) > 0
+}
 
 const (
 	colUndefined Color = -2
