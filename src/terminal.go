@@ -833,7 +833,7 @@ func (t *Terminal) printPreview() {
 		}
 		return t.pwindow.Fill(str)
 	})
-	if t.previewer.offset > 0 {
+	if t.previewer.lines > t.pwindow.Height {
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
 		t.pwindow.Move(0, t.pwindow.Width-len(offset))
 		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, offset)
