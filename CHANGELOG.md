@@ -1,6 +1,21 @@
 CHANGELOG
 =========
 
+0.15.9
+------
+- Fixed rendering glitches introduced in 0.15.8
+- The default escape delay is reduced to 50ms and is configurable via
+  `$ESCDELAY`
+- Scroll indicator at the top-right corner of the preview window is always
+  displayed when there's overflow
+- Can now be built with ncurses 6 or tcell to support extra features
+    - *ncurses 6*
+        - Supports more than 256 color pairs
+        - Supports italics
+    - *tcell*
+        - 24-bit color support
+    - See https://github.com/junegunn/fzf/blob/master/src/README.md#build
+
 0.15.8
 ------
 - Updated ANSI processor to handle more VT-100 escape sequences
