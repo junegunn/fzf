@@ -91,6 +91,11 @@ flawlessly.
 
 [wsl]: https://blogs.msdn.microsoft.com/wsl/
 
+Building fzf
+------------
+
+See [BUILD.md](BUILD.md).
+
 Usage
 -----
 

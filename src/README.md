@@ -50,55 +50,7 @@ starts much faster though the difference may not be noticeable.
 Build
 -----
 
-```sh
-# Build fzf executables and tarballs
-make release
-
-# Install the executable to ../bin directory
-make install
-
-# Build executables and tarballs for Linux using Docker
-make linux
-```
-
-### With ncurses 6
-
-The official binaries of fzf are built with ncurses 5 because it's widely
-supported by different platforms. However ncurses 5 is old and has a number of
-limitations.
-
-1. Does not support more than 256 color pairs (See [357][357])
-2. Does not support italics
-3. Does not support 24-bit color
-
-[357]: https://github.com/junegunn/fzf/issues/357
-
-But you can manually build fzf with ncurses 6 to overcome some of these
-limitations. ncurses 6 supports up to 32767 color pairs (1), and supports
-italics (2). To build fzf with ncurses 6, you have to install it first. On
-macOS, you can use Homebrew to install it.
-
-```sh
-brew install homebrew/dupes/ncurses
-LDFLAGS="-L/usr/local/opt/ncurses/lib" make install
-```
-
-### With tcell
-
-[tcell][tcell] is a portable alternative to ncurses and we currently use it to
-build Windows binaries. tcell has many benefits but most importantly, it
-supports 24-bit colors. To build fzf with tcell:
-
-```sh
-TAGS=tcell make install
-```
-
-However, note that tcell has its own issues.
-
-- Poor rendering performance compared to ncurses
-- Does not support bracketed-paste mode
-- Does not support italics unlike ncurses 6
-- Some wide characters are not correctly displayed
+See [BUILD.md](../BUILD.md)
 
 Test
 ----

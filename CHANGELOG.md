@@ -14,7 +14,7 @@ CHANGELOG
         - Supports italics
     - *tcell*
         - 24-bit color support
-    - See https://github.com/junegunn/fzf/blob/master/src/README.md#build
+    - See https://github.com/junegunn/fzf/blob/master/BUILD.md
 
 0.15.8
 ------
