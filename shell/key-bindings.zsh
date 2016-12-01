@@ -44,6 +44,24 @@ fzf-cd-widget() {
 }
 zle     -N    fzf-cd-widget
 bindkey '\ec' fzf-cd-widget
+# OSX support
+bindkey 'ç' fzf-cd-widget
+
+# ALT-SHIFT-C - cd into the first child directory
+fzf-cd1-widget() {
+  local cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    -o -type d -maxdepth 1 -print 2> /dev/null | sed 1d | cut -b3-"}"
+  setopt localoptions pipefail 2> /dev/null
+  cd "${$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS"):-.}"
+  local ret=$?
+  zle reset-prompt
+  typeset -f zle-line-init >/dev/null && zle zle-line-init
+  return $ret
+}
+zle     -N    fzf-cd1-widget
+bindkey '\eC' fzf-cd1-widget
+# OSX support
+bindkey 'Ç' fzf-cd1-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
