@@ -581,6 +581,11 @@ let s:default_action = {
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
+function! s:shortpath()
+  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
+  return empty(short) ? '~/' : short . (short =~ '/$' ? '' : '/')
+endfunction
+
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
@@ -588,7 +593,7 @@ function! s:cmd(bang, ...) abort
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '/*$', '/', '')
     let opts.options .= ' --prompt '.shellescape(opts.dir)
   else
-    let opts.options .= ' --prompt '.shellescape(pathshorten(fnamemodify(getcwd(), ':~:.')).'/')
+    let opts.options .= ' --prompt '.shellescape(s:shortpath())
   endif
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
