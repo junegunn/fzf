@@ -51,14 +51,15 @@ __fzf_history__() (
   shopt -u nocaseglob nocasematch
   line=$(
     HISTTIMEFORMAT= history |
-    eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS" |
-    command grep '^ *[0-9]') &&
-    if [[ $- =~ H ]]; then
-      sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
-    else
-      sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
-    fi
+    eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS --query=$1" |
+    command grep '^ *[0-9]') && sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
 )
+
+fzf-history-widget() {
+  local value=$(__fzf_history__ "$(printf "%q" "$READLINE_LINE")")
+  READLINE_LINE="$value"
+  READLINE_POINT=${#value}
+}
 
 __fzf_use_tmux__() {
   [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ]
@@ -82,7 +83,11 @@ if [[ ! -o vi ]]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u`__fzf_history__`\e\C-e\e^\er"'
+  if [ $__use_bind_x -eq 1 ]; then
+    bind -x '"\C-r": "fzf-history-widget"'
+  else
+    bind '"\C-r": " \C-e\C-u$(__fzf_history__)\e\C-e\e^\er"'
+  fi
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
