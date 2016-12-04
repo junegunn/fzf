@@ -273,6 +273,14 @@ func (w *Window) Erase() {
 	C.werase(w.win())
 }
 
+func (w *Window) X() int {
+	return int(C.getcurx(w.win()))
+}
+
+func DoesAutoWrap() bool {
+	return true
+}
+
 func (w *Window) Fill(str string) bool {
 	return C.waddstr(w.win(), C.CString(str)) == C.OK
 }

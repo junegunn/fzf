@@ -488,7 +488,14 @@ func (t *Terminal) resizeWindows() {
 	if t.isPreviewEnabled() {
 		createPreviewWindow := func(y int, x int, w int, h int) {
 			t.bwindow = tui.NewWindow(y, x, w, h, true)
-			t.pwindow = tui.NewWindow(y+1, x+2, w-4, h-2, false)
+			pwidth := w - 4
+			// ncurses auto-wraps the line when the cursor reaches the right-end of
+			// the window. To prevent unintended line-wraps, we use the width one
+			// column larger than the desired value.
+			if !t.preview.wrap && tui.DoesAutoWrap() {
+				pwidth += 1
+			}
+			t.pwindow = tui.NewWindow(y+1, x+2, pwidth, h-2, false)
 		}
 		switch t.preview.position {
 		case posUp:
@@ -657,7 +664,7 @@ func trimRight(runes []rune, width int) ([]rune, int) {
 	l := 0
 	for idx, r := range runes {
 		l += runeWidth(r, l)
-		if idx > 0 && l > width {
+		if l > width {
 			return runes[:idx], len(runes) - idx
 		}
 	}
@@ -827,6 +834,21 @@ func (t *Terminal) printPreview() {
 				skip -= newlines
 				return true
 			}
+		}
+		if !t.preview.wrap {
+			lines := strings.Split(str, "\n")
+			for i, line := range lines {
+				limit := t.pwindow.Width
+				if tui.DoesAutoWrap() {
+					limit -= 1
+				}
+				if i == 0 {
+					limit -= t.pwindow.X()
+				}
+				trimmed, _ := trimRight([]rune(line), limit)
+				lines[i] = string(trimmed)
+			}
+			str = strings.Join(lines, "\n")
 		}
 		if ansi != nil && ansi.colored() {
 			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.attr)

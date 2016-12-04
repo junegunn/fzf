@@ -172,6 +172,14 @@ func (w *Window) win() *WindowTcell {
 	return (*WindowTcell)(w.impl)
 }
 
+func (w *Window) X() int {
+	return w.impl.LastX
+}
+
+func DoesAutoWrap() bool {
+	return false
+}
+
 func Clear() {
 	_screen.Sync()
 	_screen.Clear()
@@ -521,7 +529,7 @@ func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 			var xPos = w.Left + w.win().LastX + lx
 
 			// word wrap:
-			if xPos > (w.Left + w.Width) {
+			if xPos >= (w.Left + w.Width) {
 				w.win().LastY++
 				w.win().LastX = 0
 				lx = 0

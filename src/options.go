@@ -66,7 +66,7 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]][:hidden]
+                          [up|down|left|right][:SIZE[%]][:wrap][:hidden]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -126,6 +126,7 @@ type previewOpts struct {
 	position windowPosition
 	size     sizeSpec
 	hidden   bool
+	wrap     bool
 }
 
 // Options stores the values of command-line options
@@ -207,7 +208,7 @@ func defaultOptions() *Options {
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int]actionType),
 		Execmap:     make(map[int]string),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -760,39 +761,43 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
-	layout := input
+	// Default
+	opts.position = posRight
+	opts.size = sizeSpec{50, true}
 	opts.hidden = false
-	if strings.HasSuffix(layout, ":hidden") {
-		opts.hidden = true
-		layout = strings.TrimSuffix(layout, ":hidden")
-	}
+	opts.wrap = false
 
-	tokens := strings.Split(layout, ":")
-	if len(tokens) == 0 || len(tokens) > 2 {
-		errorExit("invalid window layout: " + input)
-	}
-
-	if len(tokens) > 1 {
-		opts.size = parseSize(tokens[1], 99, "window size")
-	} else {
-		opts.size = sizeSpec{50, true}
+	tokens := strings.Split(input, ":")
+	sizeRegex := regexp.MustCompile("^[1-9][0-9]*%?$")
+	for _, token := range tokens {
+		switch token {
+		case "hidden":
+			opts.hidden = true
+		case "wrap":
+			opts.wrap = true
+		case "up", "top":
+			opts.position = posUp
+		case "down", "bottom":
+			opts.position = posDown
+		case "left":
+			opts.position = posLeft
+		case "right":
+			opts.position = posRight
+		default:
+			if sizeRegex.MatchString(token) {
+				opts.size = parseSize(token, 99, "window size")
+			} else {
+				errorExit("invalid preview window layout: " + input)
+			}
+		}
 	}
 	if !opts.size.percent && opts.size.size > 0 {
 		// Adjust size for border
 		opts.size.size += 2
-	}
-
-	switch tokens[0] {
-	case "up":
-		opts.position = posUp
-	case "down":
-		opts.position = posDown
-	case "left":
-		opts.position = posLeft
-	case "right":
-		opts.position = posRight
-	default:
-		errorExit("invalid window position: " + input)
+		// And padding
+		if opts.position == posLeft || opts.position == posRight {
+			opts.size.size += 2
+		}
 	}
 }
 
@@ -997,7 +1002,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--margin":
