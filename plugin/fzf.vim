@@ -471,7 +471,7 @@ function! s:execute_term(dict, command, temps) abort
       endif
     endif
   endfunction
-  function! fzf.on_exit(id, code)
+  function! fzf.on_exit(id, code, _event)
     if s:getpos() == self.ppos " {'window': 'enew'}
       for [opt, val] in items(self.winopts)
         execute 'let' opt '=' val
