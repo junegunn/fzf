@@ -303,8 +303,8 @@ fi
 
 # Man path
 # --------
-if [[ ! "\$MANPATH" == *$fzf_base/man* && -d "$fzf_base/man" ]]; then
-  export MANPATH="\$MANPATH:$fzf_base/man"
+if [[ ! "\$MANPATH" == *$fzf_base/share/man* && -d "$fzf_base/share/man" ]]; then
+  export MANPATH="\$MANPATH:$fzf_base/share/man"
 fi
 
 # Auto-completion
