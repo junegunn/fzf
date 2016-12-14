@@ -434,11 +434,36 @@ export FZF_DEFAULT_COMMAND='
 
 It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
 that it doesn't allow reading from STDIN in command substitution, which means
-simple `vim (fzf)` won't work as expected. The workaround is to store the result
-of fzf to a temporary file.
+simple `vim (fzf)` won't work as expected. The workaround is to use the `read`
+fish command:
 
 ```sh
-fzf > $TMPDIR/fzf.result; and vim (cat $TMPDIR/fzf.result)
+fzf | read -l result; and vim $result
+```
+
+or, for multiple results:
+
+```sh
+fzf -m | while read -l r; set result $result $r; end; and vim $result
+```
+
+The globbing system is different in fish and thus `**` completion will not work.
+However, the `CTRL-T` command will use the last token on the commandline as the
+root folder for the recursive search. For instance, hitting `CTRL-T` at the end
+of the following commandline
+
+```sh
+ls /var/
+```
+
+will list all files and folders under `/var/`.
+
+When using a custom `FZF_CTRL_T_COMMAND`, use the unexpanded `$dir` variable to
+make use of this feature. `$dir` defaults to `.` when the last token is not a
+valid directory. Example:
+
+```sh
+set -l FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
 ```
 
 License
