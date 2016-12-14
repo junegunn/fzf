@@ -16,10 +16,10 @@ function fzf_key_bindings
     # "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
     # $dir itself, even if hidden.
     set -q FZF_CTRL_T_COMMAND; or set -l FZF_CTRL_T_COMMAND "
-    command find -L \$dir \\( -path \$dir'*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
+    command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
     -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed '1d; s#^\./##'"
+    -o -type d -exec printf '%s/\n' \{\} + \
+    -o -type l -print 2> /dev/null | sed 's#^\./##'"
 
     eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m $FZF_CTRL_T_OPTS" | while read -l r; set result $result $r; end
     if [ -z "$result" ]
