@@ -301,12 +301,6 @@ if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
   export PATH="\$PATH:$fzf_base/bin"
 fi
 
-# Man path
-# --------
-if [[ ! "\$MANPATH" == *$fzf_base/man* && -d "$fzf_base/man" ]]; then
-  export MANPATH="\$MANPATH:$fzf_base/man"
-fi
-
 # Auto-completion
 # ---------------
 $fzf_completion
