@@ -846,7 +846,7 @@ func (t *Terminal) printPreview() {
 					limit -= t.pwindow.X()
 				}
 				trimmed, _ := trimRight([]rune(line), limit)
-				lines[i] = string(trimmed)
+				lines[i], _ = processTabs(trimmed, 0)
 			}
 			str = strings.Join(lines, "\n")
 		}
