@@ -671,6 +671,10 @@ func parseKeymap(keymap map[int]actionType, execmap map[int]string, str string) 
 			keymap[key] = actPageUp
 		case "page-down":
 			keymap[key] = actPageDown
+		case "halfpage-up":
+			keymap[key] = actHalfPageUp
+		case "halfpage-down":
+			keymap[key] = actHalfPageDown
 		case "previous-history":
 			keymap[key] = actPreviousHistory
 		case "next-history":
