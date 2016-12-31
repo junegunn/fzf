@@ -240,9 +240,11 @@ endfunction
 function! fzf#run(...) abort
 try
   let oshell = &shell
+  let useshellslash = &shellslash
 
   if has('win32') || has('win64')
     set shell=cmd.exe
+    set shellslash
   else
     set shell=sh
   endif
@@ -293,6 +295,7 @@ try
   return lines
 finally
   let &shell = oshell
+  let &shellslash = useshellslash
 endtry
 endfunction
 
@@ -609,9 +612,6 @@ function! s:shortpath()
 endfunction
 
 function! s:cmd(bang, ...) abort
-try
-  let useshellslash = &shellslash
-  set shellslash
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
@@ -622,9 +622,6 @@ try
   endif
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
-finally
-  let &shellslash = useshellslash
-endtry
 endfunction
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
