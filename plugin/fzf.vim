@@ -80,13 +80,13 @@ function! s:shellesc(arg)
 endfunction
 
 function! s:escape(path)
-  let l:escaped_chars = '$%#''"'
+  let escaped_chars = '$%#''"'
 
   if has('unix')
-    let l:escaped_chars .= ' \'
+    let escaped_chars .= ' \'
   endif
 
-  return escape(a:path, l:escaped_chars)
+  return escape(a:path, escaped_chars)
 endfunction
 
 " Upgrade legacy options
@@ -607,7 +607,7 @@ endfunction
 
 function! s:cmd(bang, ...) abort
 try
-  let l:useshellslash = &shellslash
+  let useshellslash = &shellslash
   set shellslash
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
@@ -620,7 +620,7 @@ try
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 finally
-  let &shellslash = l:useshellslash
+  let &shellslash = useshellslash
 endtry
 endfunction
 
