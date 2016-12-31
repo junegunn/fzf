@@ -80,7 +80,13 @@ function! s:shellesc(arg)
 endfunction
 
 function! s:escape(path)
-  return escape(a:path, ' $%#''"\')
+  let l:escaped_chars = '$%#''"'
+
+  if has('unix')
+    let l:escaped_chars .= ' \'
+  endif
+
+  return escape(a:path, l:escaped_chars)
 endfunction
 
 " Upgrade legacy options
@@ -234,7 +240,13 @@ endfunction
 function! fzf#run(...) abort
 try
   let oshell = &shell
-  set shell=sh
+
+  if has('win32') || has('win64')
+    set shell=cmd.exe
+  else
+    set shell=sh
+  endif
+
   if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"'))
     call s:warn('FZF is already running!')
     return []
@@ -353,7 +365,11 @@ function! s:xterm_launcher()
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
 unlet! s:launcher
-let s:launcher = function('s:xterm_launcher')
+if has('win32') || has('win64')
+  let s:launcher = 'cmd.exe'
+else
+  let s:launcher = function('s:xterm_launcher')
+endif
 
 function! s:exit_handler(code, command, ...)
   if a:code == 130
@@ -370,7 +386,9 @@ endfunction
 
 function! s:execute(dict, command, temps) abort
   call s:pushd(a:dict)
-  silent! !clear 2> /dev/null
+  if has('unix')
+    silent! !clear 2> /dev/null
+  endif
   let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#')
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
@@ -588,6 +606,9 @@ function! s:shortpath()
 endfunction
 
 function! s:cmd(bang, ...) abort
+try
+  let l:useshellslash = &shellslash
+  set shellslash
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
@@ -598,6 +619,9 @@ function! s:cmd(bang, ...) abort
   endif
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
+finally
+  let &shellslash = l:useshellslash
+endtry
 endfunction
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
