@@ -263,7 +263,7 @@ try
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = tempname()
     call writefile(split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
-    let dict.source = (empty($SHELL) ? 'sh' : $SHELL) . ' ' . s:shellesc(temps.source)
+    let dict.source = (empty($SHELL) ? &shell : $SHELL) . ' ' . s:shellesc(temps.source)
   endif
 
   if has_key(dict, 'source')
@@ -366,7 +366,7 @@ function! s:xterm_launcher()
 endfunction
 unlet! s:launcher
 if has('win32') || has('win64')
-  let s:launcher = 'cmd.exe'
+  let s:launcher = 'cmd.exe /C %s'
 else
   let s:launcher = function('s:xterm_launcher')
 endif
@@ -393,7 +393,10 @@ function! s:execute(dict, command, temps) abort
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
-    let command = printf(fmt, "'".substitute(escaped, "'", "'\"'\"'", 'g')."'")
+    if has('unix')
+      let escaped = "'".substitute(escaped, "'", "'\"'\"'", 'g')."'"
+    endif
+    let command = printf(fmt, escaped)
   else
     let command = escaped
   endif
