@@ -244,7 +244,7 @@ try
 
   if has('win32') || has('win64')
     set shell=cmd.exe
-    set shellslash
+    set noshellslash
   else
     set shell=sh
   endif
@@ -398,6 +398,8 @@ function! s:execute(dict, command, temps) abort
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
     if has('unix')
       let escaped = "'".substitute(escaped, "'", "'\"'\"'", 'g')."'"
+    elseif has('win32') || has('win64')
+      let escaped = '"'.(escaped).'"'
     endif
     let command = printf(fmt, escaped)
   else
@@ -612,6 +614,13 @@ function! s:shortpath()
 endfunction
 
 function! s:cmd(bang, ...) abort
+try
+  let useshellslash = &shellslash
+
+  if has('win32') || has('win64')
+    set noshellslash
+  endif
+
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
@@ -622,6 +631,9 @@ function! s:cmd(bang, ...) abort
   endif
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
+finally
+  let &shellslash = useshellslash
+endtry
 endfunction
 
 command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
