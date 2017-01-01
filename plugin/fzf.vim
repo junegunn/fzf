@@ -237,6 +237,19 @@ function! fzf#wrap(...)
   return opts
 endfunction
 
+function! fzf#shellescape(path)
+  if has('win32') || has('win64')
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return shellescape(a:path)
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return shellescape(a:path)
+endfunction
+
 function! fzf#run(...) abort
 try
   let oshell = &shell
@@ -244,7 +257,7 @@ try
 
   if has('win32') || has('win64')
     set shell=cmd.exe
-    set shellslash
+    set noshellslash
   else
     set shell=sh
   endif
@@ -398,6 +411,8 @@ function! s:execute(dict, command, temps) abort
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
     if has('unix')
       let escaped = "'".substitute(escaped, "'", "'\"'\"'", 'g')."'"
+    elseif has('win32') || has('win64')
+      let escaped = '"'.(escaped).'"'
     endif
     let command = printf(fmt, escaped)
   else
@@ -615,10 +630,10 @@ function! s:cmd(bang, ...) abort
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
-    let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '/*$', '/', '')
-    let opts.options .= ' --prompt '.shellescape(opts.dir)
+    let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
+    let opts.options .= ' --prompt '.fzf#shellescape(opts.dir)
   else
-    let opts.options .= ' --prompt '.shellescape(s:shortpath())
+    let opts.options .= ' --prompt '.fzf#shellescape(s:shortpath())
   endif
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
