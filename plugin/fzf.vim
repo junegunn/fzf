@@ -382,7 +382,7 @@ function! s:xterm_launcher()
 endfunction
 unlet! s:launcher
 if has('win32') || has('win64')
-  let s:launcher = 'cmd.exe /C %s'
+  let s:launcher = '%s'
 else
   let s:launcher = function('s:xterm_launcher')
 endif
@@ -411,8 +411,6 @@ function! s:execute(dict, command, temps) abort
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
     if has('unix')
       let escaped = "'".substitute(escaped, "'", "'\"'\"'", 'g')."'"
-    elseif has('win32') || has('win64')
-      let escaped = '"'.(escaped).'"'
     endif
     let command = printf(fmt, escaped)
   else
