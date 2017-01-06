@@ -1307,9 +1307,9 @@ module TestShell
     tmux.until { |lines| lines[-1].end_with? '/tmp' }
   end
 
-  def test_alt_o_command
-    # FIXME prepare test
-  end
+  # FIXME prepare test
+  # def test_alt_o_command
+  # end
 
   def test_ctrl_r
     tmux.prepare
