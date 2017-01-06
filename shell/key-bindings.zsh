@@ -45,6 +45,20 @@ fzf-cd-widget() {
 zle     -N    fzf-cd-widget
 bindkey '\ec' fzf-cd-widget
 
+# ALT-O - open file
+fzf-open-widget() {
+  local cmd="${FZF_ALT_O_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
+    -o -type f -print 2> /dev/null | sed 1d | cut -b3-"}"
+  setopt localoptions pipefail 2> /dev/null
+  /usr/bin/xdg-open "${PWD}/${$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_O_OPTS"):-.}"
+  local ret=$?
+  zle reset-prompt
+  typeset -f zle-line-init >/dev/null && zle zle-line-init
+  return $ret
+}
+zle     -N    fzf-open-widget
+bindkey '\eo' fzf-open-widget
+
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local selected num

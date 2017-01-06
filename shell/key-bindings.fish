@@ -53,6 +53,15 @@ function fzf_key_bindings
     commandline -f repaint
   end
 
+  function fzf-open-widget -d "Open file"
+    set -q FZF_ALT_O_COMMAND; or set -l FZF_ALT_O_COMMAND "
+    command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
+    -o -type f -print 2> /dev/null | sed 1d | cut -b3-"
+    eval "$FZF_ALT_O_COMMAND | "(__fzfcmd)" +m $FZF_ALT_O_OPTS" | read -l result
+    [ "$result" ]; and /usr/bin/xdg-open $PWD/$result
+    commandline -f repaint
+  end
+
   function __fzfcmd
     set -q FZF_TMUX; or set FZF_TMUX 1
     if [ $FZF_TMUX -eq 1 ]
@@ -69,10 +78,12 @@ function fzf_key_bindings
   bind \ct fzf-file-widget
   bind \cr fzf-history-widget
   bind \ec fzf-cd-widget
+  bind \eo fzf-open-widget
 
   if bind -M insert > /dev/null 2>&1
     bind -M insert \ct fzf-file-widget
     bind -M insert \cr fzf-history-widget
     bind -M insert \ec fzf-cd-widget
+    bind -M insert \eo fzf-open-widget
   end
 end

@@ -46,6 +46,13 @@ __fzf_cd__() {
   dir=$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS") && printf 'cd %q' "$dir"
 }
 
+__fzf_open__() {
+  local cmd file
+  cmd="${FZF_ALT_O_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
+    -o -type f -print 2> /dev/null | sed 1d | cut -b3-"}"
+  file=$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_O_OPTS") && printf '/usr/bin/xdg-open %q/%q' "$PWD" "$file"
+}
+
 __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
@@ -86,6 +93,9 @@ if [[ ! -o vi ]]; then
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
+
+  # ALT-O - open file
+  bind '"\eo": " \C-e\C-u`__fzf_open__`\e\C-e\er\C-m"'
 else
   # We'd usually use "\e" to enter vi-movement-mode so we can do our magic,
   # but this incurs a very noticeable delay of a half second or so,
@@ -118,6 +128,11 @@ else
   # ALT-C - cd into the selected directory
   bind '"\ec": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
   bind -m vi-command '"\ec": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+
+  # ALT-O - open file
+  bind '"\eo": "\C-x\C-addi`__fzf_open__`\C-x\C-e\C-x\C-r\C-m"'
+  bind -m vi-command '"\eo": "ddi`__fzf_open__`\C-x\C-e\C-x\C-r\C-m"'
+
 fi
 
 unset -v __use_tmux __use_bind_x
