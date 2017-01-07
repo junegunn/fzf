@@ -298,7 +298,8 @@ try
   endif
 
   let use_height = has_key(dict, 'down') &&
-        \ !(has('nvim') || has('win32') || has('win64') || s:present(dict, 'up', 'left', 'right'))
+        \ !(has('nvim') || has('win32') || has('win64') || s:present(dict, 'up', 'left', 'right')) &&
+        \ executable('tput') && filereadable('/dev/tty')
   let tmux = !use_height && (!has('nvim') || get(g:, 'fzf_prefer_tmux', 0)) && s:tmux_enabled() && s:splittable(dict)
   let term = has('nvim') && !tmux
   if use_height
