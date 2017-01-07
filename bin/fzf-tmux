@@ -114,6 +114,9 @@ if [[ -z "$TMUX" || "$opt" =~ ^-h && "$columns" -le 40 || ! "$opt" =~ ^-h && "$l
   exit $?
 fi
 
+# --height option is not allowed
+args+=("--no-height")
+
 # Handle zoomed tmux pane by moving it to a temp window
 if tmux list-panes -F '#F' | grep -q Z; then
   zoomed=1

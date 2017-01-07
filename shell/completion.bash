@@ -5,7 +5,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.bash
 #
-# - $FZF_TMUX               (default: 1)
+# - $FZF_TMUX               (default: 0)
 # - $FZF_TMUX_HEIGHT        (default: '40%')
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
@@ -30,6 +30,15 @@ fi
 
 ###########################################################
 
+# To redraw line after fzf closes (printf '\e[5n')
+bind '"\e[0n": redraw-current-line'
+
+__fzfcmd_complete() {
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
+    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+}
+
 _fzf_orig_completion_filter() {
   sed 's/^\(.*-F\) *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\3="\1 %s \3 #\2";/' |
   awk -F= '{gsub(/[^A-Za-z0-9_= ;]/, "_", $1); print $1"="$2}'
@@ -43,35 +52,42 @@ _fzf_opts_completion() {
   opts="
     -x --extended
     -e --exact
+    --algo
     -i +i
     -n --nth
+    --with-nth
     -d --delimiter
     +s --no-sort
     --tac
     --tiebreak
-    --bind
     -m --multi
     --no-mouse
-    --color
-    --black
-    --reverse
+    --bind
+    --cycle
     --no-hscroll
+    --jump-labels
+    --height
+    --reverse
+    --margin
     --inline-info
     --prompt
+    --header
+    --header-lines
+    --ansi
+    --tabstop
+    --color
+    --no-bold
+    --history
+    --history-size
+    --preview
+    --preview-window
     -q --query
     -1 --select-1
     -0 --exit-0
     -f --filter
     --print-query
     --expect
-    --toggle-sort
-    --sync
-    --cycle
-    --history
-    --history-size
-    --header
-    --header-lines
-    --margin"
+    --sync"
 
   case "${prev}" in
   --tiebreak)
@@ -116,7 +132,7 @@ _fzf_handle_dynamic_completion() {
 
 __fzf_generic_path_completion() {
   local cur base dir leftover matches trigger cmd fzf
-  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  fzf="$(__fzfcmd_complete)"
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
@@ -132,7 +148,6 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
-        tput sc
         matches=$(eval "$1 $(printf %q "$dir")" | $fzf $FZF_COMPLETION_OPTS $2 -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
@@ -142,7 +157,7 @@ __fzf_generic_path_completion() {
         else
           COMPREPLY=( "$cur" )
         fi
-        tput rc
+        printf '\e[5n'
         return 0
       fi
       dir=$(dirname "$dir")
@@ -160,7 +175,7 @@ _fzf_complete() {
   local cur selected trigger cmd fzf post
   post="$(caller 0 | awk '{print $2}')_post"
   type -t "$post" > /dev/null 2>&1 || post=cat
-  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  fzf="$(__fzfcmd_complete)"
 
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
@@ -168,10 +183,9 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    tput sc
     selected=$(cat | $fzf $FZF_COMPLETION_OPTS $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
-    tput rc
+    printf '\e[5n'
 
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
@@ -200,10 +214,9 @@ _fzf_complete_kill() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
   local selected fzf
-  [ "${FZF_TMUX:-1}" != 0 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
-  tput sc
+  fzf="$(__fzfcmd_complete)"
   selected=$(ps -ef | sed 1d | $fzf -m $FZF_COMPLETION_OPTS | awk '{print $2}' | tr '\n' ' ')
-  tput rc
+  printf '\e[5n'
 
   if [ -n "$selected" ]; then
     COMPREPLY=( "$selected" )

@@ -17,8 +17,14 @@ __fsel() {
   return $ret
 }
 
+__fzf_use_tmux__() {
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ]
+}
+
 __fzfcmd() {
-  [ ${FZF_TMUX:-1} -eq 1 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+  __fzf_use_tmux__ &&
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
+    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
 }
 
 fzf-file-widget() {
@@ -49,7 +55,7 @@ bindkey '\ec' fzf-cd-widget
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst pipefail 2> /dev/null
-  selected=( $(fc -l 1 | eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
+  selected=( $(fc -l 1 | eval "$(__fzfcmd) +s --tac --no-reverse +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
   local ret=$?
   if [ -n "$selected" ]; then
     num=$selected[1]

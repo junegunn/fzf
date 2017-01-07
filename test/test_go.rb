@@ -117,8 +117,28 @@ class Tmux
       wait do
         lines = capture(pane)
         class << lines
+          def counts
+            self.lazy
+              .map { |l| l.scan /^. ([0-9]+)\/([0-9]+)( \(([0-9]+)\))?/ }
+              .reject(&:empty?)
+              .first&.first&.map(&:to_i)&.values_at(0, 1, 3) || [0, 0, 0]
+          end
+
+          def match_count
+            counts[0]
+          end
+
           def item_count
-            self[-2] ? self[-2].strip.split('/').last.to_i : 0
+            counts[1]
+          end
+
+          def select_count
+            counts[2]
+          end
+
+          def any_include? val
+            method = val.is_a?(Regexp) ? :match : :include?
+            self.select { |line| line.send method, val }.first
           end
         end
         yield lines
@@ -161,6 +181,11 @@ class TestBase < Minitest::Test
     [TEMPNAME,
      caller_locations.map(&:label).find { |l| l =~ /^test_/ },
      @temp_suffix].join '-'
+  end
+
+  def writelines path, lines
+    File.unlink path while File.exists? path
+    File.open(path, 'w') { |f| f << lines.join($/) + $/ }
   end
 
   def readonce
@@ -1190,12 +1215,6 @@ class TestGoFZF < TestBase
     tmux.send_keys '?'
     tmux.until { |lines| lines[-1] == '> 555' }
   end
-
-private
-  def writelines path, lines
-    File.unlink path while File.exists? path
-    File.open(path, 'w') { |f| f << lines.join($/) + $/ }
-  end
 end
 
 module TestShell
@@ -1213,79 +1232,60 @@ module TestShell
     tmux.prepare
   end
 
-  def test_ctrl_t
+  def unset_var name
     tmux.prepare
-    tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count > 1 }
-    expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
-    tmux.send_keys :BTab, :BTab, pane: 1
-    tmux.until(1) { |lines| lines[-2].include?('(2)') }
-    tmux.send_keys :Enter, pane: 1
-    tmux.until(0) { |lines| lines[-1].include? expected }
-    tmux.send_keys 'C-c'
-
-    # FZF_TMUX=0
-    new_shell
-    tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(0) { |lines| lines.item_count > 1 }
-    expected = lines.values_at(-3, -4).map { |line| line[2..-1] }.join(' ')
-    tmux.send_keys :BTab, :BTab, pane: 0
-    tmux.until(0) { |lines| lines[-2].include?('(2)') }
-    tmux.send_keys :Enter, pane: 0
-    tmux.until(0) { |lines| lines[-1].include? expected }
-    tmux.send_keys 'C-c', 'C-d'
+    tmux.send_keys "unset #{name}", :Enter
+    tmux.prepare
   end
 
-  def test_ctrl_t_command
+  def test_ctrl_t
     set_var "FZF_CTRL_T_COMMAND", "seq 100"
-    tmux.send_keys 'C-t', pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count == 100 }
-    tmux.send_keys :BTab, :BTab, :BTab, pane: 1
-    tmux.until(1) { |lines| lines[-2].include?('(3)') }
-    tmux.send_keys :Enter, pane: 1
-    tmux.until(0) { |lines| lines[-1].include? '1 2 3' }
+
+    tmux.prepare
+    tmux.send_keys 'C-t'
+    lines = tmux.until { |lines| lines.item_count == 100 }
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until { |lines| lines.any_include? ' (3)' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines.any_include? '1 2 3' }
+    tmux.send_keys 'C-c'
   end
 
   def test_ctrl_t_unicode
-    FileUtils.mkdir_p '/tmp/fzf-test'
-    tmux.paste 'cd /tmp/fzf-test; echo -n test1 > "fzf-unicode 테스트1"; echo -n test2 > "fzf-unicode 테스트2"'
+    writelines tempname, ['fzf-unicode 테스트1', 'fzf-unicode 테스트2']
+    set_var "FZF_CTRL_T_COMMAND", "cat #{tempname}"
+
     tmux.prepare
-    tmux.send_keys 'cat ', 'C-t', pane: 0
-    tmux.until(1) { |lines| lines.item_count >= 1 }
-    tmux.send_keys 'fzf-unicode', pane: 1
-    redraw = ->() { tmux.send_keys 'C-l', pane: 1 }
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *2/) }
+    tmux.send_keys 'echo ', 'C-t'
+    tmux.until { |lines| lines.item_count == 2 }
+    tmux.send_keys 'fzf-unicode'
+    tmux.until { |lines| lines.match_count == 2 }
 
-    tmux.send_keys '1', pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *1/) }
-    tmux.send_keys :BTab, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2].include? '(1)' }
+    tmux.send_keys '1'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines.select_count == 1 }
 
-    tmux.send_keys :BSpace, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *2/) }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines.match_count == 2 }
 
-    tmux.send_keys '2', pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *1/) }
-    tmux.send_keys :BTab, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2].include? '(2)' }
+    tmux.send_keys '2'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines.select_count == 2 }
 
-    tmux.send_keys :Enter, pane: 1
-    tmux.until do |lines|
-      tmux.send_keys 'C-l'
-      [-1, -2].map { |offset| lines[offset] }.any? do |line|
-        line.start_with?('cat') && line.include?('fzf-unicode')
-      end
-    end
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1].include? 'test1test2' }
+    tmux.until { |lines| lines.any_include? /echo.*fzf-unicode.*1.*fzf-unicode.*2/ }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines.any_include? /^fzf-unicode.*1.*fzf-unicode.*2/ }
   end
 
   def test_alt_c
     tmux.prepare
-    tmux.send_keys :Escape, :c, pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count > 0 && lines[-3][2..-1] }
-    expected = lines[-3][2..-1]
-    tmux.send_keys :Enter, pane: 1
+    tmux.send_keys :Escape, :c
+    lines = tmux.until { |lines| lines.item_count > 0 }
+    expected = lines.reverse.select { |l| l.start_with? '>' }.first[2..-1]
+    tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
     tmux.until { |lines| lines[-1].end_with?(expected) }
@@ -1298,9 +1298,9 @@ module TestShell
     tmux.send_keys 'cd /', :Enter
 
     tmux.prepare
-    tmux.send_keys :Escape, :c, pane: 0
-    lines = tmux.until(1) { |lines| lines.item_count == 1 }
-    tmux.send_keys :Enter, pane: 1
+    tmux.send_keys :Escape, :c
+    lines = tmux.until { |lines| lines.item_count == 1 }
+    tmux.send_keys :Enter
 
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -1314,11 +1314,11 @@ module TestShell
     tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
     tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
     tmux.send_keys 'echo 4th', :Enter; tmux.prepare
-    tmux.send_keys 'C-r', pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys '3d', pane: 1
-    tmux.until(1) { |lines| lines[-3].end_with? 'echo 3rd' } # --no-sort
-    tmux.send_keys :Enter, pane: 1
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| lines.item_count > 0 }
+    tmux.send_keys '3d'
+    tmux.until { |lines| lines[-3].end_with? 'echo 3rd' }
+    tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '3rd' }
@@ -1334,12 +1334,12 @@ module CompletionTest
       FileUtils.touch File.expand_path(f)
     end
     tmux.prepare
-    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
+    tmux.until { |lines| lines.item_count > 0 }
     tmux.send_keys ' !d'
-    tmux.until(1) { |lines| lines[-2].include?(' 2/') }
-    tmux.send_keys :BTab, :BTab
-    tmux.until(1) { |lines| lines[-2].include?('(2)') }
+    tmux.until { |lines| lines.match_count == 2 }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| lines.select_count == 2 }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -1349,10 +1349,10 @@ module CompletionTest
 
     # ~USERNAME**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~#{ENV['USER']}**", :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys '.fzf-home'
-    tmux.until(1) { |lines| lines[-3].end_with? '.fzf-home' }
+    tmux.send_keys "cat ~#{ENV['USER']}**", :Tab
+    tmux.until { |lines| lines.item_count > 0 }
+    tmux.send_keys "'.fzf-home"
+    tmux.until { |lines| lines.select { |l| l.include? '.fzf-home' }.count > 1 }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -1361,8 +1361,8 @@ module CompletionTest
 
     # ~INVALID_USERNAME**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~such**", :Tab, pane: 0
-    tmux.until(1) { |lines| lines[-3].end_with? 'no~such~user' }
+    tmux.send_keys "cat ~such**", :Tab
+    tmux.until { |lines| lines.any_include? 'no~such~user' }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -1371,9 +1371,11 @@ module CompletionTest
 
     # /tmp/fzf\ test**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys 'C-K', :Enter
+    tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
+    tmux.until { |lines| lines.item_count > 0 }
+    tmux.send_keys 'foobar$'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
       lines[-1].end_with?('/tmp/fzf\ test/foobar')
@@ -1382,11 +1384,10 @@ module CompletionTest
     # Should include hidden files
     (1..100).each { |i| FileUtils.touch "/tmp/fzf-test/.hidden-#{i}" }
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab, pane: 0
-    tmux.until(1) do |lines|
+    tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab
+    tmux.until do |lines|
       tmux.send_keys 'C-L'
-      lines[-2].include?('100/') &&
-      lines[-3].include?('/tmp/fzf-test/.hidden-')
+      lines.match_count == 100 && lines.any_include?('/tmp/fzf-test/.hidden-')
     end
     tmux.send_keys :Enter
   ensure
@@ -1396,19 +1397,22 @@ module CompletionTest
   end
 
   def test_file_completion_root
-    tmux.send_keys 'ls /**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys 'ls /**', :Tab
+    tmux.until { |lines| lines.item_count > 0 }
     tmux.send_keys :Enter
   end
 
   def test_dir_completion
-    tmux.send_keys 'mkdir -p /tmp/fzf-test/d{1..100}; touch /tmp/fzf-test/d55/xxx', :Enter
+    (1..100).each do |idx|
+      FileUtils.mkdir_p "/tmp/fzf-test/d#{idx}"
+    end
+    FileUtils.touch '/tmp/fzf-test/d55/xxx'
     tmux.prepare
-    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
-    tmux.send_keys :BTab, :BTab # BTab does not work here
+    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
+    tmux.until { |lines| lines.item_count > 0 }
+    tmux.send_keys :Tab, :Tab # Tab does not work here
     tmux.send_keys 55
-    tmux.until(1) { |lines| lines[-2].start_with? '  1/' }
+    tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -1435,14 +1439,15 @@ module CompletionTest
     lines = tmux.until { |lines| lines[-1].start_with? '[1]' }
     pid = lines[-1].split.last
     tmux.prepare
-    tmux.send_keys 'kill ', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count > 0 }
+    tmux.send_keys 'C-L'
+    tmux.send_keys 'kill ', :Tab
+    tmux.until { |lines| lines.item_count > 0 }
     tmux.send_keys 'sleep12345'
-    tmux.until(1) { |lines| lines[-3].include? 'sleep 12345' }
+    tmux.until { |lines| lines.any_include? 'sleep 12345' }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
-      lines[-1] == "kill #{pid}"
+      lines[-1].include? "kill #{pid}"
     end
   ensure
     Process.kill 'KILL', pid.to_i rescue nil if pid
@@ -1451,10 +1456,10 @@ module CompletionTest
   def test_custom_completion
     tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
     tmux.prepare
-    tmux.send_keys 'ls /tmp/**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines.item_count == 11 }
-    tmux.send_keys :BTab, :BTab, :BTab
-    tmux.until(1) { |lines| lines[-2].include? '(3)' }
+    tmux.send_keys 'ls /tmp/**', :Tab
+    tmux.until { |lines| lines.item_count == 11 }
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until { |lines| lines.select_count == 3 }
     tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-L'
@@ -1463,49 +1468,48 @@ module CompletionTest
   end
 
   def test_unset_completion
-    tmux.send_keys 'export FOO=BAR', :Enter
+    tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
     tmux.prepare
 
     # Using tmux
-    tmux.send_keys 'unset FOO**', :Tab, pane: 0
-    tmux.until(1) { |lines| lines[-2].include? ' 1/' }
+    tmux.send_keys 'unset FZFFOO**', :Tab
+    tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1] == 'unset FOO' }
+    tmux.until { |lines| lines[-1].include? 'unset FZFFOOBAR' }
     tmux.send_keys 'C-c'
 
-    # FZF_TMUX=0
+    # FZF_TMUX=1
     new_shell
-    tmux.send_keys 'unset FOO**', :Tab
-    tmux.until { |lines| lines[-2].include? ' 1/' }
+    tmux.send_keys 'unset FZFFO**', :Tab, pane: 0
+    tmux.until(1) { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-1] == 'unset FOO' }
+    tmux.until { |lines| lines[-1].include? 'unset FZFFOOBAR' }
   end
 
   def test_file_completion_unicode
     FileUtils.mkdir_p '/tmp/fzf-test'
     tmux.paste 'cd /tmp/fzf-test; echo -n test3 > "fzf-unicode 테스트1"; echo -n test4 > "fzf-unicode 테스트2"'
     tmux.prepare
-    tmux.send_keys 'cat fzf-unicode**', :Tab, pane: 0
-    redraw = ->() { tmux.send_keys 'C-l', pane: 1 }
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *2/) }
+    tmux.send_keys 'cat fzf-unicode**', :Tab
+    tmux.until { |lines| lines.match_count == 2 }
 
-    tmux.send_keys '1', pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *1/) }
-    tmux.send_keys :BTab, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2].include? '(1)' }
+    tmux.send_keys '1'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines.select_count == 1 }
 
-    tmux.send_keys :BSpace, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *2/) }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines.match_count == 2 }
 
-    tmux.send_keys '2', pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2] =~ %r(^ *1/) }
-    tmux.send_keys :BTab, pane: 1
-    tmux.until(1) { |lines| redraw.(); lines[-2].include? '(2)' }
+    tmux.send_keys '2'
+    tmux.until { |lines| lines.select_count == 1 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines.select_count == 2 }
 
-    tmux.send_keys :Enter, pane: 1
+    tmux.send_keys :Enter
     tmux.until do |lines|
       tmux.send_keys 'C-l'
-      lines[-1].include?('cat') || lines[-2].include?('cat')
+      lines.any_include? 'cat'
     end
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'test3test4' }
@@ -1518,7 +1522,7 @@ class TestBash < TestBase
 
   def new_shell
     tmux.prepare
-    tmux.send_keys "FZF_TMUX=0 #{Shell.bash}", :Enter
+    tmux.send_keys "FZF_TMUX=1 #{Shell.bash}", :Enter
     tmux.prepare
   end
 
@@ -1533,7 +1537,7 @@ class TestZsh < TestBase
   include CompletionTest
 
   def new_shell
-    tmux.send_keys "FZF_TMUX=0 #{Shell.zsh}", :Enter
+    tmux.send_keys "FZF_TMUX=1 #{Shell.zsh}", :Enter
     tmux.prepare
   end
 
@@ -1547,7 +1551,7 @@ class TestFish < TestBase
   include TestShell
 
   def new_shell
-    tmux.send_keys 'env FZF_TMUX=0 fish', :Enter
+    tmux.send_keys 'env FZF_TMUX=1 fish', :Enter
     tmux.send_keys 'function fish_prompt; end; clear', :Enter
     tmux.until { |lines| lines.empty? }
   end

@@ -105,7 +105,8 @@ func TestColorOffset(t *testing.T) {
 				ansiOffset{[2]int32{33, 40}, ansiState{4, 8, tui.Bold}}}}}
 	// [{[0 5] 9 false} {[5 15] 99 false} {[15 20] 9 false} {[22 25] 10 true} {[25 35] 99 false} {[35 40] 11 true}]
 
-	colors := item.colorOffsets(offsets, tui.Dark256, 99, 0, true)
+	pair := tui.NewColorPair(99, 199)
+	colors := item.colorOffsets(offsets, tui.Dark256, pair, tui.AttrRegular, true)
 	assert := func(idx int, b int32, e int32, c tui.ColorPair, bold bool) {
 		var attr tui.Attr
 		if bold {
@@ -116,10 +117,10 @@ func TestColorOffset(t *testing.T) {
 			t.Error(o)
 		}
 	}
-	assert(0, 0, 5, tui.ColUser, false)
-	assert(1, 5, 15, 99, false)
-	assert(2, 15, 20, tui.ColUser, false)
-	assert(3, 22, 25, tui.ColUser+1, true)
-	assert(4, 25, 35, 99, false)
-	assert(5, 35, 40, tui.ColUser+2, true)
+	assert(0, 0, 5, tui.NewColorPair(1, 5), false)
+	assert(1, 5, 15, pair, false)
+	assert(2, 15, 20, tui.NewColorPair(1, 5), false)
+	assert(3, 22, 25, tui.NewColorPair(2, 6), true)
+	assert(4, 25, 35, pair, false)
+	assert(5, 35, 40, tui.NewColorPair(4, 8), true)
 }

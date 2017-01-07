@@ -6,7 +6,23 @@ import (
 	"time"
 
 	"github.com/junegunn/go-isatty"
+	"github.com/junegunn/go-runewidth"
 )
+
+var _runeWidths = make(map[rune]int)
+
+// RuneWidth returns rune width
+func RuneWidth(r rune, prefixWidth int, tabstop int) int {
+	if r == '\t' {
+		return tabstop - prefixWidth%tabstop
+	} else if w, found := _runeWidths[r]; found {
+		return w
+	} else {
+		w := runewidth.RuneWidth(r)
+		_runeWidths[r] = w
+		return w
+	}
+}
 
 // Max returns the largest integer
 func Max(first int, second int) int {

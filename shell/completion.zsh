@@ -5,7 +5,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.zsh
 #
-# - $FZF_TMUX               (default: 1)
+# - $FZF_TMUX               (default: 0)
 # - $FZF_TMUX_HEIGHT        (default: '40%')
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
@@ -30,6 +30,12 @@ fi
 
 ###########################################################
 
+__fzfcmd_complete() {
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
+    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+}
+
 __fzf_generic_path_completion() {
   local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
   # (Q) flag removes a quoting level: "foo\ bar" => "foo bar"
@@ -39,7 +45,7 @@ __fzf_generic_path_completion() {
   fzf_opts=$4
   suffix=$5
   tail=$6
-  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  fzf="$(__fzfcmd_complete)"
 
   setopt localoptions nonomatch
   dir="$base"
@@ -90,7 +96,7 @@ _fzf_complete() {
   post="${funcstack[2]}_post"
   type $post > /dev/null 2>&1 || post=cat
 
-  [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+  fzf="$(__fzfcmd_complete)"
 
   _fzf_feed_fifo "$fifo"
   matches=$(cat "$fifo" | ${=fzf} ${=FZF_COMPLETION_OPTS} ${=fzf_opts} -q "${(Q)prefix}" | $post | tr '\n' ' ')
@@ -157,7 +163,7 @@ fzf-completion() {
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
   # Kill completion (do not require trigger sequence)
   if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
-    [ ${FZF_TMUX:-1} -eq 1 ] && fzf="fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%}" || fzf="fzf"
+    fzf="$(__fzfcmd_complete)"
     matches=$(ps -ef | sed 1d | ${=fzf} ${=FZF_COMPLETION_OPTS} -m | awk '{print $2}' | tr '\n' ' ')
     if [ -n "$matches" ]; then
       LBUFFER="$LBUFFER$matches"

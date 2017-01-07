@@ -5,7 +5,7 @@ __fzf_select__() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
-  eval "$cmd | fzf -m $FZF_CTRL_T_OPTS" | while read -r item; do
+  eval "$cmd | fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse -m $@ $FZF_CTRL_T_OPTS" | while read -r item; do
     printf '%q ' "$item"
   done
   echo
@@ -13,8 +13,14 @@ __fzf_select__() {
 
 if [[ $- =~ i ]]; then
 
+__fzf_use_tmux__() {
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ]
+}
+
 __fzfcmd() {
-  [ "${FZF_TMUX:-1}" != 0 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+  __fzf_use_tmux__ &&
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
+    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
 }
 
 __fzf_select_tmux__() {
@@ -26,14 +32,14 @@ __fzf_select_tmux__() {
     height="-l $height"
   fi
 
-  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; RESULT=\"\$(__fzf_select__)\"; tmux setb -b fzf \"\$RESULT\" \\; pasteb -b fzf -t $TMUX_PANE \\; deleteb -b fzf || tmux send-keys -t $TMUX_PANE \"\$RESULT\"'"
+  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; RESULT=\"\$(__fzf_select__ --no-height)\"; tmux setb -b fzf \"\$RESULT\" \\; pasteb -b fzf -t $TMUX_PANE \\; deleteb -b fzf || tmux send-keys -t $TMUX_PANE \"\$RESULT\"'"
 }
 
 fzf-file-widget() {
   if __fzf_use_tmux__; then
     __fzf_select_tmux__
   else
-    local selected="$(__fzf_select__)"
+    local selected="$(__fzf_select__ --height ${FZF_TMUX_HEIGHT:-40%} --reverse)"
     READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
     READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
   fi
@@ -51,7 +57,7 @@ __fzf_history__() (
   shopt -u nocaseglob nocasematch
   line=$(
     HISTTIMEFORMAT= history |
-    eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS" |
+    eval "$(__fzfcmd) +s --tac --no-reverse +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS" |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
@@ -60,22 +66,15 @@ __fzf_history__() (
     fi
 )
 
-__fzf_use_tmux__() {
-  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-1}" != 0 ] && [ ${LINES:-40} -gt 15 ]
-}
-
-[ $BASH_VERSINFO -gt 3 ] && __use_bind_x=1 || __use_bind_x=0
-__fzf_use_tmux__ && __use_tmux=1 || __use_tmux=0
-
 if [[ ! -o vi ]]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
   bind '"\e^": history-expand-line'
 
   # CTRL-T - Paste the selected file path into the command line
-  if [ $__use_bind_x -eq 1 ]; then
+  if [ $BASH_VERSINFO -gt 3 ]; then
     bind -x '"\C-t": "fzf-file-widget"'
-  elif [ $__use_tmux -eq 1 ]; then
+  elif __fzf_use_tmux__; then
     bind '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
   else
     bind '"\C-t": " \C-u \C-a\C-k`__fzf_select__`\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
@@ -102,9 +101,9 @@ else
 
   # CTRL-T - Paste the selected file path into the command line
   # - FIXME: Selected items are attached to the end regardless of cursor position
-  if [ $__use_bind_x -eq 1 ]; then
+  if [ $BASH_VERSINFO -gt 3 ]; then
     bind -x '"\C-t": "fzf-file-widget"'
-  elif [ $__use_tmux -eq 1 ]; then
+  elif __fzf_use_tmux__; then
     bind '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select_tmux__`\C-x\C-e\C-x\C-a0P$xa"'
   else
     bind '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select__`\C-x\C-e\C-x\C-a0Px$a \C-x\C-r\C-x\C-axa "'
@@ -119,7 +118,5 @@ else
   bind '"\ec": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
   bind -m vi-command '"\ec": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
 fi
-
-unset -v __use_tmux __use_bind_x
 
 fi

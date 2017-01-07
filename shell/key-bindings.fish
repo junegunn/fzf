@@ -39,7 +39,7 @@ function fzf_key_bindings
   end
 
   function fzf-history-widget -d "Show command history"
-    history | eval (__fzfcmd) +s +m --tiebreak=index $FZF_CTRL_R_OPTS -q '(commandline)' | read -l result
+    history | eval (__fzfcmd) +s +m --no-reverse --tiebreak=index $FZF_CTRL_R_OPTS -q '(commandline)' | read -l result
     and commandline -- $result
     commandline -f repaint
   end
@@ -54,15 +54,12 @@ function fzf_key_bindings
   end
 
   function __fzfcmd
-    set -q FZF_TMUX; or set FZF_TMUX 1
+    set -q FZF_TMUX; or set FZF_TMUX 0
+    set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
     if [ $FZF_TMUX -eq 1 ]
-      if set -q FZF_TMUX_HEIGHT
-        echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
-      else
-        echo "fzf-tmux -d40%"
-      end
+      echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
     else
-      echo "fzf"
+      echo "fzf --height $FZF_TMUX_HEIGHT --reverse"
     end
   end
 

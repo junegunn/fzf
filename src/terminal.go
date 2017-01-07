@@ -15,8 +15,6 @@ import (
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
-
-	"github.com/junegunn/go-runewidth"
 )
 
 // import "github.com/pkg/profile"
@@ -41,6 +39,14 @@ type previewer struct {
 	offset  int
 	enabled bool
 }
+
+type itemLine struct {
+	current bool
+	label   string
+	result  Result
+}
+
+var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
 type Terminal struct {
@@ -69,11 +75,12 @@ type Terminal struct {
 	header     []string
 	header0    []string
 	ansi       bool
+	tabstop    int
 	margin     [4]sizeSpec
 	strong     tui.Attr
-	window     *tui.Window
-	bwindow    *tui.Window
-	pwindow    *tui.Window
+	window     tui.Window
+	bwindow    tui.Window
+	pwindow    tui.Window
 	count      int
 	progress   int
 	reading    bool
@@ -89,10 +96,12 @@ type Terminal struct {
 	eventBox   *util.EventBox
 	mutex      sync.Mutex
 	initFunc   func()
+	prevLines  []itemLine
 	suppress   bool
 	startChan  chan bool
 	slab       *util.Slab
 	theme      *tui.ColorTheme
+	tui        tui.Renderer
 }
 
 type selectedItem struct {
@@ -115,7 +124,6 @@ func (a byTimeOrder) Less(i, j int) bool {
 }
 
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
-var _runeWidths = make(map[rune]int)
 var _tabStop int
 
 const (
@@ -247,7 +255,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	} else {
 		header = reverseStringArray(opts.Header)
 	}
-	_tabStop = opts.Tabstop
 	var delay time.Duration
 	if opts.Tac {
 		delay = initialDelayTac
@@ -261,6 +268,24 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	strongAttr := tui.Bold
 	if !opts.Bold {
 		strongAttr = tui.AttrRegular
+	}
+	var renderer tui.Renderer
+	if opts.Height.size > 0 {
+		maxHeightFunc := func(termHeight int) int {
+			var maxHeight int
+			if opts.Height.percent {
+				maxHeight = int(opts.Height.size * float64(termHeight) / 100.0)
+			} else {
+				maxHeight = util.Min(int(opts.Height.size), termHeight)
+			}
+			if opts.InlineInfo {
+				return util.Max(maxHeight, 3)
+			}
+			return util.Max(maxHeight, 4)
+		}
+		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, maxHeightFunc)
+	} else {
+		renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 	}
 	return &Terminal{
 		initDelay:  delay,
@@ -290,6 +315,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		header:     header,
 		header0:    header,
 		ansi:       opts.Ansi,
+		tabstop:    opts.Tabstop,
 		reading:    true,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
@@ -306,9 +332,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		slab:       util.MakeSlab(slab16Size, slab32Size),
 		theme:      opts.Theme,
 		startChan:  make(chan bool, 1),
-		initFunc: func() {
-			tui.Init(opts.Theme, opts.Black, opts.Mouse)
-		}}
+		tui:        renderer,
+		initFunc:   func() { renderer.Init() }}
 }
 
 // Input returns current query string
@@ -401,22 +426,10 @@ func (t *Terminal) sortSelected() []selectedItem {
 	return sels
 }
 
-func runeWidth(r rune, prefixWidth int) int {
-	if r == '\t' {
-		return _tabStop - prefixWidth%_tabStop
-	} else if w, found := _runeWidths[r]; found {
-		return w
-	} else {
-		w := runewidth.RuneWidth(r)
-		_runeWidths[r] = w
-		return w
-	}
-}
-
-func displayWidth(runes []rune) int {
+func (t *Terminal) displayWidth(runes []rune) int {
 	l := 0
 	for _, r := range runes {
-		l += runeWidth(r, l)
+		l += util.RuneWidth(r, l, t.tabstop)
 	}
 	return l
 }
@@ -437,9 +450,10 @@ func calculateSize(base int, size sizeSpec, margin int, minSize int) int {
 }
 
 func (t *Terminal) resizeWindows() {
-	screenWidth := tui.MaxX()
-	screenHeight := tui.MaxY()
+	screenWidth := t.tui.MaxX()
+	screenHeight := t.tui.MaxY()
 	marginInt := [4]int{}
+	t.prevLines = make([]itemLine, screenHeight)
 	for idx, sizeSpec := range t.margin {
 		if sizeSpec.percent {
 			var max float64
@@ -487,40 +501,40 @@ func (t *Terminal) resizeWindows() {
 	height := screenHeight - marginInt[0] - marginInt[2]
 	if t.isPreviewEnabled() {
 		createPreviewWindow := func(y int, x int, w int, h int) {
-			t.bwindow = tui.NewWindow(y, x, w, h, true)
+			t.bwindow = t.tui.NewWindow(y, x, w, h, true)
 			pwidth := w - 4
 			// ncurses auto-wraps the line when the cursor reaches the right-end of
 			// the window. To prevent unintended line-wraps, we use the width one
 			// column larger than the desired value.
-			if !t.preview.wrap && tui.DoesAutoWrap() {
+			if !t.preview.wrap && t.tui.DoesAutoWrap() {
 				pwidth += 1
 			}
-			t.pwindow = tui.NewWindow(y+1, x+2, pwidth, h-2, false)
+			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, false)
 		}
 		switch t.preview.position {
 		case posUp:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
-			t.window = tui.NewWindow(
+			t.window = t.tui.NewWindow(
 				marginInt[0]+pheight, marginInt[3], width, height-pheight, false)
 			createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
 		case posDown:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
-			t.window = tui.NewWindow(
+			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3], width, height-pheight, false)
 			createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 		case posLeft:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
-			t.window = tui.NewWindow(
+			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false)
 			createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 		case posRight:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
-			t.window = tui.NewWindow(
+			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3], width-pwidth, height, false)
 			createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
 		}
 	} else {
-		t.window = tui.NewWindow(
+		t.window = t.tui.NewWindow(
 			marginInt[0],
 			marginInt[3],
 			width,
@@ -530,7 +544,7 @@ func (t *Terminal) resizeWindows() {
 
 func (t *Terminal) move(y int, x int, clear bool) {
 	if !t.reverse {
-		y = t.window.Height - y - 1
+		y = t.window.Height() - y - 1
 	}
 
 	if clear {
@@ -541,7 +555,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 }
 
 func (t *Terminal) placeCursor() {
-	t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input[:t.cx]), false)
+	t.move(0, t.displayWidth([]rune(t.prompt))+t.displayWidth(t.input[:t.cx]), false)
 }
 
 func (t *Terminal) printPrompt() {
@@ -552,7 +566,7 @@ func (t *Terminal) printPrompt() {
 
 func (t *Terminal) printInfo() {
 	if t.inlineInfo {
-		t.move(0, displayWidth([]rune(t.prompt))+displayWidth(t.input)+1, true)
+		t.move(0, t.displayWidth([]rune(t.prompt))+t.displayWidth(t.input)+1, true)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, t.strong, " < ")
 		} else {
@@ -589,7 +603,7 @@ func (t *Terminal) printHeader() {
 	if len(t.header) == 0 {
 		return
 	}
-	max := t.window.Height
+	max := t.window.Height()
 	var state *ansiState
 	for idx, lineStr := range t.header {
 		line := idx + 2
@@ -616,19 +630,25 @@ func (t *Terminal) printList() {
 
 	maxy := t.maxItems()
 	count := t.merger.Length() - t.offset
-	for i := 0; i < maxy; i++ {
+	for j := 0; j < maxy; j++ {
+		i := j
+		if !t.reverse {
+			i = maxy - 1 - j
+		}
 		line := i + 2 + len(t.header)
 		if t.inlineInfo {
 			line--
 		}
-		t.move(line, 0, true)
 		if i < count {
-			t.printItem(t.merger.Get(i+t.offset), i, i == t.cy-t.offset)
+			t.printItem(t.merger.Get(i+t.offset), line, i, i == t.cy-t.offset)
+		} else if t.prevLines[i] != emptyLine {
+			t.prevLines[i] = emptyLine
+			t.move(line, 0, true)
 		}
 	}
 }
 
-func (t *Terminal) printItem(result *Result, i int, current bool) {
+func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := " "
@@ -641,6 +661,15 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 	} else if current {
 		label = ">"
 	}
+
+	// Avoid unnecessary redraw
+	newLine := itemLine{current, label, *result}
+	if t.prevLines[i] == newLine {
+		return
+	}
+	t.prevLines[i] = newLine
+
+	t.move(line, 0, true)
 	t.window.CPrint(tui.ColCursor, t.strong, label)
 	if current {
 		if selected {
@@ -659,11 +688,11 @@ func (t *Terminal) printItem(result *Result, i int, current bool) {
 	}
 }
 
-func trimRight(runes []rune, width int) ([]rune, int) {
+func (t *Terminal) trimRight(runes []rune, width int) ([]rune, int) {
 	// We start from the beginning to handle tab characters
 	l := 0
 	for idx, r := range runes {
-		l += runeWidth(r, l)
+		l += util.RuneWidth(r, l, t.tabstop)
 		if l > width {
 			return runes[:idx], len(runes) - idx
 		}
@@ -671,10 +700,10 @@ func trimRight(runes []rune, width int) ([]rune, int) {
 	return runes, 0
 }
 
-func displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
+func (t *Terminal) displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
 	l := 0
 	for _, r := range runes {
-		l += runeWidth(r, l+prefixWidth)
+		l += util.RuneWidth(r, l+prefixWidth, t.tabstop)
 		if l > limit {
 			// Early exit
 			return l
@@ -683,27 +712,27 @@ func displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
 	return l
 }
 
-func trimLeft(runes []rune, width int) ([]rune, int32) {
+func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
 	if len(runes) > maxDisplayWidthCalc && len(runes) > width {
 		trimmed := len(runes) - width
 		return runes[trimmed:], int32(trimmed)
 	}
 
-	currentWidth := displayWidth(runes)
+	currentWidth := t.displayWidth(runes)
 	var trimmed int32
 
 	for currentWidth > width && len(runes) > 0 {
 		runes = runes[1:]
 		trimmed++
-		currentWidth = displayWidthWithLimit(runes, 2, width)
+		currentWidth = t.displayWidthWithLimit(runes, 2, width)
 	}
 	return runes, trimmed
 }
 
-func overflow(runes []rune, max int) bool {
+func (t *Terminal) overflow(runes []rune, max int) bool {
 	l := 0
 	for _, r := range runes {
-		l += runeWidth(r, l)
+		l += util.RuneWidth(r, l, t.tabstop)
 		if l > max {
 			return true
 		}
@@ -737,22 +766,22 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 	}
 
 	offsets := result.colorOffsets(charOffsets, t.theme, col2, attr, current)
-	maxWidth := t.window.Width - 3
+	maxWidth := t.window.Width() - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
-	if overflow(text, maxWidth) {
+	if t.overflow(text, maxWidth) {
 		if t.hscroll {
 			// Stri..
-			if !overflow(text[:maxe], maxWidth-2) {
-				text, _ = trimRight(text, maxWidth-2)
+			if !t.overflow(text[:maxe], maxWidth-2) {
+				text, _ = t.trimRight(text, maxWidth-2)
 				text = append(text, []rune("..")...)
 			} else {
 				// Stri..
-				if overflow(text[maxe:], 2) {
+				if t.overflow(text[maxe:], 2) {
 					text = append(text[:maxe], []rune("..")...)
 				}
 				// ..ri..
 				var diff int32
-				text, diff = trimLeft(text, maxWidth-2)
+				text, diff = t.trimLeft(text, maxWidth-2)
 
 				// Transform offsets
 				for idx, offset := range offsets {
@@ -766,7 +795,7 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 				text = append([]rune(".."), text...)
 			}
 		} else {
-			text, _ = trimRight(text, maxWidth-2)
+			text, _ = t.trimRight(text, maxWidth-2)
 			text = append(text, []rune("..")...)
 
 			for idx, offset := range offsets {
@@ -784,11 +813,11 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 		b := util.Constrain32(offset.offset[0], index, maxOffset)
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
-		substr, prefixWidth = processTabs(text[index:b], prefixWidth)
+		substr, prefixWidth = t.processTabs(text[index:b], prefixWidth)
 		t.window.CPrint(col1, attr, substr)
 
 		if b < e {
-			substr, prefixWidth = processTabs(text[b:e], prefixWidth)
+			substr, prefixWidth = t.processTabs(text[b:e], prefixWidth)
 			t.window.CPrint(offset.color, offset.attr, substr)
 		}
 
@@ -798,7 +827,7 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 		}
 	}
 	if index < maxOffset {
-		substr, _ = processTabs(text[index:], prefixWidth)
+		substr, _ = t.processTabs(text[index:], prefixWidth)
 		t.window.CPrint(col1, attr, substr)
 	}
 }
@@ -835,38 +864,44 @@ func (t *Terminal) printPreview() {
 				return true
 			}
 		}
-		if !t.preview.wrap {
-			lines := strings.Split(str, "\n")
-			for i, line := range lines {
-				limit := t.pwindow.Width
-				if tui.DoesAutoWrap() {
-					limit -= 1
-				}
-				if i == 0 {
-					limit -= t.pwindow.X()
-				}
-				trimmed, _ := trimRight([]rune(line), limit)
-				lines[i], _ = processTabs(trimmed, 0)
+		lines := strings.Split(str, "\n")
+		for i, line := range lines {
+			limit := t.pwindow.Width()
+			if t.tui.DoesAutoWrap() {
+				limit -= 1
 			}
+			if i == 0 {
+				limit -= t.pwindow.X()
+			}
+			trimmed := []rune(line)
+			if !t.preview.wrap {
+				trimmed, _ = t.trimRight(trimmed, limit)
+			}
+			lines[i], _ = t.processTabs(trimmed, 0)
 			str = strings.Join(lines, "\n")
 		}
 		if ansi != nil && ansi.colored() {
-			return t.pwindow.CFill(str, ansi.fg, ansi.bg, ansi.attr)
+			return t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 		}
 		return t.pwindow.Fill(str)
 	})
-	if t.previewer.lines > t.pwindow.Height {
+	t.pwindow.FinishFill()
+	if t.previewer.lines > t.pwindow.Height() {
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
-		t.pwindow.Move(0, t.pwindow.Width-len(offset))
+		pos := t.pwindow.Width() - len(offset)
+		if t.tui.DoesAutoWrap() {
+			pos -= 1
+		}
+		t.pwindow.Move(0, pos)
 		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, offset)
 	}
 }
 
-func processTabs(runes []rune, prefixWidth int) (string, int) {
+func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
 	var strbuf bytes.Buffer
 	l := prefixWidth
 	for _, r := range runes {
-		w := runeWidth(r, l)
+		w := util.RuneWidth(r, l, t.tabstop)
 		l += w
 		if r == '\t' {
 			strbuf.WriteString(strings.Repeat(" ", w))
@@ -889,9 +924,9 @@ func (t *Terminal) printAll() {
 func (t *Terminal) refresh() {
 	if !t.suppress {
 		if t.isPreviewEnabled() {
-			tui.RefreshWindows([]*tui.Window{t.bwindow, t.pwindow, t.window})
+			t.tui.RefreshWindows([]tui.Window{t.bwindow, t.pwindow, t.window})
 		} else {
-			tui.RefreshWindows([]*tui.Window{t.window})
+			t.tui.RefreshWindows([]tui.Window{t.window})
 		}
 	}
 }
@@ -1013,9 +1048,9 @@ func (t *Terminal) executeCommand(template string, items []*Item) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	tui.Pause()
+	t.tui.Pause()
 	cmd.Run()
-	if tui.Resume() {
+	if t.tui.Resume() {
 		t.printAll()
 	}
 	t.refresh()
@@ -1162,11 +1197,11 @@ func (t *Terminal) Loop() {
 					case reqRefresh:
 						t.suppress = false
 					case reqRedraw:
-						tui.Clear()
-						tui.Refresh()
+						t.tui.Clear()
+						t.tui.Refresh()
 						t.printAll()
 					case reqClose:
-						tui.Close()
+						t.tui.Close()
 						if t.output() {
 							exit(exitOk)
 						}
@@ -1179,11 +1214,11 @@ func (t *Terminal) Loop() {
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPrintQuery:
-						tui.Close()
+						t.tui.Close()
 						t.printer(string(t.input))
 						exit(exitOk)
 					case reqQuit:
-						tui.Close()
+						t.tui.Close()
 						exit(exitInterrupt)
 					}
 				}
@@ -1196,7 +1231,7 @@ func (t *Terminal) Loop() {
 
 	looping := true
 	for looping {
-		event := tui.GetChar()
+		event := t.tui.GetChar()
 
 		t.mutex.Lock()
 		previousInput := t.input
@@ -1288,11 +1323,11 @@ func (t *Terminal) Loop() {
 				}
 			case actPreviewPageUp:
 				if t.isPreviewEnabled() {
-					scrollPreview(-t.pwindow.Height)
+					scrollPreview(-t.pwindow.Height())
 				}
 			case actPreviewPageDown:
 				if t.isPreviewEnabled() {
-					scrollPreview(t.pwindow.Height)
+					scrollPreview(t.pwindow.Height())
 				}
 			case actBeginningOfLine:
 				t.cx = 0
@@ -1466,11 +1501,11 @@ func (t *Terminal) Loop() {
 						scrollPreview(-me.S)
 					}
 				} else if t.window.Enclose(my, mx) {
-					mx -= t.window.Left
-					my -= t.window.Top
-					mx = util.Constrain(mx-displayWidth([]rune(t.prompt)), 0, len(t.input))
+					mx -= t.window.Left()
+					my -= t.window.Top()
+					mx = util.Constrain(mx-t.displayWidth([]rune(t.prompt)), 0, len(t.input))
 					if !t.reverse {
-						my = t.window.Height - my - 1
+						my = t.window.Height() - my - 1
 					}
 					min := 2 + len(t.header)
 					if t.inlineInfo {
@@ -1582,7 +1617,7 @@ func (t *Terminal) vset(o int) bool {
 }
 
 func (t *Terminal) maxItems() int {
-	max := t.window.Height - 2 - len(t.header)
+	max := t.window.Height() - 2 - len(t.header)
 	if t.inlineInfo {
 		max++
 	}

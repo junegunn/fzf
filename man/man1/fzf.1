@@ -130,6 +130,10 @@ on the center of the screen.
 Label characters for \fBjump\fR and \fBjump-accept\fR
 .SS Layout
 .TP
+.BI "--height=" "HEIGHT[%]"
+Display fzf window below the cursor with the given height instead of using
+fullscreen.
+.TP
 .B "--reverse"
 Reverse orientation
 .TP
@@ -248,10 +252,11 @@ e.g. \fBfzf --preview="head -$LINES {}"\fR
 Note that you can escape a placeholder pattern by prepending a backslash.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:hidden]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:wrap][:hidden]"
 Determine the layout of the preview window. If the argument ends with
 \fB:hidden\fR, the preview window will be hidden by default until
-\fBtoggle-preview\fR action is triggered.
+\fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
+Line wrap can be enabled with \fB:wrap\fR flag.
 
 .RS
 .B POSITION: (default: right)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/junegunn/go-shellwords"
 )
@@ -46,6 +47,8 @@ const usage = `usage: fzf [options]
     --jump-labels=CHARS   Label characters for jump and jump-accept
 
   Layout
+    --height=HEIGHT[%]    Display fzf window below the cursor with the given
+                          height instead of using fullscreen
     --reverse             Reverse orientation
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
@@ -147,6 +150,7 @@ type Options struct {
 	Theme       *tui.ColorTheme
 	Black       bool
 	Bold        bool
+	Height      sizeSpec
 	Reverse     bool
 	Cycle       bool
 	Hscroll     bool
@@ -760,6 +764,14 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 	return sizeSpec{val, percent}
 }
 
+func parseHeight(str string) sizeSpec {
+	if util.IsWindows() {
+		errorExit("--height options is currently not supported on Windows")
+	}
+	size := parseSize(str, 100, "height")
+	return size
+}
+
 func parsePreviewWindow(opts *previewOpts, input string) {
 	// Default
 	opts.position = posRight
@@ -1003,6 +1015,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
+		case "--height":
+			opts.Height = parseHeight(nextString(allArgs, &i, "height required: [HEIGHT[%]]"))
+		case "--no-height":
+			opts.Height = sizeSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--margin":
@@ -1029,6 +1045,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.WithNth = splitNth(value)
 			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
+			} else if match, value := optString(arg, "--height="); match {
+				opts.Height = parseHeight(value)
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {

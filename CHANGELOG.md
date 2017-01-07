@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.16.0
+------
+- Added `--height HEIGHT[%]` option
+- Preview window will truncate long lines by default. Line wrap can be enabled
+  by `:wrap` flag in `--preview-window`.
+
 0.15.9
 ------
 - Fixed rendering glitches introduced in 0.15.8

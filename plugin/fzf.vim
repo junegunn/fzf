@@ -296,14 +296,24 @@ try
   else
     let prefix = ''
   endif
-  let tmux = (!has('nvim') || get(g:, 'fzf_prefer_tmux', 0)) && s:tmux_enabled() && s:splittable(dict)
+
+  let use_height = has_key(dict, 'down') &&
+        \ !(has('nvim') || has('win32') || has('win64') || s:present(dict, 'up', 'left', 'right'))
+  let tmux = !use_height && (!has('nvim') || get(g:, 'fzf_prefer_tmux', 0)) && s:tmux_enabled() && s:splittable(dict)
+  let term = has('nvim') && !tmux
+  if use_height
+    let optstr .= ' --height='.s:calc_size(&lines, dict.down, dict)
+  elseif term
+    let optstr .= ' --no-height'
+  endif
   let command = prefix.(tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  if has('nvim') && !tmux
+  if term
     return s:execute_term(dict, command, temps)
   endif
 
-  let lines = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
+  let lines = tmux ? s:execute_tmux(dict, command, temps)
+                 \ : s:execute(dict, command, use_height, temps)
   call s:callback(dict, lines)
   return lines
 finally
@@ -400,9 +410,9 @@ function! s:exit_handler(code, command, ...)
   return 1
 endfunction
 
-function! s:execute(dict, command, temps) abort
+function! s:execute(dict, command, use_height, temps) abort
   call s:pushd(a:dict)
-  if has('unix')
+  if has('unix') && !a:use_height
     silent! !clear 2> /dev/null
   endif
   let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#')
@@ -416,7 +426,11 @@ function! s:execute(dict, command, temps) abort
   else
     let command = escaped
   endif
-  execute 'silent !'.command
+  if a:use_height
+    call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s 2> /dev/tty', &lines, command))
+  else
+    execute 'silent !'.command
+  endif
   let exit_status = v:shell_error
   redraw!
   return s:exit_handler(exit_status, command) ? s:collect(a:temps) : []
