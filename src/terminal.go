@@ -41,9 +41,10 @@ type previewer struct {
 }
 
 type itemLine struct {
-	current bool
-	label   string
-	result  Result
+	current  bool
+	selected bool
+	label    string
+	result   Result
 }
 
 var emptyLine = itemLine{}
@@ -663,7 +664,7 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{current, label, *result}
+	newLine := itemLine{current, selected, label, *result}
 	if t.prevLines[i] == newLine {
 		return
 	}
