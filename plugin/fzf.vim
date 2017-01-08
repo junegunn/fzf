@@ -266,7 +266,8 @@ try
     set shell=sh
   endif
 
-  if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"')) || exists('s:curr_job')
+  if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"')) ||
+    \ exists('s:curr_job') && (has('nvim') || job_status(s:curr_job) == 'run')
     call s:warn('FZF is already running!')
     return []
   endif
