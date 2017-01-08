@@ -10,10 +10,14 @@ import (
 )
 
 func assertMatch(t *testing.T, fun Algo, caseSensitive, forward bool, input, pattern string, sidx int, eidx int, score int) {
+	assertMatch2(t, fun, caseSensitive, false, forward, input, pattern, sidx, eidx, score)
+}
+
+func assertMatch2(t *testing.T, fun Algo, caseSensitive, normalize, forward bool, input, pattern string, sidx int, eidx int, score int) {
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
-	res, pos := fun(caseSensitive, forward, util.RunesToChars([]rune(input)), []rune(pattern), true, nil)
+	res, pos := fun(caseSensitive, normalize, forward, util.RunesToChars([]rune(input)), []rune(pattern), true, nil)
 	var start, end int
 	if pos == nil || len(*pos) == 0 {
 		start = res.Start
@@ -154,6 +158,21 @@ func TestEmptyPattern(t *testing.T) {
 		assertMatch(t, PrefixMatch, true, dir, "foobar", "", 0, 0, 0)
 		assertMatch(t, SuffixMatch, true, dir, "foobar", "", 6, 6, 0)
 	}
+}
+
+func TestNormalize(t *testing.T) {
+	caseSensitive := false
+	normalize := true
+	forward := true
+	test := func(input, pattern string, sidx, eidx, score int, funs ...Algo) {
+		for _, fun := range funs {
+			assertMatch2(t, fun, caseSensitive, normalize, forward,
+				input, pattern, sidx, eidx, score)
+		}
+	}
+	test("Só Danço Samba", "So", 0, 2, 56, FuzzyMatchV1, FuzzyMatchV2, PrefixMatch, ExactMatchNaive)
+	test("Só Danço Samba", "sodc", 0, 7, 89, FuzzyMatchV1, FuzzyMatchV2)
+	test("Danço", "danco", 0, 5, 128, FuzzyMatchV1, FuzzyMatchV2, PrefixMatch, SuffixMatch, ExactMatchNaive, EqualMatch)
 }
 
 func TestLongString(t *testing.T) {

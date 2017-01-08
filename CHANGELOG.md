@@ -6,6 +6,8 @@ CHANGELOG
 - Added `--height HEIGHT[%]` option
 - Preview window will truncate long lines by default. Line wrap can be enabled
   by `:wrap` flag in `--preview-window`.
+- Added `--normalize` option to normalize latin script letters before
+  matching. e.g. `sodanco` can match `Só Danço Samba`.
 
 0.15.9
 ------
