@@ -33,7 +33,7 @@ func (r *LightRenderer) stderr(str string) {
 	runes := []rune{}
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
-		if r == utf8.RuneError || r != '\x1b' && r != '\n' && r < 32 {
+		if r == utf8.RuneError || r != '\x1b' && r != '\n' && r != '\r' && r < 32 {
 			runes = append(runes, '?')
 		} else {
 			runes = append(runes, r)
@@ -71,6 +71,8 @@ type LightRenderer struct {
 	escDelay      int
 	upOneLine     bool
 	queued        string
+	y             int
+	x             int
 	maxHeightFunc func(int) int
 }
 
@@ -182,8 +184,27 @@ func (r *LightRenderer) Init() {
 	}
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
-	r.csi("s")
+	// r.csi("s")
 	r.yoffset, _ = r.findOffset()
+}
+
+func (r *LightRenderer) move(y int, x int) {
+	// w.csi("u")
+	if r.y < y {
+		r.csi(fmt.Sprintf("%dB", y-r.y))
+	} else if r.y > y {
+		r.csi(fmt.Sprintf("%dA", r.y-y))
+	}
+	r.stderr("\r")
+	if x > 0 {
+		r.csi(fmt.Sprintf("%dC", x))
+	}
+	r.y = y
+	r.x = x
+}
+
+func (r *LightRenderer) origin() {
+	r.move(0, 0)
 }
 
 func (r *LightRenderer) updateTerminalSize() {
@@ -470,7 +491,8 @@ func (r *LightRenderer) Resume() bool {
 }
 
 func (r *LightRenderer) Clear() {
-	r.csi("u")
+	// r.csi("u")
+	r.origin()
 	r.csi("J")
 	r.flush()
 }
@@ -484,7 +506,8 @@ func (r *LightRenderer) Refresh() {
 }
 
 func (r *LightRenderer) Close() {
-	r.csi("u")
+	// r.csi("u")
+	r.origin()
 	r.csi("J")
 	if r.mouse {
 		r.csi("?1000l")
@@ -584,15 +607,7 @@ func (w *LightWindow) Move(y int, x int) {
 	w.posx = x
 	w.posy = y
 
-	w.csi("u")
-	y += w.Top()
-	if y > 0 {
-		w.csi(fmt.Sprintf("%dB", y))
-	}
-	x += w.Left()
-	if x > 0 {
-		w.csi(fmt.Sprintf("%dC", x))
-	}
+	w.renderer.move(w.Top()+y, w.Left()+x)
 }
 
 func (w *LightWindow) MoveAndClear(y int, x int) {
