@@ -50,6 +50,8 @@ const usage = `usage: fzf [options]
   Layout
     --height=HEIGHT[%]    Display fzf window below the cursor with the given
                           height instead of using fullscreen
+    --min-height=HEIGHT   Minimum height when --height is given in percent
+                          (default: 10)
     --reverse             Reverse orientation
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
@@ -153,6 +155,7 @@ type Options struct {
 	Black       bool
 	Bold        bool
 	Height      sizeSpec
+	MinHeight   int
 	Reverse     bool
 	Cycle       bool
 	Hscroll     bool
@@ -200,6 +203,7 @@ func defaultOptions() *Options {
 		Theme:       tui.EmptyTheme(),
 		Black:       false,
 		Bold:        true,
+		MinHeight:   10,
 		Reverse:     false,
 		Cycle:       false,
 		Hscroll:     true,
@@ -1023,7 +1027,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
 		case "--height":
-			opts.Height = parseHeight(nextString(allArgs, &i, "height required: [HEIGHT[%]]"))
+			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
+		case "--min-height":
+			opts.MinHeight = nextInt(allArgs, &i, "height required: HEIGHT")
 		case "--no-height":
 			opts.Height = sizeSpec{}
 		case "--no-margin":
@@ -1054,6 +1060,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "--height="); match {
 				opts.Height = parseHeight(value)
+			} else if match, value := optString(arg, "--min-height="); match {
+				opts.MinHeight = atoi(value)
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {

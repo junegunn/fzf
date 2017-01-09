@@ -275,14 +275,15 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		maxHeightFunc := func(termHeight int) int {
 			var maxHeight int
 			if opts.Height.percent {
-				maxHeight = int(opts.Height.size * float64(termHeight) / 100.0)
+				maxHeight = util.Min(termHeight,
+					util.Max(int(opts.Height.size*float64(termHeight)/100.0), opts.MinHeight))
 			} else {
-				maxHeight = util.Min(int(opts.Height.size), termHeight)
+				maxHeight = util.Min(termHeight, int(opts.Height.size))
 			}
 			if opts.InlineInfo {
-				return util.Max(maxHeight, 3)
+				return util.Max(maxHeight, minHeight-1)
 			}
-			return util.Max(maxHeight, 4)
+			return util.Max(maxHeight, minHeight)
 		}
 		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, maxHeightFunc)
 	} else {
