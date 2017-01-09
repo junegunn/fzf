@@ -1241,9 +1241,11 @@ module TestShell
   def test_ctrl_t
     set_var "FZF_CTRL_T_COMMAND", "seq 100"
 
-    tmux.prepare
-    tmux.send_keys 'C-t'
-    lines = tmux.until { |lines| lines.item_count == 100 }
+    lines = retries do
+      tmux.prepare
+      tmux.send_keys 'C-t'
+      tmux.until { |lines| lines.item_count == 100 }
+    end
     tmux.send_keys :Tab, :Tab, :Tab
     tmux.until { |lines| lines.any_include? ' (3)' }
     tmux.send_keys :Enter
@@ -1255,9 +1257,11 @@ module TestShell
     writelines tempname, ['fzf-unicode 테스트1', 'fzf-unicode 테스트2']
     set_var "FZF_CTRL_T_COMMAND", "cat #{tempname}"
 
-    tmux.prepare
-    tmux.send_keys 'echo ', 'C-t'
-    tmux.until { |lines| lines.item_count == 2 }
+    retries do
+      tmux.prepare
+      tmux.send_keys 'echo ', 'C-t'
+      tmux.until { |lines| lines.item_count == 2 }
+    end
     tmux.send_keys 'fzf-unicode'
     tmux.until { |lines| lines.match_count == 2 }
 
@@ -1281,9 +1285,11 @@ module TestShell
   end
 
   def test_alt_c
-    tmux.prepare
-    tmux.send_keys :Escape, :c
-    lines = tmux.until { |lines| lines.item_count > 0 }
+    lines = retries do
+      tmux.prepare
+      tmux.send_keys :Escape, :c
+      tmux.until { |lines| lines.item_count > 0 }
+    end
     expected = lines.reverse.select { |l| l.start_with? '>' }.first[2..-1]
     tmux.send_keys :Enter
     tmux.prepare
@@ -1297,9 +1303,11 @@ module TestShell
     tmux.prepare
     tmux.send_keys 'cd /', :Enter
 
-    tmux.prepare
-    tmux.send_keys :Escape, :c
-    lines = tmux.until { |lines| lines.item_count == 1 }
+    retries do
+      tmux.prepare
+      tmux.send_keys :Escape, :c
+      lines = tmux.until { |lines| lines.item_count == 1 }
+    end
     tmux.send_keys :Enter
 
     tmux.prepare
@@ -1313,15 +1321,28 @@ module TestShell
     tmux.send_keys 'echo 2nd', :Enter; tmux.prepare
     tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
     tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
-    tmux.send_keys 'echo 4th', :Enter; tmux.prepare
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| lines.item_count > 0 }
+    tmux.send_keys 'echo 4th', :Enter
+    retries do
+      tmux.prepare
+      tmux.send_keys 'C-r'
+      tmux.until { |lines| lines.item_count > 0 }
+    end
     tmux.send_keys '3d'
     tmux.until { |lines| lines[-3].end_with? 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '3rd' }
+  end
+
+  def retries times = 3, &block
+    (times - 1).times do |t|
+      begin
+        return block.call
+      rescue RuntimeError
+      end
+    end
+    block.call
   end
 end
 
