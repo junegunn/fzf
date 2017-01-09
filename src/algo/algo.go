@@ -246,21 +246,9 @@ func normalizeRune(r rune) rune {
 	return r
 }
 
-func normalizeRunes(runes []rune) []rune {
-	ret := make([]rune, len(runes))
-	copy(ret, runes)
-	for idx, r := range runes {
-		if r < 0x00C0 || r > 0x2184 {
-			continue
-		}
-		n := normalized[r]
-		if n > 0 {
-			ret[idx] = normalized[r]
-		}
-	}
-	return ret
-}
-
+// Algo functions make two assumptions
+// 1. "pattern" is given in lowercase if "caseSensitive" is false
+// 2. "pattern" is already normalized if "normalize" is true
 type Algo func(caseSensitive bool, normalize bool, forward bool, input util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int)
 
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
@@ -281,10 +269,6 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 	// we fall back to the greedy algorithm.
 	if slab != nil && N*M > cap(slab.I16) {
 		return FuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab)
-	}
-
-	if normalize {
-		pattern = normalizeRunes(pattern)
 	}
 
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
@@ -539,10 +523,6 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text util.Ch
 	lenRunes := text.Length()
 	lenPattern := len(pattern)
 
-	if normalize {
-		pattern = normalizeRunes(pattern)
-	}
-
 	for index := 0; index < lenRunes; index++ {
 		char := text.Get(indexAt(index, lenRunes, forward))
 		// This is considerably faster than blindly applying strings.ToLower to the
@@ -626,10 +606,6 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text util
 		return Result{-1, -1, 0}, nil
 	}
 
-	if normalize {
-		pattern = normalizeRunes(pattern)
-	}
-
 	// For simplicity, only look at the bonus at the first character position
 	pidx := 0
 	bestPos, bonus, bestBonus := -1, int16(0), int16(-1)
@@ -693,10 +669,6 @@ func PrefixMatch(caseSensitive bool, normalize bool, forward bool, text util.Cha
 		return Result{-1, -1, 0}, nil
 	}
 
-	if normalize {
-		pattern = normalizeRunes(pattern)
-	}
-
 	for index, r := range pattern {
 		char := text.Get(index)
 		if !caseSensitive {
@@ -724,10 +696,6 @@ func SuffixMatch(caseSensitive bool, normalize bool, forward bool, text util.Cha
 	diff := trimmedLen - len(pattern)
 	if diff < 0 {
 		return Result{-1, -1, 0}, nil
-	}
-
-	if normalize {
-		pattern = normalizeRunes(pattern)
 	}
 
 	for index, r := range pattern {

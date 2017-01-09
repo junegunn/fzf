@@ -406,3 +406,19 @@ var normalized map[rune]rune = map[rune]rune{
 	0x028F: 'Y', // , LATIN LETTER SMALL CAPITAL
 	0x1D22: 'Z', // , LATIN LETTER SMALL CAPITAL
 }
+
+// NormalizeRunes normalizes latin script letters
+func NormalizeRunes(runes []rune) []rune {
+	ret := make([]rune, len(runes))
+	copy(ret, runes)
+	for idx, r := range runes {
+		if r < 0x00C0 || r > 0x2184 {
+			continue
+		}
+		n := normalized[r]
+		if n > 0 {
+			ret[idx] = normalized[r]
+		}
+	}
+	return ret
+}

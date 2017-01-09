@@ -95,7 +95,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	termSets := []termSet{}
 
 	if extended {
-		termSets = parseTerms(fuzzy, caseMode, asString)
+		termSets = parseTerms(fuzzy, caseMode, normalize, asString)
 	Loop:
 		for _, termSet := range termSets {
 			for idx, term := range termSet {
@@ -140,7 +140,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	return ptr
 }
 
-func parseTerms(fuzzy bool, caseMode Case, str string) []termSet {
+func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet {
 	tokens := _splitRegex.Split(str, -1)
 	sets := []termSet{}
 	set := termSet{}
@@ -196,10 +196,14 @@ func parseTerms(fuzzy bool, caseMode Case, str string) []termSet {
 				sets = append(sets, set)
 				set = termSet{}
 			}
+			textRunes := []rune(text)
+			if normalize {
+				textRunes = algo.NormalizeRunes(textRunes)
+			}
 			set = append(set, term{
 				typ:           typ,
 				inv:           inv,
-				text:          []rune(text),
+				text:          textRunes,
 				caseSensitive: caseSensitive,
 				origText:      origText})
 			switchSet = true
