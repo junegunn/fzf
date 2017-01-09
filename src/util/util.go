@@ -18,7 +18,7 @@ func RuneWidth(r rune, prefixWidth int, tabstop int) int {
 	} else if w, found := _runeWidths[r]; found {
 		return w
 	} else {
-		w := runewidth.RuneWidth(r)
+		w := Max(runewidth.RuneWidth(r), 1)
 		_runeWidths[r] = w
 		return w
 	}
