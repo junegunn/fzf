@@ -197,7 +197,9 @@ Number of spaces for a tab character (default: 8)
 .BI "--color=" "[BASE_SCHEME][,COLOR:ANSI]"
 Color configuration. The name of the base color scheme is followed by custom
 color mappings. Ansi color code of -1 denotes terminal default
-foreground/background color.
+foreground/background color. You can also specify 24-bit color in \fB#rrggbb\fR
+format, but the support for 24-bit colors is experimental and only works when
+\fB--height\fR option is used.
 
 .RS
 e.g. \fBfzf --color=bg+:24\fR

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -119,6 +120,13 @@ type ColorPair struct {
 	fg Color
 	bg Color
 	id int16
+}
+
+func HexToColor(rrggbb string) Color {
+	r, _ := strconv.ParseInt(rrggbb[1:3], 16, 0)
+	g, _ := strconv.ParseInt(rrggbb[3:5], 16, 0)
+	b, _ := strconv.ParseInt(rrggbb[5:7], 16, 0)
+	return Color((1 << 24) + (r << 16) + (g << 8) + b)
 }
 
 func NewColorPair(fg Color, bg Color) ColorPair {

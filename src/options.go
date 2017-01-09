@@ -493,6 +493,7 @@ func dupeTheme(theme *tui.ColorTheme) *tui.ColorTheme {
 
 func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 	theme := dupeTheme(defaultTheme)
+	rrggbb := regexp.MustCompile("^#[0-9a-fA-F]{6}$")
 	for _, str := range strings.Split(strings.ToLower(str), ",") {
 		switch str {
 		case "dark":
@@ -516,11 +517,17 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 			if len(pair) != 2 {
 				fail()
 			}
-			ansi32, err := strconv.Atoi(pair[1])
-			if err != nil || ansi32 < -1 || ansi32 > 255 {
-				fail()
+
+			var ansi tui.Color
+			if rrggbb.MatchString(pair[1]) {
+				ansi = tui.HexToColor(pair[1])
+			} else {
+				ansi32, err := strconv.Atoi(pair[1])
+				if err != nil || ansi32 < -1 || ansi32 > 255 {
+					fail()
+				}
+				ansi = tui.Color(ansi32)
 			}
-			ansi := tui.Color(ansi32)
 			switch pair[0] {
 			case "fg":
 				theme.Fg = ansi
