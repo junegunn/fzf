@@ -185,7 +185,9 @@ func (r *LightRenderer) Init() {
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	// r.csi("s")
-	r.yoffset, _ = r.findOffset()
+	if r.mouse {
+		r.yoffset, _ = r.findOffset()
+	}
 }
 
 func (r *LightRenderer) move(y int, x int) {
