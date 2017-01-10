@@ -124,11 +124,11 @@ func (r *FullscreenRenderer) initScreen() {
 	s, e := tcell.NewScreen()
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(2)
+		errorExit()
 	}
 	if e = s.Init(); e != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(2)
+		errorExit()
 	}
 	if r.mouse {
 		s.EnableMouse()

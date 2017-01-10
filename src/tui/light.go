@@ -111,8 +111,10 @@ func (r *LightRenderer) defaultTheme() *ColorTheme {
 	return Default16
 }
 
-func stty(cmd string) string {
-	out, err := util.ExecCommand("stty " + cmd + " < /dev/tty").Output()
+func (r *LightRenderer) stty(cmd string) string {
+	proc := util.ExecCommand("stty " + cmd)
+	proc.Stdin = r.ttyin
+	out, err := proc.Output()
 	if err != nil {
 		// Not sure how to handle this
 		panic("stty " + cmd + ": " + err.Error())
@@ -164,8 +166,8 @@ func (r *LightRenderer) Init() {
 	}
 	r.escDelay = delay
 
-	r.ostty = stty("-g")
-	stty("raw")
+	r.ostty = r.stty("-g")
+	r.stty("raw")
 	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
@@ -210,7 +212,7 @@ func (r *LightRenderer) origin() {
 }
 
 func (r *LightRenderer) updateTerminalSize() {
-	sizes := strings.Split(stty("size"), " ")
+	sizes := strings.Split(r.stty("size"), " ")
 	if len(sizes) < 2 {
 		r.width = defaultWidth
 		r.height = r.maxHeightFunc(defaultHeight)
@@ -220,14 +222,14 @@ func (r *LightRenderer) updateTerminalSize() {
 	}
 }
 
-func (r *LightRenderer) getch(nonblock bool) int {
+func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 	b := make([]byte, 1)
 	util.SetNonblock(r.ttyin, nonblock)
 	_, err := r.ttyin.Read(b)
 	if err != nil {
-		return -1
+		return 0, false
 	}
-	return int(b[0])
+	return int(b[0]), true
 }
 
 func (r *LightRenderer) getBytes() []byte {
@@ -235,7 +237,11 @@ func (r *LightRenderer) getBytes() []byte {
 }
 
 func (r *LightRenderer) getBytesInternal(buffer []byte) []byte {
-	c := r.getch(false)
+	c, ok := r.getch(false)
+	if !ok {
+		r.Close()
+		errorExit()
+	}
 
 	retries := 0
 	if c == ESC {
@@ -244,8 +250,8 @@ func (r *LightRenderer) getBytesInternal(buffer []byte) []byte {
 	buffer = append(buffer, byte(c))
 
 	for {
-		c = r.getch(true)
-		if c == -1 {
+		c, ok = r.getch(true)
+		if !ok {
 			if retries > 0 {
 				retries--
 				time.Sleep(escPollInterval * time.Millisecond)
@@ -479,13 +485,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 }
 
 func (r *LightRenderer) Pause() {
-	stty(fmt.Sprintf("%q", r.ostty))
+	r.stty(fmt.Sprintf("%q", r.ostty))
 	r.csi("?1049h")
 	r.flush()
 }
 
 func (r *LightRenderer) Resume() bool {
-	stty("raw")
+	r.stty("raw")
 	r.csi("?1049l")
 	r.flush()
 	// Should redraw
@@ -518,7 +524,7 @@ func (r *LightRenderer) Close() {
 		r.csi("A")
 	}
 	r.flush()
-	stty(fmt.Sprintf("%q", r.ostty))
+	r.stty(fmt.Sprintf("%q", r.ostty))
 }
 
 func (r *LightRenderer) MaxX() int {

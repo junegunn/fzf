@@ -110,12 +110,12 @@ func (r *FullscreenRenderer) Init() {
 	tty := C.c_tty()
 	if tty == nil {
 		fmt.Println("Failed to open /dev/tty")
-		os.Exit(2)
+		errorExit()
 	}
 	_screen = C.c_newterm(tty)
 	if _screen == nil {
 		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
-		os.Exit(2)
+		errorExit()
 	}
 	C.set_term(_screen)
 	if r.mouse {
@@ -375,7 +375,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 	c := C.getch()
 	switch c {
 	case C.ERR:
-		return Event{Invalid, 0, nil}
+		// Unexpected error from blocking read
+		r.Close()
+		errorExit()
 	case C.KEY_UP:
 		return Event{Up, 0, nil}
 	case C.KEY_DOWN:

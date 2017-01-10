@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"strconv"
 	"time"
 )
@@ -273,6 +274,10 @@ func EmptyTheme() *ColorTheme {
 		Selected:     colUndefined,
 		Header:       colUndefined,
 		Border:       colUndefined}
+}
+
+func errorExit() {
+	os.Exit(2)
 }
 
 func init() {
