@@ -625,7 +625,7 @@ func (t *Terminal) printHeader() {
 
 		t.move(line, 2, true)
 		t.printHighlighted(&Result{item: item},
-			tui.AttrRegular, tui.ColHeader, tui.ColDefault, false)
+			tui.AttrRegular, tui.ColHeader, tui.ColDefault, false, false)
 	}
 }
 
@@ -681,14 +681,14 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 		} else {
 			t.window.CPrint(tui.ColCurrent, t.strong, " ")
 		}
-		t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true)
+		t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
 	} else {
 		if selected {
 			t.window.CPrint(tui.ColSelected, t.strong, ">")
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false)
+		t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
 	}
 }
 
@@ -744,7 +744,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return false
 }
 
-func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool) {
+func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) {
 	item := result.item
 
 	// Overflow
@@ -752,7 +752,7 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 	copy(text, item.text.ToRunes())
 	matchOffsets := []Offset{}
 	var pos *[]int
-	if t.merger.pattern != nil {
+	if match && t.merger.pattern != nil {
 		_, matchOffsets, pos = t.merger.pattern.MatchItem(item, true, t.slab)
 	}
 	charOffsets := matchOffsets
