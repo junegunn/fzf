@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
@@ -104,7 +105,7 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 }
 
 func (r *LightRenderer) defaultTheme() *ColorTheme {
-	colors, err := util.ExecCommand("tput colors").Output()
+	colors, err := exec.Command("tput", "colors").Output()
 	if err == nil && atoi(strings.TrimSpace(string(colors)), 16) > 16 {
 		return Dark256
 	}
@@ -112,7 +113,7 @@ func (r *LightRenderer) defaultTheme() *ColorTheme {
 }
 
 func (r *LightRenderer) stty(cmd string) string {
-	proc := util.ExecCommand("stty " + cmd)
+	proc := exec.Command("stty", cmd)
 	proc.Stdin = r.ttyin
 	out, err := proc.Output()
 	if err != nil {
@@ -485,7 +486,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 }
 
 func (r *LightRenderer) Pause() {
-	r.stty(fmt.Sprintf("%q", r.ostty))
+	r.stty(r.ostty)
 	r.csi("?1049h")
 	r.flush()
 }
@@ -524,7 +525,7 @@ func (r *LightRenderer) Close() {
 		r.csi("A")
 	}
 	r.flush()
-	r.stty(fmt.Sprintf("%q", r.ostty))
+	r.stty(r.ostty)
 }
 
 func (r *LightRenderer) MaxX() int {
