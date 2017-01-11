@@ -25,7 +25,6 @@ int c_getcurx(WINDOW* win) {
 import "C"
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -109,13 +108,11 @@ func (r *FullscreenRenderer) Init() {
 	C.setlocale(C.LC_ALL, C.CString(""))
 	tty := C.c_tty()
 	if tty == nil {
-		fmt.Println("Failed to open /dev/tty")
-		errorExit()
+		errorExit("Failed to open /dev/tty")
 	}
 	_screen = C.c_newterm(tty)
 	if _screen == nil {
-		fmt.Println("Invalid $TERM: " + os.Getenv("TERM"))
-		errorExit()
+		errorExit("Invalid $TERM: " + os.Getenv("TERM"))
 	}
 	C.set_term(_screen)
 	if r.mouse {
@@ -380,7 +377,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 	case C.ERR:
 		// Unexpected error from blocking read
 		r.Close()
-		errorExit()
+		errorExit("Failed to read /dev/tty")
 	case C.KEY_UP:
 		return Event{Up, 0, nil}
 	case C.KEY_DOWN:

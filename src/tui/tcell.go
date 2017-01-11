@@ -6,9 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"fmt"
-	"os"
-
 	"runtime"
 
 	// https://github.com/gdamore/tcell/pull/135
@@ -123,12 +120,10 @@ var (
 func (r *FullscreenRenderer) initScreen() {
 	s, e := tcell.NewScreen()
 	if e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		errorExit()
+		errorExit(e.Error())
 	}
 	if e = s.Init(); e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		errorExit()
+		errorExit(e.Error())
 	}
 	if r.mouse {
 		s.EnableMouse()

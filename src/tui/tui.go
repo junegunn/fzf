@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -284,7 +285,8 @@ func EmptyTheme() *ColorTheme {
 		Border:       colUndefined}
 }
 
-func errorExit() {
+func errorExit(message string) {
+	fmt.Fprintln(os.Stderr, message)
 	os.Exit(2)
 }
 

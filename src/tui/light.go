@@ -241,7 +241,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte) []byte {
 	c, ok := r.getch(false)
 	if !ok {
 		r.Close()
-		errorExit()
+		errorExit("Failed to read /dev/tty")
 	}
 
 	retries := 0
