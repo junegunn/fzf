@@ -117,6 +117,14 @@ const (
 	colWhite
 )
 
+type FillReturn int
+
+const (
+	FillContinue FillReturn = iota
+	FillNextLine
+	FillSuspend
+)
+
 type ColorPair struct {
 	fg Color
 	bg Color
@@ -216,8 +224,8 @@ type Window interface {
 	MoveAndClear(y int, x int)
 	Print(text string)
 	CPrint(color ColorPair, attr Attr, text string)
-	Fill(text string) bool
-	CFill(fg Color, bg Color, attr Attr, text string) bool
+	Fill(text string) FillReturn
+	CFill(fg Color, bg Color, attr Attr, text string) FillReturn
 	Erase()
 }
 

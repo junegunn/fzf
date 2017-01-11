@@ -1,8 +1,10 @@
 package fzf
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"regexp"
@@ -852,41 +854,49 @@ func (t *Terminal) printPreview() {
 		return
 	}
 	t.pwindow.Erase()
-	skip := t.previewer.offset
-	extractColor(t.previewer.text, nil, func(str string, ansi *ansiState) bool {
-		if skip > 0 {
-			newlines := numLinesMax(str, skip)
-			if skip <= newlines {
-				for i := 0; i < skip; i++ {
-					str = str[strings.Index(str, "\n")+1:]
+
+	maxWidth := t.pwindow.Width()
+	if t.tui.DoesAutoWrap() {
+		maxWidth -= 1
+	}
+	reader := bufio.NewReader(strings.NewReader(t.previewer.text))
+	lineNo := -t.previewer.offset
+	for {
+		line, err := reader.ReadString('\n')
+		eof := err == io.EOF
+		if !eof {
+			line = line[:len(line)-1]
+		}
+		lineNo++
+		if lineNo > t.pwindow.Height() {
+			break
+		} else if lineNo > 0 {
+			var fillRet tui.FillReturn
+			extractColor(line, nil, func(str string, ansi *ansiState) bool {
+				trimmed := []rune(str)
+				if !t.preview.wrap {
+					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
-				skip = 0
-			} else {
-				skip -= newlines
-				return true
+				str, _ = t.processTabs(trimmed, 0)
+				if ansi != nil && ansi.colored() {
+					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
+				} else {
+					fillRet = t.pwindow.Fill(str)
+				}
+				return fillRet == tui.FillContinue
+			})
+			switch fillRet {
+			case tui.FillNextLine:
+				continue
+			case tui.FillSuspend:
+				break
 			}
+			t.pwindow.Fill("\n")
 		}
-		lines := strings.Split(str, "\n")
-		for i, line := range lines {
-			limit := t.pwindow.Width()
-			if t.tui.DoesAutoWrap() {
-				limit -= 1
-			}
-			if i == 0 {
-				limit -= t.pwindow.X()
-			}
-			trimmed := []rune(line)
-			if !t.preview.wrap {
-				trimmed, _ = t.trimRight(trimmed, limit)
-			}
-			lines[i], _ = t.processTabs(trimmed, 0)
-			str = strings.Join(lines, "\n")
+		if eof {
+			break
 		}
-		if ansi != nil && ansi.colored() {
-			return t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
-		}
-		return t.pwindow.Fill(str)
-	})
+	}
 	t.pwindow.FinishFill()
 	if t.previewer.lines > t.pwindow.Height() {
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)

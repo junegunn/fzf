@@ -730,23 +730,29 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 	return lines
 }
 
-func (w *LightWindow) fill(str string, onMove func()) bool {
+func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 	allLines := strings.Split(str, "\n")
 	for i, line := range allLines {
 		lines := wrapLine(line, w.posx, w.width, w.tabstop)
 		for j, wl := range lines {
+			if w.posx >= w.Width()-1 && wl.displayWidth == 0 {
+				if w.posy < w.height-1 {
+					w.MoveAndClear(w.posy+1, 0)
+				}
+				return FillNextLine
+			}
 			w.stderr(wl.text)
 			w.posx += wl.displayWidth
 			if j < len(lines)-1 || i < len(allLines)-1 {
 				if w.posy+1 >= w.height {
-					return false
+					return FillSuspend
 				}
 				w.MoveAndClear(w.posy+1, 0)
 				onMove()
 			}
 		}
 	}
-	return true
+	return FillContinue
 }
 
 func (w *LightWindow) setBg() {
@@ -755,13 +761,13 @@ func (w *LightWindow) setBg() {
 	}
 }
 
-func (w *LightWindow) Fill(text string) bool {
+func (w *LightWindow) Fill(text string) FillReturn {
 	w.MoveAndClear(w.posy, w.posx)
 	w.setBg()
 	return w.fill(text, w.setBg)
 }
 
-func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) bool {
+func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillReturn {
 	w.MoveAndClear(w.posy, w.posx)
 	if bg == colDefault {
 		bg = w.bg

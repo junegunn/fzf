@@ -477,7 +477,7 @@ func (w *TcellWindow) CPrint(pair ColorPair, attr Attr, text string) {
 	w.printString(text, pair, attr)
 }
 
-func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) bool {
+func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn {
 	lx := 0
 
 	var style tcell.Style
@@ -511,7 +511,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) bool {
 			var yPos = w.top + w.lastY
 
 			if yPos >= (w.top + w.height) {
-				return false
+				return FillSuspend
 			}
 
 			_screen.SetContent(xPos, yPos, r, nil, style)
@@ -520,14 +520,14 @@ func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) bool {
 	}
 	w.lastX += lx
 
-	return true
+	return FillContinue
 }
 
-func (w *TcellWindow) Fill(str string) bool {
+func (w *TcellWindow) Fill(str string) FillReturn {
 	return w.fillString(str, ColDefault, 0)
 }
 
-func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) bool {
+func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	return w.fillString(str, ColorPair{fg, bg, -1}, a)
 }
 

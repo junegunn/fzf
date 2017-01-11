@@ -282,11 +282,14 @@ func (r *FullscreenRenderer) DoesAutoWrap() bool {
 	return true
 }
 
-func (w *CursesWindow) Fill(str string) bool {
-	return C.waddstr(w.impl, C.CString(str)) == C.OK
+func (w *CursesWindow) Fill(str string) FillReturn {
+	if C.waddstr(w.impl, C.CString(str)) == C.OK {
+		return FillContinue
+	}
+	return FillSuspend
 }
 
-func (w *CursesWindow) CFill(fg Color, bg Color, attr Attr, str string) bool {
+func (w *CursesWindow) CFill(fg Color, bg Color, attr Attr, str string) FillReturn {
 	index := ColorPair{fg, bg, -1}.index()
 	C.wcolor_set(w.impl, C.short(index), nil)
 	C.wattron(w.impl, C.int(attr))
