@@ -75,6 +75,10 @@ function! s:tmux_enabled()
   return s:tmux
 endfunction
 
+function! s:has_job()
+  return has('nvim') || v:version >= 800 && has('job') && has('lambda')
+endfunction
+
 function! s:shellesc(arg)
   return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
 endfunction
@@ -263,7 +267,8 @@ try
     set shell=sh
   endif
 
-  if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"'))
+  if has('nvim') && len(filter(range(1, bufnr('$')), 'bufname(v:val) =~# ";#FZF"')) ||
+    \ exists('s:curr_job') && (has('nvim') || job_status(s:curr_job) == 'run')
     call s:warn('FZF is already running!')
     return []
   endif
@@ -302,6 +307,10 @@ try
 
   if has('nvim') && !tmux
     return s:execute_term(dict, command, temps)
+  endif
+
+  if s:has_job() && tmux
+    return s:execute_tmux_async(dict, command, temps)
   endif
 
   let lines = tmux ? s:execute_tmux(dict, command, temps) : s:execute(dict, command, temps)
@@ -434,6 +443,46 @@ function! s:execute_tmux(dict, command, temps) abort
   let exit_status = v:shell_error
   redraw!
   return s:exit_handler(exit_status, command) ? s:collect(a:temps) : []
+endfunction
+
+function! s:execute_tmux_async(dict, command, temps) abort
+  let command = a:command
+  if s:present(a:dict, 'dir')
+    " -c '#{pane_current_path}' is only available on tmux 1.9 or above
+    let command = 'cd '.s:escape(a:dict.dir).' && '.command
+  endif
+  if !has('nvim')
+    " Vim doesn't pass environment variables to asynchronous jobs
+    let command = 'export TERM='.s:escape($TERM).' && '.command
+  endif
+  let fzf = { 'dict': a:dict, 'temps': a:temps, 'command': command }
+
+  function! fzf.on_exit(id, code, _event)
+    unlet s:curr_job
+
+    if !s:exit_handler(a:code, self.command, 1)
+      return
+    endif
+
+    call s:pushd(self.dict)
+    let lines = s:collect(self.temps)
+    call s:callback(self.dict, lines)
+  endfunction
+
+  if has('nvim')
+    let s:curr_job = jobstart(command, fzf)
+    let success = s:curr_job > 0
+  else
+    let opts = { 'exit_cb': { id, code -> fzf.on_exit(id, code, 'exit') },
+               \ 'in_io': 'null', 'out_io': 'null', 'err_io': 'null' }
+    let s:curr_job = job_start(['/bin/sh', '-c', command], opts)
+    let success = job_status(s:curr_job) != 'fail'
+  endif
+  if !success
+    unlet s:curr_job
+    call s:error('Error starting job '.command)
+  endif
+  return []
 endfunction
 
 function! s:calc_size(max, val, dict)
