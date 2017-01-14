@@ -155,7 +155,8 @@ function! s:common_sink(action, lines) abort
       else
         call s:open(cmd, item)
       endif
-      if exists('#BufEnter') && isdirectory(item)
+      if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
+            \ && isdirectory(item)
         doautocmd BufEnter
       endif
     endfor
