@@ -216,7 +216,7 @@ _fzf_complete_kill() {
 
   local selected fzf
   fzf="$(__fzfcmd_complete)"
-  selected=$(ps -ef | sed 1d | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf -m | awk '{print $2}' | tr '\n' ' ')
+  selected=$(ps -ef | sed 1d | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --preview 'echo {}' --preview-window down:3:wrap --min-height 15 $FZF_COMPLETION_OPTS" $fzf -m | awk '{print $2}' | tr '\n' ' ')
   printf '\e[5n'
 
   if [ -n "$selected" ]; then
