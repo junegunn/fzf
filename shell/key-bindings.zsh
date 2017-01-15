@@ -49,7 +49,7 @@ bindkey '\ec' fzf-cd-widget
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst pipefail 2> /dev/null
-  selected=( $(fc -l 1 | eval "$(__fzfcmd) +s --tac +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
+  selected=( $(fc -r -l 1 | eval "$(__fzfcmd) +s +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
   local ret=$?
   if [ -n "$selected" ]; then
     num=$selected[1]
