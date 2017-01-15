@@ -11,6 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/util"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
@@ -20,10 +22,12 @@ const (
 	escPollInterval = 5
 )
 
+const consoleDevice string = "/dev/tty"
+
 func openTtyIn() *os.File {
-	in, err := os.OpenFile("/dev/tty", syscall.O_RDONLY, 0)
+	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
 	if err != nil {
-		panic("Failed to open /dev/tty")
+		panic("Failed to open " + consoleDevice)
 	}
 	return in
 }
@@ -64,7 +68,7 @@ type LightRenderer struct {
 	clickY        []int
 	ttyin         *os.File
 	buffer        []byte
-	ostty         string
+	origState     *terminal.State
 	width         int
 	height        int
 	yoffset       int
@@ -104,23 +108,19 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 	return &r
 }
 
+func (r *LightRenderer) fd() int {
+	return int(r.ttyin.Fd())
+}
+
 func (r *LightRenderer) defaultTheme() *ColorTheme {
+	if strings.Contains(os.Getenv("TERM"), "256") {
+		return Dark256
+	}
 	colors, err := exec.Command("tput", "colors").Output()
 	if err == nil && atoi(strings.TrimSpace(string(colors)), 16) > 16 {
 		return Dark256
 	}
 	return Default16
-}
-
-func (r *LightRenderer) stty(cmd string) string {
-	proc := exec.Command("stty", cmd)
-	proc.Stdin = r.ttyin
-	out, err := proc.Output()
-	if err != nil {
-		// Not sure how to handle this
-		panic("stty " + cmd + ": " + err.Error())
-	}
-	return strings.TrimSpace(string(out))
 }
 
 func (r *LightRenderer) findOffset() (row int, col int) {
@@ -167,8 +167,13 @@ func (r *LightRenderer) Init() {
 	}
 	r.escDelay = delay
 
-	r.ostty = r.stty("-g")
-	r.stty("raw")
+	fd := r.fd()
+	origState, err := terminal.GetState(fd)
+	if err != nil {
+		errorExit(err.Error())
+	}
+	r.origState = origState
+	terminal.MakeRaw(fd)
 	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
@@ -212,14 +217,22 @@ func (r *LightRenderer) origin() {
 	r.move(0, 0)
 }
 
+func getEnv(name string, defaultValue int) int {
+	env := os.Getenv(name)
+	if len(env) == 0 {
+		return defaultValue
+	}
+	return atoi(env, defaultValue)
+}
+
 func (r *LightRenderer) updateTerminalSize() {
-	sizes := strings.Split(r.stty("size"), " ")
-	if len(sizes) < 2 {
-		r.width = defaultWidth
-		r.height = r.maxHeightFunc(defaultHeight)
+	width, height, err := terminal.GetSize(r.fd())
+	if err == nil {
+		r.width = width
+		r.height = r.maxHeightFunc(height)
 	} else {
-		r.width = atoi(sizes[1], defaultWidth)
-		r.height = r.maxHeightFunc(atoi(sizes[0], defaultHeight))
+		r.width = getEnv("COLUMNS", defaultWidth)
+		r.height = r.maxHeightFunc(getEnv("LINES", defaultHeight))
 	}
 }
 
@@ -241,7 +254,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte) []byte {
 	c, ok := r.getch(false)
 	if !ok {
 		r.Close()
-		errorExit("Failed to read /dev/tty")
+		errorExit("Failed to read " + consoleDevice)
 	}
 
 	retries := 0
@@ -486,13 +499,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 }
 
 func (r *LightRenderer) Pause() {
-	r.stty(r.ostty)
+	terminal.Restore(r.fd(), r.origState)
 	r.csi("?1049h")
 	r.flush()
 }
 
 func (r *LightRenderer) Resume() bool {
-	r.stty("raw")
+	terminal.MakeRaw(r.fd())
 	r.csi("?1049l")
 	r.flush()
 	// Should redraw
@@ -525,7 +538,7 @@ func (r *LightRenderer) Close() {
 		r.csi("A")
 	}
 	r.flush()
-	r.stty(r.ostty)
+	terminal.Restore(r.fd(), r.origState)
 }
 
 func (r *LightRenderer) MaxX() int {
