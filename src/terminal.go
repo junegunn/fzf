@@ -59,6 +59,8 @@ type Terminal struct {
 	reverse    bool
 	hscroll    bool
 	hscrollOff int
+	wordRubout string
+	wordNext   string
 	cx         int
 	cy         int
 	offset     int
@@ -291,6 +293,13 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	} else {
 		renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 	}
+	wordRubout := "[^[:alnum:]][[:alnum:]]"
+	wordNext := "[[:alnum:]][^[:alnum:]]|(.$)"
+	if opts.FileWord {
+		sep := regexp.QuoteMeta(string(os.PathSeparator))
+		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
+		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
+	}
 	return &Terminal{
 		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
@@ -298,6 +307,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reverse:    opts.Reverse,
 		hscroll:    opts.Hscroll,
 		hscrollOff: opts.HscrollOff,
+		wordRubout: wordRubout,
+		wordNext:   wordNext,
 		cx:         len(input),
 		cy:         0,
 		offset:     0,
@@ -1448,7 +1459,7 @@ func (t *Terminal) Loop() {
 				}
 			case actBackwardKillWord:
 				if t.cx > 0 {
-					t.rubout("[^[:alnum:]][[:alnum:]]")
+					t.rubout(t.wordRubout)
 				}
 			case actYank:
 				suffix := copySlice(t.input[t.cx:])
@@ -1467,12 +1478,12 @@ func (t *Terminal) Loop() {
 				t.jumping = jumpAcceptEnabled
 				req(reqJump)
 			case actBackwardWord:
-				t.cx = findLastMatch("[^[:alnum:]][[:alnum:]]", string(t.input[:t.cx])) + 1
+				t.cx = findLastMatch(t.wordRubout, string(t.input[:t.cx])) + 1
 			case actForwardWord:
-				t.cx += findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
+				t.cx += findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
 			case actKillWord:
 				ncx := t.cx +
-					findFirstMatch("[[:alnum:]][^[:alnum:]]|(.$)", string(t.input[t.cx:])) + 1
+					findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
 				if ncx > t.cx {
 					t.yanked = copySlice(t.input[t.cx:ncx])
 					t.input = append(t.input[:t.cx], t.input[ncx:]...)

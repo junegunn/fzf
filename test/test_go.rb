@@ -322,6 +322,19 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.last !~ /^>/ }
   end
 
+  def test_file_word
+    tmux.send_keys "#{FZF} -q '--/foo bar/foo-bar/baz' --filepath-word", :Enter
+    tmux.until { |lines| lines.last =~ /^>/ }
+
+    tmux.send_keys :Escape, :b
+    tmux.send_keys :Escape, :b
+    tmux.send_keys :Escape, :b
+    tmux.send_keys :Escape, :d
+    tmux.send_keys :Escape, :f
+    tmux.send_keys :Escape, :BSpace
+    tmux.until { |lines| lines.last == '> --///baz' }
+  end
+
   def test_multi_order
     tmux.send_keys "seq 1 10 | #{fzf :multi}", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }

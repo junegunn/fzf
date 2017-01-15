@@ -9,6 +9,8 @@ CHANGELOG
 - Latin script letters will be normalized before matching so that it's easier
   to match against accented letters. e.g. `sodanco` can match `Só Danço Samba`.
     - Normalization can be disabled via `--literal`
+- Added `--filepath-word` to make word-wise movements/actions (`alt-b`,
+  `alt-f`, `alt-bs`, `alt-d`) respect path separators
 
 0.15.9
 ------

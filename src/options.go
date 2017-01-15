@@ -45,6 +45,7 @@ const usage = `usage: fzf [options]
     --no-hscroll          Disable horizontal scroll
     --hscroll-off=COL     Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
+    --filepath-word       Make word-wise movements respect path separators
     --jump-labels=CHARS   Label characters for jump and jump-accept
 
   Layout
@@ -160,6 +161,7 @@ type Options struct {
 	Cycle       bool
 	Hscroll     bool
 	HscrollOff  int
+	FileWord    bool
 	InlineInfo  bool
 	JumpLabels  string
 	Prompt      string
@@ -208,6 +210,7 @@ func defaultOptions() *Options {
 		Cycle:       false,
 		Hscroll:     true,
 		HscrollOff:  10,
+		FileWord:    false,
 		InlineInfo:  false,
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
@@ -976,6 +979,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Hscroll = false
 		case "--hscroll-off":
 			opts.HscrollOff = nextInt(allArgs, &i, "hscroll offset required")
+		case "--filepath-word":
+			opts.FileWord = true
+		case "--no-filepath-word":
+			opts.FileWord = false
 		case "--inline-info":
 			opts.InlineInfo = true
 		case "--no-inline-info":
