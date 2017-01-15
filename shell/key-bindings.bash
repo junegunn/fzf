@@ -67,7 +67,7 @@ __fzf_use_tmux__() {
 [ $BASH_VERSINFO -gt 3 ] && __use_bind_x=1 || __use_bind_x=0
 __fzf_use_tmux__ && __use_tmux=1 || __use_tmux=0
 
-if [[ ! -o vi ]]; then
+if [[ -o vi ]]; then
   # Required to refresh the prompt after fzf
   bind '"\er": redraw-current-line'
   bind '"\e^": history-expand-line'
