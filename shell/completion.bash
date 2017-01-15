@@ -67,6 +67,7 @@ _fzf_opts_completion() {
     --no-hscroll
     --jump-labels
     --height
+    --literal
     --reverse
     --margin
     --inline-info

@@ -24,7 +24,7 @@ const usage = `usage: fzf [options]
     --algo=TYPE           Fuzzy matching algorithm: [v1|v2] (default: v2)
     -i                    Case-insensitive match (default: smart-case match)
     +i                    Case-sensitive match
-    --normalize           Normalize latin script letters before matching
+    --literal             Do not normalize latin script letters before matching
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
                           integer or a range expression ([BEGIN]..[END]).
@@ -190,7 +190,7 @@ func defaultOptions() *Options {
 		FuzzyAlgo:   algo.FuzzyMatchV2,
 		Extended:    true,
 		Case:        CaseSmart,
-		Normalize:   false,
+		Normalize:   true,
 		Nth:         make([]Range, 0),
 		WithNth:     make([]Range, 0),
 		Delimiter:   Delimiter{},
@@ -901,10 +901,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-f", "--filter":
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
-		case "--normalize":
-			opts.Normalize = true
-		case "--no-normalize":
+		case "--literal":
 			opts.Normalize = false
+		case "--no-literal":
+			opts.Normalize = true
 		case "--algo":
 			opts.FuzzyAlgo = parseAlgo(nextString(allArgs, &i, "algorithm required (v1|v2)"))
 		case "--expect":
