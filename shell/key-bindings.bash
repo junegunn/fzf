@@ -5,7 +5,7 @@ __fzf_select__() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
-  eval "$cmd | fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse -m $@ $FZF_CTRL_T_OPTS" | while read -r item; do
+  eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" fzf -m "$@" | while read -r item; do
     printf '%q ' "$item"
   done
   echo
@@ -19,8 +19,7 @@ __fzf_use_tmux__() {
 
 __fzfcmd() {
   __fzf_use_tmux__ &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
-    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
 __fzf_select_tmux__() {
@@ -39,7 +38,7 @@ fzf-file-widget() {
   if __fzf_use_tmux__; then
     __fzf_select_tmux__
   else
-    local selected="$(__fzf_select__ --height ${FZF_TMUX_HEIGHT:-40%} --reverse)"
+    local selected="$(__fzf_select__)"
     READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
     READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
   fi
@@ -49,7 +48,7 @@ __fzf_cd__() {
   local cmd dir
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3-"}"
-  dir=$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS") && printf 'cd %q' "$dir"
+  dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
 __fzf_history__() (
@@ -57,7 +56,7 @@ __fzf_history__() (
   shopt -u nocaseglob nocasematch
   line=$(
     HISTTIMEFORMAT= history |
-    eval "$(__fzfcmd) +s --tac --no-reverse +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS" |
+    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS +s --tac --no-reverse -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"

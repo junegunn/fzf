@@ -21,7 +21,11 @@ function fzf_key_bindings
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 's#^\./##'"
 
-    eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m $FZF_CTRL_T_OPTS" | while read -l r; set result $result $r; end
+    set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
+    begin
+      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS"
+      eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)" -m" | while read -l r; set result $result $r; end
+    end
     if [ -z "$result" ]
       commandline -f repaint
       return
@@ -39,8 +43,12 @@ function fzf_key_bindings
   end
 
   function fzf-history-widget -d "Show command history"
-    history | eval (__fzfcmd) +s +m --no-reverse --tiebreak=index $FZF_CTRL_R_OPTS -q '(commandline)' | read -l result
-    and commandline -- $result
+    set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
+    begin
+      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS +s --no-reverse --tiebreak=index $FZF_CTRL_R_OPTS +m"
+      history | eval (__fzfcmd) -q '(commandline)' | read -l result
+      and commandline -- $result
+    end
     commandline -f repaint
   end
 
@@ -48,8 +56,12 @@ function fzf_key_bindings
     set -q FZF_ALT_C_COMMAND; or set -l FZF_ALT_C_COMMAND "
     command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3-"
-    eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m $FZF_ALT_C_OPTS" | read -l result
-    [ "$result" ]; and cd $result
+    set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
+    begin
+      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS"
+      eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)" +m" | read -l result
+      [ "$result" ]; and cd $result
+    end
     commandline -f repaint
   end
 
@@ -59,7 +71,7 @@ function fzf_key_bindings
     if [ $FZF_TMUX -eq 1 ]
       echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
     else
-      echo "fzf --height $FZF_TMUX_HEIGHT --reverse"
+      echo "fzf"
     end
   end
 

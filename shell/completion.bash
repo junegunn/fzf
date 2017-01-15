@@ -35,8 +35,7 @@ bind '"\e[0n": redraw-current-line'
 
 __fzfcmd_complete() {
   [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
-    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
 _fzf_orig_completion_filter() {
@@ -149,7 +148,7 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $2 -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $2 -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -184,7 +183,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(cat | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
+    selected=$(cat | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     printf '\e[5n'
 

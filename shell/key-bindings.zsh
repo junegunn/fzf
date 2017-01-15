@@ -9,7 +9,7 @@ __fsel() {
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
   setopt localoptions pipefail 2> /dev/null
-  eval "$cmd | $(__fzfcmd) -m $FZF_CTRL_T_OPTS" | while read item; do
+  eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" $(__fzfcmd) -m "$@" | while read item; do
     echo -n "${(q)item} "
   done
   local ret=$?
@@ -23,8 +23,7 @@ __fzf_use_tmux__() {
 
 __fzfcmd() {
   __fzf_use_tmux__ &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
-    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
 fzf-file-widget() {
@@ -42,7 +41,7 @@ fzf-cd-widget() {
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | sed 1d | cut -b3-"}"
   setopt localoptions pipefail 2> /dev/null
-  cd "${$(eval "$cmd | $(__fzfcmd) +m $FZF_ALT_C_OPTS"):-.}"
+  cd "${$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m):-.}"
   local ret=$?
   zle reset-prompt
   typeset -f zle-line-init >/dev/null && zle zle-line-init
@@ -55,7 +54,8 @@ bindkey '\ec' fzf-cd-widget
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst pipefail 2> /dev/null
-  selected=( $(fc -l 1 | eval "$(__fzfcmd) +s --tac --no-reverse +m -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS -q ${(q)LBUFFER}") )
+  selected=( $(fc -l 1 |
+    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS +s --tac --no-reverse -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS +m --query=${(q)LBUFFER}" $(__fzfcmd)) )
   local ret=$?
   if [ -n "$selected" ]; then
     num=$selected[1]

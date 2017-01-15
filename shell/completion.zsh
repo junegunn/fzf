@@ -32,8 +32,7 @@ fi
 
 __fzfcmd_complete() {
   [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" ||
-    echo "fzf --height ${FZF_TMUX_HEIGHT:-40%} --reverse"
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
 __fzf_generic_path_completion() {
@@ -56,7 +55,7 @@ __fzf_generic_path_completion() {
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       dir=${~dir}
-      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "$leftover" | while read item; do
+      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "$leftover" | while read item; do
         echo -n "${(q)item}$suffix "
       done)
       matches=${matches% }
@@ -99,7 +98,7 @@ _fzf_complete() {
   fzf="$(__fzfcmd_complete)"
 
   _fzf_feed_fifo "$fifo"
-  matches=$(cat "$fifo" | FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "${(Q)prefix}" | $post | tr '\n' ' ')
+  matches=$(cat "$fifo" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "${(Q)prefix}" | $post | tr '\n' ' ')
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
