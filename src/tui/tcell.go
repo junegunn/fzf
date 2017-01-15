@@ -6,9 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"fmt"
-	"os"
-
 	"runtime"
 
 	// https://github.com/gdamore/tcell/pull/135
@@ -18,30 +15,56 @@ import (
 	"github.com/junegunn/go-runewidth"
 )
 
-type ColorPair [2]Color
-
-func (p ColorPair) fg() Color {
-	return p[0]
-}
-
-func (p ColorPair) bg() Color {
-	return p[1]
-}
-
 func (p ColorPair) style() tcell.Style {
 	style := tcell.StyleDefault
-	return style.Foreground(tcell.Color(p.fg())).Background(tcell.Color(p.bg()))
+	return style.Foreground(tcell.Color(p.Fg())).Background(tcell.Color(p.Bg()))
 }
 
 type Attr tcell.Style
 
-type WindowTcell struct {
-	LastX      int
-	LastY      int
-	MoveCursor bool
-	Border     bool
+type TcellWindow struct {
+	color      bool
+	top        int
+	left       int
+	width      int
+	height     int
+	lastX      int
+	lastY      int
+	moveCursor bool
+	border     bool
 }
-type WindowImpl WindowTcell
+
+func (w *TcellWindow) Top() int {
+	return w.top
+}
+
+func (w *TcellWindow) Left() int {
+	return w.left
+}
+
+func (w *TcellWindow) Width() int {
+	return w.width
+}
+
+func (w *TcellWindow) Height() int {
+	return w.height
+}
+
+func (w *TcellWindow) Refresh() {
+	if w.moveCursor {
+		_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		w.moveCursor = false
+	}
+	w.lastX = 0
+	w.lastY = 0
+	if w.border {
+		w.drawBorder()
+	}
+}
+
+func (w *TcellWindow) FinishFill() {
+	// NO-OP
+}
 
 const (
 	Bold      Attr = Attr(tcell.AttrBold)
@@ -56,31 +79,11 @@ const (
 	AttrRegular Attr = 0
 )
 
-var (
-	ColDefault      = ColorPair{colDefault, colDefault}
-	ColNormal       ColorPair
-	ColPrompt       ColorPair
-	ColMatch        ColorPair
-	ColCurrent      ColorPair
-	ColCurrentMatch ColorPair
-	ColSpinner      ColorPair
-	ColInfo         ColorPair
-	ColCursor       ColorPair
-	ColSelected     ColorPair
-	ColHeader       ColorPair
-	ColBorder       ColorPair
-	ColUser         ColorPair
-)
-
-func DefaultTheme() *ColorTheme {
+func (r *FullscreenRenderer) defaultTheme() *ColorTheme {
 	if _screen.Colors() >= 256 {
 		return Dark256
 	}
 	return Default16
-}
-
-func PairFor(fg Color, bg Color) ColorPair {
-	return [2]Color{fg, bg}
 }
 
 var (
@@ -112,20 +115,17 @@ func (a Attr) Merge(b Attr) Attr {
 
 var (
 	_screen tcell.Screen
-	_mouse  bool
 )
 
-func initScreen() {
+func (r *FullscreenRenderer) initScreen() {
 	s, e := tcell.NewScreen()
 	if e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(2)
+		errorExit(e.Error())
 	}
 	if e = s.Init(); e != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", e)
-		os.Exit(2)
+		errorExit(e.Error())
 	}
-	if _mouse {
+	if r.mouse {
 		s.EnableMouse()
 	} else {
 		s.DisableMouse()
@@ -133,63 +133,45 @@ func initScreen() {
 	_screen = s
 }
 
-func Init(theme *ColorTheme, black bool, mouse bool) {
+func (r *FullscreenRenderer) Init() {
 	encoding.Register()
 
-	_mouse = mouse
-	initScreen()
-
-	_color = theme != nil
-	if _color {
-		InitTheme(theme, black)
-	} else {
-		theme = DefaultTheme()
-	}
-	ColNormal = ColorPair{theme.Fg, theme.Bg}
-	ColPrompt = ColorPair{theme.Prompt, theme.Bg}
-	ColMatch = ColorPair{theme.Match, theme.Bg}
-	ColCurrent = ColorPair{theme.Current, theme.DarkBg}
-	ColCurrentMatch = ColorPair{theme.CurrentMatch, theme.DarkBg}
-	ColSpinner = ColorPair{theme.Spinner, theme.Bg}
-	ColInfo = ColorPair{theme.Info, theme.Bg}
-	ColCursor = ColorPair{theme.Cursor, theme.DarkBg}
-	ColSelected = ColorPair{theme.Selected, theme.DarkBg}
-	ColHeader = ColorPair{theme.Header, theme.Bg}
-	ColBorder = ColorPair{theme.Border, theme.Bg}
+	r.initScreen()
+	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 }
 
-func MaxX() int {
+func (r *FullscreenRenderer) MaxX() int {
 	ncols, _ := _screen.Size()
 	return int(ncols)
 }
 
-func MaxY() int {
+func (r *FullscreenRenderer) MaxY() int {
 	_, nlines := _screen.Size()
 	return int(nlines)
 }
 
-func (w *Window) win() *WindowTcell {
-	return (*WindowTcell)(w.impl)
+func (w *TcellWindow) X() int {
+	return w.lastX
 }
 
-func (w *Window) X() int {
-	return w.impl.LastX
-}
-
-func DoesAutoWrap() bool {
+func (r *FullscreenRenderer) DoesAutoWrap() bool {
 	return false
 }
 
-func Clear() {
+func (r *FullscreenRenderer) IsOptimized() bool {
+	return false
+}
+
+func (r *FullscreenRenderer) Clear() {
 	_screen.Sync()
 	_screen.Clear()
 }
 
-func Refresh() {
+func (r *FullscreenRenderer) Refresh() {
 	// noop
 }
 
-func GetChar() Event {
+func (r *FullscreenRenderer) GetChar() Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
@@ -213,15 +195,15 @@ func GetChar() Event {
 			double := false
 			if down {
 				now := time.Now()
-				if now.Sub(_prevDownTime) < doubleClickDuration {
-					_clickY = append(_clickY, x)
+				if now.Sub(r.prevDownTime) < doubleClickDuration {
+					r.clickY = append(r.clickY, x)
 				} else {
-					_clickY = []int{x}
-					_prevDownTime = now
+					r.clickY = []int{x}
+					r.prevDownTime = now
 				}
 			} else {
-				if len(_clickY) > 1 && _clickY[0] == _clickY[1] &&
-					time.Now().Sub(_prevDownTime) < doubleClickDuration {
+				if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
+					time.Now().Sub(r.prevDownTime) < doubleClickDuration {
 					double = true
 				}
 			}
@@ -368,49 +350,39 @@ func GetChar() Event {
 	return Event{Invalid, 0, nil}
 }
 
-func Pause() {
+func (r *FullscreenRenderer) Pause() {
 	_screen.Fini()
 }
 
-func Resume() bool {
-	initScreen()
+func (r *FullscreenRenderer) Resume() bool {
+	r.initScreen()
 	return true
 }
 
-func Close() {
+func (r *FullscreenRenderer) Close() {
 	_screen.Fini()
 }
 
-func RefreshWindows(windows []*Window) {
+func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
 	// TODO
 	for _, w := range windows {
-		if w.win().MoveCursor {
-			_screen.ShowCursor(w.Left+w.win().LastX, w.Top+w.win().LastY)
-			w.win().MoveCursor = false
-		}
-		w.win().LastX = 0
-		w.win().LastY = 0
-		if w.win().Border {
-			w.DrawBorder()
-		}
+		w.Refresh()
 	}
 	_screen.Show()
 }
 
-func NewWindow(top int, left int, width int, height int, border bool) *Window {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
 	// TODO
-	win := new(WindowTcell)
-	win.Border = border
-	return &Window{
-		impl:   (*WindowImpl)(win),
-		Top:    top,
-		Left:   left,
-		Width:  width,
-		Height: height,
-	}
+	return &TcellWindow{
+		color:  r.theme != nil,
+		top:    top,
+		left:   left,
+		width:  width,
+		height: height,
+		border: border}
 }
 
-func (w *Window) Close() {
+func (w *TcellWindow) Close() {
 	// TODO
 }
 
@@ -422,40 +394,40 @@ func fill(x, y, w, h int, r rune) {
 	}
 }
 
-func (w *Window) Erase() {
+func (w *TcellWindow) Erase() {
 	// TODO
-	fill(w.Left, w.Top, w.Width, w.Height, ' ')
+	fill(w.left, w.top, w.width, w.height, ' ')
 }
 
-func (w *Window) Enclose(y int, x int) bool {
-	return x >= w.Left && x <= (w.Left+w.Width) &&
-		y >= w.Top && y <= (w.Top+w.Height)
+func (w *TcellWindow) Enclose(y int, x int) bool {
+	return x >= w.left && x < (w.left+w.width) &&
+		y >= w.top && y < (w.top+w.height)
 }
 
-func (w *Window) Move(y int, x int) {
-	w.win().LastX = x
-	w.win().LastY = y
-	w.win().MoveCursor = true
+func (w *TcellWindow) Move(y int, x int) {
+	w.lastX = x
+	w.lastY = y
+	w.moveCursor = true
 }
 
-func (w *Window) MoveAndClear(y int, x int) {
+func (w *TcellWindow) MoveAndClear(y int, x int) {
 	w.Move(y, x)
-	for i := w.win().LastX; i < w.Width; i++ {
-		_screen.SetContent(i+w.Left, w.win().LastY+w.Top, rune(' '), nil, ColDefault.style())
+	for i := w.lastX; i < w.width; i++ {
+		_screen.SetContent(i+w.left, w.lastY+w.top, rune(' '), nil, ColDefault.style())
 	}
-	w.win().LastX = x
+	w.lastX = x
 }
 
-func (w *Window) Print(text string) {
-	w.PrintString(text, ColDefault, 0)
+func (w *TcellWindow) Print(text string) {
+	w.printString(text, ColDefault, 0)
 }
 
-func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
+func (w *TcellWindow) printString(text string, pair ColorPair, a Attr) {
 	t := text
 	lx := 0
 
 	var style tcell.Style
-	if _color {
+	if w.color {
 		style = pair.style().
 			Reverse(a&Attr(tcell.AttrReverse) != 0).
 			Underline(a&Attr(tcell.AttrUnderline) != 0)
@@ -481,7 +453,7 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 		}
 
 		if r == '\n' {
-			w.win().LastY++
+			w.lastY++
 			lx = 0
 		} else {
 
@@ -489,26 +461,26 @@ func (w *Window) PrintString(text string, pair ColorPair, a Attr) {
 				continue
 			}
 
-			var xPos = w.Left + w.win().LastX + lx
-			var yPos = w.Top + w.win().LastY
-			if xPos < (w.Left+w.Width) && yPos < (w.Top+w.Height) {
+			var xPos = w.left + w.lastX + lx
+			var yPos = w.top + w.lastY
+			if xPos < (w.left+w.width) && yPos < (w.top+w.height) {
 				_screen.SetContent(xPos, yPos, r, nil, style)
 			}
 			lx += runewidth.RuneWidth(r)
 		}
 	}
-	w.win().LastX += lx
+	w.lastX += lx
 }
 
-func (w *Window) CPrint(pair ColorPair, a Attr, text string) {
-	w.PrintString(text, pair, a)
+func (w *TcellWindow) CPrint(pair ColorPair, attr Attr, text string) {
+	w.printString(text, pair, attr)
 }
 
-func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
+func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn {
 	lx := 0
 
 	var style tcell.Style
-	if _color {
+	if w.color {
 		style = pair.style()
 	} else {
 		style = ColDefault.style()
@@ -522,50 +494,50 @@ func (w *Window) FillString(text string, pair ColorPair, a Attr) bool {
 
 	for _, r := range text {
 		if r == '\n' {
-			w.win().LastY++
-			w.win().LastX = 0
+			w.lastY++
+			w.lastX = 0
 			lx = 0
 		} else {
-			var xPos = w.Left + w.win().LastX + lx
+			var xPos = w.left + w.lastX + lx
 
 			// word wrap:
-			if xPos >= (w.Left + w.Width) {
-				w.win().LastY++
-				w.win().LastX = 0
+			if xPos >= (w.left + w.width) {
+				w.lastY++
+				w.lastX = 0
 				lx = 0
-				xPos = w.Left
+				xPos = w.left
 			}
-			var yPos = w.Top + w.win().LastY
+			var yPos = w.top + w.lastY
 
-			if yPos >= (w.Top + w.Height) {
-				return false
+			if yPos >= (w.top + w.height) {
+				return FillSuspend
 			}
 
 			_screen.SetContent(xPos, yPos, r, nil, style)
 			lx += runewidth.RuneWidth(r)
 		}
 	}
-	w.win().LastX += lx
+	w.lastX += lx
 
-	return true
+	return FillContinue
 }
 
-func (w *Window) Fill(str string) bool {
-	return w.FillString(str, ColDefault, 0)
+func (w *TcellWindow) Fill(str string) FillReturn {
+	return w.fillString(str, ColDefault, 0)
 }
 
-func (w *Window) CFill(str string, fg Color, bg Color, a Attr) bool {
-	return w.FillString(str, ColorPair{fg, bg}, a)
+func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
+	return w.fillString(str, ColorPair{fg, bg, -1}, a)
 }
 
-func (w *Window) DrawBorder() {
-	left := w.Left
-	right := left + w.Width
-	top := w.Top
-	bot := top + w.Height
+func (w *TcellWindow) drawBorder() {
+	left := w.left
+	right := left + w.width
+	top := w.top
+	bot := top + w.height
 
 	var style tcell.Style
-	if _color {
+	if w.color {
 		style = ColBorder.style()
 	} else {
 		style = ColDefault.style()

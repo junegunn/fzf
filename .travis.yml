@@ -2,7 +2,7 @@ language: ruby
 matrix:
   include:
     - env: TAGS=
-      rvm: 2.2.0
+      rvm: 2.3.3
 #   - env: TAGS=tcell
 #     rvm: 2.2.0
 

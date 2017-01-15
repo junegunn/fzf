@@ -166,7 +166,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  tui.PairFor(fg, bg),
+					color:  tui.NewColorPair(fg, bg),
 					attr:   ansi.color.attr.Merge(attr)})
 			}
 		}

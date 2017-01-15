@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+0.16.0
+------
+- *Added `--height HEIGHT[%]` option*
+    - fzf can now display finder without occupying the full screen
+- Preview window will truncate long lines by default. Line wrap can be enabled
+  by `:wrap` flag in `--preview-window`.
+- Latin script letters will be normalized before matching so that it's easier
+  to match against accented letters. e.g. `sodanco` can match `Só Danço Samba`.
+    - Normalization can be disabled via `--literal`
+- Added `--filepath-word` to make word-wise movements/actions (`alt-b`,
+  `alt-f`, `alt-bs`, `alt-d`) respect path separators
+
 0.15.9
 ------
 - Fixed rendering glitches introduced in 0.15.8

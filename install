@@ -2,9 +2,7 @@
 
 set -u
 
-[[ "$@" =~ --pre ]] && version=0.15.9 pre=1 ||
-                       version=0.15.9 pre=0
-
+version=0.16.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -48,7 +46,7 @@ for opt in "$@"; do
     --no-update-rc)    update_config=0   ;;
     --32)              binary_arch=386   ;;
     --64)              binary_arch=amd64 ;;
-    --bin|--pre)       ;;
+    --bin)             ;;
     *)
       echo "unknown option: $opt"
       help
@@ -121,7 +119,7 @@ try_wget() {
 
 download() {
   echo "Downloading bin/fzf ..."
-  if [ $pre = 0 ]; then
+  if [[ ! "$version" =~ alpha ]]; then
     if [ -x "$fzf_base"/bin/fzf ]; then
       echo "  - Already exists"
       check_binary && return
@@ -137,7 +135,10 @@ download() {
     return
   fi
 
-  local url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
+  local url
+  [[ "$version" =~ alpha ]] &&
+    url=https://github.com/junegunn/fzf-bin/releases/download/alpha/${1}.tgz ||
+    url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     set +o pipefail

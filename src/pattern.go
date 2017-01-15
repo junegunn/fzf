@@ -43,6 +43,7 @@ type Pattern struct {
 	fuzzyAlgo     algo.Algo
 	extended      bool
 	caseSensitive bool
+	normalize     bool
 	forward       bool
 	text          []rune
 	termSets      []termSet
@@ -75,7 +76,7 @@ func clearChunkCache() {
 }
 
 // BuildPattern builds Pattern object from the given arguments
-func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, forward bool,
+func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
 	cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
@@ -94,7 +95,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	termSets := []termSet{}
 
 	if extended {
-		termSets = parseTerms(fuzzy, caseMode, asString)
+		termSets = parseTerms(fuzzy, caseMode, normalize, asString)
 	Loop:
 		for _, termSet := range termSets {
 			for idx, term := range termSet {
@@ -120,6 +121,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		fuzzyAlgo:     fuzzyAlgo,
 		extended:      extended,
 		caseSensitive: caseSensitive,
+		normalize:     normalize,
 		forward:       forward,
 		text:          []rune(asString),
 		termSets:      termSets,
@@ -138,7 +140,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	return ptr
 }
 
-func parseTerms(fuzzy bool, caseMode Case, str string) []termSet {
+func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet {
 	tokens := _splitRegex.Split(str, -1)
 	sets := []termSet{}
 	set := termSet{}
@@ -194,10 +196,14 @@ func parseTerms(fuzzy bool, caseMode Case, str string) []termSet {
 				sets = append(sets, set)
 				set = termSet{}
 			}
+			textRunes := []rune(text)
+			if normalize {
+				textRunes = algo.NormalizeRunes(textRunes)
+			}
 			set = append(set, term{
 				typ:           typ,
 				inv:           inv,
-				text:          []rune(text),
+				text:          textRunes,
 				caseSensitive: caseSensitive,
 				origText:      origText})
 			switchSet = true
@@ -309,9 +315,9 @@ func (p *Pattern) MatchItem(item *Item, withPos bool, slab *util.Slab) (*Result,
 func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset, int, int, *[]int) {
 	input := p.prepareInput(item)
 	if p.fuzzy {
-		return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.forward, p.text, withPos, slab)
+		return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
 	}
-	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.forward, p.text, withPos, slab)
+	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
 }
 
 func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Offset, int, int, *[]int) {
@@ -330,7 +336,7 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 		matched := false
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
-			off, score, tLen, pos := p.iter(pfun, input, term.caseSensitive, p.forward, term.text, withPos, slab)
+			off, score, tLen, pos := p.iter(pfun, input, term.caseSensitive, p.normalize, p.forward, term.text, withPos, slab)
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
@@ -378,9 +384,9 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 	return ret
 }
 
-func (p *Pattern) iter(pfun algo.Algo, tokens []Token, caseSensitive bool, forward bool, pattern []rune, withPos bool, slab *util.Slab) (Offset, int, int, *[]int) {
+func (p *Pattern) iter(pfun algo.Algo, tokens []Token, caseSensitive bool, normalize bool, forward bool, pattern []rune, withPos bool, slab *util.Slab) (Offset, int, int, *[]int) {
 	for _, part := range tokens {
-		if res, pos := pfun(caseSensitive, forward, *part.text, pattern, withPos, slab); res.Start >= 0 {
+		if res, pos := pfun(caseSensitive, normalize, forward, *part.text, pattern, withPos, slab); res.Start >= 0 {
 			sidx := int32(res.Start) + part.prefixLength
 			eidx := int32(res.End) + part.prefixLength
 			if pos != nil {

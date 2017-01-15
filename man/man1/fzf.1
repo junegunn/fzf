@@ -1,7 +1,7 @@
 .ig
 The MIT License (MIT)
 
-Copyright (c) 2016 Junegunn Choi
+Copyright (c) 2017 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2016" "fzf 0.15.9" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2017" "fzf 0.16.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -47,6 +47,9 @@ Case-insensitive match (default: smart-case match)
 .TP
 .B "+i"
 Case-sensitive match
+.TP
+.B "--literal"
+Do not normalize latin script letters for matching.
 .TP
 .BI "--algo=" TYPE
 Fuzzy matching algorithm (default: v2)
@@ -126,9 +129,29 @@ Number of screen columns to keep to the right of the highlighted substring
 (default: 10). Setting it to a large value will cause the text to be positioned
 on the center of the screen.
 .TP
+.B "--filepath-word"
+Make word-wise movements and actions respect path separators. The following
+actions are affected:
+
+\fBbackward-kill-word\fR
+.br
+\fBbackward-word\fR
+.br
+\fBforward-word\fR
+.br
+\fBkill-word\fR
+.TP
 .BI "--jump-labels=" "CHARS"
 Label characters for \fBjump\fR and \fBjump-accept\fR
 .SS Layout
+.TP
+.BI "--height=" "HEIGHT[%]"
+Display fzf window below the cursor with the given height instead of using
+the full screen.
+.TP
+.BI "--min-height=" "HEIGHT"
+Minimum height when \fB--height\fR is given in percent (default: 10).
+Ignored when \fB--height\fR is not specified.
 .TP
 .B "--reverse"
 Reverse orientation
@@ -185,7 +208,9 @@ Number of spaces for a tab character (default: 8)
 .BI "--color=" "[BASE_SCHEME][,COLOR:ANSI]"
 Color configuration. The name of the base color scheme is followed by custom
 color mappings. Ansi color code of -1 denotes terminal default
-foreground/background color.
+foreground/background color. You can also specify 24-bit color in \fB#rrggbb\fR
+format, but the support for 24-bit colors is experimental and only works when
+\fB--height\fR option is used.
 
 .RS
 e.g. \fBfzf --color=bg+:24\fR
@@ -248,10 +273,11 @@ e.g. \fBfzf --preview="head -$LINES {}"\fR
 Note that you can escape a placeholder pattern by prepending a backslash.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:hidden]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:wrap][:hidden]"
 Determine the layout of the preview window. If the argument ends with
 \fB:hidden\fR, the preview window will be hidden by default until
-\fBtoggle-preview\fR action is triggered.
+\fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
+Line wrap can be enabled with \fB:wrap\fR flag.
 
 .RS
 .B POSITION: (default: right)
