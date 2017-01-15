@@ -11,6 +11,17 @@ __fzf_select__() {
   echo
 }
 
+__fzf_select_global__() {
+  local cmd="${FZF_CTRL_G_COMMAND:-"command find -L ~/ \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    -o -type f -print \
+    -o -type d -print \
+    -o -type l -print 2> /dev/null | sed 1d "}"
+  eval "$cmd | fzf -m $FZF_CTRL_G_OPTS" | while read -r item; do
+    printf '%q ' "$item"
+  done
+  echo
+}
+
 if [[ $- =~ i ]]; then
 
 __fzfcmd() {
@@ -18,6 +29,7 @@ __fzfcmd() {
 }
 
 __fzf_select_tmux__() {
+    echo 'select_global'
   local height
   height=${FZF_TMUX_HEIGHT:-40%}
   if [[ $height =~ %$ ]]; then
@@ -29,11 +41,35 @@ __fzf_select_tmux__() {
   tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_T_COMMAND=$(printf %q "$FZF_CTRL_T_COMMAND") FZF_CTRL_T_OPTS=$(printf %q "$FZF_CTRL_T_OPTS") bash -c 'source \"${BASH_SOURCE[0]}\"; RESULT=\"\$(__fzf_select__)\"; tmux setb -b fzf \"\$RESULT\" \\; pasteb -b fzf -t $TMUX_PANE \\; deleteb -b fzf || tmux send-keys -t $TMUX_PANE \"\$RESULT\"'"
 }
 
+__fzf_select_global_tmux__() {
+    echo 'select_global_tmux'
+  local height
+  height=${FZF_TMUX_HEIGHT:-40%}
+  if [[ $height =~ %$ ]]; then
+    height="-p ${height%\%}"
+  else
+    height="-l $height"
+  fi
+
+  tmux split-window $height "cd $(printf %q "$PWD"); FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS") PATH=$(printf %q "$PATH") FZF_CTRL_G_COMMAND=$(printf %q "$FZF_CTRL_G_COMMAND") FZF_CTRL_G_OPTS=$(printf %q "$FZF_CTRL_G_OPTS")
+  bash -c 'source \"${BASH_SOURCE[0]}\"; RESULT=\"\$(__fzf_select_global__)\"; tmux setb -b fzf \"\$RESULT\" \\; pasteb -b fzf -t $TMUX_PANE \\; deleteb -b fzf || tmux send-keys -t $TMUX_PANE \"\$RESULT\"'"
+}
+
 fzf-file-widget() {
   if __fzf_use_tmux__; then
     __fzf_select_tmux__
   else
     local selected="$(__fzf_select__)"
+    READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
+    READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
+  fi
+}
+
+fzf-file-widget-global() {
+  if __fzf_use_tmux__; then
+    __fzf_select_global_tmux__
+  else
+    local selected="$(__fzf_select_global__)"
     READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
     READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
   fi
@@ -79,6 +115,15 @@ if [[ ! -o vi ]]; then
     bind '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
   else
     bind '"\C-t": " \C-u \C-a\C-k`__fzf_select__`\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
+  fi
+  
+  # CTRL-G - Paste the selected file path into the command line (global search)
+  if [ $__use_bind_x -eq 1 ]; then
+    bind -x '"\C-g": "fzf-file-widget-global"'
+  elif [ $__use_tmux -eq 1 ]; then
+    bind '"\C-g": " \C-u \C-a\C-k$(__fzf_select_global_tmux__)\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
+  else
+    bind '"\C-g": " \C-u \C-a\C-k$(__fzf_select_global__)\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
   fi
 
   # CTRL-R - Paste the selected command from history into the command line

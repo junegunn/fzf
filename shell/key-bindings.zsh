@@ -17,6 +17,21 @@ __fsel() {
   return $ret
 }
 
+# CTRL-G - Paste the selected file path(s) into the command line (global)
+__fsel_global() {
+  local cmd="${FZF_CTRL_G_COMMAND:-"command find -L ~/ \\( -path '*/\\.*' -o -fstype 'dev' -o -fstype 'proc' \\) -prune \
+    -o -type f -print \
+    -o -type d -print \
+    -o -type l -print 2> /dev/null | sed 1d "}"
+  setopt localoptions pipefail 2> /dev/null
+  eval "$cmd | $(__fzfcmd) -m $FZF_CTRL_G_OPTS" | while read item; do
+    echo -n "${(q)item} "
+  done
+  local ret=$?
+  echo
+  return $ret
+}
+
 __fzfcmd() {
   [ ${FZF_TMUX:-1} -eq 1 ] && echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
@@ -30,6 +45,16 @@ fzf-file-widget() {
 }
 zle     -N   fzf-file-widget
 bindkey '^T' fzf-file-widget
+
+fzf-file-widget-global() {
+  LBUFFER="${LBUFFER}$(__fsel_global)"
+  local ret=$?
+  zle redisplay
+  typeset -f zle-line-init >/dev/null && zle zle-line-init
+  return $ret
+}
+zle     -N   fzf-file-widget-global
+bindkey '^G' fzf-file-widget-global
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
