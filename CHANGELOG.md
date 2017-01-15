@@ -3,7 +3,8 @@ CHANGELOG
 
 0.16.0
 ------
-- Added `--height HEIGHT[%]` option
+- *Added `--height HEIGHT[%]` option*
+    - fzf can now display finder without occupying the full screen
 - Preview window will truncate long lines by default. Line wrap can be enabled
   by `:wrap` flag in `--preview-window`.
 - Latin script letters will be normalized before matching so that it's easier
