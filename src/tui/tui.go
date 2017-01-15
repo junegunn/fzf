@@ -204,6 +204,7 @@ type Renderer interface {
 	MaxX() int
 	MaxY() int
 	DoesAutoWrap() bool
+	IsOptimized() bool
 
 	NewWindow(top int, left int, width int, height int, border bool) Window
 }

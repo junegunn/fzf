@@ -32,13 +32,18 @@ func openTtyIn() *os.File {
 	return in
 }
 
-// FIXME: Need better handling of non-displayable characters
 func (r *LightRenderer) stderr(str string) {
+	r.stderrInternal(str, true)
+}
+
+// FIXME: Need better handling of non-displayable characters
+func (r *LightRenderer) stderrInternal(str string, allowNLCR bool) {
 	bytes := []byte(str)
 	runes := []rune{}
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
-		if r == utf8.RuneError || r != '\x1b' && r != '\n' && r != '\r' && r < 32 {
+		if r == utf8.RuneError || r < 32 &&
+			r != '\x1b' && (!allowNLCR || r != '\n' && r != '\r') {
 			runes = append(runes, '?')
 		} else {
 			runes = append(runes, r)
@@ -553,6 +558,10 @@ func (r *LightRenderer) DoesAutoWrap() bool {
 	return true
 }
 
+func (r *LightRenderer) IsOptimized() bool {
+	return false
+}
+
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
 	w := &LightWindow{
 		renderer: r,
@@ -592,6 +601,10 @@ func (w *LightWindow) csi(code string) {
 
 func (w *LightWindow) stderr(str string) {
 	w.renderer.stderr(str)
+}
+
+func (w *LightWindow) stderrInternal(str string, allowNLCR bool) {
+	w.renderer.stderrInternal(str, allowNLCR)
 }
 
 func (w *LightWindow) Top() int {
@@ -703,7 +716,7 @@ func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
 	} else {
 		w.csiColor(pair.Fg(), pair.Bg(), attr)
 	}
-	w.stderr(text)
+	w.stderrInternal(text, false)
 	w.csi("m")
 }
 
@@ -711,7 +724,7 @@ func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
 	if w.csiColor(fg, bg, attr) {
 		defer w.csi("m")
 	}
-	w.stderr(text)
+	w.stderrInternal(text, false)
 }
 
 type wrappedLine struct {
@@ -754,7 +767,7 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 				}
 				return FillNextLine
 			}
-			w.stderr(wl.text)
+			w.stderrInternal(wl.text, false)
 			w.posx += wl.displayWidth
 			if j < len(lines)-1 || i < len(allLines)-1 {
 				if w.posy+1 >= w.height {

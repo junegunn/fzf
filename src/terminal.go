@@ -46,6 +46,7 @@ type itemLine struct {
 	current  bool
 	selected bool
 	label    string
+	width    int
 	result   Result
 }
 
@@ -678,13 +679,17 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{current, selected, label, *result}
-	if t.prevLines[i] == newLine {
+	newLine := itemLine{current: current, selected: selected, label: label, result: *result, width: 0}
+	prevLine := t.prevLines[i]
+	if prevLine.current == newLine.current &&
+		prevLine.selected == newLine.selected &&
+		prevLine.label == newLine.label &&
+		prevLine.result == newLine.result {
 		return
 	}
-	t.prevLines[i] = newLine
 
-	t.move(line, 0, true)
+	// Optimized renderer can simply erase to the end of the window
+	t.move(line, 0, t.tui.IsOptimized())
 	t.window.CPrint(tui.ColCursor, t.strong, label)
 	if current {
 		if selected {
@@ -692,15 +697,22 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 		} else {
 			t.window.CPrint(tui.ColCurrent, t.strong, " ")
 		}
-		t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
+		newLine.width = t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
 	} else {
 		if selected {
 			t.window.CPrint(tui.ColSelected, t.strong, ">")
 		} else {
 			t.window.Print(" ")
 		}
-		t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
+		newLine.width = t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
 	}
+	if !t.tui.IsOptimized() {
+		fillSpaces := prevLine.width - newLine.width
+		if fillSpaces > 0 {
+			t.window.Print(strings.Repeat(" ", fillSpaces))
+		}
+	}
+	t.prevLines[i] = newLine
 }
 
 func (t *Terminal) trimRight(runes []rune, width int) ([]rune, int) {
@@ -745,17 +757,10 @@ func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
 }
 
 func (t *Terminal) overflow(runes []rune, max int) bool {
-	l := 0
-	for _, r := range runes {
-		l += util.RuneWidth(r, l, t.tabstop)
-		if l > max {
-			return true
-		}
-	}
-	return false
+	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) {
+func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) int {
 	item := result.item
 
 	// Overflow
@@ -783,7 +788,8 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 	offsets := result.colorOffsets(charOffsets, t.theme, col2, attr, current)
 	maxWidth := t.window.Width() - 3
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
-	if t.overflow(text, maxWidth) {
+	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
+	if displayWidth > maxWidth {
 		if t.hscroll {
 			// Stri..
 			if !t.overflow(text[:maxe], maxWidth-2) {
@@ -845,6 +851,7 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 		substr, _ = t.processTabs(text[index:], prefixWidth)
 		t.window.CPrint(col1, attr, substr)
 	}
+	return displayWidth
 }
 
 func numLinesMax(str string, max int) int {

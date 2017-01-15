@@ -279,6 +279,10 @@ func (r *FullscreenRenderer) DoesAutoWrap() bool {
 	return true
 }
 
+func (r *FullscreenRenderer) IsOptimized() bool {
+	return true
+}
+
 func (w *CursesWindow) Fill(str string) FillReturn {
 	if C.waddstr(w.impl, C.CString(str)) == C.OK {
 		return FillContinue

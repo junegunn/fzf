@@ -158,6 +158,10 @@ func (r *FullscreenRenderer) DoesAutoWrap() bool {
 	return false
 }
 
+func (r *FullscreenRenderer) IsOptimized() bool {
+	return false
+}
+
 func (r *FullscreenRenderer) Clear() {
 	_screen.Sync()
 	_screen.Clear()
