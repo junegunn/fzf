@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.16.1
+------
+- Fixed `--height` option to properly fill the window with the background
+  color
+- Added `half-page-up` and `half-page-down` actions
+- Added `-L` flag to the default find command
+
 0.16.0
 ------
 - *Added `--height HEIGHT[%]` option*
