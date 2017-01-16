@@ -186,6 +186,8 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actHalfPageUp
+	actHalfPageDown
 	actJump
 	actJumpAccept
 	actPrintQuery
@@ -1477,6 +1479,12 @@ func (t *Terminal) Loop() {
 				req(reqList)
 			case actPageDown:
 				t.vmove(-(t.maxItems() - 1))
+				req(reqList)
+			case actHalfPageUp:
+				t.vmove(t.maxItems() / 2)
+				req(reqList)
+			case actHalfPageDown:
+				t.vmove(-(t.maxItems() / 2))
 				req(reqList)
 			case actJump:
 				t.jumping = jumpEnabled
