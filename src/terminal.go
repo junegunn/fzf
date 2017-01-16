@@ -558,6 +558,11 @@ func (t *Terminal) resizeWindows() {
 			width,
 			height, false)
 	}
+	if !t.tui.IsOptimized() && t.theme != nil && t.theme.HasBg() {
+		for i := 0; i < t.window.Height(); i++ {
+			t.window.MoveAndClear(i, 0)
+		}
+	}
 }
 
 func (t *Terminal) move(y int, x int, clear bool) {

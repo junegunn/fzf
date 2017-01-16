@@ -175,6 +175,10 @@ type ColorTheme struct {
 	Border       Color
 }
 
+func (t *ColorTheme) HasBg() bool {
+	return t.Bg != colDefault
+}
+
 type Event struct {
 	Type       int
 	Char       rune
