@@ -45,7 +45,7 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS +s --no-reverse --tiebreak=index $FZF_CTRL_R_OPTS +m"
+      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS +s --tiebreak=index $FZF_CTRL_R_OPTS +m"
       history | eval (__fzfcmd) -q '(commandline)' | read -l result
       and commandline -- $result
     end
