@@ -53,8 +53,9 @@ bindkey '\ec' fzf-cd-widget
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local selected num
+  local cmd="${FZF_CTRL_R_COMMAND:-"fc -l 1"}"
   setopt localoptions noglobsubst pipefail 2> /dev/null
-  selected=( $(fc -l 1 |
+  selected=( $(eval "$cmd" |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS +s --tac -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS --query=${(q)LBUFFER} +m" $(__fzfcmd)) )
   local ret=$?
   if [ -n "$selected" ]; then

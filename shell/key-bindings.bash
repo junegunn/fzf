@@ -53,9 +53,10 @@ __fzf_cd__() {
 
 __fzf_history__() (
   local line
+  local cmd="${FZF_CTRL_R_COMMAND:-"history"}"
   shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= history |
+    HISTTIMEFORMAT= eval "$cmd" |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS +s --tac -n2..,.. --tiebreak=index --toggle-sort=ctrl-r $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then

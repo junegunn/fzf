@@ -37,7 +37,7 @@ end
 class Shell
   class << self
     def unsets
-      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_CTRL_R_OPTS;'
+      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_CTRL_R_COMMAND FZF_CTRL_R_OPTS;'
     end
 
     def bash
@@ -1348,6 +1348,17 @@ module TestShell
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '3rd' }
+  end
+
+  def test_ctrl_r_command
+    set_var "FZF_CTRL_R_COMMAND", "echo '1    foobar'"
+    tmux.prepare
+    retries do
+      tmux.prepare
+      tmux.send_keys 'C-r'
+      tmux.until { |lines| lines[-2].include?('1/1') }
+    end
+    tmux.send_keys :Enter
   end
 
   def retries times = 3, &block
