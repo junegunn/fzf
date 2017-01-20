@@ -5,7 +5,7 @@ if [[ $- == *i* ]]; then
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
   local cmd d ignore_dirs=()
-  while IFS= read -r d; do
+  [[ -r "$HOME/.ignore" ]] && while IFS= read -r d; do
     ignore_dirs+=( -path "\*/$d" -o )
   done < "$HOME/.ignore"
   cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( ${ignore_dirs[*]} -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
