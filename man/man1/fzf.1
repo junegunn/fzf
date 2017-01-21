@@ -481,16 +481,20 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBselect-all\fR
     \fBtoggle\fR
     \fBtoggle-all\fR
-    \fBtoggle-down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle-up\fR : \fBtoggle-down\fR)
-    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle-down\fR : \fBtoggle-up\fR)
+    \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
+    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-sort\fR           (equivalent to \fB--toggle-sort\fR)
-    \fBtoggle-up\fR             \fIbtab    (shift-tab)\fR
+    \fBtoggle+up\fR             \fIbtab    (shift-tab)\fR
     \fBunix-line-discard\fR     \fIctrl-u\fR
     \fBunix-word-rubout\fR      \fIctrl-w\fR
     \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
     \fByank\fR                  \fIctrl-y\fR
+
+Multiple actions can be chained using \fB+\fR separator.
+
+    \fBfzf --bind 'ctrl-a:select-all+accept'\fR
 
 With \fBexecute(...)\fR action, you can execute arbitrary commands without
 leaving fzf. For example, you can turn fzf into a simple file browser by

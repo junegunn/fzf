@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.16.2
+------
+- Added support for composite actions in `--bind`. Multiple actions can be
+  chained using `+` separator.
+    - e.g. `fzf --bind 'ctrl-y:execute(echo -n {} | pbcopy)+abort'`
+
 0.16.1
 ------
 - Fixed `--height` option to properly fill the window with the background

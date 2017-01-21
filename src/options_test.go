@@ -225,49 +225,51 @@ func TestParseKeysWithComma(t *testing.T) {
 }
 
 func TestBind(t *testing.T) {
-	check := func(action actionType, expected actionType) {
-		if action != expected {
-			t.Errorf("%d != %d", action, expected)
-		}
-	}
-	checkString := func(action string, expected string) {
-		if action != expected {
-			t.Errorf("%d != %d", action, expected)
-		}
-	}
 	keymap := defaultKeymap()
-	execmap := make(map[int]string)
-	check(actBeginningOfLine, keymap[tui.CtrlA])
-	parseKeymap(keymap, execmap,
-		"ctrl-a:kill-line,ctrl-b:toggle-sort,c:page-up,alt-z:page-down,"+
-			"f1:execute(ls {}),f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
-			"alt-a:execute@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};"+
-			",,:abort,::accept,X:execute:\nfoobar,Y:execute(baz)")
-	check(actKillLine, keymap[tui.CtrlA])
-	check(actToggleSort, keymap[tui.CtrlB])
-	check(actPageUp, keymap[tui.AltZ+'c'])
-	check(actAbort, keymap[tui.AltZ+','])
-	check(actAccept, keymap[tui.AltZ+':'])
-	check(actPageDown, keymap[tui.AltZ])
-	check(actExecute, keymap[tui.F1])
-	check(actExecute, keymap[tui.F2])
-	check(actExecute, keymap[tui.F3])
-	check(actExecute, keymap[tui.F4])
-	checkString("ls {}", execmap[tui.F1])
-	checkString("echo {}, {}, {}", execmap[tui.F2])
-	checkString("echo '({})'", execmap[tui.F3])
-	checkString("less {}", execmap[tui.F4])
-	checkString("echo (,),[,],/,:,;,%,{}", execmap[tui.AltA])
-	checkString("echo (,),[,],/,:,@,%,{}", execmap[tui.AltB])
-	checkString("\nfoobar,Y:execute(baz)", execmap[tui.AltZ+'X'])
+	check := func(keyName int, arg1 string, types ...actionType) {
+		if len(keymap[keyName]) != len(types) {
+			t.Errorf("invalid number of actions (%d != %d)", len(types), len(keymap[keyName]))
+			return
+		}
+		for idx, action := range keymap[keyName] {
+			if types[idx] != action.t {
+				t.Errorf("invalid action type (%d != %d)", types[idx], action.t)
+			}
+		}
+		if len(arg1) > 0 && keymap[keyName][0].a != arg1 {
+			t.Errorf("invalid action argument: (%s != %s)", arg1, keymap[keyName][0].a)
+		}
+	}
+	check(tui.CtrlA, "", actBeginningOfLine)
+	parseKeymap(keymap,
+		"ctrl-a:kill-line,ctrl-b:toggle-sort+up+down,c:page-up,alt-z:page-down,"+
+			"f1:execute(ls {})+abort,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
+			"alt-a:execute-Multi@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};,"+
+			"x:Execute(foo+bar),X:execute/bar+baz/"+
+			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up")
+	check(tui.CtrlA, "", actKillLine)
+	check(tui.CtrlB, "", actToggleSort, actUp, actDown)
+	check(tui.AltZ+'c', "", actPageUp)
+	check(tui.AltZ+',', "", actAbort)
+	check(tui.AltZ+':', "", actAccept)
+	check(tui.AltZ, "", actPageDown)
+	check(tui.F1, "ls {}", actExecute, actAbort)
+	check(tui.F2, "echo {}, {}, {}", actExecute)
+	check(tui.F3, "echo '({})'", actExecute)
+	check(tui.F4, "less {}", actExecute)
+	check(tui.AltZ+'x', "foo+bar", actExecute)
+	check(tui.AltZ+'X', "bar+baz", actExecute)
+	check(tui.AltA, "echo (,),[,],/,:,;,%,{}", actExecuteMulti)
+	check(tui.AltB, "echo (,),[,],/,:,@,%,{}", actExecute)
+	check(tui.AltZ+'+', "++\nfoobar,Y:execute(baz)+up", actExecute)
 
 	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ';', '/'} {
-		parseKeymap(keymap, execmap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
-		checkString("foobar", execmap[tui.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0])])
+		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
+		check(tui.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0]), "foobar", actExecute)
 	}
 
-	parseKeymap(keymap, execmap, "f1:abort")
-	check(actAbort, keymap[tui.F1])
+	parseKeymap(keymap, "f1:abort")
+	check(tui.F1, "", actAbort)
 }
 
 func TestColorSpec(t *testing.T) {
@@ -327,7 +329,7 @@ func TestDefaultCtrlNP(t *testing.T) {
 		opts := defaultOptions()
 		parseOptions(opts, words)
 		postProcessOptions(opts)
-		if opts.Keymap[key] != expected {
+		if opts.Keymap[key][0].t != expected {
 			t.Error()
 		}
 	}

@@ -72,8 +72,7 @@ type Terminal struct {
 	toggleSort bool
 	delimiter  Delimiter
 	expect     map[int]string
-	keymap     map[int]actionType
-	execmap    map[int]string
+	keymap     map[int][]action
 	pressed    string
 	printQuery bool
 	history    *History
@@ -148,6 +147,11 @@ const (
 	reqQuit
 )
 
+type action struct {
+	t actionType
+	a string
+}
+
 type actionType int
 
 const (
@@ -203,54 +207,62 @@ const (
 	actExecuteMulti
 )
 
-func defaultKeymap() map[int]actionType {
-	keymap := make(map[int]actionType)
-	keymap[tui.Invalid] = actInvalid
-	keymap[tui.Resize] = actClearScreen
-	keymap[tui.CtrlA] = actBeginningOfLine
-	keymap[tui.CtrlB] = actBackwardChar
-	keymap[tui.CtrlC] = actAbort
-	keymap[tui.CtrlG] = actAbort
-	keymap[tui.CtrlQ] = actAbort
-	keymap[tui.ESC] = actAbort
-	keymap[tui.CtrlD] = actDeleteCharEOF
-	keymap[tui.CtrlE] = actEndOfLine
-	keymap[tui.CtrlF] = actForwardChar
-	keymap[tui.CtrlH] = actBackwardDeleteChar
-	keymap[tui.BSpace] = actBackwardDeleteChar
-	keymap[tui.Tab] = actToggleDown
-	keymap[tui.BTab] = actToggleUp
-	keymap[tui.CtrlJ] = actDown
-	keymap[tui.CtrlK] = actUp
-	keymap[tui.CtrlL] = actClearScreen
-	keymap[tui.CtrlM] = actAccept
-	keymap[tui.CtrlN] = actDown
-	keymap[tui.CtrlP] = actUp
-	keymap[tui.CtrlU] = actUnixLineDiscard
-	keymap[tui.CtrlW] = actUnixWordRubout
-	keymap[tui.CtrlY] = actYank
+func toActions(types ...actionType) []action {
+	actions := make([]action, len(types))
+	for idx, t := range types {
+		actions[idx] = action{t: t, a: ""}
+	}
+	return actions
+}
 
-	keymap[tui.AltB] = actBackwardWord
-	keymap[tui.SLeft] = actBackwardWord
-	keymap[tui.AltF] = actForwardWord
-	keymap[tui.SRight] = actForwardWord
-	keymap[tui.AltD] = actKillWord
-	keymap[tui.AltBS] = actBackwardKillWord
+func defaultKeymap() map[int][]action {
+	keymap := make(map[int][]action)
+	keymap[tui.Invalid] = toActions(actInvalid)
+	keymap[tui.Resize] = toActions(actClearScreen)
+	keymap[tui.CtrlA] = toActions(actBeginningOfLine)
+	keymap[tui.CtrlB] = toActions(actBackwardChar)
+	keymap[tui.CtrlC] = toActions(actAbort)
+	keymap[tui.CtrlG] = toActions(actAbort)
+	keymap[tui.CtrlQ] = toActions(actAbort)
+	keymap[tui.ESC] = toActions(actAbort)
+	keymap[tui.CtrlD] = toActions(actDeleteCharEOF)
+	keymap[tui.CtrlE] = toActions(actEndOfLine)
+	keymap[tui.CtrlF] = toActions(actForwardChar)
+	keymap[tui.CtrlH] = toActions(actBackwardDeleteChar)
+	keymap[tui.BSpace] = toActions(actBackwardDeleteChar)
+	keymap[tui.Tab] = toActions(actToggleDown)
+	keymap[tui.BTab] = toActions(actToggleUp)
+	keymap[tui.CtrlJ] = toActions(actDown)
+	keymap[tui.CtrlK] = toActions(actUp)
+	keymap[tui.CtrlL] = toActions(actClearScreen)
+	keymap[tui.CtrlM] = toActions(actAccept)
+	keymap[tui.CtrlN] = toActions(actDown)
+	keymap[tui.CtrlP] = toActions(actUp)
+	keymap[tui.CtrlU] = toActions(actUnixLineDiscard)
+	keymap[tui.CtrlW] = toActions(actUnixWordRubout)
+	keymap[tui.CtrlY] = toActions(actYank)
 
-	keymap[tui.Up] = actUp
-	keymap[tui.Down] = actDown
-	keymap[tui.Left] = actBackwardChar
-	keymap[tui.Right] = actForwardChar
+	keymap[tui.AltB] = toActions(actBackwardWord)
+	keymap[tui.SLeft] = toActions(actBackwardWord)
+	keymap[tui.AltF] = toActions(actForwardWord)
+	keymap[tui.SRight] = toActions(actForwardWord)
+	keymap[tui.AltD] = toActions(actKillWord)
+	keymap[tui.AltBS] = toActions(actBackwardKillWord)
 
-	keymap[tui.Home] = actBeginningOfLine
-	keymap[tui.End] = actEndOfLine
-	keymap[tui.Del] = actDeleteChar
-	keymap[tui.PgUp] = actPageUp
-	keymap[tui.PgDn] = actPageDown
+	keymap[tui.Up] = toActions(actUp)
+	keymap[tui.Down] = toActions(actDown)
+	keymap[tui.Left] = toActions(actBackwardChar)
+	keymap[tui.Right] = toActions(actForwardChar)
 
-	keymap[tui.Rune] = actRune
-	keymap[tui.Mouse] = actMouse
-	keymap[tui.DoubleClick] = actAccept
+	keymap[tui.Home] = toActions(actBeginningOfLine)
+	keymap[tui.End] = toActions(actEndOfLine)
+	keymap[tui.Del] = toActions(actDeleteChar)
+	keymap[tui.PgUp] = toActions(actPageUp)
+	keymap[tui.PgDn] = toActions(actPageDown)
+
+	keymap[tui.Rune] = toActions(actRune)
+	keymap[tui.Mouse] = toActions(actMouse)
+	keymap[tui.DoubleClick] = toActions(actAccept)
 	return keymap
 }
 
@@ -323,7 +335,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delimiter:  opts.Delimiter,
 		expect:     opts.Expect,
 		keymap:     opts.Keymap,
-		execmap:    opts.Execmap,
 		pressed:    "",
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
@@ -1314,13 +1325,21 @@ func (t *Terminal) Loop() {
 			}
 		}
 
-		var doAction func(actionType, int) bool
-		doAction = func(action actionType, mapkey int) bool {
-			switch action {
+		var doAction func(action, int) bool
+		doActions := func(actions []action, mapkey int) bool {
+			for _, action := range actions {
+				if !doAction(action, mapkey) {
+					return false
+				}
+			}
+			return true
+		}
+		doAction = func(a action, mapkey int) bool {
+			switch a.t {
 			case actIgnore:
 			case actExecute:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
-					t.executeCommand(t.execmap[mapkey], []*Item{t.currentItem()})
+					t.executeCommand(a.a, []*Item{t.currentItem()})
 				}
 			case actExecuteMulti:
 				if len(t.selected) > 0 {
@@ -1328,9 +1347,9 @@ func (t *Terminal) Loop() {
 					for i, sel := range t.sortSelected() {
 						sels[i] = sel.item
 					}
-					t.executeCommand(t.execmap[mapkey], sels)
+					t.executeCommand(a.a, sels)
 				} else {
-					return doAction(actExecute, mapkey)
+					return doAction(action{t: actExecute, a: a.a}, mapkey)
 				}
 			case actInvalid:
 				t.mutex.Unlock()
@@ -1431,14 +1450,14 @@ func (t *Terminal) Loop() {
 				}
 			case actToggleIn:
 				if t.reverse {
-					return doAction(actToggleUp, mapkey)
+					return doAction(action{t: actToggleUp}, mapkey)
 				}
-				return doAction(actToggleDown, mapkey)
+				return doAction(action{t: actToggleDown}, mapkey)
 			case actToggleOut:
 				if t.reverse {
-					return doAction(actToggleDown, mapkey)
+					return doAction(action{t: actToggleDown}, mapkey)
 				}
-				return doAction(actToggleUp, mapkey)
+				return doAction(action{t: actToggleUp}, mapkey)
 			case actToggleDown:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
@@ -1558,7 +1577,7 @@ func (t *Terminal) Loop() {
 						// Double-click
 						if my >= min {
 							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doAction(t.keymap[tui.DoubleClick], tui.DoubleClick)
+								return doActions(t.keymap[tui.DoubleClick], tui.DoubleClick)
 							}
 						}
 					} else if me.Down {
@@ -1580,14 +1599,14 @@ func (t *Terminal) Loop() {
 		changed := false
 		mapkey := event.Type
 		if t.jumping == jumpDisabled {
-			action := t.keymap[mapkey]
+			actions := t.keymap[mapkey]
 			if mapkey == tui.Rune {
 				mapkey = int(event.Char) + int(tui.AltZ)
 				if act, prs := t.keymap[mapkey]; prs {
-					action = act
+					actions = act
 				}
 			}
-			if !doAction(action, mapkey) {
+			if !doActions(actions, mapkey) {
 				continue
 			}
 			// Truncate the query if it's too long
