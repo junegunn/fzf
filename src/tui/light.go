@@ -79,6 +79,7 @@ type LightRenderer struct {
 	yoffset       int
 	tabstop       int
 	escDelay      int
+	fullscreen    bool
 	upOneLine     bool
 	queued        string
 	y             int
@@ -106,8 +107,9 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		ttyin:         openTtyIn(),
-		yoffset:       -1,
+		yoffset:       0,
 		tabstop:       tabstop,
+		fullscreen:    false,
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
 	return &r
@@ -179,16 +181,24 @@ func (r *LightRenderer) Init() {
 	}
 	r.origState = origState
 	terminal.MakeRaw(fd)
-	r.updateTerminalSize()
+	terminalHeight, capHeight := r.updateTerminalSize()
+	if capHeight == terminalHeight {
+		r.fullscreen = true
+		r.height = terminalHeight
+	}
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
-	_, x := r.findOffset()
-	if x > 0 {
-		r.upOneLine = true
-		r.makeSpace()
-	}
-	for i := 1; i < r.MaxY(); i++ {
-		r.makeSpace()
+	if r.fullscreen {
+		r.smcup()
+	} else {
+		_, x := r.findOffset()
+		if x > 0 {
+			r.upOneLine = true
+			r.makeSpace()
+		}
+		for i := 1; i < r.MaxY(); i++ {
+			r.makeSpace()
+		}
 	}
 
 	if r.mouse {
@@ -198,7 +208,7 @@ func (r *LightRenderer) Init() {
 	r.csi("G")
 	r.csi("K")
 	// r.csi("s")
-	if r.mouse {
+	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
 }
@@ -236,15 +246,20 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) updateTerminalSize() {
+func (r *LightRenderer) updateTerminalSize() (int, int) {
 	width, height, err := terminal.GetSize(r.fd())
 	if err == nil {
 		r.width = width
-		r.height = r.maxHeightFunc(height)
+		if r.fullscreen {
+			r.height = height
+		} else {
+			r.height = r.maxHeightFunc(height)
+		}
 	} else {
 		r.width = getEnv("COLUMNS", defaultWidth)
 		r.height = r.maxHeightFunc(getEnv("LINES", defaultHeight))
 	}
+	return height, r.height
 }
 
 func (r *LightRenderer) getch(nonblock bool) (int, bool) {
@@ -470,7 +485,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 }
 
 func (r *LightRenderer) mouseSequence(sz *int) Event {
-	if len(r.buffer) < 6 || r.yoffset < 0 {
+	if len(r.buffer) < 6 || !r.mouse {
 		return Event{Invalid, 0, nil}
 	}
 	*sz = 6
@@ -509,15 +524,31 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	return Event{Invalid, 0, nil}
 }
 
+func (r *LightRenderer) smcup() {
+	r.csi("?1049h")
+}
+
+func (r *LightRenderer) rmcup() {
+	r.csi("?1049l")
+}
+
 func (r *LightRenderer) Pause() {
 	terminal.Restore(r.fd(), r.origState)
-	r.csi("?1049h")
+	if r.fullscreen {
+		r.rmcup()
+	} else {
+		r.smcup()
+	}
 	r.flush()
 }
 
 func (r *LightRenderer) Resume() bool {
 	terminal.MakeRaw(r.fd())
-	r.csi("?1049l")
+	if r.fullscreen {
+		r.smcup()
+	} else {
+		r.rmcup()
+	}
 	r.flush()
 	// Should redraw
 	return true
@@ -540,13 +571,17 @@ func (r *LightRenderer) Refresh() {
 
 func (r *LightRenderer) Close() {
 	// r.csi("u")
-	r.origin()
-	r.csi("J")
+	if r.fullscreen {
+		r.rmcup()
+	} else {
+		r.origin()
+		r.csi("J")
+		if r.upOneLine {
+			r.csi("A")
+		}
+	}
 	if r.mouse {
 		r.csi("?1000l")
-	}
-	if r.upOneLine {
-		r.csi("A")
 	}
 	r.flush()
 	terminal.Restore(r.fd(), r.origState)
