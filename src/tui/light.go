@@ -185,11 +185,10 @@ func (r *LightRenderer) Init() {
 	_, x := r.findOffset()
 	if x > 0 {
 		r.upOneLine = true
-		r.stderr("\n")
+		r.makeSpace()
 	}
 	for i := 1; i < r.MaxY(); i++ {
-		r.stderr("\n")
-		r.csi("G")
+		r.makeSpace()
 	}
 
 	if r.mouse {
@@ -197,10 +196,17 @@ func (r *LightRenderer) Init() {
 	}
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
+	r.csi("K")
 	// r.csi("s")
 	if r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
+}
+
+func (r *LightRenderer) makeSpace() {
+	r.stderr("\n")
+	r.csi("G")
+	r.csi("K")
 }
 
 func (r *LightRenderer) move(y int, x int) {
