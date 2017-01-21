@@ -51,6 +51,7 @@ $(SRCDIR):
 
 deps: $(SRCDIR) $(SOURCES)
 	cd $(SRCDIR) && go get -tags "$(TAGS)"
+	./deps
 
 android-build: $(SRCDIR)
 	cd $(SRCDIR) && GOARCH=arm GOARM=7 CGO_ENABLED=1 go get

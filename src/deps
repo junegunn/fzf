@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+if [ -z "$GOPATH" ]; then
+  echo '$GOPATH not defined'
+  exit 1
+fi
+
+reset() (
+  cd "$GOPATH/src/$1"
+  [ "$(git rev-parse HEAD)" = "$2" ] ||
+    (git fetch && git reset --hard "$2")
+)
+
+reset github.com/junegunn/go-isatty     66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+reset github.com/junegunn/go-runewidth  63c378b851290989b19ca955468386485f118c65
+reset github.com/junegunn/go-shellwords 33bd8f1ebe16d6e5eb688cc885749a63059e9167
+reset golang.org/x/crypto               abc5fa7ad02123a41f02bf1391c9760f7586e608
