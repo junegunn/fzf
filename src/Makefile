@@ -28,11 +28,22 @@ RELEASEARM7 := fzf-$(VERSION)-$(GOOS)_arm7
 RELEASEARM8 := fzf-$(VERSION)-$(GOOS)_arm8
 export GOPATH
 
+# https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),amd64)
+	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),i686)
 	BINARY := $(BINARY32)
+else ifeq ($(UNAME_M),i386)
+	BINARY := $(BINARY32)
+else ifeq ($(UNAME_M),armv5l)
+	BINARY := $(BINARYARM5)
+else ifeq ($(UNAME_M),armv6l)
+	BINARY := $(BINARYARM6)
+else ifeq ($(UNAME_M),armv7l)
+	BINARY := $(BINARYARM7)
 else
 $(error "Build on $(UNAME_M) is not supported, yet.")
 endif
