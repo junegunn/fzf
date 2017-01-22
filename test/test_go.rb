@@ -1095,12 +1095,6 @@ class TestGoFZF < TestBase
     assert_equal 1, $?.exitstatus
   end
 
-  def test_invalid_term
-    lines = `TERM=xxx #{FZF} 2>&1`
-    assert_equal 2, $?.exitstatus
-    assert lines.include?('Invalid $TERM: xxx') || lines.include?('terminal entry not found')
-  end
-
   def test_invalid_option
     lines = `#{FZF} --foobar 2>&1`
     assert_equal 2, $?.exitstatus
