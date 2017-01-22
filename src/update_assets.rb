@@ -23,21 +23,23 @@ end
 # List assets
 assets = Hash[rel['assets'].map { |a| a.values_at *%w[name id] }]
 
-files.select { |f| File.exists? f }.each do |file|
-  name = File.basename file
+files.select { |f| File.exists? f }.map do |file|
+  Thread.new do
+    name = File.basename file
 
-  if asset_id = assets[name]
-    puts "#{name} found. Deleting asset id #{asset_id}."
-    RestClient.delete "#{base}/assets/#{asset_id}",
-      :authorization => "token #{token}"
-  else
-    puts "#{name} not found"
+    if asset_id = assets[name]
+      puts "#{name} found. Deleting asset id #{asset_id}."
+      RestClient.delete "#{base}/assets/#{asset_id}",
+        :authorization => "token #{token}"
+    else
+      puts "#{name} not found"
+    end
+
+    puts "Uploading #{name}"
+    RestClient.post(
+      "#{base.sub 'api', 'uploads'}/#{rel['id']}/assets?name=#{name}",
+      File.read(file),
+      :authorization => "token #{token}",
+      :content_type  => "application/octet-stream")
   end
-
-  puts "Uploading #{name}"
-  RestClient.post(
-    "#{base.sub 'api', 'uploads'}/#{rel['id']}/assets?name=#{name}",
-    File.read(file),
-    :authorization => "token #{token}",
-    :content_type  => "application/octet-stream")
-end
+end.each(&:join)
