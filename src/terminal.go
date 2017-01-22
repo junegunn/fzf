@@ -1360,6 +1360,7 @@ func (t *Terminal) Loop() {
 			case actTogglePreview:
 				if t.hasPreviewWindow() {
 					t.previewer.enabled = !t.previewer.enabled
+					t.tui.Clear()
 					t.resizeWindows()
 					cnt := t.merger.Length()
 					if t.previewer.enabled && cnt > 0 && cnt > t.cy {
