@@ -15,11 +15,17 @@ SRCDIR      := $(GOPATH)/src/github.com/junegunn/fzf/src
 DOCKEROPTS  := -i -t -v $(ROOTDIR):/fzf/src
 BINARY32    := fzf-$(GOOS)_386
 BINARY64    := fzf-$(GOOS)_amd64
+BINARYARM5  := fzf-$(GOOS)_arm5
+BINARYARM6  := fzf-$(GOOS)_arm6
 BINARYARM7  := fzf-$(GOOS)_arm7
+BINARYARM8  := fzf-$(GOOS)_arm8
 VERSION     := $(shell awk -F= '/version =/ {print $$2}' constants.go | tr -d "\" ")
 RELEASE32   := fzf-$(VERSION)-$(GOOS)_386
 RELEASE64   := fzf-$(VERSION)-$(GOOS)_amd64
+RELEASEARM5 := fzf-$(VERSION)-$(GOOS)_arm5
+RELEASEARM6 := fzf-$(VERSION)-$(GOOS)_arm6
 RELEASEARM7 := fzf-$(VERSION)-$(GOOS)_arm7
+RELEASEARM8 := fzf-$(VERSION)-$(GOOS)_arm8
 export GOPATH
 
 UNAME_M := $(shell uname -m)
@@ -35,15 +41,31 @@ all: fzf/$(BINARY)
 
 ifeq ($(GOOS),windows)
 release: fzf/$(BINARY32) fzf/$(BINARY64)
-	-cd fzf && cp $(BINARY32) $(RELEASE32).exe && zip $(RELEASE32).zip $(RELEASE32).exe
-	cd fzf && cp $(BINARY64) $(RELEASE64).exe && zip $(RELEASE64).zip $(RELEASE64).exe && \
-	rm -f $(RELEASE32).exe $(RELEASE64).exe
+	cd fzf && cp $(BINARY32) $(RELEASE32).exe && zip $(RELEASE32).zip $(RELEASE32).exe
+	cd fzf && cp $(BINARY64) $(RELEASE64).exe && zip $(RELEASE64).zip $(RELEASE64).exe
+	cd fzf && rm -f $(RELEASE32).exe $(RELEASE64).exe
+else ifeq ($(GOOS),linux)
+release: fzf/$(BINARY32) fzf/$(BINARY64) fzf/$(BINARYARM5) fzf/$(BINARYARM6) fzf/$(BINARYARM7) fzf/$(BINARYARM8)
+	cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
+	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64)
+	cd fzf && cp $(BINARYARM5) $(RELEASEARM5) && tar -czf $(RELEASEARM5).tgz $(RELEASEARM5)
+	cd fzf && cp $(BINARYARM6) $(RELEASEARM6) && tar -czf $(RELEASEARM6).tgz $(RELEASEARM6)
+	cd fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7)
+	cd fzf && cp $(BINARYARM8) $(RELEASEARM8) && tar -czf $(RELEASEARM8).tgz $(RELEASEARM8)
+	cd fzf && rm -f $(RELEASE32) $(RELEASE64) $(RELEASEARM5) $(RELEASEARM6) $(RELEASEARM7) $(RELEASEARM8)
 else
-release: test fzf/$(BINARY32) fzf/$(BINARY64)
-	-cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
-	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64) && \
-	rm -f $(RELEASE32) $(RELEASE64)
+release: fzf/$(BINARY32) fzf/$(BINARY64)
+	cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
+	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64)
+	cd fzf && rm -f $(RELEASE32) $(RELEASE64)
 endif
+
+release-all: clean test
+	GOOS=darwin  make release
+	GOOS=linux   make release
+	GOOS=freebsd make release
+	GOOS=openbsd make release
+	GOOS=windows make release
 
 $(SRCDIR):
 	mkdir -p $(shell dirname $(SRCDIR))
@@ -60,7 +82,7 @@ android-build: $(SRCDIR)
 	rm -f $(RELEASEARM7)
 
 test: deps
-	SHELL=/bin/sh GOOS=$(GOOS) go test -v -tags "$(TAGS)" ./...
+	SHELL=/bin/sh GOOS= go test -v -tags "$(TAGS)" ./...
 
 install: $(BINDIR)/fzf
 
@@ -71,10 +93,23 @@ clean:
 	cd fzf && rm -f fzf-*
 
 fzf/$(BINARY32): deps
-	cd fzf && GOARCH=386 CGO_ENABLED=1 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY32)
+	cd fzf && GOARCH=386 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY32)
 
 fzf/$(BINARY64): deps
-	cd fzf && go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY64)
+	cd fzf && GOARCH=amd64 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARY64)
+
+# https://github.com/golang/go/wiki/GoArm
+fzf/$(BINARYARM5): deps
+	cd fzf && GOARCH=arm GOARM=5 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARYARM5)
+
+fzf/$(BINARYARM6): deps
+	cd fzf && GOARCH=arm GOARM=6 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARYARM6)
+
+fzf/$(BINARYARM7): deps
+	cd fzf && GOARCH=arm GOARM=7 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARYARM7)
+
+fzf/$(BINARYARM8): deps
+	cd fzf && GOARCH=arm64 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $(BINARYARM8)
 
 $(BINDIR)/fzf: fzf/$(BINARY) | $(BINDIR)
 	cp -f fzf/$(BINARY) $(BINDIR)

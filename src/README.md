@@ -59,20 +59,31 @@ Unit tests can be run with `make test`. Integration tests are written in Ruby
 script that should be run on tmux.
 
 ```sh
+cd src
+
 # Unit tests
 make test
+
+# Integration tests
+ruby ../test/test_go.rb
+
+# Build binary for the platform
+make
 
 # Install the executable to ../bin directory
 make install
 
-# Integration tests
-ruby ../test/test_go.rb
+# Make release archives
+make release
+
+# Make release archives for all supported platforms
+make release-all
 ```
 
 Third-party libraries used
 --------------------------
 
-- [ncurses][ncurses]
+- ~[ncurses][ncurses]~
 - [mattn/go-runewidth](https://github.com/mattn/go-runewidth)
     - Licensed under [MIT](http://mattn.mit-license.org)
 - [mattn/go-shellwords](https://github.com/mattn/go-shellwords)

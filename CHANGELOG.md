@@ -3,6 +3,8 @@ CHANGELOG
 
 0.16.2
 ------
+- Dropped ncurses dependency
+- Binaries for freebsd, openbsd, arm5, arm6, arm7, and arm8
 - Added support for composite actions in `--bind`. Multiple actions can be
   chained using `+` separator.
     - e.g. `fzf --bind 'ctrl-y:execute(echo -n {} | pbcopy)+abort'`

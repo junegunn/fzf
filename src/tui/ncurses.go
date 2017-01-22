@@ -1,3 +1,4 @@
+// +build ncurses
 // +build !windows
 // +build !tcell
 
@@ -31,6 +32,10 @@ import (
 	"time"
 	"unicode/utf8"
 )
+
+func HasFullscreenRenderer() bool {
+	return true
+}
 
 type Attr C.uint
 

@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.16.1
+version=0.16.2-alpha
 auto_completion=
 key_bindings=
 update_config=2
@@ -160,10 +160,18 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ x86_64) download fzf-$version-darwin_${binary_arch:-amd64} ;;
-  Darwin\ i*86)   download fzf-$version-darwin_${binary_arch:-386}   ;;
-  Linux\ x86_64)  download fzf-$version-linux_${binary_arch:-amd64}  ;;
-  Linux\ i*86)    download fzf-$version-linux_${binary_arch:-386}    ;;
+  Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}  ;;
+  Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}    ;;
+  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}   ;;
+  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}     ;;
+  Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}    ;;
+  Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}    ;;
+  Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}    ;;
+  Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}    ;;
+  FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64} ;;
+  FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}   ;;
+  OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64} ;;
+  OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}   ;;
   *)              binary_available=0 binary_error=1  ;;
 esac
 
