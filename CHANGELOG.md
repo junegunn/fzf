@@ -8,6 +8,8 @@ CHANGELOG
 - Added support for composite actions in `--bind`. Multiple actions can be
   chained using `+` separator.
     - e.g. `fzf --bind 'ctrl-y:execute(echo -n {} | pbcopy)+abort'`
+- `--preview-window` with size 0 is allowed. This is used to make fzf execute
+  preview command in the background without displaying the result.
 
 0.16.1
 ------

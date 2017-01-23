@@ -1224,6 +1224,19 @@ class TestGoFZF < TestBase
     tmux.send_keys '?'
     tmux.until { |lines| lines[-1] == '> 555' }
   end
+
+  def test_preview_size_0
+    File.unlink tempname rescue nil
+    tmux.send_keys %[seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0], :Enter
+    tmux.until { |lines| lines.item_count == 100 && lines[1] == '  100/100' && lines[2] == '> 1' }
+    tmux.until { |_|  %w[1] == File.readlines(tempname).map(&:chomp) }
+    tmux.send_keys :Down
+    tmux.until { |lines| lines[3] == '> 2' }
+    tmux.until { |_|  %w[1 2] == File.readlines(tempname).map(&:chomp) }
+    tmux.send_keys :Down
+    tmux.until { |lines| lines[4] == '> 3' }
+    tmux.until { |_|  %w[1 2 3] == File.readlines(tempname).map(&:chomp) }
+  end
 end
 
 module TestShell

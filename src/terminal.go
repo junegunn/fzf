@@ -509,9 +509,11 @@ func (t *Terminal) resizeWindows() {
 			}
 		}
 	}
+
+	previewVisible := t.isPreviewEnabled() && t.preview.size.size > 0
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
-	if t.isPreviewEnabled() {
+	if previewVisible {
 		switch t.preview.position {
 		case posUp, posDown:
 			minAreaHeight *= 2
@@ -531,7 +533,7 @@ func (t *Terminal) resizeWindows() {
 
 	width := screenWidth - marginInt[1] - marginInt[3]
 	height := screenHeight - marginInt[0] - marginInt[2]
-	if t.isPreviewEnabled() {
+	if previewVisible {
 		createPreviewWindow := func(y int, x int, w int, h int) {
 			t.bwindow = t.tui.NewWindow(y, x, w, h, true)
 			pwidth := w - 4
@@ -889,7 +891,7 @@ func numLinesMax(str string, max int) int {
 }
 
 func (t *Terminal) printPreview() {
-	if !t.isPreviewEnabled() {
+	if !t.hasPreviewWindow() {
 		return
 	}
 	t.pwindow.Erase()
@@ -974,7 +976,7 @@ func (t *Terminal) printAll() {
 
 func (t *Terminal) refresh() {
 	if !t.suppress {
-		if t.isPreviewEnabled() {
+		if t.hasPreviewWindow() {
 			t.tui.RefreshWindows([]tui.Window{t.bwindow, t.pwindow, t.window})
 		} else {
 			t.tui.RefreshWindows([]tui.Window{t.window})
@@ -1107,12 +1109,16 @@ func (t *Terminal) executeCommand(template string, items []*Item) {
 	t.refresh()
 }
 
-func (t *Terminal) hasPreviewWindow() bool {
+func (t *Terminal) hasPreviewer() bool {
 	return t.previewBox != nil
 }
 
 func (t *Terminal) isPreviewEnabled() bool {
-	return t.previewBox != nil && t.previewer.enabled
+	return t.hasPreviewer() && t.previewer.enabled
+}
+
+func (t *Terminal) hasPreviewWindow() bool {
+	return t.pwindow != nil && t.isPreviewEnabled()
 }
 
 func (t *Terminal) currentItem() *Item {
@@ -1174,7 +1180,7 @@ func (t *Terminal) Loop() {
 		}()
 	}
 
-	if t.hasPreviewWindow() {
+	if t.hasPreviewer() {
 		go func() {
 			for {
 				var request *Item
@@ -1358,7 +1364,7 @@ func (t *Terminal) Loop() {
 				t.mutex.Unlock()
 				return false
 			case actTogglePreview:
-				if t.hasPreviewWindow() {
+				if t.hasPreviewer() {
 					t.previewer.enabled = !t.previewer.enabled
 					t.tui.Clear()
 					t.resizeWindows()
@@ -1374,19 +1380,19 @@ func (t *Terminal) Loop() {
 				t.mutex.Unlock()
 				return false
 			case actPreviewUp:
-				if t.isPreviewEnabled() {
+				if t.hasPreviewWindow() {
 					scrollPreview(-1)
 				}
 			case actPreviewDown:
-				if t.isPreviewEnabled() {
+				if t.hasPreviewWindow() {
 					scrollPreview(1)
 				}
 			case actPreviewPageUp:
-				if t.isPreviewEnabled() {
+				if t.hasPreviewWindow() {
 					scrollPreview(-t.pwindow.Height())
 				}
 			case actPreviewPageDown:
-				if t.isPreviewEnabled() {
+				if t.hasPreviewWindow() {
 					scrollPreview(t.pwindow.Height())
 				}
 			case actBeginningOfLine:
@@ -1563,7 +1569,7 @@ func (t *Terminal) Loop() {
 						}
 						t.vmove(me.S)
 						req(reqList)
-					} else if t.isPreviewEnabled() && t.pwindow.Enclose(my, mx) {
+					} else if t.hasPreviewWindow() && t.pwindow.Enclose(my, mx) {
 						scrollPreview(-me.S)
 					}
 				} else if t.window.Enclose(my, mx) {

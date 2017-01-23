@@ -823,7 +823,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	opts.wrap = false
 
 	tokens := strings.Split(input, ":")
-	sizeRegex := regexp.MustCompile("^[1-9][0-9]*%?$")
+	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	for _, token := range tokens {
 		switch token {
 		case "hidden":
