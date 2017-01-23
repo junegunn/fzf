@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,9 +21,12 @@ const (
 	defaultHeight = 24
 
 	escPollInterval = 5
+	offsetPollTries = 10
 )
 
 const consoleDevice string = "/dev/tty"
+
+var offsetRegexp *regexp.Regexp = regexp.MustCompile("\x1b\\[([0-9]+);([0-9]+)R")
 
 func openTtyIn() *os.File {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
@@ -133,18 +137,14 @@ func (r *LightRenderer) defaultTheme() *ColorTheme {
 func (r *LightRenderer) findOffset() (row int, col int) {
 	r.csi("6n")
 	r.flush()
-	bytes := r.getBytesInternal([]byte{})
-
-	// ^[[*;*R
-	if len(bytes) > 5 && bytes[0] == 27 && bytes[1] == 91 && bytes[len(bytes)-1] == 'R' {
-		nums := strings.Split(string(bytes[2:len(bytes)-1]), ";")
-		if len(nums) == 2 {
-			return atoi(nums[0], 0) - 1, atoi(nums[1], 0) - 1
+	bytes := []byte{}
+	for tries := 0; tries < offsetPollTries; tries++ {
+		bytes = r.getBytesInternal(bytes, tries > 0)
+		offsets := offsetRegexp.FindSubmatch(bytes)
+		if len(offsets) > 2 {
+			return atoi(string(offsets[1]), 0) - 1, atoi(string(offsets[2]), 0) - 1
 		}
-		return -1, -1
 	}
-
-	// No idea
 	return -1, -1
 }
 
@@ -274,18 +274,18 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 }
 
 func (r *LightRenderer) getBytes() []byte {
-	return r.getBytesInternal(r.buffer)
+	return r.getBytesInternal(r.buffer, false)
 }
 
-func (r *LightRenderer) getBytesInternal(buffer []byte) []byte {
-	c, ok := r.getch(false)
-	if !ok {
+func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
+	c, ok := r.getch(nonblock)
+	if !nonblock && !ok {
 		r.Close()
 		errorExit("Failed to read " + consoleDevice)
 	}
 
 	retries := 0
-	if c == ESC {
+	if c == ESC || nonblock {
 		retries = r.escDelay / escPollInterval
 	}
 	buffer = append(buffer, byte(c))
