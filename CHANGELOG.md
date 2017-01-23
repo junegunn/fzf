@@ -5,11 +5,13 @@ CHANGELOG
 ------
 - Dropped ncurses dependency
 - Binaries for freebsd, openbsd, arm5, arm6, arm7, and arm8
+- Official 24-bit color support
 - Added support for composite actions in `--bind`. Multiple actions can be
   chained using `+` separator.
     - e.g. `fzf --bind 'ctrl-y:execute(echo -n {} | pbcopy)+abort'`
 - `--preview-window` with size 0 is allowed. This is used to make fzf execute
   preview command in the background without displaying the result.
+- Minor bug fixes and improvements
 
 0.16.1
 ------
