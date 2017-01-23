@@ -7,6 +7,7 @@ fi
 
 reset() (
   cd "$GOPATH/src/$1"
+  export GIT_DIR="$(pwd)/.git"
   [ "$(git rev-parse HEAD)" = "$2" ] ||
     (git fetch && git reset --hard "$2")
 )
