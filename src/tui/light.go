@@ -184,6 +184,7 @@ func (r *LightRenderer) Init() {
 	if r.fullscreen {
 		r.smcup()
 	} else {
+		r.csi("J")
 		y, x := r.findOffset()
 		r.mouse = r.mouse && y >= 0
 		if x > 0 {
@@ -210,7 +211,6 @@ func (r *LightRenderer) Init() {
 func (r *LightRenderer) makeSpace() {
 	r.stderr("\n")
 	r.csi("G")
-	r.csi("K")
 }
 
 func (r *LightRenderer) move(y int, x int) {
@@ -569,10 +569,10 @@ func (r *LightRenderer) Close() {
 		r.rmcup()
 	} else {
 		r.origin()
-		r.csi("J")
 		if r.upOneLine {
 			r.csi("A")
 		}
+		r.csi("J")
 	}
 	if r.mouse {
 		r.csi("?1000l")
