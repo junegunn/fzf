@@ -191,7 +191,8 @@ func (r *LightRenderer) Init() {
 	if r.fullscreen {
 		r.smcup()
 	} else {
-		_, x := r.findOffset()
+		y, x := r.findOffset()
+		r.mouse = r.mouse && y >= 0
 		if x > 0 {
 			r.upOneLine = true
 			r.makeSpace()
