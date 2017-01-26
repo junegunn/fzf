@@ -847,6 +847,7 @@ func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.Colo
 				offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 			}
 		}
+		displayWidth = t.displayWidthWithLimit(text, 0, displayWidth)
 	}
 
 	var index int32

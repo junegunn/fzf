@@ -82,6 +82,8 @@ const usage = `usage: fzf [options]
     -f, --filter=STR      Filter mode. Do not start interactive finder.
     --print-query         Print query as the first line
     --expect=KEYS         Comma-separated list of keys to complete fzf
+    --read0               Read input delimited by ASCII NUL characters
+    --print0              Print output delimited by ASCII NUL characters
     --sync                Synchronous search for multi-staged filtering
 
   Environment variables
