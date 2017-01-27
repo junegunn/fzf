@@ -262,12 +262,20 @@ Execute the given command for the current line and display the result on the
 preview window. \fB{}\fR in the command is the placeholder that is replaced to
 the single-quoted string of the current line. To transform the replacement
 string, specify field index expressions between the braces (See \fBFIELD INDEX
-EXPRESSION\fR for the details). Also, \fB{q}\fR is replaced to the current
-query string.
+EXPRESSION\fR for the details).
 
 .RS
 e.g. \fBfzf --preview="head -$LINES {}"\fR
      \fBls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1\fR
+
+A placeholder expression starting with \fB+\fR flag will be replaced to the
+space-separated list of the selected lines (or the current line if no selection
+was made) individually quoted.
+
+e.g. \fBfzf --multi --preview="head -10 {+}"\fR
+     \fBgit log --oneline | fzf --multi --preview 'git show {+1}'\fR
+
+Also, \fB{q}\fR is replaced to the current query string.
 
 Note that you can escape a placeholder pattern by prepending a backslash.
 .RE
@@ -461,7 +469,7 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
     \fBend-of-line\fR           \fIctrl-e  end\fR
     \fBexecute(...)\fR          (see below for the details)
-    \fBexecute-multi(...)\fR    (see below for the details)
+    \fRexecute-multi(...)\fR    (deprecated in favor of \fB{+}\fR expression)
     \fBforward-char\fR          \fIctrl-f  right\fR
     \fBforward-word\fR          \fIalt-f   shift-right\fR
     \fBignore\fR

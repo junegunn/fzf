@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.16.3
+------
+- Fixed a bug where fzf incorrectly display the lines when straddling tab
+  characters are trimmed
+- Placeholder expression used in `--preview` and `execute` action can
+  optionally take `+` flag to be used with multiple selections
+    - e.g. `git log --oneline | fzf --multi --preview 'git show {+1}'`
+
 0.16.2
 ------
 - Dropped ncurses dependency

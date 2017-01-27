@@ -24,7 +24,7 @@ import (
 var placeholder *regexp.Regexp
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{[0-9,-.]*}|{q})")
+	placeholder = regexp.MustCompile("\\\\?(?:{\\+?[0-9,-.]*}|{q})")
 }
 
 type jumpMode int
@@ -436,9 +436,9 @@ func (t *Terminal) output() bool {
 	}
 	found := len(t.selected) > 0
 	if !found {
-		cnt := t.merger.Length()
-		if cnt > 0 && cnt > t.cy {
-			t.printer(t.current())
+		current := t.currentItem()
+		if current != nil {
+			t.printer(current.AsString(t.ansi))
 			found = true
 		}
 	} else {
@@ -1044,7 +1044,27 @@ func quoteEntry(entry string) string {
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, query string, items []*Item) string {
+func hasPlusFlag(template string) bool {
+	for _, match := range placeholder.FindAllString(template, -1) {
+		if match[0] == '\\' {
+			continue
+		}
+		if match[1] == '+' {
+			return true
+		}
+	}
+	return false
+}
+
+func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
+	current := allItems[:1]
+	selected := allItems[1:]
+	if current[0] == nil {
+		current = []*Item{}
+	}
+	if selected[0] == nil {
+		selected = []*Item{}
+	}
 	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
 		// Escaped pattern
 		if match[0] == '\\' {
@@ -1054,6 +1074,16 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, qu
 		// Current query
 		if match == "{q}" {
 			return quoteEntry(query)
+		}
+
+		plusFlag := forcePlus
+		if match[1] == '+' {
+			match = "{" + match[2:]
+			plusFlag = true
+		}
+		items := current
+		if plusFlag {
+			items = selected
 		}
 
 		replacements := make([]string, len(items))
@@ -1096,8 +1126,12 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, qu
 	})
 }
 
-func (t *Terminal) executeCommand(template string, items []*Item) {
-	command := replacePlaceholder(template, t.ansi, t.delimiter, string(t.input), items)
+func (t *Terminal) executeCommand(template string, forcePlus bool) {
+	valid, list := t.buildPlusList(template, forcePlus)
+	if !valid {
+		return
+	}
+	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -1123,11 +1157,24 @@ func (t *Terminal) hasPreviewWindow() bool {
 }
 
 func (t *Terminal) currentItem() *Item {
-	return t.merger.Get(t.cy).item
+	cnt := t.merger.Length()
+	if cnt > 0 && cnt > t.cy {
+		return t.merger.Get(t.cy).item
+	}
+	return nil
 }
 
-func (t *Terminal) current() string {
-	return t.currentItem().AsString(t.ansi)
+func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
+	current := t.currentItem()
+	if !forcePlus && !hasPlusFlag(template) || len(t.selected) == 0 {
+		return current != nil, []*Item{current, current}
+	}
+	sels := make([]*Item, len(t.selected)+1)
+	sels[0] = current
+	for i, sel := range t.sortSelected() {
+		sels[i+1] = sel.item
+	}
+	return true, sels
 }
 
 // Loop is called to start Terminal I/O
@@ -1184,19 +1231,20 @@ func (t *Terminal) Loop() {
 	if t.hasPreviewer() {
 		go func() {
 			for {
-				var request *Item
+				var request []*Item
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
 						case reqPreviewEnqueue:
-							request = value.(*Item)
+							request = value.([]*Item)
 						}
 					}
 					events.Clear()
 				})
-				if request != nil {
+				// We don't display preview window if no match
+				if request[0] != nil {
 					command := replacePlaceholder(t.preview.command,
-						t.ansi, t.delimiter, string(t.input), []*Item{request})
+						t.ansi, t.delimiter, false, string(t.input), request)
 					cmd := util.ExecCommand(command)
 					out, _ := cmd.CombinedOutput()
 					t.reqBox.Set(reqPreviewDisplay, string(out))
@@ -1232,17 +1280,12 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case reqList:
 						t.printList()
-						cnt := t.merger.Length()
-						var currentFocus *Item
-						if cnt > 0 && cnt > t.cy {
-							currentFocus = t.currentItem()
-						} else {
-							currentFocus = nil
-						}
+						currentFocus := t.currentItem()
 						if currentFocus != focused {
 							focused = currentFocus
 							if t.isPreviewEnabled() {
-								t.previewBox.Set(reqPreviewEnqueue, focused)
+								_, list := t.buildPlusList(t.preview.command, false)
+								t.previewBox.Set(reqPreviewEnqueue, list)
 							}
 						}
 					case reqJump:
@@ -1348,19 +1391,9 @@ func (t *Terminal) Loop() {
 			switch a.t {
 			case actIgnore:
 			case actExecute:
-				if t.cy >= 0 && t.cy < t.merger.Length() {
-					t.executeCommand(a.a, []*Item{t.currentItem()})
-				}
+				t.executeCommand(a.a, false)
 			case actExecuteMulti:
-				if len(t.selected) > 0 {
-					sels := make([]*Item, len(t.selected))
-					for i, sel := range t.sortSelected() {
-						sels[i] = sel.item
-					}
-					t.executeCommand(a.a, sels)
-				} else {
-					return doAction(action{t: actExecute, a: a.a}, mapkey)
-				}
+				t.executeCommand(a.a, true)
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -1369,9 +1402,11 @@ func (t *Terminal) Loop() {
 					t.previewer.enabled = !t.previewer.enabled
 					t.tui.Clear()
 					t.resizeWindows()
-					cnt := t.merger.Length()
-					if t.previewer.enabled && cnt > 0 && cnt > t.cy {
-						t.previewBox.Set(reqPreviewEnqueue, t.currentItem())
+					if t.previewer.enabled {
+						valid, list := t.buildPlusList(t.preview.command, false)
+						if valid {
+							t.previewBox.Set(reqPreviewEnqueue, list)
+						}
 					}
 					req(reqList, reqInfo, reqHeader)
 				}
