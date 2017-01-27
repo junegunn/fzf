@@ -12,6 +12,7 @@ CHANGELOG
   switching to the alternate screen. This is useful when the process is
   short-lived and you're not interested in its output.
     - e.g. `fzf --bind 'ctrl-y:execute!(echo -n {} | pbcopy)'`
+- `ctrl-space` is allowed in `--bind`
 
 0.16.2
 ------

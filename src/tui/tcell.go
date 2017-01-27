@@ -270,6 +270,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{CtrlY, 0, nil}
 		case tcell.KeyCtrlZ:
 			return Event{CtrlZ, 0, nil}
+		case tcell.KeyCtrlSpace:
+			return Event{CtrlSpace, 0, nil}
 		case tcell.KeyBackspace, tcell.KeyBackspace2:
 			if alt {
 				return Event{AltBS, 0, nil}

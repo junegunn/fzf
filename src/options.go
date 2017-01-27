@@ -393,6 +393,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.AltZ + int(' ')
 		case "bspace", "bs":
 			chord = tui.BSpace
+		case "ctrl-space":
+			chord = tui.CtrlSpace
 		case "alt-enter", "alt-return":
 			chord = tui.AltEnter
 		case "alt-space":

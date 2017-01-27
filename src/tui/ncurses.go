@@ -475,6 +475,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 		return escSequence()
 	case 127:
 		return Event{BSpace, 0, nil}
+	case 0:
+		return Event{CtrlSpace, 0, nil}
 	}
 	// CTRL-A ~ CTRL-Z
 	if c >= CtrlA && c <= CtrlZ {

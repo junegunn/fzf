@@ -38,6 +38,7 @@ const (
 	CtrlY
 	CtrlZ
 	ESC
+	CtrlSpace
 
 	Invalid
 	Resize
