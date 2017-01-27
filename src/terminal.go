@@ -204,7 +204,8 @@ const (
 	actPreviousHistory
 	actNextHistory
 	actExecute
-	actExecuteMulti
+	actExecuteSilent
+	actExecuteMulti // Deprecated
 )
 
 func toActions(types ...actionType) []action {
@@ -1126,22 +1127,26 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 	})
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool) {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool) {
 	valid, list := t.buildPlusList(template, forcePlus)
 	if !valid {
 		return
 	}
 	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	t.tui.Pause()
-	cmd.Run()
-	if t.tui.Resume() {
-		t.printAll()
+	if !background {
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		t.tui.Pause()
+		cmd.Run()
+		if t.tui.Resume() {
+			t.printAll()
+		}
+		t.refresh()
+	} else {
+		cmd.Run()
 	}
-	t.refresh()
 }
 
 func (t *Terminal) hasPreviewer() bool {
@@ -1390,10 +1395,10 @@ func (t *Terminal) Loop() {
 		doAction = func(a action, mapkey int) bool {
 			switch a.t {
 			case actIgnore:
-			case actExecute:
-				t.executeCommand(a.a, false)
+			case actExecute, actExecuteSilent:
+				t.executeCommand(a.a, false, a.t == actExecuteSilent)
 			case actExecuteMulti:
-				t.executeCommand(a.a, true)
+				t.executeCommand(a.a, true, false)
 			case actInvalid:
 				t.mutex.Unlock()
 				return false

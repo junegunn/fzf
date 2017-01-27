@@ -469,6 +469,7 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
     \fBend-of-line\fR           \fIctrl-e  end\fR
     \fBexecute(...)\fR          (see below for the details)
+    \fBexecute-silent(...)\fR   (see below for the details)
     \fRexecute-multi(...)\fR    (deprecated in favor of \fB{+}\fR expression)
     \fBforward-char\fR          \fIctrl-f  right\fR
     \fBforward-word\fR          \fIalt-f   shift-right\fR
@@ -538,10 +539,10 @@ the closing character. The catch is that it should be the last one in the
 comma-separated list of key-action pairs.
 .RE
 
-\fBexecute-multi(...)\fR is an alternative action that executes the command
-with the selected entries when multi-select is enabled (\fB--multi\fR). With
-this action, \fB{}\fR is replaced with the quoted strings of the selected
-entries separated by spaces.
+fzf switches to the alternate screen when executing a command. However, if the
+process is expected to complete quickly, and you are not interested in its
+output, you might want to use \fBexecute-silent\fR instead, which silently
+executes the command without switching.
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)

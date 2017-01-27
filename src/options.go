@@ -581,18 +581,25 @@ const (
 	escapedPlus  = 2
 )
 
+func init() {
+	// Backreferences are not supported.
+	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
+	executeRegexp = regexp.MustCompile(
+		"(?si):(execute(?:-multi|-silent)?):.+|:(execute(?:-multi|-silent)?)(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
+}
+
 func parseKeymap(keymap map[int][]action, str string) {
-	if executeRegexp == nil {
-		// Backreferences are not supported.
-		// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
-		executeRegexp = regexp.MustCompile(
-			"(?si):execute(-multi)?:.+|:execute(-multi)?(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
-	}
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
-		if src[len(":execute")] == '-' {
-			return ":execute-multi(" + strings.Repeat(" ", len(src)-len(":execute-multi()")) + ")"
+		prefix := ":execute"
+		if src[len(prefix)] == '-' {
+			c := src[len(prefix)+1]
+			if c == 's' || c == 'S' {
+				prefix += "-silent"
+			} else {
+				prefix += "-multi"
+			}
 		}
-		return ":execute(" + strings.Repeat(" ", len(src)-len(":execute()")) + ")"
+		return prefix + "(" + strings.Repeat(" ", len(src)-len(prefix)-2) + ")"
 	})
 	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
 	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
@@ -728,9 +735,12 @@ func parseKeymap(keymap map[int][]action, str string) {
 					errorExit("unknown action: " + spec)
 				} else {
 					var offset int
-					if t == actExecuteMulti {
+					switch t {
+					case actExecuteSilent:
+						offset = len("execute-silent")
+					case actExecuteMulti:
 						offset = len("execute-multi")
-					} else {
+					default:
 						offset = len("execute")
 					}
 					if spec[offset] == ':' {
@@ -752,23 +762,21 @@ func parseKeymap(keymap map[int][]action, str string) {
 }
 
 func isExecuteAction(str string) actionType {
-	t := actExecute
-	if !strings.HasPrefix(str, "execute") || len(str) < len("execute(") {
+	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
+	if matches == nil || len(matches) != 1 {
 		return actIgnore
 	}
-
-	b := str[len("execute")]
-	if strings.HasPrefix(str, "execute-multi") {
-		if len(str) < len("execute-multi(") {
-			return actIgnore
-		}
-		t = actExecuteMulti
-		b = str[len("execute-multi")]
+	prefix := matches[0][1]
+	if len(prefix) == 0 {
+		prefix = matches[0][2]
 	}
-	e := str[len(str)-1]
-	if b == ':' || b == '(' && e == ')' || b == '[' && e == ']' ||
-		b == e && strings.ContainsAny(string(b), "~!@#$%^&*;/|") {
-		return t
+	switch prefix {
+	case "execute":
+		return actExecute
+	case "execute-silent":
+		return actExecuteSilent
+	case "execute-multi":
+		return actExecuteMulti
 	}
 	return actIgnore
 }

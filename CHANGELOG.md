@@ -8,6 +8,10 @@ CHANGELOG
 - Placeholder expression used in `--preview` and `execute` action can
   optionally take `+` flag to be used with multiple selections
     - e.g. `git log --oneline | fzf --multi --preview 'git show {+1}'`
+- Added `execute-silent` action for executing a command silently without
+  switching to the alternate screen. This is useful when the process is
+  short-lived and you're not interested in its output.
+    - e.g. `fzf --bind 'ctrl-y:execute!(echo -n {} | pbcopy)'`
 
 0.16.2
 ------
