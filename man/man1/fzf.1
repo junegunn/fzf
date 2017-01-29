@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jan 2017" "fzf 0.16.2" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2017" "fzf 0.16.3" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -541,9 +541,11 @@ comma-separated list of key-action pairs.
 .RE
 
 fzf switches to the alternate screen when executing a command. However, if the
-process is expected to complete quickly, and you are not interested in its
+command is expected to complete quickly, and you are not interested in its
 output, you might want to use \fBexecute-silent\fR instead, which silently
-executes the command without switching.
+executes the command without the switching. Note that fzf will not be
+responsible until the command is complete. For asynchronous execution, start
+your command as a background process (i.e. appending \fB&\fR).
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)
