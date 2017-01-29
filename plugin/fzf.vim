@@ -1,4 +1,4 @@
-" Copyright (c) 2016 Junegunn Choi
+" Copyright (c) 2017 Junegunn Choi
 "
 " MIT License
 "
@@ -301,23 +301,28 @@ try
     let prefix = ''
   endif
 
+  let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0)
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || has('win32') || has('win64') || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let tmux = !use_height && (!has('nvim') || get(g:, 'fzf_prefer_tmux', 0)) && s:tmux_enabled() && s:splittable(dict)
-  let term = has('nvim') && !tmux
+  let use_term = has('nvim')
+  let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
+  if prefer_tmux && use_tmux
+    let use_height = 0
+    let use_term = 0
+  endif
   if use_height
     let optstr .= ' --height='.s:calc_size(&lines, dict.down, dict)
-  elseif term
+  elseif use_term
     let optstr .= ' --no-height'
   endif
-  let command = prefix.(tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+  let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
-  if term
+  if use_term
     return s:execute_term(dict, command, temps)
   endif
 
-  let lines = tmux ? s:execute_tmux(dict, command, temps)
+  let lines = use_tmux ? s:execute_tmux(dict, command, temps)
                  \ : s:execute(dict, command, use_height, temps)
   call s:callback(dict, lines)
   return lines
