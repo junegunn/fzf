@@ -1141,6 +1141,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.tui.Pause()
 		cmd.Run()
 		if t.tui.Resume() {
+			t.tui.Clear()
 			t.printAll()
 		}
 		t.refresh()

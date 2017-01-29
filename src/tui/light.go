@@ -534,6 +534,7 @@ func (r *LightRenderer) Pause() {
 		r.rmcup()
 	} else {
 		r.smcup()
+		r.csi("H")
 	}
 	r.flush()
 }
