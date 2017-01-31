@@ -201,6 +201,10 @@ function! fzf#wrap(...)
   endfor
   let [name, opts, bang] = args
 
+  if len(name)
+    let opts.name = name
+  end
+
   " Layout: g:fzf_layout (and deprecated g:fzf_height)
   if bang
     for key in s:layout_keys
@@ -521,6 +525,7 @@ function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
   let pbuf = bufnr('')
   let [ppos, winopts] = s:split(a:dict)
+  let b:fzf = a:dict
   let fzf = { 'buf': bufnr(''), 'pbuf': pbuf, 'ppos': ppos, 'dict': a:dict, 'temps': a:temps,
             \ 'winopts': winopts, 'winrest': winrest, 'lines': &lines,
             \ 'columns': &columns, 'command': a:command }
