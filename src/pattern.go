@@ -101,7 +101,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 			for idx, term := range termSet {
 				// If the query contains inverse search terms or OR operators,
 				// we cannot cache the search scope
-				if !cacheable || idx > 0 || term.inv {
+				if !cacheable || idx > 0 || term.inv || !fuzzy && term.typ != termExact {
 					cacheable = false
 					break Loop
 				}

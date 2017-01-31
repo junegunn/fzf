@@ -186,3 +186,21 @@ func TestCacheKey(t *testing.T) {
 	test(true, "foo | bar !baz", "", false)
 	test(true, "| | | foo", "foo", true)
 }
+
+func TestCacheable(t *testing.T) {
+	test := func(fuzzy bool, str string, cacheable bool) {
+		clearPatternCache()
+		pat := BuildPattern(fuzzy, algo.FuzzyMatchV2, true, CaseSmart, true, true, true, []Range{}, Delimiter{}, []rune(str))
+		if cacheable != pat.cacheable {
+			t.Errorf("Invalid Pattern.cacheable for \"%s\": %v (expected: %v)", str, pat.cacheable, cacheable)
+		}
+	}
+	test(true, "foo bar", true)
+	test(true, "foo 'bar", true)
+	test(true, "foo !bar", false)
+
+	test(false, "foo bar", true)
+	test(false, "foo '", true)
+	test(false, "foo 'bar", false)
+	test(false, "foo !bar", false)
+}
