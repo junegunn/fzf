@@ -72,16 +72,6 @@ But it's recommended that you use a plugin manager like
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ```
 
-### Upgrading fzf
-
-fzf is being actively developed and you might want to upgrade it once in a
-while. Please follow the instruction below depending on the installation
-method used.
-
-- git: `cd ~/.fzf && git pull && ./install`
-- brew: `brew update; brew reinstall fzf`
-- vim-plug: `:PlugUpdate fzf`
-
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. However, other
@@ -90,6 +80,17 @@ installing fzf on [Windows Subsystem for Linux][wsl] where everything runs
 flawlessly.
 
 [wsl]: https://blogs.msdn.microsoft.com/wsl/
+
+Upgrading fzf
+-------------
+
+fzf is being actively developed and you might want to upgrade it once in a
+while. Please follow the instruction below depending on the installation
+method used.
+
+- git: `cd ~/.fzf && git pull && ./install`
+- brew: `brew update; brew reinstall fzf`
+- vim-plug: `:PlugUpdate fzf`
 
 Building fzf
 ------------
@@ -357,7 +358,7 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 " With options
 :FZF --no-sort --reverse --inline-info /tmp
 
-" Bang version starts in fullscreen instead of using tmux pane or Neovim split
+" Bang version starts fzf in fullscreen mode
 :FZF!
 ```
 
@@ -407,20 +408,6 @@ command! -bang MyStuff
 
 Tips
 ----
-
-#### Rendering issues
-
-If you have any rendering issues, check the following:
-
-1. Make sure `$TERM` is correctly set. fzf will use 256-color only if it
-   contains `256` (e.g. `xterm-256color`)
-2. If you're on screen or tmux, `$TERM` should be either `screen` or
-   `screen-256color`
-3. Some terminal emulators (e.g. mintty) have problem displaying default
-   background color and make some text unable to read. In that case, try
-   `--black` option. And if it solves your problem, I recommend including it
-   in `FZF_DEFAULT_OPTS` for further convenience.
-4. If you still have problem, try `--no-256` option or even `--no-color`.
 
 #### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
 
