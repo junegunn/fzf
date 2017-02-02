@@ -44,7 +44,7 @@ func init() {
 	*/
 	// The following regular expression will include not all but most of the
 	// frequently used ANSI sequences
-	ansiRegex = regexp.MustCompile("\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x08\x0e\x0f]")
+	ansiRegex = regexp.MustCompile("\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x0e\x0f]|.\x08")
 }
 
 func extractColor(str string, state *ansiState, proc func(string, *ansiState) bool) (string, *[]ansiOffset, *ansiState) {
