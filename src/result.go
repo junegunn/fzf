@@ -37,12 +37,14 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 	result := Result{item: item, rank: rank{index: item.index}}
 	numChars := item.text.Length()
 	minBegin := math.MaxUint16
+	minEnd := math.MaxUint16
 	maxEnd := 0
 	validOffsetFound := false
 	for _, offset := range offsets {
 		b, e := int(offset[0]), int(offset[1])
 		if b < e {
 			minBegin = util.Min(b, minBegin)
+			minEnd = util.Min(e, minEnd)
 			maxEnd = util.Max(e, maxEnd)
 			validOffsetFound = true
 		}
@@ -68,7 +70,7 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 					}
 				}
 				if criterion == byBegin {
-					val = util.AsUint16(minBegin - whitePrefixLen)
+					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
 					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/trimLen)
 				}
