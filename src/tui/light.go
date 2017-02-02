@@ -748,13 +748,17 @@ func (w *LightWindow) Print(text string) {
 	w.cprint2(colDefault, w.bg, AttrRegular, text)
 }
 
+func cleanse(str string) string {
+	return strings.Replace(str, "\x1b", "?", -1)
+}
+
 func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
 	if !w.colored {
 		w.csiColor(colDefault, colDefault, attrFor(pair, attr))
 	} else {
 		w.csiColor(pair.Fg(), pair.Bg(), attr)
 	}
-	w.stderrInternal(text, false)
+	w.stderrInternal(cleanse(text), false)
 	w.csi("m")
 }
 
@@ -762,7 +766,7 @@ func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
 	if w.csiColor(fg, bg, attr) {
 		defer w.csi("m")
 	}
-	w.stderrInternal(text, false)
+	w.stderrInternal(cleanse(text), false)
 }
 
 type wrappedLine struct {
