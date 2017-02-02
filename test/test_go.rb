@@ -617,6 +617,17 @@ class TestGoFZF < TestBase
     ], `#{FZF} -foo --tiebreak=begin,length < #{tempname}`.split($/)
   end
 
+  def test_tiebreak_begin_algo_v2
+    writelines tempname, [
+      'baz foo bar',
+      'foo bar baz',
+    ]
+    assert_equal [
+      'foo bar baz',
+      'baz foo bar',
+    ], `#{FZF} -fbar --tiebreak=begin --algo=v2 < #{tempname}`.split($/)
+  end
+
   def test_tiebreak_end
     writelines tempname, [
       'xoxxxxxxxx',
