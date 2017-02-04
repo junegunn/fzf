@@ -28,10 +28,12 @@ let g:loaded_fzf = 1
 
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
-let s:fzf_go = expand('<sfile>:h:h').'/bin/fzf'
-let s:install = expand('<sfile>:h:h').'/install'
+let s:is_win = has('win32') || has('win64')
+let s:base_dir = expand('<sfile>:h:h')
+let s:fzf_go = s:base_dir.'/bin/fzf'
+let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
+let s:install = s:base_dir.'/install'
 let s:installed = 0
-let s:fzf_tmux = expand('<sfile>:h:h').'/bin/fzf-tmux'
 
 let s:cpo_save = &cpo
 set cpo&vim
@@ -42,6 +44,11 @@ function! s:fzf_exec()
       let s:exec = s:fzf_go
     elseif executable('fzf')
       let s:exec = 'fzf'
+    elseif s:is_win
+      call s:warn('fzf executable not found.')
+      call s:warn('Download fzf binary for Windows from https://github.com/junegunn/fzf-bin/releases/')
+      call s:warn('and place it as '.s:base_dir.'\bin\fzf.exe')
+      throw 'fzf executable not found'
     elseif !s:installed && executable(s:install) &&
           \ input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
       redraw
@@ -246,7 +253,7 @@ function! fzf#wrap(...)
 endfunction
 
 function! fzf#shellescape(path)
-  if has('win32') || has('win64')
+  if s:is_win
     let shellslash = &shellslash
     try
       set noshellslash
@@ -263,7 +270,7 @@ try
   let oshell = &shell
   let useshellslash = &shellslash
 
-  if has('win32') || has('win64')
+  if s:is_win
     set shell=cmd.exe
     set noshellslash
   else
@@ -307,7 +314,7 @@ try
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0)
   let use_height = has_key(dict, 'down') &&
-        \ !(has('nvim') || has('win32') || has('win64') || s:present(dict, 'up', 'left', 'right')) &&
+        \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
   let use_term = has('nvim')
   let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
@@ -317,7 +324,7 @@ try
   endif
   if use_height
     let optstr .= ' --height='.s:calc_size(&lines, dict.down, dict)
-  else
+  elseif use_term
     let optstr .= ' --no-height'
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
@@ -405,7 +412,7 @@ function! s:xterm_launcher()
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
 unlet! s:launcher
-if has('win32') || has('win64')
+if s:is_win
   let s:launcher = '%s'
 else
   let s:launcher = function('s:xterm_launcher')
