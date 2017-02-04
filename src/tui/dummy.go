@@ -40,6 +40,6 @@ func (r *FullscreenRenderer) MaxY() int          { return 0 }
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {}
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
 	return nil
 }

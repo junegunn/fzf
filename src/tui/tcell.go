@@ -27,15 +27,15 @@ func (p ColorPair) style() tcell.Style {
 type Attr tcell.Style
 
 type TcellWindow struct {
-	color      bool
-	top        int
-	left       int
-	width      int
-	height     int
-	lastX      int
-	lastY      int
-	moveCursor bool
-	border     bool
+	color       bool
+	top         int
+	left        int
+	width       int
+	height      int
+	lastX       int
+	lastY       int
+	moveCursor  bool
+	borderStyle BorderStyle
 }
 
 func (w *TcellWindow) Top() int {
@@ -61,8 +61,11 @@ func (w *TcellWindow) Refresh() {
 	}
 	w.lastX = 0
 	w.lastY = 0
-	if w.border {
-		w.drawBorder()
+	switch w.borderStyle {
+	case BorderAround:
+		w.drawBorder(true)
+	case BorderHorizontal:
+		w.drawBorder(false)
 	}
 }
 
@@ -377,15 +380,15 @@ func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
 	_screen.Show()
 }
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
 	// TODO
 	return &TcellWindow{
-		color:  r.theme != nil,
-		top:    top,
-		left:   left,
-		width:  width,
-		height: height,
-		border: border}
+		color:       r.theme != nil,
+		top:         top,
+		left:        left,
+		width:       width,
+		height:      height,
+		borderStyle: borderStyle}
 }
 
 func (w *TcellWindow) Close() {
@@ -536,7 +539,7 @@ func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	return w.fillString(str, ColorPair{fg, bg, -1}, a)
 }
 
-func (w *TcellWindow) drawBorder() {
+func (w *TcellWindow) drawBorder(around bool) {
 	left := w.left
 	right := left + w.width
 	top := w.top
@@ -554,13 +557,15 @@ func (w *TcellWindow) drawBorder() {
 		_screen.SetContent(x, bot-1, tcell.RuneHLine, nil, style)
 	}
 
-	for y := top; y < bot; y++ {
-		_screen.SetContent(left, y, tcell.RuneVLine, nil, style)
-		_screen.SetContent(right-1, y, tcell.RuneVLine, nil, style)
-	}
+	if around {
+		for y := top; y < bot; y++ {
+			_screen.SetContent(left, y, tcell.RuneVLine, nil, style)
+			_screen.SetContent(right-1, y, tcell.RuneVLine, nil, style)
+		}
 
-	_screen.SetContent(left, top, tcell.RuneULCorner, nil, style)
-	_screen.SetContent(right-1, top, tcell.RuneURCorner, nil, style)
-	_screen.SetContent(left, bot-1, tcell.RuneLLCorner, nil, style)
-	_screen.SetContent(right-1, bot-1, tcell.RuneLRCorner, nil, style)
+		_screen.SetContent(left, top, tcell.RuneULCorner, nil, style)
+		_screen.SetContent(right-1, top, tcell.RuneURCorner, nil, style)
+		_screen.SetContent(left, bot-1, tcell.RuneLLCorner, nil, style)
+		_screen.SetContent(right-1, bot-1, tcell.RuneLRCorner, nil, style)
+	}
 }

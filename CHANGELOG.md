@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.16.4
+------
+- Added `--border` option to draw border above and below the finder
+- Bug fixes and improvements
+
 0.16.3
 ------
 - Fixed a bug where fzf incorrectly display the lines when straddling tab

@@ -95,7 +95,7 @@ type LightRenderer struct {
 type LightWindow struct {
 	renderer *LightRenderer
 	colored  bool
-	border   bool
+	border   BorderStyle
 	top      int
 	left     int
 	width    int
@@ -600,11 +600,11 @@ func (r *LightRenderer) IsOptimized() bool {
 	return false
 }
 
-func (r *LightRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
+func (r *LightRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
 	w := &LightWindow{
 		renderer: r,
 		colored:  r.theme != nil,
-		border:   border,
+		border:   borderStyle,
 		top:      top,
 		left:     left,
 		width:    width,
@@ -614,13 +614,27 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, bord
 	if r.theme != nil {
 		w.bg = r.theme.Bg
 	}
-	if w.border {
-		w.drawBorder()
-	}
+	w.drawBorder()
 	return w
 }
 
 func (w *LightWindow) drawBorder() {
+	switch w.border {
+	case BorderAround:
+		w.drawBorderAround()
+	case BorderHorizontal:
+		w.drawBorderHorizontal()
+	}
+}
+
+func (w *LightWindow) drawBorderHorizontal() {
+	w.Move(0, 0)
+	w.CPrint(ColBorder, AttrRegular, repeat("─", w.width))
+	w.Move(w.height-1, 0)
+	w.CPrint(ColBorder, AttrRegular, repeat("─", w.width))
+}
+
+func (w *LightWindow) drawBorderAround() {
 	w.Move(0, 0)
 	w.CPrint(ColBorder, AttrRegular, "┌"+repeat("─", w.width-2)+"┐")
 	for y := 1; y < w.height-1; y++ {
@@ -854,9 +868,7 @@ func (w *LightWindow) FinishFill() {
 }
 
 func (w *LightWindow) Erase() {
-	if w.border {
-		w.drawBorder()
-	}
+	w.drawBorder()
 	// We don't erase the window here to avoid flickering during scroll
 	w.Move(0, 0)
 }

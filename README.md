@@ -141,10 +141,10 @@ vim $(fzf --height 40% --reverse)
 ```
 
 You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
-default.
+default. For example,
 
 ```sh
-export FZF_DEFAULT_OPTS='--height 40% --reverse'
+export FZF_DEFAULT_OPTS='--height 40% --reverse --border'
 ```
 
 #### Search syntax

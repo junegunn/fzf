@@ -189,12 +189,13 @@ func (r *FullscreenRenderer) Close() {
 	C.delscreen(_screen)
 }
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, border bool) Window {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
 	win := C.newwin(C.int(height), C.int(width), C.int(top), C.int(left))
 	if r.theme != nil {
 		C.wbkgd(win, C.chtype(C.COLOR_PAIR(C.int(ColNormal.index()))))
 	}
-	if border {
+	// FIXME Does not implement BorderHorizontal
+	if borderStyle != BorderNone {
 		pair, attr := _colorFn(ColBorder, 0)
 		C.wcolor_set(win, pair, nil)
 		C.wattron(win, attr)

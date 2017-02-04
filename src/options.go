@@ -54,6 +54,7 @@ const usage = `usage: fzf [options]
     --min-height=HEIGHT   Minimum height when --height is given in percent
                           (default: 10)
     --reverse             Reverse orientation
+    --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
     --prompt=STR          Input prompt (default: '> ')
@@ -183,6 +184,7 @@ type Options struct {
 	Header      []string
 	HeaderLines int
 	Margin      [4]sizeSpec
+	Bordered    bool
 	Tabstop     int
 	Version     bool
 }
@@ -1086,6 +1088,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Height = sizeSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
+		case "--no-border":
+			opts.Bordered = false
+		case "--border":
+			opts.Bordered = true
 		case "--margin":
 			opts.Margin = parseMargin(
 				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))

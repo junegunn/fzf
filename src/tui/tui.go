@@ -195,6 +195,14 @@ type MouseEvent struct {
 	Mod    bool
 }
 
+type BorderStyle int
+
+const (
+	BorderNone BorderStyle = iota
+	BorderAround
+	BorderHorizontal
+)
+
 type Renderer interface {
 	Init()
 	Pause()
@@ -211,7 +219,7 @@ type Renderer interface {
 	DoesAutoWrap() bool
 	IsOptimized() bool
 
-	NewWindow(top int, left int, width int, height int, border bool) Window
+	NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window
 }
 
 type Window interface {
