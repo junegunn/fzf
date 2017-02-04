@@ -317,7 +317,7 @@ try
   endif
   if use_height
     let optstr .= ' --height='.s:calc_size(&lines, dict.down, dict)
-  elseif use_term
+  else
     let optstr .= ' --no-height'
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
