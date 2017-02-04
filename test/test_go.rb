@@ -1554,7 +1554,7 @@ module CompletionTest
     tmux.prepare
 
     # Using tmux
-    tmux.send_keys 'unset FZFFOO**', :Tab
+    tmux.send_keys 'unset FZFFOOBR**', :Tab
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'unset FZFFOOBAR' }
@@ -1562,7 +1562,7 @@ module CompletionTest
 
     # FZF_TMUX=1
     new_shell
-    tmux.send_keys 'unset FZFFO**', :Tab, pane: 0
+    tmux.send_keys 'unset FZFFOOBR**', :Tab, pane: 0
     tmux.until(false, 1) { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'unset FZFFOOBAR' }
