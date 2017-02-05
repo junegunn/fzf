@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.16.3
+version=0.16.4
 auto_completion=
 key_bindings=
 update_config=2
@@ -88,17 +88,6 @@ check_binary() {
   return 1
 }
 
-symlink() {
-  echo "  - Creating symlink: bin/$1 -> bin/fzf"
-  (cd "$fzf_base"/bin &&
-   rm -f fzf &&
-   ln -sf $1 fzf)
-  if [ $? -ne 0 ]; then
-    binary_error="Failed to create symlink"
-    return 1
-  fi
-}
-
 link_fzf_in_path() {
   if which_fzf="$(command -v fzf)"; then
     echo "  - Found in \$PATH"
@@ -124,9 +113,6 @@ download() {
       echo "  - Already exists"
       check_binary && return
     fi
-    if [ -x "$fzf_base"/bin/$1 ]; then
-      symlink $1 && check_binary && return
-    fi
     link_fzf_in_path && return
   fi
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
@@ -147,12 +133,12 @@ download() {
   fi
   set +o pipefail
 
-  if [ ! -f $1 ]; then
+  if [ ! -f fzf ]; then
     binary_error="Failed to download ${1}"
     return
   fi
 
-  chmod +x $1 && symlink $1 && check_binary
+  chmod +x fzf && check_binary
 }
 
 # Try to download binary executable

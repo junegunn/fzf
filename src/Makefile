@@ -52,23 +52,23 @@ all: fzf/$(BINARY)
 
 ifeq ($(GOOS),windows)
 release: fzf/$(BINARY32) fzf/$(BINARY64)
-	cd fzf && cp $(BINARY32) $(RELEASE32).exe && zip $(RELEASE32).zip $(RELEASE32).exe
-	cd fzf && cp $(BINARY64) $(RELEASE64).exe && zip $(RELEASE64).zip $(RELEASE64).exe
-	cd fzf && rm -f $(RELEASE32).exe $(RELEASE64).exe
+	cd fzf && cp -f $(BINARY32) fzf.exe && zip $(RELEASE32).zip fzf.exe
+	cd fzf && cp -f $(BINARY64) fzf.exe && zip $(RELEASE64).zip fzf.exe
+	cd fzf && rm -f fzf.exe
 else ifeq ($(GOOS),linux)
 release: fzf/$(BINARY32) fzf/$(BINARY64) fzf/$(BINARYARM5) fzf/$(BINARYARM6) fzf/$(BINARYARM7) fzf/$(BINARYARM8)
-	cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
-	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64)
-	cd fzf && cp $(BINARYARM5) $(RELEASEARM5) && tar -czf $(RELEASEARM5).tgz $(RELEASEARM5)
-	cd fzf && cp $(BINARYARM6) $(RELEASEARM6) && tar -czf $(RELEASEARM6).tgz $(RELEASEARM6)
-	cd fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7)
-	cd fzf && cp $(BINARYARM8) $(RELEASEARM8) && tar -czf $(RELEASEARM8).tgz $(RELEASEARM8)
-	cd fzf && rm -f $(RELEASE32) $(RELEASE64) $(RELEASEARM5) $(RELEASEARM6) $(RELEASEARM7) $(RELEASEARM8)
+	cd fzf && cp -f $(BINARY32) fzf && tar -czf $(RELEASE32).tgz fzf
+	cd fzf && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
+	cd fzf && cp -f $(BINARYARM5) fzf && tar -czf $(RELEASEARM5).tgz fzf
+	cd fzf && cp -f $(BINARYARM6) fzf && tar -czf $(RELEASEARM6).tgz fzf
+	cd fzf && cp -f $(BINARYARM7) fzf && tar -czf $(RELEASEARM7).tgz fzf
+	cd fzf && cp -f $(BINARYARM8) fzf && tar -czf $(RELEASEARM8).tgz fzf
+	cd fzf && rm -f fzf
 else
 release: fzf/$(BINARY32) fzf/$(BINARY64)
-	cd fzf && cp $(BINARY32) $(RELEASE32) && tar -czf $(RELEASE32).tgz $(RELEASE32)
-	cd fzf && cp $(BINARY64) $(RELEASE64) && tar -czf $(RELEASE64).tgz $(RELEASE64)
-	cd fzf && rm -f $(RELEASE32) $(RELEASE64)
+	cd fzf && cp -f $(BINARY32) fzf && tar -czf $(RELEASE32).tgz fzf
+	cd fzf && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
+	cd fzf && rm -f fzf
 endif
 
 release-all: clean test
