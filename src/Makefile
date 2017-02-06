@@ -4,6 +4,8 @@ ifeq ($(UNAME_S),Darwin)
 	GOOS := darwin
 else ifeq ($(UNAME_S),Linux)
 	GOOS := linux
+else
+$(error "$$GOOS is not defined.")
 endif
 endif
 
@@ -12,7 +14,6 @@ ROOTDIR     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BINDIR      := $(shell dirname $(ROOTDIR))/bin
 GOPATH      := $(shell dirname $(ROOTDIR))/gopath
 SRCDIR      := $(GOPATH)/src/github.com/junegunn/fzf/src
-DOCKEROPTS  := -i -t -v $(ROOTDIR):/fzf/src
 BINARY32    := fzf-$(GOOS)_386
 BINARY64    := fzf-$(GOOS)_amd64
 BINARYARM5  := fzf-$(GOOS)_arm5
@@ -86,12 +87,6 @@ deps: $(SRCDIR) $(SOURCES)
 	cd $(SRCDIR) && go get -tags "$(TAGS)"
 	./deps
 
-android-build: $(SRCDIR)
-	cd $(SRCDIR) && GOARCH=arm GOARM=7 CGO_ENABLED=1 go get
-	cd $(SRCDIR)/fzf && GOARCH=arm GOARM=7 CGO_ENABLED=1 go build -a -ldflags="-w -extldflags=-pie" -o $(BINARYARM7)
-	cd $(SRCDIR)/fzf && cp $(BINARYARM7) $(RELEASEARM7) && tar -czf $(RELEASEARM7).tgz $(RELEASEARM7) && \
-	rm -f $(RELEASEARM7)
-
 test: deps
 	SHELL=/bin/sh GOOS= go test -v -tags "$(TAGS)" ./...
 
@@ -129,42 +124,4 @@ $(BINDIR)/fzf: fzf/$(BINARY) | $(BINDIR)
 $(BINDIR):
 	mkdir -p $@
 
-docker-arch:
-	docker build -t junegunn/arch-sandbox - < Dockerfile.arch
-
-docker-ubuntu:
-	docker build -t junegunn/ubuntu-sandbox - < Dockerfile.ubuntu
-
-docker-centos:
-	docker build -t junegunn/centos-sandbox - < Dockerfile.centos
-
-docker-android:
-	docker build -t junegunn/android-sandbox - < Dockerfile.android
-
-arch: docker-arch
-	docker run $(DOCKEROPTS) junegunn/$@-sandbox \
-		sh -c 'cd /fzf/src; /bin/bash'
-
-ubuntu: docker-ubuntu
-	docker run $(DOCKEROPTS) junegunn/$@-sandbox \
-		sh -c 'cd /fzf/src; /bin/bash'
-
-centos: docker-centos
-	docker run $(DOCKEROPTS) junegunn/$@-sandbox \
-		sh -c 'cd /fzf/src; /bin/bash'
-
-linux: docker-centos
-	docker run $(DOCKEROPTS) junegunn/centos-sandbox \
-		/bin/bash -ci 'cd /fzf/src; make TAGS=static release'
-
-ubuntu-android: docker-android
-	docker run $(DOCKEROPTS) junegunn/android-sandbox \
-		sh -c 'cd /fzf/src; /bin/bash'
-
-android: docker-android
-	docker run $(DOCKEROPTS) junegunn/android-sandbox \
-		/bin/bash -ci 'cd /fzf/src; GOOS=android make android-build'
-
-.PHONY: all deps release test install uninstall clean \
-	linux arch ubuntu centos docker-arch docker-ubuntu docker-centos \
-	android-build docker-android ubuntu-android android
+.PHONY: all deps release release-all test install uninstall clean
