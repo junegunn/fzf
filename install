@@ -158,79 +158,8 @@ case "$archi" in
   FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}   ;;
   OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64} ;;
   OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}   ;;
-  *)              binary_available=0 binary_error=1  ;;
+  *)             binary_available=0 binary_error=1 ;;
 esac
-
-install_ruby_fzf() {
-  if [ -z "$allow_legacy" ]; then
-    ask "Do you want to install legacy Ruby version instead?" && exit 1
-  fi
-  echo "Installing legacy Ruby version ..."
-
-  # ruby executable
-  echo -n "Checking Ruby executable ... "
-  ruby=$(command -v ruby)
-  if [ $? -ne 0 ]; then
-    echo "ruby executable not found !!!"
-    exit 1
-  fi
-
-  # System ruby is preferred
-  system_ruby=/usr/bin/ruby
-  if [ -x $system_ruby ] && [ $system_ruby != "$ruby" ]; then
-    $system_ruby --disable-gems -rcurses -e0 2> /dev/null
-    [ $? -eq 0 ] && ruby=$system_ruby
-  fi
-
-  echo "OK ($ruby)"
-
-  # Curses-support
-  echo -n "Checking Curses support ... "
-  "$ruby" -rcurses -e0 2> /dev/null
-  if [ $? -eq 0 ]; then
-    echo "OK"
-  else
-    echo "Not found"
-    echo "Installing 'curses' gem ... "
-    if (( EUID )); then
-      /usr/bin/env gem install curses --user-install
-    else
-      /usr/bin/env gem install curses
-    fi
-    if [ $? -ne 0 ]; then
-      echo
-      echo "Failed to install 'curses' gem."
-      if [[ $(uname -r) =~ 'ARCH' ]]; then
-        echo "Make sure that base-devel package group is installed."
-      fi
-      exit 1
-    fi
-  fi
-
-  # Ruby version
-  echo -n "Checking Ruby version ... "
-  "$ruby" -e 'exit RUBY_VERSION >= "1.9"'
-  if [ $? -eq 0 ]; then
-    echo ">= 1.9"
-    "$ruby" --disable-gems -rcurses -e0 2> /dev/null
-    if [ $? -eq 0 ]; then
-      fzf_cmd="$ruby --disable-gems $fzf_base/fzf"
-    else
-      fzf_cmd="$ruby $fzf_base/fzf"
-    fi
-  else
-    echo "< 1.9"
-    fzf_cmd="$ruby $fzf_base/fzf"
-  fi
-
-  # Create fzf script
-  echo -n "Creating wrapper script for fzf ... "
-  rm -f "$fzf_base"/bin/fzf
-  echo "#!/bin/sh" > "$fzf_base"/bin/fzf
-  echo "$fzf_cmd \"\$@\"" >> "$fzf_base"/bin/fzf
-  chmod +x "$fzf_base"/bin/fzf
-  echo "OK"
-}
 
 cd "$fzf_base"
 if [ -n "$binary_error" ]; then
@@ -249,12 +178,12 @@ if [ -n "$binary_error" ]; then
       echo "OK"
       cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
     else
-      echo "Failed to build binary ..."
-      install_ruby_fzf
+      echo "Failed to build binary. Installation failed."
+      exit 1
     fi
   else
-    echo "go executable not found. Cannot build binary ..."
-    install_ruby_fzf
+    echo "go executable not found. Installation failed."
+    exit 1
   fi
 fi
 
