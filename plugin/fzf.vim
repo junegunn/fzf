@@ -304,7 +304,7 @@ try
     elseif type == 3
       let temps.input = tempname()
       call writefile(source, temps.input)
-      let prefix = 'cat '.s:shellesc(temps.input).'|'
+      let prefix = (s:is_win ? 'type ' : 'cat ').s:shellesc(temps.input).'|'
     else
       throw 'invalid source type'
     endif
