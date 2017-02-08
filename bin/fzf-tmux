@@ -109,7 +109,7 @@ while [[ $# -gt 0 ]]; do
   [[ -n "$skip" ]] && args+=("$arg")
 done
 
-if [[ -z "$TMUX" || "$opt" =~ ^-h && "$columns" -le 40 || ! "$opt" =~ ^-h && "$lines" -le 15 ]]; then
+if [[ -z "$TMUX" || "$opt" =~ ^-h && "$columns" -le 40 || ! "$opt" =~ ^-h && "$lines" -le 15 || `tmux display -p "#{window_zoomed_flag}"` -eq 1 ]]; then
   "$fzf" "${args[@]}"
   exit $?
 fi
