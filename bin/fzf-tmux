@@ -138,6 +138,7 @@ cleanup() {
 
   # Remove temp window if we were zoomed
   if [[ -n "$zoomed" ]]; then
+    tmux display-message -p "#{window_id}" > /dev/null
     tmux swap-pane -t $original_window \; \
       select-window -t $original_window \; \
       kill-window -t $tmp_window \; \
