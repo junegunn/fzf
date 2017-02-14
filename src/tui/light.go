@@ -552,9 +552,9 @@ func (r *LightRenderer) Resume() bool {
 }
 
 func (r *LightRenderer) Clear() {
-  if r.fullscreen {
-    r.csi("H")
-  }
+	if r.fullscreen {
+		r.csi("H")
+	}
 	// r.csi("u")
 	r.origin()
 	r.csi("J")
