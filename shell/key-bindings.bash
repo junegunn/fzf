@@ -1,7 +1,11 @@
 # Key bindings
 # ------------
 __fzf_select__() {
-  local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
+  local cmd d ignore_dirs=()
+  [[ -r "$HOME/.ignore" ]] && while IFS= read -r d; do
+    ignore_dirs+=( -path "\*/$d" -o )
+  done < "$HOME/.ignore"
+  cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( ${ignore_dirs[*]} -path '*/\\.*' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
