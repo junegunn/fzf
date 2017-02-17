@@ -445,7 +445,7 @@ function! s:execute(dict, command, use_height, temps) abort
     endif
     let command = printf(fmt, escaped)
   else
-    let command = escaped
+    let command = a:use_height ? a:command : escaped
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
