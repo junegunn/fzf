@@ -292,7 +292,7 @@ try
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = tempname().(s:is_win ? '.bat' : '')
-    call writefile(split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
+    call writefile((s:is_win ? ['@echo off'] : []) + split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
     let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . s:shellesc(temps.source)
   endif
 
