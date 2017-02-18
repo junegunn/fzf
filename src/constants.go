@@ -18,10 +18,9 @@ const (
 	readerBufferSize = 64 * 1024
 
 	// Terminal
-	initialDelay     = 20 * time.Millisecond
-	initialDelayTac  = 100 * time.Millisecond
-	spinnerDuration  = 200 * time.Millisecond
-	maxPatternLength = 100
+	initialDelay    = 20 * time.Millisecond
+	initialDelayTac = 100 * time.Millisecond
+	spinnerDuration = 200 * time.Millisecond
 
 	// Matcher
 	numPartitionsMultiplier = 8

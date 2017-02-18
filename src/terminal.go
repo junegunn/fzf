@@ -603,6 +603,7 @@ func (t *Terminal) resizeWindows() {
 			t.window.MoveAndClear(i, 0)
 		}
 	}
+	t.truncateQuery()
 }
 
 func (t *Terminal) move(y int, x int, clear bool) {
@@ -628,13 +629,19 @@ func (t *Terminal) printPrompt() {
 }
 
 func (t *Terminal) printInfo() {
+	pos := 0
 	if t.inlineInfo {
-		t.move(0, t.displayWidth([]rune(t.prompt))+t.displayWidth(t.input)+1, true)
+		pos = t.displayWidth([]rune(t.prompt)) + t.displayWidth(t.input) + 1
+		if pos+len(" < ") > t.window.Width() {
+			return
+		}
+		t.move(0, pos, true)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, t.strong, " < ")
 		} else {
 			t.window.CPrint(tui.ColPrompt, t.strong, " < ")
 		}
+		pos += len(" < ")
 	} else {
 		t.move(1, 0, true)
 		if t.reading {
@@ -643,6 +650,7 @@ func (t *Terminal) printInfo() {
 			t.window.CPrint(tui.ColSpinner, t.strong, _spinner[idx])
 		}
 		t.move(1, 2, false)
+		pos = 2
 	}
 
 	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
@@ -659,7 +667,9 @@ func (t *Terminal) printInfo() {
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
-	t.window.CPrint(tui.ColInfo, 0, output)
+	if pos+len(output) <= t.window.Width() {
+		t.window.CPrint(tui.ColInfo, 0, output)
+	}
 }
 
 func (t *Terminal) printHeader() {
@@ -1210,6 +1220,12 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item
 	return true, sels
 }
 
+func (t *Terminal) truncateQuery() {
+	maxPatternLength := util.Max(1, t.window.Width()-t.displayWidth([]rune(t.prompt))-1)
+	t.input, _ = t.trimRight(t.input, maxPatternLength)
+	t.cx = util.Constrain(t.cx, 0, len(t.input))
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -1688,11 +1704,7 @@ func (t *Terminal) Loop() {
 			if !doActions(actions, mapkey) {
 				continue
 			}
-			// Truncate the query if it's too long
-			if len(t.input) > maxPatternLength {
-				t.input = t.input[:maxPatternLength]
-				t.cx = util.Constrain(t.cx, 0, maxPatternLength)
-			}
+			t.truncateQuery()
 			changed = string(previousInput) != string(t.input)
 		} else {
 			if mapkey == tui.Rune {
