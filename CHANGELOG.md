@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.16.5
+------
+- Minor bug fixes
+- Added `toggle-preview-wrap` action
+
 0.16.4
 ------
 - Added `--border` option to draw border above and below the finder

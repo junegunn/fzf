@@ -723,6 +723,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actNextHistory)
 			case "toggle-preview":
 				appendAction(actTogglePreview)
+			case "toggle-preview-wrap":
+				appendAction(actTogglePreviewWrap)
 			case "toggle-sort":
 				appendAction(actToggleSort)
 			case "preview-up":

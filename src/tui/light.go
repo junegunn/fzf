@@ -596,7 +596,7 @@ func (r *LightRenderer) MaxY() int {
 }
 
 func (r *LightRenderer) DoesAutoWrap() bool {
-	return true
+	return false
 }
 
 func (r *LightRenderer) IsOptimized() bool {

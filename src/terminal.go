@@ -199,6 +199,7 @@ const (
 	actPrintQuery
 	actToggleSort
 	actTogglePreview
+	actTogglePreviewWrap
 	actPreviewUp
 	actPreviewDown
 	actPreviewPageUp
@@ -1458,6 +1459,11 @@ func (t *Terminal) Loop() {
 						}
 					}
 					req(reqList, reqInfo, reqHeader)
+				}
+			case actTogglePreviewWrap:
+				if t.hasPreviewWindow() {
+					t.preview.wrap = !t.preview.wrap
+					req(reqPreviewRefresh)
 				}
 			case actToggleSort:
 				t.sort = !t.sort
