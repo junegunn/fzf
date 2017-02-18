@@ -5,6 +5,7 @@ CHANGELOG
 ------
 - Minor bug fixes
 - Added `toggle-preview-wrap` action
+- Built with Go 1.8
 
 0.16.4
 ------
