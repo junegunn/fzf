@@ -451,7 +451,7 @@ function! s:execute(dict, command, use_height, temps) abort
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
     call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s %s 2> /dev/tty', &lines, command, stdin))
   else
-    execute 'silent !'.command
+    execute 'silent !'.escape(command, '!')
   endif
   let exit_status = v:shell_error
   redraw!
