@@ -436,7 +436,7 @@ function! s:execute(dict, command, use_height, temps) abort
   if has('unix') && !a:use_height
     silent! !clear 2> /dev/null
   endif
-  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#')
+  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
@@ -451,7 +451,7 @@ function! s:execute(dict, command, use_height, temps) abort
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
     call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s %s 2> /dev/tty', &lines, command, stdin))
   else
-    execute 'silent !'.escape(command, '!')
+    execute 'silent !'.command
   endif
   let exit_status = v:shell_error
   redraw!
