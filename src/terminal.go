@@ -46,6 +46,7 @@ type itemLine struct {
 	current  bool
 	selected bool
 	label    string
+	queryLen int
 	width    int
 	result   Result
 }
@@ -737,11 +738,13 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{current: current, selected: selected, label: label, result: *result, width: 0}
+	newLine := itemLine{current: current, selected: selected, label: label,
+		result: *result, queryLen: len(t.input), width: 0}
 	prevLine := t.prevLines[i]
 	if prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
 		prevLine.label == newLine.label &&
+		prevLine.queryLen == newLine.queryLen &&
 		prevLine.result == newLine.result {
 		return
 	}
