@@ -290,6 +290,10 @@ try
     throw v:exception
   endtry
 
+  if has('nvim') && !has_key(dict, 'dir')
+    let dict.dir = getcwd()
+  endif
+
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = tempname().(s:is_win ? '.bat' : '')
     call writefile((s:is_win ? ['@echo off'] : []) + split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
