@@ -27,7 +27,21 @@ __fzfcmd() {
 }
 
 fzf-file-widget() {
-  LBUFFER="${LBUFFER}$(__fsel)"
+  relpath="$(__fsel)"
+  abspath=$(echo "$PWD/$relpath" | sed -e 's/[[:space:]]*$//')
+  FZF_CTRL_T_FILE_PREFIX="${FZF_CTRL_T_FILE_PREFIX:-$EDITOR}"
+
+  prefix=""
+
+  if [ -f "$abspath" ]; then
+     prefix="${FZF_CTRL_T_FILE_PREFIX}"
+  fi
+
+  LBUFFER="${LBUFFER}${relpath}"
+  if [ ! -z "$prefix" ]; then
+     LBUFFER="${prefix} ${LBUFFER}"
+  fi
+
   local ret=$?
   zle redisplay
   typeset -f zle-line-init >/dev/null && zle zle-line-init
