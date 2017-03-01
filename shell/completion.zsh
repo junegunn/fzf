@@ -142,6 +142,7 @@ _fzf_complete_unalias() {
 }
 
 fzf-completion() {
+  emulate zsh
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays
 
