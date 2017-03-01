@@ -600,7 +600,7 @@ func (t *Terminal) resizeWindows() {
 			width,
 			height, tui.BorderNone)
 	}
-	if !t.tui.IsOptimized() && t.theme != nil && t.theme.HasBg() {
+	if !t.tui.IsOptimized() {
 		for i := 0; i < t.window.Height(); i++ {
 			t.window.MoveAndClear(i, 0)
 		}
