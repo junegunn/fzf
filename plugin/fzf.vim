@@ -195,7 +195,7 @@ endfunction
 function! s:validate_layout(layout)
   for key in keys(a:layout)
     if index(s:layout_keys, key) < 0
-      throw printf('invalid entry in g:fzf_layout: %s (allowed: %s)%s',
+      throw printf('Invalid entry in g:fzf_layout: %s (allowed: %s)%s',
             \ key, join(s:layout_keys, ', '), key == 'options' ? '. Use $FZF_DEFAULT_OPTS.' : '')
     endif
   endfor
@@ -210,7 +210,7 @@ function! fzf#wrap(...)
   for arg in copy(a:000)
     let tidx = index(expects, type(arg), tidx)
     if tidx < 0
-      throw 'invalid arguments (expected: [name string] [opts dict] [fullscreen boolean])'
+      throw 'Invalid arguments (expected: [name string] [opts dict] [fullscreen boolean])'
     endif
     let args[tidx] = arg
     let tidx += 1
@@ -320,7 +320,7 @@ try
       call writefile(source, temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').s:shellesc(temps.input).'|'
     else
-      throw 'invalid source type'
+      throw 'Invalid source type'
     endif
   else
     let prefix = ''
