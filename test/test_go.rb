@@ -513,11 +513,11 @@ class TestGoFZF < TestBase
       tmux.send_keys "seq 1 111 | #{fzf "-m +s --tac #{opt} -q11"}", :Enter
       tmux.until { |lines| lines[-3].include? '> 111' }
       tmux.send_keys :Tab
-      tmux.until { |lines| lines[-2].include? '4/111   (1)' }
+      tmux.until { |lines| lines[-2].include? '4/111 -S (1)' }
       tmux.send_keys 'C-R'
       tmux.until { |lines| lines[-3].include? '> 11' }
       tmux.send_keys :Tab
-      tmux.until { |lines| lines[-2].include? '4/111/S (2)' }
+      tmux.until { |lines| lines[-2].include? '4/111 +S (2)' }
       tmux.send_keys :Enter
       assert_equal ['111', '11'], readonce.split($/)
     end

@@ -658,9 +658,9 @@ func (t *Terminal) printInfo() {
 	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
 	if t.toggleSort {
 		if t.sort {
-			output += "/S"
+			output += " +S"
 		} else {
-			output += "  "
+			output += " -S"
 		}
 	}
 	if t.multi && len(t.selected) > 0 {
