@@ -192,6 +192,16 @@ function! s:defaults()
   return empty(colors) ? '' : ('--color='.colors)
 endfunction
 
+function! s:validate_layout(layout)
+  for key in keys(a:layout)
+    if index(s:layout_keys, key) < 0
+      throw printf('invalid entry in g:fzf_layout: %s (allowed: %s)%s',
+            \ key, join(s:layout_keys, ', '), key == 'options' ? '. Use $FZF_DEFAULT_OPTS.' : '')
+    endif
+  endfor
+  return a:layout
+endfunction
+
 " [name string,] [opts dict,] [fullscreen boolean]
 function! fzf#wrap(...)
   let args = ['', {}, 0]
@@ -223,7 +233,7 @@ function! fzf#wrap(...)
     if !exists('g:fzf_layout') && exists('g:fzf_height')
       let opts.down = g:fzf_height
     else
-      let opts = extend(opts, get(g:, 'fzf_layout', s:default_layout))
+      let opts = extend(opts, s:validate_layout(get(g:, 'fzf_layout', s:default_layout)))
     endif
   endif
 
