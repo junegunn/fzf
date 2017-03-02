@@ -958,7 +958,7 @@ func (t *Terminal) printPreview() {
 					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
 				str, _ = t.processTabs(trimmed, 0)
-				if ansi != nil && ansi.colored() {
+				if t.theme != nil && ansi != nil && ansi.colored() {
 					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 				} else {
 					fillRet = t.pwindow.Fill(str)
