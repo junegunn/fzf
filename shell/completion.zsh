@@ -46,7 +46,7 @@ __fzf_generic_path_completion() {
   tail=$6
   fzf="$(__fzfcmd_complete)"
 
-  setopt nonomatch
+  setopt localoptions nonomatch
   dir="$base"
   while [ 1 ]; do
     if [[ -z "$dir" || -d ${~dir} ]]; then
@@ -142,8 +142,8 @@ _fzf_complete_unalias() {
 }
 
 fzf-completion() {
-  emulate -L zsh
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
+  setopt localoptions noshwordsplit noksh_arrays
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
