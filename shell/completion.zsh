@@ -143,7 +143,7 @@ _fzf_complete_unalias() {
 
 fzf-completion() {
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
-  setopt localoptions noshwordsplit noksh_arrays
+  setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
