@@ -1408,6 +1408,7 @@ module TestShell
       tmux.send_keys 'C-r'
       tmux.until { |lines| lines.item_count > 0 }
     end
+    tmux.send_keys 'C-r'
     tmux.send_keys '3d'
     tmux.until { |lines| lines[-3].end_with? 'echo 3rd' }
     tmux.send_keys :Enter

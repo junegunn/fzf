@@ -230,8 +230,8 @@ fish.
     - Set `FZF_CTRL_T_COMMAND` to override the default command
     - Set `FZF_CTRL_T_OPTS` to pass additional options
 - `CTRL-R` - Paste the selected command from history onto the command line
-    - Sort is disabled by default to respect chronological ordering
-    - Press `CTRL-R` again to toggle sort
+    - If you want to see the commands in chronological order, press `CTRL-R`
+      again which toggles sorting by relevance
     - Set `FZF_CTRL_R_OPTS` to pass additional options
 - `ALT-C` - cd into the selected directory
     - Set `FZF_ALT_C_COMMAND` to override the default command
