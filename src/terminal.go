@@ -295,7 +295,14 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		strongAttr = tui.AttrRegular
 	}
 	var renderer tui.Renderer
-	if opts.Height.size > 0 {
+	if opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100 {
+		if tui.HasFullscreenRenderer() {
+			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
+		} else {
+			renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
+				true, func(h int) int { return h })
+		}
+	} else {
 		maxHeightFunc := func(termHeight int) int {
 			var maxHeight int
 			if opts.Height.percent {
@@ -316,12 +323,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			}
 			return util.Min(termHeight, util.Max(maxHeight, effectiveMinHeight))
 		}
-		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, maxHeightFunc)
-	} else if tui.HasFullscreenRenderer() {
-		renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
-	} else {
-		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
-			func(h int) int { return h })
+		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
 	}
 	wordRubout := "[^[:alnum:]][[:alnum:]]"
 	wordNext := "[[:alnum:]][^[:alnum:]]|(.$)"

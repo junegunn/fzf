@@ -107,7 +107,7 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, maxHeightFunc func(int) int) Renderer {
+func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) Renderer {
 	r := LightRenderer{
 		theme:         theme,
 		forceBlack:    forceBlack,
@@ -116,7 +116,7 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 		ttyin:         openTtyIn(),
 		yoffset:       0,
 		tabstop:       tabstop,
-		fullscreen:    false,
+		fullscreen:    fullscreen,
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
 	return &r
@@ -176,11 +176,7 @@ func (r *LightRenderer) Init() {
 	}
 	r.origState = origState
 	terminal.MakeRaw(fd)
-	terminalHeight, capHeight := r.updateTerminalSize()
-	if capHeight == terminalHeight {
-		r.fullscreen = true
-		r.height = terminalHeight
-	}
+	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
 	if r.fullscreen {
@@ -242,20 +238,15 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) updateTerminalSize() (int, int) {
+func (r *LightRenderer) updateTerminalSize() {
 	width, height, err := terminal.GetSize(r.fd())
 	if err == nil {
 		r.width = width
-		if r.fullscreen {
-			r.height = height
-		} else {
-			r.height = r.maxHeightFunc(height)
-		}
+		r.height = r.maxHeightFunc(height)
 	} else {
 		r.width = getEnv("COLUMNS", defaultWidth)
 		r.height = r.maxHeightFunc(getEnv("LINES", defaultHeight))
 	}
-	return height, r.height
 }
 
 func (r *LightRenderer) getch(nonblock bool) (int, bool) {
