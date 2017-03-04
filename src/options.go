@@ -186,6 +186,7 @@ type Options struct {
 	Margin      [4]sizeSpec
 	Bordered    bool
 	Tabstop     int
+	ClearOnExit bool
 	Version     bool
 }
 
@@ -234,6 +235,7 @@ func defaultOptions() *Options {
 		HeaderLines: 0,
 		Margin:      defaultMargin(),
 		Tabstop:     8,
+		ClearOnExit: true,
 		Version:     false}
 }
 
@@ -1099,6 +1101,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
+		case "--clear":
+			opts.ClearOnExit = true
+		case "--no-clear":
+			opts.ClearOnExit = false
 		case "--version":
 			opts.Version = true
 		default:

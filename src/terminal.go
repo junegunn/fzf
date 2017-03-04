@@ -316,11 +316,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			}
 			return util.Min(termHeight, util.Max(maxHeight, effectiveMinHeight))
 		}
-		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, maxHeightFunc)
+		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, maxHeightFunc)
 	} else if tui.HasFullscreenRenderer() {
 		renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 	} else {
-		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop,
+		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
 			func(h int) int { return h })
 	}
 	wordRubout := "[^[:alnum:]][[:alnum:]]"

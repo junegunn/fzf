@@ -74,6 +74,7 @@ type LightRenderer struct {
 	theme         *ColorTheme
 	mouse         bool
 	forceBlack    bool
+	clearOnExit   bool
 	prevDownTime  time.Time
 	clickY        []int
 	ttyin         *os.File
@@ -106,11 +107,12 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, maxHeightFunc func(int) int) Renderer {
+func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, maxHeightFunc func(int) int) Renderer {
 	r := LightRenderer{
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
+		clearOnExit:   clearOnExit,
 		ttyin:         openTtyIn(),
 		yoffset:       0,
 		tabstop:       tabstop,
@@ -571,14 +573,20 @@ func (r *LightRenderer) Refresh() {
 
 func (r *LightRenderer) Close() {
 	// r.csi("u")
-	if r.fullscreen {
-		r.rmcup()
-	} else {
-		r.origin()
-		if r.upOneLine {
-			r.csi("A")
+	if r.clearOnExit {
+		if r.fullscreen {
+			r.rmcup()
+		} else {
+			r.origin()
+			if r.upOneLine {
+				r.csi("A")
+			}
+			r.csi("J")
 		}
-		r.csi("J")
+	} else if r.fullscreen {
+		r.csi("G")
+	} else {
+		r.move(r.height, 0)
 	}
 	if r.mouse {
 		r.csi("?1000l")
