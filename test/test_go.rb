@@ -1296,6 +1296,14 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[4] == '> 3' }
     tmux.until { |_|  %w[1 2 3] == File.readlines(tempname).map(&:chomp) }
   end
+
+  def test_no_clear
+    tmux.send_keys 'seq 100 | fzf --no-clear --inline-info --height 5', :Enter
+    prompt = '>   < 100/100'
+    tmux.until { |lines| lines[-1] == prompt }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-2] == prompt && lines[-1] == '1' }
+  end
 end
 
 module TestShell
