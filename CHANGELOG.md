@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.16.6
+------
+- Minor bug fixes and improvements
+- Added `--no-clear` option for scripting purposes
+
 0.16.5
 ------
 - Minor bug fixes
