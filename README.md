@@ -74,10 +74,18 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 
 ### Windows
 
-Pre-built binaries for Windows can be downloaded [here][bin]. However, other
-components of the project may not work on Windows. You might want to consider
-installing fzf on [Windows Subsystem for Linux][wsl] where everything runs
-flawlessly.
+Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
+available as a [Chocolatey package][choco].
+
+[choco]: https://chocolatey.org/packages/fzf
+
+```sh
+choco install fzf
+```
+
+However, other components of the project may not work on Windows. You might
+want to consider installing fzf on [Windows Subsystem for Linux][wsl] where
+everything runs flawlessly.
 
 [wsl]: https://blogs.msdn.microsoft.com/wsl/
 
