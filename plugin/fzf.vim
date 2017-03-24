@@ -83,7 +83,11 @@ function! s:tmux_enabled()
 endfunction
 
 function! s:shellesc(arg)
-  return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
+  let escaped = substitute(a:arg, '"', '\\"', 'g')
+  if s:is_win
+      return escaped
+  endif
+  return '"'.escaped.'"'
 endfunction
 
 function! s:escape(path)
@@ -344,6 +348,9 @@ try
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
+    if s:is_win
+        return s:execute_win_term(dict, command, temps)
+    endif
     return s:execute_term(dict, command, temps)
   endif
 
@@ -608,6 +615,23 @@ function! s:execute_term(dict, command, temps) abort
   setlocal nospell bufhidden=wipe nobuflisted
   setf fzf
   startinsert
+  return []
+endfunction
+
+function! s:execute_win_term(dict, command, temps) abort
+  let s:dict = a:dict
+  let s:temps = a:temps
+  call s:pushd(a:dict)
+  let command = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
+
+  function! Exit(job_id, exit_status, event) dict
+    let lines = s:collect(s:temps)
+    call s:callback(s:dict, lines)
+  endfunction
+
+  let callbacks = {'on_exit': function('Exit')}
+  let cmd = ['cmd', '/C', 'start', '/WAIT', 'cmd', '/C', command]
+  let job_id = jobstart(cmd, callbacks)
   return []
 endfunction
 
