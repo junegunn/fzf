@@ -265,6 +265,32 @@ function! fzf#wrap(...)
   return opts
 endfunction
 
+function! fzf#fnamemodify(fname, mods)
+  if s:is_win
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return fnamemodify(a:fname, a:mods)
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return fnamemodify(a:fname, a:mods)
+endfunction
+
+function! fzf#getcwd()
+  if s:is_win
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return getcwd()
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return getcwd()
+endfunction
+
 function! fzf#shellescape(path)
   if s:is_win
     let shellslash = &shellslash
@@ -304,7 +330,7 @@ try
   endtry
 
   if has('nvim') && !has_key(dict, 'dir')
-    let dict.dir = getcwd()
+    let dict.dir = fzf#getcwd()
   endif
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
@@ -394,13 +420,13 @@ endfunction
 
 function! s:pushd(dict)
   if s:present(a:dict, 'dir')
-    let cwd = getcwd()
+    let cwd = fzf#getcwd()
     if get(a:dict, 'prev_dir', '') ==# cwd
       return 1
     endif
     let a:dict.prev_dir = cwd
     execute 'lcd' s:escape(a:dict.dir)
-    let a:dict.dir = getcwd()
+    let a:dict.dir = fzf#getcwd()
     return 1
   endif
   return 0
@@ -686,8 +712,9 @@ let s:default_action = {
   \ 'ctrl-v': 'vsplit' }
 
 function! s:shortpath()
-  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
-  return empty(short) ? '~/' : short . (short =~ '/$' ? '' : '/')
+  let short = pathshorten(fzf#fnamemodify(fzf#getcwd(), ':~:.'))
+  let slash = s:is_win ? '\' : '/'
+  return empty(short) ? '~'.slash : short . (short =~ '/$' ? '' : slash)
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -695,6 +722,9 @@ function! s:cmd(bang, ...) abort
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
+    if s:is_win
+        let opts.dir = substitute(opts.dir, '/', '\\', 'g')
+    endif
     let opts.options .= ' --prompt '.fzf#shellescape(opts.dir)
   else
     let opts.options .= ' --prompt '.fzf#shellescape(s:shortpath())
