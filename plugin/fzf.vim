@@ -334,7 +334,7 @@ try
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = has('nvim')
+  let use_term = has('nvim') && !s:is_win
   let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
@@ -348,9 +348,6 @@ try
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
-    if s:is_win
-        return s:execute_win_term(dict, command, temps)
-    endif
     return s:execute_term(dict, command, temps)
   endif
 
@@ -467,6 +464,18 @@ function! s:execute(dict, command, use_height, temps) abort
     let command = printf(fmt, escaped)
   else
     let command = a:use_height ? a:command : escaped
+  endif
+  if has('nvim') && s:is_win
+    let s:dict = a:dict
+    let s:temps = a:temps
+    let fzf = {}
+    function! fzf.on_exit(job_id, exit_status, event) dict
+        let lines = s:collect(s:temps)
+        call s:callback(s:dict, lines)
+    endfunction
+    let cmd = ['cmd', '/C', 'start', '/WAIT', 'cmd', '/C', command]
+    call jobstart(cmd, fzf)
+    return []
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
@@ -615,23 +624,6 @@ function! s:execute_term(dict, command, temps) abort
   setlocal nospell bufhidden=wipe nobuflisted
   setf fzf
   startinsert
-  return []
-endfunction
-
-function! s:execute_win_term(dict, command, temps) abort
-  let s:dict = a:dict
-  let s:temps = a:temps
-  call s:pushd(a:dict)
-  let command = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
-
-  function! Exit(job_id, exit_status, event) dict
-    let lines = s:collect(s:temps)
-    call s:callback(s:dict, lines)
-  endfunction
-
-  let callbacks = {'on_exit': function('Exit')}
-  let cmd = ['cmd', '/C', 'start', '/WAIT', 'cmd', '/C', command]
-  let job_id = jobstart(cmd, callbacks)
   return []
 endfunction
 
