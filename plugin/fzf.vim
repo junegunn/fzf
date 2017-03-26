@@ -479,11 +479,7 @@ function! s:execute(dict, command, use_height, temps) abort
   if has('unix') && !a:use_height
     silent! !clear 2> /dev/null
   endif
-  let escaped_chars = '%#!'
-  if s:is_win
-      let escaped_chars .= '\'
-  endif
-  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), escaped_chars)
+  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
@@ -718,7 +714,8 @@ let s:default_action = {
 function! s:shortpath()
   let short = pathshorten(fzf#fnamemodify(fzf#getcwd(), ':~:.'))
   let slash = s:is_win ? '\' : '/'
-  return empty(short) ? '~'.slash : short . (short =~ '/$' ? '' : slash)
+  let path = empty(short) ? '~'.slash : short . (short =~ '/$' ? '' : slash)
+  return s:is_win ? escape(path, ' \') : path
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -729,7 +726,8 @@ function! s:cmd(bang, ...) abort
     if s:is_win
         let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     endif
-    let opts.options .= ' --prompt '.fzf#shellescape(opts.dir)
+    let path = s:is_win ? escape(opts.dir, ' \') : opts.dir
+    let opts.options .= ' --prompt '.fzf#shellescape(path)
   else
     let opts.options .= ' --prompt '.fzf#shellescape(s:shortpath())
   endif
