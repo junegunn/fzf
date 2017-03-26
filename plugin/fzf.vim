@@ -83,11 +83,10 @@ function! s:tmux_enabled()
 endfunction
 
 function! s:shellesc(arg)
-  let escaped = substitute(a:arg, '"', '\\"', 'g')
   if s:is_win
-      return escaped
+      return a:arg
   endif
-  return '"'.escaped.'"'
+  return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
 endfunction
 
 function! s:escape(path)
