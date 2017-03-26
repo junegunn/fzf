@@ -715,7 +715,7 @@ function! s:shortpath()
   let short = pathshorten(fzf#fnamemodify(fzf#getcwd(), ':~:.'))
   let slash = s:is_win ? '\' : '/'
   let path = empty(short) ? '~'.slash : short . (short =~ '/$' ? '' : slash)
-  return s:is_win ? escape(path, ' \') : path
+  return (s:is_win && !has('nvim')) ? escape(path, ' \') : path
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -726,11 +726,11 @@ function! s:cmd(bang, ...) abort
     if s:is_win
         let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     endif
-    let path = s:is_win ? escape(opts.dir, ' \') : opts.dir
-    let opts.options .= ' --prompt '.fzf#shellescape(path)
+    let dir = (s:is_win && !has('nvim')) ? escape(opts.dir, ' \') : opts.dir
   else
-    let opts.options .= ' --prompt '.fzf#shellescape(s:shortpath())
+    let dir = s:shortpath()
   endif
+  let opts.options .= ' --prompt '.fzf#shellescape(dir)
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
