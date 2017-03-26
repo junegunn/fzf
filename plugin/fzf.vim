@@ -479,7 +479,11 @@ function! s:execute(dict, command, use_height, temps) abort
   if has('unix') && !a:use_height
     silent! !clear 2> /dev/null
   endif
-  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
+  let escaped_chars = '%#!'
+  if s:is_win
+      let escaped_chars .= '\'
+  endif
+  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), escaped_chars)
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
