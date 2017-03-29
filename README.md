@@ -98,6 +98,7 @@ method used.
 
 - git: `cd ~/.fzf && git pull && ./install`
 - brew: `brew update; brew reinstall fzf`
+- chocolatey: `choco update fzf`
 - vim-plug: `:PlugUpdate fzf`
 
 Building fzf
