@@ -53,7 +53,7 @@ brew install fzf
 /usr/local/opt/fzf/install
 ```
 
-### Vim plugin
+### As Vim plugin
 
 You can manually add the directory to `&runtimepath` as follows,
 
@@ -345,75 +345,10 @@ commands as well like follows.
 complete -F _fzf_file_completion -o default -o bashdefault doge
 ```
 
-Usage as Vim plugin
--------------------
+Vim plugin
+----------
 
-This repository only enables basic integration with Vim. If you're looking for
-more, check out [fzf.vim](https://github.com/junegunn/fzf.vim) project.
-
-(Note: To use fzf in GVim, an external terminal emulator is required.)
-
-#### `:FZF[!]`
-
-If you have set up fzf for Vim, `:FZF` command will be added.
-
-```vim
-" Look for files under current directory
-:FZF
-
-" Look for files under your home directory
-:FZF ~
-
-" With options
-:FZF --no-sort --reverse --inline-info /tmp
-
-" Bang version starts fzf in fullscreen mode
-:FZF!
-```
-
-Similarly to [ctrlp.vim](https://github.com/kien/ctrlp.vim), use enter key,
-`CTRL-T`, `CTRL-X` or `CTRL-V` to open selected files in the current window,
-in new tabs, in horizontal splits, or in vertical splits respectively.
-
-Note that the environment variables `FZF_DEFAULT_COMMAND` and
-`FZF_DEFAULT_OPTS` also apply here. Refer to [the wiki page][fzf-config] for
-customization.
-
-[fzf-config]: https://github.com/junegunn/fzf/wiki/Configuring-Vim-plugin
-
-#### `fzf#run`
-
-For more advanced uses, you can use `fzf#run([options])` function with the
-following options.
-
-| Option name                | Type          | Description                                                      |
-| -------------------------- | ------------- | ---------------------------------------------------------------- |
-| `source`                   | string        | External command to generate input to fzf (e.g. `find .`)        |
-| `source`                   | list          | Vim list as input to fzf                                         |
-| `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)       |
-| `sink`                     | funcref       | Reference to function to process each selected item              |
-| `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once    |
-| `options`                  | string        | Options to fzf                                                   |
-| `dir`                      | string        | Working directory                                                |
-| `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
-| `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
-| `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
-| `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
-
-Examples can be found on [the wiki
-page](https://github.com/junegunn/fzf/wiki/Examples-(vim)).
-
-#### `fzf#wrap`
-
-`fzf#wrap([name string,] [opts dict,] [fullscreen boolean])` is a helper
-function that decorates the options dictionary so that it understands
-`g:fzf_layout`, `g:fzf_action`, `g:fzf_colors`, and `g:fzf_history_dir` like
-`:FZF`.
-
-```vim
-command! -bang MyStuff
-  \ call fzf#run(fzf#wrap('my-stuff', {'dir': '~/my-stuff'}, <bang>0))
-```
+See [README-VIM.md](README-VIM.md).
 
 Tips
 ----
