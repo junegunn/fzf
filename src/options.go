@@ -86,6 +86,7 @@ const usage = `usage: fzf [options]
     --read0               Read input delimited by ASCII NUL characters
     --print0              Print output delimited by ASCII NUL characters
     --sync                Synchronous search for multi-staged filtering
+    --version             Display version information and exit
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
