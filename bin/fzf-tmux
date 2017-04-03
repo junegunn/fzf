@@ -146,7 +146,7 @@ cleanup() {
   fi
 
   if [ $# -gt 0 ]; then
-      exit 130
+    exit 130
   fi
 }
 trap 'cleanup 1' SIGUSR1
