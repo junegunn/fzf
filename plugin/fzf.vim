@@ -26,62 +26,35 @@ if exists('g:loaded_fzf')
 endif
 let g:loaded_fzf = 1
 
-function! fzf#shellescape(path)
-  if s:is_win
-    let shellslash = &shellslash
-    try
-      set shellslash
-      return '"'.shellescape(a:path).'"'
-    finally
-      let &shellslash = shellslash
-    endtry
-  endif
-  return shellescape(a:path)
-endfunction
-
-function! fzf#getcwd()
+function! s:without_shellescape(fn, ...)
   if s:is_win
     let shellslash = &shellslash
     try
       set noshellslash
-      return getcwd()
+      return call(a:fn, a:000)
     finally
       let &shellslash = shellslash
     endtry
   endif
-  return getcwd()
+  return call(a:fn, a:000)
 endfunction
 
-function! fzf#fnamemodify(fname, mods)
-  if s:is_win
-    let shellslash = &shellslash
-    try
-      set noshellslash
-      return fnamemodify(a:fname, a:mods)
-    finally
-      let &shellslash = shellslash
-    endtry
-  endif
-  return fnamemodify(a:fname, a:mods)
+function! s:fzf_getcwd()
+  return s:without_shellescape('getcwd')
 endfunction
 
-function! fzf#expand(fmt)
-  if s:is_win
-    let shellslash = &shellslash
-    try
-      set noshellslash
-      return expand(a:fmt)
-    finally
-      let &shellslash = shellslash
-    endtry
-  endif
-  return expand(a:fmt)
+function! s:fzf_fnamemodify(fname, mods)
+  return s:without_shellescape('fnamemodify', a:fname, a:mods)
+endfunction
+
+function! s:fzf_expand(fmt)
+  return s:without_shellescape('expand', a:fmt)
 endfunction
 
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:is_win = has('win32') || has('win64')
-let s:base_dir = fzf#expand('<sfile>:h:h')
+let s:base_dir = s:fzf_expand('<sfile>:h:h')
 let s:fzf_go = s:base_dir.'/bin/fzf'
 let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
 let s:install = s:base_dir.'/install'
@@ -185,7 +158,7 @@ function! s:has_any(dict, keys)
 endfunction
 
 function! s:open(cmd, target)
-  if stridx('edit', a:cmd) == 0 && fzf#fnamemodify(a:target, ':p') ==# fzf#expand('%:p')
+  if stridx('edit', a:cmd) == 0 && s:fzf_fnamemodify(a:target, ':p') ==# s:fzf_expand('%:p')
     return
   endif
   execute a:cmd s:escape(a:target)
@@ -200,11 +173,11 @@ function! s:common_sink(action, lines) abort
   if len(a:lines) > 1
     augroup fzf_swap
       autocmd SwapExists * let v:swapchoice='o'
-            \| call s:warn('fzf: E325: swap file exists: '.fzf#expand('<afile>'))
+            \| call s:warn('fzf: E325: swap file exists: '.s:fzf_expand('<afile>'))
     augroup END
   endif
   try
-    let empty = empty(fzf#expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
+    let empty = empty(s:fzf_expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
     let autochdir = &autochdir
     set noautochdir
     for item in a:lines
@@ -294,7 +267,7 @@ function! fzf#wrap(...)
 
   " History: g:fzf_history_dir
   if len(name) && len(get(g:, 'fzf_history_dir', ''))
-    let dir = fzf#expand(g:fzf_history_dir)
+    let dir = s:fzf_expand(g:fzf_history_dir)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
@@ -312,6 +285,19 @@ function! fzf#wrap(...)
   endif
 
   return opts
+endfunction
+
+function! fzf#shellescape(path)
+  if s:is_win
+    let shellslash = &shellslash
+    try
+      set shellslash
+      return '"'.shellescape(a:path).'"'
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return shellescape(a:path)
 endfunction
 
 function! fzf#run(...) abort
@@ -343,7 +329,7 @@ try
   endtry
 
   if has('nvim') && !has_key(dict, 'dir')
-    let dict.dir = fzf#getcwd()
+    let dict.dir = s:fzf_getcwd()
   endif
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
@@ -433,13 +419,13 @@ endfunction
 
 function! s:pushd(dict)
   if s:present(a:dict, 'dir')
-    let cwd = fzf#getcwd()
+    let cwd = s:fzf_getcwd()
     if get(a:dict, 'prev_dir', '') ==# cwd
       return 1
     endif
     let a:dict.prev_dir = cwd
     execute 'lcd' s:escape(a:dict.dir)
-    let a:dict.dir = fzf#getcwd()
+    let a:dict.dir = s:fzf_getcwd()
     return 1
   endif
   return 0
@@ -713,7 +699,7 @@ let s:default_action = {
   \ 'ctrl-v': 'vsplit' }
 
 function! s:shortpath()
-  let short = pathshorten(fzf#fnamemodify(fzf#getcwd(), ':~:.'))
+  let short = pathshorten(s:fzf_fnamemodify(s:fzf_getcwd(), ':~:.'))
   let slash = s:is_win ? '\' : '/'
   return empty(short) ? '~'.slash : short . (short =~ slash.'$' ? '' : slash)
 endfunction
@@ -721,10 +707,10 @@ endfunction
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
   let opts = { 'options': '--multi ' }
-  if len(args) && isdirectory(fzf#expand(args[-1]))
+  if len(args) && isdirectory(s:fzf_expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win
-        let opts.dir = substitute(opts.dir, '/', '\\', 'g')
+      let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     endif
     let prompt = opts.dir
   else
