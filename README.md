@@ -109,7 +109,7 @@ See [BUILD.md](BUILD.md).
 Usage
 -----
 
-fzf will launch curses-based finder, read the list from STDIN, and write the
+fzf will launch interactive finder, read the list from STDIN, and write the
 selected item to STDOUT.
 
 ```sh
