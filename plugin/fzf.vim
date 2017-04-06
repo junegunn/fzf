@@ -26,7 +26,7 @@ if exists('g:loaded_fzf')
 endif
 let g:loaded_fzf = 1
 
-function! s:without_shellescape(fn, ...)
+function! s:fzf_call(fn, ...)
   if s:is_win
     let shellslash = &shellslash
     try
@@ -40,15 +40,15 @@ function! s:without_shellescape(fn, ...)
 endfunction
 
 function! s:fzf_getcwd()
-  return s:without_shellescape('getcwd')
+  return s:fzf_call('getcwd')
 endfunction
 
 function! s:fzf_fnamemodify(fname, mods)
-  return s:without_shellescape('fnamemodify', a:fname, a:mods)
+  return s:fzf_call('fnamemodify', a:fname, a:mods)
 endfunction
 
 function! s:fzf_expand(fmt)
-  return s:without_shellescape('expand', a:fmt)
+  return s:fzf_call('expand', a:fmt)
 endfunction
 
 let s:default_layout = { 'down': '~40%' }
@@ -288,16 +288,7 @@ function! fzf#wrap(...)
 endfunction
 
 function! fzf#shellescape(path)
-  if s:is_win
-    let shellslash = &shellslash
-    try
-      set shellslash
-      return '"'.shellescape(a:path).'"'
-    finally
-      let &shellslash = shellslash
-    endtry
-  endif
-  return shellescape(a:path)
+  return s:fzf_call('shellescape', a:path)
 endfunction
 
 function! fzf#run(...) abort
@@ -716,7 +707,7 @@ function! s:cmd(bang, ...) abort
   else
     let prompt = s:shortpath()
   endif
-  let opts.options .= ' --prompt '.fzf#shellescape(prompt)
+  let opts.options .= ' --prompt '.fzf#shellescape(s:is_win ? escape(prompt, '\') : prompt)
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
