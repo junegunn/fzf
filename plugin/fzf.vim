@@ -275,7 +275,8 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let opts.options = join(['--history', s:escape(dir.'/'.name), opts.options])
+    let history = s:is_win ? fzf#shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
+    let opts.options = join(['--history', history, opts.options])
   endif
 
   " Action: g:fzf_action
