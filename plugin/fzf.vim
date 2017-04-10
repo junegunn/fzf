@@ -51,6 +51,10 @@ function! s:fzf_expand(fmt)
   return s:fzf_call('expand', a:fmt)
 endfunction
 
+function! s:fzf_tempname()
+  return s:fzf_call('tempname')
+endfunction
+
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:is_win = has('win32') || has('win64')
@@ -311,7 +315,7 @@ try
     endif
   endif
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
-  let temps  = { 'result': tempname() }
+  let temps  = { 'result': s:fzf_tempname() }
   let optstr = get(dict, 'options', '')
   try
     let fzf_exec = s:fzf_exec()
@@ -324,7 +328,7 @@ try
   endif
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
-    let temps.source = tempname().(s:is_win ? '.bat' : '')
+    let temps.source = s:fzf_tempname().(s:is_win ? '.bat' : '')
     call writefile((s:is_win ? ['@echo off'] : []) + split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
     let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . s:shellesc(temps.source)
   endif
@@ -335,7 +339,7 @@ try
     if type == 1
       let prefix = source.'|'
     elseif type == 3
-      let temps.input = tempname()
+      let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').s:shellesc(temps.input).'|'
     else
