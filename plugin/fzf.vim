@@ -83,6 +83,9 @@ function! s:tmux_enabled()
 endfunction
 
 function! s:shellesc(arg)
+  if s:is_win
+      return a:arg
+  endif
   return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
 endfunction
 
@@ -262,6 +265,32 @@ function! fzf#wrap(...)
   return opts
 endfunction
 
+function! fzf#fnamemodify(fname, mods)
+  if s:is_win
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return fnamemodify(a:fname, a:mods)
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return fnamemodify(a:fname, a:mods)
+endfunction
+
+function! fzf#getcwd()
+  if s:is_win
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return getcwd()
+    finally
+      let &shellslash = shellslash
+    endtry
+  endif
+  return getcwd()
+endfunction
+
 function! fzf#shellescape(path)
   if s:is_win
     let shellslash = &shellslash
@@ -304,7 +333,7 @@ try
   endtry
 
   if has('nvim') && !has_key(dict, 'dir')
-    let dict.dir = getcwd()
+    let dict.dir = fzf#getcwd()
   endif
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
@@ -333,7 +362,7 @@ try
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = has('nvim')
+  let use_term = has('nvim') && !s:is_win
   let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
@@ -394,13 +423,13 @@ endfunction
 
 function! s:pushd(dict)
   if s:present(a:dict, 'dir')
-    let cwd = getcwd()
+    let cwd = fzf#getcwd()
     if get(a:dict, 'prev_dir', '') ==# cwd
       return 1
     endif
     let a:dict.prev_dir = cwd
     execute 'lcd' s:escape(a:dict.dir)
-    let a:dict.dir = getcwd()
+    let a:dict.dir = fzf#getcwd()
     return 1
   endif
   return 0
@@ -463,6 +492,18 @@ function! s:execute(dict, command, use_height, temps) abort
     let command = printf(fmt, escaped)
   else
     let command = a:use_height ? a:command : escaped
+  endif
+  if has('nvim') && s:is_win
+    let s:dict = a:dict
+    let s:temps = a:temps
+    let fzf = {}
+    function! fzf.on_exit(job_id, exit_status, event) dict
+        let lines = s:collect(s:temps)
+        call s:callback(s:dict, lines)
+    endfunction
+    let cmd = ['cmd', '/C', 'start', '/WAIT', 'cmd', '/C', command]
+    call jobstart(cmd, fzf)
+    return []
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
@@ -674,8 +715,10 @@ let s:default_action = {
   \ 'ctrl-v': 'vsplit' }
 
 function! s:shortpath()
-  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
-  return empty(short) ? '~/' : short . (short =~ '/$' ? '' : '/')
+  let short = pathshorten(fzf#fnamemodify(fzf#getcwd(), ':~:.'))
+  let slash = s:is_win ? '\' : '/'
+  let path = empty(short) ? '~'.slash : short . (short =~ '/$' ? '' : slash)
+  return (s:is_win && !has('nvim')) ? escape(path, ' \') : path
 endfunction
 
 function! s:cmd(bang, ...) abort
@@ -683,10 +726,14 @@ function! s:cmd(bang, ...) abort
   let opts = { 'options': '--multi ' }
   if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
-    let opts.options .= ' --prompt '.fzf#shellescape(opts.dir)
+    if s:is_win
+        let opts.dir = substitute(opts.dir, '/', '\\', 'g')
+    endif
+    let dir = (s:is_win && !has('nvim')) ? escape(opts.dir, ' \') : opts.dir
   else
-    let opts.options .= ' --prompt '.fzf#shellescape(s:shortpath())
+    let dir = s:shortpath()
   endif
+  let opts.options .= ' --prompt '.fzf#shellescape(dir)
   let opts.options .= ' '.join(args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
