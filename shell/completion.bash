@@ -304,7 +304,7 @@ done
 
 # Directory
 for cmd in $d_cmds; do
-  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o plusdirs"
+  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
 unset _fzf_defc
