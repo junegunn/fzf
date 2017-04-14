@@ -91,7 +91,7 @@ function! s:fzf_exec()
       throw 'fzf executable not found'
     endif
   endif
-  return s:shellesc(s:exec)
+  return s:is_win ? s:exec : s:shellesc(s:exec)
 endfunction
 
 function! s:tmux_enabled()
@@ -354,7 +354,7 @@ try
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = has('nvim')
+  let use_term = has('nvim') && !s:is_win
   let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
@@ -484,6 +484,25 @@ function! s:execute(dict, command, use_height, temps) abort
     let command = printf(fmt, escaped)
   else
     let command = a:use_height ? a:command : escaped
+  endif
+  if s:is_win
+    let batchfile = s:fzf_tempname().'.bat'
+    call writefile([command], batchfile)
+    let command = batchfile
+    if has('nvim')
+      let s:dict = a:dict
+      let s:temps = a:temps
+      let fzf = {}
+      function! fzf.on_exit(job_id, exit_status, event) dict
+        let lines = s:collect(s:temps)
+        call s:callback(s:dict, lines)
+      endfunction
+      let batchfile = s:fzf_tempname().'.bat'
+      call writefile([command], batchfile)
+      let cmd = 'start /wait cmd /c '.command
+      call jobstart(cmd, fzf)
+      return []
+    endif
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
