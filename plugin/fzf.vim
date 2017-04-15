@@ -497,8 +497,6 @@ function! s:execute(dict, command, use_height, temps) abort
         let lines = s:collect(s:temps)
         call s:callback(s:dict, lines)
       endfunction
-      let batchfile = s:fzf_tempname().'.bat'
-      call writefile([command], batchfile)
       let cmd = 'start /wait cmd /c '.command
       call jobstart(cmd, fzf)
       return []
