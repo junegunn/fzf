@@ -44,51 +44,31 @@ if s:is_win
       let &shellslash = shellslash
     endtry
   endfunction
-
-  function! s:fzf_getcwd()
-    return s:fzf_call('getcwd')
-  endfunction
-
-  function! s:fzf_fnamemodify(fname, mods)
-    return s:fzf_call('fnamemodify', a:fname, a:mods)
-  endfunction
-
-  function! s:fzf_expand(fmt)
-    return s:fzf_call('expand', a:fmt)
-  endfunction
-
-  function! s:fzf_tempname()
-    return s:fzf_call('tempname')
-  endfunction
-
-  function! s:fzf_shellescape(path)
-    return s:fzf_call('shellescape', a:path)
-  endfunction
 else
   function! s:fzf_call(fn, ...)
     return call(a:fn, a:000)
   endfunction
-
-  function! s:fzf_getcwd()
-    return getcwd()
-  endfunction
-
-  function! s:fzf_fnamemodify(fname, mods)
-    return fnamemodify(a:fname, a:mods)
-  endfunction
-
-  function! s:fzf_expand(fmt)
-    return expand(a:fmt)
-  endfunction
-
-  function! s:fzf_tempname()
-    return tempname()
-  endfunction
-
-  function! s:fzf_shellescape(path)
-    return shellescape(a:path)
-  endfunction
 endif
+
+function! s:fzf_getcwd()
+  return s:fzf_call('getcwd')
+endfunction
+
+function! s:fzf_fnamemodify(fname, mods)
+  return s:fzf_call('fnamemodify', a:fname, a:mods)
+endfunction
+
+function! s:fzf_expand(fmt)
+  return s:fzf_call('expand', a:fmt)
+endfunction
+
+function! s:fzf_tempname()
+  return s:fzf_call('tempname')
+endfunction
+
+function! s:fzf_shellescape(path)
+  return s:fzf_call('shellescape', a:path)
+endfunction
 
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
