@@ -26,39 +26,71 @@ if exists('g:loaded_fzf')
 endif
 let g:loaded_fzf = 1
 
-function! s:fzf_call(fn, ...)
-  if s:is_win
-    let shellslash = &shellslash
-    try
-      set noshellslash
-      return call(a:fn, a:000)
-    finally
-      let &shellslash = shellslash
-    endtry
-  endif
-  return call(a:fn, a:000)
-endfunction
+let s:is_win = has('win32') || has('win64')
+if s:is_win && &shellslash
+  set noshellslash
+  let s:base_dir = expand('<sfile>:h:h')
+  set shellslash
+else
+  let s:base_dir = expand('<sfile>:h:h')
+endif
+if s:is_win
+  function! s:fzf_call(fn, ...)
+    if s:is_win
+      let shellslash = &shellslash
+      try
+        set noshellslash
+        return call(a:fn, a:000)
+      finally
+        let &shellslash = shellslash
+      endtry
+    endif
+    return call(a:fn, a:000)
+  endfunction
 
-function! s:fzf_getcwd()
-  return s:fzf_call('getcwd')
-endfunction
+  function! s:fzf_getcwd()
+    return s:fzf_call('getcwd')
+  endfunction
 
-function! s:fzf_fnamemodify(fname, mods)
-  return s:fzf_call('fnamemodify', a:fname, a:mods)
-endfunction
+  function! s:fzf_fnamemodify(fname, mods)
+    return s:fzf_call('fnamemodify', a:fname, a:mods)
+  endfunction
 
-function! s:fzf_expand(fmt)
-  return s:fzf_call('expand', a:fmt)
-endfunction
+  function! s:fzf_expand(fmt)
+    return s:fzf_call('expand', a:fmt)
+  endfunction
 
-function! s:fzf_tempname()
-  return s:fzf_call('tempname')
-endfunction
+  function! s:fzf_tempname()
+    return s:fzf_call('tempname')
+  endfunction
+
+  function! s:fzf_shellescape(path)
+    return s:fzf_call('shellescape', a:path)
+  endfunction
+else
+  function! s:fzf_getcwd()
+    return getcwd()
+  endfunction
+
+  function! s:fzf_fnamemodify(fname, mods)
+    return fnamemodify(a:fname, a:mods)
+  endfunction
+
+  function! s:fzf_expand(fmt)
+    return expand(a:fmt)
+  endfunction
+
+  function! s:fzf_tempname()
+    return tempname()
+  endfunction
+
+  function! s:fzf_shellescape(path)
+    return shellescape(a:path)
+  endfunction
+endif
 
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
-let s:is_win = has('win32') || has('win64')
-let s:base_dir = s:fzf_expand('<sfile>:h:h')
 let s:fzf_go = s:base_dir.'/bin/fzf'
 let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
 let s:install = s:base_dir.'/install'
@@ -70,7 +102,7 @@ set cpo&vim
 function! s:fzf_exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
-      let s:exec = s:fzf_go
+      let s:exec = s:fzf_expand(s:fzf_go)
     elseif executable('fzf')
       let s:exec = 'fzf'
     elseif s:is_win
@@ -231,6 +263,11 @@ function! s:validate_layout(layout)
   return a:layout
 endfunction
 
+function! s:evaluate_opts(options)
+  return type(a:options) == type([]) ?
+        \ join(map(copy(a:options), 's:fzf_shellescape(v:val)')) : a:options
+endfunction
+
 " [name string,] [opts dict,] [fullscreen boolean]
 function! fzf#wrap(...)
   let args = ['', {}, 0]
@@ -267,7 +304,7 @@ function! fzf#wrap(...)
   endif
 
   " Colors: g:fzf_colors
-  let opts.options = s:defaults() .' '. get(opts, 'options', '')
+  let opts.options = s:defaults() .' '. s:evaluate_opts(get(opts, 'options', ''))
 
   " History: g:fzf_history_dir
   if len(name) && len(get(g:, 'fzf_history_dir', ''))
@@ -275,7 +312,7 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let history = s:is_win ? fzf#shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
+    let history = s:is_win ? s:fzf_shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
     let opts.options = join(['--history', history, opts.options])
   endif
 
@@ -290,10 +327,6 @@ function! fzf#wrap(...)
   endif
 
   return opts
-endfunction
-
-function! fzf#shellescape(path)
-  return s:fzf_call('shellescape', a:path)
 endfunction
 
 function! fzf#run(...) abort
@@ -317,7 +350,7 @@ try
   endif
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
-  let optstr = get(dict, 'options', '')
+  let optstr = s:evaluate_opts(get(dict, 'options', ''))
   try
     let fzf_exec = s:fzf_exec()
   catch
@@ -719,8 +752,8 @@ endfunction
 
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
-  let opts = { 'options': '--multi ' }
-  if len(args) && isdirectory(s:fzf_expand(args[-1]))
+  let opts = { 'options': ['--multi'] }
+  if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
@@ -729,8 +762,8 @@ function! s:cmd(bang, ...) abort
   else
     let prompt = s:shortpath()
   endif
-  let opts.options .= ' --prompt '.fzf#shellescape(s:is_win ? escape(prompt, '\') : prompt)
-  let opts.options .= ' '.join(args)
+  call extend(opts.options, ['--prompt', s:is_win ? escape(prompt, '\') : prompt])
+  call extend(opts.options, args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
 
