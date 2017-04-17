@@ -756,14 +756,14 @@ function! s:cmd(bang, ...) abort
   let opts = { 'options': ['--multi'] }
   if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
-    if s:is_win
+    if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     endif
     let prompt = opts.dir
   else
     let prompt = s:shortpath()
   endif
-  call extend(opts.options, ['--prompt', s:is_win ? escape(prompt, '\') : prompt])
+  call extend(opts.options, ['--prompt', (s:is_win && !&shellslash) ? escape(prompt, '\') : prompt])
   call extend(opts.options, args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
