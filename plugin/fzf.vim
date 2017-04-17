@@ -36,16 +36,13 @@ else
 endif
 if s:is_win
   function! s:fzf_call(fn, ...)
-    if s:is_win
-      let shellslash = &shellslash
-      try
-        set noshellslash
-        return call(a:fn, a:000)
-      finally
-        let &shellslash = shellslash
-      endtry
-    endif
-    return call(a:fn, a:000)
+    let shellslash = &shellslash
+    try
+      set noshellslash
+      return call(a:fn, a:000)
+    finally
+      let &shellslash = shellslash
+    endtry
   endfunction
 
   function! s:fzf_getcwd()
@@ -68,6 +65,10 @@ if s:is_win
     return s:fzf_call('shellescape', a:path)
   endfunction
 else
+  function! s:fzf_call(fn, ...)
+    return call(a:fn, a:000)
+  endfunction
+
   function! s:fzf_getcwd()
     return getcwd()
   endfunction
@@ -745,8 +746,8 @@ let s:default_action = {
   \ 'ctrl-v': 'vsplit' }
 
 function! s:shortpath()
-  let short = pathshorten(s:fzf_fnamemodify(s:fzf_getcwd(), ':~:.'))
-  let slash = s:is_win ? '\' : '/'
+  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
+  let slash = (s:is_win && !&shellslash) ? '\' : '/'
   return empty(short) ? '~'.slash : short . (short =~ slash.'$' ? '' : slash)
 endfunction
 
