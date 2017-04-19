@@ -266,8 +266,6 @@ EOF
 fi
 
 append_line() {
-  set -e
-
   local update line file pat lno
   update="$1"
   line="$2"
@@ -294,7 +292,6 @@ append_line() {
     fi
   fi
   echo
-  set +e
 }
 
 if [ $update_config -eq 2 ]; then
