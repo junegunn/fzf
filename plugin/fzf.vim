@@ -44,9 +44,17 @@ if s:is_win
       let &shellslash = shellslash
     endtry
   endfunction
+
+  function! s:fzf_shellescape(path)
+    return substitute(s:fzf_call('shellescape', a:path), '[^\\]\zs\\"$', '\\\\"', '')
+  endfunction
 else
   function! s:fzf_call(fn, ...)
     return call(a:fn, a:000)
+  endfunction
+
+  function! s:fzf_shellescape(path)
+    return shellescape(a:path)
   endfunction
 endif
 
@@ -64,10 +72,6 @@ endfunction
 
 function! s:fzf_tempname()
   return s:fzf_call('tempname')
-endfunction
-
-function! s:fzf_shellescape(path)
-  return s:fzf_call('shellescape', a:path)
 endfunction
 
 let s:default_layout = { 'down': '~40%' }
@@ -501,7 +505,7 @@ function! s:execute(dict, command, use_height, temps) abort
   endif
   if s:is_win
     let batchfile = s:fzf_tempname().'.bat'
-    call writefile([command], batchfile)
+    call writefile(['@echo off', command], batchfile)
     let command = batchfile
     if has('nvim')
       let s:dict = a:dict
@@ -743,7 +747,7 @@ function! s:cmd(bang, ...) abort
   else
     let prompt = s:shortpath()
   endif
-  call extend(opts.options, ['--prompt', (s:is_win && !&shellslash) ? escape(prompt, '\') : prompt])
+  call extend(opts.options, ['--prompt', prompt])
   call extend(opts.options, args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
 endfunction
