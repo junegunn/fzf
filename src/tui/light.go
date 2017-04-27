@@ -344,9 +344,10 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		return Event{ESC, 0, nil}
 	}
 	*sz = 2
+	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
+		return Event{int(CtrlAltA + r.buffer[1] - 1), 0, nil}
+	}
 	switch r.buffer[1] {
-	case 13:
-		return Event{AltEnter, 0, nil}
 	case 32:
 		return Event{AltSpace, 0, nil}
 	case 47:

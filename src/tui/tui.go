@@ -75,7 +75,6 @@ const (
 	F11
 	F12
 
-	AltEnter
 	AltSpace
 	AltSlash
 	AltBS
@@ -90,7 +89,9 @@ const ( // Reset iota
 	AltD
 	AltE
 	AltF
-	AltZ = AltA + 'z' - 'a'
+	AltZ     = AltA + 'z' - 'a'
+	CtrlAltA = AltZ + 1
+	CtrlAltM = CtrlAltA + 'm' - 'a'
 )
 
 const (

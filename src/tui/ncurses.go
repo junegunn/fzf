@@ -353,7 +353,7 @@ func escSequence() Event {
 	case C.ERR:
 		return Event{ESC, 0, nil}
 	case CtrlM:
-		return Event{AltEnter, 0, nil}
+		return Event{CtrlAltM, 0, nil}
 	case '/':
 		return Event{AltSlash, 0, nil}
 	case ' ':

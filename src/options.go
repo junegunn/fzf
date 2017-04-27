@@ -401,7 +401,7 @@ func parseKeyChords(str string, message string) map[int]string {
 		case "ctrl-space":
 			chord = tui.CtrlSpace
 		case "alt-enter", "alt-return":
-			chord = tui.AltEnter
+			chord = tui.CtrlAltM
 		case "alt-space":
 			chord = tui.AltSpace
 		case "alt-/":
@@ -437,7 +437,9 @@ func parseKeyChords(str string, message string) map[int]string {
 		case "f12":
 			chord = tui.F12
 		default:
-			if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
+			if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
+				chord = tui.CtrlAltA + int(lkey[9]) - 'a'
+			} else if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				chord = tui.CtrlA + int(lkey[5]) - 'a'
 			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
 				chord = tui.AltA + int(lkey[4]) - 'a'

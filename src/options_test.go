@@ -125,14 +125,14 @@ func TestIrrelevantNth(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	pairs := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g,ALT-enter,alt-SPACE", "")
+	pairs := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g,ctrl-alt-a,ALT-enter,alt-SPACE", "")
 	check := func(i int, s string) {
 		if pairs[i] != s {
 			t.Errorf("%s != %s", pairs[i], s)
 		}
 	}
-	if len(pairs) != 11 {
-		t.Error(11)
+	if len(pairs) != 12 {
+		t.Error(12)
 	}
 	check(tui.CtrlZ, "ctrl-z")
 	check(tui.AltZ, "alt-z")
@@ -143,7 +143,8 @@ func TestParseKeys(t *testing.T) {
 	check(tui.CtrlA+'g'-'a', "ctrl-G")
 	check(tui.AltZ+'J', "J")
 	check(tui.AltZ+'g', "g")
-	check(tui.AltEnter, "ALT-enter")
+	check(tui.CtrlAltA, "ctrl-alt-a")
+	check(tui.CtrlAltM, "ALT-enter")
 	check(tui.AltSpace, "alt-SPACE")
 
 	// Synonyms
