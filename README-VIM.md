@@ -99,12 +99,21 @@ following options.
 | `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)       |
 | `sink`                     | funcref       | Reference to function to process each selected item              |
 | `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once    |
-| `options`                  | string        | Options to fzf                                                   |
+| `options`                  | string/list   | Options to fzf                                                   |
 | `dir`                      | string        | Working directory                                                |
 | `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
 | `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
 | `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
 | `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
+
+`options` entry can be either a string or a list. For simple cases, string
+should suffice, but prefer to use list type if you're concerned about escaping
+issues on different platforms.
+
+```vim
+call fzf#run({'options': '--reverse --prompt "C:\\Program Files\\"'})
+call fzf#run({'options': ['--reverse', '--prompt', 'C:\Program Files\']})
+```
 
 `fzf#wrap`
 ----------
