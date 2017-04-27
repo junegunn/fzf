@@ -297,6 +297,17 @@ append_line() {
   set +e
 }
 
+create_file() {
+  local file="$1"
+  shift
+  echo "Create $file:"
+  for line in "$@"; do
+    echo "    $line"
+    echo "$line" >> "$file"
+  done
+  echo
+}
+
 if [ $update_config -eq 2 ]; then
   echo
   ask "Do you want to update your shell configuration files?"
@@ -310,7 +321,14 @@ done
 
 if [ $key_bindings -eq 1 ] && [ $has_fish -eq 1 ]; then
   bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
-  append_line $update_config "fzf_key_bindings" "$bind_file"
+  if [ ! -e "$bind_file" ]; then
+    create_file "$bind_file" \
+      'function fish_user_key_bindings' \
+      '  fzf_key_bindings' \
+      'end'
+  else
+    append_line $update_config "fzf_key_bindings" "$bind_file"
+  fi
 fi
 
 if [ $update_config -eq 1 ]; then
