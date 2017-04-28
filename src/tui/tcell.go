@@ -282,7 +282,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{keyfn('z'), 0, nil}
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
-		case tcell.KeyBackspace, tcell.KeyBackspace2:
+		case tcell.KeyBackspace2:
 			if alt {
 				return Event{AltBS, 0, nil}
 			}
@@ -308,8 +308,6 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyPgDn:
 			return Event{PgDn, 0, nil}
 
-		case tcell.KeyTab:
-			return Event{Tab, 0, nil}
 		case tcell.KeyBacktab:
 			return Event{BTab, 0, nil}
 
@@ -366,13 +364,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 	return Event{Invalid, 0, nil}
 }
 
-func (r *FullscreenRenderer) Pause() {
+func (r *FullscreenRenderer) Pause(bool) {
 	_screen.Fini()
 }
 
-func (r *FullscreenRenderer) Resume() bool {
+func (r *FullscreenRenderer) Resume(bool) {
 	r.initScreen()
-	return true
 }
 
 func (r *FullscreenRenderer) Close() {

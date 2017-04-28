@@ -59,6 +59,7 @@ type Terminal struct {
 	inlineInfo bool
 	prompt     string
 	reverse    bool
+	fullscreen bool
 	hscroll    bool
 	hscrollOff int
 	wordRubout string
@@ -141,6 +142,7 @@ const (
 	reqList
 	reqJump
 	reqRefresh
+	reqReinit
 	reqRedraw
 	reqClose
 	reqPrintQuery
@@ -210,6 +212,7 @@ const (
 	actExecute
 	actExecuteSilent
 	actExecuteMulti // Deprecated
+	actSigStop
 )
 
 func toActions(types ...actionType) []action {
@@ -246,6 +249,9 @@ func defaultKeymap() map[int][]action {
 	keymap[tui.CtrlU] = toActions(actUnixLineDiscard)
 	keymap[tui.CtrlW] = toActions(actUnixWordRubout)
 	keymap[tui.CtrlY] = toActions(actYank)
+	if !util.IsWindows() {
+		keymap[tui.CtrlZ] = toActions(actSigStop)
+	}
 
 	keymap[tui.AltB] = toActions(actBackwardWord)
 	keymap[tui.SLeft] = toActions(actBackwardWord)
@@ -295,7 +301,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		strongAttr = tui.AttrRegular
 	}
 	var renderer tui.Renderer
-	if opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100 {
+	fullscreen := opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100
+	if fullscreen {
 		if tui.HasFullscreenRenderer() {
 			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 		} else {
@@ -337,6 +344,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		inlineInfo: opts.InlineInfo,
 		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
+		fullscreen: fullscreen,
 		hscroll:    opts.Hscroll,
 		hscrollOff: opts.HscrollOff,
 		wordRubout: wordRubout,
@@ -1170,6 +1178,12 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 	})
 }
 
+func (t *Terminal) redraw() {
+	t.tui.Clear()
+	t.tui.Refresh()
+	t.printAll()
+}
+
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool) {
 	valid, list := t.buildPlusList(template, forcePlus)
 	if !valid {
@@ -1181,12 +1195,10 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		t.tui.Pause()
+		t.tui.Pause(true)
 		cmd.Run()
-		if t.tui.Resume() {
-			t.tui.Clear()
-			t.printAll()
-		}
+		t.tui.Resume(true)
+		t.redraw()
 		t.refresh()
 	} else {
 		cmd.Run()
@@ -1242,6 +1254,15 @@ func (t *Terminal) Loop() {
 		go func() {
 			<-intChan
 			t.reqBox.Set(reqQuit, nil)
+		}()
+
+		contChan := make(chan os.Signal, 1)
+		notifyOnCont(contChan)
+		go func() {
+			for {
+				<-contChan
+				t.reqBox.Set(reqReinit, nil)
+			}
 		}()
 
 		resizeChan := make(chan os.Signal, 1)
@@ -1352,10 +1373,11 @@ func (t *Terminal) Loop() {
 						t.printHeader()
 					case reqRefresh:
 						t.suppress = false
+					case reqReinit:
+						t.tui.Resume(t.fullscreen)
+						t.redraw()
 					case reqRedraw:
-						t.tui.Clear()
-						t.tui.Refresh()
-						t.printAll()
+						t.redraw()
 					case reqClose:
 						t.tui.Close()
 						if t.output() {
@@ -1653,6 +1675,15 @@ func (t *Terminal) Loop() {
 					t.history.override(string(t.input))
 					t.input = []rune(t.history.next())
 					t.cx = len(t.input)
+				}
+			case actSigStop:
+				p, err := os.FindProcess(os.Getpid())
+				if err == nil {
+					t.tui.Clear()
+					t.tui.Pause(t.fullscreen)
+					notifyStop(p)
+					t.mutex.Unlock()
+					return false
 				}
 			case actMouse:
 				me := event.MouseEvent

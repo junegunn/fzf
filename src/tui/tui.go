@@ -206,8 +206,8 @@ const (
 
 type Renderer interface {
 	Init()
-	Pause()
-	Resume() bool
+	Pause(clear bool)
+	Resume(clear bool)
 	Clear()
 	RefreshWindows(windows []Window)
 	Refresh()

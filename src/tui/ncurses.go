@@ -176,12 +176,11 @@ func initPairs(theme *ColorTheme) {
 	}
 }
 
-func (r *FullscreenRenderer) Pause() {
+func (r *FullscreenRenderer) Pause(bool) {
 	C.endwin()
 }
 
-func (r *FullscreenRenderer) Resume() bool {
-	return false
+func (r *FullscreenRenderer) Resume(bool) {
 }
 
 func (r *FullscreenRenderer) Close() {

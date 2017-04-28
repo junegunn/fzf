@@ -522,27 +522,35 @@ func (r *LightRenderer) rmcup() {
 	r.csi("?1049l")
 }
 
-func (r *LightRenderer) Pause() {
+func (r *LightRenderer) Pause(clear bool) {
 	terminal.Restore(r.fd(), r.origState)
-	if r.fullscreen {
-		r.rmcup()
-	} else {
-		r.smcup()
-		r.csi("H")
+	if clear {
+		if r.fullscreen {
+			r.rmcup()
+		} else {
+			r.smcup()
+			r.csi("H")
+		}
+		r.flush()
 	}
-	r.flush()
 }
 
-func (r *LightRenderer) Resume() bool {
+func (r *LightRenderer) Resume(clear bool) {
 	terminal.MakeRaw(r.fd())
-	if r.fullscreen {
-		r.smcup()
-	} else {
-		r.rmcup()
+	if clear {
+		if r.fullscreen {
+			r.smcup()
+		} else {
+			r.rmcup()
+		}
+		r.flush()
+	} else if !r.fullscreen && r.mouse {
+		// NOTE: Resume(false) is only called on SIGCONT after SIGSTOP.
+		// And It's highly likely that the offset we obtained at the beginning will
+		// no longer be correct, so we simply disable mouse input.
+		r.csi("?1000l")
+		r.mouse = false
 	}
-	r.flush()
-	// Should redraw
-	return true
 }
 
 func (r *LightRenderer) Clear() {
