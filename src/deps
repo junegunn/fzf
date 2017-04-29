@@ -14,5 +14,5 @@ reset() (
 
 reset github.com/junegunn/go-isatty     66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 reset github.com/junegunn/go-runewidth  14207d285c6c197daabb5c9793d63e7af9ab2d50
-reset github.com/junegunn/go-shellwords 33bd8f1ebe16d6e5eb688cc885749a63059e9167
+reset github.com/junegunn/go-shellwords 02e3cf038dcea8290e44424da473dd12be796a8a
 reset golang.org/x/crypto               abc5fa7ad02123a41f02bf1391c9760f7586e608
