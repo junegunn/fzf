@@ -379,7 +379,9 @@ try
     let use_term = 0
   endif
   if use_height
-    let optstr .= ' --height='.s:calc_size(&lines, dict.down, dict)
+    let height = s:calc_size(&lines, dict.down, dict)
+    let $FZF_HEIGHT = height
+    let optstr .= ' --height='.height
   elseif use_term
     let optstr .= ' --no-height'
   endif
