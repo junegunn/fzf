@@ -580,6 +580,7 @@ func (t *Terminal) resizeWindows() {
 				pwidth += 1
 			}
 			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, tui.BorderNone)
+			os.Setenv("FZF_PREVIEW_HEIGHT", strconv.Itoa(h-2))
 		}
 		switch t.preview.position {
 		case posUp:
