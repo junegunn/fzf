@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.16.7
+------
+- Added support for `ctrl-alt-[a-z]` key chords
+- CTRL-Z (SIGSTOP) now works with fzf
+- fzf will export `$FZF_PREVIEW_WINDOW` so that the scripts can use it
+- Bug fixes and improvements in Vim plugin and shell extensions
+
 0.16.6
 ------
 - Minor bug fixes and improvements
