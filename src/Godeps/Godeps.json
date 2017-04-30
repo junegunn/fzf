@@ -1,0 +1,89 @@
+{
+	"ImportPath": "github.com/junegunn/fzf/src",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v79",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gdamore/encoding",
+			"Rev": "b23993cbb6353f0e6aa98d0ee318a34728f628b9"
+		},
+		{
+			"ImportPath": "github.com/gdamore/tcell",
+			"Rev": "44772c121bb7838819d3ba4a7e84c0c2d617328e"
+		},
+		{
+			"ImportPath": "github.com/junegunn/go-isatty",
+			"Rev": "66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8"
+		},
+		{
+			"ImportPath": "github.com/junegunn/go-runewidth",
+			"Comment": "travisish-59-g14207d2",
+			"Rev": "14207d285c6c197daabb5c9793d63e7af9ab2d50"
+		},
+		{
+			"ImportPath": "github.com/junegunn/go-shellwords",
+			"Rev": "02e3cf038dcea8290e44424da473dd12be796a8a"
+		},
+		{
+			"ImportPath": "github.com/junegunn/tcell",
+			"Rev": "44772c121bb7838819d3ba4a7e84c0c2d617328e"
+		},
+		{
+			"ImportPath": "github.com/junegunn/tcell/encoding",
+			"Rev": "44772c121bb7838819d3ba4a7e84c0c2d617328e"
+		},
+		{
+			"ImportPath": "github.com/lucasb-eyer/go-colorful",
+			"Rev": "c900de9dbbc73129068f5af6a823068fc5f2308c"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-runewidth",
+			"Comment": "v0.0.2-1-g14207d2",
+			"Rev": "14207d285c6c197daabb5c9793d63e7af9ab2d50"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "abc5fa7ad02123a41f02bf1391c9760f7586e608"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "9ccfe848b9db8435a24c424abbc07a921adf1df5"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/charmap",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/internal",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/internal/identifier",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/japanese",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/korean",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/simplifiedchinese",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/traditionalchinese",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Rev": "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+		}
+	]
+}
