@@ -394,9 +394,9 @@ export FZF_DEFAULT_COMMAND='
 #### Fish shell
 
 It's [a known bug of fish](https://github.com/fish-shell/fish-shell/issues/1362)
-that it doesn't allow reading from STDIN in command substitution, which means
-simple `vim (fzf)` won't work as expected. The workaround is to use the `read`
-fish command:
+(will be fixed in 2.6.0) that it doesn't allow reading from STDIN in command
+substitution, which means simple `vim (fzf)` won't work as expected. The
+workaround is to use the `read` fish command:
 
 ```sh
 fzf | read -l result; and vim $result
