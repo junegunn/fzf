@@ -45,16 +45,16 @@ if s:is_win
     endtry
   endfunction
 
-  function! s:fzf_shellescape(path)
-    return substitute(s:fzf_call('shellescape', a:path), '[^\\]\zs\\"$', '\\\\"', '')
+  function! s:shellesc(arg)
+    return '^"'.substitute(substitute(a:arg, '"', '\\\^&', 'g'), '[^\\]\zs\\$', '\\\\', '').'^"'
   endfunction
 else
   function! s:fzf_call(fn, ...)
     return call(a:fn, a:000)
   endfunction
 
-  function! s:fzf_shellescape(path)
-    return shellescape(a:path)
+  function! s:shellesc(arg)
+    return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
   endfunction
 endif
 
@@ -126,10 +126,6 @@ function! s:tmux_enabled()
     let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   endif
   return s:tmux
-endfunction
-
-function! s:shellesc(arg)
-  return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
 endfunction
 
 function! s:escape(path)
@@ -250,7 +246,7 @@ endfunction
 
 function! s:evaluate_opts(options)
   return type(a:options) == type([]) ?
-        \ join(map(copy(a:options), 's:fzf_shellescape(v:val)')) : a:options
+        \ join(map(copy(a:options), 's:shellesc(v:val)')) : a:options
 endfunction
 
 " [name string,] [opts dict,] [fullscreen boolean]
@@ -297,7 +293,7 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let history = s:is_win ? s:fzf_shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
+    let history = s:is_win ? s:shellesc(dir.'\'.name) : s:escape(dir.'/'.name)
     let opts.options = join(['--history', history, opts.options])
   endif
 
