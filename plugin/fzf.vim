@@ -46,7 +46,7 @@ if s:is_win
   endfunction
 
   function! s:shellesc(arg)
-    return '^"'.substitute(substitute(a:arg, '"', '\\\^&', 'g'), '[^\\]\zs\\$', '\\\\', '').'^"'
+    return '^"'.substitute(a:arg, '["\\]', '\\^&', 'g').'^"'
   endfunction
 else
   function! s:fzf_call(fn, ...)
