@@ -15,6 +15,39 @@ Pros
 - Batteries included
     - Vim/Neovim plugin, key bindings and fuzzy auto-completion
 
+Table of Contents
+-----------------
+
+   * [Installation](#installation)
+      * [Using git](#using-git)
+      * [Using Homebrew](#using-homebrew)
+      * [As Vim plugin](#as-vim-plugin)
+      * [Windows](#windows)
+   * [Upgrading fzf](#upgrading-fzf)
+   * [Building fzf](#building-fzf)
+   * [Usage](#usage)
+      * [Using the finder](#using-the-finder)
+      * [Layout](#layout)
+      * [Search syntax](#search-syntax)
+      * [Environment variables](#environment-variables)
+      * [Options](#options)
+   * [Examples](#examples)
+   * [fzf-tmux script](#fzf-tmux-script)
+   * [Key bindings for command line](#key-bindings-for-command-line)
+   * [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
+      * [Files and directories](#files-and-directories)
+      * [Process IDs](#process-ids)
+      * [Host names](#host-names)
+      * [Environment variables / Aliases](#environment-variables--aliases)
+      * [Settings](#settings)
+      * [Supported commands](#supported-commands)
+   * [Vim plugin](#vim-plugin)
+   * [Tips](#tips)
+      * [Respecting .gitignore, <code>.hgignore</code>, and <code>svn:ignore</code>](#respecting-gitignore-hgignore-and-svnignore)
+      * [git ls-tree for fast traversal](#git-ls-tree-for-fast-traversal)
+      * [Fish shell](#fish-shell)
+   * [<a href="LICENSE">License</a>](#license)
+
 Installation
 ------------
 
