@@ -36,6 +36,27 @@ fzf-file-widget() {
 zle     -N   fzf-file-widget
 bindkey '^T' fzf-file-widget
 
+fzf-file-widget-dwim() {
+  autoload -U modify-current-argument split-shell-arguments
+  local reply REPLY REPLY2
+
+  ((--CURSOR))
+  split-shell-arguments
+  ((++CURSOR))
+
+  local ROOTDIR
+  eval "ROOTDIR=(${reply[$REPLY]})"
+  if [ -d "$ROOTDIR"  ]; then
+    cd $ROOTDIR
+    modify-current-argument '${ARG%%/#}/'
+    fzf-file-widget
+    cd -
+  else
+    fzf-file-widget
+  fi
+}
+zle -N fzf-file-widget-dwim
+
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
