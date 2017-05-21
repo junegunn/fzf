@@ -87,7 +87,7 @@ set cpo&vim
 function! s:fzf_exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
-      let s:exec = s:fzf_expand(s:fzf_go)
+      let s:exec = s:fzf_go
     elseif executable('fzf')
       let s:exec = 'fzf'
     elseif s:is_win
