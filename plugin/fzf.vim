@@ -67,7 +67,7 @@ function! s:fzf_fnamemodify(fname, mods)
 endfunction
 
 function! s:fzf_expand(fmt)
-  return s:fzf_call('expand', a:fmt)
+  return s:fzf_call('expand', a:fmt, 1)
 endfunction
 
 function! s:fzf_tempname()
