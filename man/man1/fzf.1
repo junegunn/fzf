@@ -467,6 +467,11 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fIdouble-click\fR
     or any single character
 
+Additionally, a special event named \fIchange\fR is available which is
+triggered whenever the query string is changed.
+
+    e.g. \fBfzf --bind change:top\fR
+
   \fBACTION:               DEFAULT BINDINGS (NOTES):
     \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
     \fBaccept\fR                \fIenter   double-click\fR
@@ -513,6 +518,7 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR
     \fBtoggle+up\fR             \fIbtab    (shift-tab)\fR
+    \fBtop\fR                   (move to the top result)
     \fBunix-line-discard\fR     \fIctrl-u\fR
     \fBunix-word-rubout\fR      \fIctrl-w\fR
     \fBup\fR                    \fIctrl-k  ctrl-p  up\fR

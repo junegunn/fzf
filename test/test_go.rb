@@ -1304,6 +1304,20 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-2] == prompt && lines[-1] == '1' }
   end
+
+  def test_change_top
+    tmux.send_keys %[seq 1000 | #{FZF} --bind change:top], :Enter
+    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.send_keys :Up
+    tmux.until { |lines| lines[-4] == '> 2' }
+    tmux.send_keys 1
+    tmux.until { |lines| lines[-3] == '> 1' }
+    tmux.send_keys :Up
+    tmux.until { |lines| lines[-4] == '> 10' }
+    tmux.send_keys 1
+    tmux.until { |lines| lines[-3] == '> 11' }
+    tmux.send_keys :Enter
+  end
 end
 
 module TestShell

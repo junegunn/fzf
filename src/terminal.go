@@ -213,6 +213,7 @@ const (
 	actExecuteSilent
 	actExecuteMulti // Deprecated
 	actSigStop
+	actTop
 )
 
 func toActions(types ...actionType) []action {
@@ -1609,6 +1610,9 @@ func (t *Terminal) Loop() {
 				req(reqClose)
 			case actClearScreen:
 				req(reqRedraw)
+			case actTop:
+				t.vset(0)
+				req(reqList)
 			case actUnixLineDiscard:
 				if t.cx > 0 {
 					t.yanked = copySlice(t.input[:t.cx])
@@ -1749,6 +1753,11 @@ func (t *Terminal) Loop() {
 			}
 			t.truncateQuery()
 			changed = string(previousInput) != string(t.input)
+			if onChanges, prs := t.keymap[tui.Change]; changed && prs {
+				if !doActions(onChanges, tui.Change) {
+					continue
+				}
+			}
 		} else {
 			if mapkey == tui.Rune {
 				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 && idx < t.maxItems() && idx < t.merger.Length() {

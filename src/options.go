@@ -400,6 +400,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.BSpace
 		case "ctrl-space":
 			chord = tui.CtrlSpace
+		case "change":
+			chord = tui.Change
 		case "alt-enter", "alt-return":
 			chord = tui.CtrlAltM
 		case "alt-space":
@@ -714,6 +716,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actDown)
 			case "up":
 				appendAction(actUp)
+			case "top":
+				appendAction(actTop)
 			case "page-up":
 				appendAction(actPageUp)
 			case "page-down":

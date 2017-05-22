@@ -75,6 +75,8 @@ const (
 	F11
 	F12
 
+	Change
+
 	AltSpace
 	AltSlash
 	AltBS
