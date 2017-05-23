@@ -1591,20 +1591,20 @@ func (t *Terminal) Loop() {
 			case actToggleDown:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
-					t.vmove(-1)
+					t.vmove(-1, true)
 					req(reqList)
 				}
 			case actToggleUp:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
-					t.vmove(1)
+					t.vmove(1, true)
 					req(reqList)
 				}
 			case actDown:
-				t.vmove(-1)
+				t.vmove(-1, true)
 				req(reqList)
 			case actUp:
-				t.vmove(1)
+				t.vmove(1, true)
 				req(reqList)
 			case actAccept:
 				req(reqClose)
@@ -1632,16 +1632,16 @@ func (t *Terminal) Loop() {
 				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
 				t.cx += len(t.yanked)
 			case actPageUp:
-				t.vmove(t.maxItems() - 1)
+				t.vmove(t.maxItems()-1, false)
 				req(reqList)
 			case actPageDown:
-				t.vmove(-(t.maxItems() - 1))
+				t.vmove(-(t.maxItems() - 1), false)
 				req(reqList)
 			case actHalfPageUp:
-				t.vmove(t.maxItems() / 2)
+				t.vmove(t.maxItems()/2, false)
 				req(reqList)
 			case actHalfPageDown:
-				t.vmove(-(t.maxItems() / 2))
+				t.vmove(-(t.maxItems() / 2), false)
 				req(reqList)
 			case actJump:
 				t.jumping = jumpEnabled
@@ -1699,7 +1699,7 @@ func (t *Terminal) Loop() {
 						if t.multi && me.Mod {
 							toggle()
 						}
-						t.vmove(me.S)
+						t.vmove(me.S, true)
 						req(reqList)
 					} else if t.hasPreviewWindow() && t.pwindow.Enclose(my, mx) {
 						scrollPreview(-me.S)
@@ -1796,12 +1796,12 @@ func (t *Terminal) constrain() {
 	t.offset = util.Max(0, t.offset)
 }
 
-func (t *Terminal) vmove(o int) {
+func (t *Terminal) vmove(o int, allowCycle bool) {
 	if t.reverse {
 		o *= -1
 	}
 	dest := t.cy + o
-	if t.cycle {
+	if t.cycle && allowCycle {
 		max := t.merger.Length() - 1
 		if dest > max {
 			if t.cy == max {
