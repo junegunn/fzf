@@ -251,8 +251,9 @@ func (r *LightRenderer) updateTerminalSize() {
 
 func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 	b := make([]byte, 1)
+	fd := r.fd()
 	util.SetNonblock(r.ttyin, nonblock)
-	_, err := r.ttyin.Read(b)
+	_, err := util.Read(fd, b)
 	if err != nil {
 		return 0, false
 	}

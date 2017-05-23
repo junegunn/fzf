@@ -32,3 +32,8 @@ func IsWindows() bool {
 func SetNonblock(file *os.File, nonblock bool) {
 	syscall.SetNonblock(syscall.Handle(file.Fd()), nonblock)
 }
+
+// Read executes syscall.Read on file descriptor
+func Read(fd int, b []byte) (int, error) {
+	return syscall.Read(syscall.Handle(fd), b)
+}
