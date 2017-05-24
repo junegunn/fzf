@@ -48,7 +48,7 @@ if s:is_win
   function! s:shellesc(arg)
     let escaped = substitute(a:arg, '[&|<>()@^]', '^&', 'g')
     let escaped = substitute(escaped, '"', '\\^&', 'g')
-    let escaped = substitute(escaped, '\\\\^', '\\^&', 'g')
+    let escaped = substitute(escaped, '\\\+\(\\^\)', '\\\\\1', 'g')
     return '^"'.substitute(escaped, '[^\\]\zs\\$', '\\\\', '').'^"'
   endfunction
 else
