@@ -975,15 +975,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-10].start_with? '>' }
     tmux.send_keys :Down
     tmux.until { |lines| lines[-9].start_with? '>' }
-    tmux.send_keys :PgUp
+    tmux.send_keys :Up
     tmux.until { |lines| lines[-10].start_with? '>' }
     tmux.send_keys :PgUp
-    tmux.until { |lines| lines[-3].start_with? '>' }
+    tmux.until { |lines| lines[-10].start_with? '>' }
     tmux.send_keys :Up
-    tmux.until { |lines| lines[-4].start_with? '>' }
-    tmux.send_keys :PgDn
     tmux.until { |lines| lines[-3].start_with? '>' }
     tmux.send_keys :PgDn
+    tmux.until { |lines| lines[-3].start_with? '>' }
+    tmux.send_keys :Down
     tmux.until { |lines| lines[-10].start_with? '>' }
   end
 
