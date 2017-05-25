@@ -374,8 +374,8 @@ On bash, fuzzy completion is enabled only for a predefined set of commands
 commands as well like follows.
 
 ```sh
-# There are also _fzf_path_completion and _fzf_dir_completion
-complete -F _fzf_file_completion -o default -o bashdefault doge
+complete -F _fzf_path_completion -o default -o bashdefault ag
+complete -F _fzf_dir_completion -o default -o bashdefault tree
 ```
 
 Vim plugin
