@@ -147,6 +147,23 @@ Execute (fzf#wrap):
   let opts = fzf#wrap({})
   Assert opts.options =~ '^--color=fg:'
 
+Execute (fzf#shellesc with sh):
+  AssertEqual '""', fzf#shellesc('', 'sh')
+  AssertEqual '"\"\""', fzf#shellesc('""', 'sh')
+  AssertEqual '"foobar>"', fzf#shellesc('foobar>', 'sh')
+  AssertEqual '"\\""', fzf#shellesc('\"', 'sh')
+  AssertEqual '"echo ''a'' && echo ''b''"', fzf#shellesc('echo ''a'' && echo ''b''', 'sh')
+
+Execute (fzf#shellesc with cmd.exe):
+  AssertEqual '^"^"', fzf#shellesc('', 'cmd.exe')
+  AssertEqual '^"\^"\^"^"', fzf#shellesc('""', 'cmd.exe')
+  AssertEqual '^"foobar^>^"', fzf#shellesc('foobar>', 'cmd.exe')
+  AssertEqual '^"\\\^"\\^"', fzf#shellesc('\\\\\\\\"\', 'cmd.exe')
+  AssertEqual '^"echo ''a'' ^&^& echo ''b''^"', fzf#shellesc('echo ''a'' && echo ''b''', 'cmd.exe')
+
+  AssertEqual '^"C:\Program Files ^(x86^)\\^"', fzf#shellesc('C:\Program Files (x86)\', 'cmd.exe')
+  AssertEqual '^"C:/Program Files ^(x86^)/^"', fzf#shellesc('C:/Program Files (x86)/', 'cmd.exe')
+
 Execute (Cleanup):
   unlet g:dir
   Restore
