@@ -58,6 +58,7 @@ type Terminal struct {
 	initDelay  time.Duration
 	inlineInfo bool
 	prompt     string
+	promptLen  int
 	reverse    bool
 	fullscreen bool
 	hscroll    bool
@@ -133,7 +134,6 @@ func (a byTimeOrder) Less(i, j int) bool {
 }
 
 var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
-var _tabStop int
 
 const (
 	reqPrompt util.EventType = iota
@@ -340,10 +340,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
-	return &Terminal{
+	t := Terminal{
 		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
-		prompt:     opts.Prompt,
 		reverse:    opts.Reverse,
 		fullscreen: fullscreen,
 		hscroll:    opts.Hscroll,
@@ -390,6 +389,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		startChan:  make(chan bool, 1),
 		tui:        renderer,
 		initFunc:   func() { renderer.Init() }}
+	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
+	return &t
 }
 
 // Input returns current query string
@@ -633,7 +634,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 }
 
 func (t *Terminal) placeCursor() {
-	t.move(0, t.displayWidth([]rune(t.prompt))+t.displayWidth(t.input[:t.cx]), false)
+	t.move(0, t.promptLen+t.displayWidth(t.input[:t.cx]), false)
 }
 
 func (t *Terminal) printPrompt() {
@@ -645,7 +646,7 @@ func (t *Terminal) printPrompt() {
 func (t *Terminal) printInfo() {
 	pos := 0
 	if t.inlineInfo {
-		pos = t.displayWidth([]rune(t.prompt)) + t.displayWidth(t.input) + 1
+		pos = t.promptLen + t.displayWidth(t.input) + 1
 		if pos+len(" < ") > t.window.Width() {
 			return
 		}
@@ -1241,7 +1242,7 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item
 }
 
 func (t *Terminal) truncateQuery() {
-	maxPatternLength := util.Max(1, t.window.Width()-t.displayWidth([]rune(t.prompt))-1)
+	maxPatternLength := util.Max(1, t.window.Width()-t.promptLen-1)
 	t.input, _ = t.trimRight(t.input, maxPatternLength)
 	t.cx = util.Constrain(t.cx, 0, len(t.input))
 }
@@ -1707,7 +1708,7 @@ func (t *Terminal) Loop() {
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left()
 					my -= t.window.Top()
-					mx = util.Constrain(mx-t.displayWidth([]rune(t.prompt)), 0, len(t.input))
+					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
 					if !t.reverse {
 						my = t.window.Height() - my - 1
 					}
