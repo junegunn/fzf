@@ -78,6 +78,12 @@ function! fzf#shellescape(arg, ...)
   return s:fzf_call('shellescape', a:arg)
 endfunction
 
+function! s:cygpath(path, ...)
+  let use_win_path = get(a:000, 0, 0)
+  let args = '-a'.(use_win_path ? 'm' : 'u').' '.a:path
+  return substitute(system('cygpath '.args), '\n', '', 'g')
+endfunction
+
 function! s:fzf_getcwd()
   return s:fzf_call('getcwd')
 endfunction
@@ -152,7 +158,7 @@ function! s:escape(path)
   let escaped_chars = '$%#''"'
 
   if has('unix')
-    let escaped_chars .= ' \'
+    let escaped_chars .= ' \()'
   endif
 
   return escape(a:path, escaped_chars)
@@ -217,6 +223,9 @@ function! s:common_sink(action, lines) abort
     let empty = empty(s:fzf_expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
     let autochdir = &autochdir
     set noautochdir
+    if has('win32unix')
+      call map(a:lines, 's:cygpath(s:escape(v:val))')
+    endif
     for item in a:lines
       if empty
         execute 'e' s:escape(item)
@@ -386,7 +395,7 @@ try
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0)
   let use_height = has_key(dict, 'down') &&
-        \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
+        \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
   let use_term = has('nvim') && !s:is_win
   let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
@@ -401,7 +410,6 @@ try
     let optstr .= ' --no-height'
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
-
   if use_term
     return s:execute_term(dict, command, temps)
   endif
@@ -455,7 +463,8 @@ function! s:pushd(dict)
       return 1
     endif
     let a:dict.prev_dir = cwd
-    execute 'lcd' s:escape(a:dict.dir)
+    let dir = s:escape(a:dict.dir)
+    execute 'lcd' has('win32unix') ? s:escape(s:cygpath(dir)) : dir
     let a:dict.dir = s:fzf_getcwd()
     return 1
   endif
@@ -537,6 +546,8 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
+  elseif has('win32unix')
+    let command = 'TERM=""; '.command
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
@@ -760,6 +771,8 @@ function! s:cmd(bang, ...) abort
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
+    elseif has('win32unix')
+      let opts.dir = s:cygpath(s:escape(opts.dir))
     endif
     let prompt = opts.dir
   else
