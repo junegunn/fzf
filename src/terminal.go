@@ -954,6 +954,7 @@ func (t *Terminal) printPreview() {
 	}
 	reader := bufio.NewReader(strings.NewReader(t.previewer.text))
 	lineNo := -t.previewer.offset
+	var ansi *ansiState
 	for {
 		line, err := reader.ReadString('\n')
 		eof := err == io.EOF
@@ -965,7 +966,7 @@ func (t *Terminal) printPreview() {
 			break
 		} else if lineNo > 0 {
 			var fillRet tui.FillReturn
-			extractColor(line, nil, func(str string, ansi *ansiState) bool {
+			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
 				if !t.preview.wrap {
 					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
