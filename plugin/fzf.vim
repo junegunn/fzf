@@ -63,7 +63,7 @@ function! fzf#shellescape(arg, ...)
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
-  return shellescape(a:arg)
+  return s:fzf_call('shellescape', a:arg)
 endfunction
 
 function! s:fzf_getcwd()
