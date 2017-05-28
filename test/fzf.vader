@@ -147,22 +147,23 @@ Execute (fzf#wrap):
   let opts = fzf#wrap({})
   Assert opts.options =~ '^--color=fg:'
 
-Execute (fzf#shellesc with sh):
-  AssertEqual '""', fzf#shellesc('', 'sh')
-  AssertEqual '"\"\""', fzf#shellesc('""', 'sh')
-  AssertEqual '"foobar>"', fzf#shellesc('foobar>', 'sh')
-  AssertEqual '"\\""', fzf#shellesc('\"', 'sh')
-  AssertEqual '"echo ''a'' && echo ''b''"', fzf#shellesc('echo ''a'' && echo ''b''', 'sh')
+Execute (fzf#shellescape with sh):
+  AssertEqual '''''', fzf#shellescape('', 'sh')
+  AssertEqual '''""''', fzf#shellescape('""', 'sh')
+  AssertEqual '''foobar>''', fzf#shellescape('foobar>', 'sh')
+  AssertEqual '''\"''', fzf#shellescape('\"', 'sh')
+  AssertEqual '''echo ''\''''a''\'''' && echo ''\''''b''\''''''', fzf#shellescape('echo ''a'' && echo ''b''', 'sh')
 
-Execute (fzf#shellesc with cmd.exe):
-  AssertEqual '^"^"', fzf#shellesc('', 'cmd.exe')
-  AssertEqual '^"\^"\^"^"', fzf#shellesc('""', 'cmd.exe')
-  AssertEqual '^"foobar^>^"', fzf#shellesc('foobar>', 'cmd.exe')
-  AssertEqual '^"\\\^"\\^"', fzf#shellesc('\\\\\\\\"\', 'cmd.exe')
-  AssertEqual '^"echo ''a'' ^&^& echo ''b''^"', fzf#shellesc('echo ''a'' && echo ''b''', 'cmd.exe')
+Execute (fzf#shellescape with cmd.exe):
+  AssertEqual '^"^"', fzf#shellescape('', 'cmd.exe')
+  AssertEqual '^"\^"\^"^"', fzf#shellescape('""', 'cmd.exe')
+  AssertEqual '^"foobar^>^"', fzf#shellescape('foobar>', 'cmd.exe')
+  AssertEqual '^"\\\^"\\^"', fzf#shellescape('\\\\\\\\"\', 'cmd.exe')
+  AssertEqual '^"echo ''a'' ^&^& echo ''b''^"', fzf#shellescape('echo ''a'' && echo ''b''', 'cmd.exe')
 
-  AssertEqual '^"C:\Program Files ^(x86^)\\^"', fzf#shellesc('C:\Program Files (x86)\', 'cmd.exe')
-  AssertEqual '^"C:/Program Files ^(x86^)/^"', fzf#shellesc('C:/Program Files (x86)/', 'cmd.exe')
+  AssertEqual '^"C:\Program Files ^(x86^)\\^"', fzf#shellescape('C:\Program Files (x86)\', 'cmd.exe')
+  AssertEqual '^"C:/Program Files ^(x86^)/^"', fzf#shellescape('C:/Program Files (x86)/', 'cmd.exe')
+  " AssertEqual '^"%%USERPROFILE%%^", fzf#shellescape('%USERPROFILE%', 'cmd.exe')
 
 Execute (Cleanup):
   unlet g:dir

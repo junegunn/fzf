@@ -50,23 +50,20 @@ else
   endfunction
 endif
 
-function! s:shellesc_sh(arg)
-  return '"'.substitute(a:arg, '"', '\\"', 'g').'"'
-endfunction
-
 function! s:shellesc_cmd(arg)
   let escaped = substitute(a:arg, '[&|<>()@^]', '^&', 'g')
+  let escaped = substitute(escaped, '%', '%%', 'g')
   let escaped = substitute(escaped, '"', '\\^&', 'g')
   let escaped = substitute(escaped, '\\\+\(\\^\)', '\\\\\1', 'g')
   return '^"'.substitute(escaped, '[^\\]\zs\\$', '\\\\', '').'^"'
 endfunction
 
-function! fzf#shellesc(arg, ...)
+function! fzf#shellescape(arg, ...)
   let shell = get(a:000, 0, &shell)
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
-  return s:shellesc_sh(a:arg)
+  return shellescape(a:arg)
 endfunction
 
 function! s:fzf_getcwd()
@@ -119,7 +116,7 @@ function! s:fzf_exec()
       throw 'fzf executable not found'
     endif
   endif
-  return s:is_win ? s:exec : fzf#shellesc(s:exec)
+  return s:is_win ? s:exec : fzf#shellescape(s:exec)
 endfunction
 
 function! s:tmux_enabled()
@@ -257,7 +254,7 @@ endfunction
 
 function! s:evaluate_opts(options)
   return type(a:options) == type([]) ?
-        \ join(map(copy(a:options), 'fzf#shellesc(v:val)')) : a:options
+        \ join(map(copy(a:options), 'fzf#shellescape(v:val)')) : a:options
 endfunction
 
 " [name string,] [opts dict,] [fullscreen boolean]
@@ -304,7 +301,7 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let history = s:is_win ? fzf#shellesc(dir.'\'.name) : s:escape(dir.'/'.name)
+    let history = s:is_win ? fzf#shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
     let opts.options = join(['--history', history, opts.options])
   endif
 
@@ -356,7 +353,7 @@ try
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = s:fzf_tempname().(s:is_win ? '.bat' : '')
     call writefile((s:is_win ? ['@echo off'] : []) + split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
-    let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . fzf#shellesc(temps.source)
+    let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . fzf#shellescape(temps.source)
   endif
 
   if has_key(dict, 'source')
@@ -367,7 +364,7 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
-      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellesc(temps.input).'|'
+      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
     endif
@@ -431,7 +428,7 @@ function! s:fzf_tmux(dict)
     endif
   endfor
   return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellesc(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
 endfunction
 
 function! s:splittable(dict)
@@ -500,7 +497,7 @@ function! s:execute(dict, command, use_height, temps) abort
   if has('unix') && !a:use_height
     silent! !clear 2> /dev/null
   endif
-  let escaped = escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
+  let escaped = (a:use_height || s:is_win) ? a:command : escape(substitute(a:command, '\n', '\\n', 'g'), '%#!')
   if has('gui_running')
     let Launcher = get(a:dict, 'launcher', get(g:, 'Fzf_launcher', get(g:, 'fzf_launcher', s:launcher)))
     let fmt = type(Launcher) == 2 ? call(Launcher, []) : Launcher
@@ -509,7 +506,7 @@ function! s:execute(dict, command, use_height, temps) abort
     endif
     let command = printf(fmt, escaped)
   else
-    let command = a:use_height ? a:command : escaped
+    let command = escaped
   endif
   if s:is_win
     let batchfile = s:fzf_tempname().'.bat'
