@@ -128,7 +128,7 @@ function! s:fzf_exec()
       throw 'fzf executable not found'
     endif
   endif
-  return s:is_win ? s:exec : fzf#shellescape(s:exec)
+  return fzf#shellescape(s:exec)
 endfunction
 
 function! s:tmux_enabled()
