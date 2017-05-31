@@ -313,7 +313,7 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let history = s:is_win ? fzf#shellescape(dir.'\'.name) : s:escape(dir.'/'.name)
+    let history = fzf#shellescape(dir.'/'.name)
     let opts.options = join(['--history', history, opts.options])
   endif
 
@@ -553,7 +553,7 @@ function! s:execute_tmux(dict, command, temps) abort
   let command = a:command
   if s:pushd(a:dict)
     " -c '#{pane_current_path}' is only available on tmux 1.9 or above
-    let command = 'cd '.s:escape(a:dict.dir).' && '.command
+    let command = join(['cd', fzf#shellescape(a:dict.dir), '&&', command])
   endif
 
   call system(command)
