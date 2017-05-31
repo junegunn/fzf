@@ -46,7 +46,7 @@ if s:is_win
   endfunction
 
   " Use utf-8 for fzf.vim commands
-: " Return array of shell commands for cmd.exe
+  " Return array of shell commands for cmd.exe
   function! s:wrap_cmds(cmds)
     return ['@echo off', 'for /f "tokens=4" %%a in (''chcp'') do set origchcp=%%a', 'chcp 65001 > nul'] +
           \ (type(a:cmds) == type([]) ? a:cmds : [a:cmds]) +
