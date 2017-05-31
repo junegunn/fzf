@@ -524,6 +524,7 @@ function! s:execute(dict, command, use_height, temps) abort
     let batchfile = s:fzf_tempname().'.bat'
     call writefile(s:wrap_cmds(command), batchfile)
     let command = batchfile
+    let a:temps.batchfile = batchfile
     if has('nvim')
       let s:dict = a:dict
       let s:temps = a:temps
