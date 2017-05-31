@@ -1,0 +1,15 @@
+d200-dg=d200
+d214=d210
+Eterm-color=Eterm
+X-hpterm=hpterm
+sun1=sun
+sun2=sun
+tvi914=tvi912
+tvi920=tvi912
+vt100-am=vt100
+vt200=vt220
+vt300=vt320
+vt400-24=vt400
+dec-vt400=vt400
+wyse50=wy50
+wyse60=wy60

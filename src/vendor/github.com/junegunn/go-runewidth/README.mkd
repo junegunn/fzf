@@ -1,0 +1,27 @@
+go-runewidth
+============
+
+[![Build Status](https://travis-ci.org/mattn/go-runewidth.png?branch=master)](https://travis-ci.org/mattn/go-runewidth)
+[![Coverage Status](https://coveralls.io/repos/mattn/go-runewidth/badge.png?branch=HEAD)](https://coveralls.io/r/mattn/go-runewidth?branch=HEAD)
+[![GoDoc](https://godoc.org/github.com/mattn/go-runewidth?status.svg)](http://godoc.org/github.com/mattn/go-runewidth)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mattn/go-runewidth)](https://goreportcard.com/report/github.com/mattn/go-runewidth)
+
+Provides functions to get fixed width of the character or string.
+
+Usage
+-----
+
+```go
+runewidth.StringWidth("つのだ☆HIRO") == 12
+```
+
+
+Author
+------
+
+Yasuhiro Matsumoto
+
+License
+-------
+
+under the MIT License: http://mattn.mit-license.org/2013

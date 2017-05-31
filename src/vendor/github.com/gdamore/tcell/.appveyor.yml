@@ -1,0 +1,13 @@
+version: 1.0.{build}
+clone_folder: c:\gopath\src\github.com\gdamore\tcell
+environment:
+  GOPATH: c:\gopath
+build_script:
+- go version
+- go env
+- SET PATH=%LOCALAPPDATA%\atom\bin;%GOPATH%\bin;%PATH%
+- go get -t ./...
+- go build
+- go install ./...
+test_script:
+- go test ./...
