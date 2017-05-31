@@ -44,9 +44,21 @@ if s:is_win
       let &shellslash = shellslash
     endtry
   endfunction
+
+  " Use utf-8 for fzf.vim commands
+  " Return array of shell commands for cmd.exe
+  function! s:wrap_cmds(cmds)
+    return ['@echo off', 'for /f "tokens=4" %%a in (''chcp'') do set origchcp=%%a', 'chcp 65001 > nul'] +
+          \ (type(a:cmds) == type([]) ? a:cmds : [a:cmds]) +
+          \ ['chcp %origchcp% > nul']
+  endfunction
 else
   function! s:fzf_call(fn, ...)
     return call(a:fn, a:000)
+  endfunction
+
+  function! s:wrap_cmds(cmds)
+    return a:cmds
   endfunction
 endif
 
@@ -352,7 +364,7 @@ try
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = s:fzf_tempname().(s:is_win ? '.bat' : '')
-    call writefile((s:is_win ? ['@echo off'] : []) + split($FZF_DEFAULT_COMMAND, "\n"), temps.source)
+    call writefile(s:wrap_cmds(split($FZF_DEFAULT_COMMAND, "\n")), temps.source)
     let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . fzf#shellescape(temps.source)
   endif
 
@@ -510,7 +522,7 @@ function! s:execute(dict, command, use_height, temps) abort
   endif
   if s:is_win
     let batchfile = s:fzf_tempname().'.bat'
-    call writefile(['@echo off', command], batchfile)
+    call writefile(s:wrap_cmds(command), batchfile)
     let command = batchfile
     if has('nvim')
       let s:dict = a:dict
