@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/junegunn/go-shellwords"
+	"github.com/mattn/go-shellwords"
 )
 
 // ExecCommand executes the given command with $SHELL

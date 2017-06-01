@@ -8,11 +8,10 @@ import (
 
 	"runtime"
 
-	// https://github.com/gdamore/tcell/pull/135
-	"github.com/junegunn/tcell"
-	"github.com/junegunn/tcell/encoding"
+	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/encoding"
 
-	"github.com/junegunn/go-runewidth"
+	"github.com/mattn/go-runewidth"
 )
 
 func HasFullscreenRenderer() bool {
