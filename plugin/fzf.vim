@@ -158,7 +158,10 @@ function! s:escape(path)
   let escaped_chars = '$%#''"'
 
   if has('unix')
-    let escaped_chars .= ' \()'
+    let escaped_chars .= ' \'
+  endif
+  if has('win32unix')
+    let escaped_chars .= '()'
   endif
 
   return escape(a:path, escaped_chars)
@@ -410,6 +413,7 @@ try
     let optstr .= ' --no-height'
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+
   if use_term
     return s:execute_term(dict, command, temps)
   endif
