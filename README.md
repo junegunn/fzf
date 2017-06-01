@@ -278,6 +278,9 @@ fish.
 - `ALT-C` - cd into the selected directory
     - Set `FZF_ALT_C_COMMAND` to override the default command
     - Set `FZF_ALT_C_OPTS` to pass additional options
+- `ALT-O` - open selected file with default application (`xdg-open`)
+    - Set `FZF_ALT_O_COMMAND` to override the default command
+    - Set `FZF_ALT_O_OPTS` to pass additional options
 
 If you're on a tmux session, you can start fzf in a split pane by setting
 `FZF_TMUX` to 1, and change the height of the pane with `FZF_TMUX_HEIGHT`

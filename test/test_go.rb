@@ -37,7 +37,7 @@ end
 class Shell
   class << self
     def unsets
-      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_CTRL_R_OPTS;'
+      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_ALT_O_COMMAND FZF_ALT_O_OPTS FZF_CTRL_R_OPTS;'
     end
 
     def bash
@@ -1403,6 +1403,10 @@ module TestShell
     tmux.send_keys :pwd, :Enter
     tmux.until { |lines| lines[-1].end_with? '/tmp' }
   end
+
+  # FIXME prepare test
+  # def test_alt_o_command
+  # end
 
   def test_ctrl_r
     tmux.prepare
