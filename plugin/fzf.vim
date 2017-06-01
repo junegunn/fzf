@@ -80,7 +80,7 @@ endfunction
 
 function! s:cygpath(path, ...)
   let use_win_path = get(a:000, 0, 0)
-  let args = '-a'.(use_win_path ? 'm' : 'u').' '.a:path
+  let args = '-a'.(use_win_path ? 'm' : 'u').' '.fzf#shellescape(a:path)
   return substitute(system('cygpath '.args), '\n', '', 'g')
 endfunction
 
@@ -227,7 +227,7 @@ function! s:common_sink(action, lines) abort
     let autochdir = &autochdir
     set noautochdir
     if has('win32unix')
-      call map(a:lines, 's:cygpath(s:escape(v:val))')
+      call map(a:lines, 's:cygpath(v:val)')
     endif
     for item in a:lines
       if empty
@@ -467,8 +467,7 @@ function! s:pushd(dict)
       return 1
     endif
     let a:dict.prev_dir = cwd
-    let dir = s:escape(a:dict.dir)
-    execute 'lcd' has('win32unix') ? s:escape(s:cygpath(dir)) : dir
+    execute 'lcd' s:escape(has('win32unix') ? s:cygpath(a:dict.dir) : a:dict.dir)
     let a:dict.dir = s:fzf_getcwd()
     return 1
   endif
@@ -776,7 +775,7 @@ function! s:cmd(bang, ...) abort
     if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     elseif has('win32unix')
-      let opts.dir = s:cygpath(s:escape(opts.dir))
+      let opts.dir = s:cygpath(opts.dir)
     endif
     let prompt = opts.dir
   else
