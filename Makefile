@@ -92,16 +92,16 @@ release-all: clean test
 
 $(SRC_LINK):
 	mkdir -p $(shell dirname $(SRC_LINK))
-	ln -s $(ROOT_DIR)/src $(SRC_LINK)
+	ln -sf $(ROOT_DIR)/src $(SRC_LINK)
 
 $(VENDOR_LINK):
 	mkdir -p $(shell dirname $(VENDOR_LINK))
-	ln -s $(ROOT_DIR)/vendor $(VENDOR_LINK)
+	ln -sf $(ROOT_DIR)/vendor $(VENDOR_LINK)
 
-$(GLIDE_LOCK): $(GLIDE_YAML)
+vendor: $(GLIDE_YAML)
 	go get -u github.com/Masterminds/glide && $(GOPATH)/bin/glide install && touch $@
 
-test: $(SOURCES)
+test: $(SOURCES) vendor
 	SHELL=/bin/sh GOOS= go test -v -tags "$(TAGS)" \
 				github.com/junegunn/fzf/src \
 				github.com/junegunn/fzf/src/algo \
@@ -113,23 +113,23 @@ install: bin/fzf
 clean:
 	rm -rf target
 
-target/$(BINARY32): $(SOURCES)
+target/$(BINARY32): $(SOURCES) vendor
 	GOARCH=386 go build $(BUILD_FLAGS) -o $@
 
-target/$(BINARY64): $(SOURCES)
+target/$(BINARY64): $(SOURCES) vendor
 	GOARCH=amd64 go build $(BUILD_FLAGS) -o $@
 
 # https://github.com/golang/go/wiki/GoArm
-target/$(BINARYARM5): $(SOURCES)
+target/$(BINARYARM5): $(SOURCES) vendor
 	GOARCH=arm GOARM=5 go build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM6): $(SOURCES)
+target/$(BINARYARM6): $(SOURCES) vendor
 	GOARCH=arm GOARM=6 go build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM7): $(SOURCES)
+target/$(BINARYARM7): $(SOURCES) vendor
 	GOARCH=arm GOARM=7 go build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM8): $(SOURCES)
+target/$(BINARYARM8): $(SOURCES) vendor
 	GOARCH=arm64 go build $(BUILD_FLAGS) -o $@
 
 bin/fzf: target/$(BINARY) | bin
