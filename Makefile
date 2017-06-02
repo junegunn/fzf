@@ -9,14 +9,19 @@ $(error "$$GOOS is not defined.")
 endif
 endif
 
-ROOT_DIR    := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+MAKEFILE    := $(realpath $(lastword $(MAKEFILE_LIST)))
+ROOT_DIR    := $(shell dirname $(MAKEFILE))
 GOPATH      := $(ROOT_DIR)/gopath
 SRC_LINK    := $(GOPATH)/src/github.com/junegunn/fzf/src
 VENDOR_LINK := $(GOPATH)/src/github.com/junegunn/fzf/vendor
+export GOPATH
 
 GLIDE_YAML  := glide.yaml
 GLIDE_LOCK  := glide.lock
-SOURCES     := $(wildcard *.go src/*.go src/*/*.go) $(SRC_LINK) $(VENDOR_LINK) $(GLIDE_LOCK)
+SOURCES     := $(wildcard *.go src/*.go src/*/*.go) $(SRC_LINK) $(VENDOR_LINK) $(GLIDE_LOCK) $(MAKEFILE)
+
+REVISION    := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
+BUILD_FLAGS := -a -ldflags "-X main.revision=$(REVISION) -w -extldflags=$(LDFLAGS)" -tags "$(TAGS)"
 
 BINARY32    := fzf-$(GOOS)_386
 BINARY64    := fzf-$(GOOS)_amd64
@@ -31,7 +36,6 @@ RELEASEARM5 := fzf-$(VERSION)-$(GOOS)_arm5
 RELEASEARM6 := fzf-$(VERSION)-$(GOOS)_arm6
 RELEASEARM7 := fzf-$(VERSION)-$(GOOS)_arm7
 RELEASEARM8 := fzf-$(VERSION)-$(GOOS)_arm8
-export GOPATH
 
 # https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
@@ -60,8 +64,8 @@ target:
 
 ifeq ($(GOOS),windows)
 release: target/$(BINARY32) target/$(BINARY64)
-	cd target && cp -f $(BINARY32) fzf.exe && zip $(RELEASE32).zip bin/fzf.exe
-	cd target && cp -f $(BINARY64) fzf.exe && zip $(RELEASE64).zip bin/fzf.exe
+	cd target && cp -f $(BINARY32) fzf.exe && zip $(RELEASE32).zip fzf.exe
+	cd target && cp -f $(BINARY64) fzf.exe && zip $(RELEASE64).zip fzf.exe
 	cd target && rm -f fzf.exe
 else ifeq ($(GOOS),linux)
 release: target/$(BINARY32) target/$(BINARY64) target/$(BINARYARM5) target/$(BINARYARM6) target/$(BINARYARM7) target/$(BINARYARM8)
@@ -110,23 +114,23 @@ clean:
 	rm -rf target
 
 target/$(BINARY32): $(SOURCES)
-	GOARCH=386 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=386 go build $(BUILD_FLAGS) -o $@
 
 target/$(BINARY64): $(SOURCES)
-	GOARCH=amd64 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=amd64 go build $(BUILD_FLAGS) -o $@
 
 # https://github.com/golang/go/wiki/GoArm
 target/$(BINARYARM5): $(SOURCES)
-	GOARCH=arm GOARM=5 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=arm GOARM=5 go build $(BUILD_FLAGS) -o $@
 
 target/$(BINARYARM6): $(SOURCES)
-	GOARCH=arm GOARM=6 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=arm GOARM=6 go build $(BUILD_FLAGS) -o $@
 
 target/$(BINARYARM7): $(SOURCES)
-	GOARCH=arm GOARM=7 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=arm GOARM=7 go build $(BUILD_FLAGS) -o $@
 
 target/$(BINARYARM8): $(SOURCES)
-	GOARCH=arm64 go build -a -ldflags "-w -extldflags=$(LDFLAGS)" -tags "$(TAGS)" -o $@
+	GOARCH=arm64 go build $(BUILD_FLAGS) -o $@
 
 bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf

@@ -43,12 +43,16 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
 // Run starts fzf
-func Run(opts *Options) {
+func Run(opts *Options, revision string) {
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
 	if opts.Version {
-		fmt.Println(version)
+		if len(revision) > 0 {
+			fmt.Printf("%s (%s)\n", version, revision)
+		} else {
+			fmt.Println(version)
+		}
 		os.Exit(exitOk)
 	}
 
