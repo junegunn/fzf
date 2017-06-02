@@ -16,13 +16,6 @@ install:
 - sudo apt-get install -y zsh fish
 
 script: |
-  export GOPATH=~/go
-  export FZF_BASE=$GOPATH/src/github.com/junegunn/fzf
-
-  mkdir -p $GOPATH/src/github.com/junegunn
-  ln -s $(pwd) $FZF_BASE
-
-  cd $FZF_BASE/src && make test fzf/fzf-linux_amd64 install &&
-  cd $FZF_BASE/bin && ln -sf fzf-linux_amd64 fzf-$(./fzf --version)-linux_amd64 &&
-  cd $FZF_BASE && yes | ./install && rm -f fzf &&
+  make test install &&
+  ./install --all &&
   tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]
