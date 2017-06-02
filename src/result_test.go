@@ -52,7 +52,7 @@ func TestResultRank(t *testing.T) {
 	sortCriteria = []criterion{byScore, byLength}
 
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
-	item1 := buildResult(&Item{text: util.RunesToChars(strs[0]), index: 1}, []Offset{}, 2, 3)
+	item1 := buildResult(&Item{text: util.RunesToChars(strs[0]), index: 1, trimLength: -1}, []Offset{}, 2)
 	if item1.rank.points[0] != math.MaxUint16-2 || // Bonus
 		item1.rank.points[1] != 3 || // Length
 		item1.rank.points[2] != 0 || // Unused
@@ -61,7 +61,7 @@ func TestResultRank(t *testing.T) {
 		t.Error(item1.rank)
 	}
 	// Only differ in index
-	item2 := buildResult(&Item{text: util.RunesToChars(strs[0])}, []Offset{}, 2, 3)
+	item2 := buildResult(&Item{text: util.RunesToChars(strs[0])}, []Offset{}, 2)
 
 	items := []*Result{item1, item2}
 	sort.Sort(ByRelevance(items))
@@ -77,10 +77,10 @@ func TestResultRank(t *testing.T) {
 	}
 
 	// Sort by relevance
-	item3 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 3, 0)
-	item4 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 4, 0)
-	item5 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 5, 0)
-	item6 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 6, 0)
+	item3 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 3)
+	item4 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 4)
+	item5 := buildResult(&Item{index: 2}, []Offset{Offset{1, 3}, Offset{5, 7}}, 5)
+	item6 := buildResult(&Item{index: 2}, []Offset{Offset{1, 2}, Offset{6, 7}}, 6)
 	items = []*Result{item1, item2, item3, item4, item5, item6}
 	sort.Sort(ByRelevance(items))
 	if !(items[0] == item6 && items[1] == item5 &&

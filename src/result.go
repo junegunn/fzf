@@ -29,7 +29,7 @@ type Result struct {
 	rank rank
 }
 
-func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
+func buildResult(item *Item, offsets []Offset, score int) *Result {
 	if len(offsets) > 1 {
 		sort.Sort(ByOrder(offsets))
 	}
@@ -57,8 +57,7 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 			// Higher is better
 			val = math.MaxUint16 - util.AsUint16(score)
 		case byLength:
-			// If offsets is empty, trimLen will be 0, but we don't care
-			val = util.AsUint16(trimLen)
+			val = util.AsUint16(int(item.TrimLength()))
 		case byBegin, byEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
@@ -72,7 +71,7 @@ func buildResult(item *Item, offsets []Offset, score int, trimLen int) *Result {
 				if criterion == byBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
-					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/trimLen)
+					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()))
 				}
 			}
 		}

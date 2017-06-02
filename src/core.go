@@ -95,9 +95,10 @@ func Run(opts *Options) {
 			}
 			chars, colors := ansiProcessor(data)
 			return &Item{
-				index:  int32(index),
-				text:   chars,
-				colors: colors}
+				index:      int32(index),
+				trimLength: -1,
+				text:       chars,
+				colors:     colors}
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) *Item {
@@ -110,9 +111,10 @@ func Run(opts *Options) {
 			}
 			textRunes := joinTokens(trans)
 			item := Item{
-				index:    int32(index),
-				origText: &data,
-				colors:   nil}
+				index:      int32(index),
+				trimLength: -1,
+				origText:   &data,
+				colors:     nil}
 
 			trimmed, colors := ansiProcessorRunes(textRunes)
 			item.text = trimmed

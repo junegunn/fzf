@@ -7,6 +7,7 @@ import (
 // Item represents each input line
 type Item struct {
 	index       int32
+	trimLength  int32
 	text        util.Chars
 	origText    *[]byte
 	colors      *[]ansiOffset
@@ -16,6 +17,14 @@ type Item struct {
 // Index returns ordinal index of the Item
 func (item *Item) Index() int32 {
 	return item.index
+}
+
+func (item *Item) TrimLength() int32 {
+	if item.trimLength >= 0 {
+		return item.trimLength
+	}
+	item.trimLength = int32(item.text.TrimLength())
+	return item.trimLength
 }
 
 // Colors returns ansiOffsets of the Item

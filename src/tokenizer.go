@@ -20,7 +20,6 @@ type Range struct {
 type Token struct {
 	text         *util.Chars
 	prefixLength int32
-	trimLength   int32
 }
 
 // Delimiter for tokenizing the input
@@ -81,7 +80,7 @@ func withPrefixLengths(tokens []util.Chars, begin int) []Token {
 	prefixLength := begin
 	for idx, token := range tokens {
 		// NOTE: &tokens[idx] instead of &tokens
-		ret[idx] = Token{&tokens[idx], int32(prefixLength), int32(token.TrimLength())}
+		ret[idx] = Token{&tokens[idx], int32(prefixLength)}
 		prefixLength += token.Length()
 	}
 	return ret
@@ -242,7 +241,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		} else {
 			prefixLength = 0
 		}
-		transTokens[idx] = Token{&merged, prefixLength, int32(merged.TrimLength())}
+		transTokens[idx] = Token{&merged, prefixLength}
 	}
 	return transTokens
 }

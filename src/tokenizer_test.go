@@ -48,22 +48,22 @@ func TestTokenize(t *testing.T) {
 	// AWK-style
 	input := "  abc:  def:  ghi  "
 	tokens := Tokenize(util.RunesToChars([]rune(input)), Delimiter{})
-	if tokens[0].text.ToString() != "abc:  " || tokens[0].prefixLength != 2 || tokens[0].trimLength != 4 {
+	if tokens[0].text.ToString() != "abc:  " || tokens[0].prefixLength != 2 {
 		t.Errorf("%s", tokens)
 	}
 
 	// With delimiter
 	tokens = Tokenize(util.RunesToChars([]rune(input)), delimiterRegexp(":"))
-	if tokens[0].text.ToString() != "  abc:" || tokens[0].prefixLength != 0 || tokens[0].trimLength != 4 {
+	if tokens[0].text.ToString() != "  abc:" || tokens[0].prefixLength != 0 {
 		t.Errorf("%s", tokens)
 	}
 
 	// With delimiter regex
 	tokens = Tokenize(util.RunesToChars([]rune(input)), delimiterRegexp("\\s+"))
-	if tokens[0].text.ToString() != "  " || tokens[0].prefixLength != 0 || tokens[0].trimLength != 0 ||
-		tokens[1].text.ToString() != "abc:  " || tokens[1].prefixLength != 2 || tokens[1].trimLength != 4 ||
-		tokens[2].text.ToString() != "def:  " || tokens[2].prefixLength != 8 || tokens[2].trimLength != 4 ||
-		tokens[3].text.ToString() != "ghi  " || tokens[3].prefixLength != 14 || tokens[3].trimLength != 3 {
+	if tokens[0].text.ToString() != "  " || tokens[0].prefixLength != 0 ||
+		tokens[1].text.ToString() != "abc:  " || tokens[1].prefixLength != 2 ||
+		tokens[2].text.ToString() != "def:  " || tokens[2].prefixLength != 8 ||
+		tokens[3].text.ToString() != "ghi  " || tokens[3].prefixLength != 14 {
 		t.Errorf("%s", tokens)
 	}
 }
