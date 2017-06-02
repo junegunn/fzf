@@ -12,8 +12,6 @@ endif
 SOURCES     := $(wildcard *.go */*.go)
 ROOTDIR     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BINDIR      := $(shell dirname $(ROOTDIR))/bin
-GOPATH      := $(shell dirname $(ROOTDIR))/gopath
-SRCDIR      := $(GOPATH)/src/github.com/junegunn/fzf/src
 BINARY32    := fzf-$(GOOS)_386
 BINARY64    := fzf-$(GOOS)_amd64
 BINARYARM5  := fzf-$(GOOS)_arm5
@@ -27,7 +25,6 @@ RELEASEARM5 := fzf-$(VERSION)-$(GOOS)_arm5
 RELEASEARM6 := fzf-$(VERSION)-$(GOOS)_arm6
 RELEASEARM7 := fzf-$(VERSION)-$(GOOS)_arm7
 RELEASEARM8 := fzf-$(VERSION)-$(GOOS)_arm8
-export GOPATH
 
 # https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
@@ -79,13 +76,8 @@ release-all: clean test
 	GOOS=openbsd make release
 	GOOS=windows make release
 
-$(SRCDIR):
-	mkdir -p $(shell dirname $(SRCDIR))
-	ln -s $(ROOTDIR) $(SRCDIR)
-
-deps: $(SRCDIR) $(SOURCES)
-	cd $(SRCDIR) && go get -tags "$(TAGS)"
-	./deps
+deps: $(SOURCES)
+	cd .. && go get -u github.com/Masterminds/glide && $(GOPATH)/bin/glide install
 
 test: deps
 	SHELL=/bin/sh GOOS= go test -v -tags "$(TAGS)" ./...

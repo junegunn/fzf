@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/junegunn/go-isatty"
-	"github.com/junegunn/go-runewidth"
+	"github.com/mattn/go-isatty"
+	"github.com/mattn/go-runewidth"
 )
 
 var _runeWidths = make(map[rune]int)

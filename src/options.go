@@ -12,7 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 
-	"github.com/junegunn/go-shellwords"
+	"github.com/mattn/go-shellwords"
 )
 
 const usage = `usage: fzf [options]

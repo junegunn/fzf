@@ -1,0 +1,38 @@
+hash: d68dd0bd779ac4ffca1e0c49ca38d85f90d5d68fa8e2d5d7db70a8ce8c662ec1
+updated: 2017-06-01T15:48:41.653745249-07:00
+imports:
+- name: github.com/gdamore/encoding
+  version: b23993cbb6353f0e6aa98d0ee318a34728f628b9
+- name: github.com/gdamore/tcell
+  version: 44772c121bb7838819d3ba4a7e84c0c2d617328e
+  subpackages:
+  - encoding
+- name: github.com/lucasb-eyer/go-colorful
+  version: c900de9dbbc73129068f5af6a823068fc5f2308c
+- name: github.com/mattn/go-isatty
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+- name: github.com/mattn/go-runewidth
+  version: 14207d285c6c197daabb5c9793d63e7af9ab2d50
+- name: github.com/mattn/go-shellwords
+  version: 02e3cf038dcea8290e44424da473dd12be796a8a
+- name: golang.org/x/crypto
+  version: e1a4589e7d3ea14a3352255d04b6f1a418845e5e
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/sys
+  version: b90f89a1e7a9c1f6b918820b3daa7f08488c8594
+  subpackages:
+  - unix
+- name: golang.org/x/text
+  version: 4ee4af566555f5fbe026368b75596286a312663a
+  subpackages:
+  - encoding
+  - encoding/charmap
+  - encoding/internal
+  - encoding/internal/identifier
+  - encoding/japanese
+  - encoding/korean
+  - encoding/simplifiedchinese
+  - encoding/traditionalchinese
+  - transform
+testImports: []

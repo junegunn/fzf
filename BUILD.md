@@ -10,8 +10,6 @@ Build instructions
 
 ### Using Makefile
 
-Makefile will set up and use its own `$GOPATH` under the project root.
-
 ```sh
 # Source files are located in src directory
 cd src
