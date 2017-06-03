@@ -550,7 +550,7 @@ function! s:execute(dict, command, use_height, temps) abort
       return []
     endif
   elseif has('win32unix')
-    if $TERM ==# 'cygwin' || $TERM ==# ''
+    if $TERM ==# 'cygwin'
       let command = 'TERM=""; '.command
     else
       let shellscript = s:fzf_tempname()
