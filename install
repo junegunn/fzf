@@ -99,11 +99,23 @@ link_fzf_in_path() {
 }
 
 try_curl() {
-  command -v curl > /dev/null && curl -fL $1 | tar -xzf -
+  command -v curl > /dev/null &&
+  if [[ $1 =~ tgz$ ]]; then
+    curl -fL $1 | tar -xzf -
+  else
+    local temp=${TMPDIR:-/tmp}/fzf.zip
+    curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+  fi
 }
 
 try_wget() {
-  command -v wget > /dev/null && wget -O - $1 | tar -xzf -
+  command -v wget > /dev/null &&
+  if [[ $1 =~ tgz$ ]]; then
+    wget -O - $1 | tar -xzf -
+  else
+    local temp=${TMPDIR:-/tmp}/fzf.zip
+    wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+  fi
 }
 
 download() {
@@ -123,8 +135,8 @@ download() {
 
   local url
   [[ "$version" =~ alpha ]] &&
-    url=https://github.com/junegunn/fzf-bin/releases/download/alpha/${1}.tgz ||
-    url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}.tgz
+    url=https://github.com/junegunn/fzf-bin/releases/download/alpha/${1} ||
+    url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     set +o pipefail
@@ -146,18 +158,19 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}  ;;
-  Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}    ;;
-  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}   ;;
-  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}     ;;
-  Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}    ;;
-  Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}    ;;
-  Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}    ;;
-  Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}    ;;
-  FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64} ;;
-  FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}   ;;
-  OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64} ;;
-  OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}   ;;
+  Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
+  Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}.tgz    ;;
+  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
+  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
+  Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
+  Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
+  Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
+  Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
+  FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
+  FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}.tgz   ;;
+  OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
+  OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}.tgz   ;;
+  CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
 
@@ -341,4 +354,3 @@ if [ $update_config -eq 1 ]; then
   echo
 fi
 echo 'For more information, see: https://github.com/junegunn/fzf'
-

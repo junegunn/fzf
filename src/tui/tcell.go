@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"os"
 	"time"
 	"unicode/utf8"
 
@@ -140,6 +141,9 @@ func (r *FullscreenRenderer) initScreen() {
 }
 
 func (r *FullscreenRenderer) Init() {
+	if os.Getenv("TERM") == "cygwin" {
+		os.Setenv("TERM", "")
+	}
 	encoding.Register()
 
 	r.initScreen()
