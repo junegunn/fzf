@@ -497,7 +497,7 @@ function! s:xterm_launcher()
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
 unlet! s:launcher
-if s:is_win
+if s:is_win || has('win32unix')
   let s:launcher = '%s'
 else
   let s:launcher = function('s:xterm_launcher')
