@@ -550,7 +550,14 @@ function! s:execute(dict, command, use_height, temps) abort
       return []
     endif
   elseif has('win32unix')
-    let command = 'TERM=""; '.command
+    if $TERM ==# 'cygwin' || $TERM ==# ''
+      let command = 'TERM=""; '.command
+    else
+      let shellscript = s:fzf_tempname()
+      call writefile([command], shellscript)
+      let command = 'cmd.exe /C ''set TERM="" & start /WAIT sh -c '.s:cygpath(shellscript).''''
+      let a:temps.shellscript = shellscript
+    endif
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
