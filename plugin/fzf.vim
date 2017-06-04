@@ -110,7 +110,7 @@ function! s:fzf_exec()
       let s:exec = s:fzf_go
     elseif executable('fzf')
       let s:exec = 'fzf'
-    elseif s:is_win
+    elseif s:is_win && !has('win32unix')
       call s:warn('fzf executable not found.')
       call s:warn('Download fzf binary for Windows from https://github.com/junegunn/fzf-bin/releases/')
       call s:warn('and place it as '.s:base_dir.'\bin\fzf.exe')
