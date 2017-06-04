@@ -549,15 +549,11 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
-  elseif has('win32unix')
-    if $TERM ==# 'cygwin'
-      let command = 'TERM=""; '.command
-    else
-      let shellscript = s:fzf_tempname()
-      call writefile([command], shellscript)
-      let command = 'cmd.exe /C ''set TERM="" & start /WAIT sh -c '.s:cygpath(shellscript).''''
-      let a:temps.shellscript = shellscript
-    endif
+  elseif has('win32unix') && $TERM !=# 'cygwin'
+    let shellscript = s:fzf_tempname()
+    call writefile([command], shellscript)
+    let command = 'cmd.exe /C ''set "TERM=" & start /WAIT sh -c '.s:cygpath(shellscript).''''
+    let a:temps.shellscript = shellscript
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
