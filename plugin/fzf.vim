@@ -220,9 +220,6 @@ function! s:common_sink(action, lines) abort
     let empty = empty(s:fzf_expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
     let autochdir = &autochdir
     set noautochdir
-    if has('win32unix')
-      call map(a:lines, 's:fzf_fnamemodify(v:val, ":p")')
-    endif
     for item in a:lines
       if empty
         execute 'e' s:escape(item)
