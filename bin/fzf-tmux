@@ -134,7 +134,7 @@ fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
 fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
 fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
 cleanup() {
-  rm -f $argsf $fifo1 $fifo2 $fifo3
+  \rm -f $argsf $fifo1 $fifo2 $fifo3
 
   # Remove temp window if we were zoomed
   if [[ -n "$zoomed" ]]; then
@@ -150,6 +150,7 @@ cleanup() {
   fi
 }
 trap 'cleanup 1' SIGUSR1
+trap 'cleanup' EXIT
 
 envs="env TERM=$TERM "
 [[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
@@ -169,7 +170,7 @@ for arg in "${args[@]}"; do
 done
 
 pppid=$$
-trap_set="trap 'kill -SIGUSR1 $pppid' EXIT SIGINT SIGTERM"
+trap_set="trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM"
 trap_unset="trap - EXIT SIGINT SIGTERM"
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
