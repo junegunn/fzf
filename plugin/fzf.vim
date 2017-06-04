@@ -78,12 +78,6 @@ function! fzf#shellescape(arg, ...)
   return s:fzf_call('shellescape', a:arg)
 endfunction
 
-function! s:cygpath(path, ...)
-  let use_win_path = get(a:000, 0, 0)
-  let args = '-a'.(use_win_path ? 'm' : 'u').' '.fzf#shellescape(a:path)
-  return substitute(system('cygpath '.args), '\n', '', 'g')
-endfunction
-
 function! s:fzf_getcwd()
   return s:fzf_call('getcwd')
 endfunction
@@ -227,7 +221,7 @@ function! s:common_sink(action, lines) abort
     let autochdir = &autochdir
     set noautochdir
     if has('win32unix')
-      call map(a:lines, 's:cygpath(v:val)')
+      call map(a:lines, 's:fzf_fnamemodify(v:val, ":p")')
     endif
     for item in a:lines
       if empty
@@ -467,7 +461,7 @@ function! s:pushd(dict)
       return 1
     endif
     let a:dict.prev_dir = cwd
-    execute 'lcd' s:escape(has('win32unix') ? s:cygpath(a:dict.dir) : a:dict.dir)
+    execute 'lcd' s:escape(a:dict.dir)
     let a:dict.dir = s:fzf_getcwd()
     return 1
   endif
@@ -552,7 +546,7 @@ function! s:execute(dict, command, use_height, temps) abort
   elseif has('win32unix') && $TERM !=# 'cygwin'
     let shellscript = s:fzf_tempname()
     call writefile([command], shellscript)
-    let command = 'cmd.exe /C ''set "TERM=" & start /WAIT sh -c '.s:cygpath(shellscript).''''
+    let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
     let a:temps.shellscript = shellscript
   endif
   if a:use_height
@@ -778,7 +772,7 @@ function! s:cmd(bang, ...) abort
     if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
     elseif has('win32unix')
-      let opts.dir = s:cygpath(opts.dir)
+      let opts.dir = fnamemodify(opts.dir, ':p')
     endif
     let prompt = opts.dir
   else
