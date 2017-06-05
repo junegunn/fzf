@@ -154,9 +154,6 @@ function! s:escape(path)
   if has('unix')
     let escaped_chars .= ' \'
   endif
-  if has('win32unix')
-    let escaped_chars .= '()'
-  endif
 
   return escape(a:path, escaped_chars)
 endfunction
