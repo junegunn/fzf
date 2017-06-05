@@ -386,10 +386,10 @@ try
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0)
   let use_height = has_key(dict, 'down') &&
-        \ !(has('nvim') || s:is_win || s:present(dict, 'up', 'left', 'right')) &&
+        \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
   let use_term = has('nvim') && !s:is_win
-  let use_tmux = (!use_height && !use_term || prefer_tmux) && s:tmux_enabled() && s:splittable(dict)
+  let use_tmux = (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
     let use_term = 0
@@ -485,7 +485,7 @@ function! s:xterm_launcher()
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
 unlet! s:launcher
-if s:is_win
+if s:is_win || has('win32unix')
   let s:launcher = '%s'
 else
   let s:launcher = function('s:xterm_launcher')
@@ -537,6 +537,11 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
+  elseif has('win32unix') && $TERM !=# 'cygwin'
+    let shellscript = s:fzf_tempname()
+    call writefile([command], shellscript)
+    let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
+    let a:temps.shellscript = shellscript
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
@@ -760,6 +765,8 @@ function! s:cmd(bang, ...) abort
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
+    elseif has('win32unix')
+      let opts.dir = fnamemodify(opts.dir, ':p')
     endif
     let prompt = opts.dir
   else
