@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.16.8
+------
+- New `change` event and `top` action for `--bind`
+    - `fzf --bind change:top`
+        - Move cursor to the top result whenever the query string is changed
+    - `fzf --bind ctrl-u:unix-word-rubout+top`
+        - `top` combined with `unix-word-rubout`
+- Fixed inconsistent tiebreak scores when `--nth` is used
+- Proper display of tab characters in `--prompt`
+- Fixed not to `--cycle` on page-up/page-down to prevent overshoot
+- Git revision in `--version` output
+- Basic support for Cygwin environment
+- Many fixes in Vim plugin on Windows/Cygwin (thanks to @janlazo)
+
 0.16.7
 ------
 - Added support for `ctrl-alt-[a-z]` key chords
