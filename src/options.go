@@ -91,7 +91,12 @@ const usage = `usage: fzf [options]
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
     FZF_DEFAULT_OPTS      Default options (e.g. '--reverse --inline-info')
-
+    FZF_CTRL_T_COMMAND    Default command for ctrl+t binding
+    FZF_ALT_C_COMMAND     Default command for ctrl+t binding
+    FZF_COMPLETION_TRIGGER
+                          Key sequence to trigger fzf
+    FZF_TMUX              Enable/disable TMUX integration
+    FZF_TMUX_HEIGHT       Height of the tmux pane (in %)
 `
 
 // Case denotes case-sensitivity of search

@@ -224,6 +224,18 @@ or `py`.
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
+- `FZF_CTRL_T_COMMAND`
+    - Default command for CTRL+T binding
+- `FZF_ALT_C_COMMAND`
+    - Default command for ALT+C binding
+- `FZF_COMPLETION_TRIGGER`
+    - Key sequence to trigger fzf
+- `FZF_TMUX`
+    - Enable/disable TMUX integration
+    - Boolean
+- `FZF_TMUX_HEIGHT`
+    - Height of the tmux pane (in %)
+    - Defualts to 40
 
 #### Options
 
