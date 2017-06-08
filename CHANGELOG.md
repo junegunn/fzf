@@ -6,8 +6,8 @@ CHANGELOG
 - New `change` event and `top` action for `--bind`
     - `fzf --bind change:top`
         - Move cursor to the top result whenever the query string is changed
-    - `fzf --bind ctrl-u:unix-word-rubout+top`
-        - `top` combined with `unix-word-rubout`
+    - `fzf --bind 'ctrl-w:unix-word-rubout+top,ctrl-u:unix-line-discard+top'`
+        - `top` combined with `unix-word-rubout` and `unix-line-discard`
 - Fixed inconsistent tiebreak scores when `--nth` is used
 - Proper display of tab characters in `--prompt`
 - Fixed not to `--cycle` on page-up/page-down to prevent overshoot
