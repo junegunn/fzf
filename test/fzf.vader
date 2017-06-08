@@ -163,7 +163,7 @@ Execute (fzf#shellescape with cmd.exe):
 
   AssertEqual '^"C:\Program Files ^(x86^)\\^"', fzf#shellescape('C:\Program Files (x86)\', 'cmd.exe')
   AssertEqual '^"C:/Program Files ^(x86^)/^"', fzf#shellescape('C:/Program Files (x86)/', 'cmd.exe')
-  " AssertEqual '^"%%USERPROFILE%%^", fzf#shellescape('%USERPROFILE%', 'cmd.exe')
+  AssertEqual '^"%%USERPROFILE%%^"', fzf#shellescape('%USERPROFILE%', 'cmd.exe')
 
 Execute (Cleanup):
   unlet g:dir
