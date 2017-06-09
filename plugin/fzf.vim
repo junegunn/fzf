@@ -361,6 +361,9 @@ try
   if has('nvim') && !has_key(dict, 'dir')
     let dict.dir = s:fzf_getcwd()
   endif
+  if has('win32unix') && has_key(dict, 'dir')
+    let dict.dir = fnamemodify(dict.dir, ':p')
+  endif
 
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
     let temps.source = s:fzf_tempname().(s:is_win ? '.bat' : '')
@@ -765,8 +768,6 @@ function! s:cmd(bang, ...) abort
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win && !&shellslash
       let opts.dir = substitute(opts.dir, '/', '\\', 'g')
-    elseif has('win32unix')
-      let opts.dir = fnamemodify(opts.dir, ':p')
     endif
     let prompt = opts.dir
   else
