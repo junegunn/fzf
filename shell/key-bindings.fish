@@ -19,7 +19,7 @@ function fzf_key_bindings
     command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
     -o -type f -print \
     -o -type d -print \
-    -o -type l -print 2> /dev/null | cut -b3-"
+    -o -type l -print 2> /dev/null | sed 's@^\./@@'"
 
     set -q FZF_TMUX_HEIGHT; or set FZF_TMUX_HEIGHT 40%
     begin
