@@ -29,9 +29,7 @@ function fzf_key_bindings
     if [ -z "$result" ]
       commandline -f repaint
       return
-    end
-
-    if [ "$dir" != . ]
+    else
       # Remove last token from commandline.
       commandline -t ""
     end
