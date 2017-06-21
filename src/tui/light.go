@@ -411,10 +411,12 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{F12, 0, nil}
 					}
 				}
-				// Bracketed paste mode \e[200~ / \e[201
-				if r.buffer[3] == 48 && (r.buffer[4] == 48 || r.buffer[4] == 49) && r.buffer[5] == 126 {
-					*sz = 6
-					return Event{Invalid, 0, nil}
+				// Bracketed paste mode: \e[200~ ... \e[201~
+				if r.buffer[3] == '0' && (r.buffer[4] == '0' || r.buffer[4] == '1') && r.buffer[5] == '~' {
+					// Immediately discard the sequence from the buffer and reread input
+					r.buffer = r.buffer[6:]
+					*sz = 0
+					return r.GetChar()
 				}
 				return Event{Invalid, 0, nil} // INS
 			case 51:
