@@ -73,6 +73,7 @@ class Tmux
       else
         raise "Unknown shell: #{shell}"
       end
+    go("set-window-option -t #{@win} pane-base-index 0")
     @lines = `tput lines`.chomp.to_i
 
     if shell == :fish
