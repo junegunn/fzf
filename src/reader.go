@@ -17,16 +17,17 @@ type Reader struct {
 
 // ReadSource reads data from the default command or from standard input
 func (r *Reader) ReadSource() {
+	var success bool
 	if util.IsTty() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			cmd = defaultCommand
 		}
-		r.readFromCommand(cmd)
+		success = r.readFromCommand(cmd)
 	} else {
-		r.readFromStdin()
+		success = r.readFromStdin()
 	}
-	r.eventBox.Set(EvtReadFin, nil)
+	r.eventBox.Set(EvtReadFin, success)
 }
 
 func (r *Reader) feed(src io.Reader) {
@@ -50,7 +51,7 @@ func (r *Reader) feed(src io.Reader) {
 				}
 			}
 			if r.pusher(bytea) {
-				r.eventBox.Set(EvtReadNew, nil)
+				r.eventBox.Set(EvtReadNew, true)
 			}
 		}
 		if err != nil {
@@ -59,20 +60,21 @@ func (r *Reader) feed(src io.Reader) {
 	}
 }
 
-func (r *Reader) readFromStdin() {
+func (r *Reader) readFromStdin() bool {
 	r.feed(os.Stdin)
+	return true
 }
 
-func (r *Reader) readFromCommand(cmd string) {
+func (r *Reader) readFromCommand(cmd string) bool {
 	listCommand := util.ExecCommand(cmd)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
-		return
+		return false
 	}
 	err = listCommand.Start()
 	if err != nil {
-		return
+		return false
 	}
-	defer listCommand.Wait()
 	r.feed(out)
+	return listCommand.Wait() == nil
 }

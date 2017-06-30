@@ -228,7 +228,7 @@ func Run(opts *Options, revision string) {
 				case EvtReadNew, EvtReadFin:
 					reading = reading && evt == EvtReadNew
 					snapshot, count := chunkList.Snapshot()
-					terminal.UpdateCount(count, !reading)
+					terminal.UpdateCount(count, !reading, value.(bool))
 					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
 
 				case EvtSearchNew:

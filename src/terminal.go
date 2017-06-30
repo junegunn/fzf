@@ -94,6 +94,7 @@ type Terminal struct {
 	count      int
 	progress   int
 	reading    bool
+	success    bool
 	jumping    jumpMode
 	jumpLabels string
 	printer    func(string)
@@ -372,6 +373,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ansi:       opts.Ansi,
 		tabstop:    opts.Tabstop,
 		reading:    true,
+		success:    true,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
 		printer:    opts.Printer,
@@ -401,10 +403,11 @@ func (t *Terminal) Input() []rune {
 }
 
 // UpdateCount updates the count information
-func (t *Terminal) UpdateCount(cnt int, final bool) {
+func (t *Terminal) UpdateCount(cnt int, final bool, success bool) {
 	t.mutex.Lock()
 	t.count = cnt
 	t.reading = !final
+	t.success = success
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	if final {
@@ -681,6 +684,9 @@ func (t *Terminal) printInfo() {
 	}
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
+	}
+	if !t.success && t.count == 0 {
+		output += " [ERROR]"
 	}
 	if pos+len(output) <= t.window.Width() {
 		t.window.CPrint(tui.ColInfo, 0, output)

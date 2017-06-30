@@ -260,6 +260,12 @@ class TestGoFZF < TestBase
     assert_equal 'hello', readonce.chomp
   end
 
+  def test_fzf_default_command_failure
+    tmux.send_keys fzf.sub('FZF_DEFAULT_COMMAND=', 'FZF_DEFAULT_COMMAND=false'), :Enter
+    tmux.until { |lines| lines[-2].include?('ERROR') }
+    tmux.send_keys :Enter
+  end
+
   def test_key_bindings
     tmux.send_keys "#{FZF} -q 'foo bar foo-bar'", :Enter
     tmux.until { |lines| lines.last =~ /^>/ }
