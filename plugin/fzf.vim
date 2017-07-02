@@ -35,6 +35,8 @@ else
   let s:base_dir = expand('<sfile>:h:h')
 endif
 if s:is_win
+  let s:term_marker = '&::FZF'
+
   function! s:fzf_call(fn, ...)
     let shellslash = &shellslash
     try
@@ -53,6 +55,8 @@ if s:is_win
           \ ['chcp %origchcp% > nul']
   endfunction
 else
+  let s:term_marker = ";#FZF"
+
   function! s:fzf_call(fn, ...)
     return call(a:fn, a:000)
   endfunction
@@ -343,7 +347,7 @@ try
   endif
 
   if has('nvim')
-    let running = filter(range(1, bufnr('$')), "bufname(v:val) =~# ';#FZF'")
+    let running = filter(range(1, bufnr('$')), "bufname(v:val) =~# '".s:term_marker."'")
     if len(running)
       call s:warn('FZF is already running (in buffer '.join(running, ', ').')!')
       return []
@@ -391,7 +395,7 @@ try
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = exists('g:fzf_use_term')  || (has('nvim') && !s:is_win)
+  let use_term = exists('g:fzf_use_term') || (has('nvim') && !s:is_win)
   let use_tmux = (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
@@ -684,7 +688,7 @@ function! s:execute_term(dict, command, temps) abort
     if s:present(a:dict, 'dir')
       execute 'lcd' s:escape(a:dict.dir)
     endif
-    call termopen(a:command . ';#FZF', fzf)
+    call termopen(a:command.s:term_marker, fzf)
   finally
     if s:present(a:dict, 'dir')
       lcd -
