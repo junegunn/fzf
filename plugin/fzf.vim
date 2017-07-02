@@ -391,7 +391,7 @@ try
   let use_height = has_key(dict, 'down') &&
         \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = has('nvim') && !s:is_win
+  let use_term = exists('g:fzf_use_term')  || (has('nvim') && !s:is_win)
   let use_tmux = (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
