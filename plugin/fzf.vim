@@ -365,10 +365,10 @@ try
     let dict.dir = fnamemodify(dict.dir, ':p')
   endif
 
-  if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND)
-    let temps.source = s:fzf_tempname().(s:is_win ? '.bat' : '')
+  if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND) && !s:is_win
+    let temps.source = s:fzf_tempname()
     call writefile(s:wrap_cmds(split($FZF_DEFAULT_COMMAND, "\n")), temps.source)
-    let dict.source = (empty($SHELL) ? &shell : $SHELL) . (s:is_win ? ' /c ' : ' ') . fzf#shellescape(temps.source)
+    let dict.source = (empty($SHELL) ? &shell : $SHELL).' '.fzf#shellescape(temps.source)
   endif
 
   if has_key(dict, 'source')
