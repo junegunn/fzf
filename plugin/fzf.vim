@@ -529,12 +529,15 @@ function! s:execute(dict, command, use_height, temps) abort
     let command = batchfile
     let a:temps.batchfile = batchfile
     if has('nvim')
-      let s:dict = a:dict
-      let s:temps = a:temps
       let fzf = {}
+      let fzf.dict = a:dict
+      let fzf.temps = a:temps
       function! fzf.on_exit(job_id, exit_status, event) dict
-        let lines = s:collect(s:temps)
-        call s:callback(s:dict, lines)
+        if s:present(self.dict, 'dir')
+          execute 'lcd' s:escape(self.dict.dir)
+        endif
+        let lines = s:collect(self.temps)
+        call s:callback(self.dict, lines)
       endfunction
       let cmd = 'start /wait cmd /c '.command
       call jobstart(cmd, fzf)
