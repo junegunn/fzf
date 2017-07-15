@@ -247,27 +247,13 @@ func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []*Result {
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
 	if p.cacheable {
-		if cached, found := _cache.Find(chunk, cacheKey); found {
+		if cached := _cache.Find(chunk, cacheKey); cached != nil {
 			return cached
 		}
 	}
 
 	// Prefix/suffix cache
-	var space []*Result
-Loop:
-	for idx := 1; idx < len(cacheKey); idx++ {
-		// [---------| ] | [ |---------]
-		// [--------|  ] | [  |--------]
-		// [-------|   ] | [   |-------]
-		prefix := cacheKey[:len(cacheKey)-idx]
-		suffix := cacheKey[idx:]
-		for _, substr := range [2]*string{&prefix, &suffix} {
-			if cached, found := _cache.Find(chunk, *substr); found {
-				space = cached
-				break Loop
-			}
-		}
-	}
+	space := _cache.Search(chunk, cacheKey)
 
 	matches := p.matchChunk(chunk, space, slab)
 
