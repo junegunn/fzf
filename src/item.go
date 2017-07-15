@@ -19,6 +19,12 @@ func (item *Item) Index() int32 {
 	return item.index
 }
 
+var nilItem = Item{index: -1}
+
+func (item *Item) Nil() bool {
+	return item.index < 0
+}
+
 func (item *Item) TrimLength() int32 {
 	if item.trimLength >= 0 {
 		return item.trimLength

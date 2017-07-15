@@ -11,8 +11,8 @@ func TestChunkList(t *testing.T) {
 	// FIXME global
 	sortCriteria = []criterion{byScore, byLength}
 
-	cl := NewChunkList(func(s []byte, i int) *Item {
-		return &Item{text: util.ToChars(s), index: int32(i * 2)}
+	cl := NewChunkList(func(s []byte, i int) Item {
+		return Item{text: util.ToChars(s), index: int32(i * 2)}
 	})
 
 	// Snapshot

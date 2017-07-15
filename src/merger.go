@@ -65,7 +65,7 @@ func (mg *Merger) Get(idx int) *Result {
 			idx = mg.count - idx - 1
 		}
 		chunk := (*mg.chunks)[idx/chunkSize]
-		return &Result{item: (*chunk)[idx%chunkSize]}
+		return &Result{item: &(*chunk)[idx%chunkSize]}
 	}
 
 	if mg.sorted {

@@ -281,8 +281,8 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []*Result, slab *util.Slab) []*
 	matches := []*Result{}
 
 	if space == nil {
-		for _, item := range *chunk {
-			if match, _, _ := p.MatchItem(item, false, slab); match != nil {
+		for idx := range *chunk {
+			if match, _, _ := p.MatchItem(&(*chunk)[idx], false, slab); match != nil {
 				matches = append(matches, match)
 			}
 		}
