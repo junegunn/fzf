@@ -79,15 +79,8 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 
 	// Duplicate the last chunk
 	if cnt := len(ret); cnt > 0 {
-		ret[cnt-1] = ret[cnt-1].dupe()
+		newChunk := *ret[cnt-1]
+		ret[cnt-1] = &newChunk
 	}
 	return ret, cl.count
-}
-
-func (c *Chunk) dupe() *Chunk {
-	newChunk := make(Chunk, len(*c))
-	for idx, ptr := range *c {
-		newChunk[idx] = ptr
-	}
-	return &newChunk
 }
