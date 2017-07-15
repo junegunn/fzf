@@ -47,11 +47,11 @@ function fzf_key_bindings
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-          history -z | eval (__fzfcmd) --read0 -q '(commandline)' | perl -pe 'chomp if eof' | read -lz result
-          and commandline -- $result
+        history -z | eval (__fzfcmd) --read0 -q '(commandline)' | perl -pe 'chomp if eof' | read -lz result
+        and commandline -- $result
       else
-          history | eval (__fzfcmd) -q '(commandline)' | read -l result
-          and commandline -- $result
+        history | eval (__fzfcmd) -q '(commandline)' | read -l result
+        and commandline -- $result
       end
     end
     commandline -f repaint
