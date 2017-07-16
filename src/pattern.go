@@ -247,7 +247,7 @@ func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []*Result {
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
 	if p.cacheable {
-		if cached := _cache.Find(chunk, cacheKey); cached != nil {
+		if cached := _cache.Lookup(chunk, cacheKey); cached != nil {
 			return cached
 		}
 	}
@@ -352,18 +352,17 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 }
 
 func (p *Pattern) prepareInput(item *Item) []Token {
-	if item.transformed != nil {
-		return item.transformed
+	if len(p.nth) == 0 {
+		return []Token{Token{text: &item.text, prefixLength: 0}}
 	}
 
-	var ret []Token
-	if len(p.nth) == 0 {
-		ret = []Token{Token{text: &item.text, prefixLength: 0}}
-	} else {
-		tokens := Tokenize(item.text, p.delimiter)
-		ret = Transform(tokens, p.nth)
+	if item.transformed != nil {
+		return *item.transformed
 	}
-	item.transformed = ret
+
+	tokens := Tokenize(item.text, p.delimiter)
+	ret := Transform(tokens, p.nth)
+	item.transformed = &ret
 	return ret
 }
 

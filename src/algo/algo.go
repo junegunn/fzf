@@ -283,8 +283,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 
 	// Phase 1. Check if there's a match and calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
+	input.CopyRunes(T)
 	for idx := 0; idx < N; idx++ {
-		char := input.Get(idx)
+		char := T[idx]
 		var class charClass
 		if char <= unicode.MaxASCII {
 			class = charClassOfAscii(char)
@@ -389,7 +390,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 			if i == 0 {
 				fmt.Print("  ")
 				for j := int(F[i]); j <= lastIdx; j++ {
-					fmt.Printf(" " + string(input.Get(j)) + " ")
+					fmt.Printf(" " + string(T[j]) + " ")
 				}
 				fmt.Println()
 			}

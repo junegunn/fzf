@@ -33,8 +33,8 @@ func (cc *ChunkCache) Add(chunk *Chunk, key string, list []*Result) {
 	(*qc)[key] = list
 }
 
-// Find is called to lookup ChunkCache
-func (cc *ChunkCache) Find(chunk *Chunk, key string) []*Result {
+// Lookup is called to lookup ChunkCache
+func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []*Result {
 	if len(key) == 0 || !chunk.IsFull() {
 		return nil
 	}

@@ -98,11 +98,8 @@ func Run(opts *Options, revision string) {
 				return nilItem
 			}
 			chars, colors := ansiProcessor(data)
-			return Item{
-				index:      int32(index),
-				trimLength: -1,
-				text:       chars,
-				colors:     colors}
+			chars.Index = int32(index)
+			return Item{text: chars, colors: colors}
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) Item {
@@ -114,16 +111,9 @@ func Run(opts *Options, revision string) {
 				return nilItem
 			}
 			textRunes := joinTokens(trans)
-			item := Item{
-				index:      int32(index),
-				trimLength: -1,
-				origText:   &data,
-				colors:     nil}
-
 			trimmed, colors := ansiProcessorRunes(textRunes)
-			item.text = trimmed
-			item.colors = colors
-			return item
+			trimmed.Index = int32(index)
+			return Item{text: trimmed, colors: colors, origText: &data}
 		})
 	}
 

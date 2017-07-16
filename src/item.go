@@ -4,33 +4,27 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-// Item represents each input line
+// Item represents each input line. 56 bytes.
 type Item struct {
-	index       int32
-	trimLength  int32
-	text        util.Chars
-	origText    *[]byte
-	colors      *[]ansiOffset
-	transformed []Token
+	text        util.Chars    // 32 = 24 + 1 + 1 + 2 + 4
+	transformed *[]Token      // 8
+	origText    *[]byte       // 8
+	colors      *[]ansiOffset // 8
 }
 
 // Index returns ordinal index of the Item
 func (item *Item) Index() int32 {
-	return item.index
+	return item.text.Index
 }
 
-var nilItem = Item{index: -1}
+var nilItem = Item{text: util.Chars{Index: -1}}
 
 func (item *Item) Nil() bool {
-	return item.index < 0
+	return item.Index() < 0
 }
 
-func (item *Item) TrimLength() int32 {
-	if item.trimLength >= 0 {
-		return item.trimLength
-	}
-	item.trimLength = int32(item.text.TrimLength())
-	return item.trimLength
+func (item *Item) TrimLength() uint16 {
+	return item.text.TrimLength()
 }
 
 // Colors returns ansiOffsets of the Item

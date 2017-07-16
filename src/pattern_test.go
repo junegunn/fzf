@@ -142,13 +142,13 @@ func TestOrigTextAndTransformed(t *testing.T) {
 			Item{
 				text:        util.RunesToChars([]rune("junegunn")),
 				origText:    &origBytes,
-				transformed: trans},
+				transformed: &trans},
 		}
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk, nil, slab) // No cache
 		if !(matches[0].item.text.ToString() == "junegunn" &&
 			string(*matches[0].item.origText) == "junegunn.choi" &&
-			reflect.DeepEqual(matches[0].item.transformed, trans)) {
+			reflect.DeepEqual(*matches[0].item.transformed, trans)) {
 			t.Error("Invalid match result", matches)
 		}
 
@@ -156,7 +156,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 		if !(match.item.text.ToString() == "junegunn" &&
 			string(*match.item.origText) == "junegunn.choi" &&
 			offsets[0][0] == 0 && offsets[0][1] == 5 &&
-			reflect.DeepEqual(match.item.transformed, trans)) {
+			reflect.DeepEqual(*match.item.transformed, trans)) {
 			t.Error("Invalid match result", match, offsets, extended)
 		}
 		if !((*pos)[0] == 4 && (*pos)[1] == 0) {

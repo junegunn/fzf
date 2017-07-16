@@ -14,27 +14,27 @@ func TestChunkCache(t *testing.T) {
 	cache.Add(chunk2p, "bar", items2)
 
 	{ // chunk1 is not full
-		cached, found := cache.Find(chunk1p, "foo")
-		if found {
-			t.Error("Cached disabled for non-empty chunks", found, cached)
+		cached := cache.Lookup(chunk1p, "foo")
+		if cached != nil {
+			t.Error("Cached disabled for non-empty chunks", cached)
 		}
 	}
 	{
-		cached, found := cache.Find(chunk2p, "foo")
-		if !found || len(cached) != 1 {
-			t.Error("Expected 1 item cached", found, cached)
+		cached := cache.Lookup(chunk2p, "foo")
+		if cached == nil || len(cached) != 1 {
+			t.Error("Expected 1 item cached", cached)
 		}
 	}
 	{
-		cached, found := cache.Find(chunk2p, "bar")
-		if !found || len(cached) != 2 {
-			t.Error("Expected 2 items cached", found, cached)
+		cached := cache.Lookup(chunk2p, "bar")
+		if cached == nil || len(cached) != 2 {
+			t.Error("Expected 2 items cached", cached)
 		}
 	}
 	{
-		cached, found := cache.Find(chunk1p, "foobar")
-		if found {
-			t.Error("Expected 0 item cached", found, cached)
+		cached := cache.Lookup(chunk1p, "foobar")
+		if cached != nil {
+			t.Error("Expected 0 item cached", cached)
 		}
 	}
 }

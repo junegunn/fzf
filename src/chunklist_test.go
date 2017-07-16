@@ -12,7 +12,9 @@ func TestChunkList(t *testing.T) {
 	sortCriteria = []criterion{byScore, byLength}
 
 	cl := NewChunkList(func(s []byte, i int) Item {
-		return Item{text: util.ToChars(s), index: int32(i * 2)}
+		chars := util.ToChars(s)
+		chars.Index = int32(i * 2)
+		return Item{text: chars}
 	})
 
 	// Snapshot
@@ -41,8 +43,8 @@ func TestChunkList(t *testing.T) {
 	if len(*chunk1) != 2 {
 		t.Error("Snapshot should contain only two items")
 	}
-	if (*chunk1)[0].text.ToString() != "hello" || (*chunk1)[0].index != 0 ||
-		(*chunk1)[1].text.ToString() != "world" || (*chunk1)[1].index != 2 {
+	if (*chunk1)[0].text.ToString() != "hello" || (*chunk1)[0].Index() != 0 ||
+		(*chunk1)[1].text.ToString() != "world" || (*chunk1)[1].Index() != 2 {
 		t.Error("Invalid data")
 	}
 	if chunk1.IsFull() {

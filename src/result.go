@@ -34,7 +34,7 @@ func buildResult(item *Item, offsets []Offset, score int) *Result {
 		sort.Sort(ByOrder(offsets))
 	}
 
-	result := Result{item: item, rank: rank{index: item.index}}
+	result := Result{item: item, rank: rank{index: item.Index()}}
 	numChars := item.text.Length()
 	minBegin := math.MaxUint16
 	minEnd := math.MaxUint16
@@ -57,7 +57,7 @@ func buildResult(item *Item, offsets []Offset, score int) *Result {
 			// Higher is better
 			val = math.MaxUint16 - util.AsUint16(score)
 		case byLength:
-			val = util.AsUint16(int(item.TrimLength()))
+			val = item.TrimLength()
 		case byBegin, byEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
@@ -86,7 +86,7 @@ var sortCriteria []criterion
 
 // Index returns ordinal index of the Item
 func (result *Result) Index() int32 {
-	return result.item.index
+	return result.item.Index()
 }
 
 func minRank() rank {
