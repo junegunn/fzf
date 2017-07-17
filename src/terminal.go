@@ -714,7 +714,7 @@ func (t *Terminal) printHeader() {
 			colors: colors}
 
 		t.move(line, 2, true)
-		t.printHighlighted(&Result{item: item},
+		t.printHighlighted(Result{item: item},
 			tui.AttrRegular, tui.ColHeader, tui.ColDefault, false, false)
 	}
 }
@@ -742,7 +742,7 @@ func (t *Terminal) printList() {
 	}
 }
 
-func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
+func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := " "
@@ -758,7 +758,7 @@ func (t *Terminal) printItem(result *Result, line int, i int, current bool) {
 
 	// Avoid unnecessary redraw
 	newLine := itemLine{current: current, selected: selected, label: label,
-		result: *result, queryLen: len(t.input), width: 0}
+		result: result, queryLen: len(t.input), width: 0}
 	prevLine := t.prevLines[i]
 	if prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
@@ -840,7 +840,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result *Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) int {
+func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) int {
 	item := result.item
 
 	// Overflow

@@ -31,10 +31,10 @@ func TestOffsetSort(t *testing.T) {
 }
 
 func TestRankComparison(t *testing.T) {
-	rank := func(vals ...uint16) rank {
-		return rank{
+	rank := func(vals ...uint16) Result {
+		return Result{
 			points: [4]uint16{vals[0], vals[1], vals[2], vals[3]},
-			index:  int32(vals[4])}
+			item:   &Item{text: util.Chars{Index: int32(vals[4])}}}
 	}
 	if compareRanks(rank(3, 0, 0, 0, 5), rank(2, 0, 0, 0, 7), false) ||
 		!compareRanks(rank(3, 0, 0, 0, 5), rank(3, 0, 0, 0, 6), false) ||
@@ -59,23 +59,23 @@ func TestResultRank(t *testing.T) {
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := buildResult(
 		withIndex(&Item{text: util.RunesToChars(strs[0])}, 1), []Offset{}, 2)
-	if item1.rank.points[0] != math.MaxUint16-2 || // Bonus
-		item1.rank.points[1] != 3 || // Length
-		item1.rank.points[2] != 0 || // Unused
-		item1.rank.points[3] != 0 || // Unused
+	if item1.points[0] != math.MaxUint16-2 || // Bonus
+		item1.points[1] != 3 || // Length
+		item1.points[2] != 0 || // Unused
+		item1.points[3] != 0 || // Unused
 		item1.item.Index() != 1 {
-		t.Error(item1.rank)
+		t.Error(item1)
 	}
 	// Only differ in index
 	item2 := buildResult(&Item{text: util.RunesToChars(strs[0])}, []Offset{}, 2)
 
-	items := []*Result{item1, item2}
+	items := []Result{item1, item2}
 	sort.Sort(ByRelevance(items))
 	if items[0] != item2 || items[1] != item1 {
 		t.Error(items)
 	}
 
-	items = []*Result{item2, item1, item1, item2}
+	items = []Result{item2, item1, item1, item2}
 	sort.Sort(ByRelevance(items))
 	if items[0] != item2 || items[1] != item2 ||
 		items[2] != item1 || items[3] != item1 {
@@ -91,7 +91,7 @@ func TestResultRank(t *testing.T) {
 		withIndex(&Item{}, 2), []Offset{Offset{1, 3}, Offset{5, 7}}, 5)
 	item6 := buildResult(
 		withIndex(&Item{}, 2), []Offset{Offset{1, 2}, Offset{6, 7}}, 6)
-	items = []*Result{item1, item2, item3, item4, item5, item6}
+	items = []Result{item1, item2, item3, item4, item5, item6}
 	sort.Sort(ByRelevance(items))
 	if !(items[0] == item6 && items[1] == item5 &&
 		items[2] == item4 && items[3] == item3 &&

@@ -15,11 +15,11 @@ func assert(t *testing.T, cond bool, msg ...string) {
 	}
 }
 
-func randResult() *Result {
+func randResult() Result {
 	str := fmt.Sprintf("%d", rand.Uint32())
-	return &Result{
-		item: &Item{text: util.RunesToChars([]rune(str))},
-		rank: rank{index: rand.Int31()}}
+	chars := util.RunesToChars([]rune(str))
+	chars.Index = rand.Int31()
+	return Result{item: &Item{text: chars}}
 }
 
 func TestEmptyMerger(t *testing.T) {
@@ -29,14 +29,14 @@ func TestEmptyMerger(t *testing.T) {
 	assert(t, len(EmptyMerger.merged) == 0, "Invalid merged list")
 }
 
-func buildLists(partiallySorted bool) ([][]*Result, []*Result) {
+func buildLists(partiallySorted bool) ([][]Result, []Result) {
 	numLists := 4
-	lists := make([][]*Result, numLists)
+	lists := make([][]Result, numLists)
 	cnt := 0
 	for i := 0; i < numLists; i++ {
 		numResults := rand.Int() % 20
 		cnt += numResults
-		lists[i] = make([]*Result, numResults)
+		lists[i] = make([]Result, numResults)
 		for j := 0; j < numResults; j++ {
 			item := randResult()
 			lists[i][j] = item
@@ -45,7 +45,7 @@ func buildLists(partiallySorted bool) ([][]*Result, []*Result) {
 			sort.Sort(ByRelevance(lists[i]))
 		}
 	}
-	items := []*Result{}
+	items := []Result{}
 	for _, list := range lists {
 		items = append(items, list...)
 	}

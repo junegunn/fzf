@@ -3,14 +3,14 @@ package fzf
 import "fmt"
 
 // EmptyMerger is a Merger with no data
-var EmptyMerger = NewMerger(nil, [][]*Result{}, false, false)
+var EmptyMerger = NewMerger(nil, [][]Result{}, false, false)
 
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
 type Merger struct {
 	pattern *Pattern
-	lists   [][]*Result
-	merged  []*Result
+	lists   [][]Result
+	merged  []Result
 	chunks  *[]*Chunk
 	cursors []int
 	sorted  bool
@@ -35,11 +35,11 @@ func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 }
 
 // NewMerger returns a new Merger
-func NewMerger(pattern *Pattern, lists [][]*Result, sorted bool, tac bool) *Merger {
+func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool) *Merger {
 	mg := Merger{
 		pattern: pattern,
 		lists:   lists,
-		merged:  []*Result{},
+		merged:  []Result{},
 		chunks:  nil,
 		cursors: make([]int, len(lists)),
 		sorted:  sorted,
@@ -59,13 +59,13 @@ func (mg *Merger) Length() int {
 }
 
 // Get returns the pointer to the Result object indexed by the given integer
-func (mg *Merger) Get(idx int) *Result {
+func (mg *Merger) Get(idx int) Result {
 	if mg.chunks != nil {
 		if mg.tac {
 			idx = mg.count - idx - 1
 		}
 		chunk := (*mg.chunks)[idx/chunkSize]
-		return &Result{item: &(*chunk)[idx%chunkSize]}
+		return Result{item: &(*chunk)[idx%chunkSize]}
 	}
 
 	if mg.sorted {
@@ -89,7 +89,7 @@ func (mg *Merger) cacheable() bool {
 	return mg.count < mergerCacheMax
 }
 
-func (mg *Merger) mergedGet(idx int) *Result {
+func (mg *Merger) mergedGet(idx int) Result {
 	for i := len(mg.merged); i <= idx; i++ {
 		minRank := minRank()
 		minIdx := -1
@@ -100,7 +100,7 @@ func (mg *Merger) mergedGet(idx int) *Result {
 				continue
 			}
 			if cursor >= 0 {
-				rank := list[cursor].rank
+				rank := list[cursor]
 				if minIdx < 0 || compareRanks(rank, minRank, mg.tac) {
 					minRank = rank
 					minIdx = listIdx

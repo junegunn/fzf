@@ -3,7 +3,7 @@ package fzf
 import "sync"
 
 // queryCache associates strings to lists of items
-type queryCache map[string][]*Result
+type queryCache map[string][]Result
 
 // ChunkCache associates Chunk and query string to lists of items
 type ChunkCache struct {
@@ -17,7 +17,7 @@ func NewChunkCache() ChunkCache {
 }
 
 // Add adds the list to the cache
-func (cc *ChunkCache) Add(chunk *Chunk, key string, list []*Result) {
+func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
 	if len(key) == 0 || !chunk.IsFull() || len(list) > queryCacheMax {
 		return
 	}
@@ -34,7 +34,7 @@ func (cc *ChunkCache) Add(chunk *Chunk, key string, list []*Result) {
 }
 
 // Lookup is called to lookup ChunkCache
-func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []*Result {
+func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []Result {
 	if len(key) == 0 || !chunk.IsFull() {
 		return nil
 	}
@@ -52,7 +52,7 @@ func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []*Result {
 	return nil
 }
 
-func (cc *ChunkCache) Search(chunk *Chunk, key string) []*Result {
+func (cc *ChunkCache) Search(chunk *Chunk, key string) []Result {
 	if len(key) == 0 || !chunk.IsFull() {
 		return nil
 	}

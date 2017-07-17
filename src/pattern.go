@@ -243,7 +243,7 @@ func (p *Pattern) CacheKey() string {
 }
 
 // Match returns the list of matches Items in the given Chunk
-func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []*Result {
+func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []Result {
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
 	if p.cacheable {
@@ -263,19 +263,19 @@ func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []*Result {
 	return matches
 }
 
-func (p *Pattern) matchChunk(chunk *Chunk, space []*Result, slab *util.Slab) []*Result {
-	matches := []*Result{}
+func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Result {
+	matches := []Result{}
 
 	if space == nil {
 		for idx := range *chunk {
 			if match, _, _ := p.MatchItem(&(*chunk)[idx], false, slab); match != nil {
-				matches = append(matches, match)
+				matches = append(matches, *match)
 			}
 		}
 	} else {
 		for _, result := range space {
 			if match, _, _ := p.MatchItem(result.item, false, slab); match != nil {
-				matches = append(matches, match)
+				matches = append(matches, *match)
 			}
 		}
 	}
@@ -286,14 +286,16 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []*Result, slab *util.Slab) []*
 func (p *Pattern) MatchItem(item *Item, withPos bool, slab *util.Slab) (*Result, []Offset, *[]int) {
 	if p.extended {
 		if offsets, bonus, pos := p.extendedMatch(item, withPos, slab); len(offsets) == len(p.termSets) {
-			return buildResult(item, offsets, bonus), offsets, pos
+			result := buildResult(item, offsets, bonus)
+			return &result, offsets, pos
 		}
 		return nil, nil, nil
 	}
 	offset, bonus, pos := p.basicMatch(item, withPos, slab)
 	if sidx := offset[0]; sidx >= 0 {
 		offsets := []Offset{offset}
-		return buildResult(item, offsets, bonus), offsets, pos
+		result := buildResult(item, offsets, bonus)
+		return &result, offsets, pos
 	}
 	return nil, nil, nil
 }
