@@ -87,6 +87,7 @@ type Terminal struct {
 	margin     [4]sizeSpec
 	strong     tui.Attr
 	bordered   bool
+	cleanExit  bool
 	border     tui.Window
 	window     tui.Window
 	pborder    tui.Window
@@ -366,6 +367,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		history:    opts.History,
 		margin:     opts.Margin,
 		bordered:   opts.Bordered,
+		cleanExit:  opts.ClearOnExit,
 		strong:     strongAttr,
 		cycle:      opts.Cycle,
 		header:     header,
@@ -1341,7 +1343,14 @@ func (t *Terminal) Loop() {
 		}()
 	}
 
-	exit := func(code int) {
+	exit := func(code int, printQuery bool) {
+		if !t.cleanExit && t.fullscreen && t.inlineInfo {
+			t.placeCursor()
+		}
+		t.tui.Close()
+		if printQuery {
+			t.printer(string(t.input))
+		}
 		if code <= exitNoMatch && t.history != nil {
 			t.history.append(string(t.input))
 		}
@@ -1389,11 +1398,11 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
-						t.tui.Close()
 						if t.output() {
-							exit(exitOk)
+							exit(exitOk, false)
+						} else {
+							exit(exitNoMatch, false)
 						}
-						exit(exitNoMatch)
 					case reqPreviewDisplay:
 						t.previewer.text = value.(string)
 						t.previewer.lines = strings.Count(t.previewer.text, "\n")
@@ -1402,12 +1411,9 @@ func (t *Terminal) Loop() {
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPrintQuery:
-						t.tui.Close()
-						t.printer(string(t.input))
-						exit(exitOk)
+						exit(exitOk, true)
 					case reqQuit:
-						t.tui.Close()
-						exit(exitInterrupt)
+						exit(exitInterrupt, false)
 					}
 				}
 				t.placeCursor()

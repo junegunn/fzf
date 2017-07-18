@@ -1253,11 +1253,12 @@ class TestGoFZF < TestBase
   end
 
   def test_no_clear
-    tmux.send_keys 'seq 100 | fzf --no-clear --inline-info --height 5', :Enter
-    prompt = '>   < 100/100'
+    tmux.send_keys "seq 10 | fzf --no-clear --inline-info --height 5 > #{tempname}", :Enter
+    prompt = '>   < 10/10'
     tmux.until { |lines| lines[-1] == prompt }
     tmux.send_keys :Enter
-    tmux.until { |lines| lines[-2] == prompt && lines[-1] == '1' }
+    tmux.until { |_| %w[1] == File.readlines(tempname).map(&:chomp) }
+    tmux.until { |lines| lines[-1] == prompt }
   end
 
   def test_change_top
