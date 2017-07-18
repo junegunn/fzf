@@ -149,13 +149,8 @@ function! s:tmux_enabled()
 endfunction
 
 function! s:escape(path)
-  let escaped_chars = '$%#''"'
-
-  if has('unix')
-    let escaped_chars .= ' \'
-  endif
-
-  return escape(a:path, escaped_chars)
+  let path = fnameescape(a:path)
+  return s:is_win ? escape(path, '$') : path
 endfunction
 
 " Upgrade legacy options
