@@ -962,6 +962,7 @@ func (t *Terminal) printPreview() {
 	}
 	reader := bufio.NewReader(strings.NewReader(t.previewer.text))
 	lineNo := -t.previewer.offset
+	height := t.pwindow.Height()
 	var ansi *ansiState
 	for {
 		line, err := reader.ReadString('\n')
@@ -970,7 +971,8 @@ func (t *Terminal) printPreview() {
 			line = line[:len(line)-1]
 		}
 		lineNo++
-		if lineNo > t.pwindow.Height() {
+		if lineNo > height ||
+			t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
 			break
 		} else if lineNo > 0 {
 			var fillRet tui.FillReturn
@@ -1000,7 +1002,7 @@ func (t *Terminal) printPreview() {
 		}
 	}
 	t.pwindow.FinishFill()
-	if t.previewer.lines > t.pwindow.Height() {
+	if t.previewer.lines > height {
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
 		pos := t.pwindow.Width() - len(offset)
 		if t.tui.DoesAutoWrap() {

@@ -236,6 +236,7 @@ type Window interface {
 	Close()
 
 	X() int
+	Y() int
 	Enclose(y int, x int) bool
 
 	Move(y int, x int)

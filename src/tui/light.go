@@ -705,6 +705,10 @@ func (w *LightWindow) X() int {
 	return w.posx
 }
 
+func (w *LightWindow) Y() int {
+	return w.posy
+}
+
 func (w *LightWindow) Enclose(y int, x int) bool {
 	return x >= w.left && x < (w.left+w.width) &&
 		y >= w.top && y < (w.top+w.height)
@@ -839,17 +843,20 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 		for j, wl := range lines {
 			if w.posx >= w.Width()-1 && wl.displayWidth == 0 {
 				if w.posy < w.height-1 {
-					w.MoveAndClear(w.posy+1, 0)
+					w.Move(w.posy+1, 0)
 				}
 				return FillNextLine
 			}
 			w.stderrInternal(wl.text, false)
 			w.posx += wl.displayWidth
+
+			// Wrap line
 			if j < len(lines)-1 || i < len(allLines)-1 {
 				if w.posy+1 >= w.height {
 					return FillSuspend
 				}
-				w.MoveAndClear(w.posy+1, 0)
+				w.MoveAndClear(w.posy, w.posx)
+				w.Move(w.posy+1, 0)
 				onMove()
 			}
 		}
@@ -864,13 +871,13 @@ func (w *LightWindow) setBg() {
 }
 
 func (w *LightWindow) Fill(text string) FillReturn {
-	w.MoveAndClear(w.posy, w.posx)
+	w.Move(w.posy, w.posx)
 	w.setBg()
 	return w.fill(text, w.setBg)
 }
 
 func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillReturn {
-	w.MoveAndClear(w.posy, w.posx)
+	w.Move(w.posy, w.posx)
 	if bg == colDefault {
 		bg = w.bg
 	}
@@ -882,6 +889,7 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 }
 
 func (w *LightWindow) FinishFill() {
+	w.MoveAndClear(w.posy, w.posx)
 	for y := w.posy + 1; y < w.height; y++ {
 		w.MoveAndClear(y, 0)
 	}

@@ -164,6 +164,10 @@ func (w *TcellWindow) X() int {
 	return w.lastX
 }
 
+func (w *TcellWindow) Y() int {
+	return w.lastY
+}
+
 func (r *FullscreenRenderer) DoesAutoWrap() bool {
 	return false
 }
