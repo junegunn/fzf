@@ -362,7 +362,7 @@ func (p *Pattern) prepareInput(item *Item) []Token {
 		return *item.transformed
 	}
 
-	tokens := Tokenize(item.text, p.delimiter)
+	tokens := Tokenize(item.text.ToString(), p.delimiter)
 	ret := Transform(tokens, p.nth)
 	item.transformed = &ret
 	return ret

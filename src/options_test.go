@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/junegunn/fzf/src/tui"
-	"github.com/junegunn/fzf/src/util"
 )
 
 func TestDelimiterRegex(t *testing.T) {
@@ -44,7 +43,7 @@ func TestDelimiterRegex(t *testing.T) {
 
 func TestDelimiterRegexString(t *testing.T) {
 	delim := delimiterRegexp("*")
-	tokens := Tokenize(util.RunesToChars([]rune("-*--*---**---")), delim)
+	tokens := Tokenize("-*--*---**---", delim)
 	if delim.regex != nil ||
 		tokens[0].text.ToString() != "-*" ||
 		tokens[1].text.ToString() != "--*" ||
@@ -57,7 +56,7 @@ func TestDelimiterRegexString(t *testing.T) {
 
 func TestDelimiterRegexRegex(t *testing.T) {
 	delim := delimiterRegexp("--\\*")
-	tokens := Tokenize(util.RunesToChars([]rune("-*--*---**---")), delim)
+	tokens := Tokenize("-*--*---**---", delim)
 	if delim.str != nil ||
 		tokens[0].text.ToString() != "-*--*" ||
 		tokens[1].text.ToString() != "---*" ||

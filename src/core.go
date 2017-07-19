@@ -63,9 +63,6 @@ func Run(opts *Options, revision string) {
 	ansiProcessor := func(data []byte) (util.Chars, *[]ansiOffset) {
 		return util.ToChars(data), nil
 	}
-	ansiProcessorRunes := func(data []rune) (util.Chars, *[]ansiOffset) {
-		return util.RunesToChars(data), nil
-	}
 	if opts.Ansi {
 		if opts.Theme != nil {
 			var state *ansiState
@@ -81,9 +78,6 @@ func Run(opts *Options, revision string) {
 				trimmed, _, _ := extractColor(string(data), nil, nil)
 				return util.RunesToChars([]rune(trimmed)), nil
 			}
-		}
-		ansiProcessorRunes = func(data []rune) (util.Chars, *[]ansiOffset) {
-			return ansiProcessor([]byte(string(data)))
 		}
 	}
 
@@ -103,15 +97,15 @@ func Run(opts *Options, revision string) {
 		})
 	} else {
 		chunkList = NewChunkList(func(data []byte, index int) Item {
-			tokens := Tokenize(util.ToChars(data), opts.Delimiter)
+			tokens := Tokenize(string(data), opts.Delimiter)
 			trans := Transform(tokens, opts.WithNth)
+			transformed := joinTokens(trans)
 			if len(header) < opts.HeaderLines {
-				header = append(header, string(joinTokens(trans)))
+				header = append(header, transformed)
 				eventBox.Set(EvtHeader, header)
 				return nilItem
 			}
-			textRunes := joinTokens(trans)
-			trimmed, colors := ansiProcessorRunes(textRunes)
+			trimmed, colors := ansiProcessor([]byte(transformed))
 			trimmed.Index = int32(index)
 			return Item{text: trimmed, colors: colors, origText: &data}
 		})

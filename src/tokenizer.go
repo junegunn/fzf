@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,14 +75,14 @@ func ParseRange(str *string) (Range, bool) {
 	return newRange(n, n), true
 }
 
-func withPrefixLengths(tokens []util.Chars, begin int) []Token {
+func withPrefixLengths(tokens []string, begin int) []Token {
 	ret := make([]Token, len(tokens))
 
 	prefixLength := begin
-	for idx, token := range tokens {
-		// NOTE: &tokens[idx] instead of &tokens
-		ret[idx] = Token{&tokens[idx], int32(prefixLength)}
-		prefixLength += token.Length()
+	for idx := range tokens {
+		chars := util.ToChars([]byte(tokens[idx]))
+		ret[idx] = Token{&chars, int32(prefixLength)}
+		prefixLength += chars.Length()
 	}
 	return ret
 }
@@ -92,16 +93,15 @@ const (
 	awkWhite
 )
 
-func awkTokenizer(input util.Chars) ([]util.Chars, int) {
+func awkTokenizer(input string) ([]string, int) {
 	// 9, 32
-	ret := []util.Chars{}
+	ret := []string{}
 	prefixLength := 0
 	state := awkNil
-	numChars := input.Length()
 	begin := 0
 	end := 0
-	for idx := 0; idx < numChars; idx++ {
-		r := input.Get(idx)
+	for idx := 0; idx < len(input); idx++ {
+		r := input[idx]
 		white := r == 9 || r == 32
 		switch state {
 		case awkNil:
@@ -119,19 +119,19 @@ func awkTokenizer(input util.Chars) ([]util.Chars, int) {
 			if white {
 				end = idx + 1
 			} else {
-				ret = append(ret, input.Slice(begin, end))
+				ret = append(ret, input[begin:end])
 				state, begin, end = awkBlack, idx, idx+1
 			}
 		}
 	}
 	if begin < end {
-		ret = append(ret, input.Slice(begin, end))
+		ret = append(ret, input[begin:end])
 	}
 	return ret, prefixLength
 }
 
 // Tokenize tokenizes the given string with the delimiter
-func Tokenize(text util.Chars, delimiter Delimiter) []Token {
+func Tokenize(text string, delimiter Delimiter) []Token {
 	if delimiter.str == nil && delimiter.regex == nil {
 		// AWK-style (\S+\s*)
 		tokens, prefixLength := awkTokenizer(text)
@@ -139,36 +139,31 @@ func Tokenize(text util.Chars, delimiter Delimiter) []Token {
 	}
 
 	if delimiter.str != nil {
-		return withPrefixLengths(text.Split(*delimiter.str), 0)
+		return withPrefixLengths(strings.SplitAfter(text, *delimiter.str), 0)
 	}
 
 	// FIXME performance
 	var tokens []string
 	if delimiter.regex != nil {
-		str := text.ToString()
-		for len(str) > 0 {
-			loc := delimiter.regex.FindStringIndex(str)
+		for len(text) > 0 {
+			loc := delimiter.regex.FindStringIndex(text)
 			if loc == nil {
-				loc = []int{0, len(str)}
+				loc = []int{0, len(text)}
 			}
 			last := util.Max(loc[1], 1)
-			tokens = append(tokens, str[:last])
-			str = str[last:]
+			tokens = append(tokens, text[:last])
+			text = text[last:]
 		}
 	}
-	asRunes := make([]util.Chars, len(tokens))
-	for i, token := range tokens {
-		asRunes[i] = util.RunesToChars([]rune(token))
-	}
-	return withPrefixLengths(asRunes, 0)
+	return withPrefixLengths(tokens, 0)
 }
 
-func joinTokens(tokens []Token) []rune {
-	ret := []rune{}
+func joinTokens(tokens []Token) string {
+	var output bytes.Buffer
 	for _, token := range tokens {
-		ret = append(ret, token.text.ToRunes()...)
+		output.WriteString(token.text.ToString())
 	}
-	return ret
+	return output.String()
 }
 
 // Transform is used to transform the input when --with-nth option is given
@@ -181,7 +176,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				chars := util.RunesToChars(joinTokens(tokens))
+				chars := util.ToChars([]byte(joinTokens(tokens)))
 				parts = append(parts, &chars)
 			} else {
 				if idx < 0 {
@@ -224,15 +219,15 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		var merged util.Chars
 		switch len(parts) {
 		case 0:
-			merged = util.RunesToChars([]rune{})
+			merged = util.ToChars([]byte{})
 		case 1:
 			merged = *parts[0]
 		default:
-			runes := []rune{}
+			var output bytes.Buffer
 			for _, part := range parts {
-				runes = append(runes, part.ToRunes()...)
+				output.WriteString(part.ToString())
 			}
-			merged = util.RunesToChars(runes)
+			merged = util.ToChars([]byte(output.String()))
 		}
 
 		var prefixLength int32

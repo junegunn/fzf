@@ -2,8 +2,6 @@ package fzf
 
 import (
 	"testing"
-
-	"github.com/junegunn/fzf/src/util"
 )
 
 func TestParseRange(t *testing.T) {
@@ -47,19 +45,19 @@ func TestParseRange(t *testing.T) {
 func TestTokenize(t *testing.T) {
 	// AWK-style
 	input := "  abc:  def:  ghi  "
-	tokens := Tokenize(util.RunesToChars([]rune(input)), Delimiter{})
+	tokens := Tokenize(input, Delimiter{})
 	if tokens[0].text.ToString() != "abc:  " || tokens[0].prefixLength != 2 {
 		t.Errorf("%s", tokens)
 	}
 
 	// With delimiter
-	tokens = Tokenize(util.RunesToChars([]rune(input)), delimiterRegexp(":"))
+	tokens = Tokenize(input, delimiterRegexp(":"))
 	if tokens[0].text.ToString() != "  abc:" || tokens[0].prefixLength != 0 {
-		t.Errorf("%s", tokens)
+		t.Error(tokens[0].text.ToString(), tokens[0].prefixLength)
 	}
 
 	// With delimiter regex
-	tokens = Tokenize(util.RunesToChars([]rune(input)), delimiterRegexp("\\s+"))
+	tokens = Tokenize(input, delimiterRegexp("\\s+"))
 	if tokens[0].text.ToString() != "  " || tokens[0].prefixLength != 0 ||
 		tokens[1].text.ToString() != "abc:  " || tokens[1].prefixLength != 2 ||
 		tokens[2].text.ToString() != "def:  " || tokens[2].prefixLength != 8 ||
@@ -71,7 +69,7 @@ func TestTokenize(t *testing.T) {
 func TestTransform(t *testing.T) {
 	input := "  abc:  def:  ghi:  jkl"
 	{
-		tokens := Tokenize(util.RunesToChars([]rune(input)), Delimiter{})
+		tokens := Tokenize(input, Delimiter{})
 		{
 			ranges := splitNth("1,2,3")
 			tx := Transform(tokens, ranges)
@@ -93,7 +91,7 @@ func TestTransform(t *testing.T) {
 		}
 	}
 	{
-		tokens := Tokenize(util.RunesToChars([]rune(input)), delimiterRegexp(":"))
+		tokens := Tokenize(input, delimiterRegexp(":"))
 		{
 			ranges := splitNth("1..2,3,2..,1")
 			tx := Transform(tokens, ranges)

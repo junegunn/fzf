@@ -1174,7 +1174,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 
 		for idx, item := range items {
 			chars := util.RunesToChars([]rune(item.AsString(stripAnsi)))
-			tokens := Tokenize(chars, delimiter)
+			tokens := Tokenize(chars.ToString(), delimiter)
 			trans := Transform(tokens, ranges)
 			str := string(joinTokens(trans))
 			if delimiter.str != nil {

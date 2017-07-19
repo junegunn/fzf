@@ -133,7 +133,7 @@ func TestCaseSensitivity(t *testing.T) {
 
 func TestOrigTextAndTransformed(t *testing.T) {
 	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune("jg"))
-	tokens := Tokenize(util.RunesToChars([]rune("junegunn")), Delimiter{})
+	tokens := Tokenize("junegunn", Delimiter{})
 	trans := Transform(tokens, []Range{Range{1, 1}})
 
 	origBytes := []byte("junegunn.choi")
