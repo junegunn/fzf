@@ -1343,14 +1343,12 @@ func (t *Terminal) Loop() {
 		}()
 	}
 
-	exit := func(code int, printQuery bool) {
+	exit := func(getCode func() int) {
 		if !t.cleanExit && t.fullscreen && t.inlineInfo {
 			t.placeCursor()
 		}
 		t.tui.Close()
-		if printQuery {
-			t.printer(string(t.input))
-		}
+		code := getCode()
 		if code <= exitNoMatch && t.history != nil {
 			t.history.append(string(t.input))
 		}
@@ -1398,11 +1396,12 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
-						if t.output() {
-							exit(exitOk, false)
-						} else {
-							exit(exitNoMatch, false)
-						}
+						exit(func() int {
+							if t.output() {
+								return exitOk
+							}
+							return exitNoMatch
+						})
 					case reqPreviewDisplay:
 						t.previewer.text = value.(string)
 						t.previewer.lines = strings.Count(t.previewer.text, "\n")
@@ -1411,9 +1410,12 @@ func (t *Terminal) Loop() {
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPrintQuery:
-						exit(exitOk, true)
+						exit(func() int {
+							t.printer(string(t.input))
+							return exitOk
+						})
 					case reqQuit:
-						exit(exitInterrupt, false)
+						exit(func() int { return exitInterrupt })
 					}
 				}
 				t.placeCursor()
