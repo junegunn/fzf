@@ -44,7 +44,21 @@ func init() {
 	*/
 	// The following regular expression will include not all but most of the
 	// frequently used ANSI sequences
-	ansiRegex = regexp.MustCompile("\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x0e\x0f]|.\x08")
+	ansiRegex = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x0e\x0f]|.\x08)")
+}
+
+func findAnsiStart(str string) int {
+	idx := 0
+	for ; idx < len(str); idx++ {
+		b := str[idx]
+		if b == 0x1b || b == 0x0e || b == 0x0f {
+			return idx
+		}
+		if b == 0x08 && idx > 0 {
+			return idx - 1
+		}
+	}
+	return idx
 }
 
 func extractColor(str string, state *ansiState, proc func(string, *ansiState) bool) (string, *[]ansiOffset, *ansiState) {
@@ -55,41 +69,61 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 		offsets = append(offsets, ansiOffset{[2]int32{0, 0}, *state})
 	}
 
-	idx := 0
-	for _, offset := range ansiRegex.FindAllStringIndex(str, -1) {
-		prev := str[idx:offset[0]]
-		output.WriteString(prev)
+	prevIdx := 0
+	runeCount := 0
+	for idx := 0; idx < len(str); {
+		idx += findAnsiStart(str[idx:])
+
+		// No sign of ANSI code
+		if idx == len(str) {
+			break
+		}
+
+		// Make sure that we found an ANSI code
+		offset := ansiRegex.FindStringIndex(str[idx:])
+		if offset == nil {
+			idx++
+			continue
+		}
+		offset[0] += idx
+		offset[1] += idx
+		idx = offset[1]
+
+		// Check if we should continue
+		prev := str[prevIdx:offset[0]]
 		if proc != nil && !proc(prev, state) {
 			return "", nil, nil
 		}
-		newState := interpretCode(str[offset[0]:offset[1]], state)
 
+		prevIdx = offset[1]
+		runeCount += utf8.RuneCountInString(prev)
+		output.WriteString(prev)
+
+		newState := interpretCode(str[offset[0]:offset[1]], state)
 		if !newState.equals(state) {
 			if state != nil {
 				// Update last offset
-				(&offsets[len(offsets)-1]).offset[1] = int32(utf8.RuneCount(output.Bytes()))
+				(&offsets[len(offsets)-1]).offset[1] = int32(runeCount)
 			}
 
 			if newState.colored() {
 				// Append new offset
 				state = newState
-				newLen := int32(utf8.RuneCount(output.Bytes()))
-				offsets = append(offsets, ansiOffset{[2]int32{newLen, newLen}, *state})
+				offsets = append(offsets, ansiOffset{[2]int32{int32(runeCount), int32(runeCount)}, *state})
 			} else {
 				// Discard state
 				state = nil
 			}
 		}
-
-		idx = offset[1]
 	}
 
-	rest := str[idx:]
+	rest := str[prevIdx:]
 	if len(rest) > 0 {
 		output.WriteString(rest)
 		if state != nil {
 			// Update last offset
-			(&offsets[len(offsets)-1]).offset[1] = int32(utf8.RuneCount(output.Bytes()))
+			runeCount += utf8.RuneCountInString(rest)
+			(&offsets[len(offsets)-1]).offset[1] = int32(runeCount)
 		}
 	}
 	if proc != nil {
