@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+0.16.9
+------
+- Memory and performance optimization
+    - Around 20% performance improvement for general use cases
+    - Up to 5x faster processing of `--ansi`
+    - Up to 50% reduction of memory usage
+- Bug fixes and usability improvements
+    - Fixed handling of bracketed paste mode
+    - [ERROR] on info line when the default command failed
+    - More efficient rendering of preview window
+    - `--no-clear` updated for repetitive relaunching scenarios
+
 0.16.8
 ------
 - New `change` event and `top` action for `--bind`
