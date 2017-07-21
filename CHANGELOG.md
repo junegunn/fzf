@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.16.10
+-------
+- Fixed invalid handling of ANSI colors in preview window
+- Further improved `--ansi` performance
+
 0.16.9
 ------
 - Memory and performance optimization
