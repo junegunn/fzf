@@ -17,7 +17,7 @@ func assert(t *testing.T, cond bool, msg ...string) {
 
 func randResult() Result {
 	str := fmt.Sprintf("%d", rand.Uint32())
-	chars := util.RunesToChars([]rune(str))
+	chars := util.ToChars([]byte(str))
 	chars.Index = rand.Int31()
 	return Result{item: &Item{text: chars}}
 }

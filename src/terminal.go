@@ -712,7 +712,7 @@ func (t *Terminal) printHeader() {
 		trimmed, colors, newState := extractColor(lineStr, state, nil)
 		state = newState
 		item := &Item{
-			text:   util.RunesToChars([]rune(trimmed)),
+			text:   util.ToChars([]byte(trimmed)),
 			colors: colors}
 
 		t.move(line, 2, true)
@@ -1173,8 +1173,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 		}
 
 		for idx, item := range items {
-			chars := util.RunesToChars([]rune(item.AsString(stripAnsi)))
-			tokens := Tokenize(chars.ToString(), delimiter)
+			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
 			trans := Transform(tokens, ranges)
 			str := string(joinTokens(trans))
 			if delimiter.str != nil {

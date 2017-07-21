@@ -17,7 +17,7 @@ func assertMatch2(t *testing.T, fun Algo, caseSensitive, normalize, forward bool
 	if !caseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
-	res, pos := fun(caseSensitive, normalize, forward, util.RunesToChars([]rune(input)), []rune(pattern), true, nil)
+	res, pos := fun(caseSensitive, normalize, forward, util.ToChars([]byte(input)), []rune(pattern), true, nil)
 	var start, end int
 	if pos == nil || len(*pos) == 0 {
 		start = res.Start

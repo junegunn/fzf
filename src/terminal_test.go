@@ -10,7 +10,7 @@ import (
 func newItem(str string) *Item {
 	bytes := []byte(str)
 	trimmed, _, _ := extractColor(str, nil, nil)
-	return &Item{origText: &bytes, text: util.RunesToChars([]rune(trimmed))}
+	return &Item{origText: &bytes, text: util.ToChars([]byte(trimmed))}
 }
 
 func TestReplacePlaceholder(t *testing.T) {

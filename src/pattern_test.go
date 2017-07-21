@@ -78,7 +78,7 @@ func TestExact(t *testing.T) {
 	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, true,
 		[]Range{}, Delimiter{}, []rune("'abc"))
 	res, pos := algo.ExactMatchNaive(
-		pattern.caseSensitive, pattern.normalize, pattern.forward, util.RunesToChars([]rune("aabbcc abc")), pattern.termSets[0][0].text, true, nil)
+		pattern.caseSensitive, pattern.normalize, pattern.forward, util.ToChars([]byte("aabbcc abc")), pattern.termSets[0][0].text, true, nil)
 	if res.Start != 7 || res.End != 10 {
 		t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
 	}
@@ -94,7 +94,7 @@ func TestEqual(t *testing.T) {
 
 	match := func(str string, sidxExpected int, eidxExpected int) {
 		res, pos := algo.EqualMatch(
-			pattern.caseSensitive, pattern.normalize, pattern.forward, util.RunesToChars([]rune(str)), pattern.termSets[0][0].text, true, nil)
+			pattern.caseSensitive, pattern.normalize, pattern.forward, util.ToChars([]byte(str)), pattern.termSets[0][0].text, true, nil)
 		if res.Start != sidxExpected || res.End != eidxExpected {
 			t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
 		}
@@ -140,7 +140,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 	for _, extended := range []bool{false, true} {
 		chunk := Chunk{
 			Item{
-				text:        util.RunesToChars([]rune("junegunn")),
+				text:        util.ToChars([]byte("junegunn")),
 				origText:    &origBytes,
 				transformed: &trans},
 		}

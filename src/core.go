@@ -69,14 +69,14 @@ func Run(opts *Options, revision string) {
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				trimmed, offsets, newState := extractColor(string(data), state, nil)
 				state = newState
-				return util.RunesToChars([]rune(trimmed)), offsets
+				return util.ToChars([]byte(trimmed)), offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				trimmed, _, _ := extractColor(string(data), nil, nil)
-				return util.RunesToChars([]rune(trimmed)), nil
+				return util.ToChars([]byte(trimmed)), nil
 			}
 		}
 	}
