@@ -882,8 +882,8 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 		bg = w.bg
 	}
 	if w.csiColor(fg, bg, attr) {
-		return w.fill(text, func() { w.csiColor(fg, bg, attr) })
 		defer w.csi("m")
+		return w.fill(text, func() { w.csiColor(fg, bg, attr) })
 	}
 	return w.fill(text, w.setBg)
 }
