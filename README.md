@@ -224,6 +224,10 @@ or `py`.
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
+- `FZF_FIND_COMMAND:`
+    - The `find` command to use when autocompleting files and directories.
+    - When unset, defaults to `find`.
+    - e.g. `export FZF_FIND_COMMAND="/usr/local/bin/find"`
 
 #### Options
 
