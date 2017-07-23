@@ -688,7 +688,7 @@ function! s:execute_term(dict, command, temps) abort
       lcd -
     endif
   endtry
-  setlocal nospell bufhidden=wipe nobuflisted
+  setlocal nospell bufhidden=wipe nobuflisted nonumber
   setf fzf
   startinsert
   return []
