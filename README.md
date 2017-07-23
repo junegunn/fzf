@@ -3,15 +3,19 @@
 
 fzf is a general-purpose command-line fuzzy finder.
 
-![](https://raw.github.com/junegunn/i/master/fzf.gif)
+<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-preview.png" width=640>
+
+It's an interactive Unix filter for command-line that can be used with any
+list; files, command history, processes, hostnames, bookmarks, git commits,
+etc.
 
 Pros
 ----
 
-- No dependencies
+- Portable, no dependencies
 - Blazingly fast
 - The most comprehensive feature set
-- Flexible layout using tmux panes
+- Flexible layout
 - Batteries included
     - Vim/Neovim plugin, key bindings and fuzzy auto-completion
 
