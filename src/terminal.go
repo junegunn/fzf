@@ -101,6 +101,7 @@ type Terminal struct {
 	printer    func(string)
 	merger     *Merger
 	selected   map[int32]selectedItem
+	version    int64
 	reqBox     *util.EventBox
 	preview    previewOpts
 	previewer  previewer
@@ -1257,6 +1258,24 @@ func (t *Terminal) truncateQuery() {
 	t.cx = util.Constrain(t.cx, 0, len(t.input))
 }
 
+func (t *Terminal) selectItem(item *Item) {
+	t.selected[item.Index()] = selectedItem{time.Now(), item}
+	t.version++
+}
+
+func (t *Terminal) deselectItem(item *Item) {
+	delete(t.selected, item.Index())
+	t.version++
+}
+
+func (t *Terminal) toggleItem(item *Item) {
+	if _, found := t.selected[item.Index()]; !found {
+		t.selectItem(item)
+	} else {
+		t.deselectItem(item)
+	}
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -1359,6 +1378,7 @@ func (t *Terminal) Loop() {
 
 	go func() {
 		var focused *Item
+		var version int64
 		for {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
@@ -1375,7 +1395,8 @@ func (t *Terminal) Loop() {
 					case reqList:
 						t.printList()
 						currentFocus := t.currentItem()
-						if currentFocus != focused {
+						if currentFocus != focused || version != t.version {
+							version = t.version
 							focused = currentFocus
 							if t.isPreviewEnabled() {
 								_, list := t.buildPlusList(t.preview.command, false)
@@ -1441,22 +1462,9 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}
-		selectItem := func(item *Item) bool {
-			if _, found := t.selected[item.Index()]; !found {
-				t.selected[item.Index()] = selectedItem{time.Now(), item}
-				return true
-			}
-			return false
-		}
-		toggleY := func(y int) {
-			item := t.merger.Get(y).item
-			if !selectItem(item) {
-				delete(t.selected, item.Index())
-			}
-		}
 		toggle := func() {
 			if t.cy < t.merger.Length() {
-				toggleY(t.cy)
+				t.toggleItem(t.merger.Get(t.cy).item)
 				req(reqInfo)
 			}
 		}
@@ -1570,16 +1578,14 @@ func (t *Terminal) Loop() {
 			case actSelectAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
-						item := t.merger.Get(i).item
-						selectItem(item)
+						t.selectItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
 			case actDeselectAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
-						item := t.merger.Get(i)
-						delete(t.selected, item.Index())
+						t.deselectItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
@@ -1591,7 +1597,7 @@ func (t *Terminal) Loop() {
 			case actToggleAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
-						toggleY(i)
+						t.toggleItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}

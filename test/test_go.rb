@@ -1274,6 +1274,16 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-3] == '> 11' }
     tmux.send_keys :Enter
   end
+
+  def test_preview_update_on_select
+    tmux.send_keys(%(seq 10 | fzf -m --preview 'echo {+}' --bind a:toggle-all),
+                   :Enter)
+    tmux.until { |lines| lines.item_count == 10 }
+    tmux.send_keys 'a'
+    tmux.until { |lines| lines.any? { |line| line.include? '1 2 3 4 5' } }
+    tmux.send_keys 'a'
+    tmux.until { |lines| !lines.any? { |line| line.include? '1 2 3 4 5' } }
+  end
 end
 
 module TestShell
