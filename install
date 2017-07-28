@@ -171,6 +171,7 @@ case "$archi" in
   OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
   OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}.tgz   ;;
   CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+  MINGW*\ *86)   download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
 
