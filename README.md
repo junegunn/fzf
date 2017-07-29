@@ -393,7 +393,7 @@ Tips
 #### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
 
 [ag](https://github.com/ggreer/the_silver_searcher) or
-[pt](https://github.com/monochromegane/the_platinum_searcher) will do the
+[rg](https://github.com/BurntSushi/ripgrep) will do the
 filtering:
 
 ```sh
