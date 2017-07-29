@@ -415,11 +415,11 @@ options that affect the performance.
 
 ### Executing external programs
 
-You can set up key bindings for starting external process in the foreground
-(`execute`) or in the background (`execute-silent`).
+You can set up key bindings for starting external processes without leaving
+fzf (`execute`, `execute-silent`).
 
-```sh
-# Press F1 to open the file with less without exiting fzf
+```bash
+# Press F1 to open the file with less without leaving fzf
 # Press CTRL-Y to copy the line to clipboard and aborts fzf (requires pbcopy)
 fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort'
 ```
@@ -431,7 +431,7 @@ See *KEY BINDINGS* section of the man page for details.
 When `--preview` option is set, fzf automatically starts external process with
 the current line as the argument and shows the result in the split window.
 
-```sh
+```bash
 # {} is replaced to the single-quoted string of the focused line
 fzf --preview 'cat {}'
 ```
@@ -439,7 +439,7 @@ fzf --preview 'cat {}'
 Since preview window is updated only after the process is complete, it's
 important that the command finishes quickly.
 
-```sh
+```bash
 # Use head instead of cat so that the command doesn't take too long to finish
 fzf --preview 'head -100 {}'
 ```
@@ -451,7 +451,7 @@ syntax-highlights the content of a file.
 - CodeRay: http://coderay.rubychan.de/
 - Rouge: https://github.com/jneen/rouge
 
-```sh
+```bash
 # Try highlight, coderay, rougify in turn, then fall back to cat
 fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
                  echo {} is a binary file ||
@@ -464,7 +464,7 @@ fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
 You can customize the size and position of the preview window using
 `--preview-window` option. For example,
 
-```sh
+```bash
 fzf --height 40% --reverse --preview 'file {}' --preview-window down:1
 ```
 
