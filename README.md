@@ -48,6 +48,7 @@ Table of Contents
    * [Vim plugin](#vim-plugin)
    * [Advanced topics](#advanced-topics)
       * [Performance](#performance)
+      * [Executing external programs](#executing-external-programs)
       * [Preview window](#preview-window)
    * [Tips](#tips)
       * [Respecting .gitignore, <code>.hgignore</code>, and <code>svn:ignore</code>](#respecting-gitignore-hgignore-and-svnignore)
