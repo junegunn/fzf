@@ -65,6 +65,14 @@ func RunesToChars(runes []rune) Chars {
 	return Chars{slice: *(*[]byte)(unsafe.Pointer(&runes)), inBytes: false}
 }
 
+func (chars *Chars) IsBytes() bool {
+	return chars.inBytes
+}
+
+func (chars *Chars) Bytes() []byte {
+	return chars.slice
+}
+
 func (chars *Chars) optionalRunes() []rune {
 	if chars.inBytes {
 		return nil

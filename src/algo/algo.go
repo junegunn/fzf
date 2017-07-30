@@ -78,9 +78,11 @@ Scoring criteria
 */
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -251,19 +253,37 @@ func normalizeRune(r rune) rune {
 // 2. "pattern" is already normalized if "normalize" is true
 type Algo func(caseSensitive bool, normalize bool, forward bool, input util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int)
 
+func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
+	byteArray := input.Bytes()[from:]
+	idx := bytes.IndexByte(byteArray, b)
+	if idx == 0 {
+		// Can't skip any further
+		return from
+	}
+	// We may need to search for the uppercase letter again. We don't have to
+	// consider normalization as we can be sure that this is an ASCII string.
+	if !caseSensitive && b >= 'a' && b <= 'z' {
+		uidx := bytes.IndexByte(byteArray, b-32)
+		if idx < 0 || uidx >= 0 && uidx < idx {
+			idx = uidx
+		}
+	}
+	if idx < 0 {
+		return -1
+	}
+	return from + idx
+}
+
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	// Assume that pattern is given in lowercase if case-insensitive.
 	// First check if there's a match and calculate bonus for each position.
 	// If the input string is too long, consider finding the matching chars in
 	// this phase as well (non-optimal alignment).
-	N := input.Length()
 	M := len(pattern)
-	switch M {
-	case 0:
+	if M == 0 {
 		return Result{0, 0, 0}, posArray(withPos, M)
-	case 1:
-		return ExactMatchNaive(caseSensitive, normalize, forward, input, pattern[0:1], withPos, slab)
 	}
+	N := input.Length()
 
 	// Since O(nm) algorithm can be prohibitively expensive for large input,
 	// we fall back to the greedy algorithm.
@@ -281,10 +301,31 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 	// Rune array
 	offset32, T := alloc32(offset32, slab, N, false)
 
-	// Phase 1. Check if there's a match and calculate bonus for each point
+	// Phase 1. Optimized search for ASCII string
+	firstIdx := 0
+	if input.IsBytes() {
+		idx := 0
+		for pidx := 0; pidx < M; pidx++ {
+			// Not possible
+			if pattern[pidx] >= utf8.RuneSelf {
+				return Result{-1, -1, 0}, nil
+			}
+			idx = trySkip(&input, caseSensitive, byte(pattern[pidx]), idx)
+			if idx < 0 {
+				return Result{-1, -1, 0}, nil
+			}
+			if pidx == 0 && idx > 0 {
+				// Step back to find the right bonus point
+				firstIdx = idx - 1
+			}
+			idx++
+		}
+	}
+
+	// Phase 2. Calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
 	input.CopyRunes(T)
-	for idx := 0; idx < N; idx++ {
+	for idx := firstIdx; idx < N; idx++ {
 		char := T[idx]
 		var class charClass
 		if char <= unicode.MaxASCII {
@@ -324,8 +365,17 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 	if pidx != M {
 		return Result{-1, -1, 0}, nil
 	}
+	if M == 1 && B[F[0]] == bonusBoundary {
+		p := int(F[0])
+		result := Result{p, p + 1, scoreMatch + bonusBoundary*bonusFirstCharMultiplier}
+		if !withPos {
+			return result, nil
+		}
+		pos := []int{p}
+		return result, &pos
+	}
 
-	// Phase 2. Fill in score matrix (H)
+	// Phase 3. Fill in score matrix (H)
 	// Unlike the original algorithm, we do not allow omission.
 	width := lastIdx - int(F[0]) + 1
 	offset16, H := alloc16(offset16, slab, width*M, false)
@@ -414,7 +464,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 		}
 	}
 
-	// Phase 3. (Optional) Backtrace to find character positions
+	// Phase 4. (Optional) Backtrace to find character positions
 	pos := posArray(withPos, M)
 	j := int(F[0])
 	if withPos {
