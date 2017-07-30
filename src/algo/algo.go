@@ -274,6 +274,41 @@ func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
 	return from + idx
 }
 
+func isAscii(runes []rune) bool {
+	for _, r := range runes {
+		if r >= utf8.RuneSelf {
+			return false
+		}
+	}
+	return true
+}
+
+func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) int {
+	// Can't determine
+	if !input.IsBytes() {
+		return 0
+	}
+
+	// Not possible
+	if !isAscii(pattern) {
+		return -1
+	}
+
+	firstIdx, idx := 0, 0
+	for pidx := 0; pidx < len(pattern); pidx++ {
+		idx = trySkip(input, caseSensitive, byte(pattern[pidx]), idx)
+		if idx < 0 {
+			return -1
+		}
+		if pidx == 0 && idx > 0 {
+			// Step back to find the right bonus point
+			firstIdx = idx - 1
+		}
+		idx++
+	}
+	return firstIdx
+}
+
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	// Assume that pattern is given in lowercase if case-insensitive.
 	// First check if there's a match and calculate bonus for each position.
@@ -302,30 +337,15 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 	offset32, T := alloc32(offset32, slab, N, false)
 
 	// Phase 1. Optimized search for ASCII string
-	firstIdx := 0
-	if input.IsBytes() {
-		idx := 0
-		for pidx := 0; pidx < M; pidx++ {
-			// Not possible
-			if pattern[pidx] >= utf8.RuneSelf {
-				return Result{-1, -1, 0}, nil
-			}
-			idx = trySkip(&input, caseSensitive, byte(pattern[pidx]), idx)
-			if idx < 0 {
-				return Result{-1, -1, 0}, nil
-			}
-			if pidx == 0 && idx > 0 {
-				// Step back to find the right bonus point
-				firstIdx = idx - 1
-			}
-			idx++
-		}
+	idx := asciiFuzzyIndex(&input, pattern, caseSensitive)
+	if idx < 0 {
+		return Result{-1, -1, 0}, nil
 	}
 
 	// Phase 2. Calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
 	input.CopyRunes(T)
-	for idx := firstIdx; idx < N; idx++ {
+	for ; idx < N; idx++ {
 		char := T[idx]
 		var class charClass
 		if char <= unicode.MaxASCII {
@@ -654,6 +674,10 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text util
 	lenPattern := len(pattern)
 
 	if lenRunes < lenPattern {
+		return Result{-1, -1, 0}, nil
+	}
+
+	if asciiFuzzyIndex(&text, pattern, caseSensitive) < 0 {
 		return Result{-1, -1, 0}, nil
 	}
 
