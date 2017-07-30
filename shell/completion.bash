@@ -151,7 +151,7 @@ __fzf_generic_path_completion() {
         matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $2 -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
-        matches=${matches% }
+        [ $4 = 1 ] && matches=${matches% }
         if [ -n "$matches" ]; then
           COMPREPLY=( "$matches" )
         else
@@ -164,6 +164,7 @@ __fzf_generic_path_completion() {
       [[ "$dir" =~ /$ ]] || dir="$dir"/
     done
   else
+    shift
     shift
     shift
     shift
@@ -198,7 +199,7 @@ _fzf_complete() {
 }
 
 _fzf_path_completion() {
-  __fzf_generic_path_completion _fzf_compgen_path "-m" "" "$@"
+  __fzf_generic_path_completion _fzf_compgen_path "-m" "" 0 "$@"
 }
 
 # Deprecated. No file only completion.
@@ -207,7 +208,7 @@ _fzf_file_completion() {
 }
 
 _fzf_dir_completion() {
-  __fzf_generic_path_completion _fzf_compgen_dir "" "/" "$@"
+  __fzf_generic_path_completion _fzf_compgen_dir "" "/" 1 "$@"
 }
 
 _fzf_complete_kill() {
@@ -299,7 +300,7 @@ _fzf_defc() {
 
 # Anything
 for cmd in $a_cmds; do
-  _fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
+  _fzf_defc "$cmd" _fzf_path_completion "-o nospace -o default -o bashdefault"
 done
 
 # Directory
