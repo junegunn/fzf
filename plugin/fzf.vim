@@ -756,7 +756,7 @@ let s:default_action = {
 function! s:shortpath()
   let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
   let slash = (s:is_win && !&shellslash) ? '\' : '/'
-  return empty(short) ? '~'.slash : short . (short =~ slash.'$' ? '' : slash)
+  return empty(short) ? '~'.slash : short . (short =~ escape(slash, '\').'$' ? '' : slash)
 endfunction
 
 function! s:cmd(bang, ...) abort
