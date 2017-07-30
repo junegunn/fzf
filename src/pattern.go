@@ -301,7 +301,12 @@ func (p *Pattern) MatchItem(item *Item, withPos bool, slab *util.Slab) (*Result,
 }
 
 func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset, int, *[]int) {
-	input := p.prepareInput(item)
+	var input []Token
+	if len(p.nth) == 0 {
+		input = []Token{Token{text: &item.text, prefixLength: 0}}
+	} else {
+		input = p.transformInput(item)
+	}
 	if p.fuzzy {
 		return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
 	}
@@ -309,7 +314,12 @@ func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset,
 }
 
 func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Offset, int, *[]int) {
-	input := p.prepareInput(item)
+	var input []Token
+	if len(p.nth) == 0 {
+		input = []Token{Token{text: &item.text, prefixLength: 0}}
+	} else {
+		input = p.transformInput(item)
+	}
 	offsets := []Offset{}
 	var totalScore int
 	var allPos *[]int
@@ -353,11 +363,7 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 	return offsets, totalScore, allPos
 }
 
-func (p *Pattern) prepareInput(item *Item) []Token {
-	if len(p.nth) == 0 {
-		return []Token{Token{text: &item.text, prefixLength: 0}}
-	}
-
+func (p *Pattern) transformInput(item *Item) []Token {
 	if item.transformed != nil {
 		return *item.transformed
 	}
