@@ -205,7 +205,6 @@ func Run(opts *Options, revision string) {
 		delay := true
 		ticks++
 		eventBox.Wait(func(events *util.Events) {
-			defer events.Clear()
 			for evt, value := range *events {
 				switch evt {
 
@@ -265,6 +264,7 @@ func Run(opts *Options, revision string) {
 					}
 				}
 			}
+			events.Clear()
 		})
 		if delay && reading {
 			dur := util.DurWithin(

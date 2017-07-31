@@ -55,7 +55,6 @@ func CountItems(cs []*Chunk) int {
 // Push adds the item to the list
 func (cl *ChunkList) Push(data []byte) bool {
 	cl.mutex.Lock()
-	defer cl.mutex.Unlock()
 
 	if len(cl.chunks) == 0 || cl.lastChunk().IsFull() {
 		newChunk := Chunk(make([]Item, 0, chunkSize))
@@ -64,15 +63,16 @@ func (cl *ChunkList) Push(data []byte) bool {
 
 	if cl.lastChunk().push(cl.trans, data, cl.count) {
 		cl.count++
+		cl.mutex.Unlock()
 		return true
 	}
+	cl.mutex.Unlock()
 	return false
 }
 
 // Snapshot returns immutable snapshot of the ChunkList
 func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()
-	defer cl.mutex.Unlock()
 
 	ret := make([]*Chunk, len(cl.chunks))
 	copy(ret, cl.chunks)
@@ -82,5 +82,7 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 		newChunk := *ret[cnt-1]
 		ret[cnt-1] = &newChunk
 	}
+
+	cl.mutex.Unlock()
 	return ret, cl.count
 }

@@ -26,23 +26,23 @@ func NewEventBox() *EventBox {
 // Wait blocks the goroutine until signaled
 func (b *EventBox) Wait(callback func(*Events)) {
 	b.cond.L.Lock()
-	defer b.cond.L.Unlock()
 
 	if len(b.events) == 0 {
 		b.cond.Wait()
 	}
 
 	callback(&b.events)
+	b.cond.L.Unlock()
 }
 
 // Set turns on the event type on the box
 func (b *EventBox) Set(event EventType, value interface{}) {
 	b.cond.L.Lock()
-	defer b.cond.L.Unlock()
 	b.events[event] = value
 	if _, found := b.ignore[event]; !found {
 		b.cond.Broadcast()
 	}
+	b.cond.L.Unlock()
 }
 
 // Clear clears the events
@@ -56,27 +56,27 @@ func (events *Events) Clear() {
 // Peek peeks at the event box if the given event is set
 func (b *EventBox) Peek(event EventType) bool {
 	b.cond.L.Lock()
-	defer b.cond.L.Unlock()
 	_, ok := b.events[event]
+	b.cond.L.Unlock()
 	return ok
 }
 
 // Watch deletes the events from the ignore list
 func (b *EventBox) Watch(events ...EventType) {
 	b.cond.L.Lock()
-	defer b.cond.L.Unlock()
 	for _, event := range events {
 		delete(b.ignore, event)
 	}
+	b.cond.L.Unlock()
 }
 
 // Unwatch adds the events to the ignore list
 func (b *EventBox) Unwatch(events ...EventType) {
 	b.cond.L.Lock()
-	defer b.cond.L.Unlock()
 	for _, event := range events {
 		b.ignore[event] = true
 	}
+	b.cond.L.Unlock()
 }
 
 // WaitFor blocks the execution until the event is received
