@@ -1482,19 +1482,6 @@ module CompletionTest
     tmux.send_keys :Enter
   end
 
-  def test_completion_cancel
-    %w[ls cd].each do |cmd|
-      tmux.prepare
-      tmux.send_keys "#{cmd} **", :Tab
-      tmux.until { |lines| lines.item_count > 0 }
-      tmux.send_keys 'C-c'
-      tmux.until { |lines| lines[-1].include?('**') }
-      tmux.send_keys 'xoxo'
-      tmux.until { |lines| lines[-1].include?('**xoxo') }
-      tmux.send_keys 'C-u'
-    end
-  end
-
   def test_dir_completion
     (1..100).each do |idx|
       FileUtils.mkdir_p "/tmp/fzf-test/d#{idx}"
