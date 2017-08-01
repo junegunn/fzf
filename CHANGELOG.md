@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.16.11
+-------
+- Performance optimization
+- Fixed missing preview update
+
 0.16.10
 -------
 - Fixed invalid handling of ANSI colors in preview window
