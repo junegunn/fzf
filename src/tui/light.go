@@ -32,7 +32,8 @@ var offsetRegexp *regexp.Regexp = regexp.MustCompile("\x1b\\[([0-9]+);([0-9]+)R"
 func openTtyIn() *os.File {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
 	if err != nil {
-		panic("Failed to open " + consoleDevice)
+		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
+		os.Exit(2)
 	}
 	return in
 }
