@@ -1,4 +1,5 @@
 bin/fzf
+bin/fzf-[0-9]*
 target
 pkg
 Gemfile.lock
