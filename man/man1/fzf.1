@@ -111,6 +111,9 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 .B "-m, --multi"
 Enable multi-select with tab/shift-tab
 .TP
+.B "+m, --no-multi"
+Disable multi-select
+.TP
 .B "--no-mouse"
 Disable mouse
 .TP
@@ -356,6 +359,9 @@ e.g. \fBfzf --multi | fzf --sync\fR
 .TP
 .B "--version"
 Display version information and exit
+
+.TP
+Note that most options have the opposite versions with \fB--no-\fR prefix.
 
 .SH ENVIRONMENT VARIABLES
 .TP
