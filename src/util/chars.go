@@ -24,12 +24,12 @@ type Chars struct {
 
 func checkAscii(bytes []byte) (bool, int) {
 	i := 0
-	for ; i < len(bytes)-8; i += 8 {
+	for ; i <= len(bytes)-8; i += 8 {
 		if (overflow64 & *(*uint64)(unsafe.Pointer(&bytes[i]))) > 0 {
 			return false, i
 		}
 	}
-	for ; i < len(bytes)-4; i += 4 {
+	for ; i <= len(bytes)-4; i += 4 {
 		if (overflow32 & *(*uint32)(unsafe.Pointer(&bytes[i]))) > 0 {
 			return false, i
 		}
