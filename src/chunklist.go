@@ -75,6 +75,7 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()
 
 	ret := make([]*Chunk, len(cl.chunks))
+	count := cl.count
 	copy(ret, cl.chunks)
 
 	// Duplicate the last chunk
@@ -84,5 +85,5 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	}
 
 	cl.mutex.Unlock()
-	return ret, cl.count
+	return ret, count
 }
