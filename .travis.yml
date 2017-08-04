@@ -1,4 +1,6 @@
 language: ruby
+dist: trusty
+sudo: required
 matrix:
   include:
     - env: TAGS=
