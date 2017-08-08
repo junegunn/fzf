@@ -209,7 +209,9 @@ func (r *LightRenderer) Init() {
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
-	r.csi("s")
+	if !r.clearOnExit && !r.fullscreen {
+		r.csi("s")
+	}
 	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
