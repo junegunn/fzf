@@ -466,11 +466,11 @@ augroup fzf_popd
 augroup END
 
 function! s:dopopd()
-  if !exists('w:fzf_prev_dir') || exists('*haslocaldir') && !haslocaldir()
+  if !exists('w:fzf_dir') || s:fzf_getcwd() != w:fzf_dir[1]
     return
   endif
-  execute 'lcd' s:escape(w:fzf_prev_dir)
-  unlet w:fzf_prev_dir
+  execute 'lcd' s:escape(w:fzf_dir[0])
+  unlet w:fzf_dir
 endfunction
 
 function! s:xterm_launcher()
@@ -719,7 +719,7 @@ function! s:callback(dict, lines) abort
   let popd = has_key(a:dict, 'prev_dir') &&
         \ (!&autochdir || (empty(a:lines) || len(a:lines) == 1 && empty(a:lines[0])))
   if popd
-    let w:fzf_prev_dir = a:dict.prev_dir
+    let w:fzf_dir = [a:dict.prev_dir, a:dict.dir]
   endif
 
   try
@@ -743,7 +743,7 @@ function! s:callback(dict, lines) abort
 
   " We may have opened a new window or tab
   if popd
-    let w:fzf_prev_dir = a:dict.prev_dir
+    let w:fzf_dir = [a:dict.prev_dir, a:dict.dir]
     call s:dopopd()
   endif
 endfunction
