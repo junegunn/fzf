@@ -33,17 +33,9 @@ func TestParseTermsExtended(t *testing.T) {
 		terms[8][3].typ != termExact || !terms[8][3].inv {
 		t.Errorf("%s", terms)
 	}
-	for idx, termSet := range terms[:8] {
+	for _, termSet := range terms[:8] {
 		term := termSet[0]
 		if len(term.text) != 3 {
-			t.Errorf("%s", term)
-		}
-		if idx > 0 && len(term.origText) != 4+idx/5 {
-			t.Errorf("%s", term)
-		}
-	}
-	for _, term := range terms[8] {
-		if len(term.origText) != 4 {
 			t.Errorf("%s", term)
 		}
 	}
@@ -167,6 +159,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 
 func TestCacheKey(t *testing.T) {
 	test := func(extended bool, patStr string, expected string, cacheable bool) {
+		clearPatternCache()
 		pat := BuildPattern(true, algo.FuzzyMatchV2, extended, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune(patStr))
 		if pat.CacheKey() != expected {
 			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
@@ -188,19 +181,24 @@ func TestCacheKey(t *testing.T) {
 }
 
 func TestCacheable(t *testing.T) {
-	test := func(fuzzy bool, str string, cacheable bool) {
+	test := func(fuzzy bool, str string, expected string, cacheable bool) {
 		clearPatternCache()
 		pat := BuildPattern(fuzzy, algo.FuzzyMatchV2, true, CaseSmart, true, true, true, []Range{}, Delimiter{}, []rune(str))
+		if pat.CacheKey() != expected {
+			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
+		}
 		if cacheable != pat.cacheable {
 			t.Errorf("Invalid Pattern.cacheable for \"%s\": %v (expected: %v)", str, pat.cacheable, cacheable)
 		}
+		clearPatternCache()
 	}
-	test(true, "foo bar", true)
-	test(true, "foo 'bar", true)
-	test(true, "foo !bar", false)
+	test(true, "foo bar", "foo bar", true)
+	test(true, "foo 'bar", "foo bar", false)
+	test(true, "foo !bar", "foo", false)
 
-	test(false, "foo bar", true)
-	test(false, "foo '", true)
-	test(false, "foo 'bar", false)
-	test(false, "foo !bar", false)
+	test(false, "foo bar", "foo bar", true)
+	test(false, "foo 'bar", "foo", false)
+	test(false, "foo '", "foo", true)
+	test(false, "foo 'bar", "foo", false)
+	test(false, "foo !bar", "foo", false)
 }

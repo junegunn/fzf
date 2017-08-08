@@ -10,12 +10,12 @@ import (
 
 // fuzzy
 // 'exact
-// ^exact-prefix
-// exact-suffix$
-// !not-fuzzy
-// !'not-exact
-// !^not-exact-prefix
-// !not-exact-suffix$
+// ^prefix-exact
+// suffix-exact$
+// !inverse-exact
+// !'inverse-fuzzy
+// !^inverse-prefix-exact
+// !inverse-suffix-exact$
 
 type termType int
 
@@ -32,7 +32,6 @@ type term struct {
 	inv           bool
 	text          []rune
 	caseSensitive bool
-	origText      []rune
 }
 
 type termSet []term
@@ -101,7 +100,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 			for idx, term := range termSet {
 				// If the query contains inverse search terms or OR operators,
 				// we cannot cache the search scope
-				if !cacheable || idx > 0 || term.inv || !fuzzy && term.typ != termExact {
+				if !cacheable || idx > 0 || term.inv || fuzzy && term.typ != termFuzzy || !fuzzy && term.typ != termExact {
 					cacheable = false
 					break Loop
 				}
@@ -153,7 +152,6 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 		if !caseSensitive {
 			text = lowerText
 		}
-		origText := []rune(text)
 		if !fuzzy {
 			typ = termExact
 		}
@@ -204,8 +202,7 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 				typ:           typ,
 				inv:           inv,
 				text:          textRunes,
-				caseSensitive: caseSensitive,
-				origText:      origText})
+				caseSensitive: caseSensitive})
 			switchSet = true
 		}
 	}
@@ -236,7 +233,7 @@ func (p *Pattern) CacheKey() string {
 	cacheableTerms := []string{}
 	for _, termSet := range p.termSets {
 		if len(termSet) == 1 && !termSet[0].inv && (p.fuzzy || termSet[0].typ == termExact) {
-			cacheableTerms = append(cacheableTerms, string(termSet[0].origText))
+			cacheableTerms = append(cacheableTerms, string(termSet[0].text))
 		}
 	}
 	return strings.Join(cacheableTerms, " ")

@@ -719,6 +719,38 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_invalid_cache_query_type
+    command = %[(echo 'foo\\$bar'; echo 'barfoo'; echo 'foo^bar'; echo \\"foo'1-2\\"; seq 100) | #{fzf}]
+
+    # Suffix match
+    tmux.send_keys command, :Enter
+    tmux.until { |lines| lines.match_count == 104 }
+    tmux.send_keys 'foo$'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys 'bar'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Enter
+
+    # Prefix match
+    tmux.prepare
+    tmux.send_keys command, :Enter
+    tmux.until { |lines| lines.match_count == 104 }
+    tmux.send_keys '^bar'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys 'C-a', 'foo'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys :Enter
+
+    # Exact match
+    tmux.prepare
+    tmux.send_keys command, :Enter
+    tmux.until { |lines| lines.match_count == 104 }
+    tmux.send_keys "'12"
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys 'C-a', 'foo'
+    tmux.until { |lines| lines.match_count == 1 }
+  end
+
   def test_smart_case_for_each_term
     assert_equal 1, `echo Foo bar | #{FZF} -x -f "foo Fbar" | wc -l`.to_i
   end
