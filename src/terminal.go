@@ -281,9 +281,13 @@ func defaultKeymap() map[int][]action {
 	return keymap
 }
 
+func trimQuery(query string) []rune {
+	return []rune(strings.Replace(query, "\t", " ", -1))
+}
+
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
-	input := []rune(opts.Query)
+	input := trimQuery(opts.Query)
 	var header []string
 	if opts.Reverse {
 		header = opts.Header
@@ -1694,13 +1698,13 @@ func (t *Terminal) Loop() {
 			case actPreviousHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
-					t.input = []rune(t.history.previous())
+					t.input = trimQuery(t.history.previous())
 					t.cx = len(t.input)
 				}
 			case actNextHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
-					t.input = []rune(t.history.next())
+					t.input = trimQuery(t.history.next())
 					t.cx = len(t.input)
 				}
 			case actSigStop:

@@ -165,15 +165,15 @@ func TestCacheKey(t *testing.T) {
 			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
 		}
 		if pat.cacheable != cacheable {
-			t.Errorf("Expected: %s, actual: %s (%s)", cacheable, pat.cacheable, patStr)
+			t.Errorf("Expected: %t, actual: %t (%s)", cacheable, pat.cacheable, patStr)
 		}
 		clearPatternCache()
 	}
 	test(false, "foo !bar", "foo !bar", true)
 	test(false, "foo | bar !baz", "foo | bar !baz", true)
-	test(true, "foo  bar  baz", "foo bar baz", true)
+	test(true, "foo  bar  baz", "foo\tbar\tbaz", true)
 	test(true, "foo !bar", "foo", false)
-	test(true, "foo !bar   baz", "foo baz", false)
+	test(true, "foo !bar   baz", "foo\tbaz", false)
 	test(true, "foo | bar baz", "baz", false)
 	test(true, "foo | bar | baz", "", false)
 	test(true, "foo | bar !baz", "", false)
@@ -192,11 +192,11 @@ func TestCacheable(t *testing.T) {
 		}
 		clearPatternCache()
 	}
-	test(true, "foo bar", "foo bar", true)
-	test(true, "foo 'bar", "foo bar", false)
+	test(true, "foo bar", "foo\tbar", true)
+	test(true, "foo 'bar", "foo\tbar", false)
 	test(true, "foo !bar", "foo", false)
 
-	test(false, "foo bar", "foo bar", true)
+	test(false, "foo bar", "foo\tbar", true)
 	test(false, "foo 'bar", "foo", false)
 	test(false, "foo '", "foo", true)
 	test(false, "foo 'bar", "foo", false)

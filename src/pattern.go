@@ -53,13 +53,15 @@ type Pattern struct {
 }
 
 var (
-	_patternCache map[string]*Pattern
-	_splitRegex   *regexp.Regexp
-	_cache        ChunkCache
+	_patternCache       map[string]*Pattern
+	_splitRegex         *regexp.Regexp
+	_escapedPrefixRegex *regexp.Regexp
+	_cache              ChunkCache
 )
 
 func init() {
-	_splitRegex = regexp.MustCompile("\\s+")
+	_splitRegex = regexp.MustCompile(" +")
+	_escapedPrefixRegex = regexp.MustCompile("^\\\\['!^]")
 	clearPatternCache()
 	clearChunkCache()
 }
@@ -80,7 +82,10 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 
 	var asString string
 	if extended {
-		asString = strings.Trim(string(runes), " ")
+		asString = strings.TrimLeft(string(runes), " ")
+		for strings.HasSuffix(asString, " ") && !strings.HasSuffix(asString, "\\ ") {
+			asString = asString[:len(asString)-1]
+		}
 	} else {
 		asString = string(runes)
 	}
@@ -140,12 +145,13 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 }
 
 func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet {
+	str = strings.Replace(str, "\\ ", "\t", -1)
 	tokens := _splitRegex.Split(str, -1)
 	sets := []termSet{}
 	set := termSet{}
 	switchSet := false
 	for _, token := range tokens {
-		typ, inv, text := termFuzzy, false, token
+		typ, inv, text := termFuzzy, false, strings.Replace(token, "\t", " ", -1)
 		lowerText := strings.ToLower(text)
 		caseSensitive := caseMode == CaseRespect ||
 			caseMode == CaseSmart && text != lowerText
@@ -167,6 +173,15 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			text = text[1:]
 		}
 
+		if strings.HasSuffix(text, "$") {
+			if strings.HasSuffix(text, "\\$") {
+				text = text[:len(text)-2] + "$"
+			} else {
+				typ = termSuffix
+				text = text[:len(text)-1]
+			}
+		}
+
 		if strings.HasPrefix(text, "'") {
 			// Flip exactness
 			if fuzzy && !inv {
@@ -177,16 +192,16 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 				text = text[1:]
 			}
 		} else if strings.HasPrefix(text, "^") {
-			if strings.HasSuffix(text, "$") {
+			if typ == termSuffix {
 				typ = termEqual
-				text = text[1 : len(text)-1]
 			} else {
 				typ = termPrefix
-				text = text[1:]
 			}
-		} else if strings.HasSuffix(text, "$") {
-			typ = termSuffix
-			text = text[:len(text)-1]
+			text = text[1:]
+		}
+
+		if _escapedPrefixRegex.MatchString(text) {
+			text = text[1:]
 		}
 
 		if len(text) > 0 {
@@ -236,7 +251,7 @@ func (p *Pattern) CacheKey() string {
 			cacheableTerms = append(cacheableTerms, string(termSet[0].text))
 		}
 	}
-	return strings.Join(cacheableTerms, " ")
+	return strings.Join(cacheableTerms, "\t")
 }
 
 // Match returns the list of matches Items in the given Chunk

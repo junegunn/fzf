@@ -1378,6 +1378,28 @@ class TestGoFZF < TestBase
     tmux.send_keys 'a'
     tmux.until { |lines| lines.none? { |line| line.include? '1 2 3 4 5' } }
   end
+
+  def test_escaped_meta_characters
+    input = <<~EOF
+      foo^bar
+      foo$bar
+      foo!bar
+      foo'bar
+      foo bar
+      bar foo
+    EOF
+    writelines tempname, input.lines.map(&:chomp)
+
+    assert_equal input.lines.count, `#{FZF} -f'foo bar' < #{tempname}`.lines.count
+    assert_equal ['foo bar'], `#{FZF} -f'foo\\ bar' < #{tempname}`.lines.map(&:chomp)
+    assert_equal ['bar foo'], `#{FZF} -f'foo$' < #{tempname}`.lines.map(&:chomp)
+    assert_equal ['foo$bar'], `#{FZF} -f'foo\\$' < #{tempname}`.lines.map(&:chomp)
+    assert_equal [], `#{FZF} -f'!bar' < #{tempname}`.lines.map(&:chomp)
+    assert_equal ['foo!bar'], `#{FZF} -f'\\!bar' < #{tempname}`.lines.map(&:chomp)
+    assert_equal ['foo bar'], `#{FZF} -f'^foo\\ bar$' < #{tempname}`.lines.map(&:chomp)
+    assert_equal [], `#{FZF} -f"'br" < #{tempname}`.lines.map(&:chomp)
+    assert_equal ["foo'bar"], `#{FZF} -f"\\'br" < #{tempname}`.lines.map(&:chomp)
+  end
 end
 
 module TestShell
