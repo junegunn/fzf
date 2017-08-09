@@ -61,7 +61,7 @@ var (
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
-	_escapedPrefixRegex = regexp.MustCompile("^\\\\['!^]")
+	_escapedPrefixRegex = regexp.MustCompile("^\\\\['!^|]")
 	clearPatternCache()
 	clearChunkCache()
 }
