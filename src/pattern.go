@@ -152,6 +152,7 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 	sets := []termSet{}
 	set := termSet{}
 	switchSet := false
+	afterBar := false
 	for _, token := range tokens {
 		typ, inv, text := termFuzzy, false, strings.Replace(token, "\t", " ", -1)
 		lowerText := strings.ToLower(text)
@@ -164,10 +165,12 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			typ = termExact
 		}
 
-		if text == "|" {
+		if len(set) > 0 && !afterBar && text == "|" {
 			switchSet = false
+			afterBar = true
 			continue
 		}
+		afterBar = false
 
 		if strings.HasPrefix(text, "!") {
 			inv = true

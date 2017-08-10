@@ -16,7 +16,7 @@ func init() {
 
 func TestParseTermsExtended(t *testing.T) {
 	terms := parseTerms(true, CaseSmart, false,
-		"| aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$ | ^iii$ ^xxx | 'yyy | | zzz$ | !ZZZ |")
+		"aaa 'bbb ^ccc ddd$ !eee !'fff !^ggg !hhh$ | ^iii$ ^xxx | 'yyy | zzz$ | !ZZZ |")
 	if len(terms) != 9 ||
 		terms[0][0].typ != termFuzzy || terms[0][0].inv ||
 		terms[1][0].typ != termExact || terms[1][0].inv ||
@@ -177,7 +177,8 @@ func TestCacheKey(t *testing.T) {
 	test(true, "foo | bar baz", "baz", false)
 	test(true, "foo | bar | baz", "", false)
 	test(true, "foo | bar !baz", "", false)
-	test(true, "| | | foo", "foo", true)
+	test(true, "| | foo", "", false)
+	test(true, "| | | foo", "foo", false)
 }
 
 func TestCacheable(t *testing.T) {
