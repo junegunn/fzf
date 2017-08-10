@@ -1400,6 +1400,16 @@ class TestGoFZF < TestBase
     assert_equal [], `#{FZF} -f"'br" < #{tempname}`.lines.map(&:chomp)
     assert_equal ["foo'bar"], `#{FZF} -f"\\'br" < #{tempname}`.lines.map(&:chomp)
   end
+
+  def test_escaped_meta_characters_only_on_relevant_positions
+    input = <<~EOF
+      \\^
+      ^
+    EOF
+    writelines tempname, input.lines.map(&:chomp)
+    assert_equal %w[^ \\^], `#{FZF} -f"\\^" < #{tempname}`.lines.map(&:chomp)
+    assert_equal %w[\\^], `#{FZF} -f"'\\^" < #{tempname}`.lines.map(&:chomp)
+  end
 end
 
 module TestShell

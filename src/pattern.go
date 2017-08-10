@@ -182,7 +182,9 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			}
 		}
 
-		if strings.HasPrefix(text, "'") {
+		if _escapedPrefixRegex.MatchString(text) {
+			text = text[1:]
+		} else if strings.HasPrefix(text, "'") {
 			// Flip exactness
 			if fuzzy && !inv {
 				typ = termExact
@@ -197,10 +199,6 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			} else {
 				typ = termPrefix
 			}
-			text = text[1:]
-		}
-
-		if _escapedPrefixRegex.MatchString(text) {
 			text = text[1:]
 		}
 
