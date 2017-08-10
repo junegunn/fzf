@@ -58,7 +58,7 @@ func TestParseTermsExtendedExact(t *testing.T) {
 }
 
 func TestParseTermsEmpty(t *testing.T) {
-	terms := parseTerms(true, CaseSmart, false, "' $ ^ !' !^ !$")
+	terms := parseTerms(true, CaseSmart, false, "' ^ !' !^")
 	if len(terms) != 0 {
 		t.Errorf("%s", terms)
 	}

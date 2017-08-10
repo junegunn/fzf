@@ -175,7 +175,7 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			text = text[1:]
 		}
 
-		if strings.HasSuffix(text, "$") {
+		if text != "$" && strings.HasSuffix(text, "$") {
 			if strings.HasSuffix(text, "\\$") {
 				text = text[:len(text)-2] + "$"
 			} else {
