@@ -47,6 +47,7 @@ type Pattern struct {
 	text          []rune
 	termSets      []termSet
 	cacheable     bool
+	cacheKey      string
 	delimiter     Delimiter
 	nth           []Range
 	procFun       map[termType]algo.Algo
@@ -134,6 +135,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		delimiter:     delimiter,
 		procFun:       make(map[termType]algo.Algo)}
 
+	ptr.cacheKey = ptr.buildCacheKey()
 	ptr.procFun[termFuzzy] = fuzzyAlgo
 	ptr.procFun[termEqual] = algo.EqualMatch
 	ptr.procFun[termExact] = algo.ExactMatchNaive
@@ -238,8 +240,7 @@ func (p *Pattern) AsString() string {
 	return string(p.text)
 }
 
-// CacheKey is used to build string to be used as the key of result cache
-func (p *Pattern) CacheKey() string {
+func (p *Pattern) buildCacheKey() string {
 	if !p.extended {
 		return p.AsString()
 	}
@@ -250,6 +251,11 @@ func (p *Pattern) CacheKey() string {
 		}
 	}
 	return strings.Join(cacheableTerms, "\t")
+}
+
+// CacheKey is used to build string to be used as the key of result cache
+func (p *Pattern) CacheKey() string {
+	return p.cacheKey
 }
 
 // Match returns the list of matches Items in the given Chunk
