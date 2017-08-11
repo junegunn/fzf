@@ -586,6 +586,9 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text util.Ch
 	if len(pattern) == 0 {
 		return Result{0, 0, 0}, nil
 	}
+	if asciiFuzzyIndex(&text, pattern, caseSensitive) < 0 {
+		return Result{-1, -1, 0}, nil
+	}
 
 	pidx := 0
 	sidx := -1
