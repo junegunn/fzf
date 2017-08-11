@@ -54,15 +54,13 @@ type Pattern struct {
 }
 
 var (
-	_patternCache       map[string]*Pattern
-	_splitRegex         *regexp.Regexp
-	_escapedPrefixRegex *regexp.Regexp
-	_cache              ChunkCache
+	_patternCache map[string]*Pattern
+	_splitRegex   *regexp.Regexp
+	_cache        ChunkCache
 )
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
-	_escapedPrefixRegex = regexp.MustCompile("^\\\\['!^|]")
 	clearPatternCache()
 	clearChunkCache()
 }
@@ -179,17 +177,11 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 		}
 
 		if text != "$" && strings.HasSuffix(text, "$") {
-			if strings.HasSuffix(text, "\\$") {
-				text = text[:len(text)-2] + "$"
-			} else {
-				typ = termSuffix
-				text = text[:len(text)-1]
-			}
+			typ = termSuffix
+			text = text[:len(text)-1]
 		}
 
-		if _escapedPrefixRegex.MatchString(text) {
-			text = text[1:]
-		} else if strings.HasPrefix(text, "'") {
+		if strings.HasPrefix(text, "'") {
 			// Flip exactness
 			if fuzzy && !inv {
 				typ = termExact

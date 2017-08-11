@@ -1391,24 +1391,10 @@ class TestGoFZF < TestBase
     writelines tempname, input.lines.map(&:chomp)
 
     assert_equal input.lines.count, `#{FZF} -f'foo bar' < #{tempname}`.lines.count
+    assert_equal input.lines.count - 1, `#{FZF} -f'^foo bar$' < #{tempname}`.lines.count
     assert_equal ['foo bar'], `#{FZF} -f'foo\\ bar' < #{tempname}`.lines.map(&:chomp)
-    assert_equal ['bar foo'], `#{FZF} -f'foo$' < #{tempname}`.lines.map(&:chomp)
-    assert_equal ['foo$bar'], `#{FZF} -f'foo\\$' < #{tempname}`.lines.map(&:chomp)
-    assert_equal [], `#{FZF} -f'!bar' < #{tempname}`.lines.map(&:chomp)
-    assert_equal ['foo!bar'], `#{FZF} -f'\\!bar' < #{tempname}`.lines.map(&:chomp)
     assert_equal ['foo bar'], `#{FZF} -f'^foo\\ bar$' < #{tempname}`.lines.map(&:chomp)
-    assert_equal [], `#{FZF} -f"'br" < #{tempname}`.lines.map(&:chomp)
-    assert_equal ["foo'bar"], `#{FZF} -f"\\'br" < #{tempname}`.lines.map(&:chomp)
-  end
-
-  def test_escaped_meta_characters_only_on_relevant_positions
-    input = <<~EOF
-      \\^
-      ^
-    EOF
-    writelines tempname, input.lines.map(&:chomp)
-    assert_equal %w[^ \\^], `#{FZF} -f"\\^" < #{tempname}`.lines.map(&:chomp)
-    assert_equal %w[\\^], `#{FZF} -f"'\\^" < #{tempname}`.lines.map(&:chomp)
+    assert_equal input.lines.count - 1, `#{FZF} -f'!^foo\\ bar$' < #{tempname}`.lines.count
   end
 end
 
