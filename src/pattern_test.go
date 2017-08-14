@@ -130,12 +130,11 @@ func TestOrigTextAndTransformed(t *testing.T) {
 
 	origBytes := []byte("junegunn.choi")
 	for _, extended := range []bool{false, true} {
-		chunk := Chunk{
-			Item{
-				text:        util.ToChars([]byte("junegunn")),
-				origText:    &origBytes,
-				transformed: &trans},
-		}
+		chunk := Chunk{count: 1}
+		chunk.items[0] = Item{
+			text:        util.ToChars([]byte("junegunn")),
+			origText:    &origBytes,
+			transformed: &trans}
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk, nil, slab) // No cache
 		if !(matches[0].item.text.ToString() == "junegunn" &&
@@ -144,7 +143,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 			t.Error("Invalid match result", matches)
 		}
 
-		match, offsets, pos := pattern.MatchItem(&chunk[0], true, slab)
+		match, offsets, pos := pattern.MatchItem(&chunk.items[0], true, slab)
 		if !(match.item.text.ToString() == "junegunn" &&
 			string(*match.item.origText) == "junegunn.choi" &&
 			offsets[0][0] == 0 && offsets[0][1] == 5 &&

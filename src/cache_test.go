@@ -4,9 +4,8 @@ import "testing"
 
 func TestChunkCache(t *testing.T) {
 	cache := NewChunkCache()
-	chunk2 := make(Chunk, chunkSize)
 	chunk1p := &Chunk{}
-	chunk2p := &chunk2
+	chunk2p := &Chunk{count: chunkSize}
 	items1 := []Result{Result{}}
 	items2 := []Result{Result{}, Result{}}
 	cache.Add(chunk1p, "foo", items1)

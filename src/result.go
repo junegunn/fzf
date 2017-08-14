@@ -85,7 +85,7 @@ func (result *Result) Index() int32 {
 }
 
 func minRank() Result {
-	return Result{item: &nilItem, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
+	return Result{item: &minItem, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
 func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme, color tui.ColorPair, attr tui.Attr, current bool) []colorOffset {

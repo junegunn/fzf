@@ -17,11 +17,7 @@ func (item *Item) Index() int32 {
 	return item.text.Index
 }
 
-var nilItem = Item{text: util.Chars{Index: -1}}
-
-func (item *Item) Nil() bool {
-	return item.Index() < 0
-}
+var minItem = Item{text: util.Chars{Index: -1}}
 
 func (item *Item) TrimLength() uint16 {
 	return item.text.TrimLength()

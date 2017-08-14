@@ -29,7 +29,7 @@ func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 		count:   0}
 
 	for _, chunk := range *mg.chunks {
-		mg.count += len(*chunk)
+		mg.count += chunk.count
 	}
 	return &mg
 }
@@ -65,7 +65,7 @@ func (mg *Merger) Get(idx int) Result {
 			idx = mg.count - idx - 1
 		}
 		chunk := (*mg.chunks)[idx/chunkSize]
-		return Result{item: &(*chunk)[idx%chunkSize]}
+		return Result{item: &chunk.items[idx%chunkSize]}
 	}
 
 	if mg.sorted {

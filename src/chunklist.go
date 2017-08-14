@@ -3,11 +3,14 @@ package fzf
 import "sync"
 
 // Chunk is a list of Items whose size has the upper limit of chunkSize
-type Chunk []Item
+type Chunk struct {
+	items [chunkSize]Item
+	count int
+}
 
 // ItemBuilder is a closure type that builds Item object from a pointer to a
 // string and an integer
-type ItemBuilder func([]byte, int) Item
+type ItemBuilder func(*Item, []byte, int) bool
 
 // ChunkList is a list of Chunks
 type ChunkList struct {
@@ -27,17 +30,16 @@ func NewChunkList(trans ItemBuilder) *ChunkList {
 }
 
 func (c *Chunk) push(trans ItemBuilder, data []byte, index int) bool {
-	item := trans(data, index)
-	if item.Nil() {
-		return false
+	if trans(&c.items[c.count], data, index) {
+		c.count++
+		return true
 	}
-	*c = append(*c, item)
-	return true
+	return false
 }
 
 // IsFull returns true if the Chunk is full
 func (c *Chunk) IsFull() bool {
-	return len(*c) == chunkSize
+	return c.count == chunkSize
 }
 
 func (cl *ChunkList) lastChunk() *Chunk {
@@ -49,7 +51,7 @@ func CountItems(cs []*Chunk) int {
 	if len(cs) == 0 {
 		return 0
 	}
-	return chunkSize*(len(cs)-1) + len(*(cs[len(cs)-1]))
+	return chunkSize*(len(cs)-1) + cs[len(cs)-1].count
 }
 
 // Push adds the item to the list
@@ -57,8 +59,7 @@ func (cl *ChunkList) Push(data []byte) bool {
 	cl.mutex.Lock()
 
 	if len(cl.chunks) == 0 || cl.lastChunk().IsFull() {
-		newChunk := Chunk(make([]Item, 0, chunkSize))
-		cl.chunks = append(cl.chunks, &newChunk)
+		cl.chunks = append(cl.chunks, &Chunk{})
 	}
 
 	if cl.lastChunk().push(cl.trans, data, cl.count) {
