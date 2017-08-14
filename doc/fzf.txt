@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: April 28 2017
+fzf.txt	fzf	Last change: August 14 2017
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -76,6 +76,19 @@ Examples~
 >
     " This is the default extra key bindings
     let g:fzf_action = {
+      \ 'ctrl-t': 'tab split',
+      \ 'ctrl-x': 'split',
+      \ 'ctrl-v': 'vsplit' }
+
+    " An action can be a reference to a function that processes selected lines
+    function! s:build_quickfix_list(lines)
+      call setqflist(map(copy(a:lines), '{ "filename": v:val }'))
+      copen
+      cc
+    endfunction
+
+    let g:fzf_action = {
+      \ 'ctrl-q': function('s:build_quickfix_list'),
       \ 'ctrl-t': 'tab split',
       \ 'ctrl-x': 'split',
       \ 'ctrl-v': 'vsplit' }
