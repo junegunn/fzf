@@ -115,9 +115,9 @@ func Run(opts *Options, revision string) {
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	if !streamingFilter {
-		reader := Reader{func(data []byte) bool {
+		reader := NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
-		}, eventBox, opts.ReadZero}
+		}, eventBox, opts.ReadZero)
 		go reader.ReadSource()
 	}
 
@@ -150,7 +150,7 @@ func Run(opts *Options, revision string) {
 		found := false
 		if streamingFilter {
 			slab := util.MakeSlab(slab16Size, slab32Size)
-			reader := Reader{
+			reader := NewReader(
 				func(runes []byte) bool {
 					item := Item{}
 					if chunkList.trans(&item, runes, 0) {
@@ -160,7 +160,7 @@ func Run(opts *Options, revision string) {
 						}
 					}
 					return false
-				}, eventBox, opts.ReadZero}
+				}, eventBox, opts.ReadZero)
 			reader.ReadSource()
 		} else {
 			eventBox.Unwatch(EvtReadNew)

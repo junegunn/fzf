@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"sync/atomic"
+	"time"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -13,10 +15,43 @@ type Reader struct {
 	pusher   func([]byte) bool
 	eventBox *util.EventBox
 	delimNil bool
+	event    int32
+}
+
+// NewReader returns new Reader object
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) *Reader {
+	return &Reader{pusher, eventBox, delimNil, int32(EvtReady)}
+}
+
+func (r *Reader) startEventPoller() {
+	go func() {
+		ptr := &r.event
+		pollInterval := readerPollIntervalMin
+		for {
+			if atomic.CompareAndSwapInt32(ptr, int32(EvtReadNew), int32(EvtReady)) {
+				r.eventBox.Set(EvtReadNew, true)
+				pollInterval = readerPollIntervalMin
+			} else if atomic.LoadInt32(ptr) == int32(EvtReadFin) {
+				return
+			} else {
+				pollInterval += readerPollIntervalStep
+				if pollInterval > readerPollIntervalMax {
+					pollInterval = readerPollIntervalMax
+				}
+			}
+			time.Sleep(pollInterval)
+		}
+	}()
+}
+
+func (r *Reader) fin(success bool) {
+	atomic.StoreInt32(&r.event, int32(EvtReadFin))
+	r.eventBox.Set(EvtReadFin, success)
 }
 
 // ReadSource reads data from the default command or from standard input
 func (r *Reader) ReadSource() {
+	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
@@ -27,7 +62,7 @@ func (r *Reader) ReadSource() {
 	} else {
 		success = r.readFromStdin()
 	}
-	r.eventBox.Set(EvtReadFin, success)
+	r.fin(success)
 }
 
 func (r *Reader) feed(src io.Reader) {
@@ -51,7 +86,7 @@ func (r *Reader) feed(src io.Reader) {
 				}
 			}
 			if r.pusher(bytea) {
-				r.eventBox.Set(EvtReadNew, true)
+				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
 		if err != nil {

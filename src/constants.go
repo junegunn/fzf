@@ -16,7 +16,10 @@ const (
 	coordinatorDelayStep time.Duration = 10 * time.Millisecond
 
 	// Reader
-	readerBufferSize = 64 * 1024
+	readerBufferSize       = 64 * 1024
+	readerPollIntervalMin  = 10 * time.Millisecond
+	readerPollIntervalStep = 5 * time.Millisecond
+	readerPollIntervalMax  = 50 * time.Millisecond
 
 	// Terminal
 	initialDelay    = 20 * time.Millisecond
@@ -68,7 +71,7 @@ const (
 	EvtSearchProgress
 	EvtSearchFin
 	EvtHeader
-	EvtClose
+	EvtReady
 )
 
 const (
