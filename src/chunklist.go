@@ -8,14 +8,12 @@ type Chunk struct {
 	count int
 }
 
-// ItemBuilder is a closure type that builds Item object from a pointer to a
-// string and an integer
-type ItemBuilder func(*Item, []byte, int) bool
+// ItemBuilder is a closure type that builds Item object from byte array
+type ItemBuilder func(*Item, []byte) bool
 
 // ChunkList is a list of Chunks
 type ChunkList struct {
 	chunks []*Chunk
-	count  int
 	mutex  sync.Mutex
 	trans  ItemBuilder
 }
@@ -24,13 +22,12 @@ type ChunkList struct {
 func NewChunkList(trans ItemBuilder) *ChunkList {
 	return &ChunkList{
 		chunks: []*Chunk{},
-		count:  0,
 		mutex:  sync.Mutex{},
 		trans:  trans}
 }
 
-func (c *Chunk) push(trans ItemBuilder, data []byte, index int) bool {
-	if trans(&c.items[c.count], data, index) {
+func (c *Chunk) push(trans ItemBuilder, data []byte) bool {
+	if trans(&c.items[c.count], data) {
 		c.count++
 		return true
 	}
@@ -62,13 +59,9 @@ func (cl *ChunkList) Push(data []byte) bool {
 		cl.chunks = append(cl.chunks, &Chunk{})
 	}
 
-	if cl.lastChunk().push(cl.trans, data, cl.count) {
-		cl.count++
-		cl.mutex.Unlock()
-		return true
-	}
+	ret := cl.lastChunk().push(cl.trans, data)
 	cl.mutex.Unlock()
-	return false
+	return ret
 }
 
 // Snapshot returns immutable snapshot of the ChunkList
@@ -76,7 +69,6 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()
 
 	ret := make([]*Chunk, len(cl.chunks))
-	count := cl.count
 	copy(ret, cl.chunks)
 
 	// Duplicate the last chunk
@@ -86,5 +78,5 @@ func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	}
 
 	cl.mutex.Unlock()
-	return ret, count
+	return ret, CountItems(ret)
 }

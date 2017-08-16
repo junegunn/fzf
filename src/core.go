@@ -83,20 +83,22 @@ func Run(opts *Options, revision string) {
 
 	// Chunk list
 	var chunkList *ChunkList
+	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
 	if len(opts.WithNth) == 0 {
-		chunkList = NewChunkList(func(item *Item, data []byte, index int) bool {
+		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, string(data))
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
 			item.text, item.colors = ansiProcessor(data)
-			item.text.Index = int32(index)
+			item.text.Index = itemIndex
+			itemIndex++
 			return true
 		})
 	} else {
-		chunkList = NewChunkList(func(item *Item, data []byte, index int) bool {
+		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
 			trans := Transform(tokens, opts.WithNth)
 			transformed := joinTokens(trans)
@@ -106,8 +108,9 @@ func Run(opts *Options, revision string) {
 				return false
 			}
 			item.text, item.colors = ansiProcessor([]byte(transformed))
-			item.text.Index = int32(index)
+			item.text.Index = itemIndex
 			item.origText = &data
+			itemIndex++
 			return true
 		})
 	}
@@ -153,7 +156,7 @@ func Run(opts *Options, revision string) {
 			reader := NewReader(
 				func(runes []byte) bool {
 					item := Item{}
-					if chunkList.trans(&item, runes, 0) {
+					if chunkList.trans(&item, runes) {
 						if result, _, _ := pattern.MatchItem(&item, false, slab); result != nil {
 							opts.Printer(item.text.ToString())
 							found = true

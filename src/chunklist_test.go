@@ -11,9 +11,8 @@ func TestChunkList(t *testing.T) {
 	// FIXME global
 	sortCriteria = []criterion{byScore, byLength}
 
-	cl := NewChunkList(func(item *Item, s []byte, i int) bool {
+	cl := NewChunkList(func(item *Item, s []byte) bool {
 		item.text = util.ToChars(s)
-		item.text.Index = int32(i * 2)
 		return true
 	})
 
@@ -44,9 +43,7 @@ func TestChunkList(t *testing.T) {
 		t.Error("Snapshot should contain only two items")
 	}
 	if chunk1.items[0].text.ToString() != "hello" ||
-		chunk1.items[0].Index() != 0 ||
-		chunk1.items[1].text.ToString() != "world" ||
-		chunk1.items[1].Index() != 2 {
+		chunk1.items[1].text.ToString() != "world" {
 		t.Error("Invalid data")
 	}
 	if chunk1.IsFull() {
