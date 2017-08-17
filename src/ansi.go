@@ -74,8 +74,11 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	for idx := 0; idx < len(str); {
 		idx += findAnsiStart(str[idx:])
 
-		// No sign of ANSI code
 		if idx == len(str) {
+			// No sign of ANSI code
+			if len(offsets) == 0 {
+				return str, nil, state
+			}
 			break
 		}
 
