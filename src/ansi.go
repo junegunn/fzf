@@ -73,8 +73,6 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	runeCount := 0
 	for idx := 0; idx < len(str); {
 		idx += findAnsiStart(str[idx:])
-
-		// No sign of ANSI code
 		if idx == len(str) {
 			break
 		}
@@ -117,22 +115,30 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 		}
 	}
 
-	rest := str[prevIdx:]
-	if len(rest) > 0 {
+	var rest string
+	var trimmed string
+
+	if prevIdx == 0 {
+		// No ANSI code found
+		rest = str
+		trimmed = str
+	} else {
+		rest = str[prevIdx:]
 		output.WriteString(rest)
-		if state != nil {
-			// Update last offset
-			runeCount += utf8.RuneCountInString(rest)
-			(&offsets[len(offsets)-1]).offset[1] = int32(runeCount)
-		}
+		trimmed = output.String()
+	}
+	if len(rest) > 0 && state != nil {
+		// Update last offset
+		runeCount += utf8.RuneCountInString(rest)
+		(&offsets[len(offsets)-1]).offset[1] = int32(runeCount)
 	}
 	if proc != nil {
 		proc(rest, state)
 	}
 	if len(offsets) == 0 {
-		return output.String(), nil, state
+		return trimmed, nil, state
 	}
-	return output.String(), &offsets, state
+	return trimmed, &offsets, state
 }
 
 func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
