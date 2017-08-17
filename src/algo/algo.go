@@ -263,8 +263,11 @@ func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
 	// We may need to search for the uppercase letter again. We don't have to
 	// consider normalization as we can be sure that this is an ASCII string.
 	if !caseSensitive && b >= 'a' && b <= 'z' {
+		if idx > 0 {
+			byteArray = byteArray[:idx]
+		}
 		uidx := bytes.IndexByte(byteArray, b-32)
-		if idx < 0 || uidx >= 0 && uidx < idx {
+		if uidx >= 0 {
 			idx = uidx
 		}
 	}
