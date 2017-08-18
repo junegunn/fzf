@@ -59,7 +59,7 @@ func init() {
 	} else if os.Getenv("TERM") == "cygwin" {
 		defaultCommand = `sh -c "command find -L . -mindepth 1 -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null | cut -b3-"`
 	} else {
-		defaultCommand = `dir /s/b/a:-d-h 2> nul`
+		defaultCommand = `cmd.exe /q/V:ON/c "for /f %A in ('dir /s/b 2^> nul') do set RELPATH=%A & echo !RELPATH:%cd%\\=!"`
 	}
 }
 
