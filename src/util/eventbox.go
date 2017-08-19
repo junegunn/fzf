@@ -45,6 +45,13 @@ func (b *EventBox) Set(event EventType, value interface{}) {
 	b.cond.L.Unlock()
 }
 
+// Unset turns off the event type on the box
+func (b *EventBox) Unset(event EventType) {
+	b.cond.L.Lock()
+	delete(b.events, event)
+	b.cond.L.Unlock()
+}
+
 // Clear clears the events
 // Unsynchronized; should be called within Wait routine
 func (events *Events) Clear() {

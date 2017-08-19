@@ -188,6 +188,7 @@ func Run(opts *Options, revision string) {
 	if opts.Sync {
 		eventBox.Unwatch(EvtReadNew)
 		eventBox.WaitFor(EvtReadFin)
+		eventBox.Unset(EvtReadNew)
 	}
 
 	// Go interactive
@@ -216,6 +217,9 @@ func Run(opts *Options, revision string) {
 					reading = reading && evt == EvtReadNew
 					snapshot, count := chunkList.Snapshot()
 					terminal.UpdateCount(count, !reading, value.(bool))
+					if opts.Sync {
+						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
+					}
 					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
 
 				case EvtSearchNew:
