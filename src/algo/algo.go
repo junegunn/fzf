@@ -158,27 +158,17 @@ func posArray(withPos bool, len int) *[]int {
 	return nil
 }
 
-func alloc16(offset int, slab *util.Slab, size int, clear bool) (int, []int16) {
+func alloc16(offset int, slab *util.Slab, size int) (int, []int16) {
 	if slab != nil && cap(slab.I16) > offset+size {
 		slice := slab.I16[offset : offset+size]
-		if clear {
-			for idx := range slice {
-				slice[idx] = 0
-			}
-		}
 		return offset + size, slice
 	}
 	return offset, make([]int16, size)
 }
 
-func alloc32(offset int, slab *util.Slab, size int, clear bool) (int, []int32) {
+func alloc32(offset int, slab *util.Slab, size int) (int, []int32) {
 	if slab != nil && cap(slab.I32) > offset+size {
 		slice := slab.I32[offset : offset+size]
-		if clear {
-			for idx := range slice {
-				slice[idx] = 0
-			}
-		}
 		return offset + size, slice
 	}
 	return offset, make([]int32, size)
@@ -339,11 +329,11 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	offset16 := 0
 	offset32 := 0
 	// Bonus point for each position
-	offset16, B := alloc16(offset16, slab, N, false)
+	offset16, B := alloc16(offset16, slab, N)
 	// The first occurrence of each character in the pattern
-	offset32, F := alloc32(offset32, slab, M, false)
+	offset32, F := alloc32(offset32, slab, M)
 	// Rune array
-	offset32, T := alloc32(offset32, slab, N, false)
+	offset32, T := alloc32(offset32, slab, N)
 
 	// Phase 2. Calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
@@ -401,10 +391,10 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Phase 3. Fill in score matrix (H)
 	// Unlike the original algorithm, we do not allow omission.
 	width := lastIdx - int(F[0]) + 1
-	offset16, H := alloc16(offset16, slab, width*M, false)
+	offset16, H := alloc16(offset16, slab, width*M)
 
 	// Possible length of consecutive chunk at each position.
-	offset16, C := alloc16(offset16, slab, width*M, false)
+	offset16, C := alloc16(offset16, slab, width*M)
 
 	maxScore, maxScorePos := int16(0), 0
 	for i := 0; i < M; i++ {
