@@ -387,7 +387,7 @@ func (p *Pattern) transformInput(item *Item) []Token {
 
 func (p *Pattern) iter(pfun algo.Algo, tokens []Token, caseSensitive bool, normalize bool, forward bool, pattern []rune, withPos bool, slab *util.Slab) (Offset, int, *[]int) {
 	for _, part := range tokens {
-		if res, pos := pfun(caseSensitive, normalize, forward, *part.text, pattern, withPos, slab); res.Start >= 0 {
+		if res, pos := pfun(caseSensitive, normalize, forward, part.text, pattern, withPos, slab); res.Start >= 0 {
 			sidx := int32(res.Start) + part.prefixLength
 			eidx := int32(res.End) + part.prefixLength
 			if pos != nil {
