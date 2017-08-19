@@ -360,17 +360,20 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
 	offset16 := 0
 	offset32 := 0
+	offset16, H0 := alloc16(offset16, slab, N)
+	offset16, C0 := alloc16(offset16, slab, N)
 	// Bonus point for each position
 	offset16, B := alloc16(offset16, slab, N)
 	// The first occurrence of each character in the pattern
 	offset32, F := alloc32(offset32, slab, M)
 	// Rune array
 	offset32, T := alloc32(offset32, slab, N)
+	input.CopyRunes(T)
 
 	// Phase 2. Calculate bonus for each point
-	pidx, lastIdx, prevClass := 0, 0, charNonWord
-	input.CopyRunes(T)
-	for ; idx < N; idx++ {
+	maxScore, maxScorePos := int16(0), 0
+	pidx, lastIdx := 0, 0
+	for pchar0, prevClass, inGap := pattern[0], charNonWord, false; idx < N; idx++ {
 		char := T[idx]
 		var class charClass
 		if char <= unicode.MaxASCII {
@@ -392,51 +395,73 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 		}
 
 		T[idx] = char
-		B[idx] = bonusFor(prevClass, class)
+		bonus := bonusFor(prevClass, class)
+		B[idx] = bonus
 		prevClass = class
 
-		if pidx < M {
-			if char == pattern[pidx] {
-				lastIdx = idx
+		if char == pattern[util.Min(pidx, M-1)] {
+			if pidx < M {
 				F[pidx] = int32(idx)
 				pidx++
 			}
-		} else {
-			if char == pattern[M-1] {
-				lastIdx = idx
+			lastIdx = idx
+		}
+
+		if char == pchar0 {
+			score := scoreMatch + bonus*bonusFirstCharMultiplier
+			H0[idx] = score
+			C0[idx] = 1
+			if M == 1 && (forward && score > maxScore || !forward && score >= maxScore) {
+				maxScore, maxScorePos = score, idx
+				if forward && bonus == bonusBoundary {
+					break
+				}
 			}
+			inGap = false
+		} else {
+			if idx == 0 {
+				H0[idx] = 0
+			} else if inGap {
+				H0[idx] = util.Max16(H0[idx-1]+scoreGapExtention, 0)
+			} else {
+				H0[idx] = util.Max16(H0[idx-1]+scoreGapStart, 0)
+			}
+			C0[idx] = 0
+			inGap = true
 		}
 	}
 	if pidx != M {
 		return Result{-1, -1, 0}, nil
 	}
-	if M == 1 && B[F[0]] == bonusBoundary {
-		p := int(F[0])
-		result := Result{p, p + 1, scoreMatch + bonusBoundary*bonusFirstCharMultiplier}
+	if M == 1 {
+		result := Result{maxScorePos, maxScorePos + 1, int(maxScore)}
 		if !withPos {
 			return result, nil
 		}
-		pos := []int{p}
+		pos := []int{maxScorePos}
 		return result, &pos
 	}
 
 	// Phase 3. Fill in score matrix (H)
 	// Unlike the original algorithm, we do not allow omission.
-	width := lastIdx - int(F[0]) + 1
+	f0 := int(F[0])
+	width := lastIdx - f0 + 1
 	offset16, H := alloc16(offset16, slab, width*M)
+	copy(H, H0[f0:lastIdx+1])
 
 	// Possible length of consecutive chunk at each position.
 	offset16, C := alloc16(offset16, slab, width*M)
+	copy(C, C0[f0:lastIdx+1])
 
-	maxScore, maxScorePos := int16(0), 0
-	for i := 0; i < M; i++ {
+	for i := 1; i < M; i++ {
 		I := i * width
+		f := int(F[i])
 		inGap := false
-		for j := int(F[i]); j <= lastIdx; j++ {
-			j0 := j - int(F[0])
+		for j := f; j <= lastIdx; j++ {
+			j0 := j - f0
 			var s1, s2, consecutive int16
 
-			if j > int(F[i]) {
+			if j > f {
 				if inGap {
 					s2 = H[I+j0-1] + scoreGapExtention
 				} else {
@@ -445,24 +470,14 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			}
 
 			if pattern[i] == T[j] {
-				var diag int16
-				if i > 0 && j0 > 0 {
-					diag = H[I-width+j0-1]
-				}
-				s1 = diag + scoreMatch
+				s1 = H[I-width+j0-1] + scoreMatch
 				b := B[j]
-				if i > 0 {
-					// j > 0 if i > 0
-					consecutive = C[I-width+j0-1] + 1
-					// Break consecutive chunk
-					if b == bonusBoundary {
-						consecutive = 1
-					} else if consecutive > 1 {
-						b = util.Max16(b, util.Max16(bonusConsecutive, B[j-int(consecutive)+1]))
-					}
-				} else {
+				consecutive = C[I-width+j0-1] + 1
+				// Break consecutive chunk
+				if b == bonusBoundary {
 					consecutive = 1
-					b *= bonusFirstCharMultiplier
+				} else if consecutive > 1 {
+					b = util.Max16(b, util.Max16(bonusConsecutive, B[j-int(consecutive)+1]))
 				}
 				if s1+b < s2 {
 					s1 += B[j]
@@ -488,14 +503,14 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 
 	// Phase 4. (Optional) Backtrace to find character positions
 	pos := posArray(withPos, M)
-	j := int(F[0])
+	j := f0
 	if withPos {
 		i := M - 1
 		j = maxScorePos
 		preferMatch := true
 		for {
 			I := i * width
-			j0 := j - int(F[0])
+			j0 := j - f0
 			s := H[I+j0]
 
 			var s1, s2 int16
