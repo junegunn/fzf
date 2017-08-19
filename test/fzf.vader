@@ -149,6 +149,7 @@ Execute (fzf#wrap):
 
 Execute (fzf#shellescape with sh):
   AssertEqual '''''', fzf#shellescape('', 'sh')
+  AssertEqual '''\''', fzf#shellescape('\', 'sh')
   AssertEqual '''""''', fzf#shellescape('""', 'sh')
   AssertEqual '''foobar>''', fzf#shellescape('foobar>', 'sh')
   AssertEqual '''\"''', fzf#shellescape('\"', 'sh')
@@ -156,6 +157,7 @@ Execute (fzf#shellescape with sh):
 
 Execute (fzf#shellescape with cmd.exe):
   AssertEqual '^"^"', fzf#shellescape('', 'cmd.exe')
+  AssertEqual '^"\\^"', fzf#shellescape('\', 'cmd.exe')
   AssertEqual '^"\^"\^"^"', fzf#shellescape('""', 'cmd.exe')
   AssertEqual '^"foobar^>^"', fzf#shellescape('foobar>', 'cmd.exe')
   AssertEqual '^"\\\^"\\^"', fzf#shellescape('\\\\\\\\"\', 'cmd.exe')
