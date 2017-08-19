@@ -302,6 +302,38 @@ func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) int 
 	return firstIdx
 }
 
+func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []int16) {
+	width := lastIdx - int(F[0]) + 1
+
+	for i, f := range F {
+		I := i * width
+		if i == 0 {
+			fmt.Print("  ")
+			for j := int(f); j <= lastIdx; j++ {
+				fmt.Printf(" " + string(T[j]) + " ")
+			}
+			fmt.Println()
+		}
+		fmt.Print(string(pattern[i]) + " ")
+		for idx := int(F[0]); idx < int(f); idx++ {
+			fmt.Print(" 0 ")
+		}
+		for idx := int(f); idx <= lastIdx; idx++ {
+			fmt.Printf("%2d ", H[i*width+idx-int(F[0])])
+		}
+		fmt.Println()
+
+		fmt.Print("  ")
+		for idx, p := range C[I : I+width] {
+			if idx+int(F[0]) < int(F[i]) {
+				p = 0
+			}
+			fmt.Printf("%2d ", p)
+		}
+		fmt.Println()
+	}
+}
+
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	// Assume that pattern is given in lowercase if case-insensitive.
 	// First check if there's a match and calculate bonus for each position.
@@ -448,33 +480,10 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			}
 			H[I+j0] = score
 		}
+	}
 
-		if DEBUG {
-			if i == 0 {
-				fmt.Print("  ")
-				for j := int(F[i]); j <= lastIdx; j++ {
-					fmt.Printf(" " + string(T[j]) + " ")
-				}
-				fmt.Println()
-			}
-			fmt.Print(string(pattern[i]) + " ")
-			for idx := int(F[0]); idx < int(F[i]); idx++ {
-				fmt.Print(" 0 ")
-			}
-			for idx := int(F[i]); idx <= lastIdx; idx++ {
-				fmt.Printf("%2d ", H[i*width+idx-int(F[0])])
-			}
-			fmt.Println()
-
-			fmt.Print("  ")
-			for idx, p := range C[I : I+width] {
-				if idx+int(F[0]) < int(F[i]) {
-					p = 0
-				}
-				fmt.Printf("%2d ", p)
-			}
-			fmt.Println()
-		}
+	if DEBUG {
+		debugV2(T, pattern, F, lastIdx, H, C)
 	}
 
 	// Phase 4. (Optional) Backtrace to find character positions
