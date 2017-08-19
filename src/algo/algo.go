@@ -329,6 +329,12 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 		return FuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab)
 	}
 
+	// Phase 1. Optimized search for ASCII string
+	idx := asciiFuzzyIndex(&input, pattern, caseSensitive)
+	if idx < 0 {
+		return Result{-1, -1, 0}, nil
+	}
+
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
 	offset16 := 0
 	offset32 := 0
@@ -338,12 +344,6 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input util.C
 	offset32, F := alloc32(offset32, slab, M, false)
 	// Rune array
 	offset32, T := alloc32(offset32, slab, N, false)
-
-	// Phase 1. Optimized search for ASCII string
-	idx := asciiFuzzyIndex(&input, pattern, caseSensitive)
-	if idx < 0 {
-		return Result{-1, -1, 0}, nil
-	}
 
 	// Phase 2. Calculate bonus for each point
 	pidx, lastIdx, prevClass := 0, 0, charNonWord
