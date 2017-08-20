@@ -188,7 +188,6 @@ func Run(opts *Options, revision string) {
 	if opts.Sync {
 		eventBox.Unwatch(EvtReadNew)
 		eventBox.WaitFor(EvtReadFin)
-		eventBox.Unset(EvtReadNew)
 	}
 
 	// Go interactive
@@ -210,6 +209,9 @@ func Run(opts *Options, revision string) {
 		delay := true
 		ticks++
 		eventBox.Wait(func(events *util.Events) {
+			if _, fin := (*events)[EvtReadFin]; fin {
+				delete(*events, EvtReadNew)
+			}
 			for evt, value := range *events {
 				switch evt {
 
