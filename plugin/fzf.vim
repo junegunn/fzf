@@ -66,8 +66,8 @@ function! s:shellesc_cmd(arg)
   let escaped = substitute(a:arg, '[&|<>()@^]', '^&', 'g')
   let escaped = substitute(escaped, '%', '%%', 'g')
   let escaped = substitute(escaped, '"', '\\^&', 'g')
-  let escaped = substitute(escaped, '\\\+\(\\^\)', '\\\\\1', 'g')
-  return '^"'.substitute(escaped, '[^\\]\zs\\$', '\\\\', '').'^"'
+  let escaped = substitute(escaped, '\(\\\+\)\(\\^\)', '\1\1\2', 'g')
+  return '^"'.substitute(escaped, '\(\\\+\)$', '\1\1', '').'^"'
 endfunction
 
 function! fzf#shellescape(arg, ...)

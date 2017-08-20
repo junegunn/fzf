@@ -149,16 +149,18 @@ Execute (fzf#wrap):
 
 Execute (fzf#shellescape with sh):
   AssertEqual '''''', fzf#shellescape('', 'sh')
+  AssertEqual '''\''', fzf#shellescape('\', 'sh')
   AssertEqual '''""''', fzf#shellescape('""', 'sh')
   AssertEqual '''foobar>''', fzf#shellescape('foobar>', 'sh')
-  AssertEqual '''\"''', fzf#shellescape('\"', 'sh')
+  AssertEqual '''\\\"\\\''', fzf#shellescape('\\\"\\\', 'sh')
   AssertEqual '''echo ''\''''a''\'''' && echo ''\''''b''\''''''', fzf#shellescape('echo ''a'' && echo ''b''', 'sh')
 
 Execute (fzf#shellescape with cmd.exe):
   AssertEqual '^"^"', fzf#shellescape('', 'cmd.exe')
+  AssertEqual '^"\\^"', fzf#shellescape('\', 'cmd.exe')
   AssertEqual '^"\^"\^"^"', fzf#shellescape('""', 'cmd.exe')
   AssertEqual '^"foobar^>^"', fzf#shellescape('foobar>', 'cmd.exe')
-  AssertEqual '^"\\\^"\\^"', fzf#shellescape('\\\\\\\\"\', 'cmd.exe')
+  AssertEqual '^"\\\\\\\^"\\\\\\^"', fzf#shellescape('\\\"\\\', 'cmd.exe')
   AssertEqual '^"echo ''a'' ^&^& echo ''b''^"', fzf#shellescape('echo ''a'' && echo ''b''', 'cmd.exe')
 
   AssertEqual '^"C:\Program Files ^(x86^)\\^"', fzf#shellescape('C:\Program Files (x86)\', 'cmd.exe')
