@@ -685,7 +685,14 @@ function! s:execute_term(dict, command, temps) abort
     if s:present(a:dict, 'dir')
       execute 'lcd' s:escape(a:dict.dir)
     endif
-    call termopen(a:command.s:term_marker, fzf)
+    if s:is_win
+      let fzf.temps.batchfile = s:fzf_tempname().'.bat'
+      call writefile(s:wrap_cmds(a:command), fzf.temps.batchfile)
+      let command = fzf.temps.batchfile
+    else
+      let command = a:command
+    endif
+    call termopen(command.s:term_marker, fzf)
   finally
     if s:present(a:dict, 'dir')
       lcd -
