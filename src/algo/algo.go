@@ -328,7 +328,11 @@ func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []in
 			if idx+int(F[0]) < int(F[i]) {
 				p = 0
 			}
-			fmt.Printf("%2d ", p)
+			if p > 0 {
+				fmt.Printf("%2d ", p)
+			} else {
+				fmt.Print("   ")
+			}
 		}
 		fmt.Println()
 	}
@@ -373,8 +377,10 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Phase 2. Calculate bonus for each point
 	maxScore, maxScorePos := int16(0), 0
 	pidx, lastIdx := 0, 0
-	for pchar0, prevClass, inGap := pattern[0], charNonWord, false; idx < N; idx++ {
-		char := T[idx]
+	pchar0, pchar, prevH0, prevClass, inGap := pattern[0], pattern[0], int16(0), charNonWord, false
+	Tsub := T[idx:]
+	H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], B[idx:][:len(Tsub)]
+	for off, char := range Tsub {
 		var class charClass
 		if char <= unicode.MaxASCII {
 			class = charClassOfAscii(char)
@@ -394,41 +400,41 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			char = normalizeRune(char)
 		}
 
-		T[idx] = char
+		Tsub[off] = char
 		bonus := bonusFor(prevClass, class)
-		B[idx] = bonus
+		Bsub[off] = bonus
 		prevClass = class
 
-		if char == pattern[util.Min(pidx, M-1)] {
+		if char == pchar {
 			if pidx < M {
-				F[pidx] = int32(idx)
+				F[pidx] = int32(idx + off)
 				pidx++
+				pchar = pattern[util.Min(pidx, M-1)]
 			}
-			lastIdx = idx
+			lastIdx = idx + off
 		}
 
 		if char == pchar0 {
 			score := scoreMatch + bonus*bonusFirstCharMultiplier
-			H0[idx] = score
-			C0[idx] = 1
+			H0sub[off] = score
+			C0sub[off] = 1
 			if M == 1 && (forward && score > maxScore || !forward && score >= maxScore) {
-				maxScore, maxScorePos = score, idx
+				maxScore, maxScorePos = score, idx+off
 				if forward && bonus == bonusBoundary {
 					break
 				}
 			}
 			inGap = false
 		} else {
-			if idx == 0 {
-				H0[idx] = 0
-			} else if inGap {
-				H0[idx] = util.Max16(H0[idx-1]+scoreGapExtention, 0)
+			if inGap {
+				H0sub[off] = util.Max16(prevH0+scoreGapExtention, 0)
 			} else {
-				H0[idx] = util.Max16(H0[idx-1]+scoreGapStart, 0)
+				H0sub[off] = util.Max16(prevH0+scoreGapStart, 0)
 			}
-			C0[idx] = 0
+			C0sub[off] = 0
 			inGap = true
 		}
+		prevH0 = H0sub[off]
 	}
 	if pidx != M {
 		return Result{-1, -1, 0}, nil
@@ -453,47 +459,57 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	offset16, C := alloc16(offset16, slab, width*M)
 	copy(C, C0[f0:lastIdx+1])
 
-	for i := 1; i < M; i++ {
-		I := i * width
-		f := int(F[i])
+	Fsub := F[1:]
+	Psub := pattern[1:][:len(Fsub)]
+	for off, f := range Fsub {
+		f := int(f)
+		pchar := Psub[off]
+		pidx := off + 1
+		row := pidx * width
 		inGap := false
-		for j := f; j <= lastIdx; j++ {
-			j0 := j - f0
+		Tsub := T[f : lastIdx+1]
+		Bsub := B[f:][:len(Tsub)]
+		Csub := C[row+f-f0:][:len(Tsub)]
+		Cdiag := C[row+f-f0-1-width:][:len(Tsub)]
+		Hsub := H[row+f-f0:][:len(Tsub)]
+		Hdiag := H[row+f-f0-1-width:][:len(Tsub)]
+		Hleft := H[row+f-f0-1:][:len(Tsub)]
+		Hleft[0] = 0
+		for off, char := range Tsub {
+			col := off + f
 			var s1, s2, consecutive int16
 
-			if j > f {
-				if inGap {
-					s2 = H[I+j0-1] + scoreGapExtention
-				} else {
-					s2 = H[I+j0-1] + scoreGapStart
-				}
+			if inGap {
+				s2 = Hleft[off] + scoreGapExtention
+			} else {
+				s2 = Hleft[off] + scoreGapStart
 			}
 
-			if pattern[i] == T[j] {
-				s1 = H[I-width+j0-1] + scoreMatch
-				b := B[j]
-				consecutive = C[I-width+j0-1] + 1
+			if pchar == char {
+				s1 = Hdiag[off] + scoreMatch
+				b := Bsub[off]
+				consecutive = Cdiag[off] + 1
 				// Break consecutive chunk
 				if b == bonusBoundary {
 					consecutive = 1
 				} else if consecutive > 1 {
-					b = util.Max16(b, util.Max16(bonusConsecutive, B[j-int(consecutive)+1]))
+					b = util.Max16(b, util.Max16(bonusConsecutive, B[col-int(consecutive)+1]))
 				}
 				if s1+b < s2 {
-					s1 += B[j]
+					s1 += Bsub[off]
 					consecutive = 0
 				} else {
 					s1 += b
 				}
 			}
-			C[I+j0] = consecutive
+			Csub[off] = consecutive
 
 			inGap = s1 < s2
 			score := util.Max16(util.Max16(s1, s2), 0)
-			if i == M-1 && (forward && score > maxScore || !forward && score >= maxScore) {
-				maxScore, maxScorePos = score, j
+			if pidx == M-1 && (forward && score > maxScore || !forward && score >= maxScore) {
+				maxScore, maxScorePos = score, col
 			}
-			H[I+j0] = score
+			Hsub[off] = score
 		}
 	}
 
