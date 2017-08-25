@@ -146,6 +146,7 @@ cleanup() {
   fi
 
   if [ $# -gt 0 ]; then
+    trap - EXIT
     exit 130
   fi
 }
@@ -170,21 +171,22 @@ for arg in "${args[@]}"; do
 done
 
 pppid=$$
-trap_set="trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM"
-trap_unset="trap - EXIT SIGINT SIGTERM"
+echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" > $argsf
+close="; trap - EXIT SIGINT SIGTERM $close"
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
-  cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" > $argsf
+  cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
+  cat $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "$trap_set;cd $(printf %q "$PWD");$envs bash $argsf;$trap_unset" $swap \
+    split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap \
     > /dev/null 2>&1
 else
   mkfifo $fifo1
-  cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" > $argsf
+  cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "$trap_set;$envs bash $argsf;$trap_unset" $swap \
+    split-window $opt "$envs bash $argsf" $swap \
     > /dev/null 2>&1
   cat <&0 > $fifo1 &
 fi
