@@ -160,7 +160,7 @@ func (chars *Chars) CopyRunes(dest []rune) {
 		copy(dest, runes)
 		return
 	}
-	for idx, b := range chars.slice {
+	for idx, b := range chars.slice[:len(dest)] {
 		dest[idx] = rune(b)
 	}
 	return

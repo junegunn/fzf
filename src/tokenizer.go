@@ -147,7 +147,7 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	if delimiter.regex != nil {
 		for len(text) > 0 {
 			loc := delimiter.regex.FindStringIndex(text)
-			if loc == nil {
+			if len(loc) < 2 {
 				loc = []int{0, len(text)}
 			}
 			last := util.Max(loc[1], 1)

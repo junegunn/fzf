@@ -79,7 +79,7 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 
 		// Make sure that we found an ANSI code
 		offset := ansiRegex.FindStringIndex(str[idx:])
-		if offset == nil {
+		if len(offset) < 2 {
 			idx++
 			continue
 		}

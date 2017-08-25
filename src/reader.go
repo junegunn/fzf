@@ -76,7 +76,7 @@ func (r *Reader) feed(src io.Reader) {
 		// end in delim.
 		bytea, err := reader.ReadBytes(delim)
 		byteaLen := len(bytea)
-		if len(bytea) > 0 {
+		if byteaLen > 0 {
 			if err == nil {
 				// get rid of carriage return if under Windows:
 				if util.IsWindows() && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
