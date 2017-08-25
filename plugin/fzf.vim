@@ -340,13 +340,6 @@ try
     set shell=sh
   endif
 
-  if has('nvim')
-    let running = filter(range(1, bufnr('$')), "bufname(v:val) =~# ';#FZF'")
-    if len(running)
-      call s:warn('FZF is already running (in buffer '.join(running, ', ').')!')
-      return []
-    endif
-  endif
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
   let optstr = s:evaluate_opts(get(dict, 'options', ''))
