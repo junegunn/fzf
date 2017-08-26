@@ -962,7 +962,9 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--algo":
 			opts.FuzzyAlgo = parseAlgo(nextString(allArgs, &i, "algorithm required (v1|v2)"))
 		case "--expect":
-			opts.Expect = parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required")
+			for k, v := range parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required") {
+				opts.Expect[k] = v
+			}
 		case "--no-expect":
 			opts.Expect = make(map[int]string)
 		case "--tiebreak":
@@ -1140,7 +1142,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {
-				opts.Expect = parseKeyChords(value, "key names required")
+				for k, v := range parseKeyChords(value, "key names required") {
+					opts.Expect[k] = v
+				}
 			} else if match, value := optString(arg, "--tiebreak="); match {
 				opts.Criteria = parseTiebreak(value)
 			} else if match, value := optString(arg, "--color="); match {

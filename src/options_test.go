@@ -414,3 +414,10 @@ func TestPreviewOpts(t *testing.T) {
 		t.Error(opts.Preview)
 	}
 }
+
+func TestAdditiveExpect(t *testing.T) {
+	opts := optsFor("--expect=a", "--expect", "b", "--expect=c")
+	if len(opts.Expect) != 3 {
+		t.Error(opts.Expect)
+	}
+}

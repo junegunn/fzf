@@ -331,10 +331,12 @@ Comma-separated list of keys that can be used to complete fzf in addition to
 the default enter key. When this option is set, fzf will print the name of the
 key pressed as the first line of its output (or as the second line if
 \fB--print-query\fR is also used). The line will be empty if fzf is completed
-with the default enter key.
+with the default enter key. If \fB--expect\fR option is specified multiple
+times, fzf will expect the union of the keys. \fB--no-expect\fR will clear the
+list.
 
 .RS
-e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s,f1,f2,~,@\fR
+e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s --expect=f1,f2,~,@\fR
 .RE
 .TP
 .B "--read0"
