@@ -384,20 +384,17 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 		var class charClass
 		if char <= unicode.MaxASCII {
 			class = charClassOfAscii(char)
+			if !caseSensitive && class == charUpper {
+				char += 32
+			}
 		} else {
 			class = charClassOfNonAscii(char)
-		}
-
-		if !caseSensitive && class == charUpper {
-			if char <= unicode.MaxASCII {
-				char += 32
-			} else {
+			if !caseSensitive && class == charUpper {
 				char = unicode.To(unicode.LowerCase, char)
 			}
-		}
-
-		if normalize {
-			char = normalizeRune(char)
+			if normalize {
+				char = normalizeRune(char)
+			}
 		}
 
 		Tsub[off] = char
