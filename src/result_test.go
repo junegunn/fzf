@@ -59,10 +59,10 @@ func TestResultRank(t *testing.T) {
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := buildResult(
 		withIndex(&Item{text: util.RunesToChars(strs[0])}, 1), []Offset{}, 2)
-	if item1.points[0] != math.MaxUint16-2 || // Bonus
-		item1.points[1] != 3 || // Length
-		item1.points[2] != 0 || // Unused
-		item1.points[3] != 0 || // Unused
+	if item1.points[3] != math.MaxUint16-2 || // Bonus
+		item1.points[2] != 3 || // Length
+		item1.points[1] != 0 || // Unused
+		item1.points[0] != 0 || // Unused
 		item1.item.Index() != 1 {
 		t.Error(item1)
 	}
