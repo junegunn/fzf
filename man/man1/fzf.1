@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Aug 2017" "fzf 0.16.11" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Aug 2017" "fzf 0.17.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -411,6 +411,9 @@ of field index expressions.
 Unless specified otherwise, fzf will start in "extended-search mode". In this
 mode, you can specify multiple patterns delimited by spaces, such as: \fB'wild
 ^music .mp3$ sbtrkt !rmx\fR
+
+You can prepend a backslash to a space (\fB\\ \fR) to match a literal space
+character.
 
 .SS Exact-match (quoted)
 A term that is prefixed by a single-quote character (\fB'\fR) is interpreted as

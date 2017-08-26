@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.17.0
+------
+- Performance optimization
+- One can match literal spaces in extended-search mode with a space prepended
+  by a backslash.
+- `--expect` is now additive and can be specified multiple times.
+
 0.16.11
 -------
 - Performance optimization
