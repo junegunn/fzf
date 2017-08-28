@@ -366,7 +366,7 @@ try
     let source = dict.source
     let type = type(source)
     if type == 1
-      let prefix = source.'|'
+      let prefix = '( '.source.' )|'
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
