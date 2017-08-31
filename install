@@ -59,14 +59,14 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 fzf_base="$(pwd)"
 
 ask() {
-  # If stdin is a tty, we are "interactive".
-  # non-interactive shell: wait for a linefeed
-  #     interactive shell: continue after a single keypress
-  read_n=$([ -t 0 ] && echo "-n 1")
-
-  read -p "$1 ([y]/n) " $read_n -r
-  echo
-  [[ $REPLY =~ ^[Nn]$ ]]
+  while true; do
+    read -p "$1 ([y]/n) " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      return 1
+    elif [[ $REPLY =~ ^[Nn]$ ]]; then
+      return 0
+    fi
+  done
 }
 
 check_binary() {
