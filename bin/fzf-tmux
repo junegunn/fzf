@@ -176,7 +176,6 @@ close="; trap - EXIT SIGINT SIGTERM $close"
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
-  cat $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
     split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap \
