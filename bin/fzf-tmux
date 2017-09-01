@@ -16,8 +16,8 @@ skip=""
 swap=""
 close=""
 term=""
-[[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines)
-[[ -n "$COLUMNS" ]] && columns=$COLUMNS || columns=$(tput cols)
+[[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines) || lines=$(tmux display-message -p "#{pane_height}")
+[[ -n "$COLUMNS" ]] && columns=$COLUMNS || columns=$(tput cols) || columns=$(tmux display-message -p "#{pane_width}")
 
 help() {
   >&2 echo 'usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
