@@ -21,6 +21,8 @@ usage: $0 [OPTIONS]
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files
 
+    --zsh-only           Patch only zshrc rather than both: bashrc and zshrc
+
     --32                 Download 32-bit binary
     --64                 Download 64-bit binary
 EOF
@@ -37,6 +39,7 @@ for opt in "$@"; do
       key_bindings=1
       update_config=1
       allow_legacy=1
+      zsh_only=0
       ;;
     --key-bindings)    key_bindings=1    ;;
     --no-key-bindings) key_bindings=0    ;;
@@ -47,6 +50,7 @@ for opt in "$@"; do
     --32)              binary_arch=386   ;;
     --64)              binary_arch=amd64 ;;
     --bin)             ;;
+    --zsh-only)        zsh_only=1        ;;
     *)
       echo "unknown option: $opt"
       help
@@ -218,7 +222,7 @@ fi
 
 echo
 has_zsh=$(command -v zsh > /dev/null && echo 1 || echo 0)
-shells=$([ $has_zsh -eq 1 ] && echo "bash zsh" || echo "bash")
+shells=$(([ $has_zsh -eq 1 ] && [ $zsh_only -eq 1 ] && echo "zsh") || ([ $has_zsh -eq 1 ] && echo "bash zsh") || echo "bash")
 for shell in $shells; do
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
@@ -348,8 +352,8 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  echo '   source ~/.bashrc  # bash'
-  [ $has_zsh  -eq 1 ] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
+  [ $zsh_only -eq 0 ] && echo '   source ~/.bashrc  # bash'
+  [ $has_zsh  -eq 1 ] && echo '   source ${ZDOTDIR:-~}/.zshrc   # zsh'
   [ $has_fish -eq 1 ] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
   echo
   echo 'Use uninstall script to remove fzf.'
