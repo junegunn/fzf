@@ -8,6 +8,7 @@ key_bindings=
 update_config=2
 binary_arch=
 allow_legacy=
+shells="bash zsh fish"
 
 help() {
   cat << EOF
@@ -20,6 +21,10 @@ usage: $0 [OPTIONS]
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files
+
+    --no-bash            Do not set up bash configuration
+    --no-zsh             Do not set up zsh configuration
+    --no-fish            Do not set up fish configuration
 
     --32                 Download 32-bit binary
     --64                 Download 64-bit binary
@@ -47,6 +52,9 @@ for opt in "$@"; do
     --32)              binary_arch=386   ;;
     --64)              binary_arch=amd64 ;;
     --bin)             ;;
+    --no-bash)         shells=${shells/bash/} ;;
+    --no-zsh)          shells=${shells/zsh/} ;;
+    --no-fish)         shells=${shells/fish/} ;;
     *)
       echo "unknown option: $opt"
       help
@@ -204,6 +212,17 @@ fi
 
 [[ "$*" =~ "--bin" ]] && exit 0
 
+for s in $shells; do
+  if ! command -v "$s" > /dev/null; then
+    shells=${shells/$s/}
+  fi
+done
+
+if [[ ${#shells} -lt 3 ]]; then
+  echo "No shell configuration to be updated."
+  exit 0
+fi
+
 # Auto-completion
 if [ -z "$auto_completion" ]; then
   ask "Do you want to enable fuzzy auto-completion?"
@@ -217,9 +236,8 @@ if [ -z "$key_bindings" ]; then
 fi
 
 echo
-has_zsh=$(command -v zsh > /dev/null && echo 1 || echo 0)
-shells=$([ $has_zsh -eq 1 ] && echo "bash zsh" || echo "bash")
 for shell in $shells; do
+  [[ "$shell" = fish ]] && continue
   echo -n "Generate ~/.fzf.$shell ... "
   src=~/.fzf.${shell}
 
@@ -253,8 +271,7 @@ EOF
 done
 
 # fish
-has_fish=$(command -v fish > /dev/null && echo 1 || echo 0)
-if [ $has_fish -eq 1 ]; then
+if [[ "$shells" =~ fish ]]; then
   echo -n "Update fish_user_paths ... "
   fish << EOF
   echo \$fish_user_paths | \grep $fzf_base/bin > /dev/null
@@ -330,11 +347,12 @@ if [ $update_config -eq 2 ]; then
 fi
 echo
 for shell in $shells; do
+  [[ "$shell" = fish ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" "$dest" "~/.fzf.${shell}"
 done
 
-if [ $key_bindings -eq 1 ] && [ $has_fish -eq 1 ]; then
+if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
   bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
   if [ ! -e "$bind_file" ]; then
     create_file "$bind_file" \
@@ -348,9 +366,9 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  echo '   source ~/.bashrc  # bash'
-  [ $has_zsh  -eq 1 ] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-  [ $has_fish -eq 1 ] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
+  [[ "$shells" =~ bash ]] && echo '   source ~/.bashrc  # bash'
+  [[ "$shells" =~ zsh ]]  && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
+  [[ "$shells" =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
   echo
   echo 'Use uninstall script to remove fzf.'
   echo
