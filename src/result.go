@@ -48,12 +48,12 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 	for idx, criterion := range sortCriteria {
 		val := uint16(math.MaxUint16)
 		switch criterion {
-		case byScore:
+		case CriterionByScore:
 			// Higher is better
 			val = math.MaxUint16 - util.AsUint16(score)
-		case byLength:
+		case CriterionByLength:
 			val = item.TrimLength()
-		case byBegin, byEnd:
+		case CriterionByBegin, CriterionByEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
 				for idx := 0; idx < numChars; idx++ {
@@ -63,7 +63,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 						break
 					}
 				}
-				if criterion == byBegin {
+				if criterion == CriterionByBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
 					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()))
@@ -77,7 +77,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 }
 
 // Sort criteria to use. Never changes once fzf is started.
-var sortCriteria []criterion
+var sortCriteria []Criterion
 
 // Index returns ordinal index of the Item
 func (result *Result) Index() int32 {

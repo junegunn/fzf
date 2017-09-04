@@ -105,22 +105,22 @@ const (
 )
 
 // Sort criteria
-type criterion int
+type Criterion int
 
 const (
-	byScore criterion = iota
-	byLength
-	byBegin
-	byEnd
+	CriterionByScore Criterion = iota
+	CriterionByLength
+	CriterionByBegin
+	CriterionByEnd
 )
 
-type sizeSpec struct {
+type SizeSpec struct {
 	size    float64
 	percent bool
 }
 
-func defaultMargin() [4]sizeSpec {
-	return [4]sizeSpec{}
+func defaultMargin() [4]SizeSpec {
+	return [4]SizeSpec{}
 }
 
 type windowPosition int
@@ -132,10 +132,10 @@ const (
 	posRight
 )
 
-type previewOpts struct {
+type PreviewOpts struct {
 	command  string
 	position windowPosition
-	size     sizeSpec
+	size     SizeSpec
 	hidden   bool
 	wrap     bool
 }
@@ -152,14 +152,14 @@ type Options struct {
 	Delimiter   Delimiter
 	Sort        int
 	Tac         bool
-	Criteria    []criterion
+	Criteria    []Criterion
 	Multi       bool
 	Ansi        bool
 	Mouse       bool
 	Theme       *tui.ColorTheme
 	Black       bool
 	Bold        bool
-	Height      sizeSpec
+	Height      SizeSpec
 	MinHeight   int
 	Reverse     bool
 	Cycle       bool
@@ -175,8 +175,8 @@ type Options struct {
 	Filter      *string
 	ToggleSort  bool
 	Expect      map[int]string
-	Keymap      map[int][]action
-	Preview     previewOpts
+	Keymap      map[int][]Action
+	Preview     PreviewOpts
 	PrintQuery  bool
 	ReadZero    bool
 	Printer     func(string)
@@ -184,14 +184,14 @@ type Options struct {
 	History     *History
 	Header      []string
 	HeaderLines int
-	Margin      [4]sizeSpec
+	Margin      [4]SizeSpec
 	Bordered    bool
 	Tabstop     int
 	ClearOnExit bool
 	Version     bool
 }
 
-func defaultOptions() *Options {
+func DefaultOptions() *Options {
 	return &Options{
 		Fuzzy:       true,
 		FuzzyAlgo:   algo.FuzzyMatchV2,
@@ -203,7 +203,7 @@ func defaultOptions() *Options {
 		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
+		Criteria:    []Criterion{CriterionByScore, CriterionByLength},
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
@@ -225,8 +225,8 @@ func defaultOptions() *Options {
 		Filter:      nil,
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
-		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false},
+		Keymap:      make(map[int][]Action),
+		Preview:     PreviewOpts{"", posRight, SizeSpec{50, true}, false, false},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -462,8 +462,8 @@ func parseKeyChords(str string, message string) map[int]string {
 	return chords
 }
 
-func parseTiebreak(str string) []criterion {
-	criteria := []criterion{byScore}
+func parseTiebreak(str string) []Criterion {
+	criteria := []Criterion{CriterionByScore}
 	hasIndex := false
 	hasLength := false
 	hasBegin := false
@@ -483,13 +483,13 @@ func parseTiebreak(str string) []criterion {
 			check(&hasIndex, "index")
 		case "length":
 			check(&hasLength, "length")
-			criteria = append(criteria, byLength)
+			criteria = append(criteria, CriterionByLength)
 		case "begin":
 			check(&hasBegin, "begin")
-			criteria = append(criteria, byBegin)
+			criteria = append(criteria, CriterionByBegin)
 		case "end":
 			check(&hasEnd, "end")
-			criteria = append(criteria, byEnd)
+			criteria = append(criteria, CriterionByEnd)
 		default:
 			errorExit("invalid sort criterion: " + str)
 		}
@@ -599,7 +599,7 @@ func init() {
 		"(?si):(execute(?:-multi|-silent)?):.+|:(execute(?:-multi|-silent)?)(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
 }
 
-func parseKeymap(keymap map[int][]action, str string) {
+func parseKeymap(keymap map[int][]Action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		prefix := ":execute"
 		if src[len(prefix)] == '-' {
@@ -639,7 +639,7 @@ func parseKeymap(keymap map[int][]action, str string) {
 
 		idx2 := len(pair[0]) + 1
 		specs := strings.Split(pair[1], "+")
-		actions := make([]action, 0, len(specs))
+		actions := make([]Action, 0, len(specs))
 		appendAction := func(types ...actionType) {
 			actions = append(actions, toActions(types...)...)
 		}
@@ -760,13 +760,13 @@ func parseKeymap(keymap map[int][]action, str string) {
 					}
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, action{t: t, a: spec[offset+1:]})
+							actions = append(actions, Action{t: t, a: spec[offset+1:]})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, action{t: t, a: spec[offset+1 : len(spec)-1]})
+						actions = append(actions, Action{t: t, a: spec[offset+1 : len(spec)-1]})
 					}
 				}
 			}
@@ -796,7 +796,7 @@ func isExecuteAction(str string) actionType {
 	return actIgnore
 }
 
-func parseToggleSort(keymap map[int][]action, str string) {
+func parseToggleSort(keymap map[int][]Action, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
@@ -808,7 +808,7 @@ func strLines(str string) []string {
 	return strings.Split(strings.TrimSuffix(str, "\n"), "\n")
 }
 
-func parseSize(str string, maxPercent float64, label string) sizeSpec {
+func parseSize(str string, maxPercent float64, label string) SizeSpec {
 	var val float64
 	percent := strings.HasSuffix(str, "%")
 	if percent {
@@ -829,10 +829,10 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 			errorExit(label + " must be non-negative")
 		}
 	}
-	return sizeSpec{val, percent}
+	return SizeSpec{val, percent}
 }
 
-func parseHeight(str string) sizeSpec {
+func parseHeight(str string) SizeSpec {
 	if util.IsWindows() {
 		errorExit("--height options is currently not supported on Windows")
 	}
@@ -840,10 +840,10 @@ func parseHeight(str string) sizeSpec {
 	return size
 }
 
-func parsePreviewWindow(opts *previewOpts, input string) {
+func parsePreviewWindow(opts *PreviewOpts, input string) {
 	// Default
 	opts.position = posRight
-	opts.size = sizeSpec{50, true}
+	opts.size = SizeSpec{50, true}
 	opts.hidden = false
 	opts.wrap = false
 
@@ -881,26 +881,26 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	}
 }
 
-func parseMargin(margin string) [4]sizeSpec {
+func parseMargin(margin string) [4]SizeSpec {
 	margins := strings.Split(margin, ",")
-	checked := func(str string) sizeSpec {
+	checked := func(str string) SizeSpec {
 		return parseSize(str, 49, "margin")
 	}
 	switch len(margins) {
 	case 1:
 		m := checked(margins[0])
-		return [4]sizeSpec{m, m, m, m}
+		return [4]SizeSpec{m, m, m, m}
 	case 2:
 		tb := checked(margins[0])
 		rl := checked(margins[1])
-		return [4]sizeSpec{tb, rl, tb, rl}
+		return [4]SizeSpec{tb, rl, tb, rl}
 	case 3:
 		t := checked(margins[0])
 		rl := checked(margins[1])
 		b := checked(margins[2])
-		return [4]sizeSpec{t, rl, b, rl}
+		return [4]SizeSpec{t, rl, b, rl}
 	case 4:
-		return [4]sizeSpec{
+		return [4]SizeSpec{
 			checked(margins[0]), checked(margins[1]),
 			checked(margins[2]), checked(margins[3])}
 	default:
@@ -1100,7 +1100,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--min-height":
 			opts.MinHeight = nextInt(allArgs, &i, "height required: HEIGHT")
 		case "--no-height":
-			opts.Height = sizeSpec{}
+			opts.Height = SizeSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--no-border":
@@ -1239,7 +1239,7 @@ func postProcessOptions(opts *Options) {
 
 // ParseOptions parses command-line options
 func ParseOptions() *Options {
-	opts := defaultOptions()
+	opts := DefaultOptions()
 
 	// Options from Env var
 	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))

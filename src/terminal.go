@@ -75,7 +75,7 @@ type Terminal struct {
 	toggleSort bool
 	delimiter  Delimiter
 	expect     map[int]string
-	keymap     map[int][]action
+	keymap     map[int][]Action
 	pressed    string
 	printQuery bool
 	history    *History
@@ -84,7 +84,7 @@ type Terminal struct {
 	header0    []string
 	ansi       bool
 	tabstop    int
-	margin     [4]sizeSpec
+	margin     [4]SizeSpec
 	strong     tui.Attr
 	bordered   bool
 	cleanExit  bool
@@ -103,7 +103,7 @@ type Terminal struct {
 	selected   map[int32]selectedItem
 	version    int64
 	reqBox     *util.EventBox
-	preview    previewOpts
+	preview    PreviewOpts
 	previewer  previewer
 	previewBox *util.EventBox
 	eventBox   *util.EventBox
@@ -155,7 +155,7 @@ const (
 	reqQuit
 )
 
-type action struct {
+type Action struct {
 	t actionType
 	a string
 }
@@ -219,16 +219,16 @@ const (
 	actTop
 )
 
-func toActions(types ...actionType) []action {
-	actions := make([]action, len(types))
+func toActions(types ...actionType) []Action {
+	actions := make([]Action, len(types))
 	for idx, t := range types {
-		actions[idx] = action{t: t, a: ""}
+		actions[idx] = Action{t: t, a: ""}
 	}
 	return actions
 }
 
-func defaultKeymap() map[int][]action {
-	keymap := make(map[int][]action)
+func defaultKeymap() map[int][]Action {
+	keymap := make(map[int][]Action)
 	keymap[tui.Invalid] = toActions(actInvalid)
 	keymap[tui.Resize] = toActions(actClearScreen)
 	keymap[tui.CtrlA] = toActions(actBeginningOfLine)
@@ -508,7 +508,7 @@ const (
 	maxDisplayWidthCalc = 1024
 )
 
-func calculateSize(base int, size sizeSpec, margin int, minSize int) int {
+func calculateSize(base int, size SizeSpec, margin int, minSize int) int {
 	max := base - margin
 	if size.percent {
 		return util.Constrain(int(float64(base)*0.01*size.size), minSize, max)
@@ -1486,8 +1486,8 @@ func (t *Terminal) Loop() {
 			}
 		}
 
-		var doAction func(action, int) bool
-		doActions := func(actions []action, mapkey int) bool {
+		var doAction func(Action, int) bool
+		doActions := func(actions []Action, mapkey int) bool {
 			for _, action := range actions {
 				if !doAction(action, mapkey) {
 					return false
@@ -1495,7 +1495,7 @@ func (t *Terminal) Loop() {
 			}
 			return true
 		}
-		doAction = func(a action, mapkey int) bool {
+		doAction = func(a Action, mapkey int) bool {
 			switch a.t {
 			case actIgnore:
 			case actExecute, actExecuteSilent:
@@ -1606,14 +1606,14 @@ func (t *Terminal) Loop() {
 				}
 			case actToggleIn:
 				if t.reverse {
-					return doAction(action{t: actToggleUp}, mapkey)
+					return doAction(Action{t: actToggleUp}, mapkey)
 				}
-				return doAction(action{t: actToggleDown}, mapkey)
+				return doAction(Action{t: actToggleDown}, mapkey)
 			case actToggleOut:
 				if t.reverse {
-					return doAction(action{t: actToggleDown}, mapkey)
+					return doAction(Action{t: actToggleDown}, mapkey)
 				}
-				return doAction(action{t: actToggleUp}, mapkey)
+				return doAction(Action{t: actToggleUp}, mapkey)
 			case actToggleDown:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
