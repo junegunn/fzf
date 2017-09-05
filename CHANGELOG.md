@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.17.0-2
+--------
+
+A maintenance release for auxiliary scripts. fzf binaries are not updated.
+
+- Experimental support for the builtin terminal of Vim 8
+    - fzf can now run inside GVim
+- Updated Vim plugin to better handle `&shell` issue on fish
+- Fixed a bug of fzf-tmux where invalid output is generated
+- Fixed fzf-tmux to work even when `tput` does not work
+
 0.17.0
 ------
 - Performance optimization
