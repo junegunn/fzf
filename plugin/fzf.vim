@@ -400,6 +400,9 @@ try
     let optstr .= ' --height='.height
   elseif use_term
     let optstr .= ' --no-height'
+    if !has('nvim') && !s:is_win
+      let optstr .= ' --bind ctrl-j:accept'
+    endif
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
