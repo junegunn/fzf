@@ -157,7 +157,7 @@ const (
 
 type Action struct {
 	t actionType
-	a string
+	a Command
 }
 
 type actionType int
@@ -222,7 +222,7 @@ const (
 func toActions(types ...actionType) []Action {
 	actions := make([]Action, len(types))
 	for idx, t := range types {
-		actions[idx] = Action{t: t, a: ""}
+		actions[idx] = Action{t: t, a: nil}
 	}
 	return actions
 }
@@ -301,7 +301,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delay = initialDelay
 	}
 	var previewBox *util.EventBox
-	if len(opts.Preview.Command) > 0 {
+	if opts.Preview.Command != nil {
 		previewBox = util.NewEventBox()
 	}
 	strongAttr := tui.Bold
@@ -1115,111 +1115,25 @@ func quoteEntry(entry string) string {
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
-func hasPlusFlag(template string) bool {
-	for _, match := range placeholder.FindAllString(template, -1) {
-		if match[0] == '\\' {
-			continue
-		}
-		if match[1] == '+' {
-			return true
-		}
-	}
-	return false
-}
-
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
-	current := allItems[:1]
-	selected := allItems[1:]
-	if current[0] == nil {
-		current = []*Item{}
-	}
-	if selected[0] == nil {
-		selected = []*Item{}
-	}
-	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
-		// Escaped pattern
-		if match[0] == '\\' {
-			return match[1:]
-		}
-
-		// Current query
-		if match == "{q}" {
-			return quoteEntry(query)
-		}
-
-		plusFlag := forcePlus
-		if match[1] == '+' {
-			match = "{" + match[2:]
-			plusFlag = true
-		}
-		items := current
-		if plusFlag {
-			items = selected
-		}
-
-		replacements := make([]string, len(items))
-
-		if match == "{}" {
-			for idx, item := range items {
-				replacements[idx] = quoteEntry(item.AsString(stripAnsi))
-			}
-			return strings.Join(replacements, " ")
-		}
-
-		tokens := strings.Split(match[1:len(match)-1], ",")
-		ranges := make([]Range, len(tokens))
-		for idx, s := range tokens {
-			r, ok := ParseRange(&s)
-			if !ok {
-				// Invalid expression, just return the original string in the template
-				return match
-			}
-			ranges[idx] = r
-		}
-
-		for idx, item := range items {
-			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
-			trans := Transform(tokens, ranges)
-			str := string(joinTokens(trans))
-			if delimiter.str != nil {
-				str = strings.TrimSuffix(str, *delimiter.str)
-			} else if delimiter.regex != nil {
-				delims := delimiter.regex.FindAllStringIndex(str, -1)
-				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
-					str = str[:delims[len(delims)-1][0]]
-				}
-			}
-			str = strings.TrimSpace(str)
-			replacements[idx] = quoteEntry(str)
-		}
-		return strings.Join(replacements, " ")
-	})
-}
-
 func (t *Terminal) redraw() {
 	t.tui.Clear()
 	t.tui.Refresh()
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool) {
-	valid, list := t.buildPlusList(template, forcePlus)
+func (t *Terminal) executeCommand(command Command, forcePlus bool, background bool) {
+	valid, list := t.buildPlusList(command, forcePlus)
 	if !valid {
 		return
 	}
-	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
-	cmd := util.ExecCommand(command)
 	if !background {
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
-		cmd.Run()
+		command.Execute(true, t.ansi, t.delimiter, forcePlus, string(t.input), list)
 		t.tui.Resume(true)
 		t.redraw()
 		t.refresh()
 	} else {
-		cmd.Run()
+		command.Execute(false, t.ansi, t.delimiter, forcePlus, string(t.input), list)
 	}
 }
 
@@ -1243,9 +1157,9 @@ func (t *Terminal) currentItem() *Item {
 	return nil
 }
 
-func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
+func (t *Terminal) buildPlusList(command Command, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	if !forcePlus && !hasPlusFlag(template) || len(t.selected) == 0 {
+	if !forcePlus && !command.HasPlusFlag() || len(t.selected) == 0 {
 		return current != nil, []*Item{current, current}
 	}
 	sels := make([]*Item, len(t.selected)+1)
@@ -1355,10 +1269,7 @@ func (t *Terminal) Loop() {
 				})
 				// We don't display preview window if no match
 				if request[0] != nil {
-					command := replacePlaceholder(t.preview.Command,
-						t.ansi, t.delimiter, false, string(t.input), request)
-					cmd := util.ExecCommand(command)
-					out, _ := cmd.CombinedOutput()
+					out := t.preview.Command.GetPreview(t.ansi, t.delimiter, string(t.input), request)
 					t.reqBox.Set(reqPreviewDisplay, string(out))
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, "")

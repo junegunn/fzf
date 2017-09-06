@@ -133,7 +133,7 @@ const (
 )
 
 type PreviewOpts struct {
-	Command  string
+	Command  Command
 	Position WindowPosition
 	Size     SizeSpec
 	Hidden   bool
@@ -227,7 +227,7 @@ func DefaultOptions() *Options {
 		ToggleSort:    false,
 		Expect:        make(map[int]string),
 		Keymap:        make(map[int][]Action),
-		Preview:       PreviewOpts{"", WindowPositionRight, SizeSpec{50, true}, false, false},
+		Preview:       PreviewOpts{nil, WindowPositionRight, SizeSpec{50, true}, false, false},
 		PrintQuery:    false,
 		ReadZero:      false,
 		Printer:       func(str string) { fmt.Println(str) },
@@ -763,13 +763,13 @@ func parseKeymap(keymap map[int][]Action, str string) {
 					}
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, Action{t: t, a: spec[offset+1:]})
+							actions = append(actions, Action{t: t, a: NewDefaultCommand(spec[offset+1:])})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, Action{t: t, a: spec[offset+1 : len(spec)-1]})
+						actions = append(actions, Action{t: t, a: NewDefaultCommand(spec[offset+1 : len(spec)-1])})
 					}
 				}
 			}
@@ -1092,9 +1092,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
 		case "--preview":
-			opts.Preview.Command = nextString(allArgs, &i, "preview command required")
+			opts.Preview.Command = NewDefaultCommand(nextString(allArgs, &i, "preview command required"))
 		case "--no-preview":
-			opts.Preview.Command = ""
+			opts.Preview.Command = nil
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
@@ -1163,7 +1163,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--preview="); match {
-				opts.Preview.Command = value
+				opts.Preview.Command = NewDefaultCommand(value)
 			} else if match, value := optString(arg, "--preview-window="); match {
 				parsePreviewWindow(&opts.Preview, value)
 			} else if match, value := optString(arg, "--margin="); match {

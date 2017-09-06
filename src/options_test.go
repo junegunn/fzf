@@ -236,7 +236,7 @@ func TestBind(t *testing.T) {
 				t.Errorf("invalid action type (%d != %d)", types[idx], action.t)
 			}
 		}
-		if len(arg1) > 0 && keymap[keyName][0].a != arg1 {
+		if len(arg1) > 0 && (keymap[keyName][0].a == nil || keymap[keyName][0].a.(*DefaultCommand).command != arg1) {
 			t.Errorf("invalid action argument: (%s != %s)", arg1, keymap[keyName][0].a)
 		}
 	}
@@ -378,7 +378,7 @@ func TestToggle(t *testing.T) {
 
 func TestPreviewOpts(t *testing.T) {
 	opts := optsFor()
-	if !(opts.Preview.Command == "" &&
+	if !(opts.Preview.Command == nil &&
 		opts.Preview.Hidden == false &&
 		opts.Preview.Wrap == false &&
 		opts.Preview.Position == WindowPositionRight &&
@@ -387,7 +387,8 @@ func TestPreviewOpts(t *testing.T) {
 		t.Error()
 	}
 	opts = optsFor("--preview", "cat {}", "--preview-window=left:15:hidden:wrap")
-	if !(opts.Preview.Command == "cat {}" &&
+	if !(opts.Preview.Command != nil &&
+		opts.Preview.Command.(*DefaultCommand).command == "cat {}" &&
 		opts.Preview.Hidden == true &&
 		opts.Preview.Wrap == true &&
 		opts.Preview.Position == WindowPositionLeft &&
@@ -396,7 +397,7 @@ func TestPreviewOpts(t *testing.T) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden", "--preview-window=down")
-	if !(opts.Preview.Command == "" &&
+	if !(opts.Preview.Command == nil &&
 		opts.Preview.Hidden == false &&
 		opts.Preview.Wrap == false &&
 		opts.Preview.Position == WindowPositionDown &&
@@ -405,7 +406,7 @@ func TestPreviewOpts(t *testing.T) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden")
-	if !(opts.Preview.Command == "" &&
+	if !(opts.Preview.Command == nil &&
 		opts.Preview.Hidden == true &&
 		opts.Preview.Wrap == true &&
 		opts.Preview.Position == WindowPositionUp &&
