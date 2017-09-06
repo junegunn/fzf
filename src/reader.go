@@ -119,3 +119,57 @@ func (r *DefaultReader) readFromCommand(cmd string) bool {
 	r.feed(out)
 	return listCommand.Wait() == nil
 }
+
+type ChannelReader struct {
+	channel  <-chan []byte
+	pusher   func([]byte) bool
+	eventBox *util.EventBox
+	event    int32
+}
+
+func NewChannelReader(channel <-chan []byte) ReaderFactory {
+	return func(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) Reader {
+		return &ChannelReader{
+			channel:  channel,
+			pusher:   pusher,
+			eventBox: eventBox,
+			event:    int32(EvtReady),
+		}
+	}
+}
+
+func (r *ChannelReader) ReadSource() {
+	r.startEventPoller()
+	for bytes := range r.channel {
+		if r.pusher(bytes) {
+			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		}
+	}
+	r.fin()
+}
+
+func (r *ChannelReader) startEventPoller() {
+	go func() {
+		ptr := &r.event
+		pollInterval := readerPollIntervalMin
+		for {
+			if atomic.CompareAndSwapInt32(ptr, int32(EvtReadNew), int32(EvtReady)) {
+				r.eventBox.Set(EvtReadNew, true)
+				pollInterval = readerPollIntervalMin
+			} else if atomic.LoadInt32(ptr) == int32(EvtReadFin) {
+				return
+			} else {
+				pollInterval += readerPollIntervalStep
+				if pollInterval > readerPollIntervalMax {
+					pollInterval = readerPollIntervalMax
+				}
+			}
+			time.Sleep(pollInterval)
+		}
+	}()
+}
+
+func (r *ChannelReader) fin() {
+	atomic.StoreInt32(&r.event, int32(EvtReadFin))
+	r.eventBox.Set(EvtReadFin, true)
+}
