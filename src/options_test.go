@@ -378,39 +378,39 @@ func TestToggle(t *testing.T) {
 
 func TestPreviewOpts(t *testing.T) {
 	opts := optsFor()
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == false &&
-		opts.Preview.wrap == false &&
-		opts.Preview.position == posRight &&
-		opts.Preview.size.percent == true &&
-		opts.Preview.size.size == 50) {
+	if !(opts.Preview.Command == "" &&
+		opts.Preview.Hidden == false &&
+		opts.Preview.Wrap == false &&
+		opts.Preview.Position == WindowPositionRight &&
+		opts.Preview.Size.percent == true &&
+		opts.Preview.Size.size == 50) {
 		t.Error()
 	}
 	opts = optsFor("--preview", "cat {}", "--preview-window=left:15:hidden:wrap")
-	if !(opts.Preview.command == "cat {}" &&
-		opts.Preview.hidden == true &&
-		opts.Preview.wrap == true &&
-		opts.Preview.position == posLeft &&
-		opts.Preview.size.percent == false &&
-		opts.Preview.size.size == 15+2+2) {
+	if !(opts.Preview.Command == "cat {}" &&
+		opts.Preview.Hidden == true &&
+		opts.Preview.Wrap == true &&
+		opts.Preview.Position == WindowPositionLeft &&
+		opts.Preview.Size.percent == false &&
+		opts.Preview.Size.size == 15+2+2) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden", "--preview-window=down")
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == false &&
-		opts.Preview.wrap == false &&
-		opts.Preview.position == posDown &&
-		opts.Preview.size.percent == true &&
-		opts.Preview.size.size == 50) {
+	if !(opts.Preview.Command == "" &&
+		opts.Preview.Hidden == false &&
+		opts.Preview.Wrap == false &&
+		opts.Preview.Position == WindowPositionDown &&
+		opts.Preview.Size.percent == true &&
+		opts.Preview.Size.size == 50) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden")
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == true &&
-		opts.Preview.wrap == true &&
-		opts.Preview.position == posUp &&
-		opts.Preview.size.percent == false &&
-		opts.Preview.size.size == 15+2) {
+	if !(opts.Preview.Command == "" &&
+		opts.Preview.Hidden == true &&
+		opts.Preview.Wrap == true &&
+		opts.Preview.Position == WindowPositionUp &&
+		opts.Preview.Size.percent == false &&
+		opts.Preview.Size.size == 15+2) {
 		t.Error(opts.Preview)
 	}
 }

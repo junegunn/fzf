@@ -123,21 +123,21 @@ func defaultMargin() [4]SizeSpec {
 	return [4]SizeSpec{}
 }
 
-type windowPosition int
+type WindowPosition int
 
 const (
-	posUp windowPosition = iota
-	posDown
-	posLeft
-	posRight
+	WindowPositionUp WindowPosition = iota
+	WindowPositionDown
+	WindowPositionLeft
+	WindowPositionRight
 )
 
 type PreviewOpts struct {
-	command  string
-	position windowPosition
-	size     SizeSpec
-	hidden   bool
-	wrap     bool
+	Command  string
+	Position WindowPosition
+	Size     SizeSpec
+	Hidden   bool
+	Wrap     bool
 }
 
 // Options stores the values of command-line options
@@ -227,7 +227,7 @@ func DefaultOptions() *Options {
 		ToggleSort:    false,
 		Expect:        make(map[int]string),
 		Keymap:        make(map[int][]Action),
-		Preview:       PreviewOpts{"", posRight, SizeSpec{50, true}, false, false},
+		Preview:       PreviewOpts{"", WindowPositionRight, SizeSpec{50, true}, false, false},
 		PrintQuery:    false,
 		ReadZero:      false,
 		Printer:       func(str string) { fmt.Println(str) },
@@ -845,41 +845,41 @@ func parseHeight(str string) SizeSpec {
 
 func parsePreviewWindow(opts *PreviewOpts, input string) {
 	// Default
-	opts.position = posRight
-	opts.size = SizeSpec{50, true}
-	opts.hidden = false
-	opts.wrap = false
+	opts.Position = WindowPositionRight
+	opts.Size = SizeSpec{50, true}
+	opts.Hidden = false
+	opts.Wrap = false
 
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	for _, token := range tokens {
 		switch token {
 		case "hidden":
-			opts.hidden = true
+			opts.Hidden = true
 		case "wrap":
-			opts.wrap = true
+			opts.Wrap = true
 		case "up", "top":
-			opts.position = posUp
+			opts.Position = WindowPositionUp
 		case "down", "bottom":
-			opts.position = posDown
+			opts.Position = WindowPositionDown
 		case "left":
-			opts.position = posLeft
+			opts.Position = WindowPositionLeft
 		case "right":
-			opts.position = posRight
+			opts.Position = WindowPositionRight
 		default:
 			if sizeRegex.MatchString(token) {
-				opts.size = parseSize(token, 99, "window size")
+				opts.Size = parseSize(token, 99, "window size")
 			} else {
 				errorExit("invalid preview window layout: " + input)
 			}
 		}
 	}
-	if !opts.size.percent && opts.size.size > 0 {
+	if !opts.Size.percent && opts.Size.size > 0 {
 		// Adjust size for border
-		opts.size.size += 2
+		opts.Size.size += 2
 		// And padding
-		if opts.position == posLeft || opts.position == posRight {
-			opts.size.size += 2
+		if opts.Position == WindowPositionLeft || opts.Position == WindowPositionRight {
+			opts.Size.size += 2
 		}
 	}
 }
@@ -1092,9 +1092,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
 		case "--preview":
-			opts.Preview.command = nextString(allArgs, &i, "preview command required")
+			opts.Preview.Command = nextString(allArgs, &i, "preview command required")
 		case "--no-preview":
-			opts.Preview.command = ""
+			opts.Preview.Command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
@@ -1163,7 +1163,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--preview="); match {
-				opts.Preview.command = value
+				opts.Preview.Command = value
 			} else if match, value := optString(arg, "--preview-window="); match {
 				parsePreviewWindow(&opts.Preview, value)
 			} else if match, value := optString(arg, "--margin="); match {
