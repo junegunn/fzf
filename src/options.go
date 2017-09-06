@@ -1253,6 +1253,5 @@ func ParseOptions() *Options {
 	// Options from command-line arguments
 	parseOptions(opts, os.Args[1:])
 
-	postProcessOptions(opts)
 	return opts
 }
