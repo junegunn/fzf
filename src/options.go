@@ -142,102 +142,105 @@ type PreviewOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Extended    bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []Criterion
-	Multi       bool
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      SizeSpec
-	MinHeight   int
-	Reverse     bool
-	Cycle       bool
-	Hscroll     bool
-	HscrollOff  int
-	FileWord    bool
-	InlineInfo  bool
-	JumpLabels  string
-	Prompt      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[int]string
-	Keymap      map[int][]Action
-	Preview     PreviewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	Margin      [4]SizeSpec
-	Bordered    bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy         bool
+	FuzzyAlgo     algo.Algo
+	Extended      bool
+	Case          Case
+	Normalize     bool
+	Nth           []Range
+	WithNth       []Range
+	Delimiter     Delimiter
+	Sort          int
+	Tac           bool
+	Criteria      []Criterion
+	Multi         bool
+	Ansi          bool
+	Mouse         bool
+	Theme         *tui.ColorTheme
+	Black         bool
+	Bold          bool
+	Height        SizeSpec
+	MinHeight     int
+	Reverse       bool
+	Cycle         bool
+	Hscroll       bool
+	HscrollOff    int
+	FileWord      bool
+	InlineInfo    bool
+	JumpLabels    string
+	Prompt        string
+	Query         string
+	Select1       bool
+	Exit0         bool
+	Filter        *string
+	ToggleSort    bool
+	Expect        map[int]string
+	Keymap        map[int][]Action
+	Preview       PreviewOpts
+	PrintQuery    bool
+	ReadZero      bool
+	Printer       func(string)
+	Sync          bool
+	History       *History
+	Header        []string
+	HeaderLines   int
+	Margin        [4]SizeSpec
+	Bordered      bool
+	Tabstop       int
+	ClearOnExit   bool
+	Version       bool
+	ReaderFactory ReaderFactory
 }
 
 func DefaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Extended:    true,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []Criterion{CriterionByScore, CriterionByLength},
-		Multi:       false,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Reverse:     false,
-		Cycle:       false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		FileWord:    false,
-		InlineInfo:  false,
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[int]string),
-		Keymap:      make(map[int][]Action),
-		Preview:     PreviewOpts{"", posRight, SizeSpec{50, true}, false, false},
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		Margin:      defaultMargin(),
-		Tabstop:     8,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:         true,
+		FuzzyAlgo:     algo.FuzzyMatchV2,
+		Extended:      true,
+		Case:          CaseSmart,
+		Normalize:     true,
+		Nth:           make([]Range, 0),
+		WithNth:       make([]Range, 0),
+		Delimiter:     Delimiter{},
+		Sort:          1000,
+		Tac:           false,
+		Criteria:      []Criterion{CriterionByScore, CriterionByLength},
+		Multi:         false,
+		Ansi:          false,
+		Mouse:         true,
+		Theme:         tui.EmptyTheme(),
+		Black:         false,
+		Bold:          true,
+		MinHeight:     10,
+		Reverse:       false,
+		Cycle:         false,
+		Hscroll:       true,
+		HscrollOff:    10,
+		FileWord:      false,
+		InlineInfo:    false,
+		JumpLabels:    defaultJumpLabels,
+		Prompt:        "> ",
+		Query:         "",
+		Select1:       false,
+		Exit0:         false,
+		Filter:        nil,
+		ToggleSort:    false,
+		Expect:        make(map[int]string),
+		Keymap:        make(map[int][]Action),
+		Preview:       PreviewOpts{"", posRight, SizeSpec{50, true}, false, false},
+		PrintQuery:    false,
+		ReadZero:      false,
+		Printer:       func(str string) { fmt.Println(str) },
+		Sync:          false,
+		History:       nil,
+		Header:        make([]string, 0),
+		HeaderLines:   0,
+		Margin:        defaultMargin(),
+		Tabstop:       8,
+		ClearOnExit:   true,
+		Version:       false,
+		ReaderFactory: NewDefaultReader,
+	}
 }
 
 func help(code int) {
