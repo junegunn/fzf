@@ -412,7 +412,7 @@ options that affect the performance.
   algorithm. However, this algorithm is not guaranteed to find the optimal
   ordering of the matches and is not recommended.
 
-[perf]: https://junegunn.kr/images/fzf-0.16.11.png
+[perf]: https://junegunn.kr/images/fzf-0.17.0.png
 
 ### Executing external programs
 
