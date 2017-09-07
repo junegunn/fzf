@@ -145,8 +145,13 @@ command! -bang MyStuff
 GVim
 ----
 
-In GVim, you need an external terminal emulator to start fzf with. `xterm`
-command is used by default, but you can customize it with `g:fzf_launcher`.
+With the latest version of GVim, fzf will start inside the builtin terminal
+emulator of Vim. Please note that this terminal feature of Vim is still young
+and unstable and you may run into some issues.
+
+If you have an older version of GVim, you need an external terminal emulator
+to start fzf with. `xterm` command is used by default, but you can customize
+it with `g:fzf_launcher`.
 
 ```vim
 " This is the default. %s is replaced with fzf command
