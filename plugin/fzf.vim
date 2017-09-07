@@ -772,7 +772,10 @@ let s:default_action = {
   \ 'ctrl-v': 'vsplit' }
 
 function! s:shortpath()
-  let short = pathshorten(fnamemodify(getcwd(), ':~:.'))
+  let short = fnamemodify(getcwd(), ':~:.')
+  if !has('win32unix')
+    let short = pathshorten(short)
+  endif
   let slash = (s:is_win && !&shellslash) ? '\' : '/'
   return empty(short) ? '~'.slash : short . (short =~ escape(slash, '\').'$' ? '' : slash)
 endfunction
