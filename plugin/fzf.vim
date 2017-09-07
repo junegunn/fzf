@@ -789,6 +789,7 @@ function! s:cmd(bang, ...) abort
   else
     let prompt = s:shortpath()
   endif
+  let prompt = strwidth(prompt) < &columns - 20 ? prompt : '> '
   call extend(opts.options, ['--prompt', prompt])
   call extend(opts.options, args)
   call fzf#run(fzf#wrap('FZF', opts, a:bang))
