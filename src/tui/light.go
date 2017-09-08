@@ -105,6 +105,7 @@ type LightWindow struct {
 	posx     int
 	posy     int
 	tabstop  int
+	fg       Color
 	bg       Color
 }
 
@@ -633,8 +634,10 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, bord
 		width:    width,
 		height:   height,
 		tabstop:  r.tabstop,
+		fg:       colDefault,
 		bg:       colDefault}
 	if r.theme != nil {
+		w.fg = r.theme.Fg
 		w.bg = r.theme.Bg
 	}
 	w.drawBorder()
@@ -881,6 +884,9 @@ func (w *LightWindow) Fill(text string) FillReturn {
 
 func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillReturn {
 	w.Move(w.posy, w.posx)
+	if fg == colDefault {
+		fg = w.fg
+	}
 	if bg == colDefault {
 		bg = w.bg
 	}
