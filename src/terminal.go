@@ -990,7 +990,7 @@ func (t *Terminal) printPreview() {
 				if t.theme != nil && ansi != nil && ansi.colored() {
 					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 				} else {
-					fillRet = t.pwindow.Fill(str)
+					fillRet = t.pwindow.CFill(tui.ColNormal.Fg(), tui.ColNormal.Bg(), tui.AttrRegular, str)
 				}
 				return fillRet == tui.FillContinue
 			})
