@@ -11,32 +11,32 @@ import (
 func TestDelimiterRegex(t *testing.T) {
 	// Valid regex
 	delim := delimiterRegexp(".")
-	if delim.regex == nil || delim.str != nil {
+	if delim.Regex == nil || delim.Str != nil {
 		t.Error(delim)
 	}
 	// Broken regex -> string
 	delim = delimiterRegexp("[0-9")
-	if delim.regex != nil || *delim.str != "[0-9" {
+	if delim.Regex != nil || *delim.Str != "[0-9" {
 		t.Error(delim)
 	}
 	// Valid regex
 	delim = delimiterRegexp("[0-9]")
-	if delim.regex.String() != "[0-9]" || delim.str != nil {
+	if delim.Regex.String() != "[0-9]" || delim.Str != nil {
 		t.Error(delim)
 	}
 	// Tab character
 	delim = delimiterRegexp("\t")
-	if delim.regex != nil || *delim.str != "\t" {
+	if delim.Regex != nil || *delim.Str != "\t" {
 		t.Error(delim)
 	}
 	// Tab expression
 	delim = delimiterRegexp("\\t")
-	if delim.regex != nil || *delim.str != "\t" {
+	if delim.Regex != nil || *delim.Str != "\t" {
 		t.Error(delim)
 	}
 	// Tabs -> regex
 	delim = delimiterRegexp("\t+")
-	if delim.regex == nil || delim.str != nil {
+	if delim.Regex == nil || delim.Str != nil {
 		t.Error(delim)
 	}
 }
@@ -44,7 +44,7 @@ func TestDelimiterRegex(t *testing.T) {
 func TestDelimiterRegexString(t *testing.T) {
 	delim := delimiterRegexp("*")
 	tokens := Tokenize("-*--*---**---", delim)
-	if delim.regex != nil ||
+	if delim.Regex != nil ||
 		tokens[0].text.ToString() != "-*" ||
 		tokens[1].text.ToString() != "--*" ||
 		tokens[2].text.ToString() != "---*" ||
@@ -57,7 +57,7 @@ func TestDelimiterRegexString(t *testing.T) {
 func TestDelimiterRegexRegex(t *testing.T) {
 	delim := delimiterRegexp("--\\*")
 	tokens := Tokenize("-*--*---**---", delim)
-	if delim.str != nil ||
+	if delim.Str != nil ||
 		tokens[0].text.ToString() != "-*--*" ||
 		tokens[1].text.ToString() != "---*" ||
 		tokens[2].text.ToString() != "*---" {
@@ -69,24 +69,24 @@ func TestSplitNth(t *testing.T) {
 	{
 		ranges := splitNth("..")
 		if len(ranges) != 1 ||
-			ranges[0].begin != rangeEllipsis ||
-			ranges[0].end != rangeEllipsis {
+			ranges[0].Begin != rangeEllipsis ||
+			ranges[0].End != rangeEllipsis {
 			t.Errorf("%s", ranges)
 		}
 	}
 	{
 		ranges := splitNth("..3,1..,2..3,4..-1,-3..-2,..,2,-2,2..-2,1..-1")
 		if len(ranges) != 10 ||
-			ranges[0].begin != rangeEllipsis || ranges[0].end != 3 ||
-			ranges[1].begin != rangeEllipsis || ranges[1].end != rangeEllipsis ||
-			ranges[2].begin != 2 || ranges[2].end != 3 ||
-			ranges[3].begin != 4 || ranges[3].end != rangeEllipsis ||
-			ranges[4].begin != -3 || ranges[4].end != -2 ||
-			ranges[5].begin != rangeEllipsis || ranges[5].end != rangeEllipsis ||
-			ranges[6].begin != 2 || ranges[6].end != 2 ||
-			ranges[7].begin != -2 || ranges[7].end != -2 ||
-			ranges[8].begin != 2 || ranges[8].end != -2 ||
-			ranges[9].begin != rangeEllipsis || ranges[9].end != rangeEllipsis {
+			ranges[0].Begin != rangeEllipsis || ranges[0].End != 3 ||
+			ranges[1].Begin != rangeEllipsis || ranges[1].End != rangeEllipsis ||
+			ranges[2].Begin != 2 || ranges[2].End != 3 ||
+			ranges[3].Begin != 4 || ranges[3].End != rangeEllipsis ||
+			ranges[4].Begin != -3 || ranges[4].End != -2 ||
+			ranges[5].Begin != rangeEllipsis || ranges[5].End != rangeEllipsis ||
+			ranges[6].Begin != 2 || ranges[6].End != 2 ||
+			ranges[7].Begin != -2 || ranges[7].End != -2 ||
+			ranges[8].Begin != 2 || ranges[8].End != -2 ||
+			ranges[9].Begin != rangeEllipsis || ranges[9].End != rangeEllipsis {
 			t.Errorf("%s", ranges)
 		}
 	}

@@ -336,17 +336,17 @@ func delimiterRegexp(str string) Delimiter {
 
 	// 1. Pattern does not contain any special character
 	if regexp.QuoteMeta(str) == str {
-		return Delimiter{str: &str}
+		return Delimiter{Str: &str}
 	}
 
 	rx, e := regexp.Compile(str)
 	// 2. Pattern is not a valid regular expression
 	if e != nil {
-		return Delimiter{str: &str}
+		return Delimiter{Str: &str}
 	}
 
 	// 3. Pattern as regular expression. Slow.
-	return Delimiter{regex: rx}
+	return Delimiter{Regex: rx}
 }
 
 func isAlphabet(char uint8) bool {
@@ -1232,7 +1232,7 @@ func postProcessOptions(opts *Options) {
 	// if it contains the whole range
 	if !opts.Extended || len(opts.Nth) == 1 {
 		for _, r := range opts.Nth {
-			if r.begin == rangeEllipsis && r.end == rangeEllipsis {
+			if r.Begin == rangeEllipsis && r.End == rangeEllipsis {
 				opts.Nth = make([]Range, 0)
 				return
 			}

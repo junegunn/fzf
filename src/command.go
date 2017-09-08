@@ -109,10 +109,10 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
 			trans := Transform(tokens, ranges)
 			str := string(joinTokens(trans))
-			if delimiter.str != nil {
-				str = strings.TrimSuffix(str, *delimiter.str)
-			} else if delimiter.regex != nil {
-				delims := delimiter.regex.FindAllStringIndex(str, -1)
+			if delimiter.Str != nil {
+				str = strings.TrimSuffix(str, *delimiter.Str)
+			} else if delimiter.Regex != nil {
+				delims := delimiter.Regex.FindAllStringIndex(str, -1)
 				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
 					str = str[:delims[len(delims)-1][0]]
 				}

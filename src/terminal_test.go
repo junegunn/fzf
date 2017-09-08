@@ -82,12 +82,12 @@ func TestReplacePlaceholder(t *testing.T) {
 
 	// String delimiter
 	delim := "'"
-	result = replacePlaceholder("echo {}/{1}/{2}", true, Delimiter{str: &delim}, false, "query", items1)
+	result = replacePlaceholder("echo {}/{1}/{2}", true, Delimiter{Str: &delim}, false, "query", items1)
 	check("echo '  foo'\\''bar baz'/'foo'/'bar baz'")
 
 	// Regex delimiter
 	regex := regexp.MustCompile("[oa]+")
 	// foo'bar baz
-	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{regex: regex}, false, "query", items1)
+	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{Regex: regex}, false, "query", items1)
 	check("echo '  foo'\\''bar baz'/'f'/'r b'/''\\''bar b'")
 }
