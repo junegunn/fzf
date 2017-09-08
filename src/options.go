@@ -643,7 +643,7 @@ func parseKeymap(keymap map[int][]Action, str string) {
 		idx2 := len(pair[0]) + 1
 		specs := strings.Split(pair[1], "+")
 		actions := make([]Action, 0, len(specs))
-		appendAction := func(types ...actionType) {
+		appendAction := func(types ...ActionType) {
 			actions = append(actions, toActions(types...)...)
 		}
 		prevSpec := ""
@@ -654,122 +654,122 @@ func parseKeymap(keymap map[int][]Action, str string) {
 			specLower := strings.ToLower(spec)
 			switch specLower {
 			case "ignore":
-				appendAction(actIgnore)
+				appendAction(ActionTypeIgnore)
 			case "beginning-of-line":
-				appendAction(actBeginningOfLine)
+				appendAction(ActionTypeBeginningOfLine)
 			case "abort":
-				appendAction(actAbort)
+				appendAction(ActionTypeAbort)
 			case "accept":
-				appendAction(actAccept)
+				appendAction(ActionTypeAccept)
 			case "print-query":
-				appendAction(actPrintQuery)
+				appendAction(ActionTypePrintQuery)
 			case "backward-char":
-				appendAction(actBackwardChar)
+				appendAction(ActionTypeBackwardChar)
 			case "backward-delete-char":
-				appendAction(actBackwardDeleteChar)
+				appendAction(ActionTypeBackwardDeleteChar)
 			case "backward-word":
-				appendAction(actBackwardWord)
+				appendAction(ActionTypeBackwardWord)
 			case "clear-screen":
-				appendAction(actClearScreen)
+				appendAction(ActionTypeClearScreen)
 			case "delete-char":
-				appendAction(actDeleteChar)
+				appendAction(ActionTypeDeleteChar)
 			case "delete-char/eof":
-				appendAction(actDeleteCharEOF)
+				appendAction(ActionTypeDeleteCharEOF)
 			case "end-of-line":
-				appendAction(actEndOfLine)
+				appendAction(ActionTypeEndOfLine)
 			case "cancel":
-				appendAction(actCancel)
+				appendAction(ActionTypeCancel)
 			case "forward-char":
-				appendAction(actForwardChar)
+				appendAction(ActionTypeForwardChar)
 			case "forward-word":
-				appendAction(actForwardWord)
+				appendAction(ActionTypeForwardWord)
 			case "jump":
-				appendAction(actJump)
+				appendAction(ActionTypeJump)
 			case "jump-accept":
-				appendAction(actJumpAccept)
+				appendAction(ActionTypeJumpAccept)
 			case "kill-line":
-				appendAction(actKillLine)
+				appendAction(ActionTypeKillLine)
 			case "kill-word":
-				appendAction(actKillWord)
+				appendAction(ActionTypeKillWord)
 			case "unix-line-discard", "line-discard":
-				appendAction(actUnixLineDiscard)
+				appendAction(ActionTypeUnixLineDiscard)
 			case "unix-word-rubout", "word-rubout":
-				appendAction(actUnixWordRubout)
+				appendAction(ActionTypeUnixWordRubout)
 			case "yank":
-				appendAction(actYank)
+				appendAction(ActionTypeYank)
 			case "backward-kill-word":
-				appendAction(actBackwardKillWord)
+				appendAction(ActionTypeBackwardKillWord)
 			case "toggle-down":
-				appendAction(actToggle, actDown)
+				appendAction(ActionTypeToggle, ActionTypeDown)
 			case "toggle-up":
-				appendAction(actToggle, actUp)
+				appendAction(ActionTypeToggle, ActionTypeUp)
 			case "toggle-in":
-				appendAction(actToggleIn)
+				appendAction(ActionTypeToggleIn)
 			case "toggle-out":
-				appendAction(actToggleOut)
+				appendAction(ActionTypeToggleOut)
 			case "toggle-all":
-				appendAction(actToggleAll)
+				appendAction(ActionTypeToggleAll)
 			case "select-all":
-				appendAction(actSelectAll)
+				appendAction(ActionTypeSelectAll)
 			case "deselect-all":
-				appendAction(actDeselectAll)
+				appendAction(ActionTypeDeselectAll)
 			case "toggle":
-				appendAction(actToggle)
+				appendAction(ActionTypeToggle)
 			case "down":
-				appendAction(actDown)
+				appendAction(ActionTypeDown)
 			case "up":
-				appendAction(actUp)
+				appendAction(ActionTypeUp)
 			case "top":
-				appendAction(actTop)
+				appendAction(ActionTypeTop)
 			case "page-up":
-				appendAction(actPageUp)
+				appendAction(ActionTypePageUp)
 			case "page-down":
-				appendAction(actPageDown)
+				appendAction(ActionTypePageDown)
 			case "half-page-up":
-				appendAction(actHalfPageUp)
+				appendAction(ActionTypeHalfPageUp)
 			case "half-page-down":
-				appendAction(actHalfPageDown)
+				appendAction(ActionTypeHalfPageDown)
 			case "previous-history":
-				appendAction(actPreviousHistory)
+				appendAction(ActionTypePreviousHistory)
 			case "next-history":
-				appendAction(actNextHistory)
+				appendAction(ActionTypeNextHistory)
 			case "toggle-preview":
-				appendAction(actTogglePreview)
+				appendAction(ActionTypeTogglePreview)
 			case "toggle-preview-wrap":
-				appendAction(actTogglePreviewWrap)
+				appendAction(ActionTypeTogglePreviewWrap)
 			case "toggle-sort":
-				appendAction(actToggleSort)
+				appendAction(ActionTypeToggleSort)
 			case "preview-up":
-				appendAction(actPreviewUp)
+				appendAction(ActionTypePreviewUp)
 			case "preview-down":
-				appendAction(actPreviewDown)
+				appendAction(ActionTypePreviewDown)
 			case "preview-page-up":
-				appendAction(actPreviewPageUp)
+				appendAction(ActionTypePreviewPageUp)
 			case "preview-page-down":
-				appendAction(actPreviewPageDown)
+				appendAction(ActionTypePreviewPageDown)
 			default:
 				t := isExecuteAction(specLower)
-				if t == actIgnore {
+				if t == ActionTypeIgnore {
 					errorExit("unknown action: " + spec)
 				} else {
 					var offset int
 					switch t {
-					case actExecuteSilent:
+					case ActionTypeExecuteSilent:
 						offset = len("execute-silent")
-					case actExecuteMulti:
+					case ActionTypeExecuteMulti:
 						offset = len("execute-multi")
 					default:
 						offset = len("execute")
 					}
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, Action{t: t, a: NewDefaultCommand(spec[offset+1:])})
+							actions = append(actions, Action{Type: t, Command: NewDefaultCommand(spec[offset+1:])})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, Action{t: t, a: NewDefaultCommand(spec[offset+1 : len(spec)-1])})
+						actions = append(actions, Action{Type: t, Command: NewDefaultCommand(spec[offset+1 : len(spec)-1])})
 					}
 				}
 			}
@@ -779,10 +779,10 @@ func parseKeymap(keymap map[int][]Action, str string) {
 	}
 }
 
-func isExecuteAction(str string) actionType {
+func isExecuteAction(str string) ActionType {
 	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
 	if matches == nil || len(matches) != 1 {
-		return actIgnore
+		return ActionTypeIgnore
 	}
 	prefix := matches[0][1]
 	if len(prefix) == 0 {
@@ -790,13 +790,13 @@ func isExecuteAction(str string) actionType {
 	}
 	switch prefix {
 	case "execute":
-		return actExecute
+		return ActionTypeExecute
 	case "execute-silent":
-		return actExecuteSilent
+		return ActionTypeExecuteSilent
 	case "execute-multi":
-		return actExecuteMulti
+		return ActionTypeExecuteMulti
 	}
-	return actIgnore
+	return ActionTypeIgnore
 }
 
 func parseToggleSort(keymap map[int][]Action, str string) {
@@ -804,7 +804,7 @@ func parseToggleSort(keymap map[int][]Action, str string) {
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
 	}
-	keymap[firstKey(keys)] = toActions(actToggleSort)
+	keymap[firstKey(keys)] = toActions(ActionTypeToggleSort)
 }
 
 func strLines(str string) []string {
@@ -1209,10 +1209,10 @@ func postProcessOptions(opts *Options) {
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
 		if _, prs := opts.Keymap[tui.CtrlP]; !prs {
-			opts.Keymap[tui.CtrlP] = toActions(actPreviousHistory)
+			opts.Keymap[tui.CtrlP] = toActions(ActionTypePreviousHistory)
 		}
 		if _, prs := opts.Keymap[tui.CtrlN]; !prs {
-			opts.Keymap[tui.CtrlN] = toActions(actNextHistory)
+			opts.Keymap[tui.CtrlN] = toActions(ActionTypeNextHistory)
 		}
 	}
 
@@ -1220,7 +1220,7 @@ func postProcessOptions(opts *Options) {
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
 		for _, act := range actions {
-			if act.t == actToggleSort {
+			if act.Type == ActionTypeToggleSort {
 				opts.ToggleSort = true
 			}
 		}

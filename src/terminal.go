@@ -156,128 +156,128 @@ const (
 )
 
 type Action struct {
-	t actionType
-	a Command
+	Type    ActionType
+	Command Command
 }
 
-type actionType int
+type ActionType int
 
 const (
-	actIgnore actionType = iota
-	actInvalid
-	actRune
-	actMouse
-	actBeginningOfLine
-	actAbort
-	actAccept
-	actBackwardChar
-	actBackwardDeleteChar
-	actBackwardWord
-	actCancel
-	actClearScreen
-	actDeleteChar
-	actDeleteCharEOF
-	actEndOfLine
-	actForwardChar
-	actForwardWord
-	actKillLine
-	actKillWord
-	actUnixLineDiscard
-	actUnixWordRubout
-	actYank
-	actBackwardKillWord
-	actSelectAll
-	actDeselectAll
-	actToggle
-	actToggleAll
-	actToggleDown
-	actToggleUp
-	actToggleIn
-	actToggleOut
-	actDown
-	actUp
-	actPageUp
-	actPageDown
-	actHalfPageUp
-	actHalfPageDown
-	actJump
-	actJumpAccept
-	actPrintQuery
-	actToggleSort
-	actTogglePreview
-	actTogglePreviewWrap
-	actPreviewUp
-	actPreviewDown
-	actPreviewPageUp
-	actPreviewPageDown
-	actPreviousHistory
-	actNextHistory
-	actExecute
-	actExecuteSilent
-	actExecuteMulti // Deprecated
-	actSigStop
-	actTop
+	ActionTypeIgnore ActionType = iota
+	ActionTypeInvalid
+	ActionTypeRune
+	ActionTypeMouse
+	ActionTypeBeginningOfLine
+	ActionTypeAbort
+	ActionTypeAccept
+	ActionTypeBackwardChar
+	ActionTypeBackwardDeleteChar
+	ActionTypeBackwardWord
+	ActionTypeCancel
+	ActionTypeClearScreen
+	ActionTypeDeleteChar
+	ActionTypeDeleteCharEOF
+	ActionTypeEndOfLine
+	ActionTypeForwardChar
+	ActionTypeForwardWord
+	ActionTypeKillLine
+	ActionTypeKillWord
+	ActionTypeUnixLineDiscard
+	ActionTypeUnixWordRubout
+	ActionTypeYank
+	ActionTypeBackwardKillWord
+	ActionTypeSelectAll
+	ActionTypeDeselectAll
+	ActionTypeToggle
+	ActionTypeToggleAll
+	ActionTypeToggleDown
+	ActionTypeToggleUp
+	ActionTypeToggleIn
+	ActionTypeToggleOut
+	ActionTypeDown
+	ActionTypeUp
+	ActionTypePageUp
+	ActionTypePageDown
+	ActionTypeHalfPageUp
+	ActionTypeHalfPageDown
+	ActionTypeJump
+	ActionTypeJumpAccept
+	ActionTypePrintQuery
+	ActionTypeToggleSort
+	ActionTypeTogglePreview
+	ActionTypeTogglePreviewWrap
+	ActionTypePreviewUp
+	ActionTypePreviewDown
+	ActionTypePreviewPageUp
+	ActionTypePreviewPageDown
+	ActionTypePreviousHistory
+	ActionTypeNextHistory
+	ActionTypeExecute
+	ActionTypeExecuteSilent
+	ActionTypeExecuteMulti // Deprecated
+	ActionTypeSigStop
+	ActionTypeTop
 )
 
-func toActions(types ...actionType) []Action {
+func toActions(types ...ActionType) []Action {
 	actions := make([]Action, len(types))
 	for idx, t := range types {
-		actions[idx] = Action{t: t, a: nil}
+		actions[idx] = Action{Type: t, Command: nil}
 	}
 	return actions
 }
 
 func defaultKeymap() map[int][]Action {
 	keymap := make(map[int][]Action)
-	keymap[tui.Invalid] = toActions(actInvalid)
-	keymap[tui.Resize] = toActions(actClearScreen)
-	keymap[tui.CtrlA] = toActions(actBeginningOfLine)
-	keymap[tui.CtrlB] = toActions(actBackwardChar)
-	keymap[tui.CtrlC] = toActions(actAbort)
-	keymap[tui.CtrlG] = toActions(actAbort)
-	keymap[tui.CtrlQ] = toActions(actAbort)
-	keymap[tui.ESC] = toActions(actAbort)
-	keymap[tui.CtrlD] = toActions(actDeleteCharEOF)
-	keymap[tui.CtrlE] = toActions(actEndOfLine)
-	keymap[tui.CtrlF] = toActions(actForwardChar)
-	keymap[tui.CtrlH] = toActions(actBackwardDeleteChar)
-	keymap[tui.BSpace] = toActions(actBackwardDeleteChar)
-	keymap[tui.Tab] = toActions(actToggleDown)
-	keymap[tui.BTab] = toActions(actToggleUp)
-	keymap[tui.CtrlJ] = toActions(actDown)
-	keymap[tui.CtrlK] = toActions(actUp)
-	keymap[tui.CtrlL] = toActions(actClearScreen)
-	keymap[tui.CtrlM] = toActions(actAccept)
-	keymap[tui.CtrlN] = toActions(actDown)
-	keymap[tui.CtrlP] = toActions(actUp)
-	keymap[tui.CtrlU] = toActions(actUnixLineDiscard)
-	keymap[tui.CtrlW] = toActions(actUnixWordRubout)
-	keymap[tui.CtrlY] = toActions(actYank)
+	keymap[tui.Invalid] = toActions(ActionTypeInvalid)
+	keymap[tui.Resize] = toActions(ActionTypeClearScreen)
+	keymap[tui.CtrlA] = toActions(ActionTypeBeginningOfLine)
+	keymap[tui.CtrlB] = toActions(ActionTypeBackwardChar)
+	keymap[tui.CtrlC] = toActions(ActionTypeAbort)
+	keymap[tui.CtrlG] = toActions(ActionTypeAbort)
+	keymap[tui.CtrlQ] = toActions(ActionTypeAbort)
+	keymap[tui.ESC] = toActions(ActionTypeAbort)
+	keymap[tui.CtrlD] = toActions(ActionTypeDeleteCharEOF)
+	keymap[tui.CtrlE] = toActions(ActionTypeEndOfLine)
+	keymap[tui.CtrlF] = toActions(ActionTypeForwardChar)
+	keymap[tui.CtrlH] = toActions(ActionTypeBackwardDeleteChar)
+	keymap[tui.BSpace] = toActions(ActionTypeBackwardDeleteChar)
+	keymap[tui.Tab] = toActions(ActionTypeToggleDown)
+	keymap[tui.BTab] = toActions(ActionTypeToggleUp)
+	keymap[tui.CtrlJ] = toActions(ActionTypeDown)
+	keymap[tui.CtrlK] = toActions(ActionTypeUp)
+	keymap[tui.CtrlL] = toActions(ActionTypeClearScreen)
+	keymap[tui.CtrlM] = toActions(ActionTypeAccept)
+	keymap[tui.CtrlN] = toActions(ActionTypeDown)
+	keymap[tui.CtrlP] = toActions(ActionTypeUp)
+	keymap[tui.CtrlU] = toActions(ActionTypeUnixLineDiscard)
+	keymap[tui.CtrlW] = toActions(ActionTypeUnixWordRubout)
+	keymap[tui.CtrlY] = toActions(ActionTypeYank)
 	if !util.IsWindows() {
-		keymap[tui.CtrlZ] = toActions(actSigStop)
+		keymap[tui.CtrlZ] = toActions(ActionTypeSigStop)
 	}
 
-	keymap[tui.AltB] = toActions(actBackwardWord)
-	keymap[tui.SLeft] = toActions(actBackwardWord)
-	keymap[tui.AltF] = toActions(actForwardWord)
-	keymap[tui.SRight] = toActions(actForwardWord)
-	keymap[tui.AltD] = toActions(actKillWord)
-	keymap[tui.AltBS] = toActions(actBackwardKillWord)
+	keymap[tui.AltB] = toActions(ActionTypeBackwardWord)
+	keymap[tui.SLeft] = toActions(ActionTypeBackwardWord)
+	keymap[tui.AltF] = toActions(ActionTypeForwardWord)
+	keymap[tui.SRight] = toActions(ActionTypeForwardWord)
+	keymap[tui.AltD] = toActions(ActionTypeKillWord)
+	keymap[tui.AltBS] = toActions(ActionTypeBackwardKillWord)
 
-	keymap[tui.Up] = toActions(actUp)
-	keymap[tui.Down] = toActions(actDown)
-	keymap[tui.Left] = toActions(actBackwardChar)
-	keymap[tui.Right] = toActions(actForwardChar)
+	keymap[tui.Up] = toActions(ActionTypeUp)
+	keymap[tui.Down] = toActions(ActionTypeDown)
+	keymap[tui.Left] = toActions(ActionTypeBackwardChar)
+	keymap[tui.Right] = toActions(ActionTypeForwardChar)
 
-	keymap[tui.Home] = toActions(actBeginningOfLine)
-	keymap[tui.End] = toActions(actEndOfLine)
-	keymap[tui.Del] = toActions(actDeleteChar)
-	keymap[tui.PgUp] = toActions(actPageUp)
-	keymap[tui.PgDn] = toActions(actPageDown)
+	keymap[tui.Home] = toActions(ActionTypeBeginningOfLine)
+	keymap[tui.End] = toActions(ActionTypeEndOfLine)
+	keymap[tui.Del] = toActions(ActionTypeDeleteChar)
+	keymap[tui.PgUp] = toActions(ActionTypePageUp)
+	keymap[tui.PgDn] = toActions(ActionTypePageDown)
 
-	keymap[tui.Rune] = toActions(actRune)
-	keymap[tui.Mouse] = toActions(actMouse)
-	keymap[tui.DoubleClick] = toActions(actAccept)
+	keymap[tui.Rune] = toActions(ActionTypeRune)
+	keymap[tui.Mouse] = toActions(ActionTypeMouse)
+	keymap[tui.DoubleClick] = toActions(ActionTypeAccept)
 	return keymap
 }
 
@@ -1407,16 +1407,16 @@ func (t *Terminal) Loop() {
 			return true
 		}
 		doAction = func(a Action, mapkey int) bool {
-			switch a.t {
-			case actIgnore:
-			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent)
-			case actExecuteMulti:
-				t.executeCommand(a.a, true, false)
-			case actInvalid:
+			switch a.Type {
+			case ActionTypeIgnore:
+			case ActionTypeExecute, ActionTypeExecuteSilent:
+				t.executeCommand(a.Command, false, a.Type == ActionTypeExecuteSilent)
+			case ActionTypeExecuteMulti:
+				t.executeCommand(a.Command, true, false)
+			case ActionTypeInvalid:
 				t.mutex.Unlock()
 				return false
-			case actTogglePreview:
+			case ActionTypeTogglePreview:
 				if t.hasPreviewer() {
 					t.previewer.enabled = !t.previewer.enabled
 					t.tui.Clear()
@@ -1429,51 +1429,51 @@ func (t *Terminal) Loop() {
 					}
 					req(reqList, reqInfo, reqHeader)
 				}
-			case actTogglePreviewWrap:
+			case ActionTypeTogglePreviewWrap:
 				if t.hasPreviewWindow() {
 					t.preview.Wrap = !t.preview.Wrap
 					req(reqPreviewRefresh)
 				}
-			case actToggleSort:
+			case ActionTypeToggleSort:
 				t.sort = !t.sort
 				t.eventBox.Set(EvtSearchNew, t.sort)
 				t.mutex.Unlock()
 				return false
-			case actPreviewUp:
+			case ActionTypePreviewUp:
 				if t.hasPreviewWindow() {
 					scrollPreview(-1)
 				}
-			case actPreviewDown:
+			case ActionTypePreviewDown:
 				if t.hasPreviewWindow() {
 					scrollPreview(1)
 				}
-			case actPreviewPageUp:
+			case ActionTypePreviewPageUp:
 				if t.hasPreviewWindow() {
 					scrollPreview(-t.pwindow.Height())
 				}
-			case actPreviewPageDown:
+			case ActionTypePreviewPageDown:
 				if t.hasPreviewWindow() {
 					scrollPreview(t.pwindow.Height())
 				}
-			case actBeginningOfLine:
+			case ActionTypeBeginningOfLine:
 				t.cx = 0
-			case actBackwardChar:
+			case ActionTypeBackwardChar:
 				if t.cx > 0 {
 					t.cx--
 				}
-			case actPrintQuery:
+			case ActionTypePrintQuery:
 				req(reqPrintQuery)
-			case actAbort:
+			case ActionTypeAbort:
 				req(reqQuit)
-			case actDeleteChar:
+			case ActionTypeDeleteChar:
 				t.delChar()
-			case actDeleteCharEOF:
+			case ActionTypeDeleteCharEOF:
 				if !t.delChar() && t.cx == 0 {
 					req(reqQuit)
 				}
-			case actEndOfLine:
+			case ActionTypeEndOfLine:
 				t.cx = len(t.input)
-			case actCancel:
+			case ActionTypeCancel:
 				if len(t.input) == 0 {
 					req(reqQuit)
 				} else {
@@ -1481,144 +1481,144 @@ func (t *Terminal) Loop() {
 					t.input = []rune{}
 					t.cx = 0
 				}
-			case actForwardChar:
+			case ActionTypeForwardChar:
 				if t.cx < len(t.input) {
 					t.cx++
 				}
-			case actBackwardDeleteChar:
+			case ActionTypeBackwardDeleteChar:
 				if t.cx > 0 {
 					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
 					t.cx--
 				}
-			case actSelectAll:
+			case ActionTypeSelectAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
 						t.selectItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
-			case actDeselectAll:
+			case ActionTypeDeselectAll:
 				if t.multi {
 					t.selected = make(map[int32]selectedItem)
 					t.version++
 					req(reqList, reqInfo)
 				}
-			case actToggle:
+			case ActionTypeToggle:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
 					req(reqList)
 				}
-			case actToggleAll:
+			case ActionTypeToggleAll:
 				if t.multi {
 					for i := 0; i < t.merger.Length(); i++ {
 						t.toggleItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
-			case actToggleIn:
+			case ActionTypeToggleIn:
 				if t.reverse {
-					return doAction(Action{t: actToggleUp}, mapkey)
+					return doAction(Action{Type: ActionTypeToggleUp}, mapkey)
 				}
-				return doAction(Action{t: actToggleDown}, mapkey)
-			case actToggleOut:
+				return doAction(Action{Type: ActionTypeToggleDown}, mapkey)
+			case ActionTypeToggleOut:
 				if t.reverse {
-					return doAction(Action{t: actToggleDown}, mapkey)
+					return doAction(Action{Type: ActionTypeToggleDown}, mapkey)
 				}
-				return doAction(Action{t: actToggleUp}, mapkey)
-			case actToggleDown:
+				return doAction(Action{Type: ActionTypeToggleUp}, mapkey)
+			case ActionTypeToggleDown:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
 					t.vmove(-1, true)
 					req(reqList)
 				}
-			case actToggleUp:
+			case ActionTypeToggleUp:
 				if t.multi && t.merger.Length() > 0 {
 					toggle()
 					t.vmove(1, true)
 					req(reqList)
 				}
-			case actDown:
+			case ActionTypeDown:
 				t.vmove(-1, true)
 				req(reqList)
-			case actUp:
+			case ActionTypeUp:
 				t.vmove(1, true)
 				req(reqList)
-			case actAccept:
+			case ActionTypeAccept:
 				req(reqClose)
-			case actClearScreen:
+			case ActionTypeClearScreen:
 				req(reqRedraw)
-			case actTop:
+			case ActionTypeTop:
 				t.vset(0)
 				req(reqList)
-			case actUnixLineDiscard:
+			case ActionTypeUnixLineDiscard:
 				if t.cx > 0 {
 					t.yanked = copySlice(t.input[:t.cx])
 					t.input = t.input[t.cx:]
 					t.cx = 0
 				}
-			case actUnixWordRubout:
+			case ActionTypeUnixWordRubout:
 				if t.cx > 0 {
 					t.rubout("\\s\\S")
 				}
-			case actBackwardKillWord:
+			case ActionTypeBackwardKillWord:
 				if t.cx > 0 {
 					t.rubout(t.wordRubout)
 				}
-			case actYank:
+			case ActionTypeYank:
 				suffix := copySlice(t.input[t.cx:])
 				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
 				t.cx += len(t.yanked)
-			case actPageUp:
+			case ActionTypePageUp:
 				t.vmove(t.maxItems()-1, false)
 				req(reqList)
-			case actPageDown:
+			case ActionTypePageDown:
 				t.vmove(-(t.maxItems() - 1), false)
 				req(reqList)
-			case actHalfPageUp:
+			case ActionTypeHalfPageUp:
 				t.vmove(t.maxItems()/2, false)
 				req(reqList)
-			case actHalfPageDown:
+			case ActionTypeHalfPageDown:
 				t.vmove(-(t.maxItems() / 2), false)
 				req(reqList)
-			case actJump:
+			case ActionTypeJump:
 				t.jumping = jumpEnabled
 				req(reqJump)
-			case actJumpAccept:
+			case ActionTypeJumpAccept:
 				t.jumping = jumpAcceptEnabled
 				req(reqJump)
-			case actBackwardWord:
+			case ActionTypeBackwardWord:
 				t.cx = findLastMatch(t.wordRubout, string(t.input[:t.cx])) + 1
-			case actForwardWord:
+			case ActionTypeForwardWord:
 				t.cx += findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
-			case actKillWord:
+			case ActionTypeKillWord:
 				ncx := t.cx +
 					findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
 				if ncx > t.cx {
 					t.yanked = copySlice(t.input[t.cx:ncx])
 					t.input = append(t.input[:t.cx], t.input[ncx:]...)
 				}
-			case actKillLine:
+			case ActionTypeKillLine:
 				if t.cx < len(t.input) {
 					t.yanked = copySlice(t.input[t.cx:])
 					t.input = t.input[:t.cx]
 				}
-			case actRune:
+			case ActionTypeRune:
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++
-			case actPreviousHistory:
+			case ActionTypePreviousHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
 					t.input = trimQuery(t.history.previous())
 					t.cx = len(t.input)
 				}
-			case actNextHistory:
+			case ActionTypeNextHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
 					t.input = trimQuery(t.history.next())
 					t.cx = len(t.input)
 				}
-			case actSigStop:
+			case ActionTypeSigStop:
 				p, err := os.FindProcess(os.Getpid())
 				if err == nil {
 					t.tui.Clear()
@@ -1627,7 +1627,7 @@ func (t *Terminal) Loop() {
 					t.mutex.Unlock()
 					return false
 				}
-			case actMouse:
+			case ActionTypeMouse:
 				me := event.MouseEvent
 				mx, my := me.X, me.Y
 				if me.S != 0 {
