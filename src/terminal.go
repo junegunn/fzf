@@ -623,10 +623,8 @@ func (t *Terminal) resizeWindows() {
 			width,
 			height, tui.BorderNone)
 	}
-	if !t.tui.IsOptimized() {
-		for i := 0; i < t.window.Height(); i++ {
-			t.window.MoveAndClear(i, 0)
-		}
+	for i := 0; i < t.window.Height(); i++ {
+		t.window.MoveAndClear(i, 0)
 	}
 	t.truncateQuery()
 }
@@ -722,7 +720,7 @@ func (t *Terminal) printHeader() {
 
 		t.move(line, 2, true)
 		t.printHighlighted(Result{item: item},
-			tui.AttrRegular, tui.ColHeader, tui.ColDefault, false, false)
+			tui.AttrRegular, tui.ColHeader, tui.ColHeader, false, false)
 	}
 }
 
@@ -775,8 +773,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 		return
 	}
 
-	// Optimized renderer can simply erase to the end of the window
-	t.move(line, 0, t.tui.IsOptimized())
+	t.move(line, 0, false)
 	t.window.CPrint(tui.ColCursor, t.strong, label)
 	if current {
 		if selected {
@@ -793,11 +790,9 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 		}
 		newLine.width = t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
 	}
-	if !t.tui.IsOptimized() {
-		fillSpaces := prevLine.width - newLine.width
-		if fillSpaces > 0 {
-			t.window.Print(strings.Repeat(" ", fillSpaces))
-		}
+	fillSpaces := prevLine.width - newLine.width
+	if fillSpaces > 0 {
+		t.window.Print(strings.Repeat(" ", fillSpaces))
 	}
 	t.prevLines[i] = newLine
 }

@@ -620,10 +620,6 @@ func (r *LightRenderer) DoesAutoWrap() bool {
 	return false
 }
 
-func (r *LightRenderer) IsOptimized() bool {
-	return false
-}
-
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
 	w := &LightWindow{
 		renderer: r,
