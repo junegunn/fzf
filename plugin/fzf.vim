@@ -699,7 +699,8 @@ function! s:execute_term(dict, command, temps) abort
     if has('nvim')
       call termopen(command, fzf)
     else
-      call term_start([&shell, &shellcmdflag, command], {'curwin': fzf.buf, 'exit_cb': function(fzf.on_exit)})
+      let cmds = [&shell, &shellcmdflag, command]
+      call term_start(s:is_win ? join(cmds) : cmds, {'curwin': fzf.buf, 'exit_cb': function(fzf.on_exit)})
     endif
   finally
     if s:present(a:dict, 'dir')
