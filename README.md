@@ -91,8 +91,8 @@ Alternatively, you can use [Homebrew](http://brew.sh/) or
 ```sh
 brew install fzf
 
-# Install shell extensions
-/usr/local/opt/fzf/install
+# To install useful key bindings and fuzzy completion:
+$(brew --prefix)/opt/fzf/install
 ```
 
 ### As Vim plugin
