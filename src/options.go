@@ -105,139 +105,142 @@ const (
 )
 
 // Sort criteria
-type criterion int
+type Criterion int
 
 const (
-	byScore criterion = iota
-	byLength
-	byBegin
-	byEnd
+	CriterionByScore Criterion = iota
+	CriterionByLength
+	CriterionByBegin
+	CriterionByEnd
 )
 
-type sizeSpec struct {
+type SizeSpec struct {
 	size    float64
 	percent bool
 }
 
-func defaultMargin() [4]sizeSpec {
-	return [4]sizeSpec{}
+func defaultMargin() [4]SizeSpec {
+	return [4]SizeSpec{}
 }
 
-type windowPosition int
+type WindowPosition int
 
 const (
-	posUp windowPosition = iota
-	posDown
-	posLeft
-	posRight
+	WindowPositionUp WindowPosition = iota
+	WindowPositionDown
+	WindowPositionLeft
+	WindowPositionRight
 )
 
-type previewOpts struct {
-	command  string
-	position windowPosition
-	size     sizeSpec
-	hidden   bool
-	wrap     bool
+type PreviewOpts struct {
+	Command  Command
+	Position WindowPosition
+	Size     SizeSpec
+	Hidden   bool
+	Wrap     bool
 }
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Extended    bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []criterion
-	Multi       bool
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      sizeSpec
-	MinHeight   int
-	Reverse     bool
-	Cycle       bool
-	Hscroll     bool
-	HscrollOff  int
-	FileWord    bool
-	InlineInfo  bool
-	JumpLabels  string
-	Prompt      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[int]string
-	Keymap      map[int][]action
-	Preview     previewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	Margin      [4]sizeSpec
-	Bordered    bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy         bool
+	FuzzyAlgo     algo.Algo
+	Extended      bool
+	Case          Case
+	Normalize     bool
+	Nth           []Range
+	WithNth       []Range
+	Delimiter     Delimiter
+	Sort          int
+	Tac           bool
+	Criteria      []Criterion
+	Multi         bool
+	Ansi          bool
+	Mouse         bool
+	Theme         *tui.ColorTheme
+	Black         bool
+	Bold          bool
+	Height        SizeSpec
+	MinHeight     int
+	Reverse       bool
+	Cycle         bool
+	Hscroll       bool
+	HscrollOff    int
+	FileWord      bool
+	InlineInfo    bool
+	JumpLabels    string
+	Prompt        string
+	Query         string
+	Select1       bool
+	Exit0         bool
+	Filter        *string
+	ToggleSort    bool
+	Expect        map[int]string
+	Keymap        map[int][]Action
+	Preview       PreviewOpts
+	PrintQuery    bool
+	ReadZero      bool
+	Printer       func(string)
+	Sync          bool
+	History       *History
+	Header        []string
+	HeaderLines   int
+	Margin        [4]SizeSpec
+	Bordered      bool
+	Tabstop       int
+	ClearOnExit   bool
+	Version       bool
+	ReaderFactory ReaderFactory
 }
 
-func defaultOptions() *Options {
+func DefaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Extended:    true,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
-		Multi:       false,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Reverse:     false,
-		Cycle:       false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		FileWord:    false,
-		InlineInfo:  false,
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[int]string),
-		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false},
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		Margin:      defaultMargin(),
-		Tabstop:     8,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:         true,
+		FuzzyAlgo:     algo.FuzzyMatchV2,
+		Extended:      true,
+		Case:          CaseSmart,
+		Normalize:     true,
+		Nth:           make([]Range, 0),
+		WithNth:       make([]Range, 0),
+		Delimiter:     Delimiter{},
+		Sort:          1000,
+		Tac:           false,
+		Criteria:      []Criterion{CriterionByScore, CriterionByLength},
+		Multi:         false,
+		Ansi:          false,
+		Mouse:         true,
+		Theme:         tui.EmptyTheme(),
+		Black:         false,
+		Bold:          true,
+		MinHeight:     10,
+		Reverse:       false,
+		Cycle:         false,
+		Hscroll:       true,
+		HscrollOff:    10,
+		FileWord:      false,
+		InlineInfo:    false,
+		JumpLabels:    defaultJumpLabels,
+		Prompt:        "> ",
+		Query:         "",
+		Select1:       false,
+		Exit0:         false,
+		Filter:        nil,
+		ToggleSort:    false,
+		Expect:        make(map[int]string),
+		Keymap:        make(map[int][]Action),
+		Preview:       PreviewOpts{nil, WindowPositionRight, SizeSpec{50, true}, false, false},
+		PrintQuery:    false,
+		ReadZero:      false,
+		Printer:       func(str string) { fmt.Println(str) },
+		Sync:          false,
+		History:       nil,
+		Header:        make([]string, 0),
+		HeaderLines:   0,
+		Margin:        defaultMargin(),
+		Tabstop:       8,
+		ClearOnExit:   true,
+		Version:       false,
+		ReaderFactory: NewDefaultReader,
+	}
 }
 
 func help(code int) {
@@ -333,17 +336,17 @@ func delimiterRegexp(str string) Delimiter {
 
 	// 1. Pattern does not contain any special character
 	if regexp.QuoteMeta(str) == str {
-		return Delimiter{str: &str}
+		return Delimiter{Str: &str}
 	}
 
 	rx, e := regexp.Compile(str)
 	// 2. Pattern is not a valid regular expression
 	if e != nil {
-		return Delimiter{str: &str}
+		return Delimiter{Str: &str}
 	}
 
 	// 3. Pattern as regular expression. Slow.
-	return Delimiter{regex: rx}
+	return Delimiter{Regex: rx}
 }
 
 func isAlphabet(char uint8) bool {
@@ -462,8 +465,8 @@ func parseKeyChords(str string, message string) map[int]string {
 	return chords
 }
 
-func parseTiebreak(str string) []criterion {
-	criteria := []criterion{byScore}
+func parseTiebreak(str string) []Criterion {
+	criteria := []Criterion{CriterionByScore}
 	hasIndex := false
 	hasLength := false
 	hasBegin := false
@@ -483,13 +486,13 @@ func parseTiebreak(str string) []criterion {
 			check(&hasIndex, "index")
 		case "length":
 			check(&hasLength, "length")
-			criteria = append(criteria, byLength)
+			criteria = append(criteria, CriterionByLength)
 		case "begin":
 			check(&hasBegin, "begin")
-			criteria = append(criteria, byBegin)
+			criteria = append(criteria, CriterionByBegin)
 		case "end":
 			check(&hasEnd, "end")
-			criteria = append(criteria, byEnd)
+			criteria = append(criteria, CriterionByEnd)
 		default:
 			errorExit("invalid sort criterion: " + str)
 		}
@@ -599,7 +602,7 @@ func init() {
 		"(?si):(execute(?:-multi|-silent)?):.+|:(execute(?:-multi|-silent)?)(\\([^)]*\\)|\\[[^\\]]*\\]|~[^~]*~|![^!]*!|@[^@]*@|\\#[^\\#]*\\#|\\$[^\\$]*\\$|%[^%]*%|\\^[^\\^]*\\^|&[^&]*&|\\*[^\\*]*\\*|;[^;]*;|/[^/]*/|\\|[^\\|]*\\|)")
 }
 
-func parseKeymap(keymap map[int][]action, str string) {
+func parseKeymap(keymap map[int][]Action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		prefix := ":execute"
 		if src[len(prefix)] == '-' {
@@ -639,8 +642,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 
 		idx2 := len(pair[0]) + 1
 		specs := strings.Split(pair[1], "+")
-		actions := make([]action, 0, len(specs))
-		appendAction := func(types ...actionType) {
+		actions := make([]Action, 0, len(specs))
+		appendAction := func(types ...ActionType) {
 			actions = append(actions, toActions(types...)...)
 		}
 		prevSpec := ""
@@ -651,122 +654,122 @@ func parseKeymap(keymap map[int][]action, str string) {
 			specLower := strings.ToLower(spec)
 			switch specLower {
 			case "ignore":
-				appendAction(actIgnore)
+				appendAction(ActionTypeIgnore)
 			case "beginning-of-line":
-				appendAction(actBeginningOfLine)
+				appendAction(ActionTypeBeginningOfLine)
 			case "abort":
-				appendAction(actAbort)
+				appendAction(ActionTypeAbort)
 			case "accept":
-				appendAction(actAccept)
+				appendAction(ActionTypeAccept)
 			case "print-query":
-				appendAction(actPrintQuery)
+				appendAction(ActionTypePrintQuery)
 			case "backward-char":
-				appendAction(actBackwardChar)
+				appendAction(ActionTypeBackwardChar)
 			case "backward-delete-char":
-				appendAction(actBackwardDeleteChar)
+				appendAction(ActionTypeBackwardDeleteChar)
 			case "backward-word":
-				appendAction(actBackwardWord)
+				appendAction(ActionTypeBackwardWord)
 			case "clear-screen":
-				appendAction(actClearScreen)
+				appendAction(ActionTypeClearScreen)
 			case "delete-char":
-				appendAction(actDeleteChar)
+				appendAction(ActionTypeDeleteChar)
 			case "delete-char/eof":
-				appendAction(actDeleteCharEOF)
+				appendAction(ActionTypeDeleteCharEOF)
 			case "end-of-line":
-				appendAction(actEndOfLine)
+				appendAction(ActionTypeEndOfLine)
 			case "cancel":
-				appendAction(actCancel)
+				appendAction(ActionTypeCancel)
 			case "forward-char":
-				appendAction(actForwardChar)
+				appendAction(ActionTypeForwardChar)
 			case "forward-word":
-				appendAction(actForwardWord)
+				appendAction(ActionTypeForwardWord)
 			case "jump":
-				appendAction(actJump)
+				appendAction(ActionTypeJump)
 			case "jump-accept":
-				appendAction(actJumpAccept)
+				appendAction(ActionTypeJumpAccept)
 			case "kill-line":
-				appendAction(actKillLine)
+				appendAction(ActionTypeKillLine)
 			case "kill-word":
-				appendAction(actKillWord)
+				appendAction(ActionTypeKillWord)
 			case "unix-line-discard", "line-discard":
-				appendAction(actUnixLineDiscard)
+				appendAction(ActionTypeUnixLineDiscard)
 			case "unix-word-rubout", "word-rubout":
-				appendAction(actUnixWordRubout)
+				appendAction(ActionTypeUnixWordRubout)
 			case "yank":
-				appendAction(actYank)
+				appendAction(ActionTypeYank)
 			case "backward-kill-word":
-				appendAction(actBackwardKillWord)
+				appendAction(ActionTypeBackwardKillWord)
 			case "toggle-down":
-				appendAction(actToggle, actDown)
+				appendAction(ActionTypeToggle, ActionTypeDown)
 			case "toggle-up":
-				appendAction(actToggle, actUp)
+				appendAction(ActionTypeToggle, ActionTypeUp)
 			case "toggle-in":
-				appendAction(actToggleIn)
+				appendAction(ActionTypeToggleIn)
 			case "toggle-out":
-				appendAction(actToggleOut)
+				appendAction(ActionTypeToggleOut)
 			case "toggle-all":
-				appendAction(actToggleAll)
+				appendAction(ActionTypeToggleAll)
 			case "select-all":
-				appendAction(actSelectAll)
+				appendAction(ActionTypeSelectAll)
 			case "deselect-all":
-				appendAction(actDeselectAll)
+				appendAction(ActionTypeDeselectAll)
 			case "toggle":
-				appendAction(actToggle)
+				appendAction(ActionTypeToggle)
 			case "down":
-				appendAction(actDown)
+				appendAction(ActionTypeDown)
 			case "up":
-				appendAction(actUp)
+				appendAction(ActionTypeUp)
 			case "top":
-				appendAction(actTop)
+				appendAction(ActionTypeTop)
 			case "page-up":
-				appendAction(actPageUp)
+				appendAction(ActionTypePageUp)
 			case "page-down":
-				appendAction(actPageDown)
+				appendAction(ActionTypePageDown)
 			case "half-page-up":
-				appendAction(actHalfPageUp)
+				appendAction(ActionTypeHalfPageUp)
 			case "half-page-down":
-				appendAction(actHalfPageDown)
+				appendAction(ActionTypeHalfPageDown)
 			case "previous-history":
-				appendAction(actPreviousHistory)
+				appendAction(ActionTypePreviousHistory)
 			case "next-history":
-				appendAction(actNextHistory)
+				appendAction(ActionTypeNextHistory)
 			case "toggle-preview":
-				appendAction(actTogglePreview)
+				appendAction(ActionTypeTogglePreview)
 			case "toggle-preview-wrap":
-				appendAction(actTogglePreviewWrap)
+				appendAction(ActionTypeTogglePreviewWrap)
 			case "toggle-sort":
-				appendAction(actToggleSort)
+				appendAction(ActionTypeToggleSort)
 			case "preview-up":
-				appendAction(actPreviewUp)
+				appendAction(ActionTypePreviewUp)
 			case "preview-down":
-				appendAction(actPreviewDown)
+				appendAction(ActionTypePreviewDown)
 			case "preview-page-up":
-				appendAction(actPreviewPageUp)
+				appendAction(ActionTypePreviewPageUp)
 			case "preview-page-down":
-				appendAction(actPreviewPageDown)
+				appendAction(ActionTypePreviewPageDown)
 			default:
 				t := isExecuteAction(specLower)
-				if t == actIgnore {
+				if t == ActionTypeIgnore {
 					errorExit("unknown action: " + spec)
 				} else {
 					var offset int
 					switch t {
-					case actExecuteSilent:
+					case ActionTypeExecuteSilent:
 						offset = len("execute-silent")
-					case actExecuteMulti:
+					case ActionTypeExecuteMulti:
 						offset = len("execute-multi")
 					default:
 						offset = len("execute")
 					}
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, action{t: t, a: spec[offset+1:]})
+							actions = append(actions, Action{Type: t, Command: NewDefaultCommand(spec[offset+1:])})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, action{t: t, a: spec[offset+1 : len(spec)-1]})
+						actions = append(actions, Action{Type: t, Command: NewDefaultCommand(spec[offset+1 : len(spec)-1])})
 					}
 				}
 			}
@@ -776,10 +779,10 @@ func parseKeymap(keymap map[int][]action, str string) {
 	}
 }
 
-func isExecuteAction(str string) actionType {
+func isExecuteAction(str string) ActionType {
 	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
 	if matches == nil || len(matches) != 1 {
-		return actIgnore
+		return ActionTypeIgnore
 	}
 	prefix := matches[0][1]
 	if len(prefix) == 0 {
@@ -787,28 +790,28 @@ func isExecuteAction(str string) actionType {
 	}
 	switch prefix {
 	case "execute":
-		return actExecute
+		return ActionTypeExecute
 	case "execute-silent":
-		return actExecuteSilent
+		return ActionTypeExecuteSilent
 	case "execute-multi":
-		return actExecuteMulti
+		return ActionTypeExecuteMulti
 	}
-	return actIgnore
+	return ActionTypeIgnore
 }
 
-func parseToggleSort(keymap map[int][]action, str string) {
+func parseToggleSort(keymap map[int][]Action, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
 	}
-	keymap[firstKey(keys)] = toActions(actToggleSort)
+	keymap[firstKey(keys)] = toActions(ActionTypeToggleSort)
 }
 
 func strLines(str string) []string {
 	return strings.Split(strings.TrimSuffix(str, "\n"), "\n")
 }
 
-func parseSize(str string, maxPercent float64, label string) sizeSpec {
+func parseSize(str string, maxPercent float64, label string) SizeSpec {
 	var val float64
 	percent := strings.HasSuffix(str, "%")
 	if percent {
@@ -829,10 +832,10 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 			errorExit(label + " must be non-negative")
 		}
 	}
-	return sizeSpec{val, percent}
+	return SizeSpec{val, percent}
 }
 
-func parseHeight(str string) sizeSpec {
+func parseHeight(str string) SizeSpec {
 	if util.IsWindows() {
 		errorExit("--height options is currently not supported on Windows")
 	}
@@ -840,67 +843,67 @@ func parseHeight(str string) sizeSpec {
 	return size
 }
 
-func parsePreviewWindow(opts *previewOpts, input string) {
+func parsePreviewWindow(opts *PreviewOpts, input string) {
 	// Default
-	opts.position = posRight
-	opts.size = sizeSpec{50, true}
-	opts.hidden = false
-	opts.wrap = false
+	opts.Position = WindowPositionRight
+	opts.Size = SizeSpec{50, true}
+	opts.Hidden = false
+	opts.Wrap = false
 
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	for _, token := range tokens {
 		switch token {
 		case "hidden":
-			opts.hidden = true
+			opts.Hidden = true
 		case "wrap":
-			opts.wrap = true
+			opts.Wrap = true
 		case "up", "top":
-			opts.position = posUp
+			opts.Position = WindowPositionUp
 		case "down", "bottom":
-			opts.position = posDown
+			opts.Position = WindowPositionDown
 		case "left":
-			opts.position = posLeft
+			opts.Position = WindowPositionLeft
 		case "right":
-			opts.position = posRight
+			opts.Position = WindowPositionRight
 		default:
 			if sizeRegex.MatchString(token) {
-				opts.size = parseSize(token, 99, "window size")
+				opts.Size = parseSize(token, 99, "window size")
 			} else {
 				errorExit("invalid preview window layout: " + input)
 			}
 		}
 	}
-	if !opts.size.percent && opts.size.size > 0 {
+	if !opts.Size.percent && opts.Size.size > 0 {
 		// Adjust size for border
-		opts.size.size += 2
+		opts.Size.size += 2
 		// And padding
-		if opts.position == posLeft || opts.position == posRight {
-			opts.size.size += 2
+		if opts.Position == WindowPositionLeft || opts.Position == WindowPositionRight {
+			opts.Size.size += 2
 		}
 	}
 }
 
-func parseMargin(margin string) [4]sizeSpec {
+func parseMargin(margin string) [4]SizeSpec {
 	margins := strings.Split(margin, ",")
-	checked := func(str string) sizeSpec {
+	checked := func(str string) SizeSpec {
 		return parseSize(str, 49, "margin")
 	}
 	switch len(margins) {
 	case 1:
 		m := checked(margins[0])
-		return [4]sizeSpec{m, m, m, m}
+		return [4]SizeSpec{m, m, m, m}
 	case 2:
 		tb := checked(margins[0])
 		rl := checked(margins[1])
-		return [4]sizeSpec{tb, rl, tb, rl}
+		return [4]SizeSpec{tb, rl, tb, rl}
 	case 3:
 		t := checked(margins[0])
 		rl := checked(margins[1])
 		b := checked(margins[2])
-		return [4]sizeSpec{t, rl, b, rl}
+		return [4]SizeSpec{t, rl, b, rl}
 	case 4:
-		return [4]sizeSpec{
+		return [4]SizeSpec{
 			checked(margins[0]), checked(margins[1]),
 			checked(margins[2]), checked(margins[3])}
 	default:
@@ -1089,9 +1092,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
 		case "--preview":
-			opts.Preview.command = nextString(allArgs, &i, "preview command required")
+			opts.Preview.Command = NewDefaultCommand(nextString(allArgs, &i, "preview command required"))
 		case "--no-preview":
-			opts.Preview.command = ""
+			opts.Preview.Command = nil
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
@@ -1100,7 +1103,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--min-height":
 			opts.MinHeight = nextInt(allArgs, &i, "height required: HEIGHT")
 		case "--no-height":
-			opts.Height = sizeSpec{}
+			opts.Height = SizeSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--no-border":
@@ -1160,7 +1163,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--preview="); match {
-				opts.Preview.command = value
+				opts.Preview.Command = NewDefaultCommand(value)
 			} else if match, value := optString(arg, "--preview-window="); match {
 				parsePreviewWindow(&opts.Preview, value)
 			} else if match, value := optString(arg, "--margin="); match {
@@ -1206,10 +1209,10 @@ func postProcessOptions(opts *Options) {
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
 		if _, prs := opts.Keymap[tui.CtrlP]; !prs {
-			opts.Keymap[tui.CtrlP] = toActions(actPreviousHistory)
+			opts.Keymap[tui.CtrlP] = toActions(ActionTypePreviousHistory)
 		}
 		if _, prs := opts.Keymap[tui.CtrlN]; !prs {
-			opts.Keymap[tui.CtrlN] = toActions(actNextHistory)
+			opts.Keymap[tui.CtrlN] = toActions(ActionTypeNextHistory)
 		}
 	}
 
@@ -1217,7 +1220,7 @@ func postProcessOptions(opts *Options) {
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
 		for _, act := range actions {
-			if act.t == actToggleSort {
+			if act.Type == ActionTypeToggleSort {
 				opts.ToggleSort = true
 			}
 		}
@@ -1229,7 +1232,7 @@ func postProcessOptions(opts *Options) {
 	// if it contains the whole range
 	if !opts.Extended || len(opts.Nth) == 1 {
 		for _, r := range opts.Nth {
-			if r.begin == rangeEllipsis && r.end == rangeEllipsis {
+			if r.Begin == rangeEllipsis && r.End == rangeEllipsis {
 				opts.Nth = make([]Range, 0)
 				return
 			}
@@ -1239,7 +1242,7 @@ func postProcessOptions(opts *Options) {
 
 // ParseOptions parses command-line options
 func ParseOptions() *Options {
-	opts := defaultOptions()
+	opts := DefaultOptions()
 
 	// Options from Env var
 	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
@@ -1250,6 +1253,5 @@ func ParseOptions() *Options {
 	// Options from command-line arguments
 	parseOptions(opts, os.Args[1:])
 
-	postProcessOptions(opts)
 	return opts
 }

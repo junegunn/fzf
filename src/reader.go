@@ -10,8 +10,14 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
+type Reader interface {
+	ReadSource()
+}
+
+type ReaderFactory func(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) Reader
+
 // Reader reads from command or standard input
-type Reader struct {
+type DefaultReader struct {
 	pusher   func([]byte) bool
 	eventBox *util.EventBox
 	delimNil bool
@@ -19,11 +25,11 @@ type Reader struct {
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady)}
+func NewDefaultReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) Reader {
+	return &DefaultReader{pusher, eventBox, delimNil, int32(EvtReady)}
 }
 
-func (r *Reader) startEventPoller() {
+func (r *DefaultReader) startEventPoller() {
 	go func() {
 		ptr := &r.event
 		pollInterval := readerPollIntervalMin
@@ -44,13 +50,13 @@ func (r *Reader) startEventPoller() {
 	}()
 }
 
-func (r *Reader) fin(success bool) {
+func (r *DefaultReader) fin(success bool) {
 	atomic.StoreInt32(&r.event, int32(EvtReadFin))
 	r.eventBox.Set(EvtReadFin, success)
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource() {
+func (r *DefaultReader) ReadSource() {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
@@ -65,7 +71,7 @@ func (r *Reader) ReadSource() {
 	r.fin(success)
 }
 
-func (r *Reader) feed(src io.Reader) {
+func (r *DefaultReader) feed(src io.Reader) {
 	delim := byte('\n')
 	if r.delimNil {
 		delim = '\000'
@@ -95,12 +101,12 @@ func (r *Reader) feed(src io.Reader) {
 	}
 }
 
-func (r *Reader) readFromStdin() bool {
+func (r *DefaultReader) readFromStdin() bool {
 	r.feed(os.Stdin)
 	return true
 }
 
-func (r *Reader) readFromCommand(cmd string) bool {
+func (r *DefaultReader) readFromCommand(cmd string) bool {
 	listCommand := util.ExecCommand(cmd)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
@@ -112,4 +118,58 @@ func (r *Reader) readFromCommand(cmd string) bool {
 	}
 	r.feed(out)
 	return listCommand.Wait() == nil
+}
+
+type ChannelReader struct {
+	channel  <-chan []byte
+	pusher   func([]byte) bool
+	eventBox *util.EventBox
+	event    int32
+}
+
+func NewChannelReader(channel <-chan []byte) ReaderFactory {
+	return func(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) Reader {
+		return &ChannelReader{
+			channel:  channel,
+			pusher:   pusher,
+			eventBox: eventBox,
+			event:    int32(EvtReady),
+		}
+	}
+}
+
+func (r *ChannelReader) ReadSource() {
+	r.startEventPoller()
+	for bytes := range r.channel {
+		if r.pusher(bytes) {
+			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		}
+	}
+	r.fin()
+}
+
+func (r *ChannelReader) startEventPoller() {
+	go func() {
+		ptr := &r.event
+		pollInterval := readerPollIntervalMin
+		for {
+			if atomic.CompareAndSwapInt32(ptr, int32(EvtReadNew), int32(EvtReady)) {
+				r.eventBox.Set(EvtReadNew, true)
+				pollInterval = readerPollIntervalMin
+			} else if atomic.LoadInt32(ptr) == int32(EvtReadFin) {
+				return
+			} else {
+				pollInterval += readerPollIntervalStep
+				if pollInterval > readerPollIntervalMax {
+					pollInterval = readerPollIntervalMax
+				}
+			}
+			time.Sleep(pollInterval)
+		}
+	}()
+}
+
+func (r *ChannelReader) fin() {
+	atomic.StoreInt32(&r.event, int32(EvtReadFin))
+	r.eventBox.Set(EvtReadFin, true)
 }

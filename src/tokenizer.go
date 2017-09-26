@@ -13,8 +13,8 @@ const rangeEllipsis = 0
 
 // Range represents nth-expression
 type Range struct {
-	begin int
-	end   int
+	Begin int
+	End   int
 }
 
 // Token contains the tokenized part of the strings and its prefix length
@@ -25,8 +25,8 @@ type Token struct {
 
 // Delimiter for tokenizing the input
 type Delimiter struct {
-	regex *regexp.Regexp
-	str   *string
+	Regex *regexp.Regexp
+	Str   *string
 }
 
 func newRange(begin int, end int) Range {
@@ -132,21 +132,21 @@ func awkTokenizer(input string) ([]string, int) {
 
 // Tokenize tokenizes the given string with the delimiter
 func Tokenize(text string, delimiter Delimiter) []Token {
-	if delimiter.str == nil && delimiter.regex == nil {
+	if delimiter.Str == nil && delimiter.Regex == nil {
 		// AWK-style (\S+\s*)
 		tokens, prefixLength := awkTokenizer(text)
 		return withPrefixLengths(tokens, prefixLength)
 	}
 
-	if delimiter.str != nil {
-		return withPrefixLengths(strings.SplitAfter(text, *delimiter.str), 0)
+	if delimiter.Str != nil {
+		return withPrefixLengths(strings.SplitAfter(text, *delimiter.Str), 0)
 	}
 
 	// FIXME performance
 	var tokens []string
-	if delimiter.regex != nil {
+	if delimiter.Regex != nil {
 		for len(text) > 0 {
-			loc := delimiter.regex.FindStringIndex(text)
+			loc := delimiter.Regex.FindStringIndex(text)
 			if len(loc) < 2 {
 				loc = []int{0, len(text)}
 			}
@@ -173,8 +173,8 @@ func Transform(tokens []Token, withNth []Range) []Token {
 	for idx, r := range withNth {
 		parts := []*util.Chars{}
 		minIdx := 0
-		if r.begin == r.end {
-			idx := r.begin
+		if r.Begin == r.End {
+			idx := r.Begin
 			if idx == rangeEllipsis {
 				chars := util.ToChars([]byte(joinTokens(tokens)))
 				parts = append(parts, &chars)
@@ -189,18 +189,18 @@ func Transform(tokens []Token, withNth []Range) []Token {
 			}
 		} else {
 			var begin, end int
-			if r.begin == rangeEllipsis { // ..N
-				begin, end = 1, r.end
+			if r.Begin == rangeEllipsis { // ..N
+				begin, end = 1, r.End
 				if end < 0 {
 					end += numTokens + 1
 				}
-			} else if r.end == rangeEllipsis { // N..
-				begin, end = r.begin, numTokens
+			} else if r.End == rangeEllipsis { // N..
+				begin, end = r.Begin, numTokens
 				if begin < 0 {
 					begin += numTokens + 1
 				}
 			} else {
-				begin, end = r.begin, r.end
+				begin, end = r.Begin, r.End
 				if begin < 0 {
 					begin += numTokens + 1
 				}

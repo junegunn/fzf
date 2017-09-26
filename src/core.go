@@ -44,6 +44,8 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 
 // Run starts fzf
 func Run(opts *Options, revision string) {
+	postProcessOptions(opts)
+
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
@@ -118,7 +120,7 @@ func Run(opts *Options, revision string) {
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	if !streamingFilter {
-		reader := NewReader(func(data []byte) bool {
+		reader := opts.ReaderFactory(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, opts.ReadZero)
 		go reader.ReadSource()
@@ -127,11 +129,11 @@ func Run(opts *Options, revision string) {
 	// Matcher
 	forward := true
 	for _, cri := range opts.Criteria[1:] {
-		if cri == byEnd {
+		if cri == CriterionByEnd {
 			forward = false
 			break
 		}
-		if cri == byBegin {
+		if cri == CriterionByBegin {
 			break
 		}
 	}
@@ -153,7 +155,7 @@ func Run(opts *Options, revision string) {
 		found := false
 		if streamingFilter {
 			slab := util.MakeSlab(slab16Size, slab32Size)
-			reader := NewReader(
+			reader := opts.ReaderFactory(
 				func(runes []byte) bool {
 					item := Item{}
 					if chunkList.trans(&item, runes) {

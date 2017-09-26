@@ -11,32 +11,32 @@ import (
 func TestDelimiterRegex(t *testing.T) {
 	// Valid regex
 	delim := delimiterRegexp(".")
-	if delim.regex == nil || delim.str != nil {
+	if delim.Regex == nil || delim.Str != nil {
 		t.Error(delim)
 	}
 	// Broken regex -> string
 	delim = delimiterRegexp("[0-9")
-	if delim.regex != nil || *delim.str != "[0-9" {
+	if delim.Regex != nil || *delim.Str != "[0-9" {
 		t.Error(delim)
 	}
 	// Valid regex
 	delim = delimiterRegexp("[0-9]")
-	if delim.regex.String() != "[0-9]" || delim.str != nil {
+	if delim.Regex.String() != "[0-9]" || delim.Str != nil {
 		t.Error(delim)
 	}
 	// Tab character
 	delim = delimiterRegexp("\t")
-	if delim.regex != nil || *delim.str != "\t" {
+	if delim.Regex != nil || *delim.Str != "\t" {
 		t.Error(delim)
 	}
 	// Tab expression
 	delim = delimiterRegexp("\\t")
-	if delim.regex != nil || *delim.str != "\t" {
+	if delim.Regex != nil || *delim.Str != "\t" {
 		t.Error(delim)
 	}
 	// Tabs -> regex
 	delim = delimiterRegexp("\t+")
-	if delim.regex == nil || delim.str != nil {
+	if delim.Regex == nil || delim.Str != nil {
 		t.Error(delim)
 	}
 }
@@ -44,7 +44,7 @@ func TestDelimiterRegex(t *testing.T) {
 func TestDelimiterRegexString(t *testing.T) {
 	delim := delimiterRegexp("*")
 	tokens := Tokenize("-*--*---**---", delim)
-	if delim.regex != nil ||
+	if delim.Regex != nil ||
 		tokens[0].text.ToString() != "-*" ||
 		tokens[1].text.ToString() != "--*" ||
 		tokens[2].text.ToString() != "---*" ||
@@ -57,7 +57,7 @@ func TestDelimiterRegexString(t *testing.T) {
 func TestDelimiterRegexRegex(t *testing.T) {
 	delim := delimiterRegexp("--\\*")
 	tokens := Tokenize("-*--*---**---", delim)
-	if delim.str != nil ||
+	if delim.Str != nil ||
 		tokens[0].text.ToString() != "-*--*" ||
 		tokens[1].text.ToString() != "---*" ||
 		tokens[2].text.ToString() != "*---" {
@@ -69,24 +69,24 @@ func TestSplitNth(t *testing.T) {
 	{
 		ranges := splitNth("..")
 		if len(ranges) != 1 ||
-			ranges[0].begin != rangeEllipsis ||
-			ranges[0].end != rangeEllipsis {
+			ranges[0].Begin != rangeEllipsis ||
+			ranges[0].End != rangeEllipsis {
 			t.Errorf("%s", ranges)
 		}
 	}
 	{
 		ranges := splitNth("..3,1..,2..3,4..-1,-3..-2,..,2,-2,2..-2,1..-1")
 		if len(ranges) != 10 ||
-			ranges[0].begin != rangeEllipsis || ranges[0].end != 3 ||
-			ranges[1].begin != rangeEllipsis || ranges[1].end != rangeEllipsis ||
-			ranges[2].begin != 2 || ranges[2].end != 3 ||
-			ranges[3].begin != 4 || ranges[3].end != rangeEllipsis ||
-			ranges[4].begin != -3 || ranges[4].end != -2 ||
-			ranges[5].begin != rangeEllipsis || ranges[5].end != rangeEllipsis ||
-			ranges[6].begin != 2 || ranges[6].end != 2 ||
-			ranges[7].begin != -2 || ranges[7].end != -2 ||
-			ranges[8].begin != 2 || ranges[8].end != -2 ||
-			ranges[9].begin != rangeEllipsis || ranges[9].end != rangeEllipsis {
+			ranges[0].Begin != rangeEllipsis || ranges[0].End != 3 ||
+			ranges[1].Begin != rangeEllipsis || ranges[1].End != rangeEllipsis ||
+			ranges[2].Begin != 2 || ranges[2].End != 3 ||
+			ranges[3].Begin != 4 || ranges[3].End != rangeEllipsis ||
+			ranges[4].Begin != -3 || ranges[4].End != -2 ||
+			ranges[5].Begin != rangeEllipsis || ranges[5].End != rangeEllipsis ||
+			ranges[6].Begin != 2 || ranges[6].End != 2 ||
+			ranges[7].Begin != -2 || ranges[7].End != -2 ||
+			ranges[8].Begin != 2 || ranges[8].End != -2 ||
+			ranges[9].Begin != rangeEllipsis || ranges[9].End != rangeEllipsis {
 			t.Errorf("%s", ranges)
 		}
 	}
@@ -94,7 +94,7 @@ func TestSplitNth(t *testing.T) {
 
 func TestIrrelevantNth(t *testing.T) {
 	{
-		opts := defaultOptions()
+		opts := DefaultOptions()
 		words := []string{"--nth", "..", "-x"}
 		parseOptions(opts, words)
 		postProcessOptions(opts)
@@ -104,7 +104,7 @@ func TestIrrelevantNth(t *testing.T) {
 	}
 	for _, words := range [][]string{[]string{"--nth", "..,3", "+x"}, []string{"--nth", "3,1..", "+x"}, []string{"--nth", "..-1,1", "+x"}} {
 		{
-			opts := defaultOptions()
+			opts := DefaultOptions()
 			parseOptions(opts, words)
 			postProcessOptions(opts)
 			if len(opts.Nth) != 0 {
@@ -112,7 +112,7 @@ func TestIrrelevantNth(t *testing.T) {
 			}
 		}
 		{
-			opts := defaultOptions()
+			opts := DefaultOptions()
 			words = append(words, "-x")
 			parseOptions(opts, words)
 			postProcessOptions(opts)
@@ -226,50 +226,50 @@ func TestParseKeysWithComma(t *testing.T) {
 
 func TestBind(t *testing.T) {
 	keymap := defaultKeymap()
-	check := func(keyName int, arg1 string, types ...actionType) {
+	check := func(keyName int, arg1 string, types ...ActionType) {
 		if len(keymap[keyName]) != len(types) {
 			t.Errorf("invalid number of actions (%d != %d)", len(types), len(keymap[keyName]))
 			return
 		}
 		for idx, action := range keymap[keyName] {
-			if types[idx] != action.t {
-				t.Errorf("invalid action type (%d != %d)", types[idx], action.t)
+			if types[idx] != action.Type {
+				t.Errorf("invalid action type (%d != %d)", types[idx], action.Type)
 			}
 		}
-		if len(arg1) > 0 && keymap[keyName][0].a != arg1 {
-			t.Errorf("invalid action argument: (%s != %s)", arg1, keymap[keyName][0].a)
+		if len(arg1) > 0 && (keymap[keyName][0].Command == nil || keymap[keyName][0].Command.(*DefaultCommand).command != arg1) {
+			t.Errorf("invalid action argument: (%s != %s)", arg1, keymap[keyName][0].Command)
 		}
 	}
-	check(tui.CtrlA, "", actBeginningOfLine)
+	check(tui.CtrlA, "", ActionTypeBeginningOfLine)
 	parseKeymap(keymap,
 		"ctrl-a:kill-line,ctrl-b:toggle-sort+up+down,c:page-up,alt-z:page-down,"+
 			"f1:execute(ls {})+abort,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 			"alt-a:execute-Multi@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};,"+
 			"x:Execute(foo+bar),X:execute/bar+baz/"+
 			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up")
-	check(tui.CtrlA, "", actKillLine)
-	check(tui.CtrlB, "", actToggleSort, actUp, actDown)
-	check(tui.AltZ+'c', "", actPageUp)
-	check(tui.AltZ+',', "", actAbort)
-	check(tui.AltZ+':', "", actAccept)
-	check(tui.AltZ, "", actPageDown)
-	check(tui.F1, "ls {}", actExecute, actAbort)
-	check(tui.F2, "echo {}, {}, {}", actExecute)
-	check(tui.F3, "echo '({})'", actExecute)
-	check(tui.F4, "less {}", actExecute)
-	check(tui.AltZ+'x', "foo+bar", actExecute)
-	check(tui.AltZ+'X', "bar+baz", actExecute)
-	check(tui.AltA, "echo (,),[,],/,:,;,%,{}", actExecuteMulti)
-	check(tui.AltB, "echo (,),[,],/,:,@,%,{}", actExecute)
-	check(tui.AltZ+'+', "++\nfoobar,Y:execute(baz)+up", actExecute)
+	check(tui.CtrlA, "", ActionTypeKillLine)
+	check(tui.CtrlB, "", ActionTypeToggleSort, ActionTypeUp, ActionTypeDown)
+	check(tui.AltZ+'c', "", ActionTypePageUp)
+	check(tui.AltZ+',', "", ActionTypeAbort)
+	check(tui.AltZ+':', "", ActionTypeAccept)
+	check(tui.AltZ, "", ActionTypePageDown)
+	check(tui.F1, "ls {}", ActionTypeExecute, ActionTypeAbort)
+	check(tui.F2, "echo {}, {}, {}", ActionTypeExecute)
+	check(tui.F3, "echo '({})'", ActionTypeExecute)
+	check(tui.F4, "less {}", ActionTypeExecute)
+	check(tui.AltZ+'x', "foo+bar", ActionTypeExecute)
+	check(tui.AltZ+'X', "bar+baz", ActionTypeExecute)
+	check(tui.AltA, "echo (,),[,],/,:,;,%,{}", ActionTypeExecuteMulti)
+	check(tui.AltB, "echo (,),[,],/,:,@,%,{}", ActionTypeExecute)
+	check(tui.AltZ+'+', "++\nfoobar,Y:execute(baz)+up", ActionTypeExecute)
 
 	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ';', '/'} {
 		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
-		check(tui.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0]), "foobar", actExecute)
+		check(tui.AltZ+int([]rune(fmt.Sprintf("%d", idx%10))[0]), "foobar", ActionTypeExecute)
 	}
 
 	parseKeymap(keymap, "f1:abort")
-	check(tui.F1, "", actAbort)
+	check(tui.F1, "", ActionTypeAbort)
 }
 
 func TestColorSpec(t *testing.T) {
@@ -325,35 +325,35 @@ func TestParseNilTheme(t *testing.T) {
 }
 
 func TestDefaultCtrlNP(t *testing.T) {
-	check := func(words []string, key int, expected actionType) {
-		opts := defaultOptions()
+	check := func(words []string, key int, expected ActionType) {
+		opts := DefaultOptions()
 		parseOptions(opts, words)
 		postProcessOptions(opts)
-		if opts.Keymap[key][0].t != expected {
+		if opts.Keymap[key][0].Type != expected {
 			t.Error()
 		}
 	}
-	check([]string{}, tui.CtrlN, actDown)
-	check([]string{}, tui.CtrlP, actUp)
+	check([]string{}, tui.CtrlN, ActionTypeDown)
+	check([]string{}, tui.CtrlP, ActionTypeUp)
 
-	check([]string{"--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
-	check([]string{"--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)
+	check([]string{"--bind=ctrl-n:accept"}, tui.CtrlN, ActionTypeAccept)
+	check([]string{"--bind=ctrl-p:accept"}, tui.CtrlP, ActionTypeAccept)
 
 	f, _ := ioutil.TempFile("", "fzf-history")
 	f.Close()
 	hist := "--history=" + f.Name()
-	check([]string{hist}, tui.CtrlN, actNextHistory)
-	check([]string{hist}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist}, tui.CtrlN, ActionTypeNextHistory)
+	check([]string{hist}, tui.CtrlP, ActionTypePreviousHistory)
 
-	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
-	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlN, ActionTypeAccept)
+	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, ActionTypePreviousHistory)
 
-	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlN, actNextHistory)
-	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)
+	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlN, ActionTypeNextHistory)
+	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlP, ActionTypeAccept)
 }
 
 func optsFor(words ...string) *Options {
-	opts := defaultOptions()
+	opts := DefaultOptions()
 	parseOptions(opts, words)
 	postProcessOptions(opts)
 	return opts
@@ -378,39 +378,40 @@ func TestToggle(t *testing.T) {
 
 func TestPreviewOpts(t *testing.T) {
 	opts := optsFor()
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == false &&
-		opts.Preview.wrap == false &&
-		opts.Preview.position == posRight &&
-		opts.Preview.size.percent == true &&
-		opts.Preview.size.size == 50) {
+	if !(opts.Preview.Command == nil &&
+		opts.Preview.Hidden == false &&
+		opts.Preview.Wrap == false &&
+		opts.Preview.Position == WindowPositionRight &&
+		opts.Preview.Size.percent == true &&
+		opts.Preview.Size.size == 50) {
 		t.Error()
 	}
 	opts = optsFor("--preview", "cat {}", "--preview-window=left:15:hidden:wrap")
-	if !(opts.Preview.command == "cat {}" &&
-		opts.Preview.hidden == true &&
-		opts.Preview.wrap == true &&
-		opts.Preview.position == posLeft &&
-		opts.Preview.size.percent == false &&
-		opts.Preview.size.size == 15+2+2) {
+	if !(opts.Preview.Command != nil &&
+		opts.Preview.Command.(*DefaultCommand).command == "cat {}" &&
+		opts.Preview.Hidden == true &&
+		opts.Preview.Wrap == true &&
+		opts.Preview.Position == WindowPositionLeft &&
+		opts.Preview.Size.percent == false &&
+		opts.Preview.Size.size == 15+2+2) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden", "--preview-window=down")
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == false &&
-		opts.Preview.wrap == false &&
-		opts.Preview.position == posDown &&
-		opts.Preview.size.percent == true &&
-		opts.Preview.size.size == 50) {
+	if !(opts.Preview.Command == nil &&
+		opts.Preview.Hidden == false &&
+		opts.Preview.Wrap == false &&
+		opts.Preview.Position == WindowPositionDown &&
+		opts.Preview.Size.percent == true &&
+		opts.Preview.Size.size == 50) {
 		t.Error(opts.Preview)
 	}
 	opts = optsFor("--preview-window=up:15:wrap:hidden")
-	if !(opts.Preview.command == "" &&
-		opts.Preview.hidden == true &&
-		opts.Preview.wrap == true &&
-		opts.Preview.position == posUp &&
-		opts.Preview.size.percent == false &&
-		opts.Preview.size.size == 15+2) {
+	if !(opts.Preview.Command == nil &&
+		opts.Preview.Hidden == true &&
+		opts.Preview.Wrap == true &&
+		opts.Preview.Position == WindowPositionUp &&
+		opts.Preview.Size.percent == false &&
+		opts.Preview.Size.size == 15+2) {
 		t.Error(opts.Preview)
 	}
 }
