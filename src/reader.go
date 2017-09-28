@@ -56,9 +56,11 @@ func (r *Reader) ReadSource() {
 	if util.IsTty() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			cmd = defaultCommand
+			// The default command for *nix requires bash
+			success = r.readFromCommand("bash", defaultCommand)
+		} else {
+			success = r.readFromCommand("sh", cmd)
 		}
-		success = r.readFromCommand(cmd)
 	} else {
 		success = r.readFromStdin()
 	}
@@ -100,8 +102,8 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
-func (r *Reader) readFromCommand(cmd string) bool {
-	listCommand := util.ExecCommand(cmd)
+func (r *Reader) readFromCommand(shell string, cmd string) bool {
+	listCommand := util.ExecCommandWith(shell, cmd)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
 		return false

@@ -10,8 +10,14 @@ import (
 	"github.com/mattn/go-shellwords"
 )
 
-// ExecCommand executes the given command with $SHELL
+// ExecCommand executes the given command with cmd
 func ExecCommand(command string) *exec.Cmd {
+	return ExecCommandWith("cmd", command)
+}
+
+// ExecCommandWith executes the given command with cmd. _shell parameter is
+// ignored on Windows.
+func ExecCommandWith(_shell string, command string) *exec.Cmd {
 	args, _ := shellwords.Parse(command)
 	allArgs := make([]string, len(args)+1)
 	allArgs[0] = "/c"

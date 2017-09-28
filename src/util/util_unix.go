@@ -14,6 +14,11 @@ func ExecCommand(command string) *exec.Cmd {
 	if len(shell) == 0 {
 		shell = "sh"
 	}
+	return ExecCommandWith(shell, command)
+}
+
+// ExecCommandWith executes the given command with the specified shell
+func ExecCommandWith(shell string, command string) *exec.Cmd {
 	return exec.Command(shell, "-c", command)
 }
 
