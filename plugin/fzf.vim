@@ -386,10 +386,11 @@ try
   endif
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0)
-  let use_height = has_key(dict, 'down') &&
-        \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right')) &&
+  let use_height = has_key(dict, 'down') && !has('gui_running') &&
+        \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right', 'window')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let use_term = has('nvim-0.2.1') || (has('nvim') && !s:is_win) || (has('terminal') && has('patch-8.0.995') && (has('gui_running') || s:is_win))
+  let has_term = has('nvim-0.2.1') || has('nvim') && !s:is_win || has('terminal') && has('patch-8.0.995')
+  let use_term = has_term && (has('gui_running') || s:is_win || !use_height && s:present(dict, 'down', 'up', 'left', 'right', 'window'))
   let use_tmux = (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:tmux_enabled() && s:splittable(dict)
   if prefer_tmux && use_tmux
     let use_height = 0
@@ -400,9 +401,6 @@ try
     let optstr .= ' --height='.height
   elseif use_term
     let optstr .= ' --no-height'
-    if !has('nvim') && !s:is_win
-      let optstr .= ' --bind ctrl-j:accept'
-    endif
   endif
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
@@ -699,7 +697,11 @@ function! s:execute_term(dict, command, temps) abort
     if has('nvim')
       call termopen(command, fzf)
     else
-      call term_start([&shell, &shellcmdflag, command], {'curwin': fzf.buf, 'exit_cb': function(fzf.on_exit)})
+      let t = term_start([&shell, &shellcmdflag, command], {'curwin': fzf.buf, 'exit_cb': function(fzf.on_exit)})
+      " FIXME: https://github.com/vim/vim/issues/1998
+      if !has('nvim') && !s:is_win
+        call term_wait(t, 20)
+      endif
     endif
   finally
     if s:present(a:dict, 'dir')

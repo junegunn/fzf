@@ -37,7 +37,7 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
 - `g:fzf_action`
     - Customizable extra key bindings for opening selected files in different ways
 - `g:fzf_layout`
-    - Determines the size and position of fzf window (tmux pane or Neovim split)
+    - Determines the size and position of fzf window
 - `g:fzf_colors`
     - Customizes fzf colors to match the current color scheme
 - `g:fzf_history_dir`
@@ -72,7 +72,7 @@ let g:fzf_action = {
 " - down / up / left / right
 let g:fzf_layout = { 'down': '~40%' }
 
-" In Neovim, you can set up fzf window using a Vim command
+" You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
 let g:fzf_layout = { 'window': 'enew' }
 let g:fzf_layout = { 'window': '-tabnew' }
 let g:fzf_layout = { 'window': '10split enew' }
@@ -116,7 +116,7 @@ following options.
 | `options`                  | string/list   | Options to fzf                                                   |
 | `dir`                      | string        | Working directory                                                |
 | `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
-| `window` (*Neovim only*)   | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
+| `window` (Vim 8 / Neovim)  | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
 | `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
 | `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
 

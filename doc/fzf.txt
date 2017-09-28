@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: August 14 2017
+fzf.txt	fzf	Last change: September 29 2017
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -61,7 +61,7 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
    - Customizable extra key bindings for opening selected files in different
      ways
  - `g:fzf_layout`
-   - Determines the size and position of fzf window (tmux pane or Neovim split)
+   - Determines the size and position of fzf window
  - `g:fzf_colors`
    - Customizes fzf colors to match the current color scheme
  - `g:fzf_history_dir`
@@ -97,7 +97,7 @@ Examples~
     " - down / up / left / right
     let g:fzf_layout = { 'down': '~40%' }
 
-    " In Neovim, you can set up fzf window using a Vim command
+    " You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
     let g:fzf_layout = { 'window': 'enew' }
     let g:fzf_layout = { 'window': '-tabnew' }
     let g:fzf_layout = { 'window': '10split enew' }
@@ -111,6 +111,7 @@ Examples~
       \ 'bg+':     ['bg', 'CursorLine', 'CursorColumn'],
       \ 'hl+':     ['fg', 'Statement'],
       \ 'info':    ['fg', 'PreProc'],
+      \ 'border':  ['fg', 'Ignore'],
       \ 'prompt':  ['fg', 'Conditional'],
       \ 'pointer': ['fg', 'Exception'],
       \ 'marker':  ['fg', 'Keyword'],
@@ -141,7 +142,7 @@ following options.
   `options`                   | string/list   | Options to fzf
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | Use tmux pane with the given size (e.g.  `20` ,  `50%` )
-  `window`  (Neovim only)     | string        | Command to open fzf window (e.g.  `vertical aboveleft 30new` )
+  `window`  (Vim 8 / Neovim)  | string        | Command to open fzf window (e.g.  `vertical aboveleft 30new` )
   `launcher`                  | string        | External terminal emulator to start fzf with (GVim only)
   `launcher`                  | funcref       | Function for generating  `launcher`  string (GVim only)
  ---------------------------+---------------+--------------------------------------------------------------
@@ -169,8 +170,13 @@ function that decorates the options dictionary so that it understands
 GVIM                                                                  *fzf-gvim*
 ==============================================================================
 
-In GVim, you need an external terminal emulator to start fzf with. `xterm`
-command is used by default, but you can customize it with `g:fzf_launcher`.
+With the latest version of GVim, fzf will start inside the builtin terminal
+emulator of Vim. Please note that this terminal feature of Vim is still young
+and unstable and you may run into some issues.
+
+If you have an older version of GVim, you need an external terminal emulator
+to start fzf with. `xterm` command is used by default, but you can customize
+it with `g:fzf_launcher`.
 >
     " This is the default. %s is replaced with fzf command
     let g:fzf_launcher = 'xterm -e bash -ic %s'
