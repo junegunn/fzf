@@ -178,14 +178,14 @@ if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "cd $(printf %q "$PWD");$envs bash $argsf" $swap \
+    split-window $opt "$envs bash -c 'cd $(printf %q "$PWD"); exec -a fzf bash $argsf'" $swap \
     > /dev/null 2>&1
 else
   mkfifo $fifo1
   cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "$envs bash $argsf" $swap \
+    split-window $opt "$envs bash -c 'exec -a fzf bash $argsf'" $swap \
     > /dev/null 2>&1
   cat <&0 > $fifo1 &
 fi
