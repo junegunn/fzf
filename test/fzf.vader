@@ -137,6 +137,19 @@ Execute (fzf#wrap):
   AssertEqual 'e', opts.sink
   Assert !has_key(opts, 'sink*')
 
+  let opts = fzf#wrap('foobar', {'sink*': 'test', 'options': '--expect'})
+  Log opts
+  Assert opts['sink*'] == 'test'
+
+  function! TestCustomSinkAst(action, lines)
+    return [a:action, a:lines]
+  endfunction
+  let opts = fzf#wrap('foobar', {'sink*': function('TestCustomSinkAst')})
+  Log opts
+  Assert opts.options =~ '--expect='
+  Assert opts['sink*'](['', ['lines']]) == [opts._action, ['', ['lines']]]
+  delfunction TestCustomSinkAst
+
   let g:fzf_history_dir = '/tmp'
   let opts = fzf#wrap('foobar', {'options': '--color light'})
   Log opts
