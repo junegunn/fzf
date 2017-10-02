@@ -6,8 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-
-	"github.com/mattn/go-shellwords"
 )
 
 // ExecCommand executes the given command with cmd
@@ -18,11 +16,13 @@ func ExecCommand(command string) *exec.Cmd {
 // ExecCommandWith executes the given command with cmd. _shell parameter is
 // ignored on Windows.
 func ExecCommandWith(_shell string, command string) *exec.Cmd {
-	args, _ := shellwords.Parse(command)
-	allArgs := make([]string, len(args)+1)
-	allArgs[0] = "/c"
-	copy(allArgs[1:], args)
-	return exec.Command("cmd", allArgs...)
+	cmd := exec.Command("cmd")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+	    HideWindow: false,
+	    CmdLine: fmt.Sprintf(` /s /c "%s"`, command),
+	    CreationFlags: 0,
+	}
+	return cmd
 }
 
 // IsWindows returns true on Windows
