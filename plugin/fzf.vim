@@ -320,11 +320,12 @@ function! fzf#wrap(...)
   endif
 
   " Action: g:fzf_action
-  if !s:has_any(opts, ['sink', 'sink*'])
-    let opts._action = get(g:, 'fzf_action', s:default_action)
-    let opts.options .= ' --expect='.join(keys(opts._action), ',')
+  if !has_key(opts, 'sink') && opts.options !~# '--expect'
+    let opts._action   = get(g:, 'fzf_action', s:default_action)
+    let opts.options  .= ' --expect='.join(keys(opts._action), ',')
+    let opts._sink_ref = has_key(opts, 'sink*') ? opts['sink*'] : function('s:common_sink')
     function! opts.sink(lines) abort
-      return s:common_sink(self._action, a:lines)
+      return self._sink_ref(self._action, a:lines)
     endfunction
     let opts['sink*'] = remove(opts, 'sink')
   endif
