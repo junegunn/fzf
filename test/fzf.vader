@@ -61,7 +61,7 @@ Execute (fzf#run with dir option and autochdir):
   let cwd = getcwd()
   call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
   " Working directory changed due to &acd
-  AssertEqual '/', getcwd()
+  AssertEqual '/tmp', getcwd()
 
 Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
   set acd
