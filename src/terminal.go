@@ -1105,7 +1105,10 @@ func keyMatch(key int, event tui.Event) bool {
 
 func quoteEntry(entry string) string {
 	if util.IsWindows() {
-		return strconv.Quote(strings.Replace(entry, "\"", "\\\"", -1))
+		r, _ := regexp.Compile("[&|<>()@^%\"]")
+		return r.ReplaceAllStringFunc(strconv.Quote(entry), func (match string) string {
+		    return "^" + match
+		})
 	}
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
