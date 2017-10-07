@@ -1107,7 +1107,7 @@ func quoteEntry(entry string) string {
 	if util.IsWindows() {
 		escaped := strings.Replace(entry, `\`, `\\`, -1)
 		escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
-		r, _ := regexp.Compile(`[&|<>()@^%"]`)
+		r, _ := regexp.Compile(`[&|<>()@^%!"]`)
 		return r.ReplaceAllStringFunc(escaped, func (match string) string {
 		    return "^" + match
 		})
