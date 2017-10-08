@@ -21,11 +21,6 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-if exists('g:loaded_fzf')
-  finish
-endif
-let g:loaded_fzf = 1
-
 let s:is_win = has('win32') || has('win64')
 if s:is_win && &shellslash
   set noshellslash
@@ -74,7 +69,7 @@ function! s:shellesc_cmd(arg)
   return '^"'.substitute(escaped, '\(\\\+\)$', '\1\1', '').'^"'
 endfunction
 
-function! fzf#shellescape(arg, ...)
+function! fzf#core#shellescape(arg, ...)
   let shell = get(a:000, 0, &shell)
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
@@ -132,7 +127,7 @@ function! s:fzf_exec()
       throw 'fzf executable not found'
     endif
   endif
-  return fzf#shellescape(s:exec)
+  return fzf#core#shellescape(s:exec)
 endfunction
 
 function! s:tmux_enabled()
@@ -268,11 +263,11 @@ endfunction
 
 function! s:evaluate_opts(options)
   return type(a:options) == type([]) ?
-        \ join(map(copy(a:options), 'fzf#shellescape(v:val)')) : a:options
+        \ join(map(copy(a:options), 'fzf#core#shellescape(v:val)')) : a:options
 endfunction
 
 " [name string,] [opts dict,] [fullscreen boolean]
-function! fzf#wrap(...)
+function! fzf#core#wrap(...)
   let args = ['', {}, 0]
   let expects = map(copy(args), 'type(v:val)')
   let tidx = 0
@@ -315,7 +310,7 @@ function! fzf#wrap(...)
     if !isdirectory(dir)
       call mkdir(dir, 'p')
     endif
-    let history = fzf#shellescape(dir.'/'.name)
+    let history = fzf#core#shellescape(dir.'/'.name)
     let opts.options = join(['--history', history, opts.options])
   endif
 
@@ -343,7 +338,7 @@ function! s:use_sh()
   return [shell, shellslash]
 endfunction
 
-function! fzf#run(...) abort
+function! fzf#core#run(...) abort
 try
   let [shell, shellslash] = s:use_sh()
 
@@ -366,7 +361,7 @@ try
   if !has_key(dict, 'source') && !empty($FZF_DEFAULT_COMMAND) && !s:is_win
     let temps.source = s:fzf_tempname()
     call writefile(s:wrap_cmds(split($FZF_DEFAULT_COMMAND, "\n")), temps.source)
-    let dict.source = (empty($SHELL) ? &shell : $SHELL).' '.fzf#shellescape(temps.source)
+    let dict.source = (empty($SHELL) ? &shell : $SHELL).' '.fzf#core#shellescape(temps.source)
   endif
 
   if has_key(dict, 'source')
@@ -377,7 +372,7 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
-      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
+      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#core#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
     endif
@@ -443,7 +438,7 @@ function! s:fzf_tmux(dict)
     endif
   endfor
   return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+    \ &lines, &columns, fzf#core#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
 endfunction
 
 function! s:splittable(dict)
@@ -546,7 +541,7 @@ function! s:execute(dict, command, use_height, temps) abort
   elseif has('win32unix') && $TERM !=# 'cygwin'
     let shellscript = s:fzf_tempname()
     call writefile([command], shellscript)
-    let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
+    let command = 'cmd.exe /C '.fzf#core#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
     let a:temps.shellscript = shellscript
   endif
   if a:use_height
@@ -564,7 +559,7 @@ function! s:execute_tmux(dict, command, temps) abort
   let command = a:command
   if s:pushd(a:dict)
     " -c '#{pane_current_path}' is only available on tmux 1.9 or above
-    let command = join(['cd', fzf#shellescape(a:dict.dir), '&&', command])
+    let command = join(['cd', fzf#core#shellescape(a:dict.dir), '&&', command])
   endif
 
   call system(command)
@@ -784,7 +779,7 @@ function! s:shortpath()
   return empty(short) ? '~'.slash : short . (short =~ escape(slash, '\').'$' ? '' : slash)
 endfunction
 
-function! s:cmd(bang, ...) abort
+function! fzf#core#cmd(bang, ...) abort
   let args = copy(a:000)
   let opts = { 'options': ['--multi'] }
   if len(args) && isdirectory(expand(args[-1]))
@@ -799,10 +794,8 @@ function! s:cmd(bang, ...) abort
   let prompt = strwidth(prompt) < &columns - 20 ? prompt : '> '
   call extend(opts.options, ['--prompt', prompt])
   call extend(opts.options, args)
-  call fzf#run(fzf#wrap('FZF', opts, a:bang))
+  call fzf#core#run(fzf#core#wrap('FZF', opts, a:bang))
 endfunction
-
-command! -nargs=* -complete=dir -bang FZF call s:cmd(<bang>0, <f-args>)
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
