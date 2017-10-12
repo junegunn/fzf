@@ -369,10 +369,13 @@ export FZF_COMPLETION_OPTS='+c -x'
 
 # Use ag instead of the default find command for listing candidates.
 # - The first argument to the function is the base path to start traversal
-# - Note that ag only lists files not directories
 # - See the source code (completion.{bash,zsh}) for the details.
 _fzf_compgen_path() {
   ag -g "" "$1"
+}
+# Ag only lists files not directories, so we can use awk to get dirnames
+_fzf_compgen_dir() {
+  ag -g "" "$1" | awk 'function dirname(fn) { if (fn == "") return ".";  if (fn !~ "[^/]") return "/"; sub("/*$", "", fn); if (fn !~ "/") return "."; sub("/[^/]*$", "", fn); if (fn == "") fn = "/"; return fn } {$0 = dirname($0)} !a[$0]++'
 }
 ```
 
