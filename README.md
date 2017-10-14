@@ -367,14 +367,25 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='+c -x'
 
-# Use ag instead of the default find command for listing candidates.
+# Use ag instead of the default find command for listing path candidates.
 # - The first argument to the function is the base path to start traversal
-# - Note that ag only lists files not directories
 # - See the source code (completion.{bash,zsh}) for the details.
+# - ag only lists files, so we use with-dir script to augment the output
 _fzf_compgen_path() {
-  ag -g "" "$1"
+  ag -g "" "$1" | with-dir "$1"
+}
+
+# Use ag to generate the list for directory completion
+_fzf_compgen_dir() {
+  ag -g "" "$1" | only-dir "$1"
 }
 ```
+
+`only-dir` and `with-dir` scripts can be found [here][dir-scripts]. They are
+written in Ruby, but you should be able to rewrite them in any language you
+prefer.
+
+[dir-scripts]: https://gist.github.com/junegunn/8c3796a965f22e6a803fe53096ad7a75
 
 #### Supported commands
 
