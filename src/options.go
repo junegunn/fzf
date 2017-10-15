@@ -833,9 +833,6 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 }
 
 func parseHeight(str string) sizeSpec {
-	if util.IsWindows() {
-		errorExit("--height options is currently not supported on Windows")
-	}
 	size := parseSize(str, 100, "height")
 	return size
 }
@@ -1203,6 +1200,9 @@ func parseOptions(opts *Options, allArgs []string) {
 }
 
 func postProcessOptions(opts *Options) {
+	if util.IsWindows() && opts.Height.size > 0 {
+		errorExit("--height option is currently not supported on Windows")
+	}
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
 		if _, prs := opts.Keymap[tui.CtrlP]; !prs {
