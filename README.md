@@ -125,10 +125,12 @@ available as a [Chocolatey package][choco].
 choco install fzf
 ```
 
-However, other components of the project may not work on Windows. You might
-want to consider installing fzf on [Windows Subsystem for Linux][wsl] where
+However, other components of the project may not work on Windows. Known issues
+and limitations can be found on [the wiki page][windows-wiki]. You might want
+to consider installing fzf on [Windows Subsystem for Linux][wsl] where
 everything runs flawlessly.
 
+[windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
 [wsl]: https://blogs.msdn.microsoft.com/wsl/
 
 Upgrading fzf
