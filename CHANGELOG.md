@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.17.1
+------
+
+- Fixed custom background color of preview window (#1046)
+- Fixed background color issues of Windows binary
+- Fixed Windows binary to execute command using cmd.exe with no parsing and
+  escaping (#1072)
+- Added support for `window` layout on Vim 8 using Vim 8 terminal (#1055)
+
 0.17.0-2
 --------
 
