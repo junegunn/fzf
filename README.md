@@ -231,7 +231,7 @@ or `py`.
 
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
-    - e.g. `export FZF_DEFAULT_COMMAND='ag -g ""'`
+    - e.g. `export FZF_DEFAULT_COMMAND='rg --files'`
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
@@ -369,17 +369,18 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='+c -x'
 
-# Use ag instead of the default find command for listing path candidates.
+# Use rg (https://github.com/BurntSushi/ripgrep) instead of the default find
+# command for listing path candidates.
 # - The first argument to the function is the base path to start traversal
 # - See the source code (completion.{bash,zsh}) for the details.
-# - ag only lists files, so we use with-dir script to augment the output
+# - rg only lists files, so we use with-dir script to augment the output
 _fzf_compgen_path() {
-  ag -g "" "$1" | with-dir "$1"
+  rg --files "$1" | with-dir "$1"
 }
 
-# Use ag to generate the list for directory completion
+# Use rg to generate the list for directory completion
 _fzf_compgen_dir() {
-  ag -g "" "$1" | only-dir "$1"
+  rg --files "$1" | only-dir "$1"
 }
 ```
 
@@ -491,18 +492,17 @@ Tips
 
 #### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
 
-[ag](https://github.com/ggreer/the_silver_searcher) or
-[rg](https://github.com/BurntSushi/ripgrep) will do the
-filtering:
+[ripgrep](https://github.com/BurntSushi/ripgrep) or [the silver
+searcher](https://github.com/ggreer/the_silver_searcher) can do the filtering:
 
 ```sh
-# Feed the output of ag into fzf
-ag -g "" | fzf
+# Feed the output of rg into fzf
+rg --files | fzf
 
-# Setting ag as the default source for fzf
-export FZF_DEFAULT_COMMAND='ag -g ""'
+# Setting rg as the default source for fzf
+export FZF_DEFAULT_COMMAND='rg --files'
 
-# Now fzf (w/o pipe) will use ag instead of find
+# Now fzf (w/o pipe) will use rg instead of find
 fzf
 
 # To apply the command to CTRL-T as well
@@ -512,7 +512,7 @@ export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 If you don't want to exclude hidden files, use the following command:
 
 ```sh
-export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
+export FZF_DEFAULT_COMMAND='rg --files --hidden --glob \!.git'
 ```
 
 #### `git ls-tree` for fast traversal
