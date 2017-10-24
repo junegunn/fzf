@@ -680,6 +680,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actForwardChar)
 			case "forward-word":
 				appendAction(actForwardWord)
+			case "interrupt":
+				appendAction(actInterrupt)
 			case "jump":
 				appendAction(actJump)
 			case "jump-accept":

@@ -78,5 +78,6 @@ const (
 	exitOk        = 0
 	exitNoMatch   = 1
 	exitError     = 2
-	exitInterrupt = 130
+	exitQuit      = 130
+	exitInterrupt = 131
 )
