@@ -141,6 +141,7 @@ var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 const (
 	reqPrompt util.EventType = iota
 	reqInfo
+	reqInterrupt
 	reqHeader
 	reqList
 	reqJump
@@ -180,6 +181,7 @@ const (
 	actEndOfLine
 	actForwardChar
 	actForwardWord
+	actInterrupt
 	actKillLine
 	actKillWord
 	actUnixLineDiscard
@@ -1445,6 +1447,8 @@ func (t *Terminal) Loop() {
 							return exitOk
 						})
 					case reqQuit:
+						exit(func() int { return exitQuit })
+					case reqInterrupt:
 						exit(func() int { return exitInterrupt })
 					}
 				}
@@ -1574,6 +1578,8 @@ func (t *Terminal) Loop() {
 					t.input = []rune{}
 					t.cx = 0
 				}
+			case actInterrupt:
+				req(reqInterrupt)
 			case actForwardChar:
 				if t.cx < len(t.input) {
 					t.cx++
