@@ -233,7 +233,22 @@ _fzf_complete_telnet() {
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
+    scan_config() {
+      shopt -s nocasematch; file="$1"; base="${2:-$(dirname "$1")}"; IFS=$'\n'
+      for line in $([[ -e "$file" ]] && cat "$file"); do
+        if [[ "$line" =~ ^[[:space:]]*include[[:space:]]+(.*)$ ]]; then
+          includepath="${BASH_REMATCH[1]}"
+          [[ "$includepath" =~ ^~/ ]] && includepath="$HOME/${includepath:2}"
+          [[ "$includepath" =~ ^/ ]] || includepath="${base}/${includepath}"
+
+          # if $includepath contains wildcard, may expand to multiple files
+          globbed=($includepath); for item in "${globbed[@]}"; do scan_config "$item" "$base"; done
+        else
+          echo ${line}
+        fi
+      done
+    }
+    cat <(scan_config ~/.ssh/config && scan_config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
