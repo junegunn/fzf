@@ -231,7 +231,7 @@ or `py`.
 
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
-    - e.g. `export FZF_DEFAULT_COMMAND='rg --files'`
+    - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
@@ -369,26 +369,19 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='+c -x'
 
-# Use rg (https://github.com/BurntSushi/ripgrep) instead of the default find
+# Use fd (https://github.com/sharkdp/fd) instead of the default find
 # command for listing path candidates.
-# - The first argument to the function is the base path to start traversal
+# - The first argument to the function ($1) is the base path to start traversal
 # - See the source code (completion.{bash,zsh}) for the details.
-# - rg only lists files, so we use with-dir script to augment the output
 _fzf_compgen_path() {
-  rg --files "$1" | with-dir "$1"
+  fd --hidden --follow --exclude ".git" . "$1"
 }
 
-# Use rg to generate the list for directory completion
+# Use fd to generate the list for directory completion
 _fzf_compgen_dir() {
-  rg --files "$1" | only-dir "$1"
+  fd --type d --hidden --follow --exclude ".git" . "$1"
 }
 ```
-
-`only-dir` and `with-dir` scripts can be found [here][dir-scripts]. They are
-written in Ruby, but you should be able to rewrite them in any language you
-prefer.
-
-[dir-scripts]: https://gist.github.com/junegunn/8c3796a965f22e6a803fe53096ad7a75
 
 #### Supported commands
 
@@ -490,29 +483,33 @@ For more advanced examples, see [Key bindings for git with fzf][fzf-git].
 Tips
 ----
 
-#### Respecting `.gitignore`, `.hgignore`, and `svn:ignore`
+#### Respecting `.gitignore`
 
-[ripgrep](https://github.com/BurntSushi/ripgrep) or [the silver
-searcher](https://github.com/ggreer/the_silver_searcher) can do the filtering:
+You can use [fd](https://github.com/sharkdp/fd),
+[ripgrep](https://github.com/BurntSushi/ripgrep), or [the silver
+searcher](https://github.com/ggreer/the_silver_searcher) instead of the
+default find command to traverse the file system while respecting
+`.gitignore`.
 
 ```sh
-# Feed the output of rg into fzf
-rg --files | fzf
+# Feed the output of fd into fzf
+fd --type f | fzf
 
-# Setting rg as the default source for fzf
-export FZF_DEFAULT_COMMAND='rg --files'
+# Setting fd as the default source for fzf
+export FZF_DEFAULT_COMMAND='fd --type f'
 
-# Now fzf (w/o pipe) will use rg instead of find
+# Now fzf (w/o pipe) will use fd instead of find
 fzf
 
 # To apply the command to CTRL-T as well
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 ```
 
-If you don't want to exclude hidden files, use the following command:
+If you want the command to follow symbolic links, and don't want it to exclude
+hidden files, use the following command:
 
 ```sh
-export FZF_DEFAULT_COMMAND='rg --files --hidden --glob \!.git'
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 ```
 
 #### `git ls-tree` for fast traversal
