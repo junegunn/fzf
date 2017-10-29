@@ -237,12 +237,16 @@ _fzf_complete_ssh() {
       shopt -s nocasematch; file="$1"; base="${2:-$(dirname "$1")}"; IFS=$'\n'
       for line in $([[ -e "$file" ]] && cat "$file"); do
         if [[ "$line" =~ ^[[:space:]]*include[[:space:]]+(.*)$ ]]; then
-          includepath="${BASH_REMATCH[1]}"
-          [[ "$includepath" =~ ^~/ ]] && includepath="$HOME/${includepath:2}"
-          [[ "$includepath" =~ ^/ ]] || includepath="${base}/${includepath}"
+          includepath="${BASH_REMATCH[1]}"; IFS=" "
+          for item in $includepath; do
+            # handle absolute, relative and ~ paths
+            [[ "$item" =~ ^~/ ]] && item="$HOME/${item:2}"
+            [[ "$item" =~ ^/ ]] || item="${base}/${item}"
 
-          # if $includepath contains wildcard, may expand to multiple files
-          globbed=($includepath); for item in "${globbed[@]}"; do scan_config "$item" "$base"; done
+            # if $item contains wildcard, may expand to multiple files
+            globbed=($item)
+            for globitem in "${globbed[@]}"; do scan_config "$globitem" "$base"; done
+          done
         else
           echo ${line}
         fi
