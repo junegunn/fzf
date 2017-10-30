@@ -109,16 +109,16 @@ _fzf_complete() {
 
 _fzf_complete_telnet() {
   _fzf_complete '+m' "$@" < <(
-    command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
+    GREP_OPTIONS='' command grep -v '^\s*\(#\|$\)' /etc/hosts | GREP_OPTIONS='' command grep -Fv '0.0.0.0' |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    command cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
+    command cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | GREP_OPTIONS='' command grep -i '^host' | GREP_OPTIONS='' command grep -v '*' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
+        <(GREP_OPTIONS='' command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+        <(GREP_OPTIONS='' command grep -v '^\s*\(#\|$\)' /etc/hosts | GREP_OPTIONS='' command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
