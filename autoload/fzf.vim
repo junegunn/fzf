@@ -21,15 +21,14 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-if exists('g:loaded_fzf')
-  finish
-endif
-let g:loaded_fzf = 1
+function! fzf#shellescape(...)
+  return call(fzf#core#shellescape, a:000)
+endfunction
 
-let s:cpo_save = &cpo
-set cpo&vim
+function! fzf#wrap(...)
+  return call(fzf#core#wrap, a:000)
+endfunction
 
-command! -nargs=* -complete=dir -bang FZF call fzf#core#cmd(<bang>0, <f-args>)
-
-let &cpo = s:cpo_save
-unlet s:cpo_save
+function! fzf#run(...)
+  return call(fzf#core#run, a:000)
+endfunction
