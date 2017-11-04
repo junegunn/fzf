@@ -389,7 +389,7 @@ try
   let use_height = has_key(dict, 'down') && !has('gui_running') &&
         \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right', 'window')) &&
         \ executable('tput') && filereadable('/dev/tty')
-  let has_vim8_term = has('terminal') && has('patch-8.0.995')
+  let has_vim8_term = has('terminal') && has('patch-8.0.995') && (!s:is_win || has('patch-8.0.1108'))
   let has_nvim_term = has('nvim-0.2.1') || has('nvim') && !s:is_win
   let use_term = has_nvim_term ||
     \ has_vim8_term && (has('gui_running') || s:is_win || !use_height && s:present(dict, 'down', 'up', 'left', 'right', 'window'))
