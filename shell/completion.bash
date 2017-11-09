@@ -310,15 +310,15 @@ done
 unset _fzf_defc
 
 # Kill completion
-complete -F _fzf_complete_kill -o nospace -o default kill
+complete -F _fzf_complete_kill -o nospace kill
 
 # Host completion
-complete -F _fzf_complete_ssh -o default ssh
-complete -F _fzf_complete_telnet -o default telnet
+complete -F _fzf_complete_ssh ssh
+complete -F _fzf_complete_telnet telnet
 
 # Environment variables / Aliases
-complete -F _fzf_complete_unset -o default unset
-complete -F _fzf_complete_export -o default export
-complete -F _fzf_complete_unalias -o default unalias
+complete -F _fzf_complete_unset unset
+complete -F _fzf_complete_export export
+complete -F _fzf_complete_unalias unalias
 
 unset cmd d_cmds a_cmds x_cmds
