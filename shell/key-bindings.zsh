@@ -36,6 +36,16 @@ fzf-file-widget() {
 zle     -N   fzf-file-widget
 bindkey '^T' fzf-file-widget
 
+# Ensure precmds are run after cd
+fzf-redraw-prompt() {
+  local precmd
+  for precmd in $precmd_functions; do
+    $precmd
+  done
+  zle reset-prompt
+}
+zle -N fzf-redraw-prompt
+
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
@@ -48,7 +58,7 @@ fzf-cd-widget() {
   fi
   cd "$dir"
   local ret=$?
-  zle reset-prompt
+  zle fzf-redraw-prompt
   typeset -f zle-line-init >/dev/null && zle zle-line-init
   return $ret
 }
