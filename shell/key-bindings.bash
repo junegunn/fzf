@@ -11,6 +11,14 @@ __fzf_select__() {
   echo
 }
 
+__fzf_git_branches__(){
+  local cmd="git branch --all | cut -b3-"
+  eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" fzf -m "$@" | while read -r item; do
+  printf '%q ' "$item"
+  done
+  echo
+}
+
 if [[ $- =~ i ]]; then
 
 __fzf_use_tmux__() {
@@ -44,6 +52,17 @@ fzf-file-widget() {
   fi
 }
 
+fzf-branch-widget() {
+  if __fzf_use_tmux__; then
+    __fzf_select_tmux__
+  else
+    local selected="$(__fzf_git_branches__)"
+    READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
+    READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
+  fi
+}
+
+
 __fzf_cd__() {
   local cmd dir
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
@@ -73,6 +92,7 @@ if [[ ! -o vi ]]; then
   # CTRL-T - Paste the selected file path into the command line
   if [ $BASH_VERSINFO -gt 3 ]; then
     bind -x '"\C-t": "fzf-file-widget"'
+    bind -x '"\C-o": "fzf-branch-widget"'
   elif __fzf_use_tmux__; then
     bind '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
   else
