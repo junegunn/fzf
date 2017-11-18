@@ -149,7 +149,7 @@ _fzf_complete_any() {
       # fi
 
       # echo $words
-      matches=$(printf '%s\n' "${COMPREPLY[@]}" | awk '!a[$0]++' | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" fzf --bind 'ctrl-i:accept' -1 | while read -r item; do
+      matches=$(printf '%s\n' "${COMPREPLY[@]}" | awk '!a[$0]++' | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" fzf -1 | while read -r item; do
         printf -- "${item}"
       done)
       matches=${matches% }
