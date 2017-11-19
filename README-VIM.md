@@ -142,6 +142,28 @@ command! -bang MyStuff
   \ call fzf#run(fzf#wrap('my-stuff', {'dir': '~/my-stuff'}, <bang>0))
 ```
 
+fzf inside terminal buffer
+--------------------------
+
+The latest versions of Vim and Neovim include builtin terminal emulator
+(`:terminal`) and fzf will start in a terminal buffer in the following cases:
+
+- On Neovim
+- On GVim
+- On Terminal Vim with the non-default layout
+    - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
+
+### Hide statusline
+
+When fzf starts in a terminal buffer, you may want to hide the statusline of
+the containing buffer.
+
+```vim
+autocmd! FileType fzf
+autocmd  FileType fzf set laststatus=0 noshowmode noruler
+  \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
+```
+
 GVim
 ----
 
