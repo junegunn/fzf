@@ -112,7 +112,7 @@ But it's recommended that you use a plugin manager like
 [vim-plug](https://github.com/junegunn/vim-plug).
 
 ```vim
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug 'junegunn/fzf', { 'rtp': '~/.fzf', 'do': './install --all' }
 ```
 
 ### Fedora
