@@ -23,8 +23,8 @@ Table of Contents
 -----------------
 
    * [Installation](#installation)
-      * [Using git](#using-git)
       * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
+      * [Using git](#using-git)
       * [As Vim plugin](#as-vim-plugin)
       * [Fedora](#fedora)
       * [Windows](#windows)
@@ -74,20 +74,10 @@ stuff.
 
 [bin]: https://github.com/junegunn/fzf-bin/releases
 
-### Using git
-
-Clone this repository and run
-[install](https://github.com/junegunn/fzf/blob/master/install) script.
-
-```sh
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install
-```
-
 ### Using Homebrew or Linuxbrew
 
-Alternatively, you can use [Homebrew](http://brew.sh/) or
-[Linuxbrew](http://linuxbrew.sh/) to install fzf.
+You can use [Homebrew](http://brew.sh/) or [Linuxbrew](http://linuxbrew.sh/)
+to install fzf.
 
 ```sh
 brew install fzf
@@ -96,23 +86,49 @@ brew install fzf
 $(brew --prefix)/opt/fzf/install
 ```
 
-### As Vim plugin
+### Using git
 
-You can manually add the directory to `&runtimepath` as follows,
+Alternatively, you can "git clone" this repository to any directory and run
+[install](https://github.com/junegunn/fzf/blob/master/install) script.
 
-```vim
-" If installed using git
-set rtp+=~/.fzf
-
-" If installed using Homebrew
-set rtp+=/usr/local/opt/fzf
+```sh
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
 ```
 
-But it's recommended that you use a plugin manager like
-[vim-plug](https://github.com/junegunn/vim-plug).
+### As Vim plugin
+
+Once you have fzf installed, you can enable it inside Vim simply by adding the
+directory to `&runtimepath` as follows:
 
 ```vim
+" If installed using Homebrew
+set rtp+=/usr/local/opt/fzf
+
+" If installed using git
+set rtp+=~/.fzf
+```
+
+If you use [vim-plug](https://github.com/junegunn/vim-plug), the same can be
+written as:
+
+```vim
+" If installed using Homebrew
+Plug '/usr/local/opt/fzf'
+
+" If installed using git
+Plug '~/.fzf'
+```
+
+But instead of separately installing fzf on your system (using Homebrew or
+"git clone") and enabling it on Vim (adding it to `&runtimepath`), you can use
+vim-plug to do both.
+
+```vim
+" PlugInstall and PlugUpdate will clone fzf in ~/.fzf and run install script
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+  " Both options are optional. You don't have to install fzf in ~/.fzf
+  " and you don't have to run install script if you use fzf only in Vim.
 ```
 
 ### Fedora
