@@ -1,4 +1,4 @@
-#!/bin/zsh
+#compdef fzf
 #     ____      ____
 #    / __/___  / __/
 #   / /_/_  / / /_
@@ -9,25 +9,7 @@
 # - $FZF_TMUX_HEIGHT        (default: '40%')
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
-
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
-if ! declare -f _fzf_compgen_path > /dev/null; then
-  _fzf_compgen_path() {
-    echo "$1"
-    command find -L "$1" \
-      -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
-  }
-fi
-
-if ! declare -f _fzf_compgen_dir > /dev/null; then
-  _fzf_compgen_dir() {
-    command find -L "$1" \
-      -name .git -prune -o -name .svn -prune -o -type d \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
-  }
-fi
-
 ###########################################################
 
 __fzfcmd_complete() {
@@ -189,11 +171,32 @@ fzf-completion() {
   fi
 }
 
-[ -z "$fzf_default_completion" ] && {
-  binding=$(bindkey '^I')
-  [[ $binding =~ 'undefined-key' ]] || fzf_default_completion=$binding[(s: :w)2]
-  unset binding
+_fzf() {
+  if ! declare -f _fzf_compgen_path > /dev/null; then
+    _fzf_compgen_path() {
+      echo "$1"
+      command find -L "$1" \
+        -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+        -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    }
+  fi
+
+  if ! declare -f _fzf_compgen_dir > /dev/null; then
+    _fzf_compgen_dir() {
+      command find -L "$1" \
+        -name .git -prune -o -name .svn -prune -o -type d \
+        -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    }
+  fi
+
+  [ -z "$fzf_default_completion" ] && {
+    binding=$(bindkey '^I')
+    [[ $binding =~ 'undefined-key' ]] || fzf_default_completion=$binding[(s: :w)2]
+    unset binding
+  }
+
+  zle     -N   fzf-completion
+  bindkey '^I' fzf-completion
 }
 
-zle     -N   fzf-completion
-bindkey '^I' fzf-completion
+_fzf "$@"
