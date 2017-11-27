@@ -168,13 +168,13 @@ binary_error=""
 case "$archi" in
   Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
   Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}.tgz    ;;
-  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
-  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
   Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
   Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
   Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
   Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
   Linux\ aarch64*) download fzf-$version-linux_${binary_arch:-arm8}.tgz  ;;
+  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
+  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
   FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
   FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}.tgz   ;;
   OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
