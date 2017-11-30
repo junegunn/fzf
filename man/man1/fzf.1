@@ -272,14 +272,17 @@ string, specify field index expressions between the braces (See \fBFIELD INDEX
 EXPRESSION\fR for the details).
 
 .RS
-e.g. \fBfzf --preview="head -$LINES {}"\fR
+e.g. \fBfzf --preview='head -$LINES {}'\fR
      \fBls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1\fR
+
+fzf overrides \fB$LINES\fR and \fB$COLUMNS\fR so that they represent the exact
+size of the preview window.
 
 A placeholder expression starting with \fB+\fR flag will be replaced to the
 space-separated list of the selected lines (or the current line if no selection
 was made) individually quoted.
 
-e.g. \fBfzf --multi --preview="head -10 {+}"\fR
+e.g. \fBfzf --multi --preview='head -10 {+}'\fR
      \fBgit log --oneline | fzf --multi --preview 'git show {+1}'\fR
 
 Also, \fB{q}\fR is replaced to the current query string.

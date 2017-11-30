@@ -1319,12 +1319,12 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_hidden
-    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
+    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-\\$LINES-\\$COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys '?'
-    tmux.until { |lines| lines[-2].include?(' {1-1}') }
+    tmux.until { |lines| lines[-2].match?(/ {1-1-1-[0-9]+}/) }
     tmux.send_keys '555'
-    tmux.until { |lines| lines[-2].include?(' {555-555}') }
+    tmux.until { |lines| lines[-2].match?(/ {555-555-1-[0-9]+}/) }
     tmux.send_keys '?'
     tmux.until { |lines| lines[-1] == '> 555' }
   end

@@ -1368,6 +1368,12 @@ func (t *Terminal) Loop() {
 					command := replacePlaceholder(t.preview.command,
 						t.ansi, t.delimiter, false, string(t.input), request)
 					cmd := util.ExecCommand(command)
+					if t.pwindow != nil {
+						env := os.Environ()
+						env = append(env, fmt.Sprintf("LINES=%d", t.pwindow.Height()))
+						env = append(env, fmt.Sprintf("COLUMNS=%d", t.pwindow.Width()))
+						cmd.Env = env
+					}
 					out, _ := cmd.CombinedOutput()
 					t.reqBox.Set(reqPreviewDisplay, string(out))
 				} else {
