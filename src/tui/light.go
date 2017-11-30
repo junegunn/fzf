@@ -495,16 +495,19 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	}
 	*sz = 6
 	switch r.buffer[3] {
-	case 32, 36, 40, 48, // mouse-down / shift / cmd / ctrl
+	case 32, 34, 36, 40, 48, // mouse-down / shift / cmd / ctrl
 		35, 39, 43, 51: // mouse-up / shift / cmd / ctrl
 		mod := r.buffer[3] >= 36
+		left := r.buffer[3] == 32
 		down := r.buffer[3]%2 == 0
 		x := int(r.buffer[4] - 33)
 		y := int(r.buffer[5]-33) - r.yoffset
 		double := false
 		if down {
 			now := time.Now()
-			if now.Sub(r.prevDownTime) < doubleClickDuration {
+			if !left { // Right double click is not allowed
+				r.clickY = []int{}
+			} else if now.Sub(r.prevDownTime) < doubleClickDuration {
 				r.clickY = append(r.clickY, y)
 			} else {
 				r.clickY = []int{y}
@@ -517,14 +520,14 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 			}
 		}
 
-		return Event{Mouse, 0, &MouseEvent{y, x, 0, down, double, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
 	case 96, 100, 104, 112, // scroll-up / shift / cmd / ctrl
 		97, 101, 105, 113: // scroll-down / shift / cmd / ctrl
 		mod := r.buffer[3] >= 100
 		s := 1 - int(r.buffer[3]%2)*2
 		x := int(r.buffer[4] - 33)
 		y := int(r.buffer[5]-33) - r.yoffset
-		return Event{Mouse, 0, &MouseEvent{y, x, s, false, false, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, s, false, false, false, mod}}
 	}
 	return Event{Invalid, 0, nil}
 }

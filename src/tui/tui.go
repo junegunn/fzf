@@ -44,6 +44,8 @@ const (
 	Resize
 	Mouse
 	DoubleClick
+	LeftClick
+	RightClick
 
 	BTab
 	BSpace
@@ -185,6 +187,7 @@ type MouseEvent struct {
 	Y      int
 	X      int
 	S      int
+	Left   bool
 	Down   bool
 	Double bool
 	Mod    bool

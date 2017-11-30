@@ -278,6 +278,8 @@ func defaultKeymap() map[int][]action {
 	keymap[tui.Rune] = toActions(actRune)
 	keymap[tui.Mouse] = toActions(actMouse)
 	keymap[tui.DoubleClick] = toActions(actAccept)
+	keymap[tui.LeftClick] = toActions(actIgnore)
+	keymap[tui.RightClick] = toActions(actToggle)
 	return keymap
 }
 
@@ -1766,6 +1768,10 @@ func (t *Terminal) Loop() {
 								toggle()
 							}
 							req(reqList)
+							if me.Left {
+								return doActions(t.keymap[tui.LeftClick], tui.LeftClick)
+							}
+							return doActions(t.keymap[tui.RightClick], tui.RightClick)
 						}
 					}
 				}
