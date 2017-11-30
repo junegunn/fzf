@@ -691,7 +691,11 @@ func (t *Terminal) printInfo() {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
 	if !t.success && t.count == 0 {
-		output += " [ERROR]"
+		if len(os.Getenv("FZF_DEFAULT_COMMAND")) > 0 {
+			output = "[$FZF_DEFAULT_COMMAND failed]"
+		} else {
+			output = "[default command failed - $FZF_DEFAULT_COMMAND required]"
+		}
 	}
 	if pos+len(output) <= t.window.Width() {
 		t.window.CPrint(tui.ColInfo, 0, output)
