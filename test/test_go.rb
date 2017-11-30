@@ -277,7 +277,7 @@ class TestGoFZF < TestBase
 
   def test_fzf_default_command_failure
     tmux.send_keys fzf.sub('FZF_DEFAULT_COMMAND=', 'FZF_DEFAULT_COMMAND=false'), :Enter
-    tmux.until { |lines| lines[-2].include?('ERROR') }
+    tmux.until { |lines| lines[-2].include?('FZF_DEFAULT_COMMAND failed') }
     tmux.send_keys :Enter
   end
 
