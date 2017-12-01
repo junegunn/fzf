@@ -769,6 +769,15 @@ class TestGoFZF < TestBase
     assert_equal %w[print-my-query], readonce.split($INPUT_RECORD_SEPARATOR)
   end
 
+  def test_bind_replace_query
+    tmux.send_keys "seq 1 1000 | #{fzf '--print-query --bind=ctrl-j:replace-query'}", :Enter
+    tmux.send_keys '1'
+    tmux.until { |lines| lines[-2].end_with? '272/1000' }
+    tmux.send_keys 'C-k', 'C-j'
+    tmux.until { |lines| lines[-2].end_with? '29/1000' }
+    tmux.until { |lines| lines[-1].end_with? '> 10' }
+  end
+
   def test_long_line
     data = '.' * 256 * 1024
     File.open(tempname, 'w') do |f|

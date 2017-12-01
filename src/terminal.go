@@ -203,6 +203,7 @@ const (
 	actJump
 	actJumpAccept
 	actPrintQuery
+	actReplaceQuery
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
@@ -1568,6 +1569,11 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actReplaceQuery:
+				if t.cy < t.merger.Length() {
+					t.input = t.merger.Get(t.cy).item.text.ToRunes()
+					t.cx = len(t.input)
+				}
 			case actAbort:
 				req(reqQuit)
 			case actDeleteChar:
