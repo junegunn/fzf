@@ -1378,6 +1378,42 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_accept_non_empty
+    tmux.send_keys %(seq 1000 | #{fzf '--print-query --bind enter:accept-non-empty'}), :Enter
+    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.send_keys 'foo'
+    tmux.until { |lines| lines[-2].include? '0/1000' }
+    # fzf doesn't exit since there's no selection
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-2].include? '0/1000' }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| lines[-2].include? '1000/1000' }
+    tmux.send_keys '999'
+    tmux.until { |lines| lines[-2].include? '1/1000' }
+    tmux.send_keys :Enter
+    assert_equal %w[999 999], readonce.split($INPUT_RECORD_SEPARATOR)
+  end
+
+  def test_accept_non_empty_with_multi_selection
+    tmux.send_keys %(seq 1000 | #{fzf '-m --print-query --bind enter:accept-non-empty'}), :Enter
+    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-2].include? '1000/1000 (1)' }
+    tmux.send_keys 'foo'
+    tmux.until { |lines| lines[-2].include? '0/1000' }
+    # fzf will exit in this case even though there's no match for the current query
+    tmux.send_keys :Enter
+    assert_equal %w[foo 1], readonce.split($INPUT_RECORD_SEPARATOR)
+  end
+
+  def test_accept_non_empty_with_empty_list
+    tmux.send_keys %(: | #{fzf '-q foo --print-query --bind enter:accept-non-empty'}), :Enter
+    tmux.until { |lines| lines[-2].strip == '0/0' }
+    tmux.send_keys :Enter
+    # fzf will exit anyway since input list is empty
+    assert_equal %w[foo], readonce.split($INPUT_RECORD_SEPARATOR)
+  end
+
   def test_preview_update_on_select
     tmux.send_keys(%(seq 10 | fzf -m --preview 'echo {+}' --bind a:toggle-all),
                    :Enter)

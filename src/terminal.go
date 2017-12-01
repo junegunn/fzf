@@ -170,6 +170,7 @@ const (
 	actBeginningOfLine
 	actAbort
 	actAccept
+	actAcceptNonEmpty
 	actBackwardChar
 	actBackwardDeleteChar
 	actBackwardWord
@@ -1656,6 +1657,10 @@ func (t *Terminal) Loop() {
 				req(reqList)
 			case actAccept:
 				req(reqClose)
+			case actAcceptNonEmpty:
+				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
+					req(reqClose)
+				}
 			case actClearScreen:
 				req(reqRedraw)
 			case actTop:
