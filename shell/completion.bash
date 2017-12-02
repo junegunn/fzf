@@ -113,7 +113,7 @@ _fzf_opts_completion() {
 }
 
 _fzf_handle_dynamic_completion() {
-  local cmd orig_var orig ret orig_cmd
+  local cmd orig_var orig ret orig_cmd orig_complete
   cmd="$1"
   shift
   orig_cmd="$1"
@@ -122,10 +122,14 @@ _fzf_handle_dynamic_completion() {
   if [ -n "$orig" ] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
   elif [ -n "$_fzf_completion_loader" ]; then
+    orig_complete=$(complete -p "$cmd")
     _completion_loader "$@"
     ret=$?
-    eval "$(complete | command grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)"
-    source "${BASH_SOURCE[0]}"
+    # _completion_loader may not have updated completion for the command
+    if [ "$(complete -p "$cmd")" != "$orig_complete" ]; then
+      eval "$(complete | command grep "\-F.* $orig_cmd$" | _fzf_orig_completion_filter)"
+      eval "$orig_complete"
+    fi
     return $ret
   fi
 }

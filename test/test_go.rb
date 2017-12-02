@@ -1761,6 +1761,27 @@ class TestBash < TestBase
     super
     @tmux = Tmux.new :bash
   end
+
+  def test_dynamic_completion_loader
+    tmux.paste 'touch /tmp/foo; _fzf_completion_loader=1'
+    tmux.paste '_completion_loader() { complete -o default fake; }'
+    tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
+    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.until do |lines|
+      lines.item_count.positive? && lines.item_count == lines.match_count
+    end
+    tmux.send_keys 'C-c'
+
+    tmux.prepare
+    tmux.send_keys 'fake /tmp/foo'
+    tmux.send_keys :Tab , 'C-u'
+
+    tmux.prepare
+    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.until do |lines|
+      lines.item_count.positive? && lines.item_count == lines.match_count
+    end
+  end
 end
 
 class TestZsh < TestBase
