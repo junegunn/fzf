@@ -1767,9 +1767,7 @@ class TestBash < TestBase
     tmux.paste '_completion_loader() { complete -o default fake; }'
     tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
     tmux.send_keys 'fake /tmp/foo**', :Tab
-    tmux.until do |lines|
-      lines.item_count.positive? && lines.item_count == lines.match_count
-    end
+    tmux.until { |lines| lines.item_count.positive? }
     tmux.send_keys 'C-c'
 
     tmux.prepare
@@ -1778,9 +1776,7 @@ class TestBash < TestBase
 
     tmux.prepare
     tmux.send_keys 'fake /tmp/foo**', :Tab
-    tmux.until do |lines|
-      lines.item_count.positive? && lines.item_count == lines.match_count
-    end
+    tmux.until { |lines| lines.item_count.positive? }
   end
 end
 
