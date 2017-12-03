@@ -1,6 +1,24 @@
 CHANGELOG
 =========
 
+0.17.3
+------
+- `$LINES` and `$COLUMNS` are exported to preview command so that the command
+  knows the exact size of the preview window.
+- Better error messages when the default command or `$FZF_DEFAULT_COMMAND`
+  fails.
+- Reverted #1061 to avoid having duplicate entries in the list when find
+  command detected a file system loop (#1120). The default command now
+  requires that find supports `-fstype` option.
+- fzf now distinguishes mouse left click and right click (#1130)
+    - Right click is now bound to `toggle` action by default
+    - `--bind` understands `left-click` and `right-click`
+- Added `replace-query` action (#1137)
+    - Replaces query string with the current selection
+- Added `accept-non-empty` action (#1162)
+    - Same as accept, except that it prevents fzf from exiting without any
+      selection
+
 0.17.1
 ------
 
