@@ -1571,7 +1571,7 @@ func (t *Terminal) Loop() {
 			case actPrintQuery:
 				req(reqPrintQuery)
 			case actReplaceQuery:
-				if t.cy < t.merger.Length() {
+				if t.cy >= 0 && t.cy < t.merger.Length() {
 					t.input = t.merger.Get(t.cy).item.text.ToRunes()
 					t.cx = len(t.input)
 				}
