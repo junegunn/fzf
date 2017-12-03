@@ -7,7 +7,7 @@ import:
 - package: github.com/mattn/go-shellwords
   version: 02e3cf038dcea8290e44424da473dd12be796a8a
 - package: github.com/gdamore/tcell
-  version: 44772c121bb7838819d3ba4a7e84c0c2d617328e
+  version: 0a0db94084dfe181108c18508ebd312f12d331fb
   subpackages:
   - encoding
 - package: golang.org/x/crypto
