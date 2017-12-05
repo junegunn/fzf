@@ -682,6 +682,10 @@ function! s:execute_term(dict, command, temps) abort
     let lines = s:collect(self.temps)
     call s:callback(self.dict, lines)
     call self.switch_back(s:getpos() == self.ppos)
+
+    if s:is_win && has('gui_running')
+      redraw!
+    endif
   endfunction
 
   try
