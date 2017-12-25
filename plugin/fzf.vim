@@ -100,9 +100,9 @@ endfunction
 
 let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
-let s:fzf_go = s:base_dir.'/bin/fzf'
-let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
-let s:install = s:base_dir.'/install'
+let s:fzf_go = get(g:, 'fzf_command', s:base_dir.'/bin/fzf')
+let s:fzf_tmux = get(g:, 'fzf_tmux_command', s:base_dir.'/bin/fzf-tmux')
+let s:install = get(g:, 'fzf_install_command', s:base_dir.'/install')
 let s:installed = 0
 
 let s:cpo_save = &cpo
