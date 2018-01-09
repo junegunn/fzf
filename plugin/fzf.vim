@@ -115,6 +115,12 @@ function! s:fzf_exec()
     elseif executable('fzf')
       let s:exec = 'fzf'
     elseif s:is_win && !has('win32unix')
+      if executable('wsl')
+        let wsl_fzf = get(split(system('wsl bash --login -c "command -v fzf"'), "\n"), 0, '')
+        if !v:shell_error && !empty(wsl_fzf)
+          return 'wsl.exe '.wsl_fzf
+        endif
+      endif
       call s:warn('fzf executable not found.')
       call s:warn('Download fzf binary for Windows from https://github.com/junegunn/fzf-bin/releases/')
       call s:warn('and place it as '.s:base_dir.'\bin\fzf.exe')
