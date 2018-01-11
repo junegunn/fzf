@@ -146,6 +146,19 @@ actions are affected:
 .TP
 .BI "--jump-labels=" "CHARS"
 Label characters for \fBjump\fR and \fBjump-accept\fR
+.TP
+.BI "--vi-mode"
+Enable vi command line like mode by default (otherwise can be entered this mode by ctrl-O).
+In this mode, key bindings will be changed as follows:
+    i       ... back to default mode
+    j       ... move down
+    k       ... move up
+    g       ... move top
+    G       ... move bottom
+    o       ... return
+    q       ... quit
+    f,space ... move half pave
+    b       ... move back half pave
 .SS Layout
 .TP
 .BI "--height=" "HEIGHT[%]"
@@ -528,6 +541,7 @@ triggered whenever the query string is changed.
     \fBprint-query\fR           (print query and exit)
     \fBreplace-query\fR         (replace query string with the current selection)
     \fBselect-all\fR
+    \fBtoDefaultMode\fR         (back to default mode from vi mode)
     \fBtoggle\fR                (\fIright-click\fR)
     \fBtoggle-all\fR
     \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
@@ -538,6 +552,7 @@ triggered whenever the query string is changed.
     \fBtoggle-sort\fR
     \fBtoggle+up\fR             \fIbtab    (shift-tab)\fR
     \fBtop\fR                   (move to the top result)
+    \fBtoViMode\fR              \fIctrl-o\fR
     \fBunix-line-discard\fR     \fIctrl-u\fR
     \fBunix-word-rubout\fR      \fIctrl-w\fR
     \fBup\fR                    \fIctrl-k  ctrl-p  up\fR

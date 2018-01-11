@@ -76,6 +76,8 @@ type Terminal struct {
 	delimiter  Delimiter
 	expect     map[int]string
 	keymap     map[int][]action
+	vimode     bool
+	vikeymap   map[int][]action
 	pressed    string
 	printQuery bool
 	history    *History
@@ -166,6 +168,7 @@ const (
 	actIgnore actionType = iota
 	actInvalid
 	actRune
+	actRuneVi
 	actMouse
 	actBeginningOfLine
 	actAbort
@@ -195,6 +198,8 @@ const (
 	actToggleUp
 	actToggleIn
 	actToggleOut
+	actToViMode
+	actToDefaultMode
 	actDown
 	actUp
 	actPageUp
@@ -229,6 +234,33 @@ func toActions(types ...actionType) []action {
 	return actions
 }
 
+func viKeymap() map[int][]action {
+	keymap := make(map[int][]action)
+	keymap[tui.Rune] = toActions(actRuneVi)
+
+	keymap[tui.Tab] = toActions(actToggleDown)
+	keymap[tui.BTab] = toActions(actToggleUp)
+	keymap[tui.CtrlC] = toActions(actAbort)
+	keymap[tui.CtrlG] = toActions(actAbort)
+	keymap[tui.ESC] = toActions(actAbort)
+	keymap[tui.CtrlL] = toActions(actClearScreen)
+	keymap[tui.CtrlM] = toActions(actAccept)
+	keymap[tui.CtrlY] = toActions(actYank)
+
+	keymap[tui.Up] = toActions(actUp)
+	keymap[tui.Down] = toActions(actDown)
+
+	keymap[tui.PgUp] = toActions(actPageUp)
+	keymap[tui.PgDn] = toActions(actPageDown)
+
+	keymap[tui.Mouse] = toActions(actMouse)
+	keymap[tui.DoubleClick] = toActions(actAccept)
+	keymap[tui.LeftClick] = toActions(actIgnore)
+	keymap[tui.RightClick] = toActions(actToggle)
+
+	return keymap
+}
+
 func defaultKeymap() map[int][]action {
 	keymap := make(map[int][]action)
 	keymap[tui.Invalid] = toActions(actInvalid)
@@ -251,6 +283,7 @@ func defaultKeymap() map[int][]action {
 	keymap[tui.CtrlL] = toActions(actClearScreen)
 	keymap[tui.CtrlM] = toActions(actAccept)
 	keymap[tui.CtrlN] = toActions(actDown)
+	keymap[tui.CtrlO] = toActions(actToViMode)
 	keymap[tui.CtrlP] = toActions(actUp)
 	keymap[tui.CtrlU] = toActions(actUnixLineDiscard)
 	keymap[tui.CtrlW] = toActions(actUnixWordRubout)
@@ -371,6 +404,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delimiter:  opts.Delimiter,
 		expect:     opts.Expect,
 		keymap:     opts.Keymap,
+		vimode:     opts.viMode,
+		vikeymap:   opts.viKeymap,
 		pressed:    "",
 		printQuery: opts.PrintQuery,
 		history:    opts.History,
@@ -1469,6 +1504,12 @@ func (t *Terminal) Loop() {
 		}
 	}()
 
+	var keymap map[int][]action
+	if t.vimode {
+		keymap = t.vikeymap
+	} else {
+		keymap = t.keymap
+	}
 	looping := true
 	for looping {
 		event := t.tui.GetChar()
@@ -1680,6 +1721,12 @@ func (t *Terminal) Loop() {
 				if t.cx > 0 {
 					t.rubout(t.wordRubout)
 				}
+			case actToViMode:
+				keymap = t.vikeymap
+				t.vimode = true
+			case actToDefaultMode:
+				keymap = t.keymap
+				t.vimode = false
 			case actYank:
 				suffix := copySlice(t.input[t.cx:])
 				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
@@ -1722,6 +1769,35 @@ func (t *Terminal) Loop() {
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++
+			case actRuneVi:
+				switch event.Char {
+					case rune('i'):
+						t.vset(0)
+						keymap = t.keymap
+						t.vimode = false
+					case rune('j'):
+						t.vmove(-1, true)
+						req(reqList)
+					case rune('k'):
+						t.vmove(+1, true)
+						req(reqList)
+					case rune('g'):
+						t.vset(0)
+						req(reqList)
+					case rune('G'):
+						t.vset(t.merger.Length())
+						req(reqList)
+					case rune('o'):
+						req(reqClose)
+					case rune('q'):
+						req(reqQuit)
+					case rune('f'),rune(' '):
+						t.vmove(-(t.maxItems() / 2), false)
+						req(reqList)
+					case rune('b'):
+						t.vmove(t.maxItems()/2, false)
+						req(reqList)
+				}
 			case actPreviousHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
@@ -1772,7 +1848,7 @@ func (t *Terminal) Loop() {
 						// Double-click
 						if my >= min {
 							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doActions(t.keymap[tui.DoubleClick], tui.DoubleClick)
+								return doActions(keymap[tui.DoubleClick], tui.DoubleClick)
 							}
 						}
 					} else if me.Down {
@@ -1786,9 +1862,9 @@ func (t *Terminal) Loop() {
 							}
 							req(reqList)
 							if me.Left {
-								return doActions(t.keymap[tui.LeftClick], tui.LeftClick)
+								return doActions(keymap[tui.LeftClick], tui.LeftClick)
 							}
-							return doActions(t.keymap[tui.RightClick], tui.RightClick)
+							return doActions(keymap[tui.RightClick], tui.RightClick)
 						}
 					}
 				}
@@ -1798,10 +1874,10 @@ func (t *Terminal) Loop() {
 		changed := false
 		mapkey := event.Type
 		if t.jumping == jumpDisabled {
-			actions := t.keymap[mapkey]
+			actions := keymap[mapkey]
 			if mapkey == tui.Rune {
 				mapkey = int(event.Char) + int(tui.AltZ)
-				if act, prs := t.keymap[mapkey]; prs {
+				if act, prs := keymap[mapkey]; prs {
 					actions = act
 				}
 			}
@@ -1810,7 +1886,7 @@ func (t *Terminal) Loop() {
 			}
 			t.truncateQuery()
 			changed = string(previousInput) != string(t.input)
-			if onChanges, prs := t.keymap[tui.Change]; changed && prs {
+			if onChanges, prs := keymap[tui.Change]; changed && prs {
 				if !doActions(onChanges, tui.Change) {
 					continue
 				}
