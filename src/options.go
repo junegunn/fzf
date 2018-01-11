@@ -47,6 +47,8 @@ const usage = `usage: fzf [options]
                           highlighted substring (default: 10)
     --filepath-word       Make word-wise movements respect path separators
     --jump-labels=CHARS   Label characters for jump and jump-accept
+    --vi-mode             Enable vi command line like mode by default
+                          (otherwise can be entered this mode by ctrl-o)
 
   Layout
     --height=HEIGHT[%]    Display fzf window below the cursor with the given
@@ -176,6 +178,8 @@ type Options struct {
 	ToggleSort  bool
 	Expect      map[int]string
 	Keymap      map[int][]action
+	viMode      bool
+	viKeymap    map[int][]action
 	Preview     previewOpts
 	PrintQuery  bool
 	ReadZero    bool
@@ -1050,6 +1054,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true
+		case "--vi-mode":
+			opts.viMode = true
 		case "-1", "--select-1":
 			opts.Select1 = true
 		case "+1", "--no-select-1":
@@ -1232,6 +1238,7 @@ func postProcessOptions(opts *Options) {
 		keymap[key] = actions
 	}
 	opts.Keymap = keymap
+	opts.viKeymap = viKeymap()
 
 	// If we're not using extended search mode, --nth option becomes irrelevant
 	// if it contains the whole range
