@@ -69,6 +69,7 @@ fzf_base="$(pwd)"
 ask() {
   while true; do
     read -p "$1 ([y]/n) " -r
+    REPLY=${REPLY:-"y"}
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       return 1
     elif [[ $REPLY =~ ^[Nn]$ ]]; then
