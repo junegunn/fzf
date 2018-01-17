@@ -20,7 +20,7 @@ func ExecCommandWith(_shell string, command string) *exec.Cmd {
 	cmd := exec.Command("cmd")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    false,
-		CmdLine:       fmt.Sprintf(` /s /c "%s"`, command),
+		CmdLine:       fmt.Sprintf(` /v:on/s/c "%s"`, command),
 		CreationFlags: 0,
 	}
 	return cmd
