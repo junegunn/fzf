@@ -297,6 +297,8 @@ function! fzf#wrap(...)
     let opts.name = name
   end
 
+try
+  let [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote] = s:use_sh()
   " Layout: g:fzf_layout (and deprecated g:fzf_height)
   if bang
     for key in s:layout_keys
@@ -336,22 +338,35 @@ function! fzf#wrap(...)
   endif
 
   return opts
+finally
+  let [&shell, &shellslash, &shellcmdflag, &shellredir, &shellxquote, &shellquote] = [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote]
+endtry
 endfunction
 
 function! s:use_sh()
-  let [shell, shellslash] = [&shell, &shellslash]
+  let [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote] = [&shell, &shellslash, &shellcmdflag, &shellredir, &shellxquote, &shellquote]
   if s:is_win
     set shell=cmd.exe
     set noshellslash
+    set shellcmdflag=/c
+    set shellredir=>%s\ 2>&1
+    set shellquote=
+
+    if has('nvim')
+      set shellxquote=
+    else
+      set shellxquote=(
+    endif
   else
     set shell=sh
+    set shellcmdflag=-c
   endif
-  return [shell, shellslash]
+  return [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash] = s:use_sh()
+  let [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote] = s:use_sh()
 
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -421,7 +436,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  let [&shell, &shellslash] = [shell, shellslash]
+  let [&shell, &shellslash, &shellcmdflag, &shellredir, &shellxquote, &shellquote] = [shell, shellslash, shellcmdflag, shellredir, shellxquote, shellquote]
 endtry
 endfunction
 
