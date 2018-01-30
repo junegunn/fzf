@@ -303,7 +303,7 @@ _fzf_defc() {
 
 # Anything
 for cmd in $a_cmds; do
-  _fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
+  _fzf_defc "$cmd" _fzf_path_completion "-o nospace -o default -o bashdefault"
 done
 
 # Directory
