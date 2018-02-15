@@ -458,25 +458,22 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						}
 					}
 					return Event{Invalid, 0, nil}
-				case 59:
+				case ';':
 					if len(r.buffer) != 6 {
 						return Event{Invalid, 0, nil}
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case 50:
+					case '2', '5':
 						switch r.buffer[5] {
-						case 68:
-							return Event{Home, 0, nil}
-						case 67:
-							return Event{End, 0, nil}
-						}
-					case 53:
-						switch r.buffer[5] {
-						case 68:
-							return Event{SLeft, 0, nil}
-						case 67:
+						case 'A':
+							return Event{SUp, 0, nil}
+						case 'B':
+							return Event{SDown, 0, nil}
+						case 'C':
 							return Event{SRight, 0, nil}
+						case 'D':
+							return Event{SLeft, 0, nil}
 						}
 					} // r.buffer[4]
 				} // r.buffer[3]

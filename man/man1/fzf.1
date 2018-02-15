@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2017" "fzf 0.17.3" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Feb 2018" "fzf 0.17.4-devel" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -477,6 +477,8 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fIend\fR
     \fIpgup\fR        (\fIpage-up\fR)
     \fIpgdn\fR        (\fIpage-down\fR)
+    \fIshift-up\fR
+    \fIshift-down\fR
     \fIshift-left\fR
     \fIshift-right\fR
     \fIleft-click\fR
@@ -520,8 +522,8 @@ triggered whenever the query string is changed.
     \fBpage-up\fR               \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
-    \fBpreview-down\fR
-    \fBpreview-up\fR
+    \fBpreview-down\fR          \fIshift-down\fR
+    \fBpreview-up\fR            \fIshift-up\fR
     \fBpreview-page-down\fR
     \fBpreview-page-up\fR
     \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)

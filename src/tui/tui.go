@@ -61,6 +61,8 @@ const (
 	Home
 	End
 
+	SUp
+	SDown
 	SLeft
 	SRight
 

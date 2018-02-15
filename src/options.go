@@ -426,6 +426,10 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.PgUp
 		case "pgdn", "page-down":
 			chord = tui.PgDn
+		case "shift-up":
+			chord = tui.SUp
+		case "shift-down":
+			chord = tui.SDown
 		case "shift-left":
 			chord = tui.SLeft
 		case "shift-right":

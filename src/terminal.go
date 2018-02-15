@@ -277,6 +277,9 @@ func defaultKeymap() map[int][]action {
 	keymap[tui.PgUp] = toActions(actPageUp)
 	keymap[tui.PgDn] = toActions(actPageDown)
 
+	keymap[tui.SUp] = toActions(actPreviewUp)
+	keymap[tui.SDown] = toActions(actPreviewDown)
+
 	keymap[tui.Rune] = toActions(actRune)
 	keymap[tui.Mouse] = toActions(actMouse)
 	keymap[tui.DoubleClick] = toActions(actAccept)
