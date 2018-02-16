@@ -80,7 +80,7 @@ if [[ ! -o vi ]]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u`__fzf_history__`\e\C-e\er\e^"'
+  bind '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
