@@ -31,12 +31,12 @@ func TestParseTermsExtended(t *testing.T) {
 		terms[8][1].typ != termExact || terms[8][1].inv ||
 		terms[8][2].typ != termSuffix || terms[8][2].inv ||
 		terms[8][3].typ != termExact || !terms[8][3].inv {
-		t.Errorf("%s", terms)
+		t.Errorf("%v", terms)
 	}
 	for _, termSet := range terms[:8] {
 		term := termSet[0]
 		if len(term.text) != 3 {
-			t.Errorf("%s", term)
+			t.Errorf("%v", term)
 		}
 	}
 }
@@ -53,14 +53,14 @@ func TestParseTermsExtendedExact(t *testing.T) {
 		terms[5][0].typ != termFuzzy || !terms[5][0].inv || len(terms[5][0].text) != 3 ||
 		terms[6][0].typ != termPrefix || !terms[6][0].inv || len(terms[6][0].text) != 3 ||
 		terms[7][0].typ != termSuffix || !terms[7][0].inv || len(terms[7][0].text) != 3 {
-		t.Errorf("%s", terms)
+		t.Errorf("%v", terms)
 	}
 }
 
 func TestParseTermsEmpty(t *testing.T) {
 	terms := parseTerms(true, CaseSmart, false, "' ^ !' !^")
 	if len(terms) != 0 {
-		t.Errorf("%s", terms)
+		t.Errorf("%v", terms)
 	}
 }
 
@@ -73,7 +73,7 @@ func TestExact(t *testing.T) {
 	res, pos := algo.ExactMatchNaive(
 		pattern.caseSensitive, pattern.normalize, pattern.forward, &chars, pattern.termSets[0][0].text, true, nil)
 	if res.Start != 7 || res.End != 10 {
-		t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
+		t.Errorf("%v / %d / %d", pattern.termSets, res.Start, res.End)
 	}
 	if pos != nil {
 		t.Errorf("pos is expected to be nil")
@@ -90,7 +90,7 @@ func TestEqual(t *testing.T) {
 		res, pos := algo.EqualMatch(
 			pattern.caseSensitive, pattern.normalize, pattern.forward, &chars, pattern.termSets[0][0].text, true, nil)
 		if res.Start != sidxExpected || res.End != eidxExpected {
-			t.Errorf("%s / %d / %d", pattern.termSets, res.Start, res.End)
+			t.Errorf("%v / %d / %d", pattern.termSets, res.Start, res.End)
 		}
 		if pos != nil {
 			t.Errorf("pos is expected to be nil")

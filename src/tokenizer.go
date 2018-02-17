@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,10 +24,20 @@ type Token struct {
 	prefixLength int32
 }
 
+// String returns the string representation of a Token.
+func (t Token) String() string {
+	return fmt.Sprintf("Token{text: %s, prefixLength: %d}", t.text, t.prefixLength)
+}
+
 // Delimiter for tokenizing the input
 type Delimiter struct {
 	regex *regexp.Regexp
 	str   *string
+}
+
+// String returns the string representation of a Delimeter.
+func (d Delimiter) String() string {
+	return fmt.Sprintf("Delimiter{regex: %v, str: &%q}", d.regex, *d.str)
 }
 
 func newRange(begin int, end int) Range {
