@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -32,6 +33,11 @@ type term struct {
 	inv           bool
 	text          []rune
 	caseSensitive bool
+}
+
+// String returns the string representation of a term.
+func (t term) String() string {
+	return fmt.Sprintf("term{typ: %d, inv: %v, text: []rune(%q), caseSensitive: %v}", t.typ, t.inv, string(t.text), t.caseSensitive)
 }
 
 type termSet []term

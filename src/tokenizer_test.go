@@ -9,35 +9,35 @@ func TestParseRange(t *testing.T) {
 		i := ".."
 		r, _ := ParseRange(&i)
 		if r.begin != rangeEllipsis || r.end != rangeEllipsis {
-			t.Errorf("%s", r)
+			t.Errorf("%v", r)
 		}
 	}
 	{
 		i := "3.."
 		r, _ := ParseRange(&i)
 		if r.begin != 3 || r.end != rangeEllipsis {
-			t.Errorf("%s", r)
+			t.Errorf("%v", r)
 		}
 	}
 	{
 		i := "3..5"
 		r, _ := ParseRange(&i)
 		if r.begin != 3 || r.end != 5 {
-			t.Errorf("%s", r)
+			t.Errorf("%v", r)
 		}
 	}
 	{
 		i := "-3..-5"
 		r, _ := ParseRange(&i)
 		if r.begin != -3 || r.end != -5 {
-			t.Errorf("%s", r)
+			t.Errorf("%v", r)
 		}
 	}
 	{
 		i := "3"
 		r, _ := ParseRange(&i)
 		if r.begin != 3 || r.end != 3 {
-			t.Errorf("%s", r)
+			t.Errorf("%v", r)
 		}
 	}
 }
