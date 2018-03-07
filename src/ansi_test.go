@@ -26,7 +26,7 @@ func TestExtractColor(t *testing.T) {
 		output, ansiOffsets, newState := extractColor(src, state, nil)
 		state = newState
 		if output != "hello world" {
-			t.Errorf("Invalid output: %s %s", output, []rune(output))
+			t.Errorf("Invalid output: %s %v", output, []rune(output))
 		}
 		fmt.Println(src, ansiOffsets, clean)
 		assertion(ansiOffsets, state)

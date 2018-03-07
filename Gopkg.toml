@@ -1,0 +1,8 @@
+[[constraint]]
+  name = "github.com/mattn/go-shellwords"
+  version = "1.0.3"
+
+[prune]
+  go-tests = true
+  non-go = true
+  unused-packages = true

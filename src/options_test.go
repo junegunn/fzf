@@ -50,7 +50,7 @@ func TestDelimiterRegexString(t *testing.T) {
 		tokens[2].text.ToString() != "---*" ||
 		tokens[3].text.ToString() != "*" ||
 		tokens[4].text.ToString() != "---" {
-		t.Errorf("%s %s %d", delim, tokens, len(tokens))
+		t.Errorf("%s %v %d", delim, tokens, len(tokens))
 	}
 }
 
@@ -71,7 +71,7 @@ func TestSplitNth(t *testing.T) {
 		if len(ranges) != 1 ||
 			ranges[0].begin != rangeEllipsis ||
 			ranges[0].end != rangeEllipsis {
-			t.Errorf("%s", ranges)
+			t.Errorf("%v", ranges)
 		}
 	}
 	{
@@ -87,7 +87,7 @@ func TestSplitNth(t *testing.T) {
 			ranges[7].begin != -2 || ranges[7].end != -2 ||
 			ranges[8].begin != 2 || ranges[8].end != -2 ||
 			ranges[9].begin != rangeEllipsis || ranges[9].end != rangeEllipsis {
-			t.Errorf("%s", ranges)
+			t.Errorf("%v", ranges)
 		}
 	}
 }
@@ -99,7 +99,7 @@ func TestIrrelevantNth(t *testing.T) {
 		parseOptions(opts, words)
 		postProcessOptions(opts)
 		if len(opts.Nth) != 0 {
-			t.Errorf("nth should be empty: %s", opts.Nth)
+			t.Errorf("nth should be empty: %v", opts.Nth)
 		}
 	}
 	for _, words := range [][]string{[]string{"--nth", "..,3", "+x"}, []string{"--nth", "3,1..", "+x"}, []string{"--nth", "..-1,1", "+x"}} {
@@ -108,7 +108,7 @@ func TestIrrelevantNth(t *testing.T) {
 			parseOptions(opts, words)
 			postProcessOptions(opts)
 			if len(opts.Nth) != 0 {
-				t.Errorf("nth should be empty: %s", opts.Nth)
+				t.Errorf("nth should be empty: %v", opts.Nth)
 			}
 		}
 		{
@@ -117,7 +117,7 @@ func TestIrrelevantNth(t *testing.T) {
 			parseOptions(opts, words)
 			postProcessOptions(opts)
 			if len(opts.Nth) != 2 {
-				t.Errorf("nth should not be empty: %s", opts.Nth)
+				t.Errorf("nth should not be empty: %v", opts.Nth)
 			}
 		}
 	}
