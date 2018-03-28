@@ -205,10 +205,6 @@ function! s:common_sink(action, lines) abort
     return
   endif
   let key = remove(a:lines, 0)
-  let Cmd = get(a:action, key, 'e')
-  if type(Cmd) == type(function('call'))
-    return Cmd(a:lines)
-  endif
   if len(a:lines) > 1
     augroup fzf_swap
       autocmd SwapExists * let v:swapchoice='o'
@@ -224,6 +220,10 @@ function! s:common_sink(action, lines) abort
         execute 'e' s:escape(item)
         let empty = 0
       else
+        let Cmd = get(a:action, key, bufexists(expand(item)) ? 'sbuffer' : 'e')
+        if type(Cmd) == type(function('call'))
+          return Cmd(a:lines)
+        endif
         call s:open(Cmd, item)
       endif
       if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
