@@ -285,6 +285,9 @@ was made) individually quoted.
 e.g. \fBfzf --multi --preview='head -10 {+}'\fR
      \fBgit log --oneline | fzf --multi --preview 'git show {+1}'\fR
 
+When using a field index expression, leading and trailing whitespace is stripped
+from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
+
 Also, \fB{q}\fR is replaced to the current query string.
 
 Note that you can escape a placeholder pattern by prepending a backslash.

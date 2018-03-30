@@ -24,7 +24,7 @@ import (
 var placeholder *regexp.Regexp
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{\\+?[0-9,-.]*}|{q})")
+	placeholder = regexp.MustCompile("\\\\?(?:{[+s]*[0-9,-.]*}|{q})")
 }
 
 type jumpMode int
@@ -220,6 +220,11 @@ const (
 	actSigStop
 	actTop
 )
+
+type placeholderFlags struct {
+	plus          bool
+	preserveSpace bool
+}
 
 func toActions(types ...actionType) []action {
 	actions := make([]action, len(types))
@@ -1130,12 +1135,37 @@ func quoteEntry(entry string) string {
 	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }
 
+func parsePlaceholder(match string) (bool, string, placeholderFlags) {
+	flags := placeholderFlags{}
+
+	if match[0] == '\\' {
+		// Escaped placeholder pattern
+		return true, match[1:], flags
+	}
+
+	skipChars := 1
+	for _, char := range match[1:] {
+		switch char {
+		case '+':
+			flags.plus = true
+			skipChars++
+		case 's':
+			flags.preserveSpace = true
+			skipChars++
+		default:
+			break
+		}
+	}
+
+	matchWithoutFlags := "{" + match[skipChars:]
+
+	return false, matchWithoutFlags, flags
+}
+
 func hasPlusFlag(template string) bool {
 	for _, match := range placeholder.FindAllString(template, -1) {
-		if match[0] == '\\' {
-			continue
-		}
-		if match[1] == '+' {
+		_, _, flags := parsePlaceholder(match)
+		if flags.plus {
 			return true
 		}
 	}
@@ -1152,9 +1182,10 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 		selected = []*Item{}
 	}
 	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
-		// Escaped pattern
-		if match[0] == '\\' {
-			return match[1:]
+		escaped, match, flags := parsePlaceholder(match)
+
+		if escaped {
+			return match
 		}
 
 		// Current query
@@ -1162,13 +1193,8 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			return quoteEntry(query)
 		}
 
-		plusFlag := forcePlus
-		if match[1] == '+' {
-			match = "{" + match[2:]
-			plusFlag = true
-		}
 		items := current
-		if plusFlag {
+		if flags.plus || forcePlus {
 			items = selected
 		}
 
@@ -1204,7 +1230,9 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 					str = str[:delims[len(delims)-1][0]]
 				}
 			}
-			str = strings.TrimSpace(str)
+			if !flags.preserveSpace {
+				str = strings.TrimSpace(str)
+			}
 			replacements[idx] = quoteEntry(str)
 		}
 		return strings.Join(replacements, " ")
