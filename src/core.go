@@ -100,7 +100,7 @@ func Run(opts *Options, revision string) {
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
-			trans := Transform(tokens, opts.WithNth)
+			trans := Transform(tokens, opts.WithNth, opts.Delimiter)
 			transformed := joinTokens(trans)
 			if len(header) < opts.HeaderLines {
 				header = append(header, transformed)
