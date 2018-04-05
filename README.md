@@ -142,7 +142,7 @@ sudo dnf install fzf
 
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
-documentation for more information.
+documentation (/usr/share/doc/fzf/README.Fedora) for more information.
 
 
 ### Windows
