@@ -178,7 +178,7 @@ func joinTokens(tokens []Token) string {
 }
 
 // Transform is used to transform the input when --with-nth option is given
-func Transform(tokens []Token, withNth []Range) []Token {
+func Transform(tokens []Token, withNth []Range, delimiter Delimiter) []Token {
 	transTokens := make([]Token, len(withNth))
 	numTokens := len(tokens)
 	for idx, r := range withNth {
@@ -249,5 +249,21 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		}
 		transTokens[idx] = Token{&merged, prefixLength}
 	}
+
+	// remove trailing delimiters
+	// a third condition is possible but that delimiter must be invisible whitespace
+	if delimiter.str != nil {
+		rightmostText := transTokens[len(transTokens)-1].text.ToString()
+		rightmostText = strings.TrimSuffix(rightmostText, *delimiter.str)
+		asChars := util.ToChars([]byte(rightmostText))
+		transTokens[len(transTokens)-1].text = &asChars
+	} else if delimiter.regex != nil {
+		reg := regexp.MustCompile(delimiter.regex.String() + "$")
+		rightmostText := transTokens[len(transTokens)-1].text.ToString()
+		rightmostText = reg.ReplaceAllString(rightmostText, "")
+		asChars := util.ToChars([]byte(rightmostText))
+		transTokens[len(transTokens)-1].text = &asChars
+	}
+
 	return transTokens
 }

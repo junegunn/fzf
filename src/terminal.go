@@ -1220,7 +1220,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 
 		for idx, item := range items {
 			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
-			trans := Transform(tokens, ranges)
+			trans := Transform(tokens, ranges, delimiter)
 			str := string(joinTokens(trans))
 			if delimiter.str != nil {
 				str = strings.TrimSuffix(str, *delimiter.str)

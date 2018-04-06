@@ -72,14 +72,14 @@ func TestTransform(t *testing.T) {
 		tokens := Tokenize(input, Delimiter{})
 		{
 			ranges := splitNth("1,2,3")
-			tx := Transform(tokens, ranges)
+			tx := Transform(tokens, ranges, Delimiter{})
 			if string(joinTokens(tx)) != "abc:  def:  ghi:  " {
 				t.Errorf("%s", tx)
 			}
 		}
 		{
 			ranges := splitNth("1..2,3,2..,1")
-			tx := Transform(tokens, ranges)
+			tx := Transform(tokens, ranges, Delimiter{})
 			if string(joinTokens(tx)) != "abc:  def:  ghi:  def:  ghi:  jklabc:  " ||
 				len(tx) != 4 ||
 				tx[0].text.ToString() != "abc:  def:  " || tx[0].prefixLength != 2 ||
@@ -94,13 +94,13 @@ func TestTransform(t *testing.T) {
 		tokens := Tokenize(input, delimiterRegexp(":"))
 		{
 			ranges := splitNth("1..2,3,2..,1")
-			tx := Transform(tokens, ranges)
-			if string(joinTokens(tx)) != "  abc:  def:  ghi:  def:  ghi:  jkl  abc:" ||
+			tx := Transform(tokens, ranges, delimiterRegexp(":"))
+			if string(joinTokens(tx)) != "  abc:  def:  ghi:  def:  ghi:  jkl  abc" ||
 				len(tx) != 4 ||
 				tx[0].text.ToString() != "  abc:  def:" || tx[0].prefixLength != 0 ||
 				tx[1].text.ToString() != "  ghi:" || tx[1].prefixLength != 12 ||
 				tx[2].text.ToString() != "  def:  ghi:  jkl" || tx[2].prefixLength != 6 ||
-				tx[3].text.ToString() != "  abc:" || tx[3].prefixLength != 0 {
+				tx[3].text.ToString() != "  abc" || tx[3].prefixLength != 0 {
 				t.Errorf("%s", tx)
 			}
 		}
@@ -108,5 +108,5 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformIndexOutOfBounds(t *testing.T) {
-	Transform([]Token{}, splitNth("1"))
+	Transform([]Token{}, splitNth("1"), Delimiter{})
 }
