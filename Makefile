@@ -1,12 +1,5 @@
 ifndef GOOS
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	GOOS := darwin
-else ifeq ($(UNAME_S),Linux)
-	GOOS := linux
-else
-$(error "$$GOOS is not defined.")
-endif
+GOOS        := $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
 endif
 
 MAKEFILE    := $(realpath $(lastword $(MAKEFILE_LIST)))
