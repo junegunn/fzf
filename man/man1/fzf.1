@@ -489,10 +489,13 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fIdouble-click\fR
     or any single character
 
-Additionally, a special event named \fIchange\fR is available which is
-triggered whenever the query string is changed.
+Additionally, the following special events are available:
 
-    e.g. \fBfzf --bind change:top\fR
+    \fIinit\fR        triggered when the finder interface is initialized
+    \fIchange\fR      triggered whenever the query string is changed
+
+    e.g. \fBfzf --multi --bind init:select-all\fR
+         \fBfzf --bind change:top\fR
 
   \fBACTION:               DEFAULT BINDINGS (NOTES):
     \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR

@@ -79,6 +79,7 @@ const (
 	F11
 	F12
 
+	Init
 	Change
 
 	AltSpace
