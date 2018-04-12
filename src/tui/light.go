@@ -48,11 +48,13 @@ func (r *LightRenderer) stderrInternal(str string, allowNLCR bool) {
 	runes := []rune{}
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
-		if r == utf8.RuneError || r < 32 &&
-			r != '\x1b' && (!allowNLCR || r != '\n' && r != '\r') {
-			runes = append(runes, '?')
-		} else {
-			runes = append(runes, r)
+		nlcr := r == '\n' || r == '\r'
+		if r >= 32 || r == '\x1b' || nlcr {
+			if r == utf8.RuneError || nlcr && !allowNLCR {
+				runes = append(runes, ' ')
+			} else {
+				runes = append(runes, r)
+			}
 		}
 		bytes = bytes[sz:]
 	}
@@ -807,7 +809,7 @@ func (w *LightWindow) Print(text string) {
 }
 
 func cleanse(str string) string {
-	return strings.Replace(str, "\x1b", "?", -1)
+	return strings.Replace(str, "\x1b", "", -1)
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
