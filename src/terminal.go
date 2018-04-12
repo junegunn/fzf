@@ -1500,12 +1500,12 @@ func (t *Terminal) Loop() {
 		}
 	}()
 
+	init := true
 	looping := true
 	for looping {
-		event := t.tui.GetChar()
+		var event tui.Event
+		var previousInput []rune
 
-		t.mutex.Lock()
-		previousInput := t.input
 		events := []util.EventType{reqPrompt}
 		req := func(evts ...util.EventType) {
 			for _, event := range evts {
@@ -1525,14 +1525,6 @@ func (t *Terminal) Loop() {
 			t.previewer.offset = util.Constrain(
 				t.previewer.offset+amount, 0, t.previewer.lines-1)
 			req(reqPreviewRefresh)
-		}
-		for key, ret := range t.expect {
-			if keyMatch(key, event) {
-				t.pressed = ret
-				t.reqBox.Set(reqClose, nil)
-				t.mutex.Unlock()
-				return
-			}
 		}
 
 		var doAction func(action, int) bool
@@ -1826,6 +1818,32 @@ func (t *Terminal) Loop() {
 			}
 			return true
 		}
+
+		if init {
+			init = false
+			if onInit, prs := t.keymap[tui.Init]; prs {
+				t.mutex.Lock()
+				if !doActions(onInit, tui.Init) {
+					continue
+				}
+				t.mutex.Unlock()
+			}
+		}
+
+		event = t.tui.GetChar()
+
+		t.mutex.Lock()
+		previousInput = t.input
+
+		for key, ret := range t.expect {
+			if keyMatch(key, event) {
+				t.pressed = ret
+				t.reqBox.Set(reqClose, nil)
+				t.mutex.Unlock()
+				return
+			}
+		}
+
 		changed := false
 		mapkey := event.Type
 		if t.jumping == jumpDisabled {

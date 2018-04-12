@@ -400,6 +400,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.BSpace
 		case "ctrl-space":
 			chord = tui.CtrlSpace
+		case "init":
+			chord = tui.Init
 		case "change":
 			chord = tui.Change
 		case "alt-enter", "alt-return":
