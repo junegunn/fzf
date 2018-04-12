@@ -360,6 +360,11 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
 		return Event{int(CtrlAltA + r.buffer[1] - 1), 0, nil}
 	}
+	alt := false
+	if len(r.buffer) > 2 && r.buffer[1] == ESC {
+		r.buffer = r.buffer[1:]
+		alt = true
+	}
 	switch r.buffer[1] {
 	case 32:
 		return Event{AltSpace, 0, nil}
@@ -380,12 +385,25 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		*sz = 3
 		switch r.buffer[2] {
 		case 68:
+			if alt {
+				return Event{AltLeft, 0, nil}
+			}
 			return Event{Left, 0, nil}
 		case 67:
+			if alt {
+				// Ugh..
+				return Event{AltRight, 0, nil}
+			}
 			return Event{Right, 0, nil}
 		case 66:
+			if alt {
+				return Event{AltDown, 0, nil}
+			}
 			return Event{Down, 0, nil}
 		case 65:
+			if alt {
+				return Event{AltUp, 0, nil}
+			}
 			return Event{Up, 0, nil}
 		case 90:
 			return Event{BTab, 0, nil}

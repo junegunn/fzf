@@ -85,6 +85,11 @@ const (
 	AltSlash
 	AltBS
 
+	AltUp
+	AltDown
+	AltLeft
+	AltRight
+
 	Alt0
 )
 

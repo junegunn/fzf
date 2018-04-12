@@ -410,6 +410,14 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.AltSlash
 		case "alt-bs", "alt-bspace":
 			chord = tui.AltBS
+		case "alt-up":
+			chord = tui.AltUp
+		case "alt-down":
+			chord = tui.AltDown
+		case "alt-left":
+			chord = tui.AltLeft
+		case "alt-right":
+			chord = tui.AltRight
 		case "tab":
 			chord = tui.Tab
 		case "btab", "shift-tab":
