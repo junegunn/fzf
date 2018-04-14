@@ -141,6 +141,11 @@ cleanup() {
     tmux set-window-option $tmux_remain_on_exit
   fi
 
+  # Reset synchronize-panes window option
+  if [[ -n "$tmux_synchronize_panes" ]]; then
+    tmux set-window-option $tmux_synchronize_panes
+  fi
+
   # Remove temp window if we were zoomed
   if [[ -n "$zoomed" ]]; then
     tmux display-message -p "#{window_id}" > /dev/null
@@ -180,6 +185,7 @@ echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" > $argsf
 close="; trap - EXIT SIGINT SIGTERM $close"
 
 tmux_remain_on_exit=$(tmux show-window-options remain-on-exit)
+tmux_synchronize_panes=$(tmux show-window-options synchronize-panes)
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
