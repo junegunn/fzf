@@ -25,11 +25,9 @@ const (
 	offsetPollTries = 10
 )
 
-const consoleDevice string = "/dev/tty"
-
 var offsetRegexp *regexp.Regexp = regexp.MustCompile("\x1b\\[([0-9]+);([0-9]+)R")
 
-func openTtyIn() *os.File {
+func openTtyIn(consoleDevice string) *os.File {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
@@ -78,6 +76,7 @@ type LightRenderer struct {
 	mouse         bool
 	forceBlack    bool
 	clearOnExit   bool
+	consoleDevice string
 	prevDownTime  time.Time
 	clickY        []int
 	ttyin         *os.File
@@ -111,13 +110,14 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) Renderer {
+func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, consoleDevice string, fullscreen bool, maxHeightFunc func(int) int) Renderer {
 	r := LightRenderer{
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		clearOnExit:   clearOnExit,
-		ttyin:         openTtyIn(),
+		consoleDevice: consoleDevice,
+		ttyin:         openTtyIn(consoleDevice),
 		yoffset:       0,
 		tabstop:       tabstop,
 		fullscreen:    fullscreen,
@@ -282,7 +282,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		errorExit("Failed to read " + consoleDevice)
+		errorExit("Failed to read " + r.consoleDevice)
 	}
 
 	retries := 0
