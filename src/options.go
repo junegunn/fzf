@@ -86,6 +86,7 @@ const usage = `usage: fzf [options]
     --read0               Read input delimited by ASCII NUL characters
     --print0              Print output delimited by ASCII NUL characters
     --sync                Synchronous search for multi-staged filtering
+    --tty=DEVICE          Use DEVICE as tty (default: /dev/tty)
     --version             Display version information and exit
 
   Environment variables
@@ -188,6 +189,7 @@ type Options struct {
 	Bordered    bool
 	Tabstop     int
 	ClearOnExit bool
+	TtyDevice   string
 	Version     bool
 }
 
@@ -237,6 +239,7 @@ func defaultOptions() *Options {
 		Margin:      defaultMargin(),
 		Tabstop:     8,
 		ClearOnExit: true,
+		TtyDevice:   "/dev/tty",
 		Version:     false}
 }
 
@@ -1133,6 +1136,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = true
 		case "--no-clear":
 			opts.ClearOnExit = false
+		case "--tty":
+			opts.TtyDevice = nextString(allArgs, &i, "device name required")
 		case "--version":
 			opts.Version = true
 		default:
@@ -1188,6 +1193,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
+			} else if match, value := optString(arg, "--tty="); match {
+				opts.TtyDevice = value
 			} else {
 				errorExit("unknown option: " + arg)
 			}
