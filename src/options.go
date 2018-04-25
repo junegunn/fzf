@@ -53,7 +53,8 @@ const usage = `usage: fzf [options]
                           height instead of using fullscreen
     --min-height=HEIGHT   Minimum height when --height is given in percent
                           (default: 10)
-    --reverse             Reverse orientation
+    --layout=LAYOUT       Choose layout: [bottom-up|top-down|top-down-below]
+                          (default: bottom-up)
     --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
@@ -90,7 +91,8 @@ const usage = `usage: fzf [options]
 
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Default options (e.g. '--reverse --inline-info')
+    FZF_DEFAULT_OPTS      Default options
+                          (e.g. '--layout=top-down --inline-info')
 
 `
 
@@ -132,6 +134,14 @@ const (
 	posRight
 )
 
+type layoutType int
+
+const (
+	layoutBottomUp layoutType = iota
+	layoutTopDown
+	layoutTopDownBelow
+)
+
 type previewOpts struct {
 	command  string
 	position windowPosition
@@ -161,7 +171,7 @@ type Options struct {
 	Bold        bool
 	Height      sizeSpec
 	MinHeight   int
-	Reverse     bool
+	Layout      layoutType
 	Cycle       bool
 	Hscroll     bool
 	HscrollOff  int
@@ -211,7 +221,7 @@ func defaultOptions() *Options {
 		Black:       false,
 		Bold:        true,
 		MinHeight:   10,
-		Reverse:     false,
+		Layout:      layoutBottomUp,
 		Cycle:       false,
 		Hscroll:     true,
 		HscrollOff:  10,
@@ -857,6 +867,20 @@ func parseHeight(str string) sizeSpec {
 	return size
 }
 
+func parseLayout(str string) layoutType {
+	switch str {
+	case "bottom-up":
+		return layoutBottomUp
+	case "top-down":
+		return layoutTopDown
+	case "top-down-below":
+		return layoutTopDownBelow
+	default:
+		errorExit("invalid layout (expected: bottom-up / top-down / top-down-below)")
+	}
+	return layoutBottomUp
+}
+
 func parsePreviewWindow(opts *previewOpts, input string) {
 	// Default
 	opts.position = posRight
@@ -1037,10 +1061,13 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Bold = true
 		case "--no-bold":
 			opts.Bold = false
+		case "--layout":
+			opts.Layout = parseLayout(
+				nextString(allArgs, &i, "layout required (bottom-up / top-down / top-down-below)"))
 		case "--reverse":
-			opts.Reverse = true
+			opts.Layout = layoutTopDown
 		case "--no-reverse":
-			opts.Reverse = false
+			opts.Layout = layoutBottomUp
 		case "--cycle":
 			opts.Cycle = true
 		case "--no-cycle":
@@ -1156,6 +1183,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Height = parseHeight(value)
 			} else if match, value := optString(arg, "--min-height="); match {
 				opts.MinHeight = atoi(value)
+			} else if match, value := optString(arg, "--layout="); match {
+				opts.Layout = parseLayout(value)
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {

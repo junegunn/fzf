@@ -59,7 +59,7 @@ type Terminal struct {
 	inlineInfo bool
 	prompt     string
 	promptLen  int
-	reverse    bool
+	layout     layoutType
 	fullscreen bool
 	hscroll    bool
 	hscrollOff int
@@ -301,10 +301,11 @@ func trimQuery(query string) []rune {
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
 	var header []string
-	if opts.Reverse {
-		header = opts.Header
-	} else {
+	switch opts.Layout {
+	case layoutBottomUp, layoutTopDownBelow:
 		header = reverseStringArray(opts.Header)
+	default:
+		header = opts.Header
 	}
 	var delay time.Duration
 	if opts.Tac {
@@ -362,7 +363,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t := Terminal{
 		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
-		reverse:    opts.Reverse,
+		layout:     opts.Layout,
 		fullscreen: fullscreen,
 		hscroll:    opts.Hscroll,
 		hscrollOff: opts.HscrollOff,
@@ -642,8 +643,21 @@ func (t *Terminal) resizeWindows() {
 }
 
 func (t *Terminal) move(y int, x int, clear bool) {
-	if !t.reverse {
-		y = t.window.Height() - y - 1
+	h := t.window.Height()
+
+	switch t.layout {
+	case layoutBottomUp:
+		y = h - y - 1
+	case layoutTopDownBelow:
+		n := 2 + len(t.header)
+		if t.inlineInfo {
+			n--
+		}
+		if y < n {
+			y = h - y - 1
+		} else {
+			y -= n
+		}
 	}
 
 	if clear {
@@ -747,7 +761,7 @@ func (t *Terminal) printList() {
 	count := t.merger.Length() - t.offset
 	for j := 0; j < maxy; j++ {
 		i := j
-		if !t.reverse {
+		if t.layout == layoutBottomUp {
 			i = maxy - 1 - j
 		}
 		line := i + 2 + len(t.header)
@@ -1659,12 +1673,12 @@ func (t *Terminal) Loop() {
 					req(reqList, reqInfo)
 				}
 			case actToggleIn:
-				if t.reverse {
+				if t.layout != layoutBottomUp {
 					return doAction(action{t: actToggleUp}, mapkey)
 				}
 				return doAction(action{t: actToggleDown}, mapkey)
 			case actToggleOut:
-				if t.reverse {
+				if t.layout != layoutBottomUp {
 					return doAction(action{t: actToggleDown}, mapkey)
 				}
 				return doAction(action{t: actToggleUp}, mapkey)
@@ -1792,12 +1806,20 @@ func (t *Terminal) Loop() {
 					mx -= t.window.Left()
 					my -= t.window.Top()
 					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
-					if !t.reverse {
-						my = t.window.Height() - my - 1
-					}
 					min := 2 + len(t.header)
 					if t.inlineInfo {
 						min--
+					}
+					h := t.window.Height()
+					switch t.layout {
+					case layoutBottomUp:
+						my = h - my - 1
+					case layoutTopDownBelow:
+						if my < h-min {
+							my += min
+						} else {
+							my = h - my - 1
+						}
 					}
 					if me.Double {
 						// Double-click
@@ -1885,7 +1907,7 @@ func (t *Terminal) constrain() {
 }
 
 func (t *Terminal) vmove(o int, allowCycle bool) {
-	if t.reverse {
+	if t.layout != layoutBottomUp {
 		o *= -1
 	}
 	dest := t.cy + o
