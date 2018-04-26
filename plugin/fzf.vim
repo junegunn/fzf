@@ -231,6 +231,7 @@ function! s:common_sink(action, lines) abort
         doautocmd BufEnter
       endif
     endfor
+  catch /^Vim:Interrupt$/
   finally
     let &autochdir = autochdir
     silent! autocmd! fzf_swap
