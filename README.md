@@ -139,6 +139,14 @@ method:
 ```sh
 sudo dnf install fzf
 ```
+### Arch Linux
+
+fzf is available in Fedora 26 and above, and can be installed using the usual
+method:
+
+```sh
+sudo pacman -Sy fzf
+```
 
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
