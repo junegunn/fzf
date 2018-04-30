@@ -157,19 +157,19 @@ Minimum height when \fB--height\fR is given in percent (default: 10).
 Ignored when \fB--height\fR is not specified.
 .TP
 .BI "--layout=" "LAYOUT"
-Choose the layout (default: bottom-up)
+Choose the layout (default: default)
 
 .br
-.BR bottom-up "     Show everything from bottom up"
+.BR default "     Show everything from bottom up"
 .br
-.BR top-down "      Show everything from top down"
+.BR reverse "     Show everything from top down"
 .br
-.BR top-down-below "Show items from top down, prompt and header at the bottom"
+.BR reverse-list "Show items from top down, prompt and header at the bottom"
 .br
 
 .TP
 .B "--reverse"
-Deprecated synonym for \fB--layout=top-down\fB
+A synonym for \fB--layout=reverse\fB
 
 .TP
 .B "--border"
@@ -553,8 +553,8 @@ triggered whenever the query string is changed.
     \fBtoggle\fR                (\fIright-click\fR)
     \fBtoggle-all\fR
     \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--layout=top-down*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
-    \fBtoggle-out\fR            (\fB--layout=top-down*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBtoggle-in\fR             (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR            (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR

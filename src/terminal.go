@@ -302,7 +302,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
 	var header []string
 	switch opts.Layout {
-	case layoutBottomUp, layoutTopDownBelow:
+	case layoutDefault, layoutReverseList:
 		header = reverseStringArray(opts.Header)
 	default:
 		header = opts.Header
@@ -646,9 +646,9 @@ func (t *Terminal) move(y int, x int, clear bool) {
 	h := t.window.Height()
 
 	switch t.layout {
-	case layoutBottomUp:
+	case layoutDefault:
 		y = h - y - 1
-	case layoutTopDownBelow:
+	case layoutReverseList:
 		n := 2 + len(t.header)
 		if t.inlineInfo {
 			n--
@@ -761,7 +761,7 @@ func (t *Terminal) printList() {
 	count := t.merger.Length() - t.offset
 	for j := 0; j < maxy; j++ {
 		i := j
-		if t.layout == layoutBottomUp {
+		if t.layout == layoutDefault {
 			i = maxy - 1 - j
 		}
 		line := i + 2 + len(t.header)
@@ -1673,12 +1673,12 @@ func (t *Terminal) Loop() {
 					req(reqList, reqInfo)
 				}
 			case actToggleIn:
-				if t.layout != layoutBottomUp {
+				if t.layout != layoutDefault {
 					return doAction(action{t: actToggleUp}, mapkey)
 				}
 				return doAction(action{t: actToggleDown}, mapkey)
 			case actToggleOut:
-				if t.layout != layoutBottomUp {
+				if t.layout != layoutDefault {
 					return doAction(action{t: actToggleDown}, mapkey)
 				}
 				return doAction(action{t: actToggleUp}, mapkey)
@@ -1812,9 +1812,9 @@ func (t *Terminal) Loop() {
 					}
 					h := t.window.Height()
 					switch t.layout {
-					case layoutBottomUp:
+					case layoutDefault:
 						my = h - my - 1
-					case layoutTopDownBelow:
+					case layoutReverseList:
 						if my < h-min {
 							my += min
 						} else {
@@ -1907,7 +1907,7 @@ func (t *Terminal) constrain() {
 }
 
 func (t *Terminal) vmove(o int, allowCycle bool) {
-	if t.layout != layoutBottomUp {
+	if t.layout != layoutDefault {
 		o *= -1
 	}
 	dest := t.cy + o

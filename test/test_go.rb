@@ -1045,8 +1045,8 @@ class TestGoFZF < TestBase
     assert_equal '50', readonce.chomp
   end
 
-  def test_header_lines_top_down
-    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5 --layout=top-down'}", :Enter
+  def test_header_lines_reverse
+    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5 --reverse'}", :Enter
     2.times do
       tmux.until do |lines|
         lines[1].include?('/90') &&
@@ -1060,8 +1060,8 @@ class TestGoFZF < TestBase
     assert_equal '50', readonce.chomp
   end
 
-  def test_header_lines_top_down_below
-    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5 --layout=top-down-below'}", :Enter
+  def test_header_lines_reverse_list
+    tmux.send_keys "seq 100 | #{fzf '--header-lines=10 -q 5 --layout=reverse-list'}", :Enter
     2.times do
       tmux.until do |lines|
         lines[0]    == '> 50' &&
@@ -1107,8 +1107,8 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_header_top_down
-    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --layout=top-down"}", :Enter
+  def test_header_reverse
+    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --reverse"}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('100/100') &&
@@ -1117,8 +1117,8 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_header_top_down_below
-    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --layout=top-down-below"}", :Enter
+  def test_header_reverse_list
+    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --layout=reverse-list"}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('100/100') &&
@@ -1137,8 +1137,8 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_header_and_header_lines_top_down
-    tmux.send_keys "seq 100 | #{fzf "--layout=top-down --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+  def test_header_and_header_lines_reverse
+    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('90/90') &&
@@ -1147,8 +1147,8 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_header_and_header_lines_top_down_below
-    tmux.send_keys "seq 100 | #{fzf "--layout=top-down-below --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+  def test_header_and_header_lines_reverse_list
+    tmux.send_keys "seq 100 | #{fzf "--layout=reverse-list --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
@@ -1176,14 +1176,14 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
-  def test_margin_top_down
-    tmux.send_keys "seq 1000 | #{fzf '--margin 7,5 --layout=top-down'}", :Enter
+  def test_margin_reverse
+    tmux.send_keys "seq 1000 | #{fzf '--margin 7,5 --reverse'}", :Enter
     tmux.until { |lines| lines[1 + 7] == '       1000/1000' }
     tmux.send_keys :Enter
   end
 
-  def test_margin_top_down_below
-    tmux.send_keys "yes | head -1000 | #{fzf '--margin 5,3 --layout=top-down-below'}", :Enter
+  def test_margin_reverse_list
+    tmux.send_keys "yes | head -1000 | #{fzf '--margin 5,3 --layout=reverse-list'}", :Enter
     tmux.until { |lines| lines[4] == '' && lines[5] == '   > y' }
     tmux.send_keys :Enter
   end
@@ -1387,7 +1387,7 @@ class TestGoFZF < TestBase
     rescue
       nil
     end
-    tmux.send_keys %(seq 100 | #{FZF} --layout=top-down --preview 'echo {} >> #{tempname}; echo ' --preview-window 0), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0), :Enter
     tmux.until { |lines| lines.item_count == 100 && lines[1] == '  100/100' && lines[2] == '> 1' }
     tmux.until { |_| %w[1] == File.readlines(tempname).map(&:chomp) }
     tmux.send_keys :Down

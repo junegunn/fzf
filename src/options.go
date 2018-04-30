@@ -53,8 +53,8 @@ const usage = `usage: fzf [options]
                           height instead of using fullscreen
     --min-height=HEIGHT   Minimum height when --height is given in percent
                           (default: 10)
-    --layout=LAYOUT       Choose layout: [bottom-up|top-down|top-down-below]
-                          (default: bottom-up)
+    --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
+                          (default: default)
     --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
@@ -92,7 +92,7 @@ const usage = `usage: fzf [options]
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
     FZF_DEFAULT_OPTS      Default options
-                          (e.g. '--layout=top-down --inline-info')
+                          (e.g. '--layout=reverse-list --inline-info')
 
 `
 
@@ -137,9 +137,9 @@ const (
 type layoutType int
 
 const (
-	layoutBottomUp layoutType = iota
-	layoutTopDown
-	layoutTopDownBelow
+	layoutDefault layoutType = iota
+	layoutReverse
+	layoutReverseList
 )
 
 type previewOpts struct {
@@ -221,7 +221,7 @@ func defaultOptions() *Options {
 		Black:       false,
 		Bold:        true,
 		MinHeight:   10,
-		Layout:      layoutBottomUp,
+		Layout:      layoutDefault,
 		Cycle:       false,
 		Hscroll:     true,
 		HscrollOff:  10,
@@ -869,16 +869,16 @@ func parseHeight(str string) sizeSpec {
 
 func parseLayout(str string) layoutType {
 	switch str {
-	case "bottom-up":
-		return layoutBottomUp
-	case "top-down":
-		return layoutTopDown
-	case "top-down-below":
-		return layoutTopDownBelow
+	case "default":
+		return layoutDefault
+	case "reverse":
+		return layoutReverse
+	case "reverse-list":
+		return layoutReverseList
 	default:
-		errorExit("invalid layout (expected: bottom-up / top-down / top-down-below)")
+		errorExit("invalid layout (expected: default / reverse / reverse-list)")
 	}
-	return layoutBottomUp
+	return layoutDefault
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
@@ -1063,11 +1063,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Bold = false
 		case "--layout":
 			opts.Layout = parseLayout(
-				nextString(allArgs, &i, "layout required (bottom-up / top-down / top-down-below)"))
+				nextString(allArgs, &i, "layout required (default / reverse / reverse-list)"))
 		case "--reverse":
-			opts.Layout = layoutTopDown
+			opts.Layout = layoutReverse
 		case "--no-reverse":
-			opts.Layout = layoutBottomUp
+			opts.Layout = layoutDefault
 		case "--cycle":
 			opts.Cycle = true
 		case "--no-cycle":
