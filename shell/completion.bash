@@ -39,7 +39,7 @@ __fzfcmd_complete() {
 
 __fzf_orig_completion_filter() {
   sed 's/^\(.*-F\) *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\3="\1 %s \3 #\2"; [[ "\1" = *" -o nospace "* ]] \&\& [[ ! "$__fzf_nospace_commands" = *" \3 "* ]] \&\& __fzf_nospace_commands="$__fzf_nospace_commands \3 ";/' |
-  awk -F= '{gsub(/[^A-Za-z0-9_= ;]/, "_", $1);}1'
+  awk -F= '{OFS = FS} {gsub(/[^A-Za-z0-9_= ;]/, "_", $1);}1'
 }
 
 _fzf_opts_completion() {
