@@ -54,7 +54,6 @@ const usage = `usage: fzf [options]
     --min-height=HEIGHT   Minimum height when --height is given in percent
                           (default: 10)
     --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
-                          (default: default)
     --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
@@ -92,7 +91,7 @@ const usage = `usage: fzf [options]
   Environment variables
     FZF_DEFAULT_COMMAND   Default command to use when input is tty
     FZF_DEFAULT_OPTS      Default options
-                          (e.g. '--layout=reverse-list --inline-info')
+                          (e.g. '--layout=reverse --inline-info')
 
 `
 

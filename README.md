@@ -228,7 +228,7 @@ You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
 default. For example,
 
 ```sh
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse-list --border'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
 ```
 
 #### Search syntax
@@ -266,7 +266,7 @@ or `py`.
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
 - `FZF_DEFAULT_OPTS`
     - Default options
-    - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse-list --inline-info"`
+    - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
 
 #### Options
 
