@@ -99,7 +99,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### As Vim plugin
 
 Once you have fzf installed, you can enable it inside Vim simply by adding the
-directory to `&runtimepath` as follows:
+directory to `&runtimepath` in your ```.vimrc``` as follows:
 
 ```vim
 " If installed using Homebrew
