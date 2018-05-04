@@ -26,6 +26,7 @@ Table of Contents
       * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
       * [Using git](#using-git)
       * [As Vim plugin](#as-vim-plugin)
+      * [Arch Linux](#arch-linux)
       * [Fedora](#fedora)
       * [Windows](#windows)
    * [Upgrading fzf](#upgrading-fzf)
@@ -131,6 +132,12 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
   " and you don't have to run install script if you use fzf only in Vim.
 ```
 
+### Arch Linux
+
+```sh
+sudo pacman -Sy fzf
+```
+
 ### Fedora
 
 fzf is available in Fedora 26 and above, and can be installed using the usual
@@ -143,7 +150,6 @@ sudo dnf install fzf
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
 documentation (/usr/share/doc/fzf/README.Fedora) for more information.
-
 
 ### Windows
 
