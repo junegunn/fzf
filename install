@@ -11,8 +11,7 @@ allow_legacy=
 shells="bash zsh fish"
 config_dir=~/.config/fzf
 fish_dir=~/.config/fish
-if [ ! -z $XDG_CONFIG_HOME ] && [ -d $XDG_CONFIG_HOME ]; then
-    echo hi
+if [[ -v XDG_CONFIG_HOME ]] && [ ! -z $XDG_CONFIG_HOME ] && [ -d $XDG_CONFIG_HOME ]; then
     config_dir=$XDG_CONFIG_HOME/fzf
     fish_dir=$XDG_CONFIG_HOME/fish
 fi
