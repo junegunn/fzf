@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+config_dir=~/.config/fzf
+fish_dir=~/.config/fish
+if [ ! -z $XDG_CONFIG_HOME ] && [ -d $XDG_CONFIG_HOME ]; then
+    config_dir=$XDG_CONFIG_HOME/fzf
+    fish_dir=$XDG_CONFIG_HOME/fish
+fi
 
 confirm() {
   while [ 1 ]; do
@@ -55,25 +61,25 @@ remove_line() {
 }
 
 for shell in bash zsh; do
-  remove ~/.fzf.${shell}
+  remove ${config_dir}/fzf.${shell}
   remove_line ~/.${shell}rc \
-    "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" \
-    "source ~/.fzf.${shell}"
+    "[ -f ${config_dir}/fzf.${shell} ] && source ${config_dir}/fzf.${shell}" \
+    "source ${config_dir}/fzf.${shell}"
 done
 
-bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
+bind_file=$fish_dir/functions/fish_user_key_bindings.fish
 if [ -f "$bind_file" ]; then
   remove_line "$bind_file" "fzf_key_bindings"
 fi
 
-if [ -d ~/.config/fish/functions ]; then
-  remove ~/.config/fish/functions/fzf.fish
-  remove ~/.config/fish/functions/fzf_key_bindings.fish
+if [ -d $fish_dir/functions ]; then
+  remove $fish_dir/functions/fzf.fish
+  remove $fish_dir/functions/fzf_key_bindings.fish
 
-  if [ "$(ls -A ~/.config/fish/functions)" ]; then
-    echo "Can't delete non-empty directory: \"~/.config/fish/functions\""
+  if [ "$(ls -A $fish_dir/functions)" ]; then
+    echo "Can't delete non-empty directory: \"$fish_dir/functions\""
   else
-    rmdir ~/.config/fish/functions
+    rmdir $fish_dir/functions
   fi
 fi
 
