@@ -9,14 +9,14 @@ update_config=2
 binary_arch=
 allow_legacy=
 shells="bash zsh fish"
-config_base=~/.
+config_prefix=~/.
 fish_dir=~/.config/fish
 if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z $XDG_CONFIG_HOME ]] && [[ -d $XDG_CONFIG_HOME ]]; then
-  config_base=$XDG_CONFIG_HOME/fzf/
-  fish_dir=$XDG_CONFIG_HOME/fish/
-  mkdir -p $config_base
+  config_prefix=$XDG_CONFIG_HOME/fzf/
+  fish_dir=$XDG_CONFIG_HOME/fish
+  mkdir -p $config_prefix
 elif [[ -d ~/.config/fzf ]]; then
-  config_base=~/.config/fzf/
+  config_prefix=~/.config/fzf/
 fi
 
 help() {
@@ -249,8 +249,8 @@ fi
 echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
-  echo -n "Generate ${config_base}fzf.$shell ... "
-  src=${config_base}fzf.${shell}
+  echo -n "Generate ${config_prefix}fzf.$shell ... "
+  src=${config_prefix}fzf.${shell}
 
   fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
   if [ $auto_completion -eq 0 ]; then
@@ -290,13 +290,13 @@ if [[ "$shells" =~ fish ]]; then
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
-  mkdir -p ${fish_dir}functions
-  if [ -e ${fish_dir}functions/fzf.fish ]; then
-    echo -n "Remove unnecessary ${fish_dir}functions/fzf.fish ... "
-    rm -f ${fish_dir}functions/fzf.fish && echo "OK" || echo "Failed"
+  mkdir -p ${fish_dir}/functions
+  if [ -e ${fish_dir}/functions/fzf.fish ]; then
+    echo -n "Remove unnecessary ${fish_dir}/functions/fzf.fish ... "
+    rm -f ${fish_dir}/functions/fzf.fish && echo "OK" || echo "Failed"
   fi
 
-  fish_binding=${fish_dir}functions/fzf_key_bindings.fish
+  fish_binding=${fish_dir}/functions/fzf_key_bindings.fish
   if [ $key_bindings -ne 0 ]; then
     echo -n "Symlink $fish_binding ... "
     ln -sf "$fzf_base/shell/key-bindings.fish" \
@@ -362,11 +362,11 @@ echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
-  append_line $update_config "[ -f ${config_base}fzf.${shell} ] && source ${config_base}fzf.${shell}" "$dest" "${config_base}fzf.${shell}"
+  append_line $update_config "[ -f ${config_prefix}fzf.${shell} ] && source ${config_prefix}fzf.${shell}" "$dest" "${config_prefix}fzf.${shell}"
 done
 
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
-  bind_file=${fish_dir}functions/fish_user_key_bindings.fish
+  bind_file=${fish_dir}/functions/fish_user_key_bindings.fish
   if [ ! -e "$bind_file" ]; then
     create_file "$bind_file" \
       'function fish_user_key_bindings' \
