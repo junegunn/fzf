@@ -135,7 +135,7 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ### Arch Linux
 
 ```sh
-sudo pacman -Sy fzf
+sudo pacman -S fzf
 ```
 
 ### Fedora
