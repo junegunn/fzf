@@ -9,14 +9,14 @@ update_config=2
 binary_arch=
 allow_legacy=
 shells="bash zsh fish"
-config_prefix=~/.
+config_prefix="~/."
 fish_dir=~/.config/fish
 if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z $XDG_CONFIG_HOME ]] && [[ -d $XDG_CONFIG_HOME ]]; then
-  config_prefix=$XDG_CONFIG_HOME/fzf/
+  config_prefix='$XDG_CONFIG_HOME/fzf/'
   fish_dir=$XDG_CONFIG_HOME/fish
-  mkdir -p $config_prefix
+  mkdir -p $XDG_CONFIG_HOME/fzf/
 elif [[ -d ~/.config/fzf ]]; then
-  config_prefix=~/.config/fzf/
+  config_prefix="~/.config/fzf/"
 fi
 
 help() {
@@ -262,7 +262,8 @@ for shell in $shells; do
     fzf_key_bindings="# $fzf_key_bindings"
   fi
 
-  cat > $src << EOF
+  eval "src=\"$src\""
+  cat > "$src" << EOF
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
@@ -379,7 +380,7 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  [[ "$shells" =~ bash ]] && echo '   source ~/.bashrc  # bash'
+  [[ "$shells" =~ bash ]] && echo "   source ~/.bashrc  # bash"
   [[ "$shells" =~ zsh ]]  && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
   [[ "$shells" =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
   echo
