@@ -262,8 +262,8 @@ for shell in $shells; do
     fzf_key_bindings="# $fzf_key_bindings"
   fi
 
-  eval "src=\"$src\""
-  cat > "$src" << EOF
+  eval "src=$src"
+  cat > $src << EOF
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
