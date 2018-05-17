@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 config_prefix=~/.
 fish_dir=~/.config/fish
-if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z $XDG_CONFIG_HOME ]] && [[ -d $XDG_CONFIG_HOME ]]; then
+if [[ -v XDG_CONFIG_HOME ]] && [[ $(echo $XDG_CONFIG_HOME | wc -w) -eq 1 ]] && [[ -d $XDG_CONFIG_HOME ]]; then
   config_prefix=$XDG_CONFIG_HOME/fzf/
   fish_dir=$XDG_CONFIG_HOME/fish
   mkdir -p $config_prefix
