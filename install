@@ -264,7 +264,7 @@ for shell in $shells; do
   fi
 
   eval "src=$src"
-  cat > $src << EOF
+  cat > "$src" << EOF
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
@@ -292,13 +292,13 @@ if [[ "$shells" =~ fish ]]; then
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
-  mkdir -p ${fish_dir}/functions
-  if [ -e ${fish_dir}/functions/fzf.fish ]; then
+  mkdir -p "${fish_dir}/functions"
+  if [ -e "${fish_dir}/functions/fzf.fish" ]; then
     echo -n "Remove unnecessary ${fish_dir}/functions/fzf.fish ... "
-    rm -f ${fish_dir}/functions/fzf.fish && echo "OK" || echo "Failed"
+    rm -f "${fish_dir}/functions/fzf.fish" && echo "OK" || echo "Failed"
   fi
 
-  fish_binding=${fish_dir}/functions/fzf_key_bindings.fish
+  fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
   if [ $key_bindings -ne 0 ]; then
     echo -n "Symlink $fish_binding ... "
     ln -sf "$fzf_base/shell/key-bindings.fish" \
@@ -368,7 +368,7 @@ for shell in $shells; do
 done
 
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
-  bind_file=${fish_dir}/functions/fish_user_key_bindings.fish
+  bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
     create_file "$bind_file" \
       'function fish_user_key_bindings' \
