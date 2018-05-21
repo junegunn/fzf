@@ -4,10 +4,11 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.zsh
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_OPTS          (default: '-d 40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                        (default: 0)
+# - $FZF_TMUX_OPTS                   (default: '-d 40%')
+# - $FZF_COMPLETION_TRIGGER          (default: '**')
+# - $FZF_PER_CMD_COMPLETION_TRIGGERS (default: none)
+# - $FZF_COMPLETION_OPTS             (default: empty)
 
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
@@ -274,8 +275,11 @@ fzf-completion() {
 
   cmd=$(__fzf_extract_command "$LBUFFER")
 
+  # Use a per-command completion trigger if available. Otherwise, fall
+  # back to $FZF_COMPLETION_TRIGGER.
+  trigger=${FZF_PER_CMD_COMPLETION_TRIGGERS[$cmd]-${FZF_COMPLETION_TRIGGER-'**'}}
+
   # Explicitly allow for empty trigger.
-  trigger=${FZF_COMPLETION_TRIGGER-'**'}
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
   # When the trigger starts with ';', it becomes a separate token
