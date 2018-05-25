@@ -46,7 +46,7 @@ __fzf_generic_path_completion() {
   fzf="$(__fzfcmd_complete)"
 
   setopt localoptions nonomatch
-  dir="$base"
+  [[ $base = *"/"* ]] && dir="$base"
   while [ 1 ]; do
     if [[ -z "$dir" || -d ${~dir} ]]; then
       leftover=${base/#"$dir"}
