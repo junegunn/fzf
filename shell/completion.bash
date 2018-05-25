@@ -148,7 +148,7 @@ __fzf_generic_path_completion() {
     base=${cur:0:${#cur}-${#trigger}}
     eval "base=$base"
 
-    dir="$base"
+    [[ $base = *"/"* ]] && dir="$base"
     while true; do
       if [ -z "$dir" ] || [ -d "$dir" ]; then
         leftover=${base/#"$dir"}
