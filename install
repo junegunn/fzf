@@ -9,7 +9,7 @@ update_config=2
 binary_arch=
 allow_legacy=
 shells="bash zsh fish"
-config_prefix="~/."
+config_prefix='~/.'
 fish_dir=~/.config/fish
 if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z "$XDG_CONFIG_HOME" ]] && [[ -d "$XDG_CONFIG_HOME" ]] \
     && [[ ! -e ~/.fzf.bash ]]; then

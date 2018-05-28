@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-config_prefix=~/.
+config_prefix='~/.'
 fish_dir=~/.config/fish
 if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z "$XDG_CONFIG_HOME" ]] && [[ -d "$XDG_CONFIG_HOME" ]] \
     && [[ ! -e ~/.fzf.bash ]]; then
