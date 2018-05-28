@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 config_prefix=~/.
 fish_dir=~/.config/fish
 if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z $XDG_CONFIG_HOME ]] && [[ -d $XDG_CONFIG_HOME ]] \
@@ -9,13 +10,13 @@ elif [[ -d ~/.config/fzf ]]; then
   config_prefix="~/.config/fzf/"
 fi
 
-confirm() {
-  while [ 1 ]; do
-    read -p "$1" -n 1 -r
-    echo
-    if [[ "$REPLY" =~ ^[Yy] ]]; then
+ask() {
+  while true; do
+    read -p "$1 ([y]/n) " -r
+    REPLY=${REPLY:-"y"}
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
       return 0
-    elif [[ "$REPLY" =~ ^[Nn] ]]; then
+    elif [[ $REPLY =~ ^[Nn]$ ]]; then
       return 1
     fi
   done
@@ -49,7 +50,7 @@ remove_line() {
     content=$(sed 's/^[0-9]*://' <<< "$line")
     match=1
     echo    "  - Line #$line_no: $content"
-    [ "$content" = "$1" ] || confirm "    - Remove (y/n) ? "
+    [ "$content" = "$1" ] || ask "    - Remove?"
     if [ $? -eq 0 ]; then
       awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$src.bak" &&
         mv "$src.bak" "$src" || break
