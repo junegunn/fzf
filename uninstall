@@ -2,9 +2,9 @@
 
 config_prefix=~/.
 fish_dir=~/.config/fish
-if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z $XDG_CONFIG_HOME ]] && [[ -d $XDG_CONFIG_HOME ]] \
+if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z "$XDG_CONFIG_HOME" ]] && [[ -d "$XDG_CONFIG_HOME" ]] \
     && [[ ! -e ~/.fzf.bash ]]; then
-  config_prefix='$XDG_CONFIG_HOME/fzf/'
+  config_prefix='"$XDG_CONFIG_HOME"/fzf/'
   fish_dir=$XDG_CONFIG_HOME/fish
 elif [[ -d ~/.config/fzf ]]; then
   config_prefix="~/.config/fzf/"
