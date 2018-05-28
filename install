@@ -10,14 +10,14 @@ binary_arch=
 allow_legacy=
 shells="bash zsh fish"
 config_prefix='~/.'
-fish_dir=~/.config/fish
-if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z "$XDG_CONFIG_HOME" ]] && [[ -d "$XDG_CONFIG_HOME" ]] \
-    && [[ ! -e ~/.fzf.bash ]]; then
-  config_prefix='"$XDG_CONFIG_HOME"/fzf/'
-  fish_dir=$XDG_CONFIG_HOME/fish
-  mkdir -p "$XDG_CONFIG_HOME/fzf/"
-elif [[ -d ~/.config/fzf ]]; then
-  config_prefix="~/.config/fzf/"
+fish_dir=${XDG_CONFIG_HOME:-~/.config}/fish
+if [[ ! -e ~/.fzf.bash ]]; then
+  config_prefix='"${XDG_CONFIG_HOME:-~/.config}"/fzf/'
+  eval 'config_dir="$config_prefix"'
+  eval "config_dir=$config_dir"
+  eval "config_dir=$config_dir"
+  echo $config_dir
+  mkdir -p "$config_dir"
 fi
 
 help() {
@@ -263,6 +263,7 @@ for shell in $shells; do
     fzf_key_bindings="# $fzf_key_bindings"
   fi
 
+  eval "src=$src"
   eval "src=$src"
   cat > "$src" << EOF
 # Setup fzf

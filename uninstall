@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
 config_prefix='~/.'
-fish_dir=~/.config/fish
-if [[ -v XDG_CONFIG_HOME ]] && [[ ! -z "$XDG_CONFIG_HOME" ]] && [[ -d "$XDG_CONFIG_HOME" ]] \
-    && [[ ! -e ~/.fzf.bash ]]; then
-  config_prefix='"$XDG_CONFIG_HOME"/fzf/'
-  fish_dir=$XDG_CONFIG_HOME/fish
-elif [[ -d ~/.config/fzf ]]; then
-  config_prefix="~/.config/fzf/"
+fish_dir=${XDG_CONFIG_HOME:-~/.config}/fish
+if [[ ! -e ~/.fzf.bash ]]; then
+  config_prefix='"${XDG_CONFIG_HOME:-~/.config}"/fzf/'
 fi
 
 ask() {
@@ -66,6 +62,7 @@ remove_line() {
 
 for shell in bash zsh; do
   eval "shell_config=${config_prefix}fzf.${shell}"
+  eval "shell_config=${shell_config}"
   remove "${shell_config}"
   remove_line ~/.${shell}rc \
     "[ -f ${config_prefix}fzf.${shell} ] && source ${config_prefix}fzf.${shell}" \
@@ -89,6 +86,7 @@ if [ -d "${fish_dir}/functions" ]; then
 fi
 
 eval "src=$config_prefix"
+eval "src=$src"
 if [ "$(basename "$src")" == "fzf" ] && [ -d "$src" ]; then
   rmdir "$src"
 fi
