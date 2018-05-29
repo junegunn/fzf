@@ -2,9 +2,37 @@
 
 config_prefix='~/.'
 fish_dir=${XDG_CONFIG_HOME:-~/.config}/fish
-if [[ ! -e ~/.fzf.bash ]]; then
-  config_prefix='"${XDG_CONFIG_HOME:-~/.config}"/fzf/'
-fi
+
+help() {
+  cat << EOF
+usage: $0 [OPTIONS]
+
+    --help               Show this message
+    --xdg                Use xdg config directories
+EOF
+}
+
+for opt in "$@"; do
+  case $opt in
+    --help)
+      help
+      exit 0
+      ;;
+    --xdg)
+      config_prefix='"${XDG_CONFIG_HOME:-~/.config}"/fzf/'
+      eval 'config_dir="$config_prefix"'
+      eval "config_dir=$config_dir"
+      eval "config_dir=$config_dir"
+      echo $config_dir
+      mkdir -p "$config_dir"
+      ;;
+    *)
+      echo "unknown option: $opt"
+      help
+      exit 1
+      ;;
+  esac
+done
 
 ask() {
   while true; do
