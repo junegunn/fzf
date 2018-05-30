@@ -23,7 +23,6 @@ for opt in "$@"; do
       eval 'config_dir="$config_prefix"'
       eval "config_dir=$config_dir"
       eval "config_dir=$config_dir"
-      echo $config_dir
       mkdir -p "$config_dir"
       ;;
     *)
