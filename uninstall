@@ -10,7 +10,7 @@ help() {
 usage: $0 [OPTIONS]
 
     --help               Show this message
-    --xdg                Use XDG config directories
+    --xdg                Remove files generated under \$XDG_CONFIG_HOME/fzf
 EOF
 }
 
