@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-config_dir=~
-config_filename=.fzf
-config_prefix='~/.fzf'
+xdg=0
+prefix='~/.fzf'
+prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
 help() {
@@ -21,9 +21,9 @@ for opt in "$@"; do
       exit 0
       ;;
     --xdg)
-      config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fzf
-      config_filename=fzf
-      config_prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      xdg=1
+      prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
       ;;
     *)
       echo "unknown option: $opt"
@@ -88,11 +88,11 @@ remove_line() {
 }
 
 for shell in bash zsh; do
-  shell_config=${config_dir}/${config_filename}.${shell}
+  shell_config=${prefix_expand}.${shell}
   remove "${shell_config}"
   remove_line ~/.${shell}rc \
-    "[ -f ${config_prefix}.${shell} ] && source ${config_prefix}.${shell}" \
-    "source ${config_prefix}.${shell}"
+    "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" \
+    "source ${prefix}.${shell}"
 done
 
 bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
@@ -111,6 +111,7 @@ if [ -d "${fish_dir}/functions" ]; then
   fi
 fi
 
-if [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
+config_dir=$(dirname "$prefix_expand")
+if [[ "$xdg" = 1 ]] && [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
   rmdir "$config_dir"
 fi

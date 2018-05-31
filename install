@@ -9,9 +9,8 @@ update_config=2
 binary_arch=
 allow_legacy=
 shells="bash zsh fish"
-config_dir=~
-config_filename=.fzf
-config_prefix='~/.fzf'
+prefix='~/.fzf'
+prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
 help() {
@@ -49,10 +48,9 @@ for opt in "$@"; do
       allow_legacy=1
       ;;
     --xdg)
-      config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fzf
-      config_filename=fzf
-      config_prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
-      mkdir -p "$config_dir"
+      prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
+      mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/fzf"
       ;;
     --key-bindings)    key_bindings=1    ;;
     --no-key-bindings) key_bindings=0    ;;
@@ -251,7 +249,7 @@ fi
 echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
-  src=${config_dir}/${config_filename}.${shell}
+  src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
   fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
@@ -364,7 +362,7 @@ echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
-  append_line $update_config "[ -f ${config_prefix}.${shell} ] && source ${config_prefix}.${shell}" "$dest" "${config_prefix}.${shell}"
+  append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
@@ -381,7 +379,7 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  [[ "$shells" =~ bash ]] && echo "   source ~/.bashrc  # bash"
+  [[ "$shells" =~ bash ]] && echo '   source ~/.bashrc  # bash'
   [[ "$shells" =~ zsh ]]  && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
   [[ "$shells" =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
   echo
