@@ -21,7 +21,7 @@ usage: $0 [OPTIONS]
     --bin                Download fzf binary only; Do not generate ~/.fzf.{bash,zsh}
     --all                Download fzf binary and update configuration files
                          to enable key bindings and fuzzy completion
-    --xdg                Use xdg config directories
+    --xdg                Use XDG config directory
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files

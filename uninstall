@@ -10,7 +10,7 @@ help() {
 usage: $0 [OPTIONS]
 
     --help               Show this message
-    --xdg                Use xdg config directories
+    --xdg                Use XDG config directories
 EOF
 }
 
