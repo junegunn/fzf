@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-config_prefix='~/.'
-fish_dir=${XDG_CONFIG_HOME:-~/.config}/fish
+config_dir=~
+config_filename=.fzf
+config_prefix='~/.fzf'
+fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
 help() {
   cat << EOF
@@ -19,11 +21,9 @@ for opt in "$@"; do
       exit 0
       ;;
     --xdg)
-      config_prefix='"${XDG_CONFIG_HOME:-~/.config}"/fzf/'
-      eval 'config_dir="$config_prefix"'
-      eval "config_dir=$config_dir"
-      eval "config_dir=$config_dir"
-      mkdir -p "$config_dir"
+      config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fzf
+      config_filename=fzf
+      config_prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
       ;;
     *)
       echo "unknown option: $opt"
@@ -88,12 +88,11 @@ remove_line() {
 }
 
 for shell in bash zsh; do
-  eval "shell_config=${config_prefix}fzf.${shell}"
-  eval "shell_config=${shell_config}"
+  shell_config=${config_dir}/${config_filename}.${shell}
   remove "${shell_config}"
   remove_line ~/.${shell}rc \
-    "[ -f ${config_prefix}fzf.${shell} ] && source ${config_prefix}fzf.${shell}" \
-    "source ${config_prefix}fzf.${shell}"
+    "[ -f ${config_prefix}.${shell} ] && source ${config_prefix}.${shell}" \
+    "source ${config_prefix}.${shell}"
 done
 
 bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
@@ -112,8 +111,6 @@ if [ -d "${fish_dir}/functions" ]; then
   fi
 fi
 
-eval "src=$config_prefix"
-eval "src=$src"
-if [ "$(basename "$src")" == "fzf" ] && [ -d "$src" ]; then
-  rmdir "$src"
+if [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
+  rmdir "$config_dir"
 fi
