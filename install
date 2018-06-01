@@ -9,6 +9,9 @@ update_config=2
 binary_arch=
 allow_legacy=
 shells="bash zsh fish"
+prefix='~/.fzf'
+prefix_expand=~/.fzf
+fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
 help() {
   cat << EOF
@@ -18,6 +21,7 @@ usage: $0 [OPTIONS]
     --bin                Download fzf binary only; Do not generate ~/.fzf.{bash,zsh}
     --all                Download fzf binary and update configuration files
                          to enable key bindings and fuzzy completion
+    --xdg                Generate files under \$XDG_CONFIG_HOME/fzf
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files
@@ -42,6 +46,11 @@ for opt in "$@"; do
       key_bindings=1
       update_config=1
       allow_legacy=1
+      ;;
+    --xdg)
+      prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
+      mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/fzf"
       ;;
     --key-bindings)    key_bindings=1    ;;
     --no-key-bindings) key_bindings=0    ;;
@@ -240,8 +249,8 @@ fi
 echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
-  echo -n "Generate ~/.fzf.$shell ... "
-  src=~/.fzf.${shell}
+  src=${prefix_expand}.${shell}
+  echo -n "Generate $src ... "
 
   fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
   if [ $auto_completion -eq 0 ]; then
@@ -253,7 +262,7 @@ for shell in $shells; do
     fzf_key_bindings="# $fzf_key_bindings"
   fi
 
-  cat > $src << EOF
+  cat > "$src" << EOF
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
@@ -281,13 +290,13 @@ if [[ "$shells" =~ fish ]]; then
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
-  mkdir -p ~/.config/fish/functions
-  if [ -e ~/.config/fish/functions/fzf.fish ]; then
-    echo -n "Remove unnecessary ~/.config/fish/functions/fzf.fish ... "
-    rm -f ~/.config/fish/functions/fzf.fish && echo "OK" || echo "Failed"
+  mkdir -p "${fish_dir}/functions"
+  if [ -e "${fish_dir}/functions/fzf.fish" ]; then
+    echo -n "Remove unnecessary ${fish_dir}/functions/fzf.fish ... "
+    rm -f "${fish_dir}/functions/fzf.fish" && echo "OK" || echo "Failed"
   fi
 
-  fish_binding=~/.config/fish/functions/fzf_key_bindings.fish
+  fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
   if [ $key_bindings -ne 0 ]; then
     echo -n "Symlink $fish_binding ... "
     ln -sf "$fzf_base/shell/key-bindings.fish" \
@@ -353,11 +362,11 @@ echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
-  append_line $update_config "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" "$dest" "~/.fzf.${shell}"
+  append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
-  bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
+  bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
     create_file "$bind_file" \
       'function fish_user_key_bindings' \
