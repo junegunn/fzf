@@ -128,4 +128,12 @@ target/$(BINARYARM8): $(SOURCES) vendor
 bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
-.PHONY: all release release-all test install clean
+docker:
+	docker build -t fzf-arch .
+	docker run -it fzf-arch tmux
+
+docker-test:
+	docker build -t fzf-arch .
+	docker run -it fzf-arch
+
+.PHONY: all release release-all test install clean docker docker-test
