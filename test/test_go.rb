@@ -1514,7 +1514,7 @@ module TestShell
     lines = retries do
       tmux.prepare
       tmux.send_keys :Escape, :c
-      tmux.until { |lines| lines.item_count.positive? }
+      tmux.until { |lines| lines.match_count.positive? }
     end
     expected = lines.reverse.select { |l| l.start_with? '>' }.first[2..-1]
     tmux.send_keys :Enter
@@ -1551,7 +1551,7 @@ module TestShell
     retries do
       tmux.prepare
       tmux.send_keys 'C-r'
-      tmux.until { |lines| lines.item_count.positive? }
+      tmux.until { |lines| lines.match_count.positive? }
     end
     tmux.send_keys 'C-r'
     tmux.send_keys '3d'
@@ -1583,7 +1583,7 @@ module CompletionTest
     end
     tmux.prepare
     tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys ' !d'
     tmux.until { |lines| lines.match_count == 2 }
     tmux.send_keys :Tab, :Tab
@@ -1597,7 +1597,7 @@ module CompletionTest
     # ~USERNAME**<TAB>
     tmux.send_keys 'C-u'
     tmux.send_keys "cat ~#{ENV['USER']}**", :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys "'.fzf-home"
     tmux.until { |lines| lines.select { |l| l.include? '.fzf-home' }.count > 1 }
     tmux.send_keys :Enter
@@ -1615,7 +1615,7 @@ module CompletionTest
     # /tmp/fzf\ test**<TAB>
     tmux.send_keys 'C-u'
     tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys 'foobar$'
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
@@ -1635,7 +1635,7 @@ module CompletionTest
 
   def test_file_completion_root
     tmux.send_keys 'ls /**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys :Enter
   end
 
@@ -1646,7 +1646,7 @@ module CompletionTest
     FileUtils.touch '/tmp/fzf-test/d55/xxx'
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys :Tab, :Tab # Tab does not work here
     tmux.send_keys 55
     tmux.until { |lines| lines.match_count == 1 }
@@ -1675,7 +1675,7 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'C-L'
     tmux.send_keys 'kill ', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys 'sleep12345'
     tmux.until { |lines| lines.any_include? 'sleep 12345' }
     tmux.send_keys :Enter
@@ -1694,7 +1694,7 @@ module CompletionTest
     tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
     tmux.prepare
     tmux.send_keys 'ls /tmp/**', :Tab
-    tmux.until { |lines| lines.item_count == 11 }
+    tmux.until { |lines| lines.match_count == 11 }
     tmux.send_keys :Tab, :Tab, :Tab
     tmux.until { |lines| lines.select_count == 3 }
     tmux.send_keys :Enter
@@ -1767,7 +1767,7 @@ class TestBash < TestBase
     tmux.paste '_completion_loader() { complete -o default fake; }'
     tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
     tmux.send_keys 'fake /tmp/foo**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
     tmux.send_keys 'C-c'
 
     tmux.prepare
@@ -1776,7 +1776,7 @@ class TestBash < TestBase
 
     tmux.prepare
     tmux.send_keys 'fake /tmp/foo**', :Tab
-    tmux.until { |lines| lines.item_count.positive? }
+    tmux.until { |lines| lines.match_count.positive? }
   end
 end
 
