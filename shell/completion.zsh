@@ -36,8 +36,7 @@ __fzfcmd_complete() {
 
 __fzf_generic_path_completion() {
   local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
-  # (Q) flag removes a quoting level: "foo\ bar" => "foo bar"
-  base=${(Q)1}
+  base=$1
   lbuf=$2
   compgen=$3
   fzf_opts=$4
@@ -46,15 +45,14 @@ __fzf_generic_path_completion() {
   fzf="$(__fzfcmd_complete)"
 
   setopt localoptions nonomatch
-  eval "abspath=$1" 2> /dev/null
-  [[ $abspath = *"/"* ]] && dir="$base"
+  eval "base=$base"
+  [[ $base = *"/"* ]] && dir="$base"
   while [ 1 ]; do
-    if [[ -z "$dir" || -d ${~dir} ]]; then
+    if [[ -z "$dir" || -d ${dir} ]]; then
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      dir=${~dir}
       matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "$leftover" | while read item; do
         echo -n "${(q)item}$suffix "
       done)
