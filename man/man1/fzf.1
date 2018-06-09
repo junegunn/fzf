@@ -156,8 +156,21 @@ the full screen.
 Minimum height when \fB--height\fR is given in percent (default: 10).
 Ignored when \fB--height\fR is not specified.
 .TP
+.BI "--layout=" "LAYOUT"
+Choose the layout (default: default)
+
+.br
+.BR default "       Display from the bottom of the screen"
+.br
+.BR reverse "       Display from the top of the screen"
+.br
+.BR reverse-list "  Display from the top of the screen, prompt at the bottom"
+.br
+
+.TP
 .B "--reverse"
-Reverse orientation
+A synonym for \fB--layout=reverse\fB
+
 .TP
 .B "--border"
 Draw border above and below the finder
@@ -195,7 +208,7 @@ Input prompt (default: '> ')
 .TP
 .BI "--header=" "STR"
 The given string will be printed as the sticky header. The lines are displayed
-in the given order from top to bottom regardless of \fB--reverse\fR option, and
+in the given order from top to bottom regardless of \fB--layout\fR option, and
 are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
 \fB--ansi\fR is not set.
 .TP
@@ -543,8 +556,8 @@ triggered whenever the query string is changed.
     \fBtoggle\fR                (\fIright-click\fR)
     \fBtoggle-all\fR
     \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
-    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBtoggle-in\fR             (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR            (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR
