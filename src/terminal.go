@@ -224,6 +224,7 @@ const (
 type placeholderFlags struct {
 	plus          bool
 	preserveSpace bool
+	query         bool
 }
 
 func toActions(types ...actionType) []action {
@@ -1152,6 +1153,8 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		case 's':
 			flags.preserveSpace = true
 			skipChars++
+		case 'q':
+			flags.query = true
 		default:
 			break
 		}
@@ -1162,14 +1165,17 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPlusFlag(template string) bool {
+func hasPreviewFlags(template string) (plus bool, query bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
-			return true
+			plus = true
+		}
+		if flags.query {
+			query = true
 		}
 	}
-	return false
+	return
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
@@ -1288,13 +1294,28 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	if !forcePlus && !hasPlusFlag(template) || len(t.selected) == 0 {
+	plus, query := hasPreviewFlags(template)
+	if !(query && len(t.input) > 0 || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
-	sels := make([]*Item, len(t.selected)+1)
-	sels[0] = current
-	for i, sel := range t.sortSelected() {
-		sels[i+1] = sel.item
+
+	// We would still want to update preview window even if there is no match if
+	//   1. command template contains {q} and the query string is not empty
+	//   2. or it contains {+} and we have more than one item already selected.
+	// To do so, we pass an empty Item instead of nil to trigger an update.
+	if current == nil {
+		current = &Item{}
+	}
+
+	var sels []*Item
+	if len(t.selected) == 0 {
+		sels = []*Item{current, current}
+	} else {
+		sels = make([]*Item, len(t.selected)+1)
+		sels[0] = current
+		for i, sel := range t.sortSelected() {
+			sels[i+1] = sel.item
+		}
 	}
 	return true, sels
 }
@@ -1861,6 +1882,12 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
+			if t.isPreviewEnabled() {
+				_, q := hasPreviewFlags(t.preview.command)
+				if q {
+					t.version++
+				}
+			}
 			t.eventBox.Set(EvtSearchNew, t.sort)
 		}
 		for _, event := range events {

@@ -1355,6 +1355,35 @@ class TestGoFZF < TestBase
     tmux.until { |_| %w[1 2 3] == File.readlines(tempname).map(&:chomp) }
   end
 
+  def test_preview_flags
+    tmux.send_keys %(seq 10 | sed 's/^/:: /; s/$/  /' |
+        #{FZF} --multi --preview 'echo {{2}/{s2}/{+2}/{+s2}/{q}}'), :Enter
+    tmux.until { |lines| lines[1].include?('{1/1  /1/1  /}') }
+    tmux.send_keys '123'
+    tmux.until { |lines| lines[1].include?('{////123}') }
+    tmux.send_keys 'C-u', '1'
+    tmux.until { |lines| lines.match_count == 2 }
+    tmux.until { |lines| lines[1].include?('{1/1  /1/1  /1}') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| lines[1].include?('{10/10  /1/1  /1}') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| lines[1].include?('{10/10  /1 10/1   10  /1}') }
+    tmux.send_keys '2'
+    tmux.until { |lines| lines[1].include?('{//1 10/1   10  /12}') }
+    tmux.send_keys '3'
+    tmux.until { |lines| lines[1].include?('{//1 10/1   10  /123}') }
+  end
+
+  def test_preview_q_no_match
+    tmux.send_keys %(: | #{FZF} --preview 'echo foo {q}'), :Enter
+    tmux.until { |lines| lines.match_count == 0 }
+    tmux.until { |lines| !lines[1].include?('foo') }
+    tmux.send_keys 'bar'
+    tmux.until { |lines| lines[1].include?('foo bar') }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| !lines[1].include?('foo') }
+  end
+
   def test_no_clear
     tmux.send_keys "seq 10 | fzf --no-clear --inline-info --height 5 > #{tempname}", :Enter
     prompt = '>   < 10/10'

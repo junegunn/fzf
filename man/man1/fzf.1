@@ -291,6 +291,9 @@ from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
 Also, \fB{q}\fR is replaced to the current query string.
 
 Note that you can escape a placeholder pattern by prepending a backslash.
+
+Preview window will be updated even when there is no match for the current
+query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
 .BI "--preview-window=" "[POSITION][:SIZE[%]][:wrap][:hidden]"
