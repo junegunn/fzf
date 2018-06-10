@@ -22,7 +22,7 @@
 ### Before submitting
 
 - Make sure that you have the latest version of fzf
-- If you use tmux, make sure $TERM is set to screen or screen-256color
+- If you use tmux, make sure $TERM starts with "screen"
 - For more Vim stuff, check out https://github.com/junegunn/fzf.vim
 
 Describe your problem or suggestion from here ...
