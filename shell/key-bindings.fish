@@ -50,7 +50,7 @@ function fzf_key_bindings
         history -z | eval (__fzfcmd) --read0 -q '(commandline)' | perl -pe 'chomp if eof' | read -lz result
         and commandline -- $result
       else
-        history | eval (__fzfcmd) -q '(commandline)' | read -l result
+        history | sort -uk2,1000 | sort -nr | eval (__fzfcmd) -q '(commandline)' | read -l result
         and commandline -- $result
       end
     end
