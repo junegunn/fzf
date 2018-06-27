@@ -40,8 +40,8 @@ function fzf_key_bindings
     begin
       set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m"
 
-      set -l FISH_MAJOR (echo $FISH_VERSION | cut -f1 -d.)
-      set -l FISH_MINOR (echo $FISH_VERSION | cut -f2 -d.)
+      set -l FISH_MAJOR (echo $version | cut -f1 -d.)
+      set -l FISH_MINOR (echo $version | cut -f2 -d.)
 
       # history's -z flag is needed for multi-line support.
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
