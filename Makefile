@@ -46,6 +46,8 @@ else ifeq ($(UNAME_M),armv6l)
 	BINARY := $(BINARYARM6)
 else ifeq ($(UNAME_M),armv7l)
 	BINARY := $(BINARYARM7)
+else ifeq ($(UNAME_M),armv8l)
+	BINARY := $(BINARYARM8)
 else
 $(error "Build on $(UNAME_M) is not supported, yet.")
 endif
