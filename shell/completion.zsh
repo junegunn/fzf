@@ -158,6 +158,12 @@ fzf-completion() {
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
+  # trigger like ";" will be split into word by ${(z)LBUFFER} 
+  if [[ ${LBUFFER} = *"${tokens[-2]}${tokens[-1]}" ]]; then
+    tokens[-2]="${tokens[-2]}${tokens[-1]}"
+    tokens=(${tokens[0,-2]})
+  fi
+
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
   # Kill completion (do not require trigger sequence)
   if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
