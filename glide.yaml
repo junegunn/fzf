@@ -11,6 +11,6 @@ import:
   subpackages:
   - encoding
 - package: golang.org/x/crypto
-  version: e1a4589e7d3ea14a3352255d04b6f1a418845e5e
+  version: 558b6879de74bc843225cde5686419267ff707ca
   subpackages:
   - ssh/terminal
