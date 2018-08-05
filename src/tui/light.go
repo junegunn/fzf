@@ -306,8 +306,13 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 				continue
 			}
 			break
+		} else if c == ESC {
+			// if we find another ESC, restart retries to
+			// see if the ESC is by itself:
+			retries = r.escDelay / escPollInterval
+		} else {
+			retries = 0
 		}
-		retries = 0
 		buffer = append(buffer, byte(c))
 	}
 
