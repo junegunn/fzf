@@ -297,6 +297,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 	}
 	buffer = append(buffer, byte(c))
 
+	pc := c
 	for {
 		c, ok = r.getch(true)
 		if !ok {
@@ -306,9 +307,13 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 				continue
 			}
 			break
+		} else if c == ESC && pc != c {
+			retries = r.escDelay / escPollInterval
+		} else {
+			retries = 0
 		}
-		retries = 0
 		buffer = append(buffer, byte(c))
+		pc = c
 	}
 
 	return buffer
