@@ -458,9 +458,9 @@ function! s:pushd(dict)
     if get(a:dict, 'prev_dir', '') ==# cwd
       return 1
     endif
-    let a:dict.prev_dir = cwd
-    execute 'lcd' s:escape(a:dict.dir)
-    let a:dict.dir = s:fzf_getcwd()
+    let cd = haslocaldir() ? 'lcd' : (exists(':tcd') == 2 && haslocaldir(-1, 0)) ? 'tcd' : 'cd'
+    let a:dict.prev_dir = [cwd, cd]
+    execute cd s:escape(a:dict.dir)
     return 1
   endif
   return 0
@@ -475,7 +475,7 @@ function! s:dopopd()
   if !exists('w:fzf_dir') || s:fzf_getcwd() != w:fzf_dir[1]
     return
   endif
-  execute 'lcd' s:escape(w:fzf_dir[0])
+  execute w:fzf_dir[0][1] s:escape(w:fzf_dir[0][0])
   unlet w:fzf_dir
 endfunction
 
@@ -687,7 +687,8 @@ function! s:execute_term(dict, command, temps) abort
 
   try
     if s:present(a:dict, 'dir')
-      execute 'lcd' s:escape(a:dict.dir)
+      let cd = haslocaldir() ? 'lcd' : (exists(':tcd') == 2 && haslocaldir(-1, 0)) ? 'tcd' : 'cd'
+      execute cd.' '.s:escape(a:dict.dir)
     endif
     if s:is_win
       let fzf.temps.batchfile = s:fzf_tempname().'.bat'
@@ -707,7 +708,7 @@ function! s:execute_term(dict, command, temps) abort
     endif
   finally
     if s:present(a:dict, 'dir')
-      lcd -
+      exe cd.' -'
     endif
   endtry
   setlocal nospell bufhidden=wipe nobuflisted nonumber
