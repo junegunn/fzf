@@ -8,10 +8,13 @@ Execute (fzf#run with dir option):
   let cwd = getcwd()
   let result = fzf#run({ 'source': 'git ls-files', 'options': '--filter=vdr', 'dir': g:dir })
   AssertEqual ['fzf.vader'], result
+  AssertEqual 0, haslocaldir()
   AssertEqual getcwd(), cwd
 
+  execute 'lcd' fnameescape(cwd)
   let result = sort(fzf#run({ 'source': 'git ls-files', 'options': '--filter e', 'dir': g:dir }))
   AssertEqual ['fzf.vader', 'test_go.rb'], result
+  AssertEqual 1, haslocaldir()
   AssertEqual getcwd(), cwd
 
 Execute (fzf#run with Funcref command):
@@ -56,11 +59,11 @@ Execute (Incomplete fzf#run with dir option and autochdir):
   " No change in working directory even if &acd is set
   AssertEqual cwd, getcwd()
 
-Execute (fzf#run with dir option and autochdir):
+Execute (FIXME: fzf#run with dir option and autochdir):
   set acd
-  let cwd = getcwd()
   call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
   " Working directory changed due to &acd
+  AssertEqual '/foobar', expand('%')
   AssertEqual '/', getcwd()
 
 Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
