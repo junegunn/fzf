@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2017" "fzf 0.17.3" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2018" "fzf 0.17.4" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -156,8 +156,21 @@ the full screen.
 Minimum height when \fB--height\fR is given in percent (default: 10).
 Ignored when \fB--height\fR is not specified.
 .TP
+.BI "--layout=" "LAYOUT"
+Choose the layout (default: default)
+
+.br
+.BR default "       Display from the bottom of the screen"
+.br
+.BR reverse "       Display from the top of the screen"
+.br
+.BR reverse-list "  Display from the top of the screen, prompt at the bottom"
+.br
+
+.TP
 .B "--reverse"
-Reverse orientation
+A synonym for \fB--layout=reverse\fB
+
 .TP
 .B "--border"
 Draw border above and below the finder
@@ -195,7 +208,7 @@ Input prompt (default: '> ')
 .TP
 .BI "--header=" "STR"
 The given string will be printed as the sticky header. The lines are displayed
-in the given order from top to bottom regardless of \fB--reverse\fR option, and
+in the given order from top to bottom regardless of \fB--layout\fR option, and
 are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
 \fB--ansi\fR is not set.
 .TP
@@ -285,9 +298,15 @@ was made) individually quoted.
 e.g. \fBfzf --multi --preview='head -10 {+}'\fR
      \fBgit log --oneline | fzf --multi --preview 'git show {+1}'\fR
 
+When using a field index expression, leading and trailing whitespace is stripped
+from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
+
 Also, \fB{q}\fR is replaced to the current query string.
 
 Note that you can escape a placeholder pattern by prepending a backslash.
+
+Preview window will be updated even when there is no match for the current
+query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
 .BI "--preview-window=" "[POSITION][:SIZE[%]][:wrap][:hidden]"
@@ -461,6 +480,10 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
     \fIspace\fR
     \fIbspace\fR      (\fIbs\fR)
+    \fIalt-up\fR
+    \fIalt-down\fR
+    \fIalt-left\fR
+    \fIalt-right\fR
     \fIalt-enter\fR
     \fIalt-space\fR
     \fIalt-bspace\fR  (\fIalt-bs\fR)
@@ -477,6 +500,8 @@ e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
     \fIend\fR
     \fIpgup\fR        (\fIpage-up\fR)
     \fIpgdn\fR        (\fIpage-down\fR)
+    \fIshift-up\fR
+    \fIshift-down\fR
     \fIshift-left\fR
     \fIshift-right\fR
     \fIleft-click\fR
@@ -520,8 +545,8 @@ triggered whenever the query string is changed.
     \fBpage-up\fR               \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
-    \fBpreview-down\fR
-    \fBpreview-up\fR
+    \fBpreview-down\fR          \fIshift-down\fR
+    \fBpreview-up\fR            \fIshift-up\fR
     \fBpreview-page-down\fR
     \fBpreview-page-up\fR
     \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
@@ -531,8 +556,8 @@ triggered whenever the query string is changed.
     \fBtoggle\fR                (\fIright-click\fR)
     \fBtoggle-all\fR
     \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--reverse\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
-    \fBtoggle-out\fR            (\fB--reverse\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBtoggle-in\fR             (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR            (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR
@@ -583,7 +608,7 @@ fzf switches to the alternate screen when executing a command. However, if the
 command is expected to complete quickly, and you are not interested in its
 output, you might want to use \fBexecute-silent\fR instead, which silently
 executes the command without the switching. Note that fzf will not be
-responsible until the command is complete. For asynchronous execution, start
+responsive until the command is complete. For asynchronous execution, start
 your command as a background process (i.e. appending \fB&\fR).
 
 .SH AUTHOR

@@ -1,6 +1,26 @@
 CHANGELOG
 =========
 
+0.17.4
+------
+
+- Added `--layout` option with a new layout called `reverse-list`.
+    - `--layout=reverse` is a synonym for `--reverse`
+    - `--layout=default` is a synonym for `--no-reverse`
+- Preview window will be updated even when there is no match for the query
+  if any of the placeholder expressions (e.g. `{q}`, `{+}`) evaluates to
+  a non-empty string.
+- More keys for binding: `shift-{up,down}`, `alt-{up,down,left,right}`
+- fzf can now start even when `/dev/tty` is not available by making an
+  educated guess.
+- Updated the default command for Windows.
+- Fixes and improvements on bash/zsh completion
+- install and uninstall scripts now supports generating files under
+  `XDG_CONFIG_HOME` on `--xdg` flag.
+
+See https://github.com/junegunn/fzf/milestone/12?closed=1 for the full list of
+changes.
+
 0.17.3
 ------
 - `$LINES` and `$COLUMNS` are exported to preview command so that the command

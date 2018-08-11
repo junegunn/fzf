@@ -56,7 +56,7 @@ __fzf_history__() (
   shopt -u nocaseglob nocasematch
   line=$(
     HISTTIMEFORMAT= history |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
+    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
@@ -80,7 +80,7 @@ if [[ ! -o vi ]]; then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u`__fzf_history__`\e\C-e\er\e^"'
+  bind '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
 
   # ALT-C - cd into the selected directory
   bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'

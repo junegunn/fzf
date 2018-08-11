@@ -17,11 +17,12 @@ func RuneWidth(r rune, prefixWidth int, tabstop int) int {
 		return tabstop - prefixWidth%tabstop
 	} else if w, found := _runeWidths[r]; found {
 		return w
-	} else {
-		w := Max(runewidth.RuneWidth(r), 1)
-		_runeWidths[r] = w
-		return w
+	} else if r == '\n' || r == '\r' {
+		return 1
 	}
+	w := runewidth.RuneWidth(r)
+	_runeWidths[r] = w
+	return w
 }
 
 // Max returns the largest integer

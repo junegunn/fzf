@@ -26,6 +26,7 @@ Table of Contents
       * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
       * [Using git](#using-git)
       * [As Vim plugin](#as-vim-plugin)
+      * [Arch Linux](#arch-linux)
       * [Fedora](#fedora)
       * [Windows](#windows)
    * [Upgrading fzf](#upgrading-fzf)
@@ -99,7 +100,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### As Vim plugin
 
 Once you have fzf installed, you can enable it inside Vim simply by adding the
-directory to `&runtimepath` as follows:
+directory to `&runtimepath` in your Vim configuration file as follows:
 
 ```vim
 " If installed using Homebrew
@@ -131,6 +132,12 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
   " and you don't have to run install script if you use fzf only in Vim.
 ```
 
+### Arch Linux
+
+```sh
+sudo pacman -S fzf
+```
+
 ### Fedora
 
 fzf is available in Fedora 26 and above, and can be installed using the usual
@@ -142,8 +149,7 @@ sudo dnf install fzf
 
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
-documentation for more information.
-
+documentation (/usr/share/doc/fzf/README.Fedora) for more information.
 
 ### Windows
 
@@ -217,8 +223,8 @@ cursor with `--height` option.
 vim $(fzf --height 40%)
 ```
 
-Also check out `--reverse` option if you prefer "top-down" layout instead of
-the default "bottom-up" layout.
+Also check out `--reverse` and `--layout` options if you prefer
+"top-down" layout instead of the default "bottom-up" layout.
 
 ```sh
 vim $(fzf --height 40% --reverse)
@@ -228,7 +234,7 @@ You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
 default. For example,
 
 ```sh
-export FZF_DEFAULT_OPTS='--height 40% --reverse --border'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
 ```
 
 #### Search syntax
@@ -237,14 +243,15 @@ Unless otherwise specified, fzf starts in "extended-search mode" where you can
 type in multiple search terms delimited by spaces. e.g. `^music .mp3$ sbtrkt
 !fire`
 
-| Token    | Match type                 | Description                       |
-| -------- | -------------------------- | --------------------------------- |
-| `sbtrkt` | fuzzy-match                | Items that match `sbtrkt`         |
-| `^music` | prefix-exact-match         | Items that start with `music`     |
-| `.mp3$`  | suffix-exact-match         | Items that end with `.mp3`        |
-| `'wild`  | exact-match (quoted)       | Items that include `wild`         |
-| `!fire`  | inverse-exact-match        | Items that do not include `fire`  |
-| `!.mp3$` | inverse-suffix-exact-match | Items that do not end with `.mp3` |
+| Token     | Match type                 | Description                          |
+| --------- | -------------------------- | ------------------------------------ |
+| `sbtrkt`  | fuzzy-match                | Items that match `sbtrkt`            |
+| `'wild`   | exact-match (quoted)       | Items that include `wild`            |
+| `^music`  | prefix-exact-match         | Items that start with `music`        |
+| `.mp3$`   | suffix-exact-match         | Items that end with `.mp3`           |
+| `!fire`   | inverse-exact-match        | Items that do not include `fire`     |
+| `!^music` | inverse-prefix-exact-match | Items that do not start with `music` |
+| `!.mp3$`  | inverse-suffix-exact-match | Items that do not end with `.mp3`    |
 
 If you don't prefer fuzzy matching and do not wish to "quote" every word,
 start fzf with `-e` or `--exact` option. Note that when  `--exact` is set,
@@ -265,7 +272,7 @@ or `py`.
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
 - `FZF_DEFAULT_OPTS`
     - Default options
-    - e.g. `export FZF_DEFAULT_OPTS="--reverse --inline-info"`
+    - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
 
 #### Options
 

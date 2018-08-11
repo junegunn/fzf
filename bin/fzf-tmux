@@ -136,6 +136,11 @@ fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
 cleanup() {
   \rm -f $argsf $fifo1 $fifo2 $fifo3
 
+  # Restore tmux window options
+  if [[ "${#tmux_win_opts[@]}" -gt 0 ]]; then
+    eval "tmux ${tmux_win_opts[@]}"
+  fi
+
   # Remove temp window if we were zoomed
   if [[ -n "$zoomed" ]]; then
     tmux display-message -p "#{window_id}" > /dev/null
@@ -173,6 +178,8 @@ done
 pppid=$$
 echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" > $argsf
 close="; trap - EXIT SIGINT SIGTERM $close"
+
+tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
 
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf

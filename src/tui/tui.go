@@ -61,6 +61,8 @@ const (
 	Home
 	End
 
+	SUp
+	SDown
 	SLeft
 	SRight
 
@@ -82,6 +84,11 @@ const (
 	AltSpace
 	AltSlash
 	AltBS
+
+	AltUp
+	AltDown
+	AltLeft
+	AltRight
 
 	Alt0
 )

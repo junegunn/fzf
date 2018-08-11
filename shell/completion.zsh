@@ -1,4 +1,3 @@
-#!/bin/zsh
 #     ____      ____
 #    / __/___  / __/
 #   / /_/_  / / /_
@@ -37,8 +36,7 @@ __fzfcmd_complete() {
 
 __fzf_generic_path_completion() {
   local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
-  # (Q) flag removes a quoting level: "foo\ bar" => "foo bar"
-  base=${(Q)1}
+  base=$1
   lbuf=$2
   compgen=$3
   fzf_opts=$4
@@ -47,14 +45,14 @@ __fzf_generic_path_completion() {
   fzf="$(__fzfcmd_complete)"
 
   setopt localoptions nonomatch
-  dir="$base"
+  eval "base=$base"
+  [[ $base = *"/"* ]] && dir="$base"
   while [ 1 ]; do
-    if [[ -z "$dir" || -d ${~dir} ]]; then
+    if [[ -z "$dir" || -d ${dir} ]]; then
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      dir=${~dir}
       matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${=fzf} ${=fzf_opts} -q "$leftover" | while read item; do
         echo -n "${(q)item}$suffix "
       done)
@@ -116,7 +114,7 @@ _fzf_complete_telnet() {
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    command cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host' | command grep -v '*' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
+    command cat <(cat ~/.ssh/config /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host ' | command grep -v '[*?]' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
@@ -138,6 +136,12 @@ _fzf_complete_unset() {
 _fzf_complete_unalias() {
   _fzf_complete '+m' "$@" < <(
     alias | sed 's/=.*//'
+  )
+}
+
+_fzf_complete_make() {
+  _fzf_complete '+m' "$@" < <(
+    command grep '^[^#[:space:]].*:' Makefile | cut -d ':' -f1
   )
 }
 

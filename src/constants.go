@@ -9,7 +9,7 @@ import (
 
 const (
 	// Current version
-	version = "0.17.3"
+	version = "0.17.4"
 
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
@@ -22,9 +22,10 @@ const (
 	readerPollIntervalMax  = 50 * time.Millisecond
 
 	// Terminal
-	initialDelay    = 20 * time.Millisecond
-	initialDelayTac = 100 * time.Millisecond
-	spinnerDuration = 200 * time.Millisecond
+	initialDelay     = 20 * time.Millisecond
+	initialDelayTac  = 100 * time.Millisecond
+	spinnerDuration  = 200 * time.Millisecond
+	maxPatternLength = 300
 
 	// Matcher
 	numPartitionsMultiplier = 8

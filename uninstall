@@ -1,12 +1,45 @@
 #!/usr/bin/env bash
 
-confirm() {
-  while [ 1 ]; do
-    read -p "$1" -n 1 -r
-    echo
-    if [[ "$REPLY" =~ ^[Yy] ]]; then
+xdg=0
+prefix='~/.fzf'
+prefix_expand=~/.fzf
+fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
+
+help() {
+  cat << EOF
+usage: $0 [OPTIONS]
+
+    --help               Show this message
+    --xdg                Remove files generated under \$XDG_CONFIG_HOME/fzf
+EOF
+}
+
+for opt in "$@"; do
+  case $opt in
+    --help)
+      help
+      exit 0
+      ;;
+    --xdg)
+      xdg=1
+      prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
+      ;;
+    *)
+      echo "unknown option: $opt"
+      help
+      exit 1
+      ;;
+  esac
+done
+
+ask() {
+  while true; do
+    read -p "$1 ([y]/n) " -r
+    REPLY=${REPLY:-"y"}
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
       return 0
-    elif [[ "$REPLY" =~ ^[Nn] ]]; then
+    elif [[ $REPLY =~ ^[Nn]$ ]]; then
       return 1
     fi
   done
@@ -40,7 +73,7 @@ remove_line() {
     content=$(sed 's/^[0-9]*://' <<< "$line")
     match=1
     echo    "  - Line #$line_no: $content"
-    [ "$content" = "$1" ] || confirm "    - Remove (y/n) ? "
+    [ "$content" = "$1" ] || ask "    - Remove?"
     if [ $? -eq 0 ]; then
       awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$src.bak" &&
         mv "$src.bak" "$src" || break
@@ -55,25 +88,30 @@ remove_line() {
 }
 
 for shell in bash zsh; do
-  remove ~/.fzf.${shell}
+  shell_config=${prefix_expand}.${shell}
+  remove "${shell_config}"
   remove_line ~/.${shell}rc \
-    "[ -f ~/.fzf.${shell} ] && source ~/.fzf.${shell}" \
-    "source ~/.fzf.${shell}"
+    "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" \
+    "source ${prefix}.${shell}"
 done
 
-bind_file=~/.config/fish/functions/fish_user_key_bindings.fish
+bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
 if [ -f "$bind_file" ]; then
   remove_line "$bind_file" "fzf_key_bindings"
 fi
 
-if [ -d ~/.config/fish/functions ]; then
-  remove ~/.config/fish/functions/fzf.fish
-  remove ~/.config/fish/functions/fzf_key_bindings.fish
+if [ -d "${fish_dir}/functions" ]; then
+  remove "${fish_dir}/functions/fzf.fish"
+  remove "${fish_dir}/functions/fzf_key_bindings.fish"
 
-  if [ "$(ls -A ~/.config/fish/functions)" ]; then
-    echo "Can't delete non-empty directory: \"~/.config/fish/functions\""
+  if [ "$(ls -A "${fish_dir}/functions")" ]; then
+    echo "Can't delete non-empty directory: \"${fish_dir}/functions\""
   else
-    rmdir ~/.config/fish/functions
+    rmdir "${fish_dir}/functions"
   fi
 fi
 
+config_dir=$(dirname "$prefix_expand")
+if [[ "$xdg" = 1 ]] && [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
+  rmdir "$config_dir"
+fi

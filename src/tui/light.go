@@ -32,6 +32,12 @@ var offsetRegexp *regexp.Regexp = regexp.MustCompile("\x1b\\[([0-9]+);([0-9]+)R"
 func openTtyIn() *os.File {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
 	if err != nil {
+		tty := ttyname()
+		if len(tty) > 0 {
+			if in, err := os.OpenFile(tty, syscall.O_RDONLY, 0); err == nil {
+				return in
+			}
+		}
 		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
 		os.Exit(2)
 	}
@@ -48,11 +54,13 @@ func (r *LightRenderer) stderrInternal(str string, allowNLCR bool) {
 	runes := []rune{}
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
-		if r == utf8.RuneError || r < 32 &&
-			r != '\x1b' && (!allowNLCR || r != '\n' && r != '\r') {
-			runes = append(runes, '?')
-		} else {
-			runes = append(runes, r)
+		nlcr := r == '\n' || r == '\r'
+		if r >= 32 || r == '\x1b' || nlcr {
+			if r == utf8.RuneError || nlcr && !allowNLCR {
+				runes = append(runes, ' ')
+			} else {
+				runes = append(runes, r)
+			}
 		}
 		bytes = bytes[sz:]
 	}
@@ -289,6 +297,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 	}
 	buffer = append(buffer, byte(c))
 
+	pc := c
 	for {
 		c, ok = r.getch(true)
 		if !ok {
@@ -298,9 +307,13 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 				continue
 			}
 			break
+		} else if c == ESC && pc != c {
+			retries = r.escDelay / escPollInterval
+		} else {
+			retries = 0
 		}
-		retries = 0
 		buffer = append(buffer, byte(c))
+		pc = c
 	}
 
 	return buffer
@@ -360,6 +373,11 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
 		return Event{int(CtrlAltA + r.buffer[1] - 1), 0, nil}
 	}
+	alt := false
+	if len(r.buffer) > 2 && r.buffer[1] == ESC {
+		r.buffer = r.buffer[1:]
+		alt = true
+	}
 	switch r.buffer[1] {
 	case 32:
 		return Event{AltSpace, 0, nil}
@@ -380,12 +398,25 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		*sz = 3
 		switch r.buffer[2] {
 		case 68:
+			if alt {
+				return Event{AltLeft, 0, nil}
+			}
 			return Event{Left, 0, nil}
 		case 67:
+			if alt {
+				// Ugh..
+				return Event{AltRight, 0, nil}
+			}
 			return Event{Right, 0, nil}
 		case 66:
+			if alt {
+				return Event{AltDown, 0, nil}
+			}
 			return Event{Down, 0, nil}
 		case 65:
+			if alt {
+				return Event{AltUp, 0, nil}
+			}
 			return Event{Up, 0, nil}
 		case 90:
 			return Event{BTab, 0, nil}
@@ -458,25 +489,22 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						}
 					}
 					return Event{Invalid, 0, nil}
-				case 59:
+				case ';':
 					if len(r.buffer) != 6 {
 						return Event{Invalid, 0, nil}
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case 50:
+					case '2', '5':
 						switch r.buffer[5] {
-						case 68:
-							return Event{Home, 0, nil}
-						case 67:
-							return Event{End, 0, nil}
-						}
-					case 53:
-						switch r.buffer[5] {
-						case 68:
-							return Event{SLeft, 0, nil}
-						case 67:
+						case 'A':
+							return Event{SUp, 0, nil}
+						case 'B':
+							return Event{SDown, 0, nil}
+						case 'C':
 							return Event{SRight, 0, nil}
+						case 'D':
+							return Event{SLeft, 0, nil}
 						}
 					} // r.buffer[4]
 				} // r.buffer[3]
@@ -792,7 +820,7 @@ func (w *LightWindow) Print(text string) {
 }
 
 func cleanse(str string) string {
-	return strings.Replace(str, "\x1b", "?", -1)
+	return strings.Replace(str, "\x1b", "", -1)
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
