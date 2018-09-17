@@ -127,11 +127,11 @@ func Run(opts *Options, revision string) {
 	// Matcher
 	forward := true
 	for _, cri := range opts.Criteria[1:] {
-		if cri == byEnd {
+		if cri.by == byEnd {
 			forward = false
 			break
 		}
-		if cri == byBegin {
+		if cri.by == byBegin {
 			break
 		}
 	}

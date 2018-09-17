@@ -54,7 +54,13 @@ func TestRankComparison(t *testing.T) {
 // Match length, string length, index
 func TestResultRank(t *testing.T) {
 	// FIXME global
-	sortCriteria = []criterion{byScore, byLength}
+	sortCriteria = []criterion{criterion{
+		by:  byScore,
+		arg: "",
+	}, criterion{
+		by:  byLength,
+		arg: "",
+	}}
 
 	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
 	item1 := buildResult(

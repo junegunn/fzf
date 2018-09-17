@@ -9,7 +9,13 @@ import (
 
 func TestChunkList(t *testing.T) {
 	// FIXME global
-	sortCriteria = []criterion{byScore, byLength}
+	sortCriteria = []criterion{criterion{
+		by:  byScore,
+		arg: "",
+	}, criterion{
+		by:  byLength,
+		arg: "",
+	}}
 
 	cl := NewChunkList(func(item *Item, s []byte) bool {
 		item.text = util.ToChars(s)
