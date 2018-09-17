@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"unicode"
+	"path/filepath"
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
@@ -47,7 +48,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 
 	for idx, criterion := range sortCriteria {
 		val := uint16(math.MaxUint16)
-		switch criterion {
+		switch criterion.by {
 		case byScore:
 			// Higher is better
 			val = math.MaxUint16 - util.AsUint16(score)
@@ -63,12 +64,26 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 						break
 					}
 				}
-				if criterion == byBegin {
+				if criterion.by == byBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
 					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()))
 				}
 			}
+		case byProximity:
+			// val is number of shared prefixes
+			path := filepath.SplitList(criterion.arg)
+			candidate := filepath.SplitList(item.text.ToString())
+			end := util.Min(len(path), len(candidate))
+			val = 0
+			for idx := 0; idx < end; idx++ {
+				if path[idx] == candidate[idx] {
+					val++
+				} else {
+					break
+				}
+			}
+
 		}
 		result.points[3-idx] = val
 	}

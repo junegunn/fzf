@@ -106,13 +106,19 @@ const (
 )
 
 // Sort criteria
-type criterion int
+type criterion struct {
+	by  by
+	arg string
+}
+
+type by int
 
 const (
-	byScore criterion = iota
+	byScore by = iota
 	byLength
 	byBegin
 	byEnd
+	byProximity
 )
 
 type sizeSpec struct {
@@ -212,7 +218,7 @@ func defaultOptions() *Options {
 		Delimiter:   Delimiter{},
 		Sort:        1000,
 		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
+		Criteria:    []criterion{criterion{by: byScore, arg: ""}, criterion{by: byLength, arg: ""}},
 		Multi:       false,
 		Ansi:        false,
 		Mouse:       true,
@@ -488,7 +494,7 @@ func parseKeyChords(str string, message string) map[int]string {
 }
 
 func parseTiebreak(str string) []criterion {
-	criteria := []criterion{byScore}
+	criteria := []criterion{criterion{by: byScore, arg: ""}}
 	hasIndex := false
 	hasLength := false
 	hasBegin := false
@@ -503,18 +509,40 @@ func parseTiebreak(str string) []criterion {
 		*notExpected = true
 	}
 	for _, str := range strings.Split(strings.ToLower(str), ",") {
+		if strings.HasPrefix(str, "proximity=") {
+			path := strings.Join(strings.Split(str, "=")[1:], "=")
+			if path != "" {
+				criteria = append(criteria, criterion{
+					by:  byProximity,
+					arg: path,
+				})
+				continue
+			} else {
+				errorExit("empty proximity path given")
+			}
+		}
+
 		switch str {
 		case "index":
 			check(&hasIndex, "index")
 		case "length":
 			check(&hasLength, "length")
-			criteria = append(criteria, byLength)
+			criteria = append(criteria, criterion{
+				by:  byLength,
+				arg: "",
+			})
 		case "begin":
 			check(&hasBegin, "begin")
-			criteria = append(criteria, byBegin)
+			criteria = append(criteria, criterion{
+				by:  byBegin,
+				arg: "",
+			})
 		case "end":
 			check(&hasEnd, "end")
-			criteria = append(criteria, byEnd)
+			criteria = append(criteria, criterion{
+				by:  byEnd,
+				arg: "",
+			})
 		default:
 			errorExit("invalid sort criterion: " + str)
 		}
