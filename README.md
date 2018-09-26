@@ -56,6 +56,7 @@ Table of Contents
       * [Respecting .gitignore](#respecting-gitignore)
       * [git ls-tree for fast traversal](#git-ls-tree-for-fast-traversal)
       * [Fish shell](#fish-shell)
+   * [Related projects](#related-projects)
    * [<a href="LICENSE">License</a>](#license)
 
 Installation
@@ -598,6 +599,11 @@ valid directory. Example:
 ```sh
 set -g FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
 ```
+
+Related projects
+----------------
+
+https://github.com/junegunn/fzf/wiki/Related-projects
 
 [License](LICENSE)
 ------------------
