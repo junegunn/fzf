@@ -114,6 +114,7 @@ type Terminal struct {
 	prevLines  []itemLine
 	suppress   bool
 	startChan  chan bool
+	killChan   chan int
 	slab       *util.Slab
 	theme      *tui.ColorTheme
 	tui        tui.Renderer
@@ -414,6 +415,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		slab:       util.MakeSlab(slab16Size, slab32Size),
 		theme:      opts.Theme,
 		startChan:  make(chan bool, 1),
+		killChan:   make(chan int),
 		tui:        renderer,
 		initFunc:   func() { renderer.Init() }}
 	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
@@ -1298,7 +1300,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		return
 	}
 	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
-	cmd := util.ExecCommand(command)
+	cmd := util.ExecCommand(command, false)
 	if !background {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
@@ -1381,6 +1383,20 @@ func (t *Terminal) toggleItem(item *Item) {
 	}
 }
 
+func (t *Terminal) killPreview(code int) {
+	select {
+	case t.killChan <- code:
+	default:
+		if code != exitCancel {
+			os.Exit(code)
+		}
+	}
+}
+
+func (t *Terminal) cancelPreview() {
+	t.killPreview(exitCancel)
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -1458,15 +1474,43 @@ func (t *Terminal) Loop() {
 				if request[0] != nil {
 					command := replacePlaceholder(t.preview.command,
 						t.ansi, t.delimiter, false, string(t.input), request)
-					cmd := util.ExecCommand(command)
+					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
 						env = append(env, fmt.Sprintf("LINES=%d", t.pwindow.Height()))
 						env = append(env, fmt.Sprintf("COLUMNS=%d", t.pwindow.Width()))
 						cmd.Env = env
 					}
-					out, _ := cmd.CombinedOutput()
-					t.reqBox.Set(reqPreviewDisplay, string(out))
+					var out bytes.Buffer
+					cmd.Stdout = &out
+					cmd.Stderr = &out
+					cmd.Start()
+					finishChan := make(chan bool, 1)
+					updateChan := make(chan bool)
+					go func() {
+						select {
+						case code := <-t.killChan:
+							if code != exitCancel {
+								util.KillCommand(cmd)
+								os.Exit(code)
+							} else {
+								select {
+								case <-time.After(previewCancelWait):
+									util.KillCommand(cmd)
+									updateChan <- true
+								case <-finishChan:
+									updateChan <- false
+								}
+							}
+						case <-finishChan:
+							updateChan <- false
+						}
+					}()
+					cmd.Wait()
+					finishChan <- true
+					if out.Len() > 0 || !<-updateChan {
+						t.reqBox.Set(reqPreviewDisplay, string(out.Bytes()))
+					}
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, "")
 				}
@@ -1484,7 +1528,7 @@ func (t *Terminal) Loop() {
 			t.history.append(string(t.input))
 		}
 		// prof.Stop()
-		os.Exit(code)
+		t.killPreview(code)
 	}
 
 	go func() {
@@ -1511,6 +1555,7 @@ func (t *Terminal) Loop() {
 							focused = currentFocus
 							if t.isPreviewEnabled() {
 								_, list := t.buildPlusList(t.preview.command, false)
+								t.cancelPreview()
 								t.previewBox.Set(reqPreviewEnqueue, list)
 							}
 						}
@@ -1620,6 +1665,7 @@ func (t *Terminal) Loop() {
 					if t.previewer.enabled {
 						valid, list := t.buildPlusList(t.preview.command, false)
 						if valid {
+							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue, list)
 						}
 					}
