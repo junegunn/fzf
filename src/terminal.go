@@ -1309,7 +1309,9 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.redraw()
 		t.refresh()
 	} else {
+		t.tui.Pause(false)
 		cmd.Run()
+		t.tui.Resume(false)
 	}
 }
 
