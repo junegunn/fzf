@@ -73,7 +73,8 @@ for opt in "$@"; do
 done
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-fzf_base="$(pwd)"
+fzf_base=$(pwd)
+fzf_base_esc=$(printf %q "$fzf_base")
 
 ask() {
   while true; do
@@ -267,7 +268,7 @@ for shell in $shells; do
   cat > "$src" << EOF
 # Setup fzf
 # ---------
-if [[ ! "\$PATH" == *$fzf_base/bin* ]]; then
+if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
   export PATH="\$PATH:$fzf_base/bin"
 fi
 
@@ -287,8 +288,8 @@ done
 if [[ "$shells" =~ fish ]]; then
   echo -n "Update fish_user_paths ... "
   fish << EOF
-  echo \$fish_user_paths | \grep $fzf_base/bin > /dev/null
-  or set --universal fish_user_paths \$fish_user_paths $fzf_base/bin
+  echo \$fish_user_paths | \grep "$fzf_base"/bin > /dev/null
+  or set --universal fish_user_paths \$fish_user_paths "$fzf_base"/bin
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
