@@ -381,6 +381,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		alt = true
 	}
 	switch r.buffer[1] {
+	case ESC:
+		return Event{ESC, 0, nil}
 	case 32:
 		return Event{AltSpace, 0, nil}
 	case 47:
