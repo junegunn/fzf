@@ -266,6 +266,12 @@ _fzf_complete_unalias() {
   )
 }
 
+_fzf_complete_make() {
+  _fzf_complete '+m' "$@" < <(
+    command grep '^[^#[:space:]].*:' Makefile | cut -d ':' -f1
+  )
+}
+
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
 

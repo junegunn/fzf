@@ -139,6 +139,12 @@ _fzf_complete_unalias() {
   )
 }
 
+_fzf_complete_make() {
+  _fzf_complete '+m' "$@" < <(
+    command grep '^[^#[:space:]].*:' Makefile | cut -d ':' -f1
+  )
+}
+
 fzf-completion() {
   local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
