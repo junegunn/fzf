@@ -390,7 +390,8 @@ Note that most options have the opposite versions with \fB--no-\fR prefix.
 .SH ENVIRONMENT VARIABLES
 .TP
 .B FZF_DEFAULT_COMMAND
-Default command to use when input is tty
+Default command to use when input is tty. On *nix systems, fzf runs the command
+with \fBsh -c\fR, so make sure that it's POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
