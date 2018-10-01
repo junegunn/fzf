@@ -29,7 +29,7 @@ __fzfcmd() {
 fzf-file-widget() {
   LBUFFER="${LBUFFER}$(__fsel)"
   local ret=$?
-  zle redisplay
+  zle -R
   typeset -f zle-line-init >/dev/null && zle zle-line-init
   return $ret
 }
@@ -43,6 +43,7 @@ fzf-redraw-prompt() {
     $precmd
   done
   zle reset-prompt
+  zle -R
 }
 zle -N fzf-redraw-prompt
 
@@ -78,7 +79,7 @@ fzf-history-widget() {
       zle vi-fetch-history -n $num
     fi
   fi
-  zle redisplay
+  zle -R
   typeset -f zle-line-init >/dev/null && zle zle-line-init
   return $ret
 }
