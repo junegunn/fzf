@@ -382,12 +382,16 @@ func (r *FullscreenRenderer) GetChar() Event {
 	return Event{Invalid, 0, nil}
 }
 
-func (r *FullscreenRenderer) Pause(bool) {
-	_screen.Fini()
+func (r *FullscreenRenderer) Pause(clear bool) {
+	if clear {
+		_screen.Fini()
+	}
 }
 
-func (r *FullscreenRenderer) Resume(bool) {
-	r.initScreen()
+func (r *FullscreenRenderer) Resume(clear bool) {
+	if clear {
+		r.initScreen()
+	}
 }
 
 func (r *FullscreenRenderer) Close() {

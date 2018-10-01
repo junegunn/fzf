@@ -103,7 +103,7 @@ func (r *Reader) readFromStdin() bool {
 }
 
 func (r *Reader) readFromCommand(shell string, cmd string) bool {
-	listCommand := util.ExecCommandWith(shell, cmd)
+	listCommand := util.ExecCommandWith(shell, cmd, false)
 	out, err := listCommand.StdoutPipe()
 	if err != nil {
 		return false

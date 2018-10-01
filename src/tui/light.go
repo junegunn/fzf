@@ -27,7 +27,7 @@ const (
 
 const consoleDevice string = "/dev/tty"
 
-var offsetRegexp *regexp.Regexp = regexp.MustCompile("\x1b\\[([0-9]+);([0-9]+)R")
+var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
 
 func openTtyIn() *os.File {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
@@ -154,8 +154,10 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	for tries := 0; tries < offsetPollTries; tries++ {
 		bytes = r.getBytesInternal(bytes, tries > 0)
 		offsets := offsetRegexp.FindSubmatch(bytes)
-		if len(offsets) > 2 {
-			return atoi(string(offsets[1]), 0) - 1, atoi(string(offsets[2]), 0) - 1
+		if len(offsets) > 3 {
+			// add anything we skipped over to the input buffer
+			r.buffer = append(r.buffer, offsets[1]...)
+			return atoi(string(offsets[2]), 0) - 1, atoi(string(offsets[3]), 0) - 1
 		}
 	}
 	return -1, -1
@@ -379,6 +381,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		alt = true
 	}
 	switch r.buffer[1] {
+	case ESC:
+		return Event{ESC, 0, nil}
 	case 32:
 		return Event{AltSpace, 0, nil}
 	case 47:

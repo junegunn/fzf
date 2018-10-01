@@ -56,6 +56,7 @@ Table of Contents
       * [Respecting .gitignore](#respecting-gitignore)
       * [git ls-tree for fast traversal](#git-ls-tree-for-fast-traversal)
       * [Fish shell](#fish-shell)
+   * [Related projects](#related-projects)
    * [<a href="LICENSE">License</a>](#license)
 
 Installation
@@ -514,7 +515,8 @@ You can customize the size and position of the preview window using
 fzf --height 40% --reverse --preview 'file {}' --preview-window down:1
 ```
 
-For more advanced examples, see [Key bindings for git with fzf][fzf-git].
+For more advanced examples, see [Key bindings for git with fzf][fzf-git]
+([code](https://gist.github.com/junegunn/8b572b8d4b5eddd8b85e5f4d40f17236)).
 
 [fzf-git]: https://junegunn.kr/2016/07/fzf-git/
 
@@ -597,6 +599,11 @@ valid directory. Example:
 ```sh
 set -g FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
 ```
+
+Related projects
+----------------
+
+https://github.com/junegunn/fzf/wiki/Related-projects
 
 [License](LICENSE)
 ------------------
