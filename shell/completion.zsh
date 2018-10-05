@@ -60,8 +60,7 @@ __fzf_generic_path_completion() {
       if [ -n "$matches" ]; then
         LBUFFER="$lbuf$matches$tail"
       fi
-      zle redisplay
-      typeset -f zle-line-init >/dev/null && zle zle-line-init
+      zle reset-prompt
       break
     fi
     dir=$(dirname "$dir")
@@ -100,8 +99,7 @@ _fzf_complete() {
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
-  zle redisplay
-  typeset -f zle-line-init >/dev/null && zle zle-line-init
+  zle reset-prompt
   command rm -f "$fifo"
 }
 
@@ -165,8 +163,7 @@ fzf-completion() {
     if [ -n "$matches" ]; then
       LBUFFER="$LBUFFER$matches"
     fi
-    zle redisplay
-    typeset -f zle-line-init >/dev/null && zle zle-line-init
+    zle reset-prompt
   # Trigger sequence given
   elif [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir})
