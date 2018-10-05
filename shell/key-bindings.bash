@@ -51,11 +51,18 @@ __fzf_cd__() {
   dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
+__fzf_history_dedup__() {
+  if [ -z ${FZF_UNIQUE_HISTORY+x} ]; then
+    cat
+  else
+    perl -ne 'print if !$seen{($_ =~ s/^[0-9\s]*//r)}++'
+  fi
+}
 __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= history |
+    HISTTIMEFORMAT= history | __fzf_history_dedup__ |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
