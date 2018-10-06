@@ -11,7 +11,7 @@ import (
 
 // ExecCommand executes the given command with cmd
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
-	return ExecCommandWith("cmd", command)
+	return ExecCommandWith("cmd", command, setpgid)
 }
 
 // ExecCommandWith executes the given command with cmd. _shell parameter is

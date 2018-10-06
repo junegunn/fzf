@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.17.5
+------
+
+- Bug fixes and improvements
+    - See https://github.com/junegunn/fzf/milestone/13?closed=1
+- Search query longer than the screen width is allowed (up to 300 chars)
+- Built with Go 1.11.1
+
 0.17.4
 ------
 
