@@ -278,7 +278,7 @@ a_cmds="
   basename bunzip2 bzip2 chmod chown curl cp dirname du
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
-  svn tar unzip zip"
+  svn tar tig unzip zip"
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
