@@ -133,6 +133,12 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
   " and you don't have to run install script if you use fzf only in Vim.
 ```
 
+In order to allow Ag command on mac in vim one should install [the_silver_searcher](https://github.com/ggreer/the_silver_searcher):
+
+```sh
+brew install the_silver_searcher
+```
+
 ### Arch Linux
 
 ```sh
