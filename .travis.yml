@@ -1,20 +1,27 @@
-language: ruby
-dist: trusty
-sudo: required
-matrix:
+language: go
+dist: xenial
+addons:
+  apt:
+    sources:
+      - sourceline: "ppa:pi-rho/dev"
+      - sourceline: "ppa:fish-shell/release-2"
+    packages:
+    - tmux
+    - zsh
+    - fish
+
+env:
+  - GO111MODULE=on
+
+jobs:
   include:
-    - env: TAGS=
-      rvm: 2.3.3
-#   - env: TAGS=tcell
-#     rvm: 2.3.3
+    - stage: unittest
+      go: "1.11.x"
+      script: make && make test
 
-install:
-- sudo add-apt-repository -y ppa:pi-rho/dev
-- sudo apt-add-repository -y ppa:fish-shell/release-2
-- sudo apt-get update
-- sudo apt-get install -y tmux zsh fish
+    - stage: cli
+      go: "1.11.x"
+      rvm: "2.5"
+      script: |
+        make install && ./install --all && tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]
 
-script: |
-  make test install &&
-  ./install --all &&
-  tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]
