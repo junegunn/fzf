@@ -94,6 +94,15 @@ func Run(opts *Options, revision string) {
 			}
 			item.text, item.colors = ansiProcessor(data)
 			item.text.Index = itemIndex
+			// Pattern.go basicMatch and extendedMatch will tokenize
+			// origText before performing their matches
+			// While they could use .text normally, --with-nth
+			// transforms .text, which means they would end up tokenizing on
+			// a subset of the original text
+			// To minimize the logic required in Pattern, we duplicate
+			// the assignment here even though .origText == .text
+			// The tokenization will be performed on .origText
+			item.origText = &data
 			itemIndex++
 			return true
 		})
