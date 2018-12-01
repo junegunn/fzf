@@ -205,7 +205,7 @@ function! s:common_sink(action, lines) abort
     return
   endif
   let key = remove(a:lines, 0)
-  let Cmd = get(a:action, key, 'e')
+  let Cmd = get(a:action, key, ( winnr()<2 ? 'vsplit' : 'split' ) )
   if type(Cmd) == type(function('call'))
     return Cmd(a:lines)
   endif
