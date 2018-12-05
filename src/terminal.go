@@ -1533,7 +1533,7 @@ func (t *Terminal) Loop() {
 
 	go func() {
 		var focused *Item
-		var version int64
+		var version int64 = -1
 		for {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()

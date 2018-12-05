@@ -1427,6 +1427,12 @@ class TestGoFZF < TestBase
     tmux.until { |lines| !lines[1].include?('foo') }
   end
 
+  def test_preview_q_no_match_with_initial_query
+    tmux.send_keys %(: | #{FZF} --preview 'echo foo {q}{q}' --query foo), :Enter
+    tmux.until { |lines| lines.match_count == 0 }
+    tmux.until { |lines| lines[1].include?('foofoo') }
+  end
+
   def test_no_clear
     tmux.send_keys "seq 10 | fzf --no-clear --inline-info --height 5 > #{tempname}", :Enter
     prompt = '>   < 10/10'
