@@ -1,17 +1,9 @@
-ifndef GOOS
-GOOS           := $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
-endif
+GO             ?= go
+GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
-GOPATH         := $(ROOT_DIR)/gopath
-SRC_LINK       := $(GOPATH)/src/github.com/junegunn/fzf/src
-VENDOR_LINK    := $(GOPATH)/src/github.com/junegunn/fzf/vendor
-export GOPATH
-
-GLIDE_YAML     := glide.yaml
-GLIDE_LOCK     := glide.lock
-SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(SRC_LINK) $(VENDOR_LINK) $(GLIDE_LOCK) $(MAKEFILE)
+SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 
 REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
 BUILD_FLAGS    := -a -ldflags "-X main.revision=$(REVISION) -w -extldflags=$(LDFLAGS)" -tags "$(TAGS)"
@@ -90,19 +82,8 @@ release-all: clean test
 	GOOS=openbsd make release
 	GOOS=windows make release
 
-$(SRC_LINK):
-	mkdir -p $(shell dirname $(SRC_LINK))
-	ln -sf $(ROOT_DIR)/src $(SRC_LINK)
-
-$(VENDOR_LINK):
-	mkdir -p $(shell dirname $(VENDOR_LINK))
-	ln -sf $(ROOT_DIR)/vendor $(VENDOR_LINK)
-
-vendor: $(GLIDE_YAML)
-	go get -u github.com/Masterminds/glide && $(GOPATH)/bin/glide install && touch $@
-
-test: $(SOURCES) vendor
-	SHELL=/bin/sh GOOS= go test -v -tags "$(TAGS)" \
+test: $(SOURCES)
+	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
 				github.com/junegunn/fzf/src \
 				github.com/junegunn/fzf/src/algo \
 				github.com/junegunn/fzf/src/tui \
@@ -111,29 +92,29 @@ test: $(SOURCES) vendor
 install: bin/fzf
 
 clean:
-	rm -rf target
+	$(RM) -r target
 
-target/$(BINARY32): $(SOURCES) vendor
-	GOARCH=386 go build $(BUILD_FLAGS) -o $@
+target/$(BINARY32): $(SOURCES) 
+	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARY64): $(SOURCES) vendor
-	GOARCH=amd64 go build $(BUILD_FLAGS) -o $@
+target/$(BINARY64): $(SOURCES) 
+	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
 
 # https://github.com/golang/go/wiki/GoArm
-target/$(BINARYARM5): $(SOURCES) vendor
-	GOARCH=arm GOARM=5 go build $(BUILD_FLAGS) -o $@
+target/$(BINARYARM5): $(SOURCES) 
+	GOARCH=arm GOARM=5 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM6): $(SOURCES) vendor
-	GOARCH=arm GOARM=6 go build $(BUILD_FLAGS) -o $@
+target/$(BINARYARM6): $(SOURCES) 
+	GOARCH=arm GOARM=6 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM7): $(SOURCES) vendor
-	GOARCH=arm GOARM=7 go build $(BUILD_FLAGS) -o $@
+target/$(BINARYARM7): $(SOURCES) 
+	GOARCH=arm GOARM=7 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM8): $(SOURCES) vendor
-	GOARCH=arm64 go build $(BUILD_FLAGS) -o $@
+target/$(BINARYARM8): $(SOURCES) 
+	GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYPPC64LE): $(SOURCES) vendor
-	GOARCH=ppc64le go build $(BUILD_FLAGS) -o $@
+target/$(BINARYPPC64LE): $(SOURCES) 
+	GOARCH=ppc64le $(GO) build $(BUILD_FLAGS) -o $@
 
 bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
@@ -146,4 +127,8 @@ docker-test:
 	docker build -t fzf-arch .
 	docker run -it fzf-arch
 
-.PHONY: all release release-all test install clean docker docker-test
+update:
+	$(GO) get -u
+	$(GO) mod tidy
+
+.PHONY: all release release-all test install clean docker docker-test update
