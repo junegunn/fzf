@@ -1532,7 +1532,7 @@ func (t *Terminal) Loop() {
 	}
 
 	go func() {
-		var focused *Item
+		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
 		for {
 			t.reqBox.Wait(func(events *util.Events) {
@@ -1549,10 +1549,14 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case reqList:
 						t.printList()
-						currentFocus := t.currentItem()
-						if currentFocus != focused || version != t.version {
+						var currentIndex int32 = minItem.Index()
+						currentItem := t.currentItem()
+						if currentItem != nil {
+							currentIndex = currentItem.Index()
+						}
+						if focusedIndex != currentIndex || version != t.version {
 							version = t.version
-							focused = currentFocus
+							focusedIndex = currentIndex
 							if t.isPreviewEnabled() {
 								_, list := t.buildPlusList(t.preview.command, false)
 								t.cancelPreview()
