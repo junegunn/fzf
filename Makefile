@@ -94,26 +94,26 @@ install: bin/fzf
 clean:
 	$(RM) -r target
 
-target/$(BINARY32): $(SOURCES) 
+target/$(BINARY32): $(SOURCES)
 	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARY64): $(SOURCES) 
+target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
 
 # https://github.com/golang/go/wiki/GoArm
-target/$(BINARYARM5): $(SOURCES) 
+target/$(BINARYARM5): $(SOURCES)
 	GOARCH=arm GOARM=5 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM6): $(SOURCES) 
+target/$(BINARYARM6): $(SOURCES)
 	GOARCH=arm GOARM=6 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM7): $(SOURCES) 
+target/$(BINARYARM7): $(SOURCES)
 	GOARCH=arm GOARM=7 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYARM8): $(SOURCES) 
+target/$(BINARYARM8): $(SOURCES)
 	GOARCH=arm64 $(GO) build $(BUILD_FLAGS) -o $@
 
-target/$(BINARYPPC64LE): $(SOURCES) 
+target/$(BINARYPPC64LE): $(SOURCES)
 	GOARCH=ppc64le $(GO) build $(BUILD_FLAGS) -o $@
 
 bin/fzf: target/$(BINARY) | bin
