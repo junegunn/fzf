@@ -149,6 +149,7 @@ func Run(opts *Options, revision string) {
 		}
 
 		pattern := patternBuilder([]rune(*opts.Filter))
+		matcher.sort = pattern.sortable
 
 		found := false
 		if streamingFilter {

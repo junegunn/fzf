@@ -230,5 +230,5 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 	} else {
 		event = reqRetry
 	}
-	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort})
+	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort && pattern.sortable})
 }

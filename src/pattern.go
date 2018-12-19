@@ -52,6 +52,7 @@ type Pattern struct {
 	forward       bool
 	text          []rune
 	termSets      []termSet
+	sortable      bool
 	cacheable     bool
 	cacheKey      string
 	delimiter     Delimiter
@@ -101,18 +102,27 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	}
 
 	caseSensitive := true
+	sortable := true
 	termSets := []termSet{}
 
 	if extended {
 		termSets = parseTerms(fuzzy, caseMode, normalize, asString)
+		// We should not sort the result if there are only inverse search terms
+		sortable = false
 	Loop:
 		for _, termSet := range termSets {
 			for idx, term := range termSet {
+				if !term.inv {
+					sortable = true
+				}
 				// If the query contains inverse search terms or OR operators,
 				// we cannot cache the search scope
 				if !cacheable || idx > 0 || term.inv || fuzzy && term.typ != termFuzzy || !fuzzy && term.typ != termExact {
 					cacheable = false
-					break Loop
+					if sortable {
+						// Can't break until we see at least one non-inverse term
+						break Loop
+					}
 				}
 			}
 		}
@@ -134,6 +144,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		forward:       forward,
 		text:          []rune(asString),
 		termSets:      termSets,
+		sortable:      sortable,
 		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
