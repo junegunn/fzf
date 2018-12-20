@@ -86,7 +86,7 @@ _fzf_feed_fifo() (
 
 _fzf_complete() {
   local fifo fzf_opts lbuf fzf matches post
-  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
+  fifo="/tmp/fzf-complete-fifo-$$"
   fzf_opts=$1
   lbuf=$2
   post="${funcstack[2]}_post"

@@ -122,7 +122,7 @@ try_curl() {
   if [[ $1 =~ tgz$ ]]; then
     curl -fL $1 | tar -xzf -
   else
-    local temp=${TMPDIR:-/tmp}/fzf.zip
+    local temp=/tmp/fzf.zip
     curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
   fi
 }
@@ -132,7 +132,7 @@ try_wget() {
   if [[ $1 =~ tgz$ ]]; then
     wget -O - $1 | tar -xzf -
   else
-    local temp=${TMPDIR:-/tmp}/fzf.zip
+    local temp=/tmp/fzf.zip
     wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
   fi
 }
@@ -208,7 +208,7 @@ if [ -n "$binary_error" ]; then
   if command -v go > /dev/null; then
     echo -n "Building binary (go get -u github.com/junegunn/fzf) ... "
     if [ -z "${GOPATH-}" ]; then
-      export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
+      export GOPATH="/tmp/fzf-gopath"
       mkdir -p "$GOPATH"
     fi
     if go get -u github.com/junegunn/fzf; then
