@@ -1532,6 +1532,12 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-4] == '  b' }
     tmux.until { |lines| lines[-5] == '  ccc' }
   end
+
+  def test_preview_correct_tab_width_after_ansi_reset_code
+    writelines tempname, ["\x1b[31m+\x1b[m\t\x1b[32mgreen"]
+    tmux.send_keys "#{FZF} --preview 'cat #{tempname}'", :Enter
+    tmux.until { |lines| lines[1].include?('+       green') }
+  end
 end
 
 module TestShell

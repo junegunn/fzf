@@ -1036,12 +1036,14 @@ func (t *Terminal) printPreview() {
 			break
 		} else if lineNo > 0 {
 			var fillRet tui.FillReturn
+			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
 				if !t.preview.wrap {
 					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
-				str, _ = t.processTabs(trimmed, 0)
+				str, width := t.processTabs(trimmed, prefixWidth)
+				prefixWidth += width
 				if t.theme != nil && ansi != nil && ansi.colored() {
 					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 				} else {
