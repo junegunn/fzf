@@ -91,7 +91,7 @@ ask() {
 check_binary() {
   echo -n "  - Checking fzf executable ... "
   local output
-  output=$("$fzf_base"/bin/fzf --version 2>&1 | awk '{print $1}')
+  output=$(set -o pipefail; "$fzf_base"/bin/fzf --version 2>&1 | awk '{print $1}')
   if [ $? -ne 0 ]; then
     echo "Error: $output"
     binary_error="Invalid binary"
@@ -110,8 +110,8 @@ check_binary() {
 link_fzf_in_path() {
   if which_fzf="$(command -v fzf)"; then
     echo "  - Found in \$PATH"
-    echo "  - Creating symlink: $which_fzf -> bin/fzf"
-    (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
+    echo "  - Creating symlink: bin/fzf ->  $which_fzf"
+    (mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
     check_binary && return
   fi
   return 1
