@@ -29,8 +29,8 @@ fi
 
 ###########################################################
 
-# To redraw line after fzf closes (printf '\e[5n')
-bind '"\e[0n": redraw-current-line'
+# To redraw line after fzf closes (printf '\e[5n') for interactive shell only
+[[ $- =~ i ]] && bind '"\e[0n": redraw-current-line' || true
 
 __fzfcmd_complete() {
   [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
