@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.bash
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_HEIGHT        (default: '40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                         (default: 0)
+# - $FZF_TMUX_HEIGHT                  (default: '40%')
+# - $FZF_COMPLETION_TRIGGER           (default: '**')
+# - $FZF_COMPLETION_OPTS              (default: empty)
+# - $FZF_COMPLETION_DIR_COMMANDS      (default: 'cd pushd rmdir')
+# - $LINES                            (default: '40')
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -f _fzf_compgen_path > /dev/null; then
@@ -31,9 +33,18 @@ fi
 # To redraw line after fzf closes (printf '\e[5n')
 bind '"\e[0n": redraw-current-line'
 
+_fzf_complete_init_vars() {
+  : "${FZF_TMUX:=0}"
+  : "${FZF_TMUX_HEIGHT:='40%'}"
+  : "${FZF_COMPLETION_TRIGGER:='**'}"
+  : "${FZF_COMPLETION_OPTS:=}"
+  : "${FZF_COMPLETION_DIR_COMMANDS:='cd pushd rmdir'}"
+  : "${LINES:=40}"
+}
+
 __fzfcmd_complete() {
-  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX}" != 0 ] && [ ${LINES} -gt 15 ] &&
+    echo "fzf-tmux -d${FZF_TMUX_HEIGHT}" || echo "fzf"
 }
 
 __fzf_orig_completion_filter() {
@@ -141,7 +152,7 @@ __fzf_generic_path_completion() {
   fzf="$(__fzfcmd_complete)"
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   COMPREPLY=()
-  trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  trigger=${FZF_COMPLETION_TRIGGER}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     base=${cur:0:${#cur}-${#trigger}}
@@ -154,7 +165,7 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $2 -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $2 -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -185,12 +196,12 @@ _fzf_complete() {
   fzf="$(__fzfcmd_complete)"
 
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
-  trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  trigger=${FZF_COMPLETION_TRIGGER}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(cat | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
+    selected=$(cat | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     printf '\e[5n'
 
@@ -222,7 +233,7 @@ _fzf_complete_kill() {
 
   local selected fzf
   fzf="$(__fzfcmd_complete)"
-  selected=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS --preview 'echo {}' --preview-window down:3:wrap $FZF_COMPLETION_OPTS" $fzf -m | awk '{print $2}' | tr '\n' ' ')
+  selected=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --min-height 15 --reverse $FZF_DEFAULT_OPTS --preview 'echo {}' --preview-window down:3:wrap $FZF_COMPLETION_OPTS" $fzf -m | awk '{print $2}' | tr '\n' ' ')
   printf '\e[5n'
 
   if [ -n "$selected" ]; then
@@ -265,10 +276,13 @@ _fzf_complete_unalias() {
   )
 }
 
+# Init default variables value
+_fzf_complete_init_vars
+
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
 
-d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
+d_cmds="${FZF_COMPLETION_DIR_COMMANDS}"
 a_cmds="
   awk cat diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg java
