@@ -22,7 +22,7 @@ _filedir()
     matches=$(
       _fzf_compgen_path $(printf %q "$dir") \
       | (shopt -s extglob; while read -r line; do if [[ "${line}" != ${xspec} ]];then echo "${line}"; fi;done) \
-      | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+      | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $FZF_COMPLETION_PATH_OPTS" \
         $fzf -m -q "${leftover}" \
       | while read -r item; do printf "%s " "$item"; done \
     )
@@ -30,7 +30,7 @@ _filedir()
   # Only directories
     matches=$(
       _fzf_compgen_dir $(printf %q "$dir") \
-      | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+      | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $FZF_COMPLETION_DIR_OPTS" \
         $fzf -q "${leftover}" \
       | while read -r item; do printf "%s " "$item"; done \
     )
