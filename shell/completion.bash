@@ -6,14 +6,18 @@
 #
 # - $FZF_TMUX                         (default: 0)
 # - $FZF_TMUX_HEIGHT                  (default: '40%')
-# - $FZF_COMPLETION_OPTS              (default: empty)
+# - $FZF_COMPLETION_OPTS              (default: --select-1 --exit-0)
 # - $LINES                            (default: '40')
+# - $FZF_COMPLETION_COMPAT_MODE       (default: 1)
+# - $FZF_COMPLETION_EXCLUDE           (default: empty)
 
 __fzf_complete_init_vars() {
   : "${FZF_TMUX:=0}"
   : "${FZF_TMUX_HEIGHT:='40%'}"
-  : "${FZF_COMPLETION_OPTS:=}"
+  : "${FZF_COMPLETION_OPTS:=--select-1 --exit-0}"
   : "${LINES:=40}"
+  : "${FZF_COMPLETION_COMPAT_MODE:=1}"
+  : "${FZF_COMPLETION_EXCLUDE:=}"
 }
 
 ###########################################################
@@ -47,15 +51,59 @@ __fzfcmd_complete() {
 
 _fzf_complete() {
   local source_path
-
   source_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
   __fzf_complete_init_vars
 
-  for completion in ${source_path}/bash_completion.d/*.bash ; do
-    source ${completion}
+  local exclude_func=( ${FZF_COMPLETION_EXCLUDE} )
+
+  for completion in ${source_path}/bash_completion.d/* ; do
+    local basename="${completion##*/}"
+    # If in compatibility mode
+    if [[ "${FZF_COMPLETION_COMPAT_MODE}" == "1" ]];then
+      # and not exclude
+      if [[ ! " ${exclude_func[@]} " =~ " ${basename} " ]]; then
+        # add fzf over if already exist or Create / replace functions
+        _fzf_complete_over "${basename}" || source "${completion}"
+      fi
+    else
+      # If not exclude
+      if [[ ! " ${exclude_func[@]} " =~ " ${basename} " ]]; then
+        # Create / replace functions
+        source "${completion}"
+      fi
+    fi
   done
 
+}
+
+_fzf_complete_over() {
+  local func="${1}"
+  type -t "${1}" 2>&1 > /dev/null || return 1
+  local origin=$(declare -f "${func}" | tail -n +3 | head -n -1)
+  [[ "${origin}" =~ '# Supercharged with fzf' ]] && return 0
+  local add_def
+  IFS='' read -r -d '' add_def <<'EOF'
+      : '# Supercharged with fzf'
+      fzf="$(__fzfcmd_complete)"
+      matches=$(
+        printf "%s\n" "${COMPREPLY[@]}" \
+        | FZF_DEFAULT_OPTS="--bind 'tab:accept' --height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+          $fzf \
+        | while read -r item; do printf "%s " "$item"; done \
+      )
+      matches="${matches% }"
+      if [ -n "$matches" ]; then
+        COMPREPLY=( "$matches" )
+      fi
+      printf '\e[5n'
+EOF
+  eval "
+    ${func}() {
+    ${origin}
+    ${add_def}
+    }
+  "
 }
 
 _fzf_complete
