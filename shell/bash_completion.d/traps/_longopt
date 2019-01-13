@@ -1,0 +1,25 @@
+_fzf_complete_trap_longopt() {
+  # _longopt return 1 due to '[[ $COMPREPLY == *= ]] && compopt -o nospace'
+  # force to 0
+  local status=0
+  shift
+
+  [[ ${status} != 0 ]] && return ${status}
+
+  local array=("$@")
+  local fzf="$(__fzfcmd_complete)"
+  if [[ ${#array[@]} -ne 0 ]];then
+    local matches=$(
+      printf "%s\n" "${array[@]}" | sort -u \
+      | FZF_DEFAULT_OPTS="--bind 'tab:accept' --height ${FZF_TMUX_HEIGHT} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+        $fzf \
+      | while read -r item; do printf "%s" "${item}"; done \
+    )
+    if [ -n "$matches" ]; then
+      COMPREPLY=( "${matches}" )
+    else
+      COMPREPLY=()
+    fi
+    printf '\e[5n'
+  fi
+}
