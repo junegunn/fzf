@@ -45,7 +45,7 @@ type previewer struct {
 type itemLine struct {
 	current  bool
 	selected bool
-	label    string
+	cursor    string
 	queryLen int
 	width    int
 	result   Result
@@ -100,6 +100,7 @@ type Terminal struct {
 	success    bool
 	jumping    jumpMode
 	jumpLabels string
+	cursor      string
 	printer    func(string)
 	merger     *Merger
 	selected   map[int32]selectedItem
@@ -402,6 +403,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		success:    true,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
+		cursor:      opts.Cursor,
 		printer:    opts.Printer,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
@@ -810,7 +812,7 @@ func (t *Terminal) printList() {
 func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
-	label := " "
+	 label := " "
 	if t.jumping != jumpDisabled {
 		if i < len(t.jumpLabels) {
 			// Striped
@@ -818,16 +820,16 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 			label = t.jumpLabels[i : i+1]
 		}
 	} else if current {
-		label = ">"
+		label = t.cursor
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{current: current, selected: selected, label: label,
+	newLine := itemLine{current: current, selected: selected, cursor: label,
 		result: result, queryLen: len(t.input), width: 0}
 	prevLine := t.prevLines[i]
 	if prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
-		prevLine.label == newLine.label &&
+		prevLine.cursor == newLine.cursor &&
 		prevLine.queryLen == newLine.queryLen &&
 		prevLine.result == newLine.result {
 		return

@@ -70,6 +70,7 @@ _fzf_opts_completion() {
     --margin
     --inline-info
     --prompt
+    --cursor
     --header
     --header-lines
     --ansi

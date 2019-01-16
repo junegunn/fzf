@@ -58,6 +58,7 @@ const usage = `usage: fzf [options]
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
     --prompt=STR          Input prompt (default: '> ')
+    --cursor=STR          Cursor symbol (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
 
@@ -178,6 +179,7 @@ type Options struct {
 	InlineInfo  bool
 	JumpLabels  string
 	Prompt      string
+	Cursor      string
 	Query       string
 	Select1     bool
 	Exit0       bool
@@ -228,6 +230,7 @@ func defaultOptions() *Options {
 		InlineInfo:  false,
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
+		Cursor:      ">",
 		Query:       "",
 		Select1:     false,
 		Exit0:       false,
@@ -1110,6 +1113,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
+		case "--cursor":
+			opts.Cursor = nextString(allArgs, &i, "cursor string required")
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync":
@@ -1172,6 +1177,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
+			} else if match, value := optString(arg, "--cursor="); match {
+				opts.Cursor = value
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
