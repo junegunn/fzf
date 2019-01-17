@@ -22,5 +22,7 @@ golang.org/x/crypto v0.0.0-20170728183002-558b6879de74 h1:/0jf0Cx3u07Ma4EzUA6NIG
 golang.org/x/crypto v0.0.0-20170728183002-558b6879de74/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/sys v0.0.0-20170529185110-b90f89a1e7a9 h1:wFe/9vW2TmDagagfMeC56pEcmhyMWEqvuwE9CDAePNo=
 golang.org/x/sys v0.0.0-20170529185110-b90f89a1e7a9/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20181221143128-b4a75ba826a6 h1:IcgEB62HYgAhX0Nd/QrVgZlxlcyxbGQHElLUhW2X4Fo=
+golang.org/x/sys v0.0.0-20181221143128-b4a75ba826a6/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/text v0.0.0-20170530162606-4ee4af566555 h1:pjwO9HxObpgZBurDvTLFbSinaf3+cKpTAjVfiGaHwrI=
 golang.org/x/text v0.0.0-20170530162606-4ee4af566555/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
