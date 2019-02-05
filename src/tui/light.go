@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -28,21 +27,6 @@ const (
 const consoleDevice string = "/dev/tty"
 
 var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
-
-func openTtyIn() *os.File {
-	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
-	if err != nil {
-		tty := ttyname()
-		if len(tty) > 0 {
-			if in, err := os.OpenFile(tty, syscall.O_RDONLY, 0); err == nil {
-				return in
-			}
-		}
-		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
-		os.Exit(2)
-	}
-	return in
-}
 
 func (r *LightRenderer) stderr(str string) {
 	r.stderrInternal(str, true)
@@ -80,26 +64,31 @@ func (r *LightRenderer) flush() {
 
 // Light renderer
 type LightRenderer struct {
-	theme         *ColorTheme
-	mouse         bool
-	forceBlack    bool
-	clearOnExit   bool
-	prevDownTime  time.Time
-	clickY        []int
-	ttyin         *os.File
-	buffer        []byte
-	origState     *terminal.State
-	width         int
-	height        int
-	yoffset       int
-	tabstop       int
-	escDelay      int
-	fullscreen    bool
-	upOneLine     bool
-	queued        string
-	y             int
-	x             int
-	maxHeightFunc func(int) int
+	theme           *ColorTheme
+	mouse           bool
+	forceBlack      bool
+	clearOnExit     bool
+	prevDownTime    time.Time
+	clickY          []int
+	ttyin           *os.File
+	ttyinChannel    chan byte
+	inHandle        uintptr // Windows only
+	outHandle       uintptr // Windows only
+	buffer          []byte
+	origState       *terminal.State
+	origStateInput  uint32 // Windows only
+	origStateOutput uint32 // Windows only
+	width           int
+	height          int
+	yoffset         int
+	tabstop         int
+	escDelay        int
+	fullscreen      bool
+	upOneLine       bool
+	queued          string
+	y               int
+	x               int
+	maxHeightFunc   func(int) int
 }
 
 type LightWindow struct {
@@ -132,10 +121,6 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 	return &r
 }
 
-func (r *LightRenderer) fd() int {
-	return int(r.ttyin.Fd())
-}
-
 func (r *LightRenderer) defaultTheme() *ColorTheme {
 	if strings.Contains(os.Getenv("TERM"), "256") {
 		return Dark256
@@ -145,22 +130,6 @@ func (r *LightRenderer) defaultTheme() *ColorTheme {
 		return Dark256
 	}
 	return Default16
-}
-
-func (r *LightRenderer) findOffset() (row int, col int) {
-	r.csi("6n")
-	r.flush()
-	bytes := []byte{}
-	for tries := 0; tries < offsetPollTries; tries++ {
-		bytes = r.getBytesInternal(bytes, tries > 0)
-		offsets := offsetRegexp.FindSubmatch(bytes)
-		if len(offsets) > 3 {
-			// add anything we skipped over to the input buffer
-			r.buffer = append(r.buffer, offsets[1]...)
-			return atoi(string(offsets[2]), 0) - 1, atoi(string(offsets[3]), 0) - 1
-		}
-	}
-	return -1, -1
 }
 
 func repeat(r rune, times int) string {
@@ -181,13 +150,9 @@ func atoi(s string, defaultValue int) int {
 func (r *LightRenderer) Init() {
 	r.escDelay = atoi(os.Getenv("ESCDELAY"), defaultEscDelay)
 
-	fd := r.fd()
-	origState, err := terminal.GetState(fd)
-	if err != nil {
+	if err := r.initPlatform(); err != nil {
 		errorExit(err.Error())
 	}
-	r.origState = origState
-	terminal.MakeRaw(fd)
 	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
@@ -258,28 +223,6 @@ func getEnv(name string, defaultValue int) int {
 		return defaultValue
 	}
 	return atoi(env, defaultValue)
-}
-
-func (r *LightRenderer) updateTerminalSize() {
-	width, height, err := terminal.GetSize(r.fd())
-	if err == nil {
-		r.width = width
-		r.height = r.maxHeightFunc(height)
-	} else {
-		r.width = getEnv("COLUMNS", defaultWidth)
-		r.height = r.maxHeightFunc(getEnv("LINES", defaultHeight))
-	}
-}
-
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
-	b := make([]byte, 1)
-	fd := r.fd()
-	util.SetNonblock(r.ttyin, nonblock)
-	_, err := util.Read(fd, b)
-	if err != nil {
-		return 0, false
-	}
-	return int(b[0]), true
 }
 
 func (r *LightRenderer) getBytes() []byte {
@@ -573,7 +516,7 @@ func (r *LightRenderer) rmcup() {
 }
 
 func (r *LightRenderer) Pause(clear bool) {
-	terminal.Restore(r.fd(), r.origState)
+	r.restoreTerminal()
 	if clear {
 		if r.fullscreen {
 			r.rmcup()
@@ -586,7 +529,7 @@ func (r *LightRenderer) Pause(clear bool) {
 }
 
 func (r *LightRenderer) Resume(clear bool) {
-	terminal.MakeRaw(r.fd())
+	r.setupTerminal()
 	if clear {
 		if r.fullscreen {
 			r.smcup()
@@ -622,6 +565,8 @@ func (r *LightRenderer) Refresh() {
 }
 
 func (r *LightRenderer) Close() {
+	r.closePlatform()
+
 	// r.csi("u")
 	if r.clearOnExit {
 		if r.fullscreen {
@@ -640,7 +585,7 @@ func (r *LightRenderer) Close() {
 		r.csi("?1000l")
 	}
 	r.flush()
-	terminal.Restore(r.fd(), r.origState)
+	r.restoreTerminal()
 }
 
 func (r *LightRenderer) MaxX() int {
