@@ -9,6 +9,7 @@ CHANGELOG
       finder instead of printing horizontal lines above and below it.
       The previous style is available via `--border=horizontal`
 - Added `--pointer` and `--marker` options
+- `--height` option is now available on Windows binary (@kelleyma49)
 - More keys and actions for `--bind`
 - Bug fixes and improvements
 - Vim plugin: Floating windows support
