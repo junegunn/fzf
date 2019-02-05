@@ -275,7 +275,10 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 	b := make([]byte, 1)
 	fd := r.fd()
 	util.SetNonblock(r.ttyin, nonblock)
-	_, err := util.Read(fd, b)
+	var err error = syscall.EAGAIN
+	for tries := 3; err == syscall.EAGAIN && tries > 0; tries-- {
+		_, err = util.Read(fd, b)
+	}
 	if err != nil {
 		return 0, false
 	}
