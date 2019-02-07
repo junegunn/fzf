@@ -271,15 +271,15 @@ func (r *LightRenderer) updateTerminalSize() {
 	}
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
+func (r *LightRenderer) getch(nonblock bool) (int, error) {
 	b := make([]byte, 1)
 	fd := r.fd()
 	util.SetNonblock(r.ttyin, nonblock)
 	_, err := util.Read(fd, b)
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
-	return int(b[0]), true
+	return int(b[0]), nil
 }
 
 func (r *LightRenderer) getBytes() []byte {
@@ -287,8 +287,12 @@ func (r *LightRenderer) getBytes() []byte {
 }
 
 func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
-	c, ok := r.getch(nonblock)
-	if !nonblock && !ok {
+	isEAGAIN := func(err error) bool {
+		errno, isErrno := err.(syscall.Errno)
+		return isErrno && errno == syscall.EAGAIN
+	}
+	c, err := r.getch(nonblock)
+	if err != nil && !isEAGAIN(err) {
 		r.Close()
 		errorExit("Failed to read " + consoleDevice)
 	}
@@ -301,8 +305,8 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 
 	pc := c
 	for {
-		c, ok = r.getch(true)
-		if !ok {
+		c, err = r.getch(true)
+		if err != nil {
 			if retries > 0 {
 				retries--
 				time.Sleep(escPollInterval * time.Millisecond)
