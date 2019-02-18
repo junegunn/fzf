@@ -24,7 +24,7 @@ import (
 var placeholder *regexp.Regexp
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{[+s]*[0-9,-.]*}|{q})")
+	placeholder = regexp.MustCompile("\\\\?(?:{[+s]*[0-9,-.]*}|{q}|{\\+?n})")
 }
 
 type jumpMode int
@@ -227,6 +227,7 @@ const (
 type placeholderFlags struct {
 	plus          bool
 	preserveSpace bool
+	number        bool
 	query         bool
 }
 
@@ -1198,6 +1199,9 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		case 's':
 			flags.preserveSpace = true
 			skipChars++
+		case 'n':
+			flags.number = true
+			skipChars++
 		case 'q':
 			flags.query = true
 		default:
@@ -1253,7 +1257,16 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 
 		if match == "{}" {
 			for idx, item := range items {
-				replacements[idx] = quoteEntry(item.AsString(stripAnsi))
+				if flags.number {
+					n := int(item.text.Index)
+					if n < 0 {
+						replacements[idx] = ""
+					} else {
+						replacements[idx] = strconv.Itoa(n)
+					}
+				} else {
+					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
+				}
 			}
 			return strings.Join(replacements, " ")
 		}
@@ -1351,7 +1364,7 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item
 	//   2. or it contains {+} and we have more than one item already selected.
 	// To do so, we pass an empty Item instead of nil to trigger an update.
 	if current == nil {
-		current = &Item{}
+		current = &minItem
 	}
 
 	var sels []*Item

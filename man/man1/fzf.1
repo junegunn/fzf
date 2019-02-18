@@ -301,7 +301,9 @@ e.g. \fBfzf --multi --preview='head -10 {+}'\fR
 When using a field index expression, leading and trailing whitespace is stripped
 from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
 
-Also, \fB{q}\fR is replaced to the current query string.
+Also, \fB{q}\fR is replaced to the current query string, and \fB{n}\fR is
+replaced to zero-based ordinal index of the line. Use \fB{+n}\fR if you want
+all index numbers when multiple lines are selected.
 
 Note that you can escape a placeholder pattern by prepending a backslash.
 
