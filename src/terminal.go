@@ -613,7 +613,6 @@ func (t *Terminal) resizeWindows() {
 				pwidth += 1
 			}
 			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, tui.BorderNone)
-			os.Setenv("FZF_PREVIEW_HEIGHT", strconv.Itoa(h-2))
 		}
 		switch t.preview.position {
 		case posUp:
@@ -1492,8 +1491,12 @@ func (t *Terminal) Loop() {
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
-						env = append(env, fmt.Sprintf("LINES=%d", t.pwindow.Height()))
-						env = append(env, fmt.Sprintf("COLUMNS=%d", t.pwindow.Width()))
+						lines := fmt.Sprintf("LINES=%d", t.pwindow.Height())
+						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
+						env = append(env, lines)
+						env = append(env, "FZF_PREVIEW_"+lines)
+						env = append(env, columns)
+						env = append(env, "FZF_PREVIEW_"+columns)
 						cmd.Env = env
 					}
 					var out bytes.Buffer

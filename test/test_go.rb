@@ -1371,7 +1371,7 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_hidden
-    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-\\$LINES-\\$COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
+    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-\\$FZF_PREVIEW_LINES-\\$FZF_PREVIEW_COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys '?'
     tmux.until { |lines| lines[-2] =~ / {1-1-1-[0-9]+}/ }

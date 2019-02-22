@@ -288,8 +288,11 @@ EXPRESSION\fR for the details).
 e.g. \fBfzf --preview='head -$LINES {}'\fR
      \fBls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1\fR
 
-fzf overrides \fB$LINES\fR and \fB$COLUMNS\fR so that they represent the exact
-size of the preview window.
+fzf exports \fB$FZF_PREVIEW_LINES\fR and \fB$FZF_PREVIEW_COLUMNS\fR so that
+they represent the exact size of the preview window. (It also overrides
+\fB$LINES\fR and \fB$COLUMNS\fR with the same values but they can be reset
+by the default shell, so prefer to refer to the ones with \fBFZF_PREVIEW_\fR
+prefix.)
 
 A placeholder expression starting with \fB+\fR flag will be replaced to the
 space-separated list of the selected lines (or the current line if no selection
