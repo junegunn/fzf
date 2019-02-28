@@ -9,6 +9,8 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
+if [[ $- =~ i ]]; then
+
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -f _fzf_compgen_path > /dev/null; then
   _fzf_compgen_path() {
@@ -330,3 +332,5 @@ complete -F _fzf_complete_export -o default -o bashdefault export
 complete -F _fzf_complete_unalias -o default -o bashdefault unalias
 
 unset cmd d_cmds a_cmds x_cmds
+
+fi
