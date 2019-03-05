@@ -113,7 +113,7 @@ check_binary() {
 link_fzf_in_path() {
   if which_fzf="$(command -v fzf)"; then
     echo "  - Found in \$PATH"
-    echo "  - Creating symlink: $which_fzf -> bin/fzf"
+    echo "  - Creating symlink: bin/fzf -> $which_fzf"
     (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
     check_binary && return
   fi
