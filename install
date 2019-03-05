@@ -91,17 +91,20 @@ ask() {
 check_binary() {
   echo -n "  - Checking fzf executable ... "
   local output
-  output=$("$fzf_base"/bin/fzf --version 2>&1 | awk '{print $1}')
+  output=$("$fzf_base"/bin/fzf --version 2>&1)
   if [ $? -ne 0 ]; then
     echo "Error: $output"
     binary_error="Invalid binary"
-  elif [ "$version" != "$output" ]; then
-    echo "$output != $version"
-    binary_error="Invalid version"
   else
-    echo "$output"
-    binary_error=""
-    return 0
+    output=${output/ */}
+    if [ "$version" != "$output" ]; then
+      echo "$output != $version"
+      binary_error="Invalid version"
+    else
+      echo "$output"
+      binary_error=""
+      return 0
+    fi
   fi
   rm -f "$fzf_base"/bin/fzf
   return 1
