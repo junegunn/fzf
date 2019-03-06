@@ -63,12 +63,14 @@ func Run(opts *Options, revision string) {
 	ansiProcessor := func(data []byte) (util.Chars, *[]ansiOffset) {
 		return util.ToChars(data), nil
 	}
+
+	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
 		if opts.Theme != nil {
-			var state *ansiState
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				trimmed, offsets, newState := extractColor(string(data), state, nil)
-				state = newState
+				prevLineAnsiState = lineAnsiState
+				trimmed, offsets, newState := extractColor(string(data), lineAnsiState, nil)
+				lineAnsiState = newState
 				return util.ToChars([]byte(trimmed)), offsets
 			}
 		} else {
@@ -100,6 +102,20 @@ func Run(opts *Options, revision string) {
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
+			if opts.Ansi && len(tokens) > 1 {
+				var ansiState *ansiState
+				if prevLineAnsiState != nil {
+					ansiStateDup := *prevLineAnsiState
+					ansiState = &ansiStateDup
+				}
+				for _, token := range tokens {
+					prevAnsiState := ansiState
+					_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
+					if prevAnsiState != nil {
+						token.text.Wrap(prevAnsiState.ToString(), "\x1b[m")
+					}
+				}
+			}
 			trans := Transform(tokens, opts.WithNth)
 			transformed := joinTokens(trans)
 			if len(header) < opts.HeaderLines {

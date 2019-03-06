@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,6 +31,55 @@ func (s *ansiState) equals(t *ansiState) bool {
 		return !s.colored()
 	}
 	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr
+}
+
+func (s *ansiState) ToString() string {
+	if !s.colored() {
+		return "\x1b[m"
+	}
+
+	ret := ""
+	if s.attr&tui.Bold > 0 {
+		ret += "1;"
+	}
+	if s.attr&tui.Dim > 0 {
+		ret += "2;"
+	}
+	if s.attr&tui.Italic > 0 {
+		ret += "3;"
+	}
+	if s.attr&tui.Underline > 0 {
+		ret += "4;"
+	}
+	if s.attr&tui.Blink > 0 {
+		ret += "5;"
+	}
+	if s.attr&tui.Reverse > 0 {
+		ret += "7;"
+	}
+	ret += toAnsiString(s.fg, 30) + toAnsiString(s.bg, 40)
+
+	return "\x1b[" + strings.TrimSuffix(ret, ";") + "m"
+}
+
+func toAnsiString(color tui.Color, offset int) string {
+	col := int(color)
+	ret := ""
+	if col == -1 {
+		ret += strconv.Itoa(offset + 9)
+	} else if col < 8 {
+		ret += strconv.Itoa(offset + col)
+	} else if col < 16 {
+		ret += strconv.Itoa(offset - 30 + 90 + col - 8)
+	} else if col < 256 {
+		ret += fmt.Sprintf("%d;5;%d", offset+8, col)
+	} else if col >= (1 << 24) {
+		r := (col >> 16) & 0xff
+		g := (col >> 8) & 0xff
+		b := col & 0xff
+		ret += fmt.Sprintf("%d;2;%d;%d;%d", offset+8, r, g, b)
+	}
+	return ret + ";"
 }
 
 var ansiRegex *regexp.Regexp
