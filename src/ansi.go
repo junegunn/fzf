@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"bytes"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,12 +71,12 @@ func toAnsiString(color tui.Color, offset int) string {
 	} else if col < 16 {
 		ret += strconv.Itoa(offset - 30 + 90 + col - 8)
 	} else if col < 256 {
-		ret += fmt.Sprintf("%d;5;%d", offset+8, col)
+		ret += strconv.Itoa(offset+8) + ";5;" + strconv.Itoa(col)
 	} else if col >= (1 << 24) {
-		r := (col >> 16) & 0xff
-		g := (col >> 8) & 0xff
-		b := col & 0xff
-		ret += fmt.Sprintf("%d;2;%d;%d;%d", offset+8, r, g, b)
+		r := strconv.Itoa((col >> 16) & 0xff)
+		g := strconv.Itoa((col >> 8) & 0xff)
+		b := strconv.Itoa(col & 0xff)
+		ret += strconv.Itoa(offset+8) + ";2;" + r + ";" + g + ";" + b
 	}
 	return ret + ";"
 }
