@@ -102,7 +102,7 @@ func Run(opts *Options, revision string) {
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
-			if opts.Ansi && len(tokens) > 1 {
+			if opts.Ansi && opts.Theme != nil && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
 					ansiStateDup := *prevLineAnsiState
