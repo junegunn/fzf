@@ -167,8 +167,8 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 				strings.Replace(state.ToString(), "\x1b[", "\\x1b[", -1))
 		}
 	}
-	assert("\x1b[m", nil, "\x1b[m")
-	assert("\x1b[m", &ansiState{attr: tui.Blink}, "\x1b[m")
+	assert("\x1b[m", nil, "")
+	assert("\x1b[m", &ansiState{attr: tui.Blink}, "")
 
 	assert("\x1b[31m", nil, "\x1b[31;49m")
 	assert("\x1b[41m", nil, "\x1b[39;41m")

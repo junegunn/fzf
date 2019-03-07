@@ -112,7 +112,9 @@ func Run(opts *Options, revision string) {
 					prevAnsiState := ansiState
 					_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
 					if prevAnsiState != nil {
-						token.text.Wrap(prevAnsiState.ToString(), "\x1b[m")
+						token.text.Prepend("\x1b[m" + prevAnsiState.ToString())
+					} else {
+						token.text.Prepend("\x1b[m")
 					}
 				}
 			}

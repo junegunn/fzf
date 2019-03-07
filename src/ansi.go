@@ -34,7 +34,7 @@ func (s *ansiState) equals(t *ansiState) bool {
 
 func (s *ansiState) ToString() string {
 	if !s.colored() {
-		return "\x1b[m"
+		return ""
 	}
 
 	ret := ""
