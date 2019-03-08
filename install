@@ -272,7 +272,7 @@ for shell in $shells; do
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
-  export PATH="\$PATH:$fzf_base/bin"
+  export PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
 fi
 
 # Auto-completion
@@ -282,7 +282,6 @@ $fzf_completion
 # Key bindings
 # ------------
 $fzf_key_bindings
-
 EOF
   echo "OK"
 done
