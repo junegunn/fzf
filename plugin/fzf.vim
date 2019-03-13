@@ -405,6 +405,11 @@ try
   elseif use_term
     let optstr .= ' --no-height'
   endif
+
+  if &mouse !=# 'a' || stridx($FZF_DEFAULT_OPTS, '--no-mouse') != -1
+    let optstr .= ' --no-mouse'
+  endif
+
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
