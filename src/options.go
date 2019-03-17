@@ -576,6 +576,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				theme.Current = ansi
 			case "bg+":
 				theme.DarkBg = ansi
+			case "gutter":
+				theme.Gutter = ansi
 			case "hl":
 				theme.Match = ansi
 			case "hl+":

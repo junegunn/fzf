@@ -834,15 +834,16 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	}
 
 	t.move(line, 0, false)
-	t.window.CPrint(tui.ColCursor, t.strong, label)
 	if current {
+		t.window.CPrint(tui.ColCurrentCursor, t.strong, label)
 		if selected {
-			t.window.CPrint(tui.ColSelected, t.strong, ">")
+			t.window.CPrint(tui.ColCurrentSelected, t.strong, ">")
 		} else {
-			t.window.CPrint(tui.ColCurrent, t.strong, " ")
+			t.window.CPrint(tui.ColCurrentSelected, t.strong, " ")
 		}
 		newLine.width = t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
 	} else {
+		t.window.CPrint(tui.ColCursor, t.strong, label)
 		if selected {
 			t.window.CPrint(tui.ColSelected, t.strong, ">")
 		} else {

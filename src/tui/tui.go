@@ -172,6 +172,7 @@ type ColorTheme struct {
 	Fg           Color
 	Bg           Color
 	DarkBg       Color
+	Gutter       Color
 	Prompt       Color
 	Match        Color
 	Current      Color
@@ -272,17 +273,19 @@ var (
 	Dark256   *ColorTheme
 	Light256  *ColorTheme
 
-	ColNormal       ColorPair
-	ColPrompt       ColorPair
-	ColMatch        ColorPair
-	ColCurrent      ColorPair
-	ColCurrentMatch ColorPair
-	ColSpinner      ColorPair
-	ColInfo         ColorPair
-	ColCursor       ColorPair
-	ColSelected     ColorPair
-	ColHeader       ColorPair
-	ColBorder       ColorPair
+	ColPrompt          ColorPair
+	ColNormal          ColorPair
+	ColMatch           ColorPair
+	ColCursor          ColorPair
+	ColSelected        ColorPair
+	ColCurrent         ColorPair
+	ColCurrentMatch    ColorPair
+	ColCurrentCursor   ColorPair
+	ColCurrentSelected ColorPair
+	ColSpinner         ColorPair
+	ColInfo            ColorPair
+	ColHeader          ColorPair
+	ColBorder          ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -290,6 +293,7 @@ func EmptyTheme() *ColorTheme {
 		Fg:           colUndefined,
 		Bg:           colUndefined,
 		DarkBg:       colUndefined,
+		Gutter:       colUndefined,
 		Prompt:       colUndefined,
 		Match:        colUndefined,
 		Current:      colUndefined,
@@ -312,6 +316,7 @@ func init() {
 		Fg:           colDefault,
 		Bg:           colDefault,
 		DarkBg:       colBlack,
+		Gutter:       colBlack,
 		Prompt:       colBlue,
 		Match:        colGreen,
 		Current:      colYellow,
@@ -326,6 +331,7 @@ func init() {
 		Fg:           colDefault,
 		Bg:           colDefault,
 		DarkBg:       236,
+		Gutter:       colUndefined,
 		Prompt:       110,
 		Match:        108,
 		Current:      254,
@@ -340,6 +346,7 @@ func init() {
 		Fg:           colDefault,
 		Bg:           colDefault,
 		DarkBg:       251,
+		Gutter:       colUndefined,
 		Prompt:       25,
 		Match:        66,
 		Current:      237,
@@ -371,6 +378,7 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Fg = o(baseTheme.Fg, theme.Fg)
 	theme.Bg = o(baseTheme.Bg, theme.Bg)
 	theme.DarkBg = o(baseTheme.DarkBg, theme.DarkBg)
+	theme.Gutter = o(theme.DarkBg, o(baseTheme.Gutter, theme.Gutter))
 	theme.Prompt = o(baseTheme.Prompt, theme.Prompt)
 	theme.Match = o(baseTheme.Match, theme.Match)
 	theme.Current = o(baseTheme.Current, theme.Current)
@@ -392,27 +400,31 @@ func initPalette(theme *ColorTheme) {
 		return ColorPair{fg, bg, idx}
 	}
 	if theme != nil {
-		ColNormal = pair(theme.Fg, theme.Bg)
 		ColPrompt = pair(theme.Prompt, theme.Bg)
+		ColNormal = pair(theme.Fg, theme.Bg)
 		ColMatch = pair(theme.Match, theme.Bg)
+		ColCursor = pair(theme.Cursor, theme.Gutter)
+		ColSelected = pair(theme.Selected, theme.Gutter)
 		ColCurrent = pair(theme.Current, theme.DarkBg)
 		ColCurrentMatch = pair(theme.CurrentMatch, theme.DarkBg)
+		ColCurrentCursor = pair(theme.Cursor, theme.DarkBg)
+		ColCurrentSelected = pair(theme.Selected, theme.DarkBg)
 		ColSpinner = pair(theme.Spinner, theme.Bg)
 		ColInfo = pair(theme.Info, theme.Bg)
-		ColCursor = pair(theme.Cursor, theme.DarkBg)
-		ColSelected = pair(theme.Selected, theme.DarkBg)
 		ColHeader = pair(theme.Header, theme.Bg)
 		ColBorder = pair(theme.Border, theme.Bg)
 	} else {
-		ColNormal = pair(colDefault, colDefault)
 		ColPrompt = pair(colDefault, colDefault)
+		ColNormal = pair(colDefault, colDefault)
 		ColMatch = pair(colDefault, colDefault)
-		ColCurrent = pair(colDefault, colDefault)
-		ColCurrentMatch = pair(colDefault, colDefault)
-		ColSpinner = pair(colDefault, colDefault)
-		ColInfo = pair(colDefault, colDefault)
 		ColCursor = pair(colDefault, colDefault)
 		ColSelected = pair(colDefault, colDefault)
+		ColCurrent = pair(colDefault, colDefault)
+		ColCurrentMatch = pair(colDefault, colDefault)
+		ColCurrentCursor = pair(colDefault, colDefault)
+		ColCurrentSelected = pair(colDefault, colDefault)
+		ColSpinner = pair(colDefault, colDefault)
+		ColInfo = pair(colDefault, colDefault)
 		ColHeader = pair(colDefault, colDefault)
 		ColBorder = pair(colDefault, colDefault)
 	}
