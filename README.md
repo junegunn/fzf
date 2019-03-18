@@ -88,6 +88,10 @@ brew install fzf
 $(brew --prefix)/opt/fzf/install
 ```
 
+fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
+
+[portfile]: https://github.com/macports/macports-ports/blob/master/sysutils/fzf/Portfile
+
 ### Using git
 
 Alternatively, you can "git clone" this repository to any directory and run
