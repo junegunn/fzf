@@ -457,7 +457,8 @@ function! s:pushd(dict)
     let cwd = s:fzf_getcwd()
     let w:fzf_pushd = {
     \   'command': haslocaldir() ? 'lcd' : (exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'),
-    \   'origin': cwd
+    \   'origin': cwd,
+    \   'bufname': bufname('')
     \ }
     execute 'lcd' s:escape(a:dict.dir)
     let cwd = s:fzf_getcwd()
@@ -493,7 +494,7 @@ function! s:dopopd()
   " matches 'dir' entry. However, it is possible that the sink function did
   " change the directory to 'dir'. In that case, the user will have an
   " unexpected result.
-  if s:fzf_getcwd() ==# w:fzf_pushd.dir
+  if s:fzf_getcwd() ==# w:fzf_pushd.dir && (!&autochdir || w:fzf_pushd.bufname ==# bufname(''))
     execute w:fzf_pushd.command s:escape(w:fzf_pushd.origin)
   endif
   unlet w:fzf_pushd
