@@ -201,13 +201,46 @@ type MouseEvent struct {
 	Mod    bool
 }
 
-type BorderStyle int
+type BorderShape int
 
 const (
-	BorderNone BorderStyle = iota
+	BorderNone BorderShape = iota
 	BorderAround
 	BorderHorizontal
 )
+
+type BorderStyle struct {
+	shape       BorderShape
+	horizontal  rune
+	vertical    rune
+	topLeft     rune
+	topRight    rune
+	bottomLeft  rune
+	bottomRight rune
+}
+
+func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
+	if unicode {
+		return BorderStyle{
+			shape:       shape,
+			horizontal:  '─',
+			vertical:    '│',
+			topLeft:     '┌',
+			topRight:    '┐',
+			bottomLeft:  '└',
+			bottomRight: '┘',
+		}
+	}
+	return BorderStyle{
+		shape:       shape,
+		horizontal:  '-',
+		vertical:    '|',
+		topLeft:     '+',
+		topRight:    '+',
+		bottomLeft:  '+',
+		bottomRight: '+',
+	}
+}
 
 type Renderer interface {
 	Init()

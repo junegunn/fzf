@@ -163,9 +163,9 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return -1, -1
 }
 
-func repeat(s string, times int) string {
+func repeat(r rune, times int) string {
 	if times > 0 {
-		return strings.Repeat(s, times)
+		return strings.Repeat(string(r), times)
 	}
 	return ""
 }
@@ -676,7 +676,7 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, bord
 }
 
 func (w *LightWindow) drawBorder() {
-	switch w.border {
+	switch w.border.shape {
 	case BorderAround:
 		w.drawBorderAround()
 	case BorderHorizontal:
@@ -686,22 +686,24 @@ func (w *LightWindow) drawBorder() {
 
 func (w *LightWindow) drawBorderHorizontal() {
 	w.Move(0, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat("─", w.width))
+	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
 	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat("─", w.width))
+	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
 }
 
 func (w *LightWindow) drawBorderAround() {
 	w.Move(0, 0)
-	w.CPrint(ColBorder, AttrRegular, "┌"+repeat("─", w.width-2)+"┐")
+	w.CPrint(ColBorder, AttrRegular,
+		string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
-		w.CPrint(ColBorder, AttrRegular, "│")
-		w.cprint2(colDefault, w.bg, AttrRegular, repeat(" ", w.width-2))
-		w.CPrint(ColBorder, AttrRegular, "│")
+		w.CPrint(ColBorder, AttrRegular, string(w.border.vertical))
+		w.cprint2(colDefault, w.bg, AttrRegular, repeat(' ', w.width-2))
+		w.CPrint(ColBorder, AttrRegular, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, AttrRegular, "└"+repeat("─", w.width-2)+"┘")
+	w.CPrint(ColBorder, AttrRegular,
+		string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {
@@ -762,7 +764,7 @@ func (w *LightWindow) MoveAndClear(y int, x int) {
 	w.Move(y, x)
 	// We should not delete preview window on the right
 	// csi("K")
-	w.Print(repeat(" ", w.width-x))
+	w.Print(repeat(' ', w.width-x))
 	w.Move(y, x)
 }
 
@@ -858,7 +860,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 		width += w
 		str := string(r)
 		if r == '\t' {
-			str = repeat(" ", w)
+			str = repeat(' ', w)
 		}
 		if prefixLength+width <= max {
 			line += str
