@@ -1635,7 +1635,8 @@ func (t *Terminal) Loop() {
 
 		t.mutex.Lock()
 		previousInput := t.input
-		events := []util.EventType{reqPrompt}
+		previousCx := t.cx
+		events := []util.EventType{}
 		req := func(evts ...util.EventType) {
 			for _, event := range evts {
 				events = append(events, event)
@@ -1996,7 +1997,6 @@ func (t *Terminal) Loop() {
 			t.jumping = jumpDisabled
 			req(reqList)
 		}
-		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed {
 			if t.isPreviewEnabled() {
@@ -2007,6 +2007,12 @@ func (t *Terminal) Loop() {
 			}
 			t.eventBox.Set(EvtSearchNew, t.sort)
 		}
+
+		if changed || t.cx != previousCx {
+			req(reqPrompt)
+		}
+
+		t.mutex.Unlock() // Must be unlocked before touching reqBox
 		for _, event := range events {
 			t.reqBox.Set(event, nil)
 		}
