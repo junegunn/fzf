@@ -1652,9 +1652,12 @@ func (t *Terminal) Loop() {
 			}
 		}
 		scrollPreview := func(amount int) {
-			t.previewer.offset = util.Constrain(
+			newOffset := util.Constrain(
 				t.previewer.offset+amount, 0, t.previewer.lines-1)
-			req(reqPreviewRefresh)
+			if t.previewer.offset != newOffset {
+				t.previewer.offset = newOffset
+				req(reqPreviewRefresh)
+			}
 		}
 		for key, ret := range t.expect {
 			if keyMatch(key, event) {
