@@ -1105,6 +1105,7 @@ func (t *Terminal) printAll() {
 }
 
 func (t *Terminal) refresh() {
+	t.placeCursor()
 	if !t.suppress {
 		windows := make([]tui.Window, 0, 4)
 		if t.bordered {
@@ -1452,7 +1453,6 @@ func (t *Terminal) Loop() {
 		t.printPrompt()
 		t.printInfo()
 		t.printHeader()
-		t.placeCursor()
 		t.refresh()
 		t.mutex.Unlock()
 		go func() {
@@ -1623,7 +1623,6 @@ func (t *Terminal) Loop() {
 						exit(func() int { return exitInterrupt })
 					}
 				}
-				t.placeCursor()
 				t.refresh()
 				t.mutex.Unlock()
 			})
@@ -1703,7 +1702,7 @@ func (t *Terminal) Loop() {
 							t.previewBox.Set(reqPreviewEnqueue, list)
 						}
 					}
-					req(reqList, reqInfo, reqHeader)
+					req(reqPrompt, reqList, reqInfo, reqHeader)
 				}
 			case actTogglePreviewWrap:
 				if t.hasPreviewWindow() {
@@ -2012,7 +2011,6 @@ func (t *Terminal) Loop() {
 					t.version++
 				}
 			}
-			t.eventBox.Set(EvtSearchNew, t.sort)
 		}
 
 		if changed || t.cx != previousCx {
@@ -2020,6 +2018,10 @@ func (t *Terminal) Loop() {
 		}
 
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
+
+		if changed {
+			t.eventBox.Set(EvtSearchNew, t.sort)
+		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)
 		}
