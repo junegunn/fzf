@@ -40,6 +40,7 @@ type previewer struct {
 	lines   int
 	offset  int
 	enabled bool
+	more    bool
 }
 
 type itemLine struct {
@@ -410,7 +411,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
 		preview:    opts.Preview,
-		previewer:  previewer{"", 0, 0, previewBox != nil && !opts.Preview.hidden},
+		previewer:  previewer{"", 0, 0, previewBox != nil && !opts.Preview.hidden, false},
 		previewBox: previewBox,
 		eventBox:   eventBox,
 		mutex:      sync.Mutex{},
@@ -1027,18 +1028,17 @@ func (t *Terminal) printPreview() {
 	reader := bufio.NewReader(strings.NewReader(t.previewer.text))
 	lineNo := -t.previewer.offset
 	height := t.pwindow.Height()
+	t.previewer.more = t.previewer.offset > 0
 	var ansi *ansiState
-	for {
+	for ; ; lineNo++ {
 		line, err := reader.ReadString('\n')
 		eof := err == io.EOF
 		if !eof {
 			line = line[:len(line)-1]
 		}
-		lineNo++
-		if lineNo > height ||
-			t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
+		if lineNo >= height || t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
 			break
-		} else if lineNo > 0 {
+		} else if lineNo >= 0 {
 			var fillRet tui.FillReturn
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
@@ -1055,6 +1055,7 @@ func (t *Terminal) printPreview() {
 				}
 				return fillRet == tui.FillContinue
 			})
+			t.previewer.more = t.previewer.more || t.pwindow.Y() == height-1 && t.pwindow.X() > 0
 			if fillRet == tui.FillNextLine {
 				continue
 			} else if fillRet == tui.FillSuspend {
@@ -1068,6 +1069,7 @@ func (t *Terminal) printPreview() {
 	}
 	t.pwindow.FinishFill()
 	if t.previewer.lines > height {
+		t.previewer.more = true
 		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, t.previewer.lines)
 		pos := t.pwindow.Width() - len(offset)
 		if t.tui.DoesAutoWrap() {
@@ -1651,6 +1653,9 @@ func (t *Terminal) Loop() {
 			}
 		}
 		scrollPreview := func(amount int) {
+			if !t.previewer.more {
+				return
+			}
 			newOffset := util.Constrain(
 				t.previewer.offset+amount, 0, t.previewer.lines-1)
 			if t.previewer.offset != newOffset {
