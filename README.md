@@ -498,15 +498,17 @@ fzf --preview 'head -100 {}'
 Preview window supports ANSI colors, so you can use programs that
 syntax-highlights the content of a file.
 
+- Bat: https://github.com/sharkdp/bat
 - Highlight: http://www.andre-simon.de/doku/highlight/en/highlight.php
 - CodeRay: http://coderay.rubychan.de/
 - Rouge: https://github.com/jneen/rouge
 
 ```bash
-# Try highlight, coderay, rougify in turn, then fall back to cat
+# Try bat, highlight, coderay, rougify in turn, then fall back to cat
 fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
                  echo {} is a binary file ||
-                 (highlight -O ansi -l {} ||
+                 (bat --style=numbers --color=always {} ||
+                  highlight -O ansi -l {} ||
                   coderay {} ||
                   rougify {} ||
                   cat {}) 2> /dev/null | head -500'
