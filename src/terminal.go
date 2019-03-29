@@ -1055,10 +1055,9 @@ func (t *Terminal) printPreview() {
 				}
 				return fillRet == tui.FillContinue
 			})
-			switch fillRet {
-			case tui.FillNextLine:
+			if fillRet == tui.FillNextLine {
 				continue
-			case tui.FillSuspend:
+			} else if fillRet == tui.FillSuspend {
 				break
 			}
 			t.pwindow.Fill("\n")
