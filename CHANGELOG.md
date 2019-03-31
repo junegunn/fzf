@@ -1,6 +1,21 @@
 CHANGELOG
 =========
 
+0.18.0
+------
+
+- Added placeholder expression for zero-based item index: `{n}` and `{+n}`
+    - `fzf --preview 'echo {n}: {}'`
+- Added color option for the gutter: `--color gutter:-1`
+- Added `--no-unicode` option for drawing borders in non-Unicode, ASCII
+  characters
+- `FZF_PREVIEW_LINES` and `FZF_PREVIEW_COLUMNS` are exported to preview process
+    - fzf still overrides `LINES` and `COLUMNS` as before, but they may be
+      reset by the default shell.
+- Bug fixes and improvements
+    - See https://github.com/junegunn/fzf/milestone/14?closed=1
+- Built with Go 1.12.1
+
 0.17.5
 ------
 
