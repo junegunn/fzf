@@ -55,8 +55,25 @@ __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= history |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
+    # Use a random number as a unique marker in the output of `history` below in
+    # order to distinguish continuations of multiline commands.
+    rnd=$RANDOM
+    HISTTIMEFORMAT="_${rnd}_" history | gawk '
+    # Terminate history entries with ASCII NUL instead of newline. This
+    # requires parsing the output of `history` to determine which lines
+    # are continuations of multiline commands.
+    BEGIN { line = ""; re = "^( *[0-9]+ *)_'"${rnd}"'_(.*)$"; }
+    {
+        if (match($0, re) != 0) {
+            if (NR != 1) { printf("%s\0", line); }
+            line = gensub(re, "\\1\\2", "g");
+        } else {
+            line = line "\n" $0;
+        }
+    }
+    END { printf("%s\0", line); }' | \
+    FZF_DEFAULT_OPTS="--read0 --height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
+
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
