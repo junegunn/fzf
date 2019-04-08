@@ -71,9 +71,8 @@ __fzf_history__() (
             line = line "\n" $0;
         }
     }
-    END { printf("%s\0", line); }' | \
+    END { printf("%s\0", line); }' |
     FZF_DEFAULT_OPTS="--read0 --height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
-
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
       sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
