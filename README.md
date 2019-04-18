@@ -37,6 +37,7 @@ Table of Contents
       * [Search syntax](#search-syntax)
       * [Environment variables](#environment-variables)
       * [Options](#options)
+      * [Demo](#demo)
    * [Examples](#examples)
    * [fzf-tmux script](#fzf-tmux-script)
    * [Key bindings for command line](#key-bindings-for-command-line)
@@ -282,6 +283,11 @@ or `py`.
 #### Options
 
 See the man page (`man fzf`) for the full list of options.
+
+#### Demo
+If you learn by watching videos, checkout this screencast to explore `fzf` features.
+
+[![fzf - command-line fuzzy finder](https://i.imgur.com/vtG8olE.png)](http://www.youtube.com/watch?v=qgG5Jhi_Els "fzf - command-line fuzzy finder")
 
 Examples
 --------
