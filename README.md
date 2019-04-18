@@ -285,7 +285,7 @@ or `py`.
 See the man page (`man fzf`) for the full list of options.
 
 #### Demo
-If you learn by watching videos, checkout this screencast to explore `fzf` features.
+If you learn by watching videos, check out this screencast by [@samoshkin](https://github.com/samoshkin) to explore `fzf` features.
 
 <a title="fzf - command-line fuzzy finder" href="https://www.youtube.com/watch?v=qgG5Jhi_Els">
   <img src="https://i.imgur.com/vtG8olE.png" width="640">
