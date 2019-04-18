@@ -55,21 +55,44 @@ __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
   line=$(
-    # Use a random number as a unique marker in the output of `history` below in
-    # order to distinguish continuations of multiline commands.
-    rnd=$RANDOM
-    HISTTIMEFORMAT="_${rnd}_" history | gawk '
+    HISTTIMEFORMAT="" history | awk '
     # Terminate history entries with ASCII NUL instead of newline. This
     # requires parsing the output of `history` to determine which lines
     # are continuations of multiline commands.
-    BEGIN { line = ""; re = "^( *[0-9]+ *)_'"${rnd}"'_(.*)$"; }
+    BEGIN {
+        cmd = "";   # Content of command currently being read from history
+        idx = 1;  # Index of next history item to be read from the input
+        # Format of lines containing the beginning of commands in history;
+        # commands continued from the previous line will not start with this.
+        # Matches everything before the command.
+        #
+        # Bash always outputs 2 spaces between the date and the command.
+        re = "^ *[0-9]+  ";  # Yes, two spaces at the end is guaranteed.
+    }
     {
+        # Check that the current line starts with the correct format.
         if (match($0, re) != 0) {
-            if (NR != 1) { printf("%s\0", line); }
-            line = gensub(re, "\\1\\2", "g");
-        } else {
-            line = line "\n" $0;
+            # Extract the index from the history line
+            prefix = substr($0, RSTART, RLENGTH)
+            match(prefix, "[0-9]+");
+            idx_read = substr(prefix, RSTART, RLENGTH);
+
+            # Compare index we are expecting to read to index read from line.
+            if (idx == idx_read) {
+                # Update next index to read from input.
+                idx++;
+                # Output currently-buffered command (not on the first line,
+                # because we have not read anything at that point).
+                if (NR != 1) { printf("%s\0", cmd); }
+                # Store current line (including index; fzf needs it to read the
+                # command from Bash history later in the pipeline).
+                cmd = $0;
+                next;
+            }
         }
+        # If either of the two conditions above is false, we are reading a
+        # continuation of the command from the previous line.
+        cmd = cmd "\n" $0;
     }
     END { printf("%s\0", line); }' |
     FZF_DEFAULT_OPTS="--read0 --height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
