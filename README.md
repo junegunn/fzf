@@ -287,7 +287,9 @@ See the man page (`man fzf`) for the full list of options.
 #### Demo
 If you learn by watching videos, checkout this screencast to explore `fzf` features.
 
-[![fzf - command-line fuzzy finder](https://i.imgur.com/vtG8olE.png)](http://www.youtube.com/watch?v=qgG5Jhi_Els "fzf - command-line fuzzy finder")
+<a title="fzf - command-line fuzzy finder" href="https://www.youtube.com/watch?v=qgG5Jhi_Els">
+  <img src="https://i.imgur.com/vtG8olE.png" width="640">
+</a>
 
 Examples
 --------
