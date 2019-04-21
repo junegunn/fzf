@@ -252,7 +252,7 @@ func defaultOptions() *Options {
 }
 
 func help(code int) {
-	os.Stderr.WriteString(usage)
+	os.Stdout.WriteString(usage)
 	os.Exit(code)
 }
 
