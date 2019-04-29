@@ -273,14 +273,14 @@ complete -o default -F _fzf_opts_completion fzf
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
 a_cmds="
-  awk cat diff diff3
-  emacs emacsclient ex file ftp g++ gcc gvim head hg java
-  javac ld less more mvim nvim patch perl python ruby
-  sed sftp sort source tail tee uniq vi view vim wc xdg-open
-  basename bunzip2 bzip2 chmod chown curl cp dirname du
-  find git grep gunzip gzip hg jar
-  ln ls mv open rm rsync scp
-  svn tar unzip zip"
+  awk basename bunzip2 bzip2 cat chmod chown cp curl
+  diff diff3 dirname du emacs emacsclient ex file find ftp
+  g++ gcc git grep gunzip gvim gzip head hg
+  jar java javac ld less ln ls
+  more mv mvim nano nvim open
+  patch perl python python3 rm rsync ruby
+  scp sed sftp sort source svn tail tar tee uniq unzip
+  vi view vim wc xdg-open zip"
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
