@@ -220,7 +220,7 @@ _fzf_dir_completion() {
   __fzf_generic_path_completion _fzf_compgen_dir "" "/" "$@"
 }
 
-_fzf_complete_kill() {
+_fzf_pid_completion() {
   [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
 
   local selected fzf
@@ -282,11 +282,12 @@ a_cmds="
   scp sed sftp sort source svn tail tar tee uniq unzip
   vi view vim wc xdg-open zip
   ${FZF_COMPLETE_PATH_FOR}"
-x_cmds="kill ssh telnet unset unalias export"
+p_cmds="kill ${FZF_COMPLETE_PID_FOR}"
+x_cmds="ssh telnet unset unalias export"
 
 # Preserve existing completion
 eval "$(complete |
-  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
+  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds $p_cmds $x_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
   __fzf_orig_completion_filter)"
 
 if type _completion_loader > /dev/null 2>&1; then
@@ -318,10 +319,12 @@ for cmd in $d_cmds; do
   _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
-unset _fzf_defc
+# PID
+for cmd in $p_cmds; do
+  _fzf_defc "$cmd" _fzf_pid_completion "-o nospace -o default -o bashdefault"
+done
 
-# Kill completion
-complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
+unset _fzf_defc
 
 # Host completion
 complete -F _fzf_complete_ssh -o default -o bashdefault ssh
