@@ -271,7 +271,7 @@ _fzf_complete_unalias() {
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
 
-d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
+d_cmds="cd pushd rmdir ${FZF_COMPLETE_DIR_FOR}"
 a_cmds="
   awk basename bunzip2 bzip2 cat chmod chown cp curl
   diff diff3 dirname du emacs emacsclient ex file find ftp
@@ -280,7 +280,8 @@ a_cmds="
   more mv mvim nano nvim open
   patch perl python python3 rm rsync ruby
   scp sed sftp sort source svn tail tar tee uniq unzip
-  vi view vim wc xdg-open zip"
+  vi view vim wc xdg-open zip
+  ${FZF_COMPLETE_PATH_FOR}"
 x_cmds="kill ssh telnet unset unalias export"
 
 # Preserve existing completion
