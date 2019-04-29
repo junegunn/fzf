@@ -277,6 +277,9 @@ fi
 
 # Auto-completion
 # ---------------
+FZF_COMPLETE_PATH_FOR=''
+FZF_COMPLETE_DIR_FOR=''
+FZF_COMPLETE_PID_FOR=''
 $fzf_completion
 
 # Key bindings

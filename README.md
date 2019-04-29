@@ -434,15 +434,16 @@ _fzf_compgen_dir() {
 }
 ```
 
-#### Supported commands
+#### Commands supported on bash
 
 On bash, fuzzy completion is enabled only for a predefined set of commands
-(`complete | grep _fzf` to see the list). But you can enable it for other
-commands as well as follows.
+(do `complete | grep _fzf` to see the list). But you can enable it for other
+commands as well by editing the following variables in `~/.fzf.bash`:
 
 ```sh
-complete -F _fzf_path_completion -o default -o bashdefault ag
-complete -F _fzf_dir_completion -o default -o bashdefault tree
+FZF_COMPLETE_PATH_FOR='clang clang++ ag'
+FZF_COMPLETE_DIR_FOR='tree'
+FZF_COMPLETE_PID_FOR='my_app_that_takes_a_pid'
 ```
 
 Vim plugin
