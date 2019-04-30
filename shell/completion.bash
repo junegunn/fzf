@@ -123,11 +123,11 @@ _fzf_handle_dynamic_completion() {
   if [ -n "$orig" ] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
   elif [ -n "$_fzf_completion_loader" ]; then
-    orig_complete=$(complete -p "$cmd" 2> /dev/null)
+    orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
     _completion_loader "$@"
     ret=$?
     # _completion_loader may not have updated completion for the command
-    if [ "$(complete -p "$cmd" 2> /dev/null)" != "$orig_complete" ]; then
+    if [ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]; then
       eval "$(complete | command grep " -F.* $orig_cmd$" | __fzf_orig_completion_filter)"
       if [[ "$__fzf_nospace_commands" = *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
