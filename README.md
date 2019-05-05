@@ -28,6 +28,7 @@ Table of Contents
       * [As Vim plugin](#as-vim-plugin)
       * [Arch Linux](#arch-linux)
       * [Fedora](#fedora)
+      * [FreeBSD](#freebsd)
       * [Windows](#windows)
    * [Upgrading fzf](#upgrading-fzf)
    * [Building fzf](#building-fzf)
@@ -156,6 +157,12 @@ sudo dnf install fzf
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
 documentation (/usr/share/doc/fzf/README.Fedora) for more information.
+
+### FreeBSD
+
+```sh
+pkg install fzf
+```
 
 ### Windows
 
