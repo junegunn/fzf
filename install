@@ -7,7 +7,6 @@ auto_completion=
 key_bindings=
 update_config=2
 binary_arch=
-allow_legacy=
 shells="bash zsh fish"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
@@ -45,7 +44,6 @@ for opt in "$@"; do
       auto_completion=1
       key_bindings=1
       update_config=1
-      allow_legacy=1
       ;;
     --xdg)
       prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
