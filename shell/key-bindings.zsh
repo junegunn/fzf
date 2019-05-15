@@ -26,7 +26,30 @@ __fzfcmd() {
     echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
 }
 
+typeset -A __fzf_old_binding
+local key
+for key in '^T' '^R' '\ec'; do
+  __fzf_old_binding[$key]=${$(bindkey -L "$key")[3]}
+done
+
+__fzf_cursor_around_whitespace() {
+  # Returns 0 (true) if the cursor position is bounded on both sides by
+  # whitespace. The start and end of the line are treated as whitespace.
+  local aroundcursor="${LBUFFER[-1]:- }${RBUFFER[1]:- }${RBUFFER[2]:- }"
+  [[ $aroundcursor = '   ' ]]
+}
+
 fzf-file-widget() {
+  local oldbinding=$__fzf_old_binding[^T]
+
+  # If the cursor is not surrounded by whitespace fall back to what ctrl-t was
+  # bound to before fzf overwrote it.
+  if [[ -n $oldbinding ]] && ! __fzf_cursor_around_whitespace
+  then
+    zle $oldbinding
+    return $?
+  fi
+
   LBUFFER="${LBUFFER}$(__fsel)"
   local ret=$?
   zle reset-prompt
@@ -47,6 +70,20 @@ zle -N fzf-redraw-prompt
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
+  local aroundcursor="${LBUFFER[-1]:- }${RBUFFER[1]:- }${RBUFFER[2]:- }"
+  local oldbinding=$__fzf_old_binding[\ec]
+
+  # If the cursor is not surrounded by whitespace fall back to what alt-c was
+  # bound to before fzf overwrote it.
+  if [[ -n $oldbinding ]] && ! __fzf_cursor_around_whitespace
+  then
+    zle $oldbinding
+    return $?
+  fi
+
+  # If the cursor is not surrounded by whitespace fall back to what ctrl-t was
+  # bound to before fzf overwrote it.
+  if [[ -n $oldbinding && $aroundcursor != '   ' ]]
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | cut -b3-"}"
   setopt localoptions pipefail 2> /dev/null
@@ -65,6 +102,14 @@ bindkey '\ec' fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
+  local oldbinding=$__fzf_old_binding[^R]
+
+  # If the cursor is not at the start of the line, then fall back to the old key binding.
+  if [[ -n $oldbinding ]] && (( CURSOR )); then
+    zle $oldbinding
+    return $?
+  fi
+
   local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail 2> /dev/null
   selected=( $(fc -rl 1 |
