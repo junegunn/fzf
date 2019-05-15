@@ -103,7 +103,7 @@ fzf-history-widget() {
 
   # If the command line is empty or only whitespace, use fzf. Otherwise fall
   # back to old binding.
-  if [[ -n $oldbinding && $BUFFER != (#s)[[:space:]]#(#e) ]]; then
+  if [[ -n $oldbinding && $BUFFER != [[:space:]]# ]]; then
     zle $oldbinding
     return $?
   fi
