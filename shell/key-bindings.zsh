@@ -70,7 +70,6 @@ zle -N fzf-redraw-prompt
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
-  local aroundcursor="${LBUFFER[-1]:- }${RBUFFER[1]:- }${RBUFFER[2]:- }"
   local oldbinding=$__fzf_old_binding[\ec]
 
   # If the cursor is not surrounded by whitespace fall back to what alt-c was
@@ -81,9 +80,6 @@ fzf-cd-widget() {
     return $?
   fi
 
-  # If the cursor is not surrounded by whitespace fall back to what ctrl-t was
-  # bound to before fzf overwrote it.
-  if [[ -n $oldbinding && $aroundcursor != '   ' ]]
   local cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | cut -b3-"}"
   setopt localoptions pipefail 2> /dev/null
