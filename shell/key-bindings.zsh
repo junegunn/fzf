@@ -103,9 +103,11 @@ bindkey '\ec' fzf-cd-widget
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local oldbinding=$__fzf_old_binding[^R]
+  setopt local_options extended_glob
 
-  # If the cursor is not at the start of the line, then fall back to the old key binding.
-  if [[ -n $oldbinding ]] && (( CURSOR )); then
+  # If the command line is empty or only whitespace, use fzf. Otherwise fall
+  # back to old binding.
+  if [[ -n $oldbinding && $BUFFER != (#s)[[:space:]]#(#e) ]]; then
     zle $oldbinding
     return $?
   fi
