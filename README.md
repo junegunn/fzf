@@ -236,12 +236,6 @@ Also check out `--reverse` and `--layout` options if you prefer
 vim $(fzf --height 40% --reverse)
 ```
 
-You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
-default. For example,
-
-```sh
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-```
 
 #### Search syntax
 
@@ -273,12 +267,24 @@ or `py`.
 
 #### Environment variables
 
+##### Default
+
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
 - `FZF_DEFAULT_OPTS`
-    - Default options
-    - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
+    - Default options for any `fzf` invocation
+    - e.g. `export FZF_DEFAULT_OPTS='--layout=reverse --inline-info'`
+    - e.g. `export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'`
+
+##### Completion specific
+
+- `FZF_COMPLETION_TRIGGER`
+    - Trigger to initiate completions
+    - e.g. `**`
+- `FZF_COMPLETION_OPTS`
+    - Additional options for `fzf` completion invocation
+    - e.g. `+c -x`
 
 #### Options
 
