@@ -285,6 +285,12 @@ or `py`.
 - `FZF_COMPLETION_OPTS`
     - Additional options for `fzf` completion invocation
     - e.g. `+c -x`
+- `FZF_COMPLETION_PRE_CMDS`
+    - Shell commands to be executed pre-completion
+    - e.g. `local rt=REPORTTIME; unset REPORTTIME`
+- `FZF_COMPLETION_POST_CMDS`
+    - Shell commands to be executed post-completion
+    - e.g. `REPORTTIME=$rt`
 
 #### Options
 

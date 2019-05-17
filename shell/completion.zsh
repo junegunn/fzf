@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.zsh
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_HEIGHT        (default: '40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                  (default: 0)
+# - $FZF_TMUX_HEIGHT           (default: '40%')
+# - $FZF_COMPLETION_TRIGGER    (default: '**')
+# - $FZF_COMPLETION_OPTS       (default: empty)
+# - $FZF_COMPLETION_PRE_CMDS   (default: empty)
+# - $FZF_COMPLETION_POST_CMDS  (default: empty)
 
 if [[ $- =~ i ]]; then
 
@@ -154,6 +156,11 @@ fzf-completion() {
 
   cmd=${tokens[1]}
 
+  # run pre-completion commands
+  [ -n "$FZF_COMPLETION_PRE_CMDS" ] &&
+    { eval "$FZF_COMPLETION_PRE_CMDS" ||
+    { echo "pre-completion commands failure" && return 1; } }
+
   # Explicitly allow for empty trigger.
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
@@ -185,6 +192,11 @@ fzf-completion() {
   else
     zle ${fzf_default_completion:-expand-or-complete}
   fi
+
+  # run post-completion commands
+  [ -n "$FZF_COMPLETION_POST_CMDS" ] &&
+    { eval "$FZF_COMPLETION_POST_CMDS" ||
+    { echo "post-completion commands failure" && return 1; } }
 }
 
 [ -z "$fzf_default_completion" ] && {
