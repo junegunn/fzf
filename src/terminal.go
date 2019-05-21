@@ -1055,7 +1055,7 @@ func (t *Terminal) printPreview() {
 				}
 				return fillRet == tui.FillContinue
 			})
-			t.previewer.more = t.previewer.more || t.pwindow.Y() == height-1 && t.pwindow.X() > 0
+			t.previewer.more = t.previewer.more || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
 				continue
 			} else if fillRet == tui.FillSuspend {
