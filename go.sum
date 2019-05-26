@@ -20,7 +20,7 @@ github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c h1:Ho+uVpke
 github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c/go.mod h1:XDJAKZRPZ1CvBcN2aX5YOUTYGHki24fSF0Iv48Ibg0s=
 golang.org/x/crypto v0.0.0-20170728183002-558b6879de74 h1:/0jf0Cx3u07Ma4EzUA6NIGuvk9hb3Br6i9V8atthkwk=
 golang.org/x/crypto v0.0.0-20170728183002-558b6879de74/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
-golang.org/x/sys v0.0.0-20170529185110-b90f89a1e7a9 h1:wFe/9vW2TmDagagfMeC56pEcmhyMWEqvuwE9CDAePNo=
-golang.org/x/sys v0.0.0-20170529185110-b90f89a1e7a9/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862 h1:rM0ROo5vb9AdYJi1110yjWGMej9ITfKddS89P3Fkhug=
+golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.0.0-20170530162606-4ee4af566555 h1:pjwO9HxObpgZBurDvTLFbSinaf3+cKpTAjVfiGaHwrI=
 golang.org/x/text v0.0.0-20170530162606-4ee4af566555/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
