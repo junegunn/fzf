@@ -565,7 +565,6 @@ func (r *LightRenderer) Refresh() {
 }
 
 func (r *LightRenderer) Close() {
-	r.closePlatform()
 
 	// r.csi("u")
 	if r.clearOnExit {
@@ -585,6 +584,7 @@ func (r *LightRenderer) Close() {
 		r.csi("?1000l")
 	}
 	r.flush()
+	r.closePlatform()
 	r.restoreTerminal()
 }
 
