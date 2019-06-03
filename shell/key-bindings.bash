@@ -55,7 +55,7 @@ __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= history |
+    HISTTIMEFORMAT= builtin history |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
