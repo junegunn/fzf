@@ -42,9 +42,6 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
     - Customizes fzf colors to match the current color scheme
 - `g:fzf_history_dir`
     - Enables history feature
-- `g:fzf_launcher`
-    - (Only in GVim) Terminal emulator to open fzf with
-    - `g:Fzf_launcher` for function reference
 
 #### Examples
 
@@ -243,30 +240,6 @@ autocmd! FileType fzf
 autocmd  FileType fzf set laststatus=0 noshowmode noruler
   \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
 ```
-
-GVim
-----
-
-With the latest version of GVim, fzf will start inside the builtin terminal
-emulator of Vim. Please note that this terminal feature of Vim is still young
-and unstable and you may run into some issues.
-
-If you have an older version of GVim, you need an external terminal emulator
-to start fzf with. `xterm` command is used by default, but you can customize
-it with `g:fzf_launcher`.
-
-```vim
-" This is the default. %s is replaced with fzf command
-let g:fzf_launcher = 'xterm -e bash -ic %s'
-
-" Use urxvt instead
-let g:fzf_launcher = 'urxvt -geometry 120x30 -e sh -c %s'
-```
-
-If you're running MacVim on OSX, I recommend you to use iTerm2 as the
-launcher. Refer to the [this wiki page][macvim-iterm2] to see how to set up.
-
-[macvim-iterm2]: https://github.com/junegunn/fzf/wiki/On-MacVim-with-iTerm2
 
 [License](LICENSE)
 ------------------
