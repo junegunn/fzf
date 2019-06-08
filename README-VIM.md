@@ -103,8 +103,67 @@ let g:fzf_history_dir = '~/.local/share/fzf-history'
 `fzf#run`
 ---------
 
-For more advanced uses, you can use `fzf#run([options])` function with the
-following options.
+For more advanced uses, you can use `fzf#run([options])` function.
+
+`fzf#run()` function is the core of Vim integration. It takes a single
+dictionary argument. At the very least, specify `sink` option to tell what it
+should do with the selected entry.
+
+```vim
+call fzf#run({'sink': 'e'})
+```
+
+Without `source`, fzf will use find command (or `$FZF_DEFAULT_COMMAND` if
+defined) to list the files under the current directory. When you select one,
+it will open it with `:e` command. If you want to open it in a new tab, you
+can pass `:tabedit` command instead as the sink.
+
+```vim
+call fzf#run({'sink': 'tabedit'})
+```
+
+fzf allows you to select multiple entries with `--multi` (or `-m`) option, and
+you can change its bottom-up layout with `--reverse` option. Such options can
+be specified as `options`.
+
+```vim
+call fzf#run({'sink': 'tabedit', 'options': '--multi --reverse'})
+```
+
+Instead of using the default find command, you can use any shell command as
+the source. This will list the files managed by git.
+
+```vim
+call fzf#run({'source': 'git ls-files', 'sink': 'e'})
+```
+
+Pass a layout option if you don't want fzf window to take up the entire screen.
+
+```vim
+" up / down / left / right / window are allowed
+call fzf#run({'source': 'git ls-files', 'sink': 'e', 'right': '40%'})
+call fzf#run({'source': 'git ls-files', 'sink': 'e', 'window': '30vsplit'})
+```
+
+`source` doesn't have to be an external shell command, you can pass a Vim
+array as the source. In the following example, we use the names of the open
+buffers as the source.
+
+```vim
+call fzf#run({'source': map(filter(range(1, bufnr('$')), 'buflisted(v:val)'),
+            \               'bufname(v:val)'),
+            \ 'sink': 'e', 'down': '30%'})
+```
+
+Or the names of color schemes.
+
+```vim
+call fzf#run({'source': map(split(globpath(&rtp, 'colors/*.vim')),
+            \               'fnamemodify(v:val, ":t:r")'),
+            \ 'sink': 'colo', 'left': '25%'})
+```
+
+The following table shows the available options.
 
 | Option name                | Type          | Description                                                      |
 | -------------------------- | ------------- | ---------------------------------------------------------------- |
@@ -132,14 +191,35 @@ call fzf#run({'options': ['--reverse', '--prompt', 'C:\Program Files\']})
 `fzf#wrap`
 ----------
 
-`fzf#wrap([name string,] [opts dict,] [fullscreen boolean])` is a helper
-function that decorates the options dictionary so that it understands
-`g:fzf_layout`, `g:fzf_action`, `g:fzf_colors`, and `g:fzf_history_dir` like
-`:FZF`.
+`:FZF` command provided by default knows how to handle `CTRL-T`, `CTRL-X`, and
+`CTRL-V` and opens the selected file in a new tab, in a horizontal split, or
+in a vertical split respectively. And these key bindings can be configured via
+`g:fzf_action`. This is implemented using `--expect` option of fzf and the
+smart sink function. It also understands `g:fzf_colors`, `g:fzf_layout` and
+`g:fzf_history_dir`. However, `fzf#run` doesn't know about any of these
+options.
+
+By *"wrapping"* your options dictionary with `fzf#wrap` before passing it to
+`fzf#run`, you can make your command also support the options.
 
 ```vim
-command! -bang MyStuff
-  \ call fzf#run(fzf#wrap('my-stuff', {'dir': '~/my-stuff'}, <bang>0))
+" Usage:
+"   fzf#wrap([name string,] [opts dict,] [fullscreen boolean])
+
+" This command now supports CTRL-T, CTRL-V, and CTRL-X key bindings
+" and opens fzf according to g:fzf_layout setting.
+command! Buffers call fzf#run(fzf#wrap(
+    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}))
+
+" This extends the above example to open fzf in fullscreen
+" when the command is run with ! suffix (Buffers!)
+command! -bang Buffers call fzf#run(fzf#wrap(
+    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}, <bang>0))
+
+" You can optionally pass the name of the command as the first argument to
+" fzf#wrap to make it work with g:fzf_history_dir
+command! -bang Buffers call fzf#run(fzf#wrap('buffers',
+    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}, <bang>0))
 ```
 
 fzf inside terminal buffer
