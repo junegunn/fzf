@@ -72,7 +72,7 @@ let g:fzf_layout = { 'down': '~40%' }
 " You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
 let g:fzf_layout = { 'window': 'enew' }
 let g:fzf_layout = { 'window': '-tabnew' }
-let g:fzf_layout = { 'window': '10split enew' }
+let g:fzf_layout = { 'window': '10new' }
 
 " Customize fzf colors to match your color scheme
 let g:fzf_colors =
@@ -139,7 +139,7 @@ Pass a layout option if you don't want fzf window to take up the entire screen.
 ```vim
 " up / down / left / right / window are allowed
 call fzf#run({'source': 'git ls-files', 'sink': 'e', 'right': '40%'})
-call fzf#run({'source': 'git ls-files', 'sink': 'e', 'window': '30vsplit'})
+call fzf#run({'source': 'git ls-files', 'sink': 'e', 'window': '30vnew'})
 ```
 
 `source` doesn't have to be an external shell command, you can pass a Vim
