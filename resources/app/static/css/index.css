@@ -1,0 +1,61 @@
+body {
+  background-color: #FAFAFA;
+  touch-action: none;
+}
+
+code {
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+pre {
+  background: #121212;
+  color: #D0D0D0;
+  padding: 10px;
+  margin: 0px;
+}
+
+h3 {
+  color: #3F3F3F;
+  font-weight: bold;
+}
+
+.container {
+  margin-top: 40px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.view-block {
+  padding: 20px;
+  line-height: 121%;
+}
+
+.plus {
+  font-weight: bold;
+}
+
+.title {
+  padding-left: 30px;
+  color: #E9E9E9;
+  background: #3F3F3F;    /* fallback for old browsers */
+  background: -webkit-linear-gradient(to left, #AEE2BC, #3F3F3F, #3F3F3F, #3F3F3F); /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to left, #AEE2BC, #3F3F3F, #3F3F3F, #3F3F3F); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
+.by {
+  float: left;
+  font-size: 80%;
+  margin: 12px 0px 0px 12px;
+}
+
+a.git-link {
+  font-size: 120%;
+  color: #AEE2BC;
+}
+a.git-link:hover {
+  color: #F60069;
+}
+a.git-link:active{
+  color: #FFE5F0;
+}

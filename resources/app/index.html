@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fzf Color Picker</title>
+  
+  <link href="https://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+ 
+  <!-- jQuery -->
+  <!-- and scripts for running jQuery with window module -->
+  <script>
+  if (typeof module === 'object') {
+    window.module = module;
+    module = undefined;
+  }
+  </script>
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+  <script>
+  if (window.module)
+    module = window.module;
+  </script>
+
+  <!-- Bootstrap 3 -->
+  <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  <!-- MiniColors -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-minicolors/2.3.4/jquery.minicolors.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-minicolors/2.3.4/jquery.minicolors.min.css" />
+
+  <!-- Custom -->
+  <link rel="stylesheet" href="static/css/index.css">
+  <link rel="stylesheet" href="static/css/button.css">
+
+  <script>
+    $(document).ready(function() {
+      updateCode();
+      $('.opt').each(function() {
+        $(this).minicolors({
+          theme: 'bootstrap'
+        });
+      });
+      updateView();
+    });
+  </script>
+</head>
+
+<body>
+  <!-- Intro -->
+  <nav class="navbar-fixed-top navbar-expand-sm title">
+    <div class="row">
+      <div class="navbar-left">
+        <h4><span style="color:#F60069;">></span> <span style="color:#AEE2BC;">fz</span>f Color Picker GUI</h4>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6 col-md-offset-1 col-lg-offset-1">
+        <!-- Example Preview -->
+        <h3><span style="color:#F60069;">></span> Preview</h3>
+        <div class="preview well">
+          <div class="view-block bg h4">
+            <span class="bgp">&nbsp;&nbsp;<span class="mar">></span></span><span class="fg">src/fzf/main</span><span class="hl">.go</span></br>
+            <span class="bgp">&nbsp;&nbsp;</span><span class="fg">&nbsp;&nbsp;src/pattern</span><span class="hl">.go</span></br>
+            <span class="bgp">&nbsp;&nbsp;<span class="mar">></span></span><span class="fg">src/options</span><span class="hl">.go</span></br>
+            <span class="bgp">&nbsp;&nbsp;</span><span class="fg">&nbsp;&nbsp;src/matcher</span><span class="hl">.go</span></br>
+            <span class="bgp plus"><span class="poi">></span><span class="fgp">&nbsp;&nbsp;src/history</span><span class="hlp">.go</span></span>
+            </br>
+            <span class="bgp">&nbsp;&nbsp;</span><span class="fg">&nbsp;&nbsp;src/reader</span><span class="hl">.go</span></br>
+            <span class="bgp">&nbsp;&nbsp;</span><span class="fg">&nbsp;&nbsp;src/merger</span><span class="hl">.go</span></br>
+            <span class="hea">&nbsp;&nbsp;&nbsp;&nbsp;This is Header</span></br>
+            <span class="spi">\</span><span class="inf">&nbsp;&nbsp;35/63 (3)</span></br>
+            <span class="pro">></span><span class="fg">&nbsp;&nbsp;.go$</span>
+          </div>
+        </div>
+
+        <!-- Color Scheme Code for fzf -->
+        <h3><span style="color:#F60069;">></span> Generated Code</h3>
+        <div class="well">
+          <div class="code-view">
+            <pre><code class="code" id="export-code">
+          </code></pre>
+          </div>
+          <div class="set-btns">
+            <button type="button" class="btn-mini dark" onclick="setDefault('#fg')">default fg</button>
+            <button type="button" class="btn-mini dark" onclick="setDefault('#bg')">default bg</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color Pallete -->
+      <div class="col-xs-6 col-sm-6 col-md-5 col-lg-4">
+        <h3><span style="color:#F60069;">></span> Color Pallete</h3>
+
+        <div class="palette well">
+          <div class="row">
+            <div class="col-xs-6 col-sm-6 col-lg-6">
+              <div class="form-group">
+                <label for="label-fg">fg</label>
+                <input type="text" id="fg" class="form-control opt" data-control="hue" value="#d0d0d0">
+              </div>
+              <div class="form-group">
+                <label for="label-bg">bg</label>
+                <input type="text" id="bg" class="form-control opt" data-control="hue" value="#121212">
+              </div>
+              <div class="form-group">
+                <label for="label-hl">hl</label>
+                <input type="text" id="hl" class="form-control opt" data-control="hue" value="#5f87af">
+              </div>
+              <div class="form-group">
+                <label for="label-info">info</label>
+                <input type="text" id="info" class="form-control opt" data-control="hue" value="#afaf87">
+              </div>
+              <div class="form-group">
+                <label for="label-prompt">prompt</label>
+                <input type="text" id="promp" class="form-control opt" data-control="hue" value="#d7005f">
+              </div>
+              <div class="form-group">
+                <label for="label-pointer">pointer</label>
+                <input type="text" id="pointer" class="form-control opt" data-control="hue" value="#af5fff">
+              </div>
+            </div>
+            <div class="col-xs-6 col-sm-6 col-lg-6">
+              <div class="form-group">
+                <label for="label-fg+">fg+</label>
+                <input type="text" id="fgp" class="form-control opt" data-control="hue" value="#d0d0d0">
+              </div>
+              <div class="form-group">
+                <label for="label-bg+">bg+</label>
+                <input type="text" id="bgp" class="form-control opt" data-control="hue" value="#262626">
+              </div>
+              <div class="form-group">
+                <label for="label-hl+">hl+</label>
+                <input type="text" id="hlp" class="form-control opt" data-control="hue" value="#5fd7ff">
+              </div>
+              <div class="form-group">
+                <label for="label-marker">marker</label>
+                <input type="text" id="marker" class="form-control opt" data-control="hue" value="#87ff00">
+              </div>
+              <div class="form-group">
+                <label for="label-spinner">spinner</label>
+                <input type="text" id="spinner" class="form-control opt" data-control="hue" value="#af5fff">
+              </div>
+              <div class="form-group">
+                <label for="label-header">header</label>
+                <input type="text" id="header" class="form-control opt" data-control="hue" value="#87afaf">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apply Buttons -->
+        <div class="buttons">
+          <button id="reset-btn" type="button" class="btn-0 btn-pink" onclick="resetToDefault()" data-container="body" data-toggle="popover" data-placement="top" data-content="Reset to default 'molokai'">Reset</button>
+          <button id="apply-btn" type="button" class="btn-0 btn-green" onclick="applyToFzf()" data-container="body" data-toggle="popover" data-placement="top" data-content="Applied Color scheme to fzf">Apply to fzf</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="static/js/index.js"></script>
+</body>
+
+</html>

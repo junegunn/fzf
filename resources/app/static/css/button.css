@@ -1,0 +1,148 @@
+/* Popover color */
+.popover {
+  color: #FFFFFF;
+  background-color: #000000;
+}
+
+.popover.top>.arrow:after {
+  border-top-color: #000000;
+}
+
+/* Buttons */
+.buttons {
+  float: initial;
+  text-align: right;
+  font-size: 60.0%;
+}
+
+.buttons:before {
+  content: '';
+  height: 100%;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.btn-0 {
+  text-align: center;
+  color: #FFFFFF;
+  border: none;
+  position: relative;
+  height: 40px;
+  font-size: 1.6em;
+  font-weight: bold;
+  padding: 0 2em;
+  cursor: pointer;
+  outline: none;
+  margin: 0 0 0 1em;
+}
+
+.btn-0:hover {
+  background: none;
+}
+
+.btn-0:before,
+.btn-0:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 2px;
+  width: 0;
+  transition: 400ms ease all;
+}
+
+.btn-0:after {
+  right: inherit;
+  top: inherit;
+  left: 0;
+  bottom: 0;
+}
+
+.btn-0:hover:before,
+.btn-0:hover:after {
+  width: 100%;
+  transition: 800ms ease all;
+}
+
+.btn-green {
+  background: #AEE2BC;
+}
+
+.btn-green:hover {
+  background: #A5E8BA;
+}
+
+.btn-green:before,
+.btn-green:after {
+  background: #56E37E;
+}
+
+.btn-green:active {
+  background: #56E37E;
+}
+
+.btn-pink {
+  background: #F27EAD;
+}
+
+.btn-pink:hover {
+  background: #F59BBF;
+}
+
+.btn-pink:before,
+.btn-pink:after {
+  background: #F60069;
+}
+
+.btn-pink:active {
+  background: #F60069;
+  color: #FFFFFF;
+}
+
+.set-btns {
+  float: initial;
+  text-align: right;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.btn-mini {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  color: white;
+  margin: 5px;
+  border-radius: 10px;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+a[class*="btn-mini"] {
+  text-decoration: none;
+}
+
+input[class*="btn-mini"],
+button[class*="btn-mini"] {
+  border: 0;
+}
+
+.btn-mini:active {
+  top: 4px;
+}
+
+.btn-mini:focus {
+  outline: 0;
+}
+
+.btn-mini.dark {
+  background-color: #666666;
+}
+
+.btn-mini.dark {
+  box-shadow: 0px 4px #3F3F3F;
+}
+
+.btn-mini.dark:active {
+  box-shadow: 0 0 #3F3F3F;
+  background-color: #424242;
+}
