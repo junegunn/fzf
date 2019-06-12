@@ -133,8 +133,10 @@ argsf="${TMPDIR:-/tmp}/fzf-args-$id"
 fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
 fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
 fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
+fzf_rm_cmd="${FZF_CLEANUP_CMD:-/bin/rm}"
 cleanup() {
-  \rm -f $argsf $fifo1 $fifo2 $fifo3
+  $fzf_rm_cmd -f $argsf $fifo1 $fifo2 $fifo3
+
 
   # Restore tmux window options
   if [[ "${#tmux_win_opts[@]}" -gt 0 ]]; then
