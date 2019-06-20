@@ -234,6 +234,11 @@ _fzf_complete_kill() {
   fi
 }
 
+_fzf_complete_lsof() {
+  [ "${@:$#}" = '-p' ] || return 1
+  _fzf_complete_kill "$@"
+}
+
 _fzf_complete_telnet() {
   _fzf_complete '+m' "$@" < <(
     command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
@@ -321,6 +326,11 @@ unset _fzf_defc
 
 # Kill completion
 complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
+complete -F _fzf_complete_lsof -o nospace -o default -o bashdefault lsof
+complete -F _fzf_complete_lsof -o nospace -o default -o bashdefault strace
+complete -F _fzf_complete_lsof -o nospace -o default -o bashdefault dtruss
+complete -F _fzf_complete_lsof -o nospace -o default -o bashdefault gdb
+complete -F _fzf_complete_lsof -o nospace -o default -o bashdefault lldb
 
 # Host completion
 complete -F _fzf_complete_ssh -o default -o bashdefault ssh

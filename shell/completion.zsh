@@ -159,8 +159,8 @@ fzf-completion() {
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
-  # Kill completion (do not require trigger sequence)
-  if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
+  # PID completion of kill, lsof, strace and also (do not require trigger sequence)
+  if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ] || [[ $cmd =~ '^lsof|strace|dtruss|gdb|lldb$' && "${tokens[-1]}" = "-p" && "${LBUFFER[-1]}" = ' ' ]]; then
     fzf="$(__fzfcmd_complete)"
     matches=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS --preview 'echo {}' --preview-window down:3:wrap $FZF_COMPLETION_OPTS" ${=fzf} -m | awk '{print $2}' | tr '\n' ' ')
     if [ -n "$matches" ]; then

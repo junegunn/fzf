@@ -400,6 +400,13 @@ there is no trigger sequence, just press tab key after kill command.
 kill -9 <TAB>
 ```
 
+It is also available to lsof, strace, gdb, dtruss and lldb with the `-p`
+argument.
+
+```sh
+lsof -p <TAB>
+```
+
 #### Host names
 
 For ssh and telnet commands, fuzzy completion for host names is provided. The
