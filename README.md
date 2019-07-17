@@ -27,6 +27,7 @@ Table of Contents
       * [Using git](#using-git)
       * [As Vim plugin](#as-vim-plugin)
       * [Arch Linux](#arch-linux)
+      * [Debian](#debian)
       * [Fedora](#fedora)
       * [FreeBSD](#freebsd)
       * [Windows](#windows)
@@ -144,6 +145,17 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 ```sh
 sudo pacman -S fzf
 ```
+
+### Debian
+
+fzf is available in Debian Buster and above, and can be installed using the usual
+method:
+
+```sh
+sudo apt-get install fzf
+```
+
+Read the documentation (/usr/share/doc/fzf/README.Debian) on how to enable it.
 
 ### Fedora
 
