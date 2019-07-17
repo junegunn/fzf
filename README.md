@@ -29,6 +29,7 @@ Table of Contents
       * [Arch Linux](#arch-linux)
       * [Debian](#debian)
       * [Fedora](#fedora)
+      * [openSUSE](#opensuse)
       * [FreeBSD](#freebsd)
       * [Windows](#windows)
    * [Upgrading fzf](#upgrading-fzf)
@@ -169,6 +170,14 @@ sudo dnf install fzf
 Shell completion and plugins for vim or neovim are enabled by default. Shell
 key bindings are installed but not enabled by default. See Fedora's package
 documentation (/usr/share/doc/fzf/README.Fedora) for more information.
+
+### openSUSE
+
+fzf is available in openSUSE Tumbleweed and can be installed via zypper:
+
+```sh
+sudo zypper install fzf
+```
 
 ### FreeBSD
 
