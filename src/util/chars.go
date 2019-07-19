@@ -169,7 +169,6 @@ func (chars *Chars) CopyRunes(dest []rune) {
 	for idx, b := range chars.slice[:len(dest)] {
 		dest[idx] = rune(b)
 	}
-	return
 }
 
 func (chars *Chars) Prepend(prefix string) {

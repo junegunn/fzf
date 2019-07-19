@@ -547,7 +547,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 			r.prevDownTime = now
 		} else {
 			if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
-				time.Now().Sub(r.prevDownTime) < doubleClickDuration {
+				time.Since(r.prevDownTime) < doubleClickDuration {
 				double = true
 			}
 		}

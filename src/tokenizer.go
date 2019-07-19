@@ -238,7 +238,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 			for _, part := range parts {
 				output.WriteString(part.ToString())
 			}
-			merged = util.ToChars([]byte(output.String()))
+			merged = util.ToChars(output.Bytes())
 		}
 
 		var prefixLength int32

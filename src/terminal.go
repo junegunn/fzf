@@ -1532,7 +1532,7 @@ func (t *Terminal) Loop() {
 					cmd.Wait()
 					finishChan <- true
 					if out.Len() > 0 || !<-updateChan {
-						t.reqBox.Set(reqPreviewDisplay, string(out.Bytes()))
+						t.reqBox.Set(reqPreviewDisplay, out.String())
 					}
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, "")
