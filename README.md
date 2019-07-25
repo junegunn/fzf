@@ -188,7 +188,7 @@ pkg install fzf
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
-available as a [Chocolatey package][choco].
+available as a [Chocolatey package][choco]:
 
 [choco]: https://chocolatey.org/packages/fzf
 
@@ -196,7 +196,7 @@ available as a [Chocolatey package][choco].
 choco install fzf
 ```
 
-or a [Scoop package][scoop].
+or a [Scoop package][scoop]:
 
 [scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
 
