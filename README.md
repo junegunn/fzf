@@ -196,6 +196,14 @@ available as a [Chocolatey package][choco].
 choco install fzf
 ```
 
+or a [Scoop package][scoop].
+
+[scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
+
+```sh
+scoop install fzf
+```
+
 However, other components of the project may not work on Windows. Known issues
 and limitations can be found on [the wiki page][windows-wiki]. You might want
 to consider installing fzf on [Windows Subsystem for Linux][wsl] where
