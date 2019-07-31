@@ -333,24 +333,24 @@ function! fzf#wrap(...)
   return opts
 endfunction
 
-function! s:use_sh()
+function! s:use_sh(shell)
   let [shell, shellslash] = [&shell, &shellslash]
   if s:is_win
     set shell=cmd.exe
     set noshellslash
   else
-    set shell=sh
+    let &shell=a:shell
   endif
   return [shell, shellslash]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash] = s:use_sh()
-
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
   let optstr = s:evaluate_opts(get(dict, 'options', ''))
+  let [shell, shellslash] = s:use_sh(get(dict, 'shell', 'sh'))
+
   try
     let fzf_exec = s:fzf_exec()
   catch
@@ -656,7 +656,7 @@ function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
   let pbuf = bufnr('')
   let [ppos, winopts] = s:split(a:dict)
-  call s:use_sh()
+  call s:use_sh(get(a:dict, 'shell', 'sh'))
   let b:fzf = a:dict
   let fzf = { 'buf': bufnr(''), 'pbuf': pbuf, 'ppos': ppos, 'dict': a:dict, 'temps': a:temps,
             \ 'winopts': winopts, 'winrest': winrest, 'lines': &lines,
