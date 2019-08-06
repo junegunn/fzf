@@ -518,6 +518,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	if r.buffer[1] >= 'a' && r.buffer[1] <= 'z' {
 		return Event{AltA + int(r.buffer[1]) - 'a', 0, nil}
 	}
+	if r.buffer[1] >= '0' && r.buffer[1] <= '9' {
+		return Event{Alt0 + int(r.buffer[1]) - '0', 0, nil}
+	}
 	return Event{Invalid, 0, nil}
 }
 
