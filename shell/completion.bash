@@ -333,4 +333,18 @@ complete -F _fzf_complete_unalias -o default -o bashdefault unalias
 
 unset cmd d_cmds a_cmds x_cmds
 
+_fzf_setup_completion() {
+  local fn cmd
+  if [[ $# -lt 2 ]] || ! type -t _fzf_${1}_completion > /dev/null; then
+    echo "usage: ${FUNCNAME[0]} path|dir COMMANDS..."
+    return 1
+  fi
+  fn=_fzf_${1}_completion
+  shift
+  for cmd in "$@"; do
+    eval "$(complete -p "$cmd" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
+    complete -F "$fn" -o default -o bashdefault "$cmd"
+  done
+}
+
 fi
