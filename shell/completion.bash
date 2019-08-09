@@ -292,7 +292,7 @@ if type _completion_loader > /dev/null 2>&1; then
   _fzf_completion_loader=1
 fi
 
-_fzf_defc() {
+__fzf_defc() {
   local cmd func opts orig_var orig def
   cmd="$1"
   func="$2"
@@ -309,15 +309,13 @@ _fzf_defc() {
 
 # Anything
 for cmd in $a_cmds; do
-  _fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
+  __fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
 done
 
 # Directory
 for cmd in $d_cmds; do
-  _fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
+  __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
-
-unset _fzf_defc
 
 # Kill completion
 complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
@@ -334,16 +332,20 @@ complete -F _fzf_complete_unalias -o default -o bashdefault unalias
 unset cmd d_cmds a_cmds x_cmds
 
 _fzf_setup_completion() {
-  local fn cmd
-  if [[ $# -lt 2 ]] || ! type -t _fzf_${1}_completion > /dev/null; then
+  local kind fn cmd
+  kind=$1
+  fn=_fzf_${1}_completion
+  if [[ $# -lt 2 ]] || ! type -t "$fn" > /dev/null; then
     echo "usage: ${FUNCNAME[0]} path|dir COMMANDS..."
     return 1
   fi
-  fn=_fzf_${1}_completion
   shift
   for cmd in "$@"; do
     eval "$(complete -p "$cmd" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
-    complete -F "$fn" -o default -o bashdefault "$cmd"
+    case "$kind" in
+      dir) __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
+      *)   __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
+    esac
   done
 }
 
