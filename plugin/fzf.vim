@@ -50,7 +50,7 @@ if s:is_win
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
   function! s:wrap_cmds(cmds)
-    return map(['@echo off', 'for /f "tokens=4" %%a in (''chcp'') do set origchcp=%%a', 'chcp 65001 > nul'] +
+    return map(['@echo off', 'set TERM= > nul', 'for /f "tokens=4" %%a in (''chcp'') do set origchcp=%%a', 'chcp 65001 > nul'] +
           \ (type(a:cmds) == type([]) ? a:cmds : [a:cmds]) +
           \ ['chcp %origchcp% > nul'], 'v:val."\r"')
   endfunction
@@ -334,19 +334,20 @@ function! fzf#wrap(...)
 endfunction
 
 function! s:use_sh()
-  let [shell, shellslash] = [&shell, &shellslash]
+  let [shell, shellslash, shellcmdflag] = [&shell, &shellslash, &shellcmdflag]
   if s:is_win
     set shell=cmd.exe
+    set shellcmdflag=/c
     set noshellslash
   else
     set shell=sh
   endif
-  return [shell, shellslash]
+  return [shell, shellslash, shellcmdflag]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash] = s:use_sh()
+  let [shell, shellslash, shellcmdflag] = s:use_sh()
 
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -416,7 +417,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  let [&shell, &shellslash] = [shell, shellslash]
+  let [&shell, &shellslash, &shellcmdflag] = [shell, shellslash, shellcmdflag]
 endtry
 endfunction
 
