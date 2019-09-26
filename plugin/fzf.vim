@@ -339,8 +339,8 @@ function! s:use_sh()
   let [shell, shellslash, shellcmdflag] = [&shell, &shellslash, &shellcmdflag]
   if s:is_win
     set shell=cmd.exe
-    set shellcmdflag=/c
     set noshellslash
+    let &shellcmdflag = has('nvim') ? '/s /c' : '/c'
   else
     set shell=sh
   endif
