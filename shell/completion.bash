@@ -195,12 +195,13 @@ _fzf_complete() {
 
     selected=$(cat | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
-    printf '\e[5n'
-
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
-      return 0
+    else
+      COMPREPLY=("$cur")
     fi
+    printf '\e[5n'
+    return 0
   else
     shift
     _fzf_handle_dynamic_completion "$cmd" "$@"
