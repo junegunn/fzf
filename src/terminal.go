@@ -69,6 +69,7 @@ type Terminal struct {
 	wordNext    string
 	cx          int
 	cy          int
+	scy         int
 	offset      int
 	xoffset     int
 	yanked      []rune
@@ -380,6 +381,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordNext:    wordNext,
 		cx:          len(input),
 		cy:          opts.SelIdx,
+		scy:         opts.SelIdx,
 		offset:      0,
 		xoffset:     0,
 		yanked:      []rune{},
@@ -2038,7 +2040,7 @@ func (t *Terminal) constrain() {
 	height := t.maxItems()
 	diffpos := t.cy - t.offset
 
-	t.cy = util.Constrain(t.cy, 0, count-1)
+	t.cy = util.Constrain(t.scy, 0, count-1)
 	t.offset = util.Constrain(t.offset, t.cy-height+1, t.cy)
 	// Adjustment
 	if count-t.offset < height {
@@ -2070,6 +2072,7 @@ func (t *Terminal) vmove(o int, allowCycle bool) {
 
 func (t *Terminal) vset(o int) bool {
 	t.cy = util.Constrain(o, 0, t.merger.Length()-1)
+	t.scy = t.cy
 	return t.cy == o
 }
 
