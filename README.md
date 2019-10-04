@@ -141,6 +141,12 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
   " and you don't have to run the install script if you use fzf only in Vim.
 ```
 
+### Alpine Linux
+
+```sh
+sudo apk add fzf
+```
+
 ### Arch Linux
 
 ```sh
