@@ -42,6 +42,8 @@ else ifeq ($(UNAME_M),armv7l)
 	BINARY := $(BINARYARM7)
 else ifeq ($(UNAME_M),armv8l)
 	BINARY := $(BINARYARM8)
+else ifeq ($(UNAME_M),aarch64)
+	BINARY := $(BINARYARM8)
 else ifeq ($(UNAME_M),ppc64le)
 	BINARY := $(BINARYPPC64LE)
 else
