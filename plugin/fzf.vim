@@ -395,6 +395,7 @@ try
   let use_term = has_nvim_term ||
     \ has_vim8_term && !has('win32unix') && (has('gui_running') || s:is_win || !use_height && s:present(dict, 'down', 'up', 'left', 'right', 'window'))
   let use_tmux = (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:tmux_enabled() && s:splittable(dict)
+  let postfix = ''
   if prefer_tmux && use_tmux
     let use_height = 0
     let use_term = 0
@@ -405,7 +406,10 @@ try
   elseif use_term
     let optstr .= ' --no-height'
   endif
-  let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+  if has_key(dict, 'after_command')
+    let postfix = ' | '.dict['after_command']
+  endif
+  let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.postfix.' > '.temps.result
 
   if use_term
     return s:execute_term(dict, command, temps)
