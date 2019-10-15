@@ -25,6 +25,7 @@ Table of Contents
    * [Installation](#installation)
       * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
       * [Using git](#using-git)
+      * [Using Scarf](#using-scarf)
       * [As Vim plugin](#as-vim-plugin)
       * [Arch Linux](#arch-linux)
       * [Debian](#debian)
@@ -104,6 +105,15 @@ Alternatively, you can "git clone" this repository to any directory and run
 ```sh
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
+```
+
+### Using Scarf
+
+You can install fzf with [Scarf](https://scarf.sh), which supports the developers by
+sending anonymized usage statistics.
+
+```sh
+scarf install fzf
 ```
 
 ### As Vim plugin
