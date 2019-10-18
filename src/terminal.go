@@ -1232,7 +1232,7 @@ func hasPreviewFlags(template string) (plus bool, query bool) {
 	return
 }
 
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
+func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, joinNewlines bool, query string, allItems []*Item) string {
 	current := allItems[:1]
 	selected := allItems[1:]
 	if current[0] == nil {
@@ -1240,6 +1240,11 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 	}
 	if selected[0] == nil {
 		selected = []*Item{}
+	}
+	// Join the results with a space for command-line use, unless told otherwise.
+	joinWith := " "
+	if joinNewlines {
+		joinWith = "\n"
 	}
 	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
 		escaped, match, flags := parsePlaceholder(match)
@@ -1273,7 +1278,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
 				}
 			}
-			return strings.Join(replacements, " ")
+			return strings.Join(replacements, joinWith)
 		}
 
 		tokens := strings.Split(match[1:len(match)-1], ",")
@@ -1304,7 +1309,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			}
 			replacements[idx] = quoteEntry(str)
 		}
-		return strings.Join(replacements, " ")
+		return strings.Join(replacements, joinWith)
 	})
 }
 
@@ -1319,7 +1324,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid {
 		return
 	}
-	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
+	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, false, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	if !background {
 		cmd.Stdin = os.Stdin
@@ -1492,7 +1497,7 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if request[0] != nil {
 					command := replacePlaceholder(t.preview.command,
-						t.ansi, t.delimiter, false, string(t.input), request)
+						t.ansi, t.delimiter, false, false, string(t.input), request)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
@@ -1504,6 +1509,10 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+columns)
 						cmd.Env = env
 					}
+					if t.preview.stdin {
+						cmd.Stdin = strings.NewReader(replacePlaceholder("{+}", t.ansi, t.delimiter, true, true, "", request))
+					}
+
 					var out bytes.Buffer
 					cmd.Stdout = &out
 					cmd.Stderr = &out
@@ -1581,7 +1590,7 @@ func (t *Terminal) Loop() {
 							version = t.version
 							focusedIndex = currentIndex
 							if t.isPreviewEnabled() {
-								_, list := t.buildPlusList(t.preview.command, false)
+								_, list := t.buildPlusList(t.preview.command, t.preview.stdin)
 								t.cancelPreview()
 								t.previewBox.Set(reqPreviewEnqueue, list)
 							}
@@ -1696,7 +1705,7 @@ func (t *Terminal) Loop() {
 					t.tui.Clear()
 					t.resizeWindows()
 					if t.previewer.enabled {
-						valid, list := t.buildPlusList(t.preview.command, false)
+						valid, list := t.buildPlusList(t.preview.command, t.preview.stdin)
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue, list)

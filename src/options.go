@@ -73,6 +73,8 @@ const usage = `usage: fzf [options]
 
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
+    --preview-stdin       The preview script will be given the selected entries
+                          on stdin
     --preview-window=OPT  Preview window layout (default: right:50%)
                           [up|down|left|right][:SIZE[%]][:wrap][:hidden]
 
@@ -147,6 +149,7 @@ type previewOpts struct {
 	size     sizeSpec
 	hidden   bool
 	wrap     bool
+	stdin    bool
 }
 
 // Options stores the values of command-line options
@@ -236,7 +239,7 @@ func defaultOptions() *Options {
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false, false},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -1142,6 +1145,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:wrap][:hidden]"))
+		case "--preview-stdin":
+			opts.Preview.stdin = true
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":
