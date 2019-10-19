@@ -179,6 +179,8 @@ type Options struct {
 	JumpLabels  string
 	Prompt      string
 	Query       string
+	SelIdx      int
+	PrintSelIdx bool
 	Select1     bool
 	Exit0       bool
 	Filter      *string
@@ -230,6 +232,8 @@ func defaultOptions() *Options {
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
 		Query:       "",
+		SelIdx:      0,
+		PrintSelIdx: false,
 		Select1:     false,
 		Exit0:       false,
 		Filter:      nil,
@@ -1112,6 +1116,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = true
 		case "--no-print-query":
 			opts.PrintQuery = false
+		case "--print-sel-idx":
+			opts.PrintSelIdx = true
+		case "--no-print-sel-idx":
+			opts.PrintSelIdx = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
 		case "--sync":
@@ -1174,6 +1182,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.FuzzyAlgo = parseAlgo(value)
 			} else if match, value := optString(arg, "-q", "--query="); match {
 				opts.Query = value
+			} else if match, value := optString(arg, "--sel-idx="); match {
+				opts.SelIdx = atoi(value)
 			} else if match, value := optString(arg, "-f", "--filter="); match {
 				opts.Filter = &value
 			} else if match, value := optString(arg, "-d", "--delimiter="); match {

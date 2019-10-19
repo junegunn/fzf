@@ -251,6 +251,7 @@ func Run(opts *Options, revision string) {
 					snapshot, _ := chunkList.Snapshot()
 					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)
 					delay = false
+					terminal.scy = terminal.cy
 
 				case EvtSearchProgress:
 					switch val := value.(type) {

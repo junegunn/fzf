@@ -56,70 +56,72 @@ var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
 type Terminal struct {
-	initDelay  time.Duration
-	inlineInfo bool
-	prompt     string
-	promptLen  int
-	queryLen   [2]int
-	layout     layoutType
-	fullscreen bool
-	hscroll    bool
-	hscrollOff int
-	wordRubout string
-	wordNext   string
-	cx         int
-	cy         int
-	offset     int
-	xoffset    int
-	yanked     []rune
-	input      []rune
-	multi      bool
-	sort       bool
-	toggleSort bool
-	delimiter  Delimiter
-	expect     map[int]string
-	keymap     map[int][]action
-	pressed    string
-	printQuery bool
-	history    *History
-	cycle      bool
-	header     []string
-	header0    []string
-	ansi       bool
-	tabstop    int
-	margin     [4]sizeSpec
-	strong     tui.Attr
-	unicode    bool
-	bordered   bool
-	cleanExit  bool
-	border     tui.Window
-	window     tui.Window
-	pborder    tui.Window
-	pwindow    tui.Window
-	count      int
-	progress   int
-	reading    bool
-	success    bool
-	jumping    jumpMode
-	jumpLabels string
-	printer    func(string)
-	merger     *Merger
-	selected   map[int32]selectedItem
-	version    int64
-	reqBox     *util.EventBox
-	preview    previewOpts
-	previewer  previewer
-	previewBox *util.EventBox
-	eventBox   *util.EventBox
-	mutex      sync.Mutex
-	initFunc   func()
-	prevLines  []itemLine
-	suppress   bool
-	startChan  chan bool
-	killChan   chan int
-	slab       *util.Slab
-	theme      *tui.ColorTheme
-	tui        tui.Renderer
+	initDelay   time.Duration
+	inlineInfo  bool
+	prompt      string
+	promptLen   int
+	queryLen    [2]int
+	layout      layoutType
+	fullscreen  bool
+	hscroll     bool
+	hscrollOff  int
+	wordRubout  string
+	wordNext    string
+	cx          int
+	cy          int
+	scy         int
+	offset      int
+	xoffset     int
+	yanked      []rune
+	input       []rune
+	multi       bool
+	sort        bool
+	toggleSort  bool
+	delimiter   Delimiter
+	expect      map[int]string
+	keymap      map[int][]action
+	pressed     string
+	printQuery  bool
+	printSelIdx bool
+	history     *History
+	cycle       bool
+	header      []string
+	header0     []string
+	ansi        bool
+	tabstop     int
+	margin      [4]sizeSpec
+	strong      tui.Attr
+	unicode     bool
+	bordered    bool
+	cleanExit   bool
+	border      tui.Window
+	window      tui.Window
+	pborder     tui.Window
+	pwindow     tui.Window
+	count       int
+	progress    int
+	reading     bool
+	success     bool
+	jumping     jumpMode
+	jumpLabels  string
+	printer     func(string)
+	merger      *Merger
+	selected    map[int32]selectedItem
+	version     int64
+	reqBox      *util.EventBox
+	preview     previewOpts
+	previewer   previewer
+	previewBox  *util.EventBox
+	eventBox    *util.EventBox
+	mutex       sync.Mutex
+	initFunc    func()
+	prevLines   []itemLine
+	suppress    bool
+	startChan   chan bool
+	killChan    chan int
+	slab        *util.Slab
+	theme       *tui.ColorTheme
+	tui         tui.Renderer
 }
 
 type selectedItem struct {
@@ -368,60 +370,62 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
 	t := Terminal{
-		initDelay:  delay,
-		inlineInfo: opts.InlineInfo,
-		queryLen:   [2]int{0, 0},
-		layout:     opts.Layout,
-		fullscreen: fullscreen,
-		hscroll:    opts.Hscroll,
-		hscrollOff: opts.HscrollOff,
-		wordRubout: wordRubout,
-		wordNext:   wordNext,
-		cx:         len(input),
-		cy:         0,
-		offset:     0,
-		xoffset:    0,
-		yanked:     []rune{},
-		input:      input,
-		multi:      opts.Multi,
-		sort:       opts.Sort > 0,
-		toggleSort: opts.ToggleSort,
-		delimiter:  opts.Delimiter,
-		expect:     opts.Expect,
-		keymap:     opts.Keymap,
-		pressed:    "",
-		printQuery: opts.PrintQuery,
-		history:    opts.History,
-		margin:     opts.Margin,
-		unicode:    opts.Unicode,
-		bordered:   opts.Bordered,
-		cleanExit:  opts.ClearOnExit,
-		strong:     strongAttr,
-		cycle:      opts.Cycle,
-		header:     header,
-		header0:    header,
-		ansi:       opts.Ansi,
-		tabstop:    opts.Tabstop,
-		reading:    true,
-		success:    true,
-		jumping:    jumpDisabled,
-		jumpLabels: opts.JumpLabels,
-		printer:    opts.Printer,
-		merger:     EmptyMerger,
-		selected:   make(map[int32]selectedItem),
-		reqBox:     util.NewEventBox(),
-		preview:    opts.Preview,
-		previewer:  previewer{"", 0, 0, previewBox != nil && !opts.Preview.hidden, false},
-		previewBox: previewBox,
-		eventBox:   eventBox,
-		mutex:      sync.Mutex{},
-		suppress:   true,
-		slab:       util.MakeSlab(slab16Size, slab32Size),
-		theme:      opts.Theme,
-		startChan:  make(chan bool, 1),
-		killChan:   make(chan int),
-		tui:        renderer,
-		initFunc:   func() { renderer.Init() }}
+		initDelay:   delay,
+		inlineInfo:  opts.InlineInfo,
+		queryLen:    [2]int{0, 0},
+		layout:      opts.Layout,
+		fullscreen:  fullscreen,
+		hscroll:     opts.Hscroll,
+		hscrollOff:  opts.HscrollOff,
+		wordRubout:  wordRubout,
+		wordNext:    wordNext,
+		cx:          len(input),
+		cy:          opts.SelIdx,
+		scy:         opts.SelIdx,
+		offset:      0,
+		xoffset:     0,
+		yanked:      []rune{},
+		input:       input,
+		multi:       opts.Multi,
+		sort:        opts.Sort > 0,
+		toggleSort:  opts.ToggleSort,
+		delimiter:   opts.Delimiter,
+		expect:      opts.Expect,
+		keymap:      opts.Keymap,
+		pressed:     "",
+		printQuery:  opts.PrintQuery,
+		printSelIdx: opts.PrintSelIdx,
+		history:     opts.History,
+		margin:      opts.Margin,
+		unicode:     opts.Unicode,
+		bordered:    opts.Bordered,
+		cleanExit:   opts.ClearOnExit,
+		strong:      strongAttr,
+		cycle:       opts.Cycle,
+		header:      header,
+		header0:     header,
+		ansi:        opts.Ansi,
+		tabstop:     opts.Tabstop,
+		reading:     true,
+		success:     true,
+		jumping:     jumpDisabled,
+		jumpLabels:  opts.JumpLabels,
+		printer:     opts.Printer,
+		merger:      EmptyMerger,
+		selected:    make(map[int32]selectedItem),
+		reqBox:      util.NewEventBox(),
+		preview:     opts.Preview,
+		previewer:   previewer{"", 0, 0, previewBox != nil && !opts.Preview.hidden, false},
+		previewBox:  previewBox,
+		eventBox:    eventBox,
+		mutex:       sync.Mutex{},
+		suppress:    true,
+		slab:        util.MakeSlab(slab16Size, slab32Size),
+		theme:       opts.Theme,
+		startChan:   make(chan bool, 1),
+		killChan:    make(chan int),
+		tui:         renderer,
+		initFunc:    func() { renderer.Init() }}
 	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
 	return &t
 }
@@ -489,6 +493,9 @@ func (t *Terminal) UpdateList(merger *Merger) {
 func (t *Terminal) output() bool {
 	if t.printQuery {
 		t.printer(string(t.input))
+	}
+	if t.printSelIdx {
+		t.printer(strconv.Itoa(t.cy))
 	}
 	if len(t.expect) > 0 {
 		t.printer(t.pressed)
@@ -2033,7 +2040,7 @@ func (t *Terminal) constrain() {
 	height := t.maxItems()
 	diffpos := t.cy - t.offset
 
-	t.cy = util.Constrain(t.cy, 0, count-1)
+	t.cy = util.Constrain(t.scy, 0, count-1)
 	t.offset = util.Constrain(t.offset, t.cy-height+1, t.cy)
 	// Adjustment
 	if count-t.offset < height {
@@ -2065,6 +2072,7 @@ func (t *Terminal) vmove(o int, allowCycle bool) {
 
 func (t *Terminal) vset(o int) bool {
 	t.cy = util.Constrain(o, 0, t.merger.Length()-1)
+	t.scy = t.cy
 	return t.cy == o
 }
 
