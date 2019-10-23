@@ -96,6 +96,14 @@ fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
 [portfile]: https://github.com/macports/macports-ports/blob/master/sysutils/fzf/Portfile
 
+### Using nix
+
+You can use the [nix package manager](https://nixos.org/nix/) to install fzf.
+
+```sh
+nix-env -iA nixpkgs.fzf
+```
+
 ### Using git
 
 Alternatively, you can "git clone" this repository to any directory and run
