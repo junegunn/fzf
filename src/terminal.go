@@ -74,6 +74,7 @@ type Terminal struct {
 	yanked     []rune
 	input      []rune
 	multi      bool
+	multiLimit int
 	sort       bool
 	toggleSort bool
 	delimiter  Delimiter
@@ -384,6 +385,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		yanked:     []rune{},
 		input:      input,
 		multi:      opts.Multi,
+		multiLimit: opts.MultiLimit,
 		sort:       opts.Sort > 0,
 		toggleSort: opts.ToggleSort,
 		delimiter:  opts.Delimiter,
@@ -744,7 +746,7 @@ func (t *Terminal) printInfo() {
 			output += " -S"
 		}
 	}
-	if t.multi && len(t.selected) > 0 {
+	if t.multi && len(t.selected) > 0 && (t.multiLimit == 0 || len(t.selected) <= t.multiLimit) {
 		output += fmt.Sprintf(" (%d)", len(t.selected))
 	}
 	if t.progress > 0 && t.progress < 100 {
@@ -1785,6 +1787,7 @@ func (t *Terminal) Loop() {
 				}
 			case actToggle:
 				if t.multi && t.merger.Length() > 0 {
+					if _, found := t.selected[t.merger.Get(t.cy).item.Index()]; !found && t.multiLimit > 0 && len(t.selected) >= t.multiLimit { break }
 					toggle()
 					req(reqList)
 				}
@@ -1807,12 +1810,14 @@ func (t *Terminal) Loop() {
 				return doAction(action{t: actToggleUp}, mapkey)
 			case actToggleDown:
 				if t.multi && t.merger.Length() > 0 {
+					if _, found := t.selected[t.merger.Get(t.cy).item.Index()]; !found && t.multiLimit > 0 && len(t.selected) >= t.multiLimit { break }
 					toggle()
 					t.vmove(-1, true)
 					req(reqList)
 				}
 			case actToggleUp:
 				if t.multi && t.merger.Length() > 0 {
+					if _, found := t.selected[t.merger.Get(t.cy).item.Index()]; !found && t.multiLimit > 0 && len(t.selected) >= t.multiLimit { break }
 					toggle()
 					t.vmove(1, true)
 					req(reqList)

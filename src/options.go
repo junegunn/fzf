@@ -39,6 +39,7 @@ const usage = `usage: fzf [options]
 
   Interface
     -m, --multi           Enable multi-select with tab/shift-tab
+    --multi-limit=LIMIT   Max limit for multi-select (default: no limit)
     --no-mouse            Disable mouse
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
@@ -163,6 +164,7 @@ type Options struct {
 	Tac         bool
 	Criteria    []criterion
 	Multi       bool
+	MultiLimit  int
 	Ansi        bool
 	Mouse       bool
 	Theme       *tui.ColorTheme
@@ -215,6 +217,7 @@ func defaultOptions() *Options {
 		Tac:         false,
 		Criteria:    []criterion{byScore, byLength},
 		Multi:       false,
+		MultiLimit:  0,
 		Ansi:        false,
 		Mouse:       true,
 		Theme:       tui.EmptyTheme(),
@@ -1224,6 +1227,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
+			} else if match, value := optString(arg, "--multi-limit="); match {
+				opts.MultiLimit = atoi(value)
 			} else {
 				errorExit("unknown option: " + arg)
 			}
