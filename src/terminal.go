@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"regexp"
@@ -22,9 +23,11 @@ import (
 // import "github.com/pkg/profile"
 
 var placeholder *regexp.Regexp
+var activeTempFiles []string
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{[+s]*[0-9,-.]*}|{q}|{\\+?n})")
+	placeholder = regexp.MustCompile("\\\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\\+?nf?})")
+	activeTempFiles = make([]string, 0)
 }
 
 type jumpMode int
@@ -231,6 +234,7 @@ type placeholderFlags struct {
 	preserveSpace bool
 	number        bool
 	query         bool
+	file          bool
 }
 
 func toActions(types ...actionType) []action {
@@ -1207,6 +1211,9 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		case 'n':
 			flags.number = true
 			skipChars++
+		case 'f':
+			flags.file = true
+			skipChars++
 		case 'q':
 			flags.query = true
 		default:
@@ -1219,7 +1226,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (plus bool, query bool) {
+func hasPreviewFlags(template string) (plus bool, query bool, file bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
@@ -1228,8 +1235,38 @@ func hasPreviewFlags(template string) (plus bool, query bool) {
 		if flags.query {
 			query = true
 		}
+		if flags.file {
+			file = true
+		}
 	}
 	return
+}
+
+func writeTemporaryFile(data []string) string {
+	f, err := ioutil.TempFile("", "fzf-preview-*")
+	if err != nil {
+		errorExit("Unable to create temporary file")
+	}
+	defer f.Close()
+
+	f.WriteString(strings.Join(data, "\n"))
+	f.WriteString("\n")
+	activeTempFiles = append(activeTempFiles, f.Name())
+	return f.Name()
+}
+
+func cleanTemporaryFiles() error {
+	var err error
+	var filename string
+
+	for len(activeTempFiles) != 0 {
+		filename, activeTempFiles = activeTempFiles[0], activeTempFiles[1:]
+		err = os.Remove(filename)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
@@ -1269,9 +1306,14 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 					} else {
 						replacements[idx] = strconv.Itoa(n)
 					}
+				} else if flags.file {
+					replacements[idx] = item.AsString(stripAnsi)
 				} else {
 					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
 				}
+			}
+			if flags.file {
+				return writeTemporaryFile(replacements)
 			}
 			return strings.Join(replacements, " ")
 		}
@@ -1302,7 +1344,14 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			if !flags.preserveSpace {
 				str = strings.TrimSpace(str)
 			}
-			replacements[idx] = quoteEntry(str)
+			if flags.file {
+				replacements[idx] = str
+			} else {
+				replacements[idx] = quoteEntry(str)
+			}
+		}
+		if flags.file {
+			return writeTemporaryFile(replacements)
 		}
 		return strings.Join(replacements, " ")
 	})
@@ -1335,6 +1384,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Run()
 		t.tui.Resume(false)
 	}
+	cleanTemporaryFiles()
 }
 
 func (t *Terminal) hasPreviewer() bool {
@@ -1359,8 +1409,8 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	plus, query := hasPreviewFlags(template)
-	if !(query && len(t.input) > 0 || (forcePlus || plus) && len(t.selected) > 0) {
+	plus, query, file := hasPreviewFlags(template)
+	if !(query && len(t.input) > 0 || file || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -1534,6 +1584,7 @@ func (t *Terminal) Loop() {
 					if out.Len() > 0 || !<-updateChan {
 						t.reqBox.Set(reqPreviewDisplay, out.String())
 					}
+					cleanTemporaryFiles()
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, "")
 				}
@@ -2006,7 +2057,7 @@ func (t *Terminal) Loop() {
 
 		if changed {
 			if t.isPreviewEnabled() {
-				_, q := hasPreviewFlags(t.preview.command)
+				_, q, _ := hasPreviewFlags(t.preview.command)
 				if q {
 					t.version++
 				}
