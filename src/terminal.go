@@ -1226,7 +1226,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (plus bool, query bool, file bool) {
+func hasPreviewFlags(template string) (plus bool, query bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
@@ -1234,9 +1234,6 @@ func hasPreviewFlags(template string) (plus bool, query bool, file bool) {
 		}
 		if flags.query {
 			query = true
-		}
-		if flags.file {
-			file = true
 		}
 	}
 	return
@@ -1255,18 +1252,10 @@ func writeTemporaryFile(data []string) string {
 	return f.Name()
 }
 
-func cleanTemporaryFiles() error {
-	var err error
-	var filename string
-
-	for len(activeTempFiles) != 0 {
-		filename, activeTempFiles = activeTempFiles[0], activeTempFiles[1:]
-		err = os.Remove(filename)
-		if err != nil {
-			return err
-		}
+func cleanTemporaryFiles() {
+	for _, filename := range activeTempFiles {
+		os.Remove(filename)
 	}
-	return nil
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
@@ -1344,11 +1333,10 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			if !flags.preserveSpace {
 				str = strings.TrimSpace(str)
 			}
-			if flags.file {
-				replacements[idx] = str
-			} else {
-				replacements[idx] = quoteEntry(str)
+			if !flags.file {
+				str = quoteEntry(str)
 			}
+			replacements[idx] = str
 		}
 		if flags.file {
 			return writeTemporaryFile(replacements)
@@ -1409,8 +1397,8 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	plus, query, file := hasPreviewFlags(template)
-	if !(query && len(t.input) > 0 || file || (forcePlus || plus) && len(t.selected) > 0) {
+	plus, query := hasPreviewFlags(template)
+	if !(query && len(t.input) > 0 || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -2057,7 +2045,7 @@ func (t *Terminal) Loop() {
 
 		if changed {
 			if t.isPreviewEnabled() {
-				_, q, _ := hasPreviewFlags(t.preview.command)
+				_, q := hasPreviewFlags(t.preview.command)
 				if q {
 					t.version++
 				}
