@@ -106,6 +106,7 @@ type Terminal struct {
 	jumping    jumpMode
 	jumpLabels string
 	printer    func(string)
+	printsep   string
 	merger     *Merger
 	selected   map[int32]selectedItem
 	version    int64
@@ -411,6 +412,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
 		printer:    opts.Printer,
+		printsep:   opts.PrintSep,
 		merger:     EmptyMerger,
 		selected:   make(map[int32]selectedItem),
 		reqBox:     util.NewEventBox(),
@@ -1239,15 +1241,15 @@ func hasPreviewFlags(template string) (plus bool, query bool) {
 	return
 }
 
-func writeTemporaryFile(data []string) string {
+func writeTemporaryFile(data []string, printSep string) string {
 	f, err := ioutil.TempFile("", "fzf-preview-*")
 	if err != nil {
 		errorExit("Unable to create temporary file")
 	}
 	defer f.Close()
 
-	f.WriteString(strings.Join(data, "\n"))
-	f.WriteString("\n")
+	f.WriteString(strings.Join(data, printSep))
+	f.WriteString(printSep)
 	activeTempFiles = append(activeTempFiles, f.Name())
 	return f.Name()
 }
@@ -1258,7 +1260,7 @@ func cleanTemporaryFiles() {
 	}
 }
 
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, forcePlus bool, query string, allItems []*Item) string {
+func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
 	current := allItems[:1]
 	selected := allItems[1:]
 	if current[0] == nil {
@@ -1302,7 +1304,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 				}
 			}
 			if flags.file {
-				return writeTemporaryFile(replacements)
+				return writeTemporaryFile(replacements, printsep)
 			}
 			return strings.Join(replacements, " ")
 		}
@@ -1339,7 +1341,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, fo
 			replacements[idx] = str
 		}
 		if flags.file {
-			return writeTemporaryFile(replacements)
+			return writeTemporaryFile(replacements, printsep)
 		}
 		return strings.Join(replacements, " ")
 	})
@@ -1356,7 +1358,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid {
 		return
 	}
-	command := replacePlaceholder(template, t.ansi, t.delimiter, forcePlus, string(t.input), list)
+	command := replacePlaceholder(template, t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	if !background {
 		cmd.Stdin = os.Stdin
@@ -1530,7 +1532,7 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if request[0] != nil {
 					command := replacePlaceholder(t.preview.command,
-						t.ansi, t.delimiter, false, string(t.input), request)
+						t.ansi, t.delimiter, t.printsep, false, string(t.input), request)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()

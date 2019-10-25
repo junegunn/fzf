@@ -189,6 +189,7 @@ type Options struct {
 	PrintQuery  bool
 	ReadZero    bool
 	Printer     func(string)
+	PrintSep    string
 	Sync        bool
 	History     *History
 	Header      []string
@@ -240,6 +241,7 @@ func defaultOptions() *Options {
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
+		PrintSep:    "\n",
 		Sync:        false,
 		History:     nil,
 		Header:      make([]string, 0),
@@ -1106,8 +1108,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ReadZero = false
 		case "--print0":
 			opts.Printer = func(str string) { fmt.Print(str, "\x00") }
+			opts.PrintSep = "\x00"
 		case "--no-print0":
 			opts.Printer = func(str string) { fmt.Println(str) }
+			opts.PrintSep = "\n"
 		case "--print-query":
 			opts.PrintQuery = true
 		case "--no-print-query":
