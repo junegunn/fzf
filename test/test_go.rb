@@ -1417,6 +1417,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[1].include?('{//1 10/1   10  /123//0 9}') }
   end
 
+  def test_preview_file
+    tmux.send_keys %[(echo foo bar; echo bar foo) | #{FZF} --multi --preview 'cat {+f} {+f2} {+nf} {+fn}' --print0], :Enter
+    tmux.until { |lines| lines[1].include?('foo barbar00') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| lines[1].include?('foo barbar00') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| lines[1].include?('foo barbar foobarfoo0101') }
+  end
+
   def test_preview_q_no_match
     tmux.send_keys %(: | #{FZF} --preview 'echo foo {q}'), :Enter
     tmux.until { |lines| lines.match_count == 0 }
