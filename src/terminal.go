@@ -27,7 +27,7 @@ var activeTempFiles []string
 
 func init() {
 	placeholder = regexp.MustCompile("\\\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\\+?nf?})")
-	activeTempFiles = make([]string, 0)
+	activeTempFiles = []string{}
 }
 
 type jumpMode int
@@ -1258,6 +1258,7 @@ func cleanTemporaryFiles() {
 	for _, filename := range activeTempFiles {
 		os.Remove(filename)
 	}
+	activeTempFiles = []string{}
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
