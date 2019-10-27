@@ -1359,7 +1359,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid {
 		return
 	}
-	command := replacePlaceholder(template, t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
+	command := replacePlaceholder(template, t.ansi, t.delimiter, t.printsep, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	if !background {
 		cmd.Stdin = os.Stdin
