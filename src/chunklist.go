@@ -26,6 +26,10 @@ func NewChunkList(trans ItemBuilder) *ChunkList {
 		trans:  trans}
 }
 
+func (cs *ChunkList) clear() {
+	cs.chunks = nil
+}
+
 func (c *Chunk) push(trans ItemBuilder, data []byte) bool {
 	if trans(&c.items[c.count], data) {
 		c.count++

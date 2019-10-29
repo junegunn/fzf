@@ -28,6 +28,7 @@ package fzf
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
@@ -135,11 +136,18 @@ func Run(opts *Options, revision string) {
 
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
+	interactiveCommand := opts.Command != ""
+
 	if !streamingFilter {
 		reader := NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, opts.ReadZero)
-		go reader.ReadSource()
+		if interactiveCommand {
+			var command = strings.ReplaceAll(opts.Command, "{}", opts.Query)
+			go reader.ReadSourceCustom(command)
+		} else {
+			go reader.ReadSource()
+		}
 	}
 
 	// Matcher
@@ -248,6 +256,17 @@ func Run(opts *Options, revision string) {
 					case bool:
 						sort = val
 					}
+
+					if interactiveCommand {
+						chunkList.clear()
+
+						reader := NewReader(func(data []byte) bool {
+							return chunkList.Push(data)
+						}, eventBox, opts.ReadZero)
+						var command = strings.ReplaceAll(opts.Command, "{}", string(terminal.Input()))
+						go reader.ReadSourceCustom(command)
+					}
+
 					snapshot, _ := chunkList.Snapshot()
 					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)
 					delay = false

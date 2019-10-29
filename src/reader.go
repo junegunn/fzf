@@ -67,6 +67,14 @@ func (r *Reader) ReadSource() {
 	r.fin(success)
 }
 
+// ReadSourceCustom reads data from the default command or from standard input
+func (r *Reader) ReadSourceCustom(cmd string) {
+	r.startEventPoller()
+	var success bool
+	success = r.readFromCommand("sh", cmd)
+	r.fin(success)
+}
+
 func (r *Reader) feed(src io.Reader) {
 	delim := byte('\n')
 	if r.delimNil {

@@ -570,6 +570,19 @@ For more advanced examples, see [Key bindings for git with fzf][fzf-git]
 
 [fzf-git]: https://junegunn.kr/2016/07/fzf-git/
 
+### Using fzf in interactive mode
+
+You can also use fzf in "interactive command" mode. This mode changes the "default"
+way how fzf retrieves input for filtering. Instead of reading from stdin, fzf
+executes command specified by `--cmd` option. Every change to the filter query
+results in the command being reevaulated and the result is fed back to fzf.
+The query is passed to the command through `{}`.
+
+```bash
+# Run grep continuosly in current directory
+fzf -c 'ag -i {} *'
+```
+
 Tips
 ----
 
