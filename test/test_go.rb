@@ -256,12 +256,12 @@ class TestGoFZF < TestBase
 
     # Testing basic key bindings
     tmux.send_keys '99', 'C-a', '1', 'C-f', '3', 'C-b', 'C-h', 'C-u', 'C-e', 'C-y', 'C-k', 'Tab', 'BTab'
-    tmux.until { |lines| lines[-2] == '  856/100000' }
-    lines = tmux.capture
-    assert_equal '> 3910',       lines[-4]
-    assert_equal '  391',        lines[-3]
-    assert_equal '  856/100000', lines[-2]
-    assert_equal '> 391',        lines[-1]
+    tmux.until do |lines|
+      '> 3910'       == lines[-4] &&
+      '  391'        == lines[-3] &&
+      '  856/100000' == lines[-2] &&
+      '> 391'        == lines[-1]
+    end
 
     tmux.send_keys :Enter
     assert_equal '3910', readonce.chomp
