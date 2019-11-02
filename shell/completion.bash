@@ -139,8 +139,14 @@ _fzf_handle_dynamic_completion() {
   fi
 }
 
+__fzf_char_need_to_be_ecscaped() {
+  char="$1"
+  printf -v q_char '%q' "$char"
+  [[ "$char" != "$q_char" ]] && return 0 || return 1
+}
+
 __fzf_generic_path_completion() {
-  local cur base dir leftover matches trigger cmd fzf
+  local cur base dir leftover matches trigger cmd fzf char escape result
   fzf="$(__fzfcmd_complete)"
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   COMPREPLY=()
@@ -148,7 +154,28 @@ __fzf_generic_path_completion() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     base=${cur:0:${#cur}-${#trigger}}
-    eval "base=$base"
+    eval 'base=$base'
+
+    result=""
+    escape=0
+    for (( i=0; i<${#base}; i++ )) do
+      char=${base:$i:1}
+      result+=$char
+      if [ "$char" = '\' ]; then
+        [ $escape -eq 1 ] && escape=0 || escape=1
+      elif [ "$char" = '~' ]; then
+        [ $escape -eq 1 ] && escape=0 || result="${result:0: -1}$HOME"
+      else
+        __fzf_char_need_to_be_ecscaped $char
+        if [ $? = 0 ]; then
+          [ $escape -eq 0 ] && result=""
+        else
+          [ $escape -eq 1 ] && result=$char
+        fi
+        escape=0
+      fi
+    done
+    base=$result
 
     [[ $base = *"/"* ]] && dir="$base"
     while true; do
@@ -164,8 +191,6 @@ __fzf_generic_path_completion() {
         [[ -z "$3" ]] && [[ "$__fzf_nospace_commands" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
         if [ -n "$matches" ]; then
           COMPREPLY=( "$matches" )
-        else
-          COMPREPLY=( "$cur" )
         fi
         printf '\e[5n'
         return 0
