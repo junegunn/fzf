@@ -371,6 +371,65 @@ class TestGoFZF < TestBase
     assert_equal %w[3 2 5 6 8 7], readonce.split($INPUT_RECORD_SEPARATOR)
   end
 
+  def test_multi_max
+    tmux.send_keys "seq 1 10 | #{FZF} -m 3 --bind A:select-all,T:toggle-all --preview 'echo [{+}]/{}'", :Enter
+
+    tmux.until { |lines| lines.item_count == 10 }
+
+    tmux.send_keys '1'
+    tmux.until do |lines|
+      lines[1].include?('[1]/1') && lines[-2].include?('2/10')
+    end
+
+    tmux.send_keys 'A'
+    tmux.until do |lines|
+      lines[1].include?('[1 10]/1') && lines[-2].include?('2/10 (2/3)')
+    end
+
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-2].include?('10/10 (2/3)') }
+
+    tmux.send_keys 'T'
+    tmux.until do |lines|
+      lines[1].include?('[2 3 4]/1') && lines[-2].include?('10/10 (3/3)')
+    end
+
+    %w[T A].each do |key|
+      tmux.send_keys key
+      tmux.until do |lines|
+        lines[1].include?('[1 5 6]/1') && lines[-2].include?('10/10 (3/3)')
+      end
+    end
+
+    tmux.send_keys :BTab
+    tmux.until do |lines|
+      lines[1].include?('[5 6]/2') && lines[-2].include?('10/10 (2/3)')
+    end
+
+    [:BTab, :BTab, 'A'].each do |key|
+      tmux.send_keys key
+      tmux.until do |lines|
+        lines[1].include?('[5 6 2]/3') && lines[-2].include?('10/10 (3/3)')
+      end
+    end
+
+    tmux.send_keys '2'
+    tmux.until { |lines| lines[-2].include?('1/10 (3/3)') }
+
+    tmux.send_keys 'T'
+    tmux.until do |lines|
+      lines[1].include?('[5 6]/2') && lines[-2].include?('1/10 (2/3)')
+    end
+
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-2].include?('10/10 (2/3)') }
+
+    tmux.send_keys 'A'
+    tmux.until do |lines|
+      lines[1].include?('[5 6 1]/1') && lines[-2].include?('10/10 (3/3)')
+    end
+  end
+
   def test_with_nth
     [true, false].each do |multi|
       tmux.send_keys "(echo '  1st 2nd 3rd/';

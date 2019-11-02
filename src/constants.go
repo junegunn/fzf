@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"math"
 	"os"
 	"time"
 
@@ -27,6 +28,7 @@ const (
 	spinnerDuration   = 200 * time.Millisecond
 	previewCancelWait = 500 * time.Millisecond
 	maxPatternLength  = 300
+	maxMulti          = math.MaxInt32
 
 	// Matcher
 	numPartitionsMultiplier = 8
