@@ -865,16 +865,22 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include? '(100)' }
     tmux.send_keys :Tab, :Tab
     tmux.until { |lines| lines[-2].include? '(98)' }
+    tmux.send_keys '100'
+    tmux.until { |lines| lines.match_count == 1 }
+    tmux.send_keys 'C-d'
+    tmux.until { |lines| lines[-2].include? '(97)' }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| lines.match_count == 100 }
     tmux.send_keys 'C-d'
     tmux.until { |lines| !lines[-2].include? '(' }
-    tmux.send_keys :Tab, :Tab
+    tmux.send_keys :BTab, :BTab
     tmux.until { |lines| lines[-2].include? '(2)' }
     tmux.send_keys 0
     tmux.until { |lines| lines[-2].include? '10/100' }
     tmux.send_keys 'C-a'
     tmux.until { |lines| lines[-2].include? '(12)' }
     tmux.send_keys :Enter
-    assert_equal %w[2 1 10 20 30 40 50 60 70 80 90 100],
+    assert_equal %w[1 2 10 20 30 40 50 60 70 80 90 100],
                  readonce.split($INPUT_RECORD_SEPARATOR)
   end
 
