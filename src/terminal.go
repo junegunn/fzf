@@ -1838,10 +1838,7 @@ func (t *Terminal) Loop() {
 			case actDeselectAll:
 				if t.multi > 0 {
 					for i := 0; i < t.merger.Length() && len(t.selected) > 0; i++ {
-						item := t.merger.Get(i).item
-						if _, found := t.selected[item.Index()]; found {
-							t.deselectItem(item)
-						}
+						t.deselectItem(t.merger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
