@@ -1191,7 +1191,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.WithNth = splitNth(value)
 			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
-			} else if match, value := optString(arg, "-s", "--multi="); match {
+			} else if match, value := optString(arg, "-m", "--multi="); match {
 				opts.Multi = atoi(value)
 			} else if match, value := optString(arg, "--height="); match {
 				opts.Height = parseHeight(value)
