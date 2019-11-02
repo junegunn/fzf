@@ -873,7 +873,7 @@ class TestGoFZF < TestBase
 
   def test_execute
     output = '/tmp/fzf-test-execute'
-    opts = %[--bind \\"alt-a:execute(echo [{}] >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}\\"]
+    opts = %[--bind \\"alt-a:execute(echo /{}/ >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}\\"]
     wait = ->(exp) { tmux.until { |lines| lines[-2].include? exp } }
     writelines tempname, %w[foo'bar foo"bar foo$bar]
     tmux.send_keys "cat #{tempname} | #{fzf opts}; sync", :Enter
@@ -898,7 +898,7 @@ class TestGoFZF < TestBase
     wait['/3']
     tmux.send_keys :Enter
     readonce
-    assert_equal %w[[foo'bar] [foo'bar]
+    assert_equal %w[/foo'bar/ /foo'bar/
                     /foo"barfoo"bar/ /foo"barfoo"bar/
                     /foo$barfoo$barfoo$bar/],
                  File.readlines(output).map(&:chomp)
