@@ -164,10 +164,6 @@ func (p ColorPair) Bg() Color {
 	return p.bg
 }
 
-func (p ColorPair) is24() bool {
-	return p.fg.is24() || p.bg.is24()
-}
-
 type ColorTheme struct {
 	Fg           Color
 	Bg           Color

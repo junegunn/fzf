@@ -1012,19 +1012,6 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	return displayWidth
 }
 
-func numLinesMax(str string, max int) int {
-	lines := 0
-	for lines < max {
-		idx := strings.Index(str, "\n")
-		if idx < 0 {
-			break
-		}
-		str = str[idx+1:]
-		lines++
-	}
-	return lines
-}
-
 func (t *Terminal) printPreview() {
 	if !t.hasPreviewWindow() {
 		return
