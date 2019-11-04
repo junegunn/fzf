@@ -117,7 +117,7 @@ func (c Color) is24() bool {
 
 const (
 	colUndefined Color = -2
-	colDefault         = -1
+	colDefault   Color = -1
 )
 
 const (
