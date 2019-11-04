@@ -26,7 +26,7 @@ var placeholder *regexp.Regexp
 var activeTempFiles []string
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\\+?f?nf?})")
+	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
 	activeTempFiles = []string{}
 }
 

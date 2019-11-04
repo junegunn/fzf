@@ -89,7 +89,7 @@ func TestReplacePlaceholder(t *testing.T) {
 	check("echo '  foo'\\''bar baz'")
 
 	// Whitespace preserving flag with regex delimiter
-	regex = regexp.MustCompile("\\w+")
+	regex = regexp.MustCompile(`\w+`)
 
 	result = replacePlaceholder("echo {s1}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
 	check("echo '  '")
