@@ -57,6 +57,7 @@ const usage = `usage: fzf [options]
     --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --inline-info         Display finder info inline with the query
+    --no-info             Display no finder info at all
     --prompt=STR          Input prompt (default: '> ')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
@@ -176,6 +177,7 @@ type Options struct {
 	HscrollOff  int
 	FileWord    bool
 	InlineInfo  bool
+	NoInfo      bool
 	JumpLabels  string
 	Prompt      string
 	Query       string
@@ -228,6 +230,7 @@ func defaultOptions() *Options {
 		HscrollOff:  10,
 		FileWord:    false,
 		InlineInfo:  false,
+		NoInfo:      false,
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
 		Query:       "",
@@ -1090,6 +1093,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.FileWord = false
 		case "--inline-info":
 			opts.InlineInfo = true
+		case "--no-info":
+			opts.NoInfo = true
 		case "--no-inline-info":
 			opts.InlineInfo = false
 		case "--jump-labels":

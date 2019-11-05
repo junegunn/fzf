@@ -61,6 +61,7 @@ var emptyLine = itemLine{}
 type Terminal struct {
 	initDelay  time.Duration
 	inlineInfo bool
+	noInfo     bool
 	prompt     string
 	promptLen  int
 	queryLen   [2]int
@@ -375,6 +376,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t := Terminal{
 		initDelay:  delay,
 		inlineInfo: opts.InlineInfo,
+		noInfo:     opts.NoInfo,
 		queryLen:   [2]int{0, 0},
 		layout:     opts.Layout,
 		fullscreen: fullscreen,
@@ -666,7 +668,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 		y = h - y - 1
 	case layoutReverseList:
 		n := 2 + len(t.header)
-		if t.inlineInfo {
+		if t.inlineInfo || t.noInfo {
 			n--
 		}
 		if y < n {
@@ -718,6 +720,10 @@ func (t *Terminal) printPrompt() {
 }
 
 func (t *Terminal) printInfo() {
+	if t.noInfo {
+		return
+	}
+
 	pos := 0
 	if t.inlineInfo {
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
@@ -780,7 +786,7 @@ func (t *Terminal) printHeader() {
 	var state *ansiState
 	for idx, lineStr := range t.header {
 		line := idx + 2
-		if t.inlineInfo {
+		if t.inlineInfo || t.noInfo {
 			line--
 		}
 		if line >= max {
@@ -809,7 +815,7 @@ func (t *Terminal) printList() {
 			i = maxy - 1 - j
 		}
 		line := i + 2 + len(t.header)
-		if t.inlineInfo {
+		if t.inlineInfo || t.noInfo {
 			line--
 		}
 		if i < count {
@@ -1584,6 +1590,7 @@ func (t *Terminal) Loop() {
 	}
 
 	exit := func(getCode func() int) {
+		// XXX: Should t.noInfo apply here?
 		if !t.cleanExit && t.fullscreen && t.inlineInfo {
 			t.placeCursor()
 		}
@@ -1987,7 +1994,7 @@ func (t *Terminal) Loop() {
 					my -= t.window.Top()
 					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
 					min := 2 + len(t.header)
-					if t.inlineInfo {
+					if t.inlineInfo || t.noInfo {
 						min--
 					}
 					h := t.window.Height()
@@ -2094,7 +2101,7 @@ func (t *Terminal) constrain() {
 	t.offset = util.Constrain(t.offset, t.cy-height+1, t.cy)
 	// Adjustment
 	if count-t.offset < height {
-		t.offset = util.Max(0, count-height)
+		// t.offset = util.Max(0, count-height)
 		t.cy = util.Constrain(t.offset+diffpos, 0, count-1)
 	}
 	t.offset = util.Max(0, t.offset)
@@ -2127,7 +2134,7 @@ func (t *Terminal) vset(o int) bool {
 
 func (t *Terminal) maxItems() int {
 	max := t.window.Height() - 2 - len(t.header)
-	if t.inlineInfo {
+	if t.inlineInfo || t.noInfo {
 		max++
 	}
 	return util.Max(max, 0)
