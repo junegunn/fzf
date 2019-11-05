@@ -371,7 +371,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// The first occurrence of each character in the pattern
 	offset32, F := alloc32(offset32, slab, M)
 	// Rune array
-	offset32, T := alloc32(offset32, slab, N)
+	_, T := alloc32(offset32, slab, N)
 	input.CopyRunes(T)
 
 	// Phase 2. Calculate bonus for each point
@@ -453,7 +453,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	copy(H, H0[f0:lastIdx+1])
 
 	// Possible length of consecutive chunk at each position.
-	offset16, C := alloc16(offset16, slab, width*M)
+	_, C := alloc16(offset16, slab, width*M)
 	copy(C, C0[f0:lastIdx+1])
 
 	Fsub := F[1:]

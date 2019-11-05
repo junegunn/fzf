@@ -117,7 +117,7 @@ func (c Color) is24() bool {
 
 const (
 	colUndefined Color = -2
-	colDefault         = -1
+	colDefault   Color = -1
 )
 
 const (
@@ -162,10 +162,6 @@ func (p ColorPair) Fg() Color {
 
 func (p ColorPair) Bg() Color {
 	return p.bg
-}
-
-func (p ColorPair) is24() bool {
-	return p.fg.is24() || p.bg.is24()
 }
 
 type ColorTheme struct {

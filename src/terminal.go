@@ -26,7 +26,7 @@ var placeholder *regexp.Regexp
 var activeTempFiles []string
 
 func init() {
-	placeholder = regexp.MustCompile("\\\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\\+?f?nf?})")
+	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
 	activeTempFiles = []string{}
 }
 
@@ -1010,19 +1010,6 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 		t.window.CPrint(col1, attr, substr)
 	}
 	return displayWidth
-}
-
-func numLinesMax(str string, max int) int {
-	lines := 0
-	for lines < max {
-		idx := strings.Index(str, "\n")
-		if idx < 0 {
-			break
-		}
-		str = str[idx+1:]
-		lines++
-	}
-	return lines
 }
 
 func (t *Terminal) printPreview() {

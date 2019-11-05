@@ -713,10 +713,6 @@ func (w *LightWindow) csi(code string) {
 	w.renderer.csi(code)
 }
 
-func (w *LightWindow) stderr(str string) {
-	w.renderer.stderr(str)
-}
-
 func (w *LightWindow) stderrInternal(str string, allowNLCR bool) {
 	w.renderer.stderrInternal(str, allowNLCR)
 }

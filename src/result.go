@@ -16,7 +16,6 @@ type colorOffset struct {
 	offset [2]int32
 	color  tui.ColorPair
 	attr   tui.Attr
-	index  int32
 }
 
 type Result struct {
