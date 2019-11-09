@@ -33,6 +33,7 @@ const usage = `usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex (default: AWK-style)
     +s, --no-sort         Do not sort the result
     --tac                 Reverse the order of the input
+    --phony               Do not perform search
     --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
                           when the scores are tied [length|begin|end|index]
                           (default: length)
@@ -154,6 +155,7 @@ type Options struct {
 	Fuzzy       bool
 	FuzzyAlgo   algo.Algo
 	Extended    bool
+	Phony       bool
 	Case        Case
 	Normalize   bool
 	Nth         []Range
@@ -207,6 +209,7 @@ func defaultOptions() *Options {
 		Fuzzy:       true,
 		FuzzyAlgo:   algo.FuzzyMatchV2,
 		Extended:    true,
+		Phony:       false,
 		Case:        CaseSmart,
 		Normalize:   true,
 		Nth:         make([]Range, 0),
@@ -1014,6 +1017,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		case "--no-expect":
 			opts.Expect = make(map[int]string)
+		case "--no-phony":
+			opts.Phony = false
+		case "--phony":
+			opts.Phony = true
 		case "--tiebreak":
 			opts.Criteria = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":

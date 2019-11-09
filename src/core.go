@@ -227,6 +227,12 @@ func Run(opts *Options, revision string) {
 	for {
 		delay := true
 		ticks++
+		input := func() []rune {
+			if opts.Phony {
+				return []rune{}
+			}
+			return []rune(terminal.Input())
+		}
 		eventBox.Wait(func(events *util.Events) {
 			if _, fin := (*events)[EvtReadFin]; fin {
 				delete(*events, EvtReadNew)
@@ -241,7 +247,7 @@ func Run(opts *Options, revision string) {
 					if opts.Sync {
 						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
 					}
-					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
+					matcher.Reset(snapshot, input(), false, !reading, sort)
 
 				case EvtSearchNew:
 					switch val := value.(type) {
@@ -249,7 +255,7 @@ func Run(opts *Options, revision string) {
 						sort = val
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)
+					matcher.Reset(snapshot, input(), true, !reading, sort)
 					delay = false
 
 				case EvtSearchProgress:
