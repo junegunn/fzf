@@ -135,8 +135,9 @@ func Run(opts *Options, revision string) {
 
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
+	var reader *Reader
 	if !streamingFilter {
-		reader := NewReader(func(data []byte) bool {
+		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, opts.ReadZero)
 		go reader.ReadSource()
@@ -223,6 +224,7 @@ func Run(opts *Options, revision string) {
 	// Event coordination
 	reading := true
 	ticks := 0
+	var nextCommand *string
 	eventBox.Watch(EvtReadNew)
 	for {
 		delay := true
@@ -241,21 +243,41 @@ func Run(opts *Options, revision string) {
 				switch evt {
 
 				case EvtReadNew, EvtReadFin:
-					reading = reading && evt == EvtReadNew
+					clearCache := false
+					if evt == EvtReadFin && nextCommand != nil {
+						chunkList.Clear()
+						clearCache = true
+						go reader.restart(*nextCommand)
+						nextCommand = nil
+					} else {
+						reading = reading && evt == EvtReadNew
+					}
 					snapshot, count := chunkList.Snapshot()
-					terminal.UpdateCount(count, !reading, value.(bool))
+					terminal.UpdateCount(count, !reading, value.(*string))
 					if opts.Sync {
 						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
 					}
-					matcher.Reset(snapshot, input(), false, !reading, sort)
+					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache)
 
 				case EvtSearchNew:
+					var command *string
 					switch val := value.(type) {
-					case bool:
-						sort = val
+					case searchRequest:
+						sort = val.sort
+						command = val.command
+					}
+					if command != nil {
+						if reading {
+							reader.terminate()
+							nextCommand = command
+						} else {
+							reading = true
+							chunkList.Clear()
+							go reader.restart(*command)
+						}
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, input(), true, !reading, sort)
+					matcher.Reset(snapshot, input(), true, !reading, sort, command != nil)
 					delay = false
 
 				case EvtSearchProgress:

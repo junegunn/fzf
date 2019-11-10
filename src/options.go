@@ -631,13 +631,15 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si):(execute(?:-multi|-silent)?):.+|:(execute(?:-multi|-silent)?)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si):(execute(?:-multi|-silent)?|reload):.+|:(execute(?:-multi|-silent)?|reload)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[int][]action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		prefix := ":execute"
-		if src[len(prefix)] == '-' {
+		if strings.HasPrefix(src, ":reload") {
+			prefix = ":reload"
+		} else if src[len(prefix)] == '-' {
 			c := src[len(prefix)+1]
 			if c == 's' || c == 'S' {
 				prefix += "-silent"
@@ -790,6 +792,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				} else {
 					var offset int
 					switch t {
+					case actReload:
+						offset = len("reload")
 					case actExecuteSilent:
 						offset = len("execute-silent")
 					case actExecuteMulti:
@@ -825,6 +829,8 @@ func isExecuteAction(str string) actionType {
 		prefix = matches[0][2]
 	}
 	switch prefix {
+	case "reload":
+		return actReload
 	case "execute":
 		return actExecute
 	case "execute-silent":

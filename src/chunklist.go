@@ -64,6 +64,13 @@ func (cl *ChunkList) Push(data []byte) bool {
 	return ret
 }
 
+// Clear clears the data
+func (cl *ChunkList) Clear() {
+	cl.mutex.Lock()
+	cl.chunks = nil
+	cl.mutex.Unlock()
+}
+
 // Snapshot returns immutable snapshot of the ChunkList
 func (cl *ChunkList) Snapshot() ([]*Chunk, int) {
 	cl.mutex.Lock()

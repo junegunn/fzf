@@ -102,7 +102,7 @@ type Terminal struct {
 	count      int
 	progress   int
 	reading    bool
-	success    bool
+	failed     *string
 	jumping    jumpMode
 	jumpLabels string
 	printer    func(string)
@@ -228,6 +228,7 @@ const (
 	actExecuteMulti // Deprecated
 	actSigStop
 	actTop
+	actReload
 )
 
 type placeholderFlags struct {
@@ -236,6 +237,11 @@ type placeholderFlags struct {
 	number        bool
 	query         bool
 	file          bool
+}
+
+type searchRequest struct {
+	sort    bool
+	command *string
 }
 
 func toActions(types ...actionType) []action {
@@ -408,7 +414,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ansi:       opts.Ansi,
 		tabstop:    opts.Tabstop,
 		reading:    true,
-		success:    true,
+		failed:     nil,
 		jumping:    jumpDisabled,
 		jumpLabels: opts.JumpLabels,
 		printer:    opts.Printer,
@@ -440,11 +446,11 @@ func (t *Terminal) Input() []rune {
 }
 
 // UpdateCount updates the count information
-func (t *Terminal) UpdateCount(cnt int, final bool, success bool) {
+func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 	t.mutex.Lock()
 	t.count = cnt
 	t.reading = !final
-	t.success = success
+	t.failed = failedCommand
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	if final {
@@ -742,7 +748,9 @@ func (t *Terminal) printInfo() {
 		pos = 2
 	}
 
-	output := fmt.Sprintf("%d/%d", t.merger.Length(), t.count)
+	found := t.merger.Length()
+	total := util.Max(found, t.count)
+	output := fmt.Sprintf("%d/%d", found, total)
 	if t.toggleSort {
 		if t.sort {
 			output += " +S"
@@ -760,16 +768,15 @@ func (t *Terminal) printInfo() {
 	if t.progress > 0 && t.progress < 100 {
 		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
-	if !t.success && t.count == 0 {
-		if len(os.Getenv("FZF_DEFAULT_COMMAND")) > 0 {
-			output = "[$FZF_DEFAULT_COMMAND failed]"
-		} else {
-			output = "[default command failed - $FZF_DEFAULT_COMMAND required]"
-		}
+	if t.failed != nil && t.count == 0 {
+		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
-	if pos+len(output) <= t.window.Width() {
-		t.window.CPrint(tui.ColInfo, 0, output)
+	maxWidth := t.window.Width() - pos
+	if len(output) > maxWidth {
+		outputRunes, _ := t.trimRight([]rune(output), maxWidth-2)
+		output = string(outputRunes) + ".."
 	}
+	t.window.CPrint(tui.ColInfo, 0, output)
 }
 
 func (t *Terminal) printHeader() {
@@ -1383,7 +1390,7 @@ func (t *Terminal) hasPreviewWindow() bool {
 
 func (t *Terminal) currentItem() *Item {
 	cnt := t.merger.Length()
-	if cnt > 0 && cnt > t.cy {
+	if t.cy >= 0 && cnt > 0 && cnt > t.cy {
 		return t.merger.Get(t.cy).item
 	}
 	return nil
@@ -1508,11 +1515,10 @@ func (t *Terminal) Loop() {
 				t.mutex.Lock()
 				reading := t.reading
 				t.mutex.Unlock()
-				if !reading {
-					break
-				}
 				time.Sleep(spinnerDuration)
-				t.reqBox.Set(reqInfo, nil)
+				if reading {
+					t.reqBox.Set(reqInfo, nil)
+				}
 			}
 		}()
 	}
@@ -1533,7 +1539,7 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if request[0] != nil {
 					command := replacePlaceholder(t.preview.command,
-						t.ansi, t.delimiter, t.printsep, false, string(t.input), request)
+						t.ansi, t.delimiter, t.printsep, false, string(t.Input()), request)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
@@ -1673,6 +1679,10 @@ func (t *Terminal) Loop() {
 
 	looping := true
 	for looping {
+		var newCommand *string
+		changed := false
+		queryChanged := false
+
 		event := t.tui.GetChar()
 
 		t.mutex.Lock()
@@ -1754,9 +1764,7 @@ func (t *Terminal) Loop() {
 				}
 			case actToggleSort:
 				t.sort = !t.sort
-				t.eventBox.Set(EvtSearchNew, t.sort)
-				t.mutex.Unlock()
-				return false
+				changed = true
 			case actPreviewUp:
 				if t.hasPreviewWindow() {
 					scrollPreview(-1)
@@ -2025,10 +2033,24 @@ func (t *Terminal) Loop() {
 						}
 					}
 				}
+			case actReload:
+				t.failed = nil
+
+				valid, list := t.buildPlusList(a.a, false)
+				// If the command template has {q}, we run the command even when the
+				// query string is empty.
+				if !valid {
+					_, query := hasPreviewFlags(a.a)
+					valid = query
+				}
+				if valid {
+					command := replacePlaceholder(a.a,
+						t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
+					newCommand = &command
+				}
 			}
 			return true
 		}
-		changed := false
 		mapkey := event.Type
 		if t.jumping == jumpDisabled {
 			actions := t.keymap[mapkey]
@@ -2042,8 +2064,9 @@ func (t *Terminal) Loop() {
 				continue
 			}
 			t.truncateQuery()
-			changed = string(previousInput) != string(t.input)
-			if onChanges, prs := t.keymap[tui.Change]; changed && prs {
+			queryChanged = string(previousInput) != string(t.input)
+			changed = changed || queryChanged
+			if onChanges, prs := t.keymap[tui.Change]; queryChanged && prs {
 				if !doActions(onChanges, tui.Change) {
 					continue
 				}
@@ -2061,7 +2084,7 @@ func (t *Terminal) Loop() {
 			req(reqList)
 		}
 
-		if changed {
+		if queryChanged {
 			if t.isPreviewEnabled() {
 				_, q := hasPreviewFlags(t.preview.command)
 				if q {
@@ -2070,14 +2093,14 @@ func (t *Terminal) Loop() {
 			}
 		}
 
-		if changed || t.cx != previousCx {
+		if queryChanged || t.cx != previousCx {
 			req(reqPrompt)
 		}
 
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
-		if changed {
-			t.eventBox.Set(EvtSearchNew, t.sort)
+		if changed || newCommand != nil {
+			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, command: newCommand})
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)
