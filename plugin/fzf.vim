@@ -527,6 +527,10 @@ endif
 function! s:exit_handler(code, command, ...)
   if a:code == 130
     return 0
+  elseif has('nvim') && a:code == 129
+    " When deleting the terminal buffer while fzf is still running,
+    " Nvim sends SIGHUP.
+    return 0
   elseif a:code > 1
     call s:error('Error running ' . a:command)
     if !empty(a:000)
