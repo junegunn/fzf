@@ -10,11 +10,9 @@ import (
 func TestReadFromCommand(t *testing.T) {
 	strs := []string{}
 	eb := util.NewEventBox()
-	reader := Reader{
-		pusher:   func(s []byte) bool { strs = append(strs, string(s)); return true },
-		finChan:  make(chan bool, 1),
-		eventBox: eb,
-		event:    int32(EvtReady)}
+	reader := NewReader(
+		func(s []byte) bool { strs = append(strs, string(s)); return true },
+		eb, false, true)
 
 	reader.startEventPoller()
 

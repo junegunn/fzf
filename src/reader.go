@@ -23,11 +23,12 @@ type Reader struct {
 	exec     *exec.Cmd
 	command  *string
 	killed   bool
+	wait     bool
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false}
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
+	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -39,7 +40,9 @@ func (r *Reader) startEventPoller() {
 				r.eventBox.Set(EvtReadNew, (*string)(nil))
 				pollInterval = readerPollIntervalMin
 			} else if atomic.LoadInt32(ptr) == int32(EvtReadFin) {
-				r.finChan <- true
+				if r.wait {
+					r.finChan <- true
+				}
 				return
 			} else {
 				pollInterval += readerPollIntervalStep
@@ -54,7 +57,9 @@ func (r *Reader) startEventPoller() {
 
 func (r *Reader) fin(success bool) {
 	atomic.StoreInt32(&r.event, int32(EvtReadFin))
-	<-r.finChan
+	if r.wait {
+		<-r.finChan
+	}
 
 	r.mutex.Lock()
 	ret := r.command
