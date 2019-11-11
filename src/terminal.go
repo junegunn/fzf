@@ -1429,7 +1429,7 @@ func (t *Terminal) selectItem(item *Item) bool {
 		return false
 	}
 	if _, found := t.selected[item.Index()]; found {
-		return false
+		return true
 	}
 
 	t.selected[item.Index()] = selectedItem{time.Now(), item}
