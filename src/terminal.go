@@ -2047,6 +2047,7 @@ func (t *Terminal) Loop() {
 					command := replacePlaceholder(a.a,
 						t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
 					newCommand = &command
+					t.selected = make(map[int32]selectedItem)
 				}
 			}
 			return true
