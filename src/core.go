@@ -225,6 +225,12 @@ func Run(opts *Options, revision string) {
 	reading := true
 	ticks := 0
 	var nextCommand *string
+	restart := func(command string) {
+		reading = true
+		chunkList.Clear()
+		header = make([]string, 0, opts.HeaderLines)
+		go reader.restart(command)
+	}
 	eventBox.Watch(EvtReadNew)
 	for {
 		delay := true
@@ -245,9 +251,8 @@ func Run(opts *Options, revision string) {
 				case EvtReadNew, EvtReadFin:
 					clearCache := false
 					if evt == EvtReadFin && nextCommand != nil {
-						chunkList.Clear()
 						clearCache = true
-						go reader.restart(*nextCommand)
+						restart(*nextCommand)
 						nextCommand = nil
 					} else {
 						reading = reading && evt == EvtReadNew
@@ -271,9 +276,7 @@ func Run(opts *Options, revision string) {
 							reader.terminate()
 							nextCommand = command
 						} else {
-							reading = true
-							chunkList.Clear()
-							go reader.restart(*command)
+							restart(*command)
 						}
 					}
 					snapshot, _ := chunkList.Snapshot()

@@ -1623,14 +1623,14 @@ class TestGoFZF < TestBase
   end
 
   def test_reload
-    tmux.send_keys %(seq 1000 | #{FZF} --bind 'change:reload(seq {q}),a:reload(seq 100),b:reload:seq 200'), :Enter
-    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'change:reload(seq {q}),a:reload(seq 100),b:reload:seq 200' --header-lines 2), :Enter
+    tmux.until { |lines| lines.match_count == 998 }
     tmux.send_keys 'a'
-    tmux.until { |lines| lines.item_count == 100 && lines.match_count == 100 }
+    tmux.until { |lines| lines.item_count == 98 && lines.match_count == 98 }
     tmux.send_keys 'b'
-    tmux.until { |lines| lines.item_count == 200 && lines.match_count == 200 }
+    tmux.until { |lines| lines.item_count == 198 && lines.match_count == 198 }
     tmux.send_keys '555'
-    tmux.until { |lines| lines.item_count == 555 && lines.match_count == 1 }
+    tmux.until { |lines| lines.item_count == 553 && lines.match_count == 1 }
   end
 end
 
