@@ -284,6 +284,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{keyfn('z'), 0, nil}
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
+		case tcell.KeyCtrlBackslash:
+			return Event{CtrlBackSlash, 0, nil}
+		case tcell.KeyCtrlRightSq:
+			return Event{CtrlRightBracket, 0, nil}
+		case tcell.KeyCtrlUnderscore:
+			return Event{CtrlSlash, 0, nil}
 		case tcell.KeyBackspace2:
 			if alt {
 				return Event{AltBS, 0, nil}

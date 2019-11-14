@@ -417,6 +417,14 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.BSpace
 		case "ctrl-space":
 			chord = tui.CtrlSpace
+		case "ctrl-^", "ctrl-6":
+			chord = tui.CtrlCaret
+		case "ctrl-/", "ctrl-_":
+			chord = tui.CtrlSlash
+		case "ctrl-\\":
+			chord = tui.CtrlBackSlash
+		case "ctrl-]":
+			chord = tui.CtrlRightBracket
 		case "change":
 			chord = tui.Change
 		case "alt-enter", "alt-return":

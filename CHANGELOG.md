@@ -41,6 +41,7 @@ CHANGELOG
   ```
 - When you transform the input with `--with-nth`, the trailing white spaces
   are removed.
+- `ctrl-\`, `ctrl-]`, `ctrl-^`, and `ctrl-/` can now be used with `--bind`
 - See https://github.com/junegunn/fzf/milestone/15?closed=1 for more details
 
 [argmax]: https://unix.stackexchange.com/questions/120642/what-defines-the-maximum-size-for-a-command-single-argument

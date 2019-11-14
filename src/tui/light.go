@@ -345,6 +345,14 @@ func (r *LightRenderer) GetChar() Event {
 		return Event{BSpace, 0, nil}
 	case 0:
 		return Event{CtrlSpace, 0, nil}
+	case 28:
+		return Event{CtrlBackSlash, 0, nil}
+	case 29:
+		return Event{CtrlRightBracket, 0, nil}
+	case 30:
+		return Event{CtrlCaret, 0, nil}
+	case 31:
+		return Event{CtrlSlash, 0, nil}
 	case ESC:
 		ev := r.escSequence(&sz)
 		// Second chance
