@@ -212,8 +212,21 @@ e.g.
      fzf --margin 1,5%\fR
 .RE
 .TP
-.B "--inline-info"
-Display finder info inline with the query
+.BI "--info=" "STYLE"
+Determines the display style of finder info.
+
+.br
+.BR default "       Display on the next line to the prompt"
+.br
+.BR inline "        Display on the same line"
+.br
+.BR hidden "        Do not display finder info"
+.br
+
+.TP
+.B "--no-info"
+A synonym for \fB--info=hidden\fB
+
 .TP
 .BI "--prompt=" "STR"
 Input prompt (default: '> ')

@@ -39,6 +39,10 @@ CHANGELOG
   # usage: _fzf_setup_completion path|dir COMMANDS...
   _fzf_setup_completion path git kubectl
   ```
+- Info line style can be changed by `--info=STYLE`
+    - `--info=default`
+    - `--info=inline` (same as old `--inline-info`)
+    - `--info=hidden`
 - When you transform the input with `--with-nth`, the trailing white spaces
   are removed.
 - `ctrl-\`, `ctrl-]`, `ctrl-^`, and `ctrl-/` can now be used with `--bind`

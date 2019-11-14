@@ -1516,6 +1516,11 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-1] == prompt }
   end
 
+  def test_info_hidden
+    tmux.send_keys 'seq 10 | fzf --info=hidden', :Enter
+    tmux.until { |lines| lines[-2] == '> 1' }
+  end
+
   def test_change_top
     tmux.send_keys %(seq 1000 | #{FZF} --bind change:top), :Enter
     tmux.until { |lines| lines.match_count == 1000 }

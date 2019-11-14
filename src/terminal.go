@@ -60,7 +60,7 @@ var emptyLine = itemLine{}
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay  time.Duration
-	inlineInfo bool
+	infoStyle  infoStyle
 	prompt     string
 	promptLen  int
 	queryLen   [2]int
@@ -361,7 +361,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			if previewBox != nil && (opts.Preview.position == posUp || opts.Preview.position == posDown) {
 				effectiveMinHeight *= 2
 			}
-			if opts.InlineInfo {
+			if opts.InfoStyle != infoDefault {
 				effectiveMinHeight -= 1
 			}
 			if opts.Bordered {
@@ -380,7 +380,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	t := Terminal{
 		initDelay:  delay,
-		inlineInfo: opts.InlineInfo,
+		infoStyle:  opts.InfoStyle,
 		queryLen:   [2]int{0, 0},
 		layout:     opts.Layout,
 		fullscreen: fullscreen,
@@ -436,6 +436,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		initFunc:   func() { renderer.Init() }}
 	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
 	return &t
+}
+
+func (t *Terminal) noInfoLine() bool {
+	return t.infoStyle != infoDefault
 }
 
 // Input returns current query string
@@ -672,7 +676,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 		y = h - y - 1
 	case layoutReverseList:
 		n := 2 + len(t.header)
-		if t.inlineInfo {
+		if t.noInfoLine() {
 			n--
 		}
 		if y < n {
@@ -725,7 +729,17 @@ func (t *Terminal) printPrompt() {
 
 func (t *Terminal) printInfo() {
 	pos := 0
-	if t.inlineInfo {
+	switch t.infoStyle {
+	case infoDefault:
+		t.move(1, 0, true)
+		if t.reading {
+			duration := int64(spinnerDuration)
+			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
+			t.window.CPrint(tui.ColSpinner, t.strong, _spinner[idx])
+		}
+		t.move(1, 2, false)
+		pos = 2
+	case infoInline:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 		if pos+len(" < ") > t.window.Width() {
 			return
@@ -737,15 +751,8 @@ func (t *Terminal) printInfo() {
 			t.window.CPrint(tui.ColPrompt, t.strong, " < ")
 		}
 		pos += len(" < ")
-	} else {
-		t.move(1, 0, true)
-		if t.reading {
-			duration := int64(spinnerDuration)
-			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-			t.window.CPrint(tui.ColSpinner, t.strong, _spinner[idx])
-		}
-		t.move(1, 2, false)
-		pos = 2
+	case infoHidden:
+		return
 	}
 
 	found := t.merger.Length()
@@ -787,7 +794,7 @@ func (t *Terminal) printHeader() {
 	var state *ansiState
 	for idx, lineStr := range t.header {
 		line := idx + 2
-		if t.inlineInfo {
+		if t.noInfoLine() {
 			line--
 		}
 		if line >= max {
@@ -816,7 +823,7 @@ func (t *Terminal) printList() {
 			i = maxy - 1 - j
 		}
 		line := i + 2 + len(t.header)
-		if t.inlineInfo {
+		if t.noInfoLine() {
 			line--
 		}
 		if i < count {
@@ -1590,9 +1597,6 @@ func (t *Terminal) Loop() {
 	}
 
 	exit := func(getCode func() int) {
-		if !t.cleanExit && t.fullscreen && t.inlineInfo {
-			t.placeCursor()
-		}
 		t.tui.Close()
 		code := getCode()
 		if code <= exitNoMatch && t.history != nil {
@@ -1613,7 +1617,7 @@ func (t *Terminal) Loop() {
 					switch req {
 					case reqPrompt:
 						t.printPrompt()
-						if t.inlineInfo {
+						if t.noInfoLine() {
 							t.printInfo()
 						}
 					case reqInfo:
@@ -1995,7 +1999,7 @@ func (t *Terminal) Loop() {
 					my -= t.window.Top()
 					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
 					min := 2 + len(t.header)
-					if t.inlineInfo {
+					if t.noInfoLine() {
 						min--
 					}
 					h := t.window.Height()
@@ -2151,7 +2155,7 @@ func (t *Terminal) vset(o int) bool {
 
 func (t *Terminal) maxItems() int {
 	max := t.window.Height() - 2 - len(t.header)
-	if t.inlineInfo {
+	if t.noInfoLine() {
 		max++
 	}
 	return util.Max(max, 0)

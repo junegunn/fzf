@@ -57,7 +57,7 @@ const usage = `usage: fzf [options]
     --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
     --border              Draw border above and below the finder
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
-    --inline-info         Display finder info inline with the query
+    --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
@@ -142,6 +142,14 @@ const (
 	layoutReverseList
 )
 
+type infoStyle int
+
+const (
+	infoDefault infoStyle = iota
+	infoInline
+	infoHidden
+)
+
 type previewOpts struct {
 	command  string
 	position windowPosition
@@ -177,7 +185,7 @@ type Options struct {
 	Hscroll     bool
 	HscrollOff  int
 	FileWord    bool
-	InlineInfo  bool
+	InfoStyle   infoStyle
 	JumpLabels  string
 	Prompt      string
 	Query       string
@@ -230,7 +238,7 @@ func defaultOptions() *Options {
 		Hscroll:     true,
 		HscrollOff:  10,
 		FileWord:    false,
-		InlineInfo:  false,
+		InfoStyle:   infoDefault,
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
 		Query:       "",
@@ -904,6 +912,20 @@ func parseLayout(str string) layoutType {
 	return layoutDefault
 }
 
+func parseInfoStyle(str string) infoStyle {
+	switch str {
+	case "default":
+		return infoDefault
+	case "inline":
+		return infoInline
+	case "hidden":
+		return infoHidden
+	default:
+		errorExit("invalid info style (expected: default / inline / hidden)")
+	}
+	return infoDefault
+}
+
 func parsePreviewWindow(opts *previewOpts, input string) {
 	// Default
 	opts.position = posRight
@@ -1109,10 +1131,15 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.FileWord = true
 		case "--no-filepath-word":
 			opts.FileWord = false
+		case "--info":
+			opts.InfoStyle = parseInfoStyle(
+				nextString(allArgs, &i, "info style required"))
+		case "--no-info":
+			opts.InfoStyle = infoHidden
 		case "--inline-info":
-			opts.InlineInfo = true
+			opts.InfoStyle = infoInline
 		case "--no-inline-info":
-			opts.InlineInfo = false
+			opts.InfoStyle = infoDefault
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true
@@ -1220,6 +1247,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.MinHeight = atoi(value)
 			} else if match, value := optString(arg, "--layout="); match {
 				opts.Layout = parseLayout(value)
+			} else if match, value := optString(arg, "--info="); match {
+				opts.InfoStyle = parseInfoStyle(value)
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {
