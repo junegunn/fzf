@@ -221,6 +221,8 @@ type BorderStyle struct {
 	bottomRight rune
 }
 
+type BorderCharacter int
+
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	if unicode {
 		return BorderStyle{
@@ -242,6 +244,17 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 		bottomLeft:  '+',
 		bottomRight: '+',
 	}
+}
+
+func MakeTransparentBorder() BorderStyle {
+	return BorderStyle{
+		shape:       BorderAround,
+		horizontal:  ' ',
+		vertical:    ' ',
+		topLeft:     ' ',
+		topRight:    ' ',
+		bottomLeft:  ' ',
+		bottomRight: ' '}
 }
 
 type Renderer interface {

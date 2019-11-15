@@ -624,9 +624,9 @@ func (t *Terminal) resizeWindows() {
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if previewVisible {
 		createPreviewWindow := func(y int, x int, w int, h int) {
-			previewBorder := noBorder
-			if t.preview.border {
-				previewBorder = tui.MakeBorderStyle(tui.BorderAround, t.unicode)
+			previewBorder := tui.MakeBorderStyle(tui.BorderAround, t.unicode)
+			if !t.preview.border {
+				previewBorder = tui.MakeTransparentBorder()
 			}
 			t.pborder = t.tui.NewWindow(y, x, w, h, previewBorder)
 			pwidth := w - 4
