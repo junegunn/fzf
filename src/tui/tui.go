@@ -40,6 +40,12 @@ const (
 	ESC
 	CtrlSpace
 
+	// https://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control-slash-to-the-terminal
+	CtrlBackSlash
+	CtrlRightBracket
+	CtrlCaret
+	CtrlSlash
+
 	Invalid
 	Resize
 	Mouse
@@ -215,6 +221,8 @@ type BorderStyle struct {
 	bottomRight rune
 }
 
+type BorderCharacter int
+
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	if unicode {
 		return BorderStyle{
@@ -236,6 +244,17 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 		bottomLeft:  '+',
 		bottomRight: '+',
 	}
+}
+
+func MakeTransparentBorder() BorderStyle {
+	return BorderStyle{
+		shape:       BorderAround,
+		horizontal:  ' ',
+		vertical:    ' ',
+		topLeft:     ' ',
+		topRight:    ' ',
+		bottomLeft:  ' ',
+		bottomRight: ' '}
 }
 
 type Renderer interface {

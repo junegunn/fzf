@@ -1,7 +1,7 @@
 .ig
 The MIT License (MIT)
 
-Copyright (c) 2017 Junegunn Choi
+Copyright (c) 2019 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Mar 2019" "fzf 0.18.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2019" "fzf 0.19.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -70,6 +70,10 @@ Transform the presentation of each line using field index expressions
 .TP
 .BI "-d, --delimiter=" "STR"
 Field delimiter regex for \fB--nth\fR and \fB--with-nth\fR (default: AWK-style)
+.TP
+.BI "--phony"
+Do not perform search. With this option, fzf becomes a simple selector
+interface rather than a "fuzzy finder".
 .SS Search result
 .TP
 .B "+s, --no-sort"
@@ -79,7 +83,8 @@ Do not sort the result
 Reverse the order of the input
 
 .RS
-e.g. \fBhistory | fzf --tac --no-sort\fR
+e.g.
+     \fBhistory | fzf --tac --no-sort\fR
 .RE
 .TP
 .BI "--tiebreak=" "CRI[,..]"
@@ -109,7 +114,8 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 .SS Interface
 .TP
 .B "-m, --multi"
-Enable multi-select with tab/shift-tab
+Enable multi-select with tab/shift-tab. It optionally takes an integer argument
+which denotes the maximum number of items that can be selected.
 .TP
 .B "+m, --no-multi"
 Disable multi-select
@@ -118,8 +124,8 @@ Disable multi-select
 Disable mouse
 .TP
 .BI "--bind=" "KEYBINDS"
-Comma-separated list of custom key bindings. See \fBKEY BINDINGS\fR for the
-details.
+Comma-separated list of custom key bindings. See \fBKEY/EVENT BINDINGS\fR for
+the details.
 .TP
 .B "--cycle"
 Enable cyclic scroll
@@ -201,12 +207,26 @@ terminal size with \fB%\fR suffix.
 .br
 
 .br
-e.g. \fBfzf --margin 10%\fR
-     \fBfzf --margin 1,5%\fR
+e.g.
+     \fBfzf --margin 10%
+     fzf --margin 1,5%\fR
 .RE
 .TP
-.B "--inline-info"
-Display finder info inline with the query
+.BI "--info=" "STYLE"
+Determines the display style of finder info.
+
+.br
+.BR default "       Display on the next line to the prompt"
+.br
+.BR inline "        Display on the same line"
+.br
+.BR hidden "        Do not display finder info"
+.br
+
+.TP
+.B "--no-info"
+A synonym for \fB--info=hidden\fB
+
 .TP
 .BI "--prompt=" "STR"
 Input prompt (default: '> ')
@@ -236,11 +256,6 @@ foreground/background color. You can also specify 24-bit color in \fB#rrggbb\fR
 format.
 
 .RS
-e.g. \fBfzf --color=bg+:24\fR
-     \fBfzf --color=light,fg:232,bg:255,bg+:116,info:27\fR
-.RE
-
-.RS
 .B BASE SCHEME:
     (default: dark on 256-color terminal, otherwise 16)
 
@@ -264,6 +279,19 @@ e.g. \fBfzf --color=bg+:24\fR
     \fBmarker  \fRMulti-select marker
     \fBspinner \fRStreaming input indicator
     \fBheader  \fRHeader
+
+.B EXAMPLES:
+
+     \fB# Seoul256 theme with 8-bit colors
+     # (https://github.com/junegunn/seoul256.vim) 
+     fzf --color='bg:237,bg+:236,info:143,border:240,spinner:108' \\
+         --color='hl:65,fg:252,header:65,fg+:252' \\
+         --color='pointer:161,marker:168,prompt:110,hl+:108'
+
+     # Seoul256 theme with 24-bit colors
+     fzf --color='bg:#4B4B4B,bg+:#3F3F3F,info:#BDBB72,border:#6B6B6B,spinner:#98BC99' \\
+         --color='hl:#719872,fg:#D9D9D9,header:#719872,fg+:#D9D9D9' \\
+         --color='pointer:#E12672,marker:#E17899,prompt:#98BEDE,hl+:#98BC99'\fR
 .RE
 .TP
 .B "--no-bold"
@@ -291,8 +319,9 @@ string, specify field index expressions between the braces (See \fBFIELD INDEX
 EXPRESSION\fR for the details).
 
 .RS
-e.g. \fBfzf --preview='head -$LINES {}'\fR
-     \fBls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1\fR
+e.g.
+     \fBfzf --preview='head -$LINES {}'
+     ls -l | fzf --preview="echo user={3} when={-4..-2}; cat {-1}" --header-lines=1\fR
 
 fzf exports \fB$FZF_PREVIEW_LINES\fR and \fB$FZF_PREVIEW_COLUMNS\fR so that
 they represent the exact size of the preview window. (It also overrides
@@ -304,8 +333,9 @@ A placeholder expression starting with \fB+\fR flag will be replaced to the
 space-separated list of the selected lines (or the current line if no selection
 was made) individually quoted.
 
-e.g. \fBfzf --multi --preview='head -10 {+}'\fR
-     \fBgit log --oneline | fzf --multi --preview 'git show {+1}'\fR
+e.g.
+     \fBfzf --multi --preview='head -10 {+}'
+     git log --oneline | fzf --multi --preview 'git show {+1}'\fR
 
 When using a field index expression, leading and trailing whitespace is stripped
 from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
@@ -314,14 +344,25 @@ Also, \fB{q}\fR is replaced to the current query string, and \fB{n}\fR is
 replaced to zero-based ordinal index of the line. Use \fB{+n}\fR if you want
 all index numbers when multiple lines are selected.
 
+A placeholder expression with \fBf\fR flag is replaced to the path of
+a temporary file that holds the evaluated list. This is useful when you
+multi-select a large number of items and the length of the evaluated string may
+exceed \fBARG_MAX\fR.
+
+e.g.
+     \fB# Press CTRL-A to select 100K items and see the sum of all the numbers.
+     # This won't work properly without 'f' flag due to ARG_MAX limit.
+     seq 100000 | fzf --multi --bind ctrl-a:select-all \\
+                      --preview "awk '{sum+=\$1} END {print sum}' {+f}"\fR
+
 Note that you can escape a placeholder pattern by prepending a backslash.
 
 Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:wrap][:hidden]"
-Determine the layout of the preview window. If the argument ends with
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:noborder][:wrap][:hidden]"
+Determines the layout of the preview window. If the argument contains
 \fB:hidden\fR, the preview window will be hidden by default until
 \fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
 Line wrap can be enabled with \fB:wrap\fR flag.
@@ -338,8 +379,9 @@ execute the command in the background.
 .RE
 
 .RS
-e.g. \fBfzf --preview="head {}" --preview-window=up:30%\fR
-     \fBfzf --preview="file {}" --preview-window=down:1\fR
+e.g.
+     \fBfzf --preview="head {}" --preview-window=up:30%
+     fzf --preview="file {}" --preview-window=down:1\fR
 .RE
 .SS Scripting
 .TP
@@ -369,7 +411,8 @@ times, fzf will expect the union of the keys. \fB--no-expect\fR will clear the
 list.
 
 .RS
-e.g. \fBfzf --expect=ctrl-v,ctrl-t,alt-s --expect=f1,f2,~,@\fR
+e.g.
+     \fBfzf --expect=ctrl-v,ctrl-t,alt-s --expect=f1,f2,~,@\fR
 .RE
 .TP
 .B "--read0"
@@ -475,56 +518,110 @@ query matches entries that start with \fBcore\fR and end with either \fBgo\fR,
 
 e.g. \fB^core go$ | rb$ | py$\fR
 
-.SH KEY BINDINGS
-You can customize key bindings of fzf with \fB--bind\fR option which takes
-a comma-separated list of key binding expressions. Each key binding expression
-follows the following format: \fBKEY:ACTION\fR
+.SH KEY/EVENT BINDINGS
+\fB--bind\fR option allows you to bind \fBa key\fR or \fBan event\fR to one or
+more \fBactions\fR. You can use it to customize key bindings or implement
+dynamic behaviors.
 
-e.g. \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
+\fB--bind\fR takes a comma-separated list of binding expressions. Each binding
+expression is \fBKEY:ACTION\fR or \fBEVENT:ACTION\fR.
 
-.B AVAILABLE KEYS:    (SYNONYMS)
-    \fIctrl-[a-z]\fR
-    \fIctrl-space\fR
-    \fIctrl-alt-[a-z]\fR
-    \fIalt-[a-z]\fR
-    \fIalt-[0-9]\fR
-    \fIf[1-12]\fR
-    \fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
-    \fIspace\fR
-    \fIbspace\fR      (\fIbs\fR)
-    \fIalt-up\fR
-    \fIalt-down\fR
-    \fIalt-left\fR
-    \fIalt-right\fR
-    \fIalt-enter\fR
-    \fIalt-space\fR
-    \fIalt-bspace\fR  (\fIalt-bs\fR)
-    \fIalt-/\fR
-    \fItab\fR
-    \fIbtab\fR        (\fIshift-tab\fR)
-    \fIesc\fR
-    \fIdel\fR
-    \fIup\fR
-    \fIdown\fR
-    \fIleft\fR
-    \fIright\fR
-    \fIhome\fR
-    \fIend\fR
-    \fIpgup\fR        (\fIpage-up\fR)
-    \fIpgdn\fR        (\fIpage-down\fR)
-    \fIshift-up\fR
-    \fIshift-down\fR
-    \fIshift-left\fR
-    \fIshift-right\fR
-    \fIleft-click\fR
-    \fIright-click\fR
-    \fIdouble-click\fR
-    or any single character
+e.g.
+     \fBfzf --bind=ctrl-j:accept,ctrl-k:kill-line\fR
 
-Additionally, a special event named \fIchange\fR is available which is
-triggered whenever the query string is changed.
+.SS AVAILABLE KEYS:    (SYNONYMS)
+\fIctrl-[a-z]\fR
+.br
+\fIctrl-space\fR
+.br
+\fIctrl-\\\fR
+.br
+\fIctrl-]\fR
+.br
+\fIctrl-^\fR      (\fIctrl-6\fR)
+.br
+\fIctrl-/\fR      (\fIctrl-_\fR)
+.br
+\fIctrl-alt-[a-z]\fR
+.br
+\fIalt-[a-z]\fR
+.br
+\fIalt-[0-9]\fR
+.br
+\fIf[1-12]\fR
+.br
+\fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
+.br
+\fIspace\fR
+.br
+\fIbspace\fR      (\fIbs\fR)
+.br
+\fIalt-up\fR
+.br
+\fIalt-down\fR
+.br
+\fIalt-left\fR
+.br
+\fIalt-right\fR
+.br
+\fIalt-enter\fR
+.br
+\fIalt-space\fR
+.br
+\fIalt-bspace\fR  (\fIalt-bs\fR)
+.br
+\fIalt-/\fR
+.br
+\fItab\fR
+.br
+\fIbtab\fR        (\fIshift-tab\fR)
+.br
+\fIesc\fR
+.br
+\fIdel\fR
+.br
+\fIup\fR
+.br
+\fIdown\fR
+.br
+\fIleft\fR
+.br
+\fIright\fR
+.br
+\fIhome\fR
+.br
+\fIend\fR
+.br
+\fIpgup\fR        (\fIpage-up\fR)
+.br
+\fIpgdn\fR        (\fIpage-down\fR)
+.br
+\fIshift-up\fR
+.br
+\fIshift-down\fR
+.br
+\fIshift-left\fR
+.br
+\fIshift-right\fR
+.br
+\fIleft-click\fR
+.br
+\fIright-click\fR
+.br
+\fIdouble-click\fR
+.br
+or any single character
 
-    e.g. \fBfzf --bind change:top\fR
+.SS AVAILABLE EVENTS:
+\fIchange\fR (triggered whenever the query string is changed)
+.br
+
+    e.g.
+         \fB# Moves cursor to the top (or bottom depending on --layout) whenever the query is changed
+         fzf --bind change:top\fR
+
+.SS AVAILABLE ACTIONS:
+A key or an event can be bound to one or more of the following actions.
 
   \fBACTION:               DEFAULT BINDINGS (NOTES):
     \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
@@ -563,6 +660,7 @@ triggered whenever the query string is changed.
     \fBpreview-page-up\fR
     \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
     \fBprint-query\fR           (print query and exit)
+    \fBreload(...)\fR           (see below for the details)
     \fBreplace-query\fR         (replace query string with the current selection)
     \fBselect-all\fR
     \fBtoggle\fR                (\fIright-click\fR)
@@ -580,9 +678,14 @@ triggered whenever the query string is changed.
     \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
     \fByank\fR                  \fIctrl-y\fR
 
+.SS ACTION COMPOSITION
+
 Multiple actions can be chained using \fB+\fR separator.
 
-    \fBfzf --bind 'ctrl-a:select-all+accept'\fR
+e.g.
+     \fBfzf --bind 'ctrl-a:select-all+accept'\fR
+
+.SS COMMAND EXECUTION
 
 With \fBexecute(...)\fR action, you can execute arbitrary commands without
 leaving fzf. For example, you can turn fzf into a simple file browser by
@@ -611,9 +714,9 @@ parse errors.
     \fBexecute|...|\fR
     \fBexecute:...\fR
 .RS
-This is the special form that frees you from parse errors as it does not expect
-the closing character. The catch is that it should be the last one in the
-comma-separated list of key-action pairs.
+The last one is the special form that frees you from parse errors as it does
+not expect the closing character. The catch is that it should be the last one
+in the comma-separated list of key-action pairs.
 .RE
 
 fzf switches to the alternate screen when executing a command. However, if the
@@ -622,6 +725,26 @@ output, you might want to use \fBexecute-silent\fR instead, which silently
 executes the command without the switching. Note that fzf will not be
 responsive until the command is complete. For asynchronous execution, start
 your command as a background process (i.e. appending \fB&\fR).
+
+.SS RELOAD INPUT
+
+\fBreload(...)\fR action is used to dynamically update the input list
+without restarting fzf. It takes the same command template with placeholder
+expressions as \fBexecute(...)\fR.
+
+See \fIhttps://github.com/junegunn/fzf/issues/1750\fR for more info.
+
+e.g.
+     \fB# Update the list of processes by pressing CTRL-R
+     ps -ef | fzf --bind 'ctrl-r:reload(ps -ef)' --header 'Press CTRL-R to reload' \\
+                  --header-lines=1 --layout=reverse
+
+     # Integration with ripgrep
+     RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+     INITIAL_QUERY="foobar"
+     FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \\
+       fzf --bind "change:reload:$RG_PREFIX {q} || true" \\
+           --ansi --phony --query "$INITIAL_QUERY"\fR
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)

@@ -277,7 +277,7 @@ class TestGoFZF < TestBase
 
   def test_fzf_default_command_failure
     tmux.send_keys fzf.sub('FZF_DEFAULT_COMMAND=', 'FZF_DEFAULT_COMMAND=false'), :Enter
-    tmux.until { |lines| lines[-2].include?('FZF_DEFAULT_COMMAND failed') }
+    tmux.until { |lines| lines[-2].include?('Command failed: false') }
     tmux.send_keys :Enter
   end
 
@@ -1516,6 +1516,11 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-1] == prompt }
   end
 
+  def test_info_hidden
+    tmux.send_keys 'seq 10 | fzf --info=hidden', :Enter
+    tmux.until { |lines| lines[-2] == '> 1' }
+  end
+
   def test_change_top
     tmux.send_keys %(seq 1000 | #{FZF} --bind change:top), :Enter
     tmux.until { |lines| lines.match_count == 1000 }
@@ -1611,6 +1616,29 @@ class TestGoFZF < TestBase
     writelines tempname, ["\x1b[31m+\x1b[m\t\x1b[32mgreen"]
     tmux.send_keys "#{FZF} --preview 'cat #{tempname}'", :Enter
     tmux.until { |lines| lines[1].include?('+       green') }
+  end
+
+  def test_phony
+    tmux.send_keys %(seq 1000 | #{FZF} --query 333 --phony --preview 'echo {} {q}'), :Enter
+    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.until { |lines| lines[1].include?('1 333') }
+    tmux.send_keys 'foo'
+    tmux.until { |lines| lines.match_count == 1000 }
+    tmux.until { |lines| lines[1].include?('1 333foo') }
+  end
+
+  def test_reload
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'change:reload(seq {q}),a:reload(seq 100),b:reload:seq 200' --header-lines 2 --multi 2), :Enter
+    tmux.until { |lines| lines.match_count == 998 }
+    tmux.send_keys 'a'
+    tmux.until { |lines| lines.item_count == 98 && lines.match_count == 98 }
+    tmux.send_keys 'b'
+    tmux.until { |lines| lines.item_count == 198 && lines.match_count == 198 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-2].include?('(1/2)') }
+    tmux.send_keys '555'
+    tmux.until { |lines| lines.item_count == 553 && lines.match_count == 1 }
+    tmux.until { |lines| !lines[-2].include?('(1/2)') }
   end
 end
 

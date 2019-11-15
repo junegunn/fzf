@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"os/exec"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -16,11 +18,17 @@ type Reader struct {
 	eventBox *util.EventBox
 	delimNil bool
 	event    int32
+	finChan  chan bool
+	mutex    sync.Mutex
+	exec     *exec.Cmd
+	command  *string
+	killed   bool
+	wait     bool
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady)}
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
+	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -29,9 +37,12 @@ func (r *Reader) startEventPoller() {
 		pollInterval := readerPollIntervalMin
 		for {
 			if atomic.CompareAndSwapInt32(ptr, int32(EvtReadNew), int32(EvtReady)) {
-				r.eventBox.Set(EvtReadNew, true)
+				r.eventBox.Set(EvtReadNew, (*string)(nil))
 				pollInterval = readerPollIntervalMin
 			} else if atomic.LoadInt32(ptr) == int32(EvtReadFin) {
+				if r.wait {
+					r.finChan <- true
+				}
 				return
 			} else {
 				pollInterval += readerPollIntervalStep
@@ -46,7 +57,37 @@ func (r *Reader) startEventPoller() {
 
 func (r *Reader) fin(success bool) {
 	atomic.StoreInt32(&r.event, int32(EvtReadFin))
-	r.eventBox.Set(EvtReadFin, success)
+	if r.wait {
+		<-r.finChan
+	}
+
+	r.mutex.Lock()
+	ret := r.command
+	if success || r.killed {
+		ret = nil
+	}
+	r.mutex.Unlock()
+
+	r.eventBox.Set(EvtReadFin, ret)
+}
+
+func (r *Reader) terminate() {
+	r.mutex.Lock()
+	defer func() { r.mutex.Unlock() }()
+
+	r.killed = true
+	if r.exec != nil && r.exec.Process != nil {
+		util.KillCommand(r.exec)
+	} else {
+		os.Stdin.Close()
+	}
+}
+
+func (r *Reader) restart(command string) {
+	r.event = int32(EvtReady)
+	r.startEventPoller()
+	success := r.readFromCommand(nil, command)
+	r.fin(success)
 }
 
 // ReadSource reads data from the default command or from standard input
@@ -54,12 +95,13 @@ func (r *Reader) ReadSource() {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
+		// The default command for *nix requires bash
+		shell := "bash"
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			// The default command for *nix requires bash
-			success = r.readFromCommand("bash", defaultCommand)
+			success = r.readFromCommand(&shell, defaultCommand)
 		} else {
-			success = r.readFromCommand("sh", cmd)
+			success = r.readFromCommand(nil, cmd)
 		}
 	} else {
 		success = r.readFromStdin()
@@ -102,16 +144,25 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
-func (r *Reader) readFromCommand(shell string, cmd string) bool {
-	listCommand := util.ExecCommandWith(shell, cmd, false)
-	out, err := listCommand.StdoutPipe()
+func (r *Reader) readFromCommand(shell *string, command string) bool {
+	r.mutex.Lock()
+	r.killed = false
+	r.command = &command
+	if shell != nil {
+		r.exec = util.ExecCommandWith(*shell, command, true)
+	} else {
+		r.exec = util.ExecCommand(command, true)
+	}
+	out, err := r.exec.StdoutPipe()
 	if err != nil {
+		r.mutex.Unlock()
 		return false
 	}
-	err = listCommand.Start()
+	err = r.exec.Start()
+	r.mutex.Unlock()
 	if err != nil {
 		return false
 	}
 	r.feed(out)
-	return listCommand.Wait() == nil
+	return r.exec.Wait() == nil
 }
