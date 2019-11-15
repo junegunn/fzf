@@ -624,7 +624,11 @@ func (t *Terminal) resizeWindows() {
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if previewVisible {
 		createPreviewWindow := func(y int, x int, w int, h int) {
-			t.pborder = t.tui.NewWindow(y, x, w, h, tui.MakeBorderStyle(tui.BorderAround, t.unicode))
+			previewBorder := noBorder
+			if t.preview.border {
+				previewBorder = tui.MakeBorderStyle(tui.BorderAround, t.unicode)
+			}
+			t.pborder = t.tui.NewWindow(y, x, w, h, previewBorder)
 			pwidth := w - 4
 			// ncurses auto-wraps the line when the cursor reaches the right-end of
 			// the window. To prevent unintended line-wraps, we use the width one

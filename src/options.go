@@ -156,6 +156,7 @@ type previewOpts struct {
 	size     sizeSpec
 	hidden   bool
 	wrap     bool
+	border   bool
 }
 
 // Options stores the values of command-line options
@@ -248,7 +249,7 @@ func defaultOptions() *Options {
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false, true},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -937,6 +938,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	for _, token := range tokens {
 		switch token {
+		case "":
 		case "hidden":
 			opts.hidden = true
 		case "wrap":
@@ -949,6 +951,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.position = posLeft
 		case "right":
 			opts.position = posRight
+		case "border":
+			opts.border = true
+		case "noborder":
+			opts.border = false
 		default:
 			if sizeRegex.MatchString(token) {
 				opts.size = parseSize(token, 99, "window size")

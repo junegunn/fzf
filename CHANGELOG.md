@@ -43,6 +43,8 @@ CHANGELOG
     - `--info=default`
     - `--info=inline` (same as old `--inline-info`)
     - `--info=hidden`
+- Preview window border can be disabled by adding `noborder` to
+  `--preview-window`.
 - When you transform the input with `--with-nth`, the trailing white spaces
   are removed.
 - `ctrl-\`, `ctrl-]`, `ctrl-^`, and `ctrl-/` can now be used with `--bind`
