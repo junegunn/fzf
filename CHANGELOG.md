@@ -4,6 +4,8 @@ CHANGELOG
 0.19.0
 ------
 
+- Added `--phony` option which completely disables search functionality.
+  Useful when you want to use fzf only as a selector interface. See below.
 - Added "reload" action for dynamically updating the input list without
   restarting fzf. See https://github.com/junegunn/fzf/issues/1750 to learn
   more about it.
@@ -11,7 +13,7 @@ CHANGELOG
   # Using fzf as the selector interface for ripgrep
   RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
   INITIAL_QUERY="foo"
-  FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
+  FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY' || true" \
     fzf --bind "change:reload:$RG_PREFIX {q} || true" \
         --ansi --phony --query "$INITIAL_QUERY"
   ```
