@@ -196,6 +196,8 @@ case "$archi" in
   MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+  Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+  Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
 
