@@ -809,7 +809,11 @@ func parseKeymap(keymap map[int][]action, str string) {
 			default:
 				t := isExecuteAction(specLower)
 				if t == actIgnore {
-					errorExit("unknown action: " + spec)
+					if specIndex == 0 && specLower == "" {
+						actions = append(keymap[key], actions...)
+					} else {
+						errorExit("unknown action: " + spec)
+					}
 				} else {
 					var offset int
 					switch t {
