@@ -1,6 +1,26 @@
 CHANGELOG
 =========
 
+0.19.1 (WIP)
+------
+- It is now possible to split a composite bind action over multiple `--bind`
+  expressions by prefixing the later ones with `+`.
+  ```sh
+  fzf --bind 'ctrl-a:up+up'
+
+  # Can be now written as
+  fzf --bind 'ctrl-a:up' --bind 'ctrl-a:+up'
+
+  # This is useful when you need to write special execute/reload form (i.e. `execute:...`)
+  # to avoid parse errors and add more actions to the same key
+  fzf --multi --bind 'ctrl-l:select-all+execute:less {+f}' --bind 'ctrl-l:+deselect-all'
+  ```
+- Fixed parse error of `--bind` expression where concatenated execute/reload
+  action contains `+` character.
+  ```sh
+  fzf --multi --bind 'ctrl-l:select-all+execute(less {+f})+deselect-all'
+  ```
+
 0.19.0
 ------
 
