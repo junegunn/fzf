@@ -648,14 +648,18 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si):(execute(?:-multi|-silent)?|reload):.+|:(execute(?:-multi|-silent)?|reload)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload):.+|[:+](execute(?:-multi|-silent)?|reload)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[int][]action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
-		prefix := ":execute"
-		if strings.HasPrefix(src, ":reload") {
-			prefix = ":reload"
+		symbol := ":"
+		if strings.HasPrefix(src, "+") {
+			symbol = "+"
+		}
+		prefix := symbol + "execute"
+		if strings.HasPrefix(src[1:], "reload") {
+			prefix = symbol + "reload"
 		} else if src[len(prefix)] == '-' {
 			c := src[len(prefix)+1]
 			if c == 's' || c == 'S' {
