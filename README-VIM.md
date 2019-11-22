@@ -1,15 +1,32 @@
 FZF Vim integration
 ===================
 
-This repository only enables basic integration with Vim. If you're looking for
-more, check out [fzf.vim](https://github.com/junegunn/fzf.vim) project.
+Summary
+-------
 
-(Note: To use fzf in GVim, an external terminal emulator is required.)
+The Vim plugin of fzf provides two core functions, and `:FZF` command which is
+the basic file selector command built on top of them.
+
+1. **`fzf#run([spec dict])`**
+    - Starts fzf inside Vim with the given spec
+    - `:call fzf#run({'source': 'ls'})`
+2. **`fzf#wrap([spec dict]) -> (dict)`**
+    - Takes a spec for `fzf#run` and returns an extended version of it with
+      additional options for addressing global preferences (`g:fzf_xxx`)
+        - `:echo fzf#wrap({'source': 'ls'})`
+    - We usually *wrap* a spec with `fzf#wrap` before passing it to `fzf#run`
+        - `:call fzf#run(fzf#wrap({'source': 'ls'}))`
+3. **`:FZF [fzf_options string] [path string]`**
+    - Basic fuzzy file selector
+    - A reference implementation for those who don't want to write VimScript
+      to implement custom commands
+    - If you're looking for more such commands, check out [fzf.vim](https://github.com/junegunn/fzf.vim) project.
+
+The most important of all is `fzf#run`, but it would be easier to understand
+the whole if we start off with `:FZF` command.
 
 `:FZF[!]`
 ---------
-
-If you have set up fzf for Vim, `:FZF` command will be added.
 
 ```vim
 " Look for files under current directory
@@ -18,8 +35,8 @@ If you have set up fzf for Vim, `:FZF` command will be added.
 " Look for files under your home directory
 :FZF ~
 
-" With options
-:FZF --no-sort --reverse --inline-info /tmp
+" With fzf command-line options
+:FZF --reverse --info=inline /tmp
 
 " Bang version starts fzf in fullscreen mode
 :FZF!
@@ -75,6 +92,7 @@ let g:fzf_layout = { 'window': '-tabnew' }
 let g:fzf_layout = { 'window': '10new' }
 
 " Customize fzf colors to match your color scheme
+" - fzf#wrap translates this to a set of `--color` options
 let g:fzf_colors =
 \ { 'fg':      ['fg', 'Normal'],
   \ 'bg':      ['bg', 'Normal'],
@@ -90,69 +108,62 @@ let g:fzf_colors =
   \ 'spinner': ['fg', 'Label'],
   \ 'header':  ['fg', 'Comment'] }
 
-" Enable per-command history.
-" CTRL-N and CTRL-P will be automatically bound to next-history and
-" previous-history instead of down and up. If you don't like the change,
-" explicitly bind the keys to down and up in your $FZF_DEFAULT_OPTS.
+" Enable per-command history
+" - History files will be stored in the specified directory
+" - When set, CTRL-N and CTRL-P will be bound to 'next-history' and
+"   'previous-history' instead of 'down' and 'up'.
 let g:fzf_history_dir = '~/.local/share/fzf-history'
 ```
 
 `fzf#run`
 ---------
 
-For more advanced uses, you can use `fzf#run([options])` function.
-
 `fzf#run()` function is the core of Vim integration. It takes a single
-dictionary argument. At the very least, specify `sink` option to tell what it
-should do with the selected entry.
+dictionary argument, *a spec*, and starts fzf process accordingly. At the very
+least, specify `sink` option to tell what it should do with the selected
+entry.
 
 ```vim
 call fzf#run({'sink': 'e'})
 ```
 
-Without `source`, fzf will use find command (or `$FZF_DEFAULT_COMMAND` if
-defined) to list the files under the current directory. When you select one,
-it will open it with `:e` command. If you want to open it in a new tab, you
-can pass `:tabedit` command instead as the sink.
+We haven't specified the `source`, so this is equivalent to starting fzf on
+command line without standard input pipe; fzf will use find command (or
+`$FZF_DEFAULT_COMMAND` if defined) to list the files under the current
+directory. When you select one, it will open it with the sink, `:e` command.
+If you want to open it in a new tab, you can pass `:tabedit` command instead
+as the sink.
 
 ```vim
 call fzf#run({'sink': 'tabedit'})
 ```
 
-fzf allows you to select multiple entries with `--multi` (or `-m`) option, and
-you can change its bottom-up layout with `--reverse` option. Such options can
-be specified as `options`.
-
-```vim
-call fzf#run({'sink': 'tabedit', 'options': '--multi --reverse'})
-```
-
 Instead of using the default find command, you can use any shell command as
-the source. This will list the files managed by git.
+the source. The following example will list the files managed by git. It's
+equivalent to running `git ls-files | fzf` on shell.
 
 ```vim
 call fzf#run({'source': 'git ls-files', 'sink': 'e'})
 ```
 
-Pass a layout option if you don't want fzf window to take up the entire screen.
+fzf options can be specified as `options` entry in spec dictionary.
+
+```vim
+call fzf#run({'sink': 'tabedit', 'options': '--multi --reverse'})
+```
+
+You can also pass a layout option if you don't want fzf window to take up the
+entire screen.
 
 ```vim
 " up / down / left / right / window are allowed
-call fzf#run({'source': 'git ls-files', 'sink': 'e', 'right': '40%'})
+call fzf#run({'source': 'git ls-files', 'sink': 'e', 'left': '40%'})
 call fzf#run({'source': 'git ls-files', 'sink': 'e', 'window': '30vnew'})
 ```
 
 `source` doesn't have to be an external shell command, you can pass a Vim
-array as the source. In the following example, we use the names of the open
-buffers as the source.
-
-```vim
-call fzf#run({'source': map(filter(range(1, bufnr('$')), 'buflisted(v:val)'),
-            \               'bufname(v:val)'),
-            \ 'sink': 'e', 'down': '30%'})
-```
-
-Or the names of color schemes.
+array as the source. In the next example, we pass the names of color
+schemes as the source to implement a color scheme selector.
 
 ```vim
 call fzf#run({'source': map(split(globpath(&rtp, 'colors/*.vim')),
@@ -160,25 +171,22 @@ call fzf#run({'source': map(split(globpath(&rtp, 'colors/*.vim')),
             \ 'sink': 'colo', 'left': '25%'})
 ```
 
-The following table shows the available options.
+The following table summarizes the available options.
 
-| Option name                | Type          | Description                                                      |
-| -------------------------- | ------------- | ---------------------------------------------------------------- |
-| `source`                   | string        | External command to generate input to fzf (e.g. `find .`)        |
-| `source`                   | list          | Vim list as input to fzf                                         |
-| `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)       |
-| `sink`                     | funcref       | Reference to function to process each selected item              |
-| `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once    |
-| `options`                  | string/list   | Options to fzf                                                   |
-| `dir`                      | string        | Working directory                                                |
-| `up`/`down`/`left`/`right` | number/string | Use tmux pane with the given size (e.g. `20`, `50%`)             |
-| `window` (Vim 8 / Neovim)  | string        | Command to open fzf window (e.g. `vertical aboveleft 30new`)     |
-| `launcher`                 | string        | External terminal emulator to start fzf with (GVim only)         |
-| `launcher`                 | funcref       | Function for generating `launcher` string (GVim only)            |
+| Option name                | Type          | Description                                                           |
+| -------------------------- | ------------- | ----------------------------------------------------------------      |
+| `source`                   | string        | External command to generate input to fzf (e.g. `find .`)             |
+| `source`                   | list          | Vim list as input to fzf                                              |
+| `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)            |
+| `sink`                     | funcref       | Reference to function to process each selected item                   |
+| `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once         |
+| `options`                  | string/list   | Options to fzf                                                        |
+| `dir`                      | string        | Working directory                                                     |
+| `up`/`down`/`left`/`right` | number/string | (Layout) Window position and size (e.g. `20`, `50%`)                  |
+| `window` (Vim 8 / Neovim)  | string        | (Layout) Command to open fzf window (e.g. `vertical aboveleft 30new`) |
 
 `options` entry can be either a string or a list. For simple cases, string
-should suffice, but prefer to use list type if you're concerned about escaping
-issues on different platforms.
+should suffice, but prefer to use list type to avoid escaping issues.
 
 ```vim
 call fzf#run({'options': '--reverse --prompt "C:\\Program Files\\"'})
@@ -188,39 +196,77 @@ call fzf#run({'options': ['--reverse', '--prompt', 'C:\Program Files\']})
 `fzf#wrap`
 ----------
 
-`:FZF` command provided by default knows how to handle `CTRL-T`, `CTRL-X`, and
-`CTRL-V` and opens the selected file in a new tab, in a horizontal split, or
-in a vertical split respectively. And these key bindings can be configured via
-`g:fzf_action`. This is implemented using `--expect` option of fzf and the
-smart sink function. It also understands `g:fzf_colors`, `g:fzf_layout` and
-`g:fzf_history_dir`. However, `fzf#run` doesn't know about any of these
-options.
+We have seen that several aspects of `:FZF` command can be configured with
+a set of global option variables; different ways to open files
+(`g:fzf_action`), window position and size (`g:fzf_layout`), color palette
+(`g:fzf_colors`), etc.
 
-By *"wrapping"* your options dictionary with `fzf#wrap` before passing it to
-`fzf#run`, you can make your command also support the options.
+So how can we make our custom `fzf#run` calls also respect those variables?
+Simply by *"wrapping"* the spec dictionary with `fzf#wrap` before passing it
+to `fzf#run`.
+
+- **`fzf#wrap([name string], [spec dict], [fullscreen bool]) -> (dict)`**
+    - All arguments are optional. Usually we only need to pass a spec dictionary.
+    - `name` is for managing history files. It is ignored if
+      `g:fzf_history_dir` is not defined.
+    - `fullscreen` can be either `0` or `1` (default: 0).
+
+`fzf#wrap` takes a spec and returns an extended version of it (also
+a dictionary) with additional options for addressing global preferences. You
+can examine the return value of it like so:
 
 ```vim
-" Usage:
-"   fzf#wrap([name string,] [opts dict,] [fullscreen boolean])
-
-" This command now supports CTRL-T, CTRL-V, and CTRL-X key bindings
-" and opens fzf according to g:fzf_layout setting.
-command! Buffers call fzf#run(fzf#wrap(
-    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}))
-
-" This extends the above example to open fzf in fullscreen
-" when the command is run with ! suffix (Buffers!)
-command! -bang Buffers call fzf#run(fzf#wrap(
-    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}, <bang>0))
-
-" You can optionally pass the name of the command as the first argument to
-" fzf#wrap to make it work with g:fzf_history_dir
-command! -bang Buffers call fzf#run(fzf#wrap('buffers',
-    \ {'source': map(range(1, bufnr('$')), 'bufname(v:val)')}, <bang>0))
+echo fzf#wrap({'source': 'ls'})
 ```
 
-fzf inside terminal buffer
---------------------------
+After we *"wrap"* our spec, we pass it to `fzf#run`.
+
+```vim
+call fzf#run(fzf#wrap({'source': 'ls'}))
+```
+
+Now it supports `CTRL-T`, `CTRL-V`, and `CTRL-X` key bindings and it opens fzf
+window according to `g:fzf_layout` setting.
+
+To make it easier to use, let's define `LS` command.
+
+```vim
+command! LS call fzf#run(fzf#wrap({'source': 'ls'}))
+```
+
+Type `:LS` and see how it works.
+
+We would like to make `:LS!` (bang version) open fzf in fullscreen, just like
+`:FZF!`. Add `-bang` to command definition, and use `<bang>` value to set
+the last `fullscreen` argument of `fzf#wrap` (see `:help <bang>`).
+
+```vim
+" On :LS!, <bang> evaluates to '!', and '!0' becomes 1
+command! -bang LS call fzf#run(fzf#wrap({'source': 'ls'}, <bang>0))
+```
+
+Our `:LS` command will be much more useful if we can pass a directory argument
+to it, so that something like `:LS /tmp` is possible.
+
+```vim
+command! -bang -complete=dir -nargs=* LS
+    \ call fzf#run(fzf#wrap({'source': 'ls', 'dir': <q-args>}, <bang>0))
+```
+
+Lastly, if you have enabled `g:fzf_history_dir`, you might want to assign
+a unique name to our command and pass it as the first argument to `fzf#wrap`.
+
+```vim
+" The query history for this command will be stored as 'ls' inside g:fzf_history_dir.
+" The name is ignored if g:fzf_history_dir is not defined.
+command! -bang -complete=dir -nargs=* LS
+    \ call fzf#run(fzf#wrap('ls', {'source': 'ls', 'dir': <q-args>}, <bang>0))
+```
+
+Tips
+----
+
+### fzf inside terminal buffer
 
 The latest versions of Vim and Neovim include builtin terminal emulator
 (`:terminal`) and fzf will start in a terminal buffer in the following cases:
@@ -230,7 +276,32 @@ The latest versions of Vim and Neovim include builtin terminal emulator
 - On Terminal Vim with the non-default layout
     - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
 
-### Hide statusline
+#### Starting fzf in Neovim floating window
+
+```vim
+" Using floating windows of Neovim to start fzf
+if has('nvim')
+  let $FZF_DEFAULT_OPTS .= ' --border --margin=0,2'
+
+  function! FloatingFZF()
+    let width = float2nr(&columns * 0.9)
+    let height = float2nr(&lines * 0.6)
+    let opts = { 'relative': 'editor',
+               \ 'row': (&lines - height) / 2,
+               \ 'col': (&columns - width) / 2,
+               \ 'width': width,
+               \ 'height': height }
+
+    let win = nvim_open_win(nvim_create_buf(v:false, v:true), v:true, opts)
+    call setwinvar(win, '&winhighlight', 'NormalFloat:Normal')
+  endfunction
+
+  let g:fzf_layout = { 'window': 'call FloatingFZF()' }
+endif
+
+```
+
+#### Hide statusline
 
 When fzf starts in a terminal buffer, you may want to hide the statusline of
 the containing buffer.
@@ -246,4 +317,4 @@ autocmd  FileType fzf set laststatus=0 noshowmode noruler
 
 The MIT License (MIT)
 
-Copyright (c) 2017 Junegunn Choi
+Copyright (c) 2019 Junegunn Choi
