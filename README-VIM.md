@@ -273,7 +273,7 @@ The latest versions of Vim and Neovim include builtin terminal emulator
 
 - On Neovim
 - On GVim
-- On Terminal Vim with the non-default layout
+- On Terminal Vim with a non-default layout
     - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
 
 #### Starting fzf in Neovim floating window
@@ -303,13 +303,19 @@ endif
 
 #### Hide statusline
 
-When fzf starts in a terminal buffer, you may want to hide the statusline of
-the containing buffer.
+When fzf starts in a terminal buffer, the file type of the buffer is set to
+`fzf`. So you can set up `FileType fzf` autocmd to customize the settings of
+the window.
+
+For example, if you use the default layout (`{'down': '~40%'}`) on Neovim, you
+might want to temporarily disable the statusline for a cleaner look.
 
 ```vim
-autocmd! FileType fzf
-autocmd  FileType fzf set laststatus=0 noshowmode noruler
-  \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
+if has('nvim') && !exists('g:fzf_layout')
+  autocmd! FileType fzf
+  autocmd  FileType fzf set laststatus=0 noshowmode noruler
+    \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
+endif
 ```
 
 [License](LICENSE)
