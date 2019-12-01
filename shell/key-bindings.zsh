@@ -56,6 +56,7 @@ fzf-cd-widget() {
     return 0
   fi
   cd "$dir"
+  unset dir # ensure this doesn't end up appearing in prompt expansion
   local ret=$?
   zle fzf-redraw-prompt
   return $ret
