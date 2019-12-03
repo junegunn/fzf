@@ -131,7 +131,6 @@ Plug '/usr/local/opt/fzf'
 " If installed using git
 Plug '~/.fzf'
 ```
-
 But instead of separately installing fzf on your system (using Homebrew or
 "git clone") and enabling it on Vim (adding it to `&runtimepath`), you can use
 vim-plug to do both.
@@ -145,6 +144,18 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 
 ### Using Linux package managers
 
+Please note, if your package manager doesn't enable Vim plugin automatically, 
+you have to modify Vim configuration file to point it to the installed file 
+`fzf.vim` manually. In the code below, `/path/to/folder/` has to have a subfolder
+that points to plugin itself `/path/to/folder/plugin/fzf.vim`:
+
+```vim
+" By modyfying `&runtimepath`
+set rtp+=/path/to/folder
+
+" Or if you use vim-plug
+Plug '/path/to/folder'
+```
 #### Arch Linux
 
 ```sh
