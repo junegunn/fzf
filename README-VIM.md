@@ -59,6 +59,8 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
     - Customizes fzf colors to match the current color scheme
 - `g:fzf_history_dir`
     - Enables history feature
+- `g:fzf_new_tab`
+    - Opens files in new tab instead of current tab
 
 #### Examples
 
@@ -113,6 +115,9 @@ let g:fzf_colors =
 " - When set, CTRL-N and CTRL-P will be bound to 'next-history' and
 "   'previous-history' instead of 'down' and 'up'.
 let g:fzf_history_dir = '~/.local/share/fzf-history'
+
+" Open in new tab.
+let g:fzf_new_tab = 1
 ```
 
 `fzf#run`

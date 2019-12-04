@@ -205,7 +205,14 @@ function! s:open(cmd, target)
   if stridx('edit', a:cmd) == 0 && s:fzf_fnamemodify(a:target, ':p') ==# s:fzf_expand('%:p')
     return
   endif
-  execute a:cmd s:escape(a:target)
+
+  if !exists('g:fzf_new_tab')
+    execute a:cmd s:escape(a:target)
+  elseif g:fzf_new_tab
+    execute 'tabedit' a:target
+  else
+    execute a:cmd s:escape(a:target)
+  endif
 endfunction
 
 function! s:common_sink(action, lines) abort
