@@ -3,6 +3,10 @@ CHANGELOG
 
 0.19.1 (WIP)
 ------
+- Removed the immediate flicking of the screen on `reload` action.
+  ```sh
+  : | fzf --bind 'change:reload:seq {q}' --phony
+  ```
 - It is now possible to split a composite bind action over multiple `--bind`
   expressions by prefixing the later ones with `+`.
   ```sh

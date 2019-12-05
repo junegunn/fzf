@@ -224,10 +224,12 @@ func Run(opts *Options, revision string) {
 
 	// Event coordination
 	reading := true
+	clearCache := false
 	ticks := 0
 	var nextCommand *string
 	restart := func(command string) {
 		reading = true
+		clearCache = true
 		chunkList.Clear()
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command)
@@ -250,11 +252,10 @@ func Run(opts *Options, revision string) {
 				switch evt {
 
 				case EvtReadNew, EvtReadFin:
-					clearCache := false
 					if evt == EvtReadFin && nextCommand != nil {
-						clearCache = true
 						restart(*nextCommand)
 						nextCommand = nil
+						break
 					} else {
 						reading = reading && evt == EvtReadNew
 					}
@@ -264,6 +265,7 @@ func Run(opts *Options, revision string) {
 						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
 					}
 					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache)
+					clearCache = false
 
 				case EvtSearchNew:
 					var command *string
@@ -279,9 +281,11 @@ func Run(opts *Options, revision string) {
 						} else {
 							restart(*command)
 						}
+						break
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, input(), true, !reading, sort, command != nil)
+					matcher.Reset(snapshot, input(), true, !reading, sort, clearCache)
+					clearCache = false
 					delay = false
 
 				case EvtSearchProgress:
