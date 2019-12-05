@@ -8,3 +8,4 @@ doc/tags
 vendor
 gopath
 *.zwc
+**/.*sw?
