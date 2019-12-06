@@ -434,11 +434,12 @@ _fzf_compgen_dir() {
 
 On bash, fuzzy completion is enabled only for a predefined set of commands
 (`complete | grep _fzf` to see the list). But you can enable it for other
-commands as well as follows.
+commands as well by using `_fzf_setup_completion` helper function.
 
 ```sh
-complete -F _fzf_path_completion -o default -o bashdefault ag
-complete -F _fzf_dir_completion -o default -o bashdefault tree
+# usage: _fzf_setup_completion path|dir COMMANDS...
+_fzf_setup_completion path ag git kubectl
+_fzf_setup_completion dir tree
 ```
 
 Vim plugin
