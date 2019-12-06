@@ -1647,6 +1647,13 @@ class TestGoFZF < TestBase
     tmux.send_keys :Space
     tmux.until { |lines| lines.item_count == 10 }
   end
+
+  def test_clear_list_when_header_lines_changed_due_to_reload
+    tmux.send_keys %(seq 10 | #{FZF} --header 0 --header-lines 3 --bind 'space:reload(seq 1)'), :Enter
+    tmux.until { |lines| lines.any? { |line| line.include?('9') } }
+    tmux.send_keys :Space
+    tmux.until { |lines| lines.none? { |line| line.include?('9') } }
+  end
 end
 
 module TestShell

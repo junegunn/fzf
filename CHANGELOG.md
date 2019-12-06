@@ -24,6 +24,10 @@ CHANGELOG
   ```sh
   fzf --multi --bind 'ctrl-l:select-all+execute(less {+f})+deselect-all'
   ```
+- Fixed bugs of reload action
+    - Not triggered when there's no match even when the command doesn't have
+      any placeholder expressions
+    - Screen not properly cleared when `--header-lines` not filled on reload
 
 0.19.0
 ------
