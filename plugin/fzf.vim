@@ -336,20 +336,21 @@ function! fzf#wrap(...)
 endfunction
 
 function! s:use_sh()
-  let [shell, shellslash, shellcmdflag] = [&shell, &shellslash, &shellcmdflag]
+  let [shell, shellslash, shellcmdflag, shellxquote] = [&shell, &shellslash, &shellcmdflag, &shellxquote]
   if s:is_win
     set shell=cmd.exe
     set noshellslash
     let &shellcmdflag = has('nvim') ? '/s /c' : '/c'
+    let &shellxquote = has('nvim') ? '"' : '('
   else
     set shell=sh
   endif
-  return [shell, shellslash, shellcmdflag]
+  return [shell, shellslash, shellcmdflag, shellxquote]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash, shellcmdflag] = s:use_sh()
+  let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
 
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -419,7 +420,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  let [&shell, &shellslash, &shellcmdflag] = [shell, shellslash, shellcmdflag]
+  let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
 endtry
 endfunction
 
