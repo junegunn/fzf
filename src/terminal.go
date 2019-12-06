@@ -1237,7 +1237,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (plus bool, query bool) {
+func hasPreviewFlags(template string) (slot bool, plus bool, query bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
@@ -1246,6 +1246,7 @@ func hasPreviewFlags(template string) (plus bool, query bool) {
 		if flags.query {
 			query = true
 		}
+		slot = true
 	}
 	return
 }
@@ -1409,7 +1410,7 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	plus, query := hasPreviewFlags(template)
+	_, plus, query := hasPreviewFlags(template)
 	if !(query && len(t.input) > 0 || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
@@ -2045,11 +2046,12 @@ func (t *Terminal) Loop() {
 				t.failed = nil
 
 				valid, list := t.buildPlusList(a.a, false)
-				// If the command template has {q}, we run the command even when the
-				// query string is empty.
 				if !valid {
-					_, query := hasPreviewFlags(a.a)
-					valid = query
+					// We run the command even when there's no match
+					// 1. If the template doesn't have any slots
+					// 2. If the template has {q}
+					slot, _, query := hasPreviewFlags(a.a)
+					valid = !slot || query
 				}
 				if valid {
 					command := replacePlaceholder(a.a,
@@ -2095,7 +2097,7 @@ func (t *Terminal) Loop() {
 
 		if queryChanged {
 			if t.isPreviewEnabled() {
-				_, q := hasPreviewFlags(t.preview.command)
+				_, _, q := hasPreviewFlags(t.preview.command)
 				if q {
 					t.version++
 				}
