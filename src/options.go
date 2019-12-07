@@ -738,6 +738,10 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actEndOfLine)
 			case "cancel":
 				appendAction(actCancel)
+			case "clear-query":
+				appendAction(actClearQuery)
+			case "clear-selection":
+				appendAction(actClearSelection)
 			case "forward-char":
 				appendAction(actForwardChar)
 			case "forward-word":

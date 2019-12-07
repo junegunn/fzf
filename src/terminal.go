@@ -185,6 +185,8 @@ const (
 	actBackwardWord
 	actCancel
 	actClearScreen
+	actClearQuery
+	actClearSelection
 	actDeleteChar
 	actDeleteCharEOF
 	actEndOfLine
@@ -1905,6 +1907,15 @@ func (t *Terminal) Loop() {
 				}
 			case actClearScreen:
 				req(reqRedraw)
+			case actClearQuery:
+				t.input = []rune{}
+				t.cx = 0
+			case actClearSelection:
+				if t.multi > 0 {
+					t.selected = make(map[int32]selectedItem)
+					t.version++
+					req(reqList, reqInfo)
+				}
 			case actTop:
 				t.vset(0)
 				req(reqList)

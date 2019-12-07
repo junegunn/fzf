@@ -7,6 +7,7 @@ CHANGELOG
   ```sh
   : | fzf --bind 'change:reload:seq {q}' --phony
   ```
+- Added `clear-query` and `clear-selection` actions for `--bind`
 - It is now possible to split a composite bind action over multiple `--bind`
   expressions by prefixing the later ones with `+`.
   ```sh

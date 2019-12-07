@@ -1654,6 +1654,29 @@ class TestGoFZF < TestBase
     tmux.send_keys :Space
     tmux.until { |lines| lines.none? { |line| line.include?('9') } }
   end
+
+  def test_clear_query
+    tmux.send_keys %(: | #{FZF} --query foo --bind space:clear-query), :Enter
+    tmux.until { |lines| lines.item_count.zero? }
+    tmux.until { |lines| lines.last.include?('> foo') }
+    tmux.send_keys 'C-a', 'bar'
+    tmux.until { |lines| lines.last.include?('> barfoo') }
+    tmux.send_keys :Space
+    tmux.until { |lines| lines.last == '>' }
+  end
+
+  def test_clear_selection
+    tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
+    tmux.until { |lines| lines.match_count == 100 }
+    tmux.send_keys :Tab
+    tmux.until { |lines| lines[-2].include?('(1)') }
+    tmux.send_keys 'foo'
+    tmux.until { |lines| lines.match_count.zero? }
+    tmux.until { |lines| lines[-2].include?('(1)') }
+    tmux.send_keys :Space
+    tmux.until { |lines| lines.match_count.zero? }
+    tmux.until { |lines| !lines[-2].include?('(1)') }
+  end
 end
 
 module TestShell
