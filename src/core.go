@@ -224,12 +224,14 @@ func Run(opts *Options, revision string) {
 
 	// Event coordination
 	reading := true
-	clearCache := false
+	clearCache := util.Once(false)
+	clearSelection := util.Once(false)
 	ticks := 0
 	var nextCommand *string
 	restart := func(command string) {
 		reading = true
-		clearCache = true
+		clearCache = util.Once(true)
+		clearSelection = util.Once(true)
 		chunkList.Clear()
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command)
@@ -262,10 +264,10 @@ func Run(opts *Options, revision string) {
 					snapshot, count := chunkList.Snapshot()
 					terminal.UpdateCount(count, !reading, value.(*string))
 					if opts.Sync {
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
+						opts.Sync = false
+						terminal.UpdateList(PassMerger(&snapshot, opts.Tac), false)
 					}
-					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache)
-					clearCache = false
+					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache())
 
 				case EvtSearchNew:
 					var command *string
@@ -284,8 +286,7 @@ func Run(opts *Options, revision string) {
 						break
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, input(), true, !reading, sort, clearCache)
-					clearCache = false
+					matcher.Reset(snapshot, input(), true, !reading, sort, clearCache())
 					delay = false
 
 				case EvtSearchProgress:
@@ -327,7 +328,7 @@ func Run(opts *Options, revision string) {
 								terminal.startChan <- true
 							}
 						}
-						terminal.UpdateList(val)
+						terminal.UpdateList(val, clearSelection())
 					}
 				}
 			}

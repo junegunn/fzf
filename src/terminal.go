@@ -495,10 +495,13 @@ func (t *Terminal) UpdateProgress(progress float32) {
 }
 
 // UpdateList updates Merger to display the list
-func (t *Terminal) UpdateList(merger *Merger) {
+func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.mutex.Lock()
 	t.progress = 100
 	t.merger = merger
+	if reset {
+		t.selected = make(map[int32]selectedItem)
+	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	t.reqBox.Set(reqList, nil)
@@ -2068,7 +2071,6 @@ func (t *Terminal) Loop() {
 					command := replacePlaceholder(a.a,
 						t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
 					newCommand = &command
-					t.selected = make(map[int32]selectedItem)
 				}
 			}
 			return true

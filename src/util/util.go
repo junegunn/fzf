@@ -112,3 +112,13 @@ func DurWithin(
 func IsTty() bool {
 	return isatty.IsTerminal(os.Stdin.Fd())
 }
+
+// Once returns a function that returns the specified boolean value only once
+func Once(nextResponse bool) func() bool {
+	state := nextResponse
+	return func() bool {
+		prevState := state
+		state = false
+		return prevState
+	}
+}
