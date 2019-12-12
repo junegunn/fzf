@@ -16,7 +16,7 @@ if ! declare -f _fzf_compgen_path > /dev/null; then
   _fzf_compgen_path() {
     echo "$1"
     command find -L "$1" \
-      -name .git -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
 fi
@@ -24,7 +24,7 @@ fi
 if ! declare -f _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
     command find -L "$1" \
-      -name .git -prune -o -name .svn -prune -o -type d \
+      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
 fi
@@ -195,12 +195,13 @@ _fzf_complete() {
 
     selected=$(cat | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" $fzf $1 -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
-    printf '\e[5n'
-
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
-      return 0
+    else
+      COMPREPLY=("$cur")
     fi
+    printf '\e[5n'
+    return 0
   else
     shift
     _fzf_handle_dynamic_completion "$cmd" "$@"
@@ -243,7 +244,7 @@ _fzf_complete_telnet() {
 
 _fzf_complete_ssh() {
   _fzf_complete '+m' "$@" < <(
-    cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^host ' | command grep -v '[*?]' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}') \
+    cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u

@@ -40,6 +40,12 @@ const (
 	ESC
 	CtrlSpace
 
+	// https://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control-slash-to-the-terminal
+	CtrlBackSlash
+	CtrlRightBracket
+	CtrlCaret
+	CtrlSlash
+
 	Invalid
 	Resize
 	Mouse
@@ -117,7 +123,7 @@ func (c Color) is24() bool {
 
 const (
 	colUndefined Color = -2
-	colDefault         = -1
+	colDefault   Color = -1
 )
 
 const (
@@ -162,10 +168,6 @@ func (p ColorPair) Fg() Color {
 
 func (p ColorPair) Bg() Color {
 	return p.bg
-}
-
-func (p ColorPair) is24() bool {
-	return p.fg.is24() || p.bg.is24()
 }
 
 type ColorTheme struct {
@@ -219,6 +221,8 @@ type BorderStyle struct {
 	bottomRight rune
 }
 
+type BorderCharacter int
+
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	if unicode {
 		return BorderStyle{
@@ -240,6 +244,17 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 		bottomLeft:  '+',
 		bottomRight: '+',
 	}
+}
+
+func MakeTransparentBorder() BorderStyle {
+	return BorderStyle{
+		shape:       BorderAround,
+		horizontal:  ' ',
+		vertical:    ' ',
+		topLeft:     ' ',
+		topRight:    ' ',
+		bottomLeft:  ' ',
+		bottomRight: ' '}
 }
 
 type Renderer interface {

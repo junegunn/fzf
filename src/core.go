@@ -126,6 +126,7 @@ func Run(opts *Options, revision string) {
 				return false
 			}
 			item.text, item.colors = ansiProcessor([]byte(transformed))
+			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++
@@ -135,10 +136,11 @@ func Run(opts *Options, revision string) {
 
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
+	var reader *Reader
 	if !streamingFilter {
-		reader := NewReader(func(data []byte) bool {
+		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
-		}, eventBox, opts.ReadZero)
+		}, eventBox, opts.ReadZero, opts.Filter == nil)
 		go reader.ReadSource()
 	}
 
@@ -182,7 +184,7 @@ func Run(opts *Options, revision string) {
 						}
 					}
 					return false
-				}, eventBox, opts.ReadZero)
+				}, eventBox, opts.ReadZero, false)
 			reader.ReadSource()
 		} else {
 			eventBox.Unwatch(EvtReadNew)
@@ -222,11 +224,28 @@ func Run(opts *Options, revision string) {
 
 	// Event coordination
 	reading := true
+	clearCache := util.Once(false)
+	clearSelection := util.Once(false)
 	ticks := 0
+	var nextCommand *string
+	restart := func(command string) {
+		reading = true
+		clearCache = util.Once(true)
+		clearSelection = util.Once(true)
+		chunkList.Clear()
+		header = make([]string, 0, opts.HeaderLines)
+		go reader.restart(command)
+	}
 	eventBox.Watch(EvtReadNew)
 	for {
 		delay := true
 		ticks++
+		input := func() []rune {
+			if opts.Phony {
+				return []rune{}
+			}
+			return []rune(terminal.Input())
+		}
 		eventBox.Wait(func(events *util.Events) {
 			if _, fin := (*events)[EvtReadFin]; fin {
 				delete(*events, EvtReadNew)
@@ -235,21 +254,39 @@ func Run(opts *Options, revision string) {
 				switch evt {
 
 				case EvtReadNew, EvtReadFin:
-					reading = reading && evt == EvtReadNew
-					snapshot, count := chunkList.Snapshot()
-					terminal.UpdateCount(count, !reading, value.(bool))
-					if opts.Sync {
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac))
+					if evt == EvtReadFin && nextCommand != nil {
+						restart(*nextCommand)
+						nextCommand = nil
+						break
+					} else {
+						reading = reading && evt == EvtReadNew
 					}
-					matcher.Reset(snapshot, terminal.Input(), false, !reading, sort)
+					snapshot, count := chunkList.Snapshot()
+					terminal.UpdateCount(count, !reading, value.(*string))
+					if opts.Sync {
+						opts.Sync = false
+						terminal.UpdateList(PassMerger(&snapshot, opts.Tac), false)
+					}
+					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache())
 
 				case EvtSearchNew:
+					var command *string
 					switch val := value.(type) {
-					case bool:
-						sort = val
+					case searchRequest:
+						sort = val.sort
+						command = val.command
+					}
+					if command != nil {
+						if reading {
+							reader.terminate()
+							nextCommand = command
+						} else {
+							restart(*command)
+						}
+						break
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, terminal.Input(), true, !reading, sort)
+					matcher.Reset(snapshot, input(), true, !reading, sort, clearCache())
 					delay = false
 
 				case EvtSearchProgress:
@@ -259,7 +296,9 @@ func Run(opts *Options, revision string) {
 					}
 
 				case EvtHeader:
-					terminal.UpdateHeader(value.([]string))
+					header := value.([]string)
+					header = append(header, make([]string, opts.HeaderLines-len(header))...)
+					terminal.UpdateHeader(header)
 
 				case EvtSearchFin:
 					switch val := value.(type) {
@@ -289,7 +328,7 @@ func Run(opts *Options, revision string) {
 								terminal.startChan <- true
 							}
 						}
-						terminal.UpdateList(val)
+						terminal.UpdateList(val, clearSelection())
 					}
 				}
 			}

@@ -10,10 +10,9 @@ import (
 func TestReadFromCommand(t *testing.T) {
 	strs := []string{}
 	eb := util.NewEventBox()
-	reader := Reader{
-		pusher:   func(s []byte) bool { strs = append(strs, string(s)); return true },
-		eventBox: eb,
-		event:    int32(EvtReady)}
+	reader := NewReader(
+		func(s []byte) bool { strs = append(strs, string(s)); return true },
+		eb, false, true)
 
 	reader.startEventPoller()
 
@@ -23,7 +22,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Normal command
-	reader.fin(reader.readFromCommand("sh", `echo abc && echo def`))
+	reader.fin(reader.readFromCommand(nil, `echo abc && echo def`))
 	if len(strs) != 2 || strs[0] != "abc" || strs[1] != "def" {
 		t.Errorf("%s", strs)
 	}
@@ -48,7 +47,7 @@ func TestReadFromCommand(t *testing.T) {
 	reader.startEventPoller()
 
 	// Failing command
-	reader.fin(reader.readFromCommand("sh", `no-such-command`))
+	reader.fin(reader.readFromCommand(nil, `no-such-command`))
 	strs = []string{}
 	if len(strs) > 0 {
 		t.Errorf("%s", strs)

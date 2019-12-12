@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.18.0
+version=0.19.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -196,6 +196,8 @@ case "$archi" in
   MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+  Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+  Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
 

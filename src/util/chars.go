@@ -142,6 +142,11 @@ func (chars *Chars) TrailingWhitespaces() int {
 	return whitespaces
 }
 
+func (chars *Chars) TrimTrailingWhitespaces() {
+	whitespaces := chars.TrailingWhitespaces()
+	chars.slice = chars.slice[0 : len(chars.slice)-whitespaces]
+}
+
 func (chars *Chars) ToString() string {
 	if runes := chars.optionalRunes(); runes != nil {
 		return string(runes)

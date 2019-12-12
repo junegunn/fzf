@@ -16,11 +16,11 @@ env:
 jobs:
   include:
     - stage: unittest
-      go: "1.11.x"
+      go: "1.13.x"
       script: make && make test
 
     - stage: cli
-      go: "1.11.x"
+      go: "1.13.x"
       rvm: "2.5"
       script: |
         make install && ./install --all && tmux new "ruby test/test_go.rb > out && touch ok" && cat out && [ -e ok ]

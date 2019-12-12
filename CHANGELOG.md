@@ -1,6 +1,88 @@
 CHANGELOG
 =========
 
+0.19.1 (WIP)
+------
+- Removed the immediate flicking of the screen on `reload` action.
+  ```sh
+  : | fzf --bind 'change:reload:seq {q}' --phony
+  ```
+- Added `clear-query` and `clear-selection` actions for `--bind`
+- It is now possible to split a composite bind action over multiple `--bind`
+  expressions by prefixing the later ones with `+`.
+  ```sh
+  fzf --bind 'ctrl-a:up+up'
+
+  # Can be now written as
+  fzf --bind 'ctrl-a:up' --bind 'ctrl-a:+up'
+
+  # This is useful when you need to write special execute/reload form (i.e. `execute:...`)
+  # to avoid parse errors and add more actions to the same key
+  fzf --multi --bind 'ctrl-l:select-all+execute:less {+f}' --bind 'ctrl-l:+deselect-all'
+  ```
+- Fixed parse error of `--bind` expression where concatenated execute/reload
+  action contains `+` character.
+  ```sh
+  fzf --multi --bind 'ctrl-l:select-all+execute(less {+f})+deselect-all'
+  ```
+- Fixed bugs of reload action
+    - Not triggered when there's no match even when the command doesn't have
+      any placeholder expressions
+    - Screen not properly cleared when `--header-lines` not filled on reload
+
+0.19.0
+------
+
+- Added `--phony` option which completely disables search functionality.
+  Useful when you want to use fzf only as a selector interface. See below.
+- Added "reload" action for dynamically updating the input list without
+  restarting fzf. See https://github.com/junegunn/fzf/issues/1750 to learn
+  more about it.
+  ```sh
+  # Using fzf as the selector interface for ripgrep
+  RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+  INITIAL_QUERY="foo"
+  FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY' || true" \
+    fzf --bind "change:reload:$RG_PREFIX {q} || true" \
+        --ansi --phony --query "$INITIAL_QUERY"
+  ```
+- `--multi` now takes an optional integer argument which indicates the maximum
+  number of items that can be selected
+  ```sh
+  seq 100 | fzf --multi 3 --reverse --height 50%
+  ```
+- If a placeholder expression for `--preview` and `execute` action (and the
+  new `reload` action) contains `f` flag, it is replaced to the
+  path of a temporary file that holds the evaluated list. This is useful
+  when you multi-select a large number of items and the length of the
+  evaluated string may exceed [`ARG_MAX`][argmax].
+  ```sh
+  # Press CTRL-A to select 100K items and see the sum of all the numbers
+  seq 100000 | fzf --multi --bind ctrl-a:select-all \
+                   --preview "awk '{sum+=\$1} END {print sum}' {+f}"
+  ```
+- `deselect-all` no longer deselects unmatched items. It is now consistent
+  with `select-all` and `toggle-all` in that it only affects matched items.
+- Due to the limitation of bash, fuzzy completion is enabled by default for
+  a fixed set of commands. A helper function for easily setting up fuzzy
+  completion for any command is now provided.
+  ```sh
+  # usage: _fzf_setup_completion path|dir COMMANDS...
+  _fzf_setup_completion path git kubectl
+  ```
+- Info line style can be changed by `--info=STYLE`
+    - `--info=default`
+    - `--info=inline` (same as old `--inline-info`)
+    - `--info=hidden`
+- Preview window border can be disabled by adding `noborder` to
+  `--preview-window`.
+- When you transform the input with `--with-nth`, the trailing white spaces
+  are removed.
+- `ctrl-\`, `ctrl-]`, `ctrl-^`, and `ctrl-/` can now be used with `--bind`
+- See https://github.com/junegunn/fzf/milestone/15?closed=1 for more details
+
+[argmax]: https://unix.stackexchange.com/questions/120642/what-defines-the-maximum-size-for-a-command-single-argument
+
 0.18.0
 ------
 

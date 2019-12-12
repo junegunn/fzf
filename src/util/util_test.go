@@ -20,3 +20,21 @@ func TestContrain(t *testing.T) {
 		t.Error("Expected", 3)
 	}
 }
+
+func TestOnce(t *testing.T) {
+	o := Once(false)
+	if o() {
+		t.Error("Expected: false")
+	}
+	if o() {
+		t.Error("Expected: false")
+	}
+
+	o = Once(true)
+	if !o() {
+		t.Error("Expected: true")
+	}
+	if o() {
+		t.Error("Expected: false")
+	}
+}

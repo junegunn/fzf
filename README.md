@@ -25,13 +25,9 @@ Table of Contents
    * [Installation](#installation)
       * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
       * [Using git](#using-git)
-      * [As Vim plugin](#as-vim-plugin)
-      * [Arch Linux](#arch-linux)
-      * [Debian](#debian)
-      * [Fedora](#fedora)
-      * [openSUSE](#opensuse)
-      * [FreeBSD](#freebsd)
+      * [Using Linux package managers](#using-linux-package-managers)
       * [Windows](#windows)
+      * [As Vim plugin](#as-vim-plugin)
    * [Upgrading fzf](#upgrading-fzf)
    * [Building fzf](#building-fzf)
    * [Usage](#usage)
@@ -106,10 +102,45 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
+### Using Linux package managers
+
+| Distro       | Command                    |
+| ---          | ---                        |
+| Alpine Linux | `sudo apk add fzf`         |
+| Arch Linux   | `sudo pacman -S fzf`       |
+| Debian       | `sudo apt-get install fzf` |
+| Fedora       | `sudo dnf install fzf`     |
+| FreeBSD      | `pkg install fzf`          |
+| NixOS        | `nix-env -iA nixpkgs.fzf`  |
+| openSUSE     | `sudo zypper install fzf`  |
+
+Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
+plugin may or may not be enabled by default depending on the package manager.
+Refer to the package documentation for more information.
+
+### Windows
+
+Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
+available via [Chocolatey][choco] and [Scoop][scoop]:
+
+| Package manager | Command             |
+| ---             | ---                 |
+| Chocolatey      | `choco install fzf` |
+| Scoop           | `scoop install fzf` |
+
+[choco]: https://chocolatey.org/packages/fzf
+[scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
+
+Known issues and limitations on Windows can be found on [the wiki
+page][windows-wiki].
+
+[windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
+
 ### As Vim plugin
 
 Once you have fzf installed, you can enable it inside Vim simply by adding the
-directory to `&runtimepath` in your Vim configuration file as follows:
+directory to `&runtimepath` in your Vim configuration file. The path may
+differ depending on the package manager.
 
 ```vim
 " If installed using Homebrew
@@ -140,77 +171,6 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
   " Both options are optional. You don't have to install fzf in ~/.fzf
   " and you don't have to run the install script if you use fzf only in Vim.
 ```
-
-### Arch Linux
-
-```sh
-sudo pacman -S fzf
-```
-
-### Debian
-
-fzf is available in Debian Buster and above, and can be installed using the usual
-method:
-
-```sh
-sudo apt-get install fzf
-```
-
-Read the documentation (/usr/share/doc/fzf/README.Debian) on how to enable it.
-
-### Fedora
-
-fzf is available in Fedora 26 and above, and can be installed using the usual
-method:
-
-```sh
-sudo dnf install fzf
-```
-
-Shell completion and plugins for vim or neovim are enabled by default. Shell
-key bindings are installed but not enabled by default. See Fedora's package
-documentation (/usr/share/doc/fzf/README.Fedora) for more information.
-
-### openSUSE
-
-fzf is available in openSUSE Tumbleweed and can be installed via zypper:
-
-```sh
-sudo zypper install fzf
-```
-
-### FreeBSD
-
-```sh
-pkg install fzf
-```
-
-### Windows
-
-Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
-available as a [Chocolatey package][choco]:
-
-[choco]: https://chocolatey.org/packages/fzf
-
-```sh
-choco install fzf
-```
-
-or a [Scoop package][scoop]:
-
-[scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
-
-```sh
-scoop install fzf
-```
-
-However, other components of the project may not work on Windows. Known issues
-and limitations can be found on [the wiki page][windows-wiki]. You might want
-to consider installing fzf on [Windows Subsystem for Linux][wsl] where
-everything runs flawlessly.
-
-[windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
-[wsl]: https://blogs.msdn.microsoft.com/wsl/
 
 Upgrading fzf
 -------------
@@ -474,11 +434,12 @@ _fzf_compgen_dir() {
 
 On bash, fuzzy completion is enabled only for a predefined set of commands
 (`complete | grep _fzf` to see the list). But you can enable it for other
-commands as well as follows.
+commands as well by using `_fzf_setup_completion` helper function.
 
 ```sh
-complete -F _fzf_path_completion -o default -o bashdefault ag
-complete -F _fzf_dir_completion -o default -o bashdefault tree
+# usage: _fzf_setup_completion path|dir COMMANDS...
+_fzf_setup_completion path ag git kubectl
+_fzf_setup_completion dir tree
 ```
 
 Vim plugin
