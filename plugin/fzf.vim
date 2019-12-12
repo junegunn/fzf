@@ -49,18 +49,14 @@ if s:is_win
 
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
+  let s:codepage = libcallnr('kernel32.dll', 'GetACP', 0)
   function! s:wrap_cmds(cmds)
-    let use_chcp = executable('sed')
     return map([
       \ '@echo off',
       \ 'setlocal enabledelayedexpansion']
-    \ + (use_chcp ? [
-      \ 'for /f "usebackq" %%a in (`chcp ^| sed "s/[^0-9]//gp"`) do set origchcp=%%a',
-      \ 'chcp 65001 > nul'] : [])
     \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds])
-    \ + (use_chcp ? ['chcp !origchcp! > nul'] : [])
     \ + ['endlocal'],
-    \ 'v:val."\r"')
+    \ printf('iconv(v:val."\r", "%s", "cp%d")', &encoding, s:codepage))
   endfunction
 else
   let s:term_marker = ";#FZF"
