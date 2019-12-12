@@ -666,7 +666,7 @@ func (r *LightRenderer) DoesAutoWrap() bool {
 	return false
 }
 
-func (r *LightRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
+func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
 	w := &LightWindow{
 		renderer: r,
 		colored:  r.theme != nil,
@@ -679,8 +679,13 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, bord
 		fg:       colDefault,
 		bg:       colDefault}
 	if r.theme != nil {
-		w.fg = r.theme.Fg
-		w.bg = r.theme.Bg
+		if preview {
+			w.fg = r.theme.PreviewFg
+			w.bg = r.theme.PreviewBg
+		} else {
+			w.fg = r.theme.Fg
+			w.bg = r.theme.Bg
+		}
 	}
 	w.drawBorder()
 	return w
@@ -704,16 +709,16 @@ func (w *LightWindow) drawBorderHorizontal() {
 
 func (w *LightWindow) drawBorderAround() {
 	w.Move(0, 0)
-	w.CPrint(ColBorder, AttrRegular,
+	w.CPrint(ColPreviewBorder, AttrRegular,
 		string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
-		w.CPrint(ColBorder, AttrRegular, string(w.border.vertical))
-		w.cprint2(colDefault, w.bg, AttrRegular, repeat(' ', w.width-2))
-		w.CPrint(ColBorder, AttrRegular, string(w.border.vertical))
+		w.CPrint(ColPreviewBorder, AttrRegular, string(w.border.vertical))
+		w.CPrint(ColPreviewBorder, AttrRegular, repeat(' ', w.width-2))
+		w.CPrint(ColPreviewBorder, AttrRegular, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, AttrRegular,
+	w.CPrint(ColPreviewBorder, AttrRegular,
 		string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
 }
 

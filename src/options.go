@@ -597,6 +597,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				theme.Fg = ansi
 			case "bg":
 				theme.Bg = ansi
+			case "preview-fg":
+				theme.PreviewFg = ansi
+			case "preview-bg":
+				theme.PreviewBg = ansi
 			case "fg+":
 				theme.Current = ansi
 			case "bg+":

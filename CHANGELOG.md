@@ -1,8 +1,14 @@
 CHANGELOG
 =========
 
-0.19.1 (WIP)
+0.20.0 (WIP)
 ------
+- Customizable preview window color (`preview-fg` and `preview-bg` for `--color`)
+  ```sh
+  fzf --preview 'cat {}' \
+      --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899' \
+      --border --height 20 --layout reverse --info inline
+  ```
 - Removed the immediate flicking of the screen on `reload` action.
   ```sh
   : | fzf --bind 'change:reload:seq {q}' --phony

@@ -624,7 +624,8 @@ func (t *Terminal) resizeWindows() {
 			marginInt[0]-1,
 			marginInt[3],
 			width,
-			height+2, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
+			height+2,
+			false, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
 	}
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if previewVisible {
@@ -633,7 +634,7 @@ func (t *Terminal) resizeWindows() {
 			if !t.preview.border {
 				previewBorder = tui.MakeTransparentBorder()
 			}
-			t.pborder = t.tui.NewWindow(y, x, w, h, previewBorder)
+			t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
 			pwidth := w - 4
 			// ncurses auto-wraps the line when the cursor reaches the right-end of
 			// the window. To prevent unintended line-wraps, we use the width one
@@ -641,28 +642,28 @@ func (t *Terminal) resizeWindows() {
 			if !t.preview.wrap && t.tui.DoesAutoWrap() {
 				pwidth += 1
 			}
-			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, noBorder)
+			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, true, noBorder)
 		}
 		switch t.preview.position {
 		case posUp:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
 			t.window = t.tui.NewWindow(
-				marginInt[0]+pheight, marginInt[3], width, height-pheight, noBorder)
+				marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
 		case posDown:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3)
 			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3], width, height-pheight, noBorder)
+				marginInt[0], marginInt[3], width, height-pheight, false, noBorder)
 			createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 		case posLeft:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
 			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, noBorder)
+				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 		case posRight:
 			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
 			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3], width-pwidth, height, noBorder)
+				marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
 		}
 	} else {
@@ -670,7 +671,7 @@ func (t *Terminal) resizeWindows() {
 			marginInt[0],
 			marginInt[3],
 			width,
-			height, noBorder)
+			height, false, noBorder)
 	}
 	for i := 0; i < t.window.Height(); i++ {
 		t.window.MoveAndClear(i, 0)
@@ -1071,7 +1072,7 @@ func (t *Terminal) printPreview() {
 				if t.theme != nil && ansi != nil && ansi.colored() {
 					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 				} else {
-					fillRet = t.pwindow.CFill(tui.ColNormal.Fg(), tui.ColNormal.Bg(), tui.AttrRegular, str)
+					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
 				}
 				return fillRet == tui.FillContinue
 			})
