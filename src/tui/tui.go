@@ -364,7 +364,7 @@ func init() {
 		Fg:           colDefault,
 		Bg:           colDefault,
 		DarkBg:       colBlack,
-		Gutter:       colBlack,
+		Gutter:       colUndefined,
 		Prompt:       colBlue,
 		Match:        colGreen,
 		Current:      colYellow,
