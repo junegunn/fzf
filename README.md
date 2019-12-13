@@ -510,13 +510,10 @@ fzf --preview 'bat --style=numbers --color=always {} | head -500'
 ```
 
 You can customize the size, position, and border of the preview window using
-`--preview-window` option, and the foreground and background color of it with
-`--color` option. For example,
+`--preview-window` option.
 
 ```bash
-fzf --height 40% --layout reverse --info inline --border \
-    --preview 'file {}' --preview-window down:1:noborder \
-    --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'
+fzf --height 40% --layout reverse --preview 'file {}' --preview-window down:1
 ```
 
 See the man page (`man fzf`) for the full list of options.

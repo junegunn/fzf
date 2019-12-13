@@ -9,8 +9,6 @@ CHANGELOG
       --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899' \
       --border --height 20 --layout reverse --info inline
   ```
-- Preview window border can be disabled by setting `noborder` in
-  `--preview-window`
 - Removed the immediate flicking of the screen on `reload` action.
   ```sh
   : | fzf --bind 'change:reload:seq {q}' --phony
