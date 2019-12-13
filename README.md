@@ -54,7 +54,6 @@ Table of Contents
       * [Preview window](#preview-window)
    * [Tips](#tips)
       * [Respecting .gitignore](#respecting-gitignore)
-      * [git ls-tree for fast traversal](#git-ls-tree-for-fast-traversal)
       * [Fish shell](#fish-shell)
    * [Related projects](#related-projects)
    * [<a href="LICENSE">License</a>](#license)
@@ -500,36 +499,49 @@ important that the command finishes quickly.
 fzf --preview 'head -100 {}'
 ```
 
-Preview window supports ANSI colors, so you can use programs that
+Preview window supports ANSI colors, so you can use any program that
 syntax-highlights the content of a file.
 
 - Bat: https://github.com/sharkdp/bat
 - Highlight: http://www.andre-simon.de/doku/highlight/en/highlight.php
-- CodeRay: http://coderay.rubychan.de/
-- Rouge: https://github.com/jneen/rouge
 
 ```bash
-# Try bat, highlight, coderay, rougify in turn, then fall back to cat
-fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
-                 echo {} is a binary file ||
-                 (bat --style=numbers --color=always {} ||
-                  highlight -O ansi -l {} ||
-                  coderay {} ||
-                  rougify {} ||
-                  cat {}) 2> /dev/null | head -500'
+fzf --preview 'bat --style=numbers --color=always {} | head -500'
 ```
 
-You can customize the size and position of the preview window using
-`--preview-window` option. For example,
+You can customize the size, position, and border of the preview window using
+`--preview-window` option, and the foreground and background color of it with
+`--color` option. For example,
 
 ```bash
-fzf --height 40% --reverse --preview 'file {}' --preview-window down:1
+fzf --height 40% --layout reverse --info inline --border \
+    --preview 'file {}' --preview-window down:1:noborder \
+    --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'
 ```
+
+See the man page (`man fzf`) for the full list of options.
 
 For more advanced examples, see [Key bindings for git with fzf][fzf-git]
 ([code](https://gist.github.com/junegunn/8b572b8d4b5eddd8b85e5f4d40f17236)).
 
 [fzf-git]: https://junegunn.kr/2016/07/fzf-git/
+
+----
+
+Since fzf is a general-purpose text filter rather than a file finder, **it is
+not a good idea to add `--preview` option to your `$FZF_DEFAULT_OPTS`**.
+
+```sh
+# *********************
+# ** DO NOT DO THIS! **
+# *********************
+export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always {} | head -500"'
+
+# bat doesn't work with any input other than the list of files
+ps -ef | fzf
+seq 100 | fzf
+history | fzf
+```
 
 Tips
 ----
@@ -563,45 +575,17 @@ hidden files, use the following command:
 export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 ```
 
-#### `git ls-tree` for fast traversal
-
-If you're running fzf in a large git repository, `git ls-tree` can boost up the
-speed of the traversal.
-
-```sh
-export FZF_DEFAULT_COMMAND='
-  (git ls-tree -r --name-only HEAD ||
-   find . -path "*/\.*" -prune -o -type f -print -o -type l -print |
-      sed s/^..//) 2> /dev/null'
-```
-
 #### Fish shell
 
-Fish shell before version 2.6.0 [doesn't allow](https://github.com/fish-shell/fish-shell/issues/1362)
-reading from STDIN in command substitution, which means simple `vim (fzf)`
-doesn't work as expected. The workaround for fish 2.5.0 and earlier is to use
-the `read` fish command:
-
-```sh
-fzf | read -l result; and vim $result
-```
-
-or, for multiple results:
-
-```sh
-fzf -m | while read -l r; set result $result $r; end; and vim $result
-```
-
-The globbing system is different in fish and thus `**` completion will not work.
-However, the `CTRL-T` command will use the last token on the command-line as the
-root folder for the recursive search. For instance, hitting `CTRL-T` at the end
-of the following command-line
+`CTRL-T` key binding of fish, unlike those of bash and zsh, will use the last
+token on the command-line as the root directory for the recursive search. For
+instance, hitting `CTRL-T` at the end of the following command-line
 
 ```sh
 ls /var/
 ```
 
-will list all files and folders under `/var/`.
+will list all files and directories under `/var/`.
 
 When using a custom `FZF_CTRL_T_COMMAND`, use the unexpanded `$dir` variable to
 make use of this feature. `$dir` defaults to `.` when the last token is not a
@@ -621,4 +605,4 @@ https://github.com/junegunn/fzf/wiki/Related-projects
 
 The MIT License (MIT)
 
-Copyright (c) 2017 Junegunn Choi
+Copyright (c) 2019 Junegunn Choi
