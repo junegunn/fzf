@@ -54,6 +54,7 @@ if s:is_win
     return map([
       \ '@echo off',
       \ 'setlocal enabledelayedexpansion']
+    \ + (has('gui_running') ? ['set TERM= > nul'] : [])
     \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds])
     \ + ['endlocal'],
     \ printf('iconv(v:val."\r", "%s", "cp%d")', &encoding, s:codepage))
@@ -79,7 +80,7 @@ function! s:shellesc_cmd(arg)
 endfunction
 
 function! fzf#shellescape(arg, ...)
-  let shell = get(a:000, 0, &shell)
+  let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
@@ -338,19 +339,21 @@ function! fzf#wrap(...)
 endfunction
 
 function! s:use_sh()
-  let [shell, shellslash] = [&shell, &shellslash]
+  let [shell, shellslash, shellcmdflag, shellxquote] = [&shell, &shellslash, &shellcmdflag, &shellxquote]
   if s:is_win
     set shell=cmd.exe
     set noshellslash
+    let &shellcmdflag = has('nvim') ? '/s /c' : '/c'
+    let &shellxquote = has('nvim') ? '"' : '('
   else
     set shell=sh
   endif
-  return [shell, shellslash]
+  return [shell, shellslash, shellcmdflag, shellxquote]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash] = s:use_sh()
+  let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
 
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -420,7 +423,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  let [&shell, &shellslash] = [shell, shellslash]
+  let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
 endtry
 endfunction
 
