@@ -296,9 +296,9 @@ func Run(opts *Options, revision string) {
 					}
 
 				case EvtHeader:
-					header := value.([]string)
-					header = append(header, make([]string, opts.HeaderLines-len(header))...)
-					terminal.UpdateHeader(header)
+					headerPadded := make([]string, opts.HeaderLines)
+					copy(headerPadded, value.([]string))
+					terminal.UpdateHeader(headerPadded)
 
 				case EvtSearchFin:
 					switch val := value.(type) {
