@@ -50,6 +50,9 @@ if s:is_win
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
   let s:codepage = libcallnr('kernel32.dll', 'GetACP', 0)
+  function! s:enc_to_cp(str)
+    return iconv(a:str, &encoding, 'cp'.s:codepage)
+  endfunction
   function! s:wrap_cmds(cmds)
     return map([
       \ '@echo off',
@@ -57,7 +60,7 @@ if s:is_win
     \ + (has('gui_running') ? ['set TERM= > nul'] : [])
     \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds])
     \ + ['endlocal'],
-    \ printf('iconv(v:val."\r", "%s", "cp%d")', &encoding, s:codepage))
+    \ '<SID>enc_to_cp(v:val."\r")')
   endfunction
 else
   let s:term_marker = ";#FZF"
@@ -68,6 +71,10 @@ else
 
   function! s:wrap_cmds(cmds)
     return a:cmds
+  endfunction
+
+  function! s:enc_to_cp(str)
+    return a:str
   endfunction
 endif
 
@@ -384,7 +391,7 @@ try
       let prefix = '( '.source.' )|'
     elseif type == 3
       let temps.input = s:fzf_tempname()
-      call writefile(source, temps.input)
+      call writefile(map(source, '<SID>enc_to_cp(v:val)'), temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
