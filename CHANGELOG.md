@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.20.0 (WIP)
+0.20.0
 ------
 - Customizable preview window color (`preview-fg` and `preview-bg` for `--color`)
   ```sh
