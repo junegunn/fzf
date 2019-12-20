@@ -436,7 +436,7 @@ On bash, fuzzy completion is enabled only for a predefined set of commands
 commands as well by using `_fzf_setup_completion` helper function.
 
 ```sh
-# usage: _fzf_setup_completion path|dir COMMANDS...
+# usage: _fzf_setup_completion path|dir|var|alias|host COMMANDS...
 _fzf_setup_completion path ag git kubectl
 _fzf_setup_completion dir tree
 ```

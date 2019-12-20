@@ -235,14 +235,7 @@ _fzf_complete_kill() {
   fi
 }
 
-_fzf_complete_telnet() {
-  _fzf_complete '+m' "$@" < <(
-    command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-  )
-}
-
-_fzf_complete_ssh() {
+_fzf_host_completion() {
   _fzf_complete '+m' "$@" < <(
     cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
@@ -251,19 +244,13 @@ _fzf_complete_ssh() {
   )
 }
 
-_fzf_complete_unset() {
+_fzf_var_completion() {
   _fzf_complete '-m' "$@" < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
-_fzf_complete_export() {
-  _fzf_complete '-m' "$@" < <(
-    declare -xp | sed 's/=.*//' | sed 's/.* //'
-  )
-}
-
-_fzf_complete_unalias() {
+_fzf_alias_completion() {
   _fzf_complete '-m' "$@" < <(
     alias | sed 's/=.*//' | sed 's/.* //'
   )
@@ -282,7 +269,7 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
-x_cmds="kill ssh telnet unset unalias export"
+x_cmds="kill"
 
 # Preserve existing completion
 eval "$(complete |
@@ -319,16 +306,7 @@ for cmd in $d_cmds; do
 done
 
 # Kill completion
-complete -F _fzf_complete_kill -o nospace -o default -o bashdefault kill
-
-# Host completion
-complete -F _fzf_complete_ssh -o default -o bashdefault ssh
-complete -F _fzf_complete_telnet -o default -o bashdefault telnet
-
-# Environment variables / Aliases
-complete -F _fzf_complete_unset -o default -o bashdefault unset
-complete -F _fzf_complete_export -o default -o bashdefault export
-complete -F _fzf_complete_unalias -o default -o bashdefault unalias
+complete -F _fzf_complete_kill -o default -o bashdefault kill
 
 unset cmd d_cmds a_cmds x_cmds
 
@@ -337,17 +315,24 @@ _fzf_setup_completion() {
   kind=$1
   fn=_fzf_${1}_completion
   if [[ $# -lt 2 ]] || ! type -t "$fn" > /dev/null; then
-    echo "usage: ${FUNCNAME[0]} path|dir COMMANDS..."
+    echo "usage: ${FUNCNAME[0]} path|dir|var|alias|host COMMANDS..."
     return 1
   fi
   shift
   for cmd in "$@"; do
     eval "$(complete -p "$cmd" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
     case "$kind" in
-      dir) __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
-      *)   __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
+      dir)   __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
+      var)   __fzf_defc "$cmd" "$fn" "-o default -o nospace -v" ;;
+      alias) __fzf_defc "$cmd" "$fn" "-a" ;;
+      *)     __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
     esac
   done
 }
+
+# Environment variables / Aliases / Hosts
+_fzf_setup_completion 'var'   export unset
+_fzf_setup_completion 'alias' unalias
+_fzf_setup_completion 'host'  ssh telnet
 
 fi
