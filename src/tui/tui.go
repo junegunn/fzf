@@ -231,10 +231,10 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			shape:       shape,
 			horizontal:  '─',
 			vertical:    '│',
-			topLeft:     '┌',
-			topRight:    '┐',
-			bottomLeft:  '└',
-			bottomRight: '┘',
+			topLeft:     '╭',
+			topRight:    '╮',
+			bottomLeft:  '╰',
+			bottomRight: '╯',
 		}
 	}
 	return BorderStyle{
