@@ -4,10 +4,11 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.zsh
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_HEIGHT        (default: '40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                 (default: 0)
+# - $FZF_TMUX_HEIGHT          (default: '40%')
+# - $FZF_COMPLETION_TRIGGER   (default: '**')
+# - $FZF_COMPLETION_OPTS      (default: empty)
+# - $FZF_PATH_COMPLETION_OPTS (default: empty)
 
 if [[ $- =~ i ]]; then
 
@@ -55,7 +56,7 @@ __fzf_generic_path_completion() {
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
+      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $FZF_PATH_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
         echo -n "${(q)item}$suffix "
       done)
       matches=${matches% }
