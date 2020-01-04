@@ -411,6 +411,9 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='+c -x'
 
+# Preview path completion list
+export FZF_PATH_COMPLETION_OPTS="--preview='bat {} | head -500'"
+
 # Use fd (https://github.com/sharkdp/fd) instead of the default find
 # command for listing path candidates.
 # - The first argument to the function ($1) is the base path to start traversal
