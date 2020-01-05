@@ -1572,7 +1572,10 @@ func (t *Terminal) Loop() {
 					var out bytes.Buffer
 					cmd.Stdout = &out
 					cmd.Stderr = &out
-					cmd.Start()
+					err := cmd.Start()
+					if err != nil {
+						out.Write([]byte(err.Error()))
+					}
 					finishChan := make(chan bool, 1)
 					updateChan := make(chan bool)
 					go func() {

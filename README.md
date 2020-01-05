@@ -484,7 +484,8 @@ See *KEY BINDINGS* section of the man page for details.
 ### Preview window
 
 When `--preview` option is set, fzf automatically starts an external process with
-the current line as the argument and shows the result in the split window.
+the current line as the argument and shows the result in the split window. Your
+`$SHELL` is used to execute the command with `$SHELL -c COMMAND`
 
 ```bash
 # {} is replaced to the single-quoted string of the focused line
