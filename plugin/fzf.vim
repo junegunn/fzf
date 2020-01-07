@@ -49,8 +49,13 @@ if s:is_win
 
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
-  let s:codepage = libcallnr('kernel32.dll', 'GetACP', 0)
   function! s:enc_to_cp(str)
+    if !has('iconv')
+      return a:str
+    endif
+    if !exists('s:codepage')
+      let s:codepage = libcallnr('kernel32.dll', 'GetACP', 0)
+    endif
     return iconv(a:str, &encoding, 'cp'.s:codepage)
   endfunction
   function! s:wrap_cmds(cmds)
