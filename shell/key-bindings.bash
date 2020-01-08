@@ -52,22 +52,13 @@ __fzf_cd__() {
 }
 
 __fzf_history__() (
-  local line
-  shopt -u nocaseglob nocasematch
-  line=$(
-    HISTTIMEFORMAT= builtin history |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
-    command grep '^ *[0-9]') &&
-    if [[ $- =~ H ]]; then
-      sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
-    else
-      sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
-    fi
+  HISTTIMEFORMAT='' builtin history |
+    sed -E -e :a -e 'N;$!ba' -e 's/(^|\n) *[1-9][0-9]*[ *] /\x00/g' |
+    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort --read0 $FZF_CTRL_R_OPTS +m" $(__fzfcmd)
 )
 
 # Required to refresh the prompt after fzf
 bind -m emacs-standard '"\er": redraw-current-line'
-bind -m emacs-standard '"\e^": history-expand-line'
 
 # CTRL-T - Paste the selected file path into the command line
 if [ $BASH_VERSINFO -gt 3 ]; then
@@ -79,7 +70,7 @@ else
 fi
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
+bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u\"`__fzf_history__`\"\e\C-e\er"'
 
 # ALT-C - cd into the selected directory
 bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
@@ -95,7 +86,6 @@ bind -m vi-insert '"\C-x\C-a": vi-movement-mode'
 
 bind -m vi-insert '"\C-x\C-e": shell-expand-line'
 bind -m vi-insert '"\C-x\C-r": redraw-current-line'
-bind -m vi-insert '"\C-x^": history-expand-line'
 
 # CTRL-T - Paste the selected file path into the command line
 # - FIXME: Selected items are attached to the end regardless of cursor position
@@ -109,7 +99,7 @@ fi
 bind -m vi-command '"\C-t": "i\C-t"'
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m vi-insert '"\C-r": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
+bind -m vi-insert '"\C-r": "\C-x\C-addi\"`__fzf_history__`\"\C-x\C-e\C-x\C-r\C-x\C-a$a"'
 bind -m vi-command '"\C-r": "i\C-r"'
 
 # ALT-C - cd into the selected directory
