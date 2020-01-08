@@ -87,10 +87,9 @@ _fzf_feed_fifo() (
 )
 
 _fzf_complete() {
-  local fifo fzf_opts lbuf fzf matches post
+  local fifo fzf_opts fzf matches post
   fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
   fzf_opts=$1
-  lbuf=$2
   post="${funcstack[2]}_post"
   type $post > /dev/null 2>&1 || post=cat
 
@@ -106,14 +105,14 @@ _fzf_complete() {
 }
 
 _fzf_complete_telnet() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete '+m' < <(
     command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
 
 _fzf_complete_ssh() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete '+m' < <(
     setopt localoptions nonomatch
     command cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
@@ -123,25 +122,25 @@ _fzf_complete_ssh() {
 }
 
 _fzf_complete_export() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete '-m' < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
 _fzf_complete_unset() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete '-m' < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
 _fzf_complete_unalias() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete '+m' < <(
     alias | sed 's/=.*//'
   )
 }
 
 fzf-completion() {
-  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
+  local tokens cmd prefix trigger visited tail fzf matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
@@ -164,6 +163,13 @@ fzf-completion() {
     tokens=(${tokens[0,-2]})
   fi
 
+  # Expand aliases recursively
+  if [[ ${+aliases[$cmd]} == 1 && ! $visited =~ $cmd ]]; then
+      visited=( $cmd $visited )
+      tokens=( ${(z)aliases[$cmd]} ${tokens:1} )
+      cmd=${tokens[1]}
+  fi
+
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
   # Kill completion (do not require trigger sequence)
   if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
@@ -181,7 +187,7 @@ fzf-completion() {
     [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER        || lbuf=${LBUFFER:0:-${#tokens[-1]}}
 
     if eval "type _fzf_complete_${cmd} > /dev/null"; then
-      eval "prefix=\"$prefix\" _fzf_complete_${cmd} \"$lbuf\""
+      eval "prefix=\"$prefix\" lbuf=\"$lbuf\" _fzf_complete_${cmd} \"${tokens[0,-2]}\""
     elif [ ${d_cmds[(i)$cmd]} -le ${#d_cmds} ]; then
       _fzf_dir_completion "$prefix" "$lbuf"
     else
