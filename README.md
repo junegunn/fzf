@@ -340,10 +340,6 @@ If you're on a tmux session, you can start fzf in a split pane by setting
 `FZF_TMUX` to 1, and change the height of the pane with `FZF_TMUX_HEIGHT`
 (e.g. `20`, `50%`).
 
-If you use vi mode on bash, you need to add `set -o vi` *before* `source
-~/.fzf.bash` in your .bashrc, so that it correctly sets up key bindings for vi
-mode.
-
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
 Fuzzy completion for bash and zsh
