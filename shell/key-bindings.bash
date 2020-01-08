@@ -53,21 +53,16 @@ __fzf_cd__() {
 
 __fzf_history__() (
   local line
-  shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= builtin history |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
-    command grep '^ *[0-9]') &&
-    if [[ $- =~ H ]]; then
-      sed 's/^ *\([0-9]*\)\** .*/!\1/' <<< "$line"
-    else
-      sed 's/^ *\([0-9]*\)\** *//' <<< "$line"
-    fi
+    builtin fc -lnr -2147483648 |
+      perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t" } s/^[ *]//; $_ = $ENV{HISTCMD} - $. . "\t$_"' |
+      FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd)
+  )
+  echo "${line#*$'\t'}"
 )
 
 # Required to refresh the prompt after fzf
 bind -m emacs-standard '"\er": redraw-current-line'
-bind -m emacs-standard '"\e^": history-expand-line'
 
 # CTRL-T - Paste the selected file path into the command line
 if [ $BASH_VERSINFO -gt 3 ]; then
@@ -79,7 +74,7 @@ else
 fi
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
+bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-uHISTCMD=$HISTCMD\e\C-e __fzf_history__`\"\C-a\"`\C-e\e\C-e\er"'
 
 # ALT-C - cd into the selected directory
 bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
