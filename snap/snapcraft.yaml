@@ -7,15 +7,18 @@ description: |
   files, command history, processes, hostnames, bookmarks, git commits, etc.
 base: core18
 grade: stable
-confinement: classic
+confinement: strict
 
 parts:
   fzf:
     plugin: go
     go-importpath: github.com/junegunn/fzf
-    source: ..
+    source: .
     source-type: git
 
 apps:
   fzf:
     command: bin/fzf
+    plugs:
+      - home
+      - mount-observe
