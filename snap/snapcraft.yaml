@@ -13,7 +13,7 @@ parts:
   fzf:
     plugin: go
     go-importpath: github.com/junegunn/fzf
-    source: .
+    source: ..
     source-type: git
 
 apps:
