@@ -1,0 +1,21 @@
+name: fzf-unofficial-18-04
+version: '0.20.0'
+summary: A general-purpose command-line fuzzy finder.
+description: |
+  An unofficial snap build of fzf for Ubuntu 18.04.  The fzf package provides an
+  interactive Unix filter for command-line that can be used with any list;
+  files, command history, processes, hostnames, bookmarks, git commits, etc.
+base: core18
+grade: stable
+confinement: classic
+
+parts:
+  fzf:
+    plugin: go
+    go-importpath: github.com/junegunn/fzf
+    source: ..
+    source-type: git
+
+apps:
+  fzf:
+    command: bin/fzf
