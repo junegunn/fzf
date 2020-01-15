@@ -25,7 +25,7 @@ const (
 	// Terminal
 	initialDelay      = 20 * time.Millisecond
 	initialDelayTac   = 100 * time.Millisecond
-	spinnerDuration   = 200 * time.Millisecond
+	spinnerDuration   = 100 * time.Millisecond
 	previewCancelWait = 500 * time.Millisecond
 	maxPatternLength  = 300
 	maxMulti          = math.MaxInt32

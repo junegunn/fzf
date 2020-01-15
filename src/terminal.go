@@ -61,6 +61,7 @@ var emptyLine = itemLine{}
 type Terminal struct {
 	initDelay  time.Duration
 	infoStyle  infoStyle
+	spinner    []string
 	prompt     string
 	promptLen  int
 	queryLen   [2]int
@@ -144,8 +145,6 @@ func (a byTimeOrder) Swap(i, j int) {
 func (a byTimeOrder) Less(i, j int) bool {
 	return a[i].at.Before(a[j].at)
 }
-
-var _spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 
 const (
 	reqPrompt util.EventType = iota
@@ -380,9 +379,14 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
+	spinner := []string{`⠋`, `⠙`, `⠹`, `⠸`, `⠼`, `⠴`, `⠦`, `⠧`, `⠇`, `⠏`}
+	if !opts.Unicode {
+		spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
+	}
 	t := Terminal{
 		initDelay:  delay,
 		infoStyle:  opts.InfoStyle,
+		spinner:    spinner,
 		queryLen:   [2]int{0, 0},
 		layout:     opts.Layout,
 		fullscreen: fullscreen,
@@ -744,8 +748,8 @@ func (t *Terminal) printInfo() {
 		t.move(1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
-			idx := (time.Now().UnixNano() % (duration * int64(len(_spinner)))) / duration
-			t.window.CPrint(tui.ColSpinner, t.strong, _spinner[idx])
+			idx := (time.Now().UnixNano() % (duration * int64(len(t.spinner)))) / duration
+			t.window.CPrint(tui.ColSpinner, t.strong, t.spinner[idx])
 		}
 		t.move(1, 2, false)
 		pos = 2
