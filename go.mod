@@ -12,6 +12,8 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
 	golang.org/x/crypto v0.0.0-20170728183002-558b6879de74
-	golang.org/x/sys v0.0.0-20181221143128-b4a75ba826a6
+	golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862 // indirect
 	golang.org/x/text v0.0.0-20170530162606-4ee4af566555 // indirect
 )
+
+go 1.13

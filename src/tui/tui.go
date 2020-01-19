@@ -40,6 +40,12 @@ const (
 	ESC
 	CtrlSpace
 
+	// https://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control-slash-to-the-terminal
+	CtrlBackSlash
+	CtrlRightBracket
+	CtrlCaret
+	CtrlSlash
+
 	Invalid
 	Resize
 	Mouse
@@ -117,7 +123,7 @@ func (c Color) is24() bool {
 
 const (
 	colUndefined Color = -2
-	colDefault         = -1
+	colDefault   Color = -1
 )
 
 const (
@@ -164,14 +170,13 @@ func (p ColorPair) Bg() Color {
 	return p.bg
 }
 
-func (p ColorPair) is24() bool {
-	return p.fg.is24() || p.bg.is24()
-}
-
 type ColorTheme struct {
 	Fg           Color
 	Bg           Color
+	PreviewFg    Color
+	PreviewBg    Color
 	DarkBg       Color
+	Gutter       Color
 	Prompt       Color
 	Match        Color
 	Current      Color
@@ -200,13 +205,59 @@ type MouseEvent struct {
 	Mod    bool
 }
 
-type BorderStyle int
+type BorderShape int
 
 const (
-	BorderNone BorderStyle = iota
+	BorderNone BorderShape = iota
 	BorderAround
 	BorderHorizontal
 )
+
+type BorderStyle struct {
+	shape       BorderShape
+	horizontal  rune
+	vertical    rune
+	topLeft     rune
+	topRight    rune
+	bottomLeft  rune
+	bottomRight rune
+}
+
+type BorderCharacter int
+
+func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
+	if unicode {
+		return BorderStyle{
+			shape:       shape,
+			horizontal:  '─',
+			vertical:    '│',
+			topLeft:     '╭',
+			topRight:    '╮',
+			bottomLeft:  '╰',
+			bottomRight: '╯',
+		}
+	}
+	return BorderStyle{
+		shape:       shape,
+		horizontal:  '-',
+		vertical:    '|',
+		topLeft:     '+',
+		topRight:    '+',
+		bottomLeft:  '+',
+		bottomRight: '+',
+	}
+}
+
+func MakeTransparentBorder() BorderStyle {
+	return BorderStyle{
+		shape:       BorderAround,
+		horizontal:  ' ',
+		vertical:    ' ',
+		topLeft:     ' ',
+		topRight:    ' ',
+		bottomLeft:  ' ',
+		bottomRight: ' '}
+}
 
 type Renderer interface {
 	Init()
@@ -223,7 +274,7 @@ type Renderer interface {
 	MaxY() int
 	DoesAutoWrap() bool
 
-	NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window
+	NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window
 }
 
 type Window interface {
@@ -272,24 +323,31 @@ var (
 	Dark256   *ColorTheme
 	Light256  *ColorTheme
 
-	ColNormal       ColorPair
-	ColPrompt       ColorPair
-	ColMatch        ColorPair
-	ColCurrent      ColorPair
-	ColCurrentMatch ColorPair
-	ColSpinner      ColorPair
-	ColInfo         ColorPair
-	ColCursor       ColorPair
-	ColSelected     ColorPair
-	ColHeader       ColorPair
-	ColBorder       ColorPair
+	ColPrompt          ColorPair
+	ColNormal          ColorPair
+	ColMatch           ColorPair
+	ColCursor          ColorPair
+	ColSelected        ColorPair
+	ColCurrent         ColorPair
+	ColCurrentMatch    ColorPair
+	ColCurrentCursor   ColorPair
+	ColCurrentSelected ColorPair
+	ColSpinner         ColorPair
+	ColInfo            ColorPair
+	ColHeader          ColorPair
+	ColBorder          ColorPair
+	ColPreview         ColorPair
+	ColPreviewBorder   ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
 	return &ColorTheme{
 		Fg:           colUndefined,
 		Bg:           colUndefined,
+		PreviewFg:    colUndefined,
+		PreviewBg:    colUndefined,
 		DarkBg:       colUndefined,
+		Gutter:       colUndefined,
 		Prompt:       colUndefined,
 		Match:        colUndefined,
 		Current:      colUndefined,
@@ -311,7 +369,10 @@ func init() {
 	Default16 = &ColorTheme{
 		Fg:           colDefault,
 		Bg:           colDefault,
+		PreviewFg:    colUndefined,
+		PreviewBg:    colUndefined,
 		DarkBg:       colBlack,
+		Gutter:       colUndefined,
 		Prompt:       colBlue,
 		Match:        colGreen,
 		Current:      colYellow,
@@ -325,7 +386,10 @@ func init() {
 	Dark256 = &ColorTheme{
 		Fg:           colDefault,
 		Bg:           colDefault,
+		PreviewFg:    colUndefined,
+		PreviewBg:    colUndefined,
 		DarkBg:       236,
+		Gutter:       colUndefined,
 		Prompt:       110,
 		Match:        108,
 		Current:      254,
@@ -339,7 +403,10 @@ func init() {
 	Light256 = &ColorTheme{
 		Fg:           colDefault,
 		Bg:           colDefault,
+		PreviewFg:    colUndefined,
+		PreviewBg:    colUndefined,
 		DarkBg:       251,
+		Gutter:       colUndefined,
 		Prompt:       25,
 		Match:        66,
 		Current:      237,
@@ -370,7 +437,10 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	}
 	theme.Fg = o(baseTheme.Fg, theme.Fg)
 	theme.Bg = o(baseTheme.Bg, theme.Bg)
+	theme.PreviewFg = o(theme.Fg, o(baseTheme.PreviewFg, theme.PreviewFg))
+	theme.PreviewBg = o(theme.Bg, o(baseTheme.PreviewBg, theme.PreviewBg))
 	theme.DarkBg = o(baseTheme.DarkBg, theme.DarkBg)
+	theme.Gutter = o(theme.DarkBg, o(baseTheme.Gutter, theme.Gutter))
 	theme.Prompt = o(baseTheme.Prompt, theme.Prompt)
 	theme.Match = o(baseTheme.Match, theme.Match)
 	theme.Current = o(baseTheme.Current, theme.Current)
@@ -392,29 +462,37 @@ func initPalette(theme *ColorTheme) {
 		return ColorPair{fg, bg, idx}
 	}
 	if theme != nil {
-		ColNormal = pair(theme.Fg, theme.Bg)
 		ColPrompt = pair(theme.Prompt, theme.Bg)
+		ColNormal = pair(theme.Fg, theme.Bg)
 		ColMatch = pair(theme.Match, theme.Bg)
+		ColCursor = pair(theme.Cursor, theme.Gutter)
+		ColSelected = pair(theme.Selected, theme.Gutter)
 		ColCurrent = pair(theme.Current, theme.DarkBg)
 		ColCurrentMatch = pair(theme.CurrentMatch, theme.DarkBg)
+		ColCurrentCursor = pair(theme.Cursor, theme.DarkBg)
+		ColCurrentSelected = pair(theme.Selected, theme.DarkBg)
 		ColSpinner = pair(theme.Spinner, theme.Bg)
 		ColInfo = pair(theme.Info, theme.Bg)
-		ColCursor = pair(theme.Cursor, theme.DarkBg)
-		ColSelected = pair(theme.Selected, theme.DarkBg)
 		ColHeader = pair(theme.Header, theme.Bg)
 		ColBorder = pair(theme.Border, theme.Bg)
+		ColPreview = pair(theme.PreviewFg, theme.PreviewBg)
+		ColPreviewBorder = pair(theme.Border, theme.PreviewBg)
 	} else {
-		ColNormal = pair(colDefault, colDefault)
 		ColPrompt = pair(colDefault, colDefault)
+		ColNormal = pair(colDefault, colDefault)
 		ColMatch = pair(colDefault, colDefault)
-		ColCurrent = pair(colDefault, colDefault)
-		ColCurrentMatch = pair(colDefault, colDefault)
-		ColSpinner = pair(colDefault, colDefault)
-		ColInfo = pair(colDefault, colDefault)
 		ColCursor = pair(colDefault, colDefault)
 		ColSelected = pair(colDefault, colDefault)
+		ColCurrent = pair(colDefault, colDefault)
+		ColCurrentMatch = pair(colDefault, colDefault)
+		ColCurrentCursor = pair(colDefault, colDefault)
+		ColCurrentSelected = pair(colDefault, colDefault)
+		ColSpinner = pair(colDefault, colDefault)
+		ColInfo = pair(colDefault, colDefault)
 		ColHeader = pair(colDefault, colDefault)
 		ColBorder = pair(colDefault, colDefault)
+		ColPreview = pair(colDefault, colDefault)
+		ColPreviewBorder = pair(colDefault, colDefault)
 	}
 }
 

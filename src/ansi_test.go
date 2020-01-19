@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/junegunn/fzf/src/tui"
@@ -155,4 +156,32 @@ func TestExtractColor(t *testing.T) {
 		assert((*offsets)[0], 0, 6, 2, -1, true)
 		assert((*offsets)[1], 6, 11, 200, 100, false)
 	})
+}
+
+func TestAnsiCodeStringConversion(t *testing.T) {
+	assert := func(code string, prevState *ansiState, expected string) {
+		state := interpretCode(code, prevState)
+		if expected != state.ToString() {
+			t.Errorf("expected: %s, actual: %s",
+				strings.Replace(expected, "\x1b[", "\\x1b[", -1),
+				strings.Replace(state.ToString(), "\x1b[", "\\x1b[", -1))
+		}
+	}
+	assert("\x1b[m", nil, "")
+	assert("\x1b[m", &ansiState{attr: tui.Blink}, "")
+
+	assert("\x1b[31m", nil, "\x1b[31;49m")
+	assert("\x1b[41m", nil, "\x1b[39;41m")
+
+	assert("\x1b[92m", nil, "\x1b[92;49m")
+	assert("\x1b[102m", nil, "\x1b[39;102m")
+
+	assert("\x1b[31m", &ansiState{fg: 4, bg: 4}, "\x1b[31;44m")
+	assert("\x1b[1;2;31m", &ansiState{fg: 2, bg: -1, attr: tui.Reverse}, "\x1b[1;2;7;31;49m")
+	assert("\x1b[38;5;100;48;5;200m", nil, "\x1b[38;5;100;48;5;200m")
+	assert("\x1b[48;5;100;38;5;200m", nil, "\x1b[38;5;200;48;5;100m")
+	assert("\x1b[48;5;100;38;2;10;20;30;1m", nil, "\x1b[1;38;2;10;20;30;48;5;100m")
+	assert("\x1b[48;5;100;38;2;10;20;30;7m",
+		&ansiState{attr: tui.Dim | tui.Italic, fg: 1, bg: 1},
+		"\x1b[2;3;7;38;2;10;20;30;48;5;100m")
 }

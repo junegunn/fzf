@@ -49,10 +49,23 @@ if s:is_win
 
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
+  function! s:enc_to_cp(str)
+    if !has('iconv')
+      return a:str
+    endif
+    if !exists('s:codepage')
+      let s:codepage = libcallnr('kernel32.dll', 'GetACP', 0)
+    endif
+    return iconv(a:str, &encoding, 'cp'.s:codepage)
+  endfunction
   function! s:wrap_cmds(cmds)
-    return map(['@echo off', 'for /f "tokens=4" %%a in (''chcp'') do set origchcp=%%a', 'chcp 65001 > nul'] +
-          \ (type(a:cmds) == type([]) ? a:cmds : [a:cmds]) +
-          \ ['chcp %origchcp% > nul'], 'v:val."\r"')
+    return map([
+      \ '@echo off',
+      \ 'setlocal enabledelayedexpansion']
+    \ + (has('gui_running') ? ['set TERM= > nul'] : [])
+    \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds])
+    \ + ['endlocal'],
+    \ '<SID>enc_to_cp(v:val."\r")')
   endfunction
 else
   let s:term_marker = ";#FZF"
@@ -63,6 +76,10 @@ else
 
   function! s:wrap_cmds(cmds)
     return a:cmds
+  endfunction
+
+  function! s:enc_to_cp(str)
+    return a:str
   endfunction
 endif
 
@@ -75,7 +92,7 @@ function! s:shellesc_cmd(arg)
 endfunction
 
 function! fzf#shellescape(arg, ...)
-  let shell = get(a:000, 0, &shell)
+  let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
@@ -239,7 +256,7 @@ function! s:common_sink(action, lines) abort
 endfunction
 
 function! s:get_color(attr, ...)
-  let gui = has('termguicolors') && &termguicolors
+  let gui = !s:is_win && !has('win32unix') && has('termguicolors') && &termguicolors
   let fam = gui ? 'gui' : 'cterm'
   let pat = gui ? '^#[a-f0-9]\+' : '^[0-9]\+$'
   for group in a:000
@@ -254,7 +271,7 @@ endfunction
 function! s:defaults()
   let rules = copy(get(g:, 'fzf_colors', {}))
   let colors = join(map(items(filter(map(rules, 'call("s:get_color", v:val)'), '!empty(v:val)')), 'join(v:val, ":")'), ',')
-  return empty(colors) ? '' : ('--color='.colors)
+  return empty(colors) ? '' : fzf#shellescape('--color='.colors)
 endfunction
 
 function! s:validate_layout(layout)
@@ -334,19 +351,21 @@ function! fzf#wrap(...)
 endfunction
 
 function! s:use_sh()
-  let [shell, shellslash] = [&shell, &shellslash]
+  let [shell, shellslash, shellcmdflag, shellxquote] = [&shell, &shellslash, &shellcmdflag, &shellxquote]
   if s:is_win
     set shell=cmd.exe
     set noshellslash
+    let &shellcmdflag = has('nvim') ? '/s /c' : '/c'
+    let &shellxquote = has('nvim') ? '"' : '('
   else
     set shell=sh
   endif
-  return [shell, shellslash]
+  return [shell, shellslash, shellcmdflag, shellxquote]
 endfunction
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash] = s:use_sh()
+  let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
 
   let dict   = exists('a:1') ? s:upgrade(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -377,7 +396,7 @@ try
       let prefix = '( '.source.' )|'
     elseif type == 3
       let temps.input = s:fzf_tempname()
-      call writefile(source, temps.input)
+      call writefile(map(source, '<SID>enc_to_cp(v:val)'), temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
@@ -416,7 +435,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  let [&shell, &shellslash] = [shell, shellslash]
+  let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
 endtry
 endfunction
 
@@ -457,7 +476,8 @@ function! s:pushd(dict)
     let cwd = s:fzf_getcwd()
     let w:fzf_pushd = {
     \   'command': haslocaldir() ? 'lcd' : (exists(':tcd') && haslocaldir(-1) ? 'tcd' : 'cd'),
-    \   'origin': cwd
+    \   'origin': cwd,
+    \   'bufname': bufname('')
     \ }
     execute 'lcd' s:escape(a:dict.dir)
     let cwd = s:fzf_getcwd()
@@ -493,19 +513,19 @@ function! s:dopopd()
   " matches 'dir' entry. However, it is possible that the sink function did
   " change the directory to 'dir'. In that case, the user will have an
   " unexpected result.
-  if s:fzf_getcwd() ==# w:fzf_pushd.dir
+  if s:fzf_getcwd() ==# w:fzf_pushd.dir && (!&autochdir || w:fzf_pushd.bufname ==# bufname(''))
     execute w:fzf_pushd.command s:escape(w:fzf_pushd.origin)
   endif
   unlet w:fzf_pushd
 endfunction
 
 function! s:xterm_launcher()
-  let fmt = 'xterm -T "[fzf]" -bg "\%s" -fg "\%s" -geometry %dx%d+%d+%d -e bash -ic %%s'
+  let fmt = 'xterm -T "[fzf]" -bg "%s" -fg "%s" -geometry %dx%d+%d+%d -e bash -ic %%s'
   if has('gui_macvim')
     let fmt .= '&& osascript -e "tell application \"MacVim\" to activate"'
   endif
   return printf(fmt,
-    \ synIDattr(hlID("Normal"), "bg"), synIDattr(hlID("Normal"), "fg"),
+    \ escape(synIDattr(hlID("Normal"), "bg"), '#'), escape(synIDattr(hlID("Normal"), "fg"), '#'),
     \ &columns, &lines/2, getwinposx(), getwinposy())
 endfunction
 unlet! s:launcher
@@ -517,6 +537,10 @@ endif
 
 function! s:exit_handler(code, command, ...)
   if a:code == 130
+    return 0
+  elseif has('nvim') && a:code == 129
+    " When deleting the terminal buffer while fzf is still running,
+    " Nvim sends SIGHUP.
     return 0
   elseif a:code > 1
     call s:error('Error running ' . a:command)
@@ -606,8 +630,9 @@ function! s:calc_size(max, val, dict)
     let srcsz = len(a:dict.source)
   endif
 
-  let opts = s:evaluate_opts(get(a:dict, 'options', '')).$FZF_DEFAULT_OPTS
+  let opts = $FZF_DEFAULT_OPTS.' '.s:evaluate_opts(get(a:dict, 'options', ''))
   let margin = stridx(opts, '--inline-info') > stridx(opts, '--no-inline-info') ? 1 : 2
+  let margin += stridx(opts, '--border') > stridx(opts, '--no-border') ? 2 : 0
   let margin += stridx(opts, '--header') > stridx(opts, '--no-header')
   return srcsz >= 0 ? min([srcsz + margin, size]) : size
 endfunction

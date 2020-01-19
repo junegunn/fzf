@@ -2,12 +2,11 @@
 
 set -u
 
-version=0.17.5
+version=0.20.0
 auto_completion=
 key_bindings=
 update_config=2
 binary_arch=
-allow_legacy=
 shells="bash zsh fish"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
@@ -45,7 +44,6 @@ for opt in "$@"; do
       auto_completion=1
       key_bindings=1
       update_config=1
-      allow_legacy=1
       ;;
     --xdg)
       prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
@@ -91,17 +89,20 @@ ask() {
 check_binary() {
   echo -n "  - Checking fzf executable ... "
   local output
-  output=$("$fzf_base"/bin/fzf --version 2>&1 | awk '{print $1}')
+  output=$("$fzf_base"/bin/fzf --version 2>&1)
   if [ $? -ne 0 ]; then
     echo "Error: $output"
     binary_error="Invalid binary"
-  elif [ "$version" != "$output" ]; then
-    echo "$output != $version"
-    binary_error="Invalid version"
   else
-    echo "$output"
-    binary_error=""
-    return 0
+    output=${output/ */}
+    if [ "$version" != "$output" ]; then
+      echo "$output != $version"
+      binary_error="Invalid version"
+    else
+      echo "$output"
+      binary_error=""
+      return 0
+    fi
   fi
   rm -f "$fzf_base"/bin/fzf
   return 1
@@ -110,7 +111,7 @@ check_binary() {
 link_fzf_in_path() {
   if which_fzf="$(command -v fzf)"; then
     echo "  - Found in \$PATH"
-    echo "  - Creating symlink: $which_fzf -> bin/fzf"
+    echo "  - Creating symlink: bin/fzf -> $which_fzf"
     (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
     check_binary && return
   fi
@@ -195,6 +196,8 @@ case "$archi" in
   MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+  Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+  Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
 
@@ -269,7 +272,7 @@ for shell in $shells; do
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
-  export PATH="\$PATH:$fzf_base/bin"
+  export PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
 fi
 
 # Auto-completion
@@ -279,7 +282,6 @@ $fzf_completion
 # Key bindings
 # ------------
 $fzf_key_bindings
-
 EOF
   echo "OK"
 done

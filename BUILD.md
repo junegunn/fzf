@@ -6,11 +6,9 @@ Build instructions
 
 ### Prerequisites
 
-- `go` executable in $PATH
+- Go 1.11 or above
 
 ### Using Makefile
-
-Makefile will set up and use its own `$GOPATH` under the project root.
 
 ```sh
 # Build fzf binary for your platform in target

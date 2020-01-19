@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"math"
 	"os"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 
 const (
 	// Current version
-	version = "0.17.5"
+	version = "0.20.0"
 
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
@@ -24,9 +25,10 @@ const (
 	// Terminal
 	initialDelay      = 20 * time.Millisecond
 	initialDelayTac   = 100 * time.Millisecond
-	spinnerDuration   = 200 * time.Millisecond
+	spinnerDuration   = 100 * time.Millisecond
 	previewCancelWait = 500 * time.Millisecond
 	maxPatternLength  = 300
+	maxMulti          = math.MaxInt32
 
 	// Matcher
 	numPartitionsMultiplier = 8

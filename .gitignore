@@ -7,3 +7,4 @@ Gemfile.lock
 doc/tags
 vendor
 gopath
+*.zwc

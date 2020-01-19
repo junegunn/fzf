@@ -32,6 +32,7 @@ type TcellWindow struct {
 	left        int
 	width       int
 	height      int
+	normal      ColorPair
 	lastX       int
 	lastY       int
 	moveCursor  bool
@@ -61,12 +62,8 @@ func (w *TcellWindow) Refresh() {
 	}
 	w.lastX = 0
 	w.lastY = 0
-	switch w.borderStyle {
-	case BorderAround:
-		w.drawBorder(true)
-	case BorderHorizontal:
-		w.drawBorder(false)
-	}
+
+	w.drawBorder()
 }
 
 func (w *TcellWindow) FinishFill() {
@@ -288,6 +285,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{keyfn('z'), 0, nil}
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
+		case tcell.KeyCtrlBackslash:
+			return Event{CtrlBackSlash, 0, nil}
+		case tcell.KeyCtrlRightSq:
+			return Event{CtrlRightBracket, 0, nil}
+		case tcell.KeyCtrlUnderscore:
+			return Event{CtrlSlash, 0, nil}
 		case tcell.KeyBackspace2:
 			if alt {
 				return Event{AltBS, 0, nil}
@@ -406,14 +409,18 @@ func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
 	_screen.Show()
 }
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, borderStyle BorderStyle) Window {
-	// TODO
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
+	normal := ColNormal
+	if preview {
+		normal = ColPreview
+	}
 	return &TcellWindow{
 		color:       r.theme != nil,
 		top:         top,
 		left:        left,
 		width:       width,
 		height:      height,
+		normal:      normal,
 		borderStyle: borderStyle}
 }
 
@@ -421,16 +428,16 @@ func (w *TcellWindow) Close() {
 	// TODO
 }
 
-func fill(x, y, w, h int, r rune) {
+func fill(x, y, w, h int, n ColorPair, r rune) {
 	for ly := 0; ly <= h; ly++ {
 		for lx := 0; lx <= w; lx++ {
-			_screen.SetContent(x+lx, y+ly, r, nil, ColNormal.style())
+			_screen.SetContent(x+lx, y+ly, r, nil, n.style())
 		}
 	}
 }
 
 func (w *TcellWindow) Erase() {
-	fill(w.left-1, w.top, w.width+1, w.height, ' ')
+	fill(w.left-1, w.top, w.width+1, w.height, w.normal, ' ')
 }
 
 func (w *TcellWindow) Enclose(y int, x int) bool {
@@ -447,13 +454,13 @@ func (w *TcellWindow) Move(y int, x int) {
 func (w *TcellWindow) MoveAndClear(y int, x int) {
 	w.Move(y, x)
 	for i := w.lastX; i < w.width; i++ {
-		_screen.SetContent(i+w.left, w.lastY+w.top, rune(' '), nil, ColNormal.style())
+		_screen.SetContent(i+w.left, w.lastY+w.top, rune(' '), nil, w.normal.style())
 	}
 	w.lastX = x
 }
 
 func (w *TcellWindow) Print(text string) {
-	w.printString(text, ColNormal, 0)
+	w.printString(text, w.normal, 0)
 }
 
 func (w *TcellWindow) printString(text string, pair ColorPair, a Attr) {
@@ -466,7 +473,7 @@ func (w *TcellWindow) printString(text string, pair ColorPair, a Attr) {
 			Reverse(a&Attr(tcell.AttrReverse) != 0).
 			Underline(a&Attr(tcell.AttrUnderline) != 0)
 	} else {
-		style = ColNormal.style().
+		style = w.normal.style().
 			Reverse(a&Attr(tcell.AttrReverse) != 0 || pair == ColCurrent || pair == ColCurrentMatch).
 			Underline(a&Attr(tcell.AttrUnderline) != 0 || pair == ColMatch || pair == ColCurrentMatch)
 	}
@@ -517,7 +524,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn
 	if w.color {
 		style = pair.style()
 	} else {
-		style = ColNormal.style()
+		style = w.normal.style()
 	}
 	style = style.
 		Blink(a&Attr(tcell.AttrBlink) != 0).
@@ -557,20 +564,24 @@ func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn
 }
 
 func (w *TcellWindow) Fill(str string) FillReturn {
-	return w.fillString(str, ColNormal, 0)
+	return w.fillString(str, w.normal, 0)
 }
 
 func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	if fg == colDefault {
-		fg = ColNormal.Fg()
+		fg = w.normal.Fg()
 	}
 	if bg == colDefault {
-		bg = ColNormal.Bg()
+		bg = w.normal.Bg()
 	}
 	return w.fillString(str, NewColorPair(fg, bg), a)
 }
 
-func (w *TcellWindow) drawBorder(around bool) {
+func (w *TcellWindow) drawBorder() {
+	if w.borderStyle.shape == BorderNone {
+		return
+	}
+
 	left := w.left
 	right := left + w.width
 	top := w.top
@@ -578,25 +589,29 @@ func (w *TcellWindow) drawBorder(around bool) {
 
 	var style tcell.Style
 	if w.color {
-		style = ColBorder.style()
+		if w.borderStyle.shape == BorderAround {
+			style = ColPreviewBorder.style()
+		} else {
+			style = ColBorder.style()
+		}
 	} else {
-		style = ColNormal.style()
+		style = w.normal.style()
 	}
 
 	for x := left; x < right; x++ {
-		_screen.SetContent(x, top, tcell.RuneHLine, nil, style)
-		_screen.SetContent(x, bot-1, tcell.RuneHLine, nil, style)
+		_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
+		_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 	}
 
-	if around {
+	if w.borderStyle.shape == BorderAround {
 		for y := top; y < bot; y++ {
-			_screen.SetContent(left, y, tcell.RuneVLine, nil, style)
-			_screen.SetContent(right-1, y, tcell.RuneVLine, nil, style)
+			_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+			_screen.SetContent(right-1, y, w.borderStyle.vertical, nil, style)
 		}
 
-		_screen.SetContent(left, top, tcell.RuneULCorner, nil, style)
-		_screen.SetContent(right-1, top, tcell.RuneURCorner, nil, style)
-		_screen.SetContent(left, bot-1, tcell.RuneLLCorner, nil, style)
-		_screen.SetContent(right-1, bot-1, tcell.RuneLRCorner, nil, style)
+		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
+		_screen.SetContent(right-1, top, w.borderStyle.topRight, nil, style)
+		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
+		_screen.SetContent(right-1, bot-1, w.borderStyle.bottomRight, nil, style)
 	}
 }

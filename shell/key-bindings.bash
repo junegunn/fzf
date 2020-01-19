@@ -55,7 +55,7 @@ __fzf_history__() (
   local line
   shopt -u nocaseglob nocasematch
   line=$(
-    HISTTIMEFORMAT= history |
+    HISTTIMEFORMAT= builtin history |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tac --sync -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m" $(__fzfcmd) |
     command grep '^ *[0-9]') &&
     if [[ $- =~ H ]]; then
@@ -65,57 +65,55 @@ __fzf_history__() (
     fi
 )
 
-if [[ ! -o vi ]]; then
-  # Required to refresh the prompt after fzf
-  bind '"\er": redraw-current-line'
-  bind '"\e^": history-expand-line'
+# Required to refresh the prompt after fzf
+bind -m emacs-standard '"\er": redraw-current-line'
+bind -m emacs-standard '"\e^": history-expand-line'
 
-  # CTRL-T - Paste the selected file path into the command line
-  if [ $BASH_VERSINFO -gt 3 ]; then
-    bind -x '"\C-t": "fzf-file-widget"'
-  elif __fzf_use_tmux__; then
-    bind '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
-  else
-    bind '"\C-t": " \C-u \C-a\C-k`__fzf_select__`\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
-  fi
-
-  # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
-
-  # ALT-C - cd into the selected directory
-  bind '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
+# CTRL-T - Paste the selected file path into the command line
+if [ $BASH_VERSINFO -gt 3 ]; then
+  bind -m emacs-standard -x '"\C-t": "fzf-file-widget"'
+elif __fzf_use_tmux__; then
+  bind -m emacs-standard '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
 else
-  # We'd usually use "\e" to enter vi-movement-mode so we can do our magic,
-  # but this incurs a very noticeable delay of a half second or so,
-  # because many other commands start with "\e".
-  # Instead, we bind an unused key, "\C-x\C-a",
-  # to also enter vi-movement-mode,
-  # and then use that thereafter.
-  # (We imagine that "\C-x\C-a" is relatively unlikely to be in use.)
-  bind '"\C-x\C-a": vi-movement-mode'
-
-  bind '"\C-x\C-e": shell-expand-line'
-  bind '"\C-x\C-r": redraw-current-line'
-  bind '"\C-x^": history-expand-line'
-
-  # CTRL-T - Paste the selected file path into the command line
-  # - FIXME: Selected items are attached to the end regardless of cursor position
-  if [ $BASH_VERSINFO -gt 3 ]; then
-    bind -x '"\C-t": "fzf-file-widget"'
-  elif __fzf_use_tmux__; then
-    bind '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select_tmux__`\C-x\C-e\C-x\C-a0P$xa"'
-  else
-    bind '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select__`\C-x\C-e\C-x\C-a0Px$a \C-x\C-r\C-x\C-axa "'
-  fi
-  bind -m vi-command '"\C-t": "i\C-t"'
-
-  # CTRL-R - Paste the selected command from history into the command line
-  bind '"\C-r": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
-  bind -m vi-command '"\C-r": "i\C-r"'
-
-  # ALT-C - cd into the selected directory
-  bind '"\ec": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
-  bind -m vi-command '"\ec": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+  bind -m emacs-standard '"\C-t": " \C-u \C-a\C-k`__fzf_select__`\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
 fi
+
+# CTRL-R - Paste the selected command from history into the command line
+bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\e^"'
+
+# ALT-C - cd into the selected directory
+bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
+
+# We'd usually use "\e" to enter vi-movement-mode so we can do our magic,
+# but this incurs a very noticeable delay of a half second or so,
+# because many other commands start with "\e".
+# Instead, we bind an unused key, "\C-x\C-a",
+# to also enter vi-movement-mode,
+# and then use that thereafter.
+# (We imagine that "\C-x\C-a" is relatively unlikely to be in use.)
+bind -m vi-insert '"\C-x\C-a": vi-movement-mode'
+
+bind -m vi-insert '"\C-x\C-e": shell-expand-line'
+bind -m vi-insert '"\C-x\C-r": redraw-current-line'
+bind -m vi-insert '"\C-x^": history-expand-line'
+
+# CTRL-T - Paste the selected file path into the command line
+# - FIXME: Selected items are attached to the end regardless of cursor position
+if [ $BASH_VERSINFO -gt 3 ]; then
+  bind -m vi-insert -x '"\C-t": "fzf-file-widget"'
+elif __fzf_use_tmux__; then
+  bind -m vi-insert '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select_tmux__`\C-x\C-e\C-x\C-a0P$xa"'
+else
+  bind -m vi-insert '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select__`\C-x\C-e\C-x\C-a0Px$a \C-x\C-r\C-x\C-axa "'
+fi
+bind -m vi-command '"\C-t": "i\C-t"'
+
+# CTRL-R - Paste the selected command from history into the command line
+bind -m vi-insert '"\C-r": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
+bind -m vi-command '"\C-r": "i\C-r"'
+
+# ALT-C - cd into the selected directory
+bind -m vi-insert '"\ec": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\ec": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
 
 fi
