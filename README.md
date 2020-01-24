@@ -602,4 +602,4 @@ https://github.com/junegunn/fzf/wiki/Related-projects
 
 The MIT License (MIT)
 
-Copyright (c) 2019 Junegunn Choi
+Copyright (c) 2013-2020 Junegunn Choi

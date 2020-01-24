@@ -338,7 +338,7 @@ LICENSE                                                            *fzf-license*
 
 The MIT License (MIT)
 
-Copyright (c) 2019 Junegunn Choi
+Copyright (c) 2013-2020 Junegunn Choi
 
 ==============================================================================
 vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:
