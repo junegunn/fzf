@@ -59,6 +59,8 @@ const usage = `usage: fzf [options]
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
+    --pointer-sign=STR    Cursor line pointer sign (default: '>')
+    --selected-sign=STR   Selected sign in multi-select mode (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
 
@@ -161,108 +163,112 @@ type previewOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Extended    bool
-	Phony       bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []criterion
-	Multi       int
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      sizeSpec
-	MinHeight   int
-	Layout      layoutType
-	Cycle       bool
-	Hscroll     bool
-	HscrollOff  int
-	FileWord    bool
-	InfoStyle   infoStyle
-	JumpLabels  string
-	Prompt      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[int]string
-	Keymap      map[int][]action
-	Preview     previewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	PrintSep    string
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	Margin      [4]sizeSpec
-	Bordered    bool
-	Unicode     bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy        bool
+	FuzzyAlgo    algo.Algo
+	Extended     bool
+	Phony        bool
+	Case         Case
+	Normalize    bool
+	Nth          []Range
+	WithNth      []Range
+	Delimiter    Delimiter
+	Sort         int
+	Tac          bool
+	Criteria     []criterion
+	Multi        int
+	Ansi         bool
+	Mouse        bool
+	Theme        *tui.ColorTheme
+	Black        bool
+	Bold         bool
+	Height       sizeSpec
+	MinHeight    int
+	Layout       layoutType
+	Cycle        bool
+	Hscroll      bool
+	HscrollOff   int
+	FileWord     bool
+	InfoStyle    infoStyle
+	JumpLabels   string
+	Prompt       string
+	PointerSign  string
+	SelectedSign string
+	Query        string
+	Select1      bool
+	Exit0        bool
+	Filter       *string
+	ToggleSort   bool
+	Expect       map[int]string
+	Keymap       map[int][]action
+	Preview      previewOpts
+	PrintQuery   bool
+	ReadZero     bool
+	Printer      func(string)
+	PrintSep     string
+	Sync         bool
+	History      *History
+	Header       []string
+	HeaderLines  int
+	Margin       [4]sizeSpec
+	Bordered     bool
+	Unicode      bool
+	Tabstop      int
+	ClearOnExit  bool
+	Version      bool
 }
 
 func defaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Extended:    true,
-		Phony:       false,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
-		Multi:       0,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Layout:      layoutDefault,
-		Cycle:       false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		FileWord:    false,
-		InfoStyle:   infoDefault,
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[int]string),
-		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false, true},
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		PrintSep:    "\n",
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		Margin:      defaultMargin(),
-		Unicode:     true,
-		Tabstop:     8,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:        true,
+		FuzzyAlgo:    algo.FuzzyMatchV2,
+		Extended:     true,
+		Phony:        false,
+		Case:         CaseSmart,
+		Normalize:    true,
+		Nth:          make([]Range, 0),
+		WithNth:      make([]Range, 0),
+		Delimiter:    Delimiter{},
+		Sort:         1000,
+		Tac:          false,
+		Criteria:     []criterion{byScore, byLength},
+		Multi:        0,
+		Ansi:         false,
+		Mouse:        true,
+		Theme:        tui.EmptyTheme(),
+		Black:        false,
+		Bold:         true,
+		MinHeight:    10,
+		Layout:       layoutDefault,
+		Cycle:        false,
+		Hscroll:      true,
+		HscrollOff:   10,
+		FileWord:     false,
+		InfoStyle:    infoDefault,
+		JumpLabels:   defaultJumpLabels,
+		Prompt:       "> ",
+		PointerSign:  ">",
+		SelectedSign: ">",
+		Query:        "",
+		Select1:      false,
+		Exit0:        false,
+		Filter:       nil,
+		ToggleSort:   false,
+		Expect:       make(map[int]string),
+		Keymap:       make(map[int][]action),
+		Preview:      previewOpts{"", posRight, sizeSpec{50, true}, false, false, true},
+		PrintQuery:   false,
+		ReadZero:     false,
+		Printer:      func(str string) { fmt.Println(str) },
+		PrintSep:     "\n",
+		Sync:         false,
+		History:      nil,
+		Header:       make([]string, 0),
+		HeaderLines:  0,
+		Margin:       defaultMargin(),
+		Unicode:      true,
+		Tabstop:      8,
+		ClearOnExit:  true,
+		Version:      false}
 }
 
 func help(code int) {
@@ -1189,6 +1195,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
+		case "--pointer-sign":
+			opts.PointerSign = nextString(allArgs, &i, "pointer sign string required")
+		case "--selected-sign":
+			opts.SelectedSign = nextString(allArgs, &i, "selected sign string required")
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync":
@@ -1255,6 +1265,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
+			} else if match, value := optString(arg, "--pointer-sign="); match {
+				opts.PointerSign = value
+			} else if match, value := optString(arg, "--selected-sign="); match {
+				opts.SelectedSign = value
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
