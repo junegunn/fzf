@@ -112,6 +112,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | FreeBSD      | `pkg install fzf`          |
 | NixOS        | `nix-env -iA nixpkgs.fzf`  |
 | openSUSE     | `sudo zypper install fzf`  |
+| OpenBSD      | `pkg_add fzf`              |
 
 Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
 plugin may or may not be enabled by default depending on the package manager.
