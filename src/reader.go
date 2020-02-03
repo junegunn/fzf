@@ -5,11 +5,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
+	"github.com/saracen/walker"
 )
 
 // Reader reads from command or standard input
@@ -99,7 +101,11 @@ func (r *Reader) ReadSource() {
 		shell := "bash"
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			success = r.readFromCommand(&shell, defaultCommand)
+			if defaultCommand != "" {
+				success = r.readFromCommand(&shell, defaultCommand)
+			} else {
+				success = r.readFiles()
+			}
 		} else {
 			success = r.readFromCommand(nil, cmd)
 		}
@@ -142,6 +148,23 @@ func (r *Reader) feed(src io.Reader) {
 func (r *Reader) readFromStdin() bool {
 	r.feed(os.Stdin)
 	return true
+}
+
+func (r *Reader) readFiles() bool {
+	fn := func(path string, mode os.FileInfo) error {
+		path = filepath.Clean(path)
+		if mode.Mode().IsDir() && filepath.Base(path)[0] == '.' {
+			return filepath.SkipDir
+		}
+		if r.pusher([]byte(path)) {
+			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		}
+		return nil
+	}
+	cb := walker.WithErrorCallback(func(pathname string, err error) error {
+		return nil
+	})
+	return walker.Walk(".", fn, cb) == nil
 }
 
 func (r *Reader) readFromCommand(shell *string, command string) bool {
