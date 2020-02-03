@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: November 23 2019
+fzf.txt	fzf	Last change: February 3 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -11,7 +11,7 @@ FZF - TABLE OF CONTENTS                                            *fzf* *fzf-to
     fzf#wrap
     Tips
       fzf inside terminal buffer
-        Starting fzf in Neovim floating window
+        Starting fzf in a popup window
         Hide statusline
     License
 
@@ -204,6 +204,7 @@ The following table summarizes the available options.
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | (Layout) Window position and size (e.g.  `20` ,  `50%` )
   `window`  (Vim 8 / Neovim)  | string        | (Layout) Command to open fzf window (e.g.  `vertical aboveleft 30new` )
+  `window`  (Vim 8 / Neovim)  | dict          | (Layout) Popup window settings (e.g.  `{'width': 0.9, 'height': 0.6}` )
  ---------------------------+---------------+----------------------------------------------------------------------
 
 `options` entry can be either a string or a list. For simple cases, string
@@ -212,6 +213,16 @@ should suffice, but prefer to use list type to avoid escaping issues.
     call fzf#run({'options': '--reverse --prompt "C:\\Program Files\\"'})
     call fzf#run({'options': ['--reverse', '--prompt', 'C:\Program Files\']})
 <
+When `window` entry is a dictionary, fzf will start in a popup window. The
+following options are allowed:
+
+ - Required:
+   - `width` [float]
+   - `height` [float]
+ - Optional:
+   - `highlight` [string default `'Comment'`]: Highlight group for border
+   - `rounded` [boolean default `v:true`]: Use rounded border
+
 
 FZF#WRAP
 ==============================================================================
@@ -291,29 +302,17 @@ The latest versions of Vim and Neovim include builtin terminal emulator
    - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
 
 
-Starting fzf in Neovim floating window~
-                                    *fzf-starting-fzf-in-neovim-floating-window*
+Starting fzf in a popup window~
+                                            *fzf-starting-fzf-in-a-popup-window*
 >
-    " Using floating windows of Neovim to start fzf
-    if has('nvim')
-      let $FZF_DEFAULT_OPTS .= ' --border --margin=0,2'
-
-      function! FloatingFZF()
-        let width = float2nr(&columns * 0.9)
-        let height = float2nr(&lines * 0.6)
-        let opts = { 'relative': 'editor',
-                   \ 'row': (&lines - height) / 2,
-                   \ 'col': (&columns - width) / 2,
-                   \ 'width': width,
-                   \ 'height': height }
-
-        let win = nvim_open_win(nvim_create_buf(v:false, v:true), v:true, opts)
-        call setwinvar(win, '&winhighlight', 'NormalFloat:Normal')
-      endfunction
-
-      let g:fzf_layout = { 'window': 'call FloatingFZF()' }
-    endif
-
+    " Required:
+    " - width [float]
+    " - height [float]
+    "
+    " Optional:
+    " - highlight [string default 'Comment']: Highlight group for border
+    " - rounded [boolean default v:true]: Use rounded border
+    let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 <
 
 Hide statusline~
