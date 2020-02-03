@@ -1,5 +1,5 @@
 FROM archlinux/base:latest
-RUN pacman -Sy && pacman --noconfirm -S awk git tmux zsh fish ruby procps go make
+RUN pacman -Sy && pacman --noconfirm -S awk git tmux zsh fish ruby procps go make gcc
 RUN gem install --no-document minitest
 RUN echo '. /usr/share/bash-completion/completions/git' >> ~/.bashrc
 RUN echo '. ~/.bashrc' >> ~/.bash_profile
