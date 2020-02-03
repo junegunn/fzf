@@ -153,11 +153,13 @@ func (r *Reader) readFromStdin() bool {
 func (r *Reader) readFiles() bool {
 	fn := func(path string, mode os.FileInfo) error {
 		path = filepath.Clean(path)
-		if mode.Mode().IsDir() && filepath.Base(path)[0] == '.' {
-			return filepath.SkipDir
-		}
-		if r.pusher([]byte(path)) {
-			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		if path != "." {
+			if mode.Mode().IsDir() && filepath.Base(path)[0] == '.' {
+				return filepath.SkipDir
+			}
+			if r.pusher([]byte(path)) {
+				atomic.StoreInt32(&r.event, int32(EvtReadNew))
+			}
 		}
 		return nil
 	}
