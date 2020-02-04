@@ -163,6 +163,8 @@ func (r *Reader) readFiles() bool {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
+		r.mutex.Lock()
+		defer r.mutex.Unlock()
 		if r.killed {
 			return context.Canceled
 		}
