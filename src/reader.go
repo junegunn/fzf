@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -80,7 +81,7 @@ func (r *Reader) terminate() {
 	r.killed = true
 	if r.exec != nil && r.exec.Process != nil {
 		util.KillCommand(r.exec)
-	} else {
+	} else if defaultCommand != "" {
 		os.Stdin.Close()
 	}
 }
@@ -151,6 +152,7 @@ func (r *Reader) readFromStdin() bool {
 }
 
 func (r *Reader) readFiles() bool {
+	r.killed = false
 	fn := func(path string, mode os.FileInfo) error {
 		path = filepath.Clean(path)
 		if path != "." {
@@ -160,6 +162,9 @@ func (r *Reader) readFiles() bool {
 			if r.pusher([]byte(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
+		}
+		if r.killed {
+			return context.Canceled
 		}
 		return nil
 	}
