@@ -161,6 +161,13 @@ Plug '/usr/local/opt/fzf'
 Plug '~/.fzf'
 ```
 
+If you use [Vundle.vim](https://github.com/VundleVim/Vundle.vim), the same can be written as:
+
+```vim
+Plugin 'junegunn/fzf'
+Plugin 'junegunn/fzf.vim'
+```
+
 But instead of separately installing fzf on your system (using Homebrew or
 "git clone") and enabling it on Vim (adding it to `&runtimepath`), you can use
 vim-plug to do both.
