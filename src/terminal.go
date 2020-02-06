@@ -795,7 +795,7 @@ func (t *Terminal) printInfo() {
 	maxWidth := t.window.Width() - pos
 	if len(output) > maxWidth {
 		outputRunes, _ := t.trimRight([]rune(output), maxWidth-2)
-		output = string(outputRunes) + ".."
+		output = string(outputRunes) + strings.Repeat(".", util.Constrain(maxWidth, 0, 2))
 	}
 	t.window.CPrint(tui.ColInfo, 0, output)
 }
