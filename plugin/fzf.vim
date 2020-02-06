@@ -844,6 +844,9 @@ endif
 function! s:popup(opts) abort
   " Size and position
   let width = min([max([0, float2nr(&columns * a:opts.width)]), &columns])
+  if &ambiwidth == 'double' && get(a:opts, 'border') != 'ascii'
+    let width += width % 2
+  endif
   let height = min([max([0, float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
   let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
   let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
@@ -860,16 +863,34 @@ function! s:popup(opts) abort
     let style = 'sharp'
   endif
 
+  let ambidouble = 1
+  if &ambiwidth == 'double'
+    let ambidouble = 2
+  endif
+
   if style == 'horizontal'
-    let hor = repeat('─', width)
+    let hor = repeat('─', width / ambidouble)
     let mid = repeat(' ', width)
     let border = [hor] + repeat([mid], height - 2) + [hor]
     let margin = 0
+  elseif style == 'ascii-horizontal'
+    let hor = repeat('-', width)
+    let mid = repeat(' ', width)
+    let border = [hor] + repeat([mid], height - 2) + [hor]
+    let margin = 0
+  elseif style == 'ascii'
+    let edge = '+'
+    let bar = repeat('-', width - 2)
+    let top = edge .. bar .. edge
+    let mid = '|' .. repeat(' ', width - 2) .. '|'
+    let bot = edge .. bar .. edge
+    let border = [top] + repeat([mid], height - 2) + [bot]
+    let margin = 2
   else
     let edges = style == 'sharp' ? ['┌', '┐', '└', '┘'] : ['╭', '╮', '╰', '╯']
-    let bar = repeat('─', width - 2)
+    let bar = repeat('─', width / ambidouble - 2)
     let top = edges[0] .. bar .. edges[1]
-    let mid = '│' .. repeat(' ', width - 2) .. '│'
+    let mid = '│' .. repeat(' ', width - 2 * ambidouble) .. '│'
     let bot = edges[2] .. bar .. edges[3]
     let border = [top] + repeat([mid], height - 2) + [bot]
     let margin = 2
