@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: February 3 2020
+fzf.txt	fzf	Last change: February 6 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -217,9 +217,11 @@ When `window` entry is a dictionary, fzf will start in a popup window. The
 following options are allowed:
 
  - Required:
-   - `width` [float]
-   - `height` [float]
+   - `width` [float range [0 ~ 1]]
+   - `height` [float range [0 ~ 1]]
  - Optional:
+   - `xoffset` [float default 0.0 range [0 ~ 1]]
+   - `yoffset` [float default 0.0 range [0 ~ 1]]
    - `highlight` [string default `'Comment'`]: Highlight group for border
    - `rounded` [boolean default `v:true`]: Use rounded border
 
@@ -306,10 +308,12 @@ Starting fzf in a popup window~
                                             *fzf-starting-fzf-in-a-popup-window*
 >
     " Required:
-    " - width [float]
-    " - height [float]
+    " - width [float range [0 ~ 1]]
+    " - height [float range [0 ~ 1]]
     "
     " Optional:
+    " - xoffset [float default 0.5 range [0 ~ 1]]
+    " - yoffset [float default 0.5 range [0 ~ 1]]
     " - highlight [string default 'Comment']: Highlight group for border
     " - rounded [boolean default v:true]: Use rounded border
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }

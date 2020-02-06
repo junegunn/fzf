@@ -843,10 +843,16 @@ endif
 
 function! s:popup(opts) abort
   " Size and position
-  let width = float2nr(&columns * a:opts.width)
-  let height = float2nr(&lines * a:opts.height)
-  let row = float2nr((&lines - height) / 2)
-  let col = float2nr((&columns - width) / 2)
+  let width = min([max([0, float2nr(&columns * a:opts.width)]), &columns])
+  let height = min([max([0, float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
+  let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
+  let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
+
+  " Managing the differences
+  let row = min([max([0, row]), &lines - has('nvim') - height])
+  let col = min([max([0, col]), &columns - width])
+  let row += !has('nvim')
+  let col += !has('nvim')
 
   " Border
   let edges = get(a:opts, 'rounded', 1) ? ['╭', '╮', '╰', '╯'] : ['┌', '┐', '└', '┘']
