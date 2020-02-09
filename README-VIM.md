@@ -297,8 +297,8 @@ The latest versions of Vim and Neovim include builtin terminal emulator
 " - height [float range [0 ~ 1]]
 "
 " Optional:
-" - xoffset [float default 0.0 range [0 ~ 1]]
-" - yoffset [float default 0.0 range [0 ~ 1]]
+" - xoffset [float default 0.5 range [0 ~ 1]]
+" - yoffset [float default 0.5 range [0 ~ 1]]
 " - highlight [string default 'Comment']: Highlight group for border
 " - border [string default 'rounded']: Border style ('rounded' | 'sharp' | 'horizontal')
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
