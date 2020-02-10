@@ -2093,6 +2093,7 @@ func (t *Terminal) Loop() {
 				}
 			}
 			if !doActions(actions, mapkey) {
+				t.mutex.Unlock()
 				continue
 			}
 			t.truncateQuery()
@@ -2100,6 +2101,7 @@ func (t *Terminal) Loop() {
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change]; queryChanged && prs {
 				if !doActions(onChanges, tui.Change) {
+					t.mutex.Unlock()
 					continue
 				}
 			}
