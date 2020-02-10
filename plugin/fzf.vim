@@ -843,10 +843,7 @@ endif
 
 function! s:popup(opts) abort
   " Support ambiwidth == 'double'
-  let ambidouble = 1
-  if &ambiwidth == 'double'
-    let ambidouble = 2
-  endif
+  let ambidouble = &ambiwidth == 'double' ? 2 : 1
 
   " Size and position
   let width = min([max([0, float2nr(&columns * a:opts.width)]), &columns])
