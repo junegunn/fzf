@@ -848,7 +848,6 @@ function! s:popup(opts) abort
   " Size and position
   let width = min([max([0, float2nr(&columns * a:opts.width)]), &columns])
   let width += width % ambidouble
-
   let height = min([max([0, float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
   let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
   let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
