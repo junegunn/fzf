@@ -842,11 +842,16 @@ else
 endif
 
 function! s:popup(opts) abort
+  " Support ambiwidth == 'double'
+  let ambidouble = 1
+  if &ambiwidth == 'double'
+    let ambidouble = 2
+  endif
+
   " Size and position
   let width = min([max([0, float2nr(&columns * a:opts.width)]), &columns])
-  if &ambiwidth == 'double'
-    let width += width % 2
-  endif
+  let width += width % ambidouble
+
   let height = min([max([0, float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
   let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
   let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
@@ -861,11 +866,6 @@ function! s:popup(opts) abort
   let style = get(a:opts, 'border', 'rounded')
   if !has_key(a:opts, 'border') && !get(a:opts, 'rounded', 1)
     let style = 'sharp'
-  endif
-
-  let ambidouble = 1
-  if &ambiwidth == 'double'
-    let ambidouble = 2
   endif
 
   if style == 'horizontal'
