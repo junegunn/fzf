@@ -119,11 +119,41 @@ let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:fzf_go = s:base_dir.'/bin/fzf'
 let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
-let s:install = s:base_dir.'/install'
 let s:installed = 0
 
 let s:cpo_save = &cpo
 set cpo&vim
+
+function! s:download_bin()
+  if s:installed
+    return 0
+  endif
+
+  if s:is_win && !has('win32unix')
+    let script = s:base_dir.'/install.ps1'
+    if !filereadable(script)
+      return 0
+    endif
+    let script = 'powershell -ExecutionPolicy Bypass -file ' . script
+  else
+    let script = s:base_dir.'/install'
+    if !executable(script)
+      return 0
+    endif
+    let script .= ' --bin'
+  endif
+
+  if input('fzf executable not found. Download binary? (y/n) ') !~? '^y'
+    return 0
+  end
+
+  redraw
+  echo
+  call s:warn('Downloading fzf binary. Please wait ...')
+  let s:installed = 1
+  call system(script)
+  return v:shell_error == 0
+endfunction
 
 function! s:fzf_exec()
   if !exists('s:exec')
@@ -131,18 +161,7 @@ function! s:fzf_exec()
       let s:exec = s:fzf_go
     elseif executable('fzf')
       let s:exec = 'fzf'
-    elseif s:is_win && !has('win32unix')
-      call s:warn('fzf executable not found.')
-      call s:warn('Download fzf binary for Windows from https://github.com/junegunn/fzf-bin/releases/')
-      call s:warn('and place it as '.s:base_dir.'\bin\fzf.exe')
-      throw 'fzf executable not found'
-    elseif !s:installed && executable(s:install) &&
-          \ input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
-      redraw
-      echo
-      call s:warn('Downloading fzf binary. Please wait ...')
-      let s:installed = 1
-      call system(s:install.' --bin')
+    elseif s:download_bin()
       return s:fzf_exec()
     else
       redraw
