@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: February 6 2020
+fzf.txt	fzf	Last change: February 14 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -220,10 +220,11 @@ following options are allowed:
    - `width` [float range [0 ~ 1]]
    - `height` [float range [0 ~ 1]]
  - Optional:
-   - `xoffset` [float default 0.0 range [0 ~ 1]]
-   - `yoffset` [float default 0.0 range [0 ~ 1]]
+   - `yoffset` [float default 0.5 range [0 ~ 1]]
+   - `xoffset` [float default 0.5 range [0 ~ 1]]
    - `highlight` [string default `'Comment'`]: Highlight group for border
-   - `border` [string default `rounded`]: Border style (`rounded` | `sharp` | `horizontal`)
+   - `border` [string default `rounded`]: Border style
+     - `rounded` / `sharp` / `horizontal` / `vertical` / `top` / `bottom` / `left` / `right`
 
 
 FZF#WRAP
@@ -315,7 +316,8 @@ Starting fzf in a popup window~
     " - xoffset [float default 0.5 range [0 ~ 1]]
     " - yoffset [float default 0.5 range [0 ~ 1]]
     " - highlight [string default 'Comment']: Highlight group for border
-    " - border [string default 'rounded']: Border style ('rounded' | 'sharp' | 'horizontal')
+    " - border [string default 'rounded']: Border style
+    "   - 'rounded' / 'sharp' / 'horizontal' / 'vertical' / 'top' / 'bottom' / 'left' / 'right'
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 <
 

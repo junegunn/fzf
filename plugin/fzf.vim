@@ -872,16 +872,24 @@ function! s:popup(opts) abort
   let col += !has('nvim')
 
   " Border style
-  let style = get(a:opts, 'border', 'rounded')
+  let style = tolower(get(a:opts, 'border', 'rounded'))
   if !has_key(a:opts, 'border') && !get(a:opts, 'rounded', 1)
     let style = 'sharp'
   endif
 
-  if style == 'horizontal'
+  if style =~ 'vertical\|left\|right'
+    let mid = style == 'vertical' ? '│' .. repeat(' ', width - 2 * ambidouble) .. '│' :
+            \ style == 'left'     ? '│' .. repeat(' ', width - 1 * ambidouble)
+            \                     :        repeat(' ', width - 1 * ambidouble) .. '│'
+    let border = repeat([mid], height)
+    let shift = { 'row': 0, 'col': style == 'right' ? 0 : 2, 'width': style == 'vertical' ? -4 : -2, 'height': 0 }
+  elseif style =~ 'horizontal\|top\|bottom'
     let hor = repeat('─', width / ambidouble)
     let mid = repeat(' ', width)
-    let border = [hor] + repeat([mid], height - 2) + [hor]
-    let margin = 0
+    let border = style == 'horizontal' ? [hor] + repeat([mid], height - 2) + [hor] :
+               \ style == 'top'        ? [hor] + repeat([mid], height - 1)
+               \                       :         repeat([mid], height - 1) + [hor]
+    let shift = { 'row': style == 'bottom' ? 0 : 1, 'col': 0, 'width': 0, 'height': style == 'horizontal' ? -2 : -1 }
   else
     let edges = style == 'sharp' ? ['┌', '┐', '└', '┘'] : ['╭', '╮', '╰', '╯']
     let bar = repeat('─', width / ambidouble - 2)
@@ -889,7 +897,7 @@ function! s:popup(opts) abort
     let mid = '│' .. repeat(' ', width - 2 * ambidouble) .. '│'
     let bot = edges[2] .. bar .. edges[3]
     let border = [top] + repeat([mid], height - 2) + [bot]
-    let margin = 2
+    let shift = { 'row': 1, 'col': 2, 'width': -4, 'height': -2 }
   endif
 
   let highlight = get(a:opts, 'highlight', 'Comment')
@@ -897,7 +905,7 @@ function! s:popup(opts) abort
     \ 'row': row, 'col': col, 'width': width, 'height': height, 'border': border
   \ })
   call s:create_popup('Normal', {
-    \ 'row': row + 1, 'col': col + margin, 'width': width - margin * 2, 'height': height - 2
+    \ 'row': row + shift.row, 'col': col + shift.col, 'width': width + shift.width, 'height': height + shift.height
   \ })
   if has('nvim')
     execute 'autocmd BufWipeout <buffer> bwipeout '..frame
