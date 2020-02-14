@@ -1,6 +1,50 @@
 FZF Vim integration
 ===================
 
+Installation
+------------
+
+Once you have fzf installed, you can enable it inside Vim simply by adding the
+directory to `&runtimepath` in your Vim configuration file. The path may
+differ depending on the package manager.
+
+```vim
+" If installed using Homebrew
+set rtp+=/usr/local/opt/fzf
+
+" If installed using git
+set rtp+=~/.fzf
+```
+
+If you use [vim-plug](https://github.com/junegunn/vim-plug), the same can be
+written as:
+
+```vim
+" If installed using Homebrew
+Plug '/usr/local/opt/fzf'
+
+" If installed using git
+Plug '~/.fzf'
+```
+
+But if you want the latest Vim plugin file from GitHub rather than the one
+included in the package, write:
+
+```vim
+Plug 'junegunn/fzf'
+```
+
+The Vim plugin will pick up fzf binary available on the system. If fzf is not
+found on `$PATH`, it will ask you if it should download the latest binary for
+you.
+
+To make sure that you have the latest version of the binary, set up
+post-update hook like so:
+
+```vim
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+```
+
 Summary
 -------
 
