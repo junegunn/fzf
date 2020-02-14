@@ -153,7 +153,6 @@ function! s:fzf_exec()
       let s:exec = 'fzf'
     elseif input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
       redraw
-      echo
       call fzf#install()
       return s:fzf_exec()
     else
