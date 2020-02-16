@@ -1376,9 +1376,9 @@ func validateSign(sign string, signOptName string) error {
 			return fmt.Errorf("invalid character in %v", signOptName)
 		}
 		widthSum += runewidth.RuneWidth(r)
-	}
-	if widthSum > 2 {
-		return fmt.Errorf("%v display width should be up to 2", signOptName)
+		if widthSum > 2 {
+			return fmt.Errorf("%v display width should be up to 2", signOptName)
+		}
 	}
 	return nil
 }
