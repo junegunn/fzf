@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/algo"
@@ -1369,12 +1370,11 @@ func parseOptions(opts *Options, allArgs []string) {
 }
 
 func validateSign(sign string, signOptName string) error {
-	if strings.Contains(sign, "\n") || strings.Contains(sign, "\t") {
-		return fmt.Errorf("In %v, \\n or \\t cannot be included", signOptName)
-	}
-
 	widthSum := 0
 	for _, r := range sign {
+		if !unicode.IsGraphic(r) {
+			return fmt.Errorf("invalid character in %v", signOptName)
+		}
 		widthSum += runewidth.RuneWidth(r)
 	}
 	if widthSum > 2 {
