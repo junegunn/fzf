@@ -12,6 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/mattn/go-shellwords"
 )
 
@@ -1047,6 +1048,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		}
 	}
 	validateJumpLabels := false
+	validatePointer := false
+	validateMarker := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -1197,8 +1200,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
 		case "--pointer":
 			opts.Pointer = nextString(allArgs, &i, "pointer sign string required")
+			validatePointer = true
 		case "--marker":
 			opts.Marker = nextString(allArgs, &i, "selected sign string required")
+			validateMarker = true
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync":
@@ -1267,8 +1272,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
 				opts.Pointer = value
+				validatePointer = true
 			} else if match, value := optString(arg, "--marker="); match {
 				opts.Marker = value
+				validateMarker = true
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
@@ -1347,6 +1354,33 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		}
 	}
+
+	if validatePointer {
+		if err := validateSign(opts.Pointer, "pointer"); err != nil {
+			errorExit(err.Error())
+		}
+	}
+
+	if validateMarker {
+		if err := validateSign(opts.Marker, "marker"); err != nil {
+			errorExit(err.Error())
+		}
+	}
+}
+
+func validateSign(sign string, signOptName string) error {
+	if strings.Contains(sign, "\n") || strings.Contains(sign, "\t") {
+		return fmt.Errorf("In %v, \\n or \\t cannot be included", signOptName)
+	}
+
+	widthSum := 0
+	for _, r := range sign {
+		widthSum += runewidth.RuneWidth(r)
+	}
+	if widthSum > 2 {
+		return fmt.Errorf("%v display width should be up to 2", signOptName)
+	}
+	return nil
 }
 
 func postProcessOptions(opts *Options) {
