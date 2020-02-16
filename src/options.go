@@ -60,8 +60,8 @@ const usage = `usage: fzf [options]
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
-    --pointer=STR         Cursor line pointer sign (default: '>')
-    --marker=STR          Selected sign in multi-select mode (default: '>')
+    --pointer=STR         Pointer to the current line (default: '>')
+    --marker=STR          Multi-select marker (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
 

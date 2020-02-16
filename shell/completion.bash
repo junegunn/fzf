@@ -73,7 +73,7 @@ _fzf_opts_completion() {
     --inline-info
     --prompt
     --pointer
-    --selected
+    --marker
     --header
     --header-lines
     --ansi
