@@ -1303,6 +1303,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
+				validateJumpLabels = true
 			} else {
 				errorExit("unknown option: " + arg)
 			}
