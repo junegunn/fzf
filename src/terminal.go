@@ -869,7 +869,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 		if i < len(t.jumpLabels) {
 			// Striped
 			current = i%2 == 0
-			label = t.jumpLabels[i : i+1]
+			label = t.jumpLabels[i:i+1] + strings.Repeat(" ", t.pointerLen-1)
 		}
 	} else if current {
 		label = t.pointer
