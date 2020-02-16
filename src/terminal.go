@@ -59,78 +59,78 @@ var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
 type Terminal struct {
-	initDelay         time.Duration
-	infoStyle         infoStyle
-	spinner           []string
-	prompt            string
-	promptLen         int
-	pointerSign       string
-	pointerSignLen    int
-	pointerSignEmpty  string
-	selectedSign      string
-	selectedSignLen   int
-	selectedSignEmpty string
-	queryLen          [2]int
-	layout            layoutType
-	fullscreen        bool
-	hscroll           bool
-	hscrollOff        int
-	wordRubout        string
-	wordNext          string
-	cx                int
-	cy                int
-	offset            int
-	xoffset           int
-	yanked            []rune
-	input             []rune
-	multi             int
-	sort              bool
-	toggleSort        bool
-	delimiter         Delimiter
-	expect            map[int]string
-	keymap            map[int][]action
-	pressed           string
-	printQuery        bool
-	history           *History
-	cycle             bool
-	header            []string
-	header0           []string
-	ansi              bool
-	tabstop           int
-	margin            [4]sizeSpec
-	strong            tui.Attr
-	unicode           bool
-	bordered          bool
-	cleanExit         bool
-	border            tui.Window
-	window            tui.Window
-	pborder           tui.Window
-	pwindow           tui.Window
-	count             int
-	progress          int
-	reading           bool
-	failed            *string
-	jumping           jumpMode
-	jumpLabels        string
-	printer           func(string)
-	printsep          string
-	merger            *Merger
-	selected          map[int32]selectedItem
-	version           int64
-	reqBox            *util.EventBox
-	preview           previewOpts
-	previewer         previewer
-	previewBox        *util.EventBox
-	eventBox          *util.EventBox
-	mutex             sync.Mutex
-	initFunc          func()
-	prevLines         []itemLine
-	suppress          bool
-	startChan         chan bool
-	killChan          chan int
-	slab              *util.Slab
-	theme             *tui.ColorTheme
-	tui               tui.Renderer
+	initDelay    time.Duration
+	infoStyle    infoStyle
+	spinner      []string
+	prompt       string
+	promptLen    int
+	pointer      string
+	pointerLen   int
+	pointerEmpty string
+	marker       string
+	markerLen    int
+	markerEmpty  string
+	queryLen     [2]int
+	layout       layoutType
+	fullscreen   bool
+	hscroll      bool
+	hscrollOff   int
+	wordRubout   string
+	wordNext     string
+	cx           int
+	cy           int
+	offset       int
+	xoffset      int
+	yanked       []rune
+	input        []rune
+	multi        int
+	sort         bool
+	toggleSort   bool
+	delimiter    Delimiter
+	expect       map[int]string
+	keymap       map[int][]action
+	pressed      string
+	printQuery   bool
+	history      *History
+	cycle        bool
+	header       []string
+	header0      []string
+	ansi         bool
+	tabstop      int
+	margin       [4]sizeSpec
+	strong       tui.Attr
+	unicode      bool
+	bordered     bool
+	cleanExit    bool
+	border       tui.Window
+	window       tui.Window
+	pborder      tui.Window
+	pwindow      tui.Window
+	count        int
+	progress     int
+	reading      bool
+	failed       *string
+	jumping      jumpMode
+	jumpLabels   string
+	printer      func(string)
+	printsep     string
+	merger       *Merger
+	selected     map[int32]selectedItem
+	version      int64
+	reqBox       *util.EventBox
+	preview      previewOpts
+	previewer    previewer
+	previewBox   *util.EventBox
+	eventBox     *util.EventBox
+	mutex        sync.Mutex
+	initFunc     func()
+	prevLines    []itemLine
+	suppress     bool
+	startChan    chan bool
+	killChan     chan int
+	slab         *util.Slab
+	theme        *tui.ColorTheme
+	tui          tui.Renderer
 }
 
 type selectedItem struct {
@@ -447,11 +447,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		tui:        renderer,
 		initFunc:   func() { renderer.Init() }}
 	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
-	t.pointerSign, t.pointerSignLen = t.processTabs([]rune(opts.PointerSign), 0)
-	t.selectedSign, t.selectedSignLen = t.processTabs([]rune(opts.SelectedSign), 0)
+	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
+	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
 	// pre-calculated empty pointer and selected signs
-	t.pointerSignEmpty = strings.Repeat(" ", t.pointerSignLen)
-	t.selectedSignEmpty = strings.Repeat(" ", t.selectedSignLen)
+	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
 	return &t
 }
@@ -864,7 +864,7 @@ func (t *Terminal) printList() {
 func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
-	label := t.pointerSignEmpty
+	label := t.pointerEmpty
 	if t.jumping != jumpDisabled {
 		if i < len(t.jumpLabels) {
 			// Striped
@@ -872,8 +872,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 			label = t.jumpLabels[i : i+1]
 		}
 	} else if current {
-		label = ">"
-		label = t.pointerSign
+		label = t.pointer
 	}
 
 	// Avoid unnecessary redraw
@@ -892,17 +891,17 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	if current {
 		t.window.CPrint(tui.ColCurrentCursor, t.strong, label)
 		if selected {
-			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.selectedSign)
+			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.marker)
 		} else {
-			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.selectedSignEmpty)
+			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.markerEmpty)
 		}
 		newLine.width = t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
 	} else {
 		t.window.CPrint(tui.ColCursor, t.strong, label)
 		if selected {
-			t.window.CPrint(tui.ColSelected, t.strong, t.selectedSign)
+			t.window.CPrint(tui.ColSelected, t.strong, t.marker)
 		} else {
-			t.window.Print(t.selectedSignEmpty)
+			t.window.Print(t.markerEmpty)
 		}
 		newLine.width = t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
 	}

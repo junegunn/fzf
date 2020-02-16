@@ -72,8 +72,8 @@ _fzf_opts_completion() {
     --margin
     --inline-info
     --prompt
-    --pointer-sign
-    --selected-sign
+    --pointer
+    --selected
     --header
     --header-lines
     --ansi
