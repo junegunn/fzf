@@ -164,7 +164,7 @@ function! s:fzf_exec()
 endfunction
 
 function! s:tmux_enabled()
-  if has('gui_running')
+  if has('gui_running') || !exists('$TMUX')
     return 0
   endif
 
@@ -173,10 +173,16 @@ function! s:tmux_enabled()
   endif
 
   let s:tmux = 0
-  if exists('$TMUX') && executable(s:fzf_tmux)
-    let output = system('tmux -V')
-    let s:tmux = !v:shell_error && output >= 'tmux 1.7'
+  if !executable(s:fzf_tmux)
+    if executable('fzf-tmux')
+      let s:fzf_tmux = 'fzf-tmux'
+    else
+      return 0
+    endif
   endif
+
+  let output = system('tmux -V')
+  let s:tmux = !v:shell_error && output >= 'tmux 1.7'
   return s:tmux
 endfunction
 
