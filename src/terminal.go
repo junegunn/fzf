@@ -449,7 +449,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
-	// pre-calculated empty pointer and selected signs
+	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
