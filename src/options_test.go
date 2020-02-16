@@ -431,6 +431,7 @@ func TestValidateSign(t *testing.T) {
 		{"> ", true},
 		{"아", true},
 		{"😀", true},
+		{"", false},
 		{">>>", false},
 		{"\n", false},
 		{"\t", false},
@@ -439,11 +440,11 @@ func TestValidateSign(t *testing.T) {
 	for _, testCase := range testCases {
 		err := validateSign(testCase.inputSign, "")
 		if testCase.isValid && err != nil {
-			t.Errorf("Input sign %s caused error", testCase.inputSign)
+			t.Errorf("Input sign `%s` caused error", testCase.inputSign)
 		}
 
 		if !testCase.isValid && err == nil {
-			t.Errorf("Input sign %s did not cause error", testCase.inputSign)
+			t.Errorf("Input sign `%s` did not cause error", testCase.inputSign)
 		}
 	}
 }

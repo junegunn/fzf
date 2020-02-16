@@ -1370,6 +1370,9 @@ func parseOptions(opts *Options, allArgs []string) {
 }
 
 func validateSign(sign string, signOptName string) error {
+	if sign == "" {
+		return fmt.Errorf("%v cannot be empty", signOptName)
+	}
 	widthSum := 0
 	for _, r := range sign {
 		if !unicode.IsGraphic(r) {
