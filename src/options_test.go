@@ -422,3 +422,29 @@ func TestAdditiveExpect(t *testing.T) {
 		t.Error(opts.Expect)
 	}
 }
+
+func TestValidateSign(t *testing.T) {
+	testCases := []struct {
+		inputSign string
+		isValid   bool
+	}{
+		{"> ", true},
+		{"아", true},
+		{"😀", true},
+		{"", false},
+		{">>>", false},
+		{"\n", false},
+		{"\t", false},
+	}
+
+	for _, testCase := range testCases {
+		err := validateSign(testCase.inputSign, "")
+		if testCase.isValid && err != nil {
+			t.Errorf("Input sign `%s` caused error", testCase.inputSign)
+		}
+
+		if !testCase.isValid && err == nil {
+			t.Errorf("Input sign `%s` did not cause error", testCase.inputSign)
+		}
+	}
+}

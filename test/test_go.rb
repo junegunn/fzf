@@ -1407,6 +1407,39 @@ class TestGoFZF < TestBase
     assert_equal '3', readonce.chomp
   end
 
+  def test_pointer
+    pointer = '>>'
+    tmux.send_keys "seq 10 | #{fzf "--pointer '#{pointer}'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  10/10' }
+    lines = tmux.capture
+    # Assert that specified pointer is displayed
+    assert_equal "#{pointer} 1", lines[-3]
+  end
+
+  def test_pointer_with_jump
+    pointer = '>>'
+    tmux.send_keys "seq 10 | #{fzf "--multi --jump-labels 12345 --bind 'ctrl-j:jump' --pointer '#{pointer}'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  10/10' }
+    tmux.send_keys 'C-j'
+    # Correctly padded jump label should appear
+    tmux.until { |lines| lines[-7] == '5  5' }
+    tmux.until { |lines| lines[-8] == '   6' }
+    tmux.send_keys '5'
+    lines = tmux.capture
+    # Assert that specified pointer is displayed
+    assert_equal "#{pointer} 5", lines[-7]
+  end
+
+  def test_marker
+    marker = '>>'
+    tmux.send_keys "seq 10 | #{fzf "--multi --marker '#{marker}'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  10/10' }
+    tmux.send_keys :BTab
+    lines = tmux.capture
+    # Assert that specified marker is displayed
+    assert_equal " #{marker}1", lines[-3]
+  end
+
   def test_preview
     tmux.send_keys %(seq 1000 | sed s/^2$// | #{FZF} -m --preview 'sleep 0.2; echo {{}-{+}}' --bind ?:toggle-preview), :Enter
     tmux.until { |lines| lines[1].include?(' {1-1}') }

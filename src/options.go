@@ -6,12 +6,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/mattn/go-shellwords"
 )
 
@@ -59,6 +61,8 @@ const usage = `usage: fzf [options]
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
+    --pointer=STR         Pointer to the current line (default: '>')
+    --marker=STR          Multi-select marker (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
 
@@ -189,6 +193,8 @@ type Options struct {
 	InfoStyle   infoStyle
 	JumpLabels  string
 	Prompt      string
+	Pointer     string
+	Marker      string
 	Query       string
 	Select1     bool
 	Exit0       bool
@@ -242,6 +248,8 @@ func defaultOptions() *Options {
 		InfoStyle:   infoDefault,
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
+		Pointer:     ">",
+		Marker:      ">",
 		Query:       "",
 		Select1:     false,
 		Exit0:       false,
@@ -1041,6 +1049,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		}
 	}
 	validateJumpLabels := false
+	validatePointer := false
+	validateMarker := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -1189,6 +1199,12 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
+		case "--pointer":
+			opts.Pointer = nextString(allArgs, &i, "pointer sign string required")
+			validatePointer = true
+		case "--marker":
+			opts.Marker = nextString(allArgs, &i, "selected sign string required")
+			validateMarker = true
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync":
@@ -1255,6 +1271,12 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
+			} else if match, value := optString(arg, "--pointer="); match {
+				opts.Pointer = value
+				validatePointer = true
+			} else if match, value := optString(arg, "--marker="); match {
+				opts.Marker = value
+				validateMarker = true
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
@@ -1333,6 +1355,35 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		}
 	}
+
+	if validatePointer {
+		if err := validateSign(opts.Pointer, "pointer"); err != nil {
+			errorExit(err.Error())
+		}
+	}
+
+	if validateMarker {
+		if err := validateSign(opts.Marker, "marker"); err != nil {
+			errorExit(err.Error())
+		}
+	}
+}
+
+func validateSign(sign string, signOptName string) error {
+	if sign == "" {
+		return fmt.Errorf("%v cannot be empty", signOptName)
+	}
+	widthSum := 0
+	for _, r := range sign {
+		if !unicode.IsGraphic(r) {
+			return fmt.Errorf("invalid character in %v", signOptName)
+		}
+		widthSum += runewidth.RuneWidth(r)
+		if widthSum > 2 {
+			return fmt.Errorf("%v display width should be up to 2", signOptName)
+		}
+	}
+	return nil
 }
 
 func postProcessOptions(opts *Options) {
