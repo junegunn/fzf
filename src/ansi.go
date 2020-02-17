@@ -243,6 +243,10 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 					state.attr = state.attr | tui.Blink
 				case 7:
 					state.attr = state.attr | tui.Reverse
+				case 23: // tput rmso
+					state.attr = state.attr &^ tui.Italic
+				case 24: // tput rmul
+					state.attr = state.attr &^ tui.Underline
 				case 0:
 					init()
 				default:
