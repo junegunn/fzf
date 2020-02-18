@@ -159,6 +159,47 @@ let g:fzf_colors =
 let g:fzf_history_dir = '~/.local/share/fzf-history'
 ```
 
+The above `g:fzf_colors` setting is a little tricky.
+
+This variable is a dictionary mapping fzf elements to a color specification
+list:
+
+    element: [ layer, group1 (, group2, ...) ]
+
+- `element` is the fzf element to apply a color to:
+
+  - **fg  / bg  / hl** : non-selected lines (foreground / background / highlight)
+  - **fg+ / bg+ / hl+** : selected lines  (foreground / background / highlight)
+  - **hl  / hl+** : strings matching the search (normal / selected)
+  - **gutter** : the background of the first 2 columns
+  - **pointer / marker** : the '>' indicator in the gutter
+  - **border** : the border around terminal window
+  - **header** : the line containing the current file
+  - **info** : match counters
+  - **spinner** : the char at column 1 before the match counters
+  - **prompt** : the prompt before input strings
+
+- `layer` specifies the layer (fg/bg) from which to extract the color when
+  considering each of the following highlight groups.
+
+- `group1 (, group2, ...)` is a list of highlight groups that are searched (in
+  order) for a matching color definition.
+
+For example, consider the following specification:
+
+```vim
+  'prompt':  ['fg', 'Conditional', 'Comment'],
+```
+
+This means we color the **prompt** using the `fg` attribute of the
+`Conditional`, if it exists, otherwise use the `fg` attribute of the `Comment`
+highlight group, if it exists, otherwise fall back to the default color settings
+for the **prompt**.
+
+For the **fg+**, **bg+**, **hl+**, **prompt**, **pointer**, and **marker**
+elements there is an extra condition: the color only matches if the highlight
+group also has `term=bold` set.  This last bit can cause a lot of confusion.
+
 `fzf#run`
 ---------
 
