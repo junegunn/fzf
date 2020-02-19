@@ -31,20 +31,40 @@ fi
 
 ###########################################################
 
-__fzfcmd_complete() {
-  [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] &&
-    echo "fzf-tmux -d${FZF_TMUX_HEIGHT:-40%}" || echo "fzf"
+__fzf_comprun() {
+  if [[ "$(type _fzf_comprun 2>&1)" =~ function ]]; then
+    _fzf_comprun "$@"
+  elif [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ]; then
+    shift
+    fzf-tmux -d "${FZF_TMUX_HEIGHT:-40%}" "$@"
+  else
+    shift
+    fzf "$@"
+  fi
+}
+
+# Extract the name of the command. e.g. foo=1 bar baz**<tab>
+__fzf_extract_command() {
+  local token tokens
+  tokens=(${(z)1})
+  for token in $tokens; do
+    if [[ "$token" =~ [[:alnum:]] && ! "$token" =~ "=" ]]; then
+      echo "$token"
+      return
+    fi
+  done
+  echo "${tokens[1]}"
 }
 
 __fzf_generic_path_completion() {
-  local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
+  local base lbuf cmd compgen fzf_opts suffix tail dir leftover matches
   base=$1
   lbuf=$2
+  cmd=$(__fzf_extract_command "$lbuf")
   compgen=$3
   fzf_opts=$4
   suffix=$5
   tail=$6
-  fzf="$(__fzfcmd_complete)"
 
   setopt localoptions nonomatch
   eval "base=$base"
@@ -55,7 +75,7 @@ __fzf_generic_path_completion() {
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
+      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
         echo -n "${(q)item}$suffix "
       done)
       matches=${matches% }
@@ -87,17 +107,16 @@ _fzf_feed_fifo() (
 )
 
 _fzf_complete() {
-  local fifo fzf_opts lbuf fzf matches post
+  local fifo fzf_opts lbuf cmd matches post
   fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
   fzf_opts=$1
   lbuf=$2
+  cmd=$(__fzf_extract_command "$lbuf")
   post="${funcstack[2]}_post"
   type $post > /dev/null 2>&1 || post=cat
 
-  fzf="$(__fzfcmd_complete)"
-
   _fzf_feed_fifo "$fifo"
-  matches=$(cat "$fifo" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" | $post | tr '\n' ' ')
+  matches=$(cat "$fifo" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" | $post | tr '\n' ' ')
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
@@ -141,7 +160,7 @@ _fzf_complete_unalias() {
 }
 
 fzf-completion() {
-  local tokens cmd prefix trigger tail fzf matches lbuf d_cmds
+  local tokens cmd prefix trigger tail matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
@@ -152,7 +171,7 @@ fzf-completion() {
     return
   fi
 
-  cmd=${tokens[1]}
+  cmd=$(__fzf_extract_command "$LBUFFER")
 
   # Explicitly allow for empty trigger.
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
@@ -167,8 +186,7 @@ fzf-completion() {
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
   # Kill completion (do not require trigger sequence)
   if [ $cmd = kill -a ${LBUFFER[-1]} = ' ' ]; then
-    fzf="$(__fzfcmd_complete)"
-    matches=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS --preview 'echo {}' --preview-window down:3:wrap $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} -m | awk '{print $2}' | tr '\n' ' ')
+    matches=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS --preview 'echo {}' --preview-window down:3:wrap" __fzf_comprun "$cmd" -m | awk '{print $2}' | tr '\n' ' ')
     if [ -n "$matches" ]; then
       LBUFFER="$LBUFFER$matches"
     fi
