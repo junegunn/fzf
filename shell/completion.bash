@@ -321,8 +321,8 @@ _fzf_setup_completion() {
     return 1
   fi
   shift
+  eval "$(complete -p "$@" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
   for cmd in "$@"; do
-    eval "$(complete -p "$cmd" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
     case "$kind" in
       dir)   __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
       var)   __fzf_defc "$cmd" "$fn" "-o default -o nospace -v" ;;
