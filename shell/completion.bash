@@ -233,6 +233,7 @@ _fzf_complete_kill() {
 
   local selected
   selected=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS --preview 'echo {}' --preview-window down:3:wrap" __fzf_comprun "kill" -m | awk '{print $2}' | tr '\n' ' ')
+  selected=${selected% }
   printf '\e[5n'
 
   if [ -n "$selected" ]; then
