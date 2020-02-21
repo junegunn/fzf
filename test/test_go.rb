@@ -63,8 +63,6 @@ class Shell
 end
 
 class Tmux
-  TEMPNAME = '/tmp/fzf-test.txt'
-
   attr_reader :win
 
   def initialize(shell = :bash)
@@ -119,12 +117,7 @@ class Tmux
   end
 
   def capture(pane = 0)
-    File.unlink TEMPNAME while File.exist? TEMPNAME
-    wait do
-      go("capture-pane -t #{win}.#{pane} \\; save-buffer #{TEMPNAME} 2> /dev/null")
-      $CHILD_STATUS.exitstatus.zero?
-    end
-    File.read(TEMPNAME).split($INPUT_RECORD_SEPARATOR)[0, @lines].reverse.drop_while(&:empty?).reverse
+    go("capture-pane -p -t #{win}.#{pane}")
   end
 
   def until(refresh = false, pane = 0)
@@ -1714,7 +1707,10 @@ end
 
 module TestShell
   def setup
-    super
+    @tmux = Tmux.new shell
+
+    # Why is this necessary? To wait until the shell is ready?
+    tmux.prepare
   end
 
   def teardown
@@ -1829,6 +1825,16 @@ module TestShell
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == '3rd' }
+  end
+
+  def test_ctrl_r_abort
+    skip "doesn't restore the original line when search is aborted pre Bash 4" if shell == :bash && /(?<= version )\d+/.match(`#{Shell.bash} --version`).to_s.to_i < 4
+    tmux.send_keys 'foo'
+    tmux.until { |lines| lines[-1].start_with? 'foo' }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| lines[-1].start_with? '>' }
+    tmux.send_keys 'C-g'
+    tmux.until { |lines| lines[-1].start_with? 'foo' }
   end
 
   def retries(times = 3)
@@ -2020,15 +2026,14 @@ class TestBash < TestBase
   include TestShell
   include CompletionTest
 
+  def shell
+    :bash
+  end
+
   def new_shell
     tmux.prepare
     tmux.send_keys "FZF_TMUX=1 #{Shell.bash}", :Enter
     tmux.prepare
-  end
-
-  def setup
-    super
-    @tmux = Tmux.new :bash
   end
 
   def test_dynamic_completion_loader
@@ -2053,19 +2058,22 @@ class TestZsh < TestBase
   include TestShell
   include CompletionTest
 
+  def shell
+    :zsh
+  end
+
   def new_shell
     tmux.send_keys "FZF_TMUX=1 #{Shell.zsh}", :Enter
     tmux.prepare
-  end
-
-  def setup
-    super
-    @tmux = Tmux.new :zsh
   end
 end
 
 class TestFish < TestBase
   include TestShell
+
+  def shell
+    :fish
+  end
 
   def new_shell
     tmux.send_keys 'env FZF_TMUX=1 fish', :Enter
@@ -2077,10 +2085,5 @@ class TestFish < TestBase
     tmux.prepare
     tmux.send_keys "set -g #{name} '#{val}'", :Enter
     tmux.prepare
-  end
-
-  def setup
-    super
-    @tmux = Tmux.new :fish
   end
 end
