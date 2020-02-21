@@ -84,36 +84,20 @@ bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er\
 # ALT-C - cd into the selected directory
 bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
 
-# We'd usually use "\e" to enter vi-movement-mode so we can do our magic,
-# but this incurs a very noticeable delay of a half second or so,
-# because many other commands start with "\e".
-# Instead, we bind an unused key, "\C-x\C-a",
-# to also enter vi-movement-mode,
-# and then use that thereafter.
-# (We imagine that "\C-x\C-a" is relatively unlikely to be in use.)
-bind -m vi-insert '"\C-x\C-a": vi-movement-mode'
-
-bind -m vi-insert '"\C-x\C-e": shell-expand-line'
-bind -m vi-insert '"\C-x\C-r": redraw-current-line'
-bind -m vi-insert '"\C-x^": history-expand-line'
+bind -m vi-command '"\C-z": emacs-editing-mode'
+bind -m vi-insert '"\C-z": emacs-editing-mode'
+bind -m emacs-standard '"\C-z": vi-editing-mode'
 
 # CTRL-T - Paste the selected file path into the command line
-# - FIXME: Selected items are attached to the end regardless of cursor position
-if [ $BASH_VERSINFO -gt 3 ]; then
-  bind -m vi-insert -x '"\C-t": "fzf-file-widget"'
-elif __fzf_use_tmux__; then
-  bind -m vi-insert '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select_tmux__`\C-x\C-e\C-x\C-a0P$xa"'
-else
-  bind -m vi-insert '"\C-t": "\C-x\C-a$a \C-x\C-addi`__fzf_select__`\C-x\C-e\C-x\C-a0Px$a \C-x\C-r\C-x\C-axa "'
-fi
-bind -m vi-command '"\C-t": "i\C-t"'
+bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
+bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m vi-insert '"\C-r": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
-bind -m vi-command '"\C-r": "i\C-r"'
+bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
+bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
 
 # ALT-C - cd into the selected directory
-bind -m vi-insert '"\ec": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
-bind -m vi-command '"\ec": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\ec": "\C-z\ec\C-z"'
+bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 
 fi
