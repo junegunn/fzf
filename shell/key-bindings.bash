@@ -55,7 +55,7 @@ __fzf_history__() (
   local line
   line=$(
     builtin fc -lnr -2147483648 |
-      perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t" } s/^[ *]//; $_ = $ENV{HISTCMD} - $. . "\t$_"' |
+      perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t" } s/^[ *]//; $_ = '"$1"' - $. . "\t$_"' |
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd)
   )
   echo "${line#*$'\t'}"
@@ -74,7 +74,7 @@ else
 fi
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-uHISTCMD=$HISTCMD\e\C-e __fzf_history__`\"\C-a\"`\C-e\e\C-e\er"'
+bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u__fzf_history__ $HISTCMD\e\C-e`"\C-a"`\C-e\e\C-e\er"'
 
 # ALT-C - cd into the selected directory
 bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
