@@ -73,9 +73,9 @@ bind -m emacs-standard '"\e^": history-expand-line'
 if [ $BASH_VERSINFO -gt 3 ]; then
   bind -m emacs-standard -x '"\C-t": "fzf-file-widget"'
 elif __fzf_use_tmux__; then
-  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select_tmux__`\e\C-e\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-d"'
+  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select_tmux__`\e\C-e\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
 else
-  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-d"'
+  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
 fi
 
 # CTRL-R - Paste the selected command from history into the command line
