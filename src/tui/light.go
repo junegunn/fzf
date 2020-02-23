@@ -467,7 +467,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 				}
 				// Bracketed paste mode: \e[200~ ... \e[201~
-				if r.buffer[3] == '0' && (r.buffer[4] == '0' || r.buffer[4] == '1') && r.buffer[5] == '~' {
+				if len(r.buffer) > 5 && r.buffer[3] == '0' && (r.buffer[4] == '0' || r.buffer[4] == '1') && r.buffer[5] == '~' {
 					// Immediately discard the sequence from the buffer and reread input
 					r.buffer = r.buffer[6:]
 					*sz = 0
