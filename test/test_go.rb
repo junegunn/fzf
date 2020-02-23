@@ -71,15 +71,15 @@ class Tmux
     @win =
       case shell
       when :bash
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.bash}'").first
+        go(%W[new-window -d -P -F #I #{Shell.unsets + Shell.bash}]).first
       when :zsh
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.zsh}'").first
+        go(%W[new-window -d -P -F #I #{Shell.unsets + Shell.zsh}]).first
       when :fish
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.fish}'").first
+        go(%W[new-window -d -P -F #I #{Shell.unsets + Shell.fish}]).first
       else
         raise "Unknown shell: #{shell}"
       end
-    go("set-window-option -t #{@win} pane-base-index 0")
+    go(%W[set-window-option -t #{@win} pane-base-index 0])
     @lines = `tput lines`.chomp.to_i
 
     return unless shell == :fish
@@ -88,30 +88,19 @@ class Tmux
   end
 
   def kill
-    go("kill-window -t #{win} 2> /dev/null")
+    go(%W[kill-window -t #{win}])
   end
 
   def send_keys(*args)
     target =
       if args.last.is_a?(Hash)
         hash = args.pop
-        go("select-window -t #{win}")
+        go(%W[select-window -t #{win}])
         "#{win}.#{hash[:pane]}"
       else
         win
       end
-    enum = (args + [nil]).each_cons(2)
-    loop do
-      pair = enum.next
-      if pair.first == :Escape
-        arg = pair.compact.map { |key| %("#{key}") }.join(' ')
-        go(%(send-keys -t #{target} #{arg}))
-        enum.next if pair.last
-      else
-        go(%(send-keys -t #{target} "#{pair.first}"))
-      end
-      break unless pair.last
-    end
+    go(%W[send-keys -t #{target}] + args.map { |key| key.to_s })
   end
 
   def paste(str)
@@ -121,7 +110,7 @@ class Tmux
   def capture(pane = 0)
     File.unlink TEMPNAME while File.exist? TEMPNAME
     wait do
-      go("capture-pane -t #{win}.#{pane} \\; save-buffer #{TEMPNAME} 2> /dev/null")
+      go(%W[capture-pane -t #{win}.#{pane} ; save-buffer #{TEMPNAME}])
       $CHILD_STATUS.exitstatus.zero?
     end
     File.read(TEMPNAME).split($INPUT_RECORD_SEPARATOR)[0, @lines].reverse.drop_while(&:empty?).reverse
@@ -186,8 +175,8 @@ class Tmux
 
   private
 
-  def go(*args)
-    `tmux #{args.join ' '}`.split($INPUT_RECORD_SEPARATOR)
+  def go(args)
+    IO.popen(['tmux'] + args) { |io| io.readlines(chomp: true) }
   end
 end
 
@@ -498,7 +487,7 @@ class TestGoFZF < TestBase
   end
 
   def test_sync
-    tmux.send_keys "seq 1 100 | #{fzf! :multi} | awk '{print \\$1 \\$1}' | #{fzf :sync}", :Enter
+    tmux.send_keys "seq 1 100 | #{fzf! :multi} | awk '{print $1 $1}' | #{fzf :sync}", :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 9
     tmux.until { |lines| lines[-2] == '  19/100' }
@@ -779,7 +768,7 @@ class TestGoFZF < TestBase
   end
 
   def test_invalid_cache_query_type
-    command = %[(echo 'foo\\$bar'; echo 'barfoo'; echo 'foo^bar'; echo \\"foo'1-2\\"; seq 100) | #{fzf}]
+    command = %[(echo 'foo$bar'; echo 'barfoo'; echo 'foo^bar'; echo "foo'1-2"; seq 100) | #{fzf}]
 
     # Suffix match
     tmux.send_keys command, :Enter
@@ -938,7 +927,7 @@ class TestGoFZF < TestBase
 
   def test_execute
     output = '/tmp/fzf-test-execute'
-    opts = %[--bind \\"alt-a:execute(echo /{}/ >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}\\"]
+    opts = %[--bind "alt-a:execute(echo /{}/ >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}"]
     wait = ->(exp) { tmux.until { |lines| lines[-2].include? exp } }
     writelines tempname, %w[foo'bar foo"bar foo$bar]
     tmux.send_keys "cat #{tempname} | #{fzf opts}; sync", :Enter
@@ -977,7 +966,7 @@ class TestGoFZF < TestBase
 
   def test_execute_multi
     output = '/tmp/fzf-test-execute-multi'
-    opts = %[--multi --bind \\"alt-a:execute-multi(echo {}/{+} >> #{output}; sync)\\"]
+    opts = %[--multi --bind "alt-a:execute-multi(echo {}/{+} >> #{output}; sync)"]
     writelines tempname, %w[foo'bar foo"bar foo$bar foobar]
     tmux.send_keys "cat #{tempname} | #{fzf opts}", :Enter
     tmux.until { |lines| lines[-2].include? '4/4' }
@@ -1163,7 +1152,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header
-    tmux.send_keys "seq 100 | #{fzf "--header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--header \"$(head -5 #{FILE})\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('100/100') &&
@@ -1173,7 +1162,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_reverse
-    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --reverse"}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--header \"$(head -5 #{FILE})\" --reverse"}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('100/100') &&
@@ -1183,7 +1172,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_reverse_list
-    tmux.send_keys "seq 100 | #{fzf "--header=\\\"\\$(head -5 #{FILE})\\\" --layout=reverse-list"}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--header \"$(head -5 #{FILE})\" --layout=reverse-list"}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('100/100') &&
@@ -1193,7 +1182,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_and_header_lines
-    tmux.send_keys "seq 100 | #{fzf "--header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--header-lines 10 --header \"$(head -5 #{FILE})\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
@@ -1203,7 +1192,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_and_header_lines_reverse
-    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--reverse --header-lines 10 --header \"$(head -5 #{FILE})\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[1].include?('90/90') &&
@@ -1213,7 +1202,7 @@ class TestGoFZF < TestBase
   end
 
   def test_header_and_header_lines_reverse_list
-    tmux.send_keys "seq 100 | #{fzf "--layout=reverse-list --header-lines 10 --header \\\"\\$(head -5 #{FILE})\\\""}", :Enter
+    tmux.send_keys "seq 100 | #{fzf "--layout=reverse-list --header-lines 10 --header \"$(head -5 #{FILE})\""}", :Enter
     header = File.readlines(FILE).take(5).map(&:strip)
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
@@ -1324,7 +1313,7 @@ class TestGoFZF < TestBase
 
   def test_exitstatus_empty
     { '99' => '0', '999' => '1' }.each do |query, status|
-      tmux.send_keys "seq 100 | #{FZF} -q #{query}; echo --\\$?--", :Enter
+      tmux.send_keys "seq 100 | #{FZF} -q #{query}; echo --$?--", :Enter
       tmux.until { |lines| lines[-2] =~ %r{ [10]/100} }
       tmux.send_keys :Enter
       tmux.until { |lines| lines.last.include? "--#{status}--" }
@@ -1469,7 +1458,7 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_hidden
-    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-\\$FZF_PREVIEW_LINES-\\$FZF_PREVIEW_COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
+    tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-$FZF_PREVIEW_LINES-$FZF_PREVIEW_COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys '?'
     tmux.until { |lines| lines[-2] =~ / {1-1-1-[0-9]+}/ }
@@ -1831,6 +1820,19 @@ module TestShell
     tmux.until { |lines| lines[-1] == '3rd' }
   end
 
+  def test_ctrl_r_multiline
+    tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
+    tmux.until { |lines| lines[-2..-1] == ['foo', 'bar'] }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| lines[-1] == '>' }
+    tmux.send_keys 'foo bar'
+    tmux.until { |lines| lines[-3].end_with? 'bar"' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-1].end_with? 'bar"' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| lines[-2..-1] == ['foo', 'bar'] }
+  end
+
   def retries(times = 3)
     (times - 1).times do
       begin
@@ -1960,7 +1962,7 @@ module CompletionTest
   end
 
   def test_custom_completion
-    tmux.send_keys '_fzf_compgen_path() { echo "\$1"; seq 10; }', :Enter
+    tmux.send_keys '_fzf_compgen_path() { echo "$1"; seq 10; }', :Enter
     tmux.prepare
     tmux.send_keys 'ls /tmp/**', :Tab
     tmux.until { |lines| lines.match_count == 11 }
