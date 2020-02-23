@@ -68,16 +68,16 @@ bind -m emacs-standard '"\er": redraw-current-line'
 if [ $BASH_VERSINFO -gt 3 ]; then
   bind -m emacs-standard -x '"\C-t": "fzf-file-widget"'
 elif __fzf_use_tmux__; then
-  bind -m emacs-standard '"\C-t": " \C-u \C-a\C-k`__fzf_select_tmux__`\e\C-e\C-y\C-a\C-d\C-y\ey\C-h"'
+  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select_tmux__`\e\C-e\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
 else
-  bind -m emacs-standard '"\C-t": " \C-u \C-a\C-k`__fzf_select__`\e\C-e\C-y\C-a\C-y\ey\C-h\C-e\er \C-h"'
+  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
 fi
 
 # CTRL-R - Paste the selected command from history into the command line
-bind -m emacs-standard '"\C-r": " \C-e\C-u\C-y\ey\C-u__fzf_history__ $HISTCMD\e\C-e`"\C-a"`\C-e\e\C-e\er"'
+bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u__fzf_history__ $HISTCMD\e\C-e`"\C-a"`\C-e\e\C-e\er"'
 
 # ALT-C - cd into the selected directory
-bind -m emacs-standard '"\ec": " \C-e\C-u`__fzf_cd__`\e\C-e\er\C-m"'
+bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
 
 bind -m vi-command '"\C-z": emacs-editing-mode'
 bind -m vi-insert '"\C-z": emacs-editing-mode'
