@@ -66,6 +66,7 @@ const (
 	Right
 	Home
 	End
+	Insert
 
 	SUp
 	SDown

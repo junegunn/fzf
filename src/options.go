@@ -472,6 +472,8 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.Home
 		case "end":
 			chord = tui.End
+		case "insert":
+			chord = tui.Insert
 		case "pgup", "page-up":
 			chord = tui.PgUp
 		case "pgdn", "page-down":

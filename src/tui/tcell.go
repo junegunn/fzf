@@ -318,6 +318,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 			}
 			return Event{Right, 0, nil}
 
+		case tcell.KeyInsert:
+			return Event{Insert, 0, nil}
 		case tcell.KeyHome:
 			return Event{Home, 0, nil}
 		case tcell.KeyDelete:

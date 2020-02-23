@@ -453,7 +453,10 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			*sz = 4
 			switch r.buffer[2] {
 			case 50:
-				if len(r.buffer) == 5 && r.buffer[4] == 126 {
+				if r.buffer[3] == 126 {
+					return Event{Insert, 0, nil}
+				}
+				if len(r.buffer) > 4 && r.buffer[4] == 126 {
 					*sz = 5
 					switch r.buffer[3] {
 					case 48:
