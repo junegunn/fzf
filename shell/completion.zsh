@@ -124,6 +124,30 @@ _fzf_complete() {
   command rm -f "$fifo"
 }
 
+_fzf_complete_async() {
+  setopt localoptions nomonitor
+  local fifo fzf_opts lbuf cmd matches post func pid
+  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
+  func="$1"
+  fzf_opts="$2"
+  lbuf="$3"
+  cmd=$(__fzf_extract_command "$lbuf")
+  post="${funcstack[2]}_post"
+  type $post > /dev/null 2>&1 || post=cat
+
+  command rm -f "$fifo"
+  mkfifo "$fifo"
+  eval $func >$fifo 2>/dev/null &
+  pid=$!
+  matches=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" <"$fifo" | $post | tr '\n' ' ')
+  if [ -n "$matches" ]; then
+    LBUFFER="$lbuf$matches"
+  fi
+  zle reset-prompt
+  kill $pid >/dev/null 2>&1
+  command rm -f "$fifo"
+}
+
 _fzf_complete_telnet() {
   _fzf_complete '+m' "$@" < <(
     command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
