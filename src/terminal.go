@@ -187,6 +187,7 @@ const (
 	actAcceptNonEmpty
 	actBackwardChar
 	actBackwardDeleteChar
+    actBackwardDeleteCharNonEmpty
 	actBackwardWord
 	actCancel
 	actClearScreen
@@ -1845,6 +1846,13 @@ func (t *Terminal) Loop() {
 					t.yanked = t.input
 					t.input = []rune{}
 					t.cx = 0
+				}
+			case actBackwardDeleteCharNonEmpty:
+				if len(t.input) == 0 {
+					req(reqQuit)
+				} else {
+					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
+					t.cx--
 				}
 			case actForwardChar:
 				if t.cx < len(t.input) {
