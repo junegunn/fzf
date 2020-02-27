@@ -1710,6 +1710,20 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.match_count.zero? }
     tmux.until { |lines| !lines[-2].include?('(1)') }
   end
+
+  def test_backward_delete_char_eof
+    tmux.send_keys "seq 1000 | #{fzf "--multi --jump-labels 12345 --bind 'bs:backward-delete-char/eof'"}", :Enter
+    tmux.until { |lines| lines[-2] == '  1000/1000' }
+    tmux.send_keys '11'
+    tmux.until { |lines| lines[-1] == '> 11' }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-1] == '> 1' }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines[-1] == '>' }
+    tmux.send_keys :BSpace
+    tmux.prepare
+  end
+
 end
 
 module TestShell
