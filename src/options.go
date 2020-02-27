@@ -740,6 +740,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actBackwardChar)
 			case "backward-delete-char":
 				appendAction(actBackwardDeleteChar)
+			case "backward-delete-char/eof":
+				appendAction(actBackwardDeleteCharEOF)
 			case "backward-word":
 				appendAction(actBackwardWord)
 			case "clear-screen":
