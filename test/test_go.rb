@@ -1712,7 +1712,7 @@ class TestGoFZF < TestBase
   end
 
   def test_backward_delete_char_eof
-    tmux.send_keys "seq 1000 | #{fzf "--multi --jump-labels 12345 --bind 'bs:backward-delete-char/eof'"}", :Enter
+    tmux.send_keys "seq 1000 | #{fzf "--bind 'bs:backward-delete-char/eof'"}", :Enter
     tmux.until { |lines| lines[-2] == '  1000/1000' }
     tmux.send_keys '11'
     tmux.until { |lines| lines[-1] == '> 11' }
