@@ -100,27 +100,29 @@ _fzf_dir_completion() {
     "" "/" ""
 }
 
-_fzf_feed_fifo() (
-  command rm -f "$1"
-  mkfifo "$1"
-  cat <&0 > "$1" &
-)
-
 _fzf_complete() {
-  local fifo fzf_opts lbuf cmd matches post
+  setopt localoptions nomonitor
+  local fifo fzf_opts lbuf cmd matches post func pid
   fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
   fzf_opts=$1
   lbuf=$2
   cmd=$(__fzf_extract_command "$lbuf")
+  func="${funcstack[2]}_func"
   post="${funcstack[2]}_post"
   type $post > /dev/null 2>&1 || post=cat
 
-  _fzf_feed_fifo "$fifo"
-  matches=$(cat "$fifo" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" | $post | tr '\n' ' ')
-  if [ -n "$matches" ]; then
-    LBUFFER="$lbuf$matches"
+  command rm -f "$fifo"
+  mkfifo "$fifo"
+  if type $func > /dev/null 2>&1; then
+    $func >$fifo 2>/dev/null &
+  else
+    cat <&0 > "$fifo" &
   fi
+  pid=$!
+  matches=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" <"$fifo" | $post | tr '\n' ' ')
+  [ -n "$matches" ] && LBUFFER="$lbuf$matches"
   zle reset-prompt
+  kill $pid >/dev/null 2>&1
   command rm -f "$fifo"
 }
 
