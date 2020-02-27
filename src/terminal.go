@@ -187,7 +187,7 @@ const (
 	actAcceptNonEmpty
 	actBackwardChar
 	actBackwardDeleteChar
-    actBackwardDeleteCharEOF
+	actBackwardDeleteCharEOF
 	actBackwardWord
 	actCancel
 	actClearScreen
@@ -1851,8 +1851,8 @@ func (t *Terminal) Loop() {
 				if len(t.input) == 0 {
 					req(reqQuit)
 				} else if t.cx > 0 {
-                    t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
-                    t.cx--
+					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
+					t.cx--
 				}
 			case actForwardChar:
 				if t.cx < len(t.input) {
