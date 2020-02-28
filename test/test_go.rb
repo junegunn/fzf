@@ -9,13 +9,23 @@ require 'minitest/autorun'
 require 'fileutils'
 require 'English'
 require 'shellwords'
+require 'erb'
+require 'tempfile'
 
+TEMPLATE = DATA.read
+UNSETS = %w[
+  FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS
+  FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS
+  FZF_ALT_C_COMMAND
+  FZF_ALT_C_OPTS FZF_CTRL_R_OPTS
+  fish_history
+].freeze
 DEFAULT_TIMEOUT = 20
 
 FILE = File.expand_path(__FILE__)
-base = File.expand_path('../../', __FILE__)
-Dir.chdir base
-FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{base}/bin/fzf"
+BASE = File.expand_path('..', __dir__)
+Dir.chdir(BASE)
+FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
 class NilClass
   def include?(_str)
@@ -42,22 +52,33 @@ end
 
 class Shell
   class << self
-    def unsets
-      'unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS FZF_ALT_C_COMMAND FZF_ALT_C_OPTS FZF_CTRL_R_OPTS;'
-    end
-
     def bash
-      'PS1= PROMPT_COMMAND= bash --rcfile ~/.fzf.bash'
+      @bash ||=
+        begin
+          bashrc = '/tmp/fzf.bash'
+          File.open(bashrc, 'w') do |f|
+            f.puts(ERB.new(TEMPLATE).result(binding))
+          end
+
+          "bash --rcfile #{bashrc}"
+        end
     end
 
     def zsh
-      FileUtils.mkdir_p '/tmp/fzf-zsh'
-      FileUtils.cp File.expand_path('~/.fzf.zsh'), '/tmp/fzf-zsh/.zshrc'
-      'PS1= PROMPT_COMMAND= HISTSIZE=100 ZDOTDIR=/tmp/fzf-zsh zsh'
+      @zsh ||=
+        begin
+          zdotdir = '/tmp/fzf-zsh'
+          FileUtils.rm_rf(zdotdir)
+          FileUtils.mkdir_p(zdotdir)
+          File.open("#{zdotdir}/.zshrc", 'w') do |f|
+            f.puts(ERB.new(TEMPLATE).result(binding))
+          end
+          "ZDOTDIR=#{zdotdir} zsh"
+        end
     end
 
     def fish
-      'fish'
+      UNSETS.map { |v| v + '= ' }.join + 'fish'
     end
   end
 end
@@ -68,21 +89,10 @@ class Tmux
   attr_reader :win
 
   def initialize(shell = :bash)
-    @win =
-      case shell
-      when :bash
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.bash}'").first
-      when :zsh
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.zsh}'").first
-      when :fish
-        go("new-window -d -P -F '#I' '#{Shell.unsets + Shell.fish}'").first
-      else
-        raise "Unknown shell: #{shell}"
-      end
+    @win = go("new-window -d -P -F '#I' '#{Shell.send(shell)}'").first
     go("set-window-option -t #{@win} pane-base-index 0")
-    @lines = `tput lines`.chomp.to_i
-
     return unless shell == :fish
+
     send_keys('function fish_prompt; end; clear', :Enter)
     self.until(&:empty?)
   end
@@ -124,7 +134,7 @@ class Tmux
       go("capture-pane -t #{win}.#{pane} \\; save-buffer #{TEMPNAME} 2> /dev/null")
       $CHILD_STATUS.exitstatus.zero?
     end
-    File.read(TEMPNAME).split($INPUT_RECORD_SEPARATOR)[0, @lines].reverse.drop_while(&:empty?).reverse
+    File.read(TEMPNAME).split($INPUT_RECORD_SEPARATOR).reverse.drop_while(&:empty?).reverse
   end
 
   def until(refresh = false, pane = 0)
@@ -2098,3 +2108,21 @@ class TestFish < TestBase
     @tmux = Tmux.new :fish
   end
 end
+
+__END__
+# Setup fzf
+# ---------
+if [[ ! "$PATH" == *<%= BASE %>/bin* ]]; then
+  export PATH="${PATH:+${PATH}:}<%= BASE %>/bin"
+fi
+
+# Auto-completion
+# ---------------
+[[ $- == *i* ]] && source "<%= BASE %>/shell/completion.<%= __method__ %>" 2> /dev/null
+
+# Key bindings
+# ------------
+source "<%= BASE %>/shell/key-bindings.<%= __method__ %>"
+
+PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
+unset <%= UNSETS.join(' ') %>
