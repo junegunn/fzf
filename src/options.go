@@ -50,6 +50,7 @@ const usage = `usage: fzf [options]
                           highlighted substring (default: 10)
     --filepath-word       Make word-wise movements respect path separators
     --jump-labels=CHARS   Label characters for jump and jump-accept
+    --select-only         Automatically select the only filtered match
 
   Layout
     --height=HEIGHT[%]    Display fzf window below the cursor with the given
@@ -197,6 +198,7 @@ type Options struct {
 	Marker      string
 	Query       string
 	Select1     bool
+	SelectOnly  bool
 	Exit0       bool
 	Filter      *string
 	ToggleSort  bool
@@ -252,6 +254,7 @@ func defaultOptions() *Options {
 		Marker:      ">",
 		Query:       "",
 		Select1:     false,
+		SelectOnly:  false,
 		Exit0:       false,
 		Filter:      nil,
 		ToggleSort:  false,
@@ -1183,6 +1186,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Select1 = true
 		case "+1", "--no-select-1":
 			opts.Select1 = false
+		case "--select-only":
+			opts.SelectOnly = true
+		case "--no-select-only":
+			opts.SelectOnly = false
 		case "-0", "--exit-0":
 			opts.Exit0 = true
 		case "+0", "--no-exit-0":

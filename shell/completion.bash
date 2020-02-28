@@ -93,6 +93,7 @@ _fzf_opts_completion() {
     --preview-window
     -q --query
     -1 --select-1
+    --select-only
     -0 --exit-0
     -f --filter
     --print-query

@@ -93,6 +93,7 @@ type Terminal struct {
 	printQuery   bool
 	history      *History
 	cycle        bool
+	selectOnly   bool
 	header       []string
 	header0      []string
 	ansi         bool
@@ -422,6 +423,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		cleanExit:  opts.ClearOnExit,
 		strong:     strongAttr,
 		cycle:      opts.Cycle,
+		selectOnly: opts.SelectOnly,
 		header:     header,
 		header0:    header,
 		ansi:       opts.Ansi,
@@ -1668,6 +1670,12 @@ func (t *Terminal) Loop() {
 								t.cancelPreview()
 								t.previewBox.Set(reqPreviewEnqueue, list)
 							}
+						}
+						if t.selectOnly && t.merger.Length() == 1 {
+							exit(func() int {
+								t.output()
+								return exitOk
+							})
 						}
 					case reqJump:
 						if t.merger.Length() == 0 {
