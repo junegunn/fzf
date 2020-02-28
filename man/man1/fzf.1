@@ -633,62 +633,63 @@ or any single character
 .SS AVAILABLE ACTIONS:
 A key or an event can be bound to one or more of the following actions.
 
-  \fBACTION:               DEFAULT BINDINGS (NOTES):
-    \fBabort\fR                 \fIctrl-c  ctrl-g  ctrl-q  esc\fR
-    \fBaccept\fR                \fIenter   double-click\fR
-    \fBaccept-non-empty\fR      (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
-    \fBbackward-char\fR         \fIctrl-b  left\fR
-    \fBbackward-delete-char\fR  \fIctrl-h  bspace\fR
-    \fBbackward-kill-word\fR    \fIalt-bs\fR
-    \fBbackward-word\fR         \fIalt-b   shift-left\fR
-    \fBbeginning-of-line\fR     \fIctrl-a  home\fR
-    \fBcancel\fR                (clear query string if not empty, abort fzf otherwise)
-    \fBclear-screen\fR          \fIctrl-l\fR
-    \fBclear-selection\fR       (clear multi-selection)
-    \fBclear-query\fR           (clear query string)
-    \fBdelete-char\fR           \fIdel\fR
-    \fBdelete-char/eof\fR       \fIctrl-d\fR
-    \fBdeselect-all\fR          (deselect all matches)
-    \fBdown\fR                  \fIctrl-j  ctrl-n  down\fR
-    \fBend-of-line\fR           \fIctrl-e  end\fR
-    \fBexecute(...)\fR          (see below for the details)
-    \fBexecute-silent(...)\fR   (see below for the details)
-    \fRexecute-multi(...)\fR    (deprecated in favor of \fB{+}\fR expression)
-    \fBforward-char\fR          \fIctrl-f  right\fR
-    \fBforward-word\fR          \fIalt-f   shift-right\fR
+  \fBACTION:                   DEFAULT BINDINGS (NOTES):
+    \fBabort\fR                     \fIctrl-c  ctrl-g  ctrl-q  esc\fR
+    \fBaccept\fR                    \fIenter   double-click\fR
+    \fBaccept-non-empty\fR          (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
+    \fBbackward-char\fR             \fIctrl-b  left\fR
+    \fBbackward-delete-char\fR      \fIctrl-h  bspace\fR
+    \fBbackward-delete-char/eof\fR  (same as \fBbackward-delete-char\fR except aborts fzf if query is empty)
+    \fBbackward-kill-word\fR        \fIalt-bs\fR
+    \fBbackward-word\fR             \fIalt-b   shift-left\fR
+    \fBbeginning-of-line\fR         \fIctrl-a  home\fR
+    \fBcancel\fR                    (clear query string if not empty, abort fzf otherwise)
+    \fBclear-screen\fR              \fIctrl-l\fR
+    \fBclear-selection\fR           (clear multi-selection)
+    \fBclear-query\fR               (clear query string)
+    \fBdelete-char\fR               \fIdel\fR
+    \fBdelete-char/eof\fR           \fIctrl-d\fR (same as \fBdelete-char\fR except aborts fzf if query is empty)
+    \fBdeselect-all\fR              (deselect all matches)
+    \fBdown\fR                      \fIctrl-j  ctrl-n  down\fR
+    \fBend-of-line\fR               \fIctrl-e  end\fR
+    \fBexecute(...)\fR              (see below for the details)
+    \fBexecute-silent(...)\fR       (see below for the details)
+    \fRexecute-multi(...)\fR        (deprecated in favor of \fB{+}\fR expression)
+    \fBforward-char\fR              \fIctrl-f  right\fR
+    \fBforward-word\fR              \fIalt-f   shift-right\fR
     \fBignore\fR
-    \fBjump\fR                  (EasyMotion-like 2-keystroke movement)
-    \fBjump-accept\fR           (jump and accept)
+    \fBjump\fR                      (EasyMotion-like 2-keystroke movement)
+    \fBjump-accept\fR               (jump and accept)
     \fBkill-line\fR
-    \fBkill-word\fR             \fIalt-d\fR
-    \fBnext-history\fR          (\fIctrl-n\fR on \fB--history\fR)
-    \fBpage-down\fR             \fIpgdn\fR
-    \fBpage-up\fR               \fIpgup\fR
+    \fBkill-word\fR                 \fIalt-d\fR
+    \fBnext-history\fR              (\fIctrl-n\fR on \fB--history\fR)
+    \fBpage-down\fR                 \fIpgdn\fR
+    \fBpage-up\fR                   \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
-    \fBpreview-down\fR          \fIshift-down\fR
-    \fBpreview-up\fR            \fIshift-up\fR
+    \fBpreview-down\fR              \fIshift-down\fR
+    \fBpreview-up\fR                \fIshift-up\fR
     \fBpreview-page-down\fR
     \fBpreview-page-up\fR
-    \fBprevious-history\fR      (\fIctrl-p\fR on \fB--history\fR)
-    \fBprint-query\fR           (print query and exit)
-    \fBreload(...)\fR           (see below for the details)
-    \fBreplace-query\fR         (replace query string with the current selection)
-    \fBselect-all\fR            (select all matches)
-    \fBtoggle\fR                (\fIright-click\fR)
-    \fBtoggle-all\fR            (toggle all matches)
-    \fBtoggle+down\fR           \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR             (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
-    \fBtoggle-out\fR            (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBprevious-history\fR          (\fIctrl-p\fR on \fB--history\fR)
+    \fBprint-query\fR               (print query and exit)
+    \fBreload(...)\fR               (see below for the details)
+    \fBreplace-query\fR             (replace query string with the current selection)
+    \fBselect-all\fR                (select all matches)
+    \fBtoggle\fR                    (\fIright-click\fR)
+    \fBtoggle-all\fR                (toggle all matches)
+    \fBtoggle+down\fR               \fIctrl-i  (tab)\fR
+    \fBtoggle-in\fR                 (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR                (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR
-    \fBtoggle+up\fR             \fIbtab    (shift-tab)\fR
-    \fBtop\fR                   (move to the top result)
-    \fBunix-line-discard\fR     \fIctrl-u\fR
-    \fBunix-word-rubout\fR      \fIctrl-w\fR
-    \fBup\fR                    \fIctrl-k  ctrl-p  up\fR
-    \fByank\fR                  \fIctrl-y\fR
+    \fBtoggle+up\fR                 \fIbtab    (shift-tab)\fR
+    \fBtop\fR                       (move to the top result)
+    \fBunix-line-discard\fR         \fIctrl-u\fR
+    \fBunix-word-rubout\fR          \fIctrl-w\fR
+    \fBup\fR                        \fIctrl-k  ctrl-p  up\fR
+    \fByank\fR                      \fIctrl-y\fR
 
 .SS ACTION COMPOSITION
 
