@@ -175,7 +175,7 @@ class Tmux
     tries = 0
     begin
       self.until do |lines|
-        send_keys 'C-u', 'hello'
+        send_keys ' ', 'C-u', 'hello', :Left, :Right
         lines[-1].end_with?('hello')
       end
     rescue StandardError
