@@ -87,8 +87,8 @@ class Tmux
   attr_reader :win
 
   def initialize(shell = :bash)
-    @win = go("new-window -d -P -F '#I' '#{Shell.send(shell)}'").first
-    go("set-window-option -t #{@win} pane-base-index 0")
+    @win = go(%W[new-window -d -P -F #I #{Shell.send(shell)}]).first
+    go(%W[set-window-option -t #{@win} pane-base-index 0])
     return unless shell == :fish
 
     send_keys('function fish_prompt; end; clear', :Enter)
@@ -108,7 +108,7 @@ class Tmux
       else
         win
       end
-    go(%W[send-keys -t #{target}] + args.map { |key| key.to_s })
+    go(%W[send-keys -t #{target}] + args.map(&:to_s))
   end
 
   def paste(str)
@@ -116,7 +116,7 @@ class Tmux
   end
 
   def capture(pane = 0)
-    go("capture-pane -p -t #{win}.#{pane}")
+    go(%W[capture-pane -p -t #{win}.#{pane}]).reverse.drop_while(&:empty?).reverse
   end
 
   def until(refresh = false, pane = 0)
