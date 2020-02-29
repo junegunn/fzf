@@ -1853,12 +1853,15 @@ module TestShell
 
   def test_ctrl_r_abort
     skip "doesn't restore the original line when search is aborted pre Bash 4" if shell == :bash && /(?<= version )\d+/.match(`#{Shell.bash} --version`).to_s.to_i < 4
-    tmux.send_keys 'foo'
-    tmux.until { |lines| lines[-1].start_with? 'foo' }
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| lines[-1].start_with? '>' }
-    tmux.send_keys 'C-g'
-    tmux.until { |lines| lines[-1].start_with? 'foo' }
+    %w[foo ' "].each do |query|
+      tmux.prepare
+      tmux.send_keys(query)
+      tmux.until { |lines| lines[-1].start_with? query }
+      tmux.send_keys 'C-r'
+      tmux.until { |lines| lines[-1] == "> #{query}" }
+      tmux.send_keys 'C-g'
+      tmux.until { |lines| lines[-1].start_with? query }
+    end
   end
 
   def retries(times = 3)
