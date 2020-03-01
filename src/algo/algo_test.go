@@ -136,6 +136,10 @@ func TestPrefixMatch(t *testing.T) {
 		assertMatch(t, PrefixMatch, false, dir, "fooBarbaz", "Foo", 0, 3, score)
 		assertMatch(t, PrefixMatch, false, dir, "foOBarBaZ", "foo", 0, 3, score)
 		assertMatch(t, PrefixMatch, false, dir, "f-oBarbaz", "f-o", 0, 3, score)
+
+		assertMatch(t, PrefixMatch, false, dir, " fooBar", "foo", 1, 4, score)
+		assertMatch(t, PrefixMatch, false, dir, " fooBar", " fo", 0, 3, score)
+		assertMatch(t, PrefixMatch, false, dir, "     fo", "foo", -1, -1, 0)
 	}
 }
 
@@ -148,6 +152,13 @@ func TestSuffixMatch(t *testing.T) {
 			scoreMatch*3+bonusConsecutive*2)
 		assertMatch(t, SuffixMatch, false, dir, "fooBarBaZ", "baz", 6, 9,
 			(scoreMatch+bonusCamel123)*3+bonusCamel123*(bonusFirstCharMultiplier-1))
+
+		// Strip trailing white space from the string
+		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz ", "baz", 6, 9,
+			scoreMatch*3+bonusConsecutive*2)
+		// Only when the pattern doesn't end with a space
+		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz ", "baz ", 6, 10,
+			scoreMatch*4+bonusConsecutive*2+bonusNonWord)
 	}
 }
 

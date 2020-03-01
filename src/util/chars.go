@@ -130,6 +130,18 @@ func (chars *Chars) TrimLength() uint16 {
 	return chars.trimLength
 }
 
+func (chars *Chars) LeadingWhitespaces() int {
+	whitespaces := 0
+	for i := 0; i < chars.Length(); i++ {
+		char := chars.Get(i)
+		if !unicode.IsSpace(char) {
+			break
+		}
+		whitespaces++
+	}
+	return whitespaces
+}
+
 func (chars *Chars) TrailingWhitespaces() int {
 	whitespaces := 0
 	for i := chars.Length() - 1; i >= 0; i-- {

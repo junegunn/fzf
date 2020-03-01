@@ -98,6 +98,9 @@ func TestEqual(t *testing.T) {
 	}
 	match("ABC", -1, -1)
 	match("AbC", 0, 3)
+	match("AbC  ", 0, 3)
+	match(" AbC ", 1, 4)
+	match("  AbC", 2, 5)
 }
 
 func TestCaseSensitivity(t *testing.T) {
