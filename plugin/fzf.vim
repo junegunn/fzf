@@ -662,6 +662,9 @@ function! s:split(dict)
   try
     if s:present(a:dict, 'window')
       if type(a:dict.window) == type({})
+        if !has('nvim') && !has('patch-8.2.191')
+          throw 'Vim 8.2.191 or later is required for pop-up window'
+        end
         call s:popup(a:dict.window)
       else
         execute 'keepalt' a:dict.window
