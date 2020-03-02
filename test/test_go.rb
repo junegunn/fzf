@@ -1823,10 +1823,8 @@ module CompletionTest
   def test_file_completion
     FileUtils.mkdir_p('/tmp/fzf-test')
     FileUtils.mkdir_p('/tmp/fzf test')
-    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
-    ['no~such~user', '/tmp/fzf test/foobar', '~/.fzf-home'].each do |f|
-      FileUtils.touch(File.expand_path(f))
-    end
+    FileUtils.touch((1..100).map { |i| "/tmp/fzf-test/#{i}" })
+    FileUtils.touch(['no~such~user', '/tmp/fzf test/foobar', File.expand_path('~/.fzf-home')])
     tmux.prepare
     tmux.send_keys('cat /tmp/fzf-test/10**', :Tab)
     tmux.until { |lines| lines.match_count > 0 }
@@ -1867,14 +1865,12 @@ module CompletionTest
     tmux.until(true) { |lines| lines[-1] == 'cat /tmp/fzf\ test/foobar' }
 
     # Should include hidden files
-    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/.hidden-#{i}") }
+    FileUtils.touch((1..100).map { |i| "/tmp/fzf-test/.hidden-#{i}" })
     tmux.send_keys('C-u')
     tmux.send_keys('cat /tmp/fzf-test/hidden**', :Tab)
     tmux.until(true) { |lines| lines.match_count == 100 && lines.any_include?('/tmp/fzf-test/.hidden-') }
   ensure
-    ['/tmp/fzf-test', '/tmp/fzf test', '~/.fzf-home', 'no~such~user'].each do |f|
-      FileUtils.rm_rf(File.expand_path(f))
-    end
+    FileUtils.rm_rf(['/tmp/fzf-test', '/tmp/fzf test', File.expand_path('~/.fzf-home'), 'no~such~user'])
   end
 
   def test_file_completion_root
@@ -1883,9 +1879,7 @@ module CompletionTest
   end
 
   def test_dir_completion
-    (1..100).each do |idx|
-      FileUtils.mkdir_p("/tmp/fzf-test/d#{idx}")
-    end
+    FileUtils.mkdir_p((1..100).map { |i| "/tmp/fzf-test/d#{i}" })
     FileUtils.touch('/tmp/fzf-test/d55/xxx')
     tmux.prepare
     tmux.send_keys('cd /tmp/fzf-test/**', :Tab)
