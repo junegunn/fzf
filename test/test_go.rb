@@ -206,7 +206,6 @@ class TestGoFZF < TestBase
   def test_fzf_default_command_failure
     tmux = Tmux.new(fzf.sub('FZF_DEFAULT_COMMAND=', 'FZF_DEFAULT_COMMAND=false'))
     tmux.until { |lines| lines[-2] == '  [Command failed: false]' }
-    tmux.send_keys :Enter
   end
 
   def test_key_bindings
@@ -705,7 +704,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2] == '  3/3' }
     tmux.send_keys :D
     tmux.until { |lines| lines[-2] == '  1/3' }
-    tmux.send_keys :Enter
   end
 
   def test_invalid_cache_query_type
@@ -718,7 +716,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys 'bar'
     tmux.until { |lines| lines.match_count == 1 }
-    tmux.send_keys :Enter
 
     # Prefix match
     tmux = Tmux.new(command)
@@ -727,7 +724,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys 'C-a', 'foo'
     tmux.until { |lines| lines.match_count == 1 }
-    tmux.send_keys :Enter
 
     # Exact match
     tmux = Tmux.new(command)
@@ -858,7 +854,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2] == '  100/100' }
     tmux.send_keys 'C-n', 'C-n', 'C-n', 'C-n', 'C-p'
     tmux.until { |lines| lines[-1] == '> 33' }
-    tmux.send_keys :Enter
   ensure
     File.unlink(history_file)
   end
@@ -1164,19 +1159,16 @@ class TestGoFZF < TestBase
   def test_margin
     tmux = Tmux.new("yes | head -1000 | #{fzf('--margin 5,3')}")
     tmux.until { |lines| lines[4] == '' && lines[5] == '     y' }
-    tmux.send_keys :Enter
   end
 
   def test_margin_reverse
     tmux = Tmux.new("seq 1000 | #{fzf('--margin 7,5 --reverse')}")
     tmux.until { |lines| lines[1 + 7] == '       1000/1000' }
-    tmux.send_keys :Enter
   end
 
   def test_margin_reverse_list
     tmux = Tmux.new("yes | head -1000 | #{fzf('--margin 5,3 --layout=reverse-list')}")
     tmux.until { |lines| lines[4] == '' && lines[5] == '   > y' }
-    tmux.send_keys :Enter
   end
 
   def test_tabstop
@@ -1196,7 +1188,6 @@ class TestGoFZF < TestBase
       tmux.until(true) do |lines|
         lines[-3] == exp
       end
-      tmux.send_keys :Enter
     end
   end
 
@@ -1277,7 +1268,6 @@ class TestGoFZF < TestBase
       tmux.until { |lines| lines[-3]&.end_with?((0..off).to_a.join + '..') }
       tmux.send_keys '9'
       tmux.until { |lines| lines[-3]&.end_with?('789') }
-      tmux.send_keys :Enter
     end
   end
 
@@ -1288,7 +1278,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2] == '  19/1000' }
     tmux.send_keys 'C-a', "'"
     tmux.until { |lines| lines[-2] == '  28/1000' }
-    tmux.send_keys :Enter
   end
 
   def test_jump
@@ -1486,7 +1475,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-4] == '> 10' }
     tmux.send_keys 1
     tmux.until { |lines| lines[-3] == '> 11' }
-    tmux.send_keys :Enter
   end
 
   def test_accept_non_empty
@@ -1649,7 +1637,6 @@ class TestGoFZF < TestBase
         %(echo foo bar | #{FZF} --preview '#{tempname} {2} {1}')
       )
       tmux.until { |lines| lines.any_include?('bar foo') }
-      tmux.send_keys :Enter
     end
   end
 
@@ -1686,7 +1673,6 @@ module TestShell
     tmux.until { |lines| lines.any_include?(' (3)') }
     tmux.send_keys :Enter
     tmux.until { |lines| lines.any_include?('1 2 3') }
-    tmux.send_keys 'C-c'
   end
 
   def test_ctrl_t_unicode
@@ -1881,7 +1867,6 @@ module CompletionTest
     tmux.send_keys 'C-u'
     tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab
     tmux.until(true) { |lines| lines.match_count == 100 && lines.any_include?('/tmp/fzf-test/.hidden-') }
-    tmux.send_keys :Enter
   ensure
     ['/tmp/fzf-test', '/tmp/fzf test', '~/.fzf-home', 'no~such~user'].each do |f|
       FileUtils.rm_rf(File.expand_path(f))
@@ -1891,7 +1876,6 @@ module CompletionTest
   def test_file_completion_root
     tmux.send_keys 'ls /**', :Tab
     tmux.until { |lines| lines.match_count > 0 }
-    tmux.send_keys :Enter
   end
 
   def test_dir_completion
@@ -2024,9 +2008,6 @@ module CompletionTest
       tmux.until { |lines| lines[-1] == "#{command} #{command}barbar" }
       tmux.send_keys 'C-u'
     end
-  ensure
-    tmux.prepare
-    tmux.send_keys 'unset -f _fzf_comprun', :Enter
   end
 end
 
