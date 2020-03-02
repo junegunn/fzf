@@ -1,0 +1,9 @@
+Layout/LineLength:
+  Enabled: false
+Metrics:
+  Enabled: false
+Style/NumericPredicate:
+  AutoCorrect: true
+  EnforcedStyle: comparison
+Style/WordArray:
+  MinSize: 1
