@@ -267,7 +267,7 @@ func defaultKeymap() map[int][]action {
 	keymap[tui.CtrlA] = toActions(actBeginningOfLine)
 	keymap[tui.CtrlB] = toActions(actBackwardChar)
 	keymap[tui.CtrlC] = toActions(actAbort)
-	keymap[tui.CtrlG] = toActions(actAbort)
+	keymap[tui.CtrlG] = toActions(actPrintQuery)
 	keymap[tui.CtrlQ] = toActions(actAbort)
 	keymap[tui.ESC] = toActions(actAbort)
 	keymap[tui.CtrlD] = toActions(actDeleteCharEOF)
