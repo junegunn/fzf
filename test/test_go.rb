@@ -20,7 +20,6 @@ DEFAULT_TIMEOUT = 20
 
 FILE = File.expand_path(__FILE__)
 BASE = File.expand_path('..', __dir__)
-Dir.chdir(BASE)
 FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
 # For pane_dead_status
@@ -139,18 +138,24 @@ class Tmux
 end
 
 class TestBase < Minitest::Test
-  TEMPNAME = '/tmp/output'
+  TEMPNAME = 'output'
+
+  def setup
+    super
+    Dir.chdir(Dir.mktmpdir)
+  end
 
   def teardown
     super
+    FileUtils.remove_entry(Dir.pwd) if Dir.pwd.start_with?("#{Dir.tmpdir}/")
     system('tmux', 'kill-window', '-a')
   end
 
   def tempname
     @temp_suffix ||= 0
-    [TEMPNAME,
-     caller_locations.map(&:label).find { |l| l =~ /^test_/ },
-     @temp_suffix].join('-')
+    File.expand_path([TEMPNAME,
+                      caller_locations.map(&:label).find { |l| l =~ /^test_/ },
+                      @temp_suffix].join('-'))
   end
 
   def writelines(path, lines)
@@ -818,14 +823,9 @@ class TestGoFZF < TestBase
   end
 
   def test_history
-    history_file = '/tmp/fzf-test-history'
+    history_file = 'fzf-test-history'
 
     # History with limited number of entries
-    begin
-      File.unlink(history_file)
-    rescue StandardError
-      nil
-    end
     opts = "--history=#{history_file} --history-size=4"
     input = %w[00 11 22 33 44].map { |e| e + $INPUT_RECORD_SEPARATOR }
     input.each do |keys|
@@ -864,12 +864,10 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include?('100/100') }
     tmux.send_keys 'C-n', 'C-n', 'C-n', 'C-n', 'C-p'
     tmux.until { |lines| lines[-1].end_with?('33') }
-  ensure
-    File.unlink(history_file)
   end
 
   def test_execute
-    output = '/tmp/fzf-test-execute'
+    output = 'fzf-test-execute'
     opts = %[--bind "alt-a:execute(echo /{}/ >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar])
     tmux = Tmux.new("cat #{tempname} | #{fzf(opts)}; sync")
@@ -899,16 +897,10 @@ class TestGoFZF < TestBase
                     /foo"barfoo"bar/ /foo"barfoo"bar/
                     /foo$barfoo$barfoo$bar/],
                  File.readlines(output).map(&:chomp)
-  ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
   end
 
   def test_execute_multi
-    output = '/tmp/fzf-test-execute-multi'
+    output = 'fzf-test-execute-multi'
     opts = %[--multi --bind "alt-a:execute-multi(echo {}/{+} >> #{output}; sync)"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar foobar])
     tmux = Tmux.new("cat #{tempname} | #{fzf(opts)}")
@@ -927,21 +919,10 @@ class TestGoFZF < TestBase
                   %(foo'bar foo"bar foo$bar/foo'bar foo"bar foo$bar),
                   %(foo'bar foo"bar foobar/foo'bar foo"bar foobar)],
                  File.readlines(output).map(&:chomp)
-  ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
   end
 
   def test_execute_plus_flag
     output = tempname + '.tmp'
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
     writelines(tempname, ['foo bar', '123 456'])
 
     tmux = Tmux.new("cat #{tempname} | #{FZF} --multi --bind 'x:execute-silent(echo {+}/{}/{+2}/{2} >> #{output})'")
@@ -971,22 +952,11 @@ class TestGoFZF < TestBase
       %(123 456/foo bar/456/bar),
       %(123 456 foo bar/foo bar/456 bar/bar)
     ], File.readlines(output).map(&:chomp)
-  rescue StandardError
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
   end
 
   def test_execute_shell
     # Custom script to use as $SHELL
     output = tempname + '.out'
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
     writelines(tempname,
                ['#!/usr/bin/env bash', "echo $1 / $2 > #{output}", 'sync'])
     system("chmod +x #{tempname}")
@@ -997,12 +967,6 @@ class TestGoFZF < TestBase
     tmux.until { |lines| lines[-2].include?('1/1') }
     tmux.send_keys 'C-c'
     assert_equal ["-c / 'foo'bar"], File.readlines(output).map(&:chomp)
-  ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
   end
 
   def test_cycle
@@ -1127,7 +1091,7 @@ class TestGoFZF < TestBase
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
         lines[-7...-2].map(&:strip) == header &&
-        lines[-17...-7].map(&:strip) == (1..10).map(&:to_s).reverse
+        lines[-17...-7].map(&:strip) == ('1'..'10').to_a.reverse
     end
   end
 
@@ -1137,7 +1101,7 @@ class TestGoFZF < TestBase
     tmux.until do |lines|
       lines[1].include?('90/90') &&
         lines[2...7].map(&:strip) == header &&
-        lines[7...17].map(&:strip) == (1..10).map(&:to_s)
+        lines[7...17].map(&:strip) == ('1'..'10').to_a
     end
   end
 
@@ -1147,7 +1111,7 @@ class TestGoFZF < TestBase
     tmux.until do |lines|
       lines[-2].include?('90/90') &&
         lines[-7...-2].map(&:strip) == header &&
-        lines[-17...-7].map(&:strip) == (1..10).map(&:to_s).reverse
+        lines[-17...-7].map(&:strip) == ('1'..'10').to_a.reverse
     end
   end
 
@@ -1398,11 +1362,6 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_size_0
-    begin
-      File.unlink(tempname)
-    rescue StandardError
-      nil
-    end
     tmux = Tmux.new(%(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0))
     tmux.until { |lines| lines.item_count == 100 && lines[1] == '  100/100' && lines[2] == '> 1' }
     tmux.until { |_| File.readlines(tempname).map(&:chomp) == %w[1] }
@@ -1718,6 +1677,7 @@ module TestShell
   end
 
   def test_alt_c
+    Dir.mkdir('foo')
     lines = retries do
       tmux.prepare
       tmux.send_keys :Escape, :c
@@ -1824,21 +1784,17 @@ module CompletionTest
   include TestShell
 
   def test_file_completion
-    FileUtils.mkdir_p('/tmp/fzf-test')
-    FileUtils.mkdir_p('/tmp/fzf test')
-    FileUtils.touch((1..100).map { |i| "/tmp/fzf-test/#{i}" })
-    FileUtils.touch(['no~such~user', '/tmp/fzf test/foobar', File.expand_path('~/.fzf-home')])
+    FileUtils.touch(('1'..'100').to_a)
+    FileUtils.touch(['no~such~user', 'foobar', File.expand_path('~/.fzf-home')])
     tmux.prepare
-    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
-    tmux.until { |lines| lines.match_count > 0 }
-    tmux.send_keys ' !d'
+    tmux.send_keys 'cat 10**', :Tab
     tmux.until { |lines| lines.match_count == 2 }
     tmux.send_keys :Tab, :Tab
     tmux.until { |lines| lines.select_count == 2 }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
-      lines[-1].include?('/tmp/fzf-test/10') &&
-        lines[-1].include?('/tmp/fzf-test/100')
+      lines[-1].include?('10') &&
+        lines[-1].include?('100')
     end
 
     # ~USERNAME**<TAB>
@@ -1859,22 +1815,22 @@ module CompletionTest
     tmux.send_keys :Enter
     tmux.until(true) { |lines| lines[-1].end_with?('no~such~user') }
 
-    # /tmp/fzf\ test**<TAB>
+    # **<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
+    tmux.send_keys 'cat **', :Tab
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys 'foobar$'
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
-    tmux.until(true) { |lines| lines[-1].end_with?('/tmp/fzf\ test/foobar') }
+    tmux.until(true) { |lines| lines[-1].end_with?('foobar') }
 
     # Should include hidden files
-    FileUtils.touch((1..100).map { |i| "/tmp/fzf-test/.hidden-#{i}" })
+    FileUtils.touch((1..100).map { |i| ".hidden-#{i}" })
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab
-    tmux.until(true) { |lines| lines.match_count == 100 && lines.any_include?('/tmp/fzf-test/.hidden-') }
+    tmux.send_keys 'cat hidden**', :Tab
+    tmux.until(true) { |lines| lines.match_count == 100 && lines.any_include?('.hidden-') }
   ensure
-    FileUtils.rm_rf(['/tmp/fzf-test', '/tmp/fzf test', File.expand_path('~/.fzf-home'), 'no~such~user'])
+    File.unlink(File.expand_path('~/.fzf-home'))
   end
 
   def test_file_completion_root
@@ -1883,30 +1839,30 @@ module CompletionTest
   end
 
   def test_dir_completion
-    FileUtils.mkdir_p((1..100).map { |i| "/tmp/fzf-test/d#{i}" })
-    FileUtils.touch('/tmp/fzf-test/d55/xxx')
+    FileUtils.mkdir((1..100).map { |i| "d#{i}" })
+    FileUtils.touch('d55/xxx')
     tmux.prepare
-    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
+    tmux.send_keys 'cd **', :Tab
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys :Tab, :Tab # Tab does not work here
     tmux.send_keys 55
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
-    tmux.until(true) { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
+    tmux.until(true) { |lines| lines[-1] == 'cd d55/' }
     tmux.send_keys :xx
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+    tmux.until { |lines| lines[-1] == 'cd d55/xx' }
 
     # Should not match regular files (bash-only)
     if is_a?(TestBash)
       tmux.send_keys :Tab
-      tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/xx' }
+      tmux.until { |lines| lines[-1] == 'cd d55/xx' }
     end
 
     # Fail back to plusdirs
     tmux.send_keys :BSpace, :BSpace, :BSpace
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55' }
+    tmux.until { |lines| lines[-1] == 'cd d55' }
     tmux.send_keys :Tab
-    tmux.until { |lines| lines[-1] == 'cd /tmp/fzf-test/d55/' }
+    tmux.until { |lines| lines[-1] == 'cd d55/' }
   end
 
   def test_process_completion
@@ -1966,8 +1922,7 @@ module CompletionTest
   end
 
   def test_file_completion_unicode
-    FileUtils.mkdir_p('/tmp/fzf-test')
-    tmux.paste "cd /tmp/fzf-test; echo -n test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo -n test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'"
+    tmux.paste "echo -n test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo -n test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'"
     tmux.prepare
     tmux.send_keys 'cat fzf-unicode**', :Tab
     tmux.until { |lines| lines.match_count == 2 }
@@ -2029,19 +1984,19 @@ class TestBash < TestBase
   end
 
   def test_dynamic_completion_loader
-    tmux.paste 'touch /tmp/foo; _fzf_completion_loader=1'
+    tmux.paste 'touch foo; _fzf_completion_loader=1'
     tmux.paste '_completion_loader() { complete -o default fake; }'
     tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
-    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.send_keys 'fake foo**', :Tab
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys 'C-c'
 
     tmux.prepare
-    tmux.send_keys 'fake /tmp/foo'
+    tmux.send_keys 'fake foo'
     tmux.send_keys :Tab, 'C-u'
 
     tmux.prepare
-    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.send_keys 'fake foo**', :Tab
     tmux.until { |lines| lines.match_count > 0 }
   end
 end
