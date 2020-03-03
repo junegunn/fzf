@@ -90,10 +90,11 @@ func init() {
 		- http://ascii-table.com/ansi-escape-sequences.php
 		- http://ascii-table.com/ansi-escape-sequences-vt-100.php
 		- http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
+		- https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 	*/
 	// The following regular expression will include not all but most of the
 	// frequently used ANSI sequences
-	ansiRegex = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b.|[\x0e\x0f]|.\x08)")
+	ansiRegex = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
 }
 
 func findAnsiStart(str string) int {

@@ -1716,6 +1716,18 @@ class TestGoFZF < TestBase
     tmux.prepare
   end
 
+  def test_strip_xterm_osc_sequence
+    %W[\x07 \x1b\\].each do |esc|
+      writelines tempname, [%(printf $1"\e]4;3;rgb:aa/bb/cc#{esc} "$2)]
+      File.chmod(0o755, tempname)
+      tmux.prepare
+      tmux.send_keys(
+        %(echo foo bar | #{FZF} --preview '#{tempname} {2} {1}'), :Enter
+      )
+      tmux.until { |lines| lines.any_include?('bar foo') }
+      tmux.send_keys :Enter
+    end
+  end
 end
 
 module TestShell
