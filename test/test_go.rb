@@ -1853,6 +1853,7 @@ module TestShell
   def test_ctrl_r_multiline
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
     tmux.until { |lines| lines[-2..-1] == ['foo', 'bar'] }
+    tmux.prepare
     tmux.send_keys 'C-r'
     tmux.until { |lines| lines[-1] == '>' }
     tmux.send_keys 'foo bar'
