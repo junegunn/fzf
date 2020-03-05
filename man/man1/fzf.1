@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Feb 2020" "fzf 0.21.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Mar 2020" "fzf 0.21.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -178,8 +178,16 @@ Choose the layout (default: default)
 A synonym for \fB--layout=reverse\fB
 
 .TP
-.B "--border"
-Draw border above and below the finder
+.BI "--border" [=STYLE]
+Draw border around the finder
+
+.br
+.BR rounded "     Border with rounded corners (default)"
+.br
+.BR sharp "       Border with sharp corners"
+.br
+.BR horizontal "  Horizontal lines above and below the finder"
+.br
 
 .TP
 .B "--no-unicode"

@@ -105,6 +105,7 @@ type LightRenderer struct {
 type LightWindow struct {
 	renderer *LightRenderer
 	colored  bool
+	preview  bool
 	border   BorderStyle
 	top      int
 	left     int
@@ -681,6 +682,7 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 	w := &LightWindow{
 		renderer: r,
 		colored:  r.theme != nil,
+		preview:  preview,
 		border:   borderStyle,
 		top:      top,
 		left:     left,
@@ -704,7 +706,7 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 
 func (w *LightWindow) drawBorder() {
 	switch w.border.shape {
-	case BorderAround:
+	case BorderRounded, BorderSharp:
 		w.drawBorderAround()
 	case BorderHorizontal:
 		w.drawBorderHorizontal()
@@ -720,16 +722,20 @@ func (w *LightWindow) drawBorderHorizontal() {
 
 func (w *LightWindow) drawBorderAround() {
 	w.Move(0, 0)
-	w.CPrint(ColPreviewBorder, AttrRegular,
+	color := ColBorder
+	if w.preview {
+		color = ColPreviewBorder
+	}
+	w.CPrint(color, AttrRegular,
 		string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
-		w.CPrint(ColPreviewBorder, AttrRegular, string(w.border.vertical))
-		w.CPrint(ColPreviewBorder, AttrRegular, repeat(' ', w.width-2))
-		w.CPrint(ColPreviewBorder, AttrRegular, string(w.border.vertical))
+		w.CPrint(color, AttrRegular, string(w.border.vertical))
+		w.CPrint(color, AttrRegular, repeat(' ', w.width-2))
+		w.CPrint(color, AttrRegular, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(ColPreviewBorder, AttrRegular,
+	w.CPrint(color, AttrRegular,
 		string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
 }
 
