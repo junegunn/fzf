@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+0.21.0 (WIP)
+------------
+- Style changes
+    - Unicode spinner
+    - `--border` will now print border with rounded corners around the
+      finder instead of printing horizontal lines above and below it.
+      The previous style is available via `--border=horizontal`
+- Added `--pointer` and `--marker` options
+- More keys and actions for `--bind`
+- Bug fixes and improvements
+- Vim plugin: Floating windows support
+- bash: Various improvements in key bindings (CTRL-T, CTRL-R, ALT-C)
+
 0.20.0
 ------
 - Customizable preview window color (`preview-fg` and `preview-bg` for `--color`)
