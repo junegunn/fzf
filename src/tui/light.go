@@ -23,6 +23,7 @@ const (
 	defaultEscDelay = 100
 	escPollInterval = 5
 	offsetPollTries = 10
+	maxInputBuffer  = 10 * 1024
 )
 
 const consoleDevice string = "/dev/tty"
@@ -317,6 +318,13 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 		}
 		buffer = append(buffer, byte(c))
 		pc = c
+
+		// This should never happen under normal conditions,
+		// so terminate fzf immediately.
+		if len(buffer) > maxInputBuffer {
+			r.Close()
+			panic(fmt.Sprintf("Input buffer overflow (%d): %v", len(buffer), buffer))
+		}
 	}
 
 	return buffer
