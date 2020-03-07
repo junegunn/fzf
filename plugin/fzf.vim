@@ -859,7 +859,6 @@ else
       \ borderchars: borderchars,
       \ borderhighlight: [a:hl],
       \ padding: padding,
-      \ zindex: 50,
       \ })
     let &g:wincolor = a:hl
   endfunction
