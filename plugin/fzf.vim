@@ -836,24 +836,32 @@ if has('nvim')
   endfunction
 else
   function! s:create_popup(hl, opts) abort
-    let is_frame = has_key(a:opts, 'border')
-    let buf = is_frame ? '' : term_start(&shell, #{hidden: 1})
+    let buf = term_start(&shell, #{hidden: 1})
+    let is_horizontal = a:opts.style ==# 'horizontal' || a:opts.style ==# 'top' || a:opts.style ==# 'bottom'
+    let col = a:opts.col + is_horizontal
+    let borderchars = #{
+      \ rounded: ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
+      \ sharp: ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+      \ vertical: [' ', '│', ' ', '│', ' ', ' ', ' ', ' '],
+      \ horizontal: ['─', ' ', '─', ' ', ' ', ' ', ' ', ' '],
+      \ left: [' ', ' ', ' ', '│', ' ', ' ', ' ', ' '],
+      \ right: [' ', '│', ' ', ' ', ' ', ' ', ' ', ' '],
+      \ top: ['─', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+      \ bottom: [' ', ' ', '─', ' ', ' ', ' ', ' ', ' '],
+      \ }[a:opts.style]
+    let padding = is_horizontal ? [0,0,0,0] : [0,1,0,1]
     let id = popup_create(buf, #{
       \ line: a:opts.row,
-      \ col: a:opts.col,
+      \ col: col,
       \ minwidth: a:opts.width,
       \ minheight: a:opts.height,
-      \ zindex: 50 - is_frame,
-    \ })
-
-    if is_frame
-      call setwinvar(id, '&wincolor', a:hl)
-      call setbufline(winbufnr(id), 1, a:opts.border)
-      execute 'autocmd BufWipeout * ++once call popup_close('..id..')'
-    else
-      execute 'autocmd BufWipeout * ++once bwipeout! '..buf
-    endif
-    return winbufnr(id)
+      \ border: [],
+      \ borderchars: borderchars,
+      \ borderhighlight: [a:hl],
+      \ padding: padding,
+      \ zindex: 50,
+      \ })
+    let &g:wincolor = a:hl
   endfunction
 endif
 
@@ -871,8 +879,7 @@ function! s:popup(opts) abort
   " Managing the differences
   let row = min([max([0, row]), &lines - has('nvim') - height])
   let col = min([max([0, col]), &columns - width])
-  let row += !has('nvim')
-  let col += !has('nvim')
+  let col -= !has('nvim')
 
   " Border style
   let style = tolower(get(a:opts, 'border', 'rounded'))
@@ -904,14 +911,18 @@ function! s:popup(opts) abort
   endif
 
   let highlight = get(a:opts, 'highlight', 'Comment')
-  let frame = s:create_popup(highlight, {
-    \ 'row': row, 'col': col, 'width': width, 'height': height, 'border': border
-  \ })
-  call s:create_popup('Normal', {
-    \ 'row': row + shift.row, 'col': col + shift.col, 'width': width + shift.width, 'height': height + shift.height
-  \ })
   if has('nvim')
+    let frame = s:create_popup(highlight, {
+      \ 'row': row, 'col': col, 'width': width, 'height': height, 'border': border
+    \ })
+    call s:create_popup('Normal', {
+      \ 'row': row + shift.row, 'col': col + shift.col, 'width': width + shift.width, 'height': height + shift.height
+    \ })
     execute 'autocmd BufWipeout <buffer> bwipeout '..frame
+  else
+    call s:create_popup(highlight, #{
+      \ row: row + shift.row, col: col + shift.col, width: width + shift.width, height: height + shift.height, style: style,
+    \ })
   endif
 endfunction
 
