@@ -857,7 +857,6 @@ else
       \ minheight: a:opts.height,
       \ border: [],
       \ borderchars: borderchars,
-      \ borderhighlight: [a:hl],
       \ padding: padding,
       \ })
     let &g:wincolor = a:hl
