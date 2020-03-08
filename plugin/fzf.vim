@@ -860,7 +860,7 @@ else
       \ padding: padding,
       \ })
     let &g:wincolor = a:hl
-    execute 'autocmd BufWipeout * ++once bwipeout! '..buf
+    execute 'autocmd TerminalWinOpen * ++once autocmd BufWipeout <buffer> ++once bwipeout! '..buf
   endfunction
 endif
 
