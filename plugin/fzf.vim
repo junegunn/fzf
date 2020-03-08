@@ -861,6 +861,7 @@ else
       \ padding: padding,
       \ })
     let &g:wincolor = a:hl
+    execute 'autocmd BufWipeout * ++once bwipeout! '..buf
   endfunction
 endif
 
