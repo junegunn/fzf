@@ -11,6 +11,8 @@ CHANGELOG
 - Added `--pointer` and `--marker` options
 - `--height` option is now available on Windows binary (@kelleyma49)
 - More keys and actions for `--bind`
+- Added `--keep-right` option that keeps the right end of the line visible
+  when it's too long
 - Bug fixes and improvements
 - Vim plugin: Floating windows support
 - bash: Various improvements in key bindings (CTRL-T, CTRL-R, ALT-C)

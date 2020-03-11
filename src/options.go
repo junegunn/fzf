@@ -44,6 +44,7 @@ const usage = `usage: fzf [options]
     --no-mouse            Disable mouse
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
+    --keep-right          Keep the right end of the line visible on overflow
     --no-hscroll          Disable horizontal scroll
     --hscroll-off=COL     Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
@@ -187,6 +188,7 @@ type Options struct {
 	MinHeight   int
 	Layout      layoutType
 	Cycle       bool
+	KeepRight   bool
 	Hscroll     bool
 	HscrollOff  int
 	FileWord    bool
@@ -242,6 +244,7 @@ func defaultOptions() *Options {
 		MinHeight:   10,
 		Layout:      layoutDefault,
 		Cycle:       false,
+		KeepRight:   false,
 		Hscroll:     true,
 		HscrollOff:  10,
 		FileWord:    false,
@@ -1174,6 +1177,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Cycle = true
 		case "--no-cycle":
 			opts.Cycle = false
+		case "--keep-right":
+			opts.KeepRight = true
+		case "--no-keep-right":
+			opts.KeepRight = false
 		case "--hscroll":
 			opts.Hscroll = true
 		case "--no-hscroll":

@@ -25,6 +25,8 @@ import (
 var placeholder *regexp.Regexp
 var activeTempFiles []string
 
+const ellipsis string = ".."
+
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
 	activeTempFiles = []string{}
@@ -73,6 +75,7 @@ type Terminal struct {
 	queryLen     [2]int
 	layout       layoutType
 	fullscreen   bool
+	keepRight    bool
 	hscroll      bool
 	hscrollOff   int
 	wordRubout   string
@@ -397,6 +400,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		queryLen:    [2]int{0, 0},
 		layout:      opts.Layout,
 		fullscreen:  fullscreen,
+		keepRight:   opts.KeepRight,
 		hscroll:     opts.Hscroll,
 		hscrollOff:  opts.HscrollOff,
 		wordRubout:  wordRubout,
@@ -1000,14 +1004,17 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
 	if displayWidth > maxWidth {
 		if t.hscroll {
-			// Stri..
-			if !t.overflow(text[:maxe], maxWidth-2) {
+			if t.keepRight && pos == nil {
+				text, _ = t.trimLeft(text, maxWidth-2)
+				text = append([]rune(ellipsis), text...)
+			} else if !t.overflow(text[:maxe], maxWidth-2) {
+				// Stri..
 				text, _ = t.trimRight(text, maxWidth-2)
-				text = append(text, []rune("..")...)
+				text = append(text, []rune(ellipsis)...)
 			} else {
 				// Stri..
 				if t.overflow(text[maxe:], 2) {
-					text = append(text[:maxe], []rune("..")...)
+					text = append(text[:maxe], []rune(ellipsis)...)
 				}
 				// ..ri..
 				var diff int32
@@ -1022,11 +1029,11 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 					offsets[idx].offset[0] = b
 					offsets[idx].offset[1] = util.Max32(b, e)
 				}
-				text = append([]rune(".."), text...)
+				text = append([]rune(ellipsis), text...)
 			}
 		} else {
 			text, _ = t.trimRight(text, maxWidth-2)
-			text = append(text, []rune("..")...)
+			text = append(text, []rune(ellipsis)...)
 
 			for idx, offset := range offsets {
 				offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-2))

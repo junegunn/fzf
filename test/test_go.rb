@@ -1728,6 +1728,11 @@ class TestGoFZF < TestBase
       tmux.send_keys :Enter
     end
   end
+
+  def test_keep_right
+    tmux.send_keys("seq 10000 | #{FZF} --read0 --keep-right", :Enter)
+    tmux.until { |lines| lines.any_include?('9999 10000') }
+  end
 end
 
 module TestShell
