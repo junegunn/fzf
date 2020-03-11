@@ -134,7 +134,6 @@ _fzf_complete() {
   lbuf=${rest[0]}
   cmd=$(__fzf_extract_command "$lbuf")
   post="${funcstack[1]}_post"
-  echo "$post"
   type $post > /dev/null 2>&1 || post=cat
 
   _fzf_feed_fifo "$fifo"
