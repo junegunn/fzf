@@ -2066,6 +2066,7 @@ module CompletionTest
   end
 
   def test_custom_completion_api
+    tmux.send_keys 'eval "_fzf$(declare -f _comprun)"', :Enter
     %w[f g].each do |command|
       tmux.prepare
       tmux.send_keys "#{command} b**", :Tab
@@ -2078,6 +2079,9 @@ module CompletionTest
       tmux.until { |lines| lines[-1].include?("#{command} #{command}barbar") }
       tmux.send_keys 'C-u'
     end
+  ensure
+    tmux.prepare
+    tmux.send_keys 'unset -f _fzf_comprun', :Enter
   end
 end
 
@@ -2192,7 +2196,7 @@ _fzf_complete_g_post() {
 [ -n "$BASH" ] && complete -F _fzf_complete_f -o default -o bashdefault f
 [ -n "$BASH" ] && complete -F _fzf_complete_g -o default -o bashdefault g
 
-_fzf_comprun() {
+_comprun() {
   local command=$1
   shift
 
