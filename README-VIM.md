@@ -159,31 +159,34 @@ let g:fzf_colors =
 let g:fzf_history_dir = '~/.local/share/fzf-history'
 ```
 
-The above `g:fzf_colors` setting is a little tricky.
+##### Explanation of `g:fzf_colors`
 
-This variable is a dictionary mapping fzf elements to a color specification
+`g:fzf_colors` is a dictionary mapping fzf elements to a color specification
 list:
 
-    element: [ layer, group1 (, group2, ...) ]
+    element: [ component, group1 [, group2, ...] ]
 
-- `element` is the fzf element to apply a color to:
+- `element` is an fzf element to apply a color to:
 
-  - **fg  / bg  / hl** : non-selected lines (foreground / background / highlight)
-  - **fg+ / bg+ / hl+** : selected lines  (foreground / background / highlight)
-  - **hl  / hl+** : strings matching the search (normal / selected)
-  - **gutter** : the background of the first 2 columns
-  - **pointer / marker** : the '>' indicator in the gutter
-  - **border** : the border around terminal window
-  - **header** : the line containing the current file
-  - **info** : match counters
-  - **spinner** : the char at column 1 before the match counters
-  - **prompt** : the prompt before input strings
+  | Element               | Description                                           |
+  | ---                   | ---                                                   |
+  | `fg`  / `bg`  / `hl`  | Item (foreground / background / highlight)            |
+  | `fg+` / `bg+` / `hl+` | Current item (foreground / background / highlight)    |
+  | `hl`  / `hl+`         | Highlighted substrings (normal / current)             |
+  | `gutter`              | Background of the gutter on the left                  |
+  | `pointer`             | Pointer to the current line (`>`)                     |
+  | `marker`              | Multi-select marker (`>`)                             |
+  | `border`              | Border around the window (`--border` and `--preview`) |
+  | `header`              | Header (`--header` or `--header-lines`)               |
+  | `info`                | Info line (match counters)                            |
+  | `spinner`             | Streaming input indicator                             |
+  | `prompt`              | Prompt before query (`> `)                            |
 
-- `layer` specifies the layer (fg/bg) from which to extract the color when
-  considering each of the following highlight groups.
+- `component` specifies the component (`fg` / `bg`) from which to extract the
+  color when considering each of the following highlight groups
 
-- `group1 (, group2, ...)` is a list of highlight groups that are searched (in
-  order) for a matching color definition.
+- `group1 [, group2, ...]` is a list of highlight groups that are searched (in
+  order) for a matching color definition
 
 For example, consider the following specification:
 
@@ -191,14 +194,17 @@ For example, consider the following specification:
   'prompt':  ['fg', 'Conditional', 'Comment'],
 ```
 
-This means we color the **prompt** using the `fg` attribute of the
-`Conditional`, if it exists, otherwise use the `fg` attribute of the `Comment`
-highlight group, if it exists, otherwise fall back to the default color settings
-for the **prompt**.
+This means we color the **prompt**
+- using the `fg` attribute of the `Conditional` if it exists,
+- otherwise use the `fg` attribute of the `Comment` highlight group if it exists,
+- otherwise fall back to the default color settings for the **prompt**.
 
-For the **fg+**, **bg+**, **hl+**, **prompt**, **pointer**, and **marker**
-elements there is an extra condition: the color only matches if the highlight
-group also has `term=bold` set.  This last bit can cause a lot of confusion.
+You can examine the color option generated according the setting by printing
+the result of `fzf#wrap()` function like so:
+
+```vim
+:echo fzf#wrap()
+```
 
 `fzf#run`
 ---------
