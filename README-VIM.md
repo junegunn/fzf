@@ -159,6 +159,53 @@ let g:fzf_colors =
 let g:fzf_history_dir = '~/.local/share/fzf-history'
 ```
 
+##### Explanation of `g:fzf_colors`
+
+`g:fzf_colors` is a dictionary mapping fzf elements to a color specification
+list:
+
+    element: [ component, group1 [, group2, ...] ]
+
+- `element` is an fzf element to apply a color to:
+
+  | Element               | Description                                           |
+  | ---                   | ---                                                   |
+  | `fg`  / `bg`  / `hl`  | Item (foreground / background / highlight)            |
+  | `fg+` / `bg+` / `hl+` | Current item (foreground / background / highlight)    |
+  | `hl`  / `hl+`         | Highlighted substrings (normal / current)             |
+  | `gutter`              | Background of the gutter on the left                  |
+  | `pointer`             | Pointer to the current line (`>`)                     |
+  | `marker`              | Multi-select marker (`>`)                             |
+  | `border`              | Border around the window (`--border` and `--preview`) |
+  | `header`              | Header (`--header` or `--header-lines`)               |
+  | `info`                | Info line (match counters)                            |
+  | `spinner`             | Streaming input indicator                             |
+  | `prompt`              | Prompt before query (`> `)                            |
+
+- `component` specifies the component (`fg` / `bg`) from which to extract the
+  color when considering each of the following highlight groups
+
+- `group1 [, group2, ...]` is a list of highlight groups that are searched (in
+  order) for a matching color definition
+
+For example, consider the following specification:
+
+```vim
+  'prompt':  ['fg', 'Conditional', 'Comment'],
+```
+
+This means we color the **prompt**
+- using the `fg` attribute of the `Conditional` if it exists,
+- otherwise use the `fg` attribute of the `Comment` highlight group if it exists,
+- otherwise fall back to the default color settings for the **prompt**.
+
+You can examine the color option generated according the setting by printing
+the result of `fzf#wrap()` function like so:
+
+```vim
+:echo fzf#wrap()
+```
+
 `fzf#run`
 ---------
 
