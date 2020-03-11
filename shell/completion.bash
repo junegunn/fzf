@@ -190,6 +190,27 @@ __fzf_generic_path_completion() {
 }
 
 _fzf_complete() {
+  # Split arguments around --
+  local args rest str_arg i sep
+  args=("$@")
+  sep=
+  for i in "${!args[@]}"; do
+    if [[ "${args[$i]}" = -- ]]; then
+      sep=$i
+      break
+    fi
+  done
+  if [[ -n "$sep" ]]; then
+    str_arg=
+    rest=("${args[@]:$((sep + 1)):${#args[@]}}")
+    args=("${args[@]:0:$sep}")
+  else
+    str_arg=$1
+    args=()
+    shift
+    rest=("$@")
+  fi
+
   local cur selected trigger cmd post
   post="$(caller 0 | awk '{print $2}')_post"
   type -t "$post" > /dev/null 2>&1 || post=cat
@@ -200,7 +221,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $1" __fzf_comprun "$2" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
@@ -210,8 +231,7 @@ _fzf_complete() {
     printf '\e[5n'
     return 0
   else
-    shift
-    _fzf_handle_dynamic_completion "$cmd" "$@"
+    _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
   fi
 }
 
@@ -243,7 +263,7 @@ _fzf_complete_kill() {
 }
 
 _fzf_host_completion() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete +m -- "$@" < <(
     cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
@@ -252,13 +272,13 @@ _fzf_host_completion() {
 }
 
 _fzf_var_completion() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete -m -- "$@" < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
 _fzf_alias_completion() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete -m -- "$@" < <(
     alias | sed 's/=.*//' | sed 's/.* //'
   )
 }

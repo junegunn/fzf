@@ -2064,6 +2064,21 @@ module CompletionTest
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'test3test4' }
   end
+
+  def test_custom_completion_api
+    %w[f g].each do |command|
+      tmux.prepare
+      tmux.send_keys "#{command} b**", :Tab
+      tmux.until do |lines|
+        lines.item_count == 2 && lines.match_count == 1 &&
+          lines.any_include?("prompt-#{command}") &&
+          lines.any_include?("preview-#{command}-bar")
+      end
+      tmux.send_keys :Enter
+      tmux.until { |lines| lines[-1].include?("#{command} #{command}barbar") }
+      tmux.send_keys 'C-u'
+    end
+  end
 end
 
 class TestBash < TestBase
@@ -2149,3 +2164,41 @@ source "<%= BASE %>/shell/key-bindings.<%= __method__ %>"
 
 PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
 unset <%= UNSETS.join(' ') %>
+
+# Old API
+_fzf_complete_f() {
+  _fzf_complete "--multi --prompt \"prompt-f> \"" "$@" < <(
+    echo foo
+    echo bar
+  )
+}
+
+# New API
+_fzf_complete_g() {
+  _fzf_complete --multi --prompt "prompt-g> " -- "$@" < <(
+    echo foo
+    echo bar
+  )
+}
+
+_fzf_complete_f_post() {
+  awk '{print "f" $0 $0}'
+}
+
+_fzf_complete_g_post() {
+  awk '{print "g" $0 $0}'
+}
+
+[ -n "$BASH" ] && complete -F _fzf_complete_f -o default -o bashdefault f
+[ -n "$BASH" ] && complete -F _fzf_complete_g -o default -o bashdefault g
+
+_fzf_comprun() {
+  local command=$1
+  shift
+
+  case "$command" in
+    f) fzf "$@" --preview 'echo preview-f-{}' ;;
+    g) fzf "$@" --preview 'echo preview-g-{}' ;;
+    *) fzf "$@" ;;
+  esac
+}

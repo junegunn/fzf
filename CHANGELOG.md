@@ -14,6 +14,20 @@ CHANGELOG
 - Bug fixes and improvements
 - Vim plugin: Floating windows support
 - bash: Various improvements in key bindings (CTRL-T, CTRL-R, ALT-C)
+- Fuzzy completion API changed
+  ```sh
+  # Previous: fzf arguments given as a single string argument
+  # - This style is still supported, but it is deprecated
+  _fzf_complete "--multi --reverse --prompt=\"doge> \"" "$@" < <(
+    echo foo
+  )
+
+  # New API: multiple fzf arguments before "--"
+  # - More rebust and easier to write options
+  _fzf_complete --multi --reverse --prompt="doge> " -- "$@" < <(
+    echo foo
+  )
+  ```
 
 0.20.0
 ------

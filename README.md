@@ -47,6 +47,7 @@ Table of Contents
       * [Environment variables / Aliases](#environment-variables--aliases)
       * [Settings](#settings)
       * [Supported commands](#supported-commands)
+      * [Custom fuzzy completion](#custom-fuzzy-completion)
    * [Vim plugin](#vim-plugin)
    * [Advanced topics](#advanced-topics)
       * [Performance](#performance)
@@ -414,7 +415,7 @@ _fzf_comprun() {
 
   case "$command" in
     cd)           fzf "$@" --preview 'tree -C {} | head -200' ;;
-    export|unset) fzf "$@" --preview "eval 'echo \$'{}" "$@" ;;
+    export|unset) fzf "$@" --preview "eval 'echo \$'{}" ;;
     ssh)          fzf "$@" --preview 'dig {}' ;;
     *)            fzf "$@" ;;
   esac
@@ -431,6 +432,56 @@ commands as well by using `_fzf_setup_completion` helper function.
 # usage: _fzf_setup_completion path|dir|var|alias|host COMMANDS...
 _fzf_setup_completion path ag git kubectl
 _fzf_setup_completion dir tree
+```
+
+#### Custom fuzzy completion
+
+_**(Custom completion API is experimental and subject to change)**_
+
+For a command named _"COMMAND"_, define `_fzf_complete_COMMAND` function using
+`_fzf_complete` helper.
+
+```sh
+# Custom fuzzy completion for "doge" command
+#   e.g. doge **<TAB>
+_fzf_complete_doge() {
+  _fzf_complete --multi --reverse --prompt="doge> " -- "$@" < <(
+    echo very
+    echo wow
+    echo such
+    echo doge
+  )
+}
+```
+
+- The arguments before `--` are the options to fzf.
+- After `--`, simply pass the original completion arguments unchanged (`"$@"`).
+- Then write a set of commands that generates the completion candidates and
+  feed its output to the function using process substitution (`< <(...)`).
+
+zsh will automatically pick up the function using the naming convention but in
+bash you have to manually associate the function with the command using
+`complete` command.
+
+```sh
+[ -n "$BASH" ] && complete -F _fzf_complete_doge -o default -o bashdefault doge
+```
+
+If you need to post-process the output from fzf, define
+`_fzf_complete_COMMAND_post` as follows.
+
+```sh
+_fzf_complete_foo() {
+  _fzf_complete --multi --reverse --header-lines=3 -- "$@" < <(
+    ls -al
+  )
+}
+
+_fzf_complete_foo_post() {
+  awk '{print $NF}'
+}
+
+[ -n "$BASH" ] && complete -F _fzf_complete_foo -o default -o bashdefault foo
 ```
 
 Vim plugin

@@ -107,16 +107,38 @@ _fzf_feed_fifo() (
 )
 
 _fzf_complete() {
-  local fifo fzf_opts lbuf cmd matches post
+  setopt localoptions ksh_arrays
+  # Split arguments around --
+  local args rest str_arg i sep
+  args=("$@")
+  sep=
+  for i in {0..$#args}; do
+    if [[ "${args[$i]}" = -- ]]; then
+      sep=$i
+      break
+    fi
+  done
+  if [[ -n "$sep" ]]; then
+    str_arg=
+    rest=("${args[@]:$((sep + 1)):${#args[@]}}")
+    args=("${args[@]:0:$sep}")
+  else
+    str_arg=$1
+    args=()
+    shift
+    rest=("$@")
+  fi
+
+  local fifo lbuf cmd matches post
   fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
-  fzf_opts=$1
-  lbuf=$2
+  lbuf=${rest[0]}
   cmd=$(__fzf_extract_command "$lbuf")
-  post="${funcstack[2]}_post"
+  post="${funcstack[1]}_post"
+  echo "$post"
   type $post > /dev/null 2>&1 || post=cat
 
   _fzf_feed_fifo "$fifo"
-  matches=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "${(Q)prefix}" < "$fifo" | $post | tr '\n' ' ')
+  matches=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "$cmd" "${args[@]}" -q "${(Q)prefix}" < "$fifo" | $post | tr '\n' ' ')
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
@@ -125,14 +147,14 @@ _fzf_complete() {
 }
 
 _fzf_complete_telnet() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete +m -- "$@" < <(
     command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
 }
 
 _fzf_complete_ssh() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete +m -- "$@" < <(
     setopt localoptions nonomatch
     command cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
@@ -142,19 +164,19 @@ _fzf_complete_ssh() {
 }
 
 _fzf_complete_export() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete -m -- "$@" < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
 _fzf_complete_unset() {
-  _fzf_complete '-m' "$@" < <(
+  _fzf_complete -m -- "$@" < <(
     declare -xp | sed 's/=.*//' | sed 's/.* //'
   )
 }
 
 _fzf_complete_unalias() {
-  _fzf_complete '+m' "$@" < <(
+  _fzf_complete +m -- "$@" < <(
     alias | sed 's/=.*//'
   )
 }
