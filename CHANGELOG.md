@@ -1,35 +1,41 @@
 CHANGELOG
 =========
 
-0.21.0 (WIP)
-------------
+0.21.0
+------
+- `--height` option is now available on Windows as well (@kelleyma49)
+- Added `--pointer` and `--marker` options
+- Added `--keep-right` option that keeps the right end of the line visible
+  when it's too long
 - Style changes
-    - Unicode spinner
     - `--border` will now print border with rounded corners around the
       finder instead of printing horizontal lines above and below it.
       The previous style is available via `--border=horizontal`
-- Added `--pointer` and `--marker` options
-- `--height` option is now available on Windows binary (@kelleyma49)
+    - Unicode spinner
 - More keys and actions for `--bind`
-- Added `--keep-right` option that keeps the right end of the line visible
-  when it's too long
-- Bug fixes and improvements
-- Vim plugin: Floating windows support
+- Added PowerShell script for downloading Windows binary
+- Vim plugin: Built-in floating windows support
+  ```vim
+  let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
+  ```
 - bash: Various improvements in key bindings (CTRL-T, CTRL-R, ALT-C)
+    - CTRL-R will start with the current command-line as the initial query
+    - CTRL-R properly supports multi-line commands
 - Fuzzy completion API changed
   ```sh
   # Previous: fzf arguments given as a single string argument
-  # - This style is still supported, but it is deprecated
+  # - This style is still supported, but it's deprecated
   _fzf_complete "--multi --reverse --prompt=\"doge> \"" "$@" < <(
     echo foo
   )
 
   # New API: multiple fzf arguments before "--"
-  # - More rebust and easier to write options
+  # - Easier to write multiple options
   _fzf_complete --multi --reverse --prompt="doge> " -- "$@" < <(
     echo foo
   )
   ```
+- Bug fixes and improvements
 
 0.20.0
 ------
