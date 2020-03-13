@@ -56,7 +56,7 @@ __fzf_history__() {
   output=$(
     builtin fc -lnr -2147483648 |
       last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t"; $HISTCMD = $ENV{last_hist} + 1 } s/^[ *]//; $_ = $HISTCMD - $. . "\t$_"' |
-      FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
+      FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
   if [ -z "$READLINE_POINT" ]; then
