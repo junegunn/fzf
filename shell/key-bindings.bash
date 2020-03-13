@@ -53,9 +53,17 @@ __fzf_cd__() {
 
 __fzf_history__() {
   local output
+  if [[ "$PROMPT_COMMAND" =~ (^|;)\ *history\ +-a\ *($|;) ]]; then
+      local cmd_history="tac '$HISTFILE' | sed 's/^/\t/'"
+      local cmd_count="wc -l < '$HISTFILE'"
+  else
+      local cmd_history="builtin fc -lnr -2147483648"
+      local cmd_count="HISTTIMEFORMAT='' builtin history 1"
+  fi
+
   output=$(
-    builtin fc -lnr -2147483648 |
-      last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t"; $HISTCMD = $ENV{last_hist} + 1 } s/^[ *]//; $_ = $HISTCMD - $. . "\t$_"' |
+    eval "$cmd_history" |
+      last_hist=$(eval "$cmd_count") perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t"; $HISTCMD = $ENV{last_hist} + 1 } s/^[ *]//; $_ = $HISTCMD - $. . "\t$_"' |
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
