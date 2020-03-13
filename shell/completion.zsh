@@ -107,13 +107,13 @@ _fzf_feed_fifo() (
 )
 
 _fzf_complete() {
-  setopt localoptions ksh_arrays
+  setopt localoptions noksh_arrays
   # Split arguments around --
   local args rest str_arg i sep
   args=("$@")
   sep=
   for i in {0..$#args}; do
-    if [[ "${args[$i]}" = -- ]]; then
+    if [[ "${args[i+1]}" = -- ]]; then
       sep=$i
       break
     fi
@@ -131,9 +131,9 @@ _fzf_complete() {
 
   local fifo lbuf cmd matches post
   fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
-  lbuf=${rest[0]}
+  lbuf=${rest[1]}
   cmd=$(__fzf_extract_command "$lbuf")
-  post="${funcstack[1]}_post"
+  post="${funcstack[2]}_post"
   type $post > /dev/null 2>&1 || post=cat
 
   _fzf_feed_fifo "$fifo"
