@@ -723,7 +723,9 @@ function! s:execute_term(dict, command, temps) abort
       call self.switch_back(1)
     else
       if bufnr('') == self.buf
-        if !has('nvim') | call term_sendkeys(bufnr('#'), "exit\<CR>") | endif
+        if exists('*win_gettype') && win_gettype() ==# 'popup'
+          call term_sendkeys(bufnr('#'), "exit\<CR>")
+        endif
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
