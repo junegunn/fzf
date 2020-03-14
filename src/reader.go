@@ -156,10 +156,11 @@ func (r *Reader) readFiles() bool {
 	fn := func(path string, mode os.FileInfo) error {
 		path = filepath.Clean(path)
 		if path != "." {
-			if mode.Mode().IsDir() && filepath.Base(path)[0] == '.' {
+			isDir := mode.Mode().IsDir()
+			if isDir && filepath.Base(path)[0] == '.' {
 				return filepath.SkipDir
 			}
-			if r.pusher([]byte(path)) {
+			if !isDir && r.pusher([]byte(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
