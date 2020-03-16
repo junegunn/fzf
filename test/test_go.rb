@@ -1606,23 +1606,21 @@ class TestGoFZF < TestBase
   end
 
   def test_escaped_meta_characters
-    # rubocop:todo Naming/HeredocDelimiterNaming
-    input = <<~EOF # rubocop:todo Naming/HeredocDelimiterNaming
-      # rubocop:enable Naming/HeredocDelimiterNaming
-        foo^bar
-        foo$bar
-        foo!bar
-        foo'bar
-        foo bar
-        bar foo
-    EOF
-    writelines tempname, input.lines.map(&:chomp)
+    input = [
+      'foo^bar',
+      'foo$bar',
+      'foo!bar',
+      "foo'bar",
+      'foo bar',
+      'bar foo'
+    ]
+    writelines tempname, input
 
-    assert_equal input.lines.count, `#{FZF} -f'foo bar' < #{tempname}`.lines.count
-    assert_equal input.lines.count - 1, `#{FZF} -f'^foo bar$' < #{tempname}`.lines.count
+    assert_equal input.length, `#{FZF} -f'foo bar' < #{tempname}`.lines.length
+    assert_equal input.length - 1, `#{FZF} -f'^foo bar$' < #{tempname}`.lines.length
     assert_equal ['foo bar'], `#{FZF} -f'foo\\ bar' < #{tempname}`.lines.map(&:chomp)
     assert_equal ['foo bar'], `#{FZF} -f'^foo\\ bar$' < #{tempname}`.lines.map(&:chomp)
-    assert_equal input.lines.count - 1, `#{FZF} -f'!^foo\\ bar$' < #{tempname}`.lines.count
+    assert_equal input.length - 1, `#{FZF} -f'!^foo\\ bar$' < #{tempname}`.lines.length
   end
 
   def test_inverse_only_search_should_not_sort_the_result
@@ -1841,10 +1839,16 @@ module TestShell
 
   def test_ctrl_r
     tmux.prepare
-    tmux.send_keys 'echo 1st', :Enter; tmux.prepare
-    tmux.send_keys 'echo 2nd', :Enter; tmux.prepare
-    tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
-    3.times { tmux.send_keys 'echo 3rd', :Enter; tmux.prepare }
+    tmux.send_keys 'echo 1st', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo 2nd', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo 3d', :Enter
+    tmux.prepare
+    3.times do
+      tmux.send_keys 'echo 3rd', :Enter
+      tmux.prepare
+    end
     tmux.send_keys 'echo 4th', :Enter
     retries do
       tmux.prepare
