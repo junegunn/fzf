@@ -258,12 +258,12 @@ for shell in $shells; do
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
-  fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
+  fzf_completion="[[ \$- == *i* ]] && source \"\$HOME/shell/completion.${shell}\" 2> /dev/null"
   if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 
-  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
+  fzf_key_bindings="source \"\$HOME/shell/key-bindings.${shell}\""
   if [ $key_bindings -eq 0 ]; then
     fzf_key_bindings="# $fzf_key_bindings"
   fi
@@ -272,7 +272,7 @@ for shell in $shells; do
 # Setup fzf
 # ---------
 if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
-  export PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
+  export PATH="\${PATH:+\${PATH}:}\$HOME/bin"
 fi
 
 # Auto-completion
