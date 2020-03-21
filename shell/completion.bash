@@ -290,7 +290,7 @@ d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
 a_cmds="
   awk cat diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg java
-  javac ld less more mvim nvim patch perl python ruby
+  javac ld less more mvim nvim patch python ruby
   sed sftp sort source tail tee uniq vi view vim wc xdg-open
   basename bunzip2 bzip2 chmod chown curl cp dirname du
   find git grep gunzip gzip hg jar
