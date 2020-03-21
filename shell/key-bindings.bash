@@ -54,7 +54,7 @@ __fzf_cd__() {
 __fzf_history__() {
   local output
   output=$(
-    HISTTIMEFORMAT='' builtin history | sort -rn | sed -r 's/^ *//g;s/^([0-9]+) +/\1\t/g;' | tr '\n' '\000' |
+    HISTTIMEFORMAT='' fc -lr -2147483648 | sed -r 's/^([0-9]+\t) +/\1/g;' | tr '\n' '\000' |
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
