@@ -2176,7 +2176,7 @@ unset <%= UNSETS.join(' ') %>
 
 # Old API
 _fzf_complete_f() {
-  _fzf_complete "--multi --prompt \"prompt-f> \"" "$@" < <(
+  _fzf_complete "+m --multi --prompt \"prompt-f> \"" "$@" < <(
     echo foo
     echo bar
   )
@@ -2184,7 +2184,7 @@ _fzf_complete_f() {
 
 # New API
 _fzf_complete_g() {
-  _fzf_complete --multi --prompt "prompt-g> " -- "$@" < <(
+  _fzf_complete +m --multi --prompt "prompt-g> " -- "$@" < <(
     echo foo
     echo bar
   )
