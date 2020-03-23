@@ -112,7 +112,7 @@ _fzf_complete() {
   local args rest str_arg i sep
   args=("$@")
   sep=
-  for i in {0..$#args}; do
+  for i in {0..${#args[@]}}; do
     if [[ "${args[$i]}" = -- ]]; then
       sep=$i
       break
