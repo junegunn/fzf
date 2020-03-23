@@ -1003,10 +1003,21 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
 	if displayWidth > maxWidth {
+		transformOffsets := func(diff int32) {
+			for idx, offset := range offsets {
+				b, e := offset.offset[0], offset.offset[1]
+				b += 2 - diff
+				e += 2 - diff
+				b = util.Max32(b, 2)
+				offsets[idx].offset[0] = b
+				offsets[idx].offset[1] = util.Max32(b, e)
+			}
+		}
 		if t.hscroll {
 			if t.keepRight && pos == nil {
-				text, _ = t.trimLeft(text, maxWidth-2)
-				text = append([]rune(ellipsis), text...)
+				trimmed, diff := t.trimLeft(text, maxWidth-2)
+				transformOffsets(diff)
+				text = append([]rune(ellipsis), trimmed...)
 			} else if !t.overflow(text[:maxe], maxWidth-2) {
 				// Stri..
 				text, _ = t.trimRight(text, maxWidth-2)
@@ -1021,14 +1032,7 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 				text, diff = t.trimLeft(text, maxWidth-2)
 
 				// Transform offsets
-				for idx, offset := range offsets {
-					b, e := offset.offset[0], offset.offset[1]
-					b += 2 - diff
-					e += 2 - diff
-					b = util.Max32(b, 2)
-					offsets[idx].offset[0] = b
-					offsets[idx].offset[1] = util.Max32(b, e)
-				}
+				transformOffsets(diff)
 				text = append([]rune(ellipsis), text...)
 			}
 		} else {
