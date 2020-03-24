@@ -184,7 +184,7 @@ class TestBase < Minitest::Test
   def tempname
     @temp_suffix ||= 0
     [TEMPNAME,
-     caller_locations.map(&:label).find { |l| l =~ /^test_/ },
+     caller_locations.map(&:label).find { |l| l.start_with?('test_') },
      @temp_suffix].join('-')
   end
 
@@ -232,7 +232,7 @@ class TestGoFZF < TestBase
 
   def test_vanilla
     tmux.send_keys("seq 1 100000 | #{fzf}", :Enter)
-    tmux.until { |lines| lines.last =~ /^>/ && lines[-2] =~ /^  100000/ }
+    tmux.until { |lines| lines.last.start_with?('>') && lines[-2].start_with?('  100000') }
     lines = tmux.capture
     assert_equal('  2',             lines[-4])
     assert_equal('> 1',             lines[-3])
@@ -256,7 +256,7 @@ class TestGoFZF < TestBase
 
   def test_fzf_default_command
     tmux.send_keys(fzf.sub('FZF_DEFAULT_COMMAND=', "FZF_DEFAULT_COMMAND='echo hello'"), :Enter)
-    tmux.until { |lines| lines.last =~ /^>/ }
+    tmux.until { |lines| lines.last.start_with?('>') }
 
     tmux.send_keys(:Enter)
     assert_equal('hello', readonce.chomp)
@@ -270,7 +270,7 @@ class TestGoFZF < TestBase
 
   def test_key_bindings
     tmux.send_keys("#{FZF} -q 'foo bar foo-bar'", :Enter)
-    tmux.until { |lines| lines.last =~ /^>/ }
+    tmux.until { |lines| lines.last.start_with?('>') }
 
     # CTRL-A
     tmux.send_keys('C-A', '(')
@@ -335,7 +335,7 @@ class TestGoFZF < TestBase
 
   def test_file_word
     tmux.send_keys("#{FZF} -q '--/foo bar/foo-bar/baz' --filepath-word", :Enter)
-    tmux.until { |lines| lines.last =~ /^>/ }
+    tmux.until { |lines| lines.last.start_with?('>') }
 
     tmux.send_keys(:Escape, :b)
     tmux.send_keys(:Escape, :b)
@@ -348,7 +348,7 @@ class TestGoFZF < TestBase
 
   def test_multi_order
     tmux.send_keys("seq 1 10 | #{fzf(:multi)}", :Enter)
-    tmux.until { |lines| lines.last =~ /^>/ }
+    tmux.until { |lines| lines.last.start_with?('>') }
 
     tmux.send_keys(:Tab, :Up, :Up, :Tab, :Tab, :Tab, # 3, 2
                    'C-K', 'C-K', 'C-K', 'C-K', :BTab, :BTab, # 5, 6
@@ -473,7 +473,7 @@ class TestGoFZF < TestBase
   def test_select_1_exit_0_fail
     [:'0', :'1', %i[1 0]].each do |opt|
       tmux.send_keys("seq 1 100 | #{fzf(:print_query, :multi, :q, 5, *opt)}", :Enter)
-      tmux.until { |lines| lines.last =~ /^> 5/ }
+      tmux.until { |lines| lines.last.start_with?('> 5') }
       tmux.send_keys(:BTab, :BTab, :BTab)
       tmux.until { |lines| lines[-2].include?('(3)') }
       tmux.send_keys(:Enter)

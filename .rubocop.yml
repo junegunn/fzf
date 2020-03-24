@@ -2,6 +2,8 @@ Layout/LineLength:
   Enabled: false
 Metrics:
   Enabled: false
+Performance/StartWith:
+  AutoCorrect: true
 Style/MethodCallWithArgsParentheses:
   Enabled: true
 Style/NumericPredicate:
