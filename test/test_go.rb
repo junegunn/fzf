@@ -139,7 +139,7 @@ class Tmux
 
           def any_include?(val)
             method = val.is_a?(Regexp) ? :match : :include?
-            select { |line| line.send(method, val) }.first
+            find { |line| line.send(method, val) }
           end
         end
         yield(lines).tap do |ok|
@@ -1806,7 +1806,7 @@ module TestShell
       tmux.until { |lines| lines.match_count > 0 }
       # rubocop:enable Lint/ShadowingOuterLocalVariable
     end
-    expected = lines.reverse.select { |l| l.start_with?('>') }.first[2..-1]
+    expected = lines.reverse.find { |l| l.start_with?('>') }[2..-1]
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -1931,7 +1931,7 @@ module CompletionTest
     tmux.send_keys "cat ~#{ENV['USER']}**", :Tab
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys "'.fzf-home"
-    tmux.until { |lines| lines.select { |l| l.include?('.fzf-home') }.count > 1 }
+    tmux.until { |lines| lines.count { |l| l.include?('.fzf-home') } > 1 }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
       lines[-1].end_with?('.fzf-home')
