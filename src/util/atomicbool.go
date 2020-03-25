@@ -1,32 +1,38 @@
 package util
 
-import "sync"
+import (
+	"sync/atomic"
+)
 
 // AtomicBool is a boxed-class that provides synchronized access to the
 // underlying boolean value
 type AtomicBool struct {
-	mutex sync.Mutex
-	state bool
+	state int32 // "1" is true, "0" is false
 }
 
 // NewAtomicBool returns a new AtomicBool
 func NewAtomicBool(initialState bool) *AtomicBool {
-	return &AtomicBool{
-		mutex: sync.Mutex{},
-		state: initialState}
+	var state int32 = 0
+	if initialState == true {
+		state = 1
+	}
+	return &AtomicBool{state: state}
 }
 
 // Get returns the current boolean value synchronously
 func (a *AtomicBool) Get() bool {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	return a.state
+	if atomic.LoadInt32(&a.state) != 0 {
+		return true
+	}
+	return false
 }
 
 // Set updates the boolean value synchronously
 func (a *AtomicBool) Set(newState bool) bool {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	a.state = newState
-	return a.state
+	var state int32 = 0
+	if newState == true {
+		state = 1
+	}
+	atomic.StoreInt32(&a.state, state)
+	return newState
 }
