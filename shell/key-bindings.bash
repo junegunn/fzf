@@ -51,10 +51,11 @@ __fzf_cd__() {
   dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
+# sed -z option is only available for version 4.2.2+
 __fzf_history__() {
   local output
   output=$(
-    HISTTIMEFORMAT='' fc -lr -2147483648 | sed -r 's/^([0-9]+\t) +/\1/g;' | tr '\n' '\000' |
+    HISTTIMEFORMAT='' fc -lr -2147483648 | sed -r -e 's/^([0-9]+\t) +/\1/g;' | sed -z -r -e 's/\n^([0-9]+\t)/\x00/g;'
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
