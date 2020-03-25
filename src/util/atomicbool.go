@@ -21,10 +21,7 @@ func NewAtomicBool(initialState bool) *AtomicBool {
 
 // Get returns the current boolean value synchronously
 func (a *AtomicBool) Get() bool {
-	if atomic.LoadInt32(&a.state) != 0 {
-		return true
-	}
-	return false
+	return atomic.LoadInt32(&a.state) == 1
 }
 
 // Set updates the boolean value synchronously
