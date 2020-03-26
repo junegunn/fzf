@@ -55,7 +55,7 @@ __fzf_cd__() {
 __fzf_history__() {
   local output
   output=$(
-    HISTTIMEFORMAT='' builtin fc -lr -2147483648 | sed -z -r -e 's/([0-9]+\t) +/\1/g;s/\n([0-9]+\t)/\x00\1/g;' |
+    HISTTIMEFORMAT='' builtin fc -lr -2147483648 | awk 'BEGIN{RS="\n[0-9]+\t ";ORS="\x00";OFS=""}NR==1{$0=gensub(/^([0-9]+\t) +/,"\\1","g",$0)}{print num,$0}{num=gensub(/\n([0-9]+\t) +/,"\\1","g",RT)}' |
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
