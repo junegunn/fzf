@@ -2,6 +2,17 @@ Layout/LineLength:
   Enabled: false
 Metrics:
   Enabled: false
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+  IgnoredMethods:
+    - assert
+    - puts
+    - refute
+    - require
+    - send_keys
+  IgnoredPatterns:
+    - ^assert_
+    - ^refute_
 Style/NumericPredicate:
   AutoCorrect: true
   EnforcedStyle: comparison
