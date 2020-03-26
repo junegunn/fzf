@@ -51,7 +51,7 @@ __fzf_cd__() {
   dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
-# sed -z option is only available for version 4.2.2+
+# use sub for compatibility of BSD awk
 __fzf_history__() {
   local output
   output=$(
