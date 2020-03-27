@@ -13,6 +13,10 @@ __fzf_select__() {
 
 if [[ $- =~ i ]]; then
 
+# https://stackoverflow.com/a/246128
+CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source "$CWD/key-bindings-common.sh"
+
 __fzf_use_tmux__() {
   [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ]
 }
@@ -54,7 +58,7 @@ __fzf_cd__() {
 __fzf_history__() {
   local output
   output=$(
-    builtin fc -lnr -2147483648 |
+    builtin fc -lnr -2147483648 | __fzf_history_dedup__ |
       last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t"; $HISTCMD = $ENV{last_hist} + 1 } s/^[ *]//; $_ = $HISTCMD - $. . "\t$_"' |
       FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return

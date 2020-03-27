@@ -47,14 +47,23 @@ function fzf_key_bindings
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-        history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
+        history -z | __fzf_history_dedup__ | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
         and commandline -- $result
       else
-        history | eval (__fzfcmd) -q '(commandline)' | read -l result
+        history | __fzf_history_dedup__ | eval (__fzfcmd) -q '(commandline)' | read -l result
         and commandline -- $result
       end
     end
     commandline -f repaint
+  end
+
+  # Keep in sync with common version (in key-bindings-common.sh)
+  function __fzf_history_dedup__
+    if [ "$FZF_HIST_FIND_NO_DUPS" = on ]
+      perl -ne 'print if !$seen{($_ =~ s/^[0-9\s]*//r)}++'
+    else
+      cat
+    end
   end
 
   function fzf-cd-widget -d "Change directory"

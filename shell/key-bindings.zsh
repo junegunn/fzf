@@ -2,6 +2,10 @@
 # ------------
 if [[ $- == *i* ]]; then
 
+# https://unix.stackexchange.com/a/115431
+CWD="${0:a:h}"
+source "$CWD/key-bindings-common.sh"
+
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
   local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
@@ -66,9 +70,13 @@ bindkey '\ec' fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
+  if [ -z "$FZF_HIST_FIND_NO_DUPS" ]; then
+    export FZF_HIST_FIND_NO_DUPS="${options[HIST_FIND_NO_DUPS]}"
+  fi
+
   local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
-  selected=( $(fc -rl 1 |
+  selected=( $(fc -rl 1 | __fzf_history_dedup__ |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS --query=${(qqq)LBUFFER} +m" $(__fzfcmd)) )
   local ret=$?
   if [ -n "$selected" ]; then
