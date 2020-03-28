@@ -51,13 +51,22 @@ __fzf_cd__() {
   dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" $(__fzfcmd) +m) && printf 'cd %q' "$dir"
 }
 
-# use sub for compatibility of BSD awk
 __fzf_history__() {
   local output
-  output=$(
-    HISTTIMEFORMAT='' builtin fc -lr -2147483648 | awk 'BEGIN{RS="\n[0-9]+\t ";ORS="\x00";OFS=""}{sub("^\n","",RT);sub("\t ","\t",RT)}NR==1{sub("\t ","\t",$0)}{print sRT,$0}{sRT=RT}' |
-      FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
-  ) || return
+  # use gnu awk first if available
+  if awk --version 2>&1 | grep -q "GNU Awk"
+  then
+    output=$(
+      HISTTIMEFORMAT='' builtin fc -lr -2147483648 | awk 'BEGIN{RS="\n[0-9]+\t ";ORS="\x00";OFS=""}{sub("^\n","",RT);sub("\t ","\t",RT)}NR==1{sub("\t ","\t",$0)}{print sRT,$0}{sRT=RT}' |
+        FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
+    ) || return
+  else
+    output=$(
+        builtin fc -lnr -2147483648 |
+          last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -p -l0 -e 'BEGIN { getc; $/ = "\n\t"; $HISTCMD = $ENV{last_hist} + 1 } s/^[ *]//; $_ = $HISTCMD - $. . "\t$_"' |
+        FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m --read0" $(__fzfcmd) --query "$READLINE_LINE"
+    ) || return
+  fi
   READLINE_LINE=${output#*$'\t'}
   if [ -z "$READLINE_POINT" ]; then
     echo "$READLINE_LINE"
