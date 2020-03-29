@@ -1839,15 +1839,18 @@ module TestShell
     tmux.send_keys 'echo 1st', :Enter; tmux.prepare
     tmux.send_keys 'echo 2nd', :Enter; tmux.prepare
     tmux.send_keys 'echo 3d',  :Enter; tmux.prepare
-    tmux.send_keys 'echo 3rd', :Enter; tmux.prepare
+    3.times { tmux.send_keys 'echo 3rd', :Enter; tmux.prepare }
     tmux.send_keys 'echo 4th', :Enter
     retries do
       tmux.prepare
       tmux.send_keys 'C-r'
       tmux.until { |lines| lines.match_count.positive? }
     end
-    tmux.send_keys 'C-r'
     tmux.send_keys '3d'
+    # Duplicates removed: 3d (1) + 3rd (1) => 2 matches
+    tmux.until { |lines| lines.match_count == 2 }
+    tmux.until { |lines| lines[-3].end_with? 'echo 3d' }
+    tmux.send_keys 'C-r'
     tmux.until { |lines| lines[-3].end_with? 'echo 3rd' }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1] == 'echo 3rd' }
