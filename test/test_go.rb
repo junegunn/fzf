@@ -1713,9 +1713,8 @@ end
 module CompletionTest
   include TestShell
 
-  def test_file_completion
+  def test_file_completion1
     FileUtils.touch(('1'..'100').to_a)
-    FileUtils.touch(['no~such~user', 'foobar', File.expand_path('~/.fzf-home')])
     tmux.prepare
     tmux.send_keys('cat 10**', :Tab)
     tmux.until { |lines| lines.match_count == 2 }
@@ -1725,9 +1724,12 @@ module CompletionTest
     tmux.until do |lines|
       lines[-1] == '$ cat 10 100'
     end
+  end
 
-    # ~USERNAME**<TAB>
-    tmux.send_keys('C-u')
+  # ~USERNAME**<TAB>
+  def test_file_completion_username
+    FileUtils.touch(File.expand_path('~/.fzf-home'))
+    tmux.prepare
     tmux.send_keys("cat ~#{ENV['USER']}**", :Tab)
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys("'.fzf-home")
@@ -1736,30 +1738,38 @@ module CompletionTest
     tmux.until do |lines|
       lines[-1] =~ %r{cat .*/\.fzf-home}
     end
+  ensure
+    File.unlink(File.expand_path('~/.fzf-home'))
+  end
 
-    # ~INVALID_USERNAME**<TAB>
-    tmux.send_keys('C-u')
+  # ~INVALID_USERNAME**<TAB>
+  def test_file_completion_invalid_username
+    FileUtils.touch('no~such~user')
+    tmux.prepare
     tmux.send_keys('cat ~such**', :Tab)
     tmux.until { |lines| lines.any_include?('no~such~user') }
     tmux.send_keys(:Enter)
     tmux.until { |lines| lines[-1] == '$ cat no~such~user' }
+  end
 
-    # **<TAB>
-    tmux.send_keys('C-u')
+  # **<TAB>
+  def test_file_completion2
+    FileUtils.touch('foobar')
+    tmux.prepare
     tmux.send_keys('cat **', :Tab)
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys('foobar$')
     tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys(:Enter)
     tmux.until { |lines| lines[-1] == '$ cat foobar' }
+  end
 
-    # Should include hidden files
+  # Should include hidden files
+  def test_file_completion_hidden
     FileUtils.touch((1..100).map { |i| ".hidden-#{i}" })
-    tmux.send_keys('C-u')
+    tmux.prepare
     tmux.send_keys('cat hidden**', :Tab)
     tmux.until { |lines| lines.match_count == 100 && lines.any_include?('.hidden-') }
-  ensure
-    File.unlink(File.expand_path('~/.fzf-home'))
   end
 
   def test_file_completion_root
