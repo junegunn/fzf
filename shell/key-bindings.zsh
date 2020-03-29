@@ -1,6 +1,29 @@
 # Key bindings
 # ------------
-if [[ $- == *i* ]]; then
+
+# The code at the top and the bottom of this file is the same as in completion.zsh.
+# Refer to that file for explanation.
+if 'zmodload' 'zsh/parameter' 2>'/dev/null' && (( ${+options} )); then
+  __fzf_key_bindings_options="options=(${(j: :)${(kv)options[@]}})"
+else
+  () {
+    __fzf_key_bindings_options="setopt"
+    'local' '__fzf_opt'
+    for __fzf_opt in "${(@)${(@f)$(set -o)}%% *}"; do
+      if [[ -o "$__fzf_opt" ]]; then
+        __fzf_key_bindings_options+=" -o $__fzf_opt"
+      else
+        __fzf_key_bindings_options+=" +o $__fzf_opt"
+      fi
+    done
+  }
+fi
+
+'emulate' 'zsh' '-o' 'no_aliases'
+
+{
+
+[[ -o interactive ]] || return 0
 
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
@@ -83,4 +106,7 @@ fzf-history-widget() {
 zle     -N   fzf-history-widget
 bindkey '^R' fzf-history-widget
 
-fi
+} always {
+  eval $__fzf_key_bindings_options
+  'unset' '__fzf_key_bindings_options'
+}

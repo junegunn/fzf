@@ -9,7 +9,72 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
-if [[ $- =~ i ]]; then
+# Both branches of the following `if` do the same thing -- define
+# __fzf_completion_options such that `eval $__fzf_completion_options` sets
+# all options to the same values they currently have. We'll do just that at
+# the bottom of the file after changing options to what we prefer.
+#
+# IMPORTANT: Until we get to the `emulate` line, all words that *can* be quoted
+# *must* be quoted in order to prevent alias expansion. In addition, code must
+# be written in a way works with any set of zsh options. This is very tricky, so
+# careful when you change it.
+#
+# Start by loading the builtin zsh/parameter module. It provides `options`
+# associative array that stores current shell options.
+if 'zmodload' 'zsh/parameter' 2>'/dev/null' && (( ${+options} )); then
+  # This is the fast branch and it gets taken on virtually all Zsh installations.
+  #
+  # ${(kv)options[@]} expands to array of keys (option names) and values ("on"
+  # or "off"). The subsequent expansion# with (j: :) flag joins all elements
+  # together separated by spaces. __fzf_completion_options ends up with a value
+  # like this: "options=(shwordsplit off aliases on ...)".
+  __fzf_completion_options="options=(${(j: :)${(kv)options[@]}})"
+else
+  # This branch is much slower because it forks to get the names of all
+  # zsh options. It's possible to eliminate this fork but it's not worth the
+  # trouble because this branch gets taken only on very ancient or broken
+  # zsh installations.
+  () {
+    # That `()` above defines an anonymous function. This is essentially a scope
+    # for local parameters. We use it to avoid polluting global scope.
+    'local' '__fzf_opt'
+    __fzf_completion_options="setopt"
+    # `set -o` prints one line for every zsh option. Each line contains option
+    # name, some spaces, and then either "on" or "off". We just want option names.
+    # Expansion with (@f) flag splits a string into lines. The outer expansion
+    # removes spaces and everything that follow them on every line. __fzf_opt
+    # ends up iterating over option names: shwordsplit, aliases, etc.
+    for __fzf_opt in "${(@)${(@f)$(set -o)}%% *}"; do
+      if [[ -o "$__fzf_opt" ]]; then
+        # Option $__fzf_opt is currently on, so remember to set it back on.
+        __fzf_completion_options+=" -o $__fzf_opt"
+      else
+        # Option $__fzf_opt is currently off, so remember to set it back off.
+        __fzf_completion_options+=" +o $__fzf_opt"
+      fi
+    done
+    # The value of __fzf_completion_options here looks like this:
+    # "setopt +o shwordsplit -o aliases ..."
+  }
+fi
+
+# Enable the default zsh options (those marked with <Z> in `man zshoptions`)
+# but without `aliases`. Aliases in functions are expanded when functions are
+# defined, so if we disable aliases here, we'll be sure to have no pesky
+# aliases in any of our functions. This way we won't need prefix every
+# command with `command` or to quote every word to defend against global
+# aliases. Note that `aliases` is not the only option that's important to
+# control. There are several others that could wreck havoc if they are set
+# to values we don't expect. With the following `emulate` command we
+# sidestep this issue entirely.
+'emulate' 'zsh' '-o' 'no_aliases'
+
+# This brace is the start of try-always block. The `always` part is like
+# `finally` in lesser languages. We use it to *always* restore user options.
+{
+
+# Bail out if not interactive shell.
+[[ -o interactive ]] || return 0
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -f _fzf_compgen_path > /dev/null; then
@@ -241,4 +306,8 @@ fzf-completion() {
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
 
-fi
+} always {
+  # Restore the original options.
+  eval $__fzf_completion_options
+  'unset' '__fzf_completion_options'
+}
