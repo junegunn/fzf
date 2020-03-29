@@ -651,7 +651,7 @@ function! s:calc_size(max, val, dict)
 endfunction
 
 function! s:getpos()
-  return {'tab': tabpagenr(), 'win': winnr(), 'cnt': winnr('$'), 'tcnt': tabpagenr('$')}
+  return {'tab': tabpagenr(), 'win': winnr(), 'winid': win_getid(), 'cnt': winnr('$'), 'tcnt': tabpagenr('$')}
 endfunction
 
 function! s:split(dict)
@@ -727,8 +727,8 @@ function! s:execute_term(dict, command, temps) abort
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
       endif
-      execute 'tabnext' self.ppos.tab
-      execute self.ppos.win.'wincmd w'
+      silent! execute 'tabnext' self.ppos.tab
+      silent! execute self.ppos.win.'wincmd w'
     endif
 
     if bufexists(self.buf)
@@ -837,7 +837,7 @@ if has('nvim')
 else
   function! s:create_popup(hl, opts) abort
     let is_frame = has_key(a:opts, 'border')
-    let buf = is_frame ? '' : term_start(&shell, #{hidden: 1})
+    let buf = is_frame ? '' : term_start(&shell, #{hidden: 1, term_finish: 'close'})
     let id = popup_create(buf, #{
       \ line: a:opts.row,
       \ col: a:opts.col,
@@ -851,7 +851,7 @@ else
       call setbufline(winbufnr(id), 1, a:opts.border)
       execute 'autocmd BufWipeout * ++once call popup_close('..id..')'
     else
-      execute 'autocmd BufWipeout * ++once bwipeout! '..buf
+      execute 'autocmd BufWipeout * ++once call term_sendkeys('..buf..', "exit\<CR>")'
     endif
     return winbufnr(id)
   endfunction
