@@ -4,6 +4,13 @@ import (
 	"sync/atomic"
 )
 
+func convertBoolToInt32(b bool) int32 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 // AtomicBool is a boxed-class that provides synchronized access to the
 // underlying boolean value
 type AtomicBool struct {
@@ -12,11 +19,7 @@ type AtomicBool struct {
 
 // NewAtomicBool returns a new AtomicBool
 func NewAtomicBool(initialState bool) *AtomicBool {
-	var state int32 = 0
-	if initialState == true {
-		state = 1
-	}
-	return &AtomicBool{state: state}
+	return &AtomicBool{state: convertBoolToInt32(initialState)}
 }
 
 // Get returns the current boolean value synchronously
@@ -26,10 +29,6 @@ func (a *AtomicBool) Get() bool {
 
 // Set updates the boolean value synchronously
 func (a *AtomicBool) Set(newState bool) bool {
-	var state int32 = 0
-	if newState == true {
-		state = 1
-	}
-	atomic.StoreInt32(&a.state, state)
+	atomic.StoreInt32(&a.state, convertBoolToInt32(newState))
 	return newState
 }
