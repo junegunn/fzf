@@ -207,12 +207,12 @@ if [[ "$opt" =~ "-K -E" ]]; then
   cat $fifo2 &
   if [[ -n "$term" ]] || [[ -t 0 ]]; then
     cat <<< "\"$fzf\" $opts > $fifo2; out=\$? $close; exit \$out" >> $argsf
-    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d '#{pane_current_path}' "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
+    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
   else
     mkfifo $fifo1
     cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; out=\$? $close; exit \$out" >> $argsf
     cat <&0 > $fifo1 &
-    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d '#{pane_current_path}' "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
+    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
   fi
   exit $?
 fi
