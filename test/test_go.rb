@@ -99,31 +99,27 @@ class Tmux
     go(%W[kill-window -t #{win}])
   end
 
+  def focus
+    go(%W[select-window -t #{win}])
+  end
+
   def send_keys(*args)
-    target =
-      if args.last.is_a?(Hash)
-        hash = args.pop
-        go(%W[select-window -t #{win}])
-        "#{win}.#{hash[:pane]}"
-      else
-        win
-      end
-    go(%W[send-keys -t #{target}] + args.map(&:to_s))
+    go(%W[send-keys -t #{win}] + args.map(&:to_s))
   end
 
   def paste(str)
     system('tmux', 'setb', str, ';', 'pasteb', '-t', win, ';', 'send-keys', '-t', win, 'Enter')
   end
 
-  def capture(pane = 0)
-    go(%W[capture-pane -p -t #{win}.#{pane}]).reverse.drop_while(&:empty?).reverse
+  def capture
+    go(%W[capture-pane -p -t #{win}]).reverse.drop_while(&:empty?).reverse
   end
 
-  def until(refresh = false, pane = 0)
+  def until(refresh = false)
     lines = nil
     begin
       wait do
-        lines = capture(pane)
+        lines = capture
         class << lines
           def counts
             lazy
@@ -2040,9 +2036,11 @@ module CompletionTest
     tmux.send_keys 'C-c'
 
     # FZF_TMUX=1
+    skip 'screen size too small' if `tput lines`.to_i < 15
     new_shell
-    tmux.send_keys 'unset FZFFOOBR**', :Tab, pane: 0
-    tmux.until(false, 1) { |lines| lines.match_count == 1 }
+    tmux.focus
+    tmux.send_keys 'unset FZFFOOBR**', :Tab
+    tmux.until { |lines| lines.match_count == 1 }
     tmux.send_keys :Enter
     tmux.until { |lines| lines[-1].include? 'unset FZFFOOBAR' }
   end

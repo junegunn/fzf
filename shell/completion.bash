@@ -2,10 +2,10 @@
 #    / __/___  / __/
 #   / /_/_  / / /_
 #  / __/ / /_/ __/
-# /_/   /___/_/-completion.bash
+# /_/   /___/_/ completion.bash
 #
 # - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_HEIGHT        (default: '40%')
+# - $FZF_TMUX_OPTS          (default: empty)
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
@@ -37,9 +37,9 @@ bind '"\e[0n": redraw-current-line'
 __fzf_comprun() {
   if [ "$(type -t _fzf_comprun 2>&1)" = function ]; then
     _fzf_comprun "$@"
-  elif [ -n "$TMUX_PANE" ] && [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ]; then
+  elif [ -n "$TMUX_PANE" ] && { [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] || [ -n "$FZF_TMUX_OPTS" ]; }; then
     shift
-    fzf-tmux -d "${FZF_TMUX_HEIGHT:-40%}" "$@"
+    fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- "$@"
   else
     shift
     fzf "$@"
