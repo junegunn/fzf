@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/-completion.bash
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_HEIGHT        (default: '40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                  (default: 0)
+# - $FZF_TMUX_HEIGHT           (default: '40%')
+# - $FZF_COMPLETION_TRIGGER    (default: '**')
+# - $FZF_COMPLETION_OPTS       (default: empty)
+# - $FZF_COMPLETION_PRE_CMDS   (default: empty)
+# - $FZF_COMPLETION_POST_CMDS  (default: empty)
 
 if [[ $- =~ i ]]; then
 
@@ -215,6 +217,11 @@ _fzf_complete() {
   post="$(caller 0 | awk '{print $2}')_post"
   type -t "$post" > /dev/null 2>&1 || post=cat
 
+  # run pre-completion commands
+  [ -n "$FZF_COMPLETION_PRE_CMDS" ] &&
+    { eval "$FZF_COMPLETION_PRE_CMDS" ||
+    { echo "pre-completion commands failure" && return 1; } }
+
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
@@ -233,6 +240,11 @@ _fzf_complete() {
   else
     _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
   fi
+
+  # run post-completion commands
+  [ -n "$FZF_COMPLETION_POST_CMDS" ] &&
+    { eval "$FZF_COMPLETION_POST_CMDS" ||
+    { echo "post-completion commands failure" && return 1; } }
 }
 
 _fzf_path_completion() {
