@@ -1,3 +1,16 @@
+#     ____      ____
+#    / __/___  / __/
+#   / /_/_  / / /_
+#  / __/ / /_/ __/
+# /_/   /___/_/ key-bindings.fish
+#
+# - $FZF_TMUX_OPTS
+# - $FZF_CTRL_T_COMMAND
+# - $FZF_CTRL_T_OPTS
+# - $FZF_CTRL_R_OPTS
+# - $FZF_ALT_C_COMMAND
+# - $FZF_ALT_C_OPTS
+
 # Key bindings
 # ------------
 function fzf_key_bindings
@@ -84,8 +97,10 @@ function fzf_key_bindings
   function __fzfcmd
     test -n "$FZF_TMUX"; or set FZF_TMUX 0
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    if [ $FZF_TMUX -eq 1 ]
-      echo "fzf-tmux -d$FZF_TMUX_HEIGHT"
+    if [ -n "$FZF_TMUX_OPTS" ]
+      echo "fzf-tmux $FZF_TMUX_OPTS -- "
+    else if [ $FZF_TMUX -eq 1 ]
+      echo "fzf-tmux -d$FZF_TMUX_HEIGHT -- "
     else
       echo "fzf"
     end

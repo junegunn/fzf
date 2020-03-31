@@ -281,8 +281,10 @@ own as well.
 [fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux pane.
 
 ```sh
-# usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
-#        (-[udlr]: up/down/left/right)
+# usage: fzf-tmux [LAYOUT OPTIONS] [--] [FZF OPTIONS]
+
+# See available options
+fzf-tmux --help
 
 # select git branches in horizontal split below (15 lines)
 git branch | fzf-tmux -d 15
@@ -291,7 +293,7 @@ git branch | fzf-tmux -d 15
 cat /usr/share/dict/words | fzf-tmux -l 20% --multi --reverse
 ```
 
-It will still work even when you're not on tmux, silently ignoring `-[udlr]`
+It will still work even when you're not on tmux, silently ignoring `-[pudlr]`
 options, so you can invariably use `fzf-tmux` in your scripts.
 
 Alternatively, you can use `--height HEIGHT[%]` option not to start fzf in
@@ -318,9 +320,9 @@ fish.
     - Set `FZF_ALT_C_COMMAND` to override the default command
     - Set `FZF_ALT_C_OPTS` to pass additional options
 
-If you're on a tmux session, you can start fzf in a split pane by setting
-`FZF_TMUX` to 1, and change the height of the pane with `FZF_TMUX_HEIGHT`
-(e.g. `20`, `50%`).
+If you're on a tmux session, you can start fzf in a tmux split pane or in
+a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `-d 40%`).
+See `fzf-tmux --help` for available options.
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 

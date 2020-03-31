@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # fzf-tmux: starts fzf in a tmux pane
-# usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
+# usage: fzf-tmux [LAYOUT OPTIONS] [--] [FZF OPTIONS]
 
 fail() {
   >&2 echo "$1"
@@ -10,6 +10,7 @@ fail() {
 fzf="$(command -v fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
 [[ -x "$fzf" ]] || fail 'fzf executable not found'
 
+tmux_args=()
 args=()
 opt=""
 skip=""
@@ -20,15 +21,23 @@ term=""
 [[ -n "$COLUMNS" ]] && columns=$COLUMNS || columns=$(tput cols) || columns=$(tmux display-message -p "#{pane_width}")
 
 help() {
-  >&2 echo 'usage: fzf-tmux [-u|-d [HEIGHT[%]]] [-l|-r [WIDTH[%]]] [--] [FZF OPTIONS]
+  >&2 echo 'usage: fzf-tmux [LAYOUT OPTIONS] [--] [FZF OPTIONS]
 
-  Layout
-    -u [HEIGHT[%]]  Split above (up)
-    -d [HEIGHT[%]]  Split below (down)
-    -l [WIDTH[%]]   Split left
-    -r [WIDTH[%]]   Split right
+  LAYOUT OPTIONS:
+    (default layout: -d 50%)
 
-    (default: -d 50%)
+    Popup window (requires tmux 3.2 or above):
+      -p [WIDTH[%][,HEIGHT[%]]]  (default: 50%)
+      -w WIDTH[%]
+      -h HEIGHT[%]
+      -x COL
+      -y ROW
+
+    Split pane:
+      -u [HEIGHT[%]]             Split above (up)
+      -d [HEIGHT[%]]             Split below (down)
+      -l [WIDTH[%]]              Split left
+      -r [WIDTH[%]]              Split right
 '
   exit
 }
@@ -47,8 +56,10 @@ while [[ $# -gt 0 ]]; do
       echo "fzf-tmux (with fzf $("$fzf" --version))"
       exit
       ;;
-    -w*|-h*|-d*|-u*|-r*|-l*)
-      if [[ "$arg" =~ ^.[lrw] ]]; then
+    -p*|-w*|-h*|-x*|-y*|-d*|-u*|-r*|-l*)
+      if [[ "$arg" =~ ^-[pwhxy] ]]; then
+        [[ "$opt" =~ "-K -E" ]] || opt="-K -E"
+      elif [[ "$arg" =~ ^.[lr] ]]; then
         opt="-h"
         if [[ "$arg" =~ ^.l ]]; then
           opt="$opt -d"
@@ -66,7 +77,7 @@ while [[ $# -gt 0 ]]; do
       if [[ ${#arg} -gt 2 ]]; then
         size="${arg:2}"
       else
-        if [[ "$1" =~ ^[0-9]+%?$ ]]; then
+        if [[ "$1" =~ ^[0-9%,C]+$ ]]; then
           size="$1"
           shift
         else
@@ -74,7 +85,15 @@ while [[ $# -gt 0 ]]; do
         fi
       fi
 
-      if [[ "$size" =~ %$ ]]; then
+      if [[ "$arg" =~ ^-p ]]; then
+        if [[ -n "$size" ]]; then
+          w=${size%%,*}
+          h=${size##*,}
+          opt="$opt -w$w -h$h"
+        fi
+      elif [[ "$arg" =~ ^-[whxy] ]]; then
+        opt="$opt ${arg:0:2}$size"
+      elif [[ "$size" =~ %$ ]]; then
         size=${size:0:((${#size}-1))}
         if [[ -n "$swap" ]]; then
           opt="$opt -p $(( 100 - size ))"
@@ -100,6 +119,8 @@ while [[ $# -gt 0 ]]; do
       # "--" can be used to separate fzf-tmux options from fzf options to
       # avoid conflicts
       skip=1
+      tmux_args=("${args[@]}")
+      args=()
       continue
       ;;
     *)
@@ -115,7 +136,7 @@ if [[ -z "$TMUX" || "$opt" =~ ^-h && "$columns" -le 40 || ! "$opt" =~ ^-h && "$l
 fi
 
 # --height option is not allowed
-args+=("--no-height")
+args=("--no-height" "${args[@]}")
 
 # Handle zoomed tmux pane by moving it to a temp window
 if tmux list-panes -F '#F' | grep -q Z; then
@@ -181,21 +202,34 @@ close="; trap - EXIT SIGINT SIGTERM $close"
 
 tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
 
+if [[ "$opt" =~ "-K -E" ]]; then
+  cat $fifo2 &
+  if [[ -n "$term" ]] || [[ -t 0 ]]; then
+    cat <<< "\"$fzf\" $opts > $fifo2; out=\$? $close; exit \$out" >> $argsf
+    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d '#{pane_current_path}' "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
+  else
+    mkfifo $fifo1
+    cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; out=\$? $close; exit \$out" >> $argsf
+    cat <&0 > $fifo1 &
+    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d '#{pane_current_path}' "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
+  fi
+  exit $?
+fi
+
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "$envs bash -c 'cd $(printf %q "$PWD"); exec -a fzf bash $argsf'" $swap \
+    split-window $opt "${tmux_args[@]}" "$envs bash -c 'cd $(printf %q "$PWD"); exec -a fzf bash $argsf'" $swap \
     > /dev/null 2>&1
 else
   mkfifo $fifo1
   cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
     set-window-option remain-on-exit off \;\
-    split-window $opt "$envs bash -c 'exec -a fzf bash $argsf'" $swap \
+    split-window $opt "${tmux_args[@]}" "$envs bash -c 'exec -a fzf bash $argsf'" $swap \
     > /dev/null 2>&1
   cat <&0 > $fifo1 &
 fi
 cat $fifo2
 exit "$(cat $fifo3)"
-
