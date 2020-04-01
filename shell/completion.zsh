@@ -99,7 +99,7 @@ fi
 __fzf_comprun() {
   if [[ "$(type _fzf_comprun 2>&1)" =~ function ]]; then
     _fzf_comprun "$@"
-  elif [ -n "$TMUX_PANE" ] && { [ "${FZF_TMUX:-0}" != 0 ] && [ ${LINES:-40} -gt 15 ] || [ -n "$FZF_TMUX_OPTS" ]; }; then
+  elif [ -n "$TMUX_PANE" ] && { [ "${FZF_TMUX:-0}" != 0 ] || [ -n "$FZF_TMUX_OPTS" ]; }; then
     shift
     fzf-tmux ${(Q)${(Z+n+)FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}}} -- "$@"
   else
