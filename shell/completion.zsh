@@ -101,7 +101,11 @@ __fzf_comprun() {
     _fzf_comprun "$@"
   elif [ -n "$TMUX_PANE" ] && { [ "${FZF_TMUX:-0}" != 0 ] || [ -n "$FZF_TMUX_OPTS" ]; }; then
     shift
-    fzf-tmux ${(Q)${(Z+n+)FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}}} -- "$@"
+    if [ -n "$FZF_TMUX_OPTS" ]; then
+      fzf-tmux ${(Q)${(Z+n+)FZF_TMUX_OPTS}} -- "$@"
+    else
+      fzf-tmux -d ${FZF_TMUX_HEIGHT:-40%} -- "$@"
+    fi
   else
     shift
     fzf "$@"
