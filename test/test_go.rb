@@ -2036,7 +2036,6 @@ module CompletionTest
     tmux.send_keys 'C-c'
 
     # FZF_TMUX=1
-    skip 'screen size too small' if `tput lines`.to_i < 15
     new_shell
     tmux.focus
     tmux.send_keys 'unset FZFFOOBR**', :Tab
