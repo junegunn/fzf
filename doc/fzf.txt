@@ -1,12 +1,14 @@
-fzf.txt	fzf	Last change: February 14 2020
+fzf.txt	fzf	Last change: April 4 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
   FZF Vim integration
+    Installation
     Summary
     :FZF[!]
       Configuration
         Examples
+          Explanation of g:fzf_colors
     fzf#run
     fzf#wrap
     Tips
@@ -17,6 +19,46 @@ FZF - TABLE OF CONTENTS                                            *fzf* *fzf-to
 
 FZF VIM INTEGRATION                                        *fzf-vim-integration*
 ==============================================================================
+
+
+INSTALLATION                                                  *fzf-installation*
+==============================================================================
+
+Once you have fzf installed, you can enable it inside Vim simply by adding the
+directory to 'runtimepath' in your Vim configuration file. The path may differ
+depending on the package manager.
+>
+    " If installed using Homebrew
+    set rtp+=/usr/local/opt/fzf
+
+    " If installed using git
+    set rtp+=~/.fzf
+<
+If you use {vim-plug}{1}, the same can be written as:
+>
+    " If installed using Homebrew
+    Plug '/usr/local/opt/fzf'
+
+    " If installed using git
+    Plug '~/.fzf'
+<
+But if you want the latest Vim plugin file from GitHub rather than the one
+included in the package, write:
+>
+    Plug 'junegunn/fzf'
+<
+The Vim plugin will pick up fzf binary available on the system. If fzf is not
+found on `$PATH`, it will ask you if it should download the latest binary for
+you.
+
+To make sure that you have the latest version of the binary, set up
+post-update hook like so:
+
+                                                                   *fzf#install*
+>
+    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+<
+                                      {1} https://github.com/junegunn/vim-plug
 
 
 SUMMARY                                                            *fzf-summary*
@@ -38,12 +80,12 @@ the basic file selector command built on top of them.
    - Basic fuzzy file selector
    - A reference implementation for those who don't want to write VimScript to
      implement custom commands
-   - If you're looking for more such commands, check out {fzf.vim}{1} project.
+   - If you're looking for more such commands, check out {fzf.vim}{2} project.
 
 The most important of all is `fzf#run`, but it would be easier to understand
 the whole if we start off with `:FZF` command.
 
-                                       {1} https://github.com/junegunn/fzf.vim
+                                       {2} https://github.com/junegunn/fzf.vim
 
 
 :FZF[!]
@@ -144,6 +186,51 @@ Examples~
     let g:fzf_history_dir = '~/.local/share/fzf-history'
 <
 
+Explanation of g:fzf_colors~
+                                                 *fzf-explanation-of-gfzfcolors*
+
+`g:fzf_colors` is a dictionary mapping fzf elements to a color specification
+list:
+>
+    element: [ component, group1 [, group2, ...] ]
+<
+ - `element` is an fzf element to apply a color to:
+
+ ----------------------+------------------------------------------------------
+ Element               | Description                                          ~
+ ----------------------+------------------------------------------------------
+  `fg`   /  `bg`   /  `hl`   | Item (foreground / background / highlight)
+  `fg+`  /  `bg+`  /  `hl+`  | Current item (foreground / background / highlight)
+  `hl`   /  `hl+`          | Highlighted substrings (normal / current)
+  `gutter`               | Background of the gutter on the left
+  `pointer`              | Pointer to the current line ( `>` )
+  `marker`               | Multi-select marker ( `>` )
+  `border`               | Border around the window ( `--border`  and  `--preview` )
+  `header`               | Header ( `--header`  or  `--header-lines` )
+  `info`                 | Info line (match counters)
+  `spinner`              | Streaming input indicator
+  `prompt`               | Prompt before query ( `> ` )
+ ----------------------+------------------------------------------------------
+ - `component` specifies the component (`fg` / `bg`) from which to extract the
+   color when considering each of the following highlight groups
+ - `group1 [, group2, ...]` is a list of highlight groups that are searched (in
+   order) for a matching color definition
+
+For example, consider the following specification:
+>
+      'prompt':  ['fg', 'Conditional', 'Comment'],
+<
+This means we color the prompt - using the `fg` attribute of the `Conditional`
+if it exists, - otherwise use the `fg` attribute of the `Comment` highlight
+group if it exists, - otherwise fall back to the default color settings for
+the prompt.
+
+You can examine the color option generated according the setting by printing
+the result of `fzf#wrap()` function like so:
+>
+    :echo fzf#wrap()
+<
+
 FZF#RUN
 ==============================================================================
 
@@ -203,6 +290,7 @@ The following table summarizes the available options.
   `options`                   | string/list   | Options to fzf
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | (Layout) Window position and size (e.g.  `20` ,  `50%` )
+  `tmux`                      | string        | (Layout) fzf-tmux options (e.g.  `-p90%,60%` )
   `window`  (Vim 8 / Neovim)  | string        | (Layout) Command to open fzf window (e.g.  `vertical aboveleft 30new` )
   `window`  (Vim 8 / Neovim)  | dict          | (Layout) Popup window settings (e.g.  `{'width': 0.9, 'height': 0.6}` )
  ---------------------------+---------------+----------------------------------------------------------------------
@@ -319,6 +407,16 @@ Starting fzf in a popup window~
     " - border [string default 'rounded']: Border style
     "   - 'rounded' / 'sharp' / 'horizontal' / 'vertical' / 'top' / 'bottom' / 'left' / 'right'
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
+<
+Alternatively, you can make fzf open in a tmux popup window (requires tmux 3.2
+or above) by putting fzf-tmux options in `tmux` key.
+>
+    " See `man fzf-tmux` for available options
+    if exists('$TMUX')
+      let g:fzf_layout = { 'tmux': '-p90%,60%' }
+    else
+      let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
+    endif
 <
 
 Hide statusline~
