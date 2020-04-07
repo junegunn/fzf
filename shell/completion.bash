@@ -322,6 +322,18 @@ __fzf_defc() {
   fi
 }
 
+_fzf_complete_make() {
+  if [ -e "Makefile" ]; then
+    _fzf_complete --multi --reverse --prompt="make> " -- "$@" < <(
+      grep -oE '^[a-zA-Z0-9_.-\ ]+:' Makefile | grep -v ".PHONY" | sed 's/.$//' | sed 's/ /\n/g'
+    )
+  elif [ -e "makefile" ]; then
+    _fzf_complete --multi --reverse --prompt="make> " -- "$@" < <(
+      grep -oE '^[a-zA-Z0-9_.-\ ]+:' makefile | grep -v ".PHONY" | sed 's/.$//' | sed 's/ /\n/g'
+    )
+  fi
+}
+
 # Anything
 for cmd in $a_cmds; do
   __fzf_defc "$cmd" _fzf_path_completion "-o default -o bashdefault"
@@ -334,6 +346,9 @@ done
 
 # Kill completion
 complete -F _fzf_complete_kill -o default -o bashdefault kill
+
+# Make completion
+[ -n "$BASH" ] && complete -F _fzf_complete_make -o default -o bashdefault make
 
 unset cmd d_cmds a_cmds x_cmds
 
