@@ -77,7 +77,7 @@ while [[ $# -gt 0 ]]; do
       if [[ ${#arg} -gt 2 ]]; then
         size="${arg:2}"
       else
-        if [[ "$1" =~ ^[0-9%,C]+$ ]]; then
+        if [[ "$1" =~ ^[0-9%,]+$ ]] || [[ "$1" =~ ^[A-Z]$ ]]; then
           size="$1"
           shift
         else
