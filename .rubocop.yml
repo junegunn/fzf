@@ -1,0 +1,13 @@
+Layout/LineLength:
+  Enabled: false
+Metrics:
+  Enabled: false
+Performance/StartWith:
+  AutoCorrect: true
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+Style/NumericPredicate:
+  AutoCorrect: true
+  EnforcedStyle: comparison
+Style/WordArray:
+  MinSize: 1
