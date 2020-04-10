@@ -191,6 +191,7 @@ const (
 	actBackwardChar
 	actBackwardDeleteChar
 	actBackwardDeleteCharEOF
+	actBackwardDeleteCharCdParent
 	actBackwardWord
 	actCancel
 	actClearScreen
@@ -1874,6 +1875,13 @@ func (t *Terminal) Loop() {
 					req(reqQuit)
 				} else if t.cx > 0 {
 					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
+					t.cx--
+				}
+			case actBackwardDeleteCharCdParent:
+				if len(t.input) == 0 {
+					os.Chdir("..")
+				} else if t.cx > 0 {
+					t.input = append(t.input[:t.cx-1], t.input[t:cx:]...)
 					t.cx--
 				}
 			case actForwardChar:
