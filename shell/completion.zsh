@@ -249,6 +249,36 @@ _fzf_complete_unalias() {
   )
 }
 
+list_aptitude_packages() {
+  if [[ $@ == *' install'* ]] || [[ $@ == *' show'* ]] || [[ $@ == *' search'* ]]; then
+    command apt list --verbose
+  elif [[ $@ == *' remove'* ]] || [[ $@ == *' reinstall'* ]] || [[ $@ == *' purge'* ]]; then
+    command apt list --verbose --installed
+  fi
+}
+
+_fzf_complete_apt() {
+  ARGS="$@"
+  if [[ $@ == *' install'* ]] \
+    || [[ $@ == *' show'* ]] \
+    || [[ $@ == *' search'* ]] \
+    || [[ $@ == *' remove'* ]] \
+    || [[ $@ == *' reinstall'* ]] \
+    || [[ $@ == *' purge'* ]]; then
+    _fzf_complete '--multi' "$@" < <(
+      list_aptitude_packages $ARGS 2>/dev/null | \
+      command tail --lines +2 | \
+      command sed '/^ *$/d' | \
+      command sed 'N;s/\n */^/;p' | \
+      command column -t -s '^'
+    )
+  fi
+}
+_fzf_complete_apt_post() {
+  cut --delimiter '/' --fields 1 | \
+  xargs --max-args 1 --no-run-if-empty printf "%q "
+}
+
 fzf-completion() {
   local tokens cmd prefix trigger tail matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
