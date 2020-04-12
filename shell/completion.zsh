@@ -117,6 +117,7 @@ __fzf_extract_command() {
   local token tokens
   tokens=(${(z)1})
   for token in $tokens; do
+    token=${(q)token}
     if [[ "$token" =~ [[:alnum:]] && ! "$token" =~ "=" ]]; then
       echo "$token"
       return
