@@ -1,0 +1,24 @@
+Layout/LineLength:
+  Enabled: false
+Metrics:
+  Enabled: false
+Lint/ShadowingOuterLocalVariable:
+  Enabled: false
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+  IgnoredMethods:
+    - assert
+    - exit
+    - paste
+    - puts
+    - raise
+    - refute
+    - require
+    - send_keys
+  IgnoredPatterns:
+    - ^assert_
+    - ^refute_
+Style/NumericPredicate:
+  Enabled: false
+Style/WordArray:
+  MinSize: 1

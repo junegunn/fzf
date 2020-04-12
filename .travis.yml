@@ -14,9 +14,11 @@ addons:
       - fish
       - tmux
     update: true
+install: gem install rubocop rubocop-performance
 script:
   - make test
   # LC_ALL=C to avoid escape codes in
   # printf %q $'\355\205\214\354\212\244\355\212\270' on macOS. Bash on
   # macOS is built without HANDLE_MULTIBYTE?
   - make install && ./install --all && LC_ALL=C tmux new-session -d && ruby test/test_go.rb --verbose
+  - rubocop --require rubocop-performance
