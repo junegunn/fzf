@@ -2133,6 +2133,18 @@ class TestZsh < TestBase
     tmux.send_keys "FZF_TMUX=1 #{Shell.zsh}", :Enter
     tmux.prepare
   end
+
+  def test_complete_quoted_command
+    tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
+    ['unset', '\unset', "'unset'"].each do |command|
+      tmux.prepare
+      tmux.send_keys "#{command} FZFFOOBR**", :Tab
+      tmux.until { |lines| lines.match_count == 1 }
+      tmux.send_keys :Enter
+      tmux.until { |lines| lines[-1].include?("#{command} FZFFOOBAR") }
+      tmux.send_keys 'C-c'
+    end
+  end
 end
 
 class TestFish < TestBase
