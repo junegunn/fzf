@@ -44,7 +44,7 @@ def wait
 
     sleep(0.05)
   end
-  raise('timeout')
+  raise 'timeout'
 end
 
 class Shell
@@ -476,7 +476,7 @@ class TestGoFZF < TestBase
   end
 
   def test_query_unicode
-    tmux.paste("(echo abc; echo $'\\352\\260\\200\\353\\202\\230\\353\\213\\244') | #{fzf(:query, "$'\\352\\260\\200\\353\\213\\244'")}")
+    tmux.paste "(echo abc; echo $'\\352\\260\\200\\353\\202\\230\\353\\213\\244') | #{fzf(:query, "$'\\352\\260\\200\\353\\213\\244'")}"
     tmux.until { |lines| lines[-2].include?('1/2') }
     tmux.send_keys :Enter
     assert_equal %w[가나다], readonce.split($INPUT_RECORD_SEPARATOR)
@@ -2045,7 +2045,7 @@ module CompletionTest
 
   def test_file_completion_unicode
     FileUtils.mkdir_p('/tmp/fzf-test')
-    tmux.paste("cd /tmp/fzf-test; echo -n test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo -n test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'")
+    tmux.paste "cd /tmp/fzf-test; echo -n test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo -n test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'"
     tmux.prepare
     tmux.send_keys 'cat fzf-unicode**', :Tab
     tmux.until { |lines| lines.match_count == 2 }
@@ -2104,9 +2104,9 @@ class TestBash < TestBase
   end
 
   def test_dynamic_completion_loader
-    tmux.paste('touch /tmp/foo; _fzf_completion_loader=1')
-    tmux.paste('_completion_loader() { complete -o default fake; }')
-    tmux.paste('complete -F _fzf_path_completion -o default -o bashdefault fake')
+    tmux.paste 'touch /tmp/foo; _fzf_completion_loader=1'
+    tmux.paste '_completion_loader() { complete -o default fake; }'
+    tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
     tmux.send_keys 'fake /tmp/foo**', :Tab
     tmux.until { |lines| lines.match_count > 0 }
     tmux.send_keys 'C-c'

@@ -8,7 +8,9 @@ Style/MethodCallWithArgsParentheses:
   Enabled: true
   IgnoredMethods:
     - assert
+    - paste
     - puts
+    - raise
     - refute
     - require
     - send_keys
