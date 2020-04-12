@@ -8,6 +8,7 @@ Style/MethodCallWithArgsParentheses:
   Enabled: true
   IgnoredMethods:
     - assert
+    - exit
     - paste
     - puts
     - raise
