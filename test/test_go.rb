@@ -1596,14 +1596,14 @@ class TestGoFZF < TestBase
   end
 
   def test_escaped_meta_characters
-    input = [
-      'foo^bar',
-      'foo$bar',
-      'foo!bar',
-      "foo'bar",
-      'foo bar',
-      'bar foo'
-    ]
+    input = <<~ITEMS
+      foo^bar
+      foo$bar
+      foo!bar
+      foo'bar
+      foo bar
+      bar foo
+    ITEMS
     writelines(tempname, input)
 
     assert_equal input.length, `#{FZF} -f'foo bar' < #{tempname}`.lines.length
