@@ -2,6 +2,8 @@ Layout/LineLength:
   Enabled: false
 Metrics:
   Enabled: false
+Lint/ShadowingOuterLocalVariable:
+  Enabled: false
 Style/MethodCallWithArgsParentheses:
   Enabled: true
   IgnoredMethods:

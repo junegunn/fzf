@@ -241,9 +241,7 @@ class TestGoFZF < TestBase
 
     # Testing basic key bindings
     tmux.send_keys '99', 'C-a', '1', 'C-f', '3', 'C-b', 'C-h', 'C-u', 'C-e', 'C-y', 'C-k', 'Tab', 'BTab'
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     tmux.until do |lines|
-      # rubocop:enable Lint/ShadowingOuterLocalVariable
       lines[-4] == '> 3910' &&
         lines[-3] == '  391' &&
         lines[-2] == '  856/100000' &&
@@ -433,16 +431,12 @@ class TestGoFZF < TestBase
       # However, the output must not be transformed
       if multi
         tmux.send_keys :BTab, :BTab
-        # rubocop:todo Lint/ShadowingOuterLocalVariable
         tmux.until { |lines| lines[-2].include?('(2)') }
-        # rubocop:enable Lint/ShadowingOuterLocalVariable
         tmux.send_keys :Enter
         assert_equal ['  1st 2nd 3rd/', '  first second third/'], readonce.split($INPUT_RECORD_SEPARATOR)
       else
         tmux.send_keys '^', '3'
-        # rubocop:todo Lint/ShadowingOuterLocalVariable
         tmux.until { |lines| lines[-2].include?('1/2') }
-        # rubocop:enable Lint/ShadowingOuterLocalVariable
         tmux.send_keys :Enter
         assert_equal ['  1st 2nd 3rd/'], readonce.split($INPUT_RECORD_SEPARATOR)
       end
@@ -1802,17 +1796,13 @@ module TestShell
     lines = retries do
       tmux.prepare
       tmux.send_keys :Escape, :c
-      # rubocop:todo Lint/ShadowingOuterLocalVariable
       tmux.until { |lines| lines.match_count > 0 }
-      # rubocop:enable Lint/ShadowingOuterLocalVariable
     end
     expected = lines.reverse.find { |l| l.start_with?('>') }[2..-1]
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     tmux.until { |lines| lines[-1].end_with?(expected) }
-    # rubocop:enable Lint/ShadowingOuterLocalVariable
   end
 
   def test_alt_c_command
@@ -2002,24 +1992,16 @@ module CompletionTest
 
   def test_process_completion
     tmux.send_keys 'sleep 12345 &', :Enter
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     lines = tmux.until { |lines| lines[-1].start_with?('[1]') }
-    # rubocop:enable Lint/ShadowingOuterLocalVariable
     pid = lines[-1].split.last
     tmux.prepare
     tmux.send_keys 'C-L'
     tmux.send_keys 'kill ', :Tab
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     tmux.until { |lines| lines.match_count > 0 }
-    # rubocop:enable Lint/ShadowingOuterLocalVariable
     tmux.send_keys 'sleep12345'
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     tmux.until { |lines| lines.any_include?('sleep 12345') }
-    # rubocop:enable Lint/ShadowingOuterLocalVariable
     tmux.send_keys :Enter
-    # rubocop:todo Lint/ShadowingOuterLocalVariable
     tmux.until(true) { |lines| lines[-1].include?("kill #{pid}") }
-    # rubocop:enable Lint/ShadowingOuterLocalVariable
   ensure
     if pid
       begin
