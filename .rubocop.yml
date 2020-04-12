@@ -19,7 +19,6 @@ Style/MethodCallWithArgsParentheses:
     - ^assert_
     - ^refute_
 Style/NumericPredicate:
-  AutoCorrect: true
-  EnforcedStyle: comparison
+  Enabled: false
 Style/WordArray:
   MinSize: 1
