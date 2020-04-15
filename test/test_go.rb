@@ -1275,16 +1275,16 @@ class TestGoFZF < TestBase
   def test_invalid_option
     lines = `#{FZF} --foobar 2>&1`
     assert_equal 2, $CHILD_STATUS.exitstatus
-    assert lines.include?('unknown option: --foobar'), lines
+    assert_includes lines, 'unknown option: --foobar'
   end
 
   def test_filter_exitstatus
     # filter / streaming filter
     ['', '--no-sort'].each do |opts|
-      assert `echo foo | #{FZF} -f foo #{opts}`.include?('foo')
+      assert_includes `echo foo | #{FZF} -f foo #{opts}`, 'foo'
       assert_equal 0, $CHILD_STATUS.exitstatus
 
-      assert `echo foo | #{FZF} -f bar #{opts}`.empty?
+      assert_empty `echo foo | #{FZF} -f bar #{opts}`
       assert_equal 1, $CHILD_STATUS.exitstatus
     end
   end
