@@ -248,20 +248,6 @@ _fzf_dir_completion() {
   __fzf_generic_path_completion _fzf_compgen_dir "" "/" "$@"
 }
 
-_fzf_complete_kill() {
-  [ -n "${COMP_WORDS[COMP_CWORD]}" ] && return 1
-
-  local selected
-  selected=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS --preview 'echo {}' --preview-window down:3:wrap" __fzf_comprun "kill" -m | awk '{print $2}' | tr '\n' ' ')
-  selected=${selected% }
-  printf '\e[5n'
-
-  if [ -n "$selected" ]; then
-    COMPREPLY=( "$selected" )
-    return 0
-  fi
-}
-
 _fzf_host_completion() {
   _fzf_complete +m -- "$@" < <(
     cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
@@ -283,6 +269,24 @@ _fzf_alias_completion() {
   )
 }
 
+_fzf_proc_completion() {
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  if [[ "$cur" == *"$trigger" ]]; then
+    cur=${cur:0:${#cur}-${#trigger}}
+    local selected
+    selected=$(command ps -ef | sed 1d | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-50%} --min-height 15 --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS --preview 'echo {}' --preview-window down:3:wrap" __fzf_comprun "kill" -m | awk '{print $2}' | tr '\n' ' ')
+    selected=${selected% }
+    if [ -n "$selected" ]; then
+      COMPREPLY=("$selected")
+    else
+      COMPREPLY=("$cur")
+    fi
+    printf '\e[5n'
+    return 0
+  fi
+}
+
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
 
@@ -296,11 +300,10 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
-x_cmds="kill"
 
 # Preserve existing completion
 eval "$(complete |
-  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
+  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
   __fzf_orig_completion_filter)"
 
 if type _completion_loader > /dev/null 2>&1; then
@@ -332,17 +335,14 @@ for cmd in $d_cmds; do
   __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
-# Kill completion
-complete -F _fzf_complete_kill -o default -o bashdefault kill
-
-unset cmd d_cmds a_cmds x_cmds
+unset cmd d_cmds a_cmds
 
 _fzf_setup_completion() {
   local kind fn cmd
   kind=$1
   fn=_fzf_${1}_completion
   if [[ $# -lt 2 ]] || ! type -t "$fn" > /dev/null; then
-    echo "usage: ${FUNCNAME[0]} path|dir|var|alias|host COMMANDS..."
+    echo "usage: ${FUNCNAME[0]} path|dir|var|alias|host|proc COMMANDS..."
     return 1
   fi
   shift
@@ -352,6 +352,7 @@ _fzf_setup_completion() {
       dir)   __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
       var)   __fzf_defc "$cmd" "$fn" "-o default -o nospace -v" ;;
       alias) __fzf_defc "$cmd" "$fn" "-a" ;;
+      proc)  __fzf_defc "$cmd" "$fn" "-o default" ;;
       *)     __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
     esac
   done
@@ -361,5 +362,6 @@ _fzf_setup_completion() {
 _fzf_setup_completion 'var'   export unset
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  ssh telnet
+_fzf_setup_completion 'proc'  kill
 
 fi
