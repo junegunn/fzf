@@ -16,7 +16,7 @@ addons:
       - fish
       - tmux
     update: true
-install: gem install rubocop rubocop-minitest rubocop-performance
+install: gem install minitest rubocop rubocop-minitest rubocop-performance
 script:
   - make test
   # LC_ALL=C to avoid escape codes in
