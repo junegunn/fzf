@@ -3,12 +3,14 @@ env: GO111MODULE=on
 os:
   - linux
   - osx
-dist: bionic # For fish >= 2.3.0 string builtin
+dist: bionic
 addons:
   apt:
     packages:
       - fish
       - zsh
+    sources:
+      sourceline: ppa:fish-shell/release-3
   homebrew:
     packages:
       - fish
