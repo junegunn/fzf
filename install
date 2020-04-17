@@ -384,7 +384,11 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  [[ "$shells" =~ bash ]] && echo '   source ~/.bashrc  # bash'
+  if [[ "$shells" =~ bash ]]; then
+    echo -n '   source ~/.bashrc  # bash'
+    [[ "$archi" =~ Darwin ]] && echo -n '  (.bashrc should be loaded from .bash_profile)'
+    echo
+  fi
   [[ "$shells" =~ zsh ]]  && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
   [[ "$shells" =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
   echo
