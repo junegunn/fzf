@@ -937,9 +937,11 @@ class TestGoFZF < TestBase
     tmux.send_keys :Escape, :a
     tmux.send_keys :Escape, :b
     wait do
-      File.exist?(output) && File.readlines(output).map(&:chomp) == %w[/foo'bar/ /foo'bar/
-                                                                       /foo"barfoo"bar/ /foo"barfoo"bar/
-                                                                       /foo$barfoo$barfoo$bar/]
+      File.exist?(output) && File.readlines(output).map(&:chomp) == %w[
+        /foo'bar/ /foo'bar/
+        /foo"barfoo"bar/ /foo"barfoo"bar/
+        /foo$barfoo$barfoo$bar/
+      ]
     end
   ensure
     begin
@@ -963,9 +965,11 @@ class TestGoFZF < TestBase
     tmux.send_keys :Tab, :Tab
     tmux.send_keys :Escape, :a
     wait do
-      File.exist?(output) && File.readlines(output).map(&:chomp) == [%(foo'bar/foo'bar),
-                                                                     %(foo'bar foo"bar foo$bar/foo'bar foo"bar foo$bar),
-                                                                     %(foo'bar foo"bar foobar/foo'bar foo"bar foobar)]
+      File.exist?(output) && File.readlines(output).map(&:chomp) == [
+        %(foo'bar/foo'bar),
+        %(foo'bar foo"bar foo$bar/foo'bar foo"bar foo$bar),
+        %(foo'bar foo"bar foobar/foo'bar foo"bar foobar)
+      ]
     end
   ensure
     begin
