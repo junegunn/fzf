@@ -304,11 +304,10 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
-x_cmds="kill"
 
 # Preserve existing completion
 eval "$(complete |
-  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds $x_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
+  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
   __fzf_orig_completion_filter)"
 
 if type _completion_loader > /dev/null 2>&1; then
@@ -343,7 +342,7 @@ done
 # Kill completion (supports empty completion trigger)
 complete -F _fzf_complete_kill -o default -o bashdefault kill
 
-unset cmd d_cmds a_cmds x_cmds
+unset cmd d_cmds a_cmds
 
 _fzf_setup_completion() {
   local kind fn cmd
