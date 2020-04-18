@@ -104,16 +104,17 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 ### Using Linux package managers
 
-| Distro       | Command                    |
-| ---          | ---                        |
-| Alpine Linux | `sudo apk add fzf`         |
-| Arch Linux   | `sudo pacman -S fzf`       |
-| Debian 9+/Ubuntu 19.10+| `sudo apt-get install fzf` |
-| Fedora       | `sudo dnf install fzf`     |
-| FreeBSD      | `pkg install fzf`          |
-| NixOS        | `nix-env -iA nixpkgs.fzf`  |
-| openSUSE     | `sudo zypper install fzf`  |
-| OpenBSD      | `pkg_add fzf`              |
+| Package Manager | Linux Distribution      | Command                            |
+| ---             | ---                     | ---                                |
+| APK             | Alpine Linux            | `sudo apk add fzf`                 |
+| APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt-get install fzf`         |
+| Conda           |                         | `conda install -c conda-forge fzf` |
+| DNF             | Fedora                  | `sudo dnf install fzf`             |
+| Nix             | NixOS                   | `nix-env -iA nixpkgs.fzf`          |
+| Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
+| pkg             | FreeBSD                 | `pkg install fzf`                  |
+| pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
+| Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
 Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
 plugin may or may not be enabled by default depending on the package manager.
