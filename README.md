@@ -108,7 +108,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | ---          | ---                        |
 | Alpine Linux | `sudo apk add fzf`         |
 | Arch Linux   | `sudo pacman -S fzf`       |
-| Debian       | `sudo apt-get install fzf` |
+| Debian 9+/Ubuntu 19.10+| `sudo apt-get install fzf` |
 | Fedora       | `sudo dnf install fzf`     |
 | FreeBSD      | `pkg install fzf`          |
 | NixOS        | `nix-env -iA nixpkgs.fzf`  |
