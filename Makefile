@@ -6,7 +6,7 @@ ROOT_DIR       := $(shell dirname $(MAKEFILE))
 SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 
 REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
-BUILD_FLAGS    := -a -ldflags "-X main.revision=$(REVISION) -w -extldflags=$(LDFLAGS)" -tags "$(TAGS)"
+BUILD_FLAGS    := -a -ldflags "-X main.revision=$(REVISION) -w \"-extldflags=$(LDFLAGS)\"" -tags "$(TAGS)"
 
 BINARY32       := fzf-$(GOOS)_386
 BINARY64       := fzf-$(GOOS)_amd64
