@@ -178,7 +178,7 @@ class TestBase < Minitest::Test
 
   def writelines(path, lines)
     File.unlink(path) while File.exist?(path)
-    File.open(path, 'w') { |f| f << lines.join($INPUT_RECORD_SEPARATOR) + $INPUT_RECORD_SEPARATOR }
+    File.open(path, 'w') { |f| f.puts lines }
   end
 
   def readonce
@@ -344,7 +344,7 @@ class TestGoFZF < TestBase
                    :PgUp, 'C-J', :Down, :Tab, :Tab # 8, 7
     tmux.until { |lines| assert_equal '  10/10 (6)', lines[-2] }
     tmux.send_keys 'C-M'
-    assert_equal %w[3 2 5 6 8 7], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[3 2 5 6 8 7], readonce.lines(chomp: true)
   end
 
   def test_multi_max
@@ -432,12 +432,12 @@ class TestGoFZF < TestBase
         tmux.send_keys :BTab, :BTab
         tmux.until { |lines| assert_equal '  2/2 (2)', lines[-2] }
         tmux.send_keys :Enter
-        assert_equal ['  1st 2nd 3rd/', '  first second third/'], readonce.split($INPUT_RECORD_SEPARATOR)
+        assert_equal ['  1st 2nd 3rd/', '  first second third/'], readonce.lines(chomp: true)
       else
         tmux.send_keys '^', '3'
         tmux.until { |lines| assert_equal '  1/2', lines[-2] }
         tmux.send_keys :Enter
-        assert_equal ['  1st 2nd 3rd/'], readonce.split($INPUT_RECORD_SEPARATOR)
+        assert_equal ['  1st 2nd 3rd/'], readonce.lines(chomp: true)
       end
     end
   end
@@ -455,12 +455,12 @@ class TestGoFZF < TestBase
 
   def test_select_1
     tmux.send_keys "seq 1 100 | #{fzf(:with_nth, '..,..', :print_query, :q, 5555, :'1')}", :Enter
-    assert_equal %w[5555 55], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[5555 55], readonce.lines(chomp: true)
   end
 
   def test_exit_0
     tmux.send_keys "seq 1 100 | #{fzf(:with_nth, '..,..', :print_query, :q, 555_555, :'0')}", :Enter
-    assert_equal %w[555555], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[555555], readonce.lines(chomp: true)
   end
 
   def test_select_1_exit_0_fail
@@ -470,7 +470,7 @@ class TestGoFZF < TestBase
       tmux.send_keys :BTab, :BTab, :BTab
       tmux.until { |lines| assert_equal '  19/100 (3)', lines[-2] }
       tmux.send_keys :Enter
-      assert_equal %w[5 5 50 51], readonce.split($INPUT_RECORD_SEPARATOR)
+      assert_equal %w[5 5 50 51], readonce.lines(chomp: true)
     end
   end
 
@@ -478,7 +478,7 @@ class TestGoFZF < TestBase
     tmux.paste "(echo abc; echo $'\\352\\260\\200\\353\\202\\230\\353\\213\\244') | #{fzf(:query, "$'\\352\\260\\200\\353\\213\\244'")}"
     tmux.until { |lines| assert_equal '  1/2', lines[-2] }
     tmux.send_keys :Enter
-    assert_equal %w[가나다], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[가나다], readonce.lines(chomp: true)
   end
 
   def test_sync
@@ -491,7 +491,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 'C-K', :Enter
-    assert_equal %w[9090], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[9090], readonce.lines(chomp: true)
   end
 
   def test_tac
@@ -500,7 +500,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  1000/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
-    assert_equal %w[1000 999 998], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[1000 999 998], readonce.lines(chomp: true)
   end
 
   def test_tac_sort
@@ -511,7 +511,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  28/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
-    assert_equal %w[99 999 998], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[99 999 998], readonce.lines(chomp: true)
   end
 
   def test_tac_nosort
@@ -522,7 +522,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  10/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
-    assert_equal %w[1000 900 800], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[1000 900 800], readonce.lines(chomp: true)
   end
 
   def test_expect
@@ -533,7 +533,7 @@ class TestGoFZF < TestBase
       tmux.until { |lines| assert_equal '  1/100', lines[-2] }
       tmux.send_keys(*feed)
       tmux.prepare
-      assert_equal [expected, '55'], readonce.split($INPUT_RECORD_SEPARATOR)
+      assert_equal [expected, '55'], readonce.lines(chomp: true)
     end
     test.call('ctrl-t', 'C-T')
     test.call('ctrl-t', 'Enter', '')
@@ -556,7 +556,7 @@ class TestGoFZF < TestBase
     tmux.send_keys '55'
     tmux.until { |lines| assert_equal '  1/100', lines[-2] }
     tmux.send_keys :Escape, :z
-    assert_equal %w[55 alt-z 55], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[55 alt-z 55], readonce.lines(chomp: true)
   end
 
   def test_expect_printable_character_print_query
@@ -565,12 +565,12 @@ class TestGoFZF < TestBase
     tmux.send_keys '55'
     tmux.until { |lines| assert_equal '  1/100', lines[-2] }
     tmux.send_keys 'z'
-    assert_equal %w[55 z 55], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[55 z 55], readonce.lines(chomp: true)
   end
 
   def test_expect_print_query_select_1
     tmux.send_keys "seq 1 100 | #{fzf('-q55 -1 --expect=alt-z --print-query')}", :Enter
-    assert_equal ['55', '', '55'], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal ['55', '', '55'], readonce.lines(chomp: true)
   end
 
   def test_toggle_sort
@@ -584,14 +584,14 @@ class TestGoFZF < TestBase
       tmux.send_keys :Tab
       tmux.until { |lines| assert_equal '  4/111 +S (2)', lines[-2] }
       tmux.send_keys :Enter
-      assert_equal %w[111 11], readonce.split($INPUT_RECORD_SEPARATOR)
+      assert_equal %w[111 11], readonce.lines(chomp: true)
     end
   end
 
   def test_unicode_case
     writelines(tempname, %w[строКА1 СТРОКА2 строка3 Строка4])
-    assert_equal %w[СТРОКА2 Строка4], `#{FZF} -fС < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
-    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `#{FZF} -fс < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[СТРОКА2 Строка4], `#{FZF} -fС < #{tempname}`.lines(chomp: true)
+    assert_equal %w[строКА1 СТРОКА2 строка3 Строка4], `#{FZF} -fс < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak
@@ -603,7 +603,7 @@ class TestGoFZF < TestBase
     ]
     writelines(tempname, input)
 
-    assert_equal input, `#{FZF} -ffoobar --tiebreak=index < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal input, `#{FZF} -ffoobar --tiebreak=index < #{tempname}`.lines(chomp: true)
 
     by_length = %w[
       ----foobar--
@@ -611,8 +611,8 @@ class TestGoFZF < TestBase
       -------foobar-
       --foobar--------
     ]
-    assert_equal by_length, `#{FZF} -ffoobar < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
-    assert_equal by_length, `#{FZF} -ffoobar --tiebreak=length < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal by_length, `#{FZF} -ffoobar < #{tempname}`.lines(chomp: true)
+    assert_equal by_length, `#{FZF} -ffoobar --tiebreak=length < #{tempname}`.lines(chomp: true)
 
     by_begin = %w[
       --foobar--------
@@ -620,17 +620,17 @@ class TestGoFZF < TestBase
       -----foobar---
       -------foobar-
     ]
-    assert_equal by_begin, `#{FZF} -ffoobar --tiebreak=begin < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
-    assert_equal by_begin, `#{FZF} -f"!z foobar" -x --tiebreak begin < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal by_begin, `#{FZF} -ffoobar --tiebreak=begin < #{tempname}`.lines(chomp: true)
+    assert_equal by_begin, `#{FZF} -f"!z foobar" -x --tiebreak begin < #{tempname}`.lines(chomp: true)
 
     assert_equal %w[
       -------foobar-
       ----foobar--
       -----foobar---
       --foobar--------
-    ], `#{FZF} -ffoobar --tiebreak end < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -ffoobar --tiebreak end < #{tempname}`.lines(chomp: true)
 
-    assert_equal input, `#{FZF} -f"!z" -x --tiebreak end < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal input, `#{FZF} -f"!z" -x --tiebreak end < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_index_begin
@@ -650,7 +650,7 @@ class TestGoFZF < TestBase
       'xxoxxxoxx',
       'xoxxxxxox',
       'xoxxxxxoxx'
-    ], `#{FZF} -foo < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -foo < #{tempname}`.lines(chomp: true)
 
     assert_equal [
       'xxxoxoxxx',
@@ -659,7 +659,7 @@ class TestGoFZF < TestBase
       'xxoxxxoxx',
       'xoxxxxxoxx',
       'xoxxxxxox'
-    ], `#{FZF} -foo --tiebreak=index < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -foo --tiebreak=index < #{tempname}`.lines(chomp: true)
 
     # Note that --tiebreak=begin is now based on the first occurrence of the
     # first character on the pattern
@@ -670,7 +670,7 @@ class TestGoFZF < TestBase
       'xxoxxxoxx',
       'xoxxxxxoxx',
       'xoxxxxxox'
-    ], `#{FZF} -foo --tiebreak=begin < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -foo --tiebreak=begin < #{tempname}`.lines(chomp: true)
 
     assert_equal [
       '  xxoxoxxx',
@@ -679,7 +679,7 @@ class TestGoFZF < TestBase
       'xxoxxxoxx',
       'xoxxxxxox',
       'xoxxxxxoxx'
-    ], `#{FZF} -foo --tiebreak=begin,length < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -foo --tiebreak=begin,length < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_begin_algo_v2
@@ -690,7 +690,7 @@ class TestGoFZF < TestBase
     assert_equal [
       'foo bar baz',
       'baz foo bar'
-    ], `#{FZF} -fbar --tiebreak=begin --algo=v2 < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -fbar --tiebreak=begin --algo=v2 < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_end
@@ -710,7 +710,7 @@ class TestGoFZF < TestBase
       'xoxxxxxxxx',
       'xxoxxxxxxx',
       'xxxoxxxxxx'
-    ], `#{FZF} -fo < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -fo < #{tempname}`.lines(chomp: true)
 
     assert_equal [
       'xxxxxoxxx',
@@ -719,7 +719,7 @@ class TestGoFZF < TestBase
       'xxxoxxxxxx',
       'xxoxxxxxxx',
       'xoxxxxxxxx'
-    ], `#{FZF} -fo --tiebreak=end < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -fo --tiebreak=end < #{tempname}`.lines(chomp: true)
 
     assert_equal [
       'xxxxxoxxx',
@@ -728,7 +728,7 @@ class TestGoFZF < TestBase
       'xxxoxxxxxx',
       'xxoxxxxxxx',
       'xoxxxxxxxx'
-    ], `#{FZF} -fo --tiebreak=end,length,begin < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    ], `#{FZF} -fo --tiebreak=end,length,begin < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_length_with_nth
@@ -746,10 +746,10 @@ class TestGoFZF < TestBase
       123:hello
       1234567:h
     ]
-    assert_equal output, `#{FZF} -fh < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal output, `#{FZF} -fh < #{tempname}`.lines(chomp: true)
 
     # Since 0.16.8, --nth doesn't affect --tiebreak
-    assert_equal output, `#{FZF} -fh -n2 -d: < #{tempname}`.split($INPUT_RECORD_SEPARATOR)
+    assert_equal output, `#{FZF} -fh -n2 -d: < #{tempname}`.lines(chomp: true)
   end
 
   def test_invalid_cache
@@ -802,14 +802,14 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:accept,u:up,T:toggle-up,t:toggle')}", :Enter
     tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
     tmux.send_keys 'uuu', 'TTT', 'tt', 'uu', 'ttt', 'C-j'
-    assert_equal %w[4 5 6 9], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[4 5 6 9], readonce.lines(chomp: true)
   end
 
   def test_bind_print_query
     tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:print-query')}", :Enter
     tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
     tmux.send_keys 'print-my-query', 'C-j'
-    assert_equal %w[print-my-query], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[print-my-query], readonce.lines(chomp: true)
   end
 
   def test_bind_replace_query
@@ -830,7 +830,7 @@ class TestGoFZF < TestBase
   end
 
   def test_read0
-    lines = `find .`.split($INPUT_RECORD_SEPARATOR)
+    lines = `find .`.lines(chomp: true)
     assert_equal lines.last, `find . | #{FZF} -e -f "^#{lines.last}$"`.chomp
     assert_equal \
       lines.last,
@@ -864,7 +864,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '  10/100 (12)', lines[-2] }
     tmux.send_keys :Enter
     assert_equal %w[1 2 10 20 30 40 50 60 70 80 90 100],
-                 readonce.split($INPUT_RECORD_SEPARATOR)
+                 readonce.lines(chomp: true)
   end
 
   def test_history
@@ -877,7 +877,7 @@ class TestGoFZF < TestBase
       nil
     end
     opts = "--history=#{history_file} --history-size=4"
-    input = %w[00 11 22 33 44].map { |e| e + $INPUT_RECORD_SEPARATOR }
+    input = %w[00 11 22 33 44]
     input.each do |keys|
       tmux.prepare
       tmux.send_keys "seq 100 | #{fzf(opts)}", :Enter
@@ -888,7 +888,7 @@ class TestGoFZF < TestBase
     end
     wait do
       assert_path_exists history_file
-      assert_equal input[1..-1], File.readlines(history_file)
+      assert_equal input[1..-1], File.readlines(history_file, chomp: true)
     end
 
     # Update history entries (not changed on disk)
@@ -911,7 +911,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     wait do
       assert_path_exists history_file
-      assert_equal %w[22 33 44 310].map { |e| e + $INPUT_RECORD_SEPARATOR }, File.readlines(history_file)
+      assert_equal %w[22 33 44 310], File.readlines(history_file, chomp: true)
     end
 
     # Respect --bind option
@@ -947,7 +947,7 @@ class TestGoFZF < TestBase
         /foo'bar/ /foo'bar/
         /foo"barfoo"bar/ /foo"barfoo"bar/
         /foo$barfoo$barfoo$bar/
-      ], File.readlines(output).map(&:chomp)
+      ], File.readlines(output, chomp: true)
     end
   ensure
     begin
@@ -976,7 +976,7 @@ class TestGoFZF < TestBase
         %(foo'bar/foo'bar),
         %(foo'bar foo"bar foo$bar/foo'bar foo"bar foo$bar),
         %(foo'bar foo"bar foobar/foo'bar foo"bar foobar)
-      ], File.readlines(output).map(&:chomp)
+      ], File.readlines(output, chomp: true)
     end
   ensure
     begin
@@ -1022,7 +1022,7 @@ class TestGoFZF < TestBase
         %(foo bar/foo bar/bar/bar),
         %(123 456/foo bar/456/bar),
         %(123 456 foo bar/foo bar/456 bar/bar)
-      ], File.readlines(output).map(&:chomp)
+      ], File.readlines(output, chomp: true)
     end
   rescue StandardError
     begin
@@ -1050,7 +1050,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '  1/1', lines[-2] }
     wait do
       assert_path_exists output
-      assert_equal ["-c / 'foo'bar"], File.readlines(output).map(&:chomp)
+      assert_equal ["-c / 'foo'bar"], File.readlines(output, chomp: true)
     end
   ensure
     begin
@@ -1148,7 +1148,7 @@ class TestGoFZF < TestBase
 
   def test_header
     tmux.send_keys "seq 100 | #{fzf("--header \"$(head -5 #{FILE})\"")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  100/100', lines[-2]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7..-3]
@@ -1158,7 +1158,7 @@ class TestGoFZF < TestBase
 
   def test_header_reverse
     tmux.send_keys "seq 100 | #{fzf("--header \"$(head -5 #{FILE})\" --reverse")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  100/100', lines[1]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[2..6]
@@ -1168,7 +1168,7 @@ class TestGoFZF < TestBase
 
   def test_header_reverse_list
     tmux.send_keys "seq 100 | #{fzf("--header \"$(head -5 #{FILE})\" --layout=reverse-list")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  100/100', lines[-2]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7..-3]
@@ -1178,7 +1178,7 @@ class TestGoFZF < TestBase
 
   def test_header_and_header_lines
     tmux.send_keys "seq 100 | #{fzf("--header-lines 10 --header \"$(head -5 #{FILE})\"")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  90/90', lines[-2]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7...-2]
@@ -1188,7 +1188,7 @@ class TestGoFZF < TestBase
 
   def test_header_and_header_lines_reverse
     tmux.send_keys "seq 100 | #{fzf("--reverse --header-lines 10 --header \"$(head -5 #{FILE})\"")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  90/90', lines[1]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[2...7]
@@ -1198,7 +1198,7 @@ class TestGoFZF < TestBase
 
   def test_header_and_header_lines_reverse_list
     tmux.send_keys "seq 100 | #{fzf("--layout=reverse-list --header-lines 10 --header \"$(head -5 #{FILE})\"")}", :Enter
-    header = File.readlines(FILE).take(5).map(&:strip)
+    header = File.readlines(FILE, chomp: true).take(5)
     tmux.until do |lines|
       assert_equal '  90/90', lines[-2]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7...-2]
@@ -1333,9 +1333,9 @@ class TestGoFZF < TestBase
   end
 
   def test_or_operator
-    assert_equal %w[1 5 10], `seq 10 | #{FZF} -f "1 | 5"`.lines.map(&:chomp)
+    assert_equal %w[1 5 10], `seq 10 | #{FZF} -f "1 | 5"`.lines(chomp: true)
     assert_equal %w[1 10 2 3 4 5 6 7 8 9],
-                 `seq 10 | #{FZF} -f '1 | !1'`.lines.map(&:chomp)
+                 `seq 10 | #{FZF} -f '1 | !1'`.lines(chomp: true)
   end
 
   def test_hscroll_off
@@ -1385,7 +1385,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Tab
     tmux.until { |lines| assert_equal '>>1', lines[-3] }
     tmux.send_keys :Enter
-    assert_equal %w[5 2 1], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[5 2 1], readonce.lines(chomp: true)
   end
 
   def test_jump_accept
@@ -1476,19 +1476,19 @@ class TestGoFZF < TestBase
     end
     wait do
       assert_path_exists tempname
-      assert_equal %w[1], File.readlines(tempname).map(&:chomp)
+      assert_equal %w[1], File.readlines(tempname, chomp: true)
     end
     tmux.send_keys :Down
     tmux.until { |lines| assert_equal '> 2', lines[3] }
     wait do
       assert_path_exists tempname
-      assert_equal %w[1 2], File.readlines(tempname).map(&:chomp)
+      assert_equal %w[1 2], File.readlines(tempname, chomp: true)
     end
     tmux.send_keys :Down
     tmux.until { |lines| assert_equal '> 3', lines[4] }
     wait do
       assert_path_exists tempname
-      assert_equal %w[1 2 3], File.readlines(tempname).map(&:chomp)
+      assert_equal %w[1 2 3], File.readlines(tempname, chomp: true)
     end
   end
 
@@ -1543,7 +1543,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     wait do
       assert_path_exists tempname
-      assert_equal %w[1], File.readlines(tempname).map(&:chomp)
+      assert_equal %w[1], File.readlines(tempname, chomp: true)
     end
     tmux.until { |lines| assert_equal prompt, lines[-1] }
   end
@@ -1580,7 +1580,7 @@ class TestGoFZF < TestBase
     tmux.send_keys '999'
     tmux.until { |lines| assert_equal '  1/1000', lines[-2] }
     tmux.send_keys :Enter
-    assert_equal %w[999 999], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[999 999], readonce.lines(chomp: true)
   end
 
   def test_accept_non_empty_with_multi_selection
@@ -1592,7 +1592,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '  0/1000 (1)', lines[-2] }
     # fzf will exit in this case even though there's no match for the current query
     tmux.send_keys :Enter
-    assert_equal %w[foo 1], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[foo 1], readonce.lines(chomp: true)
   end
 
   def test_accept_non_empty_with_empty_list
@@ -1600,7 +1600,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '  0/0', lines[-2] }
     tmux.send_keys :Enter
     # fzf will exit anyway since input list is empty
-    assert_equal %w[foo], readonce.split($INPUT_RECORD_SEPARATOR)
+    assert_equal %w[foo], readonce.lines(chomp: true)
   end
 
   def test_preview_update_on_select
@@ -1626,15 +1626,15 @@ class TestGoFZF < TestBase
 
     assert_equal input.length, `#{FZF} -f'foo bar' < #{tempname}`.lines.length
     assert_equal input.length - 1, `#{FZF} -f'^foo bar$' < #{tempname}`.lines.length
-    assert_equal ['foo bar'], `#{FZF} -f'foo\\ bar' < #{tempname}`.lines.map(&:chomp)
-    assert_equal ['foo bar'], `#{FZF} -f'^foo\\ bar$' < #{tempname}`.lines.map(&:chomp)
+    assert_equal ['foo bar'], `#{FZF} -f'foo\\ bar' < #{tempname}`.lines(chomp: true)
+    assert_equal ['foo bar'], `#{FZF} -f'^foo\\ bar$' < #{tempname}`.lines(chomp: true)
     assert_equal input.length - 1, `#{FZF} -f'!^foo\\ bar$' < #{tempname}`.lines.length
   end
 
   def test_inverse_only_search_should_not_sort_the_result
     # Filter
     assert_equal %w[aaaaa b ccc],
-                 `printf '%s\n' aaaaa b ccc BAD | #{FZF} -f '!bad'`.lines.map(&:chomp)
+                 `printf '%s\n' aaaaa b ccc BAD | #{FZF} -f '!bad'`.lines(chomp: true)
 
     # Interactive
     tmux.send_keys %(printf '%s\n' aaaaa b ccc BAD | #{FZF} -q '!bad'), :Enter
