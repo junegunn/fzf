@@ -115,6 +115,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
+| MPS             | Milis Linux             | `sudo mps kur fzf`                 |
 
 Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
 plugin may or may not be enabled by default depending on the package manager.
