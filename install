@@ -7,6 +7,7 @@ auto_completion=
 key_bindings=
 update_config=2
 binary_arch=
+skip_download=0
 shells="bash zsh fish"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
@@ -19,6 +20,8 @@ usage: $0 [OPTIONS]
     --help               Show this message
     --bin                Download fzf binary only; Do not generate ~/.fzf.{bash,zsh}
     --all                Download fzf binary and update configuration files
+                         to enable key bindings and fuzzy completion
+    --conf               Don't download fzf; only update configuration files
                          to enable key bindings and fuzzy completion
     --xdg                Generate files under \$XDG_CONFIG_HOME/fzf
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
@@ -44,6 +47,9 @@ for opt in "$@"; do
       auto_completion=1
       key_bindings=1
       update_config=1
+      ;;
+    --conf)
+      skip_download=1
       ;;
     --xdg)
       prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
@@ -177,54 +183,58 @@ download() {
 archi=$(uname -sm)
 binary_available=1
 binary_error=""
-case "$archi" in
-  Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
-  Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}.tgz    ;;
-  Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
-  Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
-  Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
-  Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
-  Linux\ aarch64*) download fzf-$version-linux_${binary_arch:-arm8}.tgz  ;;
-  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
-  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
-  FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
-  FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}.tgz   ;;
-  OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
-  OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}.tgz   ;;
-  CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MINGW*\ *86)   download fzf-$version-windows_${binary_arch:-386}.zip   ;;
-  MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
-  MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
-  Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  *)             binary_available=0 binary_error=1 ;;
-esac
+if [ $skip_download -eq 0 ]; then
 
-cd "$fzf_base"
-if [ -n "$binary_error" ]; then
-  if [ $binary_available -eq 0 ]; then
-    echo "No prebuilt binary for $archi ..."
-  else
-    echo "  - $binary_error !!!"
-  fi
-  if command -v go > /dev/null; then
-    echo -n "Building binary (go get -u github.com/junegunn/fzf) ... "
-    if [ -z "${GOPATH-}" ]; then
-      export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
-      mkdir -p "$GOPATH"
+    case "$archi" in
+      Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
+      Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}.tgz    ;;
+      Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
+      Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
+      Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
+      Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
+      Linux\ aarch64*) download fzf-$version-linux_${binary_arch:-arm8}.tgz  ;;
+      Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
+      Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
+      FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
+      FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}.tgz   ;;
+      OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
+      OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}.tgz   ;;
+      CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+      MINGW*\ *86)   download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+      MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+      MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+      MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+      Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
+      Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
+      *)             binary_available=0 binary_error=1 ;;
+    esac
+
+    cd "$fzf_base"
+    if [ -n "$binary_error" ]; then
+      if [ $binary_available -eq 0 ]; then
+        echo "No prebuilt binary for $archi ..."
+      else
+        echo "  - $binary_error !!!"
+      fi
+      if command -v go > /dev/null; then
+        echo -n "Building binary (go get -u github.com/junegunn/fzf) ... "
+        if [ -z "${GOPATH-}" ]; then
+          export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
+          mkdir -p "$GOPATH"
+        fi
+        if go get -u github.com/junegunn/fzf; then
+          echo "OK"
+          cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
+        else
+          echo "Failed to build binary. Installation failed."
+          exit 1
+        fi
+      else
+        echo "go executable not found. Installation failed."
+        exit 1
+      fi
     fi
-    if go get -u github.com/junegunn/fzf; then
-      echo "OK"
-      cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
-    else
-      echo "Failed to build binary. Installation failed."
-      exit 1
-    fi
-  else
-    echo "go executable not found. Installation failed."
-    exit 1
-  fi
+
 fi
 
 [[ "$*" =~ "--bin" ]] && exit 0
