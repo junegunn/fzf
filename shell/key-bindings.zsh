@@ -96,20 +96,64 @@ fzf-cd-widget() {
 zle     -N    fzf-cd-widget
 bindkey '\ec' fzf-cd-widget
 
+fzf-edit-command-line() {
+  emulate -L zsh
+
+  () {
+    exec </dev/tty
+
+    # Compute the cursor's position in bytes, not characters.
+    setopt localoptions nomultibyte noksharrays
+
+    (( $+zle_bracketed_paste )) && print -r -n - $zle_bracketed_paste[2]
+
+    # Open the editor, placing the cursor at the right place if we know how.
+    local editor=( "${(@Q)${(z)${VISUAL:-${EDITOR:-vi}}}}" )
+    case $editor in 
+      (*vim*)
+        integer byteoffset=$(( $#PREBUFFER + $#LBUFFER + 1 ))
+        "${(@)editor}" -c "normal! ${byteoffset}go" -- $1;;
+      (*emacs*)
+        local lines=( "${(@f):-"$PREBUFFER$LBUFFER"}" )
+        "${(@)editor}" +${#lines}:$((${#lines[-1]} + 1)) $1;;
+      (*) "${(@)editor}" $1;;
+    esac
+
+    (( $+zle_bracketed_paste )) && print -r -n - $zle_bracketed_paste[1]
+
+    BUFFER="$(<$1)"
+    CURSOR=$#BUFFER
+  } =(<<<"$PREBUFFER$BUFFER")
+  zle reset-prompt
+}
+
+zle -N fzf-edit-command-line
+
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
-  local selected num
+  local selected num key
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
-  selected=( $(fc -rl 1 | perl -ne 'print if !$seen{(/^\s*[0-9]+\s+(.*)/, $1)}++' |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS --query=${(qqq)LBUFFER} +m" $(__fzfcmd)) )
+  selected=$(fc -rl 1 | perl -ne 'print if !$seen{(/^\s*[0-9]+\s+(.*)/, $1)}++' |
+    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --tiebreak=index --expect=tab,btab --header='tab:edit enter:execute shift-tab:select' --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS --query=${(qqq)LBUFFER} +m" $(__fzfcmd))
   local ret=$?
   if [ -n "$selected" ]; then
-    num=$selected[1]
+    key="${${(@f)selected}[1]}"
+    print "$key"
+    selected="${${(@f)selected}[2]}"
+    num=${selected[(w)1]}
     if [ -n "$num" ]; then
       zle vi-fetch-history -n $num
+      if [[ $key = tab ]]; then
+        zle fzf-edit-command-line
+      fi
     fi
   fi
+
   zle reset-prompt
+
+  if [[ -n "$num" && $key != btab ]]; then
+    zle accept-line
+  fi
   return $ret
 }
 zle     -N   fzf-history-widget
