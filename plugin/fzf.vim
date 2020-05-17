@@ -680,7 +680,9 @@ function! s:split(dict)
     endif
     return [ppos, { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }, is_popup]
   finally
-    setlocal winfixwidth winfixheight
+    if !is_popup
+      setlocal winfixwidth winfixheight
+    endif
   endtry
 endfunction
 
@@ -751,9 +753,6 @@ function! s:execute_term(dict, command, temps) abort
     if has('nvim')
       call termopen(command, fzf)
     else
-      if !len(&bufhidden)
-        setlocal bufhidden=hide
-      endif
       let term_opts = {'exit_cb': function(fzf.on_exit)}
       if is_popup
         let term_opts.hidden = 1
