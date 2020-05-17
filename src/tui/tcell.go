@@ -394,7 +394,7 @@ func (r *FullscreenRenderer) Pause(clear bool) {
 	}
 }
 
-func (r *FullscreenRenderer) Resume(clear bool) {
+func (r *FullscreenRenderer) Resume(clear bool, sigcont bool) {
 	if clear {
 		r.initScreen()
 	}

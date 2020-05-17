@@ -275,7 +275,7 @@ func MakeTransparentBorder() BorderStyle {
 type Renderer interface {
 	Init()
 	Pause(clear bool)
-	Resume(clear bool)
+	Resume(clear bool, sigcont bool)
 	Clear()
 	RefreshWindows(windows []Window)
 	Refresh()

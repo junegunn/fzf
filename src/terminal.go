@@ -1422,13 +1422,13 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
 		cmd.Run()
-		t.tui.Resume(true)
+		t.tui.Resume(true, false)
 		t.redraw()
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
 		cmd.Run()
-		t.tui.Resume(false)
+		t.tui.Resume(false, false)
 	}
 	cleanTemporaryFiles()
 }
@@ -1701,7 +1701,7 @@ func (t *Terminal) Loop() {
 					case reqRefresh:
 						t.suppress = false
 					case reqReinit:
-						t.tui.Resume(t.fullscreen)
+						t.tui.Resume(t.fullscreen, true)
 						t.redraw()
 					case reqRedraw:
 						t.redraw()

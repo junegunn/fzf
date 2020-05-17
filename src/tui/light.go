@@ -561,7 +561,7 @@ func (r *LightRenderer) Pause(clear bool) {
 	}
 }
 
-func (r *LightRenderer) Resume(clear bool) {
+func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
 	if clear {
 		if r.fullscreen {
@@ -570,10 +570,10 @@ func (r *LightRenderer) Resume(clear bool) {
 			r.rmcup()
 		}
 		r.flush()
-	} else if !r.fullscreen && r.mouse {
-		// NOTE: Resume(false) is only called on SIGCONT after SIGSTOP.
-		// And It's highly likely that the offset we obtained at the beginning will
-		// no longer be correct, so we simply disable mouse input.
+	} else if sigcont && !r.fullscreen && r.mouse {
+		// NOTE: SIGCONT (Coming back from CTRL-Z):
+		// It's highly likely that the offset we obtained at the beginning is
+		// no longer correct, so we simply disable mouse input.
 		r.csi("?1000l")
 		r.mouse = false
 	}
