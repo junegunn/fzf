@@ -678,7 +678,7 @@ function! s:split(dict)
         endif
       endfor
     endif
-    return [ppos, { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }, is_popup]
+    return [ppos, is_popup ? {} : { '&l:wfw': &l:wfw, '&l:wfh': &l:wfh }, is_popup]
   finally
     if !is_popup
       setlocal winfixwidth winfixheight
