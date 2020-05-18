@@ -216,7 +216,7 @@ if [ -n "$binary_error" ]; then
     fi
     if go get -u github.com/junegunn/fzf; then
       echo "OK"
-      cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
+      mv "$GOPATH/bin/fzf" "$fzf_base/bin/"
     else
       echo "Failed to build binary. Installation failed."
       exit 1
