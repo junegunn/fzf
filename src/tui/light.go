@@ -92,6 +92,9 @@ type LightRenderer struct {
 	outHandle       uintptr
 	origStateInput  uint32
 	origStateOutput uint32
+
+	// Cygwin only
+	cygwin_tty_out_r *os.File
 }
 
 type LightWindow struct {

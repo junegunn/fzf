@@ -1,4 +1,5 @@
 //+build windows
+//+build !cygwin
 
 package tui
 
