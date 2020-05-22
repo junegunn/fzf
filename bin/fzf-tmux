@@ -138,9 +138,9 @@ fi
 # --height option is not allowed
 args=("--no-height" "${args[@]}")
 
-# Handle zoomed tmux pane by moving it to a temp window
-if tmux list-panes -F '#F' | grep -q Z; then
-  zoomed=1
+# Handle zoomed tmux pane without popup options by moving it to a temp window
+if [[ ! "$opt" =~ "-K -E" ]] && tmux list-panes -F '#F' | grep -q Z; then
+  zoomed_without_popup=1
   original_window=$(tmux display-message -p "#{window_id}")
   tmp_window=$(tmux new-window -d -P -F "#{window_id}" "bash -c 'while :; do for c in \\| / - '\\;' do sleep 0.2; printf \"\\r\$c fzf-tmux is running\\r\"; done; done'")
   tmux swap-pane -t $tmp_window \; select-window -t $tmp_window
@@ -162,8 +162,8 @@ cleanup() {
     eval "tmux ${tmux_win_opts[@]}"
   fi
 
-  # Remove temp window if we were zoomed
-  if [[ -n "$zoomed" ]]; then
+  # Remove temp window if we were zoomed without popup options
+  if [[ -n "$zoomed_without_popup" ]]; then
     tmux display-message -p "#{window_id}" > /dev/null
     tmux swap-pane -t $original_window \; \
       select-window -t $original_window \; \
