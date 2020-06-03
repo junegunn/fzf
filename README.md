@@ -553,7 +553,7 @@ syntax-highlights the content of a file.
 - Highlight: http://www.andre-simon.de/doku/highlight/en/highlight.php
 
 ```bash
-fzf --preview 'bat --style=numbers --color=always --line-range :99 {}'
+fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'
 ```
 
 You can customize the size, position, and border of the preview window using
@@ -582,7 +582,7 @@ not a good idea to add `--preview` option to your `$FZF_DEFAULT_OPTS`**.
 # *********************
 # ** DO NOT DO THIS! **
 # *********************
-export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always --line-range :99 {}"'
+export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always --line-range :500 {}"'
 
 # bat doesn't work with any input other than the list of files
 ps -ef | fzf
