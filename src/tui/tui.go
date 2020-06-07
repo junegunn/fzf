@@ -87,6 +87,7 @@ const (
 	F12
 
 	Change
+	BackwardEOF
 
 	AltSpace
 	AltSlash

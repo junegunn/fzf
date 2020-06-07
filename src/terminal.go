@@ -1738,6 +1738,7 @@ func (t *Terminal) Loop() {
 	for looping {
 		var newCommand *string
 		changed := false
+		beof := false
 		queryChanged := false
 
 		event := t.tui.GetChar()
@@ -1881,6 +1882,7 @@ func (t *Terminal) Loop() {
 					t.cx++
 				}
 			case actBackwardDeleteChar:
+				beof = len(t.input) == 0
 				if t.cx > 0 {
 					t.input = append(t.input[:t.cx-1], t.input[t.cx:]...)
 					t.cx--
@@ -1973,16 +1975,19 @@ func (t *Terminal) Loop() {
 				t.vset(0)
 				req(reqList)
 			case actUnixLineDiscard:
+				beof = len(t.input) == 0
 				if t.cx > 0 {
 					t.yanked = copySlice(t.input[:t.cx])
 					t.input = t.input[t.cx:]
 					t.cx = 0
 				}
 			case actUnixWordRubout:
+				beof = len(t.input) == 0
 				if t.cx > 0 {
 					t.rubout("\\s\\S")
 				}
 			case actBackwardKillWord:
+				beof = len(t.input) == 0
 				if t.cx > 0 {
 					t.rubout(t.wordRubout)
 				}
@@ -2142,6 +2147,11 @@ func (t *Terminal) Loop() {
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change]; queryChanged && prs {
 				if !doActions(onChanges, tui.Change) {
+					continue
+				}
+			}
+			if onEOFs, prs := t.keymap[tui.BackwardEOF]; beof && prs {
+				if !doActions(onEOFs, tui.BackwardEOF) {
 					continue
 				}
 			}

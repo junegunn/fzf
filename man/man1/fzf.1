@@ -635,12 +635,23 @@ e.g.
 or any single character
 
 .SS AVAILABLE EVENTS:
-\fIchange\fR (triggered whenever the query string is changed)
-.br
+\fIchange\fR
+.RS
+Triggered whenever the query string is changed
 
-    e.g.
-         \fB# Moves cursor to the top (or bottom depending on --layout) whenever the query is changed
-         fzf --bind change:top\fR
+e.g.
+     \fB# Moves cursor to the top (or bottom depending on --layout) whenever the query is changed
+     fzf --bind change:top\fR
+.RE
+
+\fIbackward-eof\fR
+.RS
+Triggered when the query string is already empty and you try to delete it
+backward.
+
+e.g.
+     \fBfzf --bind backward-eof:abort\fR
+.RE
 
 .SS AVAILABLE ACTIONS:
 A key or an event can be bound to one or more of the following actions.

@@ -1746,6 +1746,17 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right", :Enter
     tmux.until { |lines| assert lines.any_include?('9999 10000') }
   end
+
+  def test_backward_eof
+    tmux.send_keys "echo foo | #{FZF} --bind 'backward-eof:reload(seq 100)'", :Enter
+    tmux.until { |lines| lines.item_count == 1 && lines.match_count == 1 }
+    tmux.send_keys 'x'
+    tmux.until { |lines| lines.item_count == 1 && lines.match_count == 0 }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines.item_count == 1 && lines.match_count == 1 }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| lines.item_count == 100 && lines.match_count == 100 }
+  end
 end
 
 module TestShell
