@@ -57,7 +57,7 @@ function download {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))
   if ($?) {
-    (Expand-Archive -Path $temp -DestinationPath .); (Remove-Item $temp)
+    (Microsoft.PowerShell.Archive\Expand-Archive -Path $temp -DestinationPath .); (Remove-Item $temp)
   } else {
     $binary_error="Failed to download with powershell"
   }
