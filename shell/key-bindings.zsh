@@ -109,7 +109,7 @@ fzf-history-widget() {
       zle vi-fetch-history -n $num
     fi
   fi
-  zle reset-prompt
+  zle fzf-redraw-prompt
   return $ret
 }
 zle     -N   fzf-history-widget
