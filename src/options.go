@@ -756,6 +756,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actAcceptNonEmpty)
 			case "print-query":
 				appendAction(actPrintQuery)
+			case "refresh-preview":
+				appendAction(actRefreshPreview)
 			case "replace-query":
 				appendAction(actReplaceQuery)
 			case "backward-char":

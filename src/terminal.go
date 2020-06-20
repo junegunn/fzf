@@ -224,6 +224,7 @@ const (
 	actJump
 	actJumpAccept
 	actPrintQuery
+	actRefreshPreview
 	actReplaceQuery
 	actToggleSort
 	actTogglePreview
@@ -1659,6 +1660,14 @@ func (t *Terminal) Loop() {
 		t.killPreview(code)
 	}
 
+	refreshPreview := func() {
+		if t.isPreviewEnabled() {
+			_, list := t.buildPlusList(t.preview.command, false)
+			t.cancelPreview()
+			t.previewBox.Set(reqPreviewEnqueue, list)
+		}
+	}
+
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
@@ -1685,11 +1694,7 @@ func (t *Terminal) Loop() {
 						if focusedIndex != currentIndex || version != t.version {
 							version = t.version
 							focusedIndex = currentIndex
-							if t.isPreviewEnabled() {
-								_, list := t.buildPlusList(t.preview.command, false)
-								t.cancelPreview()
-								t.previewBox.Set(reqPreviewEnqueue, list)
-							}
+							refreshPreview()
 						}
 					case reqJump:
 						if t.merger.Length() == 0 {
@@ -1847,6 +1852,8 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actRefreshPreview:
+				refreshPreview()
 			case actReplaceQuery:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
 					t.input = t.merger.Get(t.cy).item.text.ToRunes()
