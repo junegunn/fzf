@@ -297,7 +297,7 @@ function! fzf#wrap(...)
   let expects = map(copy(args), 'type(v:val)')
   let tidx = 0
   for arg in copy(a:000)
-    let tidx = index(expects, type(arg), tidx)
+    let tidx = index(expects, type(arg) == 6 ? type(0) : type(arg), tidx)
     if tidx < 0
       throw 'Invalid arguments (expected: [name string] [opts dict] [fullscreen boolean])'
     endif
