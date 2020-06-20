@@ -291,7 +291,7 @@ function! s:evaluate_opts(options)
         \ join(map(copy(a:options), 'fzf#shellescape(v:val)')) : a:options
 endfunction
 
-" [name string,] [opts dict,] [fullscreen boolean]
+" [name string,] [opts dict,] [fullscreen 0|1]
 function! fzf#wrap(...)
   let args = ['', {}, 0]
   let expects = map(copy(args), 'type(v:val)')
@@ -299,7 +299,7 @@ function! fzf#wrap(...)
   for arg in copy(a:000)
     let tidx = index(expects, type(arg), tidx)
     if tidx < 0
-      throw 'Invalid arguments (expected: [name string] [opts dict] [fullscreen boolean])'
+      throw 'Invalid arguments (expected: [name string] [opts dict] [fullscreen 0|1])'
     endif
     let args[tidx] = arg
     let tidx += 1
