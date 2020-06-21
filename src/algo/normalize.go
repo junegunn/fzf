@@ -405,6 +405,82 @@ var normalized map[rune]rune = map[rune]rune{
 	0x024E: 'Y', //  WITH STROKE, LATIN CAPITAL LETTER
 	0x028F: 'Y', // , LATIN LETTER SMALL CAPITAL
 	0x1D22: 'Z', // , LATIN LETTER SMALL CAPITAL
+
+	// ẮẤẰẦẲẨẴẪẶẬ -> 'A'
+	0x1EAE: 'A',
+	0x1EA4: 'A',
+	0x1EB0: 'A',
+	0x1EA6: 'A',
+	0x1EB2: 'A',
+	0x1EA8: 'A',
+	0x1EB4: 'A',
+	0x1EAA: 'A',
+	0x1EB6: 'A',
+	0x1EAC: 'A',
+	
+	// ắấằầẳẩẵẫặậ  -> 'a'
+	0x1EAF: 'a',
+	0x1EA5: 'a',
+	0x1EB1: 'a',
+	0x1EA7: 'a',
+	0x1EB3: 'a',
+	0x1EA9: 'a',
+	0x1EB5: 'a',
+	0x1EAB: 'a',
+	0x1EB7: 'a',
+	0x1EAD: 'a',
+	
+	// ẾỀỂỄỆ  -> 'E'
+	0x1EBE: 'E',
+	0x1EC0: 'E',
+	0x1EC2: 'E',
+	0x1EC4: 'E',
+	0x1EC6: 'E',
+	
+	// ếềểễệ  -> 'e'
+	0x1EBF: 'e',
+	0x1EC1: 'e',
+	0x1EC3: 'e',
+	0x1EC5: 'e',
+	0x1EC7: 'e',
+	
+	// ỐỚỒỜỔỞỖỠỘỢ  -> 'O'
+	0x1ED0: 'O',
+	0x1EDA: 'O',
+	0x1ED2: 'O',
+	0x1EDC: 'O',
+	0x1ED4: 'O',
+	0x1EDE: 'O',
+	0x1ED6: 'O',
+	0x1EE0: 'O',
+	0x1ED8: 'O',
+	0x1EE2: 'O',
+	
+	// ốớồờổởỗỡộợ  -> 'o'
+	0x1ED1: 'o',
+	0x1EDB: 'o',
+	0x1ED3: 'o',
+	0x1EDD: 'o',
+	0x1ED5: 'o',
+	0x1EDF: 'o',
+	0x1ED7: 'o',
+	0x1EE1: 'o',
+	0x1ED9: 'o',
+	0x1EE3: 'o',
+	
+	// ỨỪỬỮỰ  -> 'U'
+	0x1EE8: 'U',
+	0x1EEA: 'U',
+	0x1EEC: 'U',
+	0x1EEE: 'U',
+	0x1EF0: 'U',
+	
+	// ứừửữự  -> 'u'
+	0x1EE9: 'u',
+	0x1EEB: 'u',
+	0x1EED: 'u',
+	0x1EEF: 'u',
+	0x1EF1: 'u',
 }
 
 // NormalizeRunes normalizes latin script letters
