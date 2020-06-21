@@ -297,7 +297,7 @@ function! fzf#wrap(...)
   let expects = map(copy(args), 'type(v:val)')
   let tidx = 0
   for arg in copy(a:000)
-    let tidx = index(expects, type(arg), tidx)
+    let tidx = index(expects, type(arg) == 6 ? type(0) : type(arg), tidx)
     if tidx < 0
       throw 'Invalid arguments (expected: [name string] [opts dict] [fullscreen boolean])'
     endif
@@ -652,8 +652,8 @@ function! s:split(dict)
   try
     if s:present(a:dict, 'window')
       if type(a:dict.window) == type({})
-        if !has('nvim') && !has('patch-8.2.191')
-          throw 'Vim 8.2.191 or later is required for pop-up window'
+        if !(has('nvim') ? has('nvim-0.4') : has('popupwin') && has('patch-8.2.191'))
+          throw 'Nvim 0.4+ or Vim 8.2.191+ with popupwin feature is required for pop-up window'
         end
         call s:popup(a:dict.window)
         let is_popup = 1
