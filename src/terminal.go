@@ -229,6 +229,7 @@ const (
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
+	actPreview
 	actPreviewUp
 	actPreviewDown
 	actPreviewPageUp
@@ -254,6 +255,11 @@ type placeholderFlags struct {
 type searchRequest struct {
 	sort    bool
 	command *string
+}
+
+type previewRequest struct {
+	template string
+	list     []*Item
 }
 
 func toActions(types ...actionType) []action {
@@ -327,6 +333,17 @@ func trimQuery(query string) []rune {
 	return []rune(strings.Replace(query, "\t", " ", -1))
 }
 
+func hasPreviewAction(opts *Options) bool {
+	for _, actions := range opts.Keymap {
+		for _, action := range actions {
+			if action.t == actPreview {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
@@ -344,7 +361,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delay = initialDelay
 	}
 	var previewBox *util.EventBox
-	if len(opts.Preview.command) > 0 {
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) {
 		previewBox = util.NewEventBox()
 	}
 	strongAttr := tui.Bold
@@ -1584,20 +1601,23 @@ func (t *Terminal) Loop() {
 	if t.hasPreviewer() {
 		go func() {
 			for {
-				var request []*Item
+				var items []*Item
+				var commandTemplate string
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
 						case reqPreviewEnqueue:
-							request = value.([]*Item)
+							request := value.(previewRequest)
+							commandTemplate = request.template
+							items = request.list
 						}
 					}
 					events.Clear()
 				})
 				// We don't display preview window if no match
-				if request[0] != nil {
-					command := replacePlaceholder(t.preview.command,
-						t.ansi, t.delimiter, t.printsep, false, string(t.Input()), request)
+				if items[0] != nil {
+					command := replacePlaceholder(commandTemplate,
+						t.ansi, t.delimiter, t.printsep, false, string(t.Input()), items)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
@@ -1660,11 +1680,11 @@ func (t *Terminal) Loop() {
 		t.killPreview(code)
 	}
 
-	refreshPreview := func() {
-		if t.isPreviewEnabled() {
-			_, list := t.buildPlusList(t.preview.command, false)
+	refreshPreview := func(command string) {
+		if len(command) > 0 && t.isPreviewEnabled() {
+			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, list)
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, list})
 		}
 	}
 
@@ -1694,7 +1714,7 @@ func (t *Terminal) Loop() {
 						if focusedIndex != currentIndex || version != t.version {
 							version = t.version
 							focusedIndex = currentIndex
-							refreshPreview()
+							refreshPreview(t.preview.command)
 						}
 					case reqJump:
 						if t.merger.Length() == 0 {
@@ -1760,6 +1780,14 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}
+		togglePreview := func(enabled bool) {
+			if t.previewer.enabled != enabled {
+				t.previewer.enabled = enabled
+				t.tui.Clear()
+				t.resizeWindows()
+				req(reqPrompt, reqList, reqInfo, reqHeader)
+			}
+		}
 		toggle := func() bool {
 			if t.cy < t.merger.Length() && t.toggleItem(t.merger.Get(t.cy).item) {
 				req(reqInfo)
@@ -1808,17 +1836,15 @@ func (t *Terminal) Loop() {
 				return false
 			case actTogglePreview:
 				if t.hasPreviewer() {
-					t.previewer.enabled = !t.previewer.enabled
-					t.tui.Clear()
-					t.resizeWindows()
+					togglePreview(!t.previewer.enabled)
 					if t.previewer.enabled {
 						valid, list := t.buildPlusList(t.preview.command, false)
 						if valid {
 							t.cancelPreview()
-							t.previewBox.Set(reqPreviewEnqueue, list)
+							t.previewBox.Set(reqPreviewEnqueue,
+								previewRequest{t.preview.command, list})
 						}
 					}
-					req(reqPrompt, reqList, reqInfo, reqHeader)
 				}
 			case actTogglePreviewWrap:
 				if t.hasPreviewWindow() {
@@ -1852,8 +1878,11 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actPreview:
+				togglePreview(true)
+				refreshPreview(a.a)
 			case actRefreshPreview:
-				refreshPreview()
+				refreshPreview(t.preview.command)
 			case actReplaceQuery:
 				if t.cy >= 0 && t.cy < t.merger.Length() {
 					t.input = t.merger.Get(t.cy).item.text.ToRunes()
