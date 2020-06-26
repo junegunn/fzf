@@ -240,13 +240,18 @@ function! s:common_sink(action, lines) abort
     set noautochdir
     " preserve current directory in case current directory is changed by others
     " after the call of s:open
-    let currdir = expand('%:p:h') . (s:is_win ? '\\' : '/')
+    let currdir = expand('%:p:h') 
+    if exists('w:fzf_pushd')
+        let currdir = w:fzf_pushd.dir 
+    endif
+"    let currdir = currdir . (s:is_win ? '\\' : '/')
     for item in a:lines
       if empty
         execute 'e' s:escape(item)
         let empty = 0
       else
-        call s:open(Cmd, currdir . item)
+        let abspath = item =~ (s:is_win ? '^[A-Z]:\' : '^/') ? item : join([currdir, item], (s:is_win ? '\\' : '/'))
+        call s:open(Cmd, abspath)
       endif
       if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
             \ && isdirectory(item)
