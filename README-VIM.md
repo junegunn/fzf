@@ -128,7 +128,7 @@ let g:fzf_action = {
 
 " Default fzf layout
 " - down / up / left / right
-let g:fzf_layout = { 'down': '~40%' }
+let g:fzf_layout = { 'down': '40%' }
 
 " You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
 let g:fzf_layout = { 'window': 'enew' }
@@ -416,7 +416,7 @@ When fzf starts in a terminal buffer, the file type of the buffer is set to
 `fzf`. So you can set up `FileType fzf` autocmd to customize the settings of
 the window.
 
-For example, if you use the default layout (`{'down': '~40%'}`) on Neovim, you
+For example, if you use the default layout (`{'down': '40%'}`) on Neovim, you
 might want to temporarily disable the statusline for a cleaner look.
 
 ```vim
