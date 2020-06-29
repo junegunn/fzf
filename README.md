@@ -114,6 +114,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
+| XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
 Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
