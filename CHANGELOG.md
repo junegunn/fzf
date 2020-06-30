@@ -1,6 +1,37 @@
 CHANGELOG
 =========
 
+0.22.0 (WIP)
+------
+- Added more options for `--bind`
+    - `backward-eof` event
+      ```sh
+      # Aborts when you delete backward when the query prompt is already empty
+      fzf --bind backward-eof:abort
+      ```
+    - `refresh-preview` action
+      ```sh
+      # Rerun preview command when you hit '?'
+      fzf --preview 'echo $RANDOM' --bind '?:refresh-preview'
+      ```
+    - `preview` action
+      ```sh
+      # Default preview command with an extra preview binding
+      fzf --preview 'file {}' --bind '?:preview:cat {}'
+
+      # A preview binding with no default preview command
+      # (Preview window is initially empty)
+      fzf --bind '?:preview:cat {}'
+
+      # Preview window hidden by default, it appears when you first hit '?'
+      fzf --bind '?:preview:cat {}' --preview-window hidden
+      ```
+- Vim plugin
+    - `tmux` layout option for using fzf-tmux
+      ```vim
+      let g:fzf_layout = { 'tmux': '-p90%,60%' }
+      ```
+
 0.21.1
 ------
 - Shell extension
