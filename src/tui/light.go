@@ -28,6 +28,7 @@ const (
 const consoleDevice string = "/dev/tty"
 
 var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
+var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
 func (r *LightRenderer) stderr(str string) {
 	r.stderrInternal(str, true)
@@ -333,6 +334,13 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	if len(r.buffer) < 2 {
 		return Event{ESC, 0, nil}
 	}
+
+	loc := offsetRegexpBegin.FindIndex(r.buffer)
+	if loc != nil && loc[0] == 0 {
+		*sz = loc[1]
+		return Event{Invalid, 0, nil}
+	}
+
 	*sz = 2
 	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
 		return Event{int(CtrlAltA + r.buffer[1] - 1), 0, nil}
