@@ -345,81 +345,81 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	switch r.buffer[1] {
 	case ESC:
 		return Event{ESC, 0, nil}
-	case 32:
+	case ' ':
 		return Event{AltSpace, 0, nil}
-	case 47:
+	case '/':
 		return Event{AltSlash, 0, nil}
-	case 98:
+	case 'b':
 		return Event{AltB, 0, nil}
-	case 100:
+	case 'd':
 		return Event{AltD, 0, nil}
-	case 102:
+	case 'f':
 		return Event{AltF, 0, nil}
 	case 127:
 		return Event{AltBS, 0, nil}
-	case 91, 79:
+	case '[', 'O':
 		if len(r.buffer) < 3 {
 			return Event{Invalid, 0, nil}
 		}
 		*sz = 3
 		switch r.buffer[2] {
-		case 68:
+		case 'D':
 			if alt {
 				return Event{AltLeft, 0, nil}
 			}
 			return Event{Left, 0, nil}
-		case 67:
+		case 'C':
 			if alt {
 				// Ugh..
 				return Event{AltRight, 0, nil}
 			}
 			return Event{Right, 0, nil}
-		case 66:
+		case 'B':
 			if alt {
 				return Event{AltDown, 0, nil}
 			}
 			return Event{Down, 0, nil}
-		case 65:
+		case 'A':
 			if alt {
 				return Event{AltUp, 0, nil}
 			}
 			return Event{Up, 0, nil}
-		case 90:
+		case 'Z':
 			return Event{BTab, 0, nil}
-		case 72:
+		case 'H':
 			return Event{Home, 0, nil}
-		case 70:
+		case 'F':
 			return Event{End, 0, nil}
-		case 77:
+		case 'M':
 			return r.mouseSequence(sz)
-		case 80:
+		case 'P':
 			return Event{F1, 0, nil}
-		case 81:
+		case 'Q':
 			return Event{F2, 0, nil}
-		case 82:
+		case 'R':
 			return Event{F3, 0, nil}
-		case 83:
+		case 'S':
 			return Event{F4, 0, nil}
-		case 49, 50, 51, 52, 53, 54:
+		case '1', '2', '3', '4', '5', '6':
 			if len(r.buffer) < 4 {
 				return Event{Invalid, 0, nil}
 			}
 			*sz = 4
 			switch r.buffer[2] {
-			case 50:
-				if r.buffer[3] == 126 {
+			case '2':
+				if r.buffer[3] == '~' {
 					return Event{Insert, 0, nil}
 				}
-				if len(r.buffer) > 4 && r.buffer[4] == 126 {
+				if len(r.buffer) > 4 && r.buffer[4] == '~' {
 					*sz = 5
 					switch r.buffer[3] {
-					case 48:
+					case '0':
 						return Event{F9, 0, nil}
-					case 49:
+					case '1':
 						return Event{F10, 0, nil}
-					case 51:
+					case '3':
 						return Event{F11, 0, nil}
-					case 52:
+					case '4':
 						return Event{F12, 0, nil}
 					}
 				}
@@ -431,37 +431,37 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					return r.GetChar()
 				}
 				return Event{Invalid, 0, nil} // INS
-			case 51:
+			case '3':
 				return Event{Del, 0, nil}
-			case 52:
+			case '4':
 				return Event{End, 0, nil}
-			case 53:
+			case '5':
 				return Event{PgUp, 0, nil}
-			case 54:
+			case '6':
 				return Event{PgDn, 0, nil}
-			case 49:
+			case '1':
 				switch r.buffer[3] {
-				case 126:
+				case '~':
 					return Event{Home, 0, nil}
-				case 49, 50, 51, 52, 53, 55, 56, 57:
-					if len(r.buffer) == 5 && r.buffer[4] == 126 {
+				case '1', '2', '3', '4', '5', '7', '8', '9':
+					if len(r.buffer) == 5 && r.buffer[4] == '~' {
 						*sz = 5
 						switch r.buffer[3] {
-						case 49:
+						case '1':
 							return Event{F1, 0, nil}
-						case 50:
+						case '2':
 							return Event{F2, 0, nil}
-						case 51:
+						case '3':
 							return Event{F3, 0, nil}
-						case 52:
+						case '4':
 							return Event{F4, 0, nil}
-						case 53:
+						case '5':
 							return Event{F5, 0, nil}
-						case 55:
+						case '7':
 							return Event{F6, 0, nil}
-						case 56:
+						case '8':
 							return Event{F7, 0, nil}
-						case 57:
+						case '9':
 							return Event{F8, 0, nil}
 						}
 					}
