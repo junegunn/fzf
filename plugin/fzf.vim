@@ -393,6 +393,10 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(map(source, '<SID>enc_to_cp(v:val)'), temps.input)
+      if s:is_win
+          let prefix = 'powershell -NoProfile -Command "get-content '.temps.input.'|out-file -encoding utf8 '.temps.input.'.fix" &&'
+		  let temps.input = temps.input.'.fix'
+      endif
       let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
