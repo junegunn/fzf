@@ -236,21 +236,15 @@ function! s:common_sink(action, lines) abort
   endif
   try
     let empty = empty(s:fzf_expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
-    let autochdir = &autochdir
-    set noautochdir
-    " preserve current directory in case current directory is changed by others
-    " after the call of s:open
-    let currdir = expand('%:p:h') 
-    if exists('w:fzf_pushd')
-        let currdir = w:fzf_pushd.dir 
-    endif
-"    let currdir = currdir . (s:is_win ? '\\' : '/')
+    " Preserve current directory in case current working directory is changed
+    " during the execution
+    let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
     for item in a:lines
       if empty
         execute 'e' s:escape(item)
         let empty = 0
       else
-        let abspath = item =~ (s:is_win ? '^[A-Z]:\' : '^/') ? item : join([currdir, item], (s:is_win ? '\\' : '/'))
+        let abspath = item =~ (s:is_win ? '^[A-Z]:\' : '^/') ? item : join([cwd, item], (s:is_win ? '\' : '/'))
         call s:open(Cmd, abspath)
       endif
       if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
@@ -260,7 +254,6 @@ function! s:common_sink(action, lines) abort
     endfor
   catch /^Vim:Interrupt$/
   finally
-    let &autochdir = autochdir
     silent! autocmd! fzf_swap
   endtry
 endfunction
