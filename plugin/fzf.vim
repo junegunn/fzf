@@ -244,8 +244,10 @@ function! s:common_sink(action, lines) abort
         execute 'e' s:escape(item)
         let empty = 0
       else
-        let abspath = item =~ (s:is_win ? '^[A-Z]:\' : '^/') ? item : join([cwd, item], (s:is_win ? '\' : '/'))
-        call s:open(Cmd, abspath)
+        if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
+          let item = join([cwd, item], (s:is_win ? '\' : '/'))
+        endif
+        call s:open(Cmd, item)
       endif
       if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
             \ && isdirectory(item)
