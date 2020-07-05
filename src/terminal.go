@@ -64,7 +64,7 @@ type Terminal struct {
 	initDelay    time.Duration
 	infoStyle    infoStyle
 	spinner      []string
-	prompt       string
+	prompt       func()
 	promptLen    int
 	pointer      string
 	pointerLen   int
@@ -469,7 +469,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:    make(chan int),
 		tui:         renderer,
 		initFunc:    func() { renderer.Init() }}
-	t.prompt, t.promptLen = t.processTabs([]rune(opts.Prompt), 0)
+	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
 	// Pre-calculated empty pointer and marker signs
@@ -477,6 +477,19 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
 	return &t
+}
+
+func (t *Terminal) parsePrompt(prompt string) (func(), int) {
+	var state *ansiState
+	trimmed, colors, _ := extractColor(prompt, state, nil)
+	item := &Item{text: util.ToChars([]byte(trimmed)), colors: colors}
+	output := func() {
+		t.printHighlighted(
+			Result{item: item}, t.strong, tui.ColPrompt, tui.ColPrompt, false, false)
+	}
+	_, promptLen := t.processTabs([]rune(trimmed), 0)
+
+	return output, promptLen
 }
 
 func (t *Terminal) noInfoLine() bool {
@@ -780,7 +793,7 @@ func (t *Terminal) placeCursor() {
 
 func (t *Terminal) printPrompt() {
 	t.move(0, 0, true)
-	t.window.CPrint(tui.ColPrompt, t.strong, t.prompt)
+	t.prompt()
 
 	before, after := t.updatePromptOffset()
 	t.window.CPrint(tui.ColNormal, t.strong, string(before))

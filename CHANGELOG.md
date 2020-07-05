@@ -26,6 +26,7 @@ CHANGELOG
       # Preview window hidden by default, it appears when you first hit '?'
       fzf --bind '?:preview:cat {}' --preview-window hidden
       ```
+- Added support for ANSI colors in `--prompt` string
 - Vim plugin
     - `tmux` layout option for using fzf-tmux
       ```vim
