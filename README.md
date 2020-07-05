@@ -110,7 +110,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt-get install fzf`         |
 | Conda           |                         | `conda install -c conda-forge fzf` |
 | DNF             | Fedora                  | `sudo dnf install fzf`             |
-| Nix             | NixOS                   | `nix-env -iA nixpkgs.fzf`          |
+| Nix             | NixOS, etc.             | `nix-env -iA nixpkgs.fzf`          |
 | Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
