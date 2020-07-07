@@ -240,13 +240,13 @@ function! s:common_sink(action, lines) abort
     " during the execution
     let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
     for item in a:lines
+      if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
+        let item = join([cwd, item], (s:is_win ? '\' : '/'))
+      endif
       if empty
         execute 'e' s:escape(item)
         let empty = 0
       else
-        if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
-          let item = join([cwd, item], (s:is_win ? '\' : '/'))
-        endif
         call s:open(Cmd, item)
       endif
       if !has('patch-8.0.0177') && !has('nvim-0.2') && exists('#BufEnter')
