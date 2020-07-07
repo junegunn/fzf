@@ -236,8 +236,8 @@ function! s:common_sink(action, lines) abort
   endif
   try
     let empty = empty(s:fzf_expand('%')) && line('$') == 1 && empty(getline(1)) && !&modified
-    " Preserve current directory in case current working directory is changed
-    " during the execution
+    " Preserve the current working directory in case it's changed during
+    " the execution (e.g. `set autochdir` or `autocmd BufEnter * lcd ...`)
     let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
     for item in a:lines
       if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
