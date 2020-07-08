@@ -11,6 +11,7 @@ import (
 
 // fuzzy
 // 'exact
+// "exact+caseSensitive
 // ^prefix-exact
 // suffix-exact$
 // !inverse-exact
@@ -207,6 +208,24 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 				typ = termFuzzy
 				text = text[1:]
 			}
+
+		} else if strings.HasPrefix(text, "\"") {
+			// Flip exactness
+			if fuzzy && !inv {
+				typ = termExact
+				// if caseSmart then also caseSensitive
+				if caseMode == CaseSmart {
+					caseSensitive = true
+				}
+				text = text[1:]
+			} else {
+				if caseMode == CaseRespect {
+					caseSensitive = false
+				}
+				typ = termFuzzy
+				text = text[1:]
+			}
+
 		} else if strings.HasPrefix(text, "^") {
 			if typ == termSuffix {
 				typ = termEqual
