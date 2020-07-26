@@ -260,6 +260,14 @@ _fzf_complete_kill_post() {
   awk '{print $2}'
 }
 
+_fzf_complete_fc() {
+    _fzf_complete --tac --cycle --prompt='fc> ' -- "$@" < <(fc -l -1000)
+}
+
+_fzf_complete_fc_post() {
+    awk '{print $1}'
+}
+
 fzf-completion() {
   local tokens cmd prefix trigger tail matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
