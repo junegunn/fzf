@@ -517,7 +517,7 @@ function! s:dopopd()
   if s:fzf_getcwd() ==# w:fzf_pushd.dir && (!&autochdir || w:fzf_pushd.bufname ==# bufname(''))
     execute w:fzf_pushd.command s:escape(w:fzf_pushd.origin)
   endif
-  unlet w:fzf_pushd
+  unlet! w:fzf_pushd
 endfunction
 
 function! s:xterm_launcher()
