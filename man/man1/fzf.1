@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jun 2020" "fzf 0.22.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jul 2020" "fzf 0.22.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -381,7 +381,7 @@ Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:noborder][:wrap][:hidden]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"
 Determines the layout of the preview window. If the argument contains
 \fB:hidden\fR, the preview window will be hidden by default until
 \fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
@@ -389,6 +389,12 @@ Line wrap can be enabled with \fB:wrap\fR flag.
 
 If size is given as 0, preview window will not be visible, but fzf will still
 execute the command in the background.
+
+\fB+SCROLL[-OFFSET]\fR determines the initial scroll offset of the preview
+window. \fBSCROLL\fR can be either a numeric integer or a single-field index
+expression that refers to a numeric integer. The optional \fB-OFFSET\fR part is
+for adjusting the base offset so that you can see the text above it. It should
+be given as a numeric integer.
 
 .RS
 .B POSITION: (default: right)
@@ -400,8 +406,15 @@ execute the command in the background.
 
 .RS
 e.g.
-     \fBfzf --preview="head {}" --preview-window=up:30%
-     fzf --preview="file {}" --preview-window=down:1\fR
+     \fB# Non-default scroll window positions and sizes
+     fzf --preview="head {}" --preview-window=up:30%
+     fzf --preview="file {}" --preview-window=down:1
+
+     # Initial scroll offset is set to the line number of each line of
+     # git grep output *minus* 5 lines
+     git grep --line-number '' |
+       fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5\fR
+
 .RE
 .SS Scripting
 .TP

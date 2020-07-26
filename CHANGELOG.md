@@ -26,6 +26,13 @@ CHANGELOG
       # Preview window hidden by default, it appears when you first hit '?'
       fzf --bind '?:preview:cat {}' --preview-window hidden
       ```
+- Added preview window option for setting the initial scroll offset
+  ```sh
+  # Initial scroll offset is set to the line number of each line of
+  # git grep output *minus* 5 lines
+  git grep --line-number '' |
+    fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5
+  ```
 - Added support for ANSI colors in `--prompt` string
 - Vim plugin
     - `tmux` layout option for using fzf-tmux

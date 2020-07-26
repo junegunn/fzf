@@ -80,7 +80,7 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]][:wrap][:hidden]
+                          [up|down|left|right][:SIZE[%]][:wrap][:hidden][:+SCROLL[-OFFSET]]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -159,6 +159,7 @@ type previewOpts struct {
 	command  string
 	position windowPosition
 	size     sizeSpec
+	scroll   string
 	hidden   bool
 	wrap     bool
 	border   bool
@@ -260,7 +261,7 @@ func defaultOptions() *Options {
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, false, false, true},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, "", false, false, true},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -994,6 +995,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
+	offsetRegex := regexp.MustCompile("^\\+([0-9]+|{[0-9]+})(-[0-9]+)?$")
 	for _, token := range tokens {
 		switch token {
 		case "":
@@ -1016,8 +1018,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 		default:
 			if sizeRegex.MatchString(token) {
 				opts.size = parseSize(token, 99, "window size")
+			} else if offsetRegex.MatchString(token) {
+				opts.scroll = token[1:]
 			} else {
-				errorExit("invalid preview window layout: " + input)
+				errorExit("invalid preview window option: " + token)
 			}
 		}
 	}
@@ -1270,7 +1274,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:noborder][:wrap][:hidden]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":

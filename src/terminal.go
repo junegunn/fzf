@@ -262,6 +262,11 @@ type previewRequest struct {
 	list     []*Item
 }
 
+type previewResult struct {
+	content string
+	offset  int
+}
+
 func toActions(types ...actionType) []action {
 	actions := make([]action, len(types))
 	for idx, t := range types {
@@ -1347,6 +1352,39 @@ func cleanTemporaryFiles() {
 	activeTempFiles = []string{}
 }
 
+func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) string {
+	return replacePlaceholder(
+		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list)
+}
+
+// Ascii to positive integer
+func atopi(s string) int {
+	n, e := strconv.Atoi(strings.ReplaceAll(s, "'", ""))
+	if e != nil || n < 1 {
+		return 0
+	}
+	return n
+}
+
+func (t *Terminal) evaluateScrollOffset(list []*Item) int {
+	offsetExpr := t.replacePlaceholder(t.preview.scroll, false, "", list)
+	nums := strings.Split(offsetExpr, "-")
+	switch len(nums) {
+	case 0:
+		return 0
+	case 1, 2:
+		base := atopi(nums[0])
+		if base == 0 {
+			return 0
+		} else if len(nums) == 1 {
+			return base - 1
+		}
+		return base - atopi(nums[1]) - 1
+	default:
+		return 0
+	}
+}
+
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
 	current := allItems[:1]
 	selected := allItems[1:]
@@ -1445,7 +1483,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid {
 		return
 	}
-	command := replacePlaceholder(template, t.ansi, t.delimiter, t.printsep, forcePlus, string(t.input), list)
+	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	if !background {
 		cmd.Stdin = os.Stdin
@@ -1629,8 +1667,8 @@ func (t *Terminal) Loop() {
 				})
 				// We don't display preview window if no match
 				if items[0] != nil {
-					command := replacePlaceholder(commandTemplate,
-						t.ansi, t.delimiter, t.printsep, false, string(t.Input()), items)
+					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
+					offset := t.evaluateScrollOffset(items)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
@@ -1673,11 +1711,11 @@ func (t *Terminal) Loop() {
 					cmd.Wait()
 					finishChan <- true
 					if out.Len() > 0 || !<-updateChan {
-						t.reqBox.Set(reqPreviewDisplay, out.String())
+						t.reqBox.Set(reqPreviewDisplay, previewResult{out.String(), offset})
 					}
 					cleanTemporaryFiles()
 				} else {
-					t.reqBox.Set(reqPreviewDisplay, "")
+					t.reqBox.Set(reqPreviewDisplay, previewResult{"", 0})
 				}
 			}
 		}()
@@ -1751,9 +1789,10 @@ func (t *Terminal) Loop() {
 							return exitNoMatch
 						})
 					case reqPreviewDisplay:
-						t.previewer.text = value.(string)
+						result := value.(previewResult)
+						t.previewer.text = result.content
 						t.previewer.lines = strings.Count(t.previewer.text, "\n")
-						t.previewer.offset = 0
+						t.previewer.offset = util.Constrain(result.offset, 0, t.previewer.lines-1)
 						t.printPreview()
 					case reqPreviewRefresh:
 						t.printPreview()
@@ -2172,8 +2211,7 @@ func (t *Terminal) Loop() {
 					valid = !slot || query
 				}
 				if valid {
-					command := replacePlaceholder(a.a,
-						t.ansi, t.delimiter, t.printsep, false, string(t.input), list)
+					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
 				}
 			}

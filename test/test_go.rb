@@ -1787,6 +1787,24 @@ class TestGoFZF < TestBase
     tmux.until { |lines| refute_includes lines[1], '2' }
     tmux.until { |lines| assert_includes lines[1], '[111]' }
   end
+
+  def test_preview_scroll_begin_constant
+    tmux.send_keys "echo foo 123 321 | #{FZF} --preview 'seq 1000' --preview-window left:+123", :Enter
+    tmux.until { |lines| lines.item_count == 1 }
+    tmux.until { |lines| assert_match %r{123.*123/1000}, lines[1] }
+  end
+
+  def test_preview_scroll_begin_expr
+    tmux.send_keys "echo foo 123 321 | #{FZF} --preview 'seq 1000' --preview-window left:+{3}", :Enter
+    tmux.until { |lines| lines.item_count == 1 }
+    tmux.until { |lines| assert_match %r{321.*321/1000}, lines[1] }
+  end
+
+  def test_preview_scroll_begin_and_offset
+    tmux.send_keys "echo foo 123 321 | #{FZF} --preview 'seq 1000' --preview-window left:+{2}-2", :Enter
+    tmux.until { |lines| lines.item_count == 1 }
+    tmux.until { |lines| assert_match %r{121.*121/1000}, lines[1] }
+  end
 end
 
 module TestShell
