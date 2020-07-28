@@ -34,6 +34,10 @@ CHANGELOG
     fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5
   ```
 - Added support for ANSI colors in `--prompt` string
+- Smart match of accented characters
+    - An unaccented character in the query string will match both accented and
+      unaccented characters, while an accented character will only match
+      accented characters. This is similar to how "smart-case" match works.
 - Vim plugin
     - `tmux` layout option for using fzf-tmux
       ```vim

@@ -33,6 +33,7 @@ type term struct {
 	inv           bool
 	text          []rune
 	caseSensitive bool
+	normalize     bool
 }
 
 // String returns the string representation of a term.
@@ -128,6 +129,8 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		}
 	} else {
 		lowerString := strings.ToLower(asString)
+		normalize = normalize &&
+			lowerString == string(algo.NormalizeRunes([]rune(lowerString)))
 		caseSensitive = caseMode == CaseRespect ||
 			caseMode == CaseSmart && lowerString != asString
 		if !caseSensitive {
@@ -173,6 +176,8 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 		lowerText := strings.ToLower(text)
 		caseSensitive := caseMode == CaseRespect ||
 			caseMode == CaseSmart && text != lowerText
+		normalizeTerm := normalize &&
+			lowerText == string(algo.NormalizeRunes([]rune(lowerText)))
 		if !caseSensitive {
 			text = lowerText
 		}
@@ -222,14 +227,15 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 				set = termSet{}
 			}
 			textRunes := []rune(text)
-			if normalize {
+			if normalizeTerm {
 				textRunes = algo.NormalizeRunes(textRunes)
 			}
 			set = append(set, term{
 				typ:           typ,
 				inv:           inv,
 				text:          textRunes,
-				caseSensitive: caseSensitive})
+				caseSensitive: caseSensitive,
+				normalize:     normalizeTerm})
 			switchSet = true
 		}
 	}
@@ -360,7 +366,7 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 		matched := false
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
-			off, score, pos := p.iter(pfun, input, term.caseSensitive, p.normalize, p.forward, term.text, withPos, slab)
+			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
