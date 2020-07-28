@@ -405,8 +405,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
 	}
-	wordRubout := "[^[:alnum:]][[:alnum:]]"
-	wordNext := "[[:alnum:]][^[:alnum:]]|(.$)"
+	wordRubout := "[^\\pL\\pN][\\pL\\pN]"
+	wordNext := "[\\pL\\pN][^\\pL\\pN]|(.$)"
 	if opts.FileWord {
 		sep := regexp.QuoteMeta(string(os.PathSeparator))
 		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
@@ -1232,7 +1232,8 @@ func findLastMatch(pattern string, str string) int {
 	if locs == nil {
 		return -1
 	}
-	return locs[len(locs)-1][0]
+	prefix := []rune(str[:locs[len(locs)-1][0]])
+	return len(prefix)
 }
 
 func findFirstMatch(pattern string, str string) int {
@@ -1244,7 +1245,8 @@ func findFirstMatch(pattern string, str string) int {
 	if loc == nil {
 		return -1
 	}
-	return loc[0]
+	prefix := []rune(str[:loc[0]])
+	return len(prefix)
 }
 
 func copySlice(slice []rune) []rune {
