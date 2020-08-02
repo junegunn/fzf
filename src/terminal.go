@@ -23,12 +23,14 @@ import (
 // import "github.com/pkg/profile"
 
 var placeholder *regexp.Regexp
+var numericPrefix *regexp.Regexp
 var activeTempFiles []string
 
 const ellipsis string = ".."
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
+	numericPrefix = regexp.MustCompile(`^[[:punct:]]*([0-9]+)`)
 	activeTempFiles = []string{}
 }
 
@@ -1361,7 +1363,11 @@ func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input str
 
 // Ascii to positive integer
 func atopi(s string) int {
-	n, e := strconv.Atoi(strings.ReplaceAll(s, "'", ""))
+	matches := numericPrefix.FindStringSubmatch(s)
+	if len(matches) < 2 {
+		return 0
+	}
+	n, e := strconv.Atoi(matches[1])
 	if e != nil || n < 1 {
 		return 0
 	}
