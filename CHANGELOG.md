@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.22.0 (WIP)
+0.22.0
 ------
 - Added more options for `--bind`
     - `backward-eof` event
