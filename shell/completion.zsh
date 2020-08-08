@@ -118,6 +118,12 @@ __fzf_extract_command() {
   tokens=(${(z)1})
   for token in $tokens; do
     token=${(Q)token}
+
+    # sudo -E env kill <tab> should still fzf complete
+    if [[ $token == sudo || $token == env || $token == command || $token == builtin || "$token" =~ [-].* ]]; then
+        continue
+    fi
+
     if [[ "$token" =~ [[:alnum:]] && ! "$token" =~ "=" ]]; then
       echo "$token"
       return
