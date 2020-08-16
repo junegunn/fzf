@@ -21,6 +21,9 @@ CHANGELOG
 
 0.22.0
 ------
+- Preview window half page movements
+    - `preview-half-page-up`
+    - `preview-half-page-down`
 - Added more options for `--bind`
     - `backward-eof` event
       ```sh
