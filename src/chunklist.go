@@ -1,6 +1,9 @@
 package fzf
 
-import "sync"
+import (
+	"bytes"
+	"sync"
+)
 
 // Chunk is a list of Items whose size has the upper limit of chunkSize
 type Chunk struct {
@@ -26,8 +29,27 @@ func NewChunkList(trans ItemBuilder) *ChunkList {
 		trans:  trans}
 }
 
-func (c *Chunk) push(trans ItemBuilder, data []byte) bool {
-	if trans(&c.items[c.count], data) {
+func (c *Chunk) push(duplicate func(line []byte) bool, trans ItemBuilder, data []byte) bool {
+	item := &c.items[c.count]
+	if trans(item, data) {
+		bts := item.text.Bytes()
+
+		// First check this chunk for duplicate items.
+		for i, it := range c.items {
+			if i == c.count {
+				break
+			}
+			if bytes.Equal(bts, it.text.Bytes()) {
+				return true
+			}
+		}
+
+		// Second check all chunks for duplicate items.
+		if duplicate(bts) {
+			return true
+		}
+
+		// Only increment counter if we want to keep this item, it is not a duplicate.
 		c.count++
 		return true
 	}
@@ -59,7 +81,23 @@ func (cl *ChunkList) Push(data []byte) bool {
 		cl.chunks = append(cl.chunks, &Chunk{})
 	}
 
-	ret := cl.lastChunk().push(cl.trans, data)
+	ret := cl.lastChunk().push(func(bts []byte) bool {
+		for i, chunk := range cl.chunks {
+			// Break on the last item which is going to be the item being tested.
+			if i == len(cl.chunks)-1 {
+				break
+			}
+
+			for _, item := range chunk.items {
+				if bytes.Equal(bts, item.text.Bytes()) {
+					// Duplicate found.
+					return true
+				}
+			}
+		}
+		// No dupliates found.
+		return false
+	}, cl.trans, data)
 	cl.mutex.Unlock()
 	return ret
 }
