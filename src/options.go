@@ -41,6 +41,7 @@ const usage = `usage: fzf [options]
 
   Interface
     -m, --multi[=MAX]     Enable multi-select with tab/shift-tab
+    +m, --no-multi        Disable multi-select
     --no-mouse            Disable mouse
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
