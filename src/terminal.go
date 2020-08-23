@@ -1697,10 +1697,11 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if items[0] != nil {
 					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
-					height := t.pwindow.Height()
-					offset := t.evaluateScrollOffset(items, height)
+					offset := 0
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
+						height := t.pwindow.Height()
+						offset = t.evaluateScrollOffset(items, height)
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
