@@ -1374,7 +1374,7 @@ func atopi(s string) int {
 	return n
 }
 
-func (t *Terminal) evaluateScrollOffset(list []*Item) int {
+func (t *Terminal) evaluateScrollOffset(list []*Item, height int) int {
 	offsetExpr := t.replacePlaceholder(t.preview.scroll, false, "", list)
 	nums := strings.Split(offsetExpr, "-")
 	switch len(nums) {
@@ -1386,6 +1386,13 @@ func (t *Terminal) evaluateScrollOffset(list []*Item) int {
 			return 0
 		} else if len(nums) == 1 {
 			return base - 1
+		}
+		if nums[1][0] == '/' {
+			denom := atopi(nums[1][1:])
+			if denom == 0 {
+				return base
+			}
+			return base - height/denom
 		}
 		return base - atopi(nums[1]) - 1
 	default:
@@ -1676,11 +1683,12 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if items[0] != nil {
 					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
-					offset := t.evaluateScrollOffset(items)
+					height := t.pwindow.Height()
+					offset := t.evaluateScrollOffset(items, height)
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						env := os.Environ()
-						lines := fmt.Sprintf("LINES=%d", t.pwindow.Height())
+						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
 						env = append(env, lines)
 						env = append(env, "FZF_PREVIEW_"+lines)

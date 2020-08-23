@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+0.22.1
+------
+- Support preview scroll offset relative to window height
+  ```sh
+  git grep --line-number '' |
+    fzf --delimiter : \
+        --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \
+        --preview-window +{2}-/2
+  ```
+
 0.22.0
 ------
 - Added more options for `--bind`

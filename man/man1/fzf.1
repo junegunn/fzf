@@ -394,7 +394,8 @@ execute the command in the background.
 window. \fBSCROLL\fR can be either a numeric integer or a single-field index
 expression that refers to a numeric integer. The optional \fB-OFFSET\fR part is
 for adjusting the base offset so that you can see the text above it. It should
-be given as a numeric integer.
+be given as a numeric integer (\fB-INTEGER\fR), or as a denominator form
+(\fB-/INTEGER\fR) for specifying a fraction of the preview window height.
 
 .RS
 .B POSITION: (default: right)
@@ -411,9 +412,15 @@ e.g.
      fzf --preview="file {}" --preview-window=down:1
 
      # Initial scroll offset is set to the line number of each line of
-     # git grep output *minus* 5 lines
+     # git grep output *minus* 5 lines (-5)
      git grep --line-number '' |
-       fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5\fR
+       fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5
+
+     # Preview with bat, matching line in the middle of the window (-/2)
+     git grep --line-number '' |
+       fzf --delimiter : \\
+           --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \\
+           --preview-window +{2}-/2\fR
 
 .RE
 .SS Scripting
