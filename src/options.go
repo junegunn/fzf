@@ -81,6 +81,7 @@ const usage = `usage: fzf [options]
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
                           [up|down|left|right][:SIZE[%]][:wrap][:hidden][:+SCROLL[-OFFSET]]
+                          [:rounded|sharp|noborder]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -162,7 +163,7 @@ type previewOpts struct {
 	scroll   string
 	hidden   bool
 	wrap     bool
-	border   bool
+	border   tui.BorderShape
 }
 
 // Options stores the values of command-line options
@@ -261,7 +262,7 @@ func defaultOptions() *Options {
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, "", false, false, true},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, "", false, false, tui.BorderRounded},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -1011,10 +1012,12 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.position = posLeft
 		case "right":
 			opts.position = posRight
-		case "border":
-			opts.border = true
+		case "rounded", "border":
+			opts.border = tui.BorderRounded
+		case "sharp":
+			opts.border = tui.BorderSharp
 		case "noborder":
-			opts.border = false
+			opts.border = tui.BorderNone
 		default:
 			if sizeRegex.MatchString(token) {
 				opts.size = parseSize(token, 99, "window size")
@@ -1274,7 +1277,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":

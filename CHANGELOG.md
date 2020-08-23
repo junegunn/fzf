@@ -10,6 +10,9 @@ CHANGELOG
         --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \
         --preview-window +{2}-/2
   ```
+- Added `--preview-window` option for sharp edges (`--preview-window sharp`)
+- Reduced vertical padding around the preview window when `--preview-window
+  noborder` is used
 
 0.22.0
 ------

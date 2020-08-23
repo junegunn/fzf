@@ -381,7 +381,7 @@ Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"
 Determines the layout of the preview window. If the argument contains
 \fB:hidden\fR, the preview window will be hidden by default until
 \fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
@@ -389,6 +389,10 @@ Line wrap can be enabled with \fB:wrap\fR flag.
 
 If size is given as 0, preview window will not be visible, but fzf will still
 execute the command in the background.
+
+To change the style of the border of the preview window, specify one of
+\fBrounded\fR (border with rounded edges, default), \fBsharp\fR (border with
+sharp edges), or \fBnoborder\fR (no border).
 
 \fB+SCROLL[-OFFSET]\fR determines the initial scroll offset of the preview
 window. \fBSCROLL\fR can be either a numeric integer or a single-field index

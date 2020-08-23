@@ -676,6 +676,8 @@ func (t *Terminal) resizeWindows() {
 	}
 	if t.pborder != nil {
 		t.pborder.Close()
+	}
+	if t.pwindow != nil {
 		t.pwindow.Close()
 	}
 
@@ -700,19 +702,28 @@ func (t *Terminal) resizeWindows() {
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if previewVisible {
 		createPreviewWindow := func(y int, x int, w int, h int) {
-			previewBorder := tui.MakeBorderStyle(tui.BorderRounded, t.unicode)
-			if !t.preview.border {
-				previewBorder = tui.MakeTransparentBorder()
+			pwidth := w
+			pheight := h
+			if t.preview.border != tui.BorderNone {
+				previewBorder := tui.MakeBorderStyle(t.preview.border, t.unicode)
+				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+				pwidth -= 4
+				pheight -= 2
+				x += 2
+				y += 1
+			} else {
+				previewBorder := tui.MakeTransparentBorder()
+				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+				pwidth -= 2
+				x += 1
 			}
-			t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
-			pwidth := w - 4
 			// ncurses auto-wraps the line when the cursor reaches the right-end of
 			// the window. To prevent unintended line-wraps, we use the width one
 			// column larger than the desired value.
 			if !t.preview.wrap && t.tui.DoesAutoWrap() {
 				pwidth += 1
 			}
-			t.pwindow = t.tui.NewWindow(y+1, x+2, pwidth, h-2, true, noBorder)
+			t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 		}
 		switch t.preview.position {
 		case posUp:
@@ -1210,7 +1221,10 @@ func (t *Terminal) refresh() {
 			windows = append(windows, t.border)
 		}
 		if t.hasPreviewWindow() {
-			windows = append(windows, t.pborder, t.pwindow)
+			if t.pborder != nil {
+				windows = append(windows, t.pborder)
+			}
+			windows = append(windows, t.pwindow)
 		}
 		windows = append(windows, t.window)
 		t.tui.RefreshWindows(windows)
