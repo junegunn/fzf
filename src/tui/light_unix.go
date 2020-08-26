@@ -5,6 +5,8 @@ package tui
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/junegunn/fzf/src/util"
@@ -13,6 +15,17 @@ import (
 
 func IsLightRendererSupported() bool {
 	return true
+}
+
+func (r *LightRenderer) defaultTheme() *ColorTheme {
+	if strings.Contains(os.Getenv("TERM"), "256") {
+		return Dark256
+	}
+	colors, err := exec.Command("tput", "colors").Output()
+	if err == nil && atoi(strings.TrimSpace(string(colors)), 16) > 16 {
+		return Dark256
+	}
+	return Default16
 }
 
 func (r *LightRenderer) fd() int {
