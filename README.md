@@ -367,7 +367,7 @@ there is no trigger sequence, just press tab key after kill command.
 
 ```sh
 # Can select multiple processes with <TAB> or <Shift-TAB> keys
-kill -9 <TAB>
+kill -9 **<TAB>
 ```
 
 #### Host names
