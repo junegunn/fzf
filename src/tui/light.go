@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -124,17 +123,6 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
 	return &r
-}
-
-func (r *LightRenderer) defaultTheme() *ColorTheme {
-	if strings.Contains(os.Getenv("TERM"), "256") {
-		return Dark256
-	}
-	colors, err := exec.Command("tput", "colors").Output()
-	if err == nil && atoi(strings.TrimSpace(string(colors)), 16) > 16 {
-		return Dark256
-	}
-	return Default16
 }
 
 func repeat(r rune, times int) string {
