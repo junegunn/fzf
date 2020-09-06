@@ -290,8 +290,8 @@ When `window` entry is a dictionary, fzf will start in a popup window. The
 following options are allowed:
 
 - Required:
-    - `width` [float range [0 ~ 1]]
-    - `height` [float range [0 ~ 1]]
+    - `width` [float range [0 ~ 1]] or [integer range [8 ~ ]]
+    - `height` [float range [0 ~ 1]] or [integer range [4 ~ ]]
 - Optional:
     - `yoffset` [float default 0.5 range [0 ~ 1]]
     - `xoffset` [float default 0.5 range [0 ~ 1]]
@@ -386,8 +386,8 @@ The latest versions of Vim and Neovim include builtin terminal emulator
 
 ```vim
 " Required:
-" - width [float range [0 ~ 1]]
-" - height [float range [0 ~ 1]]
+" - width [float range [0 ~ 1]] or [integer range [8 ~ ]]
+" - height [float range [0 ~ 1]] or [integer range [4 ~ ]]
 "
 " Optional:
 " - xoffset [float default 0.5 range [0 ~ 1]]
