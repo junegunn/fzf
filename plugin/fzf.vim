@@ -145,7 +145,7 @@ function! fzf#install()
   endif
 endfunction
 
-function! s:fzf_exec()
+function! fzf#exec()
   if !exists('s:exec')
     if executable(s:fzf_go)
       let s:exec = s:fzf_go
@@ -154,13 +154,13 @@ function! s:fzf_exec()
     elseif input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
       redraw
       call fzf#install()
-      return s:fzf_exec()
+      return fzf#exec()
     else
       redraw
       throw 'fzf executable not found'
     endif
   endif
-  return fzf#shellescape(s:exec)
+  return s:exec
 endfunction
 
 function! s:tmux_enabled()
@@ -376,7 +376,7 @@ try
   let temps  = { 'result': s:fzf_tempname() }
   let optstr = s:evaluate_opts(get(dict, 'options', ''))
   try
-    let fzf_exec = s:fzf_exec()
+    let fzf_exec = fzf#shellescape(fzf#exec())
   catch
     throw v:exception
   endtry
