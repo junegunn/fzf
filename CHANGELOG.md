@@ -13,6 +13,11 @@ CHANGELOG
 - Added `--preview-window` option for sharp edges (`--preview-window sharp`)
 - Reduced vertical padding around the preview window when `--preview-window
   noborder` is used
+- Vim
+    - Popup width and height can be given in absolute integer values
+    - Added `fzf#exec()` function for getting the path of fzf executable
+        - It also downloads the latest binary if it's not available by running
+          `./install --bin`
 
 0.22.0
 ------
