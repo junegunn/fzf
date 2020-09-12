@@ -115,13 +115,22 @@ function! s:fzf_tempname()
   return s:fzf_call('tempname')
 endfunction
 
-let s:default_layout = { 'down': '~40%' }
 let s:layout_keys = ['window', 'tmux', 'up', 'down', 'left', 'right']
 let s:fzf_go = s:base_dir.'/bin/fzf'
 let s:fzf_tmux = s:base_dir.'/bin/fzf-tmux'
 
 let s:cpo_save = &cpo
 set cpo&vim
+
+function! s:popup_support()
+  return has('nvim') ? has('nvim-0.4') : has('popupwin') && has('patch-8.2.191')
+endfunction
+
+function! s:default_layout()
+  return s:popup_support()
+        \ ? { 'window' : { 'width': 0.9, 'height': 0.6, 'highlight': 'Normal' } }
+        \ : { 'down': '~40%' }
+endfunction
 
 function! fzf#install()
   if s:is_win && !has('win32unix')
@@ -325,7 +334,7 @@ function! fzf#wrap(...)
     if !exists('g:fzf_layout') && exists('g:fzf_height')
       let opts.down = g:fzf_height
     else
-      let opts = extend(opts, s:validate_layout(get(g:, 'fzf_layout', s:default_layout)))
+      let opts = extend(opts, s:validate_layout(get(g:, 'fzf_layout', s:default_layout())))
     endif
   endif
 
@@ -658,7 +667,7 @@ function! s:split(dict)
   try
     if s:present(a:dict, 'window')
       if type(a:dict.window) == type({})
-        if !(has('nvim') ? has('nvim-0.4') : has('popupwin') && has('patch-8.2.191'))
+        if !s:popup_support()
           throw 'Nvim 0.4+ or Vim 8.2.191+ with popupwin feature is required for pop-up window'
         end
         call s:popup(a:dict.window)
