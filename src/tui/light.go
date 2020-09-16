@@ -324,7 +324,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	}
 
 	loc := offsetRegexpBegin.FindIndex(r.buffer)
-	if loc != nil && loc[0] == 0 {
+	if len(loc) != 0 && loc[0] == 0 {
 		*sz = loc[1]
 		return Event{Invalid, 0, nil}
 	}
