@@ -205,7 +205,7 @@ func (r *LightRenderer) origin() {
 
 func getEnv(name string, defaultValue int) int {
 	env := os.Getenv(name)
-	if len(env) == 0 {
+	if env == "" {
 		return defaultValue
 	}
 	return atoi(env, defaultValue)

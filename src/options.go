@@ -423,7 +423,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 }
 
 func parseKeyChords(str string, message string) map[int]string {
-	if len(str) == 0 {
+	if str == "" {
 		errorExit(message)
 	}
 
@@ -434,7 +434,7 @@ func parseKeyChords(str string, message string) map[int]string {
 
 	chords := make(map[int]string)
 	for _, key := range tokens {
-		if len(key) == 0 {
+		if key == "" {
 			continue // ignore
 		}
 		lkey := strings.ToLower(key)
@@ -900,7 +900,7 @@ func isExecuteAction(str string) actionType {
 		return actIgnore
 	}
 	prefix := matches[0][1]
-	if len(prefix) == 0 {
+	if prefix == "" {
 		prefix = matches[0][2]
 	}
 	switch prefix {
@@ -1136,7 +1136,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			parseKeymap(opts.Keymap, nextString(allArgs, &i, "bind expression required"))
 		case "--color":
 			_, spec := optionalNextString(allArgs, &i)
-			if len(spec) == 0 {
+			if spec == "" {
 				opts.Theme = tui.EmptyTheme()
 			} else {
 				opts.Theme = parseTheme(opts.Theme, spec)
@@ -1392,7 +1392,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		errorExit("tab stop must be a positive integer")
 	}
 
-	if len(opts.JumpLabels) == 0 {
+	if opts.JumpLabels == "" {
 		errorExit("empty jump labels")
 	}
 
