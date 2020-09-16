@@ -1326,8 +1326,6 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			skipChars++
 		case 'q':
 			flags.query = true
-		default:
-			break
 		}
 	}
 
