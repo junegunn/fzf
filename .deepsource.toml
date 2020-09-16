@@ -1,0 +1,17 @@
+version = 1
+
+test_patterns = [
+    "test/**",
+    "**/*_test.go"
+]
+
+[[analyzers]]
+name = "go"
+enabled = true
+
+  [analyzers.meta]
+  import_paths = ["github.com/junegunn/fzf"]
+
+[[analyzers]]
+name = "ruby"
+enabled = true
