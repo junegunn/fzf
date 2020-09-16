@@ -85,13 +85,6 @@ type LightRenderer struct {
 	y             int
 	x             int
 	maxHeightFunc func(int) int
-
-	// Windows only
-	ttyinChannel    chan byte
-	inHandle        uintptr
-	outHandle       uintptr
-	origStateInput  uint32
-	origStateOutput uint32
 }
 
 type LightWindow struct {
