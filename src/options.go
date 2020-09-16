@@ -368,7 +368,7 @@ func splitNth(str string) []Range {
 
 func delimiterRegexp(str string) Delimiter {
 	// Special handling of \t
-	str = strings.Replace(str, "\\t", "\t", -1)
+	str = strings.ReplaceAll(str, "\\t", "\t")
 
 	// 1. Pattern does not contain any special character
 	if regexp.QuoteMeta(str) == str {
@@ -710,9 +710,9 @@ func parseKeymap(keymap map[int][]action, str string) {
 		}
 		return prefix + "(" + strings.Repeat(" ", len(src)-len(prefix)-2) + ")"
 	})
-	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
-	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
-	masked = strings.Replace(masked, "+:", string([]rune{escapedPlus, ':'}), -1)
+	masked = strings.ReplaceAll(masked, "::", string([]rune{escapedColon, ':'}))
+	masked = strings.ReplaceAll(masked, ",:", string([]rune{escapedComma, ':'}))
+	masked = strings.ReplaceAll(masked, "+:", string([]rune{escapedPlus, ':'}))
 
 	idx := 0
 	for _, pairStr := range strings.Split(masked, ",") {
