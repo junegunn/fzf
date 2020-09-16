@@ -138,9 +138,7 @@ func Run(opts *Options, revision string) {
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	var reader *Reader
 	if !streamingFilter {
-		reader = NewReader(func(data []byte) bool {
-			return chunkList.Push(data)
-		}, eventBox, opts.ReadZero, opts.Filter == nil)
+		reader = NewReader(chunkList.Push, eventBox, opts.ReadZero, opts.Filter == nil)
 		go reader.ReadSource()
 	}
 
