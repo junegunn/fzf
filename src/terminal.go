@@ -1703,10 +1703,7 @@ func (t *Terminal) Loop() {
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
-						env = append(env, lines)
-						env = append(env, "FZF_PREVIEW_"+lines)
-						env = append(env, columns)
-						env = append(env, "FZF_PREVIEW_"+columns)
+						env = append(env, lines, "FZF_PREVIEW_"+lines, columns, "FZF_PREVIEW_"+columns)
 						cmd.Env = env
 					}
 					var out bytes.Buffer
