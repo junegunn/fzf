@@ -150,9 +150,9 @@ const (
 	charNumber
 )
 
-func posArray(withPos bool, len int) *[]int {
+func posArray(withPos bool, length int) *[]int {
 	if withPos {
-		pos := make([]int, 0, len)
+		pos := make([]int, 0, length)
 		return &pos
 	}
 	return nil

@@ -107,8 +107,8 @@ func (chars *Chars) TrimLength() uint16 {
 	}
 	chars.trimLengthKnown = true
 	var i int
-	len := chars.Length()
-	for i = len - 1; i >= 0; i-- {
+	length := chars.Length()
+	for i = length - 1; i >= 0; i-- {
 		char := chars.Get(i)
 		if !unicode.IsSpace(char) {
 			break
@@ -120,7 +120,7 @@ func (chars *Chars) TrimLength() uint16 {
 	}
 
 	var j int
-	for j = 0; j < len; j++ {
+	for j = 0; j < length; j++ {
 		char := chars.Get(j)
 		if !unicode.IsSpace(char) {
 			break
