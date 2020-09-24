@@ -1048,7 +1048,7 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	}
 
 	offsets := result.colorOffsets(charOffsets, t.theme, col2, attr, current)
-	maxWidth := t.window.Width() - 3
+	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
 	if displayWidth > maxWidth {
