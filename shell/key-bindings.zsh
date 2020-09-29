@@ -87,7 +87,8 @@ fzf-cd-widget() {
     zle redisplay
     return 0
   fi
-  BUFFER="cd \"$dir\""
+  # cd
+  BUFFER=`printf "cd %q" $dir`
   zle reset-prompt
   zle accept-line
   unset dir # ensure this doesn't end up appearing in prompt expansion
