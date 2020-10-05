@@ -22,42 +22,50 @@ Pros
 Table of Contents
 -----------------
 
-   * [Installation](#installation)
-      * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
-      * [Using git](#using-git)
-      * [Using Linux package managers](#using-linux-package-managers)
-      * [Windows](#windows)
-      * [As Vim plugin](#as-vim-plugin)
-   * [Upgrading fzf](#upgrading-fzf)
-   * [Building fzf](#building-fzf)
-   * [Usage](#usage)
-      * [Using the finder](#using-the-finder)
-      * [Layout](#layout)
-      * [Search syntax](#search-syntax)
-      * [Environment variables](#environment-variables)
-      * [Options](#options)
-      * [Demo](#demo)
-   * [Examples](#examples)
-   * [fzf-tmux script](#fzf-tmux-script)
-   * [Key bindings for command line](#key-bindings-for-command-line)
-   * [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
-      * [Files and directories](#files-and-directories)
-      * [Process IDs](#process-ids)
-      * [Host names](#host-names)
-      * [Environment variables / Aliases](#environment-variables--aliases)
-      * [Settings](#settings)
-      * [Supported commands](#supported-commands)
-      * [Custom fuzzy completion](#custom-fuzzy-completion)
-   * [Vim plugin](#vim-plugin)
-   * [Advanced topics](#advanced-topics)
-      * [Performance](#performance)
-      * [Executing external programs](#executing-external-programs)
-      * [Preview window](#preview-window)
-   * [Tips](#tips)
-      * [Respecting .gitignore](#respecting-gitignore)
-      * [Fish shell](#fish-shell)
-   * [Related projects](#related-projects)
-   * [<a href="LICENSE">License</a>](#license)
+<!-- vim-markdown-toc GFM -->
+
+* [Installation](#installation)
+  * [Using Homebrew or Linuxbrew](#using-homebrew-or-linuxbrew)
+  * [Using git](#using-git)
+  * [Using Linux package managers](#using-linux-package-managers)
+  * [Windows](#windows)
+  * [As Vim plugin](#as-vim-plugin)
+* [Upgrading fzf](#upgrading-fzf)
+* [Building fzf](#building-fzf)
+* [Usage](#usage)
+    * [Using the finder](#using-the-finder)
+    * [Layout](#layout)
+    * [Search syntax](#search-syntax)
+    * [Environment variables](#environment-variables)
+    * [Options](#options)
+    * [Demo](#demo)
+* [Examples](#examples)
+* [`fzf-tmux` script](#fzf-tmux-script)
+* [Key bindings for command-line](#key-bindings-for-command-line)
+* [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
+    * [Files and directories](#files-and-directories)
+    * [Process IDs](#process-ids)
+    * [Host names](#host-names)
+    * [Environment variables / Aliases](#environment-variables--aliases)
+    * [Settings](#settings)
+    * [Supported commands](#supported-commands)
+    * [Custom fuzzy completion](#custom-fuzzy-completion)
+* [Vim plugin](#vim-plugin)
+* [Advanced topics](#advanced-topics)
+  * [Performance](#performance)
+  * [Executing external programs](#executing-external-programs)
+  * [Reloading the candidate list](#reloading-the-candidate-list)
+    * [1. Update the list of processes by pressing CTRL-R](#1-update-the-list-of-processes-by-pressing-ctrl-r)
+    * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
+    * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
+  * [Preview window](#preview-window)
+* [Tips](#tips)
+    * [Respecting `.gitignore`](#respecting-gitignore)
+    * [Fish shell](#fish-shell)
+* [Related projects](#related-projects)
+* [License](#license)
+
+<!-- vim-markdown-toc -->
 
 Installation
 ------------
@@ -527,6 +535,50 @@ fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort
 ```
 
 See *KEY BINDINGS* section of the man page for details.
+
+### Reloading the candidate list
+
+By binding `reload` action to a key or an event, you can make fzf dynamically
+reload the candidate list. See https://github.com/junegunn/fzf/issues/1750 for
+more details.
+
+#### 1. Update the list of processes by pressing CTRL-R
+
+```sh
+FZF_DEFAULT_COMMAND='ps -ef' \
+  fzf --bind 'ctrl-r:reload($FZF_DEFAULT_COMMAND)' \
+      --header 'Press CTRL-R to reload' --header-lines=1 \
+      --height=50% --layout=reverse
+```
+
+#### 2. Switch between sources by pressing CTRL-D or CTRL-F
+
+```sh
+FZF_DEFAULT_COMMAND='find . -type f' \
+  fzf --bind 'ctrl-d:reload(find . -type d),ctrl-f:reload($FZF_DEFAULT_COMMAND)' \
+      --height=50% --layout=reverse
+```
+
+#### 3. Interactive ripgrep integration
+
+The following example uses fzf as the selector interface for ripgrep. We bound
+`reload` action to `change` event, so every time you type on fzf, ripgrep
+process will restart with the updated query string denoted by the placeholder
+expression `{q}`. Also, note that we used `--phony` option so that fzf doesn't
+perform any secondary filtering.
+
+```sh
+INITIAL_QUERY=""
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
+  fzf --bind "change:reload:$RG_PREFIX {q} || true" \
+      --ansi --phony --query "$INITIAL_QUERY" \
+      --height=50% --layout=reverse
+```
+
+If ripgrep doesn't find any matches, it will exit with a non-zero exit status,
+and fzf will warn you about it. To suppress the warning message, we added
+`|| true` to the command, so that it always exits with 0.
 
 ### Preview window
 
