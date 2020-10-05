@@ -854,6 +854,10 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actPreviewPageUp)
 			case "preview-page-down":
 				appendAction(actPreviewPageDown)
+			case "preview-half-page-up":
+				appendAction(actPreviewHalfPageUp)
+			case "preview-half-page-down":
+				appendAction(actPreviewHalfPageDown)
 			default:
 				t := isExecuteAction(specLower)
 				if t == actIgnore {

@@ -236,6 +236,8 @@ const (
 	actPreviewDown
 	actPreviewPageUp
 	actPreviewPageDown
+	actPreviewHalfPageUp
+	actPreviewHalfPageDown
 	actPreviousHistory
 	actNextHistory
 	actExecute
@@ -1952,6 +1954,14 @@ func (t *Terminal) Loop() {
 			case actPreviewPageDown:
 				if t.hasPreviewWindow() {
 					scrollPreview(t.pwindow.Height())
+				}
+			case actPreviewHalfPageUp:
+				if t.hasPreviewWindow() {
+					scrollPreview(-t.pwindow.Height()/2)
+				}
+			case actPreviewHalfPageDown:
+				if t.hasPreviewWindow() {
+					scrollPreview(t.pwindow.Height()/2)
 				}
 			case actBeginningOfLine:
 				t.cx = 0
