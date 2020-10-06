@@ -1030,14 +1030,6 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			}
 		}
 	}
-	if !opts.size.percent && opts.size.size > 0 {
-		// Adjust size for border
-		opts.size.size += 2
-		// And padding
-		if opts.position == posLeft || opts.position == posRight {
-			opts.size.size += 2
-		}
-	}
 }
 
 func parseMargin(margin string) [4]sizeSpec {

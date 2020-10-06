@@ -614,12 +614,12 @@ const (
 	maxDisplayWidthCalc = 1024
 )
 
-func calculateSize(base int, size sizeSpec, margin int, minSize int) int {
-	max := base - margin
+func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) int {
+	max := base - occupied
 	if size.percent {
 		return util.Constrain(int(float64(base)*0.01*size.size), minSize, max)
 	}
-	return util.Constrain(int(size.size), minSize, max)
+	return util.Constrain(int(size.size)+pad, minSize, max)
 }
 
 func (t *Terminal) resizeWindows() {
@@ -727,24 +727,28 @@ func (t *Terminal) resizeWindows() {
 			}
 			t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 		}
+		verticalPad := 2
+		if t.preview.border == tui.BorderNone {
+			verticalPad = 0
+		}
 		switch t.preview.position {
 		case posUp:
-			pheight := calculateSize(height, t.preview.size, minHeight, 3)
+			pheight := calculateSize(height, t.preview.size, minHeight, 3, verticalPad)
 			t.window = t.tui.NewWindow(
 				marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
 		case posDown:
-			pheight := calculateSize(height, t.preview.size, minHeight, 3)
+			pheight := calculateSize(height, t.preview.size, minHeight, 3, verticalPad)
 			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3], width, height-pheight, false, noBorder)
 			createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 		case posLeft:
-			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
+			pwidth := calculateSize(width, t.preview.size, minWidth, 5, 4)
 			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 		case posRight:
-			pwidth := calculateSize(width, t.preview.size, minWidth, 5)
+			pwidth := calculateSize(width, t.preview.size, minWidth, 5, 4)
 			t.window = t.tui.NewWindow(
 				marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
 			createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
