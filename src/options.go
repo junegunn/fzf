@@ -994,13 +994,6 @@ func parseInfoStyle(str string) infoStyle {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
-	// Default
-	opts.position = posRight
-	opts.size = sizeSpec{50, true}
-	opts.hidden = false
-	opts.wrap = false
-	opts.cycle = false
-
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	offsetRegex := regexp.MustCompile("^\\+([0-9]+|{-?[0-9]+})(-[0-9]+|-/[1-9][0-9]*)?$")
