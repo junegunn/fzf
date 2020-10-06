@@ -11,6 +11,7 @@ CHANGELOG
         --preview-window +{2}-/2
   ```
 - Added `--preview-window` option for sharp edges (`--preview-window sharp`)
+- Added `--preview-window` option for cyclic scrolling (`--preview-window cycle`)
 - Reduced vertical padding around the preview window when `--preview-window
   noborder` is used
 - Added actions for preview window

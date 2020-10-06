@@ -80,7 +80,8 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]][:wrap][:hidden][:+SCROLL[-OFFSET]]
+                          [up|down|left|right][:SIZE[%]][:wrap][:cycle][:hidden]
+                          [:+SCROLL[-OFFSET]]
                           [:rounded|sharp|noborder]
 
   Scripting
@@ -163,6 +164,7 @@ type previewOpts struct {
 	scroll   string
 	hidden   bool
 	wrap     bool
+	cycle    bool
 	border   tui.BorderShape
 }
 
@@ -262,7 +264,7 @@ func defaultOptions() *Options {
 		ToggleSort:  false,
 		Expect:      make(map[int]string),
 		Keymap:      make(map[int][]action),
-		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, "", false, false, tui.BorderRounded},
+		Preview:     previewOpts{"", posRight, sizeSpec{50, true}, "", false, false, false, tui.BorderRounded},
 		PrintQuery:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
@@ -997,6 +999,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	opts.size = sizeSpec{50, true}
 	opts.hidden = false
 	opts.wrap = false
+	opts.cycle = false
 
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
@@ -1008,6 +1011,8 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.hidden = true
 		case "wrap":
 			opts.wrap = true
+		case "cycle":
+			opts.cycle = true
 		case "up", "top":
 			opts.position = posUp
 		case "down", "bottom":
@@ -1281,7 +1286,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[-OFFSET]]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":

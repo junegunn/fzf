@@ -1884,8 +1884,11 @@ func (t *Terminal) Loop() {
 			if !t.previewer.more {
 				return
 			}
-			newOffset := util.Constrain(
-				t.previewer.offset+amount, 0, t.previewer.lines-1)
+			newOffset := t.previewer.offset + amount
+			if t.preview.cycle {
+				newOffset = (newOffset + t.previewer.lines) % t.previewer.lines
+			}
+			newOffset = util.Constrain(newOffset, 0, t.previewer.lines-1)
 			if t.previewer.offset != newOffset {
 				t.previewer.offset = newOffset
 				req(reqPreviewRefresh)
@@ -1957,11 +1960,11 @@ func (t *Terminal) Loop() {
 				}
 			case actPreviewHalfPageUp:
 				if t.hasPreviewWindow() {
-					scrollPreview(-t.pwindow.Height()/2)
+					scrollPreview(-t.pwindow.Height() / 2)
 				}
 			case actPreviewHalfPageDown:
 				if t.hasPreviewWindow() {
-					scrollPreview(t.pwindow.Height()/2)
+					scrollPreview(t.pwindow.Height() / 2)
 				}
 			case actBeginningOfLine:
 				t.cx = 0
