@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.22.1
+0.23.0
 ------
 - Support preview scroll offset relative to window height
   ```sh
@@ -22,6 +22,8 @@ CHANGELOG
     - Added `fzf#exec()` function for getting the path of fzf executable
         - It also downloads the latest binary if it's not available by running
           `./install --bin`
+- Built with Go 1.15.2
+    - We no longer provide 32-bit binaries
 
 0.22.0
 ------

@@ -8,7 +8,6 @@ SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
 BUILD_FLAGS    := -a -ldflags "-X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
 
-BINARY32       := fzf-$(GOOS)_386
 BINARY64       := fzf-$(GOOS)_amd64
 BINARYARM5     := fzf-$(GOOS)_arm5
 BINARYARM6     := fzf-$(GOOS)_arm6
@@ -16,7 +15,6 @@ BINARYARM7     := fzf-$(GOOS)_arm7
 BINARYARM8     := fzf-$(GOOS)_arm8
 BINARYPPC64LE  := fzf-$(GOOS)_ppc64le
 VERSION        := $(shell awk -F= '/version =/ {print $$2}' src/constants.go | tr -d "\" ")
-RELEASE32      := fzf-$(VERSION)-$(GOOS)_386
 RELEASE64      := fzf-$(VERSION)-$(GOOS)_amd64
 RELEASEARM5    := fzf-$(VERSION)-$(GOOS)_arm5
 RELEASEARM6    := fzf-$(VERSION)-$(GOOS)_arm6
@@ -30,10 +28,6 @@ ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),amd64)
 	BINARY := $(BINARY64)
-else ifeq ($(UNAME_M),i686)
-	BINARY := $(BINARY32)
-else ifeq ($(UNAME_M),i386)
-	BINARY := $(BINARY32)
 else ifeq ($(UNAME_M),armv5l)
 	BINARY := $(BINARYARM5)
 else ifeq ($(UNAME_M),armv6l)
@@ -56,13 +50,11 @@ target:
 	mkdir -p $@
 
 ifeq ($(GOOS),windows)
-release: target/$(BINARY32) target/$(BINARY64)
-	cd target && cp -f $(BINARY32) fzf.exe && zip $(RELEASE32).zip fzf.exe
+release: target/$(BINARY64)
 	cd target && cp -f $(BINARY64) fzf.exe && zip $(RELEASE64).zip fzf.exe
 	cd target && rm -f fzf.exe
 else ifeq ($(GOOS),linux)
-release: target/$(BINARY32) target/$(BINARY64) target/$(BINARYARM5) target/$(BINARYARM6) target/$(BINARYARM7) target/$(BINARYARM8) target/$(BINARYPPC64LE)
-	cd target && cp -f $(BINARY32) fzf && tar -czf $(RELEASE32).tgz fzf
+release: target/$(BINARY64) target/$(BINARYARM5) target/$(BINARYARM6) target/$(BINARYARM7) target/$(BINARYARM8) target/$(BINARYPPC64LE)
 	cd target && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
 	cd target && cp -f $(BINARYARM5) fzf && tar -czf $(RELEASEARM5).tgz fzf
 	cd target && cp -f $(BINARYARM6) fzf && tar -czf $(RELEASEARM6).tgz fzf
@@ -71,8 +63,7 @@ release: target/$(BINARY32) target/$(BINARY64) target/$(BINARYARM5) target/$(BIN
 	cd target && cp -f $(BINARYPPC64LE) fzf && tar -czf $(RELEASEPPC64LE).tgz fzf
 	cd target && rm -f fzf
 else
-release: target/$(BINARY32) target/$(BINARY64)
-	cd target && cp -f $(BINARY32) fzf && tar -czf $(RELEASE32).tgz fzf
+release: target/$(BINARY64)
 	cd target && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
 	cd target && rm -f fzf
 endif
@@ -95,9 +86,6 @@ install: bin/fzf
 
 clean:
 	$(RM) -r target
-
-target/$(BINARY32): $(SOURCES)
-	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
 
 target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@

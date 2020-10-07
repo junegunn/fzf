@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.22.0
+version=0.23.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -28,9 +28,6 @@ usage: $0 [OPTIONS]
     --no-bash            Do not set up bash configuration
     --no-zsh             Do not set up zsh configuration
     --no-fish            Do not set up fish configuration
-
-    --32                 Download 32-bit binary
-    --64                 Download 64-bit binary
 EOF
 }
 
@@ -56,8 +53,6 @@ for opt in "$@"; do
     --no-completion)   auto_completion=0 ;;
     --update-rc)       update_config=1   ;;
     --no-update-rc)    update_config=0   ;;
-    --32)              binary_arch=386   ;;
-    --64)              binary_arch=amd64 ;;
     --bin)             ;;
     --no-bash)         shells=${shells/bash/} ;;
     --no-zsh)          shells=${shells/zsh/} ;;
@@ -179,24 +174,17 @@ binary_available=1
 binary_error=""
 case "$archi" in
   Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
-  Darwin\ *86)   download fzf-$version-darwin_${binary_arch:-386}.tgz    ;;
   Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
   Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
   Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
   Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
   Linux\ aarch64*) download fzf-$version-linux_${binary_arch:-arm8}.tgz  ;;
   Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
-  Linux\ *86)    download fzf-$version-linux_${binary_arch:-386}.tgz     ;;
   FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
-  FreeBSD\ *86)  download fzf-$version-freebsd_${binary_arch:-386}.tgz   ;;
   OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
-  OpenBSD\ *86)  download fzf-$version-openbsd_${binary_arch:-386}.tgz   ;;
   CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MINGW*\ *86)   download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MSYS*\ *86)    download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  Windows*\ *86) download fzf-$version-windows_${binary_arch:-386}.zip   ;;
   Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
   *)             binary_available=0 binary_error=1 ;;
 esac
