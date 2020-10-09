@@ -80,7 +80,7 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]]
+                          [up|down|left|right|upleft|downright][:SIZE[%]]
                           [:[no]wrap][:[no]cycle][:[no]hidden]
                           [:rounded|sharp|noborder]
                           [:+SCROLL[-OFFSET]]
@@ -140,6 +140,8 @@ const (
 	posDown
 	posLeft
 	posRight
+	posUpLeft
+	posDownRight
 )
 
 type layoutType int
@@ -1021,6 +1023,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.position = posLeft
 		case "right":
 			opts.position = posRight
+		case "upleft":
+			opts.position = posUpLeft
+		case "downright":
+			opts.position = posDownRight
 		case "rounded", "border":
 			opts.border = tui.BorderRounded
 		case "sharp":

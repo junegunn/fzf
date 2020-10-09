@@ -396,7 +396,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			}
 
 			effectiveMinHeight := minHeight
-			if previewBox != nil && (opts.Preview.position == posUp || opts.Preview.position == posDown) {
+			if previewBox != nil && (opts.Preview.position == posUp || opts.Preview.position == posUpLeft || opts.Preview.position == posDown || opts.Preview.position == posDownRight) {
 				effectiveMinHeight *= 2
 			}
 			if opts.InfoStyle != infoDefault {
@@ -660,8 +660,27 @@ func (t *Terminal) resizeWindows() {
 	previewVisible := t.isPreviewEnabled() && t.preview.size.size > 0
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
+	previewPosition := t.preview.position
 	if previewVisible {
-		switch t.preview.position {
+		if previewPosition == posUpLeft || previewPosition == posDownRight {
+			vsplitScale := 0.5
+			verticalSplitPreview := screenWidth > 160 || vsplitScale * float64(screenWidth) > float64(screenHeight) * 2
+			if verticalSplitPreview {
+				if previewPosition == posUpLeft {
+					previewPosition = posLeft
+				} else {
+					previewPosition = posRight
+				}
+			} else {
+				if previewPosition == posUpLeft {
+					previewPosition = posUp
+				} else {
+					previewPosition = posDown
+				}
+			}
+		}
+
+		switch previewPosition {
 		case posUp, posDown:
 			minAreaHeight *= 2
 		case posLeft, posRight:
@@ -731,7 +750,7 @@ func (t *Terminal) resizeWindows() {
 		if t.preview.border == tui.BorderNone {
 			verticalPad = 0
 		}
-		switch t.preview.position {
+		switch previewPosition {
 		case posUp:
 			pheight := calculateSize(height, t.preview.size, minHeight, 3, verticalPad)
 			t.window = t.tui.NewWindow(
