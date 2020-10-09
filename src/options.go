@@ -80,9 +80,10 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]][:wrap][:cycle][:hidden]
-                          [:+SCROLL[-OFFSET]]
+                          [up|down|left|right][:SIZE[%]]
+                          [:[no]wrap][:[no]cycle][:[no]hidden]
                           [:rounded|sharp|noborder]
+                          [:+SCROLL[-OFFSET]]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -994,10 +995,6 @@ func parseInfoStyle(str string) infoStyle {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
-	// We should reset flags that are not style-related.
-	opts.hidden = false
-	opts.scroll = ""
-
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	offsetRegex := regexp.MustCompile("^\\+([0-9]+|{-?[0-9]+})(-[0-9]+|-/[1-9][0-9]*)?$")
@@ -1006,10 +1003,16 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 		case "":
 		case "hidden":
 			opts.hidden = true
+		case "nohidden":
+			opts.hidden = false
 		case "wrap":
 			opts.wrap = true
+		case "nowrap":
+			opts.wrap = false
 		case "cycle":
 			opts.cycle = true
+		case "nocycle":
+			opts.cycle = false
 		case "up", "top":
 			opts.position = posUp
 		case "down", "bottom":

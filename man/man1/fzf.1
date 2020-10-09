@@ -381,7 +381,7 @@ Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[-OFFSET]]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]]"
 
 .RS
 .B POSITION: (default: right)
@@ -428,18 +428,6 @@ e.g.
            --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \\
            --preview-window +{2}-/2\fR
 
-.RE
-
-You can write style-related flags across multiple \fB--preview-window\fR
-options. But flags that are not style-related such as \fBhidden\fR and scroll
-offset are only allowed in the last \fB--preview-window\fR.
-
-.RS
-e.g.
-    export FZF_DEFAULT_OPTS='--preview-window sharp:cycle'
-
-    # sharp + cycle + up + 50%
-    fzf --preview-window 'up' --preview-window '50%' --preview 'bat {}'
 .RE
 
 .SS Scripting

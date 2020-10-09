@@ -3,9 +3,10 @@ CHANGELOG
 
 0.23.1
 ------
-- Reset `hidden` flag and scroll offset of `--preview-window` if another
-  `--preview-window` is found. We should only keep style-related flags across
-  multiple `--preview-window` options.
+- Added `--preview-window` options for disabling flags
+    - `nocycle`
+    - `nohidden`
+    - `nowrap`
 
 0.23.0
 ------
