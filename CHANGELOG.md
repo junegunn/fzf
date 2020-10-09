@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.23.1
+------
+- Reset `hidden` flag and scroll offset of `--preview-window` if another
+  `--preview-window` is found. We should only keep style-related flags across
+  multiple `--preview-window` options.
+
 0.23.0
 ------
 - Support preview scroll offset relative to window height

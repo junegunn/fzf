@@ -381,11 +381,21 @@ Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:wrap][:hidden][:+SCROLL[-OFFSET]]"
-Determines the layout of the preview window. If the argument contains
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[-OFFSET]]"
+
+.RS
+.B POSITION: (default: right)
+    \fBup
+    \fBdown
+    \fBleft
+    \fBright
+.RE
+
+\fRDetermines the layout of the preview window. If the argument contains
 \fB:hidden\fR, the preview window will be hidden by default until
 \fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
-Line wrap can be enabled with \fB:wrap\fR flag.
+Line wrap can be enabled with \fB:wrap\fR flag. Cyclic scrolling is enabled
+with \fB:cycle\fR flag.
 
 If size is given as 0, preview window will not be visible, but fzf will still
 execute the command in the background.
@@ -400,14 +410,6 @@ expression that refers to a numeric integer. The optional \fB-OFFSET\fR part is
 for adjusting the base offset so that you can see the text above it. It should
 be given as a numeric integer (\fB-INTEGER\fR), or as a denominator form
 (\fB-/INTEGER\fR) for specifying a fraction of the preview window height.
-
-.RS
-.B POSITION: (default: right)
-    \fBup
-    \fBdown
-    \fBleft
-    \fBright
-.RE
 
 .RS
 e.g.
@@ -427,6 +429,19 @@ e.g.
            --preview-window +{2}-/2\fR
 
 .RE
+
+You can write style-related flags across multiple \fB--preview-window\fR
+options. But flags that are not style-related such as \fBhidden\fR and scroll
+offset are only allowed in the last \fB--preview-window\fR.
+
+.RS
+e.g.
+    export FZF_DEFAULT_OPTS='--preview-window sharp:cycle'
+
+    # sharp + cycle + up + 50%
+    fzf --preview-window 'up' --preview-window '50%' --preview 'bat {}'
+.RE
+
 .SS Scripting
 .TP
 .BI "-q, --query=" "STR"
