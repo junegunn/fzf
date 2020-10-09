@@ -136,7 +136,7 @@ if [[ -z "$TMUX" ]]; then
 fi
 
 # --height option is not allowed
-args=("--no-height" "${args[@]}")
+args=("${args[@]}" "--no-height")
 
 # Handle zoomed tmux pane without popup options by moving it to a temp window
 if [[ ! "$opt" =~ "-K -E" ]] && tmux list-panes -F '#F' | grep -q Z; then
@@ -154,12 +154,13 @@ argsf="${TMPDIR:-/tmp}/fzf-args-$id"
 fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
 fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
 fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
+tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
 cleanup() {
   \rm -f $argsf $fifo1 $fifo2 $fifo3
 
   # Restore tmux window options
   if [[ "${#tmux_win_opts[@]}" -gt 0 ]]; then
-    eval "tmux ${tmux_win_opts[@]}"
+    eval "tmux ${tmux_win_opts[*]}"
   fi
 
   # Remove temp window if we were zoomed without popup options
@@ -179,58 +180,45 @@ cleanup() {
 trap 'cleanup 1' SIGUSR1
 trap 'cleanup' EXIT
 
-envs="env TERM=$TERM "
+envs="export TERM=$TERM "
 [[ "$opt" =~ "-K -E" ]] && FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
 [[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
 [[ -n "$FZF_DEFAULT_COMMAND" ]] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
-
-mkfifo -m o+w $fifo2
-mkfifo -m o+w $fifo3
+echo "$envs;" > "$argsf"
 
 # Build arguments to fzf
-opts=""
-for arg in "${args[@]}"; do
-  arg="${arg//\\/\\\\}"
-  arg="${arg//\"/\\\"}"
-  arg="${arg//\`/\\\`}"
-  arg="${arg//$/\\$}"
-  opts="$opts \"$arg\""
-done
+opts=$(printf "%q " "${args[@]}")
 
 pppid=$$
-echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" > $argsf
+echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" >> $argsf
 close="; trap - EXIT SIGINT SIGTERM $close"
 
-tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
-
+export TMUX=$(cut -d , -f 1,2 <<< "$TMUX")
+mkfifo -m o+w $fifo2
 if [[ "$opt" =~ "-K -E" ]]; then
   cat $fifo2 &
   if [[ -n "$term" ]] || [[ -t 0 ]]; then
     cat <<< "\"$fzf\" $opts > $fifo2; out=\$? $close; exit \$out" >> $argsf
-    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
   else
     mkfifo $fifo1
     cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; out=\$? $close; exit \$out" >> $argsf
     cat <&0 > $fifo1 &
-    TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "$envs bash $argsf" > /dev/null 2>&1
   fi
+  tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "bash $argsf" > /dev/null 2>&1
   exit $?
 fi
 
+mkfifo -m o+w $fifo3
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
   cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
-  TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
-    set-window-option remain-on-exit off \;\
-    split-window $opt "${tmux_args[@]}" "$envs bash -c 'cd $(printf %q "$PWD"); exec -a fzf bash $argsf'" $swap \
-    > /dev/null 2>&1 || { "$fzf" "${args[@]}"; exit $?; }
 else
   mkfifo $fifo1
   cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
-  TMUX=$(echo $TMUX | cut -d , -f 1,2) tmux set-window-option synchronize-panes off \;\
-    set-window-option remain-on-exit off \;\
-    split-window $opt "${tmux_args[@]}" "$envs bash -c 'exec -a fzf bash $argsf'" $swap \
-    > /dev/null 2>&1 || { "$fzf" "${args[@]}"; exit $?; }
   cat <&0 > $fifo1 &
 fi
+tmux set-window-option synchronize-panes off \;\
+  set-window-option remain-on-exit off \;\
+  split-window -c "$PWD" $opt "${tmux_args[@]}" "bash -c 'exec -a fzf bash $argsf'" $swap \
+  > /dev/null 2>&1 || { "$fzf" "${args[@]}"; exit $?; }
 cat $fifo2
 exit "$(cat $fifo3)"
