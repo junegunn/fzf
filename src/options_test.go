@@ -417,6 +417,13 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.size.size == 15) {
 		t.Error(opts.Preview)
 	}
+	opts = optsFor("--preview=foo", "--preview-window=up", "--preview-window=default:70%")
+	if !(opts.Preview.command == "foo" &&
+		opts.Preview.position == posRight &&
+		opts.Preview.size.percent == true &&
+		opts.Preview.size.size == 70) {
+		t.Error(opts.Preview)
+	}
 }
 
 func TestAdditiveExpect(t *testing.T) {

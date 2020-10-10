@@ -7,6 +7,7 @@ CHANGELOG
     - `nocycle`
     - `nohidden`
     - `nowrap`
+    - `default`
 
 0.23.0
 ------
