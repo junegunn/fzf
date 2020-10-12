@@ -85,13 +85,6 @@ type LightRenderer struct {
 	y             int
 	x             int
 	maxHeightFunc func(int) int
-
-	// Windows only
-	ttyinChannel    chan byte
-	inHandle        uintptr
-	outHandle       uintptr
-	origStateInput  uint32
-	origStateOutput uint32
 }
 
 type LightWindow struct {
@@ -212,7 +205,7 @@ func (r *LightRenderer) origin() {
 
 func getEnv(name string, defaultValue int) int {
 	env := os.Getenv(name)
-	if len(env) == 0 {
+	if env == "" {
 		return defaultValue
 	}
 	return atoi(env, defaultValue)
@@ -324,7 +317,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	}
 
 	loc := offsetRegexpBegin.FindIndex(r.buffer)
-	if loc != nil && loc[0] == 0 {
+	if len(loc) != 0 && loc[0] == 0 {
 		*sz = loc[1]
 		return Event{Invalid, 0, nil}
 	}
@@ -805,7 +798,7 @@ func (w *LightWindow) Print(text string) {
 }
 
 func cleanse(str string) string {
-	return strings.Replace(str, "\x1b", "", -1)
+	return strings.ReplaceAll(str, "\x1b", "")
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {

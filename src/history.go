@@ -53,7 +53,7 @@ func NewHistory(path string, maxSize int) (*History, error) {
 
 func (h *History) append(line string) error {
 	// We don't append empty lines
-	if len(line) == 0 {
+	if line == "" {
 		return nil
 	}
 

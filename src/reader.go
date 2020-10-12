@@ -101,7 +101,7 @@ func (r *Reader) ReadSource() {
 		// The default command for *nix requires bash
 		shell := "bash"
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
-		if len(cmd) == 0 {
+		if cmd == "" {
 			if defaultCommand != "" {
 				success = r.readFromCommand(&shell, defaultCommand)
 			} else {

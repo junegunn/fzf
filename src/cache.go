@@ -18,7 +18,7 @@ func NewChunkCache() ChunkCache {
 
 // Add adds the list to the cache
 func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
-	if len(key) == 0 || !chunk.IsFull() || len(list) > queryCacheMax {
+	if key == "" || !chunk.IsFull() || len(list) > queryCacheMax {
 		return
 	}
 
@@ -35,7 +35,7 @@ func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
 
 // Lookup is called to lookup ChunkCache
 func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []Result {
-	if len(key) == 0 || !chunk.IsFull() {
+	if key == "" || !chunk.IsFull() {
 		return nil
 	}
 
@@ -53,7 +53,7 @@ func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []Result {
 }
 
 func (cc *ChunkCache) Search(chunk *Chunk, key string) []Result {
-	if len(key) == 0 || !chunk.IsFull() {
+	if key == "" || !chunk.IsFull() {
 		return nil
 	}
 

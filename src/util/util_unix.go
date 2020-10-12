@@ -11,7 +11,7 @@ import (
 // ExecCommand executes the given command with $SHELL
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")
-	if len(shell) == 0 {
+	if shell == "" {
 		shell = "sh"
 	}
 	return ExecCommandWith(shell, command, setpgid)

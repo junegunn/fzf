@@ -339,7 +339,7 @@ func defaultKeymap() map[int][]action {
 }
 
 func trimQuery(query string) []rune {
-	return []rune(strings.Replace(query, "\t", " ", -1))
+	return []rune(strings.ReplaceAll(query, "\t", " "))
 }
 
 func hasPreviewAction(opts *Options) bool {
@@ -1292,8 +1292,8 @@ func keyMatch(key int, event tui.Event) bool {
 }
 
 func quoteEntryCmd(entry string) string {
-	escaped := strings.Replace(entry, `\`, `\\`, -1)
-	escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
+	escaped := strings.ReplaceAll(entry, `\`, `\\`)
+	escaped = `"` + strings.ReplaceAll(escaped, `"`, `\"`) + `"`
 	r, _ := regexp.Compile(`[&|<>()@^%!"]`)
 	return r.ReplaceAllStringFunc(escaped, func(match string) string {
 		return "^" + match
@@ -1304,7 +1304,7 @@ func quoteEntry(entry string) string {
 	if util.IsWindows() {
 		return quoteEntryCmd(entry)
 	}
-	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
+	return "'" + strings.ReplaceAll(entry, "'", "'\\''") + "'"
 }
 
 func parsePlaceholder(match string) (bool, string, placeholderFlags) {
@@ -1332,8 +1332,6 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			skipChars++
 		case 'q':
 			flags.query = true
-		default:
-			break
 		}
 	}
 
@@ -1711,10 +1709,7 @@ func (t *Terminal) Loop() {
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
-						env = append(env, lines)
-						env = append(env, "FZF_PREVIEW_"+lines)
-						env = append(env, columns)
-						env = append(env, "FZF_PREVIEW_"+columns)
+						env = append(env, lines, "FZF_PREVIEW_"+lines, columns, "FZF_PREVIEW_"+columns)
 						cmd.Env = env
 					}
 					var out bytes.Buffer
