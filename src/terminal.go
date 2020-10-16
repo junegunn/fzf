@@ -56,6 +56,11 @@ type previewed struct {
 	filled  bool
 }
 
+type eachLine struct {
+	line string
+	err  error
+}
+
 type itemLine struct {
 	current  bool
 	selected bool
@@ -1768,23 +1773,40 @@ func (t *Terminal) Loop() {
 					if err != nil {
 						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, true})
 					} else {
-						lastRender := time.Now()
-						lines := []string{}
+						lineChan := make(chan eachLine)
 						go func() {
 							for {
 								line, err := reader.ReadString('\n')
-								if len(line) > 0 {
-									lines = append(lines, line)
-								}
-								if err != nil || time.Now().Sub(lastRender) > previewChunkDelay {
-									t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, err != nil})
-									lastRender = time.Now()
-									offset = -1
-								}
+								lineChan <- eachLine{line, err}
 								if err != nil {
 									break
 								}
 							}
+						}()
+						go func() {
+							lines := []string{}
+							ticker := time.NewTicker(previewChunkDelay)
+						Loop:
+							for {
+								select {
+								case <-ticker.C:
+									if len(lines) > 0 {
+										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false})
+										offset = -1
+									}
+								case eachLine := <-lineChan:
+									line := eachLine.line
+									err := eachLine.err
+									if len(line) > 0 {
+										lines = append(lines, line)
+									}
+									if err != nil {
+										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true})
+										break Loop
+									}
+								}
+							}
+							ticker.Stop()
 							updateChan <- false
 						}()
 					}
@@ -1889,13 +1911,15 @@ func (t *Terminal) Loop() {
 						})
 					case reqPreviewDisplay:
 						result := value.(previewResult)
-						t.previewer.version = result.version
-						t.previewer.lines = result.lines
-						t.previewer.final = result.final
-						if result.offset >= 0 {
-							t.previewer.offset = util.Constrain(result.offset, 0, len(t.previewer.lines)-1)
+						if result.version >= t.previewer.version {
+							t.previewer.version = result.version
+							t.previewer.lines = result.lines
+							t.previewer.final = result.final
+							if result.offset >= 0 {
+								t.previewer.offset = util.Constrain(result.offset, 0, len(t.previewer.lines)-1)
+							}
+							t.printPreview()
 						}
-						t.printPreview()
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPreviewDelayed:
