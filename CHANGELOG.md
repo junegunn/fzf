@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.24.0
+------
+- fzf can render preview window before the command completes
+  ```sh
+  fzf --preview 'sleep 1; for i in $(seq 100); do echo $i; sleep 0.01; done'
+  ```
+
 0.23.1
 ------
 - Added `--preview-window` options for disabling flags
