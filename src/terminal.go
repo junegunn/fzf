@@ -52,9 +52,10 @@ type previewer struct {
 }
 
 type previewed struct {
-	version int
-	offset  int
-	filled  bool
+	version  int
+	numLines int
+	offset   int
+	filled   bool
 }
 
 type eachLine struct {
@@ -488,7 +489,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reqBox:      util.NewEventBox(),
 		preview:     opts.Preview,
 		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, ""},
-		previewed:   previewed{0, 0, false},
+		previewed:   previewed{0, 0, 0, false},
 		previewBox:  previewBox,
 		eventBox:    eventBox,
 		mutex:       sync.Mutex{},
@@ -1162,7 +1163,7 @@ func (t *Terminal) printPreview() {
 	}
 	numLines := len(t.previewer.lines)
 	height := t.pwindow.Height()
-	unchanged := t.previewed.filled &&
+	unchanged := (t.previewed.filled || numLines == t.previewed.numLines) &&
 		t.previewer.version == t.previewed.version &&
 		t.previewer.offset == t.previewed.offset
 	if unchanged {
@@ -1218,16 +1219,15 @@ func (t *Terminal) printPreview() {
 	}
 	if !t.previewer.final || t.previewer.scrollable {
 		offsetRunes, _ := t.trimRight([]rune(fmt.Sprintf("%s%d/%d", t.previewer.spinner, t.previewer.offset+1, numLines)), t.pwindow.Width())
-		width := t.displayWidth(offsetRunes)
-		offset := string(offsetRunes)
-		pos := t.pwindow.Width() - width
+		pos := t.pwindow.Width() - t.displayWidth(offsetRunes)
 		if t.tui.DoesAutoWrap() {
-			pos -= 1
+			pos--
 		}
 		t.pwindow.Move(0, pos)
-		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, offset)
+		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, string(offsetRunes))
 	}
 
+	t.previewed.numLines = numLines
 	t.previewed.version = t.previewer.version
 	t.previewed.offset = t.previewer.offset
 }
