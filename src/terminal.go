@@ -48,6 +48,7 @@ type previewer struct {
 	enabled    bool
 	scrollable bool
 	final      bool
+	spinner    string
 }
 
 type previewed struct {
@@ -284,6 +285,7 @@ type previewResult struct {
 	lines   []string
 	offset  int
 	final   bool
+	spinner string
 }
 
 func toActions(types ...actionType) []action {
@@ -368,6 +370,13 @@ func hasPreviewAction(opts *Options) bool {
 	return false
 }
 
+func makeSpinner(unicode bool) []string {
+	if unicode {
+		return []string{`⠋`, `⠙`, `⠹`, `⠸`, `⠼`, `⠴`, `⠦`, `⠧`, `⠇`, `⠏`}
+	}
+	return []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
+}
+
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
@@ -431,14 +440,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
-	spinner := []string{`⠋`, `⠙`, `⠹`, `⠸`, `⠼`, `⠴`, `⠦`, `⠧`, `⠇`, `⠏`}
-	if !opts.Unicode {
-		spinner = []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
-	}
 	t := Terminal{
 		initDelay:   delay,
 		infoStyle:   opts.InfoStyle,
-		spinner:     spinner,
+		spinner:     makeSpinner(opts.Unicode),
 		queryLen:    [2]int{0, 0},
 		layout:      opts.Layout,
 		fullscreen:  fullscreen,
@@ -482,7 +487,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		selected:    make(map[int32]selectedItem),
 		reqBox:      util.NewEventBox(),
 		preview:     opts.Preview,
-		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true},
+		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, ""},
 		previewed:   previewed{0, 0, false},
 		previewBox:  previewBox,
 		eventBox:    eventBox,
@@ -1212,11 +1217,10 @@ func (t *Terminal) printPreview() {
 		t.pwindow.FinishFill()
 	}
 	if !t.previewer.final || t.previewer.scrollable {
-		offset := fmt.Sprintf("%d/%d", t.previewer.offset+1, numLines)
-		if !t.previewer.final {
-			offset += "+"
-		}
-		pos := t.pwindow.Width() - len(offset)
+		offsetRunes, _ := t.trimRight([]rune(fmt.Sprintf("%s%d/%d", t.previewer.spinner, t.previewer.offset+1, numLines)), t.pwindow.Width())
+		width := t.displayWidth(offsetRunes)
+		offset := string(offsetRunes)
+		pos := t.pwindow.Width() - width
 		if t.tui.DoesAutoWrap() {
 			pos -= 1
 		}
@@ -1771,7 +1775,7 @@ func (t *Terminal) Loop() {
 					updateChan := make(chan bool)
 					err := cmd.Start()
 					if err != nil {
-						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, true})
+						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, true, ""})
 					} else {
 						lineChan := make(chan eachLine)
 						go func() {
@@ -1785,13 +1789,17 @@ func (t *Terminal) Loop() {
 						}()
 						go func() {
 							lines := []string{}
+							spinner := makeSpinner(t.unicode)
+							spinnerIndex := 0
 							ticker := time.NewTicker(previewChunkDelay)
 						Loop:
 							for {
 								select {
 								case <-ticker.C:
 									if len(lines) > 0 {
-										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false})
+										spin := spinner[spinnerIndex%len(spinner)]
+										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false, spin + " "})
+										spinnerIndex++
 										offset = -1
 									}
 								case eachLine := <-lineChan:
@@ -1801,7 +1809,7 @@ func (t *Terminal) Loop() {
 										lines = append(lines, line)
 									}
 									if err != nil {
-										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true})
+										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true, ""})
 										break Loop
 									}
 								}
@@ -1836,7 +1844,7 @@ func (t *Terminal) Loop() {
 					<-updateChan
 					cleanTemporaryFiles()
 				} else {
-					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, true})
+					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, true, ""})
 				}
 			}
 		}()
@@ -1915,6 +1923,7 @@ func (t *Terminal) Loop() {
 							t.previewer.version = result.version
 							t.previewer.lines = result.lines
 							t.previewer.final = result.final
+							t.previewer.spinner = result.spinner
 							if result.offset >= 0 {
 								t.previewer.offset = util.Constrain(result.offset, 0, len(t.previewer.lines)-1)
 							}
