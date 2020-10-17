@@ -278,6 +278,7 @@ type searchRequest struct {
 
 type previewRequest struct {
 	template string
+	pwindow  tui.Window
 	list     []*Item
 }
 
@@ -1738,6 +1739,7 @@ func (t *Terminal) Loop() {
 			for {
 				var items []*Item
 				var commandTemplate string
+				var pwindow tui.Window
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
@@ -1745,6 +1747,7 @@ func (t *Terminal) Loop() {
 							request := value.(previewRequest)
 							commandTemplate = request.template
 							items = request.list
+							pwindow = request.pwindow
 						}
 					}
 					events.Clear()
@@ -1755,12 +1758,12 @@ func (t *Terminal) Loop() {
 					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
 					initialOffset := 0
 					cmd := util.ExecCommand(command, true)
-					if t.pwindow != nil {
-						height := t.pwindow.Height()
+					if pwindow != nil {
+						height := pwindow.Height()
 						initialOffset = util.Max(0, t.evaluateScrollOffset(items, height))
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
-						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
+						columns := fmt.Sprintf("COLUMNS=%d", pwindow.Width())
 						env = append(env, lines)
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
@@ -1787,7 +1790,7 @@ func (t *Terminal) Loop() {
 								}
 							}
 						}()
-						go func() {
+						go func(version int) {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
 							spinnerIndex := -1 // Delay initial rendering by an extra tick
@@ -1821,9 +1824,9 @@ func (t *Terminal) Loop() {
 							}
 							ticker.Stop()
 							updateChan <- false
-						}()
+						}(version)
 					}
-					go func() {
+					go func(version int) {
 						timer := time.NewTimer(previewDelayed)
 					Loop:
 						for {
@@ -1852,7 +1855,7 @@ func (t *Terminal) Loop() {
 							}
 						}
 						timer.Stop()
-					}()
+					}(version)
 					cmd.Wait()
 					finishChan <- true
 					<-updateChan
@@ -1878,7 +1881,7 @@ func (t *Terminal) Loop() {
 		if len(command) > 0 && t.isPreviewEnabled() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, list})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, list})
 		}
 	}
 
@@ -2050,7 +2053,7 @@ func (t *Terminal) Loop() {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.preview.command, list})
+								previewRequest{t.preview.command, t.pwindow, list})
 						}
 					}
 				}
