@@ -166,10 +166,6 @@ func (w *TcellWindow) Y() int {
 	return w.lastY
 }
 
-func (r *FullscreenRenderer) DoesAutoWrap() bool {
-	return false
-}
-
 func (r *FullscreenRenderer) Clear() {
 	_screen.Sync()
 	_screen.Clear()

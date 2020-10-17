@@ -286,7 +286,6 @@ type previewResult struct {
 	version int
 	lines   []string
 	offset  int
-	final   bool
 	spinner string
 }
 
@@ -744,12 +743,6 @@ func (t *Terminal) resizeWindows() {
 				pwidth -= 4
 				x += 2
 			}
-			// ncurses auto-wraps the line when the cursor reaches the right-end of
-			// the window. To prevent unintended line-wraps, we use the width one
-			// column larger than the desired value.
-			if !t.preview.wrap && t.tui.DoesAutoWrap() {
-				pwidth += 1
-			}
 			t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 		}
 		verticalPad := 2
@@ -1159,27 +1152,43 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	return displayWidth
 }
 
-func (t *Terminal) printPreview() {
-	if !t.hasPreviewWindow() {
-		return
-	}
+func (t *Terminal) renderPreviewSpinner() {
 	numLines := len(t.previewer.lines)
+	spin := t.previewer.spinner
+	if len(spin) > 0 || t.previewer.scrollable {
+		maxWidth := t.pwindow.Width()
+		if !t.previewer.scrollable {
+			if maxWidth > 0 {
+				t.pwindow.Move(0, maxWidth-1)
+				t.pwindow.CPrint(tui.ColSpinner, t.strong, spin)
+			}
+		} else {
+			offsetString := fmt.Sprintf("%d/%d", t.previewer.offset+1, numLines)
+			if len(spin) > 0 {
+				spin += " "
+				maxWidth -= 2
+			}
+			offsetRunes, _ := t.trimRight([]rune(offsetString), maxWidth)
+			pos := maxWidth - t.displayWidth(offsetRunes)
+			t.pwindow.Move(0, pos)
+			if maxWidth > 0 {
+				t.pwindow.CPrint(tui.ColSpinner, t.strong, spin)
+				t.pwindow.CPrint(tui.ColInfo, tui.Reverse, string(offsetRunes))
+			}
+		}
+	}
+}
+
+func (t *Terminal) renderPreviewText(unchanged bool) {
+	maxWidth := t.pwindow.Width()
+	lineNo := -t.previewer.offset
 	height := t.pwindow.Height()
-	unchanged := (t.previewed.filled || numLines == t.previewed.numLines) &&
-		t.previewer.version == t.previewed.version &&
-		t.previewer.offset == t.previewed.offset
 	if unchanged {
 		t.pwindow.Move(0, 0)
 	} else {
 		t.previewed.filled = false
 		t.pwindow.Erase()
 	}
-	maxWidth := t.pwindow.Width()
-	if t.tui.DoesAutoWrap() {
-		maxWidth -= 1
-	}
-	lineNo := -t.previewer.offset
-	t.previewer.scrollable = t.previewer.offset > 0 || numLines > height
 	var ansi *ansiState
 	for _, line := range t.previewer.lines {
 		if lineNo >= height || t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
@@ -1218,20 +1227,20 @@ func (t *Terminal) printPreview() {
 	if !unchanged {
 		t.pwindow.FinishFill()
 	}
-	if !t.previewer.final || t.previewer.scrollable {
-		offsetString := strings.TrimSpace(t.previewer.spinner)
-		if t.previewer.scrollable {
-			offsetString = fmt.Sprintf("%s%d/%d", t.previewer.spinner, t.previewer.offset+1, numLines)
-		}
-		offsetRunes, _ := t.trimRight([]rune(offsetString), t.pwindow.Width())
-		pos := t.pwindow.Width() - t.displayWidth(offsetRunes)
-		if t.tui.DoesAutoWrap() {
-			pos--
-		}
-		t.pwindow.Move(0, pos)
-		t.pwindow.CPrint(tui.ColInfo, tui.Reverse, string(offsetRunes))
-	}
+}
 
+func (t *Terminal) printPreview() {
+	if !t.hasPreviewWindow() {
+		return
+	}
+	numLines := len(t.previewer.lines)
+	height := t.pwindow.Height()
+	unchanged := (t.previewed.filled || numLines == t.previewed.numLines) &&
+		t.previewer.version == t.previewed.version &&
+		t.previewer.offset == t.previewed.offset
+	t.previewer.scrollable = t.previewer.offset > 0 || numLines > height
+	t.renderPreviewText(unchanged)
+	t.renderPreviewSpinner()
 	t.previewed.numLines = numLines
 	t.previewed.version = t.previewer.version
 	t.previewed.offset = t.previewer.offset
@@ -1242,7 +1251,10 @@ func (t *Terminal) printPreviewDelayed() {
 		return
 	}
 
-	message := t.trimMessage("Loading preview ..", t.pwindow.Width())
+	t.previewer.scrollable = false
+	t.renderPreviewText(true)
+
+	message := t.trimMessage("Loading ..", t.pwindow.Width())
 	pos := t.pwindow.Width() - len(message)
 	t.pwindow.Move(0, pos)
 	t.pwindow.CPrint(tui.ColInfo, tui.Reverse, message)
@@ -1784,7 +1796,7 @@ func (t *Terminal) Loop() {
 					err := cmd.Start()
 					reaps := 0
 					if err != nil {
-						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, true, ""})
+						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
 					} else {
 						reaps = 2
 						lineChan := make(chan eachLine)
@@ -1813,7 +1825,7 @@ func (t *Terminal) Loop() {
 									if len(lines) > 0 && len(lines) >= initialOffset {
 										if spinnerIndex >= 0 {
 											spin := spinner[spinnerIndex%len(spinner)]
-											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false, spin + " "})
+											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, spin})
 											offset = -1
 										}
 										spinnerIndex++
@@ -1826,7 +1838,7 @@ func (t *Terminal) Loop() {
 									}
 									if err != nil {
 										if len(lines) > 0 {
-											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true, ""})
+											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
 										}
 										break Loop
 									}
@@ -1873,7 +1885,7 @@ func (t *Terminal) Loop() {
 					}
 					cleanTemporaryFiles()
 				} else {
-					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, true, ""})
+					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, ""})
 				}
 			}
 		}()
@@ -1950,7 +1962,6 @@ func (t *Terminal) Loop() {
 						result := value.(previewResult)
 						t.previewer.version = result.version
 						t.previewer.lines = result.lines
-						t.previewer.final = result.final
 						t.previewer.spinner = result.spinner
 						if result.offset >= 0 {
 							t.previewer.offset = util.Constrain(result.offset, 0, len(t.previewer.lines)-1)
