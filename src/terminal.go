@@ -1818,25 +1818,34 @@ func (t *Terminal) Loop() {
 						}()
 					}
 					go func() {
-						select {
-						case <-time.After(previewDelayed):
-							t.reqBox.Set(reqPreviewDelayed, version)
-						case code := <-t.killChan:
-							if code != exitCancel {
-								util.KillCommand(cmd)
-								os.Exit(code)
-							} else {
-								select {
-								case <-time.After(previewCancelWait):
+						timer := time.NewTimer(previewDelayed)
+					Loop:
+						for {
+							select {
+							case <-timer.C:
+								t.reqBox.Set(reqPreviewDelayed, version)
+							case code := <-t.killChan:
+								if code != exitCancel {
 									util.KillCommand(cmd)
-									updateChan <- true
-								case <-finishChan:
-									updateChan <- false
+									os.Exit(code)
+								} else {
+									timer := time.NewTimer(previewCancelWait)
+									select {
+									case <-timer.C:
+										util.KillCommand(cmd)
+										updateChan <- true
+									case <-finishChan:
+										updateChan <- false
+									}
+									timer.Stop()
 								}
+								break Loop
+							case <-finishChan:
+								updateChan <- false
+								break Loop
 							}
-						case <-finishChan:
-							updateChan <- false
 						}
+						timer.Stop()
 					}()
 					cmd.Wait()
 					finishChan <- true
