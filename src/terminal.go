@@ -1790,7 +1790,7 @@ func (t *Terminal) Loop() {
 						go func() {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
-							spinnerIndex := 0
+							spinnerIndex := -1 // Delay initial rendering by an extra tick
 							ticker := time.NewTicker(previewChunkDelay)
 							offset := initialOffset
 						Loop:
@@ -1798,10 +1798,12 @@ func (t *Terminal) Loop() {
 								select {
 								case <-ticker.C:
 									if len(lines) > 0 && len(lines) >= initialOffset {
-										spin := spinner[spinnerIndex%len(spinner)]
-										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false, spin + " "})
+										if spinnerIndex >= 0 {
+											spin := spinner[spinnerIndex%len(spinner)]
+											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false, spin + " "})
+											offset = -1
+										}
 										spinnerIndex++
-										offset = -1
 									}
 								case eachLine := <-lineChan:
 									line := eachLine.line
