@@ -1753,11 +1753,11 @@ func (t *Terminal) Loop() {
 				// We don't display preview window if no match
 				if items[0] != nil {
 					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
-					offset := 0
+					initialOffset := 0
 					cmd := util.ExecCommand(command, true)
 					if t.pwindow != nil {
 						height := t.pwindow.Height()
-						offset = t.evaluateScrollOffset(items, height)
+						initialOffset = util.Max(0, t.evaluateScrollOffset(items, height))
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", t.pwindow.Width())
@@ -1792,11 +1792,12 @@ func (t *Terminal) Loop() {
 							spinner := makeSpinner(t.unicode)
 							spinnerIndex := 0
 							ticker := time.NewTicker(previewChunkDelay)
+							offset := initialOffset
 						Loop:
 							for {
 								select {
 								case <-ticker.C:
-									if len(lines) > 0 {
+									if len(lines) > 0 && len(lines) >= initialOffset {
 										spin := spinner[spinnerIndex%len(spinner)]
 										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, false, spin + " "})
 										spinnerIndex++
@@ -1809,7 +1810,9 @@ func (t *Terminal) Loop() {
 										lines = append(lines, line)
 									}
 									if err != nil {
-										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true, ""})
+										if len(lines) > 0 {
+											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, true, ""})
+										}
 										break Loop
 									}
 								}
