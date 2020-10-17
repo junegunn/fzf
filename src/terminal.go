@@ -1208,7 +1208,6 @@ func (t *Terminal) printPreview() {
 				break
 			}
 			if unchanged && lineNo == 0 {
-				t.previewed.filled = true
 				break
 			}
 		}
