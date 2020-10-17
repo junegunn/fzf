@@ -1219,7 +1219,11 @@ func (t *Terminal) printPreview() {
 		t.pwindow.FinishFill()
 	}
 	if !t.previewer.final || t.previewer.scrollable {
-		offsetRunes, _ := t.trimRight([]rune(fmt.Sprintf("%s%d/%d", t.previewer.spinner, t.previewer.offset+1, numLines)), t.pwindow.Width())
+		offsetString := strings.TrimSpace(t.previewer.spinner)
+		if t.previewer.scrollable {
+			offsetString = fmt.Sprintf("%s%d/%d", t.previewer.spinner, t.previewer.offset+1, numLines)
+		}
+		offsetRunes, _ := t.trimRight([]rune(offsetString), t.pwindow.Width())
 		pos := t.pwindow.Width() - t.displayWidth(offsetRunes)
 		if t.tui.DoesAutoWrap() {
 			pos--
