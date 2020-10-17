@@ -704,7 +704,8 @@ func (t *Terminal) resizeWindows() {
 	if t.pwindow != nil {
 		t.pwindow.Close()
 	}
-	t.previewed.filled = false
+	// Reset preview version so that full redraw occurs
+	t.previewed.version = 0
 
 	width := screenWidth - marginInt[1] - marginInt[3]
 	height := screenHeight - marginInt[0] - marginInt[2]
