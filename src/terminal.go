@@ -1774,15 +1774,17 @@ func (t *Terminal) Loop() {
 					out, _ := cmd.StdoutPipe()
 					cmd.Stderr = cmd.Stdout
 					reader := bufio.NewReader(out)
+					eofChan := make(chan bool)
 					finishChan := make(chan bool, 1)
 					reapChan := make(chan bool)
 					err := cmd.Start()
-					reaps := 1
+					reaps := 0
 					if err != nil {
 						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, true, ""})
 					} else {
-						reaps += 2
+						reaps = 2
 						lineChan := make(chan eachLine)
+						// Goroutine 1 reads process output
 						go func() {
 							for {
 								line, err := reader.ReadString('\n')
@@ -1791,8 +1793,9 @@ func (t *Terminal) Loop() {
 									break
 								}
 							}
-							reapChan <- true
+							eofChan <- true
 						}()
+						// Goroutine 2 periodically requests rendering
 						go func(version int) {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
@@ -1829,6 +1832,7 @@ func (t *Terminal) Loop() {
 							reapChan <- true
 						}(version)
 					}
+					// Goroutine 3 is responsible for cancelling running preview command
 					go func(version int) {
 						timer := time.NewTimer(previewDelayed)
 					Loop:
@@ -1857,7 +1861,8 @@ func (t *Terminal) Loop() {
 						timer.Stop()
 						reapChan <- true
 					}(version)
-					cmd.Wait()
+					<-eofChan
+					cmd.Wait() // NOTE: We should not call Wait before EOF
 					finishChan <- true
 					for i := 0; i < reaps; i++ {
 						<-reapChan
