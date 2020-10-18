@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: April 4 2020
+fzf.txt	fzf	Last change: October 18 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -11,6 +11,7 @@ FZF - TABLE OF CONTENTS                                            *fzf* *fzf-to
           Explanation of g:fzf_colors
     fzf#run
     fzf#wrap
+      Global options supported by fzf#wrap
     Tips
       fzf inside terminal buffer
         Starting fzf in a popup window
@@ -105,14 +106,14 @@ the whole if we start off with `:FZF` command.
     " Bang version starts fzf in fullscreen mode
     :FZF!
 <
-Similarly to {ctrlp.vim}{2}, use enter key, CTRL-T, CTRL-X or CTRL-V to open
+Similarly to {ctrlp.vim}{3}, use enter key, CTRL-T, CTRL-X or CTRL-V to open
 selected files in the current window, in new tabs, in horizontal splits, or in
 vertical splits respectively.
 
 Note that the environment variables `FZF_DEFAULT_COMMAND` and
 `FZF_DEFAULT_OPTS` also apply here.
 
-                                         {2} https://github.com/kien/ctrlp.vim
+                                         {3} https://github.com/kien/ctrlp.vim
 
 
 < Configuration >_____________________________________________________________~
@@ -154,11 +155,13 @@ Examples~
       \ 'ctrl-v': 'vsplit' }
 
     " Default fzf layout
-    " - down / up / left / right / window
-    let g:fzf_layout = { 'down': '~40%' }
+    " - Popup window
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 
-    " You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
+    " - down / up / left / right
+    let g:fzf_layout = { 'down': '40%' }
+
+    " - Window using a Vim command
     let g:fzf_layout = { 'window': 'enew' }
     let g:fzf_layout = { 'window': '-tabnew' }
     let g:fzf_layout = { 'window': '10new' }
@@ -347,8 +350,8 @@ After we "wrap" our spec, we pass it to `fzf#run`.
 >
     call fzf#run(fzf#wrap({'source': 'ls'}))
 <
-Now it supports CTRL-T, CTRL-V, and CTRL-X key bindings and it opens fzf
-window according to `g:fzf_layout` setting.
+Now it supports CTRL-T, CTRL-V, and CTRL-X key bindings (configurable via
+`g:fzf_action`) and it opens fzf window according to `g:fzf_layout` setting.
 
 To make it easier to use, let's define `LS` command.
 >
@@ -378,6 +381,19 @@ unique name to our command and pass it as the first argument to `fzf#wrap`.
         \ call fzf#run(fzf#wrap('ls', {'source': 'ls', 'dir': <q-args>}, <bang>0))
 <
 
+< Global options supported by fzf#wrap >______________________________________~
+                                      *fzf-global-options-supported-by-fzf#wrap*
+
+ - `g:fzf_layout`
+ - `g:fzf_action`
+   - Works only when no custom `sink` (or `sink*`) is provided
+     - Having custom sink usually means that each entry is not an ordinary
+       file path (e.g. name of color scheme), so we can't blindly apply the
+       same strategy (i.e. `tabedit some-color-scheme` doesn't make sense)
+ - `g:fzf_colors`
+ - `g:fzf_history_dir`
+
+
 TIPS                                                                  *fzf-tips*
 ==============================================================================
 
@@ -398,8 +414,8 @@ Starting fzf in a popup window~
                                             *fzf-starting-fzf-in-a-popup-window*
 >
     " Required:
-    " - width [float range [0 ~ 1]]
-    " - height [float range [0 ~ 1]]
+    " - width [float range [0 ~ 1]] or [integer range [8 ~ ]]
+    " - height [float range [0 ~ 1]] or [integer range [4 ~ ]]
     "
     " Optional:
     " - xoffset [float default 0.5 range [0 ~ 1]]
@@ -427,9 +443,8 @@ When fzf starts in a terminal buffer, the file type of the buffer is set to
 `fzf`. So you can set up `FileType fzf` autocmd to customize the settings of
 the window.
 
-For example, if you use a non-popup layout (e.g. `{'down': '40%'}`) on
-Neovim, you might want to temporarily disable the statusline for a cleaner
-look.
+For example, if you use a non-popup layout (e.g. `{'down': '40%'}`) on Neovim,
+you might want to temporarily disable the statusline for a cleaner look.
 >
     if has('nvim') && !exists('g:fzf_layout')
       autocmd! FileType fzf

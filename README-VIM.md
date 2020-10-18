@@ -127,11 +127,13 @@ let g:fzf_action = {
   \ 'ctrl-v': 'vsplit' }
 
 " Default fzf layout
-" - down / up / left / right / window
-let g:fzf_layout = { 'down': '40%' }
+" - Popup window
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 
-" You can set up fzf window using a Vim command (Neovim or latest Vim 8 required)
+" - down / up / left / right
+let g:fzf_layout = { 'down': '40%' }
+
+" - Window using a Vim command
 let g:fzf_layout = { 'window': 'enew' }
 let g:fzf_layout = { 'window': '-tabnew' }
 let g:fzf_layout = { 'window': '10new' }
@@ -332,8 +334,9 @@ After we *"wrap"* our spec, we pass it to `fzf#run`.
 call fzf#run(fzf#wrap({'source': 'ls'}))
 ```
 
-Now it supports `CTRL-T`, `CTRL-V`, and `CTRL-X` key bindings and it opens fzf
-window according to `g:fzf_layout` setting.
+Now it supports `CTRL-T`, `CTRL-V`, and `CTRL-X` key bindings (configurable
+via `g:fzf_action`) and it opens fzf window according to `g:fzf_layout`
+setting.
 
 To make it easier to use, let's define `LS` command.
 
@@ -369,6 +372,17 @@ a unique name to our command and pass it as the first argument to `fzf#wrap`.
 command! -bang -complete=dir -nargs=* LS
     \ call fzf#run(fzf#wrap('ls', {'source': 'ls', 'dir': <q-args>}, <bang>0))
 ```
+
+### Global options supported by `fzf#wrap`
+
+- `g:fzf_layout`
+- `g:fzf_action`
+    - **Works only when no custom `sink` (or `sink*`) is provided**
+        - Having custom sink usually means that each entry is not an ordinary
+          file path (e.g. name of color scheme), so we can't blindly apply the
+          same strategy (i.e. `tabedit some-color-scheme` doesn't make sense)
+- `g:fzf_colors`
+- `g:fzf_history_dir`
 
 Tips
 ----
