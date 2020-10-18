@@ -582,9 +582,9 @@ and fzf will warn you about it. To suppress the warning message, we added
 
 ### Preview window
 
-When the `--preview` option is set, fzf automatically starts an external process 
-with the current line as the argument and shows the result in the split window. 
-Your `$SHELL` is used to execute the command with `$SHELL -c COMMAND`. 
+When the `--preview` option is set, fzf automatically starts an external process
+with the current line as the argument and shows the result in the split window.
+Your `$SHELL` is used to execute the command with `$SHELL -c COMMAND`.
 The window can be scrolled using the mouse or custom key bindings.
 
 ```bash
@@ -592,16 +592,8 @@ The window can be scrolled using the mouse or custom key bindings.
 fzf --preview 'cat {}'
 ```
 
-Since the preview window is updated only after the process is complete, it's
-important that the command finishes quickly.
-
-```bash
-# Use head instead of cat so that the command doesn't take too long to finish
-fzf --preview 'head -100 {}'
-```
-
 Preview window supports ANSI colors, so you can use any program that
-syntax-highlights the content of a file, such as 
+syntax-highlights the content of a file, such as
 [Bat](https://github.com/sharkdp/bat) or
 [Highlight](http://www.andre-simon.de/doku/highlight/en/highlight.php):
 
