@@ -420,7 +420,7 @@ class TestGoFZF < TestBase
                        echo '  first second third/') |
                        #{fzf(multi && :multi, :x, :nth, 2, :with_nth, '2,-1,1')}",
                      :Enter
-      tmux.until { |lines| assert_equal '  2/2', lines[-2] }
+      tmux.until { |lines| assert_equal multi ? '  2/2 (0)' : '  2/2', lines[-2] }
 
       # Transformed list
       lines = tmux.capture
@@ -485,7 +485,7 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 100 | #{fzf!(:multi)} | awk '{print $1 $1}' | #{fzf(:sync)}", :Enter
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 9
-    tmux.until { |lines| assert_equal '  19/100', lines[-2] }
+    tmux.until { |lines| assert_equal '  19/100 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  19/100 (3)', lines[-2] }
     tmux.send_keys :Enter
@@ -496,7 +496,7 @@ class TestGoFZF < TestBase
 
   def test_tac
     tmux.send_keys "seq 1 1000 | #{fzf(:tac, :multi)}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  1000/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
@@ -505,9 +505,9 @@ class TestGoFZF < TestBase
 
   def test_tac_sort
     tmux.send_keys "seq 1 1000 | #{fzf(:tac, :multi)}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys '99'
-    tmux.until { |lines| assert_equal '  28/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  28/1000 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  28/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
@@ -516,9 +516,9 @@ class TestGoFZF < TestBase
 
   def test_tac_nosort
     tmux.send_keys "seq 1 1000 | #{fzf(:tac, :no_sort, :multi)}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys '00'
-    tmux.until { |lines| assert_equal '  10/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  10/1000 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  10/1000 (3)', lines[-2] }
     tmux.send_keys :Enter
@@ -800,14 +800,14 @@ class TestGoFZF < TestBase
 
   def test_bind
     tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:accept,u:up,T:toggle-up,t:toggle')}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys 'uuu', 'TTT', 'tt', 'uu', 'ttt', 'C-j'
     assert_equal %w[4 5 6 9], readonce.lines(chomp: true)
   end
 
   def test_bind_print_query
     tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:print-query')}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys 'print-my-query', 'C-j'
     assert_equal %w[print-my-query], readonce.lines(chomp: true)
   end
@@ -839,7 +839,7 @@ class TestGoFZF < TestBase
 
   def test_select_all_deselect_all_toggle_all
     tmux.send_keys "seq 100 | #{fzf('--bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all --multi')}", :Enter
-    tmux.until { |lines| assert_equal '  100/100', lines[-2] }
+    tmux.until { |lines| assert_equal '  100/100 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  100/100 (3)', lines[-2] }
     tmux.send_keys 'C-t'
@@ -855,7 +855,7 @@ class TestGoFZF < TestBase
     tmux.send_keys 'C-u'
     tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 'C-d'
-    tmux.until { |lines| assert_equal '  100/100', lines[-2] }
+    tmux.until { |lines| assert_equal '  100/100 (0)', lines[-2] }
     tmux.send_keys :BTab, :BTab
     tmux.until { |lines| assert_equal '  100/100 (2)', lines[-2] }
     tmux.send_keys 0
@@ -962,7 +962,7 @@ class TestGoFZF < TestBase
     opts = %[--multi --bind "alt-a:execute-multi(echo {}/{+} >> #{output})"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar foobar])
     tmux.send_keys "cat #{tempname} | #{fzf(opts)}", :Enter
-    tmux.until { |lines| assert_equal '  4/4', lines[-2] }
+    tmux.until { |lines| assert_equal '  4/4 (0)', lines[-2] }
     tmux.send_keys :Escape, :a
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  4/4 (3)', lines[-2] }
@@ -997,11 +997,11 @@ class TestGoFZF < TestBase
 
     tmux.send_keys "cat #{tempname} | #{FZF} --multi --bind 'x:execute-silent(echo {+}/{}/{+2}/{2} >> #{output})'", :Enter
 
-    tmux.until { |lines| assert_equal '  2/2', lines[-2] }
+    tmux.until { |lines| assert_equal '  2/2 (0)', lines[-2] }
     tmux.send_keys 'xy'
-    tmux.until { |lines| assert_equal '  0/2', lines[-2] }
+    tmux.until { |lines| assert_equal '  0/2 (0)', lines[-2] }
     tmux.send_keys :BSpace
-    tmux.until { |lines| assert_equal '  2/2', lines[-2] }
+    tmux.until { |lines| assert_equal '  2/2 (0)', lines[-2] }
 
     tmux.send_keys :Up
     tmux.send_keys :Tab
@@ -1362,7 +1362,7 @@ class TestGoFZF < TestBase
 
   def test_jump
     tmux.send_keys "seq 1000 | #{fzf("--multi --jump-labels 12345 --bind 'ctrl-j:jump'")}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys 'C-j'
     tmux.until { |lines| assert_equal '5 5', lines[-7] }
     tmux.until { |lines| assert_equal '  6', lines[-8] }
@@ -1390,7 +1390,7 @@ class TestGoFZF < TestBase
 
   def test_jump_accept
     tmux.send_keys "seq 1000 | #{fzf("--multi --jump-labels 12345 --bind 'ctrl-j:jump-accept'")}", :Enter
-    tmux.until { |lines| assert_equal '  1000/1000', lines[-2] }
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
     tmux.send_keys 'C-j'
     tmux.until { |lines| assert_equal '5 5', lines[-7] }
     tmux.send_keys '3'
@@ -1405,7 +1405,7 @@ class TestGoFZF < TestBase
 
   def test_pointer_with_jump
     tmux.send_keys "seq 10 | #{fzf("--multi --jump-labels 12345 --bind 'ctrl-j:jump' --pointer '>>'")}", :Enter
-    tmux.until { |lines| assert_equal '  10/10', lines[-2] }
+    tmux.until { |lines| assert_equal '  10/10 (0)', lines[-2] }
     tmux.send_keys 'C-j'
     # Correctly padded jump label should appear
     tmux.until { |lines| assert_equal '5  5', lines[-7] }
@@ -1417,7 +1417,7 @@ class TestGoFZF < TestBase
 
   def test_marker
     tmux.send_keys "seq 10 | #{fzf("--multi --marker '>>'")}", :Enter
-    tmux.until { |lines| assert_equal '  10/10', lines[-2] }
+    tmux.until { |lines| assert_equal '  10/10 (0)', lines[-2] }
     tmux.send_keys :BTab
     # Assert that specified marker is displayed
     tmux.until { |lines| assert_equal ' >>1', lines[-3] }
@@ -1678,7 +1678,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Tab
     tmux.until { |lines| assert_equal '  198/198 (1/2)', lines[-2] }
     tmux.send_keys '555'
-    tmux.until { |lines| assert_equal '  1/553', lines[-2] }
+    tmux.until { |lines| assert_equal '  1/553 (0/2)', lines[-2] }
   end
 
   def test_reload_even_when_theres_no_match
@@ -1713,7 +1713,7 @@ class TestGoFZF < TestBase
     tmux.send_keys 'foo'
     tmux.until { |lines| assert_equal '  0/100 (1)', lines[-2] }
     tmux.send_keys :Space
-    tmux.until { |lines| assert_equal '  0/100', lines[-2] }
+    tmux.until { |lines| assert_equal '  0/100 (0)', lines[-2] }
   end
 
   def test_backward_delete_char_eof

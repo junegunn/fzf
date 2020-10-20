@@ -888,7 +888,7 @@ func (t *Terminal) printInfo() {
 			output += " -S"
 		}
 	}
-	if len(t.selected) > 0 {
+	if t.multi > 0 {
 		if t.multi == maxMulti {
 			output += fmt.Sprintf(" (%d)", len(t.selected))
 		} else {
