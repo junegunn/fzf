@@ -1845,9 +1845,7 @@ func (t *Terminal) Loop() {
 										lines = append(lines, line)
 									}
 									if err != nil {
-										if len(lines) > 0 {
-											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
-										}
+										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
 										break Loop
 									}
 								}
