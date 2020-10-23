@@ -26,6 +26,7 @@ var numericPrefix *regexp.Regexp
 var activeTempFiles []string
 
 const ellipsis string = ".."
+const clearCode string = "\x1b[2J"
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
@@ -1834,6 +1835,13 @@ func (t *Terminal) Loop() {
 									line := eachLine.line
 									err := eachLine.err
 									if len(line) > 0 {
+										clearIndex := strings.Index(line, clearCode)
+										if clearIndex >= 0 {
+											lines = []string{}
+											line = line[clearIndex+len(clearCode):]
+											version--
+											offset = 0
+										}
 										lines = append(lines, line)
 									}
 									if err != nil {

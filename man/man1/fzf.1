@@ -379,6 +379,18 @@ Note that you can escape a placeholder pattern by prepending a backslash.
 
 Preview window will be updated even when there is no match for the current
 query if any of the placeholder expressions evaluates to a non-empty string.
+
+Since 0.24.0, fzf can render partial preview content before the preview command
+completes. ANSI escape sequence for clearing the display (\fBCSI 2 J\fR) is
+supported, so you can use it to implement preview window that is constantly
+updating.
+
+e.g.
+      \fBfzf --preview 'for i in $(seq 100000); do
+        (( i % 200 == 0 )) && printf "\\033[2J"
+        echo "$i"
+        sleep 0.01
+      done'\fR
 .RE
 .TP
 .BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:default]"
@@ -389,7 +401,6 @@ query if any of the placeholder expressions evaluates to a non-empty string.
     \fBdown
     \fBleft
     \fBright
-.RE
 
 \fRDetermines the layout of the preview window. If the argument contains
 \fB:hidden\fR, the preview window will be hidden by default until

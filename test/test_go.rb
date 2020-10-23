@@ -1817,6 +1817,12 @@ class TestGoFZF < TestBase
     assert_equal %w[A Á], `#{echoes} | #{FZF} -f A`.lines.map(&:chomp)
     assert_equal %w[Á], `#{echoes} | #{FZF} -f Á`.lines.map(&:chomp)
   end
+
+  def test_preview_clear_screen
+    tmux.send_keys %{seq 100 | #{FZF} --preview 'for i in $(seq 300); do (( i % 200 == 0 )) && printf "\\033[2J"; echo "[$i]"; sleep 0.001; done'}, :Enter
+    tmux.until { |lines| lines.item_count == 100 }
+    tmux.until { |lines| lines[1]&.include?('[200]') }
+  end
 end
 
 module TestShell
