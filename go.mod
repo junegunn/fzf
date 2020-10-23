@@ -4,7 +4,7 @@ require (
 	github.com/gdamore/tcell v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/mattn/go-isatty v0.0.12
-	github.com/mattn/go-runewidth v0.0.8
+	github.com/mattn/go-runewidth v0.0.9
 	github.com/mattn/go-shellwords v1.0.9
 	github.com/saracen/walker v0.0.0-20191201085201-324a081bae7e
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
