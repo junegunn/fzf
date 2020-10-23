@@ -20,5 +20,9 @@ Style/MethodCallWithArgsParentheses:
     - ^refute_
 Style/NumericPredicate:
   Enabled: false
+Style/StringConcatenation:
+  Enabled: false
+Style/OptionalBooleanParameter:
+  Enabled: false
 Style/WordArray:
   MinSize: 1

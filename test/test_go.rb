@@ -109,7 +109,7 @@ class Tmux
         class << lines
           def counts
             lazy
-              .map { |l| l.scan(%r{^. ([0-9]+)\/([0-9]+)( \(([0-9]+)\))?}) }
+              .map { |l| l.scan(%r{^. ([0-9]+)/([0-9]+)( \(([0-9]+)\))?}) }
               .reject(&:empty?)
               .first&.first&.map(&:to_i)&.values_at(0, 1, 3) || [0, 0, 0]
           end
@@ -2052,7 +2052,7 @@ module CompletionTest
     tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55/xx', lines[-1] }
 
     # Should not match regular files (bash-only)
-    if self.class == TestBash
+    if instance_of?(TestBash)
       tmux.send_keys :Tab
       tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55/xx', lines[-1] }
     end
