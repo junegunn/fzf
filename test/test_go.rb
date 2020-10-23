@@ -11,12 +11,13 @@ require 'tempfile'
 TEMPLATE = DATA.read
 UNSETS = %w[
   FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS
+  FZF_TMUX FZF_TMUX_OPTS
   FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS
   FZF_ALT_C_COMMAND
   FZF_ALT_C_OPTS FZF_CTRL_R_OPTS
   fish_history
 ].freeze
-DEFAULT_TIMEOUT = 20
+DEFAULT_TIMEOUT = 10
 
 FILE = File.expand_path(__FILE__)
 BASE = File.expand_path('..', __dir__)
@@ -26,7 +27,7 @@ FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 def wait
   since = Time.now
   begin
-    yield
+    yield or raise Minitest::Assertion, 'Assertion failure'
   rescue Minitest::Assertion
     raise if Time.now - since > DEFAULT_TIMEOUT
 
@@ -77,7 +78,7 @@ class Tmux
     return unless shell == :fish
 
     send_keys 'function fish_prompt; end; clear', :Enter
-    self.until { |lines| raise Minitest::Assertion unless lines.empty? }
+    self.until(&:empty?)
   end
 
   def kill
@@ -149,7 +150,7 @@ class Tmux
     begin
       self.until do |lines|
         send_keys ' ', 'C-u', :Enter, 'hello', :Left, :Right
-        raise Minitest::Assertion unless lines[-1] == 'hello'
+        lines[-1] == 'hello'
       end
     rescue Minitest::Assertion
       (tries += 1) < 5 ? retry : raise
@@ -1790,20 +1791,20 @@ class TestGoFZF < TestBase
 
   def test_preview_scroll_begin_constant
     tmux.send_keys "echo foo 123 321 | #{FZF} --preview 'seq 1000' --preview-window left:+123", :Enter
-    tmux.until { |lines| lines.item_count == 1 }
+    tmux.until { |lines| assert_match %r{1/1}, lines[-2] }
     tmux.until { |lines| assert_match %r{123.*123/1000}, lines[1] }
   end
 
   def test_preview_scroll_begin_expr
     tmux.send_keys "echo foo 123 321 | #{FZF} --preview 'seq 1000' --preview-window left:+{3}", :Enter
-    tmux.until { |lines| lines.item_count == 1 }
+    tmux.until { |lines| assert_match %r{1/1}, lines[-2] }
     tmux.until { |lines| assert_match %r{321.*321/1000}, lines[1] }
   end
 
   def test_preview_scroll_begin_and_offset
     ['echo foo 123 321', 'echo foo :123: 321'].each do |input|
       tmux.send_keys "#{input} | #{FZF} --preview 'seq 1000' --preview-window left:+{2}-2", :Enter
-      tmux.until { |lines| lines.item_count == 1 }
+      tmux.until { |lines| assert_match %r{1/1}, lines[-2] }
       tmux.until { |lines| assert_match %r{121.*121/1000}, lines[1] }
       tmux.send_keys 'C-c'
     end
@@ -1970,7 +1971,7 @@ module CompletionTest
     FileUtils.mkdir_p('/tmp/fzf-test')
     FileUtils.mkdir_p('/tmp/fzf test')
     (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
-    ['no~such~user', '/tmp/fzf test/foobar', '~/.fzf-home'].each do |f|
+    ['no~such~user', '/tmp/fzf test/foobar'].each do |f|
       FileUtils.touch(File.expand_path(f))
     end
     tmux.prepare
@@ -1986,14 +1987,15 @@ module CompletionTest
     end
 
     # ~USERNAME**<TAB>
+    user = ENV['USER']
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~#{ENV['USER']}**", :Tab
+    tmux.send_keys "cat ~#{user}**", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys "'.fzf-home"
-    tmux.until { |lines| assert(lines.any? { |l| l.end_with?('/.fzf-home') }) }
+    tmux.send_keys "/#{user}"
+    tmux.until { |lines| assert(lines.any? { |l| l.end_with?("/#{user}") }) }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
-      assert_match %r{cat .*/\.fzf-home}, lines[-1]
+      assert_match %r{cat .*/#{user}}, lines[-1]
     end
 
     # ~INVALID_USERNAME**<TAB>
@@ -2241,6 +2243,11 @@ class TestFish < TestBase
 end
 
 __END__
+PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
+unset <%= UNSETS.join(' ') %>
+unset $(env | sed -n /^_fzf_orig/s/=.*//p)
+unset $(declare -F | sed -n "/_fzf/s/.*-f //p")
+
 # Setup fzf
 # ---------
 if [[ ! "$PATH" == *<%= BASE %>/bin* ]]; then
@@ -2254,9 +2261,6 @@ fi
 # Key bindings
 # ------------
 source "<%= BASE %>/shell/key-bindings.<%= __method__ %>"
-
-PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
-unset <%= UNSETS.join(' ') %>
 
 # Old API
 _fzf_complete_f() {
