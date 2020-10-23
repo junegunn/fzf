@@ -125,9 +125,10 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
-Shell extensions (key bindings and fuzzy auto-completion) and Vim/Neovim
-plugin may or may not be enabled by default depending on the package manager.
-Refer to the package documentation for more information.
+> :warning: **Key bindings (CTRL-T / CTRL-R / ALT-C) and fuzzy auto-completion
+> may not be enabled by default.**
+>
+> Refer to the package documentation for more information. (e.g. `apt-cache show fzf`)
 
 ### Windows
 
