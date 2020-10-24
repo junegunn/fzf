@@ -43,7 +43,7 @@ const (
 )
 
 type previewer struct {
-	version    int
+	version    int64
 	lines      []string
 	offset     int
 	enabled    bool
@@ -53,7 +53,7 @@ type previewer struct {
 }
 
 type previewed struct {
-	version  int
+	version  int64
 	numLines int
 	offset   int
 	filled   bool
@@ -284,7 +284,7 @@ type previewRequest struct {
 }
 
 type previewResult struct {
-	version int
+	version int64
 	lines   []string
 	offset  int
 	spinner string
@@ -1752,7 +1752,7 @@ func (t *Terminal) Loop() {
 
 	if t.hasPreviewer() {
 		go func() {
-			version := 0
+			var version int64
 			for {
 				var items []*Item
 				var commandTemplate string
@@ -1813,7 +1813,7 @@ func (t *Terminal) Loop() {
 							eofChan <- true
 						}()
 						// Goroutine 2 periodically requests rendering
-						go func(version int) {
+						go func(version int64) {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
 							spinnerIndex := -1 // Delay initial rendering by an extra tick
@@ -1855,7 +1855,7 @@ func (t *Terminal) Loop() {
 						}(version)
 					}
 					// Goroutine 3 is responsible for cancelling running preview command
-					go func(version int) {
+					go func(version int64) {
 						timer := time.NewTimer(previewDelayed)
 					Loop:
 						for {
@@ -1976,7 +1976,7 @@ func (t *Terminal) Loop() {
 					case reqPreviewRefresh:
 						t.printPreview()
 					case reqPreviewDelayed:
-						t.previewer.version = value.(int)
+						t.previewer.version = value.(int64)
 						t.printPreviewDelayed()
 					case reqPrintQuery:
 						exit(func() int {
