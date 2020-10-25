@@ -15,12 +15,17 @@ CHANGELOG
     sleep 0.01
   done'
   ```
-- Extended color specification: supports text styles
+- Updated `--color` option to support text styles
   - `regular` / `bold` / `dim` / `underline` / `italic` / `reverse` / `blink`
     ```sh
+    # * Set -1 to keep the original color
+    # * Multiple style attributes can be combined
+    # * Italic style may not be supported by some terminals
     rg --line-number --no-heading --color=always "" |
       fzf --ansi --prompt "Rg: " \
-          --color fg+:italic,hl:underline:-1,hl+:reverse:-1,prompt:reverse
+          --color fg+:italic,hl:underline:-1,hl+:underline:reverse:-1 \
+          --color pointer:underline:reverse,prompt:reverse \
+          --pointer '  '
     ```
 - To indicate if `--multi` mode is enabled, fzf will print the number of
   selected items even when no item is selected
