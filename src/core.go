@@ -66,7 +66,7 @@ func Run(opts *Options, revision string) {
 
 	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
-		if opts.Theme != nil {
+		if opts.Theme.Colored {
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				prevLineAnsiState = lineAnsiState
 				trimmed, offsets, newState := extractColor(string(data), lineAnsiState, nil)
@@ -102,7 +102,7 @@ func Run(opts *Options, revision string) {
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
-			if opts.Ansi && opts.Theme != nil && len(tokens) > 1 {
+			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
 					ansiStateDup := *prevLineAnsiState

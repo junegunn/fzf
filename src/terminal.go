@@ -23,6 +23,7 @@ import (
 
 var placeholder *regexp.Regexp
 var numericPrefix *regexp.Regexp
+var whiteSuffix *regexp.Regexp
 var activeTempFiles []string
 
 const ellipsis string = ".."
@@ -31,6 +32,7 @@ const clearCode string = "\x1b[2J"
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
 	numericPrefix = regexp.MustCompile(`^[[:punct:]]*([0-9]+)`)
+	whiteSuffix = regexp.MustCompile(`\s*$`)
 	activeTempFiles = []string{}
 }
 
@@ -515,9 +517,29 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	var state *ansiState
 	trimmed, colors, _ := extractColor(prompt, state, nil)
 	item := &Item{text: util.ToChars([]byte(trimmed)), colors: colors}
+
+	// "Prompt>  "
+	//  -------    // Do not apply ANSI attributes to the trailing whitespaces
+	//             // unless the part has a non-default ANSI state
+	loc := whiteSuffix.FindStringIndex(trimmed)
+	if loc != nil {
+		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{-1, -1, tui.AttrClear}}
+		if item.colors != nil {
+			lastColor := (*item.colors)[len(*item.colors)-1]
+			fmt.Println(lastColor.offset[1], int32(loc[1]))
+			if lastColor.offset[1] < int32(loc[1]) {
+				blankState.offset[0] = lastColor.offset[1]
+				colors := append(*item.colors, blankState)
+				item.colors = &colors
+			}
+		} else {
+			colors := []ansiOffset{blankState}
+			item.colors = &colors
+		}
+	}
 	output := func() {
 		t.printHighlighted(
-			Result{item: item}, t.strong, tui.ColPrompt, tui.ColPrompt, false, false)
+			Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false)
 	}
 	_, promptLen := t.processTabs([]rune(trimmed), 0)
 
@@ -839,8 +861,8 @@ func (t *Terminal) printPrompt() {
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
-	t.window.CPrint(tui.ColNormal, t.strong, string(before))
-	t.window.CPrint(tui.ColNormal, t.strong, string(after))
+	t.window.CPrint(tui.ColInput, string(before))
+	t.window.CPrint(tui.ColInput, string(after))
 }
 
 func (t *Terminal) trimMessage(message string, maxWidth int) string {
@@ -859,7 +881,7 @@ func (t *Terminal) printInfo() {
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(t.spinner)))) / duration
-			t.window.CPrint(tui.ColSpinner, t.strong, t.spinner[idx])
+			t.window.CPrint(tui.ColSpinner, t.spinner[idx])
 		}
 		t.move(1, 2, false)
 		pos = 2
@@ -870,9 +892,9 @@ func (t *Terminal) printInfo() {
 		}
 		t.move(0, pos, true)
 		if t.reading {
-			t.window.CPrint(tui.ColSpinner, t.strong, " < ")
+			t.window.CPrint(tui.ColSpinner, " < ")
 		} else {
-			t.window.CPrint(tui.ColPrompt, t.strong, " < ")
+			t.window.CPrint(tui.ColPrompt, " < ")
 		}
 		pos += len(" < ")
 	case infoHidden:
@@ -903,7 +925,7 @@ func (t *Terminal) printInfo() {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
 	output = t.trimMessage(output, t.window.Width()-pos)
-	t.window.CPrint(tui.ColInfo, 0, output)
+	t.window.CPrint(tui.ColInfo, output)
 }
 
 func (t *Terminal) printHeader() {
@@ -928,7 +950,7 @@ func (t *Terminal) printHeader() {
 
 		t.move(line, 2, true)
 		t.printHighlighted(Result{item: item},
-			tui.AttrRegular, tui.ColHeader, tui.ColHeader, false, false)
+			tui.ColHeader, tui.ColHeader, false, false)
 	}
 }
 
@@ -958,7 +980,7 @@ func (t *Terminal) printList() {
 func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
-	label := t.pointerEmpty
+	label := ""
 	if t.jumping != jumpDisabled {
 		if i < len(t.jumpLabels) {
 			// Striped
@@ -983,21 +1005,29 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 
 	t.move(line, 0, false)
 	if current {
-		t.window.CPrint(tui.ColCurrentCursor, t.strong, label)
-		if selected {
-			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.marker)
+		if len(label) == 0 {
+			t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
 		} else {
-			t.window.CPrint(tui.ColCurrentSelected, t.strong, t.markerEmpty)
+			t.window.CPrint(tui.ColCurrentCursor, label)
 		}
-		newLine.width = t.printHighlighted(result, t.strong, tui.ColCurrent, tui.ColCurrentMatch, true, true)
-	} else {
-		t.window.CPrint(tui.ColCursor, t.strong, label)
 		if selected {
-			t.window.CPrint(tui.ColSelected, t.strong, t.marker)
+			t.window.CPrint(tui.ColCurrentSelected, t.marker)
+		} else {
+			t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
+		}
+		newLine.width = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true)
+	} else {
+		if len(label) == 0 {
+			t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+		} else {
+			t.window.CPrint(tui.ColCursor, label)
+		}
+		if selected {
+			t.window.CPrint(tui.ColSelected, t.marker)
 		} else {
 			t.window.Print(t.markerEmpty)
 		}
-		newLine.width = t.printHighlighted(result, 0, tui.ColNormal, tui.ColMatch, false, true)
+		newLine.width = t.printHighlighted(result, tui.ColNormal, tui.ColMatch, false, true)
 	}
 	fillSpaces := prevLine.width - newLine.width
 	if fillSpaces > 0 {
@@ -1051,7 +1081,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.ColorPair, col2 tui.ColorPair, current bool, match bool) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool) int {
 	item := result.item
 
 	// Overflow
@@ -1076,7 +1106,7 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 		maxe = util.Max(maxe, int(offset[1]))
 	}
 
-	offsets := result.colorOffsets(charOffsets, t.theme, col2, attr, current)
+	offsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
 	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
@@ -1134,11 +1164,11 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
 		substr, prefixWidth = t.processTabs(text[index:b], prefixWidth)
-		t.window.CPrint(col1, attr, substr)
+		t.window.CPrint(colBase, substr)
 
 		if b < e {
 			substr, prefixWidth = t.processTabs(text[b:e], prefixWidth)
-			t.window.CPrint(offset.color, offset.attr, substr)
+			t.window.CPrint(offset.color, substr)
 		}
 
 		index = e
@@ -1148,7 +1178,7 @@ func (t *Terminal) printHighlighted(result Result, attr tui.Attr, col1 tui.Color
 	}
 	if index < maxOffset {
 		substr, _ = t.processTabs(text[index:], prefixWidth)
-		t.window.CPrint(col1, attr, substr)
+		t.window.CPrint(colBase, substr)
 	}
 	return displayWidth
 }
@@ -1161,7 +1191,7 @@ func (t *Terminal) renderPreviewSpinner() {
 		if !t.previewer.scrollable {
 			if maxWidth > 0 {
 				t.pwindow.Move(0, maxWidth-1)
-				t.pwindow.CPrint(tui.ColSpinner, t.strong, spin)
+				t.pwindow.CPrint(tui.ColSpinner, spin)
 			}
 		} else {
 			offsetString := fmt.Sprintf("%d/%d", t.previewer.offset+1, numLines)
@@ -1173,8 +1203,8 @@ func (t *Terminal) renderPreviewSpinner() {
 			pos := maxWidth - t.displayWidth(offsetRunes)
 			t.pwindow.Move(0, pos)
 			if maxWidth > 0 {
-				t.pwindow.CPrint(tui.ColSpinner, t.strong, spin)
-				t.pwindow.CPrint(tui.ColInfo, tui.Reverse, string(offsetRunes))
+				t.pwindow.CPrint(tui.ColSpinner, spin)
+				t.pwindow.CPrint(tui.ColInfo.WithAttr(tui.Reverse), string(offsetRunes))
 			}
 		}
 	}
@@ -1185,7 +1215,7 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 	lineNo := -t.previewer.offset
 	height := t.pwindow.Height()
 	if unchanged {
-		t.pwindow.Move(0, 0)
+		t.pwindow.MoveAndClear(0, 0)
 	} else {
 		t.previewed.filled = false
 		t.pwindow.Erase()
@@ -1205,7 +1235,7 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				prefixWidth += width
-				if t.theme != nil && ansi != nil && ansi.colored() {
+				if t.theme.Colored && ansi != nil && ansi.colored() {
 					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 				} else {
 					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
@@ -1258,7 +1288,7 @@ func (t *Terminal) printPreviewDelayed() {
 	message := t.trimMessage("Loading ..", t.pwindow.Width())
 	pos := t.pwindow.Width() - len(message)
 	t.pwindow.Move(0, pos)
-	t.pwindow.CPrint(tui.ColInfo, tui.Reverse, message)
+	t.pwindow.CPrint(tui.ColInfo.WithAttr(tui.Reverse), message)
 }
 
 func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {

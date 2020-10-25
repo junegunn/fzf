@@ -15,7 +15,6 @@ type Offset [2]int32
 type colorOffset struct {
 	offset [2]int32
 	color  tui.ColorPair
-	attr   tui.Attr
 }
 
 type Result struct {
@@ -87,14 +86,14 @@ func minRank() Result {
 	return Result{item: &minItem, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme, color tui.ColorPair, attr tui.Attr, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme, colBase tui.ColorPair, colMatch tui.ColorPair, current bool) []colorOffset {
 	itemColors := result.item.Colors()
 
-	// No ANSI code, or --color=no
+	// No ANSI codes
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
 		for _, off := range matchOffsets {
-			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: color, attr: attr})
+			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch})
 		}
 		return offsets
 	}
@@ -111,17 +110,19 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 			maxCol = ansi.offset[1]
 		}
 	}
-	cols := make([]int, maxCol)
 
+	cols := make([]int, maxCol)
 	for colorIndex, ansi := range itemColors {
 		for i := ansi.offset[0]; i < ansi.offset[1]; i++ {
-			cols[i] = colorIndex + 1 // XXX
+			cols[i] = colorIndex + 1 // 1-based index of itemColors
 		}
 	}
 
 	for _, off := range matchOffsets {
 		for i := off[0]; i < off[1]; i++ {
-			cols[i] = -1
+			// Negative of 1-based index of itemColors
+			// - The extra -1 means highlighted
+			cols[i] = cols[i]*-1 - 1
 		}
 	}
 
@@ -133,36 +134,41 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 	// --++++++++--  --++++++++++---
 	curr := 0
 	start := 0
+	ansiToColorPair := func(ansi ansiOffset, base tui.ColorPair) tui.ColorPair {
+		fg := ansi.color.fg
+		bg := ansi.color.bg
+		if fg == -1 {
+			if current {
+				fg = theme.Current.Color
+			} else {
+				fg = theme.Fg.Color
+			}
+		}
+		if bg == -1 {
+			if current {
+				bg = theme.DarkBg.Color
+			} else {
+				bg = theme.Bg.Color
+			}
+		}
+		return tui.NewColorPair(fg, bg, ansi.color.attr).MergeAttr(base)
+	}
 	var colors []colorOffset
 	add := func(idx int) {
 		if curr != 0 && idx > start {
-			if curr == -1 {
-				colors = append(colors, colorOffset{
-					offset: [2]int32{int32(start), int32(idx)}, color: color, attr: attr})
-			} else {
-				ansi := itemColors[curr-1]
-				fg := ansi.color.fg
-				bg := ansi.color.bg
-				if theme != nil {
-					if fg == -1 {
-						if current {
-							fg = theme.Current
-						} else {
-							fg = theme.Fg
-						}
-					}
-					if bg == -1 {
-						if current {
-							bg = theme.DarkBg
-						} else {
-							bg = theme.Bg
-						}
-					}
+			if curr < 0 {
+				color := colMatch
+				if curr < -1 && theme.Colored {
+					origColor := ansiToColorPair(itemColors[-curr-2], colMatch)
+					color = origColor.MergeNonDefault(color)
 				}
 				colors = append(colors, colorOffset{
+					offset: [2]int32{int32(start), int32(idx)}, color: color})
+			} else {
+				ansi := itemColors[curr-1]
+				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  tui.NewColorPair(fg, bg),
-					attr:   ansi.color.attr.Merge(attr)})
+					color:  ansiToColorPair(ansi, colBase)})
 			}
 		}
 	}

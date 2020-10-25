@@ -295,7 +295,7 @@ func TestColorSpec(t *testing.T) {
 	}
 
 	customized := parseTheme(theme, "fg:231,bg:232")
-	if customized.Fg != 231 || customized.Bg != 232 {
+	if customized.Fg.Color != 231 || customized.Bg.Color != 232 {
 		t.Errorf("color not customized")
 	}
 	if *tui.Dark256 == *customized {
@@ -310,18 +310,6 @@ func TestColorSpec(t *testing.T) {
 	customized = parseTheme(theme, "fg:231,dark,bg:232")
 	if customized.Fg != tui.Dark256.Fg || customized.Bg == tui.Dark256.Bg {
 		t.Errorf("color not customized")
-	}
-}
-
-func TestParseNilTheme(t *testing.T) {
-	var theme *tui.ColorTheme
-	newTheme := parseTheme(theme, "prompt:12")
-	if newTheme != nil {
-		t.Errorf("color is disabled. keep it that way.")
-	}
-	newTheme = parseTheme(theme, "prompt:12,dark,prompt:13")
-	if newTheme.Prompt != 13 {
-		t.Errorf("color should now be enabled and customized")
 	}
 }
 

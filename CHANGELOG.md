@@ -15,6 +15,13 @@ CHANGELOG
     sleep 0.01
   done'
   ```
+- Extended color specification: supports text styles
+  - `regular` / `bold` / `dim` / `underline` / `italic` / `reverse` / `blink`
+    ```sh
+    rg --line-number --no-heading --color=always "" |
+      fzf --ansi --prompt "Rg: " \
+          --color fg+:italic,hl:underline:-1,hl+:reverse:-1,prompt:reverse
+    ```
 - To indicate if `--multi` mode is enabled, fzf will print the number of
   selected items even when no item is selected
   ```sh

@@ -15,14 +15,17 @@ func (a Attr) Merge(b Attr) Attr {
 }
 
 const (
-	AttrRegular Attr = Attr(0)
-	Bold             = Attr(1)
-	Dim              = Attr(1 << 1)
-	Italic           = Attr(1 << 2)
-	Underline        = Attr(1 << 3)
-	Blink            = Attr(1 << 4)
-	Blink2           = Attr(1 << 5)
-	Reverse          = Attr(1 << 6)
+	AttrUndefined = Attr(0)
+	AttrRegular   = Attr(1 << 7)
+	AttrClear     = Attr(1 << 8)
+
+	Bold      = Attr(1)
+	Dim       = Attr(1 << 1)
+	Italic    = Attr(1 << 2)
+	Underline = Attr(1 << 3)
+	Blink     = Attr(1 << 4)
+	Blink2    = Attr(1 << 5)
+	Reverse   = Attr(1 << 6)
 )
 
 func (r *FullscreenRenderer) Init()             {}

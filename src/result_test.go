@@ -105,32 +105,55 @@ func TestColorOffset(t *testing.T) {
 	//   ++++++++        ++++++++++
 	// --++++++++--    --++++++++++---
 
-	offsets := []Offset{Offset{5, 15}, Offset{25, 35}}
+	offsets := []Offset{{5, 15}, {25, 35}}
 	item := Result{
 		item: &Item{
 			colors: &[]ansiOffset{
-				ansiOffset{[2]int32{0, 20}, ansiState{1, 5, 0}},
-				ansiOffset{[2]int32{22, 27}, ansiState{2, 6, tui.Bold}},
-				ansiOffset{[2]int32{30, 32}, ansiState{3, 7, 0}},
-				ansiOffset{[2]int32{33, 40}, ansiState{4, 8, tui.Bold}}}}}
-	// [{[0 5] 9 false} {[5 15] 99 false} {[15 20] 9 false} {[22 25] 10 true} {[25 35] 99 false} {[35 40] 11 true}]
+				{[2]int32{0, 20}, ansiState{1, 5, 0}},
+				{[2]int32{22, 27}, ansiState{2, 6, tui.Bold}},
+				{[2]int32{30, 32}, ansiState{3, 7, 0}},
+				{[2]int32{33, 40}, ansiState{4, 8, tui.Bold}}}}}
 
-	pair := tui.NewColorPair(99, 199)
-	colors := item.colorOffsets(offsets, tui.Dark256, pair, tui.AttrRegular, true)
-	assert := func(idx int, b int32, e int32, c tui.ColorPair, bold bool) {
-		var attr tui.Attr
-		if bold {
-			attr = tui.Bold
-		}
+	colBase := tui.NewColorPair(89, 189, tui.AttrUndefined)
+	colMatch := tui.NewColorPair(99, 199, tui.AttrUndefined)
+	colors := item.colorOffsets(offsets, tui.Dark256, colBase, colMatch, true)
+	assert := func(idx int, b int32, e int32, c tui.ColorPair) {
 		o := colors[idx]
-		if o.offset[0] != b || o.offset[1] != e || o.color != c || o.attr != attr {
-			t.Error(o)
+		if o.offset[0] != b || o.offset[1] != e || o.color != c {
+			t.Error(o, b, e, c)
 		}
 	}
-	assert(0, 0, 5, tui.NewColorPair(1, 5), false)
-	assert(1, 5, 15, pair, false)
-	assert(2, 15, 20, tui.NewColorPair(1, 5), false)
-	assert(3, 22, 25, tui.NewColorPair(2, 6), true)
-	assert(4, 25, 35, pair, false)
-	assert(5, 35, 40, tui.NewColorPair(4, 8), true)
+	// [{[0 5] {1 5 0}} {[5 15] {99 199 0}} {[15 20] {1 5 0}}
+	//  {[22 25] {2 6 1}} {[25 27] {99 199 1}} {[27 30] {99 199 0}}
+	//  {[30 32] {99 199 0}} {[32 33] {99 199 0}} {[33 35] {99 199 1}}
+	//  {[35 40] {4 8 1}}]
+	assert(0, 0, 5, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(1, 5, 15, colMatch)
+	assert(2, 15, 20, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(3, 22, 25, tui.NewColorPair(2, 6, tui.Bold))
+	assert(4, 25, 27, colMatch.WithAttr(tui.Bold))
+	assert(5, 27, 30, colMatch)
+	assert(6, 30, 32, colMatch)
+	assert(7, 32, 33, colMatch) // TODO: Should we merge consecutive blocks?
+	assert(8, 33, 35, colMatch.WithAttr(tui.Bold))
+	assert(9, 35, 40, tui.NewColorPair(4, 8, tui.Bold))
+
+	colRegular := tui.NewColorPair(-1, -1, tui.AttrUndefined)
+	colUnderline := tui.NewColorPair(-1, -1, tui.Underline)
+	colors = item.colorOffsets(offsets, tui.Dark256, colRegular, colUnderline, true)
+
+	// [{[0 5] {1 5 0}} {[5 15] {1 5 8}} {[15 20] {1 5 0}}
+	//  {[22 25] {2 6 1}} {[25 27] {2 6 9}} {[27 30] {-1 -1 8}}
+	//  {[30 32] {3 7 8}} {[32 33] {-1 -1 8}} {[33 35] {4 8 9}}
+	//  {[35 40] {4 8 1}}]
+	assert(0, 0, 5, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(1, 5, 15, tui.NewColorPair(1, 5, tui.Underline))
+	assert(2, 15, 20, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(3, 22, 25, tui.NewColorPair(2, 6, tui.Bold))
+	assert(4, 25, 27, tui.NewColorPair(2, 6, tui.Bold|tui.Underline))
+	assert(5, 27, 30, colUnderline)
+	assert(6, 30, 32, tui.NewColorPair(3, 7, tui.Underline))
+	assert(7, 32, 33, colUnderline)
+	assert(8, 33, 35, tui.NewColorPair(4, 8, tui.Bold|tui.Underline))
+	assert(9, 35, 40, tui.NewColorPair(4, 8, tui.Bold))
 }

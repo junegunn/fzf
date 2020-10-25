@@ -627,7 +627,7 @@ func (r *LightRenderer) MaxY() int {
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
 	w := &LightWindow{
 		renderer: r,
-		colored:  r.theme != nil,
+		colored:  r.theme.Colored,
 		preview:  preview,
 		border:   borderStyle,
 		top:      top,
@@ -637,14 +637,12 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 		tabstop:  r.tabstop,
 		fg:       colDefault,
 		bg:       colDefault}
-	if r.theme != nil {
-		if preview {
-			w.fg = r.theme.PreviewFg
-			w.bg = r.theme.PreviewBg
-		} else {
-			w.fg = r.theme.Fg
-			w.bg = r.theme.Bg
-		}
+	if preview {
+		w.fg = r.theme.PreviewFg.Color
+		w.bg = r.theme.PreviewBg.Color
+	} else {
+		w.fg = r.theme.Fg.Color
+		w.bg = r.theme.Bg.Color
 	}
 	w.drawBorder()
 	return w
@@ -661,9 +659,9 @@ func (w *LightWindow) drawBorder() {
 
 func (w *LightWindow) drawBorderHorizontal() {
 	w.Move(0, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
+	w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
 	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
+	w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
 }
 
 func (w *LightWindow) drawBorderAround() {
@@ -672,17 +670,15 @@ func (w *LightWindow) drawBorderAround() {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	w.CPrint(color, AttrRegular,
-		string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
-		w.CPrint(color, AttrRegular, string(w.border.vertical))
-		w.CPrint(color, AttrRegular, repeat(' ', w.width-2))
-		w.CPrint(color, AttrRegular, string(w.border.vertical))
+		w.CPrint(color, string(w.border.vertical))
+		w.CPrint(color, repeat(' ', w.width-2))
+		w.CPrint(color, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(color, AttrRegular,
-		string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {
@@ -745,6 +741,9 @@ func (w *LightWindow) MoveAndClear(y int, x int) {
 
 func attrCodes(attr Attr) []string {
 	codes := []string{}
+	if (attr & AttrClear) > 0 {
+		return codes
+	}
 	if (attr & Bold) > 0 {
 		codes = append(codes, "1")
 	}
@@ -804,12 +803,8 @@ func cleanse(str string) string {
 	return strings.Replace(str, "\x1b", "", -1)
 }
 
-func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
-	if !w.colored {
-		w.csiColor(colDefault, colDefault, attrFor(pair, attr))
-	} else {
-		w.csiColor(pair.Fg(), pair.Bg(), attr)
-	}
+func (w *LightWindow) CPrint(pair ColorPair, text string) {
+	w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
 	w.stderrInternal(cleanse(text), false)
 	w.csi("m")
 }
