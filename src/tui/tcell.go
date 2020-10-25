@@ -515,8 +515,9 @@ func (w *TcellWindow) CPrint(pair ColorPair, text string) {
 	w.printString(text, pair)
 }
 
-func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn {
+func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 	lx := 0
+	a := pair.Attr()
 
 	var style tcell.Style
 	if w.color {
@@ -558,12 +559,17 @@ func (w *TcellWindow) fillString(text string, pair ColorPair, a Attr) FillReturn
 		}
 	}
 	w.lastX += lx
+	if w.lastX == w.width {
+		w.lastY++
+		w.lastX = 0
+		return FillNextLine
+	}
 
 	return FillContinue
 }
 
 func (w *TcellWindow) Fill(str string) FillReturn {
-	return w.fillString(str, w.normal, 0)
+	return w.fillString(str, w.normal)
 }
 
 func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
@@ -573,7 +579,7 @@ func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	if bg == colDefault {
 		bg = w.normal.Bg()
 	}
-	return w.fillString(str, NewColorPair(fg, bg, a), a)
+	return w.fillString(str, NewColorPair(fg, bg, a))
 }
 
 func (w *TcellWindow) drawBorder() {
