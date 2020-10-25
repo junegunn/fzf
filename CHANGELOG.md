@@ -24,7 +24,7 @@ CHANGELOG
     rg --line-number --no-heading --color=always "" |
       fzf --ansi --prompt "Rg: " \
           --color fg+:italic,hl:underline:-1,hl+:underline:reverse:-1 \
-          --color pointer:underline:reverse,prompt:reverse \
+          --color pointer:reverse,prompt:reverse,input:159 \
           --pointer '  '
     ```
 - To indicate if `--multi` mode is enabled, fzf will print the number of
