@@ -154,7 +154,20 @@ function! fzf#install()
   endif
 endfunction
 
-function! fzf#exec()
+function! s:version_requirement(val, min)
+  let val = split(a:val, '\.')
+  let min = split(a:min, '\.')
+  for idx in range(0, len(min) - 1)
+    let v = get(val, idx, 0)
+    if     v < min[idx] | return 0
+    elseif v > min[idx] | return 1
+    endif
+  endfor
+  return 1
+endfunction
+
+let s:checked = {}
+function! fzf#exec(...)
   if !exists('s:exec')
     if executable(s:fzf_go)
       let s:exec = s:fzf_go
@@ -169,6 +182,26 @@ function! fzf#exec()
       throw 'fzf executable not found'
     endif
   endif
+
+  if a:0 && !has_key(s:checked, a:1)
+    let command = s:exec . ' --version'
+    let output = systemlist(command)
+    if v:shell_error || empty(output)
+      throw printf('Failed to run "%s": %s', command, output)
+    endif
+    let fzf_version = matchstr(output[0], '[0-9.]\+')
+    if s:version_requirement(fzf_version, a:1)
+      let s:checked[a:1] = 1
+      return s:exec
+    elseif a:0 < 2 && input(printf('You need fzf %s or above. Found: %s. Download binary? (y/n) ', a:1, fzf_version)) =~? '^y'
+      redraw
+      call fzf#install()
+      return fzf#exec(a:1, 1)
+    else
+      throw printf('You need to upgrade fzf (required: %s or above)', a:1)
+    endif
+  endif
+
   return s:exec
 endfunction
 
@@ -671,6 +704,8 @@ function! s:border_opt(window)
     return ''
   endif
 
+  " For --border styles, we need fzf 0.24.0 or above
+  call fzf#exec('0.24.0')
   let opt = ' --border=' . style
   if has_key(a:window, 'highlight')
     let color = s:get_color('fg', a:window.highlight)

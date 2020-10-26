@@ -1,11 +1,5 @@
 $version="0.23.1"
 
-if ([Environment]::Is64BitProcess) {
-  $binary_arch="amd64"
-} else {
-  $binary_arch="386"
-}
-
 $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 function check_binary () {
@@ -68,6 +62,6 @@ function download {
   check_binary >$null
 }
 
-download "fzf-$version-windows_$binary_arch.zip"
+download "fzf-$version-windows_amd64.zip"
 
 Write-Host 'For more information, see: https://github.com/junegunn/fzf'
