@@ -670,7 +670,7 @@ func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) 
 func (t *Terminal) resizeWindows() {
 	screenWidth := t.tui.MaxX()
 	screenHeight := t.tui.MaxY()
-	marginInt := [4]int{}
+	marginInt := [4]int{} // TRBL
 	t.prevLines = make([]itemLine, screenHeight)
 	for idx, sizeSpec := range t.margin {
 		if sizeSpec.percent {
@@ -687,6 +687,24 @@ func (t *Terminal) resizeWindows() {
 		switch t.borderShape {
 		case tui.BorderHorizontal:
 			marginInt[idx] += 1 - idx%2
+		case tui.BorderVertical:
+			marginInt[idx] += 2 * (idx % 2)
+		case tui.BorderTop:
+			if idx == 0 {
+				marginInt[idx]++
+			}
+		case tui.BorderRight:
+			if idx == 1 {
+				marginInt[idx] += 2
+			}
+		case tui.BorderBottom:
+			if idx == 2 {
+				marginInt[idx]++
+			}
+		case tui.BorderLeft:
+			if idx == 3 {
+				marginInt[idx] += 2
+			}
 		case tui.BorderRounded, tui.BorderSharp:
 			marginInt[idx] += 1 + idx%2
 		}
@@ -735,17 +753,31 @@ func (t *Terminal) resizeWindows() {
 	switch t.borderShape {
 	case tui.BorderHorizontal:
 		t.border = t.tui.NewWindow(
-			marginInt[0]-1,
-			marginInt[3],
-			width,
-			height+2,
+			marginInt[0]-1, marginInt[3], width, height+2,
 			false, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
+	case tui.BorderVertical:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3]-2, width+4, height,
+			false, tui.MakeBorderStyle(tui.BorderVertical, t.unicode))
+	case tui.BorderTop:
+		t.border = t.tui.NewWindow(
+			marginInt[0]-1, marginInt[3], width, height+1,
+			false, tui.MakeBorderStyle(tui.BorderTop, t.unicode))
+	case tui.BorderBottom:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3], width, height+1,
+			false, tui.MakeBorderStyle(tui.BorderBottom, t.unicode))
+	case tui.BorderLeft:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3]-2, width+2, height,
+			false, tui.MakeBorderStyle(tui.BorderLeft, t.unicode))
+	case tui.BorderRight:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3], width+2, height,
+			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
 	case tui.BorderRounded, tui.BorderSharp:
 		t.border = t.tui.NewWindow(
-			marginInt[0]-1,
-			marginInt[3]-2,
-			width+4,
-			height+2,
+			marginInt[0]-1, marginInt[3]-2, width+4, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 	}
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)

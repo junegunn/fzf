@@ -27,6 +27,8 @@ CHANGELOG
           --color pointer:reverse,prompt:reverse,input:159 \
           --pointer '  '
     ```
+- More `--border` options
+  - `vertical`, `top`, `bottom`, `left`, `right`
 - To indicate if `--multi` mode is enabled, fzf will print the number of
   selected items even when no item is selected
   ```sh

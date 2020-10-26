@@ -653,15 +653,46 @@ func (w *LightWindow) drawBorder() {
 	case BorderRounded, BorderSharp:
 		w.drawBorderAround()
 	case BorderHorizontal:
-		w.drawBorderHorizontal()
+		w.drawBorderHorizontal(true, true)
+	case BorderVertical:
+		w.drawBorderVertical(true, true)
+	case BorderTop:
+		w.drawBorderHorizontal(true, false)
+	case BorderBottom:
+		w.drawBorderHorizontal(false, true)
+	case BorderLeft:
+		w.drawBorderVertical(true, false)
+	case BorderRight:
+		w.drawBorderVertical(false, true)
 	}
 }
 
-func (w *LightWindow) drawBorderHorizontal() {
-	w.Move(0, 0)
-	w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
-	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
+func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
+	if top {
+		w.Move(0, 0)
+		w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
+	}
+	if bottom {
+		w.Move(w.height-1, 0)
+		w.CPrint(ColBorder, repeat(w.border.horizontal, w.width))
+	}
+}
+
+func (w *LightWindow) drawBorderVertical(left, right bool) {
+	width := w.width - 2
+	if !left || !right {
+		width++
+	}
+	for y := 0; y < w.height; y++ {
+		w.Move(y, 0)
+		if left {
+			w.CPrint(ColBorder, string(w.border.vertical))
+		}
+		w.CPrint(ColBorder, repeat(' ', width))
+		if right {
+			w.CPrint(ColBorder, string(w.border.vertical))
+		}
+	}
 }
 
 func (w *LightWindow) drawBorderAround() {

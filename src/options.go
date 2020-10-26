@@ -58,7 +58,8 @@ const usage = `usage: fzf [options]
                           (default: 10)
     --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]      Draw border around the finder
-                          [rounded|sharp|horizontal] (default: rounded)
+                          [rounded|sharp|horizontal|vertical|
+                           top|bottom|left|right] (default: rounded)
     --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
     --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
@@ -421,11 +422,21 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderSharp
 	case "horizontal":
 		return tui.BorderHorizontal
+	case "vertical":
+		return tui.BorderVertical
+	case "top":
+		return tui.BorderTop
+	case "bottom":
+		return tui.BorderBottom
+	case "left":
+		return tui.BorderLeft
+	case "right":
+		return tui.BorderRight
 	default:
 		if optional && str == "" {
 			return tui.BorderRounded
 		}
-		errorExit("invalid border style (expected: rounded|sharp|horizontal)")
+		errorExit("invalid border style (expected: rounded|sharp|horizontal|vertical|top|bottom|left|right)")
 	}
 	return tui.BorderNone
 }
