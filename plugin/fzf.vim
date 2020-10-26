@@ -670,6 +670,10 @@ function! s:split(dict)
         if !s:popup_support()
           throw 'Nvim 0.4+ or Vim 8.2.191+ with popupwin feature is required for pop-up window'
         end
+        let opts = $FZF_DEFAULT_OPTS.' '.s:evaluate_opts(get(a:dict, 'options', ''))
+        if empty(get(a:dict.window, 'border')) && (stridx(opts, '--border') > 0 || stridx(opts, '--no-border') > 0)
+          let a:dict.window.border = 'native'
+        endif
         call s:popup(a:dict.window)
         let is_popup = 1
       else
@@ -904,6 +908,8 @@ function! s:popup(opts) abort
                \ style == 'top'        ? [hor] + repeat([mid], height - 1)
                \                       :         repeat([mid], height - 1) + [hor]
     let shift = { 'row': style == 'bottom' ? 0 : 1, 'col': 0, 'width': 0, 'height': style == 'horizontal' ? -2 : -1 }
+  elseif style == 'native'
+    let shift = { 'row': 0, 'col': 0, 'width': 0, 'height': 0 }
   else
     let edges = style == 'sharp' ? ['┌', '┐', '└', '┘'] : ['╭', '╮', '╰', '╯']
     let bar = repeat('─', width / ambidouble - 2)
@@ -914,14 +920,16 @@ function! s:popup(opts) abort
     let shift = { 'row': 1, 'col': 2, 'width': -4, 'height': -2 }
   endif
 
-  let highlight = get(a:opts, 'highlight', 'Comment')
-  let frame = s:create_popup(highlight, {
-    \ 'row': row, 'col': col, 'width': width, 'height': height, 'border': border
-  \ })
+  if style != 'native'
+    let highlight = get(a:opts, 'highlight', 'Comment')
+    let frame = s:create_popup(highlight, {
+      \ 'row': row, 'col': col, 'width': width, 'height': height, 'border': border
+    \ })
+  endif
   call s:create_popup('Normal', {
     \ 'row': row + shift.row, 'col': col + shift.col, 'width': width + shift.width, 'height': height + shift.height
   \ })
-  if has('nvim')
+  if has('nvim') && style != 'native'
     execute 'autocmd BufWipeout <buffer> bwipeout '..frame
   endif
 endfunction
