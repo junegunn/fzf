@@ -667,6 +667,9 @@ function! s:border_opt(window)
   if !has_key(a:window, 'border') && !get(a:window, 'rounded', 1)
     let style = 'sharp'
   endif
+  if style == 'none'
+    return ''
+  endif
 
   let opt = ' --border=' . style
   if has_key(a:window, 'highlight')
