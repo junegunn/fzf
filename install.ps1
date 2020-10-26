@@ -1,4 +1,4 @@
-$version="0.23.1"
+$version="0.24.0-rc1"
 
 $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -26,12 +26,10 @@ function check_binary () {
 function download {
   param($file)
   Write-Host "Downloading bin/fzf ..."
-  if ("$version" -ne "alpha") {
-    if (Test-Path "$fzf_base\bin\fzf.exe") {
-      Write-Host "  - Already exists"
-      if (check_binary) {
-        return
-      }
+  if (Test-Path "$fzf_base\bin\fzf.exe") {
+    Write-Host "  - Already exists"
+    if (check_binary) {
+      return
     }
   }
   if (-not (Test-Path "$fzf_base\bin")) {
@@ -42,11 +40,7 @@ function download {
     return
   }
   cd "$fzf_base\bin"
-  if ("$version" -eq "alpha") {
-    $url="https://github.com/junegunn/fzf-bin/releases/download/alpha/$file"
-  } else {
-    $url="https://github.com/junegunn/fzf-bin/releases/download/$version/$file"
-  }
+  $url="https://github.com/junegunn/fzf/releases/download/$version/$file"
   $temp=$env:TMP + "\fzf.zip"
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))

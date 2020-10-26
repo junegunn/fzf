@@ -5,8 +5,9 @@ MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
 SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 
+VERSION        := $(shell git describe --abbrev=0)
 REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
-BUILD_FLAGS    := -a -ldflags "-X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
+BUILD_FLAGS    := -a -ldflags "-X main.version=$(VERSION) -X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
 
 BINARY64       := fzf-$(GOOS)_amd64
 BINARYARM5     := fzf-$(GOOS)_arm5
@@ -15,12 +16,6 @@ BINARYARM7     := fzf-$(GOOS)_arm7
 BINARYARM8     := fzf-$(GOOS)_arm8
 BINARYPPC64LE  := fzf-$(GOOS)_ppc64le
 VERSION        := $(shell awk -F= '/version =/ {print $$2}' src/constants.go | tr -d "\" ")
-RELEASE64      := fzf-$(VERSION)-$(GOOS)_amd64
-RELEASEARM5    := fzf-$(VERSION)-$(GOOS)_arm5
-RELEASEARM6    := fzf-$(VERSION)-$(GOOS)_arm6
-RELEASEARM7    := fzf-$(VERSION)-$(GOOS)_arm7
-RELEASEARM8    := fzf-$(VERSION)-$(GOOS)_arm8
-RELEASEPPC64LE := fzf-$(VERSION)-$(GOOS)_ppc64le
 
 # https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
@@ -46,35 +41,6 @@ endif
 
 all: target/$(BINARY)
 
-target:
-	mkdir -p $@
-
-ifeq ($(GOOS),windows)
-release: target/$(BINARY64)
-	cd target && cp -f $(BINARY64) fzf.exe && zip $(RELEASE64).zip fzf.exe
-	cd target && rm -f fzf.exe
-else ifeq ($(GOOS),linux)
-release: target/$(BINARY64) target/$(BINARYARM5) target/$(BINARYARM6) target/$(BINARYARM7) target/$(BINARYARM8) target/$(BINARYPPC64LE)
-	cd target && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
-	cd target && cp -f $(BINARYARM5) fzf && tar -czf $(RELEASEARM5).tgz fzf
-	cd target && cp -f $(BINARYARM6) fzf && tar -czf $(RELEASEARM6).tgz fzf
-	cd target && cp -f $(BINARYARM7) fzf && tar -czf $(RELEASEARM7).tgz fzf
-	cd target && cp -f $(BINARYARM8) fzf && tar -czf $(RELEASEARM8).tgz fzf
-	cd target && cp -f $(BINARYPPC64LE) fzf && tar -czf $(RELEASEPPC64LE).tgz fzf
-	cd target && rm -f fzf
-else
-release: target/$(BINARY64)
-	cd target && cp -f $(BINARY64) fzf && tar -czf $(RELEASE64).tgz fzf
-	cd target && rm -f fzf
-endif
-
-release-all: clean test
-	GOOS=darwin  make release
-	GOOS=linux   make release
-	GOOS=freebsd make release
-	GOOS=openbsd make release
-	GOOS=windows make release
-
 test: $(SOURCES)
 	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
 				github.com/junegunn/fzf/src \
@@ -84,8 +50,11 @@ test: $(SOURCES)
 
 install: bin/fzf
 
+release:
+	goreleaser --rm-dist --snapshot
+
 clean:
-	$(RM) -r target
+	$(RM) -r dist target
 
 target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
@@ -121,4 +90,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all release release-all test install clean docker docker-test update
+.PHONY: all release test install clean docker docker-test update

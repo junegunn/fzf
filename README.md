@@ -82,7 +82,7 @@ fzf project consists of the following components:
 You can [download fzf executable][bin] alone if you don't need the extra
 stuff.
 
-[bin]: https://github.com/junegunn/fzf-bin/releases
+[bin]: https://github.com/junegunn/fzf/releases
 
 ### Using Homebrew or Linuxbrew
 

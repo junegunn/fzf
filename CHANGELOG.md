@@ -23,7 +23,7 @@ CHANGELOG
     # * Italic style may not be supported by some terminals
     rg --line-number --no-heading --color=always "" |
       fzf --ansi --prompt "Rg: " \
-          --color fg+:italic,hl:underline:-1,hl+:underline:reverse:-1 \
+          --color fg+:italic,hl:underline:-1,hl+:italic:underline:reverse:-1 \
           --color pointer:reverse,prompt:reverse,input:159 \
           --pointer '  '
     ```

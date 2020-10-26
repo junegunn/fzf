@@ -43,7 +43,7 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
 // Run starts fzf
-func Run(opts *Options, revision string) {
+func Run(opts *Options, version string, revision string) {
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
