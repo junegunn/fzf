@@ -50,9 +50,6 @@ if s:is_win
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
   function! s:enc_to_cp(str)
-    if s:is_win && has('gui')
-      return iconv(a:str, 'utf-8', &encoding)
-    endif
     if !has('iconv')
       return a:str
     endif
@@ -407,7 +404,7 @@ try
       let prefix = '( '.source.' )|'
     elseif type == 3
       let temps.input = s:fzf_tempname()
-      call writefile(map(source, '<SID>enc_to_cp(v:val)'), temps.input)
+      call writefile(source, temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
