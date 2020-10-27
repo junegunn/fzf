@@ -892,23 +892,39 @@ function! s:popup(opts) abort
   endif
 
   if style =~ 'vertical\|left\|right'
-    let mid = style == 'vertical' ? '│' .. repeat(' ', width - 2 * ambidouble) .. '│' :
-            \ style == 'left'     ? '│' .. repeat(' ', width - 1 * ambidouble)
-            \                     :        repeat(' ', width - 1 * ambidouble) .. '│'
+    if 'utf-8' == &encoding
+      let mid = style == 'vertical' ? nr2char(0x2502) .. repeat(' ', width - 2 * ambidouble) .. nr2char(0x2502) :
+              \ style == 'left'     ? nr2char(0x2502) .. repeat(' ', width - 1 * ambidouble)
+              \                     :                    repeat(' ', width - 1 * ambidouble) .. nr2char(0x2502)
+    else
+      let mid = style == 'vertical' ? '|' .. repeat(' ', width - 2 * ambidouble) .. '|' :
+              \ style == 'left'     ? '|' .. repeat(' ', width - 1 * ambidouble)
+              \                     :        repeat(' ', width - 1 * ambidouble) .. '|'
+    endif
     let border = repeat([mid], height)
     let shift = { 'row': 0, 'col': style == 'right' ? 0 : 2, 'width': style == 'vertical' ? -4 : -2, 'height': 0 }
   elseif style =~ 'horizontal\|top\|bottom'
-    let hor = repeat('─', width / ambidouble)
+    let hor = repeat(nr2char(0x2500), width / ambidouble)
     let mid = repeat(' ', width)
     let border = style == 'horizontal' ? [hor] + repeat([mid], height - 2) + [hor] :
                \ style == 'top'        ? [hor] + repeat([mid], height - 1)
                \                       :         repeat([mid], height - 1) + [hor]
     let shift = { 'row': style == 'bottom' ? 0 : 1, 'col': 0, 'width': 0, 'height': style == 'horizontal' ? -2 : -1 }
   else
-    let edges = style == 'sharp' ? ['┌', '┐', '└', '┘'] : ['╭', '╮', '╰', '╯']
-    let bar = repeat('─', width / ambidouble - 2)
+    if 'utf-8' == &encoding
+      let edges = style == 'sharp'
+        \ ? [nr2char(0x250c), nr2char(0x2510), nr2char(0x2514), nr2char(0x2518)]
+        \ : [nr2char(0x256d), nr2char(0x256e), nr2char(0x2570), nr2char(0x256f)]
+      let bar = repeat(nr2char(0x2500), width / ambidouble - 2)
+      let mid = nr2char(0x2502) .. repeat(' ', width - 2 * ambidouble) .. nr2char(0x2502)
+    else
+      let edges = style == 'sharp'
+        \ ? ['+', '+', '+', '+']
+        \ : ['+', '+', '+', '+']
+      let bar = repeat('-', width / ambidouble - 2)
+      let mid = '|' .. repeat(' ', width - 2 * ambidouble) .. '|'
+    endif
     let top = edges[0] .. bar .. edges[1]
-    let mid = '│' .. repeat(' ', width - 2 * ambidouble) .. '│'
     let bot = edges[2] .. bar .. edges[3]
     let border = [top] + repeat([mid], height - 2) + [bot]
     let shift = { 'row': 1, 'col': 2, 'width': -4, 'height': -2 }
