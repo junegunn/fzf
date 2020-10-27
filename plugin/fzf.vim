@@ -904,7 +904,11 @@ function! s:popup(opts) abort
     let border = repeat([mid], height)
     let shift = { 'row': 0, 'col': style == 'right' ? 0 : 2, 'width': style == 'vertical' ? -4 : -2, 'height': 0 }
   elseif style =~ 'horizontal\|top\|bottom'
-    let hor = repeat(nr2char(0x2500), width / ambidouble)
+    if 'utf-8' == &encoding
+      let hor = repeat(nr2char(0x2500), width / ambidouble)
+    else
+      let hor = repeat('-', width / ambidouble)
+    endif
     let mid = repeat(' ', width)
     let border = style == 'horizontal' ? [hor] + repeat([mid], height - 2) + [hor] :
                \ style == 'top'        ? [hor] + repeat([mid], height - 1)
