@@ -925,8 +925,8 @@ function! s:popup(opts) abort
       let edges = style == 'sharp'
         \ ? ['+', '+', '+', '+']
         \ : ['+', '+', '+', '+']
-      let bar = repeat('-', width / ambidouble - 2)
-      let mid = '|' .. repeat(' ', width - 2 * ambidouble) .. '|'
+      let bar = repeat('-', width - 2)
+      let mid = '|' .. repeat(' ', width - 2) .. '|'
     endif
     let top = edges[0] .. bar .. edges[1]
     let bot = edges[2] .. bar .. edges[3]
