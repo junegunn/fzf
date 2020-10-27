@@ -670,7 +670,7 @@ func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) 
 func (t *Terminal) resizeWindows() {
 	screenWidth := t.tui.MaxX()
 	screenHeight := t.tui.MaxY()
-	marginInt := [4]int{}
+	marginInt := [4]int{} // TRBL
 	t.prevLines = make([]itemLine, screenHeight)
 	for idx, sizeSpec := range t.margin {
 		if sizeSpec.percent {
@@ -687,6 +687,24 @@ func (t *Terminal) resizeWindows() {
 		switch t.borderShape {
 		case tui.BorderHorizontal:
 			marginInt[idx] += 1 - idx%2
+		case tui.BorderVertical:
+			marginInt[idx] += 2 * (idx % 2)
+		case tui.BorderTop:
+			if idx == 0 {
+				marginInt[idx]++
+			}
+		case tui.BorderRight:
+			if idx == 1 {
+				marginInt[idx] += 2
+			}
+		case tui.BorderBottom:
+			if idx == 2 {
+				marginInt[idx]++
+			}
+		case tui.BorderLeft:
+			if idx == 3 {
+				marginInt[idx] += 2
+			}
 		case tui.BorderRounded, tui.BorderSharp:
 			marginInt[idx] += 1 + idx%2
 		}
@@ -735,17 +753,31 @@ func (t *Terminal) resizeWindows() {
 	switch t.borderShape {
 	case tui.BorderHorizontal:
 		t.border = t.tui.NewWindow(
-			marginInt[0]-1,
-			marginInt[3],
-			width,
-			height+2,
+			marginInt[0]-1, marginInt[3], width, height+2,
 			false, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
+	case tui.BorderVertical:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3]-2, width+4, height,
+			false, tui.MakeBorderStyle(tui.BorderVertical, t.unicode))
+	case tui.BorderTop:
+		t.border = t.tui.NewWindow(
+			marginInt[0]-1, marginInt[3], width, height+1,
+			false, tui.MakeBorderStyle(tui.BorderTop, t.unicode))
+	case tui.BorderBottom:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3], width, height+1,
+			false, tui.MakeBorderStyle(tui.BorderBottom, t.unicode))
+	case tui.BorderLeft:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3]-2, width+2, height,
+			false, tui.MakeBorderStyle(tui.BorderLeft, t.unicode))
+	case tui.BorderRight:
+		t.border = t.tui.NewWindow(
+			marginInt[0], marginInt[3], width+2, height,
+			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
 	case tui.BorderRounded, tui.BorderSharp:
 		t.border = t.tui.NewWindow(
-			marginInt[0]-1,
-			marginInt[3]-2,
-			width+4,
-			height+2,
+			marginInt[0]-1, marginInt[3]-2, width+4, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 	}
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
@@ -1823,13 +1855,9 @@ func (t *Terminal) Loop() {
 					reader := bufio.NewReader(out)
 					eofChan := make(chan bool)
 					finishChan := make(chan bool, 1)
-					reapChan := make(chan bool)
 					err := cmd.Start()
-					reaps := 0
-					if err != nil {
-						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
-					} else {
-						reaps = 2
+					if err == nil {
+						reapChan := make(chan bool)
 						lineChan := make(chan eachLine)
 						// Goroutine 1 reads process output
 						go func() {
@@ -1842,6 +1870,7 @@ func (t *Terminal) Loop() {
 							}
 							eofChan <- true
 						}()
+
 						// Goroutine 2 periodically requests rendering
 						go func(version int64) {
 							lines := []string{}
@@ -1883,42 +1912,47 @@ func (t *Terminal) Loop() {
 							ticker.Stop()
 							reapChan <- true
 						}(version)
-					}
-					// Goroutine 3 is responsible for cancelling running preview command
-					go func(version int64) {
-						timer := time.NewTimer(previewDelayed)
-					Loop:
-						for {
-							select {
-							case <-timer.C:
-								t.reqBox.Set(reqPreviewDelayed, version)
-							case code := <-t.killChan:
-								if code != exitCancel {
-									util.KillCommand(cmd)
-									os.Exit(code)
-								} else {
-									timer := time.NewTimer(previewCancelWait)
-									select {
-									case <-timer.C:
+
+						// Goroutine 3 is responsible for cancelling running preview command
+						go func(version int64) {
+							timer := time.NewTimer(previewDelayed)
+						Loop:
+							for {
+								select {
+								case <-timer.C:
+									t.reqBox.Set(reqPreviewDelayed, version)
+								case code := <-t.killChan:
+									if code != exitCancel {
 										util.KillCommand(cmd)
-									case <-finishChan:
+										os.Exit(code)
+									} else {
+										timer := time.NewTimer(previewCancelWait)
+										select {
+										case <-timer.C:
+											util.KillCommand(cmd)
+										case <-finishChan:
+										}
+										timer.Stop()
 									}
-									timer.Stop()
+									break Loop
+								case <-finishChan:
+									break Loop
 								}
-								break Loop
-							case <-finishChan:
-								break Loop
 							}
-						}
-						timer.Stop()
-						reapChan <- true
-					}(version)
-					<-eofChan
-					cmd.Wait() // NOTE: We should not call Wait before EOF
-					finishChan <- true
-					for i := 0; i < reaps; i++ {
+							timer.Stop()
+							reapChan <- true
+						}(version)
+
+						<-eofChan          // Goroutine 1 finished
+						cmd.Wait()         // NOTE: We should not call Wait before EOF
+						finishChan <- true // Tell Goroutine 3 to stop
+						<-reapChan         // Goroutine 2 and 3 finished
 						<-reapChan
+					} else {
+						// Failed to start the command. Report the error immediately.
+						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
 					}
+
 					cleanTemporaryFiles()
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, ""})

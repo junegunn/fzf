@@ -2,11 +2,10 @@
 
 set -u
 
-version=0.23.1
+version=0.24.0-rc1
 auto_completion=
 key_bindings=
 update_config=2
-binary_arch=
 shells="bash zsh fish"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
@@ -115,7 +114,7 @@ link_fzf_in_path() {
 
 try_curl() {
   command -v curl > /dev/null &&
-  if [[ $1 =~ tgz$ ]]; then
+  if [[ $1 =~ tar.gz$ ]]; then
     curl -fL $1 | tar -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
@@ -125,7 +124,7 @@ try_curl() {
 
 try_wget() {
   command -v wget > /dev/null &&
-  if [[ $1 =~ tgz$ ]]; then
+  if [[ $1 =~ tar.gz$ ]]; then
     wget -O - $1 | tar -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
@@ -135,13 +134,11 @@ try_wget() {
 
 download() {
   echo "Downloading bin/fzf ..."
-  if [[ ! "$version" =~ alpha ]]; then
-    if [ -x "$fzf_base"/bin/fzf ]; then
-      echo "  - Already exists"
-      check_binary && return
-    fi
-    link_fzf_in_path && return
+  if [ -x "$fzf_base"/bin/fzf ]; then
+    echo "  - Already exists"
+    check_binary && return
   fi
+  link_fzf_in_path && return
   mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
   if [ $? -ne 0 ]; then
     binary_error="Failed to create bin directory"
@@ -149,9 +146,7 @@ download() {
   fi
 
   local url
-  [[ "$version" =~ alpha ]] &&
-    url=https://github.com/junegunn/fzf-bin/releases/download/alpha/${1} ||
-    url=https://github.com/junegunn/fzf-bin/releases/download/$version/${1}
+  url=https://github.com/junegunn/fzf/releases/download/$version/${1}
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     set +o pipefail
@@ -173,20 +168,20 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ *64)   download fzf-$version-darwin_${binary_arch:-amd64}.tgz  ;;
-  Linux\ armv5*) download fzf-$version-linux_${binary_arch:-arm5}.tgz    ;;
-  Linux\ armv6*) download fzf-$version-linux_${binary_arch:-arm6}.tgz    ;;
-  Linux\ armv7*) download fzf-$version-linux_${binary_arch:-arm7}.tgz    ;;
-  Linux\ armv8*) download fzf-$version-linux_${binary_arch:-arm8}.tgz    ;;
-  Linux\ aarch64*) download fzf-$version-linux_${binary_arch:-arm8}.tgz  ;;
-  Linux\ *64)    download fzf-$version-linux_${binary_arch:-amd64}.tgz   ;;
-  FreeBSD\ *64)  download fzf-$version-freebsd_${binary_arch:-amd64}.tgz ;;
-  OpenBSD\ *64)  download fzf-$version-openbsd_${binary_arch:-amd64}.tgz ;;
-  CYGWIN*\ *64)  download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MINGW*\ *64)   download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  MSYS*\ *64)    download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  Windows*\ *64) download fzf-$version-windows_${binary_arch:-amd64}.zip ;;
-  *)             binary_available=0 binary_error=1 ;;
+  Darwin\ *64)     download fzf-$version-darwin_amd64.tar.gz  ;;
+  Linux\ armv5*)   download fzf-$version-linux_armv5.tar.gz   ;;
+  Linux\ armv6*)   download fzf-$version-linux_armv6.tar.gz   ;;
+  Linux\ armv7*)   download fzf-$version-linux_armv7.tar.gz   ;;
+  Linux\ armv8*)   download fzf-$version-linux_arm64.tar.gz   ;;
+  Linux\ aarch64*) download fzf-$version-linux_arm64.tar.gz   ;;
+  Linux\ *64)      download fzf-$version-linux_amd64.tar.gz   ;;
+  FreeBSD\ *64)    download fzf-$version-freebsd_amd64.tar.gz ;;
+  OpenBSD\ *64)    download fzf-$version-openbsd_amd64.tar.gz ;;
+  CYGWIN*\ *64)    download fzf-$version-windows_amd64.zip    ;;
+  MINGW*\ *64)     download fzf-$version-windows_amd64.zip    ;;
+  MSYS*\ *64)      download fzf-$version-windows_amd64.zip    ;;
+  Windows*\ *64)   download fzf-$version-windows_amd64.zip    ;;
+  *)               binary_available=0 binary_error=1 ;;
 esac
 
 cd "$fzf_base"

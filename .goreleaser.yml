@@ -1,0 +1,69 @@
+---
+project_name: fzf
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: fzf-macos
+    binary: fzf
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
+    hooks:
+      post: gon .gon.hcl
+
+  - goos:
+      - linux
+      - windows
+      - freebsd
+      - openbsd
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 5
+      - 6
+      - 7
+    ldflags:
+      - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
+    ignore:
+      - goos: freebsd
+        goarch: arm
+      - goos: openbsd
+        goarch: arm
+      - goos: freebsd
+        goarch: arm64
+      - goos: openbsd
+        goarch: arm64
+
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - non-existent*
+
+release:
+  github:
+    owner: junegunn
+    name: fzf
+  prerelease: auto
+  name_template: '{{ .Tag }}'
+
+snapshot:
+  name_template: "{{ .Tag }}-devel"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - README
+      - test
