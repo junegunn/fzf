@@ -1855,13 +1855,9 @@ func (t *Terminal) Loop() {
 					reader := bufio.NewReader(out)
 					eofChan := make(chan bool)
 					finishChan := make(chan bool, 1)
-					reapChan := make(chan bool)
 					err := cmd.Start()
-					reaps := 0
-					if err != nil {
-						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
-					} else {
-						reaps = 2
+					if err == nil {
+						reapChan := make(chan bool)
 						lineChan := make(chan eachLine)
 						// Goroutine 1 reads process output
 						go func() {
@@ -1874,6 +1870,7 @@ func (t *Terminal) Loop() {
 							}
 							eofChan <- true
 						}()
+
 						// Goroutine 2 periodically requests rendering
 						go func(version int64) {
 							lines := []string{}
@@ -1915,42 +1912,47 @@ func (t *Terminal) Loop() {
 							ticker.Stop()
 							reapChan <- true
 						}(version)
-					}
-					// Goroutine 3 is responsible for cancelling running preview command
-					go func(version int64) {
-						timer := time.NewTimer(previewDelayed)
-					Loop:
-						for {
-							select {
-							case <-timer.C:
-								t.reqBox.Set(reqPreviewDelayed, version)
-							case code := <-t.killChan:
-								if code != exitCancel {
-									util.KillCommand(cmd)
-									os.Exit(code)
-								} else {
-									timer := time.NewTimer(previewCancelWait)
-									select {
-									case <-timer.C:
+
+						// Goroutine 3 is responsible for cancelling running preview command
+						go func(version int64) {
+							timer := time.NewTimer(previewDelayed)
+						Loop:
+							for {
+								select {
+								case <-timer.C:
+									t.reqBox.Set(reqPreviewDelayed, version)
+								case code := <-t.killChan:
+									if code != exitCancel {
 										util.KillCommand(cmd)
-									case <-finishChan:
+										os.Exit(code)
+									} else {
+										timer := time.NewTimer(previewCancelWait)
+										select {
+										case <-timer.C:
+											util.KillCommand(cmd)
+										case <-finishChan:
+										}
+										timer.Stop()
 									}
-									timer.Stop()
+									break Loop
+								case <-finishChan:
+									break Loop
 								}
-								break Loop
-							case <-finishChan:
-								break Loop
 							}
-						}
-						timer.Stop()
-						reapChan <- true
-					}(version)
-					<-eofChan
-					cmd.Wait() // NOTE: We should not call Wait before EOF
-					finishChan <- true
-					for i := 0; i < reaps; i++ {
+							timer.Stop()
+							reapChan <- true
+						}(version)
+
+						<-eofChan          // Goroutine 1 finished
+						cmd.Wait()         // NOTE: We should not call Wait before EOF
+						finishChan <- true // Tell Goroutine 3 to stop
+						<-reapChan         // Goroutine 2 and 3 finished
 						<-reapChan
+					} else {
+						// Failed to start the command. Report the error immediately.
+						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
 					}
+
 					cleanTemporaryFiles()
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, ""})
