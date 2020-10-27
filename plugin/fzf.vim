@@ -50,6 +50,9 @@ if s:is_win
   " Use utf-8 for fzf.vim commands
   " Return array of shell commands for cmd.exe
   function! s:enc_to_cp(str)
+    if s:is_win && has('gui')
+      return iconv(a:str, 'utf-8', &encoding)
+    endif
     if !has('iconv')
       return a:str
     endif
