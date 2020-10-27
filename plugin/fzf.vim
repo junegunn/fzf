@@ -128,7 +128,7 @@ endfunction
 
 function! s:default_layout()
   return s:popup_support()
-        \ ? { 'window' : { 'width': 0.9, 'height': 0.6, 'highlight': 'Normal' } }
+        \ ? { 'window' : { 'width': 0.9, 'height': 0.6 } }
         \ : { 'down': '~40%' }
 endfunction
 

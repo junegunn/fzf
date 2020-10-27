@@ -6,6 +6,8 @@ ROOT_DIR       := $(shell dirname $(MAKEFILE))
 SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 
 VERSION        := $(shell git describe --abbrev=0)
+VERSION_TRIM   := $(shell sed "s/-.*//" <<< $(VERSION))
+VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
 REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
 BUILD_FLAGS    := -a -ldflags "-X main.version=$(VERSION) -X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
 
@@ -15,7 +17,6 @@ BINARYARM6     := fzf-$(GOOS)_arm6
 BINARYARM7     := fzf-$(GOOS)_arm7
 BINARYARM8     := fzf-$(GOOS)_arm8
 BINARYPPC64LE  := fzf-$(GOOS)_ppc64le
-VERSION        := $(shell awk -F= '/version =/ {print $$2}' src/constants.go | tr -d "\" ")
 
 # https://en.wikipedia.org/wiki/Uname
 UNAME_M := $(shell uname -m)
@@ -36,7 +37,7 @@ else ifeq ($(UNAME_M),aarch64)
 else ifeq ($(UNAME_M),ppc64le)
 	BINARY := $(BINARYPPC64LE)
 else
-$(error "Build on $(UNAME_M) is not supported, yet.")
+$(error Build on $(UNAME_M) is not supported, yet.)
 endif
 
 all: target/$(BINARY)
@@ -50,8 +51,43 @@ test: $(SOURCES)
 
 install: bin/fzf
 
-release:
+build:
 	goreleaser --rm-dist --snapshot
+
+release:
+ifndef GITHUB_TOKEN
+	$(error GITHUB_TOKEN is not defined)
+endif
+
+	# Check if we are on master branch
+ifneq ($(shell git symbolic-ref --short HEAD),master)
+	$(error Not on master branch)
+endif
+
+	# Check if version numbers are properly updated
+	grep -q ^$(VERSION_REGEX)$$ CHANGELOG.md
+	grep -qF '"fzf $(VERSION_TRIM)"' man/man1/fzf.1
+	grep -qF '"fzf $(VERSION_TRIM)"' man/man1/fzf-tmux.1
+	grep -qF $(VERSION) install
+	grep -qF $(VERSION) install.ps1
+
+	# Make release note out of CHANGELOG.md
+	sed -n '/^$(VERSION_REGEX)$$/,/^[0-9]/p' CHANGELOG.md | tail -r | \
+		sed '1,/^ *$$/d' | tail -r | sed 1,2d | tee tmp/release-note
+
+	# Push to temp branch first so that install scripts always works on master branch
+	git checkout -B temp master
+	git push origin temp --follow-tags --force
+
+	# Make a GitHub release
+	goreleaser --rm-dist --release-notes tmp/release-note
+
+	# Push to master
+	git checkout master
+	git push origin master
+
+	# Delete temp branch
+	git push origin --delete temp
 
 clean:
 	$(RM) -r dist target
@@ -90,4 +126,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all release test install clean docker docker-test update
+.PHONY: all build release test install clean docker docker-test update
