@@ -404,7 +404,7 @@ try
       let prefix = '( '.source.' )|'
     elseif type == 3
       let temps.input = s:fzf_tempname()
-      call writefile(map(source, '<SID>enc_to_cp(v:val)'), temps.input)
+      call writefile(source, temps.input)
       let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
     else
       throw 'Invalid source type'
