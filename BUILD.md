@@ -24,6 +24,13 @@ make build
 make release
 ```
 
+> :warning: Makefile uses git commands to determine the version and the
+> revision information for `fzf --version`. So if you're building fzf from an
+> environment where its git information is not available, you have to manually
+> set `$FZF_VERSION` and `$FZF_REVISION`.
+>
+> e.g. `FZF_VERSION=0.24.0 FZF_REVISION=tarball make`
+
 Third-party libraries used
 --------------------------
 

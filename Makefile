@@ -5,10 +5,25 @@ MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
 SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
 
-VERSION        := $(shell git describe --abbrev=0)
+ifdef FZF_VERSION
+VERSION        := $(FZF_VERSION)
+else
+VERSION        := $(shell git describe --abbrev=0 2> /dev/null)
+endif
+ifeq ($(VERSION),)
+$(error Not on git repository; cannot determine $$FZF_VERSION)
+endif
 VERSION_TRIM   := $(shell sed "s/-.*//" <<< $(VERSION))
 VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
-REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES))
+
+ifdef FZF_REVISION
+REVISION       := $(FZF_REVISION)
+else
+REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES) 2> /dev/null)
+endif
+ifeq ($(REVISION),)
+$(error Not on git repository; cannot determine $$FZF_REVISION)
+endif
 BUILD_FLAGS    := -a -ldflags "-X main.version=$(VERSION) -X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
 
 BINARY64       := fzf-$(GOOS)_amd64
