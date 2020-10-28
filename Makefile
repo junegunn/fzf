@@ -24,7 +24,7 @@ endif
 ifeq ($(REVISION),)
 $(error Not on git repository; cannot determine $$FZF_REVISION)
 endif
-BUILD_FLAGS    := -a -ldflags "-X main.version=$(VERSION) -X main.revision=$(REVISION) -w '-extldflags=$(LDFLAGS)'" -tags "$(TAGS)"
+BUILD_FLAGS    := -a -ldflags "-s -w -X main.version=$(VERSION) -X main.revision=$(REVISION)" -tags "$(TAGS)"
 
 BINARY64       := fzf-$(GOOS)_amd64
 BINARYARM5     := fzf-$(GOOS)_arm5
