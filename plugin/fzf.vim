@@ -700,7 +700,7 @@ function! s:border_opt(window)
   if !has_key(a:window, 'border') && !get(a:window, 'rounded', 1)
     let style = 'sharp'
   endif
-  if style == 'none'
+  if style == 'none' || style == 'no'
     return ''
   endif
 
