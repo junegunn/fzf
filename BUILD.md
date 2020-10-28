@@ -17,20 +17,11 @@ make
 # Build fzf binary and copy it to bin directory
 make install
 
-# Build 32-bit and 64-bit executables and tarballs in target
+# Build fzf binaries and archives for all platforms using goreleaser
+make build
+
+# Publish GitHub release
 make release
-
-# Make release archives for all supported platforms in target
-make release-all
-```
-
-### Using `go get`
-
-Alternatively, you can build fzf directly with `go get` command without
-manually cloning the repository.
-
-```sh
-go get -u github.com/junegunn/fzf
 ```
 
 Third-party libraries used
