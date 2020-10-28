@@ -197,7 +197,7 @@ if [ -n "$binary_error" ]; then
       export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
       mkdir -p "$GOPATH"
     fi
-    if go get -u github.com/junegunn/fzf; then
+    if go get -ldflags "-s -w -X main.version=$version -X main.revision=go-get" github.com/junegunn/fzf; then
       echo "OK"
       cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
     else
