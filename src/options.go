@@ -617,7 +617,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 		case "16":
 			theme = dupeTheme(tui.Default16)
 		case "bw", "no":
-			theme = nil
+			theme = tui.NoColorTheme()
 		default:
 			fail := func() {
 				errorExit("invalid color specification: " + str)
