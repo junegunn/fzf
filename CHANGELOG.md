@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.24.1
+------
+- Fixed broken `--color=[bw|no]` option
+
 0.24.0
 ------
 - Real-time rendering of preview window
