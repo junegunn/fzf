@@ -6,6 +6,10 @@ package tui
 
 type Attr int
 
+func HasFullscreenRenderer() bool {
+	return false
+}
+
 func (a Attr) Merge(b Attr) Attr {
 	return a | b
 }

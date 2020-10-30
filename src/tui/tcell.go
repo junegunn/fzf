@@ -15,6 +15,10 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+func HasFullscreenRenderer() bool {
+	return true
+}
+
 func (p ColorPair) style() tcell.Style {
 	style := tcell.StyleDefault
 	return style.Foreground(tcell.Color(p.Fg())).Background(tcell.Color(p.Bg()))
