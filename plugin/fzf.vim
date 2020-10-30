@@ -189,7 +189,7 @@ function! fzf#exec(...)
     if v:shell_error || empty(output)
       throw printf('Failed to run "%s": %s', command, output)
     endif
-    let fzf_version = matchstr(output[0], '[0-9.]\+')
+    let fzf_version = matchstr(output[-1], '[0-9.]\+')
     if s:version_requirement(fzf_version, a:1)
       let s:checked[a:1] = 1
       return s:exec
