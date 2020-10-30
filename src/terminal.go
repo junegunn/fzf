@@ -408,11 +408,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	var renderer tui.Renderer
 	fullscreen := opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100
 	if fullscreen {
-		if tui.HasFullscreenRenderer() {
-			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
-		} else {
+		if tui.IsLightRendererSupported() {
 			renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
 				true, func(h int) int { return h })
+		} else {
+			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 		}
 	} else {
 		maxHeightFunc := func(termHeight int) int {
