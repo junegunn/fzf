@@ -912,7 +912,9 @@ else
       \ line: a:opts.row,
       \ col: a:opts.col,
       \ minwidth: a:opts.width,
+      \ maxwidth: a:opts.width,
       \ minheight: a:opts.height,
+      \ maxheight: a:opts.height,
       \ zindex: 1000,
     \ })}
     autocmd TerminalOpen * ++once call s:popup_create(str2nr(expand('<abuf>')))
