@@ -908,23 +908,14 @@ if has('nvim')
   endfunction
 else
   function! s:create_popup(hl, opts) abort
-    let is_frame = has_key(a:opts, 'border')
     let s:popup_create = {buf -> popup_create(buf, #{
       \ line: a:opts.row,
       \ col: a:opts.col,
       \ minwidth: a:opts.width,
       \ minheight: a:opts.height,
-      \ zindex: 50 - is_frame,
+      \ zindex: 1000,
     \ })}
-    if is_frame
-      let id = s:popup_create('')
-      call setwinvar(id, '&wincolor', a:hl)
-      call setbufline(winbufnr(id), 1, a:opts.border)
-      execute 'autocmd BufWipeout * ++once call popup_close('..id..')'
-      return winbufnr(id)
-    else
-      autocmd TerminalOpen * ++once call s:popup_create(str2nr(expand('<abuf>')))
-    endif
+    autocmd TerminalOpen * ++once call s:popup_create(str2nr(expand('<abuf>')))
   endfunction
 endif
 
