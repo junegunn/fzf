@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.24.2
+------
+- Bug fixes and improvements
+
 0.24.1
 ------
 - Fixed broken `--color=[bw|no]` option

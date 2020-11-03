@@ -1254,6 +1254,7 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 	}
 	var ansi *ansiState
 	for _, line := range t.previewer.lines {
+		line = strings.TrimSuffix(line, "\n")
 		if lineNo >= height || t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
 			t.previewed.filled = true
 			break
@@ -1284,6 +1285,7 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 			if unchanged && lineNo == 0 {
 				break
 			}
+			t.pwindow.Fill("\n")
 		}
 		lineNo++
 	}
