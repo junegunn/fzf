@@ -526,7 +526,6 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{-1, -1, tui.AttrClear}}
 		if item.colors != nil {
 			lastColor := (*item.colors)[len(*item.colors)-1]
-			fmt.Println(lastColor.offset[1], int32(loc[1]))
 			if lastColor.offset[1] < int32(loc[1]) {
 				blankState.offset[0] = lastColor.offset[1]
 				colors := append(*item.colors, blankState)
