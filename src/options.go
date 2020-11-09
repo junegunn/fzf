@@ -60,7 +60,8 @@ const usage = `usage: fzf [options]
     --border[=STYLE]      Draw border around the finder
                           [rounded|sharp|horizontal|vertical|
                            top|bottom|left|right] (default: rounded)
-    --margin=MARGIN       Screen margin (TRBL / TB,RL / T,RL,B / T,R,B,L)
+    --margin=MARGIN       Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
+    --padding=PADDING     Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE          Finder info style [default|inline|hidden]
     --prompt=STR          Input prompt (default: '> ')
     --pointer=STR         Pointer to the current line (default: '>')
@@ -221,6 +222,7 @@ type Options struct {
 	Header      []string
 	HeaderLines int
 	Margin      [4]sizeSpec
+	Padding     [4]sizeSpec
 	BorderShape tui.BorderShape
 	Unicode     bool
 	Tabstop     int
@@ -281,6 +283,7 @@ func defaultOptions() *Options {
 		Header:      make([]string, 0),
 		HeaderLines: 0,
 		Margin:      defaultMargin(),
+		Padding:     defaultMargin(),
 		Unicode:     true,
 		Tabstop:     8,
 		ClearOnExit: true,
@@ -1076,10 +1079,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	}
 }
 
-func parseMargin(margin string) [4]sizeSpec {
+func parseMargin(opt string, margin string) [4]sizeSpec {
 	margins := strings.Split(margin, ",")
 	checked := func(str string) sizeSpec {
-		return parseSize(str, 49, "margin")
+		return parseSize(str, 49, opt)
 	}
 	switch len(margins) {
 	case 1:
@@ -1099,7 +1102,7 @@ func parseMargin(margin string) [4]sizeSpec {
 			checked(margins[0]), checked(margins[1]),
 			checked(margins[2]), checked(margins[3])}
 	default:
-		errorExit("invalid margin: " + margin)
+		errorExit("invalid " + opt + ": " + margin)
 	}
 	return defaultMargin()
 }
@@ -1324,6 +1327,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Height = sizeSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
+		case "--no-padding":
+			opts.Padding = defaultMargin()
 		case "--no-border":
 			opts.BorderShape = tui.BorderNone
 		case "--border":
@@ -1335,7 +1340,12 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Unicode = true
 		case "--margin":
 			opts.Margin = parseMargin(
+				"margin",
 				nextString(allArgs, &i, "margin required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
+		case "--padding":
+			opts.Padding = parseMargin(
+				"padding",
+				nextString(allArgs, &i, "padding required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
 		case "--clear":
@@ -1404,7 +1414,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--preview-window="); match {
 				parsePreviewWindow(&opts.Preview, value)
 			} else if match, value := optString(arg, "--margin="); match {
-				opts.Margin = parseMargin(value)
+				opts.Margin = parseMargin("margin", value)
+			} else if match, value := optString(arg, "--padding="); match {
+				opts.Padding = parseMargin("padding", value)
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {

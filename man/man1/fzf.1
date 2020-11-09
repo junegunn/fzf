@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2020" "fzf 0.24.2" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2020" "fzf 0.24.3" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -233,6 +233,29 @@ e.g.
      \fBfzf --margin 10%
      fzf --margin 1,5%\fR
 .RE
+.TP
+.BI "--padding=" PADDING
+Comma-separated expression for padding inside the border. Padding is
+distinguishable from margin only when \fB--border\fR option is used.
+.br
+
+.br
+e.g.
+     \fBfzf --margin 5% --padding 5% --border --preview 'cat {}' \\
+         --color bg:#222222,preview-bg:#333333\fR
+
+.br
+.RS
+.BR TRBL "     Same padding for top, right, bottom, and left"
+.br
+.BR TB,RL "    Vertical, horizontal padding"
+.br
+.BR T,RL,B "   Top, horizontal, bottom padding"
+.br
+.BR T,R,B,L "  Top, right, bottom, left padding"
+.br
+.RE
+
 .TP
 .BI "--info=" "STYLE"
 Determines the display style of finder info.

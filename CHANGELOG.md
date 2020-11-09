@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.24.3
+------
+- Added `--padding` option
+  ```sh
+  fzf --margin 5% --padding 5% --border --preview 'cat {}' \
+      --color bg:#222222,preview-bg:#333333
+  ```
+
 0.24.2
 ------
 - Bug fixes and improvements
