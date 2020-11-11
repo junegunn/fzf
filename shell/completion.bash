@@ -53,7 +53,7 @@ __fzf_orig_completion() {
       comp="${BASH_REMATCH[1]}"
       f="${BASH_REMATCH[2]}"
       cmd="${BASH_REMATCH[3]}"
-      export "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}=${comp} %s ${cmd} #${f}"
+      printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
       if [[ "$l" = *" -o nospace "* ]] && [[ ! "$__fzf_nospace_commands" = *" $cmd "* ]]; then
         __fzf_nospace_commands="$__fzf_nospace_commands $cmd "
       fi
