@@ -844,6 +844,7 @@ function! s:execute_term(dict, command, temps) abort
         call term_wait(fzf.buf, 20)
       endif
     endif
+    tnoremap <buffer> <c-z> <nop>
   finally
     call s:dopopd()
   endtry
