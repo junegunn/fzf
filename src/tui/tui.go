@@ -98,6 +98,11 @@ const (
 	AltLeft
 	AltRight
 
+	AltSUp
+	AltSDown
+	AltSLeft
+	AltSRight
+
 	Alt0
 )
 

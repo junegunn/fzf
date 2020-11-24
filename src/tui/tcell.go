@@ -222,7 +222,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 		// process keyboard:
 	case *tcell.EventKey:
-		alt := (ev.Modifiers() & tcell.ModAlt) > 0
+		mods := ev.Modifiers()
+		alt := (mods & tcell.ModAlt) > 0
+		shift := (mods & tcell.ModShift) > 0
+		altShift := alt && shift
 		keyfn := func(r rune) int {
 			if alt {
 				return CtrlAltA - 'a' + int(r)
@@ -297,21 +300,45 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{BSpace, 0, nil}
 
 		case tcell.KeyUp:
+			if altShift {
+				return Event{AltSUp, 0, nil}
+			}
+			if shift {
+				return Event{SUp, 0, nil}
+			}
 			if alt {
 				return Event{AltUp, 0, nil}
 			}
 			return Event{Up, 0, nil}
 		case tcell.KeyDown:
+			if altShift {
+				return Event{AltSDown, 0, nil}
+			}
+			if shift {
+				return Event{SDown, 0, nil}
+			}
 			if alt {
 				return Event{AltDown, 0, nil}
 			}
 			return Event{Down, 0, nil}
 		case tcell.KeyLeft:
+			if altShift {
+				return Event{AltSLeft, 0, nil}
+			}
+			if shift {
+				return Event{SLeft, 0, nil}
+			}
 			if alt {
 				return Event{AltLeft, 0, nil}
 			}
 			return Event{Left, 0, nil}
 		case tcell.KeyRight:
+			if altShift {
+				return Event{AltSRight, 0, nil}
+			}
+			if shift {
+				return Event{SRight, 0, nil}
+			}
 			if alt {
 				return Event{AltRight, 0, nil}
 			}

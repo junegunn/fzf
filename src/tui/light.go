@@ -463,20 +463,54 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 					return Event{Invalid, 0, nil}
 				case ';':
-					if len(r.buffer) != 6 {
+					if len(r.buffer) < 6 {
 						return Event{Invalid, 0, nil}
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case '2', '5':
-						switch r.buffer[5] {
+					case '1', '2', '3', '5':
+						alt := r.buffer[4] == '3'
+						altShift := r.buffer[4] == '1' && r.buffer[5] == '0'
+						char := r.buffer[5]
+						if altShift {
+							if len(r.buffer) < 7 {
+								return Event{Invalid, 0, nil}
+							}
+							*sz = 7
+							char = r.buffer[6]
+						}
+						switch char {
 						case 'A':
+							if alt {
+								return Event{AltUp, 0, nil}
+							}
+							if altShift {
+								return Event{AltSUp, 0, nil}
+							}
 							return Event{SUp, 0, nil}
 						case 'B':
+							if alt {
+								return Event{AltDown, 0, nil}
+							}
+							if altShift {
+								return Event{AltSDown, 0, nil}
+							}
 							return Event{SDown, 0, nil}
 						case 'C':
+							if alt {
+								return Event{AltRight, 0, nil}
+							}
+							if altShift {
+								return Event{AltSRight, 0, nil}
+							}
 							return Event{SRight, 0, nil}
 						case 'D':
+							if alt {
+								return Event{AltLeft, 0, nil}
+							}
+							if altShift {
+								return Event{AltSLeft, 0, nil}
+							}
 							return Event{SLeft, 0, nil}
 						}
 					} // r.buffer[4]
