@@ -4,7 +4,7 @@
 
 package tui
 
-type Attr int
+type Attr int32
 
 func HasFullscreenRenderer() bool {
 	return false

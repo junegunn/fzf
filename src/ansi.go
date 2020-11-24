@@ -19,17 +19,18 @@ type ansiState struct {
 	fg   tui.Color
 	bg   tui.Color
 	attr tui.Attr
+	lbg  tui.Color
 }
 
 func (s *ansiState) colored() bool {
-	return s.fg != -1 || s.bg != -1 || s.attr > 0
+	return s.fg != -1 || s.bg != -1 || s.attr > 0 || s.lbg >= 0
 }
 
 func (s *ansiState) equals(t *ansiState) bool {
 	if t == nil {
 		return !s.colored()
 	}
-	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr
+	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr && s.lbg == t.lbg
 }
 
 func (s *ansiState) ToString() string {
@@ -195,11 +196,14 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 	// State
 	var state *ansiState
 	if prevState == nil {
-		state = &ansiState{-1, -1, 0}
+		state = &ansiState{-1, -1, 0, -1}
 	} else {
-		state = &ansiState{prevState.fg, prevState.bg, prevState.attr}
+		state = &ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg}
 	}
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
+		if strings.HasSuffix(ansiCode, "0K") {
+			state.lbg = prevState.bg
+		}
 		return state
 	}
 
