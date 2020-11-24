@@ -656,8 +656,6 @@ func (t *Terminal) displayWidth(runes []rune) int {
 const (
 	minWidth  = 4
 	minHeight = 4
-
-	maxDisplayWidthCalc = 1024
 )
 
 func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) int {
@@ -1116,13 +1114,15 @@ func (t *Terminal) displayWidthWithLimit(runes []rune, prefixWidth int, limit in
 }
 
 func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
-	if len(runes) > maxDisplayWidthCalc && len(runes) > width {
-		trimmed := len(runes) - width
-		return runes[trimmed:], int32(trimmed)
+	var trimmed int32
+	// Assume that each rune takes at least one column on screen
+	if len(runes) > width {
+		diff := len(runes) - width
+		trimmed = int32(diff)
+		runes = runes[diff:]
 	}
 
 	currentWidth := t.displayWidth(runes)
-	var trimmed int32
 
 	for currentWidth > width && len(runes) > 0 {
 		runes = runes[1:]
