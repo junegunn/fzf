@@ -168,7 +168,7 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 		}
 	}
 	assert("\x1b[m", nil, "")
-	assert("\x1b[m", &ansiState{attr: tui.Blink}, "")
+	assert("\x1b[m", &ansiState{attr: tui.Blink, lbg: -1}, "")
 
 	assert("\x1b[31m", nil, "\x1b[31;49m")
 	assert("\x1b[41m", nil, "\x1b[39;41m")
@@ -176,8 +176,8 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 	assert("\x1b[92m", nil, "\x1b[92;49m")
 	assert("\x1b[102m", nil, "\x1b[39;102m")
 
-	assert("\x1b[31m", &ansiState{fg: 4, bg: 4}, "\x1b[31;44m")
-	assert("\x1b[1;2;31m", &ansiState{fg: 2, bg: -1, attr: tui.Reverse}, "\x1b[1;2;7;31;49m")
+	assert("\x1b[31m", &ansiState{fg: 4, bg: 4, lbg: -1}, "\x1b[31;44m")
+	assert("\x1b[1;2;31m", &ansiState{fg: 2, bg: -1, attr: tui.Reverse, lbg: -1}, "\x1b[1;2;7;31;49m")
 	assert("\x1b[38;5;100;48;5;200m", nil, "\x1b[38;5;100;48;5;200m")
 	assert("\x1b[48;5;100;38;5;200m", nil, "\x1b[38;5;200;48;5;100m")
 	assert("\x1b[48;5;100;38;2;10;20;30;1m", nil, "\x1b[1;38;2;10;20;30;48;5;100m")
