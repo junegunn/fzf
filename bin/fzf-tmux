@@ -193,7 +193,8 @@ pppid=$$
 echo -n "trap 'kill -SIGUSR1 -$pppid' EXIT SIGINT SIGTERM;" >> $argsf
 close="; trap - EXIT SIGINT SIGTERM $close"
 
-export TMUX=$(cut -d , -f 1,2 <<< "$TMUX")
+export TMUX
+TMUX=$(cut -d , -f 1,2 <<< "$TMUX")
 mkfifo -m o+w $fifo2
 if [[ "$opt" =~ "-K -E" ]]; then
   cat $fifo2 &
