@@ -17,7 +17,6 @@ addons:
     packages:
       - fish
       - tmux
-    update: true
 install: gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1
 script:
   - make test
