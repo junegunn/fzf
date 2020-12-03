@@ -6,6 +6,7 @@ os:
   - linux
   - osx
 dist: bionic
+osx_image: xcode12.2
 addons:
   apt:
     packages:
