@@ -214,6 +214,7 @@ const (
 	actBackwardDeleteCharEOF
 	actBackwardWord
 	actCancel
+	actChangePrompt
 	actClearScreen
 	actClearQuery
 	actClearSelection
@@ -2223,6 +2224,9 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actChangePrompt:
+				t.prompt, t.promptLen = t.parsePrompt(a.a)
+				req(reqPrompt)
 			case actPreview:
 				togglePreview(true)
 				refreshPreview(a.a)

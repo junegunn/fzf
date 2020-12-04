@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.24.4
+------
+- Added `change-prompt` action
+  ```sh
+  fzf --prompt 'foo> ' --bind $'a:change-prompt:\x1b[31mbar> '
+  ```
+- Bug fixes and improvements
+
 0.24.3
 ------
 - Added `--padding` option

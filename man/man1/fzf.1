@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2020" "fzf 0.24.4" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Dec 2020" "fzf 0.24.4" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -761,6 +761,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbackward-word\fR             \fIalt-b   shift-left\fR
     \fBbeginning-of-line\fR         \fIctrl-a  home\fR
     \fBcancel\fR                    (clear query string if not empty, abort fzf otherwise)
+    \fBchange-prompt(...)\fR        (change prompt to the given string)
     \fBclear-screen\fR              \fIctrl-l\fR
     \fBclear-selection\fR           (clear multi-selection)
     \fBclear-query\fR               (clear query string)
@@ -816,7 +817,40 @@ A key or an event can be bound to one or more of the following actions.
 Multiple actions can be chained using \fB+\fR separator.
 
 e.g.
-     \fBfzf --bind 'ctrl-a:select-all+accept'\fR
+     \fBfzf --multi --bind 'ctrl-a:select-all+accept'\fR
+     \fBfzf --multi --bind 'ctrl-a:select-all' --bind 'ctrl-a:+accept'\fR
+
+.SS ACTION ARGUMENT
+
+An action denoted with \fB(...)\fR suffix takes an argument.
+
+e.g.
+     \fBfzf --bind 'ctrl-a:change-prompt(NewPrompt> )'\fR
+     \fBfzf --bind 'ctrl-v:preview(cat {})' --preview-window hidden\fR
+
+If the argument contains parentheses, fzf may fail to parse the expression. In
+that case, you can use any of the following alternative notations to avoid
+parse errors.
+
+    \fBaction-name[...]\fR
+    \fBaction-name~...~\fR
+    \fBaction-name!...!\fR
+    \fBaction-name@...@\fR
+    \fBaction-name#...#\fR
+    \fBaction-name$...$\fR
+    \fBaction-name%...%\fR
+    \fBaction-name^...^\fR
+    \fBaction-name&...&\fR
+    \fBaction-name*...*\fR
+    \fBaction-name;...;\fR
+    \fBaction-name/.../\fR
+    \fBaction-name|...|\fR
+    \fBaction-name:...\fR
+.RS
+The last one is the special form that frees you from parse errors as it does
+not expect the closing character. The catch is that it should be the last one
+in the comma-separated list of key-action pairs.
+.RE
 
 .SS COMMAND EXECUTION
 
@@ -827,30 +861,6 @@ binding \fBenter\fR key to \fBless\fR command like follows.
     \fBfzf --bind "enter:execute(less {})"\fR
 
 You can use the same placeholder expressions as in \fB--preview\fR.
-
-If the command contains parentheses, fzf may fail to parse the expression. In
-that case, you can use any of the following alternative notations to avoid
-parse errors.
-
-    \fBexecute[...]\fR
-    \fBexecute~...~\fR
-    \fBexecute!...!\fR
-    \fBexecute@...@\fR
-    \fBexecute#...#\fR
-    \fBexecute$...$\fR
-    \fBexecute%...%\fR
-    \fBexecute^...^\fR
-    \fBexecute&...&\fR
-    \fBexecute*...*\fR
-    \fBexecute;...;\fR
-    \fBexecute/.../\fR
-    \fBexecute|...|\fR
-    \fBexecute:...\fR
-.RS
-The last one is the special form that frees you from parse errors as it does
-not expect the closing character. The catch is that it should be the last one
-in the comma-separated list of key-action pairs.
-.RE
 
 fzf switches to the alternate screen when executing a command. However, if the
 command is expected to complete quickly, and you are not interested in its
