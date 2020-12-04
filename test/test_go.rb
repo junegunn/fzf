@@ -1830,7 +1830,7 @@ class TestGoFZF < TestBase
     tmux.send_keys 'a'
     tmux.until { |lines| assert_equal 'a> foo', lines[-1] }
     tmux.send_keys 'b'
-    tmux.until { |lines| assert_equal 'c> foo', lines[-1] }
+    tmux.until { |lines| assert_equal 'b> foo', lines[-1] }
   end
 end
 
