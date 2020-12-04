@@ -124,6 +124,10 @@ const (
 
 type Color int32
 
+func (c Color) IsDefault() bool {
+	return c == colDefault
+}
+
 func (c Color) is24() bool {
 	return c > 0 && (c&(1<<24)) > 0
 }
@@ -188,6 +192,11 @@ func (p ColorPair) Bg() Color {
 
 func (p ColorPair) Attr() Attr {
 	return p.attr
+}
+
+func (p ColorPair) HasBg() bool {
+	return p.attr&Reverse == 0 && p.bg != colDefault ||
+		p.attr&Reverse > 0 && p.fg != colDefault
 }
 
 func (p ColorPair) merge(other ColorPair, except Color) ColorPair {

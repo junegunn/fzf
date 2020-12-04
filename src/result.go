@@ -160,7 +160,19 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 				color := colMatch
 				if curr < -1 && theme.Colored {
 					origColor := ansiToColorPair(itemColors[-curr-2], colMatch)
-					color = origColor.MergeNonDefault(color)
+					// hl or hl+ only sets the foreground color, so colMatch is the
+					// combination of either [hl and bg] or [hl+ and bg+].
+					//
+					// If the original text already has background color, and the
+					// forground color of colMatch is -1, we shouldn't only apply the
+					// background color of colMatch.
+					// e.g. echo -e "\x1b[32;7mfoo\x1b[mbar" | fzf --ansi --color bg+:1,hl+:-1:underline
+					//      echo -e "\x1b[42mfoo\x1b[mbar" | fzf --ansi --color bg+:1,hl+:-1:underline
+					if color.Fg().IsDefault() && origColor.HasBg() {
+						color = origColor
+					} else {
+						color = origColor.MergeNonDefault(color)
+					}
 				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)}, color: color})
