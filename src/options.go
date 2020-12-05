@@ -83,7 +83,7 @@ const usage = `usage: fzf [options]
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
                           [up|down|left|right][:SIZE[%]]
-                          [:[no]wrap][:[no]cycle][:[no]hidden]
+                          [:[no]wrap][:[no]cycle][:[no]follow][:[no]hidden]
                           [:rounded|sharp|noborder]
                           [:+SCROLL[-OFFSET]]
                           [:default]
@@ -169,6 +169,7 @@ type previewOpts struct {
 	hidden   bool
 	wrap     bool
 	cycle    bool
+	follow   bool
 	border   tui.BorderShape
 }
 
@@ -231,7 +232,7 @@ type Options struct {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, tui.BorderRounded}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.BorderRounded}
 }
 
 func defaultOptions() *Options {
@@ -1081,6 +1082,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.border = tui.BorderSharp
 		case "noborder":
 			opts.border = tui.BorderNone
+		case "follow":
+			opts.follow = true
+		case "nofollow":
+			opts.follow = false
 		default:
 			if sizeRegex.MatchString(token) {
 				opts.size = parseSize(token, 99, "window size")

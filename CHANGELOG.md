@@ -3,6 +3,15 @@ CHANGELOG
 
 0.24.4
 ------
+- Added `--preview-window` option `follow`
+  ```sh
+  # Preview window will automatically scroll to the bottom
+  fzf --preview-window follow --preview 'for i in $(seq 100000); do
+    echo "$i"
+    sleep 0.01
+    (( i % 300 == 0 )) && printf "\033[2J"
+  done'
+  ```
 - Added `change-prompt` action
   ```sh
   fzf --prompt 'foo> ' --bind $'a:change-prompt:\x1b[31mbar> '

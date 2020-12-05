@@ -1832,6 +1832,11 @@ class TestGoFZF < TestBase
     tmux.send_keys 'b'
     tmux.until { |lines| assert_equal 'b> foo', lines[-1] }
   end
+
+  def test_preview_window_follow
+    tmux.send_keys "#{FZF} --preview 'seq 1000 | nl' --preview-window down:noborder:follow", :Enter
+    tmux.until { |lines| assert_equal '1000  1000', lines[-1].strip }
+  end
 end
 
 module TestShell

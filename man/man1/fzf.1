@@ -439,7 +439,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:default]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:default]"
 
 .RS
 .B POSITION: (default: right)
@@ -448,27 +448,43 @@ e.g.
     \fBleft
     \fBright
 
-\fRDetermines the layout of the preview window. If the argument contains
-\fB:hidden\fR, the preview window will be hidden by default until
-\fBtoggle-preview\fR action is triggered. Long lines are truncated by default.
-Line wrap can be enabled with \fB:wrap\fR flag. Cyclic scrolling is enabled
-with \fB:cycle\fR flag.
+\fRDetermines the layout of the preview window.
 
-If size is given as 0, preview window will not be visible, but fzf will still
+* If the argument contains \fB:hidden\fR, the preview window will be hidden by
+default until \fBtoggle-preview\fR action is triggered.
+
+* If size is given as 0, preview window will not be visible, but fzf will still
 execute the command in the background.
 
-To change the style of the border of the preview window, specify one of
+* Long lines are truncated by default. Line wrap can be enabled with
+\fB:wrap\fR flag.
+
+* Preview window will automatically scroll to the bottom when \fB:follow\fR
+flag is set, similarly to how \fBtail -f\fR works.
+
+.RS
+e.g.
+      \fBfzf --preview-window follow --preview 'for i in $(seq 100000); do
+        echo "$i"
+        sleep 0.01
+        (( i % 300 == 0 )) && printf "\\033[2J"
+      done'\fR
+.RE
+
+* Cyclic scrolling is enabled with \fB:cycle\fR flag.
+
+* To change the style of the border of the preview window, specify one of
 \fBrounded\fR (border with rounded edges, default), \fBsharp\fR (border with
 sharp edges), or \fBnoborder\fR (no border).
 
-\fB+SCROLL[-OFFSET]\fR determines the initial scroll offset of the preview
+* \fB+SCROLL[-OFFSET]\fR determines the initial scroll offset of the preview
 window. \fBSCROLL\fR can be either a numeric integer or a single-field index
 expression that refers to a numeric integer. The optional \fB-OFFSET\fR part is
 for adjusting the base offset so that you can see the text above it. It should
 be given as a numeric integer (\fB-INTEGER\fR), or as a denominator form
 (\fB-/INTEGER\fR) for specifying a fraction of the preview window height.
 
-\fBdefault\fR resets all options previously set to the default.
+* \fBdefault\fR resets all options previously set to the default.
 
 .RS
 e.g.
