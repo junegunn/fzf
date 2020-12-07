@@ -1,6 +1,29 @@
 CHANGELOG
 =========
 
+0.24.5
+------
+- Text attributes set in `--color` are not reset when fzf sees another
+  `--color` option for the same element. This allows you to put custom text
+  attributes in your `$FZF_DEFAULT_OPTS` and still have those attributes
+  even when you override the colors.
+
+  ```sh
+  # Default colors and attributes
+  fzf
+
+  # Apply custom text attributes
+  export FZF_DEFAULT_OPTS='--color fg+:italic,hl:-1:underline,hl+:-1:reverse:underline'
+
+  fzf
+
+  # Different colors but you still have the attributes
+  fzf --color hl:176,hl+:177
+
+  # Write "regular" if you want to clear the attributes
+  fzf --color hl:176:regular,hl+:177:regular
+  ```
+
 0.24.4
 ------
 - Added `--preview-window` option `follow`
