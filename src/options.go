@@ -644,71 +644,72 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				fail()
 			}
 
-			cattr := tui.NewColorAttr()
-			for _, component := range components[1:] {
-				switch component {
-				case "regular":
-					cattr.Attr = tui.AttrRegular
-				case "bold", "strong":
-					cattr.Attr |= tui.Bold
-				case "dim":
-					cattr.Attr |= tui.Dim
-				case "italic":
-					cattr.Attr |= tui.Italic
-				case "underline":
-					cattr.Attr |= tui.Underline
-				case "blink":
-					cattr.Attr |= tui.Blink
-				case "reverse":
-					cattr.Attr |= tui.Reverse
-				case "":
-				default:
-					if rrggbb.MatchString(component) {
-						cattr.Color = tui.HexToColor(component)
-					} else {
-						ansi32, err := strconv.Atoi(component)
-						if err != nil || ansi32 < -1 || ansi32 > 255 {
-							fail()
+			mergeAttr := func(cattr *tui.ColorAttr) {
+				for _, component := range components[1:] {
+					switch component {
+					case "regular":
+						cattr.Attr = tui.AttrRegular
+					case "bold", "strong":
+						cattr.Attr |= tui.Bold
+					case "dim":
+						cattr.Attr |= tui.Dim
+					case "italic":
+						cattr.Attr |= tui.Italic
+					case "underline":
+						cattr.Attr |= tui.Underline
+					case "blink":
+						cattr.Attr |= tui.Blink
+					case "reverse":
+						cattr.Attr |= tui.Reverse
+					case "":
+					default:
+						if rrggbb.MatchString(component) {
+							cattr.Color = tui.HexToColor(component)
+						} else {
+							ansi32, err := strconv.Atoi(component)
+							if err != nil || ansi32 < -1 || ansi32 > 255 {
+								fail()
+							}
+							cattr.Color = tui.Color(ansi32)
 						}
-						cattr.Color = tui.Color(ansi32)
 					}
 				}
 			}
 			switch components[0] {
 			case "input":
-				theme.Input = cattr
+				mergeAttr(&theme.Input)
 			case "fg":
-				theme.Fg = cattr
+				mergeAttr(&theme.Fg)
 			case "bg":
-				theme.Bg = cattr
+				mergeAttr(&theme.Bg)
 			case "preview-fg":
-				theme.PreviewFg = cattr
+				mergeAttr(&theme.PreviewFg)
 			case "preview-bg":
-				theme.PreviewBg = cattr
+				mergeAttr(&theme.PreviewBg)
 			case "fg+":
-				theme.Current = cattr
+				mergeAttr(&theme.Current)
 			case "bg+":
-				theme.DarkBg = cattr
+				mergeAttr(&theme.DarkBg)
 			case "gutter":
-				theme.Gutter = cattr
+				mergeAttr(&theme.Gutter)
 			case "hl":
-				theme.Match = cattr
+				mergeAttr(&theme.Match)
 			case "hl+":
-				theme.CurrentMatch = cattr
+				mergeAttr(&theme.CurrentMatch)
 			case "border":
-				theme.Border = cattr
+				mergeAttr(&theme.Border)
 			case "prompt":
-				theme.Prompt = cattr
+				mergeAttr(&theme.Prompt)
 			case "spinner":
-				theme.Spinner = cattr
+				mergeAttr(&theme.Spinner)
 			case "info":
-				theme.Info = cattr
+				mergeAttr(&theme.Info)
 			case "pointer":
-				theme.Cursor = cattr
+				mergeAttr(&theme.Cursor)
 			case "marker":
-				theme.Selected = cattr
+				mergeAttr(&theme.Selected)
 			case "header":
-				theme.Header = cattr
+				mergeAttr(&theme.Header)
 			default:
 				fail()
 			}
