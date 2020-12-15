@@ -838,6 +838,7 @@ function! s:execute_term(dict, command, temps) abort
         let term_opts.curwin = 1
       endif
       let fzf.buf = term_start([&shell, &shellcmdflag, command], term_opts)
+      call term_setkill(fzf.buf, 'term')
       if exists('&termwinkey')
         call setbufvar(fzf.buf, '&termwinkey', '<c-z>')
       endif
