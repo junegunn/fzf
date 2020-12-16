@@ -831,7 +831,7 @@ function! s:execute_term(dict, command, temps) abort
     if has('nvim')
       call termopen(command, fzf)
     else
-      let term_opts = {'exit_cb': function(fzf.on_exit)}
+      let term_opts = {'exit_cb': function(fzf.on_exit), 'term_kill': 'term'}
       if is_popup
         let term_opts.hidden = 1
       else
