@@ -394,6 +394,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 					return Event{AltSpace, 0, nil}
 				case '/':
 					return Event{AltSlash, 0, nil}
+				case '>':
+					return Event{AltMore, 0, nil}
+				case '<':
+					return Event{AltLess, 0, nil}
 				}
 				if r >= 'a' && r <= 'z' {
 					return Event{AltA + int(r) - 'a', 0, nil}

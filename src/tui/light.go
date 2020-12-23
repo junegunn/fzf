@@ -345,6 +345,10 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		return Event{AltSpace, 0, nil}
 	case '/':
 		return Event{AltSlash, 0, nil}
+	case '>':
+		return Event{AltMore, 0, nil}
+	case '<':
+		return Event{AltLess, 0, nil}
 	case 'b':
 		return Event{AltB, 0, nil}
 	case 'd':

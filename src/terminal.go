@@ -266,6 +266,7 @@ const (
 	actExecuteMulti // Deprecated
 	actSigStop
 	actTop
+	actBottom
 	actReload
 )
 
@@ -2366,6 +2367,9 @@ func (t *Terminal) Loop() {
 				}
 			case actTop:
 				t.vset(0)
+				req(reqList)
+			case actBottom:
+				t.vset(t.merger.Length())
 				req(reqList)
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0

@@ -497,6 +497,10 @@ func parseKeyChords(str string, message string) map[int]string {
 			chord = tui.AltSpace
 		case "alt-/":
 			chord = tui.AltSlash
+		case "alt->":
+			chord = tui.AltMore
+		case "alt-<":
+			chord = tui.AltLess
 		case "alt-bs", "alt-bspace":
 			chord = tui.AltBS
 		case "alt-up":
@@ -881,6 +885,8 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actUp)
 			case "top":
 				appendAction(actTop)
+			case "bottom":
+				appendAction(actBottom)
 			case "page-up":
 				appendAction(actPageUp)
 			case "page-down":

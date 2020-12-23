@@ -91,6 +91,8 @@ const (
 
 	AltSpace
 	AltSlash
+	AltMore
+	AltLess
 	AltBS
 
 	AltUp
