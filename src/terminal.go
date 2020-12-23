@@ -2130,7 +2130,8 @@ func (t *Terminal) Loop() {
 			}
 		}
 		toggle := func() bool {
-			if t.cy < t.merger.Length() && t.toggleItem(t.merger.Get(t.cy).item) {
+			current := t.currentItem()
+			if current != nil && t.toggleItem(current) {
 				req(reqInfo)
 				return true
 			}
@@ -2241,8 +2242,9 @@ func (t *Terminal) Loop() {
 			case actRefreshPreview:
 				refreshPreview(t.previewOpts.command)
 			case actReplaceQuery:
-				if t.cy >= 0 && t.cy < t.merger.Length() {
-					t.input = t.merger.Get(t.cy).item.text.ToRunes()
+				current := t.currentItem()
+				if current != nil {
+					t.input = current.text.ToRunes()
 					t.cx = len(t.input)
 				}
 			case actAbort:
