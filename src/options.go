@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
@@ -211,8 +210,8 @@ type Options struct {
 	Exit0       bool
 	Filter      *string
 	ToggleSort  bool
-	Expect      map[int]string
-	Keymap      map[int][]action
+	Expect      map[tui.Event]string
+	Keymap      map[tui.Event][]action
 	Preview     previewOpts
 	PrintQuery  bool
 	ReadZero    bool
@@ -272,8 +271,8 @@ func defaultOptions() *Options {
 		Exit0:       false,
 		Filter:      nil,
 		ToggleSort:  false,
-		Expect:      make(map[int]string),
-		Keymap:      make(map[int][]action),
+		Expect:      make(map[tui.Event]string),
+		Keymap:      make(map[tui.Event][]action),
 		Preview:     defaultPreviewOpts(""),
 		PrintQuery:  false,
 		ReadZero:    false,
@@ -445,7 +444,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 	return tui.BorderNone
 }
 
-func parseKeyChords(str string, message string) map[int]string {
+func parseKeyChords(str string, message string) map[tui.Event]string {
 	if len(str) == 0 {
 		errorExit(message)
 	}
@@ -455,123 +454,128 @@ func parseKeyChords(str string, message string) map[int]string {
 		tokens = append(tokens, ",")
 	}
 
-	chords := make(map[int]string)
+	chords := make(map[tui.Event]string)
 	for _, key := range tokens {
 		if len(key) == 0 {
 			continue // ignore
 		}
 		lkey := strings.ToLower(key)
-		chord := 0
+		add := func(e tui.EventType) {
+			chords[e.AsEvent()] = key
+		}
 		switch lkey {
 		case "up":
-			chord = tui.Up
+			add(tui.Up)
 		case "down":
-			chord = tui.Down
+			add(tui.Down)
 		case "left":
-			chord = tui.Left
+			add(tui.Left)
 		case "right":
-			chord = tui.Right
+			add(tui.Right)
 		case "enter", "return":
-			chord = tui.CtrlM
+			add(tui.CtrlM)
 		case "space":
-			chord = tui.AltZ + int(' ')
+			chords[tui.Key(' ')] = key
 		case "bspace", "bs":
-			chord = tui.BSpace
+			add(tui.BSpace)
 		case "ctrl-space":
-			chord = tui.CtrlSpace
+			add(tui.CtrlSpace)
 		case "ctrl-^", "ctrl-6":
-			chord = tui.CtrlCaret
+			add(tui.CtrlCaret)
 		case "ctrl-/", "ctrl-_":
-			chord = tui.CtrlSlash
+			add(tui.CtrlSlash)
 		case "ctrl-\\":
-			chord = tui.CtrlBackSlash
+			add(tui.CtrlBackSlash)
 		case "ctrl-]":
-			chord = tui.CtrlRightBracket
+			add(tui.CtrlRightBracket)
 		case "change":
-			chord = tui.Change
+			add(tui.Change)
 		case "backward-eof":
-			chord = tui.BackwardEOF
+			add(tui.BackwardEOF)
 		case "alt-enter", "alt-return":
-			chord = tui.CtrlAltM
+			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":
-			chord = tui.AltSpace
-		case "alt-/":
-			chord = tui.AltSlash
+			chords[tui.AltKey(' ')] = key
 		case "alt-bs", "alt-bspace":
-			chord = tui.AltBS
+			add(tui.AltBS)
 		case "alt-up":
-			chord = tui.AltUp
+			add(tui.AltUp)
 		case "alt-down":
-			chord = tui.AltDown
+			add(tui.AltDown)
 		case "alt-left":
-			chord = tui.AltLeft
+			add(tui.AltLeft)
 		case "alt-right":
-			chord = tui.AltRight
+			add(tui.AltRight)
 		case "tab":
-			chord = tui.Tab
+			add(tui.Tab)
 		case "btab", "shift-tab":
-			chord = tui.BTab
+			add(tui.BTab)
 		case "esc":
-			chord = tui.ESC
+			add(tui.ESC)
 		case "del":
-			chord = tui.Del
+			add(tui.Del)
 		case "home":
-			chord = tui.Home
+			add(tui.Home)
 		case "end":
-			chord = tui.End
+			add(tui.End)
 		case "insert":
-			chord = tui.Insert
+			add(tui.Insert)
 		case "pgup", "page-up":
-			chord = tui.PgUp
+			add(tui.PgUp)
 		case "pgdn", "page-down":
-			chord = tui.PgDn
+			add(tui.PgDn)
 		case "alt-shift-up", "shift-alt-up":
-			chord = tui.AltSUp
+			add(tui.AltSUp)
 		case "alt-shift-down", "shift-alt-down":
-			chord = tui.AltSDown
+			add(tui.AltSDown)
 		case "alt-shift-left", "shift-alt-left":
-			chord = tui.AltSLeft
+			add(tui.AltSLeft)
 		case "alt-shift-right", "shift-alt-right":
-			chord = tui.AltSRight
+			add(tui.AltSRight)
 		case "shift-up":
-			chord = tui.SUp
+			add(tui.SUp)
 		case "shift-down":
-			chord = tui.SDown
+			add(tui.SDown)
 		case "shift-left":
-			chord = tui.SLeft
+			add(tui.SLeft)
 		case "shift-right":
-			chord = tui.SRight
+			add(tui.SRight)
 		case "left-click":
-			chord = tui.LeftClick
+			add(tui.LeftClick)
 		case "right-click":
-			chord = tui.RightClick
+			add(tui.RightClick)
 		case "double-click":
-			chord = tui.DoubleClick
+			add(tui.DoubleClick)
 		case "f10":
-			chord = tui.F10
+			add(tui.F10)
 		case "f11":
-			chord = tui.F11
+			add(tui.F11)
 		case "f12":
-			chord = tui.F12
+			add(tui.F12)
 		default:
+			runes := []rune(key)
 			if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
-				chord = tui.CtrlAltA + int(lkey[9]) - 'a'
+				chords[tui.CtrlAltKey(rune(key[9]))] = key
 			} else if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
-				chord = tui.CtrlA + int(lkey[5]) - 'a'
-			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isAlphabet(lkey[4]) {
-				chord = tui.AltA + int(lkey[4]) - 'a'
-			} else if len(key) == 5 && strings.HasPrefix(lkey, "alt-") && isNumeric(lkey[4]) {
-				chord = tui.Alt0 + int(lkey[4]) - '0'
+				add(tui.EventType(tui.CtrlA.Int() + int(lkey[5]) - 'a'))
+			} else if len(runes) == 5 && strings.HasPrefix(lkey, "alt-") {
+				r := runes[4]
+				switch r {
+				case escapedColon:
+					r = ':'
+				case escapedComma:
+					r = ','
+				case escapedPlus:
+					r = '+'
+				}
+				chords[tui.AltKey(r)] = key
 			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '9' {
-				chord = tui.F1 + int(key[1]) - '1'
-			} else if utf8.RuneCountInString(key) == 1 {
-				chord = tui.AltZ + int([]rune(key)[0])
+				add(tui.EventType(tui.F1.Int() + int(key[1]) - '1'))
+			} else if len(runes) == 1 {
+				chords[tui.Key(runes[0])] = key
 			} else {
 				errorExit("unsupported key: " + key)
 			}
-		}
-		if chord > 0 {
-			chords[chord] = key
 		}
 	}
 	return chords
@@ -720,11 +724,11 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 
 var executeRegexp *regexp.Regexp
 
-func firstKey(keymap map[int]string) int {
+func firstKey(keymap map[tui.Event]string) tui.Event {
 	for k := range keymap {
 		return k
 	}
-	return 0
+	return tui.EventType(0).AsEvent()
 }
 
 const (
@@ -740,7 +744,7 @@ func init() {
 		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
-func parseKeymap(keymap map[int][]action, str string) {
+func parseKeymap(keymap map[tui.Event][]action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		symbol := ":"
 		if strings.HasPrefix(src, "+") {
@@ -776,13 +780,13 @@ func parseKeymap(keymap map[int][]action, str string) {
 		if len(pair) < 2 {
 			errorExit("bind action not specified: " + origPairStr)
 		}
-		var key int
+		var key tui.Event
 		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
-			key = ':' + tui.AltZ
+			key = tui.Key(':')
 		} else if len(pair[0]) == 1 && pair[0][0] == escapedComma {
-			key = ',' + tui.AltZ
+			key = tui.Key(',')
 		} else if len(pair[0]) == 1 && pair[0][0] == escapedPlus {
-			key = '+' + tui.AltZ
+			key = tui.Key('+')
 		} else {
 			keys := parseKeyChords(pair[0], "key name required")
 			key = firstKey(keys)
@@ -981,7 +985,7 @@ func isExecuteAction(str string) actionType {
 	return actIgnore
 }
 
-func parseToggleSort(keymap map[int][]action, str string) {
+func parseToggleSort(keymap map[tui.Event][]action, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
@@ -1188,7 +1192,7 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Expect[k] = v
 			}
 		case "--no-expect":
-			opts.Expect = make(map[int]string)
+			opts.Expect = make(map[tui.Event]string)
 		case "--no-phony":
 			opts.Phony = false
 		case "--phony":
@@ -1512,11 +1516,11 @@ func postProcessOptions(opts *Options) {
 	}
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
-		if _, prs := opts.Keymap[tui.CtrlP]; !prs {
-			opts.Keymap[tui.CtrlP] = toActions(actPreviousHistory)
+		if _, prs := opts.Keymap[tui.CtrlP.AsEvent()]; !prs {
+			opts.Keymap[tui.CtrlP.AsEvent()] = toActions(actPreviousHistory)
 		}
-		if _, prs := opts.Keymap[tui.CtrlN]; !prs {
-			opts.Keymap[tui.CtrlN] = toActions(actNextHistory)
+		if _, prs := opts.Keymap[tui.CtrlN.AsEvent()]; !prs {
+			opts.Keymap[tui.CtrlN.AsEvent()] = toActions(actNextHistory)
 		}
 	}
 

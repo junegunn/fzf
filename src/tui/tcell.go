@@ -226,65 +226,65 @@ func (r *FullscreenRenderer) GetChar() Event {
 		alt := (mods & tcell.ModAlt) > 0
 		shift := (mods & tcell.ModShift) > 0
 		altShift := alt && shift
-		keyfn := func(r rune) int {
+		keyfn := func(r rune) Event {
 			if alt {
-				return CtrlAltA - 'a' + int(r)
+				return CtrlAltKey(r)
 			}
-			return CtrlA - 'a' + int(r)
+			return EventType(CtrlA.Int() - 'a' + int(r)).AsEvent()
 		}
 		switch ev.Key() {
 		case tcell.KeyCtrlA:
-			return Event{keyfn('a'), 0, nil}
+			return keyfn('a')
 		case tcell.KeyCtrlB:
-			return Event{keyfn('b'), 0, nil}
+			return keyfn('b')
 		case tcell.KeyCtrlC:
-			return Event{keyfn('c'), 0, nil}
+			return keyfn('c')
 		case tcell.KeyCtrlD:
-			return Event{keyfn('d'), 0, nil}
+			return keyfn('d')
 		case tcell.KeyCtrlE:
-			return Event{keyfn('e'), 0, nil}
+			return keyfn('e')
 		case tcell.KeyCtrlF:
-			return Event{keyfn('f'), 0, nil}
+			return keyfn('f')
 		case tcell.KeyCtrlG:
-			return Event{keyfn('g'), 0, nil}
+			return keyfn('g')
 		case tcell.KeyCtrlH:
-			return Event{keyfn('h'), 0, nil}
+			return keyfn('h')
 		case tcell.KeyCtrlI:
-			return Event{keyfn('i'), 0, nil}
+			return keyfn('i')
 		case tcell.KeyCtrlJ:
-			return Event{keyfn('j'), 0, nil}
+			return keyfn('j')
 		case tcell.KeyCtrlK:
-			return Event{keyfn('k'), 0, nil}
+			return keyfn('k')
 		case tcell.KeyCtrlL:
-			return Event{keyfn('l'), 0, nil}
+			return keyfn('l')
 		case tcell.KeyCtrlM:
-			return Event{keyfn('m'), 0, nil}
+			return keyfn('m')
 		case tcell.KeyCtrlN:
-			return Event{keyfn('n'), 0, nil}
+			return keyfn('n')
 		case tcell.KeyCtrlO:
-			return Event{keyfn('o'), 0, nil}
+			return keyfn('o')
 		case tcell.KeyCtrlP:
-			return Event{keyfn('p'), 0, nil}
+			return keyfn('p')
 		case tcell.KeyCtrlQ:
-			return Event{keyfn('q'), 0, nil}
+			return keyfn('q')
 		case tcell.KeyCtrlR:
-			return Event{keyfn('r'), 0, nil}
+			return keyfn('r')
 		case tcell.KeyCtrlS:
-			return Event{keyfn('s'), 0, nil}
+			return keyfn('s')
 		case tcell.KeyCtrlT:
-			return Event{keyfn('t'), 0, nil}
+			return keyfn('t')
 		case tcell.KeyCtrlU:
-			return Event{keyfn('u'), 0, nil}
+			return keyfn('u')
 		case tcell.KeyCtrlV:
-			return Event{keyfn('v'), 0, nil}
+			return keyfn('v')
 		case tcell.KeyCtrlW:
-			return Event{keyfn('w'), 0, nil}
+			return keyfn('w')
 		case tcell.KeyCtrlX:
-			return Event{keyfn('x'), 0, nil}
+			return keyfn('x')
 		case tcell.KeyCtrlY:
-			return Event{keyfn('y'), 0, nil}
+			return keyfn('y')
 		case tcell.KeyCtrlZ:
-			return Event{keyfn('z'), 0, nil}
+			return keyfn('z')
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
 		case tcell.KeyCtrlBackslash:
@@ -389,18 +389,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyRune:
 			r := ev.Rune()
 			if alt {
-				switch r {
-				case ' ':
-					return Event{AltSpace, 0, nil}
-				case '/':
-					return Event{AltSlash, 0, nil}
-				}
-				if r >= 'a' && r <= 'z' {
-					return Event{AltA + int(r) - 'a', 0, nil}
-				}
-				if r >= '0' && r <= '9' {
-					return Event{Alt0 + int(r) - '0', 0, nil}
-				}
+				return AltKey(r)
 			}
 			return Event{Rune, r, nil}
 

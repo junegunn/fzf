@@ -8,8 +8,10 @@ import (
 )
 
 // Types of user action
+type EventType int
+
 const (
-	Rune = iota
+	Rune EventType = iota
 
 	CtrlA
 	CtrlB
@@ -89,8 +91,6 @@ const (
 	Change
 	BackwardEOF
 
-	AltSpace
-	AltSlash
 	AltBS
 
 	AltUp
@@ -103,20 +103,38 @@ const (
 	AltSLeft
 	AltSRight
 
-	Alt0
+	Alt
+	CtrlAlt
 )
 
-const ( // Reset iota
-	AltA = Alt0 + 'a' - '0' + iota
-	AltB
-	AltC
-	AltD
-	AltE
-	AltF
-	AltZ     = AltA + 'z' - 'a'
-	CtrlAltA = AltZ + 1
-	CtrlAltM = CtrlAltA + 'm' - 'a'
-)
+func (t EventType) AsEvent() Event {
+	return Event{t, 0, nil}
+}
+
+func (t EventType) Int() int {
+	return int(t)
+}
+
+func (t EventType) Byte() byte {
+	return byte(t)
+}
+
+func (e Event) Comparable() Event {
+	// Ignore MouseEvent pointer
+	return Event{e.Type, e.Char, nil}
+}
+
+func Key(r rune) Event {
+	return Event{Rune, r, nil}
+}
+
+func AltKey(r rune) Event {
+	return Event{Alt, r, nil}
+}
+
+func CtrlAltKey(r rune) Event {
+	return Event{CtrlAlt, r, nil}
+}
 
 const (
 	doubleClickDuration = 500 * time.Millisecond
@@ -251,7 +269,7 @@ type ColorTheme struct {
 }
 
 type Event struct {
-	Type       int
+	Type       EventType
 	Char       rune
 	MouseEvent *MouseEvent
 }

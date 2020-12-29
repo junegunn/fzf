@@ -26,6 +26,10 @@ CHANGELOG
 - Added `last` action to move the cursor to the last match
     - The opposite action `top` is renamed to `first`, but `top` is still
       recognized as a synonym for backward compatibility
+- Extended support for alt key chords: alt with any case-sensitive single character
+  ```sh
+  fzf --bind alt-,:first,alt-.:last
+  ```
 
 0.24.4
 ------
