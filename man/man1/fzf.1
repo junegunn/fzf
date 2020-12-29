@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2020" "fzf 0.24.4" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Dec 2020" "fzf 0.24.5" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -750,8 +750,8 @@ or any single character
 Triggered whenever the query string is changed
 
 e.g.
-     \fB# Moves cursor to the top (or bottom depending on --layout) whenever the query is changed
-     fzf --bind change:top\fR
+     \fB# Move cursor to the first entry whenever the query is changed
+     fzf --bind change:first\fR
 .RE
 
 \fIbackward-eof\fR
@@ -788,6 +788,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBend-of-line\fR               \fIctrl-e  end\fR
     \fBexecute(...)\fR              (see below for the details)
     \fBexecute-silent(...)\fR       (see below for the details)
+    \fBfirst\fR                     (move to the first match)
     \fBforward-char\fR              \fIctrl-f  right\fR
     \fBforward-word\fR              \fIalt-f   shift-right\fR
     \fBignore\fR
@@ -795,6 +796,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBjump-accept\fR               (jump and accept)
     \fBkill-line\fR
     \fBkill-word\fR                 \fIalt-d\fR
+    \fBlast\fR                      (move to the last match)
     \fBnext-history\fR              (\fIctrl-n\fR on \fB--history\fR)
     \fBpage-down\fR                 \fIpgdn\fR
     \fBpage-up\fR                   \fIpgup\fR
@@ -822,7 +824,6 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-preview-wrap\fR
     \fBtoggle-sort\fR
     \fBtoggle+up\fR                 \fIbtab    (shift-tab)\fR
-    \fBtop\fR                       (move to the top result)
     \fBunix-line-discard\fR         \fIctrl-u\fR
     \fBunix-word-rubout\fR          \fIctrl-w\fR
     \fBup\fR                        \fIctrl-k  ctrl-p  up\fR

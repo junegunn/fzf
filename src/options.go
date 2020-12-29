@@ -879,8 +879,10 @@ func parseKeymap(keymap map[int][]action, str string) {
 				appendAction(actDown)
 			case "up":
 				appendAction(actUp)
-			case "top":
-				appendAction(actTop)
+			case "first", "top":
+				appendAction(actFirst)
+			case "last":
+				appendAction(actLast)
 			case "page-up":
 				appendAction(actPageUp)
 			case "page-down":
