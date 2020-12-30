@@ -1554,8 +1554,8 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> 1', lines[-2] }
   end
 
-  def test_change_top
-    tmux.send_keys %(seq 1000 | #{FZF} --bind change:top), :Enter
+  def test_change_first_last
+    tmux.send_keys %(seq 1000 | #{FZF} --bind change:first,alt-Z:last), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.send_keys :Up
     tmux.until { |lines| assert_equal '> 2', lines[-4] }
@@ -1565,6 +1565,10 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> 10', lines[-4] }
     tmux.send_keys 1
     tmux.until { |lines| assert_equal '> 11', lines[-3] }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| assert_equal '> 1', lines[-3] }
+    tmux.send_keys :Escape, 'Z'
+    tmux.until { |lines| assert_equal '> 1000', lines[0] }
     tmux.send_keys :Enter
   end
 
