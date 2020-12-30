@@ -1,22 +1,22 @@
-fzf.txt	fzf	Last change: October 18 2020
+fzf.txt	fzf	Last change: December 29 2020
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
-  FZF Vim integration
-    Installation
-    Summary
-    :FZF[!]
-      Configuration
-        Examples
-          Explanation of g:fzf_colors
-    fzf#run
-    fzf#wrap
-      Global options supported by fzf#wrap
-    Tips
-      fzf inside terminal buffer
-        Starting fzf in a popup window
-        Hide statusline
-    License
+  FZF Vim integration                       |fzf-vim-integration|
+    Installation                            |fzf-installation|
+    Summary                                 |fzf-summary|
+    :FZF[!]                                 |:FZF|
+      Configuration                         |fzf-configuration|
+        Examples                            |fzf-examples|
+          Explanation of g:fzf_colors       |fzf-explanation-of-gfzfcolors|
+    fzf#run                                 |fzf#run|
+    fzf#wrap                                |fzf#wrap|
+      Global options supported by fzf#wrap  |fzf-global-options-supported-by-fzf#wrap|
+    Tips                                    |fzf-tips|
+      fzf inside terminal buffer            |fzf-inside-terminal-buffer|
+        Starting fzf in a popup window      |fzf-starting-fzf-in-a-popup-window|
+        Hide statusline                     |fzf-hide-statusline|
+    License                                 |fzf-license|
 
 FZF VIM INTEGRATION                                        *fzf-vim-integration*
 ==============================================================================
