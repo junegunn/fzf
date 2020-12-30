@@ -449,6 +449,7 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 		errorExit(message)
 	}
 
+	str = regexp.MustCompile("(?i)(alt-),").ReplaceAllString(str, "$1"+string(escapedComma))
 	tokens := strings.Split(str, ",")
 	if str == "," || strings.HasPrefix(str, ",,") || strings.HasSuffix(str, ",,") || strings.Contains(str, ",,,") {
 		tokens = append(tokens, ",")
@@ -459,6 +460,7 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 		if len(key) == 0 {
 			continue // ignore
 		}
+		key = strings.ReplaceAll(key, string(escapedComma), ",")
 		lkey := strings.ToLower(key)
 		add := func(e tui.EventType) {
 			chords[e.AsEvent()] = key

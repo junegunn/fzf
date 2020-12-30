@@ -225,6 +225,10 @@ func TestParseKeysWithComma(t *testing.T) {
 	pairs = parseKeyChords(",,,", "")
 	checkN(len(pairs), 1)
 	check(pairs, tui.Key(','), ",")
+
+	pairs = parseKeyChords(",ALT-,,", "")
+	checkN(len(pairs), 1)
+	check(pairs, tui.AltKey(','), "ALT-,")
 }
 
 func TestBind(t *testing.T) {
