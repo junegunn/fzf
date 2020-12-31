@@ -1,3 +1,4 @@
+SHELL          := bash
 GO             ?= go
 GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
 
