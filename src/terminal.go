@@ -253,6 +253,8 @@ const (
 	actTogglePreview
 	actTogglePreviewWrap
 	actPreview
+	actPreviewTop
+	actPreviewBottom
 	actPreviewUp
 	actPreviewDown
 	actPreviewPageUp
@@ -2143,12 +2145,11 @@ func (t *Terminal) Loop() {
 			}
 			return false
 		}
-		scrollPreview := func(amount int) {
+		scrollPreviewTo := func(newOffset int) {
 			if !t.previewer.scrollable {
 				return
 			}
 			t.previewer.following = false
-			newOffset := t.previewer.offset + amount
 			numLines := len(t.previewer.lines)
 			if t.previewOpts.cycle {
 				newOffset = (newOffset + numLines) % numLines
@@ -2158,6 +2159,9 @@ func (t *Terminal) Loop() {
 				t.previewer.offset = newOffset
 				req(reqPreviewRefresh)
 			}
+		}
+		scrollPreviewBy := func(amount int) {
+			scrollPreviewTo(t.previewer.offset + amount)
 		}
 		for key, ret := range t.expect {
 			if keyMatch(key, event) {
@@ -2211,29 +2215,37 @@ func (t *Terminal) Loop() {
 			case actToggleSort:
 				t.sort = !t.sort
 				changed = true
+			case actPreviewTop:
+				if t.hasPreviewWindow() {
+					scrollPreviewTo(0)
+				}
+			case actPreviewBottom:
+				if t.hasPreviewWindow() {
+					scrollPreviewTo(len(t.previewer.lines) - t.pwindow.Height())
+				}
 			case actPreviewUp:
 				if t.hasPreviewWindow() {
-					scrollPreview(-1)
+					scrollPreviewBy(-1)
 				}
 			case actPreviewDown:
 				if t.hasPreviewWindow() {
-					scrollPreview(1)
+					scrollPreviewBy(1)
 				}
 			case actPreviewPageUp:
 				if t.hasPreviewWindow() {
-					scrollPreview(-t.pwindow.Height())
+					scrollPreviewBy(-t.pwindow.Height())
 				}
 			case actPreviewPageDown:
 				if t.hasPreviewWindow() {
-					scrollPreview(t.pwindow.Height())
+					scrollPreviewBy(t.pwindow.Height())
 				}
 			case actPreviewHalfPageUp:
 				if t.hasPreviewWindow() {
-					scrollPreview(-t.pwindow.Height() / 2)
+					scrollPreviewBy(-t.pwindow.Height() / 2)
 				}
 			case actPreviewHalfPageDown:
 				if t.hasPreviewWindow() {
-					scrollPreview(t.pwindow.Height() / 2)
+					scrollPreviewBy(t.pwindow.Height() / 2)
 				}
 			case actBeginningOfLine:
 				t.cx = 0
@@ -2474,7 +2486,7 @@ func (t *Terminal) Loop() {
 						t.vmove(me.S, true)
 						req(reqList)
 					} else if t.hasPreviewWindow() && t.pwindow.Enclose(my, mx) {
-						scrollPreview(-me.S)
+						scrollPreviewBy(-me.S)
 					}
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left()

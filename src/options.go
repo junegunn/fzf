@@ -907,6 +907,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actTogglePreviewWrap)
 			case "toggle-sort":
 				appendAction(actToggleSort)
+			case "preview-top":
+				appendAction(actPreviewTop)
+			case "preview-bottom":
+				appendAction(actPreviewBottom)
 			case "preview-up":
 				appendAction(actPreviewUp)
 			case "preview-down":
