@@ -135,8 +135,8 @@ if [[ -z "$TMUX" ]]; then
   exit $?
 fi
 
-# --height option is not allowed
-args=("${args[@]}" "--no-height")
+# --height option is not allowed. CTRL-Z is also disabled.
+args=("${args[@]}" "--no-height" "--bind=ctrl-z:ignore")
 
 # Handle zoomed tmux pane without popup options by moving it to a temp window
 if [[ ! "$opt" =~ "-K -E" ]] && tmux list-panes -F '#F' | grep -q Z; then
