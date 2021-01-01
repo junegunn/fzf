@@ -176,7 +176,7 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -232,7 +232,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
