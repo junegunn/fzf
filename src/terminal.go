@@ -151,6 +151,7 @@ type Terminal struct {
 	initFunc     func()
 	prevLines    []itemLine
 	suppress     bool
+	sigstop      bool
 	startChan    chan bool
 	killChan     chan int
 	slab         *util.Slab
@@ -515,6 +516,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		eventBox:    eventBox,
 		mutex:       sync.Mutex{},
 		suppress:    true,
+		sigstop:     false,
 		slab:        util.MakeSlab(slab16Size, slab32Size),
 		theme:       opts.Theme,
 		startChan:   make(chan bool, 1),
@@ -2073,7 +2075,7 @@ func (t *Terminal) Loop() {
 					case reqRefresh:
 						t.suppress = false
 					case reqReinit:
-						t.tui.Resume(t.fullscreen, true)
+						t.tui.Resume(t.fullscreen, t.sigstop)
 						t.redraw()
 					case reqRedraw:
 						t.redraw()
@@ -2489,6 +2491,7 @@ func (t *Terminal) Loop() {
 			case actSigStop:
 				p, err := os.FindProcess(os.Getpid())
 				if err == nil {
+					t.sigstop = true
 					t.tui.Clear()
 					t.tui.Pause(t.fullscreen)
 					notifyStop(p)
