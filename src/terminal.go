@@ -125,6 +125,7 @@ type Terminal struct {
 	unicode      bool
 	borderShape  tui.BorderShape
 	cleanExit    bool
+	paused       bool
 	border       tui.Window
 	window       tui.Window
 	pborder      tui.Window
@@ -233,6 +234,7 @@ const (
 	actSelectAll
 	actDeselectAll
 	actToggle
+	actToggleSearch
 	actToggleAll
 	actToggleDown
 	actToggleUp
@@ -270,6 +272,8 @@ const (
 	actFirst
 	actLast
 	actReload
+	actDisableSearch
+	actEnableSearch
 )
 
 type placeholderFlags struct {
@@ -488,6 +492,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		unicode:     opts.Unicode,
 		borderShape: opts.BorderShape,
 		cleanExit:   opts.ClearOnExit,
+		paused:      opts.Phony,
 		strong:      strongAttr,
 		cycle:       opts.Cycle,
 		header:      header,
@@ -563,10 +568,10 @@ func (t *Terminal) noInfoLine() bool {
 }
 
 // Input returns current query string
-func (t *Terminal) Input() []rune {
+func (t *Terminal) Input() (bool, []rune) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
-	return copySlice(t.input)
+	return t.paused, copySlice(t.input)
 }
 
 // UpdateCount updates the count information
@@ -925,8 +930,12 @@ func (t *Terminal) printPrompt() {
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
-	t.window.CPrint(tui.ColInput, string(before))
-	t.window.CPrint(tui.ColInput, string(after))
+	color := tui.ColInput
+	if t.paused {
+		color = tui.ColDisabled
+	}
+	t.window.CPrint(color, string(before))
+	t.window.CPrint(color, string(after))
 }
 
 func (t *Terminal) trimMessage(message string, maxWidth int) string {
@@ -1880,7 +1889,8 @@ func (t *Terminal) Loop() {
 				version++
 				// We don't display preview window if no match
 				if items[0] != nil {
-					command := t.replacePlaceholder(commandTemplate, false, string(t.Input()), items)
+					_, query := t.Input()
+					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
 					initialOffset := 0
 					cmd := util.ExecCommand(command, true)
 					if pwindow != nil {
@@ -2465,6 +2475,17 @@ func (t *Terminal) Loop() {
 					t.input = trimQuery(t.history.next())
 					t.cx = len(t.input)
 				}
+			case actToggleSearch:
+				t.paused = !t.paused
+				changed = !t.paused
+				req(reqPrompt)
+			case actEnableSearch:
+				t.paused = false
+				changed = true
+				req(reqPrompt)
+			case actDisableSearch:
+				t.paused = true
+				req(reqPrompt)
 			case actSigStop:
 				p, err := os.FindProcess(os.Getpid())
 				if err == nil {

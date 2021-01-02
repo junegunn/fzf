@@ -171,19 +171,23 @@ list:
 
 - `element` is an fzf element to apply a color to:
 
-  | Element               | Description                                           |
-  | ---                   | ---                                                   |
-  | `fg`  / `bg`  / `hl`  | Item (foreground / background / highlight)            |
-  | `fg+` / `bg+` / `hl+` | Current item (foreground / background / highlight)    |
-  | `hl`  / `hl+`         | Highlighted substrings (normal / current)             |
-  | `gutter`              | Background of the gutter on the left                  |
-  | `pointer`             | Pointer to the current line (`>`)                     |
-  | `marker`              | Multi-select marker (`>`)                             |
-  | `border`              | Border around the window (`--border` and `--preview`) |
-  | `header`              | Header (`--header` or `--header-lines`)               |
-  | `info`                | Info line (match counters)                            |
-  | `spinner`             | Streaming input indicator                             |
-  | `prompt`              | Prompt before query (`> `)                            |
+  | Element                     | Description                                           |
+  | ---                         | ---                                                   |
+  | `fg`  / `bg`  / `hl`        | Item (foreground / background / highlight)            |
+  | `fg+` / `bg+` / `hl+`       | Current item (foreground / background / highlight)    |
+  | `preview-fg` / `preview-bg` | Preview window text and background                    |
+  | `hl`  / `hl+`               | Highlighted substrings (normal / current)             |
+  | `gutter`                    | Background of the gutter on the left                  |
+  | `pointer`                   | Pointer to the current line (`>`)                     |
+  | `marker`                    | Multi-select marker (`>`)                             |
+  | `border`                    | Border around the window (`--border` and `--preview`) |
+  | `header`                    | Header (`--header` or `--header-lines`)               |
+  | `info`                      | Info line (match counters)                            |
+  | `spinner`                   | Streaming input indicator                             |
+  | `query`                     | Query string                                          |
+  | `disabled`                  | Query string when search is disabled                  |
+  | `prompt`                    | Prompt before query (`> `)                            |
+  | `pointer`                   | Pointer to the current line (`>`)                     |
 
 - `component` specifies the component (`fg` / `bg`) from which to extract the
   color when considering each of the following highlight groups

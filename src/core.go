@@ -237,14 +237,16 @@ func Run(opts *Options, version string, revision string) {
 		go reader.restart(command)
 	}
 	eventBox.Watch(EvtReadNew)
+	query := []rune{}
 	for {
 		delay := true
 		ticks++
 		input := func() []rune {
-			if opts.Phony {
-				return []rune{}
+			paused, input := terminal.Input()
+			if !paused {
+				query = input
 			}
-			return []rune(terminal.Input())
+			return query
 		}
 		eventBox.Wait(func(events *util.Events) {
 			if _, fin := (*events)[EvtReadFin]; fin {

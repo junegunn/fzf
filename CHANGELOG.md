@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.24.5
+0.25.0
 ------
 - Text attributes set in `--color` are not reset when fzf sees another
   `--color` option for the same element. This allows you to put custom text
@@ -22,6 +22,13 @@ CHANGELOG
 
   # Write "regular" if you want to clear the attributes
   fzf --color hl:176:regular,hl+:177:regular
+  ```
+- Renamed `--phony` to `--disabled`
+- You can dynamically enable and disable the search functionality using the
+  new `enable-search`, `disable-search`, and `toggle-search` actions
+- You can assign a different color to the query string for when search is disabled
+  ```sh
+  fzf --color query:#ffffff,disabled:#999999 --bind space:toggle-search
   ```
 - Added `last` action to move the cursor to the last match
     - The opposite action `top` is renamed to `first`, but `top` is still

@@ -33,7 +33,7 @@ const usage = `usage: fzf [options]
     -d, --delimiter=STR   Field delimiter regex (default: AWK-style)
     +s, --no-sort         Do not sort the result
     --tac                 Reverse the order of the input
-    --phony               Do not perform search
+    --disabled            Do not perform search
     --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
                           when the scores are tied [length|begin|end|index]
                           (default: length)
@@ -682,8 +682,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				}
 			}
 			switch components[0] {
-			case "input":
+			case "query", "input":
 				mergeAttr(&theme.Input)
+			case "disabled":
+				mergeAttr(&theme.Disabled)
 			case "fg":
 				mergeAttr(&theme.Fg)
 			case "bg":
@@ -875,6 +877,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actToggleOut)
 			case "toggle-all":
 				appendAction(actToggleAll)
+			case "toggle-search":
+				appendAction(actToggleSearch)
 			case "select-all":
 				appendAction(actSelectAll)
 			case "deselect-all":
@@ -923,6 +927,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actPreviewHalfPageUp)
 			case "preview-half-page-down":
 				appendAction(actPreviewHalfPageDown)
+			case "enable-search":
+				appendAction(actEnableSearch)
+			case "disable-search":
+				appendAction(actDisableSearch)
 			default:
 				t := isExecuteAction(specLower)
 				if t == actIgnore {
@@ -1199,9 +1207,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		case "--no-expect":
 			opts.Expect = make(map[tui.Event]string)
-		case "--no-phony":
+		case "--enabled", "--no-phony":
 			opts.Phony = false
-		case "--phony":
+		case "--disabled", "--phony":
 			opts.Phony = true
 		case "--tiebreak":
 			opts.Criteria = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))

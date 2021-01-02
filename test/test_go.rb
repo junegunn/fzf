@@ -1658,13 +1658,35 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[1], ' +       green ' }
   end
 
-  def test_phony
-    tmux.send_keys %(seq 1000 | #{FZF} --query 333 --phony --preview 'echo {} {q}'), :Enter
+  def test_disabled
+    tmux.send_keys %(seq 1000 | #{FZF} --query 333 --disabled --bind a:enable-search,b:disable-search,c:toggle-search --preview 'echo {} {q}'), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.until { |lines| assert_includes lines[1], ' 1 333 ' }
     tmux.send_keys 'foo'
     tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.until { |lines| assert_includes lines[1], ' 1 333foo ' }
+
+    # Already disabled, no change
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+
+    # Enable search
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :BSpace, :BSpace, :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_includes lines[1], ' 333 333 ' }
+
+    # Toggle search -> disabled again, but retains the previous result
+    tmux.send_keys 'c'
+    tmux.send_keys 'foo'
+    tmux.until { |lines| assert_includes lines[1], ' 333 333foo ' }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+
+    # Enabled, no match
+    tmux.send_keys 'c'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.until { |lines| assert_includes lines[1], ' 333foo ' }
   end
 
   def test_reload

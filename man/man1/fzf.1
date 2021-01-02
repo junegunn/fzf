@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2020" "fzf 0.24.5" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2021" "fzf 0.25.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -71,9 +71,10 @@ Transform the presentation of each line using field index expressions
 .BI "-d, --delimiter=" "STR"
 Field delimiter regex for \fB--nth\fR and \fB--with-nth\fR (default: AWK-style)
 .TP
-.BI "--phony"
+.BI "--disabled"
 Do not perform search. With this option, fzf becomes a simple selector
-interface rather than a "fuzzy finder".
+interface rather than a "fuzzy finder". You can later enable the search using
+\fBenable-search\fR or `\fBtoggle-search\R action.
 .SS Search result
 .TP
 .B "+s, --no-sort"
@@ -323,6 +324,8 @@ color mappings.
     \fBbg+        \fRBackground (current line)
     \fBgutter     \fRGutter on the left (defaults to \fBbg+\fR)
     \fBhl+        \fRHighlighted substrings (current line)
+    \fBquery      \fRQuery string
+    \fBdisabled   \fRQuery string when search is disabled
     \fBinfo       \fRInfo line (match counters)
     \fBborder     \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
     \fBprompt     \fRPrompt
@@ -780,7 +783,9 @@ A key or an event can be bound to one or more of the following actions.
     \fBdelete-char\fR               \fIdel\fR
     \fBdelete-char/eof\fR           \fIctrl-d\fR (same as \fBdelete-char\fR except aborts fzf if query is empty)
     \fBdeselect-all\fR              (deselect all matches)
+    \fBdisable-search\fR            (disable search functionality)
     \fBdown\fR                      \fIctrl-j  ctrl-n  down\fR
+    \fBenable-search\fR             (enable search functionality)
     \fBend-of-line\fR               \fIctrl-e  end\fR
     \fBexecute(...)\fR              (see below for the details)
     \fBexecute-silent(...)\fR       (see below for the details)
@@ -820,6 +825,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-out\fR                (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
+    \fBtoggle-search\fR             (toggle search functionality)
     \fBtoggle-sort\fR
     \fBtoggle+up\fR                 \fIbtab    (shift-tab)\fR
     \fBunix-line-discard\fR         \fIctrl-u\fR
@@ -902,7 +908,7 @@ e.g.
      INITIAL_QUERY="foobar"
      FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \\
        fzf --bind "change:reload:$RG_PREFIX {q} || true" \\
-           --ansi --phony --query "$INITIAL_QUERY"\fR
+           --ansi --disabled --query "$INITIAL_QUERY"\fR
 
 .SS PREVIEW BINDING
 
