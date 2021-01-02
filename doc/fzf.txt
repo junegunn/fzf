@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: January 2 2021
+fzf.txt	fzf	Last change: January 3 2021
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -460,7 +460,7 @@ LICENSE                                                            *fzf-license*
 
 The MIT License (MIT)
 
-Copyright (c) 2013-2020 Junegunn Choi
+Copyright (c) 2013-2021 Junegunn Choi
 
 ==============================================================================
 vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:
