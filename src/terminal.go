@@ -2636,11 +2636,11 @@ func (t *Terminal) constrain() {
 	count := t.merger.Length()
 	// count of lines can be displayed
 	height := t.maxItems()
-	
-	t.cy = util.Constrain(t.cy, 0, count - 1)
+
+	t.cy = util.Constrain(t.cy, 0, count-1)
 
 	minOffset := t.cy - height + 1
-	maxOffset := util.Max(util.Min(count - height, t.cy), 0)
+	maxOffset := util.Max(util.Min(count-height, t.cy), 0)
 	t.offset = util.Constrain(t.offset, minOffset, maxOffset)
 }
 
