@@ -2632,18 +2632,16 @@ func (t *Terminal) Loop() {
 }
 
 func (t *Terminal) constrain() {
+	// count of items to display allowed by filtering
 	count := t.merger.Length()
+	// count of lines can be displayed
 	height := t.maxItems()
-	diffpos := t.cy - t.offset
+	
+	t.cy = util.Constrain(t.cy, 0, count - 1)
 
-	t.cy = util.Constrain(t.cy, 0, count-1)
-	t.offset = util.Constrain(t.offset, t.cy-height+1, t.cy)
-	// Adjustment
-	if count-t.offset < height {
-		t.offset = util.Max(0, count-height)
-		t.cy = util.Constrain(t.offset+diffpos, 0, count-1)
-	}
-	t.offset = util.Max(0, t.offset)
+	minOffset := t.cy - height + 1
+	maxOffset := util.Max(util.Min(count - height, t.cy), 0)
+	t.offset = util.Constrain(t.offset, minOffset, maxOffset)
 }
 
 func (t *Terminal) vmove(o int, allowCycle bool) {
