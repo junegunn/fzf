@@ -318,7 +318,7 @@ append_line() {
   if [ -n "$lno" ]; then
     echo "    - Already exists: line #$lno"
   else
-    if [ $update -eq 1 ]; then
+    if [ $update = "1" ]; then
       [ -f "$file" ] && echo >> "$file"
       echo "$line" >> "$file"
       echo "    + Added"
