@@ -171,7 +171,7 @@ while. Please follow the instruction below depending on the installation
 method used.
 
 - git: `cd ~/.fzf && git pull && ./install`
-- brew: `brew update; brew reinstall fzf`
+- brew: `brew update; brew upgrade fzf`
 - macports: `sudo port upgrade fzf`
 - chocolatey: `choco upgrade fzf`
 - vim-plug: `:PlugUpdate fzf`
