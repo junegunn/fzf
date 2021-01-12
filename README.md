@@ -17,7 +17,7 @@ Pros
 - The most comprehensive feature set
 - Flexible layout
 - Batteries included
-    - Vim/Neovim plugin, key bindings and fuzzy auto-completion
+    - Vim/Neovim plugin, key bindings, and fuzzy auto-completion
 
 Table of Contents
 -----------------
@@ -166,7 +166,7 @@ For more installation options, see [README-VIM.md](README-VIM.md).
 Upgrading fzf
 -------------
 
-fzf is being actively developed and you might want to upgrade it once in a
+fzf is being actively developed, and you might want to upgrade it once in a
 while. Please follow the instruction below depending on the installation
 method used.
 
@@ -217,7 +217,7 @@ cursor with `--height` option.
 vim $(fzf --height 40%)
 ```
 
-Also check out `--reverse` and `--layout` options if you prefer
+Also, check out `--reverse` and `--layout` options if you prefer
 "top-down" layout instead of the default "bottom-up" layout.
 
 ```sh
@@ -331,7 +331,7 @@ fish.
     - Set `FZF_ALT_C_COMMAND` to override the default command
     - Set `FZF_ALT_C_OPTS` to pass additional options
 
-If you're on a tmux session, you can start fzf in a tmux split pane or in
+If you're on a tmux session, you can start fzf in a tmux split-pane or in
 a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `-d 40%`).
 See `fzf-tmux --help` for available options.
 
@@ -343,12 +343,12 @@ Fuzzy completion for bash and zsh
 #### Files and directories
 
 Fuzzy completion for files and directories can be triggered if the word before
-the cursor ends with the trigger sequence which is by default `**`.
+the cursor ends with the trigger sequence, which is by default `**`.
 
 - `COMMAND [DIRECTORY/][FUZZY_PATTERN]**<TAB>`
 
 ```sh
-# Files under current directory
+# Files under the current directory
 # - You can select multiple items with TAB key
 vim **<TAB>
 
@@ -372,7 +372,7 @@ cd ~/github/fzf**<TAB>
 #### Process IDs
 
 Fuzzy completion for PIDs is provided for kill command. In this case,
-there is no trigger sequence, just press tab key after kill command.
+there is no trigger sequence; just press the tab key after the kill command.
 
 ```sh
 # Can select multiple processes with <TAB> or <Shift-TAB> keys
@@ -381,7 +381,7 @@ kill -9 <TAB>
 
 #### Host names
 
-For ssh and telnet commands, fuzzy completion for host names is provided. The
+For ssh and telnet commands, fuzzy completion for hostnames is provided. The
 names are extracted from /etc/hosts and ~/.ssh/config.
 
 ```sh
@@ -469,11 +469,11 @@ _fzf_complete_doge() {
 
 - The arguments before `--` are the options to fzf.
 - After `--`, simply pass the original completion arguments unchanged (`"$@"`).
-- Then write a set of commands that generates the completion candidates and
+- Then, write a set of commands that generates the completion candidates and
   feed its output to the function using process substitution (`< <(...)`).
 
 zsh will automatically pick up the function using the naming convention but in
-bash you have to manually associate the function with the command using
+bash you have to manually associate the function with the command using the
 `complete` command.
 
 ```sh
@@ -509,12 +509,12 @@ Advanced topics
 
 fzf is fast and is [getting even faster][perf]. Performance should not be
 a problem in most use cases. However, you might want to be aware of the
-options that affect the performance.
+options that affect performance.
 
-- `--ansi` tells fzf to extract and parse ANSI color codes in the input and it
+- `--ansi` tells fzf to extract and parse ANSI color codes in the input, and it
   makes the initial scanning slower. So it's not recommended that you add it
   to your `$FZF_DEFAULT_OPTS`.
-- `--nth` makes fzf slower as fzf has to tokenize each line.
+- `--nth` makes fzf slower because it has to tokenize each line.
 - `--with-nth` makes fzf slower as fzf has to tokenize and reassemble each
   line.
 - If you absolutely need better performance, you can consider using
@@ -563,7 +563,7 @@ FZF_DEFAULT_COMMAND='find . -type f' \
 #### 3. Interactive ripgrep integration
 
 The following example uses fzf as the selector interface for ripgrep. We bound
-`reload` action to `change` event, so every time you type on fzf, ripgrep
+`reload` action to `change` event, so every time you type on fzf, the ripgrep
 process will restart with the updated query string denoted by the placeholder
 expression `{q}`. Also, note that we used `--phony` option so that fzf doesn't
 perform any secondary filtering.
@@ -589,7 +589,7 @@ Your `$SHELL` is used to execute the command with `$SHELL -c COMMAND`.
 The window can be scrolled using the mouse or custom key bindings.
 
 ```bash
-# {} is replaced to the single-quoted string of the focused line
+# {} is replaced with the single-quoted string of the focused line
 fzf --preview 'cat {}'
 ```
 
@@ -661,7 +661,7 @@ fzf
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 ```
 
-If you want the command to follow symbolic links, and don't want it to exclude
+If you want the command to follow symbolic links and don't want it to exclude
 hidden files, use the following command:
 
 ```sh
