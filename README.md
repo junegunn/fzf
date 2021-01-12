@@ -191,7 +191,8 @@ selected item to STDOUT.
 find * -type f | fzf > selected
 ```
 
-Without STDIN pipe, fzf will use the find command to fetch the files' list, excluding hidden ones. (You can override the default command with
+Without STDIN pipe, fzf will use find command to fetch the list of
+files excluding hidden ones. (You can override the default command with
 `FZF_DEFAULT_COMMAND`)
 
 ```sh
@@ -472,7 +473,7 @@ _fzf_complete_doge() {
   feed its output to the function using process substitution (`< <(...)`).
 
 zsh will automatically pick up the function using the naming convention but in
-bash you have to associate the function with the command manually using the
+bash you have to manually associate the function with the command using the
 `complete` command.
 
 ```sh
@@ -510,13 +511,15 @@ fzf is fast and is [getting even faster][perf]. Performance should not be
 a problem in most use cases. However, you might want to be aware of the
 options that affect performance.
 
-- `--ansi` tells fzf to extract and parse ANSI color codes in the input, and it makes the initial scanning slower. So it's not recommended that you add it
+- `--ansi` tells fzf to extract and parse ANSI color codes in the input, and it
+  makes the initial scanning slower. So it's not recommended that you add it
   to your `$FZF_DEFAULT_OPTS`.
 - `--nth` makes fzf slower because it has to tokenize each line.
 - `--with-nth` makes fzf slower as fzf has to tokenize and reassemble each
   line.
-- If you need better performance, you can consider using
-  `--algo=v1` (the default being `v2`) to make fzf use a faster greedy algorithm. However, this algorithm is not guaranteed to find the optimal
+- If you absolutely need better performance, you can consider using
+  `--algo=v1` (the default being `v2`) to make fzf use a faster greedy
+  algorithm. However, this algorithm is not guaranteed to find the optimal
   ordering of the matches and is not recommended.
 
 [perf]: https://junegunn.kr/images/fzf-0.17.0.png
@@ -560,7 +563,8 @@ FZF_DEFAULT_COMMAND='find . -type f' \
 #### 3. Interactive ripgrep integration
 
 The following example uses fzf as the selector interface for ripgrep. We bound
-`reload` action to `change` event, so every time you type on fzf, the ripgrep process will restart with the updated query string denoted by the placeholder
+`reload` action to `change` event, so every time you type on fzf, the ripgrep
+process will restart with the updated query string denoted by the placeholder
 expression `{q}`. Also, note that we used `--phony` option so that fzf doesn't
 perform any secondary filtering.
 
