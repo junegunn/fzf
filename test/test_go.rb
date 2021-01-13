@@ -148,14 +148,15 @@ class Tmux
   def prepare
     tries = 0
     begin
-      self.until do |lines|
-        send_keys ' ', 'C-u', :Enter, 'hello', :Left, :Right
-        lines[-1] == 'hello'
+      self.until(true) do |lines|
+        message = "Prepare[#{tries}]"
+        send_keys ' ', 'C-u', :Enter, message, :Left, :Right
+        lines[-1] == message
       end
     rescue Minitest::Assertion
       (tries += 1) < 5 ? retry : raise
     end
-    send_keys 'C-u'
+    send_keys 'C-u', 'C-l'
   end
 
   private
