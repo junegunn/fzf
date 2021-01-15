@@ -35,7 +35,7 @@ type Delimiter struct {
 	str   *string
 }
 
-// String returns the string representation of a Delimeter.
+// String returns the string representation of a Delimiter.
 func (d Delimiter) String() string {
 	return fmt.Sprintf("Delimiter{regex: %v, str: &%q}", d.regex, *d.str)
 }
