@@ -792,6 +792,8 @@ function! s:execute_term(dict, command, temps) abort
       call self.switch_back(1)
     else
       if bufnr('') == self.buf
+        " Exit terminal mode first (see neovim#13769)
+        call feedkeys("\<C-\>\<C-n>", 'n')
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
