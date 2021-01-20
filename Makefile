@@ -27,6 +27,7 @@ $(error Not on git repository; cannot determine $$FZF_REVISION)
 endif
 BUILD_FLAGS    := -a -ldflags "-s -w -X main.version=$(VERSION) -X main.revision=$(REVISION)" -tags "$(TAGS)"
 
+BINARY32       := fzf-$(GOOS)_386
 BINARY64       := fzf-$(GOOS)_amd64
 BINARYARM5     := fzf-$(GOOS)_arm5
 BINARYARM6     := fzf-$(GOOS)_arm6
@@ -40,6 +41,10 @@ ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),amd64)
 	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),i686)
+	BINARY := $(BINARY32)
+else ifeq ($(UNAME_M),i386)
+	BINARY := $(BINARY32)
 else ifeq ($(UNAME_M),armv5l)
 	BINARY := $(BINARYARM5)
 else ifeq ($(UNAME_M),armv6l)
@@ -109,6 +114,9 @@ endif
 
 clean:
 	$(RM) -r dist target
+
+target/$(BINARY32): $(SOURCES)
+	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
 
 target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
