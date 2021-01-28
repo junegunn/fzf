@@ -43,7 +43,11 @@ function download {
   $url="https://github.com/junegunn/fzf/releases/download/$version/$file"
   $temp=$env:TMP + "\fzf.zip"
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))
+  if ($PSVersionTable.PSVersion.Major -ge 3) {
+    Invoke-WebRequest -Uri $url -OutFile $temp
+  } else {
+    (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))
+  }
   if ($?) {
     (Microsoft.PowerShell.Archive\Expand-Archive -Path $temp -DestinationPath .); (Remove-Item $temp)
   } else {
@@ -53,7 +57,7 @@ function download {
     $binary_error="Failed to download $file"
     return
   }
-  check_binary >$null
+  echo y | icacls $fzf_base\bin\fzf.exe /grant Administrator:F ; check_binary >$null
 }
 
 download "fzf-$version-windows_amd64.zip"
