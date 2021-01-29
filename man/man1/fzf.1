@@ -570,7 +570,8 @@ Note that most options have the opposite versions with \fB--no-\fR prefix.
 .TP
 .B FZF_DEFAULT_COMMAND
 Default command to use when input is tty. On *nix systems, fzf runs the command
-with \fBsh -c\fR, so make sure that it's POSIX-compliant.
+with \fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise with \fBsh -c\fR, so in
+this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
@@ -889,6 +890,10 @@ output, you might want to use \fBexecute-silent\fR instead, which silently
 executes the command without the switching. Note that fzf will not be
 responsive until the command is complete. For asynchronous execution, start
 your command as a background process (i.e. appending \fB&\fR).
+
+On *nix systems, fzf runs the command with \fB$SHELL -c\fR if \fBSHELL\fR is
+set, otherwise with \fBsh -c\fR, so in this case make sure that the command is
+POSIX-compliant.
 
 .SS RELOAD INPUT
 
