@@ -1864,6 +1864,19 @@ class TestGoFZF < TestBase
     tmux.send_keys "#{FZF} --preview 'seq 1000 | nl' --preview-window down:noborder:follow", :Enter
     tmux.until { |lines| assert_equal '1000  1000', lines[-1].strip }
   end
+
+  def test_toggle_preview_wrap
+    tmux.send_keys "#{FZF} --preview 'for i in $(seq $FZF_PREVIEW_COLUMNS); do echo -n .; done; echo wrapped; echo 2nd line' --bind ctrl-w:toggle-preview-wrap", :Enter
+    2.times do
+      tmux.until { |lines| assert_includes lines[2], '2nd line' }
+      tmux.send_keys 'C-w'
+      tmux.until do |lines|
+        assert_includes lines[2], 'wrapped'
+        assert_includes lines[3], '2nd line'
+      end
+      tmux.send_keys 'C-w'
+    end
+  end
 end
 
 module TestShell
