@@ -883,6 +883,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actSelectAll)
 			case "deselect-all":
 				appendAction(actDeselectAll)
+			case "close":
+				appendAction(actClose)
 			case "toggle":
 				appendAction(actToggle)
 			case "down":

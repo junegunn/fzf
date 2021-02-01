@@ -1877,6 +1877,19 @@ class TestGoFZF < TestBase
       tmux.send_keys 'C-w'
     end
   end
+
+  def test_close
+    tmux.send_keys "seq 100 | #{FZF} --preview 'echo foo' --bind ctrl-c:close", :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until { |lines| assert_includes lines[1], 'foo' }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| refute_includes lines[1], 'foo' }
+    tmux.send_keys '10'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys 'C-c'
+    tmux.send_keys 'C-l', 'closed'
+    tmux.until { |lines| assert_includes lines[0], 'closed' }
+  end
 end
 
 module TestShell
