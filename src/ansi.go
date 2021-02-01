@@ -201,7 +201,7 @@ func interpretCode(ansiCode string, prevState *ansiState) *ansiState {
 		state = &ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg}
 	}
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
-		if strings.HasSuffix(ansiCode, "0K") {
+		if strings.HasSuffix(ansiCode, "0K") && prevState != nil {
 			state.lbg = prevState.bg
 		}
 		return state
