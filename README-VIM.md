@@ -362,7 +362,7 @@ Our `:LS` command will be much more useful if we can pass a directory argument
 to it, so that something like `:LS /tmp` is possible.
 
 ```vim
-command! -bang -complete=dir -nargs=* LS
+command! -bang -complete=dir -nargs=? LS
     \ call fzf#run(fzf#wrap({'source': 'ls', 'dir': <q-args>}, <bang>0))
 ```
 
@@ -372,7 +372,7 @@ a unique name to our command and pass it as the first argument to `fzf#wrap`.
 ```vim
 " The query history for this command will be stored as 'ls' inside g:fzf_history_dir.
 " The name is ignored if g:fzf_history_dir is not defined.
-command! -bang -complete=dir -nargs=* LS
+command! -bang -complete=dir -nargs=? LS
     \ call fzf#run(fzf#wrap('ls', {'source': 'ls', 'dir': <q-args>}, <bang>0))
 ```
 

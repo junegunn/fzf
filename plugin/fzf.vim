@@ -424,10 +424,10 @@ try
     throw v:exception
   endtry
 
-  if !has_key(dict, 'dir')
+  if !s:present(dict, 'dir')
     let dict.dir = s:fzf_getcwd()
   endif
-  if has('win32unix') && has_key(dict, 'dir')
+  if has('win32unix') && s:present(dict, 'dir')
     let dict.dir = fnamemodify(dict.dir, ':p')
   endif
 
