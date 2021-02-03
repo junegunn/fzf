@@ -5,6 +5,7 @@ CHANGELOG
 ------
 - Added `close` action
     - Close preview window if open, abort fzf otherwise
+- Bug fixes and improvements
 
 0.25.0
 ------
