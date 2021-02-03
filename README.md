@@ -264,6 +264,13 @@ or `py`.
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
+    - > :warning: This variable is not used by shell extensions due to the
+      > slight difference in requirements.
+      >
+      > (e.g. `CTRL-T` runs `$FZF_CTRL_T_COMMAND` instead, `vim **<tab>` runs
+      > `_fzf_compgen_path()`, and `cd **<tab>` runs `_fzf_compgen_dir()`)
+      >
+      > The available options are described later in this document.
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
