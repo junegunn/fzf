@@ -9,9 +9,6 @@ directory to `&runtimepath` in your Vim configuration file. The path may
 differ depending on the package manager.
 
 ```vim
-" If installed using Homebrew
-set rtp+=/usr/local/opt/fzf
-
 " If installed using git
 set rtp+=~/.fzf
 ```
@@ -26,6 +23,8 @@ Plug '/usr/local/opt/fzf'
 " If installed using git
 Plug '~/.fzf'
 ```
+
+Homebrew will place fzf into the runtime path automatically.
 
 But if you want the latest Vim plugin file from GitHub rather than the one
 included in the package, write:
