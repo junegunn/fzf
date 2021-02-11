@@ -632,10 +632,21 @@ function! s:execute(dict, command, use_height, temps) abort
       return []
     endif
   elseif has('win32unix') && $TERM !=# 'cygwin'
-    let shellscript = s:fzf_tempname()
-    call writefile([command], shellscript)
-    let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
-    let a:temps.shellscript = shellscript
+    if !exists('s:cygwin_317_or_above')
+      let uname_os = system('uname -o')
+      if v:shell_error || uname_os !~? 'Cygwin'
+        let s:cygwin_317_or_above = 0
+      else
+        let cygwin_version = substitute(system("uname -r |grep --only-matching '^[0-9.]\\+' |tr -d '.'"), '\_s*$', '', '')
+        let s:cygwin_317_or_above = !(v:shell_error || cygwin_version !~# '^\d\+$' || cygwin_version < 317)
+      endif
+    endif
+    if !s:cygwin_317_or_above
+      let shellscript = s:fzf_tempname()
+      call writefile([command], shellscript)
+      let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
+      let a:temps.shellscript = shellscript
+    endif
   endif
   if a:use_height
     let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
