@@ -12,20 +12,31 @@
 if [[ $- =~ i ]]; then
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
+# If available, this will use command fd (https://github.com/sharkdp/fd)
+# instead of the default find command for listing path candidates.
+# The first argument to the function ($1) is the base path to start traversal.
 if ! declare -f _fzf_compgen_path > /dev/null; then
   _fzf_compgen_path() {
     echo "$1"
-    command find -L "$1" \
-      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    command fd --hidden --follow --exclude ".git" . "$1" 2>/dev/null ||
+    {
+      command find -L "$1" \
+        -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+        -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@';
+    }
   }
 fi
 
+# If fd is present, use fd to generate the list for directory completion or
+# else find will be used.
 if ! declare -f _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
-    command find -L "$1" \
-      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    command   fd --type d --hidden --follow --exclude ".git" . "$1" 2>/dev/null ||
+    {
+      command find -L "$1" \
+        -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
+        -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    }
   }
 fi
 
