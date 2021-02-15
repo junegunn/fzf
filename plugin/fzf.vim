@@ -764,6 +764,10 @@ function! s:split(dict)
   endtry
 endfunction
 
+noremap  <silent> <Plug>(fzf-normal) <Nop>
+noremap! <silent> <Plug>(fzf-normal) <Nop>
+tnoremap <silent> <expr> <Plug>(fzf-normal) &filetype == 'fzf' ? "\<C-L>" : "\<C-\>\<C-n>"
+
 function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
   let pbuf = bufnr('')
@@ -793,7 +797,7 @@ function! s:execute_term(dict, command, temps) abort
     else
       if bufnr('') == self.buf
         " Exit terminal mode first (see neovim#13769)
-        call feedkeys("\<C-\>\<C-n>", 'n')
+        call feedkeys("\<Plug>(fzf-normal)")
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
