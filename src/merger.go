@@ -106,7 +106,6 @@ func (mg *Merger) mergedGet(idx int) Result {
 					minIdx = listIdx
 				}
 			}
-			mg.cursors[listIdx] = cursor
 		}
 
 		if minIdx >= 0 {
