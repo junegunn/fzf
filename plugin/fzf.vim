@@ -766,7 +766,9 @@ endfunction
 
 noremap  <silent> <Plug>(fzf-normal) <Nop>
 noremap! <silent> <Plug>(fzf-normal) <Nop>
-tnoremap <silent> <expr> <Plug>(fzf-normal) &filetype == 'fzf' ? "\<C-L>" : "\<C-\>\<C-n>"
+if exists(':tnoremap')
+  tnoremap <silent> <expr> <Plug>(fzf-normal) &filetype == 'fzf' ? "\<C-L>" : "\<C-\>\<C-n>"
+endif
 
 function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
