@@ -782,7 +782,7 @@ function! s:execute_term(dict, command, temps) abort
   function! fzf.switch_back(inplace)
     if a:inplace && bufnr('') == self.buf
       if bufexists(self.pbuf)
-        execute 'keepalt b' self.pbuf
+        execute 'keepalt keepjump b' self.pbuf
       endif
       " No other listed buffer
       if bufnr('') == self.buf
