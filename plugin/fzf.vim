@@ -803,6 +803,8 @@ function! s:execute_term(dict, command, temps) abort
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
+        " avoids side effects caused by previous feedkeys()
+        call feedkeys('', 'x')
       endif
       silent! execute 'tabnext' self.ppos.tab
       silent! execute self.ppos.win.'wincmd w'
