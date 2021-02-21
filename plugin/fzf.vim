@@ -764,10 +764,11 @@ function! s:split(dict)
   endtry
 endfunction
 
-noremap  <silent> <Plug>(fzf-normal) <Nop>
-noremap! <silent> <Plug>(fzf-normal) <Nop>
+nnoremap <silent> <Plug>(fzf-insert) i
+nnoremap <silent> <Plug>(fzf-normal) <Nop>
 if exists(':tnoremap')
-  tnoremap <silent> <expr> <Plug>(fzf-normal) &filetype == 'fzf' ? "\<C-L>" : "\<C-\>\<C-n>"
+  tnoremap <silent> <Plug>(fzf-insert) <Nop>
+  tnoremap <silent> <Plug>(fzf-normal) <C-\><C-n>
 endif
 
 function! s:execute_term(dict, command, temps) abort
@@ -798,8 +799,6 @@ function! s:execute_term(dict, command, temps) abort
       call self.switch_back(1)
     else
       if bufnr('') == self.buf
-        " Exit terminal mode first (see neovim#13769)
-        call feedkeys("\<Plug>(fzf-normal)")
         " We use close instead of bd! since Vim does not close the split when
         " there's no other listed buffer (nvim +'set nobuflisted')
         close
@@ -824,6 +823,10 @@ function! s:execute_term(dict, command, temps) abort
     call s:pushd(self.dict)
     call s:callback(self.dict, lines)
     call self.switch_back(s:getpos() == self.ppos)
+
+    if &buftype == 'terminal'
+      call feedkeys(&filetype == 'fzf' ? "\<Plug>(fzf-insert)" : "\<Plug>(fzf-normal)")
+    endif
   endfunction
 
   try
