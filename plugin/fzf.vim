@@ -767,7 +767,7 @@ endfunction
 nnoremap <silent> <Plug>(fzf-insert) i
 nnoremap <silent> <Plug>(fzf-normal) <Nop>
 if exists(':tnoremap')
-  tnoremap <silent> <Plug>(fzf-insert) <Nop>
+  tnoremap <silent> <Plug>(fzf-insert) <C-\><C-n>i
   tnoremap <silent> <Plug>(fzf-normal) <C-\><C-n>
 endif
 
