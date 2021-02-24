@@ -425,6 +425,7 @@ Starting fzf in a popup window~
     " - yoffset [float default 0.5 range [0 ~ 1]]
     " - border [string default 'rounded']: Border style
     "   - 'rounded' / 'sharp' / 'horizontal' / 'vertical' / 'top' / 'bottom' / 'left' / 'right'
+    " - winblend [int default 0 range[0 ~ 100]]: Transparency of floating window  (Neovim only)
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 <
 Alternatively, you can make fzf open in a tmux popup window (requires tmux 3.2

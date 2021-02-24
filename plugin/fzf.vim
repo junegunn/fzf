@@ -915,13 +915,11 @@ if has('nvim')
   function s:create_popup(hl, opts) abort
     let buf = nvim_create_buf(v:false, v:true)
     let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
-    let border = has_key(opts, 'border') ? remove(opts, 'border') : []
+    let winblend = has_key(opts, 'winblend') ? remove(opts, 'winblend') : 0
     let win = nvim_open_win(buf, v:true, opts)
     call setwinvar(win, '&winhighlight', 'NormalFloat:'..a:hl)
     call setwinvar(win, '&colorcolumn', '')
-    if !empty(border)
-      call nvim_buf_set_lines(buf, 0, -1, v:true, border)
-    endif
+    call nvim_win_set_option(win, "winblend", winblend)
     return buf
   endfunction
 else
@@ -952,8 +950,11 @@ function! s:popup(opts) abort
   let row += !has('nvim')
   let col += !has('nvim')
 
+  " Clamp the winblend (nvim only)
+  let winblend = has('nvim') ? min([max([0, get(a:opts, 'winblend', 0)]), 100]) : 0
+
   call s:create_popup('Normal', {
-    \ 'row': row, 'col': col, 'width': width, 'height': height
+    \ 'row': row, 'col': col, 'width': width, 'height': height, 'winblend': winblend
   \ })
 endfunction
 

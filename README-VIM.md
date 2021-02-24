@@ -412,6 +412,7 @@ The latest versions of Vim and Neovim include builtin terminal emulator
 " - yoffset [float default 0.5 range [0 ~ 1]]
 " - border [string default 'rounded']: Border style
 "   - 'rounded' / 'sharp' / 'horizontal' / 'vertical' / 'top' / 'bottom' / 'left' / 'right'
+" - winblend [int default 0 range[0 ~ 100]]: Transparency of floating window  (Neovim only)
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 ```
 
