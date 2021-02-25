@@ -276,6 +276,8 @@ const (
 	actReload
 	actDisableSearch
 	actEnableSearch
+	actSelect
+	actDeselect
 )
 
 type placeholderFlags struct {
@@ -1785,9 +1787,24 @@ func (t *Terminal) selectItem(item *Item) bool {
 	return true
 }
 
+func (t *Terminal) selectItemChanged(item *Item) bool {
+	if _, found := t.selected[item.Index()]; found {
+		return false
+	}
+	return t.selectItem(item)
+}
+
 func (t *Terminal) deselectItem(item *Item) {
 	delete(t.selected, item.Index())
 	t.version++
+}
+
+func (t *Terminal) deselectItemChanged(item *Item) bool {
+	if _, found := t.selected[item.Index()]; found {
+		t.deselectItem(item)
+		return true
+	}
+	return false
 }
 
 func (t *Terminal) toggleItem(item *Item) bool {
@@ -2340,6 +2357,16 @@ func (t *Terminal) Loop() {
 					togglePreview(false)
 				} else {
 					req(reqQuit)
+				}
+			case actSelect:
+				current := t.currentItem()
+				if t.multi > 0 && current != nil && t.selectItemChanged(current) {
+					req(reqList, reqInfo)
+				}
+			case actDeselect:
+				current := t.currentItem()
+				if t.multi > 0 && current != nil && t.deselectItemChanged(current) {
+					req(reqList, reqInfo)
 				}
 			case actToggle:
 				if t.multi > 0 && t.merger.Length() > 0 && toggle() {
