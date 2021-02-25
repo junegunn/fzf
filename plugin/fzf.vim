@@ -915,13 +915,9 @@ if has('nvim')
   function s:create_popup(hl, opts) abort
     let buf = nvim_create_buf(v:false, v:true)
     let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
-    let border = has_key(opts, 'border') ? remove(opts, 'border') : []
     let win = nvim_open_win(buf, v:true, opts)
     call setwinvar(win, '&winhighlight', 'NormalFloat:'..a:hl)
     call setwinvar(win, '&colorcolumn', '')
-    if !empty(border)
-      call nvim_buf_set_lines(buf, 0, -1, v:true, border)
-    endif
     return buf
   endfunction
 else
