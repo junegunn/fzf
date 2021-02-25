@@ -12,10 +12,25 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
     hooks:
-      post: gon .gon.hcl
+      post: |-
+        sh -c '
+        cat > /tmp/fzf-gon.hcl << EOF
+        source = ["./dist/fzf-macos_darwin_{{ .Arch }}/fzf"]
+        bundle_id = "kr.junegunn.fzf"
+        apple_id {
+          username = "junegunn.c@gmail.com"
+          password = "@env:AC_PASSWORD"
+        }
+        sign {
+          application_identity = "Apple Development: junegunn.c@gmail.com"
+        }
+        EOF
+        gon /tmp/fzf-gon.hcl
+        '
 
   - goos:
       - linux
