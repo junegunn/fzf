@@ -6,8 +6,8 @@ func TestChunkCache(t *testing.T) {
 	cache := NewChunkCache()
 	chunk1p := &Chunk{}
 	chunk2p := &Chunk{count: chunkSize}
-	items1 := []Result{Result{}}
-	items2 := []Result{Result{}, Result{}}
+	items1 := []Result{{}}
+	items2 := []Result{{}, {}}
 	cache.Add(chunk1p, "foo", items1)
 	cache.Add(chunk2p, "foo", items1)
 	cache.Add(chunk2p, "bar", items2)
