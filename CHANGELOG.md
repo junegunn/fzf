@@ -3,7 +3,7 @@ CHANGELOG
 
 0.25.2
 ------
-- Added `select` and `deselect` action for unconditinoally selecting or
+- Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
 - Built with Go 1.16
 
