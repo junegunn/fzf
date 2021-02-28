@@ -157,7 +157,7 @@ type Terminal struct {
 	slab         *util.Slab
 	theme        *tui.ColorTheme
 	tui          tui.Renderer
-	executing bool
+	executing    bool
 }
 
 type selectedItem struct {
@@ -1715,7 +1715,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
-		t.executing = true;
+		t.executing = true
 		cmd.Run()
 		t.executing = false
 		t.tui.Resume(true, false)
@@ -1723,7 +1723,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		t.executing = true;
+		t.executing = true
 		cmd.Run()
 		t.executing = false
 		t.tui.Resume(false, false)
