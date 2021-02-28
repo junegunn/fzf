@@ -157,7 +157,7 @@ type Terminal struct {
 	slab         *util.Slab
 	theme        *tui.ColorTheme
 	tui          tui.Renderer
-	executing    bool
+	executing    *util.AtomicBool
 }
 
 type selectedItem struct {
@@ -527,7 +527,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:    make(chan int),
 		tui:         renderer,
 		initFunc:    func() { renderer.Init() },
-		executing:   false}
+		executing:   util.NewAtomicBool(false)}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -1715,17 +1715,17 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
-		t.executing = true
+		t.executing.Set(true)
 		cmd.Run()
-		t.executing = false
+		t.executing.Set(false)
 		t.tui.Resume(true, false)
 		t.redraw()
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		t.executing = true
+		t.executing.Set(true)
 		cmd.Run()
-		t.executing = false
+		t.executing.Set(false)
 		t.tui.Resume(false, false)
 	}
 	cleanTemporaryFiles()
@@ -1843,10 +1843,9 @@ func (t *Terminal) Loop() {
 		intChan := make(chan os.Signal, 1)
 		signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
 		go func() {
-			for {
-				s := <-intChan
+			for s := range intChan {
 				// Don't quit by SIGINT while executing because it should be for the executing command and not for fzf itself
-				if !(s == os.Interrupt && t.executing) {
+				if !(s == os.Interrupt && t.executing.Get()) {
 					t.reqBox.Set(reqQuit, nil)
 				}
 			}
