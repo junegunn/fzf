@@ -1911,6 +1911,17 @@ class TestGoFZF < TestBase
     tmux.send_keys :Down
     tmux.until { |lines| assert_equal 2, lines.select_count }
   end
+
+  def test_interrupt_execute
+    tmux.send_keys "seq 100 | #{FZF} --bind 'ctrl-l:execute:echo executing {}; sleep 100'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys 'C-l'
+    tmux.until { |lines| assert lines.any_include?('executing 1') }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys 99
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
 end
 
 module TestShell
