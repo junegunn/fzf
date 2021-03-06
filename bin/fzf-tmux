@@ -206,7 +206,7 @@ if [[ "$opt" =~ "-K -E" ]]; then
   fi
 
   # tmux dropped the support for `-K`, `-R` to popup command
-  if [[ ! "$(strings "$(which tmux)" | grep -A2 'display-popup')" =~ 'CEKc:d:h:R:t:w:x:y:' ]]; then
+  if [[ ! "$(strings "$(type -P tmux)" | grep -A2 'display-popup')" =~ 'CEKc:d:h:R:t:w:x:y:' ]]; then
     opt="${opt/-K/}"
   else
     opt="${opt} -R"
