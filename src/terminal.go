@@ -80,84 +80,85 @@ var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
 type Terminal struct {
-	initDelay    time.Duration
-	infoStyle    infoStyle
-	spinner      []string
-	prompt       func()
-	promptLen    int
-	pointer      string
-	pointerLen   int
-	pointerEmpty string
-	marker       string
-	markerLen    int
-	markerEmpty  string
-	queryLen     [2]int
-	layout       layoutType
-	fullscreen   bool
-	keepRight    bool
-	hscroll      bool
-	hscrollOff   int
-	wordRubout   string
-	wordNext     string
-	cx           int
-	cy           int
-	offset       int
-	xoffset      int
-	yanked       []rune
-	input        []rune
-	multi        int
-	sort         bool
-	toggleSort   bool
-	delimiter    Delimiter
-	expect       map[tui.Event]string
-	keymap       map[tui.Event][]action
-	pressed      string
-	printQuery   bool
-	history      *History
-	cycle        bool
-	header       []string
-	header0      []string
-	ansi         bool
-	tabstop      int
-	margin       [4]sizeSpec
-	padding      [4]sizeSpec
-	strong       tui.Attr
-	unicode      bool
-	borderShape  tui.BorderShape
-	cleanExit    bool
-	paused       bool
-	border       tui.Window
-	window       tui.Window
-	pborder      tui.Window
-	pwindow      tui.Window
-	count        int
-	progress     int
-	reading      bool
-	failed       *string
-	jumping      jumpMode
-	jumpLabels   string
-	printer      func(string)
-	printsep     string
-	merger       *Merger
-	selected     map[int32]selectedItem
-	version      int64
-	reqBox       *util.EventBox
-	previewOpts  previewOpts
-	previewer    previewer
-	previewed    previewed
-	previewBox   *util.EventBox
-	eventBox     *util.EventBox
-	mutex        sync.Mutex
-	initFunc     func()
-	prevLines    []itemLine
-	suppress     bool
-	sigstop      bool
-	startChan    chan bool
-	killChan     chan int
-	slab         *util.Slab
-	theme        *tui.ColorTheme
-	tui          tui.Renderer
-	executing    *util.AtomicBool
+	initDelay     time.Duration
+	infoStyle     infoStyle
+	spinner       []string
+	prompt        func()
+	promptLen     int
+	pointer       string
+	pointerLen    int
+	pointerEmpty  string
+	marker        string
+	markerLen     int
+	markerEmpty   string
+	queryLen      [2]int
+	layout        layoutType
+	fullscreen    bool
+	keepRight     bool
+	hscroll       bool
+	hscrollOff    int
+	wordRubout    string
+	wordNext      string
+	cx            int
+	cy            int
+	offset        int
+	xoffset       int
+	yanked        []rune
+	input         []rune
+	multi         int
+	sort          bool
+	toggleSort    bool
+	delimiter     Delimiter
+	expect        map[tui.Event]string
+	keymap        map[tui.Event][]action
+	pressed       string
+	printQuery    bool
+	history       *History
+	cycle         bool
+	header        []string
+	header0       []string
+	ansi          bool
+	tabstop       int
+	margin        [4]sizeSpec
+	padding       [4]sizeSpec
+	strong        tui.Attr
+	unicode       bool
+	borderShape   tui.BorderShape
+	cleanExit     bool
+	paused        bool
+	border        tui.Window
+	window        tui.Window
+	pborder       tui.Window
+	pwindow       tui.Window
+	count         int
+	progress      int
+	reading       bool
+	failed        *string
+	jumping       jumpMode
+	jumpLabels    string
+	printer       func(string)
+	printsep      string
+	merger        *Merger
+	selected      map[int32]selectedItem
+	version       int64
+	reqBox        *util.EventBox
+	previewOpts   previewOpts
+	previewer     previewer
+	previewed     previewed
+	previewBox    *util.EventBox
+	eventBox      *util.EventBox
+	mutex         sync.Mutex
+	initFunc      func()
+	prevLines     []itemLine
+	suppress      bool
+	sigstop       bool
+	startChan     chan bool
+	killChan      chan int
+	slab          *util.Slab
+	theme         *tui.ColorTheme
+	tui           tui.Renderer
+	executing     *util.AtomicBool
+	shutdownHooks *[]func(int) chan struct{}
 }
 
 type selectedItem struct {
@@ -466,68 +467,69 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
 	t := Terminal{
-		initDelay:   delay,
-		infoStyle:   opts.InfoStyle,
-		spinner:     makeSpinner(opts.Unicode),
-		queryLen:    [2]int{0, 0},
-		layout:      opts.Layout,
-		fullscreen:  fullscreen,
-		keepRight:   opts.KeepRight,
-		hscroll:     opts.Hscroll,
-		hscrollOff:  opts.HscrollOff,
-		wordRubout:  wordRubout,
-		wordNext:    wordNext,
-		cx:          len(input),
-		cy:          0,
-		offset:      0,
-		xoffset:     0,
-		yanked:      []rune{},
-		input:       input,
-		multi:       opts.Multi,
-		sort:        opts.Sort > 0,
-		toggleSort:  opts.ToggleSort,
-		delimiter:   opts.Delimiter,
-		expect:      opts.Expect,
-		keymap:      opts.Keymap,
-		pressed:     "",
-		printQuery:  opts.PrintQuery,
-		history:     opts.History,
-		margin:      opts.Margin,
-		padding:     opts.Padding,
-		unicode:     opts.Unicode,
-		borderShape: opts.BorderShape,
-		cleanExit:   opts.ClearOnExit,
-		paused:      opts.Phony,
-		strong:      strongAttr,
-		cycle:       opts.Cycle,
-		header:      header,
-		header0:     header,
-		ansi:        opts.Ansi,
-		tabstop:     opts.Tabstop,
-		reading:     true,
-		failed:      nil,
-		jumping:     jumpDisabled,
-		jumpLabels:  opts.JumpLabels,
-		printer:     opts.Printer,
-		printsep:    opts.PrintSep,
-		merger:      EmptyMerger,
-		selected:    make(map[int32]selectedItem),
-		reqBox:      util.NewEventBox(),
-		previewOpts: opts.Preview,
-		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, false, ""},
-		previewed:   previewed{0, 0, 0, false},
-		previewBox:  previewBox,
-		eventBox:    eventBox,
-		mutex:       sync.Mutex{},
-		suppress:    true,
-		sigstop:     false,
-		slab:        util.MakeSlab(slab16Size, slab32Size),
-		theme:       opts.Theme,
-		startChan:   make(chan bool, 1),
-		killChan:    make(chan int),
-		tui:         renderer,
-		initFunc:    func() { renderer.Init() },
-		executing:   util.NewAtomicBool(false)}
+		initDelay:     delay,
+		infoStyle:     opts.InfoStyle,
+		spinner:       makeSpinner(opts.Unicode),
+		queryLen:      [2]int{0, 0},
+		layout:        opts.Layout,
+		fullscreen:    fullscreen,
+		keepRight:     opts.KeepRight,
+		hscroll:       opts.Hscroll,
+		hscrollOff:    opts.HscrollOff,
+		wordRubout:    wordRubout,
+		wordNext:      wordNext,
+		cx:            len(input),
+		cy:            0,
+		offset:        0,
+		xoffset:       0,
+		yanked:        []rune{},
+		input:         input,
+		multi:         opts.Multi,
+		sort:          opts.Sort > 0,
+		toggleSort:    opts.ToggleSort,
+		delimiter:     opts.Delimiter,
+		expect:        opts.Expect,
+		keymap:        opts.Keymap,
+		pressed:       "",
+		printQuery:    opts.PrintQuery,
+		history:       opts.History,
+		margin:        opts.Margin,
+		padding:       opts.Padding,
+		unicode:       opts.Unicode,
+		borderShape:   opts.BorderShape,
+		cleanExit:     opts.ClearOnExit,
+		paused:        opts.Phony,
+		strong:        strongAttr,
+		cycle:         opts.Cycle,
+		header:        header,
+		header0:       header,
+		ansi:          opts.Ansi,
+		tabstop:       opts.Tabstop,
+		reading:       true,
+		failed:        nil,
+		jumping:       jumpDisabled,
+		jumpLabels:    opts.JumpLabels,
+		printer:       opts.Printer,
+		printsep:      opts.PrintSep,
+		merger:        EmptyMerger,
+		selected:      make(map[int32]selectedItem),
+		reqBox:        util.NewEventBox(),
+		previewOpts:   opts.Preview,
+		previewer:     previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, false, ""},
+		previewed:     previewed{0, 0, 0, false},
+		previewBox:    previewBox,
+		eventBox:      eventBox,
+		mutex:         sync.Mutex{},
+		suppress:      true,
+		sigstop:       false,
+		slab:          util.MakeSlab(slab16Size, slab32Size),
+		theme:         opts.Theme,
+		startChan:     make(chan bool, 1),
+		killChan:      make(chan int),
+		tui:           renderer,
+		initFunc:      func() { renderer.Init() },
+		executing:     util.NewAtomicBool(false),
+		shutdownHooks: &([]func(int) chan struct{}{})}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -536,6 +538,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
 	return &t
+}
+
+func (t *Terminal) AppendShutdownHook(shutdownHook func(int) chan struct{}) {
+	*t.shutdownHooks = append(*t.shutdownHooks, shutdownHook)
 }
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
@@ -1821,13 +1827,12 @@ func (t *Terminal) toggleItem(item *Item) bool {
 	return true
 }
 
-func (t *Terminal) killPreview(code int) {
+func (t *Terminal) killPreview(code int) bool {
 	select {
 	case t.killChan <- code:
+		return true
 	default:
-		if code != exitCancel {
-			os.Exit(code)
-		}
+		return false
 	}
 }
 
@@ -1895,9 +1900,29 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}()
+
+		t.AppendShutdownHook(func(exitCode int) chan struct{} {
+			if exitCode <= exitNoMatch && t.history != nil {
+				c := make(chan struct{})
+				go func() {
+					t.history.append(string(t.input))
+					c <- struct{}{}
+				}()
+				return c
+			}
+			return nil
+		})
 	}
 
 	if t.hasPreviewer() {
+		shutdownCompleteChan := make(chan struct{})
+		t.AppendShutdownHook(func(exitCode int) chan struct{} {
+			if t.killPreview(exitCode) {
+				return shutdownCompleteChan
+			}
+			return nil
+		})
+
 		go func() {
 			var version int64
 			for {
@@ -2010,7 +2035,7 @@ func (t *Terminal) Loop() {
 								case code := <-t.killChan:
 									if code != exitCancel {
 										util.KillCommand(cmd)
-										os.Exit(code)
+										shutdownCompleteChan <- struct{}{}
 									} else {
 										timer := time.NewTimer(previewCancelWait)
 										select {
@@ -2050,11 +2075,16 @@ func (t *Terminal) Loop() {
 	exit := func(getCode func() int) {
 		t.tui.Close()
 		code := getCode()
-		if code <= exitNoMatch && t.history != nil {
-			t.history.append(string(t.input))
+		var channels []chan struct{}
+		for _, f := range *t.shutdownHooks {
+			channels = append(channels, f(code))
 		}
-		// prof.Stop()
-		t.killPreview(code)
+		for _, c := range channels {
+			if c != nil {
+				<-c
+			}
+		}
+		os.Exit(code)
 	}
 
 	refreshPreview := func(command string) {

@@ -216,6 +216,15 @@ func Run(opts *Options, version string, revision string) {
 
 	// Terminal I/O
 	terminal := NewTerminal(opts, eventBox)
+	terminal.AppendShutdownHook(func(exitCode int) chan struct{} {
+		c := make(chan struct{})
+		go func() {
+			reader.terminate()
+			c <- struct{}{}
+		}()
+		return c
+	})
+
 	deferred := opts.Select1 || opts.Exit0
 	go terminal.Loop()
 	if !deferred {
