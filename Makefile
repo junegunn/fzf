@@ -73,6 +73,9 @@ test: $(SOURCES)
 				github.com/junegunn/fzf/src/tui \
 				github.com/junegunn/fzf/src/util
 
+bench:
+	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
+
 install: bin/fzf
 
 build:
@@ -153,4 +156,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all build release test install clean docker docker-test update
+.PHONY: all build release test bench install clean docker docker-test update
