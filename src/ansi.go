@@ -219,6 +219,8 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 
 		if len(prev) != 0 {
 			runeCount += utf8.RuneCountInString(prev)
+			// Grow the buffer size to the maximum possible length (string length
+			// containing ansi codes) to avoid repetitive allocation
 			if output.Cap() == 0 {
 				output.Grow(len(str))
 			}
