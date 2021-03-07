@@ -1837,18 +1837,6 @@ func (t *Terminal) cancelPreview() {
 	t.killPreview(exitCancel)
 }
 
-func (t *Terminal) exit(getCode func() int) {
-	t.tui.Close()
-	code := getCode()
-	if code <= exitNoMatch && t.history != nil {
-		t.history.append(string(t.input))
-	}
-	// prof.Stop()
-	t.running = false
-	t.mutex.Unlock()
-	t.killPreview(code)
-}
-
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -2073,15 +2061,21 @@ func (t *Terminal) Loop() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
 		running := true
+		code := exitError
+		exit := func(getCode func() int) {
+			t.tui.Close()
+			code = getCode()
+			if code <= exitNoMatch && t.history != nil {
+				t.history.append(string(t.input))
+			}
+			running = false
+			t.mutex.Unlock()
+		}
+
 		for running {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
 				t.mutex.Lock()
-				if !t.running {
-					running = false
-					t.mutex.Unlock()
-					return
-				}
 				for req, value := range *events {
 					switch req {
 					case reqPrompt:
@@ -2118,7 +2112,7 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
-						t.exit(func() int {
+						exit(func() int {
 							if t.output() {
 								return exitOk
 							}
@@ -2145,13 +2139,13 @@ func (t *Terminal) Loop() {
 						t.previewer.version = value.(int64)
 						t.printPreviewDelayed()
 					case reqPrintQuery:
-						t.exit(func() int {
+						exit(func() int {
 							t.printer(string(t.input))
 							return exitOk
 						})
 						return
 					case reqQuit:
-						t.exit(func() int { return exitInterrupt })
+						exit(func() int { return exitInterrupt })
 						return
 					}
 				}
@@ -2159,6 +2153,8 @@ func (t *Terminal) Loop() {
 				t.mutex.Unlock()
 			})
 		}
+		// prof.Stop()
+		t.killPreview(code)
 	}()
 
 	looping := true
