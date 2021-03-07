@@ -133,6 +133,7 @@ type Terminal struct {
 	count        int
 	progress     int
 	reading      bool
+	running      bool
 	failed       *string
 	jumping      jumpMode
 	jumpLabels   string
@@ -505,6 +506,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ansi:        opts.Ansi,
 		tabstop:     opts.Tabstop,
 		reading:     true,
+		running:     true,
 		failed:      nil,
 		jumping:     jumpDisabled,
 		jumpLabels:  opts.JumpLabels,
@@ -1843,6 +1845,8 @@ func (t *Terminal) exit(getCode func() int) {
 	}
 	// prof.Stop()
 	t.killPreview(code)
+	t.running = false
+	t.mutex.Unlock()
 }
 
 // Loop is called to start Terminal I/O
@@ -2068,10 +2072,16 @@ func (t *Terminal) Loop() {
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
-		for {
+		running := true
+		for running {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
 				t.mutex.Lock()
+				if !t.running {
+					running = false
+					t.mutex.Unlock()
+					return
+				}
 				for req, value := range *events {
 					switch req {
 					case reqPrompt:
