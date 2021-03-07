@@ -118,7 +118,7 @@ func matchControlSequence(s string) int {
 	return -1
 }
 
-func isCrtlSeqStart(c uint8) bool {
+func isCtrlSeqStart(c uint8) bool {
 	return c == '\\' || c == '[' || c == '(' || c == ')'
 }
 
@@ -155,7 +155,7 @@ Loop:
 			}
 		case '\x1b':
 			// match: `\x1b[\\[()][0-9;]*[a-zA-Z@]`
-			if i+2 < len(s) && isCrtlSeqStart(s[i+1]) {
+			if i+2 < len(s) && isCtrlSeqStart(s[i+1]) {
 				if j := matchControlSequence(s[i:]); j != -1 {
 					return i, i + j
 				}
