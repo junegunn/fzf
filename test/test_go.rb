@@ -2186,7 +2186,7 @@ module CompletionTest
     end
 
     # ~USERNAME**<TAB>
-    user = ENV['USER']
+    user = `whoami`.chomp
     tmux.send_keys 'C-u'
     tmux.send_keys "cat ~#{user}**", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
