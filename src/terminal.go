@@ -1826,13 +1826,23 @@ func (t *Terminal) killPreview(code int) {
 	case t.killChan <- code:
 	default:
 		if code != exitCancel {
-			os.Exit(code)
+			t.eventBox.Set(EvtQuit, code)
 		}
 	}
 }
 
 func (t *Terminal) cancelPreview() {
 	t.killPreview(exitCancel)
+}
+
+func (t *Terminal) exit(getCode func() int) {
+	t.tui.Close()
+	code := getCode()
+	if code <= exitNoMatch && t.history != nil {
+		t.history.append(string(t.input))
+	}
+	// prof.Stop()
+	t.killPreview(code)
 }
 
 // Loop is called to start Terminal I/O
@@ -2010,7 +2020,7 @@ func (t *Terminal) Loop() {
 								case code := <-t.killChan:
 									if code != exitCancel {
 										util.KillCommand(cmd)
-										os.Exit(code)
+										t.eventBox.Set(EvtQuit, code)
 									} else {
 										timer := time.NewTimer(previewCancelWait)
 										select {
@@ -2045,16 +2055,6 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}()
-	}
-
-	exit := func(getCode func() int) {
-		t.tui.Close()
-		code := getCode()
-		if code <= exitNoMatch && t.history != nil {
-			t.history.append(string(t.input))
-		}
-		// prof.Stop()
-		t.killPreview(code)
 	}
 
 	refreshPreview := func(command string) {
@@ -2108,12 +2108,13 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
-						exit(func() int {
+						t.exit(func() int {
 							if t.output() {
 								return exitOk
 							}
 							return exitNoMatch
 						})
+						return
 					case reqPreviewDisplay:
 						result := value.(previewResult)
 						if t.previewer.version != result.version {
@@ -2134,12 +2135,14 @@ func (t *Terminal) Loop() {
 						t.previewer.version = value.(int64)
 						t.printPreviewDelayed()
 					case reqPrintQuery:
-						exit(func() int {
+						t.exit(func() int {
 							t.printer(string(t.input))
 							return exitOk
 						})
+						return
 					case reqQuit:
-						exit(func() int { return exitInterrupt })
+						t.exit(func() int { return exitInterrupt })
+						return
 					}
 				}
 				t.refresh()

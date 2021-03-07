@@ -254,7 +254,11 @@ func Run(opts *Options, version string, revision string) {
 			}
 			for evt, value := range *events {
 				switch evt {
-
+				case EvtQuit:
+					if reading {
+						reader.terminate()
+					}
+					os.Exit(value.(int))
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand)
