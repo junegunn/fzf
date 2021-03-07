@@ -1844,9 +1844,9 @@ func (t *Terminal) exit(getCode func() int) {
 		t.history.append(string(t.input))
 	}
 	// prof.Stop()
-	t.killPreview(code)
 	t.running = false
 	t.mutex.Unlock()
+	t.killPreview(code)
 }
 
 // Loop is called to start Terminal I/O
