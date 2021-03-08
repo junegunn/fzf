@@ -30,7 +30,7 @@ const ellipsis string = ".."
 const clearCode string = "\x1b[2J"
 
 func init() {
-	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
+	placeholder = regexp.MustCompile(`\\?(?:{[+sfr]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
 	numericPrefix = regexp.MustCompile(`^[[:punct:]]*([0-9]+)`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	activeTempFiles = []string{}
@@ -288,6 +288,7 @@ type placeholderFlags struct {
 	number        bool
 	query         bool
 	file          bool
+	raw           bool
 }
 
 type searchRequest struct {
@@ -1522,6 +1523,9 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		case 'f':
 			flags.file = true
 			skipChars++
+		case 'r':
+			flags.raw = true
+			skipChars++
 		case 'q':
 			flags.query = true
 		default:
@@ -1649,7 +1653,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 					} else {
 						replacements[idx] = strconv.Itoa(n)
 					}
-				} else if flags.file {
+				} else if flags.file || flags.raw {
 					replacements[idx] = item.AsString(stripAnsi)
 				} else {
 					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
