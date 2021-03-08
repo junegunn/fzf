@@ -204,7 +204,16 @@ if [[ "$opt" =~ "-K -E" ]]; then
     cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; out=\$? $close; exit \$out" >> $argsf
     cat <&0 > $fifo1 &
   fi
-  tmux popup -d "$PWD" "${tmux_args[@]}" $opt -R "bash $argsf" > /dev/null 2>&1
+
+  # tmux dropped the support for `-K`, `-R` to popup command
+  #   TODO: We can remove this once tmux 3.2 is released
+  if [[ ! "$(tmux popup --help 2>&1)" =~ '-R shell-command' ]]; then
+    opt="${opt/-K/}"
+  else
+    opt="${opt} -R"
+  fi
+
+  tmux popup -d "$PWD" "${tmux_args[@]}" $opt "bash $argsf" > /dev/null 2>&1
   exit $?
 fi
 
