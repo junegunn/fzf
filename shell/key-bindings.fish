@@ -123,7 +123,7 @@ function fzf_key_bindings
 
     # strip -option= from token if present
     set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
-    set commandline (string replace -r -- "^$prefix" '' $commandline)
+    set commandline (string replace -- "$prefix" '' $commandline)
 
     # eval is used to do shell expansion on paths
     eval set commandline $commandline
