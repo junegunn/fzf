@@ -76,6 +76,7 @@ function fzf_key_bindings
     set -l commandline (__fzf_parse_commandline)
     set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
+    set -l prefix $commandline[3]
 
     test -n "$FZF_ALT_C_COMMAND"; or set -l FZF_ALT_C_COMMAND "
     command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
@@ -90,6 +91,7 @@ function fzf_key_bindings
 
         # Remove last token from commandline.
         commandline -t ""
+        commandline -it -- $prefix
       end
     end
 
