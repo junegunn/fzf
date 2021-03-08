@@ -20,6 +20,7 @@ function fzf_key_bindings
     set -l commandline (__fzf_parse_commandline)
     set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
+    set -l prefix $commandline[3]
 
     # "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
     # $dir itself, even if hidden.
@@ -42,6 +43,7 @@ function fzf_key_bindings
       commandline -t ""
     end
     for i in $result
+      commandline -it -- $prefix
       commandline -it -- (string escape $i)
       commandline -it -- ' '
     end
@@ -74,6 +76,7 @@ function fzf_key_bindings
     set -l commandline (__fzf_parse_commandline)
     set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
+    set -l prefix $commandline[3]
 
     test -n "$FZF_ALT_C_COMMAND"; or set -l FZF_ALT_C_COMMAND "
     command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
@@ -88,6 +91,7 @@ function fzf_key_bindings
 
         # Remove last token from commandline.
         commandline -t ""
+        commandline -it -- $prefix
       end
     end
 
@@ -116,9 +120,15 @@ function fzf_key_bindings
     bind -M insert \ec fzf-cd-widget
   end
 
-  function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath and rest of token'
+  function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
+    set -l commandline (commandline -t)
+
+    # strip -option= from token if present
+    set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
+    set commandline (string replace -- "$prefix" '' $commandline)
+
     # eval is used to do shell expansion on paths
-    set -l commandline (eval "printf '%s' "(commandline -t))
+    eval set commandline $commandline
 
     if [ -z $commandline ]
       # Default to current directory with no --query
@@ -138,6 +148,7 @@ function fzf_key_bindings
 
     echo $dir
     echo $fzf_query
+    echo $prefix
   end
 
   function __fzf_get_dir -d 'Find the longest existing filepath from input string'
