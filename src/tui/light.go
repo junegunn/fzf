@@ -906,12 +906,6 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 	for i, line := range allLines {
 		lines := wrapLine(line, w.posx, w.width, w.tabstop)
 		for j, wl := range lines {
-			if w.posx >= w.Width()-1 && wl.displayWidth == 0 {
-				if w.posy < w.height-1 {
-					w.Move(w.posy+1, 0)
-				}
-				return FillNextLine
-			}
 			w.stderrInternal(wl.text, false)
 			w.posx += wl.displayWidth
 
@@ -925,6 +919,9 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 				onMove()
 			}
 		}
+	}
+	if w.posx >= w.Width()-1 {
+		return FillNextLine
 	}
 	return FillContinue
 }

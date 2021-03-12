@@ -1320,8 +1320,9 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
+				trimmedLen := 0
 				if !t.previewOpts.wrap {
-					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+					trimmed, trimmedLen = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				prefixWidth += width
@@ -1331,7 +1332,8 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 				} else {
 					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
 				}
-				return fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine
+				return trimmedLen == 0 &&
+					(fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine)
 			})
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
