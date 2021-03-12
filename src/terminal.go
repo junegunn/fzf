@@ -1146,8 +1146,8 @@ func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
 	width = util.Max(0, width)
 	var trimmed int32
 	// Assume that each rune takes at least one column on screen
-	if len(runes) > width {
-		diff := len(runes) - width
+	if len(runes) > width+2 {
+		diff := len(runes) - width - 2
 		trimmed = int32(diff)
 		runes = runes[diff:]
 	}
