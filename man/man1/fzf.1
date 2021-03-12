@@ -442,7 +442,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:default]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:~HEADER_LINES][:default]"
 
 .RS
 .B POSITION: (default: right)
@@ -487,6 +487,9 @@ for adjusting the base offset so that you can see the text above it. It should
 be given as a numeric integer (\fB-INTEGER\fR), or as a denominator form
 (\fB-/INTEGER\fR) for specifying a fraction of the preview window height.
 
+* \fB~HEADER_LINES\fR keeps the top N lines as the fixed header so that they
+are always visible.
+
 * \fBdefault\fR resets all options previously set to the default.
 
 .RS
@@ -506,6 +509,8 @@ e.g.
            --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \\
            --preview-window +{2}-/2\fR
 
+     # Display top 3 lines as the fixed header
+     fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
 .RE
 
 .SS Scripting

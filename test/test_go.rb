@@ -2016,6 +2016,32 @@ class TestGoFZF < TestBase
       nil
     end
   end
+
+  def test_preview_header
+    tmux.send_keys "seq 100 | #{FZF} --bind ctrl-k:preview-up+preview-up,ctrl-j:preview-down+preview-down+preview-down --preview 'seq 1000' --preview-window 'top:+{1}:~3'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    top5 = ->(lines) { lines.drop(1).take(5).map { |s| s[/[0-9]+/] } }
+    tmux.until do |lines|
+      assert_includes lines[1], '4/1000'
+      assert_equal(%w[1 2 3 4 5], top5[lines])
+    end
+    tmux.send_keys '55'
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_equal(%w[1 2 3 55 56], top5[lines])
+    end
+    tmux.send_keys 'C-J'
+    tmux.until do |lines|
+      assert_equal(%w[1 2 3 58 59], top5[lines])
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 19, lines.match_count
+      assert_equal(%w[1 2 3 5 6], top5[lines])
+    end
+    tmux.send_keys 'C-K'
+    tmux.until { |lines| assert_equal(%w[1 2 3 4 5], top5[lines]) }
+  end
 end
 
 module TestShell

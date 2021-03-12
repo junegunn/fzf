@@ -1,10 +1,17 @@
 CHANGELOG
 =========
 
-0.25.2
+0.26.0
 ------
+- Added support for fixed header in preview window
+  ```sh
+  # Display top 3 lines as the fixed header
+  fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
+  ```
 - Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
+- Sigificant performance improvement in ANSI code processing
+- Bug fixes and improvements
 - Built with Go 1.16
 
 0.25.1
