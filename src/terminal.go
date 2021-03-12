@@ -22,8 +22,9 @@ import (
 // import "github.com/pkg/profile"
 
 var placeholder *regexp.Regexp
-var numericPrefix *regexp.Regexp
 var whiteSuffix *regexp.Regexp
+var offsetComponentRegex *regexp.Regexp
+var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
 
 const ellipsis string = ".."
@@ -31,8 +32,9 @@ const clearCode string = "\x1b[2J"
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
-	numericPrefix = regexp.MustCompile(`^[[:punct:]]*([0-9]+)`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
+	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
+	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
 	activeTempFiles = []string{}
 }
 
@@ -1591,43 +1593,33 @@ func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input str
 		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list)
 }
 
-// Ascii to positive integer
-func atopi(s string) int {
-	matches := numericPrefix.FindStringSubmatch(s)
-	if len(matches) < 2 {
-		return 0
-	}
-	n, e := strconv.Atoi(matches[1])
-	if e != nil || n < 1 {
-		return 0
-	}
-	return n
-}
-
 func (t *Terminal) evaluateScrollOffset(list []*Item, height int) int {
-	offsetExpr := t.replacePlaceholder(t.previewOpts.scroll, false, "", list)
-	nums := strings.Split(offsetExpr, "-")
-	switch len(nums) {
-	case 0:
-		return 0
-	case 1, 2:
-		base := atopi(nums[0])
-		if base == 0 {
+	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(
+		t.replacePlaceholder(t.previewOpts.scroll, false, "", list), "")
+
+	atoi := func(s string) int {
+		n, e := strconv.Atoi(s)
+		if e != nil {
 			return 0
-		} else if len(nums) == 1 {
-			return base - 1
 		}
-		if nums[1][0] == '/' {
-			denom := atopi(nums[1][1:])
+		return n
+	}
+
+	base := -1
+	for _, component := range offsetComponentRegex.FindAllString(offsetExpr, -1) {
+		if strings.HasPrefix(component, "-/") {
+			component = component[1:]
+		}
+		if component[0] == '/' {
+			denom := atoi(component[1:])
 			if denom == 0 {
 				return base
 			}
 			return base - height/denom
 		}
-		return base - atopi(nums[1]) - 1
-	default:
-		return 0
+		base += atoi(component)
 	}
+	return base
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {

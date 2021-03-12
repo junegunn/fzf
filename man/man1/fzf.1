@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Feb 2021" "fzf 0.25.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Mar 2021" "fzf 0.26.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -442,7 +442,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[-OFFSET]][:~HEADER_LINES][:default]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"
 
 .RS
 .B POSITION: (default: right)
@@ -480,12 +480,14 @@ e.g.
 \fBrounded\fR (border with rounded edges, default), \fBsharp\fR (border with
 sharp edges), or \fBnoborder\fR (no border).
 
-* \fB+SCROLL[-OFFSET]\fR determines the initial scroll offset of the preview
-window. \fBSCROLL\fR can be either a numeric integer or a single-field index
-expression that refers to a numeric integer. The optional \fB-OFFSET\fR part is
-for adjusting the base offset so that you can see the text above it. It should
-be given as a numeric integer (\fB-INTEGER\fR), or as a denominator form
-(\fB-/INTEGER\fR) for specifying a fraction of the preview window height.
+* \fB[:+SCROLL[OFFSETS][/DENOM]]\fR determines the initial scroll offset of the
+preview window.
+
+  - \fBSCROLL\fR can be either a numeric integer or a single-field index expression that refers to a numeric integer.
+
+  - The optional \fBOFFSETS\fR part is for adjusting the base offset. It should be given as a series of signed integers (\fB-INTEGER\fR or \fB+INTEGER\fR).
+
+  - The final \fB/DENOM\fR part is for specifying a fraction of the preview window height.
 
 * \fB~HEADER_LINES\fR keeps the top N lines as the fixed header so that they
 are always visible.
@@ -501,16 +503,23 @@ e.g.
      # Initial scroll offset is set to the line number of each line of
      # git grep output *minus* 5 lines (-5)
      git grep --line-number '' |
-       fzf --delimiter : --preview 'nl {1}' --preview-window +{2}-5
+       fzf --delimiter : --preview 'nl {1}' --preview-window '+{2}-5'
 
-     # Preview with bat, matching line in the middle of the window (-/2)
+     # Preview with bat, matching line in the middle of the window below
+     # the fixed header of the top 3 lines
+     #
+     #   ~3    Top 3 lines as the fixed header
+     #   +{2}  Base scroll offset extracted from the second field
+     #   +3    Extra offset to compensate for the 3-line header
+     #   /2    Put in the middle of the preview area
+     #
      git grep --line-number '' |
        fzf --delimiter : \\
-           --preview 'bat --style=numbers --color=always --highlight-line {2} {1}' \\
-           --preview-window +{2}-/2\fR
+           --preview 'bat --style=full --color=always --highlight-line {2} {1}' \\
+           --preview-window '~3:+{2}+3/2'
 
      # Display top 3 lines as the fixed header
-     fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
+     fzf --preview 'bat --style=full --color=always {}' --preview-window '~3'\fR
 .RE
 
 .SS Scripting

@@ -84,7 +84,7 @@ const usage = `usage: fzf [options]
                           [up|down|left|right][:SIZE[%]]
                           [:[no]wrap][:[no]cycle][:[no]follow][:[no]hidden]
                           [:rounded|sharp|noborder]
-                          [:+SCROLL[-OFFSET]][:~HEADER_LINES]
+                          [:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES]
                           [:default]
 
   Scripting
@@ -1078,7 +1078,7 @@ func parseInfoStyle(str string) infoStyle {
 func parsePreviewWindow(opts *previewOpts, input string) {
 	tokens := strings.Split(input, ":")
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
-	offsetRegex := regexp.MustCompile("^\\+([0-9]+|{-?[0-9]+})(-[0-9]+|-/[1-9][0-9]*)?$")
+	offsetRegex := regexp.MustCompile(`^(\+{-?[0-9]+})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
 	headerRegex := regexp.MustCompile("^~(0|[1-9][0-9]*)$")
 	for _, token := range tokens {
 		switch token {
@@ -1121,7 +1121,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			} else if sizeRegex.MatchString(token) {
 				opts.size = parseSize(token, 99, "window size")
 			} else if offsetRegex.MatchString(token) {
-				opts.scroll = token[1:]
+				opts.scroll = token
 			} else {
 				errorExit("invalid preview window option: " + token)
 			}
@@ -1368,7 +1368,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[-OFFSET]][:~HEADER_LINES][:default]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":

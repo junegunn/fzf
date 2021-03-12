@@ -8,6 +8,21 @@ CHANGELOG
   # Display top 3 lines as the fixed header
   fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
   ```
+- More advanced preview offset expression to better support the fixed header
+  ```sh
+  # Preview with bat, matching line in the middle of the window below
+  # the fixed header of the top 3 lines
+  #
+  #   ~3    Top 3 lines as the fixed header
+  #   +{2}  Base scroll offset extracted from the second field
+  #   +3    Extra offset to compensate for the 3-line header
+  #   /2    Put in the middle of the preview area
+  #
+  git grep --line-number '' |
+    fzf --delimiter : \
+        --preview 'bat --style=full --color=always --highlight-line {2} {1}' \
+        --preview-window '~3:+{2}+3/2'
+  ```
 - Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
 - Sigificant performance improvement in ANSI code processing

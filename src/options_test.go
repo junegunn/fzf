@@ -389,18 +389,18 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.hidden == true &&
 		opts.Preview.wrap == true &&
 		opts.Preview.position == posLeft &&
-		opts.Preview.scroll == "{1}-/2" &&
+		opts.Preview.scroll == "+{1}-/2" &&
 		opts.Preview.size.percent == false &&
 		opts.Preview.size.size == 15) {
 		t.Error(opts.Preview)
 	}
-	opts = optsFor("--preview-window=up:15:wrap:hidden:+{1}-/2", "--preview-window=down", "--preview-window=cycle")
+	opts = optsFor("--preview-window=up:15:wrap:hidden:+{1}+3-1-2/2", "--preview-window=down", "--preview-window=cycle")
 	if !(opts.Preview.command == "" &&
 		opts.Preview.hidden == true &&
 		opts.Preview.wrap == true &&
 		opts.Preview.cycle == true &&
 		opts.Preview.position == posDown &&
-		opts.Preview.scroll == "{1}-/2" &&
+		opts.Preview.scroll == "+{1}+3-1-2/2" &&
 		opts.Preview.size.percent == false &&
 		opts.Preview.size.size == 15) {
 		t.Error(opts.Preview.size.size)
