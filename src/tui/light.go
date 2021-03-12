@@ -920,7 +920,12 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 			}
 		}
 	}
-	if w.posx >= w.Width()-1 {
+	if w.posx+1 >= w.Width() {
+		if w.posy+1 >= w.height {
+			return FillSuspend
+		}
+		w.Move(w.posy+1, 0)
+		onMove()
 		return FillNextLine
 	}
 	return FillContinue
