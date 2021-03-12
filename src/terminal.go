@@ -1331,7 +1331,7 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 				} else {
 					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
 				}
-				return fillRet == tui.FillContinue
+				return fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine
 			})
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
