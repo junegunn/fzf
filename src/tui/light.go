@@ -12,7 +12,7 @@ import (
 
 	"github.com/junegunn/fzf/src/util"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const (
@@ -74,7 +74,7 @@ type LightRenderer struct {
 	clickY        []int
 	ttyin         *os.File
 	buffer        []byte
-	origState     *terminal.State
+	origState     *term.State
 	width         int
 	height        int
 	yoffset       int

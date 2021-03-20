@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/junegunn/fzf/src/util"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 func IsLightRendererSupported() bool {
@@ -34,12 +34,12 @@ func (r *LightRenderer) fd() int {
 
 func (r *LightRenderer) initPlatform() error {
 	fd := r.fd()
-	origState, err := terminal.GetState(fd)
+	origState, err := term.GetState(fd)
 	if err != nil {
 		return err
 	}
 	r.origState = origState
-	terminal.MakeRaw(fd)
+	term.MakeRaw(fd)
 	return nil
 }
 
@@ -63,15 +63,15 @@ func openTtyIn() *os.File {
 }
 
 func (r *LightRenderer) setupTerminal() {
-	terminal.MakeRaw(r.fd())
+	term.MakeRaw(r.fd())
 }
 
 func (r *LightRenderer) restoreTerminal() {
-	terminal.Restore(r.fd(), r.origState)
+	term.Restore(r.fd(), r.origState)
 }
 
 func (r *LightRenderer) updateTerminalSize() {
-	width, height, err := terminal.GetSize(r.fd())
+	width, height, err := term.GetSize(r.fd())
 
 	if err == nil {
 		r.width = width
