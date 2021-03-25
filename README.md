@@ -572,8 +572,8 @@ FZF_DEFAULT_COMMAND='find . -type f' \
 The following example uses fzf as the selector interface for ripgrep. We bound
 `reload` action to `change` event, so every time you type on fzf, the ripgrep
 process will restart with the updated query string denoted by the placeholder
-expression `{q}`. Also, note that we used `--phony` option so that fzf doesn't
-perform any secondary filtering.
+expression `{q}`. Also, note that we used `--disabled` option so that fzf 
+doesn't perform any secondary filtering.
 
 ```sh
 INITIAL_QUERY=""
