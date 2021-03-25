@@ -168,7 +168,7 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-# Darwin\ arm64)   download fzf-$version-darwin_arm64.tar.gz  ;; # TODO
+  Darwin\ arm64)   download fzf-$version-darwin_arm64.tar.gz  ;;
   Darwin\ x86_64)  download fzf-$version-darwin_amd64.tar.gz  ;;
   Linux\ armv5*)   download fzf-$version-linux_armv5.tar.gz   ;;
   Linux\ armv6*)   download fzf-$version-linux_armv6.tar.gz   ;;
