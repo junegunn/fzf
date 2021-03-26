@@ -1722,24 +1722,22 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
+	t.executing.Set(true)
 	if !background {
 		cmd.Stdin = tui.TtyIn()
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
-		t.executing.Set(true)
 		cmd.Run()
-		t.executing.Set(false)
 		t.tui.Resume(true, false)
 		t.redraw()
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		t.executing.Set(true)
 		cmd.Run()
-		t.executing.Set(false)
 		t.tui.Resume(false, false)
 	}
+	t.executing.Set(false)
 	cleanTemporaryFiles()
 }
 
