@@ -169,10 +169,10 @@ endfunction
 let s:checked = {}
 function! fzf#exec(...)
   if !exists('s:exec')
-    if executable(s:fzf_go)
-      let s:exec = s:fzf_go
-    elseif executable('fzf')
+    if executable('fzf')
       let s:exec = 'fzf'
+    elseif executable(s:fzf_go)
+      let s:exec = s:fzf_go
     elseif input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
       redraw
       call fzf#install()
