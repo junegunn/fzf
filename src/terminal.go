@@ -282,6 +282,7 @@ const (
 	actEnableSearch
 	actSelect
 	actDeselect
+	actDeselectLast
 )
 
 type placeholderFlags struct {
@@ -2393,6 +2394,14 @@ func (t *Terminal) Loop() {
 			case actDeselect:
 				current := t.currentItem()
 				if t.multi > 0 && current != nil && t.deselectItemChanged(current) {
+					req(reqList, reqInfo)
+				}
+			case actDeselectLast:
+				if t.multi > 0 {
+					len_selected := int32(len(t.selected))
+					if len_selected > 0 {
+						t.deselectItem(t.sortSelected()[len_selected-1].item)
+					}
 					req(reqList, reqInfo)
 				}
 			case actToggle:

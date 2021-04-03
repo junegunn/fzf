@@ -1912,6 +1912,29 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 2, lines.select_count }
   end
 
+  def test_deselect_last
+    tmux.send_keys "seq 3 | #{FZF} --multi --bind ctrl-k:deselect-last", :Enter
+    tmux.until { |lines| assert_equal 3, lines.match_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+    tmux.send_keys 'C-k'
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+    tmux.send_keys 'C-k'
+    tmux.until { |lines| assert_equal 0, lines.select_count }
+    tmux.send_keys 'C-k'
+    tmux.until { |lines| assert_equal 0, lines.select_count }
+    tmux.send_keys 'C-k'
+    tmux.until { |lines| assert_equal 0, lines.select_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+    tmux.send_keys 'C-k'
+    tmux.until { |lines| assert_equal 0, lines.select_count }
+  end
+
   def test_interrupt_execute
     tmux.send_keys "seq 100 | #{FZF} --bind 'ctrl-l:execute:echo executing {}; sleep 100'", :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
