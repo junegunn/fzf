@@ -2398,9 +2398,9 @@ func (t *Terminal) Loop() {
 				}
 			case actDeselectLast:
 				if t.multi > 0 {
-					len_selected := int32(len(t.selected))
-					if len_selected > 0 {
-						t.deselectItem(t.sortSelected()[len_selected-1].item)
+					lenSelected := int32(len(t.selected))
+					if lenSelected > 0 {
+						t.deselectItem(t.sortSelected()[lenSelected-1].item)
 					}
 					req(reqList, reqInfo)
 				}
