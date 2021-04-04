@@ -1968,6 +1968,7 @@ func (t *Terminal) Loop() {
 						}()
 
 						// Goroutine 2 periodically requests rendering
+						rendered := util.NewAtomicBool(false)
 						go func(version int64) {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
@@ -1982,6 +1983,7 @@ func (t *Terminal) Loop() {
 										if spinnerIndex >= 0 {
 											spin := spinner[spinnerIndex%len(spinner)]
 											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, spin})
+											rendered.Set(true)
 											offset = -1
 										}
 										spinnerIndex++
@@ -2001,6 +2003,7 @@ func (t *Terminal) Loop() {
 									}
 									if err != nil {
 										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
+										rendered.Set(true)
 										break Loop
 									}
 								}
@@ -2022,7 +2025,13 @@ func (t *Terminal) Loop() {
 										util.KillCommand(cmd)
 										t.eventBox.Set(EvtQuit, code)
 									} else {
-										timer := time.NewTimer(previewCancelWait)
+										// We can immediately kill a long-running preview program
+										// once we started rendering its partial output
+										delay := previewCancelWait
+										if rendered.Get() {
+											delay = 0
+										}
+										timer := time.NewTimer(delay)
 										select {
 										case <-timer.C:
 											util.KillCommand(cmd)
