@@ -103,11 +103,11 @@ func matchOperatingSystemCommand(s string) int {
 }
 
 func matchControlSequence(s string) int {
-	// `\x1b[\\[()][0-9;]*[a-zA-Z@]`
-	//                   ^ match starting here
+	// `\x1b[\\[()][0-9;?]*[a-zA-Z@]`
+	//                    ^ match starting here
 	//
 	i := 2 // prefix matched in nextAnsiEscapeSequence()
-	for ; i < len(s) && (isNumeric(s[i]) || s[i] == ';'); i++ {
+	for ; i < len(s) && (isNumeric(s[i]) || s[i] == ';' || s[i] == '?'); i++ {
 	}
 	if i < len(s) {
 		c := s[i]
@@ -125,7 +125,7 @@ func isCtrlSeqStart(c uint8) bool {
 // nextAnsiEscapeSequence returns the ANSI escape sequence and is equivalent to
 // calling FindStringIndex() on the below regex (which was originally used):
 //
-// "(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
+// "(?:\x1b[\\[()][0-9;?]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
 //
 func nextAnsiEscapeSequence(s string) (int, int) {
 	// fast check for ANSI escape sequences
@@ -154,7 +154,7 @@ Loop:
 				return i - n, i + 1
 			}
 		case '\x1b':
-			// match: `\x1b[\\[()][0-9;]*[a-zA-Z@]`
+			// match: `\x1b[\\[()][0-9;?]*[a-zA-Z@]`
 			if i+2 < len(s) && isCtrlSeqStart(s[i+1]) {
 				if j := matchControlSequence(s[i:]); j != -1 {
 					return i, i + j
