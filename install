@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.26.0
+version=0.27.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -168,8 +168,8 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ arm64)   download fzf-$version-darwin_arm64.tar.gz  ;;
-  Darwin\ x86_64)  download fzf-$version-darwin_amd64.tar.gz  ;;
+  Darwin\ arm64)   download fzf-$version-darwin_arm64.zip     ;;
+  Darwin\ x86_64)  download fzf-$version-darwin_amd64.zip     ;;
   Linux\ armv5*)   download fzf-$version-linux_armv5.tar.gz   ;;
   Linux\ armv6*)   download fzf-$version-linux_armv6.tar.gz   ;;
   Linux\ armv7*)   download fzf-$version-linux_armv7.tar.gz   ;;

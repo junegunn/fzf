@@ -615,7 +615,7 @@ You can customize the size, position, and border of the preview window using
 
 ```bash
 fzf --height 40% --layout reverse --info inline --border \
-    --preview 'file {}' --preview-window down:1:noborder \
+    --preview 'file {}' --preview-window up,1,border-horizontal \
     --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'
 ```
 

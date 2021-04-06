@@ -6,10 +6,21 @@ CHANGELOG
 - More border options for `--preview-window`
   ```sh
   fzf --preview 'cat {}' --preview-window border-left
+  fzf --preview 'cat {}' --preview-window border-left --border horizontal
   fzf --preview 'cat {}' --preview-window top:border-bottom
   fzf --preview 'cat {}' --preview-window top:border-horizontal
   ```
-- Signed and notarized macOS binaries (thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md))
+- Automatically set `/dev/tty` as STDIN on execute action
+  ```sh
+  # Redirect /dev/tty to suppress "Vim: Warning: Input is not from a terminal"
+  # ls | fzf --bind "enter:execute(vim {} < /dev/tty)"
+
+  # "< /dev/tty" part is no longer needed
+  ls | fzf --bind "enter:execute(vim {})"
+  ```
+- Bug fixes and improvements
+- Signed and notarized macOS binaries
+  (Huge thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md)!)
 
 0.26.0
 ------
