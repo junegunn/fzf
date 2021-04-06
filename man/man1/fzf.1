@@ -203,6 +203,8 @@ Draw border around the finder
 .br
 .BR right
 .br
+.BR none
+.br
 
 .TP
 .B "--no-unicode"
@@ -442,7 +444,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:rounded|sharp|noborder][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"
+.BI "--preview-window=" "[POSITION][:SIZE[%]][:border-BORDER_OPT][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"
 
 .RS
 .B POSITION: (default: right)
@@ -477,8 +479,10 @@ e.g.
 * Cyclic scrolling is enabled with \fB:cycle\fR flag.
 
 * To change the style of the border of the preview window, specify one of
-\fBrounded\fR (border with rounded edges, default), \fBsharp\fR (border with
-sharp edges), or \fBnoborder\fR (no border).
+the options for \fB--border\fR with \fBborder-\fR prefix.
+e.g. \fBborder-rounded\fR (border with rounded edges, default),
+\fBborder-sharp\fR (border with sharp edges), \fBborder-left\fR,
+\fBborder-none\fR, etc.
 
 * \fB[:+SCROLL[OFFSETS][/DENOM]]\fR determines the initial scroll offset of the
 preview window.

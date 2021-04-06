@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.27.0
+------
+- More border options for `--preview-window`
+  ```sh
+  fzf --preview 'cat {}' --preview-window border-left
+  fzf --preview 'cat {}' --preview-window top:border-bottom
+  fzf --preview 'cat {}' --preview-window top:border-horizontal
+  ```
+
 0.26.0
 ------
 - Added support for fixed header in preview window

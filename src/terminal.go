@@ -831,16 +831,33 @@ func (t *Terminal) resizeWindows() {
 		createPreviewWindow := func(y int, x int, w int, h int) {
 			pwidth := w
 			pheight := h
-			if t.previewOpts.border != tui.BorderNone {
-				previewBorder := tui.MakeBorderStyle(t.previewOpts.border, t.unicode)
-				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			var previewBorder tui.BorderStyle
+			if t.previewOpts.border == tui.BorderNone {
+				previewBorder = tui.MakeTransparentBorder()
+			} else {
+				previewBorder = tui.MakeBorderStyle(t.previewOpts.border, t.unicode)
+			}
+			t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			switch t.previewOpts.border {
+			case tui.BorderSharp, tui.BorderRounded:
 				pwidth -= 4
 				pheight -= 2
 				x += 2
 				y += 1
-			} else {
-				previewBorder := tui.MakeTransparentBorder()
-				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			case tui.BorderLeft:
+				pwidth -= 2
+				x += 2
+			case tui.BorderRight:
+				pwidth -= 2
+			case tui.BorderTop:
+				pheight -= 1
+				y += 1
+			case tui.BorderBottom:
+				pheight -= 1
+			case tui.BorderHorizontal:
+				pheight -= 2
+				y += 1
+			case tui.BorderVertical:
 				pwidth -= 4
 				x += 2
 			}
