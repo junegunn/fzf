@@ -338,6 +338,7 @@ IFS=: read -ra selected < <(
   Otherwise, the initial Ripgrep process will keep consuming system resources
   even after `reload` is triggered.
 - Filtering is no longer a responsibitiliy of fzf; hence `--disabled`
+- `{q}` in the reload command evaluates to the query string on fzf prompt.
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
   reduce the number of intermediate Ripgrep processes while we're typing in
   a query.
