@@ -444,7 +444,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][:SIZE[%]][:border-BORDER_OPT][:[no]wrap][:[no]follow][:[no]cycle][:[no]hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"
+.BI "--preview-window=" "[POSITION][,SIZE[%]][,border-BORDER_OPT][,[no]wrap][,[no]follow][,[no]cycle][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"
 
 .RS
 .B POSITION: (default: right)
@@ -501,8 +501,8 @@ are always visible.
 .RS
 e.g.
      \fB# Non-default scroll window positions and sizes
-     fzf --preview="head {}" --preview-window=up:30%
-     fzf --preview="file {}" --preview-window=down:1
+     fzf --preview="head {}" --preview-window=up,30%
+     fzf --preview="file {}" --preview-window=down,1
 
      # Initial scroll offset is set to the line number of each line of
      # git grep output *minus* 5 lines (-5)
@@ -520,7 +520,7 @@ e.g.
      git grep --line-number '' |
        fzf --delimiter : \\
            --preview 'bat --style=full --color=always --highlight-line {2} {1}' \\
-           --preview-window '~3:+{2}+3/2'
+           --preview-window '~3,+{2}+3/2'
 
      # Display top 3 lines as the fixed header
      fzf --preview 'bat --style=full --color=always {}' --preview-window '~3'\fR

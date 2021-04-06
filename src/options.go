@@ -81,11 +81,11 @@ const usage = `usage: fzf [options]
   Preview
     --preview=COMMAND     Command to preview highlighted line ({})
     --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][:SIZE[%]]
-                          [:[no]wrap][:[no]cycle][:[no]follow][:[no]hidden]
-                          [:border-BORDER_OPT]
-                          [:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES]
-                          [:default]
+                          [up|down|left|right][,SIZE[%]]
+                          [,[no]wrap][,[no]cycle][,[no]follow][,[no]hidden]
+                          [,border-BORDER_OPT]
+                          [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
+                          [,default]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -1078,10 +1078,11 @@ func parseInfoStyle(str string) infoStyle {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
-	tokens := strings.Split(input, ":")
+	delimRegex := regexp.MustCompile("[:,]") // : for backward compatibility
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	offsetRegex := regexp.MustCompile(`^(\+{-?[0-9]+})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
 	headerRegex := regexp.MustCompile("^~(0|[1-9][0-9]*)$")
+	tokens := delimRegex.Split(input, -1)
 	for _, token := range tokens {
 		switch token {
 		case "":
@@ -1382,7 +1383,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][:SIZE[%]][:rounded|sharp|noborder][:wrap][:cycle][:hidden][:+SCROLL[OFFSETS][/DENOM]][:~HEADER_LINES][:default]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-BORDER_OPT][,wrap][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
 		case "--min-height":

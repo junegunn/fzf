@@ -384,7 +384,7 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.size.size == 50) {
 		t.Error()
 	}
-	opts = optsFor("--preview", "cat {}", "--preview-window=left:15:hidden:wrap:+{1}-/2")
+	opts = optsFor("--preview", "cat {}", "--preview-window=left:15,hidden,wrap:+{1}-/2")
 	if !(opts.Preview.command == "cat {}" &&
 		opts.Preview.hidden == true &&
 		opts.Preview.wrap == true &&
@@ -394,7 +394,7 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.size.size == 15) {
 		t.Error(opts.Preview)
 	}
-	opts = optsFor("--preview-window=up:15:wrap:hidden:+{1}+3-1-2/2", "--preview-window=down", "--preview-window=cycle")
+	opts = optsFor("--preview-window=up,15,wrap,hidden,+{1}+3-1-2/2", "--preview-window=down", "--preview-window=cycle")
 	if !(opts.Preview.command == "" &&
 		opts.Preview.hidden == true &&
 		opts.Preview.wrap == true &&
