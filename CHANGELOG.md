@@ -9,6 +9,7 @@ CHANGELOG
   fzf --preview 'cat {}' --preview-window top:border-bottom
   fzf --preview 'cat {}' --preview-window top:border-horizontal
   ```
+- Signed and notarized macOS binaries (thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md))
 
 0.26.0
 ------
