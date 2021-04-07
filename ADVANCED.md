@@ -266,7 +266,7 @@ I know it's a lot to digest, let's try to break down the code.
 - We customize how fzf colors various text elements using `--color` option.
   `-1` tells fzf to keep the original color from the input. See `man fzf` for
   available color options.
-- The value of `--preview-window` options consists of 4 components delimited
+- The value of `--preview-window` options consists of 5 components delimited
   by `,`
     1. `up` — Position of the preview window
     1. `60%` — Size of the preview window
@@ -347,7 +347,7 @@ Log tailing
 -----------
 
 fzf can run long-running preview commands and render partial results before
-completion. And when you specify `:follow` flag in `--preview-window` option,
+completion. And when you specify `follow` flag in `--preview-window` option,
 fzf will "`tail -f`" the result, automatically scrolling to the bottom.
 
 ```bash
