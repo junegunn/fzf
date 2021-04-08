@@ -289,9 +289,10 @@ If you learn by watching videos, check out this screencast by [@samoshkin](https
 Examples
 --------
 
-Many useful examples can be found on [the wiki
-page](https://github.com/junegunn/fzf/wiki/examples). Feel free to add your
-own as well.
+* [Wiki page of examples](https://github.com/junegunn/fzf/wiki/examples)
+    * *Disclaimer: The examples on this page are maintained by the community
+      and are not thoroughly tested*
+* [Advanced fzf examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
 
 `fzf-tmux` script
 -----------------
