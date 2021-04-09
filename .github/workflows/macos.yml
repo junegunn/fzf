@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        go: [1.14, 1.15]
+        go: [1.14, 1.16]
     steps:
     - uses: actions/checkout@v2
       with:

@@ -22,8 +22,9 @@ import (
 // import "github.com/pkg/profile"
 
 var placeholder *regexp.Regexp
-var numericPrefix *regexp.Regexp
 var whiteSuffix *regexp.Regexp
+var offsetComponentRegex *regexp.Regexp
+var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
 
 const ellipsis string = ".."
@@ -31,8 +32,9 @@ const clearCode string = "\x1b[2J"
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
-	numericPrefix = regexp.MustCompile(`^[[:punct:]]*([0-9]+)`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
+	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
+	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
 	activeTempFiles = []string{}
 }
 
@@ -133,6 +135,7 @@ type Terminal struct {
 	count        int
 	progress     int
 	reading      bool
+	running      bool
 	failed       *string
 	jumping      jumpMode
 	jumpLabels   string
@@ -505,6 +508,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ansi:        opts.Ansi,
 		tabstop:     opts.Tabstop,
 		reading:     true,
+		running:     true,
 		failed:      nil,
 		jumping:     jumpDisabled,
 		jumpLabels:  opts.JumpLabels,
@@ -827,16 +831,33 @@ func (t *Terminal) resizeWindows() {
 		createPreviewWindow := func(y int, x int, w int, h int) {
 			pwidth := w
 			pheight := h
-			if t.previewOpts.border != tui.BorderNone {
-				previewBorder := tui.MakeBorderStyle(t.previewOpts.border, t.unicode)
-				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			var previewBorder tui.BorderStyle
+			if t.previewOpts.border == tui.BorderNone {
+				previewBorder = tui.MakeTransparentBorder()
+			} else {
+				previewBorder = tui.MakeBorderStyle(t.previewOpts.border, t.unicode)
+			}
+			t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			switch t.previewOpts.border {
+			case tui.BorderSharp, tui.BorderRounded:
 				pwidth -= 4
 				pheight -= 2
 				x += 2
 				y += 1
-			} else {
-				previewBorder := tui.MakeTransparentBorder()
-				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+			case tui.BorderLeft:
+				pwidth -= 2
+				x += 2
+			case tui.BorderRight:
+				pwidth -= 2
+			case tui.BorderTop:
+				pheight -= 1
+				y += 1
+			case tui.BorderBottom:
+				pheight -= 1
+			case tui.BorderHorizontal:
+				pheight -= 2
+				y += 1
+			case tui.BorderVertical:
 				pwidth -= 4
 				x += 2
 			}
@@ -844,9 +865,13 @@ func (t *Terminal) resizeWindows() {
 		}
 		verticalPad := 2
 		minPreviewHeight := 3
-		if t.previewOpts.border == tui.BorderNone {
+		switch t.previewOpts.border {
+		case tui.BorderNone, tui.BorderVertical, tui.BorderLeft, tui.BorderRight:
 			verticalPad = 0
 			minPreviewHeight = 1
+		case tui.BorderTop, tui.BorderBottom:
+			verticalPad = 1
+			minPreviewHeight = 2
 		}
 		switch t.previewOpts.position {
 		case posUp:
@@ -1144,8 +1169,8 @@ func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
 	width = util.Max(0, width)
 	var trimmed int32
 	// Assume that each rune takes at least one column on screen
-	if len(runes) > width {
-		diff := len(runes) - width
+	if len(runes) > width+2 {
+		diff := len(runes) - width - 2
 		trimmed = int32(diff)
 		runes = runes[diff:]
 	}
@@ -1293,18 +1318,37 @@ func (t *Terminal) renderPreviewSpinner() {
 	}
 }
 
-func (t *Terminal) renderPreviewText(unchanged bool) {
-	maxWidth := t.pwindow.Width()
-	lineNo := -t.previewer.offset
-	height := t.pwindow.Height()
+func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if unchanged {
-		t.pwindow.MoveAndClear(0, 0)
+		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
 		t.previewed.filled = false
 		t.pwindow.Erase()
 	}
+
+	height := t.pwindow.Height()
+	header := []string{}
+	body := t.previewer.lines
+	headerLines := t.previewOpts.headerLines
+	// Do not enable preview header lines if it's value is too large
+	if headerLines > 0 && headerLines < util.Min(len(body), height) {
+		header = t.previewer.lines[0:headerLines]
+		body = t.previewer.lines[headerLines:]
+		// Always redraw header
+		t.renderPreviewText(height, header, 0, false)
+		t.pwindow.MoveAndClear(t.pwindow.Y(), 0)
+	}
+	t.renderPreviewText(height, body, -t.previewer.offset+headerLines, unchanged)
+
+	if !unchanged {
+		t.pwindow.FinishFill()
+	}
+}
+
+func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
+	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
-	for _, line := range t.previewer.lines {
+	for _, line := range lines {
 		var lbg tui.Color = -1
 		if ansi != nil {
 			ansi.lbg = -1
@@ -1318,8 +1362,9 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
+				trimmedLen := 0
 				if !t.previewOpts.wrap {
-					trimmed, _ = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+					trimmed, trimmedLen = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				prefixWidth += width
@@ -1329,7 +1374,8 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 				} else {
 					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
 				}
-				return fillRet == tui.FillContinue
+				return trimmedLen == 0 &&
+					(fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine)
 			})
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
@@ -1350,9 +1396,6 @@ func (t *Terminal) renderPreviewText(unchanged bool) {
 		}
 		lineNo++
 	}
-	if !unchanged {
-		t.pwindow.FinishFill()
-	}
 }
 
 func (t *Terminal) printPreview() {
@@ -1365,7 +1408,7 @@ func (t *Terminal) printPreview() {
 		t.previewer.version == t.previewed.version &&
 		t.previewer.offset == t.previewed.offset
 	t.previewer.scrollable = t.previewer.offset > 0 || numLines > height
-	t.renderPreviewText(unchanged)
+	t.renderPreviewArea(unchanged)
 	t.renderPreviewSpinner()
 	t.previewed.numLines = numLines
 	t.previewed.version = t.previewer.version
@@ -1378,7 +1421,7 @@ func (t *Terminal) printPreviewDelayed() {
 	}
 
 	t.previewer.scrollable = false
-	t.renderPreviewText(true)
+	t.renderPreviewArea(true)
 
 	message := t.trimMessage("Loading ..", t.pwindow.Width())
 	pos := t.pwindow.Width() - len(message)
@@ -1571,43 +1614,33 @@ func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input str
 		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list)
 }
 
-// Ascii to positive integer
-func atopi(s string) int {
-	matches := numericPrefix.FindStringSubmatch(s)
-	if len(matches) < 2 {
-		return 0
-	}
-	n, e := strconv.Atoi(matches[1])
-	if e != nil || n < 1 {
-		return 0
-	}
-	return n
-}
-
 func (t *Terminal) evaluateScrollOffset(list []*Item, height int) int {
-	offsetExpr := t.replacePlaceholder(t.previewOpts.scroll, false, "", list)
-	nums := strings.Split(offsetExpr, "-")
-	switch len(nums) {
-	case 0:
-		return 0
-	case 1, 2:
-		base := atopi(nums[0])
-		if base == 0 {
+	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(
+		t.replacePlaceholder(t.previewOpts.scroll, false, "", list), "")
+
+	atoi := func(s string) int {
+		n, e := strconv.Atoi(s)
+		if e != nil {
 			return 0
-		} else if len(nums) == 1 {
-			return base - 1
 		}
-		if nums[1][0] == '/' {
-			denom := atopi(nums[1][1:])
+		return n
+	}
+
+	base := -1
+	for _, component := range offsetComponentRegex.FindAllString(offsetExpr, -1) {
+		if strings.HasPrefix(component, "-/") {
+			component = component[1:]
+		}
+		if component[0] == '/' {
+			denom := atoi(component[1:])
 			if denom == 0 {
 				return base
 			}
 			return base - height/denom
 		}
-		return base - atopi(nums[1]) - 1
-	default:
-		return 0
+		base += atoi(component)
 	}
+	return base
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
@@ -1710,24 +1743,22 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
+	t.executing.Set(true)
 	if !background {
-		cmd.Stdin = os.Stdin
+		cmd.Stdin = tui.TtyIn()
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
-		t.executing.Set(true)
 		cmd.Run()
-		t.executing.Set(false)
 		t.tui.Resume(true, false)
 		t.redraw()
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		t.executing.Set(true)
 		cmd.Run()
-		t.executing.Set(false)
 		t.tui.Resume(false, false)
 	}
+	t.executing.Set(false)
 	cleanTemporaryFiles()
 }
 
@@ -1835,16 +1866,6 @@ func (t *Terminal) cancelPreview() {
 	t.killPreview(exitCancel)
 }
 
-func (t *Terminal) exit(getCode func() int) {
-	t.tui.Close()
-	code := getCode()
-	if code <= exitNoMatch && t.history != nil {
-		t.history.append(string(t.input))
-	}
-	// prof.Stop()
-	t.killPreview(code)
-}
-
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -1935,7 +1956,7 @@ func (t *Terminal) Loop() {
 					cmd := util.ExecCommand(command, true)
 					if pwindow != nil {
 						height := pwindow.Height()
-						initialOffset = util.Max(0, t.evaluateScrollOffset(items, height))
+						initialOffset = util.Max(0, t.evaluateScrollOffset(items, util.Max(0, height-t.previewOpts.headerLines)))
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", pwindow.Width())
@@ -1968,6 +1989,7 @@ func (t *Terminal) Loop() {
 						}()
 
 						// Goroutine 2 periodically requests rendering
+						rendered := util.NewAtomicBool(false)
 						go func(version int64) {
 							lines := []string{}
 							spinner := makeSpinner(t.unicode)
@@ -1982,6 +2004,7 @@ func (t *Terminal) Loop() {
 										if spinnerIndex >= 0 {
 											spin := spinner[spinnerIndex%len(spinner)]
 											t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, spin})
+											rendered.Set(true)
 											offset = -1
 										}
 										spinnerIndex++
@@ -2001,6 +2024,7 @@ func (t *Terminal) Loop() {
 									}
 									if err != nil {
 										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
+										rendered.Set(true)
 										break Loop
 									}
 								}
@@ -2022,7 +2046,13 @@ func (t *Terminal) Loop() {
 										util.KillCommand(cmd)
 										t.eventBox.Set(EvtQuit, code)
 									} else {
-										timer := time.NewTimer(previewCancelWait)
+										// We can immediately kill a long-running preview program
+										// once we started rendering its partial output
+										delay := previewCancelWait
+										if rendered.Get() {
+											delay = 0
+										}
+										timer := time.NewTimer(delay)
 										select {
 										case <-timer.C:
 											util.KillCommand(cmd)
@@ -2068,7 +2098,19 @@ func (t *Terminal) Loop() {
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
-		for {
+		running := true
+		code := exitError
+		exit := func(getCode func() int) {
+			t.tui.Close()
+			code = getCode()
+			if code <= exitNoMatch && t.history != nil {
+				t.history.append(string(t.input))
+			}
+			running = false
+			t.mutex.Unlock()
+		}
+
+		for running {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
 				t.mutex.Lock()
@@ -2108,7 +2150,7 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
-						t.exit(func() int {
+						exit(func() int {
 							if t.output() {
 								return exitOk
 							}
@@ -2126,7 +2168,7 @@ func (t *Terminal) Loop() {
 						if t.previewer.following {
 							t.previewer.offset = len(t.previewer.lines) - t.pwindow.Height()
 						} else if result.offset >= 0 {
-							t.previewer.offset = util.Constrain(result.offset, 0, len(t.previewer.lines)-1)
+							t.previewer.offset = util.Constrain(result.offset, t.previewOpts.headerLines, len(t.previewer.lines)-1)
 						}
 						t.printPreview()
 					case reqPreviewRefresh:
@@ -2135,13 +2177,13 @@ func (t *Terminal) Loop() {
 						t.previewer.version = value.(int64)
 						t.printPreviewDelayed()
 					case reqPrintQuery:
-						t.exit(func() int {
+						exit(func() int {
 							t.printer(string(t.input))
 							return exitOk
 						})
 						return
 					case reqQuit:
-						t.exit(func() int { return exitInterrupt })
+						exit(func() int { return exitInterrupt })
 						return
 					}
 				}
@@ -2149,6 +2191,8 @@ func (t *Terminal) Loop() {
 				t.mutex.Unlock()
 			})
 		}
+		// prof.Stop()
+		t.killPreview(code)
 	}()
 
 	looping := true
@@ -2197,7 +2241,7 @@ func (t *Terminal) Loop() {
 			if t.previewOpts.cycle {
 				newOffset = (newOffset + numLines) % numLines
 			}
-			newOffset = util.Constrain(newOffset, 0, numLines-1)
+			newOffset = util.Constrain(newOffset, t.previewOpts.headerLines, numLines-1)
 			if t.previewer.offset != newOffset {
 				t.previewer.offset = newOffset
 				req(reqPreviewRefresh)

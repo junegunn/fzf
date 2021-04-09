@@ -154,46 +154,79 @@ function! fzf#install()
   endif
 endfunction
 
-function! s:version_requirement(val, min)
-  let val = split(a:val, '\.')
-  let min = split(a:min, '\.')
-  for idx in range(0, len(min) - 1)
-    let v = get(val, idx, 0)
-    if     v < min[idx] | return 0
-    elseif v > min[idx] | return 1
+let s:versions = {}
+function s:get_version(bin)
+  if has_key(s:versions, a:bin)
+    return s:versions[a:bin]
+  end
+  let command = a:bin . ' --version'
+  let output = systemlist(command)
+  if v:shell_error || empty(output)
+    return ''
+  endif
+  let ver = matchstr(output[-1], '[0-9.]\+')
+  let s:versions[a:bin] = ver
+  return ver
+endfunction
+
+function! s:compare_versions(a, b)
+  let a = split(a:a, '\.')
+  let b = split(a:b, '\.')
+  for idx in range(0, max([len(a), len(b)]) - 1)
+    let v1 = str2nr(get(a, idx, 0))
+    let v2 = str2nr(get(b, idx, 0))
+    if     v1 < v2 | return -1
+    elseif v1 > v2 | return 1
     endif
   endfor
-  return 1
+  return 0
+endfunction
+
+function! s:compare_binary_versions(a, b)
+  return s:compare_versions(s:get_version(a:a), s:get_version(a:b))
 endfunction
 
 let s:checked = {}
 function! fzf#exec(...)
   if !exists('s:exec')
-    if executable(s:fzf_go)
-      let s:exec = s:fzf_go
-    elseif executable('fzf')
-      let s:exec = 'fzf'
-    elseif input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
-      redraw
-      call fzf#install()
-      return fzf#exec()
-    else
-      redraw
-      throw 'fzf executable not found'
+    let binaries = []
+    if executable('fzf')
+      call add(binaries, 'fzf')
     endif
+    if executable(s:fzf_go)
+      call add(binaries, s:fzf_go)
+    endif
+
+    if empty(binaries)
+      if input('fzf executable not found. Download binary? (y/n) ') =~? '^y'
+        redraw
+        call fzf#install()
+        return fzf#exec()
+      else
+        redraw
+        throw 'fzf executable not found'
+      endif
+    elseif len(binaries) > 1
+      call sort(binaries, 's:compare_binary_versions')
+    endif
+
+    let s:exec = binaries[-1]
   endif
 
   if a:0 && !has_key(s:checked, a:1)
-    let command = s:exec . ' --version'
-    let output = systemlist(command)
-    if v:shell_error || empty(output)
-      throw printf('Failed to run "%s": %s', command, output)
-    endif
-    let fzf_version = matchstr(output[-1], '[0-9.]\+')
-    if s:version_requirement(fzf_version, a:1)
+    let fzf_version = s:get_version(s:exec)
+    if empty(fzf_version)
+      let message = printf('Failed to run "%s --version"', s:exec)
+      unlet s:exec
+      throw message
+    end
+
+    if s:compare_versions(fzf_version, a:1) >= 0
       let s:checked[a:1] = 1
       return s:exec
     elseif a:0 < 2 && input(printf('You need fzf %s or above. Found: %s. Download binary? (y/n) ', a:1, fzf_version)) =~? '^y'
+      let s:versions = {}
+      unlet s:exec
       redraw
       call fzf#install()
       return fzf#exec(a:1, 1)
@@ -842,16 +875,16 @@ function! s:execute_term(dict, command, temps) abort
     if has('nvim')
       call termopen(command, fzf)
     else
-      let term_opts = {'exit_cb': function(fzf.on_exit), 'term_kill': 'term'}
+      let term_opts = {'exit_cb': function(fzf.on_exit)}
+      if v:version >= 802
+        let term_opts.term_kill = 'term'
+      endif
       if is_popup
         let term_opts.hidden = 1
       else
         let term_opts.curwin = 1
       endif
       let fzf.buf = term_start([&shell, &shellcmdflag, command], term_opts)
-      if exists('&termwinkey')
-        call setbufvar(fzf.buf, '&termwinkey', '<c-z>')
-      endif
       if is_popup && exists('#TerminalWinOpen')
         doautocmd <nomodeline> TerminalWinOpen
       endif
@@ -860,6 +893,9 @@ function! s:execute_term(dict, command, temps) abort
       endif
     endif
     tnoremap <buffer> <c-z> <nop>
+    if exists('&termwinkey') && (empty(&termwinkey) || &termwinkey =~? '<c-w>')
+      tnoremap <buffer> <c-w> <c-w>.
+    endif
   finally
     call s:dopopd()
   endtry

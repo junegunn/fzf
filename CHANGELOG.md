@@ -1,10 +1,53 @@
 CHANGELOG
 =========
 
-0.25.2
+0.27.0
 ------
+- More border options for `--preview-window`
+  ```sh
+  fzf --preview 'cat {}' --preview-window border-left
+  fzf --preview 'cat {}' --preview-window border-left --border horizontal
+  fzf --preview 'cat {}' --preview-window top:border-bottom
+  fzf --preview 'cat {}' --preview-window top:border-horizontal
+  ```
+- Automatically set `/dev/tty` as STDIN on execute action
+  ```sh
+  # Redirect /dev/tty to suppress "Vim: Warning: Input is not from a terminal"
+  # ls | fzf --bind "enter:execute(vim {} < /dev/tty)"
+
+  # "< /dev/tty" part is no longer needed
+  ls | fzf --bind "enter:execute(vim {})"
+  ```
+- Bug fixes and improvements
+- Signed and notarized macOS binaries
+  (Huge thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md)!)
+
+0.26.0
+------
+- Added support for fixed header in preview window
+  ```sh
+  # Display top 3 lines as the fixed header
+  fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
+  ```
+- More advanced preview offset expression to better support the fixed header
+  ```sh
+  # Preview with bat, matching line in the middle of the window below
+  # the fixed header of the top 3 lines
+  #
+  #   ~3    Top 3 lines as the fixed header
+  #   +{2}  Base scroll offset extracted from the second field
+  #   +3    Extra offset to compensate for the 3-line header
+  #   /2    Put in the middle of the preview area
+  #
+  git grep --line-number '' |
+    fzf --delimiter : \
+        --preview 'bat --style=full --color=always --highlight-line {2} {1}' \
+        --preview-window '~3:+{2}+3/2'
+  ```
 - Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
+- Sigificant performance improvement in ANSI code processing
+- Bug fixes and improvements
 - Built with Go 1.16
 
 0.25.1
