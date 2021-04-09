@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2021/04/06)*
+*(Last update: 2021/04/09)*
 
 <!-- vim-markdown-toc GFM -->
 
@@ -242,9 +242,15 @@ IFS=: read -ra selected < <(
 And run it with an initial query string.
 
 ```sh
+# Make the script executable
 chmod +x rfv
+
+# Run it with the initial query "algo"
 ./rfv algo
 ```
+
+> Ripgrep will perform the initial search and list all the lines that contain
+`algo`. Then we further narrow down the list on fzf.
 
 ![image](https://user-images.githubusercontent.com/700826/113683873-a42a6200-96ff-11eb-9666-26ce4091b0e4.png)
 
@@ -266,7 +272,7 @@ I know it's a lot to digest, let's try to break down the code.
 - We customize how fzf colors various text elements using `--color` option.
   `-1` tells fzf to keep the original color from the input. See `man fzf` for
   available color options.
-- The value of `--preview-window` options consists of 5 components delimited
+- The value of `--preview-window` option consists of 5 components delimited
   by `,`
     1. `up` — Position of the preview window
     1. `60%` — Size of the preview window
