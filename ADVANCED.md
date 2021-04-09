@@ -335,7 +335,6 @@ IFS=: read -ra selected < <(
   fzf --ansi \
       --disabled --query "$INITIAL_QUERY" \
       --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --color "hl:-1:underline,hl+:-1:underline:reverse" \
       --delimiter : \
       --preview 'bat --color=always {1} --highlight-line {2}' \
       --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
