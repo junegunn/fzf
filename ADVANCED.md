@@ -89,7 +89,7 @@ fzf --height=40% --layout=reverse --info=inline --border --margin=1 --padding=1
 
 But you definitely don't want to repeat `--height=40% --layout=reverse
 --info=inline --border --margin=1 --padding=1` every time you use fzf. You
-could write a wrapper script or shell alise, but there is an easier option.
+could write a wrapper script or shell alias, but there is an easier option.
 Define `$FZF_DEFAULT_OPTS` like so:
 
 ```sh
@@ -111,6 +111,7 @@ fzf-tmux --layout=reverse
 
 The limitation of `fzf-tmux` is that it only works when you're on tmux unlike
 `--height` option. But the advantage of it is that it's more flexible.
+(See `man fzf-tmux` for available options.)
 
 ```sh
 # On the right (50%)
@@ -133,8 +134,8 @@ fzf-tmux -u30%
 
 But here's the really cool part; tmux 3.2 (stable version is not yet released
 as of now) supports popup windows. So if you have tmux built from the latest
-source, you can open fzf in a popup window, which is quite useful when you're
-working on split panes.
+source, you can open fzf in a popup window, which is quite useful if you
+frequently use split panes.
 
 ```sh
 # Open tmux in a tmux popup window (default size: 50% of the screen)
@@ -145,6 +146,12 @@ fzf-tmux -p 80%,60%
 ```
 
 ![image](https://user-images.githubusercontent.com/700826/113380106-4a9bfd80-93b6-11eb-8cee-aeb1c4ce1a1f.png)
+
+> You might also want to check out my tmux plugins which support this popup
+> window layout.
+> 
+> - https://github.com/junegunn/tmux-fzf-url
+> - https://github.com/junegunn/tmux-fzf-maccy
 
 Dynamic reloading of the list
 -----------------------------
