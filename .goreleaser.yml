@@ -14,6 +14,25 @@ builds:
       - amd64
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
+    hooks:
+      post: |
+        sh -c '
+        cat > /tmp/fzf-gon-amd64.hcl << EOF
+        source = ["./dist/fzf-macos_darwin_amd64/fzf"]
+        bundle_id = "kr.junegunn.fzf"
+        apple_id {
+          username = "junegunn.c@gmail.com"
+          password = "@env:AC_PASSWORD"
+        }
+        sign {
+          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
+        }
+        zip {
+          output_path = "./dist/fzf-{{ .Version }}-darwin_amd64.zip"
+        }
+        EOF
+        gon /tmp/fzf-gon-amd64.hcl
+        '
 
   - id: fzf-macos-arm
     binary: fzf
@@ -23,6 +42,25 @@ builds:
       - arm64
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
+    hooks:
+      post: |
+        sh -c '
+        cat > /tmp/fzf-gon-arm64.hcl << EOF
+        source = ["./dist/fzf-macos-arm_darwin_arm64/fzf"]
+        bundle_id = "kr.junegunn.fzf"
+        apple_id {
+          username = "junegunn.c@gmail.com"
+          password = "@env:AC_PASSWORD"
+        }
+        sign {
+          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
+        }
+        zip {
+          output_path = "./dist/fzf-{{ .Version }}-darwin_arm64.zip"
+        }
+        EOF
+        gon /tmp/fzf-gon-arm64.hcl
+        '
 
   - id: fzf
     goos:
@@ -60,53 +98,6 @@ archives:
         format: zip
     files:
       - non-existent*
-
-signs:
-  - id: fzf-macos-sign
-    ids: [fzf-macos]
-    artifacts: all
-    cmd: sh
-    args:
-      - "-c"
-      - |-
-        cat > /tmp/fzf-gon-amd64.hcl << EOF
-        source = ["./dist/fzf-macos_darwin_amd64/fzf"]
-        bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
-        }
-        zip {
-          output_path = "./dist/fzf-{{ .Version }}-darwin_amd64.zip"
-        }
-        EOF
-        gon /tmp/fzf-gon-amd64.hcl
-
-  - id: fzf-macos-arm-sign
-    ids: [fzf-macos-arm]
-    artifacts: all
-    cmd: sh
-    args:
-      - "-c"
-      - |-
-        cat > /tmp/fzf-gon-arm64.hcl << EOF
-        source = ["./dist/fzf-macos-arm_darwin_arm64/fzf"]
-        bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
-        }
-        zip {
-          output_path = "./dist/fzf-{{ .Version }}-darwin_arm64.zip"
-        }
-        EOF
-        gon /tmp/fzf-gon-arm64.hcl
 
 release:
   github:
