@@ -139,3 +139,9 @@ func QuoteShellEntryCmd(entry string) string {
 		return "^" + match
 	})
 }
+
+// Quote shell string, Powershell style
+func QuoteShellEntryPs(entry string) string {
+	escaped := strings.Replace(entry, `"`, `""`, -1)
+	return `'` + strings.Replace(escaped, `'`, `''`, -1) + `'`
+}

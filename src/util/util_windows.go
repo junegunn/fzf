@@ -6,28 +6,55 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
+// Get shell to execute from SHELL environment variable, defaulting to cmd
+func getShell() string {
+	shell := os.Getenv("SHELL")
+	if len(shell) == 0 {
+		shell = "cmd"
+	}
+	return shell
+}
+
+// Check if shell is cmd or cmd.exe or similar, else assume it's Powershell
+func isShellCmd(shell string) bool {
+	return strings.Contains(shell, "cmd")
+}
+
 // QuoteShellEntry quotes a string appropriately for the shell
 func QuoteShellEntry(entry string) string {
-	return QuoteShellEntryCmd(entry)
+	if isShellCmd(getShell()) {
+		return QuoteShellEntryCmd(entry)
+	} else {
+		return QuoteShellEntryPs(entry)
+	}
 }
 
-// ExecCommand executes the given command with cmd
+// ExecCommand executes the given command with $SHELL
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
-	return ExecCommandWith("cmd", command, setpgid)
+	return ExecCommandWith(getShell(), command, setpgid)
 }
 
-// ExecCommandWith executes the given command with cmd. _shell parameter is
-// ignored on Windows.
+// ExecCommandWith executes the given command with the specified shell.
+// Depending on isShellCmd(shell) this creates a command for use with cmd
+// or else PS. In the latter case the command string is passed
+// as a ScriptBlock which gets executed, i.e. &{<command>}.
 // FIXME: setpgid is unused. We set it in the Unix implementation so that we
 // can kill preview process with its child processes at once.
-func ExecCommandWith(_shell string, command string, setpgid bool) *exec.Cmd {
-	cmd := exec.Command("cmd")
+func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
+	var cmdline string
+	if isShellCmd(shell) {
+		cmdline = fmt.Sprintf(` /v:on/s/c "%s"`, command)
+	} else {
+		cmdline = fmt.Sprintf(` -NoProfile -Command "&{%s}"`, command)
+	}
+	cmd := exec.Command(shell)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    false,
-		CmdLine:       fmt.Sprintf(` /v:on/s/c "%s"`, command),
+		CmdLine:       cmdline,
 		CreationFlags: 0,
 	}
 	return cmd

@@ -57,3 +57,17 @@ func TestQuoteShellEntryCmd(t *testing.T) {
 		}
 	}
 }
+
+func TestQuoteShellEntryPs(t *testing.T) {
+	tests := map[string]string{
+		`"`: `'""'`,
+		`'`: `''''`,
+	}
+
+	for input, expected := range tests {
+		escaped := QuoteShellEntryPs(input)
+		if escaped != expected {
+			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
+		}
+	}
+}
