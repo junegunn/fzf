@@ -3,6 +3,8 @@ package util
 import (
 	"math"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -121,4 +123,19 @@ func Once(nextResponse bool) func() bool {
 		state = false
 		return prevState
 	}
+}
+
+// Quote shell string, sh style
+func QuoteShellEntrySh(entry string) string {
+	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
+}
+
+// Quote shell string, cmd style
+func QuoteShellEntryCmd(entry string) string {
+	escaped := strings.Replace(entry, `\`, `\\`, -1)
+	escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
+	r, _ := regexp.Compile(`[&|<>()@^%!"]`)
+	return r.ReplaceAllStringFunc(escaped, func(match string) string {
+		return "^" + match
+	})
 }

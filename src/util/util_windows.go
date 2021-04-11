@@ -9,6 +9,11 @@ import (
 	"syscall"
 )
 
+// QuoteShellEntry quotes a string appropriately for the shell
+func QuoteShellEntry(entry string) string {
+	return QuoteShellEntryCmd(entry)
+}
+
 // ExecCommand executes the given command with cmd
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	return ExecCommandWith("cmd", command, setpgid)

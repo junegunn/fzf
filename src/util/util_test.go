@@ -38,3 +38,22 @@ func TestOnce(t *testing.T) {
 		t.Error("Expected: false")
 	}
 }
+
+func TestQuoteShellEntryCmd(t *testing.T) {
+	tests := map[string]string{
+		`"`:                       `^"\^"^"`,
+		`\`:                       `^"\\^"`,
+		`\"`:                      `^"\\\^"^"`,
+		`"\\\"`:                   `^"\^"\\\\\\\^"^"`,
+		`&|<>()@^%!`:              `^"^&^|^<^>^(^)^@^^^%^!^"`,
+		`%USERPROFILE%`:           `^"^%USERPROFILE^%^"`,
+		`C:\Program Files (x86)\`: `^"C:\\Program Files ^(x86^)\\^"`,
+	}
+
+	for input, expected := range tests {
+		escaped := QuoteShellEntryCmd(input)
+		if escaped != expected {
+			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
+		}
+	}
+}

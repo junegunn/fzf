@@ -8,6 +8,11 @@ import (
 	"syscall"
 )
 
+// QuoteShellEntry quotes a string appropriately for the shell
+func QuoteShellEntry(entry string) string {
+	return QuoteShellEntrySh(entry)
+}
+
 // ExecCommand executes the given command with $SHELL
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")

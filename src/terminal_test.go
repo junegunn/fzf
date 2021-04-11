@@ -118,22 +118,3 @@ func TestReplacePlaceholder(t *testing.T) {
 	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
 	check("echo '  foo'\\''bar baz'/'f'/'r b'/''\\''bar b'")
 }
-
-func TestQuoteEntryCmd(t *testing.T) {
-	tests := map[string]string{
-		`"`:                       `^"\^"^"`,
-		`\`:                       `^"\\^"`,
-		`\"`:                      `^"\\\^"^"`,
-		`"\\\"`:                   `^"\^"\\\\\\\^"^"`,
-		`&|<>()@^%!`:              `^"^&^|^<^>^(^)^@^^^%^!^"`,
-		`%USERPROFILE%`:           `^"^%USERPROFILE^%^"`,
-		`C:\Program Files (x86)\`: `^"C:\\Program Files ^(x86^)\\^"`,
-	}
-
-	for input, expected := range tests {
-		escaped := quoteEntryCmd(input)
-		if escaped != expected {
-			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
-		}
-	}
-}
