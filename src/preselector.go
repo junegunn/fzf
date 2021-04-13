@@ -36,8 +36,8 @@ func NewPreselector(path string) (*Preselector, error) {
 	// Split lines and limit the maximum number of lines
 	lines := strings.Split(strings.Trim(string(data), "\n"), "\n")
 	return &Preselector{
-		path:       path,
-		prepointed: lines[0],
+		path:        path,
+		prepointed:  lines[0],
 		preselected: lines[1:]}, nil
 }
 
@@ -68,7 +68,7 @@ func (p *Preselector) save(t *Terminal) error {
 	if current == nil {
 		return errors.New("current item not found")
 	}
-	res := make([]string, 0, len(t.selected) + 1)
+	res := make([]string, 0, len(t.selected)+1)
 	res = append(res, current.AsString(true))
 	for _, sel := range t.selected {
 		res = append(res, sel.item.AsString(true))
