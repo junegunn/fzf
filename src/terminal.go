@@ -161,6 +161,7 @@ type Terminal struct {
 	theme        *tui.ColorTheme
 	tui          tui.Renderer
 	executing    *util.AtomicBool
+	preselector  *Preselector
 }
 
 type selectedItem struct {
@@ -531,7 +532,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:    make(chan int),
 		tui:         renderer,
 		initFunc:    func() { renderer.Init() },
-		executing:   util.NewAtomicBool(false)}
+		executing:   util.NewAtomicBool(false),
+		preselector: opts.Preselector}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -635,6 +637,9 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.merger = merger
 	if reset {
 		t.selected = make(map[int32]selectedItem)
+	}
+	if t.preselector != nil {
+		t.preselector.apply(t)
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
@@ -2150,6 +2155,9 @@ func (t *Terminal) Loop() {
 					case reqRedraw:
 						t.redraw()
 					case reqClose:
+						if t.preselector != nil {
+							t.preselector.save(t)
+						}
 						exit(func() int {
 							if t.output() {
 								return exitOk
@@ -2177,12 +2185,18 @@ func (t *Terminal) Loop() {
 						t.previewer.version = value.(int64)
 						t.printPreviewDelayed()
 					case reqPrintQuery:
+						if t.preselector != nil {
+							t.preselector.save(t)
+						}
 						exit(func() int {
 							t.printer(string(t.input))
 							return exitOk
 						})
 						return
 					case reqQuit:
+						if t.preselector != nil {
+							t.preselector.save(t)
+						}
 						exit(func() int { return exitInterrupt })
 						return
 					}
