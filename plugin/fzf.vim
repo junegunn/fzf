@@ -972,21 +972,24 @@ else
 endif
 
 function! s:popup(opts) abort
+  let columns = has_key(a:opts, 'relative') ? winwidth(0) : &columns
+  let lines = has_key(a:opts, 'relative') ? winheight(0) : &lines
+
   " Size and position
-  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(&columns * a:opts.width)]), &columns])
-  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
-  let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
-  let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
+  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(&columns * a:opts.width)]), columns])
+  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(&lines * a:opts.height)]), lines - has('nvim')])
+  let row = float2nr(get(a:opts, 'yoffset', 0.5) * (lines - height))
+  let col = float2nr(get(a:opts, 'xoffset', 0.5) * (columns - width))
 
   " Managing the differences
-  let row = min([max([0, row]), &lines - has('nvim') - height])
-  let col = min([max([0, col]), &columns - width])
+  let row = min([max([0, row]), lines - has('nvim') - height])
+  let col = min([max([0, col]), columns - width])
   let row += !has('nvim')
   let col += !has('nvim')
 
-  call s:create_popup('Normal', {
+  call s:create_popup('Normal', extend(a:opts, {
     \ 'row': row, 'col': col, 'width': width, 'height': height
-  \ })
+  \ }))
 endfunction
 
 let s:default_action = {
