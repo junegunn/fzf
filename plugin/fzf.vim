@@ -975,30 +975,22 @@ function! s:popup(opts) abort
   let create_opts = copy(a:opts)
 
   " Remove known FZF options
-  let xoffset = 0.5
-  let yoffset = 0.5
+  let xoffset = get(a:opts, 'xoffset', 0.5)
+  let yoffset = get(a:opts, 'yoffset', 0.5)
 
-  if has_key(a:opts, 'xoffset')
-    let xoffset = a:opts.xoffset
-    call remove(create_opts, 'xoffset')
-  endif
-
-  if has_key(a:opts, 'yoffset')
-    let yoffset = a:opts.yoffset
-    call remove(create_opts, 'yoffset')
-  endif
-
-  if has_key(a:opts, 'border')
-    call remove(create_opts, 'border')
-  endif
+  for key in ['xoffset', 'yoffset', 'border', 'highlight']
+    if has_key(a:opts, key)
+      call remove(create_opts, key)
+    endif
+  endfor
 
   " Use current window size for positioning relatively positioned popups
   let columns = has_key(a:opts, 'relative') ? winwidth(0) : &columns
   let lines = has_key(a:opts, 'relative') ? winheight(0) : &lines
 
   " Size and position
-  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(&columns * a:opts.width)]), columns])
-  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(&lines * a:opts.height)]), lines - has('nvim')])
+  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(columns * a:opts.width)]), columns])
+  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(lines * a:opts.height)]), lines - has('nvim')])
   let row = float2nr(yoffset * (lines - height))
   let col = float2nr(xoffset * (columns - width))
 
