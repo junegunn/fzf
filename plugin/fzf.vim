@@ -972,14 +972,35 @@ else
 endif
 
 function! s:popup(opts) abort
+  let create_opts = copy(a:opts)
+
+  " Remove known FZF options
+  let xoffset = 0.5
+  let yoffset = 0.5
+
+  if has_key(a:opts, 'xoffset')
+    let xoffset = a:opts.xoffset
+    call remove(create_opts, 'xoffset')
+  endif
+
+  if has_key(a:opts, 'yoffset')
+    let yoffset = a:opts.yoffset
+    call remove(create_opts, 'yoffset')
+  endif
+
+  if has_key(a:opts, 'border')
+    call remove(create_opts, 'border')
+  endif
+
+  " Use current window size for positioning relatively positioned popups
   let columns = has_key(a:opts, 'relative') ? winwidth(0) : &columns
   let lines = has_key(a:opts, 'relative') ? winheight(0) : &lines
 
   " Size and position
   let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(&columns * a:opts.width)]), columns])
   let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(&lines * a:opts.height)]), lines - has('nvim')])
-  let row = float2nr(get(a:opts, 'yoffset', 0.5) * (lines - height))
-  let col = float2nr(get(a:opts, 'xoffset', 0.5) * (columns - width))
+  let row = float2nr(yoffset * (lines - height))
+  let col = float2nr(xoffset * (columns - width))
 
   " Managing the differences
   let row = min([max([0, row]), lines - has('nvim') - height])
@@ -987,9 +1008,11 @@ function! s:popup(opts) abort
   let row += !has('nvim')
   let col += !has('nvim')
 
-  call s:create_popup('Normal', extend(copy(a:opts), {
+  call extend(create_opts, {
     \ 'row': row, 'col': col, 'width': width, 'height': height
-  \ }))
+  \ })
+
+  call s:create_popup('Normal', create_opts)
 endfunction
 
 let s:default_action = {
