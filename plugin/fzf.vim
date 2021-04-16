@@ -987,7 +987,7 @@ function! s:popup(opts) abort
   let row += !has('nvim')
   let col += !has('nvim')
 
-  call s:create_popup('Normal', extend(a:opts, {
+  call s:create_popup('Normal', extend(copy(a:opts), {
     \ 'row': row, 'col': col, 'width': width, 'height': height
   \ }))
 endfunction
