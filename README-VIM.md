@@ -131,7 +131,7 @@ let g:fzf_action = {
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 
 " - Popup window (centered in current window)
-let g:fzf_layout = { 'window': { 'relative': 'win', 'width': 0.9, 'height': 0.6 } }
+let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true } }
 
 " - down / up / left / right
 let g:fzf_layout = { 'down': '40%' }
