@@ -972,11 +972,19 @@ else
 endif
 
 function! s:popup(opts) abort
+  let xoffset = get(a:opts, 'xoffset', 0.5)
+  let yoffset = get(a:opts, 'yoffset', 0.5)
+  let relative = get(a:opts, 'relative', 0)
+
+  " Use current window size for positioning relatively positioned popups
+  let columns = relative ? winwidth(0) : &columns
+  let lines = relative ? winheight(0) : &lines
+
   " Size and position
-  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(&columns * a:opts.width)]), &columns])
-  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(&lines * a:opts.height)]), &lines - has('nvim')])
-  let row = float2nr(get(a:opts, 'yoffset', 0.5) * (&lines - height))
-  let col = float2nr(get(a:opts, 'xoffset', 0.5) * (&columns - width))
+  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(columns * a:opts.width)]), columns])
+  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(lines * a:opts.height)]), lines - has('nvim')])
+  let row = float2nr(yoffset * (lines - height)) + (relative ? win_screenpos(0)[0] : 0)
+  let col = float2nr(xoffset * (columns - width)) + (relative ? win_screenpos(0)[1] : 0)
 
   " Managing the differences
   let row = min([max([0, row]), &lines - has('nvim') - height])
