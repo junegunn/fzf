@@ -3,6 +3,7 @@ package fzf
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -94,7 +95,7 @@ func (r *Reader) restart(command string) {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource() {
+func (r *Reader) ReadSource(root string) {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
@@ -103,9 +104,17 @@ func (r *Reader) ReadSource() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			if defaultCommand != "" {
-				success = r.readFromCommand(&shell, defaultCommand)
+				// When listing the current directory strip the "./"
+				var cutAt int
+				if root == "." {
+					cutAt = 3
+				} else {
+					cutAt = 1
+				}
+				command := fmt.Sprintf(defaultCommand, root, cutAt)
+				success = r.readFromCommand(&shell, command)
 			} else {
-				success = r.readFiles()
+				success = r.readFiles(root)
 			}
 		} else {
 			success = r.readFromCommand(nil, cmd)
@@ -151,11 +160,11 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
-func (r *Reader) readFiles() bool {
+func (r *Reader) readFiles(root string) bool {
 	r.killed = false
 	fn := func(path string, mode os.FileInfo) error {
 		path = filepath.Clean(path)
-		if path != "." {
+		if path != "." && path != ".." {
 			isDir := mode.Mode().IsDir()
 			if isDir && filepath.Base(path)[0] == '.' {
 				return filepath.SkipDir
@@ -174,7 +183,7 @@ func (r *Reader) readFiles() bool {
 	cb := walker.WithErrorCallback(func(pathname string, err error) error {
 		return nil
 	})
-	return walker.Walk(".", fn, cb) == nil
+	return walker.Walk(root, fn, cb) == nil
 }
 
 func (r *Reader) readFromCommand(shell *string, command string) bool {

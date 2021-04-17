@@ -92,6 +92,7 @@ const usage = `usage: fzf [options]
     -1, --select-1        Automatically select the only match
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
+    -r, --root=STR        Root directory for built-in file search.
     --print-query         Print query as the first line
     --expect=KEYS         Comma-separated list of keys to complete fzf
     --read0               Read input delimited by ASCII NUL characters
@@ -210,6 +211,7 @@ type Options struct {
 	Select1     bool
 	Exit0       bool
 	Filter      *string
+	RootDir     string
 	ToggleSort  bool
 	Expect      map[tui.Event]string
 	Keymap      map[tui.Event][]action
@@ -271,6 +273,7 @@ func defaultOptions() *Options {
 		Select1:     false,
 		Exit0:       false,
 		Filter:      nil,
+		RootDir:     ".",
 		ToggleSort:  false,
 		Expect:      make(map[tui.Event]string),
 		Keymap:      make(map[tui.Event][]action),
@@ -1220,6 +1223,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-f", "--filter":
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
+		case "-r", "--root":
+			opts.RootDir = nextString(allArgs, &i, "root string required")
 		case "--literal":
 			opts.Normalize = false
 		case "--no-literal":

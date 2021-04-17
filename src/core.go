@@ -141,7 +141,7 @@ func Run(opts *Options, version string, revision string) {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, opts.ReadZero, opts.Filter == nil)
-		go reader.ReadSource()
+		go reader.ReadSource(opts.RootDir)
 	}
 
 	// Matcher
@@ -185,7 +185,7 @@ func Run(opts *Options, version string, revision string) {
 					}
 					return false
 				}, eventBox, opts.ReadZero, false)
-			reader.ReadSource()
+			reader.ReadSource(opts.RootDir)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
