@@ -977,16 +977,21 @@ function! s:popup(opts) abort
   " Remove known FZF options
   let xoffset = get(a:opts, 'xoffset', 0.5)
   let yoffset = get(a:opts, 'yoffset', 0.5)
+  let relative = index([1, 'win'], get(a:opts, 'relative', '')) >= 0
 
-  for key in ['xoffset', 'yoffset', 'border', 'highlight']
+  for key in ['xoffset', 'yoffset', 'border', 'highlight', 'relative']
     if has_key(a:opts, key)
       call remove(create_opts, key)
     endif
   endfor
 
+  if relative && has('nvim')
+    let create_opts.relative = 'win'
+  endif
+
   " Use current window size for positioning relatively positioned popups
-  let columns = has_key(a:opts, 'relative') ? winwidth(0) : &columns
-  let lines = has_key(a:opts, 'relative') ? winheight(0) : &lines
+  let columns = relative ? winwidth(0) : &columns
+  let lines = relative ? winheight(0) : &lines
 
   " Size and position
   let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(columns * a:opts.width)]), columns])
