@@ -59,6 +59,8 @@ __fzf_history__() {
   fi
 }
 
+FZF_CTRL_T_KEY=${FZF_CTRL_T_KEY:-'\C-t'}
+
 # Required to refresh the prompt after fzf
 bind -m emacs-standard '"\er": redraw-current-line'
 
@@ -68,9 +70,9 @@ bind -m emacs-standard '"\C-z": vi-editing-mode'
 
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
   # CTRL-T - Paste the selected file path into the command line
-  bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
-  bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
-  bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
+  bind -m emacs-standard '"'$FZF_CTRL_T_KEY'": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
+  bind -m vi-command '"'$FZF_CTRL_T_KEY'": "\C-z\C-t\C-z"'
+  bind -m vi-insert '"'$FZF_CTRL_T_KEY'": "\C-z\C-t\C-z"'
 
   # CTRL-R - Paste the selected command from history into the command line
   bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u"$(__fzf_history__)"\e\C-e\er"'
@@ -78,9 +80,9 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
   bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
 else
   # CTRL-T - Paste the selected file path into the command line
-  bind -m emacs-standard -x '"\C-t": fzf-file-widget'
-  bind -m vi-command -x '"\C-t": fzf-file-widget'
-  bind -m vi-insert -x '"\C-t": fzf-file-widget'
+  bind -m emacs-standard -x '"'$FZF_CTRL_T_KEY'": fzf-file-widget'
+  bind -m vi-command -x '"'$FZF_CTRL_T_KEY'": fzf-file-widget'
+  bind -m vi-insert -x '"'$FZF_CTRL_T_KEY'": fzf-file-widget'
 
   # CTRL-R - Paste the selected command from history into the command line
   bind -m emacs-standard -x '"\C-r": __fzf_history__'
