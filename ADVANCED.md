@@ -132,10 +132,9 @@ fzf-tmux -u30%
 
 #### Popup window support
 
-But here's the really cool part; tmux 3.2 (stable version is not yet released
-as of now) supports popup windows. So if you have tmux built from the latest
-source, you can open fzf in a popup window, which is quite useful if you
-frequently use split panes.
+But here's the really cool part; tmux 3.2 added support for popup windows. So
+you can open fzf in a popup window, which is quite useful if you frequently
+use split panes.
 
 ```sh
 # Open tmux in a tmux popup window (default size: 50% of the screen)
