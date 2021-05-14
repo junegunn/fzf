@@ -5,7 +5,6 @@ package tui
 import (
 	"os"
 	"time"
-	"unicode/utf8"
 
 	"runtime"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/gdamore/tcell/encoding"
 
 	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
 func HasFullscreenRenderer() bool {
@@ -482,7 +482,6 @@ func (w *TcellWindow) Print(text string) {
 }
 
 func (w *TcellWindow) printString(text string, pair ColorPair) {
-	t := text
 	lx := 0
 	a := pair.Attr()
 
@@ -496,33 +495,28 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 			Dim(a&Attr(tcell.AttrDim) != 0)
 	}
 
-	for {
-		if len(t) == 0 {
-			break
-		}
-		r, size := utf8.DecodeRuneInString(t)
-		t = t[size:]
+	gr := uniseg.NewGraphemes(text)
+	for gr.Next() {
+		rs := gr.Runes()
 
-		if r < rune(' ') { // ignore control characters
-			continue
-		}
-
-		if r == '\n' {
-			w.lastY++
-			lx = 0
-		} else {
-
-			if r == '\u000D' { // skip carriage return
+		if len(rs) == 1 {
+			r := rs[0]
+			if r < rune(' ') { // ignore control characters
+				continue
+			} else if r == '\n' {
+				w.lastY++
+				lx = 0
+				continue
+			} else if r == '\u000D' { // skip carriage return
 				continue
 			}
-
-			var xPos = w.left + w.lastX + lx
-			var yPos = w.top + w.lastY
-			if xPos < (w.left+w.width) && yPos < (w.top+w.height) {
-				_screen.SetContent(xPos, yPos, r, nil, style)
-			}
-			lx += runewidth.RuneWidth(r)
 		}
+		var xPos = w.left + w.lastX + lx
+		var yPos = w.top + w.lastY
+		if xPos < (w.left+w.width) && yPos < (w.top+w.height) {
+			_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
+		}
+		lx += runewidth.StringWidth(string(rs))
 	}
 	w.lastX += lx
 }
@@ -549,30 +543,32 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Underline(a&Attr(tcell.AttrUnderline) != 0).
 		Italic(a&Attr(tcell.AttrItalic) != 0)
 
-	for _, r := range text {
-		if r == '\n' {
+	gr := uniseg.NewGraphemes(text)
+	for gr.Next() {
+		rs := gr.Runes()
+		if len(rs) == 1 && rs[0] == '\n' {
 			w.lastY++
 			w.lastX = 0
 			lx = 0
-		} else {
-			var xPos = w.left + w.lastX + lx
-
-			// word wrap:
-			if xPos >= (w.left + w.width) {
-				w.lastY++
-				w.lastX = 0
-				lx = 0
-				xPos = w.left
-			}
-			var yPos = w.top + w.lastY
-
-			if yPos >= (w.top + w.height) {
-				return FillSuspend
-			}
-
-			_screen.SetContent(xPos, yPos, r, nil, style)
-			lx += runewidth.RuneWidth(r)
+			continue
 		}
+
+		// word wrap:
+		xPos := w.left + w.lastX + lx
+		if xPos >= (w.left + w.width) {
+			w.lastY++
+			w.lastX = 0
+			lx = 0
+			xPos = w.left
+		}
+
+		yPos := w.top + w.lastY
+		if yPos >= (w.top + w.height) {
+			return FillSuspend
+		}
+
+		_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
+		lx += runewidth.StringWidth(string(rs))
 	}
 	w.lastX += lx
 	if w.lastX == w.width {

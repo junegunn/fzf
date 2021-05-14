@@ -1536,15 +1536,13 @@ func validateSign(sign string, signOptName string) error {
 	if sign == "" {
 		return fmt.Errorf("%v cannot be empty", signOptName)
 	}
-	widthSum := 0
 	for _, r := range sign {
 		if !unicode.IsGraphic(r) {
 			return fmt.Errorf("invalid character in %v", signOptName)
 		}
-		widthSum += runewidth.RuneWidth(r)
-		if widthSum > 2 {
-			return fmt.Errorf("%v display width should be up to 2", signOptName)
-		}
+	}
+	if runewidth.StringWidth(sign) > 2 {
+		return fmt.Errorf("%v display width should be up to 2", signOptName)
 	}
 	return nil
 }
