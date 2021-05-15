@@ -7,22 +7,29 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
-var _runeWidths = make(map[rune]int)
-
-// RuneWidth returns rune width
-func RuneWidth(r rune, prefixWidth int, tabstop int) int {
-	if r == '\t' {
-		return tabstop - prefixWidth%tabstop
-	} else if w, found := _runeWidths[r]; found {
-		return w
-	} else if r == '\n' || r == '\r' {
-		return 1
+// RunesWidth returns runes width
+func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
+	width := 0
+	gr := uniseg.NewGraphemes(string(runes))
+	idx := 0
+	for gr.Next() {
+		rs := gr.Runes()
+		var w int
+		if len(rs) == 1 && rs[0] == '\t' {
+			w = tabstop - (prefixWidth+width)%tabstop
+		} else {
+			w = runewidth.StringWidth(string(rs))
+		}
+		width += w
+		if limit > 0 && width > limit {
+			return width, idx
+		}
+		idx += len(rs)
 	}
-	w := runewidth.RuneWidth(r)
-	_runeWidths[r] = w
-	return w
+	return width, -1
 }
 
 // Max returns the largest integer
