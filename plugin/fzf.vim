@@ -465,19 +465,19 @@ try
   endif
 
   if has_key(dict, 'source')
-    let source = dict.source
+    let source = remove(dict, 'source')
     let type = type(source)
     if type == 1
-      let prefix = '( '.source.' )|'
+      let source_command = source
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
-      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
+      let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
     else
       throw 'Invalid source type'
     endif
   else
-    let prefix = ''
+    let source_command = ''
   endif
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0) || has_key(dict, 'tmux')
@@ -500,7 +500,11 @@ try
     let optstr .= ' --no-height'
   endif
   let optstr .= s:border_opt(get(dict, 'window', 0))
-  let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+  let prev_default_command = $FZF_DEFAULT_COMMAND
+  if len(source_command)
+    let $FZF_DEFAULT_COMMAND = source_command
+  endif
+  let command = (use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
     return s:execute_term(dict, command, temps)
@@ -511,6 +515,13 @@ try
   call s:callback(dict, lines)
   return lines
 finally
+  if len(source_command)
+    if len(prev_default_command)
+      let $FZF_DEFAULT_COMMAND = prev_default_command
+    else
+      unlet $FZF_DEFAULT_COMMAND
+    endif
+  endif
   let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
 endtry
 endfunction
@@ -540,8 +551,8 @@ function! s:fzf_tmux(dict)
       endif
     endfor
   endif
-  return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+  return printf('LINES=%d COLUMNS=%d %s %s - --',
+    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size)
 endfunction
 
 function! s:splittable(dict)
@@ -671,8 +682,7 @@ function! s:execute(dict, command, use_height, temps) abort
     let a:temps.shellscript = shellscript
   endif
   if a:use_height
-    let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
-    call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s %s 2> /dev/tty', &lines, command, stdin))
+    call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s < /dev/tty 2> /dev/tty', &lines, command))
   else
     execute 'silent !'.command
   endif
