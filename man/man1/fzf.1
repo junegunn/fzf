@@ -532,10 +532,12 @@ e.g.
 Start the finder with the given query
 .TP
 .B "-1, --select-1"
-Automatically select the only match
+If there is only one match for the initial query (\fB--query\fR), do not start
+interactive finder and automatically select the only match
 .TP
 .B "-0, --exit-0"
-Exit immediately when there's no match
+If there is no match for the initial query (\fB--query\fR), do not start
+interactive finder and exit immediately
 .TP
 .BI "-f, --filter=" "STR"
 Filter mode. Do not start interactive finder. When used with \fB--no-sort\fR,
