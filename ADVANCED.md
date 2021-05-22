@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2021/04/09)*
+*(Last update: 2021/05/22)*
 
 <!-- vim-markdown-toc GFM -->
 
