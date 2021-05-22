@@ -844,6 +844,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actDeleteCharEOF)
 			case "deselect":
 				appendAction(actDeselect)
+			case "deselect-last":
+				appendAction(actDeselectLast)
 			case "end-of-line":
 				appendAction(actEndOfLine)
 			case "cancel":
