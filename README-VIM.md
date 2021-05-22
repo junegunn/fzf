@@ -399,15 +399,41 @@ Tips
 
 ### fzf inside terminal buffer
 
-The latest versions of Vim and Neovim include builtin terminal emulator
-(`:terminal`) and fzf will start in a terminal buffer in the following cases:
+On the latest versions of Vim and Neovim, fzf will start in a terminal buffer.
+If you find the default ANSI colors to be different, consider configuring the
+colors using `g:terminal_ansi_colors` in regular Vim or `g:terminal_color_x`
+in Neovim.
 
-- On Neovim
-- On GVim
-- On Terminal Vim with a non-default layout
-    - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
+```vim
+" Terminal colors for seoul256 color scheme
+if has('nvim')
+  let g:terminal_color_0 = '#4e4e4e'
+  let g:terminal_color_1 = '#d68787'
+  let g:terminal_color_2 = '#5f865f'
+  let g:terminal_color_3 = '#d8af5f'
+  let g:terminal_color_4 = '#85add4'
+  let g:terminal_color_5 = '#d7afaf'
+  let g:terminal_color_6 = '#87afaf'
+  let g:terminal_color_7 = '#d0d0d0'
+  let g:terminal_color_8 = '#626262'
+  let g:terminal_color_9 = '#d75f87'
+  let g:terminal_color_10 = '#87af87'
+  let g:terminal_color_11 = '#ffd787'
+  let g:terminal_color_12 = '#add4fb'
+  let g:terminal_color_13 = '#ffafaf'
+  let g:terminal_color_14 = '#87d7d7'
+  let g:terminal_color_15 = '#e4e4e4'
+else
+  let g:terminal_ansi_colors = [
+    \ '#4e4e4e', '#d68787', '#5f865f', '#d8af5f',
+    \ '#85add4', '#d7afaf', '#87afaf', '#d0d0d0',
+    \ '#626262', '#d75f87', '#87af87', '#ffd787',
+    \ '#add4fb', '#ffafaf', '#87d7d7', '#e4e4e4'
+  \ ]
+endif
+```
 
-#### Starting fzf in a popup window
+### Starting fzf in a popup window
 
 ```vim
 " Required:
@@ -435,21 +461,21 @@ else
 endif
 ```
 
-#### Hide statusline
+### Hide statusline
 
 When fzf starts in a terminal buffer, the file type of the buffer is set to
 `fzf`. So you can set up `FileType fzf` autocmd to customize the settings of
 the window.
 
-For example, if you use a non-popup layout (e.g. `{'down': '40%'}`) on Neovim,
-you might want to temporarily disable the statusline for a cleaner look.
+For example, if you open fzf on the bottom on the screen (e.g. `{'down':
+'40%'}`), you might want to temporarily disable the statusline for a cleaner
+look.
 
 ```vim
-if has('nvim') && !exists('g:fzf_layout')
-  autocmd! FileType fzf
-  autocmd  FileType fzf set laststatus=0 noshowmode noruler
-    \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
-endif
+let g:fzf_layout = { 'down': '30%' }
+autocmd! FileType fzf
+autocmd  FileType fzf set laststatus=0 noshowmode noruler
+  \| autocmd BufLeave <buffer> set laststatus=2 showmode ruler
 ```
 
 [License](LICENSE)

@@ -465,19 +465,19 @@ try
   endif
 
   if has_key(dict, 'source')
-    let source = dict.source
+    let source = remove(dict, 'source')
     let type = type(source)
     if type == 1
-      let prefix = '( '.source.' )|'
+      let source_command = source
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call writefile(source, temps.input)
-      let prefix = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input).'|'
+      let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
     else
       throw 'Invalid source type'
     endif
   else
-    let prefix = ''
+    let source_command = ''
   endif
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0) || has_key(dict, 'tmux')
@@ -487,20 +487,24 @@ try
   let has_vim8_term = has('terminal') && has('patch-8.0.995')
   let has_nvim_term = has('nvim-0.2.1') || has('nvim') && !s:is_win
   let use_term = has_nvim_term ||
-    \ has_vim8_term && !has('win32unix') && (has('gui_running') || s:is_win || !use_height && s:present(dict, 'down', 'up', 'left', 'right', 'window'))
+    \ has_vim8_term && !has('win32unix') && (has('gui_running') || s:is_win || s:present(dict, 'down', 'up', 'left', 'right', 'window'))
   let use_tmux = (has_key(dict, 'tmux') || (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:splittable(dict)) && s:tmux_enabled()
   if prefer_tmux && use_tmux
     let use_height = 0
     let use_term = 0
   endif
-  if use_height
+  if use_term
+    let optstr .= ' --no-height'
+  elseif use_height
     let height = s:calc_size(&lines, dict.down, dict)
     let optstr .= ' --height='.height
-  elseif use_term
-    let optstr .= ' --no-height'
   endif
   let optstr .= s:border_opt(get(dict, 'window', 0))
-  let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
+  let prev_default_command = $FZF_DEFAULT_COMMAND
+  if len(source_command)
+    let $FZF_DEFAULT_COMMAND = source_command
+  endif
+  let command = (use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
     return s:execute_term(dict, command, temps)
@@ -511,6 +515,13 @@ try
   call s:callback(dict, lines)
   return lines
 finally
+  if len(source_command)
+    if len(prev_default_command)
+      let $FZF_DEFAULT_COMMAND = prev_default_command
+    else
+      execute 'unlet $FZF_DEFAULT_COMMAND'
+    endif
+  endif
   let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
 endtry
 endfunction
@@ -540,8 +551,8 @@ function! s:fzf_tmux(dict)
       endif
     endfor
   endif
-  return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+  return printf('LINES=%d COLUMNS=%d %s %s - --',
+    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size)
 endfunction
 
 function! s:splittable(dict)
@@ -671,8 +682,7 @@ function! s:execute(dict, command, use_height, temps) abort
     let a:temps.shellscript = shellscript
   endif
   if a:use_height
-    let stdin = has_key(a:dict, 'source') ? '' : '< /dev/tty'
-    call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s %s 2> /dev/tty', &lines, command, stdin))
+    call system(printf('tput cup %d > /dev/tty; tput cnorm > /dev/tty; %s < /dev/tty 2> /dev/tty', &lines, command))
   else
     execute 'silent !'.command
   endif
