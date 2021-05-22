@@ -748,7 +748,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]action, str string) {
@@ -762,6 +762,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 			prefix = symbol + "reload"
 		} else if strings.HasPrefix(src[1:], "preview") {
 			prefix = symbol + "preview"
+		} else if strings.HasPrefix(src[1:], "unbind") {
+			prefix = symbol + "unbind"
 		} else if strings.HasPrefix(src[1:], "change-prompt") {
 			prefix = symbol + "change-prompt"
 		} else if src[len(prefix)] == '-' {
@@ -957,6 +959,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("preview")
 					case actChangePrompt:
 						offset = len("change-prompt")
+					case actUnbind:
+						offset = len("unbind")
 					case actExecuteSilent:
 						offset = len("execute-silent")
 					case actExecuteMulti:
@@ -964,15 +968,21 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					default:
 						offset = len("execute")
 					}
+					var actionArg string
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, action{t: t, a: spec[offset+1:]})
+							actionArg = spec[offset+1:]
+							actions = append(actions, action{t: t, a: actionArg})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, action{t: t, a: spec[offset+1 : len(spec)-1]})
+						actionArg = spec[offset+1 : len(spec)-1]
+						actions = append(actions, action{t: t, a: actionArg})
+					}
+					if t == actUnbind {
+						parseKeyChords(actionArg, "unbind target required")
 					}
 				}
 			}
@@ -994,6 +1004,8 @@ func isExecuteAction(str string) actionType {
 	switch prefix {
 	case "reload":
 		return actReload
+	case "unbind":
+		return actUnbind
 	case "preview":
 		return actPreview
 	case "change-prompt":
