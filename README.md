@@ -121,6 +121,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | Nix             | NixOS, etc.             | `nix-env -iA nixpkgs.fzf`          |
 | Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
+| pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
