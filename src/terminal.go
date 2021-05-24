@@ -284,6 +284,7 @@ const (
 	actEnableSearch
 	actSelect
 	actDeselect
+	actUnbind
 )
 
 type placeholderFlags struct {
@@ -2656,6 +2657,11 @@ func (t *Terminal) Loop() {
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
+				}
+			case actUnbind:
+				keys := parseKeyChords(a.a, "PANIC")
+				for key := range keys {
+					delete(t.keymap, key)
 				}
 			}
 			return true

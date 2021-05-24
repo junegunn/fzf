@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2021/04/09)*
+*(Last update: 2021/05/22)*
 
 <!-- vim-markdown-toc GFM -->
 
@@ -16,6 +16,7 @@ Advanced fzf examples
 * [Ripgrep integration](#ripgrep-integration)
   * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
   * [Using fzf as interative Ripgrep launcher](#using-fzf-as-interative-ripgrep-launcher)
+  * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
   * [Files listed in `git status`](#files-listed-in-git-status)
@@ -353,6 +354,56 @@ IFS=: read -ra selected < <(
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
   reduce the number of intermediate Ripgrep processes while we're typing in
   a query.
+
+### Switching to fzf-only search mode
+
+*(Requires fzf 0.27.1 or above)*
+
+In the previous example, we lost fuzzy matching capability as we completely
+delegated search functionality to Ripgrep. But we can dynamically switch to
+fzf-only search mode by *"unbinding"* `reload` action from `change` event.
+
+```sh
+#!/usr/bin/env bash
+
+# Two-phase filtering with Ripgrep and fzf
+#
+# 1. Search for text in files using Ripgrep
+# 2. Interactively restart Ripgrep with reload action
+#    * Press alt-enter to switch to fzf-only filtering
+# 3. Open the file in Vim
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+IFS=: read -ra selected < <(
+  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
+  fzf --ansi \
+      --color "hl:-1:underline,hl+:-1:underline:reverse" \
+      --disabled --query "$INITIAL_QUERY" \
+      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+      --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+      --prompt '1. ripgrep> ' \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
+)
+[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+```
+
+* Phase 1. Filtering with Ripgrep
+![image](https://user-images.githubusercontent.com/700826/119213880-735e8a80-bafd-11eb-8493-123e4be24fbc.png)
+* Phase 2. Filtering with fzf
+![image](https://user-images.githubusercontent.com/700826/119213887-7e191f80-bafd-11eb-98c9-71a1af9d7aab.png)
+
+- We added `--prompt` option to show that fzf is initially running in "Ripgrep
+  launcher mode".
+- We added `alt-enter` binding that
+    1. unbinds `change` event, so Ripgrep is no longer restarted on key press
+    2. changes the prompt to `2. fzf>`
+    3. enables search functionality of fzf
+    4. clears the current query string that was used to start Ripgrep process
+    5. and unbinds `alt-enter` itself as this is a one-off event
+- We reverted `--color` option for customizing how the matching chunks are
+  displayed in the second phase
 
 Log tailing
 -----------
