@@ -670,6 +670,38 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 						cattr.Attr |= tui.Blink
 					case "reverse":
 						cattr.Attr |= tui.Reverse
+					case "black":
+						cattr.Color = tui.Color(0)
+					case "red":
+						cattr.Color = tui.Color(1)
+					case "green":
+						cattr.Color = tui.Color(2)
+					case "yellow":
+						cattr.Color = tui.Color(3)
+					case "blue":
+						cattr.Color = tui.Color(4)
+					case "magenta":
+						cattr.Color = tui.Color(5)
+					case "cyan":
+						cattr.Color = tui.Color(6)
+					case "white":
+						cattr.Color = tui.Color(7)
+					case "bright-black", "gray", "grey":
+						cattr.Color = tui.Color(8)
+					case "bright-red":
+						cattr.Color = tui.Color(9)
+					case "bright-green":
+						cattr.Color = tui.Color(10)
+					case "bright-yellow":
+						cattr.Color = tui.Color(11)
+					case "bright-blue":
+						cattr.Color = tui.Color(12)
+					case "bright-magenta":
+						cattr.Color = tui.Color(13)
+					case "bright-cyan":
+						cattr.Color = tui.Color(14)
+					case "bright-white":
+						cattr.Color = tui.Color(15)
 					case "":
 					default:
 						if rrggbb.MatchString(component) {

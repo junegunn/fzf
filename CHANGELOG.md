@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.27.2
+------
+- 16 base ANSI colors can be specified by their names
+  ```sh
+  fzf --color fg:3,fg+:11
+  fzf --color fg:yellow,fg+:bright-yellow
+  ```
+
 0.27.1
 ------
 - Added `unbind` action. In the following Ripgrep launcher example, you can
