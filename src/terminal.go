@@ -1519,22 +1519,6 @@ func keyMatch(key tui.Event, event tui.Event) bool {
 		key.Type == tui.DoubleClick && event.Type == tui.Mouse && event.MouseEvent.Double
 }
 
-func quoteEntryCmd(entry string) string {
-	escaped := strings.Replace(entry, `\`, `\\`, -1)
-	escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
-	r, _ := regexp.Compile(`[&|<>()@^%!"]`)
-	return r.ReplaceAllStringFunc(escaped, func(match string) string {
-		return "^" + match
-	})
-}
-
-func quoteEntry(entry string) string {
-	if util.IsWindows() {
-		return quoteEntryCmd(entry)
-	}
-	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
-}
-
 func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	flags := placeholderFlags{}
 
@@ -1656,7 +1640,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 
 		// Current query
 		if match == "{q}" {
-			return quoteEntry(query)
+			return util.QuoteShellEntry(query)
 		}
 
 		items := current
@@ -1678,7 +1662,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 				} else if flags.file {
 					replacements[idx] = item.AsString(stripAnsi)
 				} else {
-					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
+					replacements[idx] = util.QuoteShellEntry(item.AsString(stripAnsi))
 				}
 			}
 			if flags.file {
@@ -1714,7 +1698,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 				str = strings.TrimSpace(str)
 			}
 			if !flags.file {
-				str = quoteEntry(str)
+				str = util.QuoteShellEntry(str)
 			}
 			replacements[idx] = str
 		}
