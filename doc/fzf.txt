@@ -300,7 +300,7 @@ The following table summarizes the available options.
   `source`                    | list          | Vim list as input to fzf
   `sink`                      | string        | Vim command to handle the selected item (e.g.  `e` ,  `tabe` )
   `sink`                      | funcref       | Reference to function to process each selected item
-  `sink*`                     | funcref       | Similar to  `sink` , but takes the list of output lines at once
+  `sinklist`  (or  `sink*` )    | funcref       | Similar to  `sink` , but takes the list of output lines at once
   `options`                   | string/list   | Options to fzf
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | (Layout) Window position and size (e.g.  `20` ,  `50%` )

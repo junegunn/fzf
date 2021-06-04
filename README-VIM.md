@@ -283,7 +283,7 @@ The following table summarizes the available options.
 | `source`                   | list          | Vim list as input to fzf                                              |
 | `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)            |
 | `sink`                     | funcref       | Reference to function to process each selected item                   |
-| `sink*`                    | funcref       | Similar to `sink`, but takes the list of output lines at once         |
+| `sinklist` (or `sink*`)    | funcref       | Similar to `sink`, but takes the list of output lines at once         |
 | `options`                  | string/list   | Options to fzf                                                        |
 | `dir`                      | string        | Working directory                                                     |
 | `up`/`down`/`left`/`right` | number/string | (Layout) Window position and size (e.g. `20`, `50%`)                  |
@@ -387,7 +387,7 @@ command! -bang -complete=dir -nargs=? LS
 
 - `g:fzf_layout`
 - `g:fzf_action`
-    - **Works only when no custom `sink` (or `sink*`) is provided**
+    - **Works only when no custom `sink` (or `sinklist`) is provided**
         - Having custom sink usually means that each entry is not an ordinary
           file path (e.g. name of color scheme), so we can't blindly apply the
           same strategy (i.e. `tabedit some-color-scheme` doesn't make sense)
