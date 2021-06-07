@@ -1,6 +1,22 @@
 CHANGELOG
 =========
 
+0.27.3
+------
+- Preview window is `hidden` by default when there are `preview` bindings but
+  `--preview` command is not given
+- Vim plugin
+    - `sinklist` is added as a synonym to `sink*` so that it's easier to add
+      a function to a spec dictionary
+      ```vim
+      let spec = { 'source': 'ls', 'options': ['--multi', '--preview', 'cat {}'] }
+      function spec.sinklist(matches)
+        echom string(a:matches)
+      endfunction
+
+      call fzf#run(fzf#wrap(spec))
+      ```
+
 0.27.2
 ------
 - 16 base ANSI colors can be specified by their names
