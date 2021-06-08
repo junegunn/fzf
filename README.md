@@ -125,6 +125,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
+| MPS             | Milis Linux             | `sudo mps kur fzf`                 |
 
 > :warning: **Key bindings (CTRL-T / CTRL-R / ALT-C) and fuzzy auto-completion
 > may not be enabled by default.**
