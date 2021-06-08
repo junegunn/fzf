@@ -218,6 +218,7 @@ const (
 	actAbort
 	actAccept
 	actAcceptNonEmpty
+	actAcceptOne
 	actBackwardChar
 	actBackwardDeleteChar
 	actBackwardDeleteCharEOF
@@ -2476,6 +2477,11 @@ func (t *Terminal) Loop() {
 				req(reqClose)
 			case actAcceptNonEmpty:
 				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
+					req(reqClose)
+				}
+			case actAcceptOne:
+				if t.merger.Length() == 1 && t.cy < t.merger.Length() {
+					t.selectItem(t.merger.Get(t.cy).item)
 					req(reqClose)
 				}
 			case actClearScreen:
