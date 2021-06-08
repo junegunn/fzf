@@ -59,6 +59,20 @@ __fzfcmd() {
     echo "fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- " || echo "fzf"
 }
 
+fzf_binding() {
+  local -A default
+  default=(
+    file '^T'
+    cd '\ec'
+    history '^R'
+  )
+  local binding
+  if ! zstyle -s ':fzf:bindings' "$1" binding; then
+    binding="${default[$1]}"
+  fi
+  echo -n "$binding"
+}
+
 fzf-file-widget() {
   LBUFFER="${LBUFFER}$(__fsel)"
   local ret=$?
@@ -66,7 +80,7 @@ fzf-file-widget() {
   return $ret
 }
 zle     -N   fzf-file-widget
-bindkey '^T' fzf-file-widget
+bindkey "$(fzf_binding file)" fzf-file-widget
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
@@ -87,7 +101,7 @@ fzf-cd-widget() {
   return $ret
 }
 zle     -N    fzf-cd-widget
-bindkey '\ec' fzf-cd-widget
+bindkey "$(fzf_binding cd)" fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
@@ -105,8 +119,11 @@ fzf-history-widget() {
   zle reset-prompt
   return $ret
 }
+
 zle     -N   fzf-history-widget
-bindkey '^R' fzf-history-widget
+bindkey "$(fzf_binding history)" fzf-history-widget
+
+unset -f fzf_binding
 
 } always {
   eval $__fzf_key_bindings_options
