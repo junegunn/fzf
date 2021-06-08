@@ -117,6 +117,7 @@ type Terminal struct {
 	keymap       map[tui.Event][]action
 	pressed      string
 	printQuery   bool
+	printSelectedCount   bool
 	history      *History
 	cycle        bool
 	header       []string
@@ -498,6 +499,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		keymap:      opts.Keymap,
 		pressed:     "",
 		printQuery:  opts.PrintQuery,
+		printSelectedCount:  opts.PrintSelectedCount,
 		history:     opts.History,
 		margin:      opts.Margin,
 		padding:     opts.Padding,
@@ -652,7 +654,11 @@ func (t *Terminal) output() bool {
 	if len(t.expect) > 0 {
 		t.printer(t.pressed)
 	}
-	found := len(t.selected) > 0
+  selectedCount := len(t.selected)
+  if t.printSelectedCount {
+    t.printer(strconv.Itoa(selectedCount))
+  }
+	found := selectedCount > 0
 	if !found {
 		current := t.currentItem()
 		if current != nil {
