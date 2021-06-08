@@ -4,10 +4,11 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.zsh
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_OPTS          (default: '-d 40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                        (default: 0)
+# - $FZF_TMUX_OPTS                   (default: '-d 40%')
+# - $FZF_COMPLETION_TRIGGER          (default: '**')
+# - $FZF_PER_CMD_COMPLETION_TRIGGERS (default: (kill ""))
+# - $FZF_COMPLETION_OPTS             (default: empty)
 
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
@@ -92,6 +93,11 @@ if ! declare -f _fzf_compgen_dir > /dev/null; then
       -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
       -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
   }
+fi
+
+if (( ! ${+FZF_PER_CMD_COMPLETION_TRIGGERS} )); then
+  declare -A FZF_PER_CMD_COMPLETION_TRIGGERS
+  FZF_PER_CMD_COMPLETION_TRIGGERS[kill]=''
 fi
 
 ###########################################################
@@ -273,8 +279,11 @@ fzf-completion() {
 
   cmd=$(__fzf_extract_command "$LBUFFER")
 
+  # Use a per-command completion trigger if available. Otherwise, fall
+  # back to $FZF_COMPLETION_TRIGGER.
+  trigger=${FZF_PER_CMD_COMPLETION_TRIGGERS[$cmd]-${FZF_COMPLETION_TRIGGER-'**'}}
+
   # Explicitly allow for empty trigger.
-  trigger=${FZF_COMPLETION_TRIGGER-'**'}
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
   # When the trigger starts with ';', it becomes a separate token
@@ -285,12 +294,6 @@ fzf-completion() {
 
   lbuf=$LBUFFER
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
-  # Kill completion (do not require trigger sequence)
-  if [ "$cmd" = kill -a ${LBUFFER[-1]} = ' ' ]; then
-    tail=$trigger
-    tokens+=$trigger
-    lbuf="$lbuf$trigger"
-  fi
 
   # Trigger sequence given
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
