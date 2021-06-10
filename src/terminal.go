@@ -425,6 +425,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delay = initialDelay
 	}
 	var previewBox *util.EventBox
+	showPreviewWindow := len(opts.Preview.command) > 0 && !opts.Preview.hidden
 	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) {
 		previewBox = util.NewEventBox()
 	}
@@ -521,7 +522,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		selected:    make(map[int32]selectedItem),
 		reqBox:      util.NewEventBox(),
 		previewOpts: opts.Preview,
-		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, false, ""},
+		previewer:   previewer{0, []string{}, 0, showPreviewWindow, false, true, false, ""},
 		previewed:   previewed{0, 0, 0, false},
 		previewBox:  previewBox,
 		eventBox:    eventBox,
