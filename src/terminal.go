@@ -257,6 +257,7 @@ const (
 	actPrintQuery
 	actRefreshPreview
 	actReplaceQuery
+        actAppendQuery
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
@@ -2358,6 +2359,12 @@ func (t *Terminal) Loop() {
 					t.input = current.text.ToRunes()
 					t.cx = len(t.input)
 				}
+                        case actAppendQuery:
+                        current := t.currentItem()
+                        if current != nil {
+                            t.input = append(t.input, current.text.ToRunes()...)
+                            t.cx = len(t.input)
+                        }
 			case actAbort:
 				req(reqQuit)
 			case actDeleteChar:
