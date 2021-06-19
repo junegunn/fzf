@@ -670,6 +670,38 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 						cattr.Attr |= tui.Blink
 					case "reverse":
 						cattr.Attr |= tui.Reverse
+					case "black":
+						cattr.Color = tui.Color(0)
+					case "red":
+						cattr.Color = tui.Color(1)
+					case "green":
+						cattr.Color = tui.Color(2)
+					case "yellow":
+						cattr.Color = tui.Color(3)
+					case "blue":
+						cattr.Color = tui.Color(4)
+					case "magenta":
+						cattr.Color = tui.Color(5)
+					case "cyan":
+						cattr.Color = tui.Color(6)
+					case "white":
+						cattr.Color = tui.Color(7)
+					case "bright-black", "gray", "grey":
+						cattr.Color = tui.Color(8)
+					case "bright-red":
+						cattr.Color = tui.Color(9)
+					case "bright-green":
+						cattr.Color = tui.Color(10)
+					case "bright-yellow":
+						cattr.Color = tui.Color(11)
+					case "bright-blue":
+						cattr.Color = tui.Color(12)
+					case "bright-magenta":
+						cattr.Color = tui.Color(13)
+					case "bright-cyan":
+						cattr.Color = tui.Color(14)
+					case "bright-white":
+						cattr.Color = tui.Color(15)
 					case "":
 					default:
 						if rrggbb.MatchString(component) {
@@ -748,7 +780,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]action, str string) {
@@ -762,6 +794,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 			prefix = symbol + "reload"
 		} else if strings.HasPrefix(src[1:], "preview") {
 			prefix = symbol + "preview"
+		} else if strings.HasPrefix(src[1:], "unbind") {
+			prefix = symbol + "unbind"
 		} else if strings.HasPrefix(src[1:], "change-prompt") {
 			prefix = symbol + "change-prompt"
 		} else if src[len(prefix)] == '-' {
@@ -959,6 +993,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("preview")
 					case actChangePrompt:
 						offset = len("change-prompt")
+					case actUnbind:
+						offset = len("unbind")
 					case actExecuteSilent:
 						offset = len("execute-silent")
 					case actExecuteMulti:
@@ -966,15 +1002,21 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					default:
 						offset = len("execute")
 					}
+					var actionArg string
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
-							actions = append(actions, action{t: t, a: spec[offset+1:]})
+							actionArg = spec[offset+1:]
+							actions = append(actions, action{t: t, a: actionArg})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
-						actions = append(actions, action{t: t, a: spec[offset+1 : len(spec)-1]})
+						actionArg = spec[offset+1 : len(spec)-1]
+						actions = append(actions, action{t: t, a: actionArg})
+					}
+					if t == actUnbind {
+						parseKeyChords(actionArg, "unbind target required")
 					}
 				}
 			}
@@ -996,6 +1038,8 @@ func isExecuteAction(str string) actionType {
 	switch prefix {
 	case "reload":
 		return actReload
+	case "unbind":
+		return actUnbind
 	case "preview":
 		return actPreview
 	case "change-prompt":
@@ -1538,15 +1582,13 @@ func validateSign(sign string, signOptName string) error {
 	if sign == "" {
 		return fmt.Errorf("%v cannot be empty", signOptName)
 	}
-	widthSum := 0
 	for _, r := range sign {
 		if !unicode.IsGraphic(r) {
 			return fmt.Errorf("invalid character in %v", signOptName)
 		}
-		widthSum += runewidth.RuneWidth(r)
-		if widthSum > 2 {
-			return fmt.Errorf("%v display width should be up to 2", signOptName)
-		}
+	}
+	if runewidth.StringWidth(sign) > 2 {
+		return fmt.Errorf("%v display width should be up to 2", signOptName)
 	}
 	return nil
 }

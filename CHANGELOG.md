@@ -1,6 +1,47 @@
 CHANGELOG
 =========
 
+0.27.3
+------
+- Preview window is `hidden` by default when there are `preview` bindings but
+  `--preview` command is not given
+- Vim plugin
+    - `sinklist` is added as a synonym to `sink*` so that it's easier to add
+      a function to a spec dictionary
+      ```vim
+      let spec = { 'source': 'ls', 'options': ['--multi', '--preview', 'cat {}'] }
+      function spec.sinklist(matches)
+        echom string(a:matches)
+      endfunction
+
+      call fzf#run(fzf#wrap(spec))
+      ```
+
+0.27.2
+------
+- 16 base ANSI colors can be specified by their names
+  ```sh
+  fzf --color fg:3,fg+:11
+  fzf --color fg:yellow,fg+:bright-yellow
+  ```
+- Fix bug where `--read0` not properly displaying long lines
+
+0.27.1
+------
+- Added `unbind` action. In the following Ripgrep launcher example, you can
+  use `unbind(reload)` to switch to fzf-only filtering mode.
+    - See https://github.com/junegunn/fzf/blob/master/ADVANCED.md#switching-to-fzf-only-search-mode
+- Vim plugin
+    - Vim plugin will stop immediately even when the source command hasn't finished
+      ```vim
+      " fzf will read the stream file while allowing other processes to append to it
+      call fzf#run({'source': 'cat /dev/null > /tmp/stream; tail -f /tmp/stream'})
+      ```
+    - It is now possible to open popup window relative to the currrent window
+      ```vim
+      let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0 } }
+      ```
+
 0.27.0
 ------
 - More border options for `--preview-window`

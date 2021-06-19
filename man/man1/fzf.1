@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2021" "fzf 0.27.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2021" "fzf 0.27.2" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -340,6 +340,22 @@ color mappings.
     \fB-1         \fRDefault terminal foreground/background color
     \fB           \fR(or the original color of the text)
     \fB0 ~ 15     \fR16 base colors
+      \fBblack\fR
+      \fBred\fR
+      \fBgreen\fR
+      \fByellow\fR
+      \fBblue\fR
+      \fBmagenta\fR
+      \fBcyan\fR
+      \fBwhite\fR
+      \fBbright-black\fR (gray | grey)
+      \fBbright-red\fR
+      \fBbright-green\fR
+      \fBbright-yellow\fR
+      \fBbright-blue\fR
+      \fBbright-magenta\fR
+      \fBbright-cyan\fR
+      \fBbright-white\fR
     \fB16 ~ 255   \fRANSI 256 colors
     \fB#rrggbb    \fR24-bit colors
 
@@ -532,10 +548,12 @@ e.g.
 Start the finder with the given query
 .TP
 .B "-1, --select-1"
-Automatically select the only match
+If there is only one match for the initial query (\fB--query\fR), do not start
+interactive finder and automatically select the only match
 .TP
 .B "-0, --exit-0"
-Exit immediately when there's no match
+If there is no match for the initial query (\fB--query\fR), do not start
+interactive finder and exit immediately
 .TP
 .BI "-f, --filter=" "STR"
 Filter mode. Do not start interactive finder. When used with \fB--no-sort\fR,
@@ -850,6 +868,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-search\fR             (toggle search functionality)
     \fBtoggle-sort\fR
     \fBtoggle+up\fR                 \fIbtab    (shift-tab)\fR
+    \fBunbind(...)\fR               (unbind bindings)
     \fBunix-line-discard\fR         \fIctrl-u\fR
     \fBunix-word-rubout\fR          \fIctrl-w\fR
     \fBup\fR                        \fIctrl-k  ctrl-p  up\fR

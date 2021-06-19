@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,6 +13,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
@@ -283,6 +285,7 @@ const (
 	actEnableSearch
 	actSelect
 	actDeselect
+	actUnbind
 )
 
 type placeholderFlags struct {
@@ -423,6 +426,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delay = initialDelay
 	}
 	var previewBox *util.EventBox
+	showPreviewWindow := len(opts.Preview.command) > 0 && !opts.Preview.hidden
 	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) {
 		previewBox = util.NewEventBox()
 	}
@@ -519,7 +523,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		selected:    make(map[int32]selectedItem),
 		reqBox:      util.NewEventBox(),
 		previewOpts: opts.Preview,
-		previewer:   previewer{0, []string{}, 0, previewBox != nil && !opts.Preview.hidden, false, true, false, ""},
+		previewer:   previewer{0, []string{}, 0, showPreviewWindow, false, true, false, ""},
 		previewed:   previewed{0, 0, 0, false},
 		previewBox:  previewBox,
 		eventBox:    eventBox,
@@ -674,11 +678,8 @@ func (t *Terminal) sortSelected() []selectedItem {
 }
 
 func (t *Terminal) displayWidth(runes []rune) int {
-	l := 0
-	for _, r := range runes {
-		l += util.RuneWidth(r, l, t.tabstop)
-	}
-	return l
+	width, _ := util.RunesWidth(runes, 0, t.tabstop, 0)
+	return width
 }
 
 const (
@@ -1142,28 +1143,18 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	t.prevLines[i] = newLine
 }
 
-func (t *Terminal) trimRight(runes []rune, width int) ([]rune, int) {
+func (t *Terminal) trimRight(runes []rune, width int) ([]rune, bool) {
 	// We start from the beginning to handle tab characters
-	l := 0
-	for idx, r := range runes {
-		l += util.RuneWidth(r, l, t.tabstop)
-		if l > width {
-			return runes[:idx], len(runes) - idx
-		}
+	width, overflowIdx := util.RunesWidth(runes, 0, t.tabstop, width)
+	if overflowIdx >= 0 {
+		return runes[:overflowIdx], true
 	}
-	return runes, 0
+	return runes, false
 }
 
 func (t *Terminal) displayWidthWithLimit(runes []rune, prefixWidth int, limit int) int {
-	l := 0
-	for _, r := range runes {
-		l += util.RuneWidth(r, l+prefixWidth, t.tabstop)
-		if l > limit {
-			// Early exit
-			return l
-		}
-	}
-	return l
+	width, _ := util.RunesWidth(runes, prefixWidth, t.tabstop, limit)
+	return width
 }
 
 func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
@@ -1363,9 +1354,9 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
-				trimmedLen := 0
+				isTrimmed := false
 				if !t.previewOpts.wrap {
-					trimmed, trimmedLen = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+					trimmed, isTrimmed = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				prefixWidth += width
@@ -1375,7 +1366,7 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 				} else {
 					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
 				}
-				return trimmedLen == 0 &&
+				return !isTrimmed &&
 					(fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine)
 			})
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
@@ -1431,16 +1422,21 @@ func (t *Terminal) printPreviewDelayed() {
 }
 
 func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
-	var strbuf bytes.Buffer
+	var strbuf strings.Builder
 	l := prefixWidth
-	for _, r := range runes {
-		w := util.RuneWidth(r, l, t.tabstop)
-		l += w
-		if r == '\t' {
+	gr := uniseg.NewGraphemes(string(runes))
+	for gr.Next() {
+		rs := gr.Runes()
+		str := string(rs)
+		var w int
+		if len(rs) == 1 && rs[0] == '\t' {
+			w = t.tabstop - l%t.tabstop
 			strbuf.WriteString(strings.Repeat(" ", w))
 		} else {
-			strbuf.WriteRune(r)
+			w = runewidth.StringWidth(str)
+			strbuf.WriteString(str)
 		}
+		l += w
 	}
 	return strbuf.String(), l
 }
@@ -2669,6 +2665,11 @@ func (t *Terminal) Loop() {
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
+				}
+			case actUnbind:
+				keys := parseKeyChords(a.a, "PANIC")
+				for key := range keys {
+					delete(t.keymap, key)
 				}
 			}
 			return true

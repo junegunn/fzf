@@ -2042,6 +2042,17 @@ class TestGoFZF < TestBase
     tmux.send_keys 'C-K'
     tmux.until { |lines| assert_equal(%w[1 2 3 4 5], top5[lines]) }
   end
+
+  def test_unbind
+    tmux.send_keys "seq 100 | #{FZF} --bind 'c:clear-query,d:unbind(c,d)'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys 'ab'
+    tmux.until { |lines| assert_equal '> ab', lines[-1] }
+    tmux.send_keys 'c'
+    tmux.until { |lines| assert_equal '>', lines[-1] }
+    tmux.send_keys 'dabcd'
+    tmux.until { |lines| assert_equal '> abcd', lines[-1] }
+  end
 end
 
 module TestShell
