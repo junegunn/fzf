@@ -131,6 +131,9 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 >
 > Refer to the package documentation for more information. (e.g. `apt-cache show fzf`)
 
+> :warning: If installing via Aptitude, the package may be an old version. If you are
+> getting runtime errors, try installing latest with git cloning instructions.
+
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
