@@ -218,6 +218,7 @@ const (
 	actAbort
 	actAccept
 	actAcceptNonEmpty
+	actAppendQuery
 	actBackwardChar
 	actBackwardDeleteChar
 	actBackwardDeleteCharEOF
@@ -2477,6 +2478,12 @@ func (t *Terminal) Loop() {
 			case actAcceptNonEmpty:
 				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
 					req(reqClose)
+				}
+			case actAppendQuery:
+				current := t.currentItem()
+				if current != nil {
+					t.input = append(t.input, current.text.ToRunes()...)
+					t.cx = len(t.input)
 				}
 			case actClearScreen:
 				req(reqRedraw)
