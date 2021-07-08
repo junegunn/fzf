@@ -862,8 +862,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actRefreshPreview)
 			case "replace-query":
 				appendAction(actReplaceQuery)
-                        case "append-query":
-                                appendAction(actAppendQuery)
+			case "append-query":
+				appendAction(actAppendQuery)
 			case "backward-char":
 				appendAction(actBackwardChar)
 			case "backward-delete-char":
