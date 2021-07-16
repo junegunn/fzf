@@ -224,6 +224,7 @@ const (
 	actBackwardWord
 	actCancel
 	actChangePrompt
+	actChangeQuery
 	actClearScreen
 	actClearQuery
 	actClearSelection
@@ -1758,6 +1759,46 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	cleanTemporaryFiles()
 }
 
+func (t *Terminal) executeChangeQuery(template string) {
+	valid, list := t.buildPlusList(template, false)
+	if !valid {
+		return
+	}
+	command := t.replacePlaceholder(template, false, string(t.input), list)
+	cmd := util.ExecCommand(command, false)
+	newQuery := []rune{}
+	t.executing.Set(true)
+	cmd.Stdin = tui.TtyIn()
+	out, _ := cmd.StdoutPipe()
+	t.tui.Pause(false)
+	cmd.Stderr = cmd.Stdout
+	reader := bufio.NewReader(out)
+	err := cmd.Start()
+	if err != nil {
+		newQuery = append(newQuery, []rune(err.Error())...)
+	} else {
+		for {
+			line, err := reader.ReadString('\n')
+			newQuery = append(newQuery, []rune(line)...)
+			if err != nil {
+				break
+			}
+		}
+	}
+	err = cmd.Wait()
+	if err != nil {
+		newQuery = append(newQuery, []rune(err.Error())...)
+	}
+	if newQuery[len(newQuery)-1] == rune('\n') {
+		newQuery = newQuery[:len(newQuery)-1]
+	}
+	t.tui.Resume(false, false)
+	t.input = newQuery
+	t.cx = len(t.input)
+	t.executing.Set(false)
+	cleanTemporaryFiles()
+}
+
 func (t *Terminal) hasPreviewer() bool {
 	return t.previewBox != nil
 }
@@ -2343,6 +2384,8 @@ func (t *Terminal) Loop() {
 			case actChangePrompt:
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
+			case actChangeQuery:
+				t.executeChangeQuery(a.a)
 			case actPreview:
 				togglePreview(true)
 				refreshPreview(a.a)

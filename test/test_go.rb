@@ -1860,6 +1860,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 'b> foo', lines[-1] }
   end
 
+  def test_change_query
+    tmux.send_keys %{#{FZF} --bind 'ctrl-r:change-query(rev <<< {q}),ctrl-u:change-query: tr "[:lower:]" "[:upper:]" <<< {q}' --query bar}, :Enter
+    tmux.until { |lines| assert_equal '> bar', lines[-1] }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_equal '> rab', lines[-1] }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| assert_equal '> RAB', lines[-1] }
+  end
+
   def test_preview_window_follow
     tmux.send_keys "#{FZF} --preview 'seq 1000 | nl' --preview-window down:noborder:follow", :Enter
     tmux.until { |lines| assert_equal '1000  1000', lines[-1].strip }

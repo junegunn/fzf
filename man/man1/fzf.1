@@ -814,6 +814,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbeginning-of-line\fR         \fIctrl-a  home\fR
     \fBcancel\fR                    (clear query string if not empty, abort fzf otherwise)
     \fBchange-prompt(...)\fR        (change prompt to the given string)
+    \fBchange-query(...)\fR         (see below for the details)
     \fBclear-screen\fR              \fIctrl-l\fR
     \fBclear-selection\fR           (clear multi-selection)
     \fBclose\fR                     (close preview window if open, abort fzf otherwise)
@@ -954,6 +955,18 @@ e.g.
      FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \\
        fzf --bind "change:reload:$RG_PREFIX {q} || true" \\
            --ansi --disabled --query "$INITIAL_QUERY"\fR
+
+.SS CHANGE QUERY
+
+\fBchange-query(...)\fR action is used to dynamically update the query.
+It takes the same command template with placeholder expressions as \fBexecute(...)\fR
+
+See \fIhttps://github.com/junegunn/fzf/issues/1750\fR for more info.
+
+e.g.
+     \fB# Change the query to all files with the current query as their extension
+     ls | fzf --bind "ctrl-\\:change-query(ls *.{q} | awk '{ if (notfirst) { printf \\" | \\"; }; notfirst = 1; printf; }')" \\
+                  --header 'Press CTRL-\\ to escape double quotes in the query' \\
 
 .SS PREVIEW BINDING
 
