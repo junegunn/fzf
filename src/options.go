@@ -780,7 +780,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-query|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-query|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]action, str string) {
@@ -798,6 +798,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 			prefix = symbol + "unbind"
 		} else if strings.HasPrefix(src[1:], "change-prompt") {
 			prefix = symbol + "change-prompt"
+		} else if strings.HasPrefix(src[1:], "change-query") {
+			prefix = symbol + "change-query"
 		} else if src[len(prefix)] == '-' {
 			c := src[len(prefix)+1]
 			if c == 's' || c == 'S' {
@@ -991,6 +993,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("preview")
 					case actChangePrompt:
 						offset = len("change-prompt")
+					case actChangeQuery:
+						offset = len("change-query")
 					case actUnbind:
 						offset = len("unbind")
 					case actExecuteSilent:
@@ -1042,6 +1046,8 @@ func isExecuteAction(str string) actionType {
 		return actPreview
 	case "change-prompt":
 		return actChangePrompt
+	case "change-query":
+		return actChangeQuery
 	case "execute":
 		return actExecute
 	case "execute-silent":
