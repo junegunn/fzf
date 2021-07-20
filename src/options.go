@@ -780,7 +780,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind|bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind|bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]action, str string) {
@@ -796,6 +796,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 			prefix = symbol + "preview"
 		} else if strings.HasPrefix(src[1:], "unbind") {
 			prefix = symbol + "unbind"
+		} else if strings.HasPrefix(src[1:], "bind") {
+			prefix = symbol + "bind"
 		} else if strings.HasPrefix(src[1:], "change-prompt") {
 			prefix = symbol + "change-prompt"
 		} else if src[len(prefix)] == '-' {
@@ -993,6 +995,8 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("change-prompt")
 					case actUnbind:
 						offset = len("unbind")
+					case actBind:
+						offset = len("bind")
 					case actExecuteSilent:
 						offset = len("execute-silent")
 					case actExecuteMulti:
@@ -1015,6 +1019,11 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					}
 					if t == actUnbind {
 						parseKeyChords(actionArg, "unbind target required")
+					} else if t == actBind {
+						bindSepIndex := strings.Index(actionArg, ":")
+						if bindSepIndex == -1 {
+							errorExit("bind action requires an action")
+						}
 					}
 				}
 			}
@@ -1038,6 +1047,8 @@ func isExecuteAction(str string) actionType {
 		return actReload
 	case "unbind":
 		return actUnbind
+	case "bind":
+		return actBind
 	case "preview":
 		return actPreview
 	case "change-prompt":

@@ -285,6 +285,7 @@ const (
 	actSelect
 	actDeselect
 	actUnbind
+	actBind
 )
 
 type placeholderFlags struct {
@@ -2664,6 +2665,8 @@ func (t *Terminal) Loop() {
 				for key := range keys {
 					delete(t.keymap, key)
 				}
+			case actBind:
+				parseKeymap(t.keymap, a.a)
 			}
 			return true
 		}
