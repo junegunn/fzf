@@ -51,6 +51,9 @@ type Out struct {
 
 // FzfFilter filters choices into the chosen strings.
 // options shoud be specified in the same manner as for fzf's cli (eg. "-m -e --extended").
+// WARNING: Any problem while fzf is handling the TTY or parsing the options string will result in a call
+// to os.Exit(). There is no way to change this without refactoring a large portion of the code.
+// If you specify any options, you must be absolutely certain that they are valid.
 func FzfFilter(choices []string, options string) (chosen []string, err error) {
 	in, out := make(chan string), make(chan Out)
 	go Fzf(in, out, options)
@@ -74,6 +77,9 @@ func FzfFilter(choices []string, options string) (chosen []string, err error) {
 // This should be launched either in a goroutine, or with large enough buffered channels.
 // FzfFilter is a good example of how to use Fzf.
 // options shoud be specified in the same manner as for fzf's cli (eg. "-m -e --extended").
+// WARNING: Any problem while fzf is handling the TTY or parsing the options string will result in a call
+// to os.Exit(). There is no way to change this without refactoring a large portion of the code.
+// If you specify any options, you must be absolutely certain that they are valid.
 func Fzf(in <-chan string, out chan<- Out, options string) {
 	defer func() {
 		r := recover()
