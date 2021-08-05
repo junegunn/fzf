@@ -14,6 +14,9 @@ set rtp+=/usr/local/opt/fzf
 
 " If installed using git
 set rtp+=~/.fzf
+
+" Alternatively use `which` fzf to find the location of fzf
+execute("set rtp+=" . system("dirname $(dirname $(which fzf))"))
 ```
 
 If you use [vim-plug](https://github.com/junegunn/vim-plug), the same can be
