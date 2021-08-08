@@ -202,7 +202,7 @@ vim $(fzf)
 
 #### Using the finder
 
-- `CTRL-J` / `CTRL-K` (or `CTRL-N` / `CTRL-P`) to move cursor up and down
+- `CTRL-K` / `CTRL-J` (or `CTRL-P` / `CTRL-N`) to move cursor up and down
 - `Enter` key to select the item, `CTRL-C` / `CTRL-G` / `ESC` to exit
 - On multi-select mode (`-m`), `TAB` and `Shift-TAB` to mark multiple items
 - Emacs style key bindings
