@@ -73,6 +73,9 @@ func (r *LightRenderer) initPlatform() error {
 		fd := int(r.inHandle)
 		b := make([]byte, 1)
 		for {
+			// HACK: if run from PSReadline, something resets ConsoleMode to remove ENABLE_VIRTUAL_TERMINAL_INPUT.
+			_ = windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
+
 			_, err := util.Read(fd, b)
 			if err == nil {
 				r.ttyinChannel <- b[0]
