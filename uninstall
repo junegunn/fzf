@@ -104,10 +104,10 @@ if [ -d "${fish_dir}/functions" ]; then
   remove "${fish_dir}/functions/fzf.fish"
   remove "${fish_dir}/functions/fzf_key_bindings.fish"
 
-  if [ "$(ls -A "${fish_dir}/functions")" ]; then
-    echo "Can't delete non-empty directory: \"${fish_dir}/functions\""
-  else
+  if [ -z "$(ls -A "${fish_dir}/functions")" ]; then
     rmdir "${fish_dir}/functions"
+  else
+    echo "Can't delete non-empty directory: \"${fish_dir}/functions\""
   fi
 fi
 
