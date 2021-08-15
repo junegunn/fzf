@@ -134,7 +134,7 @@ const (
 
 	// The first character in the typed pattern usually has more significance
 	// than the rest so it's important that it appears at special positions where
-	// bonus points are given. e.g. "to-go" vs. "ongoing" on "og" or on "ogo".
+	// bonus points are given, e.g. "to-go" vs. "ongoing" on "og" or on "ogo".
 	// The amount of the extra bonus should be limited so that the gap penalty is
 	// still respected.
 	bonusFirstCharMultiplier = 2
