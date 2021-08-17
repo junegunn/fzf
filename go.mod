@@ -3,7 +3,7 @@ module github.com/junegunn/fzf
 require (
 	github.com/gdamore/tcell v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/mattn/go-isatty v0.0.12
+	github.com/mattn/go-isatty v0.0.13
 	github.com/mattn/go-runewidth v0.0.12
 	github.com/mattn/go-shellwords v1.0.11
 	github.com/rivo/uniseg v0.2.0
