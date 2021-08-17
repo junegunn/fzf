@@ -149,7 +149,7 @@ fzf-tmux -p 80%,60%
 
 > You might also want to check out my tmux plugins which support this popup
 > window layout.
-> 
+>
 > - https://github.com/junegunn/tmux-fzf-url
 > - https://github.com/junegunn/tmux-fzf-maccy
 
@@ -190,7 +190,7 @@ list without restarting fzf.
 
 ### Toggling between data sources
 
-You're not limiited to just one reload binding. Set up multiple bindings so
+You're not limited to just one reload binding. Set up multiple bindings so
 you can switch between data sources.
 
 ```sh
@@ -349,7 +349,7 @@ IFS=: read -ra selected < <(
   fzf can kill the initial Ripgrep process it starts with the initial query.
   Otherwise, the initial Ripgrep process will keep consuming system resources
   even after `reload` is triggered.
-- Filtering is no longer a responsibitiliy of fzf; hence `--disabled`
+- Filtering is no longer a responsibility of fzf; hence `--disabled`
 - `{q}` in the reload command evaluates to the query string on fzf prompt.
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
   reduce the number of intermediate Ripgrep processes while we're typing in

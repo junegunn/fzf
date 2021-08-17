@@ -37,7 +37,7 @@ CHANGELOG
       " fzf will read the stream file while allowing other processes to append to it
       call fzf#run({'source': 'cat /dev/null > /tmp/stream; tail -f /tmp/stream'})
       ```
-    - It is now possible to open popup window relative to the currrent window
+    - It is now possible to open popup window relative to the current window
       ```vim
       let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0 } }
       ```
@@ -87,7 +87,7 @@ CHANGELOG
   ```
 - Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
-- Sigificant performance improvement in ANSI code processing
+- Significant performance improvement in ANSI code processing
 - Bug fixes and improvements
 - Built with Go 1.16
 
@@ -1169,4 +1169,3 @@ add `--sync` option to re-enable buffering.
 ### Improvements
 - `--select-1` and `--exit-0` will start finder immediately when the condition
   cannot be met
-
