@@ -107,7 +107,7 @@ type Result struct {
 const (
 	scoreMatch        = 16
 	scoreGapStart     = -3
-	scoreGapExtention = -1
+	scoreGapExtension = -1
 
 	// We prefer matches at the beginning of a word, but the bonus should not be
 	// too great to prevent the longer acronym matches from always winning over
@@ -125,16 +125,16 @@ const (
 	// Edge-triggered bonus for matches in camelCase words.
 	// Compared to word-boundary case, they don't accompany single-character gaps
 	// (e.g. FooBar vs. foo-bar), so we deduct bonus point accordingly.
-	bonusCamel123 = bonusBoundary + scoreGapExtention
+	bonusCamel123 = bonusBoundary + scoreGapExtension
 
 	// Minimum bonus point given to characters in consecutive chunks.
 	// Note that bonus points for consecutive matches shouldn't have needed if we
 	// used fixed match score as in the original algorithm.
-	bonusConsecutive = -(scoreGapStart + scoreGapExtention)
+	bonusConsecutive = -(scoreGapStart + scoreGapExtension)
 
 	// The first character in the typed pattern usually has more significance
 	// than the rest so it's important that it appears at special positions where
-	// bonus points are given. e.g. "to-go" vs. "ongoing" on "og" or on "ogo".
+	// bonus points are given, e.g. "to-go" vs. "ongoing" on "og" or on "ogo".
 	// The amount of the extra bonus should be limited so that the gap penalty is
 	// still respected.
 	bonusFirstCharMultiplier = 2
@@ -424,7 +424,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			inGap = false
 		} else {
 			if inGap {
-				H0sub[off] = util.Max16(prevH0+scoreGapExtention, 0)
+				H0sub[off] = util.Max16(prevH0+scoreGapExtension, 0)
 			} else {
 				H0sub[off] = util.Max16(prevH0+scoreGapStart, 0)
 			}
@@ -477,7 +477,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			var s1, s2, consecutive int16
 
 			if inGap {
-				s2 = Hleft[off] + scoreGapExtention
+				s2 = Hleft[off] + scoreGapExtension
 			} else {
 				s2 = Hleft[off] + scoreGapStart
 			}
@@ -598,7 +598,7 @@ func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, patter
 			pidx++
 		} else {
 			if inGap {
-				score += scoreGapExtention
+				score += scoreGapExtension
 			} else {
 				score += scoreGapStart
 			}
