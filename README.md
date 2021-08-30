@@ -578,6 +578,9 @@ expression `{q}`. Also, note that we used `--disabled` option so that fzf
 doesn't perform any secondary filtering.
 
 ```sh
+# Add this snippet into a separate shell script or wrap it in a function.
+# Do not place it directly into a shell configuration file.
+
 INITIAL_QUERY=""
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
