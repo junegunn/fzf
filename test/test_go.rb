@@ -2053,6 +2053,22 @@ class TestGoFZF < TestBase
     tmux.send_keys 'dabcd'
     tmux.until { |lines| assert_equal '> abcd', lines[-1] }
   end
+
+  def test_item_index_reset_on_reload
+    tmux.send_keys "seq 10 | #{FZF} --preview 'echo [[{n}]]' --bind 'up:last,down:first,space:reload:seq 100'", :Enter
+    tmux.until { |lines| assert_includes lines[1], '[[0]]' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[1], '[[9]]' }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_includes lines[1], '[[0]]' }
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_includes lines[1], '[[0]]'
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[1], '[[99]]' }
+  end
 end
 
 module TestShell

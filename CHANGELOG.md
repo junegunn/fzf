@@ -5,6 +5,7 @@ CHANGELOG
 ------
 - Preview window is `hidden` by default when there are `preview` bindings but
   `--preview` command is not given
+- Fixed bug where `{n}` is not properly reset on `reload`
 - Vim plugin
     - `sinklist` is added as a synonym to `sink*` so that it's easier to add
       a function to a spec dictionary
