@@ -34,8 +34,9 @@ func TestReplacePlaceholder(t *testing.T) {
 	checkFormat := func(format string) {
 		type quotes struct {O, I string} // outer, inner quotes
 		unixStyle := quotes{"'", "'\\''"}
+		windowsStyle := quotes{"^\"", "'"}
 
-		expected := util.TemplateToString(format, unixStyle)
+		expected := util.TemplateToString(format, util.OS.Sieve(unixStyle, windowsStyle))
 		check(expected)
 	}
 	printsep := "\n"
