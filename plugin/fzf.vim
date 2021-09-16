@@ -159,7 +159,7 @@ function s:get_version(bin)
   if has_key(s:versions, a:bin)
     return s:versions[a:bin]
   end
-  let command = a:bin . ' --version'
+  let command = a:bin . ' --version --no-height'
   let output = systemlist(command)
   if v:shell_error || empty(output)
     return ''

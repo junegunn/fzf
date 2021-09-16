@@ -1592,7 +1592,7 @@ func validateSign(sign string, signOptName string) error {
 }
 
 func postProcessOptions(opts *Options) {
-	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
+	if !opts.Version && !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		errorExit("--height option is currently not supported on this platform")
 	}
 	// Default actions for CTRL-N / CTRL-P when --history is set
