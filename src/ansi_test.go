@@ -1,7 +1,6 @@
 package fzf
 
 import (
-	"fmt"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -207,7 +206,7 @@ func TestExtractColor(t *testing.T) {
 		if output != "hello world" {
 			t.Errorf("Invalid output: %s %v", output, []rune(output))
 		}
-		fmt.Println(src, ansiOffsets, clean)
+		t.Log(src, ansiOffsets, clean)
 		assertion(ansiOffsets, state)
 	}
 
