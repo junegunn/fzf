@@ -233,6 +233,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return EventType(CtrlA.Int() - 'a' + int(r)).AsEvent()
 		}
 		switch ev.Key() {
+		// section 1: Ctrl+(Alt)+[a-z]
 		case tcell.KeyCtrlA:
 			return keyfn('a')
 		case tcell.KeyCtrlB:
@@ -285,6 +286,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return keyfn('y')
 		case tcell.KeyCtrlZ:
 			return keyfn('z')
+		// section 2: Ctrl+[ \]_]
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
 		case tcell.KeyCtrlBackslash:
@@ -293,12 +295,14 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{CtrlRightBracket, 0, nil}
 		case tcell.KeyCtrlUnderscore:
 			return Event{CtrlSlash, 0, nil}
+		// section 3: (Alt)+Backspace2
 		case tcell.KeyBackspace2:
 			if alt {
 				return Event{AltBS, 0, nil}
 			}
 			return Event{BSpace, 0, nil}
 
+		// section 4: (Alt+Shift)+Key(Up|Down|Left|Right)
 		case tcell.KeyUp:
 			if altShift {
 				return Event{AltSUp, 0, nil}
@@ -344,6 +348,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 			}
 			return Event{Right, 0, nil}
 
+		// section 5: (Insert|Home|Delete|End|PgUp|PgDn|BackTab|F1-F12)
 		case tcell.KeyInsert:
 			return Event{Insert, 0, nil}
 		case tcell.KeyHome:
@@ -356,10 +361,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{PgUp, 0, nil}
 		case tcell.KeyPgDn:
 			return Event{PgDn, 0, nil}
-
 		case tcell.KeyBacktab:
 			return Event{BTab, 0, nil}
-
 		case tcell.KeyF1:
 			return Event{F1, 0, nil}
 		case tcell.KeyF2:
@@ -385,6 +388,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyF12:
 			return Event{F12, 0, nil}
 
+		// section 6: (Alt)+'rune'
 		case tcell.KeyRune:
 			r := ev.Rune()
 			if alt {
@@ -392,12 +396,13 @@ func (r *FullscreenRenderer) GetChar() Event {
 			}
 			return Event{Rune, r, nil}
 
+		// section 7: Esc
 		case tcell.KeyEsc:
 			return Event{ESC, 0, nil}
-
 		}
 	}
 
+	// section 8: Invalid
 	return Event{Invalid, 0, nil}
 }
 
