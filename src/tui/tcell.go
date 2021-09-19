@@ -224,8 +224,11 @@ func (r *FullscreenRenderer) GetChar() Event {
 	case *tcell.EventKey:
 		mods := ev.Modifiers()
 		alt := (mods & tcell.ModAlt) > 0
+		ctrl := (mods & tcell.ModCtrl) > 0
 		shift := (mods & tcell.ModShift) > 0
+		ctrlAlt := ctrl && alt
 		altShift := alt && shift
+
 		keyfn := func(r rune) Event {
 			if alt {
 				return CtrlAltKey(r)
@@ -388,13 +391,20 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyF12:
 			return Event{F12, 0, nil}
 
-		// section 6: (Alt)+'rune'
+		// section 6: (Ctrl+Alt)+'rune'
 		case tcell.KeyRune:
 			r := ev.Rune()
-			if alt {
+
+			switch {
+			// handle AltGr characters
+			case ctrlAlt:
+				return Event{Rune, r, nil} // dropping modifiers
+			// simple characters (possibly with modifier)
+			case alt:
 				return AltKey(r)
+			default:
+				return Event{Rune, r, nil}
 			}
-			return Event{Rune, r, nil}
 
 		// section 7: Esc
 		case tcell.KeyEsc:
