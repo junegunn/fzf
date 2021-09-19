@@ -385,7 +385,6 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyF12:
 			return Event{F12, 0, nil}
 
-		// ev.Ch doesn't work for some reason for space:
 		case tcell.KeyRune:
 			r := ev.Rune()
 			if alt {
