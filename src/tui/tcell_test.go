@@ -88,19 +88,6 @@ func TestGetCharEventKey(t *testing.T) {
 		{giveKey{tcell.KeyCtrlA, rune(tcell.KeyCtrlA), tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAlt, 'a', nil}},                  // fabricated
 		{giveKey{tcell.KeyCtrlA, rune(tcell.KeyCtrlA), tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{CtrlAlt, 'a', nil}}, // fabricated
 
-		/*
-		   "Input method" in Windows Language options:
-		   US: "US Keyboard" does not generate any characters (and thus any events) in Ctrl+Alt+[a-z] range
-		   CS: "Czech keyboard"
-		   DE: "German keyboard"
-
-		   Note that right Alt is not just `tcell.ModAlt` on foreign language keyboards, but it is the AltGr `tcell.ModCtrl|tcell.ModAlt`.
-		*/
-		{giveKey{tcell.KeyRune, '{', tcell.ModCtrl | tcell.ModAlt}, wantKey{Alt, '{', nil}}, // CS: Ctrl+Alt+b = "{"
-		{giveKey{tcell.KeyRune, '{', tcell.ModCtrl | tcell.ModAlt}, wantKey{Alt, '{', nil}}, // DE: Ctrl+Alt+7 = "{"
-		{giveKey{tcell.KeyRune, '@', tcell.ModCtrl | tcell.ModAlt}, wantKey{Alt, '@', nil}}, // DE: Ctrl+Alt+q = "@"
-		{giveKey{tcell.KeyRune, 'µ', tcell.ModCtrl | tcell.ModAlt}, wantKey{Alt, 'µ', nil}}, // DE: Ctrl+Alt+m = "µ"
-
 		// section 2: Ctrl+[ \]_]
 		{giveKey{tcell.KeyCtrlSpace, rune(tcell.KeyCtrlSpace), tcell.ModCtrl}, wantKey{CtrlSpace, 0, nil}}, // fabricated
 		{giveKey{tcell.KeyNUL, rune(tcell.KeyNUL), tcell.ModNone}, wantKey{CtrlSpace, 0, nil}},             // fabricated, unhandled
@@ -146,11 +133,29 @@ func TestGetCharEventKey(t *testing.T) {
 		// section 5: (Insert|Home|Delete|End|PgUp|PgDn|BackTab|F1-F12)
 		{giveKey{tcell.KeyInsert, 0, tcell.ModNone}, wantKey{Insert, 0, nil}},
 		{giveKey{tcell.KeyF1, 0, tcell.ModNone}, wantKey{F1, 0, nil}},
-		// section 6: (Alt)+'rune'
+		// section 6: (Ctrl+Alt)+'rune'
 		{giveKey{tcell.KeyRune, 'a', tcell.ModNone}, wantKey{Rune, 'a', nil}},
+		{giveKey{tcell.KeyRune, 'a', tcell.ModCtrl}, wantKey{Rune, 'a', nil}}, // fabricated
 		{giveKey{tcell.KeyRune, 'a', tcell.ModAlt}, wantKey{Alt, 'a', nil}},
 		{giveKey{tcell.KeyRune, 'A', tcell.ModAlt}, wantKey{Alt, 'A', nil}},
 		{giveKey{tcell.KeyRune, '`', tcell.ModAlt}, wantKey{Alt, '`', nil}},
+		/*
+			"Input method" in Windows Language options:
+			US: "US Keyboard" does not generate any characters (and thus any events) in Ctrl+Alt+[a-z] range
+			CS: "Czech keyboard"
+			DE: "German keyboard"
+
+			Note that right Alt is not just `tcell.ModAlt` on foreign language keyboards, but it is the AltGr `tcell.ModCtrl|tcell.ModAlt`.
+		*/
+		{giveKey{tcell.KeyRune, '{', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '{', nil}}, // CS: Ctrl+Alt+b = "{" // Note that this does not interfere with CtrlB, since the "b" is replaced with "{" on OS level
+		{giveKey{tcell.KeyRune, '$', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '$', nil}}, // CS: Ctrl+Alt+ů = "$"
+		{giveKey{tcell.KeyRune, '~', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '~', nil}}, // CS: Ctrl+Alt++ = "~"
+		{giveKey{tcell.KeyRune, '`', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '`', nil}}, // CS: Ctrl+Alt+ý,Space = "`" // this is dead key, space is required to emit the char
+
+		{giveKey{tcell.KeyRune, '{', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '{', nil}}, // DE: Ctrl+Alt+7 = "{"
+		{giveKey{tcell.KeyRune, '@', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, '@', nil}}, // DE: Ctrl+Alt+q = "@"
+		{giveKey{tcell.KeyRune, 'µ', tcell.ModCtrl | tcell.ModAlt}, wantKey{Rune, 'µ', nil}}, // DE: Ctrl+Alt+m = "µ"
+
 		// section 7: Esc
 		// KeyEsc and KeyEscape are aliases for KeyESC
 		{giveKey{tcell.KeyEsc, rune(tcell.KeyEsc), tcell.ModNone}, wantKey{ESC, 0, nil}},               // fabricated
