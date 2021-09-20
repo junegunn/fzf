@@ -94,6 +94,8 @@ func TestGetCharEventKey(t *testing.T) {
 		{giveKey{tcell.KeyRune, ' ', tcell.ModCtrl}, wantKey{CtrlSpace, 0, nil}},                           // actual Ctrl+' '
 		{giveKey{tcell.KeyCtrlBackslash, rune(tcell.KeyCtrlBackslash), tcell.ModCtrl}, wantKey{CtrlBackSlash, 0, nil}},
 		{giveKey{tcell.KeyCtrlRightSq, rune(tcell.KeyCtrlRightSq), tcell.ModCtrl}, wantKey{CtrlRightBracket, 0, nil}},
+		{giveKey{tcell.KeyCtrlCarat, rune(tcell.KeyCtrlCarat), tcell.ModShift | tcell.ModCtrl}, wantKey{CtrlCaret, 0, nil}}, // fabricated
+		{giveKey{tcell.KeyRS, rune(tcell.KeyRS), tcell.ModShift | tcell.ModCtrl}, wantKey{CtrlCaret, 0, nil}},               // actual Ctrl+Shift+6 (i.e. Ctrl+^) keystroke
 		{giveKey{tcell.KeyCtrlUnderscore, rune(tcell.KeyCtrlUnderscore), tcell.ModShift | tcell.ModCtrl}, wantKey{CtrlSlash, 0, nil}},
 
 		// section 3: (Alt)+Backspace2
@@ -167,14 +169,12 @@ func TestGetCharEventKey(t *testing.T) {
 		// section 8: Invalid
 		{giveKey{tcell.KeyRune, 'a', tcell.ModMeta}, wantKey{Rune, 'a', nil}}, // fabricated
 		{giveKey{tcell.KeyF24, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},
-		{giveKey{tcell.KeyCtrlCarat, rune(tcell.KeyCtrlCarat), tcell.ModShift | tcell.ModCtrl}, wantKey{Invalid, 0, nil}}, // fabricated, unhandled
-		{giveKey{tcell.KeyRS, rune(tcell.KeyRS), tcell.ModShift | tcell.ModCtrl}, wantKey{Invalid, 0, nil}},               // actual Ctrl+Shift+6 (i.e. Ctrl+^) keystroke
-		{giveKey{tcell.KeyHelp, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                              // fabricated, unhandled
-		{giveKey{tcell.KeyExit, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                              // fabricated, unhandled
-		{giveKey{tcell.KeyClear, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                             // unhandled, actual keystroke Numpad_5 with Numlock OFF
-		{giveKey{tcell.KeyCancel, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                            // fabricated, unhandled
-		{giveKey{tcell.KeyPrint, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                             // fabricated, unhandled
-		{giveKey{tcell.KeyPause, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                             // unhandled
+		{giveKey{tcell.KeyHelp, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},   // fabricated, unhandled
+		{giveKey{tcell.KeyExit, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},   // fabricated, unhandled
+		{giveKey{tcell.KeyClear, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},  // unhandled, actual keystroke Numpad_5 with Numlock OFF
+		{giveKey{tcell.KeyCancel, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}}, // fabricated, unhandled
+		{giveKey{tcell.KeyPrint, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},  // fabricated, unhandled
+		{giveKey{tcell.KeyPause, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},  // unhandled
 
 	}
 	r := NewFullscreenRenderer(&ColorTheme{}, false, false)
@@ -246,7 +246,7 @@ Quick reference
 27	7	KeyCtrlLeftSq	KeyESC = ^[	KeyEsc, KeyEscape	ESC
 28	2	KeyCtrlBackslash	KeyFS = ^\		CtrlSpace
 29	2	KeyCtrlRightSq	KeyGS = ^]		CtrlBackSlash
-30	8	KeyCtrlCarat	KeyRS = ^^		CtrlRightBracket
+30	2	KeyCtrlCarat	KeyRS = ^^		CtrlRightBracket
 31	2	KeyCtrlUnderscore	KeyUS = ^_		CtrlCaret
 32					CtrlSlash
 33					Invalid
