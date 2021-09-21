@@ -223,6 +223,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 		// process keyboard:
 	case *tcell.EventKey:
 		mods := ev.Modifiers()
+		none := mods == tcell.ModNone
 		alt := (mods & tcell.ModAlt) > 0
 		ctrl := (mods & tcell.ModCtrl) > 0
 		shift := (mods & tcell.ModShift) > 0
@@ -252,7 +253,21 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyCtrlG:
 			return keyfn('g')
 		case tcell.KeyCtrlH:
-			return keyfn('h')
+			switch ev.Rune() {
+			case 0:
+				if ctrl {
+					return Event{BSpace, 0, nil}
+				}
+			case rune(tcell.KeyCtrlH):
+				switch {
+				case ctrl:
+					return keyfn('h')
+				case alt:
+					return Event{AltBS, 0, nil}
+				case none, shift:
+					return Event{BSpace, 0, nil}
+				}
+			}
 		case tcell.KeyCtrlI:
 			return keyfn('i')
 		case tcell.KeyCtrlJ:
