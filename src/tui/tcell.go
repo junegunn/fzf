@@ -185,14 +185,48 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 	// process mouse events:
 	case *tcell.EventMouse:
+		// mouse down events have zeroed buttons, so we can't use them
+		// mouse up event consists of two events, 1. (main) event with modifier and other metadata, 2. event with zeroed buttons
+		// so mouse click is three consecutive events, but the first and last are indistinguishable from movement events (with released buttons)
+		// dragging has same structure, it only repeats the middle (main) event appropriately
 		x, y := ev.Position()
-		button := ev.Buttons()
 		mod := ev.Modifiers() != 0
-		if button&tcell.WheelDown != 0 {
+
+		// since we dont have mouse down events (unlike LightRenderer), we need to track state in prevButton
+		prevButton, button := r.prevMouseButton, ev.Buttons()
+		r.prevMouseButton = button
+		drag := prevButton == button
+
+		switch {
+		case button&tcell.WheelDown != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, false, mod}}
-		} else if button&tcell.WheelUp != 0 {
+		case button&tcell.WheelUp != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, false, mod}}
-		} else if runtime.GOOS != "windows" {
+		case button&tcell.Button1 != 0 && !drag:
+			// all potential double click events put their 'line' coordinate in the clickY array
+			// double click event has two conditions, temporal and spatial, the first is checked here
+			now := time.Now()
+			if now.Sub(r.prevDownTime) < doubleClickDuration {
+				r.clickY = append(r.clickY, y)
+			} else {
+				r.clickY = []int{y}
+			}
+			r.prevDownTime = now
+
+			// detect double clicks (also check for spatial condition)
+			n := len(r.clickY)
+			double := n > 1 && r.clickY[n-2] == r.clickY[n-1]
+			if double {
+				// make sure two consecutive double clicks require four clicks
+				r.clickY = []int{}
+			}
+
+			// fire single or double click event
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, true, !double, double, mod}}
+		case button&tcell.Button2 != 0 && !drag:
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, false, true, false, mod}}
+		case runtime.GOOS != "windows":
+
 			// double and single taps on Windows don't quite work due to
 			// the console acting on the events and not allowing us
 			// to consume them.
