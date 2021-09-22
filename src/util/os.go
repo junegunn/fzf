@@ -16,4 +16,3 @@ func (os osName) Sieve(onUnix interface{}, onWindows interface{}) interface{} {
 		return onUnix
 	}
 }
-

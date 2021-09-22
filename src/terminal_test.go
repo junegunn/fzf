@@ -32,7 +32,7 @@ func TestReplacePlaceholder(t *testing.T) {
 	}
 	// helper function that converts template format into string and carries out the check()
 	checkFormat := func(format string) {
-		type quotes struct {O, I string} // outer, inner quotes
+		type quotes struct{ O, I string } // outer, inner quotes
 		unixStyle := quotes{"'", "'\\''"}
 		windowsStyle := quotes{"^\"", "'"}
 
