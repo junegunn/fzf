@@ -1,8 +1,10 @@
 package fzf
 
 import (
+	"bytes"
 	"regexp"
 	"testing"
+	"text/template"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -35,8 +37,15 @@ func TestReplacePlaceholder(t *testing.T) {
 		type quotes struct{ O, I string } // outer, inner quotes
 		unixStyle := quotes{"'", "'\\''"}
 		windowsStyle := quotes{"^\"", "'"}
+		var effectiveStyle quotes
 
-		expected := util.TemplateToString(format, util.OS.Sieve(unixStyle, windowsStyle))
+		if util.IsWindows() {
+			effectiveStyle = windowsStyle
+		} else {
+			effectiveStyle = unixStyle
+		}
+
+		expected := templateToString(format, effectiveStyle)
 		check(expected)
 	}
 	printsep := "\n"
@@ -145,4 +154,16 @@ func TestQuoteEntryCmd(t *testing.T) {
 			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
 		}
 	}
+}
+
+// Helper function to parse, execute and convert "text/template" to string. Panics on error.
+func templateToString(format string, data interface{}) string {
+	bb := &bytes.Buffer{}
+
+	err := template.Must(template.New("").Parse(format)).Execute(bb, data)
+	if err != nil {
+		panic(err)
+	}
+
+	return bb.String()
 }
