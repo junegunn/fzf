@@ -1581,6 +1581,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			skipChars++
 		case 'q':
 			flags.query = true
+			// query flag is not skipped
 		default:
 			break
 		}
@@ -1681,14 +1682,17 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 		}
 
 		items := current
+		// 1. flag "+"
 		if flags.plus || forcePlus {
 			items = selected
 		}
 
 		replacements := make([]string, len(items))
 
+		// A. flags only
 		if match == "{}" {
 			for idx, item := range items {
+				// 2. flag "n"
 				if flags.number {
 					n := int(item.text.Index)
 					if n < 0 {
@@ -1696,8 +1700,10 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 					} else {
 						replacements[idx] = strconv.Itoa(n)
 					}
+					// 3. flag "f"
 				} else if flags.file {
 					replacements[idx] = item.AsString(stripAnsi)
+					// 4. no flag
 				} else {
 					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
 				}
@@ -1708,6 +1714,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 			return strings.Join(replacements, " ")
 		}
 
+		// B. {range, range...}; range: "[0-9]\.\.[0-9]"
 		tokens := strings.Split(match[1:len(match)-1], ",")
 		ranges := make([]Range, len(tokens))
 		for idx, s := range tokens {
@@ -1727,16 +1734,20 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 				str = strings.TrimSuffix(str, *delimiter.str)
 			} else if delimiter.regex != nil {
 				delims := delimiter.regex.FindAllStringIndex(str, -1)
+				// if possible trim the last delimiter
 				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
 					str = str[:delims[len(delims)-1][0]]
 				}
 			}
+			// 2. flag "s"
 			if !flags.preserveSpace {
 				str = strings.TrimSpace(str)
 			}
+			// 3. flag "f"
 			if !flags.file {
 				str = quoteEntry(str)
 			}
+			// 4. no flag
 			replacements[idx] = str
 		}
 		if flags.file {
