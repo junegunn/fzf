@@ -5,6 +5,7 @@ package fzf
 import (
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -18,4 +19,8 @@ func notifyStop(p *os.Process) {
 
 func notifyOnCont(resizeChan chan<- os.Signal) {
 	signal.Notify(resizeChan, syscall.SIGCONT)
+}
+
+func quoteEntry(entry string) string {
+	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 }

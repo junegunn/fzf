@@ -1540,22 +1540,6 @@ func keyMatch(key tui.Event, event tui.Event) bool {
 		key.Type == tui.DoubleClick && event.Type == tui.Mouse && event.MouseEvent.Double
 }
 
-func quoteEntryCmd(entry string) string {
-	escaped := strings.Replace(entry, `\`, `\\`, -1)
-	escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
-	r, _ := regexp.Compile(`[&|<>()@^%!"]`)
-	return r.ReplaceAllStringFunc(escaped, func(match string) string {
-		return "^" + match
-	})
-}
-
-func quoteEntry(entry string) string {
-	if util.IsWindows() {
-		return quoteEntryCmd(entry)
-	}
-	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
-}
-
 func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	flags := placeholderFlags{}
 

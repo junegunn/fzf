@@ -221,19 +221,47 @@ func TestReplacePlaceholder(t *testing.T) {
 	}
 }
 
-func TestQuoteEntryCmd(t *testing.T) {
+func TestQuoteEntry(t *testing.T) {
+	type quotes struct{ E, O, SQ, DQ, BS string } // standalone escape, outer, single and double quotes, backslash
+	unixStyle := quotes{``, `'`, `'\''`, `"`, `\`}
+	windowsStyle := quotes{`^`, `^"`, `'`, `\^"`, `\\`}
+	var effectiveStyle quotes
+
+	if util.IsWindows() {
+		effectiveStyle = windowsStyle
+	} else {
+		effectiveStyle = unixStyle
+	}
+
 	tests := map[string]string{
-		`"`:                       `^"\^"^"`,
-		`\`:                       `^"\\^"`,
-		`\"`:                      `^"\\\^"^"`,
-		`"\\\"`:                   `^"\^"\\\\\\\^"^"`,
-		`&|<>()@^%!`:              `^"^&^|^<^>^(^)^@^^^%^!^"`,
-		`%USERPROFILE%`:           `^"^%USERPROFILE^%^"`,
-		`C:\Program Files (x86)\`: `^"C:\\Program Files ^(x86^)\\^"`,
+		`'`:     `{{.O}}{{.SQ}}{{.O}}`,
+		`"`:     `{{.O}}{{.DQ}}{{.O}}`,
+		`\`:     `{{.O}}{{.BS}}{{.O}}`,
+		`\"`:    `{{.O}}{{.BS}}{{.DQ}}{{.O}}`,
+		`"\\\"`: `{{.O}}{{.DQ}}{{.BS}}{{.BS}}{{.BS}}{{.DQ}}{{.O}}`,
+
+		`$`:       `{{.O}}${{.O}}`,
+		`$HOME`:   `{{.O}}$HOME{{.O}}`,
+		`'$HOME'`: `{{.O}}{{.SQ}}$HOME{{.SQ}}{{.O}}`,
+
+		`&`:                       `{{.O}}{{.E}}&{{.O}}`,
+		`|`:                       `{{.O}}{{.E}}|{{.O}}`,
+		`<`:                       `{{.O}}{{.E}}<{{.O}}`,
+		`>`:                       `{{.O}}{{.E}}>{{.O}}`,
+		`(`:                       `{{.O}}{{.E}}({{.O}}`,
+		`)`:                       `{{.O}}{{.E}}){{.O}}`,
+		`@`:                       `{{.O}}{{.E}}@{{.O}}`,
+		`^`:                       `{{.O}}{{.E}}^{{.O}}`,
+		`%`:                       `{{.O}}{{.E}}%{{.O}}`,
+		`!`:                       `{{.O}}{{.E}}!{{.O}}`,
+		`%USERPROFILE%`:           `{{.O}}{{.E}}%USERPROFILE{{.E}}%{{.O}}`,
+		`C:\Program Files (x86)\`: `{{.O}}C:{{.BS}}Program Files {{.E}}(x86{{.E}}){{.BS}}{{.O}}`,
+		`"C:\Program Files"`:      `{{.O}}{{.DQ}}C:{{.BS}}Program Files{{.DQ}}{{.O}}`,
 	}
 
 	for input, expected := range tests {
-		escaped := quoteEntryCmd(input)
+		escaped := quoteEntry(input)
+		expected = templateToString(expected, effectiveStyle)
 		if escaped != expected {
 			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
 		}
