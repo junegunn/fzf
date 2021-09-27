@@ -32,8 +32,8 @@ func TestReplacePlaceholder(t *testing.T) {
 	// helper function that converts template format into string and carries out the check()
 	checkFormat := func(format string) {
 		type quotes struct{ O, I, S string } // outer, inner quotes, print separator
-		unixStyle := quotes{"'", "'\\''", "\n"}
-		windowsStyle := quotes{"^\"", "'", "\n"}
+		unixStyle := quotes{`'`, `'\''`, "\n"}
+		windowsStyle := quotes{`^"`, `'`, "\n"}
 		var effectiveStyle quotes
 
 		if util.IsWindows() {
@@ -442,13 +442,13 @@ func testCommands(t *testing.T, tests []testCase) {
 	delim := "\t"
 	delimiter := Delimiter{str: &delim}
 	printsep := ""
-	stringAnsi := false
+	stripAnsi := false
 	forcePlus := false
 
 	// evaluate the test cases
 	for idx, test := range tests {
 		gotOutput := replacePlaceholder(
-			test.give.template, stringAnsi, delimiter, printsep, forcePlus,
+			test.give.template, stripAnsi, delimiter, printsep, forcePlus,
 			test.give.query,
 			test.give.allItems)
 		switch {
@@ -460,7 +460,7 @@ func testCommands(t *testing.T, tests []testCase) {
 					gotOutput, test.want.output)
 			}
 		case test.want.match != "":
-			wantMatch := strings.ReplaceAll(test.want.match, "\\", "\\\\")
+			wantMatch := strings.ReplaceAll(test.want.match, `\`, `\\`)
 			wantRegex := regexp.MustCompile(wantMatch)
 			if !wantRegex.MatchString(gotOutput) {
 				t.Errorf("tests[%v]:\ngave{\n\ttemplate: '%s',\n\tquery: '%s',\n\tallItems: %s}\nand got '%s',\nbut want '%s'",
