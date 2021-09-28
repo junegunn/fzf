@@ -20,7 +20,7 @@ import (
 // 	- http://ascii-table.com/ansi-escape-sequences-vt-100.php
 // 	- http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
 // 	- https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-var ansiRegexRefence = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
+var ansiRegexReference = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
 
 func testParserReference(t testing.TB, str string) {
 	t.Helper()
@@ -35,7 +35,7 @@ func testParserReference(t testing.TB, str string) {
 	s := str
 	for i := 0; ; i++ {
 		got := toSlice(nextAnsiEscapeSequence(s))
-		exp := ansiRegexRefence.FindStringIndex(s)
+		exp := ansiRegexReference.FindStringIndex(s)
 
 		equal := len(got) == len(exp)
 		if equal {
@@ -408,7 +408,7 @@ func BenchmarkNextAnsiEscapeSequence_Regex(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := ansiBenchmarkString
 		for {
-			a := ansiRegexRefence.FindStringIndex(s)
+			a := ansiRegexReference.FindStringIndex(s)
 			if len(a) == 0 {
 				break
 			}
