@@ -16,8 +16,10 @@ import (
 //
 // References:
 // 	- https://github.com/gnachman/iTerm2
-// 	- http://ascii-table.com/ansi-escape-sequences.php
-// 	- http://ascii-table.com/ansi-escape-sequences-vt-100.php
+// 	- https://web.archive.org/web/20090204053813/http://ascii-table.com/ansi-escape-sequences.php
+//      (archived from http://ascii-table.com/ansi-escape-sequences.php)
+// 	- https://web.archive.org/web/20090227051140/http://ascii-table.com/ansi-escape-sequences-vt-100.php
+//      (archived from http://ascii-table.com/ansi-escape-sequences-vt-100.php)
 // 	- http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
 // 	- https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
 var ansiRegexReference = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
