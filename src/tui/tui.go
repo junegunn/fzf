@@ -5,8 +5,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/gdamore/tcell"
 )
 
 // Types of user action
@@ -399,22 +397,20 @@ type Window interface {
 }
 
 type FullscreenRenderer struct {
-	theme           *ColorTheme
-	mouse           bool
-	forceBlack      bool
-	prevDownTime    time.Time
-	prevMouseButton tcell.ButtonMask
-	clickY          []int
+	theme        *ColorTheme
+	mouse        bool
+	forceBlack   bool
+	prevDownTime time.Time
+	clickY       []int
 }
 
 func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Renderer {
 	r := &FullscreenRenderer{
-		theme:           theme,
-		mouse:           mouse,
-		forceBlack:      forceBlack,
-		prevDownTime:    time.Unix(0, 0),
-		prevMouseButton: tcell.ButtonNone,
-		clickY:          []int{}}
+		theme:        theme,
+		mouse:        mouse,
+		forceBlack:   forceBlack,
+		prevDownTime: time.Unix(0, 0),
+		clickY:       []int{}}
 	return r
 }
 
