@@ -120,8 +120,11 @@ func (a Attr) Merge(b Attr) Attr {
 	return a | b
 }
 
+// handle the following as private members of FullscreenRenderer instance
+// they are declared here to prevent introducing tcell library in non-windows builds
 var (
-	_screen tcell.Screen
+	_screen          tcell.Screen
+	_prevMouseButton tcell.ButtonMask
 )
 
 func (r *FullscreenRenderer) initScreen() {
@@ -193,8 +196,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 		mod := ev.Modifiers() != 0
 
 		// since we dont have mouse down events (unlike LightRenderer), we need to track state in prevButton
-		prevButton, button := r.prevMouseButton, ev.Buttons()
-		r.prevMouseButton = button
+		prevButton, button := _prevMouseButton, ev.Buttons()
+		_prevMouseButton = button
 		drag := prevButton == button
 
 		switch {
