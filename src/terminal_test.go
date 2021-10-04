@@ -2,6 +2,8 @@ package fzf
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -29,9 +31,9 @@ func TestReplacePlaceholder(t *testing.T) {
 	}
 	// helper function that converts template format into string and carries out the check()
 	checkFormat := func(format string) {
-		type quotes struct{ O, I string } // outer, inner quotes
-		unixStyle := quotes{"'", "'\\''"}
-		windowsStyle := quotes{"^\"", "'"}
+		type quotes struct{ O, I, S string } // outer, inner quotes, print separator
+		unixStyle := quotes{"'", "'\\''", "\n"}
+		windowsStyle := quotes{"^\"", "'", "\n"}
 		var effectiveStyle quotes
 
 		if util.IsWindows() {
@@ -44,6 +46,11 @@ func TestReplacePlaceholder(t *testing.T) {
 		check(expected)
 	}
 	printsep := "\n"
+
+	/*
+		Test multiple placeholders and the function parameters.
+	*/
+
 	// {}, preserve ansi
 	result = replacePlaceholder("echo {}", false, Delimiter{}, printsep, false, "query", items1)
 	checkFormat("echo {{.O}}  foo{{.I}}bar \x1b[31mbaz\x1b[m{{.O}}")
@@ -130,6 +137,88 @@ func TestReplacePlaceholder(t *testing.T) {
 	// foo'bar baz
 	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}/{{.O}}f{{.O}}/{{.O}}r b{{.O}}/{{.O}}{{.I}}bar b{{.O}}")
+
+	/*
+		Test single placeholders, but focus on the placeholders' parameters (e.g. flags).
+		see: TestParsePlaceholder
+	*/
+	items3 := []*Item{
+		// single line
+		newItem("1a 1b 1c 1d 1e 1f"),
+		// multi line
+		newItem("1a 1b 1c 1d 1e 1f"),
+		newItem("2a 2b 2c 2d 2e 2f"),
+		newItem("3a 3b 3c 3d 3e 3f"),
+		newItem("4a 4b 4c 4d 4e 4f"),
+		newItem("5a 5b 5c 5d 5e 5f"),
+		newItem("6a 6b 6c 6d 6e 6f"),
+		newItem("7a 7b 7c 7d 7e 7f"),
+	}
+	stripAnsi := false
+	printsep = "\n"
+	forcePlus := false
+	query := "sample query"
+
+	templateToOutput := make(map[string]string)
+	templateToFile := make(map[string]string) // same as above, but the file contents will be matched
+	// I. item type placeholder
+	templateToOutput[`{}`] = `{{.O}}1a 1b 1c 1d 1e 1f{{.O}}`
+	templateToOutput[`{+}`] = `{{.O}}1a 1b 1c 1d 1e 1f{{.O}} {{.O}}2a 2b 2c 2d 2e 2f{{.O}} {{.O}}3a 3b 3c 3d 3e 3f{{.O}} {{.O}}4a 4b 4c 4d 4e 4f{{.O}} {{.O}}5a 5b 5c 5d 5e 5f{{.O}} {{.O}}6a 6b 6c 6d 6e 6f{{.O}} {{.O}}7a 7b 7c 7d 7e 7f{{.O}}`
+	templateToOutput[`{n}`] = `0`
+	templateToOutput[`{+n}`] = `0 0 0 0 0 0 0`
+	templateToFile[`{f}`] = `1a 1b 1c 1d 1e 1f{{.S}}`
+	templateToFile[`{+f}`] = `1a 1b 1c 1d 1e 1f{{.S}}2a 2b 2c 2d 2e 2f{{.S}}3a 3b 3c 3d 3e 3f{{.S}}4a 4b 4c 4d 4e 4f{{.S}}5a 5b 5c 5d 5e 5f{{.S}}6a 6b 6c 6d 6e 6f{{.S}}7a 7b 7c 7d 7e 7f{{.S}}`
+	templateToFile[`{nf}`] = `0{{.S}}`
+	templateToFile[`{+nf}`] = `0{{.S}}0{{.S}}0{{.S}}0{{.S}}0{{.S}}0{{.S}}0{{.S}}`
+
+	// II. token type placeholders
+	templateToOutput[`{..}`] = templateToOutput[`{}`]
+	templateToOutput[`{1..}`] = templateToOutput[`{}`]
+	templateToOutput[`{..2}`] = `{{.O}}1a 1b{{.O}}`
+	templateToOutput[`{1..2}`] = templateToOutput[`{..2}`]
+	templateToOutput[`{-2..-1}`] = `{{.O}}1e 1f{{.O}}`
+	// shorthand for x..x range
+	templateToOutput[`{1}`] = `{{.O}}1a{{.O}}`
+	templateToOutput[`{1..1}`] = templateToOutput[`{1}`]
+	templateToOutput[`{-6}`] = templateToOutput[`{1}`]
+	// multiple ranges
+	templateToOutput[`{1,2}`] = templateToOutput[`{1..2}`]
+	templateToOutput[`{1,2,4}`] = `{{.O}}1a 1b 1d{{.O}}`
+	templateToOutput[`{1,2..4}`] = `{{.O}}1a 1b 1c 1d{{.O}}`
+	templateToOutput[`{1..2,-4..-3}`] = `{{.O}}1a 1b 1c 1d{{.O}}`
+	// flags
+	templateToOutput[`{+1}`] = `{{.O}}1a{{.O}} {{.O}}2a{{.O}} {{.O}}3a{{.O}} {{.O}}4a{{.O}} {{.O}}5a{{.O}} {{.O}}6a{{.O}} {{.O}}7a{{.O}}`
+	templateToOutput[`{+-1}`] = `{{.O}}1f{{.O}} {{.O}}2f{{.O}} {{.O}}3f{{.O}} {{.O}}4f{{.O}} {{.O}}5f{{.O}} {{.O}}6f{{.O}} {{.O}}7f{{.O}}`
+	templateToOutput[`{s1}`] = `{{.O}}1a {{.O}}`
+	templateToFile[`{f1}`] = `1a{{.S}}`
+	templateToOutput[`{+s1..2}`] = `{{.O}}1a 1b {{.O}} {{.O}}2a 2b {{.O}} {{.O}}3a 3b {{.O}} {{.O}}4a 4b {{.O}} {{.O}}5a 5b {{.O}} {{.O}}6a 6b {{.O}} {{.O}}7a 7b {{.O}}`
+	templateToFile[`{+sf1..2}`] = `1a 1b {{.S}}2a 2b {{.S}}3a 3b {{.S}}4a 4b {{.S}}5a 5b {{.S}}6a 6b {{.S}}7a 7b {{.S}}`
+
+	// III. query type placeholder
+	// query flag is not removed after parsing, so it gets doubled
+	// while the double q is invalid, it is useful here for testing purposes
+	templateToOutput[`{q}`] = "{{.O}}" + query + "{{.O}}"
+
+	// IV. escaping placeholder
+	templateToOutput[`\{}`] = `{}`
+	templateToOutput[`\{++}`] = `{++}`
+	templateToOutput[`{++}`] = templateToOutput[`{+}`]
+
+	for giveTemplate, wantOutput := range templateToOutput {
+		result = replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3)
+		checkFormat(wantOutput)
+	}
+	for giveTemplate, wantOutput := range templateToFile {
+		path := replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3)
+
+		data, err := readFile(path)
+		if err != nil {
+			t.Errorf("Cannot read the content of the temp file %s.", path)
+		}
+		result = string(data)
+
+		checkFormat(wantOutput)
+	}
 }
 
 func TestQuoteEntryCmd(t *testing.T) {
@@ -404,4 +493,30 @@ func (flags placeholderFlags) encodePlaceholder() string {
 		encoded += "q"
 	}
 	return encoded
+}
+
+// can be replaced with os.ReadFile() in go 1.16+
+func readFile(path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	data := make([]byte, 0, 128)
+	for {
+		if len(data) >= cap(data) {
+			d := append(data[:cap(data)], 0)
+			data = d[:len(data)]
+		}
+
+		n, err := file.Read(data[len(data):cap(data)])
+		data = data[:len(data)+n]
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return data, err
+		}
+	}
 }
