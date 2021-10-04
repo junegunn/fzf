@@ -1653,87 +1653,87 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 	if selected[0] == nil {
 		selected = []*Item{}
 	}
+
+	// replace placeholders one by one
 	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
 		escaped, match, flags := parsePlaceholder(match)
 
-		if escaped {
+		// this function implements the effects a placeholder has on items
+		var replace func(*Item) string
+
+		// placeholder types (escaped, query type, item type, token type)
+		switch {
+		case escaped:
 			return match
+		case match == "{q}":
+			return quoteEntry(query)
+		case match == "{}":
+			replace = func(item *Item) string {
+				switch {
+				case flags.number:
+					n := int(item.text.Index)
+					if n < 0 {
+						return ""
+					} else {
+						return strconv.Itoa(n)
+					}
+				case flags.file:
+					return item.AsString(stripAnsi)
+				default:
+					return quoteEntry(item.AsString(stripAnsi))
+				}
+			}
+		default:
+			// token type and also failover (below)
+			rangeExpressions := strings.Split(match[1:len(match)-1], ",")
+			ranges := make([]Range, len(rangeExpressions))
+			for idx, s := range rangeExpressions {
+				r, ok := ParseRange(&s) // ellipsis (x..y) and shorthand (x..x) range syntax
+				if !ok {
+					// Invalid expression, just return the original string in the template
+					return match
+				}
+				ranges[idx] = r
+			}
+
+			replace = func(item *Item) string {
+				tokens := Tokenize(item.AsString(stripAnsi), delimiter)
+				trans := Transform(tokens, ranges)
+				str := joinTokens(trans)
+
+				// trim the last delimiter
+				if delimiter.str != nil {
+					str = strings.TrimSuffix(str, *delimiter.str)
+				} else if delimiter.regex != nil {
+					delims := delimiter.regex.FindAllStringIndex(str, -1)
+					// make sure the delimiter is at the very end of the string
+					if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
+						str = str[:delims[len(delims)-1][0]]
+					}
+				}
+
+				if !flags.preserveSpace {
+					str = strings.TrimSpace(str)
+				}
+				if !flags.file {
+					str = quoteEntry(str)
+				}
+				return str
+			}
 		}
 
-		// Current query
-		if match == "{q}" {
-			return quoteEntry(query)
-		}
+		// apply 'replace' function over proper set of items and return result
 
 		items := current
-		// 1. flag "+"
 		if flags.plus || forcePlus {
 			items = selected
 		}
-
 		replacements := make([]string, len(items))
 
-		// A. flags only
-		if match == "{}" {
-			for idx, item := range items {
-				// 2. flag "n"
-				if flags.number {
-					n := int(item.text.Index)
-					if n < 0 {
-						replacements[idx] = ""
-					} else {
-						replacements[idx] = strconv.Itoa(n)
-					}
-					// 3. flag "f"
-				} else if flags.file {
-					replacements[idx] = item.AsString(stripAnsi)
-					// 4. no flag
-				} else {
-					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
-				}
-			}
-			if flags.file {
-				return writeTemporaryFile(replacements, printsep)
-			}
-			return strings.Join(replacements, " ")
-		}
-
-		// B. {range, range...}; range: "[0-9]\.\.[0-9]"
-		tokens := strings.Split(match[1:len(match)-1], ",")
-		ranges := make([]Range, len(tokens))
-		for idx, s := range tokens {
-			r, ok := ParseRange(&s)
-			if !ok {
-				// Invalid expression, just return the original string in the template
-				return match
-			}
-			ranges[idx] = r
-		}
-
 		for idx, item := range items {
-			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
-			trans := Transform(tokens, ranges)
-			str := joinTokens(trans)
-			if delimiter.str != nil {
-				str = strings.TrimSuffix(str, *delimiter.str)
-			} else if delimiter.regex != nil {
-				delims := delimiter.regex.FindAllStringIndex(str, -1)
-				// if possible trim the last delimiter
-				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
-					str = str[:delims[len(delims)-1][0]]
-				}
-			}
-			// 2. flag "s"
-			if !flags.preserveSpace {
-				str = strings.TrimSpace(str)
-			}
-			// 3. flag "f"
-			if !flags.file {
-				str = quoteEntry(str)
-			}
-			// 4. no flag
-			replacements[idx] = str
+			replacements[idx] = replace(item)
 		}
+
 		if flags.file {
 			return writeTemporaryFile(replacements, printsep)
 		}
