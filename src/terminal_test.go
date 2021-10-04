@@ -215,6 +215,72 @@ func TestWindowsCommands(t *testing.T) {
 	testCommands(t, tests)
 }
 
+/*
+	Test typical valid placeholders and parsing of them.
+
+	Also since the parser assumes the input is matched with `placeholder` regex,
+	the regex is tested here as well.
+*/
+func TestParsePlaceholder(t *testing.T) {
+	// give, want pairs
+	templates := map[string]string{
+		// I. item type placeholder
+		`{}`:    `{}`,
+		`{+}`:   `{+}`,
+		`{n}`:   `{n}`,
+		`{+n}`:  `{+n}`,
+		`{f}`:   `{f}`,
+		`{+nf}`: `{+nf}`,
+
+		// II. token type placeholders
+		`{..}`:     `{..}`,
+		`{1..}`:    `{1..}`,
+		`{..2}`:    `{..2}`,
+		`{1..2}`:   `{1..2}`,
+		`{-2..-1}`: `{-2..-1}`,
+		// shorthand for x..x range
+		`{1}`:    `{1}`,
+		`{1..1}`: `{1..1}`,
+		`{-6}`:   `{-6}`,
+		// multiple ranges
+		`{1,2}`:         `{1,2}`,
+		`{1,2,4}`:       `{1,2,4}`,
+		`{1,2..4}`:      `{1,2..4}`,
+		`{1..2,-4..-3}`: `{1..2,-4..-3}`,
+		// flags
+		`{+1}`:      `{+1}`,
+		`{+-1}`:     `{+-1}`,
+		`{s1}`:      `{s1}`,
+		`{f1}`:      `{f1}`,
+		`{+s1..2}`:  `{+s1..2}`,
+		`{+sf1..2}`: `{+sf1..2}`,
+
+		// III. query type placeholder
+		// query flag is not removed after parsing, so it gets doubled
+		// while the double q is invalid, it is useful here for testing purposes
+		`{q}`: `{qq}`,
+
+		// IV. escaping placeholder
+		`\{}`:   `{}`,
+		`\{++}`: `{++}`,
+		`{++}`:  `{+}`,
+	}
+
+	for giveTemplate, wantTemplate := range templates {
+		if !placeholder.MatchString(giveTemplate) {
+			t.Errorf(`given placeholder %s does not match placeholder regex, so attempt to parse it is unexpected`, giveTemplate)
+			continue
+		}
+
+		_, placeholderWithoutFlags, flags := parsePlaceholder(giveTemplate)
+		gotTemplate := placeholderWithoutFlags[:1] + flags.encodePlaceholder() + placeholderWithoutFlags[1:]
+
+		if gotTemplate != wantTemplate {
+			t.Errorf(`parsed placeholder "%s" into "%s", but want "%s"`, giveTemplate, gotTemplate, wantTemplate)
+		}
+	}
+}
+
 /* utilities section */
 
 // Item represents one line in fzf UI. Usually it is relative path to files and folders.
@@ -317,4 +383,25 @@ func testCommands(t *testing.T, tests []testCase) {
 			t.Errorf("tests[%v]: test case does not describe 'want' property", idx)
 		}
 	}
+}
+
+// naive encoder of placeholder flags
+func (flags placeholderFlags) encodePlaceholder() string {
+	encoded := ""
+	if flags.plus {
+		encoded += "+"
+	}
+	if flags.preserveSpace {
+		encoded += "s"
+	}
+	if flags.number {
+		encoded += "n"
+	}
+	if flags.file {
+		encoded += "f"
+	}
+	if flags.query {
+		encoded += "q"
+	}
+	return encoded
 }

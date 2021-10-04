@@ -23,6 +23,26 @@ import (
 
 // import "github.com/pkg/profile"
 
+/*
+	Placeholder regex is used to extract placeholders from fzf's template
+	strings. Acts as input validation for parsePlaceholder function.
+	Describes the syntax, but it is fairly lenient.
+
+	The following pseudo regex has been reverse engineered from the
+	implementation. It is overly strict, but better describes whats possible.
+	As such it is not useful for validation, but rather to generate test
+	cases for example.
+
+	\\?(?:										# escaped type
+		{\+?s?f?RANGE(?:,RANGE)*}				# token type
+		|{q}									# query type
+		|{\+?n?f?}								# item type (notice no mandatory element inside brackets)
+	)
+	RANGE = (?:
+		(?:-?[0-9]+)?\.\.(?:-?[0-9]+)?			# ellipsis syntax for token range (x..y)
+		|-?[0-9]+								# shorthand syntax (x..x)
+	)
+*/
 var placeholder *regexp.Regexp
 var whiteSuffix *regexp.Regexp
 var offsetComponentRegex *regexp.Regexp
