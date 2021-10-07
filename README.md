@@ -202,7 +202,7 @@ vim $(fzf)
 
 #### Using the finder
 
-- `CTRL-J` / `CTRL-K` (or `CTRL-N` / `CTRL-P`) to move cursor up and down
+- `CTRL-K` / `CTRL-J` (or `CTRL-P` / `CTRL-N`) to move cursor up and down
 - `Enter` key to select the item, `CTRL-C` / `CTRL-G` / `ESC` to exit
 - On multi-select mode (`-m`), `TAB` and `Shift-TAB` to mark multiple items
 - Emacs style key bindings
@@ -574,7 +574,7 @@ FZF_DEFAULT_COMMAND='find . -type f' \
 The following example uses fzf as the selector interface for ripgrep. We bound
 `reload` action to `change` event, so every time you type on fzf, the ripgrep
 process will restart with the updated query string denoted by the placeholder
-expression `{q}`. Also, note that we used `--disabled` option so that fzf 
+expression `{q}`. Also, note that we used `--disabled` option so that fzf
 doesn't perform any secondary filtering.
 
 ```sh
