@@ -1766,7 +1766,7 @@ func (t *Terminal) executeChangeQuery(template string) {
 	}
 	command := t.replacePlaceholder(template, false, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
-	newQuery := []rune{}
+	var newQuerySB strings.Builder
 	t.executing.Set(true)
 	cmd.Stdin = tui.TtyIn()
 	out, _ := cmd.StdoutPipe()
@@ -1775,25 +1775,22 @@ func (t *Terminal) executeChangeQuery(template string) {
 	reader := bufio.NewReader(out)
 	err := cmd.Start()
 	if err != nil {
-		newQuery = append(newQuery, []rune(err.Error())...)
+		newQuerySB.WriteString(err.Error())
 	} else {
 		for {
-			line, err := reader.ReadString('\n')
-			newQuery = append(newQuery, []rune(line)...)
+			line, _, err := reader.ReadLine()
 			if err != nil {
 				break
 			}
+			newQuerySB.WriteString(line)
 		}
 	}
 	err = cmd.Wait()
 	if err != nil {
-		newQuery = append(newQuery, []rune(err.Error())...)
-	}
-	if newQuery[len(newQuery)-1] == rune('\n') {
-		newQuery = newQuery[:len(newQuery)-1]
+		newQuerySB.WriteString(err.Error())
 	}
 	t.tui.Resume(false, false)
-	t.input = newQuery
+	t.input = []rune(newQuerySB.String())
 	t.cx = len(t.input)
 	t.executing.Set(false)
 	cleanTemporaryFiles()
