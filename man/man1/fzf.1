@@ -966,7 +966,7 @@ See \fIhttps://github.com/junegunn/fzf/issues/1750\fR for more info.
 e.g.
      \fB# Change the query to all files with the current query as their extension
      ls | fzf --bind "ctrl-\\:change-query(ls *.{q} | awk '{ if (notfirst) { printf \\" | \\"; }; notfirst = 1; printf; }')" \\
-                  --header 'Press CTRL-\\ to escape double quotes in the query' \\
+                  --header 'Press CTRL-\\ to find files with the current query as an extension' \\
 
 .SS PREVIEW BINDING
 
