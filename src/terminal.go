@@ -1778,11 +1778,14 @@ func (t *Terminal) executeChangeQuery(template string) {
 		newQuerySB.WriteString(err.Error())
 	} else {
 		for {
-			line, _, err := reader.ReadLine()
+			line, isPre, err := reader.ReadLine()
 			if err != nil {
 				break
 			}
 			newQuerySB.WriteString(line)
+			if !isPre {
+				newQuerySB.WriteByte('\n')
+			}
 		}
 	}
 	err = cmd.Wait()
@@ -1790,6 +1793,9 @@ func (t *Terminal) executeChangeQuery(template string) {
 		newQuerySB.WriteString(err.Error())
 	}
 	t.tui.Resume(false, false)
+	newQuery := newQuerySB.String()
+	newQuery = strings.TrimSuffix(newQuery, "\n")
+	newQuery = strings.Replace(newQuery, "\n", " ")
 	t.input = []rune(newQuerySB.String())
 	t.cx = len(t.input)
 	t.executing.Set(false)
