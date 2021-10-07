@@ -1782,7 +1782,7 @@ func (t *Terminal) executeChangeQuery(template string) {
 			if err != nil {
 				break
 			}
-			newQuerySB.WriteString(line)
+			newQuerySB.Write(line)
 			if !isPre {
 				newQuerySB.WriteByte('\n')
 			}
