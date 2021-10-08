@@ -109,6 +109,7 @@ func TestReadFiles(t *testing.T) {
 		"wd/includedFile",
 		"wd/includedDir/foo",
 		"wd/includedDir/bar",
+		"symlinkTarget/foo",
 	}
 	for _, relFilePath := range files {
 		absFilePath := filepath.Join(testRootPath, relFilePath)
@@ -128,6 +129,36 @@ func TestReadFiles(t *testing.T) {
 		absFile.Close()
 	}
 
+	// create test symlinks
+	symlinks := map[string]string{
+		"wd/includedSymlink": "symlinkTarget",
+	}
+	for relSymPath, relFilePath := range symlinks {
+		absSymPath := filepath.Join(testRootPath, relSymPath)
+		absFilePath := filepath.Join(testRootPath, relFilePath)
+		absDirPath, _ := filepath.Split(absSymPath)
+
+		// create all required dirs
+		err = os.MkdirAll(absDirPath, 0777)
+		if err != nil {
+			t.Errorf("error: %s", err)
+		}
+
+		// create symlink
+		err := os.Symlink(absFilePath, absSymPath)
+		if err != nil {
+			switch e := err.(type) {
+			case *os.LinkError:
+				if util.IsWindows() && e.Err.Error() == "A required privilege is not held by the client." {
+					t.Skip("Skipped: this test requires admin privileges to create symlinks.")
+				}
+				t.Errorf("error: %s", e)
+			default:
+				t.Errorf("error: %s", e)
+			}
+		}
+	}
+
 	// make fzf read the files
 	ok := reader.readFiles()
 	if !ok {
@@ -139,6 +170,7 @@ func TestReadFiles(t *testing.T) {
 		`includedFile`:    nil,
 		`includedDir/foo`: nil,
 		`includedDir/bar`: nil,
+		`includedSymlink`: nil, // symlink is not followed
 	}
 	for _, s := range pushedStrings {
 		s = filepath.ToSlash(s) // windows: normalize path separators for comparison purposes
@@ -148,7 +180,7 @@ func TestReadFiles(t *testing.T) {
 			t.Errorf("unexpected file encountered: %s", s)
 		}
 	}
-	for k, _ := range expected {
+	for k := range expected {
 		t.Errorf("didn't encounter expected file: %s", k)
 	}
 }
