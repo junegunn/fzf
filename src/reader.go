@@ -224,7 +224,7 @@ type walker interface {
 }
 
 func newWalker() walker {
-	return &saracenWalker{}
+	return newSymlinkWalker()
 }
 
 // saracenWalker is the original implementation
@@ -233,6 +233,68 @@ type saracenWalker struct{}
 func (w *saracenWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
 	opt := walkerLib.WithErrorCallback(cb)
 	return walkerLib.Walk(path, fn, opt)
+}
+
+// symlinkWalker can follow symlinks
+type symlinkWalker struct {
+	mutex            sync.Mutex
+	seenDirs         map[string]bool
+	downstreamWalker saracenWalker
+}
+
+func newSymlinkWalker() *symlinkWalker {
+	return &symlinkWalker{
+		sync.Mutex{},
+		make(map[string]bool),
+		saracenWalker{},
+	}
+}
+func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
+	var hookFn walkerFunction
+
+	hookFn = func(path string, fi os.FileInfo) error {
+		//TODO can't use io/fs.ModeSymlink constant, because go <1.16 will fail
+		// with "src/reader.go:7:2: package io/fs is not in GOROOT (/Users/runner/
+		// hostedtoolcache/go/1.14.15/x64/src/io/fs)"
+		const ModeSymlink uint32 = 1 << 27
+
+		mode := fi.Mode()
+		isSymlink := uint32(mode)&ModeSymlink != 0
+		isDir := mode.IsDir()
+
+		if isDir {
+			canonicalPath, err := filepath.Abs(path)
+			if err != nil {
+				return err
+			}
+			w.mutex.Lock()
+			if w.seenDirs[canonicalPath] {
+				w.mutex.Unlock()
+				return filepath.SkipDir
+			} else {
+				w.seenDirs[canonicalPath] = true
+				w.mutex.Unlock()
+			}
+		}
+		if isSymlink {
+			absPath, err := filepath.Abs(path)
+			if err != nil {
+				return err
+			}
+			realPath, err := filepath.EvalSymlinks(absPath)
+			if err != nil {
+				return err
+			}
+			// we need to walk the symlink target explicitly
+			return w.Walk(realPath, fn, cb)
+		}
+
+		// call downstream
+		return fn(path, fi)
+	}
+
+	// call downstream
+	return w.downstreamWalker.Walk(path, hookFn, cb)
 }
 
 func (r *Reader) readFromCommand(shell *string, command string) bool {

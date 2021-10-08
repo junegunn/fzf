@@ -80,6 +80,19 @@ func TestReadFiles(t *testing.T) {
 		t.Errorf("error: %s", err)
 		return
 	}
+	testRootPath, err = filepath.Abs(testRootPath)
+	if err != nil {
+		t.Errorf("error: %s", err)
+		return
+	}
+	// when symlink is encountered and evaluated, the whole path is evaluated so
+	// for comparison purposes we need to make sure test root is also evaluated
+	// notable example is /tmp symlink to /private/tmp on macos
+	testRootPath, err = filepath.EvalSymlinks(testRootPath)
+	if err != nil {
+		t.Errorf("error: %s", err)
+		return
+	}
 	defer os.RemoveAll(testRootPath)
 
 	// create and change to a fzf's working dir
@@ -165,12 +178,17 @@ func TestReadFiles(t *testing.T) {
 		t.Error("error: readFiles() indicated error")
 	}
 
+	// util function to transform relative test path to absolute one
+	abs := func(p string) string {
+		return filepath.ToSlash(filepath.Join(testRootPath, p))
+	}
+
 	// check the read files
 	expected := map[string]interface{}{ // used as a set, ignore values
-		`includedFile`:    nil,
-		`includedDir/foo`: nil,
-		`includedDir/bar`: nil,
-		`includedSymlink`: nil, // symlink is not followed
+		`includedFile`:           nil,
+		`includedDir/foo`:        nil,
+		`includedDir/bar`:        nil,
+		abs(`symlinkTarget/foo`): nil, // symlink is followed
 	}
 	for _, s := range pushedStrings {
 		s = filepath.ToSlash(s) // windows: normalize path separators for comparison purposes
