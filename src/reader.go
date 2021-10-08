@@ -153,17 +153,32 @@ func (r *Reader) readFromStdin() bool {
 
 func (r *Reader) readFiles() bool {
 	r.killed = false
+
+	/*
+		A function called for each root, file and subdir; recursively.
+
+		- arg path: relative path, expects:
+			- "." for root
+			- "./subdirs/subfiles" for subtree objects
+		- arg mode: path's file info
+	*/
 	fn := func(path string, mode os.FileInfo) error {
+		// simplify the path, e.g. drop the leading "./" if any
 		path = filepath.Clean(path)
+
+		//non root
 		if path != "." {
 			isDir := mode.Mode().IsDir()
+			// skip hidden (subtree) dirs
 			if isDir && filepath.Base(path)[0] == '.' {
 				return filepath.SkipDir
 			}
+			// push files to fzf
 			if !isDir && r.pusher([]byte(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
+		// continue (and test for interrupt)
 		r.mutex.Lock()
 		defer r.mutex.Unlock()
 		if r.killed {
@@ -171,9 +186,30 @@ func (r *Reader) readFiles() bool {
 		}
 		return nil
 	}
+	/*
+		The error chain is below, note:
+		- errors up to fzf.fn(".") call are not filtered via cb()
+		- subsequent errors (most notably errors for subfiles, fzf.fn("./..."))
+			are filtered, possibly multiple times
+		- gowalk() spins out goroutines
+
+		fzf.readFiles()
+			<- walker.Walk()
+				<- walker.WalkWithContext()
+					<- fzf.fn(".")
+					<- go walker.gowalk()
+						<- fzf.cb() <- walker.readdir()
+										<- os.calls
+										<- walker.walk()
+											<- fzf.fn("./...")
+											<- fzf.cb() <- walker.readdir()
+	*/
 	cb := walker.WithErrorCallback(func(pathname string, err error) error {
+		// ignore the error
 		return nil
 	})
+
+	// walk the working dir
 	return walker.Walk(".", fn, cb) == nil
 }
 
