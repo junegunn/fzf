@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
-	"github.com/saracen/walker"
+	walkerLib "github.com/saracen/walker"
 )
 
 // Reader reads from command or standard input
@@ -152,6 +152,8 @@ func (r *Reader) readFromStdin() bool {
 }
 
 func (r *Reader) readFiles() bool {
+	var fn walkerFunction
+	var cb walkerErrorCallback
 	r.killed = false
 
 	/*
@@ -162,7 +164,7 @@ func (r *Reader) readFiles() bool {
 			- "./subdirs/subfiles" for subtree objects
 		- arg mode: path's file info
 	*/
-	fn := func(path string, mode os.FileInfo) error {
+	fn = func(path string, mode os.FileInfo) error {
 		// simplify the path, e.g. drop the leading "./" if any
 		path = filepath.Clean(path)
 
@@ -194,23 +196,43 @@ func (r *Reader) readFiles() bool {
 		- gowalk() spins out goroutines
 
 		fzf.readFiles()
-			<- walker.Walk()
-				<- walker.WalkWithContext()
+			<- walkerLib.Walk()
+				<- walkerLib.WalkWithContext()
 					<- fzf.fn(".")
-					<- go walker.gowalk()
-						<- fzf.cb() <- walker.readdir()
+					<- go walkerLib.gowalk()
+						<- fzf.cb() <- walkerLib.readdir()
 										<- os.calls
-										<- walker.walk()
+										<- walkerLib.walk()
 											<- fzf.fn("./...")
-											<- fzf.cb() <- walker.readdir()
+											<- fzf.cb() <- walkerLib.readdir()
 	*/
-	cb := walker.WithErrorCallback(func(pathname string, err error) error {
+	cb = func(pathname string, err error) error {
 		// ignore the error
 		return nil
-	})
+	}
 
 	// walk the working dir
-	return walker.Walk(".", fn, cb) == nil
+	w := newWalker()
+	return w.Walk(".", fn, cb) == nil
+}
+
+// the walker library does not provide types, so those we use are repeated here
+type walkerFunction func(path string, mode os.FileInfo) error
+type walkerErrorCallback func(pathname string, err error) error
+type walker interface {
+	Walk(path string, fn walkerFunction, cb walkerErrorCallback) error
+}
+
+func newWalker() walker {
+	return &saracenWalker{}
+}
+
+// saracenWalker is the original implementation
+type saracenWalker struct{}
+
+func (w *saracenWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
+	opt := walkerLib.WithErrorCallback(cb)
+	return walkerLib.Walk(path, fn, opt)
 }
 
 func (r *Reader) readFromCommand(shell *string, command string) bool {
