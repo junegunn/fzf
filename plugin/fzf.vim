@@ -519,7 +519,8 @@ finally
     if len(prev_default_command)
       let $FZF_DEFAULT_COMMAND = prev_default_command
     else
-      execute 'unlet $FZF_DEFAULT_COMMAND'
+      let $FZF_DEFAULT_COMMAND = ''
+      silent! execute 'unlet $FZF_DEFAULT_COMMAND'
     endif
   endif
   let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
