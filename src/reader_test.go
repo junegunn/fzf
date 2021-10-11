@@ -103,8 +103,8 @@ func TestReadFiles(t *testing.T) {
 	}
 	defer os.Chdir(originalWD)
 
-	testWD := filepath.Join(testRootPath, "wd")
-	err = os.Mkdir(testWD, 0777)
+	testWD := filepath.Join(testRootPath, "sup/wd")
+	err = os.MkdirAll(testWD, 0777)
 	if err != nil {
 		t.Errorf("error: %s", err)
 		return
@@ -117,12 +117,31 @@ func TestReadFiles(t *testing.T) {
 
 	// create test files
 	files := []string{
-		"excludedFile",
-		"excludedDir/foo",
-		"wd/includedFile",
-		"wd/includedDir/foo",
-		"wd/includedDir/bar",
-		"symlinkTarget/foo",
+		"file0",
+		"dir/file1",
+		"dir/subdir/file2",
+		"dir/subdir/another-file3",
+		"sup/file4", // symlink2
+		"sup/dir/file5",
+		"sup/wd/file6",
+		"sup/wd/dir/file7",
+		"sup/wd/dir/.target/subdir/file8", // symlink1
+		"sup/wd/another-dir/subdir/file9",
+		"sup/wd/another-dir/subdir/another-file10",
+		"sup/wd/.dir/file11",
+		"sup/wd/.file12",
+		"target/file13", // symlink0
+		"target/subdir/file14",
+		"file15",                                    // symlink3
+		"prefix/supdir/target/subdir/subdir/file16", // symlink4
+		"prefix/supdir/target/subdir/subdir/file17",
+		"prefix/supdir/target/subdir/another-subdir/file18",
+		"prefix/supdir/file19",
+		"prefix/target/dir/file20", // symlink5
+		"prefix/target/dir/file21",
+		"prefix/target2/file22", // symlink6
+		"prefix/target2/file23",
+		"prefix/file24", // symlink7
 	}
 	for _, relFilePath := range files {
 		absFilePath := filepath.Join(testRootPath, relFilePath)
@@ -144,7 +163,23 @@ func TestReadFiles(t *testing.T) {
 
 	// create test symlinks
 	symlinks := map[string]string{
-		"wd/includedSymlink": "symlinkTarget",
+		// outward symlink
+		"sup/wd/symlink0": "target",
+		// inward symlink
+		"sup/wd/symlink1": "sup/wd/dir/.target",
+		/*
+			upward symlink
+			note that this symlink contains all of the working dir wd, but won't
+			duplicate items because of the cycle
+		*/
+		"sup/wd/another-dir/subdir/symlink2": "sup",
+		// file symlink
+		"sup/wd/symlink3": "file15",
+		// symlink chain
+		"sup/wd/symlink4":               "prefix/supdir/target",
+		"prefix/supdir/target/symlink5": "prefix/target",
+		"prefix/target/symlink6":        "prefix/target2",
+		"prefix/target2/symlink7":       "prefix/file24",
 	}
 	for relSymPath, relFilePath := range symlinks {
 		absSymPath := filepath.Join(testRootPath, relSymPath)
@@ -185,10 +220,28 @@ func TestReadFiles(t *testing.T) {
 
 	// check the read files
 	expected := map[string]interface{}{ // used as a set, ignore values
-		`includedFile`:           nil,
-		`includedDir/foo`:        nil,
-		`includedDir/bar`:        nil,
-		abs(`symlinkTarget/foo`): nil, // symlink is followed
+		// files 0..3 excluded/unreachable
+		abs("sup/file4"):     nil,
+		abs("sup/dir/file5"): nil,
+		"file6":              nil,
+		"dir/file7":          nil,
+		// file8 in hidden dir, so it gets skipped, despite of also being reachable from symlink
+		"another-dir/subdir/file9":          nil,
+		"another-dir/subdir/another-file10": nil,
+		// file11 in hidden dir, so it gets skipped
+		".file12":                   nil,
+		abs("target/file13"):        nil,
+		abs("target/subdir/file14"): nil,
+		abs("file15"):               nil,
+		abs("prefix/supdir/target/subdir/subdir/file16"):         nil,
+		abs("prefix/supdir/target/subdir/subdir/file17"):         nil,
+		abs("prefix/supdir/target/subdir/another-subdir/file18"): nil,
+		// file19 squeezed between two symlink trees and intentionally unreachable
+		abs("prefix/target/dir/file20"): nil,
+		abs("prefix/target/dir/file21"): nil,
+		abs("prefix/target2/file22"):    nil,
+		abs("prefix/target2/file23"):    nil,
+		abs("prefix/file24"):            nil,
 	}
 	for _, s := range pushedStrings {
 		s = filepath.ToSlash(s) // windows: normalize path separators for comparison purposes
