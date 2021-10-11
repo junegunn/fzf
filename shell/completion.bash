@@ -108,7 +108,9 @@ _fzf_opts_completion() {
     -f --filter
     --print-query
     --expect
-    --sync"
+    --sync
+    -L --dereference
+    -P --no-dereference"
 
   case "${prev}" in
   --tiebreak)

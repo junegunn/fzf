@@ -17,21 +17,22 @@ import (
 
 // Reader reads from command or standard input
 type Reader struct {
-	pusher   func([]byte) bool
-	eventBox *util.EventBox
-	delimNil bool
-	event    int32
-	finChan  chan bool
-	mutex    sync.Mutex
-	exec     *exec.Cmd
-	command  *string
-	killed   bool
-	wait     bool
+	pusher      func([]byte) bool
+	eventBox    *util.EventBox
+	delimNil    bool
+	event       int32
+	finChan     chan bool
+	mutex       sync.Mutex
+	exec        *exec.Cmd
+	command     *string
+	killed      bool
+	wait        bool
+	dereference bool
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool, dereference bool) *Reader {
+	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait, dereference}
 }
 
 func (r *Reader) startEventPoller() {
@@ -212,7 +213,7 @@ func (r *Reader) readFiles() bool {
 	}
 
 	// walk the working dir
-	w := newWalker()
+	w := r.newWalker()
 	return w.Walk(".", fn, cb) == nil
 }
 
@@ -226,8 +227,12 @@ type walker interface {
 }
 
 // Returns proper walker implementation based on current config.
-func newWalker() walker {
-	return newSymlinkWalker()
+func (r *Reader) newWalker() walker {
+	if r.dereference {
+		return newSymlinkWalker()
+	} else {
+		return &saracenWalker{}
+	}
 }
 
 /*

@@ -15,7 +15,7 @@ func TestReadFromCommand(t *testing.T) {
 	eb := util.NewEventBox()
 	reader := NewReader(
 		func(s []byte) bool { strs = append(strs, string(s)); return true },
-		eb, false, true)
+		eb, false, true, false)
 
 	reader.startEventPoller()
 
@@ -66,13 +66,14 @@ func TestReadFromCommand(t *testing.T) {
 }
 
 // create temporary file structure, run fzf on it and check the files it saw
+// (symlink walker is tested)
 func TestReadFiles(t *testing.T) {
 	pushedStrings := []string{}
 	pusher := func(s []byte) bool {
 		pushedStrings = append(pushedStrings, string(s))
 		return true
 	}
-	reader := NewReader(pusher, util.NewEventBox(), false, true)
+	reader := NewReader(pusher, util.NewEventBox(), false, true, true)
 
 	// setup test dir
 	testRootPath, err := ioutil.TempDir("", "fzf-test-walk-")

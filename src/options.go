@@ -97,6 +97,8 @@ const usage = `usage: fzf [options]
     --read0               Read input delimited by ASCII NUL characters
     --print0              Print output delimited by ASCII NUL characters
     --sync                Synchronous search for multi-staged filtering
+    -L, --dereference     Traverse every symbolic link encountered.
+    -P, --no-dereference  Do not traverse any symbolic links (default).
     --version             Display version information and exit
 
   Environment variables
@@ -228,6 +230,7 @@ type Options struct {
 	Unicode     bool
 	Tabstop     int
 	ClearOnExit bool
+	Dereference bool
 	Version     bool
 }
 
@@ -288,6 +291,7 @@ func defaultOptions() *Options {
 		Unicode:     true,
 		Tabstop:     8,
 		ClearOnExit: true,
+		Dereference: false,
 		Version:     false}
 }
 
@@ -1461,6 +1465,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = true
 		case "--no-clear":
 			opts.ClearOnExit = false
+		case "-L", "--dereference":
+			opts.Dereference = true
+		case "-P", "--no-dereference":
+			opts.Dereference = false
 		case "--version":
 			opts.Version = true
 		default:
