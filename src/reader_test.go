@@ -125,7 +125,7 @@ func TestReadFiles(t *testing.T) {
 		"sup/dir/file5",
 		"sup/wd/file6",
 		"sup/wd/dir/file7",
-		"sup/wd/dir/.target/subdir/file8", // symlink1
+		"sup/wd/dir/target/subdir/file8", // symlink1
 		"sup/wd/another-dir/subdir/file9",
 		"sup/wd/another-dir/subdir/another-file10",
 		"sup/wd/.dir/file11",
@@ -165,8 +165,12 @@ func TestReadFiles(t *testing.T) {
 	symlinks := map[string]string{
 		// outward symlink
 		"sup/wd/symlink0": "target",
-		// inward symlink
-		"sup/wd/symlink1": "sup/wd/dir/.target",
+		/*
+			inward symlink
+			note that the target dir can be reached via two paths, however it
+			will be included in result set only once regardless the order
+		*/
+		"sup/wd/symlink1": "sup/wd/dir/target",
 		/*
 			upward symlink
 			note that this symlink contains all of the working dir wd, but won't
@@ -213,40 +217,38 @@ func TestReadFiles(t *testing.T) {
 		t.Error("error: readFiles() indicated error")
 	}
 
-	// util function to transform relative test path to absolute one
-	abs := func(p string) string {
-		return filepath.ToSlash(filepath.Join(testRootPath, p))
-	}
-
 	// check the read files
-	expected := map[string]interface{}{ // used as a set, ignore values
+	// used as a set, values are optional aliases (all aliases are removed at once)
+	expected := map[string]string{
 		// files 0..3 excluded/unreachable
-		abs("sup/file4"):     nil,
-		abs("sup/dir/file5"): nil,
-		"file6":              nil,
-		"dir/file7":          nil,
-		// file8 in hidden dir, so it gets skipped, despite of also being reachable from symlink
-		"another-dir/subdir/file9":          nil,
-		"another-dir/subdir/another-file10": nil,
+		"another-dir/subdir/symlink2/file4":     "",
+		"another-dir/subdir/symlink2/dir/file5": "",
+		"file6":                                 "",
+		"dir/file7":                             "",
+		"dir/target/subdir/file8":               "symlink1/subdir/file8",
+		"symlink1/subdir/file8":                 "dir/target/subdir/file8",
+		"another-dir/subdir/file9":              "",
+		"another-dir/subdir/another-file10":     "",
 		// file11 in hidden dir, so it gets skipped
-		".file12":                   nil,
-		abs("target/file13"):        nil,
-		abs("target/subdir/file14"): nil,
-		abs("file15"):               nil,
-		abs("prefix/supdir/target/subdir/subdir/file16"):         nil,
-		abs("prefix/supdir/target/subdir/subdir/file17"):         nil,
-		abs("prefix/supdir/target/subdir/another-subdir/file18"): nil,
+		".file12":                               "",
+		"symlink0/file13":                       "",
+		"symlink0/subdir/file14":                "",
+		"symlink3":                              "",
+		"symlink4/subdir/subdir/file16":         "",
+		"symlink4/subdir/subdir/file17":         "",
+		"symlink4/subdir/another-subdir/file18": "",
 		// file19 squeezed between two symlink trees and intentionally unreachable
-		abs("prefix/target/dir/file20"): nil,
-		abs("prefix/target/dir/file21"): nil,
-		abs("prefix/target2/file22"):    nil,
-		abs("prefix/target2/file23"):    nil,
-		abs("prefix/file24"):            nil,
+		"symlink4/symlink5/dir/file20":        "",
+		"symlink4/symlink5/dir/file21":        "",
+		"symlink4/symlink5/symlink6/file22":   "",
+		"symlink4/symlink5/symlink6/file23":   "",
+		"symlink4/symlink5/symlink6/symlink7": "",
 	}
 	for _, s := range pushedStrings {
 		s = filepath.ToSlash(s) // windows: normalize path separators for comparison purposes
-		if _, found := expected[s]; found {
+		if alias, found := expected[s]; found {
 			delete(expected, s)
+			delete(expected, alias)
 		} else {
 			t.Errorf("unexpected file encountered: %s", s)
 		}

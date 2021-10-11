@@ -252,6 +252,7 @@ func newSymlinkWalker() *symlinkWalker {
 func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
 	var hookFn walkerFunction
 
+	basePath := path
 	hookFn = func(path string, fi os.FileInfo) error {
 		//TODO can't use io/fs.ModeSymlink constant, because go <1.16 will fail
 		// with "src/reader.go:7:2: package io/fs is not in GOROOT (/Users/runner/
@@ -277,6 +278,10 @@ func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 			}
 		}
 		if isSymlink {
+			relPath, err := filepath.Rel(basePath, path)
+			if err != nil {
+				return err
+			}
 			absPath, err := filepath.Abs(path)
 			if err != nil {
 				return err
@@ -285,6 +290,15 @@ func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 			if err != nil {
 				return err
 			}
+
+			fn := func(p string, fi os.FileInfo) error {
+				rp, err := filepath.Rel(realPath, p)
+				if err != nil {
+					return err
+				}
+				return fn(filepath.Join(basePath, relPath, rp), fi)
+			}
+
 			// we need to walk the symlink target explicitly
 			return w.Walk(realPath, fn, cb)
 		}
