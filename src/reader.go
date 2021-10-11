@@ -219,15 +219,20 @@ func (r *Reader) readFiles() bool {
 // the walker library does not provide types, so those we use are repeated here
 type walkerFunction func(path string, mode os.FileInfo) error
 type walkerErrorCallback func(pathname string, err error) error
+
+// Walker scans filesystem tree and reports files and dirs to walker function fn.
 type walker interface {
 	Walk(path string, fn walkerFunction, cb walkerErrorCallback) error
 }
 
+// Returns proper walker implementation based on current config.
 func newWalker() walker {
 	return newSymlinkWalker()
 }
 
-// saracenWalker is the original implementation
+/*
+	saracenWalker is the original implementation
+*/
 type saracenWalker struct{}
 
 func (w *saracenWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
@@ -235,7 +240,11 @@ func (w *saracenWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 	return walkerLib.Walk(path, fn, opt)
 }
 
-// symlinkWalker can follow symlinks
+/*
+	symlinkWalker is same as saracen, but follows symlinks
+	- safe for concurrent use
+	- works like man in the middle between saracen walker and fzf's implementation of walker function fn
+*/
 type symlinkWalker struct {
 	mutex            sync.Mutex
 	seenDirs         map[string]bool
@@ -249,6 +258,29 @@ func newSymlinkWalker() *symlinkWalker {
 		saracenWalker{},
 	}
 }
+
+/*
+	arg path: absolute or relative path of directory to walk
+		- recursive calls can change this parameter to whatever path it needs
+	arg fn:
+		- callback function that will receive found files, prefixed with (original) path arg
+		- on recursive calls this function will be chain of functions
+			- e.g. for two symlink jumps: renameFn -> renameFn -> fn
+			- this function chain is then hooked and sent to saracen: hookFn -> renameFn -> renameFn -> fn
+		- caveat: the function fn receives path and os.FileInfo of the files and
+			dirs, but since the path argument is translated by renameFn and
+			os.FileInfo is taken from symlink's target absolute path (by saracen),
+			these two may not report same filename and mode of root dirs (but the arguments
+			always refer to the same filesystem node)
+				- for current implementation this means that symlink is reported
+					to fzf with its own symlink path and the os.FileInfo will
+					report directory mode (or possibly file mode), but not symbolic link mode
+				- this is useful and intentional, but easy to overlook
+	arg cb: error callback (note saracen is not filtering errors encountered
+		until reporting root dir through this function)
+
+	Cycles are prevented by making sure this walker won't step in one directory twice.
+*/
 func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallback) error {
 	var hookFn walkerFunction
 
@@ -263,6 +295,7 @@ func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 		isSymlink := uint32(mode)&ModeSymlink != 0
 		isDir := mode.IsDir()
 
+		// take a note of visited directories
 		if isDir {
 			canonicalPath, err := filepath.Abs(path)
 			if err != nil {
@@ -277,11 +310,16 @@ func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 				w.mutex.Unlock()
 			}
 		}
+
+		// jump to symlink target
 		if isSymlink {
+			// we can't assume path is relative (or absolute)
 			relPath, err := filepath.Rel(basePath, path)
 			if err != nil {
 				return err
 			}
+
+			// find the real path
 			absPath, err := filepath.Abs(path)
 			if err != nil {
 				return err
@@ -291,6 +329,16 @@ func (w *symlinkWalker) Walk(path string, fn walkerFunction, cb walkerErrorCallb
 				return err
 			}
 
+			/*
+				renameFn + fn chain:
+				- responsible to translate symlink's target absolute path to
+					whatever fzf was requesting
+				- basePath: absolute path of the root node of the tree containing the symlink
+				- relPath: path to the symlink file relative to the root node
+				- rp: path to the subfile or subdir in symlink's target tree, relative to its own root
+
+				- note that os.FileInfo is passed as is
+			*/
 			fn := func(p string, fi os.FileInfo) error {
 				rp, err := filepath.Rel(realPath, p)
 				if err != nil {
