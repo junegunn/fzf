@@ -22,7 +22,7 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Normal command
-	reader.fin(reader.readFromCommand(nil, `echo abc && echo def`))
+	reader.fin(reader.readFromCommand(nil, `echo abc&&echo def`))
 	if len(strs) != 2 || strs[0] != "abc" || strs[1] != "def" {
 		t.Errorf("%s", strs)
 	}

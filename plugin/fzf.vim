@@ -159,7 +159,7 @@ function s:get_version(bin)
   if has_key(s:versions, a:bin)
     return s:versions[a:bin]
   end
-  let command = a:bin . ' --version'
+  let command = a:bin . ' --version --no-height'
   let output = systemlist(command)
   if v:shell_error || empty(output)
     return ''
@@ -519,7 +519,8 @@ finally
     if len(prev_default_command)
       let $FZF_DEFAULT_COMMAND = prev_default_command
     else
-      execute 'unlet $FZF_DEFAULT_COMMAND'
+      let $FZF_DEFAULT_COMMAND = ''
+      silent! execute 'unlet $FZF_DEFAULT_COMMAND'
     endif
   endif
   let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
