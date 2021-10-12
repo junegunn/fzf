@@ -33,14 +33,14 @@ import (
 	As such it is not useful for validation, but rather to generate test
 	cases for example.
 
-	\\?(?:										# escaped type
-		{\+?s?f?RANGE(?:,RANGE)*}				# token type
-		|{q}									# query type
-		|{\+?n?f?}								# item type (notice no mandatory element inside brackets)
+	\\?(?:                                      # escaped type
+	    {\+?s?f?RANGE(?:,RANGE)*}               # token type
+	    |{q}                                    # query type
+	    |{\+?n?f?}                              # item type (notice no mandatory element inside brackets)
 	)
 	RANGE = (?:
-		(?:-?[0-9]+)?\.\.(?:-?[0-9]+)?			# ellipsis syntax for token range (x..y)
-		|-?[0-9]+								# shorthand syntax (x..x)
+	    (?:-?[0-9]+)?\.\.(?:-?[0-9]+)?          # ellipsis syntax for token range (x..y)
+	    |-?[0-9]+                               # shorthand syntax (x..x)
 	)
 */
 var placeholder *regexp.Regexp
@@ -1674,9 +1674,8 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 					n := int(item.text.Index)
 					if n < 0 {
 						return ""
-					} else {
-						return strconv.Itoa(n)
 					}
+					return strconv.Itoa(n)
 				case flags.file:
 					return item.AsString(stripAnsi)
 				default:
