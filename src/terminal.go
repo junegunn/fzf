@@ -2658,6 +2658,7 @@ func (t *Terminal) Loop() {
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
+					t.reading = true
 				}
 			case actUnbind:
 				keys := parseKeyChords(a.a, "PANIC")
