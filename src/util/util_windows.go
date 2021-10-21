@@ -16,7 +16,7 @@ func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	if len(shell) == 0 {
 		shell = "cmd"
 	} else {
-		if strings.Contains(shell, "/") || strings.Contains(shell, "\\") {
+		if strings.ContainsAny(shell, `/\`) {
 			out, err := exec.Command("cygpath", "-w", shell).Output()
 			if err == nil {
 				shell = strings.Trim(string(out), "\n")
@@ -41,15 +41,7 @@ func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
 	} else {
 		cmdlist = false
 	}
-	if cmdlist {
-		cmd := exec.Command(shell)
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			HideWindow:    false,
-			CmdLine:       commandline,
-			CreationFlags: 0,
-		}
-		return cmd
-	} else {
+	if !cmdlist {
 		cmd := exec.Command(shell, "-c", command)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
@@ -57,6 +49,13 @@ func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
 		}
 		return cmd
 	}
+	cmd := exec.Command(shell)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    false,
+		CmdLine:       commandline,
+		CreationFlags: 0,
+	}
+	return cmd
 }
 
 // KillCommand kills the process for the given command
