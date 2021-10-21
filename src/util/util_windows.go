@@ -15,12 +15,10 @@ func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")
 	if len(shell) == 0 {
 		shell = "cmd"
-	} else {
-		if strings.ContainsAny(shell, `/\`) {
-			out, err := exec.Command("cygpath", "-w", shell).Output()
-			if err == nil {
-				shell = strings.Trim(string(out), "\n")
-			}
+	} else if strings.ContainsAny(shell, `/\`) {
+		out, err := exec.Command("cygpath", "-w", shell).Output()
+		if err == nil {
+			shell = strings.Trim(string(out), "\n")
 		}
 	}
 	return ExecCommandWith(shell, command, setpgid)
@@ -33,15 +31,12 @@ func ExecCommand(command string, setpgid bool) *exec.Cmd {
 // but it is left as is now because no adverse effect has been observed.
 func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
 	var commandline string
-	cmdlist := true
 	if strings.Contains(shell, "cmd") {
 		commandline = fmt.Sprintf(` /v:on/s/c "%s"`, command)
 	} else if strings.Contains(shell, "pwsh") || strings.Contains(shell, "powershell") {
 		commandline = fmt.Sprintf(` -NoProfile -Command "& { %s }"`, command)
-	} else {
-		cmdlist = false
 	}
-	if !cmdlist {
+	if len(commandline) == 0 {
 		cmd := exec.Command(shell, "-c", command)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
