@@ -15,7 +15,7 @@ func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")
 	if len(shell) == 0 {
 		shell = "cmd"
-	} else if strings.ContainsAny(shell, `/\`) {
+	} else if strings.Contains(shell, "/") {
 		out, err := exec.Command("cygpath", "-w", shell).Output()
 		if err == nil {
 			shell = strings.Trim(string(out), "\n")

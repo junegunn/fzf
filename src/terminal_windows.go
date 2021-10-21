@@ -27,8 +27,11 @@ func quoteEntry(entry string) string {
 	}
 
 	if strings.Contains(shell, "cmd") {
+		// backslash escaping is done here for applications
+		// (see ripgrep test case in terminal_test.go#TestWindowsCommands)
 		escaped := strings.Replace(entry, `\`, `\\`, -1)
 		escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
+		// caret is the escape character for cmd shell
 		r, _ := regexp.Compile(`[&|<>()@^%!"]`)
 		return r.ReplaceAllStringFunc(escaped, func(match string) string {
 			return "^" + match
