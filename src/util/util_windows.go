@@ -6,23 +6,48 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
-// ExecCommand executes the given command with cmd
+// ExecCommand executes the given command with $SHELL
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
-	return ExecCommandWith("cmd", command, setpgid)
+	shell := os.Getenv("SHELL")
+	if len(shell) == 0 {
+		shell = "cmd"
+	} else if strings.Contains(shell, "/") {
+		out, err := exec.Command("cygpath", "-w", shell).Output()
+		if err == nil {
+			shell = strings.Trim(string(out), "\n")
+		}
+	}
+	return ExecCommandWith(shell, command, setpgid)
 }
 
-// ExecCommandWith executes the given command with cmd. _shell parameter is
-// ignored on Windows.
+// ExecCommandWith executes the given command with the specified shell
 // FIXME: setpgid is unused. We set it in the Unix implementation so that we
 // can kill preview process with its child processes at once.
-func ExecCommandWith(_shell string, command string, setpgid bool) *exec.Cmd {
-	cmd := exec.Command("cmd")
+// NOTE: For "powershell", we should ideally set output encoding to UTF8,
+// but it is left as is now because no adverse effect has been observed.
+func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
+	var commandline string
+	if strings.Contains(shell, "cmd") {
+		commandline = fmt.Sprintf(` /v:on/s/c "%s"`, command)
+	} else if strings.Contains(shell, "pwsh") || strings.Contains(shell, "powershell") {
+		commandline = fmt.Sprintf(` -NoProfile -Command "& { %s }"`, command)
+	}
+	if len(commandline) == 0 {
+		cmd := exec.Command(shell, "-c", command)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:    false,
+			CreationFlags: 0,
+		}
+		return cmd
+	}
+	cmd := exec.Command(shell)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    false,
-		CmdLine:       fmt.Sprintf(` /v:on/s/c "%s"`, command),
+		CmdLine:       commandline,
 		CreationFlags: 0,
 	}
 	return cmd
