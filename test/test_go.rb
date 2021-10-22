@@ -2069,6 +2069,13 @@ class TestGoFZF < TestBase
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines[1], '[[99]]' }
   end
+
+  def test_reload_should_update_preview
+    tmux.send_keys "seq 3 | #{FZF} --bind 'ctrl-t:reload:echo 4' --preview 'echo {}' --preview-window 'nohidden'", :Enter
+    tmux.until { |lines| assert_includes lines[1], '1' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_includes lines[1], '4' }
+  end
 end
 
 module TestShell
