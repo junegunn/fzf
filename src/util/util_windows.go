@@ -7,19 +7,28 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"syscall"
 )
 
+var shellPath atomic.Value
+
 // ExecCommand executes the given command with $SHELL
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
-	shell := os.Getenv("SHELL")
-	if len(shell) == 0 {
-		shell = "cmd"
-	} else if strings.Contains(shell, "/") {
-		out, err := exec.Command("cygpath", "-w", shell).Output()
-		if err == nil {
-			shell = strings.Trim(string(out), "\n")
+	var shell string
+	if cached := shellPath.Load(); cached != nil {
+		shell = cached.(string)
+	} else {
+		shell = os.Getenv("SHELL")
+		if len(shell) == 0 {
+			shell = "cmd"
+		} else if strings.Contains(shell, "/") {
+			out, err := exec.Command("cygpath", "-w", shell).Output()
+			if err == nil {
+				shell = strings.Trim(string(out), "\n")
+			}
 		}
+		shellPath.Store(shell)
 	}
 	return ExecCommandWith(shell, command, setpgid)
 }
