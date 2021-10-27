@@ -37,7 +37,7 @@ func quoteEntry(entry string) string {
 			return "^" + match
 		})
 	} else if strings.Contains(shell, "pwsh") || strings.Contains(shell, "powershell") {
-		escaped := strings.Replace(entry, `"`, `""`, -1)
+		escaped := strings.Replace(entry, `"`, `\"`, -1)
 		return "'" + strings.Replace(escaped, "'", "''", -1) + "'"
 	} else {
 		return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
