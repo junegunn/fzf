@@ -288,6 +288,7 @@ func TestUnixCommands(t *testing.T) {
 		{give{`grep {} ~/test`, ``, newItems(`~`)}, want{output: `grep '~' ~/test`}},
 
 		// 2) problematic examples
+		// (not necessarily unexpected)
 
 		// paths that need to expand some part of it won't work (special characters and variables)
 		{give{`cat {}`, ``, newItems(`~/test`)}, want{output: `cat '~/test'`}},
@@ -315,6 +316,7 @@ func TestWindowsCommands(t *testing.T) {
 		{give{`rg -- {}`, ``, newItems(`"C:\test.txt"`)}, want{output: `rg -- ^"\^"C:\\test.txt\^"^"`}},
 
 		// 2) problematic examples
+		// (not necessarily unexpected)
 
 		// notepad++'s parser can't handle `-n"12"` generate by fzf, expects `-n12`
 		{give{`notepad++ -n{1} {2}`, ``, newItems(`12	C:\Work\Test Folder\File.txt`)}, want{output: `notepad++ -n^"12^" ^"C:\\Work\\Test Folder\\File.txt^"`}},
@@ -327,9 +329,56 @@ func TestWindowsCommands(t *testing.T) {
 
 		// the "file" flag in the pattern won't create *.bat or *.cmd file so the command in the output tries to edit the file, instead of executing it
 		// the temp file contains: `cat "C:\test.txt"`
+		// TODO this should actually work
 		{give{`cmd /c {f}`, ``, newItems(`cat "C:\test.txt"`)}, want{match: `^cmd /c .*\fzf-preview-[0-9]{9}$`}},
 	}
 	testCommands(t, tests)
+}
+
+// purpose of this test is to demonstrate some shortcomings of fzf's templating system on Windows in Powershell
+func TestPowershellCommands(t *testing.T) {
+	if !util.IsWindows() {
+		t.SkipNow()
+	}
+
+	tests := []testCase{
+		// reference: give{template, query, items}, want{output OR match}
+
+		// 1) working examples
+
+		{give{`Get-Content {}`, ``, newItems(`C:\test.txt`)}, want{output: `Get-Content 'C:\test.txt'`}},
+		{give{`rg -- "package" {}`, ``, newItems(`.\test.go`)}, want{output: `rg -- "package" '.\test.go'`}},
+
+		// example of escaping single quotes
+		{give{`rg -- {}`, ``, newItems(`'foobar'`)}, want{output: `rg -- '''foobar'''`}},
+
+		// chaining powershells
+		{give{`powershell -NoProfile -Command {}`, ``, newItems(`cat "C:\test.txt"`)}, want{output: `powershell -NoProfile -Command 'cat \"C:\test.txt\"'`}},
+
+		// 2) problematic examples
+		// (not necessarily unexpected)
+
+		// looking for a path string will only work with escaped backslashes
+		{give{`rg -- {}`, ``, newItems(`C:\test.txt`)}, want{output: `rg -- 'C:\test.txt'`}},
+		// looking for a literal double quote will only work with triple escaped double quotes
+		{give{`rg -- {}`, ``, newItems(`"C:\test.txt"`)}, want{output: `rg -- '\"C:\test.txt\"'`}},
+
+		// Get-Content (i.e. cat alias) is parsing `"` as a part of the file path, returns an error:
+		// Get-Content : Cannot find drive. A drive with the name '"C:' does not exist.
+		{give{`cat {}`, ``, newItems(`"C:\test.txt"`)}, want{output: `cat '\"C:\test.txt\"'`}},
+
+		// the "file" flag in the pattern won't create *.ps1 file so the powershell will offload this "unknown" filetype
+		// to explorer, which will prompt user to pick editing program for the fzf-preview file
+		// the temp file contains: `cat "C:\test.txt"`
+		// TODO this should actually work
+		{give{`powershell -NoProfile -Command {f}`, ``, newItems(`cat "C:\test.txt"`)}, want{match: `^powershell -NoProfile -Command .*\fzf-preview-[0-9]{9}$`}},
+	}
+
+	// to force powershell-style escaping we temporarily set environment variable that fzf honors
+	shellBackup := os.Getenv("SHELL")
+	os.Setenv("SHELL", "powershell")
+	testCommands(t, tests)
+	os.Setenv("SHELL", shellBackup)
 }
 
 /*
