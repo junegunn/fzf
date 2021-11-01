@@ -344,6 +344,45 @@ func TestPowershellCommands(t *testing.T) {
 	tests := []testCase{
 		// reference: give{template, query, items}, want{output OR match}
 
+		/*
+			You can read each line in the following table as a pipeline that
+			consist of series of parsers that act upon your input (col. 1) and
+			each cell represents the output value.
+
+			For example:
+			 - exec.Command("program.exe", `\''`)
+			   - goes to win32 api which will process it transparently as it contains no special characters, see [CommandLineToArgvW][].
+			     - powershell command will receive it as is, that is two arguments: a literal backslash and empty string in single quotes
+			     - native command run via/from powershell will receive only one argument: a literal backslash. Because extra parsing rules apply, see [NativeCallsFromPowershell][].
+			       - some¹ apps have internal parser, that requires one more level of escaping (yes, this is completely application-specific, but see terminal_test.go#TestWindowsCommands)
+
+			Character⁰   CommandLineToArgvW   Powershell commands              Native commands from Powershell   Apps requiring escapes¹    | Being tested below
+			----------   ------------------   ------------------------------   -------------------------------   -------------------------- | ------------------
+			"            empty string²        missing argument error           ...                               ...                        |
+			\"           literal "            unbalanced quote error           ...                               ...                        |
+			'\"'         literal '"'          literal "                        empty string                      empty string (match all)   | yes
+			'\\\"'       literal '\"'         literal \"                       literal "                         literal "                  |
+			----------   ------------------   ------------------------------   -------------------------------   -------------------------- | ------------------
+			\            transparent          transparent                      transparent                       regex error                |
+			'\'          transparent          literal \                        literal \                         regex error                | yes
+			\\           transparent          transparent                      transparent                       literal \                  |
+			'\\'         transparent          literal \\                       literal \\                        literal \                  |
+			----------   ------------------   ------------------------------   -------------------------------   -------------------------- | ------------------
+			'            transparent          unbalanced quote error           ...                               ...                        |
+			\'           transparent          literal \ and unb. quote error   ...                               ...                        |
+			\''          transparent          literal \ and empty string       literal \                         regex error                | no, but given as example above
+			'''          transparent          unbalanced quote error           ...                               ...                        |
+			''''         transparent          literal '                        literal '                         literal '                  | yes
+			----------   ------------------   ------------------------------   -------------------------------   -------------------------- | ------------------
+
+			⁰: charatecter or characters 'x' as an argument to a program in go's call: exec.Command("program.exe", `x`)
+			¹: native commands like grep, git grep, ripgrep
+			²: interpreted as a grouping quote, affects argument parser and gets removed from the result
+
+			[CommandLineToArgvW]: https://docs.microsoft.com/en-gb/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw#remarks
+			[NativeCallsFromPowershell]: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_parsing?view=powershell-7.1#passing-arguments-that-contain-quote-characters
+		*/
+
 		// 1) working examples
 
 		{give{`Get-Content {}`, ``, newItems(`C:\test.txt`)}, want{output: `Get-Content 'C:\test.txt'`}},
