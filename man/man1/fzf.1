@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Oct 2021" "fzf 0.27.3" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2021" "fzf 0.27.4" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -135,10 +135,14 @@ Enable cyclic scroll
 Keep the right end of the line visible when it's too long. Effective only when
 the query string is empty.
 .TP
+.BI "--scroll-off=" "LINES"
+Number of screen lines to keep above or below when scrolling to the top or to
+the bottom (default: 0).
+.TP
 .B "--no-hscroll"
 Disable horizontal scroll
 .TP
-.BI "--hscroll-off=" "COL"
+.BI "--hscroll-off=" "COLS"
 Number of screen columns to keep to the right of the highlighted substring
 (default: 10). Setting it to a large value will cause the text to be positioned
 on the center of the screen.

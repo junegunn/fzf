@@ -44,8 +44,10 @@ const usage = `usage: fzf [options]
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
     --keep-right          Keep the right end of the line visible on overflow
+    --scroll-off=LINES    Number of screen lines to keep above or below when
+                          scrolling to the top or to the bottom (default: 0)
     --no-hscroll          Disable horizontal scroll
-    --hscroll-off=COL     Number of screen columns to keep to the right of the
+    --hscroll-off=COLS    Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
     --filepath-word       Make word-wise movements respect path separators
     --jump-labels=CHARS   Label characters for jump and jump-accept
@@ -200,6 +202,7 @@ type Options struct {
 	KeepRight   bool
 	Hscroll     bool
 	HscrollOff  int
+	ScrollOff   int
 	FileWord    bool
 	InfoStyle   infoStyle
 	JumpLabels  string
@@ -261,6 +264,7 @@ func defaultOptions() *Options {
 		KeepRight:   false,
 		Hscroll:     true,
 		HscrollOff:  10,
+		ScrollOff:   0,
 		FileWord:    false,
 		InfoStyle:   infoDefault,
 		JumpLabels:  defaultJumpLabels,
@@ -1354,6 +1358,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Hscroll = false
 		case "--hscroll-off":
 			opts.HscrollOff = nextInt(allArgs, &i, "hscroll offset required")
+		case "--scroll-off":
+			opts.ScrollOff = nextInt(allArgs, &i, "scroll offset required")
 		case "--filepath-word":
 			opts.FileWord = true
 		case "--no-filepath-word":
@@ -1530,6 +1536,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
+			} else if match, value := optString(arg, "--scroll-off="); match {
+				opts.ScrollOff = atoi(value)
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
 				validateJumpLabels = true
@@ -1545,6 +1553,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.HscrollOff < 0 {
 		errorExit("hscroll offset must be a non-negative integer")
+	}
+
+	if opts.ScrollOff < 0 {
+		errorExit("scroll offset must be a non-negative integer")
 	}
 
 	if opts.Tabstop < 1 {

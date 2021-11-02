@@ -121,6 +121,7 @@ type Terminal struct {
 	keepRight    bool
 	hscroll      bool
 	hscrollOff   int
+	scrollOff    int
 	wordRubout   string
 	wordNext     string
 	cx           int
@@ -502,6 +503,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		keepRight:   opts.KeepRight,
 		hscroll:     opts.Hscroll,
 		hscrollOff:  opts.HscrollOff,
+		scrollOff:   opts.ScrollOff,
 		wordRubout:  wordRubout,
 		wordNext:    wordNext,
 		cx:          len(input),
@@ -2749,9 +2751,26 @@ func (t *Terminal) constrain() {
 
 	t.cy = util.Constrain(t.cy, 0, count-1)
 
-	minOffset := t.cy - height + 1
+	minOffset := util.Max(t.cy-height+1, 0)
 	maxOffset := util.Max(util.Min(count-height, t.cy), 0)
 	t.offset = util.Constrain(t.offset, minOffset, maxOffset)
+	if t.scrollOff == 0 {
+		return
+	}
+
+	scrollOff := util.Min(height/2, t.scrollOff)
+	for {
+		prevOffset := t.offset
+		if t.cy-t.offset < scrollOff {
+			t.offset = util.Max(minOffset, t.offset-1)
+		}
+		if t.cy-t.offset >= height-scrollOff {
+			t.offset = util.Min(maxOffset, t.offset+1)
+		}
+		if t.offset == prevOffset {
+			break
+		}
+	}
 }
 
 func (t *Terminal) vmove(o int, allowCycle bool) {
