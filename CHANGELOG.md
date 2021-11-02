@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.27.4
+------
+- Added `--scroll-off=LINES` option (similar to `scrolloff` option of Vim)
+    - You can set it to a very large number so that the cursor stays in the
+      middle of the screen while scrolling
+      ```sh
+      fzf --scroll-off=5
+      fzf --scroll-off=999
+      ```
+- Fixed bug where preview window is not updated on `reload` (#2644)
+- fzf on Windows will also use `$SHELL` to execute external programs
+    - See #2638 and #2647
+    - Thanks to @rashil2000, @vovcacik, and @janlazo
+
 0.27.3
 ------
 - Preview window is `hidden` by default when there are `preview` bindings but
