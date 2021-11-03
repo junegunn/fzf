@@ -981,6 +981,12 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actEnableSearch)
 			case "disable-search":
 				appendAction(actDisableSearch)
+			case "put":
+				if key.Type == tui.Rune && unicode.IsGraphic(key.Char) {
+					appendAction(actRune)
+				} else {
+					errorExit("unable to put non-printable character: " + pair[0])
+				}
 			default:
 				t := isExecuteAction(specLower)
 				if t == actIgnore {
