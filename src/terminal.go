@@ -140,6 +140,8 @@ type Terminal struct {
 	printQuery   bool
 	history      *History
 	cycle        bool
+	headerFirst  bool
+	headerLines  int
 	header       []string
 	header0      []string
 	ansi         bool
@@ -529,6 +531,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		paused:      opts.Phony,
 		strong:      strongAttr,
 		cycle:       opts.Cycle,
+		headerFirst: opts.HeaderFirst,
+		headerLines: opts.HeaderLines,
 		header:      header,
 		header0:     header,
 		ansi:        opts.Ansi,
@@ -976,12 +980,23 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 	return before, after
 }
 
+func (t *Terminal) promptLine() int {
+	if t.headerFirst {
+		max := t.window.Height() - 1
+		if !t.noInfoLine() {
+			max--
+		}
+		return util.Min(len(t.header0)+t.headerLines, max)
+	}
+	return 0
+}
+
 func (t *Terminal) placeCursor() {
-	t.move(0, t.promptLen+t.queryLen[0], false)
+	t.move(t.promptLine(), t.promptLen+t.queryLen[0], false)
 }
 
 func (t *Terminal) printPrompt() {
-	t.move(0, 0, true)
+	t.move(t.promptLine(), 0, true)
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
@@ -1003,22 +1018,23 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 
 func (t *Terminal) printInfo() {
 	pos := 0
+	line := t.promptLine()
 	switch t.infoStyle {
 	case infoDefault:
-		t.move(1, 0, true)
+		t.move(line+1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(t.spinner)))) / duration
 			t.window.CPrint(tui.ColSpinner, t.spinner[idx])
 		}
-		t.move(1, 2, false)
+		t.move(line+1, 2, false)
 		pos = 2
 	case infoInline:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 		if pos+len(" < ") > t.window.Width() {
 			return
 		}
-		t.move(0, pos, true)
+		t.move(line, pos, true)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, " < ")
 		} else {
@@ -1061,11 +1077,20 @@ func (t *Terminal) printHeader() {
 		return
 	}
 	max := t.window.Height()
+	if t.headerFirst {
+		max--
+		if !t.noInfoLine() {
+			max--
+		}
+	}
 	var state *ansiState
 	for idx, lineStr := range t.header {
-		line := idx + 2
-		if t.noInfoLine() {
-			line--
+		line := idx
+		if !t.headerFirst {
+			line++
+			if !t.noInfoLine() {
+				line++
+			}
 		}
 		if line >= max {
 			continue
@@ -2644,7 +2669,7 @@ func (t *Terminal) Loop() {
 							}
 						}
 					} else if me.Down {
-						if my == 0 && mx >= 0 {
+						if my == t.promptLine() && mx >= 0 {
 							// Prompt
 							t.cx = mx + t.xoffset
 						} else if my >= min {

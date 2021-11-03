@@ -69,6 +69,7 @@ const usage = `usage: fzf [options]
     --marker=STR          Multi-select marker (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
+    --header-first        Print header before the prompt line
 
   Display
     --ansi                Enable processing of ANSI color codes
@@ -225,6 +226,7 @@ type Options struct {
 	History     *History
 	Header      []string
 	HeaderLines int
+	HeaderFirst bool
 	Margin      [4]sizeSpec
 	Padding     [4]sizeSpec
 	BorderShape tui.BorderShape
@@ -287,6 +289,7 @@ func defaultOptions() *Options {
 		History:     nil,
 		Header:      make([]string, 0),
 		HeaderLines: 0,
+		HeaderFirst: false,
 		Margin:      defaultMargin(),
 		Padding:     defaultMargin(),
 		Unicode:     true,
@@ -1427,6 +1430,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--header-lines":
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
+		case "--header-first":
+			opts.HeaderFirst = true
+		case "--no-header-first":
+			opts.HeaderFirst = false
 		case "--preview":
 			opts.Preview.command = nextString(allArgs, &i, "preview command required")
 		case "--no-preview":

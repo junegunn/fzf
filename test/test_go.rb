@@ -2109,6 +2109,39 @@ class TestGoFZF < TestBase
     tmux.send_keys :Down
     tmux.until { |lines| assert_equal "> #{height + 1}", lines[height / 2].strip }
   end
+
+  def test_header_first
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+        > 4
+          997/997
+        >
+          3
+          2
+          1
+          foobar
+      OUTPUT
+
+      assert_equal expected.chomp, lines.reverse.take(7).reverse.join("\n")
+    end
+  end
+
+  def test_header_first_reverse
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first --reverse --inline-info", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+          foobar
+          1
+          2
+          3
+        >   < 997/997
+        > 4
+      OUTPUT
+
+      assert_equal expected.chomp, lines.take(6).join("\n")
+    end
+  end
 end
 
 module TestShell

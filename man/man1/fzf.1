@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2021" "fzf 0.27.4" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2021" "fzf 0.28.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -299,6 +299,9 @@ are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
 The first N lines of the input are treated as the sticky header. When
 \fB--with-nth\fR is set, the lines are transformed just like the other
 lines that follow.
+.TP
+.B "--header-first"
+Print header before the prompt line
 .SS Display
 .TP
 .B "--ansi"

@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
-0.27.4
+0.28.0
 ------
+- Added `--header-first` option to print header before the prompt line
+  ```sh
+  fzf --header $'Welcome to fzf\n▔▔▔▔▔▔▔▔▔▔▔▔▔▔' --reverse --height 30% --border --header-first
+  ```
 - Added `--scroll-off=LINES` option (similar to `scrolloff` option of Vim)
     - You can set it to a very large number so that the cursor stays in the
       middle of the screen while scrolling
