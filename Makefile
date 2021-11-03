@@ -102,6 +102,7 @@ endif
 	grep -qF $(VERSION) install.ps1
 
 	# Make release note out of CHANGELOG.md
+	mkdir -p tmp
 	sed -n '/^$(VERSION_REGEX)$$/,/^[0-9]/p' CHANGELOG.md | tail -r | \
 		sed '1,/^ *$$/d' | tail -r | sed 1,2d | tee tmp/release-note
 
