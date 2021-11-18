@@ -131,6 +131,8 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 >
 > Refer to the package documentation for more information. (e.g. `apt-cache show fzf`)
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
+
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
