@@ -87,7 +87,7 @@ function fzf_key_bindings
       eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
       if [ -n "$result" ]
-        cd $result
+        cd -- $result
 
         # Remove last token from commandline.
         commandline -t ""
