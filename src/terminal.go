@@ -23,6 +23,26 @@ import (
 
 // import "github.com/pkg/profile"
 
+/*
+	Placeholder regex is used to extract placeholders from fzf's template
+	strings. Acts as input validation for parsePlaceholder function.
+	Describes the syntax, but it is fairly lenient.
+
+	The following pseudo regex has been reverse engineered from the
+	implementation. It is overly strict, but better describes whats possible.
+	As such it is not useful for validation, but rather to generate test
+	cases for example.
+
+	\\?(?:                                      # escaped type
+	    {\+?s?f?RANGE(?:,RANGE)*}               # token type
+	    |{q}                                    # query type
+	    |{\+?n?f?}                              # item type (notice no mandatory element inside brackets)
+	)
+	RANGE = (?:
+	    (?:-?[0-9]+)?\.\.(?:-?[0-9]+)?          # ellipsis syntax for token range (x..y)
+	    |-?[0-9]+                               # shorthand syntax (x..x)
+	)
+*/
 var placeholder *regexp.Regexp
 var whiteSuffix *regexp.Regexp
 var offsetComponentRegex *regexp.Regexp
@@ -101,6 +121,7 @@ type Terminal struct {
 	keepRight    bool
 	hscroll      bool
 	hscrollOff   int
+	scrollOff    int
 	wordRubout   string
 	wordNext     string
 	cx           int
@@ -119,6 +140,8 @@ type Terminal struct {
 	printQuery   bool
 	history      *History
 	cycle        bool
+	headerFirst  bool
+	headerLines  int
 	header       []string
 	header0      []string
 	ansi         bool
@@ -482,6 +505,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		keepRight:   opts.KeepRight,
 		hscroll:     opts.Hscroll,
 		hscrollOff:  opts.HscrollOff,
+		scrollOff:   opts.ScrollOff,
 		wordRubout:  wordRubout,
 		wordNext:    wordNext,
 		cx:          len(input),
@@ -507,6 +531,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		paused:      opts.Phony,
 		strong:      strongAttr,
 		cycle:       opts.Cycle,
+		headerFirst: opts.HeaderFirst,
+		headerLines: opts.HeaderLines,
 		header:      header,
 		header0:     header,
 		ansi:        opts.Ansi,
@@ -954,12 +980,23 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 	return before, after
 }
 
+func (t *Terminal) promptLine() int {
+	if t.headerFirst {
+		max := t.window.Height() - 1
+		if !t.noInfoLine() {
+			max--
+		}
+		return util.Min(len(t.header0)+t.headerLines, max)
+	}
+	return 0
+}
+
 func (t *Terminal) placeCursor() {
-	t.move(0, t.promptLen+t.queryLen[0], false)
+	t.move(t.promptLine(), t.promptLen+t.queryLen[0], false)
 }
 
 func (t *Terminal) printPrompt() {
-	t.move(0, 0, true)
+	t.move(t.promptLine(), 0, true)
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
@@ -981,22 +1018,23 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 
 func (t *Terminal) printInfo() {
 	pos := 0
+	line := t.promptLine()
 	switch t.infoStyle {
 	case infoDefault:
-		t.move(1, 0, true)
+		t.move(line+1, 0, true)
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(t.spinner)))) / duration
 			t.window.CPrint(tui.ColSpinner, t.spinner[idx])
 		}
-		t.move(1, 2, false)
+		t.move(line+1, 2, false)
 		pos = 2
 	case infoInline:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 		if pos+len(" < ") > t.window.Width() {
 			return
 		}
-		t.move(0, pos, true)
+		t.move(line, pos, true)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, " < ")
 		} else {
@@ -1039,11 +1077,20 @@ func (t *Terminal) printHeader() {
 		return
 	}
 	max := t.window.Height()
+	if t.headerFirst {
+		max--
+		if !t.noInfoLine() {
+			max--
+		}
+	}
 	var state *ansiState
 	for idx, lineStr := range t.header {
-		line := idx + 2
-		if t.noInfoLine() {
-			line--
+		line := idx
+		if !t.headerFirst {
+			line++
+			if !t.noInfoLine() {
+				line++
+			}
 		}
 		if line >= max {
 			continue
@@ -1520,22 +1567,6 @@ func keyMatch(key tui.Event, event tui.Event) bool {
 		key.Type == tui.DoubleClick && event.Type == tui.Mouse && event.MouseEvent.Double
 }
 
-func quoteEntryCmd(entry string) string {
-	escaped := strings.Replace(entry, `\`, `\\`, -1)
-	escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
-	r, _ := regexp.Compile(`[&|<>()@^%!"]`)
-	return r.ReplaceAllStringFunc(escaped, func(match string) string {
-		return "^" + match
-	})
-}
-
-func quoteEntry(entry string) string {
-	if util.IsWindows() {
-		return quoteEntryCmd(entry)
-	}
-	return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
-}
-
 func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	flags := placeholderFlags{}
 
@@ -1561,6 +1592,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			skipChars++
 		case 'q':
 			flags.query = true
+			// query flag is not skipped
 		default:
 			break
 		}
@@ -1648,77 +1680,86 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 	if selected[0] == nil {
 		selected = []*Item{}
 	}
+
+	// replace placeholders one by one
 	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
 		escaped, match, flags := parsePlaceholder(match)
 
-		if escaped {
+		// this function implements the effects a placeholder has on items
+		var replace func(*Item) string
+
+		// placeholder types (escaped, query type, item type, token type)
+		switch {
+		case escaped:
 			return match
+		case match == "{q}":
+			return quoteEntry(query)
+		case match == "{}":
+			replace = func(item *Item) string {
+				switch {
+				case flags.number:
+					n := int(item.text.Index)
+					if n < 0 {
+						return ""
+					}
+					return strconv.Itoa(n)
+				case flags.file:
+					return item.AsString(stripAnsi)
+				default:
+					return quoteEntry(item.AsString(stripAnsi))
+				}
+			}
+		default:
+			// token type and also failover (below)
+			rangeExpressions := strings.Split(match[1:len(match)-1], ",")
+			ranges := make([]Range, len(rangeExpressions))
+			for idx, s := range rangeExpressions {
+				r, ok := ParseRange(&s) // ellipsis (x..y) and shorthand (x..x) range syntax
+				if !ok {
+					// Invalid expression, just return the original string in the template
+					return match
+				}
+				ranges[idx] = r
+			}
+
+			replace = func(item *Item) string {
+				tokens := Tokenize(item.AsString(stripAnsi), delimiter)
+				trans := Transform(tokens, ranges)
+				str := joinTokens(trans)
+
+				// trim the last delimiter
+				if delimiter.str != nil {
+					str = strings.TrimSuffix(str, *delimiter.str)
+				} else if delimiter.regex != nil {
+					delims := delimiter.regex.FindAllStringIndex(str, -1)
+					// make sure the delimiter is at the very end of the string
+					if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
+						str = str[:delims[len(delims)-1][0]]
+					}
+				}
+
+				if !flags.preserveSpace {
+					str = strings.TrimSpace(str)
+				}
+				if !flags.file {
+					str = quoteEntry(str)
+				}
+				return str
+			}
 		}
 
-		// Current query
-		if match == "{q}" {
-			return quoteEntry(query)
-		}
+		// apply 'replace' function over proper set of items and return result
 
 		items := current
 		if flags.plus || forcePlus {
 			items = selected
 		}
-
 		replacements := make([]string, len(items))
 
-		if match == "{}" {
-			for idx, item := range items {
-				if flags.number {
-					n := int(item.text.Index)
-					if n < 0 {
-						replacements[idx] = ""
-					} else {
-						replacements[idx] = strconv.Itoa(n)
-					}
-				} else if flags.file {
-					replacements[idx] = item.AsString(stripAnsi)
-				} else {
-					replacements[idx] = quoteEntry(item.AsString(stripAnsi))
-				}
-			}
-			if flags.file {
-				return writeTemporaryFile(replacements, printsep)
-			}
-			return strings.Join(replacements, " ")
-		}
-
-		tokens := strings.Split(match[1:len(match)-1], ",")
-		ranges := make([]Range, len(tokens))
-		for idx, s := range tokens {
-			r, ok := ParseRange(&s)
-			if !ok {
-				// Invalid expression, just return the original string in the template
-				return match
-			}
-			ranges[idx] = r
-		}
-
 		for idx, item := range items {
-			tokens := Tokenize(item.AsString(stripAnsi), delimiter)
-			trans := Transform(tokens, ranges)
-			str := joinTokens(trans)
-			if delimiter.str != nil {
-				str = strings.TrimSuffix(str, *delimiter.str)
-			} else if delimiter.regex != nil {
-				delims := delimiter.regex.FindAllStringIndex(str, -1)
-				if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
-					str = str[:delims[len(delims)-1][0]]
-				}
-			}
-			if !flags.preserveSpace {
-				str = strings.TrimSpace(str)
-			}
-			if !flags.file {
-				str = quoteEntry(str)
-			}
-			replacements[idx] = str
+			replacements[idx] = replace(item)
 		}
+
 		if flags.file {
 			return writeTemporaryFile(replacements, printsep)
 		}
@@ -2628,7 +2669,7 @@ func (t *Terminal) Loop() {
 							}
 						}
 					} else if me.Down {
-						if my == 0 && mx >= 0 {
+						if my == t.promptLine() && mx >= 0 {
 							// Prompt
 							t.cx = mx + t.xoffset
 						} else if my >= min {
@@ -2658,6 +2699,8 @@ func (t *Terminal) Loop() {
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
+					t.reading = true
+					t.version++
 				}
 			case actUnbind:
 				keys := parseKeyChords(a.a, "PANIC")
@@ -2733,9 +2776,26 @@ func (t *Terminal) constrain() {
 
 	t.cy = util.Constrain(t.cy, 0, count-1)
 
-	minOffset := t.cy - height + 1
+	minOffset := util.Max(t.cy-height+1, 0)
 	maxOffset := util.Max(util.Min(count-height, t.cy), 0)
 	t.offset = util.Constrain(t.offset, minOffset, maxOffset)
+	if t.scrollOff == 0 {
+		return
+	}
+
+	scrollOff := util.Min(height/2, t.scrollOff)
+	for {
+		prevOffset := t.offset
+		if t.cy-t.offset < scrollOff {
+			t.offset = util.Max(minOffset, t.offset-1)
+		}
+		if t.cy-t.offset >= height-scrollOff {
+			t.offset = util.Min(maxOffset, t.offset+1)
+		}
+		if t.offset == prevOffset {
+			break
+		}
+	}
 }
 
 func (t *Terminal) vmove(o int, allowCycle bool) {

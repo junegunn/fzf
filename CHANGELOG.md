@@ -1,11 +1,31 @@
 CHANGELOG
 =========
 
+0.28.0
+------
+- Added `--header-first` option to print header before the prompt line
+  ```sh
+  fzf --header $'Welcome to fzf\n▔▔▔▔▔▔▔▔▔▔▔▔▔▔' --reverse --height 30% --border --header-first
+  ```
+- Added `--scroll-off=LINES` option (similar to `scrolloff` option of Vim)
+    - You can set it to a very large number so that the cursor stays in the
+      middle of the screen while scrolling
+      ```sh
+      fzf --scroll-off=5
+      fzf --scroll-off=999
+      ```
+- Fixed bug where preview window is not updated on `reload` (#2644)
+- fzf on Windows will also use `$SHELL` to execute external programs
+    - See #2638 and #2647
+    - Thanks to @rashil2000, @vovcacik, and @janlazo
+
 0.27.3
 ------
 - Preview window is `hidden` by default when there are `preview` bindings but
   `--preview` command is not given
 - Fixed bug where `{n}` is not properly reset on `reload`
+- Fixed bug where spinner is not displayed on `reload`
+- Enhancements in tcell renderer for Windows (#2616)
 - Vim plugin
     - `sinklist` is added as a synonym to `sink*` so that it's easier to add
       a function to a spec dictionary
@@ -17,6 +37,7 @@ CHANGELOG
 
       call fzf#run(fzf#wrap(spec))
       ```
+    - Vim 7 compatibility
 
 0.27.2
 ------

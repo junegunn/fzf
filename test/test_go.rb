@@ -2069,6 +2069,79 @@ class TestGoFZF < TestBase
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines[1], '[[99]]' }
   end
+
+  def test_reload_should_update_preview
+    tmux.send_keys "seq 3 | #{FZF} --bind 'ctrl-t:reload:echo 4' --preview 'echo {}' --preview-window 'nohidden'", :Enter
+    tmux.until { |lines| assert_includes lines[1], '1' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_includes lines[1], '4' }
+  end
+
+  def test_scroll_off
+    tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    height = tmux.until { |lines| lines }.first.to_i
+    tmux.send_keys :PgUp
+    tmux.until do |lines|
+      assert_equal height + 3, lines.first.to_i
+      assert_equal "> #{height}", lines[3].strip
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[3].strip }
+    tmux.send_keys 'l'
+    tmux.until { |lines| assert_equal '> 1000', lines.first.strip }
+    tmux.send_keys :PgDn
+    tmux.until { |lines| assert_equal "> #{1000 - height + 1}", lines.reverse[5].strip }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_equal "> #{1000 - height}", lines.reverse[5].strip }
+  end
+
+  def test_scroll_off_large
+    tmux.send_keys "seq 1000 | #{FZF} --scroll-off=9999", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    height = tmux.until { |lines| lines }.first.to_i
+    tmux.send_keys :PgUp
+    tmux.until { |lines| assert_equal "> #{height}", lines[height / 2].strip }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[height / 2].strip }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 2}", lines[height / 2].strip }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[height / 2].strip }
+  end
+
+  def test_header_first
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+        > 4
+          997/997
+        >
+          3
+          2
+          1
+          foobar
+      OUTPUT
+
+      assert_equal expected.chomp, lines.reverse.take(7).reverse.join("\n")
+    end
+  end
+
+  def test_header_first_reverse
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first --reverse --inline-info", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+          foobar
+          1
+          2
+          3
+        >   < 997/997
+        > 4
+      OUTPUT
+
+      assert_equal expected.chomp, lines.take(6).join("\n")
+    end
+  end
 end
 
 module TestShell

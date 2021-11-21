@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jun 2021" "fzf 0.27.2" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2021" "fzf 0.28.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -135,10 +135,14 @@ Enable cyclic scroll
 Keep the right end of the line visible when it's too long. Effective only when
 the query string is empty.
 .TP
+.BI "--scroll-off=" "LINES"
+Number of screen lines to keep above or below when scrolling to the top or to
+the bottom (default: 0).
+.TP
 .B "--no-hscroll"
 Disable horizontal scroll
 .TP
-.BI "--hscroll-off=" "COL"
+.BI "--hscroll-off=" "COLS"
 Number of screen columns to keep to the right of the highlighted substring
 (default: 10). Setting it to a large value will cause the text to be positioned
 on the center of the screen.
@@ -295,6 +299,9 @@ are not affected by \fB--with-nth\fR. ANSI color codes are processed even when
 The first N lines of the input are treated as the sticky header. When
 \fB--with-nth\fR is set, the lines are transformed just like the other
 lines that follow.
+.TP
+.B "--header-first"
+Print header before the prompt line
 .SS Display
 .TP
 .B "--ansi"
@@ -853,6 +860,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBpreview-top\fR
     \fBprevious-history\fR          (\fIctrl-p\fR on \fB--history\fR)
     \fBprint-query\fR               (print query and exit)
+    \fBput\fR                       (put the character to the prompt)
     \fBrefresh-preview\fR
     \fBreload(...)\fR               (see below for the details)
     \fBreplace-query\fR             (replace query string with the current selection)
