@@ -86,7 +86,7 @@ stuff.
 
 ### Using Homebrew
 
-You can use [Homebrew](http://brew.sh/) (on macOS or Linux)
+You can use [Homebrew](https://brew.sh/) (on macOS or Linux)
 to install fzf.
 
 ```sh
