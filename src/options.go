@@ -95,6 +95,7 @@ const usage = `usage: fzf [options]
     -1, --select-1        Automatically select the only match
     -0, --exit-0          Exit immediately when there's no match
     -f, --filter=STR      Filter mode. Do not start interactive finder.
+    --preselector=FILE    File including the pointed and selected items
     --print-query         Print query as the first line
     --expect=KEYS         Comma-separated list of keys to complete fzf
     --read0               Read input delimited by ASCII NUL characters
@@ -211,6 +212,7 @@ type Options struct {
 	Pointer     string
 	Marker      string
 	Query       string
+	Preselector *Preselector
 	Select1     bool
 	Exit0       bool
 	Filter      *string
@@ -274,6 +276,7 @@ func defaultOptions() *Options {
 		Pointer:     ">",
 		Marker:      ">",
 		Query:       "",
+		Preselector: nil,
 		Select1:     false,
 		Exit0:       false,
 		Filter:      nil,
@@ -1277,6 +1280,13 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "-f", "--filter":
 			filter := nextString(allArgs, &i, "query string required")
 			opts.Filter = &filter
+		case "--preselector":
+			path := nextString(allArgs, &i, "preselector file required")
+			p, e := NewPreselector(path)
+			if e != nil {
+				errorExit(e.Error())
+			}
+			opts.Preselector = p
 		case "--literal":
 			opts.Normalize = false
 		case "--no-literal":
@@ -1491,6 +1501,12 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Filter = &value
 			} else if match, value := optString(arg, "-d", "--delimiter="); match {
 				opts.Delimiter = delimiterRegexp(value)
+			} else if match, value := optString(arg, "--preselector="); match {
+				p, e := NewPreselector(value)
+				if e != nil {
+					errorExit(e.Error())
+				}
+				opts.Preselector = p
 			} else if match, value := optString(arg, "--border="); match {
 				opts.BorderShape = parseBorder(value, false)
 			} else if match, value := optString(arg, "--prompt="); match {
