@@ -219,6 +219,7 @@ type Options struct {
 	Keymap      map[tui.Event][]action
 	Preview     previewOpts
 	PrintQuery  bool
+	PrintSelectedCount  bool
 	ReadZero    bool
 	Printer     func(string)
 	PrintSep    string
@@ -282,6 +283,7 @@ func defaultOptions() *Options {
 		Keymap:      make(map[tui.Event][]action),
 		Preview:     defaultPreviewOpts(""),
 		PrintQuery:  false,
+		PrintSelectedCount:  false,
 		ReadZero:    false,
 		Printer:     func(str string) { fmt.Println(str) },
 		PrintSep:    "\n",
@@ -1407,6 +1409,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.PrintQuery = true
 		case "--no-print-query":
 			opts.PrintQuery = false
+		case "--print-selected-count":
+			opts.PrintSelectedCount = true
+		case "--no-print-selected-count":
+			opts.PrintSelectedCount = false
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
 		case "--pointer":
