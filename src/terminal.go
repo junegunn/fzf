@@ -104,88 +104,89 @@ var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
 type Terminal struct {
-	initDelay    time.Duration
-	infoStyle    infoStyle
-	spinner      []string
-	prompt       func()
-	promptLen    int
-	pointer      string
-	pointerLen   int
-	pointerEmpty string
-	marker       string
-	markerLen    int
-	markerEmpty  string
-	queryLen     [2]int
-	layout       layoutType
-	fullscreen   bool
-	keepRight    bool
-	hscroll      bool
-	hscrollOff   int
-	scrollOff    int
-	wordRubout   string
-	wordNext     string
-	cx           int
-	cy           int
-	offset       int
-	xoffset      int
-	yanked       []rune
-	input        []rune
-	multi        int
-	sort         bool
-	toggleSort   bool
-	delimiter    Delimiter
-	expect       map[tui.Event]string
-	keymap       map[tui.Event][]action
-	pressed      string
-	printQuery   bool
-	history      *History
-	cycle        bool
-	headerFirst  bool
-	headerLines  int
-	header       []string
-	header0      []string
-	ansi         bool
-	tabstop      int
-	margin       [4]sizeSpec
-	padding      [4]sizeSpec
-	strong       tui.Attr
-	unicode      bool
-	borderShape  tui.BorderShape
-	cleanExit    bool
-	paused       bool
-	border       tui.Window
-	window       tui.Window
-	pborder      tui.Window
-	pwindow      tui.Window
-	count        int
-	progress     int
-	reading      bool
-	running      bool
-	failed       *string
-	jumping      jumpMode
-	jumpLabels   string
-	printer      func(string)
-	printsep     string
-	merger       *Merger
-	selected     map[int32]selectedItem
-	version      int64
-	reqBox       *util.EventBox
-	previewOpts  previewOpts
-	previewer    previewer
-	previewed    previewed
-	previewBox   *util.EventBox
-	eventBox     *util.EventBox
-	mutex        sync.Mutex
-	initFunc     func()
-	prevLines    []itemLine
-	suppress     bool
-	sigstop      bool
-	startChan    chan bool
-	killChan     chan int
-	slab         *util.Slab
-	theme        *tui.ColorTheme
-	tui          tui.Renderer
-	executing    *util.AtomicBool
+	initDelay          time.Duration
+	infoStyle          infoStyle
+	spinner            []string
+	prompt             func()
+	promptLen          int
+	pointer            string
+	pointerLen         int
+	pointerEmpty       string
+	marker             string
+	markerLen          int
+	markerEmpty        string
+	queryLen           [2]int
+	layout             layoutType
+	fullscreen         bool
+	keepRight          bool
+	hscroll            bool
+	hscrollOff         int
+	scrollOff          int
+	wordRubout         string
+	wordNext           string
+	cx                 int
+	cy                 int
+	offset             int
+	xoffset            int
+	yanked             []rune
+	input              []rune
+	multi              int
+	sort               bool
+	toggleSort         bool
+	delimiter          Delimiter
+	expect             map[tui.Event]string
+	keymap             map[tui.Event][]action
+	pressed            string
+	printQuery         bool
+	history            *History
+	cycle              bool
+	headerFirst        bool
+	headerLines        int
+	header             []string
+	header0            []string
+	ansi               bool
+	tabstop            int
+	margin             [4]sizeSpec
+	padding            [4]sizeSpec
+	strong             tui.Attr
+	unicode            bool
+	borderShape        tui.BorderShape
+	cleanExit          bool
+	paused             bool
+	border             tui.Window
+	window             tui.Window
+	pborder            tui.Window
+	pwindow            tui.Window
+	count              int
+	progress           int
+	reading            bool
+	running            bool
+	failed             *string
+	jumping            jumpMode
+	jumpLabels         string
+	printer            func(string)
+	printsep           string
+	merger             *Merger
+	selected           map[int32]selectedItem
+	version            int64
+	reqBox             *util.EventBox
+	initialPreviewOpts previewOpts
+	previewOpts        previewOpts
+	previewer          previewer
+	previewed          previewed
+	previewBox         *util.EventBox
+	eventBox           *util.EventBox
+	mutex              sync.Mutex
+	initFunc           func()
+	prevLines          []itemLine
+	suppress           bool
+	sigstop            bool
+	startChan          chan bool
+	killChan           chan int
+	slab               *util.Slab
+	theme              *tui.ColorTheme
+	tui                tui.Renderer
+	executing          *util.AtomicBool
 }
 
 type selectedItem struct {
@@ -286,6 +287,8 @@ const (
 	actTogglePreview
 	actTogglePreviewWrap
 	actPreview
+	actChangePreview
+	actChangePreviewWindow
 	actPreviewTop
 	actPreviewBottom
 	actPreviewUp
@@ -324,9 +327,10 @@ type searchRequest struct {
 }
 
 type previewRequest struct {
-	template string
-	pwindow  tui.Window
-	list     []*Item
+	template     string
+	pwindow      tui.Window
+	scrollOffset int
+	list         []*Item
 }
 
 type previewResult struct {
@@ -416,7 +420,7 @@ func trimQuery(query string) []rune {
 func hasPreviewAction(opts *Options) bool {
 	for _, actions := range opts.Keymap {
 		for _, action := range actions {
-			if action.t == actPreview {
+			if action.t == actPreview || action.t == actChangePreview {
 				return true
 			}
 		}
@@ -496,72 +500,73 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
 	t := Terminal{
-		initDelay:   delay,
-		infoStyle:   opts.InfoStyle,
-		spinner:     makeSpinner(opts.Unicode),
-		queryLen:    [2]int{0, 0},
-		layout:      opts.Layout,
-		fullscreen:  fullscreen,
-		keepRight:   opts.KeepRight,
-		hscroll:     opts.Hscroll,
-		hscrollOff:  opts.HscrollOff,
-		scrollOff:   opts.ScrollOff,
-		wordRubout:  wordRubout,
-		wordNext:    wordNext,
-		cx:          len(input),
-		cy:          0,
-		offset:      0,
-		xoffset:     0,
-		yanked:      []rune{},
-		input:       input,
-		multi:       opts.Multi,
-		sort:        opts.Sort > 0,
-		toggleSort:  opts.ToggleSort,
-		delimiter:   opts.Delimiter,
-		expect:      opts.Expect,
-		keymap:      opts.Keymap,
-		pressed:     "",
-		printQuery:  opts.PrintQuery,
-		history:     opts.History,
-		margin:      opts.Margin,
-		padding:     opts.Padding,
-		unicode:     opts.Unicode,
-		borderShape: opts.BorderShape,
-		cleanExit:   opts.ClearOnExit,
-		paused:      opts.Phony,
-		strong:      strongAttr,
-		cycle:       opts.Cycle,
-		headerFirst: opts.HeaderFirst,
-		headerLines: opts.HeaderLines,
-		header:      header,
-		header0:     header,
-		ansi:        opts.Ansi,
-		tabstop:     opts.Tabstop,
-		reading:     true,
-		running:     true,
-		failed:      nil,
-		jumping:     jumpDisabled,
-		jumpLabels:  opts.JumpLabels,
-		printer:     opts.Printer,
-		printsep:    opts.PrintSep,
-		merger:      EmptyMerger,
-		selected:    make(map[int32]selectedItem),
-		reqBox:      util.NewEventBox(),
-		previewOpts: opts.Preview,
-		previewer:   previewer{0, []string{}, 0, showPreviewWindow, false, true, false, ""},
-		previewed:   previewed{0, 0, 0, false},
-		previewBox:  previewBox,
-		eventBox:    eventBox,
-		mutex:       sync.Mutex{},
-		suppress:    true,
-		sigstop:     false,
-		slab:        util.MakeSlab(slab16Size, slab32Size),
-		theme:       opts.Theme,
-		startChan:   make(chan bool, 1),
-		killChan:    make(chan int),
-		tui:         renderer,
-		initFunc:    func() { renderer.Init() },
-		executing:   util.NewAtomicBool(false)}
+		initDelay:          delay,
+		infoStyle:          opts.InfoStyle,
+		spinner:            makeSpinner(opts.Unicode),
+		queryLen:           [2]int{0, 0},
+		layout:             opts.Layout,
+		fullscreen:         fullscreen,
+		keepRight:          opts.KeepRight,
+		hscroll:            opts.Hscroll,
+		hscrollOff:         opts.HscrollOff,
+		scrollOff:          opts.ScrollOff,
+		wordRubout:         wordRubout,
+		wordNext:           wordNext,
+		cx:                 len(input),
+		cy:                 0,
+		offset:             0,
+		xoffset:            0,
+		yanked:             []rune{},
+		input:              input,
+		multi:              opts.Multi,
+		sort:               opts.Sort > 0,
+		toggleSort:         opts.ToggleSort,
+		delimiter:          opts.Delimiter,
+		expect:             opts.Expect,
+		keymap:             opts.Keymap,
+		pressed:            "",
+		printQuery:         opts.PrintQuery,
+		history:            opts.History,
+		margin:             opts.Margin,
+		padding:            opts.Padding,
+		unicode:            opts.Unicode,
+		borderShape:        opts.BorderShape,
+		cleanExit:          opts.ClearOnExit,
+		paused:             opts.Phony,
+		strong:             strongAttr,
+		cycle:              opts.Cycle,
+		headerFirst:        opts.HeaderFirst,
+		headerLines:        opts.HeaderLines,
+		header:             header,
+		header0:            header,
+		ansi:               opts.Ansi,
+		tabstop:            opts.Tabstop,
+		reading:            true,
+		running:            true,
+		failed:             nil,
+		jumping:            jumpDisabled,
+		jumpLabels:         opts.JumpLabels,
+		printer:            opts.Printer,
+		printsep:           opts.PrintSep,
+		merger:             EmptyMerger,
+		selected:           make(map[int32]selectedItem),
+		reqBox:             util.NewEventBox(),
+		initialPreviewOpts: opts.Preview,
+		previewOpts:        opts.Preview,
+		previewer:          previewer{0, []string{}, 0, showPreviewWindow, false, true, false, ""},
+		previewed:          previewed{0, 0, 0, false},
+		previewBox:         previewBox,
+		eventBox:           eventBox,
+		mutex:              sync.Mutex{},
+		suppress:           true,
+		sigstop:            false,
+		slab:               util.MakeSlab(slab16Size, slab32Size),
+		theme:              opts.Theme,
+		startChan:          make(chan bool, 1),
+		killChan:           make(chan int),
+		tui:                renderer,
+		initFunc:           func() { renderer.Init() },
+		executing:          util.NewAtomicBool(false)}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -1642,9 +1647,14 @@ func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input str
 		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list)
 }
 
-func (t *Terminal) evaluateScrollOffset(list []*Item, height int) int {
+func (t *Terminal) evaluateScrollOffset() int {
+	if t.pwindow == nil {
+		return 0
+	}
+
+	// We only need the current item to calculate the scroll offset
 	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(
-		t.replacePlaceholder(t.previewOpts.scroll, false, "", list), "")
+		t.replacePlaceholder(t.previewOpts.scroll, false, "", []*Item{t.currentItem(), nil}), "")
 
 	atoi := func(s string) int {
 		n, e := strconv.Atoi(s)
@@ -1655,20 +1665,21 @@ func (t *Terminal) evaluateScrollOffset(list []*Item, height int) int {
 	}
 
 	base := -1
+	height := util.Max(0, t.pwindow.Height()-t.previewOpts.headerLines)
 	for _, component := range offsetComponentRegex.FindAllString(offsetExpr, -1) {
 		if strings.HasPrefix(component, "-/") {
 			component = component[1:]
 		}
 		if component[0] == '/' {
 			denom := atoi(component[1:])
-			if denom == 0 {
-				return base
+			if denom != 0 {
+				base -= height / denom
 			}
-			return base - height/denom
+			break
 		}
 		base += atoi(component)
 	}
-	return base
+	return util.Max(0, base)
 }
 
 func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
@@ -1972,12 +1983,14 @@ func (t *Terminal) Loop() {
 				var items []*Item
 				var commandTemplate string
 				var pwindow tui.Window
+				initialOffset := 0
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
 						case reqPreviewEnqueue:
 							request := value.(previewRequest)
 							commandTemplate = request.template
+							initialOffset = request.scrollOffset
 							items = request.list
 							pwindow = request.pwindow
 						}
@@ -1989,11 +2002,9 @@ func (t *Terminal) Loop() {
 				if items[0] != nil {
 					_, query := t.Input()
 					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
-					initialOffset := 0
 					cmd := util.ExecCommand(command, true)
 					if pwindow != nil {
 						height := pwindow.Height()
-						initialOffset = util.Max(0, t.evaluateScrollOffset(items, util.Max(0, height-t.previewOpts.headerLines)))
 						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", pwindow.Width())
@@ -2128,7 +2139,7 @@ func (t *Terminal) Loop() {
 		if len(command) > 0 && t.isPreviewEnabled() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, list})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.evaluateScrollOffset(), list})
 		}
 	}
 
@@ -2253,13 +2264,16 @@ func (t *Terminal) Loop() {
 				}
 			}
 		}
-		togglePreview := func(enabled bool) {
+		togglePreview := func(enabled bool) bool {
 			if t.previewer.enabled != enabled {
 				t.previewer.enabled = enabled
+				// We need to immediately update t.pwindow so we don't use reqRedraw
 				t.tui.Clear()
 				t.resizeWindows()
 				req(reqPrompt, reqList, reqInfo, reqHeader)
+				return true
 			}
+			return false
 		}
 		toggle := func() bool {
 			current := t.currentItem()
@@ -2327,7 +2341,7 @@ func (t *Terminal) Loop() {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.previewOpts.command, t.pwindow, list})
+								previewRequest{t.previewOpts.command, t.pwindow, t.evaluateScrollOffset(), list})
 						}
 					}
 				}
@@ -2706,6 +2720,39 @@ func (t *Terminal) Loop() {
 				keys := parseKeyChords(a.a, "PANIC")
 				for key := range keys {
 					delete(t.keymap, key)
+				}
+			case actChangePreview:
+				if t.previewOpts.command != a.a {
+					togglePreview(len(a.a) > 0)
+					t.previewOpts.command = a.a
+					refreshPreview(t.previewOpts.command)
+				}
+			case actChangePreviewWindow:
+				currentPreviewOpts := t.previewOpts
+
+				// Reset preview options and apply the additional options
+				t.previewOpts = t.initialPreviewOpts
+				parsePreviewWindow(&t.previewOpts, a.a)
+
+				if t.previewOpts.hidden {
+					togglePreview(false)
+				} else {
+					// Full redraw
+					if !currentPreviewOpts.sameLayout(t.previewOpts) {
+						if togglePreview(true) {
+							refreshPreview(t.previewOpts.command)
+						} else {
+							req(reqRedraw)
+						}
+					} else if !currentPreviewOpts.sameContentLayout(t.previewOpts) {
+						t.previewed.version = 0
+						req(reqPreviewRefresh)
+					}
+
+					// Adjust scroll offset
+					if t.hasPreviewWindow() && currentPreviewOpts.scroll != t.previewOpts.scroll {
+						scrollPreviewTo(t.evaluateScrollOffset())
+					}
 				}
 			}
 			return true

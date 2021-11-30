@@ -2142,6 +2142,55 @@ class TestGoFZF < TestBase
       assert_equal expected.chomp, lines.take(6).join("\n")
     end
   end
+
+  def test_change_preview_window
+    tmux.send_keys "seq 1000 | #{FZF} --preview 'echo [[{}]]' --preview-window border-none --bind '" \
+      'a:change-preview(echo __{}__),' \
+      'b:change-preview-window(down)+change-preview(echo =={}==)+change-preview-window(up),' \
+      'c:change-preview(),d:change-preview-window(hidden),' \
+      "e:preview(printf ::%${FZF_PREVIEW_COLUMNS}s{})+change-preview-window(up),f:change-preview-window(up,wrap)'", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    tmux.until { |lines| assert_includes lines[0], '[[1]]' }
+
+    # change-preview action permanently changes the preview command set by --preview
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_includes lines[0], '__1__' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[0], '__2__' }
+
+    # When multiple change-preview-window actions are bound to a single key,
+    # the last one wins and the updated options are immediately applied to the new preview
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert_equal '==2==', lines[0] }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal '==3==', lines[0] }
+
+    # change-preview with an empty preview command closes the preview window
+    tmux.send_keys 'c'
+    tmux.until { |lines| refute_includes lines[0], '==' }
+
+    # change-preview again to re-open the preview window
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_equal '__3__', lines[0] }
+
+    # Hide the preview window with hidden flag
+    tmux.send_keys 'd'
+    tmux.until { |lines| refute_includes lines[0], '__3__' }
+
+    # One-off preview
+    tmux.send_keys 'e'
+    tmux.until do |lines|
+      assert_equal '::', lines[0]
+      refute_includes lines[1], '3'
+    end
+
+    # Wrapped
+    tmux.send_keys 'f'
+    tmux.until do |lines|
+      assert_equal '::', lines[0]
+      assert_equal '  3', lines[1]
+    end
+  end
 end
 
 module TestShell

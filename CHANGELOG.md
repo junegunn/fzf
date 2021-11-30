@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.29.0
+------
+- Added `change-preview(...)` action to change the `--preview` command
+    - cf. `preview(...)` is a one-off action that doesn't change the default
+      preview command
+- Added `change-preview-window(...)` action
+
 0.28.0
 ------
 - Added `--header-first` option to print header before the prompt line

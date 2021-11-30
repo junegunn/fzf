@@ -176,6 +176,14 @@ type previewOpts struct {
 	headerLines int
 }
 
+func (a previewOpts) sameLayout(b previewOpts) bool {
+	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden
+}
+
+func (a previewOpts) sameContentLayout(b previewOpts) bool {
+	return a.wrap == b.wrap && a.headerLines == b.headerLines
+}
+
 // Options stores the values of command-line options
 type Options struct {
 	Fuzzy       bool
@@ -787,7 +795,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]action, str string) {
@@ -799,6 +807,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 		prefix := symbol + "execute"
 		if strings.HasPrefix(src[1:], "reload") {
 			prefix = symbol + "reload"
+		} else if strings.HasPrefix(src[1:], "change-preview-window") {
+			prefix = symbol + "change-preview-window"
+		} else if strings.HasPrefix(src[1:], "change-preview") {
+			prefix = symbol + "change-preview"
 		} else if strings.HasPrefix(src[1:], "preview") {
 			prefix = symbol + "preview"
 		} else if strings.HasPrefix(src[1:], "unbind") {
@@ -1002,6 +1014,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("reload")
 					case actPreview:
 						offset = len("preview")
+					case actChangePreviewWindow:
+						offset = len("change-preview-window")
+					case actChangePreview:
+						offset = len("change-preview")
 					case actChangePrompt:
 						offset = len("change-prompt")
 					case actUnbind:
@@ -1028,6 +1044,9 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					}
 					if t == actUnbind {
 						parseKeyChords(actionArg, "unbind target required")
+					} else if t == actChangePreviewWindow {
+						opts := previewOpts{}
+						parsePreviewWindow(&opts, actionArg)
 					}
 				}
 			}
@@ -1053,6 +1072,10 @@ func isExecuteAction(str string) actionType {
 		return actUnbind
 	case "preview":
 		return actPreview
+	case "change-preview-window":
+		return actChangePreviewWindow
+	case "change-preview":
+		return actChangePreview
 	case "change-prompt":
 		return actChangePrompt
 	case "execute":
@@ -1633,10 +1656,28 @@ func postProcessOptions(opts *Options) {
 	// Extend the default key map
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
+		lastChangePreviewWindow := action{t: actIgnore}
 		for _, act := range actions {
-			if act.t == actToggleSort {
+			switch act.t {
+			case actToggleSort:
+				// To display "+S"/"-S" on info line
 				opts.ToggleSort = true
+			case actChangePreviewWindow:
+				lastChangePreviewWindow = act
 			}
+		}
+		// Re-organize actions so that we only keep the last change-preview-window
+		// and it comes first in the list.
+		//  *  change-preview-window(up,+10)+preview(sleep 3; cat {})+change-preview-window(up,+20)
+		//  -> change-preview-window(up,+20)+preview(sleep 3; cat {})
+		if lastChangePreviewWindow.t == actChangePreviewWindow {
+			reordered := []action{lastChangePreviewWindow}
+			for _, act := range actions {
+				if act.t != actChangePreviewWindow {
+					reordered = append(reordered, act)
+				}
+			}
+			actions = reordered
 		}
 		keymap[key] = actions
 	}
