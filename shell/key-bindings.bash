@@ -76,6 +76,11 @@ if (( BASH_VERSINFO[0] < 4 )); then
   bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u"$(__fzf_history__)"\e\C-e\er"'
   bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
   bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
+
+   # ALT-C - cd into the selected directory
+   bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
+   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
+   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 else
   # CTRL-T - Paste the selected file path into the command line
   bind -m emacs-standard -x '"\C-t": fzf-file-widget'
@@ -86,11 +91,11 @@ else
   bind -m emacs-standard -x '"\C-r": __fzf_history__'
   bind -m vi-command -x '"\C-r": __fzf_history__'
   bind -m vi-insert -x '"\C-r": __fzf_history__'
-fi
 
-# ALT-C - cd into the selected directory
-bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
-bind -m vi-command '"\ec": "\C-z\ec\C-z"'
-bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
+  # ALT-C - cd into the selected directory
+  bind -m emacs-standard -x '"\ec": $(__fzf_cd__)'
+  bind -m vi-command -x '"\ec": $(__fzf_cd__)'
+  bind -m vi-insert -x '"\ec": $(__fzf_cd__)'
+fi
 
 fi
