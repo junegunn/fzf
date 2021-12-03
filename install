@@ -274,7 +274,7 @@ done
 if [[ "$shells" =~ fish ]]; then
   echo -n "Update fish_user_paths ... "
   fish << EOF
-  echo \$fish_user_paths | \grep "$fzf_base"/bin > /dev/null
+  echo \$fish_user_paths | grep "$fzf_base"/bin > /dev/null
   or set --universal fish_user_paths \$fish_user_paths "$fzf_base"/bin
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
