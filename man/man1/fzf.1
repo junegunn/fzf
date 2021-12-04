@@ -821,7 +821,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbeginning-of-line\fR          \fIctrl-a  home\fR
     \fBcancel\fR                     (clear query string if not empty, abort fzf otherwise)
     \fBchange-preview(...)\fR        (change \fB--preview\fR option)
-    \fBchange-preview-window(...)\fR (change \fB--preview-window\fR option)
+    \fBchange-preview-window(...)\fR (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
     \fBchange-prompt(...)\fR         (change prompt to the given string)
     \fBclear-screen\fR               \fIctrl-l\fR
     \fBclear-selection\fR            (clear multi-selection)
@@ -972,7 +972,6 @@ commands in addition to the default preview command given by \fB--preview\fR
 option.
 
 e.g.
-
      # Default preview command with an extra preview binding
      fzf --preview 'file {}' --bind '?:preview:cat {}'
 
@@ -982,6 +981,22 @@ e.g.
 
      # Preview window hidden by default, it appears when you first hit '?'
      fzf --bind '?:preview:cat {}' --preview-window hidden
+
+.SS CHANGE PREVIEW WINDOW ATTRIBUTES
+
+\fBchange-preview-window\fR action can be used to change the properties of the
+preview window. Unlike the \fB--preview-window\fR option, you can specify
+multiple sets of options separated by '|' characters.
+
+e.g.
+     # Rotate through the options using CTRL-/
+     fzf --preview 'cat {}' --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-horizontal|hidden|right)'
+
+     # The default properties given by `--preview-window` are inherited, so an empty string in the list is interpreted as the default
+     fzf --preview 'cat {}' --preview-window 'right,40%,border-left' --bind 'ctrl-/:change-preview-window(70%|down,border-top|hidden|)'
+
+     # This is equivalent to toggle-preview action
+     fzf --preview 'cat {}' --bind 'ctrl-/:change-preview-window(hidden|)'
 
 .SH AUTHOR
 Junegunn Choi (\fIjunegunn.c@gmail.com\fR)

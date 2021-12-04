@@ -2191,6 +2191,23 @@ class TestGoFZF < TestBase
       assert_equal '  3', lines[1]
     end
   end
+
+  def test_change_preview_window_rotate
+    tmux.send_keys "seq 100 | #{FZF} --preview-window left,border-none --preview 'echo hello' --bind '" \
+      "a:change-preview-window(right|down|up|hidden|)'", :Enter
+    3.times do
+      tmux.until { |lines| lines[0].start_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| lines[0].end_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| lines[-1].start_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| assert_equal 'hello', lines[0] }
+      tmux.send_keys 'a'
+      tmux.until { |lines| refute_includes lines[0], 'hello' }
+      tmux.send_keys 'a'
+    end
+  end
 end
 
 module TestShell

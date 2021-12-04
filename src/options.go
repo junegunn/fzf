@@ -224,7 +224,7 @@ type Options struct {
 	Filter      *string
 	ToggleSort  bool
 	Expect      map[tui.Event]string
-	Keymap      map[tui.Event][]action
+	Keymap      map[tui.Event][]*action
 	Preview     previewOpts
 	PrintQuery  bool
 	ReadZero    bool
@@ -287,7 +287,7 @@ func defaultOptions() *Options {
 		Filter:      nil,
 		ToggleSort:  false,
 		Expect:      make(map[tui.Event]string),
-		Keymap:      make(map[tui.Event][]action),
+		Keymap:      make(map[tui.Event][]*action),
 		Preview:     defaultPreviewOpts(""),
 		PrintQuery:  false,
 		ReadZero:    false,
@@ -798,7 +798,7 @@ func init() {
 		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
-func parseKeymap(keymap map[tui.Event][]action, str string) {
+func parseKeymap(keymap map[tui.Event][]*action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		symbol := ":"
 		if strings.HasPrefix(src, "+") {
@@ -854,7 +854,7 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 
 		idx2 := len(pair[0]) + 1
 		specs := strings.Split(pair[1], "+")
-		actions := make([]action, 0, len(specs))
+		actions := make([]*action, 0, len(specs))
 		appendAction := func(types ...actionType) {
 			actions = append(actions, toActions(types...)...)
 		}
@@ -1033,20 +1033,22 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
 							actionArg = spec[offset+1:]
-							actions = append(actions, action{t: t, a: actionArg})
+							actions = append(actions, &action{t: t, a: actionArg})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
 						actionArg = spec[offset+1 : len(spec)-1]
-						actions = append(actions, action{t: t, a: actionArg})
+						actions = append(actions, &action{t: t, a: actionArg})
 					}
 					if t == actUnbind {
 						parseKeyChords(actionArg, "unbind target required")
 					} else if t == actChangePreviewWindow {
 						opts := previewOpts{}
-						parsePreviewWindow(&opts, actionArg)
+						for _, arg := range strings.Split(actionArg, "|") {
+							parsePreviewWindow(&opts, arg)
+						}
 					}
 				}
 			}
@@ -1088,7 +1090,7 @@ func isExecuteAction(str string) actionType {
 	return actIgnore
 }
 
-func parseToggleSort(keymap map[tui.Event][]action, str string) {
+func parseToggleSort(keymap map[tui.Event][]*action, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
@@ -1656,7 +1658,7 @@ func postProcessOptions(opts *Options) {
 	// Extend the default key map
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
-		lastChangePreviewWindow := action{t: actIgnore}
+		var lastChangePreviewWindow *action
 		for _, act := range actions {
 			switch act.t {
 			case actToggleSort:
@@ -1670,8 +1672,8 @@ func postProcessOptions(opts *Options) {
 		// and it comes first in the list.
 		//  *  change-preview-window(up,+10)+preview(sleep 3; cat {})+change-preview-window(up,+20)
 		//  -> change-preview-window(up,+20)+preview(sleep 3; cat {})
-		if lastChangePreviewWindow.t == actChangePreviewWindow {
-			reordered := []action{lastChangePreviewWindow}
+		if lastChangePreviewWindow != nil {
+			reordered := []*action{lastChangePreviewWindow}
 			for _, act := range actions {
 				if act.t != actChangePreviewWindow {
 					reordered = append(reordered, act)
