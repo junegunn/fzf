@@ -230,7 +230,6 @@ const (
 type action struct {
 	t actionType
 	a string
-	c int
 }
 
 type actionType int
@@ -2743,7 +2742,6 @@ func (t *Terminal) Loop() {
 				parsePreviewWindow(&t.previewOpts, tokens[0])
 				if len(tokens) > 1 {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
-					a.c++
 				}
 
 				if t.previewOpts.hidden {
