@@ -444,6 +444,12 @@ function! s:use_sh()
   return [shell, shellslash, shellcmdflag, shellxquote]
 endfunction
 
+function! s:writefile(...)
+  if call('writefile', a:000) == -1
+    throw 'Failed to write temporary file. Check if you can write to the path tempname() returns.'
+  endif
+endfunction
+
 function! fzf#run(...) abort
 try
   let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
@@ -471,7 +477,7 @@ try
       let source_command = source
     elseif type == 3
       let temps.input = s:fzf_tempname()
-      call writefile(source, temps.input)
+      call s:writefile(source, temps.input)
       let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
     else
       throw 'Invalid source type'
@@ -515,7 +521,7 @@ try
   call s:callback(dict, lines)
   return lines
 finally
-  if len(source_command)
+  if exists('source_command') && len(source_command)
     if len(prev_default_command)
       let $FZF_DEFAULT_COMMAND = prev_default_command
     else
@@ -660,7 +666,7 @@ function! s:execute(dict, command, use_height, temps) abort
   endif
   if s:is_win
     let batchfile = s:fzf_tempname().'.bat'
-    call writefile(s:wrap_cmds(command), batchfile)
+    call s:writefile(s:wrap_cmds(command), batchfile)
     let command = batchfile
     let a:temps.batchfile = batchfile
     if has('nvim')
@@ -678,7 +684,7 @@ function! s:execute(dict, command, use_height, temps) abort
     endif
   elseif has('win32unix') && $TERM !=# 'cygwin'
     let shellscript = s:fzf_tempname()
-    call writefile([command], shellscript)
+    call s:writefile([command], shellscript)
     let command = 'cmd.exe /C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
     let a:temps.shellscript = shellscript
   endif
@@ -877,7 +883,7 @@ function! s:execute_term(dict, command, temps) abort
     call s:pushd(a:dict)
     if s:is_win
       let fzf.temps.batchfile = s:fzf_tempname().'.bat'
-      call writefile(s:wrap_cmds(a:command), fzf.temps.batchfile)
+      call s:writefile(s:wrap_cmds(a:command), fzf.temps.batchfile)
       let command = fzf.temps.batchfile
     else
       let command = a:command
