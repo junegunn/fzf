@@ -198,10 +198,10 @@ mkfifo -m o+w $fifo2
 if [[ "$opt" =~ "-K -E" ]]; then
   cat $fifo2 &
   if [[ -n "$term" ]] || [[ -t 0 ]]; then
-    cat <<< "\"$fzf\" $opts > $fifo2; out=\$? $close; exit \$out" >> $argsf
+    cat <<< "$SHELL -c \"$fzf $opts > $fifo2\"; out=\$? $close; exit \$out" >> $argsf
   else
     mkfifo $fifo1
-    cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; out=\$? $close; exit \$out" >> $argsf
+    cat <<< "$SHELL -c \"$fzf $opts < $fifo1 > $fifo2\"; out=\$? $close; exit \$out" >> $argsf
     cat <&0 > $fifo1 &
   fi
 
@@ -219,10 +219,10 @@ fi
 
 mkfifo -m o+w $fifo3
 if [[ -n "$term" ]] || [[ -t 0 ]]; then
-  cat <<< "\"$fzf\" $opts > $fifo2; echo \$? > $fifo3 $close" >> $argsf
+  cat <<< "$SHELL -c \"$fzf $opts > $fifo2\"; echo \$? > $fifo3 $close" >> $argsf
 else
   mkfifo $fifo1
-  cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
+  cat <<< "$SHELL -c \"$fzf $opts < $fifo1 > $fifo2\"; echo \$? > $fifo3 $close" >> $argsf
   cat <&0 > $fifo1 &
 fi
 tmux set-window-option synchronize-panes off \;\
