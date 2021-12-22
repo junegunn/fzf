@@ -11,6 +11,7 @@ CHANGELOG
       ```sh
       fzf --preview 'cat {}' --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-horizontal|hidden|right)'
       ```
+- Fixed rendering of the prompt line when overflow occurs with `--info=inline`
 
 0.28.0
 ------
