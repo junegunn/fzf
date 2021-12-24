@@ -9,8 +9,10 @@ CHANGELOG
 - Added `change-preview-window(...)` action
     - You can rotate through the different options separated by `|`
       ```sh
-      fzf --preview 'cat {}' --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-horizontal|hidden|right)'
+      fzf --preview 'cat {}' --preview-window right:40% \
+          --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-top|hidden|)'
       ```
+- Fixed rendering of the prompt line when overflow occurs with `--info=inline`
 
 0.28.0
 ------

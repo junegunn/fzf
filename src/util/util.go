@@ -26,7 +26,7 @@ func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int
 			w = runewidth.StringWidth(s) + strings.Count(s, "\n")
 		}
 		width += w
-		if limit > 0 && width > limit {
+		if width > limit {
 			return width, idx
 		}
 		idx += len(rs)

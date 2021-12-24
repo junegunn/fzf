@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"regexp"
@@ -709,7 +710,7 @@ func (t *Terminal) sortSelected() []selectedItem {
 }
 
 func (t *Terminal) displayWidth(runes []rune) int {
-	width, _ := util.RunesWidth(runes, 0, t.tabstop, 0)
+	width, _ := util.RunesWidth(runes, 0, t.tabstop, math.MaxInt32)
 	return width
 }
 
@@ -1197,7 +1198,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 
 func (t *Terminal) trimRight(runes []rune, width int) ([]rune, bool) {
 	// We start from the beginning to handle tab characters
-	width, overflowIdx := util.RunesWidth(runes, 0, t.tabstop, width)
+	_, overflowIdx := util.RunesWidth(runes, 0, t.tabstop, width)
 	if overflowIdx >= 0 {
 		return runes[:overflowIdx], true
 	}
