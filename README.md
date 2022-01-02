@@ -592,6 +592,8 @@ If ripgrep doesn't find any matches, it will exit with a non-zero exit status,
 and fzf will warn you about it. To suppress the warning message, we added
 `|| true` to the command, so that it always exits with 0.
 
+To see an example wrapper program named `rgf` (RipGrep Fuzzyfinder) which performs the above interactive ripgrep fuzzy search, see: https://github.com/ElectricRCAircraftGuy/eRCaGuy_dotfiles/blob/master/useful_scripts/rgf.sh
+
 ### Preview window
 
 When the `--preview` option is set, fzf automatically starts an external process
