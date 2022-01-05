@@ -592,6 +592,9 @@ If ripgrep doesn't find any matches, it will exit with a non-zero exit status,
 and fzf will warn you about it. To suppress the warning message, we added
 `|| true` to the command, so that it always exits with 0.
 
+See ["Using fzf as interative Ripgrep launcher"](https://github.com/junegunn/fzf/blob/master/ADVANCED.md#using-fzf-as-interative-ripgrep-launcher)
+for a fuller example with preview window options.
+
 ### Preview window
 
 When the `--preview` option is set, fzf automatically starts an external process
