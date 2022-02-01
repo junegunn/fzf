@@ -88,9 +88,13 @@ fi
 
 if ! declare -f _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
-    command find -L "$1" \
-      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    if declare -f _fzf_find_dir &> /dev/null; then
+      _fzf_find_dir "$1"
+    else
+      command find -L "$1" \
+        -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
+        -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+    fi
   }
 fi
 
