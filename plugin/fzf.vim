@@ -487,6 +487,7 @@ try
   endif
 
   let prefer_tmux = get(g:, 'fzf_prefer_tmux', 0) || has_key(dict, 'tmux')
+  let prefer_height = get(g:, 'fzf_prefer_height', 0)
   let use_height = has_key(dict, 'down') && !has('gui_running') &&
         \ !(has('nvim') || s:is_win || has('win32unix') || s:present(dict, 'up', 'left', 'right', 'window')) &&
         \ executable('tput') && filereadable('/dev/tty')
@@ -497,6 +498,8 @@ try
   let use_tmux = (has_key(dict, 'tmux') || (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:splittable(dict)) && s:tmux_enabled()
   if prefer_tmux && use_tmux
     let use_height = 0
+    let use_term = 0
+  elseif prefer_height && use_height
     let use_term = 0
   endif
   if use_term
