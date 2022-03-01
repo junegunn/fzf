@@ -170,6 +170,7 @@ type Terminal struct {
 	printsep           string
 	merger             *Merger
 	selected           map[int32]selectedItem
+	cs                 int
 	version            int64
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
@@ -315,6 +316,8 @@ const (
 	actDeselect
 	actUnbind
 	actRebind
+	actNextSelected
+	actPrevSelected
 )
 
 type placeholderFlags struct {
@@ -560,6 +563,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		printsep:           opts.PrintSep,
 		merger:             EmptyMerger,
 		selected:           make(map[int32]selectedItem),
+		cs:                 0,
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
@@ -2564,6 +2568,34 @@ func (t *Terminal) Loop() {
 					t.selected = make(map[int32]selectedItem)
 					t.version++
 					req(reqList, reqInfo)
+				}
+			case actNextSelected, actPrevSelected:
+				if len(t.selected) > 0 {
+					var sels []int
+					sels = make([]int, len(t.selected)+1)
+					var j int
+					for i := 0; i < t.merger.Length() && len(t.selected) > 0; i++ {
+						item := t.merger.Get(i).item
+						if _, found := t.selected[item.Index()]; found {
+							sels[j] = i
+							j = j + 1
+						}
+					}
+					if j > 0 {
+						if a.t == actNextSelected {
+							t.cs = t.cs + 1
+							if t.cs >= j {
+								t.cs = 0
+							}
+						} else {
+							t.cs = t.cs - 1
+							if t.cs < 0 {
+								t.cs = j - 1
+							}
+						}
+						t.vset(sels[t.cs])
+						req(reqList)
+					}
 				}
 			case actFirst:
 				t.vset(0)

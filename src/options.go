@@ -958,6 +958,10 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 				appendAction(actUp)
 			case "first", "top":
 				appendAction(actFirst)
+			case "next-selected":
+				appendAction(actNextSelected)
+			case "prev-selected":
+				appendAction(actPrevSelected)
 			case "last":
 				appendAction(actLast)
 			case "page-up":
