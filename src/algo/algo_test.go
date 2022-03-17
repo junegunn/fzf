@@ -43,10 +43,10 @@ func TestFuzzyMatch(t *testing.T) {
 	for _, fn := range []Algo{FuzzyMatchV1, FuzzyMatchV2} {
 		for _, forward := range []bool{true, false} {
 			assertMatch(t, fn, false, forward, "fooBarbaz1", "oBZ", 2, 9,
-				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtention*3)
+				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtension*3)
 			assertMatch(t, fn, false, forward, "foo bar baz", "fbb", 0, 9,
 				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
-					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtention)
+					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "/AutomatorDocument.icns", "rdoc", 9, 13,
 				scoreMatch*4+bonusCamel123+bonusConsecutive*2)
 			assertMatch(t, fn, false, forward, "/man1/zshcompctl.1", "zshc", 6, 10,
@@ -54,18 +54,18 @@ func TestFuzzyMatch(t *testing.T) {
 			assertMatch(t, fn, false, forward, "/.oh-my-zsh/cache", "zshc", 8, 13,
 				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*3+scoreGapStart)
 			assertMatch(t, fn, false, forward, "ab0123 456", "12356", 3, 10,
-				scoreMatch*5+bonusConsecutive*3+scoreGapStart+scoreGapExtention)
+				scoreMatch*5+bonusConsecutive*3+scoreGapStart+scoreGapExtension)
 			assertMatch(t, fn, false, forward, "abc123 456", "12356", 3, 10,
-				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+bonusConsecutive+scoreGapStart+scoreGapExtention)
+				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+bonusConsecutive+scoreGapStart+scoreGapExtension)
 			assertMatch(t, fn, false, forward, "foo/bar/baz", "fbb", 0, 9,
 				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
-					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtention)
+					bonusBoundary*2+2*scoreGapStart+4*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "fooBarBaz", "fbb", 0, 7,
 				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+
-					bonusCamel123*2+2*scoreGapStart+2*scoreGapExtention)
+					bonusCamel123*2+2*scoreGapStart+2*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "foo barbaz", "fbb", 0, 8,
 				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary+
-					scoreGapStart*2+scoreGapExtention*3)
+					scoreGapStart*2+scoreGapExtension*3)
 			assertMatch(t, fn, false, forward, "fooBar Baz", "foob", 0, 4,
 				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*3)
 			assertMatch(t, fn, false, forward, "xFoo-Bar Baz", "foo-b", 1, 6,
@@ -73,13 +73,13 @@ func TestFuzzyMatch(t *testing.T) {
 					bonusNonWord+bonusBoundary)
 
 			assertMatch(t, fn, true, forward, "fooBarbaz", "oBz", 2, 9,
-				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtention*3)
+				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtension*3)
 			assertMatch(t, fn, true, forward, "Foo/Bar/Baz", "FBB", 0, 9,
 				scoreMatch*3+bonusBoundary*(bonusFirstCharMultiplier+2)+
-					scoreGapStart*2+scoreGapExtention*4)
+					scoreGapStart*2+scoreGapExtension*4)
 			assertMatch(t, fn, true, forward, "FooBarBaz", "FBB", 0, 7,
 				scoreMatch*3+bonusBoundary*bonusFirstCharMultiplier+bonusCamel123*2+
-					scoreGapStart*2+scoreGapExtention*2)
+					scoreGapStart*2+scoreGapExtension*2)
 			assertMatch(t, fn, true, forward, "FooBar Baz", "FooB", 0, 4,
 				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*2+
 					util.Max(bonusCamel123, bonusBoundary))
@@ -99,7 +99,7 @@ func TestFuzzyMatch(t *testing.T) {
 func TestFuzzyMatchBackward(t *testing.T) {
 	assertMatch(t, FuzzyMatchV1, false, true, "foobar fb", "fb", 0, 4,
 		scoreMatch*2+bonusBoundary*bonusFirstCharMultiplier+
-			scoreGapStart+scoreGapExtention)
+			scoreGapStart+scoreGapExtension)
 	assertMatch(t, FuzzyMatchV1, false, false, "foobar fb", "fb", 7, 9,
 		scoreMatch*2+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary)
 }

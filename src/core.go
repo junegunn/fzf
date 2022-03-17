@@ -233,6 +233,7 @@ func Run(opts *Options, version string, revision string) {
 		clearCache = util.Once(true)
 		clearSelection = util.Once(true)
 		chunkList.Clear()
+		itemIndex = 0
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command)
 	}

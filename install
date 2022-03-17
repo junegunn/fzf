@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.27.2
+version=0.29.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -280,11 +280,6 @@ EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
 
   mkdir -p "${fish_dir}/functions"
-  if [ -e "${fish_dir}/functions/fzf.fish" ]; then
-    echo -n "Remove unnecessary ${fish_dir}/functions/fzf.fish ... "
-    rm -f "${fish_dir}/functions/fzf.fish" && echo "OK" || echo "Failed"
-  fi
-
   fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
   if [ $key_bindings -ne 0 ]; then
     echo -n "Symlink $fish_binding ... "

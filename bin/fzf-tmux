@@ -172,7 +172,7 @@ cleanup() {
       resize-pane -Z
   fi
 
-  if [ $# -gt 0 ]; then
+  if [[ $# -gt 0 ]]; then
     trap - EXIT
     exit 130
   fi

@@ -149,7 +149,7 @@ fzf-tmux -p 80%,60%
 
 > You might also want to check out my tmux plugins which support this popup
 > window layout.
-> 
+>
 > - https://github.com/junegunn/tmux-fzf-url
 > - https://github.com/junegunn/tmux-fzf-maccy
 
@@ -190,7 +190,7 @@ list without restarting fzf.
 
 ### Toggling between data sources
 
-You're not limiited to just one reload binding. Set up multiple bindings so
+You're not limited to just one reload binding. Set up multiple bindings so
 you can switch between data sources.
 
 ```sh
@@ -349,7 +349,7 @@ IFS=: read -ra selected < <(
   fzf can kill the initial Ripgrep process it starts with the initial query.
   Otherwise, the initial Ripgrep process will keep consuming system resources
   even after `reload` is triggered.
-- Filtering is no longer a responsibitiliy of fzf; hence `--disabled`
+- Filtering is no longer a responsibility of fzf; hence `--disabled`
 - `{q}` in the reload command evaluates to the query string on fzf prompt.
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
   reduce the number of intermediate Ripgrep processes while we're typing in
@@ -429,30 +429,34 @@ Admittedly, that was a silly example. Here's a practical one for browsing
 Kubernetes pods.
 
 ```bash
-#!/usr/bin/env bash
-
-read -ra tokens < <(
-  kubectl get pods --all-namespaces |
-    fzf --info=inline --layout=reverse --header-lines=1 --border \
+pods() {
+  FZF_DEFAULT_COMMAND="kubectl get pods --all-namespaces" \
+    fzf --info=inline --layout=reverse --header-lines=1 \
         --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
-        --header $'Press CTRL-O to open log in editor\n\n' \
-        --bind ctrl-/:toggle-preview \
-        --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --namespace {1} {2}) > /dev/tty' \
-        --preview-window up,follow \
-        --preview 'kubectl logs --follow --tail=100000 --namespace {1} {2}' "$@"
-)
-[ ${#tokens} -gt 1 ] &&
-  kubectl exec -it --namespace "${tokens[0]}" "${tokens[1]}" -- bash
+        --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
+        --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+        --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
+        --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
+        --bind 'ctrl-r:reload:$FZF_DEFAULT_COMMAND' \
+        --preview-window up:follow \
+        --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+}
 ```
 
 ![image](https://user-images.githubusercontent.com/700826/113473547-1d7a4880-94a5-11eb-98ef-9aa6f0ed215a.png)
 
 - The preview window will *"log tail"* the pod
     - Holding on to a large amount of log will consume a lot of memory. So we
-      limited the initial log amount with `--tail=100000`.
-- With `execute` binding, you can press CTRL-O to open the log in your editor
-  without leaving fzf
-- Select a pod (with an enter key) to `kubectl exec` into it
+      limited the initial log amount with `--tail=10000`.
+- `execute` bindings allow you to run any command without leaving fzf
+    - Press enter key on a pod to `kubectl exec` into it
+    - Press CTRL-O to open the log in your editor
+- Press CTRL-R to reload the pod list
+- Press CTRL-/ repeatedly to to rotate through a different sets of preview
+  window options
+    1. `80%,border-bottom`
+    1. `hidden`
+    1. Empty string after `|` translates to the default options from `--preview-window`
 
 Key bindings for git objects
 ----------------------------

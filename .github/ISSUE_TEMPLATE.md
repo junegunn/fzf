@@ -17,6 +17,6 @@
     - [ ] bash
     - [ ] zsh
     - [ ] fish
-    
+
 ## Problem / Steps to reproduce
 
