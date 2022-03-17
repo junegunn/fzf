@@ -71,10 +71,10 @@ all: target/$(BINARY)
 test: $(SOURCES)
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
-				github.com/rayiik/fzf/src \
-				github.com/rayiik/fzf/src/algo \
-				github.com/rayiik/fzf/src/tui \
-				github.com/rayiik/fzf/src/util
+				github.com/junegunn/fzf/src \
+				github.com/junegunn/fzf/src/algo \
+				github.com/junegunn/fzf/src/tui \
+				github.com/junegunn/fzf/src/util
 
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
