@@ -2053,6 +2053,161 @@ class TestGoFZF < TestBase
     tmux.send_keys 'dabcd'
     tmux.until { |lines| assert_equal '> abcd', lines[-1] }
   end
+
+  def test_item_index_reset_on_reload
+    tmux.send_keys "seq 10 | #{FZF} --preview 'echo [[{n}]]' --bind 'up:last,down:first,space:reload:seq 100'", :Enter
+    tmux.until { |lines| assert_includes lines[1], '[[0]]' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[1], '[[9]]' }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_includes lines[1], '[[0]]' }
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_includes lines[1], '[[0]]'
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[1], '[[99]]' }
+  end
+
+  def test_reload_should_update_preview
+    tmux.send_keys "seq 3 | #{FZF} --bind 'ctrl-t:reload:echo 4' --preview 'echo {}' --preview-window 'nohidden'", :Enter
+    tmux.until { |lines| assert_includes lines[1], '1' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_includes lines[1], '4' }
+  end
+
+  def test_scroll_off
+    tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    height = tmux.until { |lines| lines }.first.to_i
+    tmux.send_keys :PgUp
+    tmux.until do |lines|
+      assert_equal height + 3, lines.first.to_i
+      assert_equal "> #{height}", lines[3].strip
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[3].strip }
+    tmux.send_keys 'l'
+    tmux.until { |lines| assert_equal '> 1000', lines.first.strip }
+    tmux.send_keys :PgDn
+    tmux.until { |lines| assert_equal "> #{1000 - height + 1}", lines.reverse[5].strip }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_equal "> #{1000 - height}", lines.reverse[5].strip }
+  end
+
+  def test_scroll_off_large
+    tmux.send_keys "seq 1000 | #{FZF} --scroll-off=9999", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    height = tmux.until { |lines| lines }.first.to_i
+    tmux.send_keys :PgUp
+    tmux.until { |lines| assert_equal "> #{height}", lines[height / 2].strip }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[height / 2].strip }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal "> #{height + 2}", lines[height / 2].strip }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_equal "> #{height + 1}", lines[height / 2].strip }
+  end
+
+  def test_header_first
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+        > 4
+          997/997
+        >
+          3
+          2
+          1
+          foobar
+      OUTPUT
+
+      assert_equal expected.chomp, lines.reverse.take(7).reverse.join("\n")
+    end
+  end
+
+  def test_header_first_reverse
+    tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first --reverse --inline-info", :Enter
+    tmux.until do |lines|
+      expected = <<~OUTPUT
+          foobar
+          1
+          2
+          3
+        >   < 997/997
+        > 4
+      OUTPUT
+
+      assert_equal expected.chomp, lines.take(6).join("\n")
+    end
+  end
+
+  def test_change_preview_window
+    tmux.send_keys "seq 1000 | #{FZF} --preview 'echo [[{}]]' --preview-window border-none --bind '" \
+      'a:change-preview(echo __{}__),' \
+      'b:change-preview-window(down)+change-preview(echo =={}==)+change-preview-window(up),' \
+      'c:change-preview(),d:change-preview-window(hidden),' \
+      "e:preview(printf ::%${FZF_PREVIEW_COLUMNS}s{})+change-preview-window(up),f:change-preview-window(up,wrap)'", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    tmux.until { |lines| assert_includes lines[0], '[[1]]' }
+
+    # change-preview action permanently changes the preview command set by --preview
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_includes lines[0], '__1__' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[0], '__2__' }
+
+    # When multiple change-preview-window actions are bound to a single key,
+    # the last one wins and the updated options are immediately applied to the new preview
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert_equal '==2==', lines[0] }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal '==3==', lines[0] }
+
+    # change-preview with an empty preview command closes the preview window
+    tmux.send_keys 'c'
+    tmux.until { |lines| refute_includes lines[0], '==' }
+
+    # change-preview again to re-open the preview window
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_equal '__3__', lines[0] }
+
+    # Hide the preview window with hidden flag
+    tmux.send_keys 'd'
+    tmux.until { |lines| refute_includes lines[0], '__3__' }
+
+    # One-off preview
+    tmux.send_keys 'e'
+    tmux.until do |lines|
+      assert_equal '::', lines[0]
+      refute_includes lines[1], '3'
+    end
+
+    # Wrapped
+    tmux.send_keys 'f'
+    tmux.until do |lines|
+      assert_equal '::', lines[0]
+      assert_equal '  3', lines[1]
+    end
+  end
+
+  def test_change_preview_window_rotate
+    tmux.send_keys "seq 100 | #{FZF} --preview-window left,border-none --preview 'echo hello' --bind '" \
+      "a:change-preview-window(right|down|up|hidden|)'", :Enter
+    3.times do
+      tmux.until { |lines| lines[0].start_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| lines[0].end_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| lines[-1].start_with?('hello') }
+      tmux.send_keys 'a'
+      tmux.until { |lines| assert_equal 'hello', lines[0] }
+      tmux.send_keys 'a'
+      tmux.until { |lines| refute_includes lines[0], 'hello' }
+      tmux.send_keys 'a'
+    end
+  end
 end
 
 module TestShell

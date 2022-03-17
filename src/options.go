@@ -44,8 +44,10 @@ const usage = `usage: fzf [options]
     --bind=KEYBINDS       Custom key bindings. Refer to the man page.
     --cycle               Enable cyclic scroll
     --keep-right          Keep the right end of the line visible on overflow
+    --scroll-off=LINES    Number of screen lines to keep above or below when
+                          scrolling to the top or to the bottom (default: 0)
     --no-hscroll          Disable horizontal scroll
-    --hscroll-off=COL     Number of screen columns to keep to the right of the
+    --hscroll-off=COLS    Number of screen columns to keep to the right of the
                           highlighted substring (default: 10)
     --filepath-word       Make word-wise movements respect path separators
     --jump-labels=CHARS   Label characters for jump and jump-accept
@@ -67,6 +69,7 @@ const usage = `usage: fzf [options]
     --marker=STR          Multi-select marker (default: '>')
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
+    --header-first        Print header before the prompt line
 
   Display
     --ansi                Enable processing of ANSI color codes
@@ -173,6 +176,14 @@ type previewOpts struct {
 	headerLines int
 }
 
+func (a previewOpts) sameLayout(b previewOpts) bool {
+	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden
+}
+
+func (a previewOpts) sameContentLayout(b previewOpts) bool {
+	return a.wrap == b.wrap && a.headerLines == b.headerLines
+}
+
 // Options stores the values of command-line options
 type Options struct {
 	Fuzzy       bool
@@ -200,6 +211,7 @@ type Options struct {
 	KeepRight   bool
 	Hscroll     bool
 	HscrollOff  int
+	ScrollOff   int
 	FileWord    bool
 	InfoStyle   infoStyle
 	JumpLabels  string
@@ -212,7 +224,7 @@ type Options struct {
 	Filter      *string
 	ToggleSort  bool
 	Expect      map[tui.Event]string
-	Keymap      map[tui.Event][]action
+	Keymap      map[tui.Event][]*action
 	Preview     previewOpts
 	PrintQuery  bool
 	ReadZero    bool
@@ -222,6 +234,7 @@ type Options struct {
 	History     *History
 	Header      []string
 	HeaderLines int
+	HeaderFirst bool
 	Margin      [4]sizeSpec
 	Padding     [4]sizeSpec
 	BorderShape tui.BorderShape
@@ -261,6 +274,7 @@ func defaultOptions() *Options {
 		KeepRight:   false,
 		Hscroll:     true,
 		HscrollOff:  10,
+		ScrollOff:   0,
 		FileWord:    false,
 		InfoStyle:   infoDefault,
 		JumpLabels:  defaultJumpLabels,
@@ -273,7 +287,7 @@ func defaultOptions() *Options {
 		Filter:      nil,
 		ToggleSort:  false,
 		Expect:      make(map[tui.Event]string),
-		Keymap:      make(map[tui.Event][]action),
+		Keymap:      make(map[tui.Event][]*action),
 		Preview:     defaultPreviewOpts(""),
 		PrintQuery:  false,
 		ReadZero:    false,
@@ -283,6 +297,7 @@ func defaultOptions() *Options {
 		History:     nil,
 		Header:      make([]string, 0),
 		HeaderLines: 0,
+		HeaderFirst: false,
 		Margin:      defaultMargin(),
 		Padding:     defaultMargin(),
 		Unicode:     true,
@@ -780,10 +795,10 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
-func parseKeymap(keymap map[tui.Event][]action, str string) {
+func parseKeymap(keymap map[tui.Event][]*action, str string) {
 	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
 		symbol := ":"
 		if strings.HasPrefix(src, "+") {
@@ -792,6 +807,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 		prefix := symbol + "execute"
 		if strings.HasPrefix(src[1:], "reload") {
 			prefix = symbol + "reload"
+		} else if strings.HasPrefix(src[1:], "change-preview-window") {
+			prefix = symbol + "change-preview-window"
+		} else if strings.HasPrefix(src[1:], "change-preview") {
+			prefix = symbol + "change-preview"
 		} else if strings.HasPrefix(src[1:], "preview") {
 			prefix = symbol + "preview"
 		} else if strings.HasPrefix(src[1:], "unbind") {
@@ -835,7 +854,7 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 
 		idx2 := len(pair[0]) + 1
 		specs := strings.Split(pair[1], "+")
-		actions := make([]action, 0, len(specs))
+		actions := make([]*action, 0, len(specs))
 		appendAction := func(types ...actionType) {
 			actions = append(actions, toActions(types...)...)
 		}
@@ -976,6 +995,12 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 				appendAction(actEnableSearch)
 			case "disable-search":
 				appendAction(actDisableSearch)
+			case "put":
+				if key.Type == tui.Rune && unicode.IsGraphic(key.Char) {
+					appendAction(actRune)
+				} else {
+					errorExit("unable to put non-printable character: " + pair[0])
+				}
 			default:
 				t := isExecuteAction(specLower)
 				if t == actIgnore {
@@ -991,6 +1016,10 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 						offset = len("reload")
 					case actPreview:
 						offset = len("preview")
+					case actChangePreviewWindow:
+						offset = len("change-preview-window")
+					case actChangePreview:
+						offset = len("change-preview")
 					case actChangePrompt:
 						offset = len("change-prompt")
 					case actUnbind:
@@ -1006,17 +1035,22 @@ func parseKeymap(keymap map[tui.Event][]action, str string) {
 					if spec[offset] == ':' {
 						if specIndex == len(specs)-1 {
 							actionArg = spec[offset+1:]
-							actions = append(actions, action{t: t, a: actionArg})
+							actions = append(actions, &action{t: t, a: actionArg})
 						} else {
 							prevSpec = spec + "+"
 							continue
 						}
 					} else {
 						actionArg = spec[offset+1 : len(spec)-1]
-						actions = append(actions, action{t: t, a: actionArg})
+						actions = append(actions, &action{t: t, a: actionArg})
 					}
 					if t == actUnbind {
 						parseKeyChords(actionArg, "unbind target required")
+					} else if t == actChangePreviewWindow {
+						opts := previewOpts{}
+						for _, arg := range strings.Split(actionArg, "|") {
+							parsePreviewWindow(&opts, arg)
+						}
 					}
 				}
 			}
@@ -1042,6 +1076,10 @@ func isExecuteAction(str string) actionType {
 		return actUnbind
 	case "preview":
 		return actPreview
+	case "change-preview-window":
+		return actChangePreviewWindow
+	case "change-preview":
+		return actChangePreview
 	case "change-prompt":
 		return actChangePrompt
 	case "execute":
@@ -1054,7 +1092,7 @@ func isExecuteAction(str string) actionType {
 	return actIgnore
 }
 
-func parseToggleSort(keymap map[tui.Event][]action, str string) {
+func parseToggleSort(keymap map[tui.Event][]*action, str string) {
 	keys := parseKeyChords(str, "key name required")
 	if len(keys) != 1 {
 		errorExit("multiple keys specified")
@@ -1356,6 +1394,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Hscroll = false
 		case "--hscroll-off":
 			opts.HscrollOff = nextInt(allArgs, &i, "hscroll offset required")
+		case "--scroll-off":
+			opts.ScrollOff = nextInt(allArgs, &i, "scroll offset required")
 		case "--filepath-word":
 			opts.FileWord = true
 		case "--no-filepath-word":
@@ -1423,6 +1463,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--header-lines":
 			opts.HeaderLines = atoi(
 				nextString(allArgs, &i, "number of header lines required"))
+		case "--header-first":
+			opts.HeaderFirst = true
+		case "--no-header-first":
+			opts.HeaderFirst = false
 		case "--preview":
 			opts.Preview.command = nextString(allArgs, &i, "preview command required")
 		case "--no-preview":
@@ -1532,6 +1576,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
+			} else if match, value := optString(arg, "--scroll-off="); match {
+				opts.ScrollOff = atoi(value)
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
 				validateJumpLabels = true
@@ -1547,6 +1593,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.HscrollOff < 0 {
 		errorExit("hscroll offset must be a non-negative integer")
+	}
+
+	if opts.ScrollOff < 0 {
+		errorExit("scroll offset must be a non-negative integer")
 	}
 
 	if opts.Tabstop < 1 {
@@ -1594,7 +1644,7 @@ func validateSign(sign string, signOptName string) error {
 }
 
 func postProcessOptions(opts *Options) {
-	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
+	if !opts.Version && !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		errorExit("--height option is currently not supported on this platform")
 	}
 	// Default actions for CTRL-N / CTRL-P when --history is set
@@ -1610,10 +1660,28 @@ func postProcessOptions(opts *Options) {
 	// Extend the default key map
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
+		var lastChangePreviewWindow *action
 		for _, act := range actions {
-			if act.t == actToggleSort {
+			switch act.t {
+			case actToggleSort:
+				// To display "+S"/"-S" on info line
 				opts.ToggleSort = true
+			case actChangePreviewWindow:
+				lastChangePreviewWindow = act
 			}
+		}
+		// Re-organize actions so that we only keep the last change-preview-window
+		// and it comes first in the list.
+		//  *  change-preview-window(up,+10)+preview(sleep 3; cat {})+change-preview-window(up,+20)
+		//  -> change-preview-window(up,+20)+preview(sleep 3; cat {})
+		if lastChangePreviewWindow != nil {
+			reordered := []*action{lastChangePreviewWindow}
+			for _, act := range actions {
+				if act.t != actChangePreviewWindow {
+					reordered = append(reordered, act)
+				}
+			}
+			actions = reordered
 		}
 		keymap[key] = actions
 	}

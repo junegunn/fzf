@@ -1,10 +1,44 @@
 CHANGELOG
 =========
 
+0.29.0
+------
+- Added `change-preview(...)` action to change the `--preview` command
+    - cf. `preview(...)` is a one-off action that doesn't change the default
+      preview command
+- Added `change-preview-window(...)` action
+    - You can rotate through the different options separated by `|`
+      ```sh
+      fzf --preview 'cat {}' --preview-window right:40% \
+          --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-top|hidden|)'
+      ```
+- Fixed rendering of the prompt line when overflow occurs with `--info=inline`
+
+0.28.0
+------
+- Added `--header-first` option to print header before the prompt line
+  ```sh
+  fzf --header $'Welcome to fzf\n▔▔▔▔▔▔▔▔▔▔▔▔▔▔' --reverse --height 30% --border --header-first
+  ```
+- Added `--scroll-off=LINES` option (similar to `scrolloff` option of Vim)
+    - You can set it to a very large number so that the cursor stays in the
+      middle of the screen while scrolling
+      ```sh
+      fzf --scroll-off=5
+      fzf --scroll-off=999
+      ```
+- Fixed bug where preview window is not updated on `reload` (#2644)
+- fzf on Windows will also use `$SHELL` to execute external programs
+    - See #2638 and #2647
+    - Thanks to @rashil2000, @vovcacik, and @janlazo
+
 0.27.3
 ------
 - Preview window is `hidden` by default when there are `preview` bindings but
   `--preview` command is not given
+- Fixed bug where `{n}` is not properly reset on `reload`
+- Fixed bug where spinner is not displayed on `reload`
+- Enhancements in tcell renderer for Windows (#2616)
 - Vim plugin
     - `sinklist` is added as a synonym to `sink*` so that it's easier to add
       a function to a spec dictionary
@@ -16,6 +50,7 @@ CHANGELOG
 
       call fzf#run(fzf#wrap(spec))
       ```
+    - Vim 7 compatibility
 
 0.27.2
 ------
@@ -37,7 +72,7 @@ CHANGELOG
       " fzf will read the stream file while allowing other processes to append to it
       call fzf#run({'source': 'cat /dev/null > /tmp/stream; tail -f /tmp/stream'})
       ```
-    - It is now possible to open popup window relative to the currrent window
+    - It is now possible to open popup window relative to the current window
       ```vim
       let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0 } }
       ```
@@ -87,7 +122,7 @@ CHANGELOG
   ```
 - Added `select` and `deselect` action for unconditionally selecting or
   deselecting a single item in `--multi` mode. Complements `toggle` action.
-- Sigificant performance improvement in ANSI code processing
+- Significant performance improvement in ANSI code processing
 - Bug fixes and improvements
 - Built with Go 1.16
 
@@ -1169,4 +1204,3 @@ add `--sync` option to re-enable buffering.
 ### Improvements
 - `--select-1` and `--exit-0` will start finder immediately when the condition
   cannot be met
-
