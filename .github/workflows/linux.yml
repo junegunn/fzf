@@ -8,6 +8,9 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,17 +18,17 @@ jobs:
       matrix:
         go: [1.14, 1.16]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
       with:
         go-version: ${{ matrix.go }}
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@v1.62.0
+      uses: ruby/setup-ruby@5aaa89ff0d7bb9c02d18c0008a98d24f38acbbbb # v1.62.0
       with:
         ruby-version: 3.0.0
 
