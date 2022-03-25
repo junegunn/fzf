@@ -517,6 +517,7 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 		case "alt-space":
 			chords[tui.AltKey(' ')] = key
 		case "alt-bs", "alt-bspace":
+			chords[tui.CtrlAltKey('h')] = key
 			add(tui.AltBS)
 		case "alt-up":
 			add(tui.AltUp)
