@@ -2208,6 +2208,12 @@ class TestGoFZF < TestBase
       tmux.send_keys 'a'
     end
   end
+
+  def test_ellipsis
+    tmux.send_keys 'seq 1000 | tr "\n" , | fzf --ellipsis=SNIPSNIP -e -q500', :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_match(/^> SNIPSNIP.*SNIPSNIP$/, lines[-3]) }
+  end
 end
 
 module TestShell

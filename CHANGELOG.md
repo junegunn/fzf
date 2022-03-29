@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+0.30.0
+------
+- Added `--ellipsis` option. You can take advantage of it to make fzf
+  effectively search non-visible parts of the item.
+  ```sh
+  # Search against hidden line numbers on the far right
+  nl /usr/share/dict/words                  |
+    awk '{printf "%s%1000s\n", $2, $1}'     |
+    fzf --nth=-1 --no-hscroll --ellipsis='' |
+    awk '{print $2}'
+  ```
+- Increased TTY buffer limit (#2748)
+
 0.29.0
 ------
 - Added `change-preview(...)` action to change the `--preview` command

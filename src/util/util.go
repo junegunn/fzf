@@ -34,6 +34,23 @@ func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int
 	return width, -1
 }
 
+// Truncate returns the truncated runes and its width
+func Truncate(input string, limit int) ([]rune, int) {
+	runes := []rune{}
+	width := 0
+	gr := uniseg.NewGraphemes(input)
+	for gr.Next() {
+		rs := gr.Runes()
+		w := runewidth.StringWidth(string(rs))
+		if width+w > limit {
+			return runes, width
+		}
+		width += w
+		runes = append(runes, rs...)
+	}
+	return runes, width
+}
+
 // Max returns the largest integer
 func Max(first int, second int) int {
 	if first >= second {

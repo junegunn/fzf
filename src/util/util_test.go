@@ -54,3 +54,13 @@ func TestRunesWidth(t *testing.T) {
 		}
 	}
 }
+
+func TestTruncate(t *testing.T) {
+	truncated, width := Truncate("가나다라마", 7)
+	if string(truncated) != "가나다" {
+		t.Errorf("Expected: 가나다, actual: %s", string(truncated))
+	}
+	if width != 6 {
+		t.Errorf("Expected: 6, actual: %d", width)
+	}
+}
