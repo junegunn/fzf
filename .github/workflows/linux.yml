@@ -28,7 +28,7 @@ jobs:
         go-version: ${{ matrix.go }}
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@5aaa89ff0d7bb9c02d18c0008a98d24f38acbbbb # v1.62.0
+      uses: ruby/setup-ruby@bd94d6a504586da892a5753afdd1480096ed30df # v1.62.0
       with:
         ruby-version: 3.0.0
 
