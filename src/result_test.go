@@ -1,5 +1,3 @@
-// +build !tcell
-
 package fzf
 
 import (

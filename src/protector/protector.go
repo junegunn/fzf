@@ -1,4 +1,4 @@
-// +build !openbsd
+//go:build !openbsd
 
 package protector
 
