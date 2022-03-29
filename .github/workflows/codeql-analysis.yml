@@ -8,8 +8,15 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
+    permissions:
+      actions: read  # for github/codeql-action/init to get workflow details
+      contents: read  # for actions/checkout to fetch code
+      security-events: write  # for github/codeql-action/autobuild to send a status report
     name: Analyze
     runs-on: ubuntu-latest
 
@@ -20,18 +27,18 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
       with:
         fetch-depth: 0
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@883476649888a9e8e219d5b2e6b789dc024f690c # v1
       with:
         languages: ${{ matrix.language }}
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+      uses: github/codeql-action/autobuild@883476649888a9e8e219d5b2e6b789dc024f690c # v1
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@883476649888a9e8e219d5b2e6b789dc024f690c # v1
