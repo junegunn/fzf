@@ -12,7 +12,7 @@ CHANGELOG
     fzf --nth=-1 --no-hscroll --ellipsis='' |
     awk '{print $2}'
   ```
-- Increased TTY buffer limit (#2748)
+- Bug fixes and improvements
 
 0.29.0
 ------

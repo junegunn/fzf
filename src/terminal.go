@@ -673,6 +673,7 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.merger = merger
 	if reset {
 		t.selected = make(map[int32]selectedItem)
+		t.version++
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
