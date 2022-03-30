@@ -70,6 +70,7 @@ const usage = `usage: fzf [options]
     --header=STR          String to print as header
     --header-lines=N      The first N lines of the input are treated as header
     --header-first        Print header before the prompt line
+    --ellipsis=STR        Ellipsis to show when line is truncated (default: '..')
 
   Display
     --ansi                Enable processing of ANSI color codes
@@ -235,6 +236,7 @@ type Options struct {
 	Header      []string
 	HeaderLines int
 	HeaderFirst bool
+	Ellipsis    string
 	Margin      [4]sizeSpec
 	Padding     [4]sizeSpec
 	BorderShape tui.BorderShape
@@ -298,6 +300,7 @@ func defaultOptions() *Options {
 		Header:      make([]string, 0),
 		HeaderLines: 0,
 		HeaderFirst: false,
+		Ellipsis:    "..",
 		Margin:      defaultMargin(),
 		Padding:     defaultMargin(),
 		Unicode:     true,
@@ -1280,6 +1283,7 @@ func parseOptions(opts *Options, allArgs []string) {
 	validateJumpLabels := false
 	validatePointer := false
 	validateMarker := false
+	validateEllipsis := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -1465,6 +1469,9 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.HeaderFirst = true
 		case "--no-header-first":
 			opts.HeaderFirst = false
+		case "--ellipsis":
+			opts.Ellipsis = nextString(allArgs, &i, "ellipsis string required")
+			validateEllipsis = true
 		case "--preview":
 			opts.Preview.command = nextString(allArgs, &i, "preview command required")
 		case "--no-preview":
@@ -1562,6 +1569,9 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Header = strLines(value)
 			} else if match, value := optString(arg, "--header-lines="); match {
 				opts.HeaderLines = atoi(value)
+			} else if match, value := optString(arg, "--ellipsis="); match {
+				opts.Ellipsis = value
+				validateEllipsis = true
 			} else if match, value := optString(arg, "--preview="); match {
 				opts.Preview.command = value
 			} else if match, value := optString(arg, "--preview-window="); match {
@@ -1622,6 +1632,14 @@ func parseOptions(opts *Options, allArgs []string) {
 	if validateMarker {
 		if err := validateSign(opts.Marker, "marker"); err != nil {
 			errorExit(err.Error())
+		}
+	}
+
+	if validateEllipsis {
+		for _, r := range opts.Ellipsis {
+			if !unicode.IsGraphic(r) {
+				errorExit("invalid character in ellipsis")
+			}
 		}
 	}
 }

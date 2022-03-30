@@ -50,7 +50,6 @@ var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
 
-const ellipsis string = ".."
 const clearCode string = "\x1b[2J"
 
 func init() {
@@ -145,6 +144,7 @@ type Terminal struct {
 	headerLines        int
 	header             []string
 	header0            []string
+	ellipsis           string
 	ansi               bool
 	tabstop            int
 	margin             [4]sizeSpec
@@ -541,6 +541,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		headerLines:        opts.HeaderLines,
 		header:             header,
 		header0:            header,
+		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
 		reading:            true,
@@ -672,6 +673,7 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.merger = merger
 	if reset {
 		t.selected = make(map[int32]selectedItem)
+		t.version++
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
@@ -1261,47 +1263,54 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 
 	offsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
-	maxe = util.Constrain(maxe+util.Min(maxWidth/2-2, t.hscrollOff), 0, len(text))
+	ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
+	maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(text))
 	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
 	if displayWidth > maxWidth {
-		transformOffsets := func(diff int32) {
+		transformOffsets := func(diff int32, rightTrim bool) {
 			for idx, offset := range offsets {
 				b, e := offset.offset[0], offset.offset[1]
-				b += 2 - diff
-				e += 2 - diff
-				b = util.Max32(b, 2)
+				el := int32(len(ellipsis))
+				b += el - diff
+				e += el - diff
+				b = util.Max32(b, el)
+				if rightTrim {
+					e = util.Min32(e, int32(maxWidth-ellipsisWidth))
+				}
 				offsets[idx].offset[0] = b
 				offsets[idx].offset[1] = util.Max32(b, e)
 			}
 		}
 		if t.hscroll {
 			if t.keepRight && pos == nil {
-				trimmed, diff := t.trimLeft(text, maxWidth-2)
-				transformOffsets(diff)
-				text = append([]rune(ellipsis), trimmed...)
-			} else if !t.overflow(text[:maxe], maxWidth-2) {
+				trimmed, diff := t.trimLeft(text, maxWidth-ellipsisWidth)
+				transformOffsets(diff, false)
+				text = append(ellipsis, trimmed...)
+			} else if !t.overflow(text[:maxe], maxWidth-ellipsisWidth) {
 				// Stri..
-				text, _ = t.trimRight(text, maxWidth-2)
-				text = append(text, []rune(ellipsis)...)
+				text, _ = t.trimRight(text, maxWidth-ellipsisWidth)
+				text = append(text, ellipsis...)
 			} else {
 				// Stri..
-				if t.overflow(text[maxe:], 2) {
-					text = append(text[:maxe], []rune(ellipsis)...)
+				rightTrim := false
+				if t.overflow(text[maxe:], ellipsisWidth) {
+					text = append(text[:maxe], ellipsis...)
+					rightTrim = true
 				}
 				// ..ri..
 				var diff int32
-				text, diff = t.trimLeft(text, maxWidth-2)
+				text, diff = t.trimLeft(text, maxWidth-ellipsisWidth)
 
 				// Transform offsets
-				transformOffsets(diff)
-				text = append([]rune(ellipsis), text...)
+				transformOffsets(diff, rightTrim)
+				text = append(ellipsis, text...)
 			}
 		} else {
-			text, _ = t.trimRight(text, maxWidth-2)
-			text = append(text, []rune(ellipsis)...)
+			text, _ = t.trimRight(text, maxWidth-ellipsisWidth)
+			text = append(text, ellipsis...)
 
 			for idx, offset := range offsets {
-				offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-2))
+				offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
 				offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 			}
 		}

@@ -23,7 +23,7 @@ const (
 	defaultEscDelay = 100
 	escPollInterval = 5
 	offsetPollTries = 10
-	maxInputBuffer  = 10 * 1024
+	maxInputBuffer  = 1024 * 1024
 )
 
 const consoleDevice string = "/dev/tty"

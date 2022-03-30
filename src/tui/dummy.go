@@ -1,6 +1,4 @@
-// +build !ncurses
-// +build !tcell
-// +build !windows
+//go:build !tcell && !windows
 
 package tui
 
