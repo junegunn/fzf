@@ -2077,6 +2077,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[1], '4' }
   end
 
+  def test_reload_and_change_preview_should_update_preview
+    tmux.send_keys "seq 3 | #{FZF} --bind 'ctrl-t:reload(echo 4)+change-preview(echo {})'", :Enter
+    tmux.until { |lines| assert_equal 3, lines.item_count }
+    tmux.until { |lines| refute_includes lines[1], '1' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_includes lines[1], '4' }
+  end
+
   def test_scroll_off
     tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
     tmux.until { |lines| assert_equal 1000, lines.item_count }
@@ -2207,6 +2216,12 @@ class TestGoFZF < TestBase
       tmux.until { |lines| refute_includes lines[0], 'hello' }
       tmux.send_keys 'a'
     end
+  end
+
+  def test_ellipsis
+    tmux.send_keys 'seq 1000 | tr "\n" , | fzf --ellipsis=SNIPSNIP -e -q500', :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_match(/^> SNIPSNIP.*SNIPSNIP$/, lines[-3]) }
   end
 end
 
