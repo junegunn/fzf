@@ -1,4 +1,4 @@
-// +build tcell windows
+//go:build tcell || windows
 
 package tui
 
