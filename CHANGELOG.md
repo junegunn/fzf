@@ -12,6 +12,7 @@ CHANGELOG
     fzf --nth=-1 --no-hscroll --ellipsis='' |
     awk '{print $2}'
   ```
+- Added `rebind` action for restoring bindings after `unbind`
 - Bug fixes and improvements
 
 0.29.0
