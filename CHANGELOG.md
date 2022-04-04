@@ -3,6 +3,7 @@ CHANGELOG
 
 0.30.0
 ------
+- Fixed cursor flickering over the screen by hiding it during rendering
 - Added `--ellipsis` option. You can take advantage of it to make fzf
   effectively search non-visible parts of the item.
   ```sh
