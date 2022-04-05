@@ -32,7 +32,7 @@ __fzfcmd() {
 }
 
 fzf-file-widget() {
-  local selected="$(__fzf_select__)"
+  local selected="$(__fzf_select__ "$@")"
   READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
   READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
 }
