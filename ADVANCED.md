@@ -17,6 +17,7 @@ Advanced fzf examples
   * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
   * [Using fzf as interative Ripgrep launcher](#using-fzf-as-interative-ripgrep-launcher)
   * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
+  * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
   * [Files listed in `git status`](#files-listed-in-git-status)
@@ -404,6 +405,40 @@ IFS=: read -ra selected < <(
     5. and unbinds `alt-enter` itself as this is a one-off event
 - We reverted `--color` option for customizing how the matching chunks are
   displayed in the second phase
+
+### Switching between Ripgrep mode and fzf mode
+
+*(Requires fzf 0.30.0 or above)*
+
+fzf 0.30.0 added `rebind` action so we can "rebind" the bindings that were
+previously "unbound" via `unbind`.
+
+This is an improved version of the previous example that allows us to switch
+between Ripgrep launcher mode and fzf-only filtering mode via CTRL-R and
+CTRL-F.
+
+```sh
+#!/usr/bin/env bash
+
+# Switch between Ripgrep launcher mode (CTRL-R) and fzf filtering mode (CTRL-F)
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+IFS=: read -ra selected < <(
+  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
+  fzf --ansi \
+      --color "hl:-1:underline,hl+:-1:underline:reverse" \
+      --disabled --query "$INITIAL_QUERY" \
+      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+      --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+clear-query+rebind(ctrl-r)" \
+      --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)" \
+      --prompt '1. Ripgrep> ' \
+      --delimiter : \
+      --header '╱ CTRL-R (Ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
+)
+[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+```
 
 Log tailing
 -----------
