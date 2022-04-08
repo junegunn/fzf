@@ -3,6 +3,7 @@ CHANGELOG
 
 0.30.0
 ------
+- Fixed cursor flickering over the screen by hiding it during rendering
 - Added `--ellipsis` option. You can take advantage of it to make fzf
   effectively search non-visible parts of the item.
   ```sh
@@ -12,6 +13,7 @@ CHANGELOG
     fzf --nth=-1 --no-hscroll --ellipsis='' |
     awk '{print $2}'
   ```
+- Added `rebind` action for restoring bindings after `unbind`
 - Bug fixes and improvements
 
 0.29.0

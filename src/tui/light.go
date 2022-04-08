@@ -60,7 +60,7 @@ func (r *LightRenderer) csi(code string) {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		fmt.Fprint(os.Stderr, r.queued.String())
+		fmt.Fprint(os.Stderr, "\x1b[?25l"+r.queued.String()+"\x1b[?25h")
 		r.queued.Reset()
 	}
 }
