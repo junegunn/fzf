@@ -242,9 +242,11 @@ func Run(opts *Options, version string, revision string) {
 	for {
 		delay := true
 		ticks++
-		input := func() []rune {
+		input := func(reloaded bool) []rune {
 			paused, input := terminal.Input()
-			if !paused {
+			if reloaded && paused {
+				query = []rune{}
+			} else if !paused {
 				query = input
 			}
 			return query
@@ -274,7 +276,8 @@ func Run(opts *Options, version string, revision string) {
 						opts.Sync = false
 						terminal.UpdateList(PassMerger(&snapshot, opts.Tac), false)
 					}
-					matcher.Reset(snapshot, input(), false, !reading, sort, clearCache())
+					reset := clearCache()
+					matcher.Reset(snapshot, input(reset), false, !reading, sort, reset)
 
 				case EvtSearchNew:
 					var command *string
@@ -293,7 +296,8 @@ func Run(opts *Options, version string, revision string) {
 						break
 					}
 					snapshot, _ := chunkList.Snapshot()
-					matcher.Reset(snapshot, input(), true, !reading, sort, clearCache())
+					reset := clearCache()
+					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)
 					delay = false
 
 				case EvtSearchProgress:

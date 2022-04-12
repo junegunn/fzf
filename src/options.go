@@ -798,7 +798,7 @@ func init() {
 	// Backreferences are not supported.
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|unbind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
 }
 
 func parseKeymap(keymap map[tui.Event][]*action, str string) {
@@ -818,6 +818,8 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 			prefix = symbol + "preview"
 		} else if strings.HasPrefix(src[1:], "unbind") {
 			prefix = symbol + "unbind"
+		} else if strings.HasPrefix(src[1:], "rebind") {
+			prefix = symbol + "rebind"
 		} else if strings.HasPrefix(src[1:], "change-prompt") {
 			prefix = symbol + "change-prompt"
 		} else if src[len(prefix)] == '-' {
@@ -1025,6 +1027,8 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 						offset = len("change-prompt")
 					case actUnbind:
 						offset = len("unbind")
+					case actRebind:
+						offset = len("rebind")
 					case actExecuteSilent:
 						offset = len("execute-silent")
 					case actExecuteMulti:
@@ -1045,8 +1049,8 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 						actionArg = spec[offset+1 : len(spec)-1]
 						actions = append(actions, &action{t: t, a: actionArg})
 					}
-					if t == actUnbind {
-						parseKeyChords(actionArg, "unbind target required")
+					if t == actUnbind || t == actRebind {
+						parseKeyChords(actionArg, spec[0:offset]+" target required")
 					} else if t == actChangePreviewWindow {
 						opts := previewOpts{}
 						for _, arg := range strings.Split(actionArg, "|") {
@@ -1075,6 +1079,8 @@ func isExecuteAction(str string) actionType {
 		return actReload
 	case "unbind":
 		return actUnbind
+	case "rebind":
+		return actRebind
 	case "preview":
 		return actPreview
 	case "change-preview-window":
