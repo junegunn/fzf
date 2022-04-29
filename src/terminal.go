@@ -1417,6 +1417,7 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 		line = strings.TrimSuffix(line, "\n")
 		if lineNo >= height || t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
 			t.previewed.filled = true
+			t.previewer.scrollable = true
 			break
 		} else if lineNo >= 0 {
 			var fillRet tui.FillReturn
