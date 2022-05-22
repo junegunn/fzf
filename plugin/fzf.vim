@@ -96,7 +96,13 @@ function! fzf#shellescape(arg, ...)
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
+try
+  let oldshell = &shell
+  let &shell = shell
   return s:fzf_call('shellescape', a:arg)
+finally
+  let &shell = oldshell
+endtry
 endfunction
 
 function! s:fzf_getcwd()
