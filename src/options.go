@@ -78,11 +78,11 @@ const usage = `usage: fzf [options]
 	    --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
 	    --no-bold             Do NOT use bold text
 
-	  History
+	  History:
 	    --history=FILE        History file
 	    --history-size=N      Maximum number of history entries (default: 1000)
 
-	  Preview
+	  Preview:
 	    --preview=COMMAND     Command to preview highlighted line ({})
 	    --preview-window=OPT  Preview window layout (default: right:50%)
 				  [up|down|left|right][,SIZE[%]]
