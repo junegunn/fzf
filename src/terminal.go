@@ -801,6 +801,7 @@ func (t *Terminal) resizeWindows() {
 		}
 	}
 
+	t.previewer.enabled = screenWidth > 39 // Hide previewer when window is too narrow
 	previewVisible := t.isPreviewEnabled() && t.previewOpts.size.size > 0
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
