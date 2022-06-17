@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.31.0
+------
+- Use SGR mouse mode to support larger terminals
+- Bug fixes and improvements
+
 0.30.0
 ------
 - Fixed cursor flickering over the screen by hiding it during rendering

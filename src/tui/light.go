@@ -176,6 +176,7 @@ func (r *LightRenderer) Init() {
 
 	if r.mouse {
 		r.csi("?1000h")
+		r.csi("?1006h")
 	}
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
@@ -378,7 +379,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			return Event{Home, 0, nil}
 		case 'F':
 			return Event{End, 0, nil}
-		case 'M':
+		case '<':
 			return r.mouseSequence(sz)
 		case 'P':
 			return Event{F1, 0, nil}
@@ -519,47 +520,73 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	return Event{Invalid, 0, nil}
 }
 
+// https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-Mouse-Tracking
 func (r *LightRenderer) mouseSequence(sz *int) Event {
-	if len(r.buffer) < 6 || !r.mouse {
+	// "\e[<0;0;0M"
+	if len(r.buffer) < 9 || !r.mouse {
 		return Event{Invalid, 0, nil}
 	}
-	*sz = 6
-	switch r.buffer[3] {
-	case 32, 34, 36, 40, 48, // mouse-down / shift / cmd / ctrl
-		35, 39, 43, 51: // mouse-up / shift / cmd / ctrl
-		mod := r.buffer[3] >= 36
-		left := r.buffer[3] == 32
-		down := r.buffer[3]%2 == 0
-		x := int(r.buffer[4] - 33)
-		y := int(r.buffer[5]-33) - r.yoffset
-		double := false
-		if down {
-			now := time.Now()
-			if !left { // Right double click is not allowed
-				r.clickY = []int{}
-			} else if now.Sub(r.prevDownTime) < doubleClickDuration {
-				r.clickY = append(r.clickY, y)
-			} else {
-				r.clickY = []int{y}
-			}
-			r.prevDownTime = now
-		} else {
-			if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
-				time.Since(r.prevDownTime) < doubleClickDuration {
-				double = true
-			}
-		}
 
-		return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
-	case 96, 100, 104, 112, // scroll-up / shift / cmd / ctrl
-		97, 101, 105, 113: // scroll-down / shift / cmd / ctrl
-		mod := r.buffer[3] >= 100
-		s := 1 - int(r.buffer[3]%2)*2
-		x := int(r.buffer[4] - 33)
-		y := int(r.buffer[5]-33) - r.yoffset
-		return Event{Mouse, 0, &MouseEvent{y, x, s, false, false, false, mod}}
+	rest := r.buffer[*sz:]
+	end := bytes.IndexAny(rest, "mM")
+	if end == -1 {
+		return Event{Invalid, 0, nil}
 	}
-	return Event{Invalid, 0, nil}
+
+	elems := strings.SplitN(string(rest[:end]), ";", 3)
+	if len(elems) != 3 {
+		return Event{Invalid, 0, nil}
+	}
+
+	t := atoi(elems[0], -1)
+	x := atoi(elems[1], -1) - 1
+	y := atoi(elems[2], -1) - 1
+	if t < 0 || x < 0 || y < 0 {
+		return Event{Invalid, 0, nil}
+	}
+	*sz += end + 1
+
+	down := rest[end] == 'M'
+
+	scroll := 0
+	if t >= 64 {
+		t -= 64
+		if t&0b1 == 1 {
+			scroll = -1
+		} else {
+			scroll = 1
+		}
+	}
+
+	// middle := t & 0b1
+	left := t&0b11 == 0
+
+	// shift := t & 0b100
+	// ctrl := t & 0b1000
+	mod := t&0b1100 > 0
+
+	if scroll != 0 {
+		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
+	}
+
+	double := false
+	if down {
+		now := time.Now()
+		if !left { // Right double click is not allowed
+			r.clickY = []int{}
+		} else if now.Sub(r.prevDownTime) < doubleClickDuration {
+			r.clickY = append(r.clickY, y)
+		} else {
+			r.clickY = []int{y}
+		}
+		r.prevDownTime = now
+	} else {
+		if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
+			time.Since(r.prevDownTime) < doubleClickDuration {
+			double = true
+		}
+	}
+	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
 }
 
 func (r *LightRenderer) smcup() {
@@ -597,6 +624,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
 		r.csi("?1000l")
+		r.csi("?1006l")
 		r.mouse = false
 	}
 }
@@ -636,6 +664,7 @@ func (r *LightRenderer) Close() {
 	}
 	if r.mouse {
 		r.csi("?1000l")
+		r.csi("?1006l")
 	}
 	r.flush()
 	r.closePlatform()
