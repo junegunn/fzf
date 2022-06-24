@@ -53,6 +53,9 @@ remove() {
 remove_line() {
   src=$(readlink "$1")
   if [ $? -eq 0 ]; then
+    if [ $(expr "$src" : '/*') -eq 0 ]; then
+      src="$(dirname "$1")/$src"
+    fi
     echo "Remove from $1 ($src):"
   else
     src=$1
