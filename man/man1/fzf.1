@@ -450,7 +450,7 @@ e.g.
      \fB# Press CTRL-A to select 100K items and see the sum of all the numbers.
      # This won't work properly without 'f' flag due to ARG_MAX limit.
      seq 100000 | fzf --multi --bind ctrl-a:select-all \\
-                      --preview "awk '{sum+=\$1} END {print sum}' {+f}"\fR
+                      --preview "awk '{sum+=\\$1} END {print sum}' {+f}"\fR
 
 Note that you can escape a placeholder pattern by prepending a backslash.
 
