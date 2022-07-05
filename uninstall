@@ -51,13 +51,8 @@ remove() {
 }
 
 remove_line() {
-  src=$(readlink "$1")
-  if [ $? -eq 0 ]; then
-    echo "Remove from $1 ($src):"
-  else
-    src=$1
-    echo "Remove from $1:"
-  fi
+  src=$1
+  echo "Remove from $1:"
 
   shift
   line_no=1
@@ -75,8 +70,9 @@ remove_line() {
     echo    "  - Line #$line_no: $content"
     [ "$content" = "$1" ] || ask "    - Remove?"
     if [ $? -eq 0 ]; then
-      awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$src.bak" &&
-        mv "$src.bak" "$src" || break
+      temp=$(mktemp)
+      awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$temp" &&
+        cat "$temp" > "$src" && rm -f "$temp" || break
       echo  "      - Removed"
     else
       echo  "      - Skipped"
