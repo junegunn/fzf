@@ -304,6 +304,13 @@ _fzf_alias_completion() {
 
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
+if command -v fzf-tmux >/dev/null; then
+  complete -o default -F _fzf_opts_completion fzf-tmux
+  # fzf-tmux is a thin fzf wrapper that has only a few more options than fzf
+  # istself. As a quick improvement we'll take fzf's completion and adding the
+  # few extra fzf-tmux specific options (like `-w WIDTH`) leave as a future
+  # patch.
+fi
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
 a_cmds="
