@@ -304,6 +304,10 @@ _fzf_alias_completion() {
 
 # fzf options
 complete -o default -F _fzf_opts_completion fzf
+# fzf-tmux is a thin fzf wrapper that has only a few more options than fzf
+# itself. As a quick improvement we take fzf's completion. Adding the few extra
+# fzf-tmux specific options (like `-w WIDTH`) are left as a future patch.
+complete -o default -F _fzf_opts_completion fzf-tmux
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
 a_cmds="
