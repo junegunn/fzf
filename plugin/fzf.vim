@@ -219,7 +219,7 @@ function! fzf#exec(...)
   endif
 
   if a:0 && !has_key(s:checked, a:1)
-    let fzf_version = s:get_version(s:exec)
+    let fzf_version = s:get_version('"' . s:exec . '"')
     if empty(fzf_version)
       let message = printf('Failed to run "%s --version"', s:exec)
       unlet s:exec
