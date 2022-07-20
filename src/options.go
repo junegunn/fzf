@@ -1247,6 +1247,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 	if len(alternative) > 0 {
 		alternativeOpts := *opts
 		opts.alternative = &alternativeOpts
+		opts.alternative.hidden = false
 		opts.alternative.alternative = nil
 		parsePreviewWindow(opts.alternative, alternative)
 	}

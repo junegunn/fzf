@@ -877,9 +877,6 @@ func (t *Terminal) resizeWindows() {
 	if previewVisible {
 		var resizePreviewWindows func(previewOpts previewOpts)
 		resizePreviewWindows = func(previewOpts previewOpts) {
-			if previewOpts.hidden {
-				return
-			}
 			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
@@ -930,7 +927,9 @@ func (t *Terminal) resizeWindows() {
 			case posUp, posDown:
 				pheight := calculateSize(height, previewOpts.size, minHeight, minPreviewHeight, verticalPad)
 				if hasThreshold && pheight < previewOpts.threshold {
-					resizePreviewWindows(*previewOpts.alternative)
+					if !previewOpts.alternative.hidden {
+						resizePreviewWindows(*previewOpts.alternative)
+					}
 					return
 				}
 				if previewOpts.position == posUp {
@@ -945,8 +944,9 @@ func (t *Terminal) resizeWindows() {
 			case posLeft, posRight:
 				pwidth := calculateSize(width, previewOpts.size, minWidth, 5, 4)
 				if hasThreshold && pwidth < previewOpts.threshold {
-					fmt.Println("Alternative", (*previewOpts.alternative).position == posDown)
-					resizePreviewWindows(*previewOpts.alternative)
+					if !previewOpts.alternative.hidden {
+						resizePreviewWindows(*previewOpts.alternative)
+					}
 					return
 				}
 				if previewOpts.position == posLeft {
