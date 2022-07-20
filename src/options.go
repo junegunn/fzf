@@ -89,7 +89,7 @@ const usage = `usage: fzf [options]
                           [,[no]wrap][,[no]cycle][,[no]follow][,[no]hidden]
                           [,border-BORDER_OPT]
                           [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
-                          [,default]
+                          [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
 
   Scripting
     -q, --query=STR       Start the finder with the given query
@@ -175,10 +175,14 @@ type previewOpts struct {
 	follow      bool
 	border      tui.BorderShape
 	headerLines int
+	threshold   int
+	alternative *previewOpts
 }
 
 func (a previewOpts) sameLayout(b previewOpts) bool {
-	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden
+	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden && a.threshold == b.threshold &&
+		(a.alternative != nil && b.alternative != nil && a.alternative.sameLayout(*b.alternative) ||
+			a.alternative == nil && b.alternative == nil)
 }
 
 func (a previewOpts) sameContentLayout(b previewOpts) bool {
@@ -247,7 +251,7 @@ type Options struct {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.BorderRounded, 0}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.BorderRounded, 0, 0, nil}
 }
 
 func defaultOptions() *Options {
@@ -1169,12 +1173,19 @@ func parseInfoStyle(str string) infoStyle {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
-	delimRegex := regexp.MustCompile("[:,]") // : for backward compatibility
+	tokenRegex := regexp.MustCompile(`[:,]*(<([1-9][0-9]*)\(([^)<]+)\)|[^,:]+)`)
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	offsetRegex := regexp.MustCompile(`^(\+{-?[0-9]+})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
 	headerRegex := regexp.MustCompile("^~(0|[1-9][0-9]*)$")
-	tokens := delimRegex.Split(input, -1)
-	for _, token := range tokens {
+	tokens := tokenRegex.FindAllStringSubmatch(input, -1)
+	var alternative string
+	for _, match := range tokens {
+		if len(match[2]) > 0 {
+			opts.threshold = atoi(match[2])
+			alternative = match[3]
+			continue
+		}
+		token := match[1]
 		switch token {
 		case "":
 		case "default":
@@ -1232,6 +1243,12 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 				errorExit("invalid preview window option: " + token)
 			}
 		}
+	}
+	if len(alternative) > 0 {
+		alternativeOpts := *opts
+		opts.alternative = &alternativeOpts
+		opts.alternative.alternative = nil
+		parsePreviewWindow(opts.alternative, alternative)
 	}
 }
 
