@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2022" "fzf 0.30.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jul 2022" "fzf 0.31.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -470,7 +470,7 @@ e.g.
       done'\fR
 .RE
 .TP
-.BI "--preview-window=" "[POSITION][,SIZE[%]][,border-BORDER_OPT][,[no]wrap][,[no]follow][,[no]cycle][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"
+.BI "--preview-window=" "[POSITION][,SIZE[%]][,border-BORDER_OPT][,[no]wrap][,[no]follow][,[no]cycle][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
 
 .RS
 .B POSITION: (default: right)
@@ -488,9 +488,9 @@ default until \fBtoggle-preview\fR action is triggered.
 execute the command in the background.
 
 * Long lines are truncated by default. Line wrap can be enabled with
-\fB:wrap\fR flag.
+\fBwrap\fR flag.
 
-* Preview window will automatically scroll to the bottom when \fB:follow\fR
+* Preview window will automatically scroll to the bottom when \fBfollow\fR
 flag is set, similarly to how \fBtail -f\fR works.
 
 .RS
@@ -502,7 +502,7 @@ e.g.
       done'\fR
 .RE
 
-* Cyclic scrolling is enabled with \fB:cycle\fR flag.
+* Cyclic scrolling is enabled with \fBcycle\fR flag.
 
 * To change the style of the border of the preview window, specify one of
 the options for \fB--border\fR with \fBborder-\fR prefix.
@@ -550,6 +550,15 @@ e.g.
 
      # Display top 3 lines as the fixed header
      fzf --preview 'bat --style=full --color=always {}' --preview-window '~3'\fR
+.RE
+
+* You can specify an alternative set of options that are used only when the size
+  of the preview window is below a certain threshold. Note that only one
+  alternative layout is allowed.
+
+.RS
+e.g.
+      \fBfzf --preview 'cat {}' --preview-window 'right,border-left,<30(up,30%,border-bottom)'\fR
 .RE
 
 .SS Scripting

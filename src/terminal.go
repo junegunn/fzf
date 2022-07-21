@@ -819,12 +819,15 @@ func (t *Terminal) resizeWindows() {
 	}
 	if t.window != nil {
 		t.window.Close()
+		t.window = nil
 	}
 	if t.pborder != nil {
 		t.pborder.Close()
+		t.pborder = nil
 	}
 	if t.pwindow != nil {
 		t.pwindow.Close()
+		t.pwindow = nil
 	}
 	// Reset preview version so that full redraw occurs
 	t.previewed.version = 0
@@ -869,76 +872,97 @@ func (t *Terminal) resizeWindows() {
 	width = screenWidth - marginInt[1] - marginInt[3]
 	height = screenHeight - marginInt[0] - marginInt[2]
 
+	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if previewVisible {
-		createPreviewWindow := func(y int, x int, w int, h int) {
-			pwidth := w
-			pheight := h
-			var previewBorder tui.BorderStyle
-			if t.previewOpts.border == tui.BorderNone {
-				previewBorder = tui.MakeTransparentBorder()
-			} else {
-				previewBorder = tui.MakeBorderStyle(t.previewOpts.border, t.unicode)
+		var resizePreviewWindows func(previewOpts previewOpts)
+		resizePreviewWindows = func(previewOpts previewOpts) {
+			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
+			createPreviewWindow := func(y int, x int, w int, h int) {
+				pwidth := w
+				pheight := h
+				var previewBorder tui.BorderStyle
+				if previewOpts.border == tui.BorderNone {
+					previewBorder = tui.MakeTransparentBorder()
+				} else {
+					previewBorder = tui.MakeBorderStyle(previewOpts.border, t.unicode)
+				}
+				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
+				switch previewOpts.border {
+				case tui.BorderSharp, tui.BorderRounded:
+					pwidth -= 4
+					pheight -= 2
+					x += 2
+					y += 1
+				case tui.BorderLeft:
+					pwidth -= 2
+					x += 2
+				case tui.BorderRight:
+					pwidth -= 2
+				case tui.BorderTop:
+					pheight -= 1
+					y += 1
+				case tui.BorderBottom:
+					pheight -= 1
+				case tui.BorderHorizontal:
+					pheight -= 2
+					y += 1
+				case tui.BorderVertical:
+					pwidth -= 4
+					x += 2
+				}
+				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 			}
-			t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
-			switch t.previewOpts.border {
-			case tui.BorderSharp, tui.BorderRounded:
-				pwidth -= 4
-				pheight -= 2
-				x += 2
-				y += 1
-			case tui.BorderLeft:
-				pwidth -= 2
-				x += 2
-			case tui.BorderRight:
-				pwidth -= 2
-			case tui.BorderTop:
-				pheight -= 1
-				y += 1
-			case tui.BorderBottom:
-				pheight -= 1
-			case tui.BorderHorizontal:
-				pheight -= 2
-				y += 1
-			case tui.BorderVertical:
-				pwidth -= 4
-				x += 2
+			verticalPad := 2
+			minPreviewHeight := 3
+			switch previewOpts.border {
+			case tui.BorderNone, tui.BorderVertical, tui.BorderLeft, tui.BorderRight:
+				verticalPad = 0
+				minPreviewHeight = 1
+			case tui.BorderTop, tui.BorderBottom:
+				verticalPad = 1
+				minPreviewHeight = 2
 			}
-			t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
+			switch previewOpts.position {
+			case posUp, posDown:
+				pheight := calculateSize(height, previewOpts.size, minHeight, minPreviewHeight, verticalPad)
+				if hasThreshold && pheight < previewOpts.threshold {
+					if !previewOpts.alternative.hidden {
+						resizePreviewWindows(*previewOpts.alternative)
+					}
+					return
+				}
+				if previewOpts.position == posUp {
+					t.window = t.tui.NewWindow(
+						marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
+					createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
+				} else {
+					t.window = t.tui.NewWindow(
+						marginInt[0], marginInt[3], width, height-pheight, false, noBorder)
+					createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
+				}
+			case posLeft, posRight:
+				pwidth := calculateSize(width, previewOpts.size, minWidth, 5, 4)
+				if hasThreshold && pwidth < previewOpts.threshold {
+					if !previewOpts.alternative.hidden {
+						resizePreviewWindows(*previewOpts.alternative)
+					}
+					return
+				}
+				if previewOpts.position == posLeft {
+					t.window = t.tui.NewWindow(
+						marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false, noBorder)
+					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
+				} else {
+					t.window = t.tui.NewWindow(
+						marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
+					createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
+				}
+			}
 		}
-		verticalPad := 2
-		minPreviewHeight := 3
-		switch t.previewOpts.border {
-		case tui.BorderNone, tui.BorderVertical, tui.BorderLeft, tui.BorderRight:
-			verticalPad = 0
-			minPreviewHeight = 1
-		case tui.BorderTop, tui.BorderBottom:
-			verticalPad = 1
-			minPreviewHeight = 2
-		}
-		switch t.previewOpts.position {
-		case posUp:
-			pheight := calculateSize(height, t.previewOpts.size, minHeight, minPreviewHeight, verticalPad)
-			t.window = t.tui.NewWindow(
-				marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
-			createPreviewWindow(marginInt[0], marginInt[3], width, pheight)
-		case posDown:
-			pheight := calculateSize(height, t.previewOpts.size, minHeight, minPreviewHeight, verticalPad)
-			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3], width, height-pheight, false, noBorder)
-			createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
-		case posLeft:
-			pwidth := calculateSize(width, t.previewOpts.size, minWidth, 5, 4)
-			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false, noBorder)
-			createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
-		case posRight:
-			pwidth := calculateSize(width, t.previewOpts.size, minWidth, 5, 4)
-			t.window = t.tui.NewWindow(
-				marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
-			createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
-		}
-	} else {
+		resizePreviewWindows(t.previewOpts)
+	}
+	if t.window == nil {
 		t.window = t.tui.NewWindow(
 			marginInt[0],
 			marginInt[3],

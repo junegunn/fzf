@@ -3,8 +3,23 @@ CHANGELOG
 
 0.31.0
 ------
-- Use SGR mouse mode to support larger terminals
+- Added support for an alternative preview window layout that is activated
+  when the size of the preview window is smaller than a certain threshold.
+  ```sh
+  # If the width of the preview window is smaller than 50 columns,
+  # it will be displayed above the search window.
+  fzf --preview 'cat {}' --preview-window 'right,50%,border-left,<50(up,30%,border-bottom)'
+
+  # Or you can just hide it like so
+  fzf --preview 'cat {}' --preview-window '<50(hidden)'
+  ```
+- fzf now uses SGR mouse mode to properly support mouse on larger terminals
+- You can now use characters that do not satisfy `unicode.IsGraphic` constraint
+  for `--marker`, `--pointer`, and `--ellipsis`. Allows Nerd Fonts and stuff.
+  Use at your own risk.
 - Bug fixes and improvements
+- Shell extension
+    - `kill` completion now requires trigger sequence (`**`) for consistency
 
 0.30.0
 ------

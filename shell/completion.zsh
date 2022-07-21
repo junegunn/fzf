@@ -291,12 +291,6 @@ fzf-completion() {
 
   lbuf=$LBUFFER
   tail=${LBUFFER:$(( ${#LBUFFER} - ${#trigger} ))}
-  # Kill completion (do not require trigger sequence)
-  if [ "$cmd" = kill -a ${LBUFFER[-1]} = ' ' ]; then
-    tail=$trigger
-    tokens+=$trigger
-    lbuf="$lbuf$trigger"
-  fi
 
   # Trigger sequence given
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then

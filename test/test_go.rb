@@ -2478,7 +2478,7 @@ module CompletionTest
     pid = lines[-1]&.split&.last
     tmux.prepare
     tmux.send_keys 'C-L'
-    tmux.send_keys 'kill ', :Tab
+    tmux.send_keys 'kill **', :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'sleep12345'
     tmux.until { |lines| assert lines.any_include?('sleep 12345') }
