@@ -15,6 +15,8 @@ CHANGELOG
   ```
 - Use SGR mouse mode to support larger terminals
 - Bug fixes and improvements
+- Shell extension
+    - `kill` completion now requires trigger sequence (`**`) for consistency
 
 0.30.0
 ------

@@ -260,14 +260,6 @@ _fzf_dir_completion() {
 }
 
 _fzf_complete_kill() {
-  local trigger=${FZF_COMPLETION_TRIGGER-'**'}
-  local cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ -z "$cur" ]]; then
-    COMP_WORDS[$COMP_CWORD]=$trigger
-  elif [[ "$cur" != *"$trigger" ]]; then
-    return 1
-  fi
-
   _fzf_proc_completion "$@"
 }
 
@@ -352,9 +344,6 @@ for cmd in $d_cmds; do
   __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
-# Kill completion (supports empty completion trigger)
-complete -F _fzf_complete_kill -o default -o bashdefault kill
-
 unset cmd d_cmds a_cmds
 
 _fzf_setup_completion() {
@@ -377,9 +366,10 @@ _fzf_setup_completion() {
   done
 }
 
-# Environment variables / Aliases / Hosts
+# Environment variables / Aliases / Hosts / Process
 _fzf_setup_completion 'var'   export unset
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  ssh telnet
+_fzf_setup_completion 'proc'  kill
 
 fi

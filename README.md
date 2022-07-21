@@ -382,12 +382,11 @@ cd ~/github/fzf**<TAB>
 
 #### Process IDs
 
-Fuzzy completion for PIDs is provided for kill command. In this case,
-there is no trigger sequence; just press the tab key after the kill command.
+Fuzzy completion for PIDs is provided for kill command.
 
 ```sh
 # Can select multiple processes with <TAB> or <Shift-TAB> keys
-kill -9 <TAB>
+kill -9 **<TAB>
 ```
 
 #### Host names
