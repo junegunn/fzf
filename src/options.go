@@ -1746,6 +1746,13 @@ func postProcessOptions(opts *Options) {
 func ParseOptions() *Options {
 	opts := defaultOptions()
 
+	for _, arg := range os.Args[1:] {
+		if arg == "--version" {
+			opts.Version = true
+			return opts
+		}
+	}
+
 	// Options from Env var
 	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
 	if len(words) > 0 {
