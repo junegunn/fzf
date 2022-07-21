@@ -194,9 +194,12 @@ selected item to STDOUT.
 find * -type f | fzf > selected
 ```
 
-Without STDIN pipe, fzf will use find command to fetch the list of
-files excluding hidden ones. (You can override the default command with
-`FZF_DEFAULT_COMMAND`)
+Without STDIN pipe, fzf will use a find command to fetch the list of files:
+```sh
+set -o pipefail; command find -L . -mindepth 1 \( -path '*/\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune -print -o -type f -print -o -type l -print 2> /dev/null | cut -b3-
+```
+
+You can override the default command with `FZF_DEFAULT_COMMAND`.
 
 ```sh
 vim $(fzf)

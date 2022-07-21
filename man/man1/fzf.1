@@ -627,6 +627,10 @@ Note that most options have the opposite versions with \fB--no-\fR prefix.
 Default command to use when input is tty. On *nix systems, fzf runs the command
 with \fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise with \fBsh -c\fR, so in
 this case make sure that the command is POSIX-compliant.
+
+.RS
+When not set fzf will run: \fBset -o pipefail; command find -L . -mindepth 1 \( -path '*/\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune -print -o -type f -print -o -type l -print 2> /dev/null | cut -b3-\fR
+.RE
 .TP
 .B FZF_DEFAULT_OPTS
 Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
