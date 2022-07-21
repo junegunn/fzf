@@ -65,6 +65,19 @@ func TestDelimiterRegexRegex(t *testing.T) {
 	}
 }
 
+func TestDelimiterRegexRegexCaret(t *testing.T) {
+	delim := delimiterRegexp(`(^\s*|\s+)`)
+	tokens := Tokenize("foo  bar baz", delim)
+	if delim.str != nil ||
+		len(tokens) != 4 ||
+		tokens[0].text.ToString() != "" ||
+		tokens[1].text.ToString() != "foo  " ||
+		tokens[2].text.ToString() != "bar " ||
+		tokens[3].text.ToString() != "baz" {
+		t.Errorf("%s %d", tokens, len(tokens))
+	}
+}
+
 func TestSplitNth(t *testing.T) {
 	{
 		ranges := splitNth("..")
