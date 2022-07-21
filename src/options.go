@@ -1307,7 +1307,6 @@ func parseOptions(opts *Options, allArgs []string) {
 	validateJumpLabels := false
 	validatePointer := false
 	validateMarker := false
-	validateEllipsis := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -1495,7 +1494,6 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.HeaderFirst = false
 		case "--ellipsis":
 			opts.Ellipsis = nextString(allArgs, &i, "ellipsis string required")
-			validateEllipsis = true
 		case "--preview":
 			opts.Preview.command = nextString(allArgs, &i, "preview command required")
 		case "--no-preview":
@@ -1595,7 +1593,6 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.HeaderLines = atoi(value)
 			} else if match, value := optString(arg, "--ellipsis="); match {
 				opts.Ellipsis = value
-				validateEllipsis = true
 			} else if match, value := optString(arg, "--preview="); match {
 				opts.Preview.command = value
 			} else if match, value := optString(arg, "--preview-window="); match {
@@ -1658,24 +1655,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			errorExit(err.Error())
 		}
 	}
-
-	if validateEllipsis {
-		for _, r := range opts.Ellipsis {
-			if !unicode.IsGraphic(r) {
-				errorExit("invalid character in ellipsis")
-			}
-		}
-	}
 }
 
 func validateSign(sign string, signOptName string) error {
 	if sign == "" {
 		return fmt.Errorf("%v cannot be empty", signOptName)
-	}
-	for _, r := range sign {
-		if !unicode.IsGraphic(r) {
-			return fmt.Errorf("invalid character in %v", signOptName)
-		}
 	}
 	if runewidth.StringWidth(sign) > 2 {
 		return fmt.Errorf("%v display width should be up to 2", signOptName)

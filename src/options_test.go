@@ -453,8 +453,6 @@ func TestValidateSign(t *testing.T) {
 		{"😀", true},
 		{"", false},
 		{">>>", false},
-		{"\n", false},
-		{"\t", false},
 	}
 
 	for _, testCase := range testCases {

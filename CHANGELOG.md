@@ -14,6 +14,9 @@ CHANGELOG
   fzf --preview 'cat {}' --preview-window '<50(hidden)'
   ```
 - Use SGR mouse mode to support larger terminals
+- You can now use characters that does not satisfy `unicode.IsGraphic` constraint
+  for `--marker`, `--pointer`, and `--ellipsis`. Allows Nerd Fonts and stuff.
+  Use at your own risk.
 - Bug fixes and improvements
 - Shell extension
     - `kill` completion now requires trigger sequence (`**`) for consistency
