@@ -130,6 +130,8 @@ Note that the environment variables `FZF_DEFAULT_COMMAND` and
    - Customizes fzf colors to match the current color scheme
  - `g:fzf_history_dir`
    - Enables history feature
+ - `g:fzf_force_24_bit_colors`
+   - Force use of 24 bit colors
 
 
 Examples~
