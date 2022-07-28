@@ -164,11 +164,7 @@ function s:get_version(bin)
   if has_key(s:versions, a:bin)
     return s:versions[a:bin]
   end
-  if &shell == 'powershell'
-    let command = '&' . shellescape(a:bin) . ' --version --no-height'
-  else
-    let command = shellescape(a:bin) . ' --version --no-height'
-  endif
+  let command = (&shell == 'powershell' ? '&' : '') . shellescape(a:bin) . ' --version --no-height'
   let output = systemlist(command)
   if v:shell_error || empty(output)
     return ''
