@@ -161,7 +161,11 @@ _fzf_handle_dynamic_completion() {
 
 __fzf_generic_path_completion() {
   local cur base dir leftover matches trigger cmd
-  cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
+  cmd="${COMP_WORDS[0]}"
+  if [[ $cmd == \\* ]]; then
+    cmd="${cmd:1}"
+  fi
+  cmd="${cmd//[^A-Za-z0-9_=]/_}"
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
