@@ -557,7 +557,7 @@ more details.
 
 ```sh
 FZF_DEFAULT_COMMAND='ps -ef' \
-  fzf --bind 'ctrl-r:reload($FZF_DEFAULT_COMMAND)' \
+  fzf --bind 'ctrl-r:reload(eval "$FZF_DEFAULT_COMMAND")' \
       --header 'Press CTRL-R to reload' --header-lines=1 \
       --height=50% --layout=reverse
 ```
@@ -566,7 +566,7 @@ FZF_DEFAULT_COMMAND='ps -ef' \
 
 ```sh
 FZF_DEFAULT_COMMAND='find . -type f' \
-  fzf --bind 'ctrl-d:reload(find . -type d),ctrl-f:reload($FZF_DEFAULT_COMMAND)' \
+  fzf --bind 'ctrl-d:reload(find . -type d),ctrl-f:reload(eval "$FZF_DEFAULT_COMMAND")' \
       --height=50% --layout=reverse
 ```
 
