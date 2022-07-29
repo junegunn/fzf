@@ -540,7 +540,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 
 	t := atoi(elems[0], -1)
 	x := atoi(elems[1], -1) - 1
-	y := atoi(elems[2], -1) - 1
+	y := atoi(elems[2], -1) - 1 - r.yoffset
 	if t < 0 || x < 0 || y < 0 {
 		return Event{Invalid, 0, nil}
 	}
