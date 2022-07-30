@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+0.32.0
+------
+- Updated the scoring algorithm
+    - Different bonus points to different categories of word boundaries
+      (listed higher to lower bonus point)
+        - Word after whitespace characters or beginning of the string
+        - Word after common delimiter characters (`/,:;|`)
+        - Word after other non-word characters
+      ````sh
+      # foo/bar.sh` is preferred over `foo-bar.sh` on `bar`
+      fzf --query bar --height 4 << EOF
+      foo-bar.sh
+      foo/bar.sh
+      EOF
+      ```
+- Bug fixes and improvements
+
 0.31.0
 ------
 - Added support for an alternative preview window layout that is activated
