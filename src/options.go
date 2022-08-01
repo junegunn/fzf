@@ -1742,12 +1742,20 @@ func postProcessOptions(opts *Options) {
 	}
 }
 
+func expectsArbitraryString(opt string) bool {
+	switch opt {
+	case "-q", "--query", "-f", "--filter", "--header", "--prompt":
+		return true
+	}
+	return false
+}
+
 // ParseOptions parses command-line options
 func ParseOptions() *Options {
 	opts := defaultOptions()
 
-	for _, arg := range os.Args[1:] {
-		if arg == "--version" {
+	for idx, arg := range os.Args[1:] {
+		if arg == "--version" && (idx == 0 || idx > 0 && !expectsArbitraryString(os.Args[idx])) {
 			opts.Version = true
 			return opts
 		}
