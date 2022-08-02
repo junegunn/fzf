@@ -54,9 +54,9 @@ func TestResultRank(t *testing.T) {
 	// FIXME global
 	sortCriteria = []criterion{byScore, byLength}
 
-	strs := [][]rune{[]rune("foo"), []rune("foobar"), []rune("bar"), []rune("baz")}
+	str := []rune("foo")
 	item1 := buildResult(
-		withIndex(&Item{text: util.RunesToChars(strs[0])}, 1), []Offset{}, 2)
+		withIndex(&Item{text: util.RunesToChars(str)}, 1), []Offset{}, 2)
 	if item1.points[3] != math.MaxUint16-2 || // Bonus
 		item1.points[2] != 3 || // Length
 		item1.points[1] != 0 || // Unused
@@ -65,7 +65,7 @@ func TestResultRank(t *testing.T) {
 		t.Error(item1)
 	}
 	// Only differ in index
-	item2 := buildResult(&Item{text: util.RunesToChars(strs[0])}, []Offset{}, 2)
+	item2 := buildResult(&Item{text: util.RunesToChars(str)}, []Offset{}, 2)
 
 	items := []Result{item1, item2}
 	sort.Sort(ByRelevance(items))
@@ -96,6 +96,23 @@ func TestResultRank(t *testing.T) {
 		items[4] == item2 && items[5] == item1) {
 		t.Error(items, item1, item2, item3, item4, item5, item6)
 	}
+}
+
+func TestChunkTiebreak(t *testing.T) {
+	// FIXME global
+	sortCriteria = []criterion{byScore, byChunk}
+
+	score := 100
+	test := func(input string, offset Offset, chunk string) {
+		item := buildResult(withIndex(&Item{text: util.RunesToChars([]rune(input))}, 1), []Offset{offset}, score)
+		if !(item.points[3] == math.MaxUint16-uint16(score) && item.points[2] == uint16(len(chunk))) {
+			t.Error(item.points)
+		}
+	}
+	test("hello foobar goodbye", Offset{8, 9}, "foobar")
+	test("hello foobar goodbye", Offset{7, 18}, "foobar goodbye")
+	test("hello foobar goodbye", Offset{0, 1}, "hello")
+	test("hello foobar goodbye", Offset{5, 7}, "hello foobar") // TBD
 }
 
 func TestColorOffset(t *testing.T) {

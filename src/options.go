@@ -35,7 +35,7 @@ const usage = `usage: fzf [options]
     --tac                 Reverse the order of the input
     --disabled            Do not perform search
     --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
-                          when the scores are tied [length|begin|end|index]
+                          when the scores are tied [length|chunk|begin|end|index]
                           (default: length)
 
   Interface
@@ -125,6 +125,7 @@ type criterion int
 
 const (
 	byScore criterion = iota
+	byChunk
 	byLength
 	byBegin
 	byEnd
@@ -611,6 +612,7 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 func parseTiebreak(str string) []criterion {
 	criteria := []criterion{byScore}
 	hasIndex := false
+	hasChunk := false
 	hasLength := false
 	hasBegin := false
 	hasEnd := false
@@ -627,6 +629,9 @@ func parseTiebreak(str string) []criterion {
 		switch str {
 		case "index":
 			check(&hasIndex, "index")
+		case "chunk":
+			check(&hasChunk, "chunk")
+			criteria = append(criteria, byChunk)
 		case "length":
 			check(&hasLength, "length")
 			criteria = append(criteria, byLength)
@@ -639,6 +644,9 @@ func parseTiebreak(str string) []criterion {
 		default:
 			errorExit("invalid sort criterion: " + str)
 		}
+	}
+	if len(criteria) > 4 {
+		errorExit("at most 3 tiebreaks are allowed: " + str)
 	}
 	return criteria
 }

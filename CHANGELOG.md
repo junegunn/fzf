@@ -9,13 +9,30 @@ CHANGELOG
         - Word after whitespace characters or beginning of the string
         - Word after common delimiter characters (`/,:;|`)
         - Word after other non-word characters
-      ````sh
+      ```sh
       # foo/bar.sh` is preferred over `foo-bar.sh` on `bar`
-      fzf --query bar --height 4 << EOF
+      fzf --query=bar --height=4 << EOF
       foo-bar.sh
       foo/bar.sh
       EOF
       ```
+- Added a new tiebreak `chunk`
+    - Favors the line with shorter matched chunk. A chunk is a set of
+      consecutive non-whitespace characters.
+    - Unlike the default `length`, this scheme works well with tabular input
+      ```sh
+      # length prefers item #1, because the whole line is shorter,
+      # chunk prefers item #2, because the matched chunk ("foo") is shorter
+      fzf --height=6 --header-lines=2 --tiebreak=chunk --reverse --query=fo << "EOF"
+      N | Field1 | Field2 | Field3
+      - | ------ | ------ | ------
+      1 | hello  | foobar | baz
+      2 | world  | foo    | bazbaz
+      EOF
+      ```
+    - If the input does not contain any spaces, `chunk` is equivalent to
+      `length`. But we're not going to set it as the default because it is
+      computationally more expensive.
 - Bug fixes and improvements
 
 0.31.0
