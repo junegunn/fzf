@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.32.1
+------
+- Fixed incorrect ordering of `--tiebreak=chunk`
+
 0.32.0
 ------
 - Updated the scoring algorithm
