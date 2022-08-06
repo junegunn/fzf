@@ -181,7 +181,7 @@ trap 'cleanup 1' SIGUSR1
 trap 'cleanup' EXIT
 
 envs="export TERM=$TERM "
-[[ "$opt" =~ "-K -E" ]] && FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
+[[ "$opt" =~ "-K -E" ]] && FZF_DEFAULT_OPTS="--margin 0,1 --border $FZF_DEFAULT_OPTS"
 [[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
 [[ -n "$FZF_DEFAULT_COMMAND" ]] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
 echo "$envs;" > "$argsf"
@@ -213,12 +213,7 @@ if [[ "$opt" =~ "-K -E" ]]; then
     opt="${opt} -R"
   fi
 
-  # disable tmux pop-up window border if fzf has already enabled border
-  if [[ $FZF_DEFAULT_OPTS =~ "--border" ]]; then
-      opt="${opt} -B"
-  fi
-
-  tmux popup -d "$PWD" "${tmux_args[@]}" $opt "bash $argsf" > /dev/null 2>&1
+  tmux popup -d "$PWD" "${tmux_args[@]}" -B $opt "bash $argsf" > /dev/null 2>&1
   exit $?
 fi
 
