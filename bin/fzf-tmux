@@ -213,6 +213,11 @@ if [[ "$opt" =~ "-K -E" ]]; then
     opt="${opt} -R"
   fi
 
+  # disable tmux pop-up window border if fzf has already enabled border
+  if [[ $FZF_DEFAULT_OPTS =~ "--border" ]]; then
+      opt="${opt} -B"
+  fi
+
   tmux popup -d "$PWD" "${tmux_args[@]}" $opt "bash $argsf" > /dev/null 2>&1
   exit $?
 fi
