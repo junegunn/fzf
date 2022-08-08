@@ -67,7 +67,7 @@ func TestParseTermsEmpty(t *testing.T) {
 func TestExact(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, true,
+	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, false, true,
 		[]Range{}, Delimiter{}, []rune("'abc"))
 	chars := util.ToChars([]byte("aabbcc abc"))
 	res, pos := algo.ExactMatchNaive(
@@ -83,7 +83,7 @@ func TestExact(t *testing.T) {
 func TestEqual(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune("^AbC$"))
+	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune("^AbC$"))
 
 	match := func(str string, sidxExpected int, eidxExpected int) {
 		chars := util.ToChars([]byte(str))
@@ -106,17 +106,17 @@ func TestEqual(t *testing.T) {
 func TestCaseSensitivity(t *testing.T) {
 	defer clearPatternCache()
 	clearPatternCache()
-	pat1 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune("abc"))
+	pat1 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat2 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune("Abc"))
+	pat2 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune("Abc"))
 	clearPatternCache()
-	pat3 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseIgnore, false, true, true, []Range{}, Delimiter{}, []rune("abc"))
+	pat3 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseIgnore, false, true, false, true, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat4 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseIgnore, false, true, true, []Range{}, Delimiter{}, []rune("Abc"))
+	pat4 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseIgnore, false, true, false, true, []Range{}, Delimiter{}, []rune("Abc"))
 	clearPatternCache()
-	pat5 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseRespect, false, true, true, []Range{}, Delimiter{}, []rune("abc"))
+	pat5 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseRespect, false, true, false, true, []Range{}, Delimiter{}, []rune("abc"))
 	clearPatternCache()
-	pat6 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseRespect, false, true, true, []Range{}, Delimiter{}, []rune("Abc"))
+	pat6 := BuildPattern(true, algo.FuzzyMatchV2, false, CaseRespect, false, true, false, true, []Range{}, Delimiter{}, []rune("Abc"))
 
 	if string(pat1.text) != "abc" || pat1.caseSensitive != false ||
 		string(pat2.text) != "Abc" || pat2.caseSensitive != true ||
@@ -129,7 +129,7 @@ func TestCaseSensitivity(t *testing.T) {
 }
 
 func TestOrigTextAndTransformed(t *testing.T) {
-	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune("jg"))
+	pattern := BuildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune("jg"))
 	tokens := Tokenize("junegunn", Delimiter{})
 	trans := Transform(tokens, []Range{{1, 1}})
 
@@ -164,7 +164,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 func TestCacheKey(t *testing.T) {
 	test := func(extended bool, patStr string, expected string, cacheable bool) {
 		clearPatternCache()
-		pat := BuildPattern(true, algo.FuzzyMatchV2, extended, CaseSmart, false, true, true, []Range{}, Delimiter{}, []rune(patStr))
+		pat := BuildPattern(true, algo.FuzzyMatchV2, extended, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune(patStr))
 		if pat.CacheKey() != expected {
 			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
 		}
@@ -188,7 +188,7 @@ func TestCacheKey(t *testing.T) {
 func TestCacheable(t *testing.T) {
 	test := func(fuzzy bool, str string, expected string, cacheable bool) {
 		clearPatternCache()
-		pat := BuildPattern(fuzzy, algo.FuzzyMatchV2, true, CaseSmart, true, true, true, []Range{}, Delimiter{}, []rune(str))
+		pat := BuildPattern(fuzzy, algo.FuzzyMatchV2, true, CaseSmart, true, true, false, true, []Range{}, Delimiter{}, []rune(str))
 		if pat.CacheKey() != expected {
 			t.Errorf("Expected: %s, actual: %s", expected, pat.CacheKey())
 		}

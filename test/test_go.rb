@@ -756,7 +756,7 @@ class TestGoFZF < TestBase
 
   def test_tiebreak_chunk
     writelines(tempname, [
-                 '1 foobarbaz baz',
+                 '1 foobarbaz ba',
                  '2 foobar baz',
                  '3 foo barbaz'
                ])
@@ -764,8 +764,14 @@ class TestGoFZF < TestBase
     assert_equal [
       '3 foo barbaz',
       '2 foobar baz',
-      '1 foobarbaz baz'
+      '1 foobarbaz ba'
     ], `#{FZF} -fo --tiebreak=chunk < #{tempname}`.lines(chomp: true)
+
+    assert_equal [
+      '1 foobarbaz ba',
+      '2 foobar baz',
+      '3 foo barbaz'
+    ], `#{FZF} -fba --tiebreak=chunk < #{tempname}`.lines(chomp: true)
   end
 
   def test_invalid_cache

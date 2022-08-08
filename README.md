@@ -662,10 +662,10 @@ default find command to traverse the file system while respecting
 
 ```sh
 # Feed the output of fd into fzf
-fd --type f | fzf
+fd --type f --strip-cwd-prefix | fzf
 
 # Setting fd as the default source for fzf
-export FZF_DEFAULT_COMMAND='fd --type f'
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix'
 
 # Now fzf (w/o pipe) will use fd instead of find
 fzf
@@ -678,7 +678,7 @@ If you want the command to follow symbolic links and don't want it to exclude
 hidden files, use the following command:
 
 ```sh
-export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
 ```
 
 #### Fish shell

@@ -51,6 +51,7 @@ type Pattern struct {
 	caseSensitive bool
 	normalize     bool
 	forward       bool
+	withPos       bool
 	text          []rune
 	termSets      []termSet
 	sortable      bool
@@ -85,7 +86,7 @@ func clearChunkCache() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
 	if extended {
@@ -145,6 +146,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		caseSensitive: caseSensitive,
 		normalize:     normalize,
 		forward:       forward,
+		withPos:       withPos,
 		text:          []rune(asString),
 		termSets:      termSets,
 		sortable:      sortable,
@@ -302,13 +304,13 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Re
 
 	if space == nil {
 		for idx := 0; idx < chunk.count; idx++ {
-			if match, _, _ := p.MatchItem(&chunk.items[idx], false, slab); match != nil {
+			if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match != nil {
 				matches = append(matches, *match)
 			}
 		}
 	} else {
 		for _, result := range space {
-			if match, _, _ := p.MatchItem(result.item, false, slab); match != nil {
+			if match, _, _ := p.MatchItem(result.item, p.withPos, slab); match != nil {
 				matches = append(matches, *match)
 			}
 		}

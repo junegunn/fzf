@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.32.1
+------
+- Fixed incorrect ordering of `--tiebreak=chunk`
+- fzf-tmux will show fzf border instead of tmux popup border (requires tmux 3.3)
+  ```sh
+  fzf-tmux -p70%
+  fzf-tmux -p70% --color=border:bright-red
+  fzf-tmux -p100%,60% --color=border:bright-yellow --border=horizontal
+  fzf-tmux -p70%,100% --color=border:bright-green --border=vertical
+  ```
+
 0.32.0
 ------
 - Updated the scoring algorithm
