@@ -10,7 +10,6 @@ fail() {
 fzf="$(command -v fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
 [[ -x "$fzf" ]] || fail 'fzf executable not found'
 
-tmux_args=()
 args=()
 opt=""
 skip=""
@@ -119,8 +118,6 @@ while [[ $# -gt 0 ]]; do
       # "--" can be used to separate fzf-tmux options from fzf options to
       # avoid conflicts
       skip=1
-      tmux_args=("${args[@]}")
-      args=()
       continue
       ;;
     *)
@@ -212,7 +209,7 @@ if [[ "$opt" =~ "-E" ]]; then
     cat <&0 > $fifo1 &
   fi
 
-  tmux popup -d "$PWD" "${tmux_args[@]}" $opt "bash $argsf" > /dev/null 2>&1
+  tmux popup -d "$PWD" $opt "bash $argsf" > /dev/null 2>&1
   exit $?
 fi
 
@@ -226,7 +223,7 @@ else
 fi
 tmux set-window-option synchronize-panes off \;\
   set-window-option remain-on-exit off \;\
-  split-window -c "$PWD" $opt "${tmux_args[@]}" "bash -c 'exec -a fzf bash $argsf'" $swap \
+  split-window -c "$PWD" $opt "bash -c 'exec -a fzf bash $argsf'" $swap \
   > /dev/null 2>&1 || { "$fzf" "${args[@]}"; exit $?; }
 cat $fifo2
 exit "$(cat $fifo3)"
