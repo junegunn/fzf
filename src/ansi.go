@@ -126,7 +126,6 @@ func isCtrlSeqStart(c uint8) bool {
 // calling FindStringIndex() on the below regex (which was originally used):
 //
 // "(?:\x1b[\\[()][0-9;?]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
-//
 func nextAnsiEscapeSequence(s string) (int, int) {
 	// fast check for ANSI escape sequences
 	i := 0
