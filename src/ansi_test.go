@@ -22,7 +22,7 @@ import (
 //     (archived from http://ascii-table.com/ansi-escape-sequences-vt-100.php)
 //   - http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
 //   - https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-var ansiRegexReference = regexp.MustCompile("(?:\x1b[\\[()][0-9;]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
+var ansiRegexReference = regexp.MustCompile("(?:\x1b[\\[()][0-9;:]*[a-zA-Z@]|\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)")
 
 func testParserReference(t testing.TB, str string) {
 	t.Helper()
