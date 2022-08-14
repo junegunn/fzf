@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.32.2
+------
+- ANSI color sequences with colon delimiters are now supported.
+  ```sh
+  printf "\e[38;5;208mOption 1\e[m\nOption 2" | fzf --ansi
+  printf "\e[38:5:208mOption 1\e[m\nOption 2" | fzf --ansi
+  ```
+
 0.32.1
 ------
 - Fixed incorrect ordering of `--tiebreak=chunk`
@@ -8,8 +16,11 @@ CHANGELOG
   ```sh
   fzf-tmux -p70%
   fzf-tmux -p70% --color=border:bright-red
-  fzf-tmux -p100%,60% --color=border:bright-yellow --border=horizontal
+  fzf-tmux -p100%,60% --color=border:bright-yellow --border=horizontal --padding 1,5 --margin 1,0
   fzf-tmux -p70%,100% --color=border:bright-green --border=vertical
+
+  # Key bindings (CTRL-T, CTRL-R, ALT-C) will use these options
+  export FZF_TMUX_OPTS='-p100%,60% --color=border:green --border=horizontal --padding 1,5 --margin 1,0'
   ```
 
 0.32.0

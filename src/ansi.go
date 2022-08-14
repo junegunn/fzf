@@ -85,7 +85,7 @@ func isPrint(c uint8) bool {
 }
 
 func matchOperatingSystemCommand(s string) int {
-	// `\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)`
+	// `\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)`
 	//                        ^ match starting here
 	//
 	i := 5 // prefix matched in nextAnsiEscapeSequence()
@@ -103,11 +103,11 @@ func matchOperatingSystemCommand(s string) int {
 }
 
 func matchControlSequence(s string) int {
-	// `\x1b[\\[()][0-9;?]*[a-zA-Z@]`
-	//                    ^ match starting here
+	// `\x1b[\\[()][0-9;:?]*[a-zA-Z@]`
+	//                     ^ match starting here
 	//
 	i := 2 // prefix matched in nextAnsiEscapeSequence()
-	for ; i < len(s) && (isNumeric(s[i]) || s[i] == ';' || s[i] == '?'); i++ {
+	for ; i < len(s) && (isNumeric(s[i]) || s[i] == ';' || s[i] == ':' || s[i] == '?'); i++ {
 	}
 	if i < len(s) {
 		c := s[i]
@@ -125,8 +125,7 @@ func isCtrlSeqStart(c uint8) bool {
 // nextAnsiEscapeSequence returns the ANSI escape sequence and is equivalent to
 // calling FindStringIndex() on the below regex (which was originally used):
 //
-// "(?:\x1b[\\[()][0-9;?]*[a-zA-Z@]|\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
-//
+// "(?:\x1b[\\[()][0-9;:?]*[a-zA-Z@]|\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
 func nextAnsiEscapeSequence(s string) (int, int) {
 	// fast check for ANSI escape sequences
 	i := 0
@@ -154,16 +153,16 @@ Loop:
 				return i - n, i + 1
 			}
 		case '\x1b':
-			// match: `\x1b[\\[()][0-9;?]*[a-zA-Z@]`
+			// match: `\x1b[\\[()][0-9;:?]*[a-zA-Z@]`
 			if i+2 < len(s) && isCtrlSeqStart(s[i+1]) {
 				if j := matchControlSequence(s[i:]); j != -1 {
 					return i, i + j
 				}
 			}
 
-			// match: `\x1b][0-9];[[:print:]]+(?:\x1b\\\\|\x07)`
+			// match: `\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)`
 			if i+5 < len(s) && s[i+1] == ']' && isNumeric(s[i+2]) &&
-				s[i+3] == ';' && isPrint(s[i+4]) {
+				(s[i+3] == ';' || s[i+3] == ':') && isPrint(s[i+4]) {
 
 				if j := matchOperatingSystemCommand(s[i:]); j != -1 {
 					return i, i + j
@@ -280,9 +279,20 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	return trimmed, nil, state
 }
 
-func parseAnsiCode(s string) (int, string) {
+func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 	var remaining string
-	if i := strings.IndexByte(s, ';'); i >= 0 {
+	i := -1
+	if delimiter == 0 {
+		// Faster than strings.IndexAny(";:")
+		i = strings.IndexByte(s, ';')
+		if i < 0 {
+			i = strings.IndexByte(s, ':')
+		}
+	} else {
+		i = strings.IndexByte(s, delimiter)
+	}
+	if i >= 0 {
+		delimiter = s[i]
 		remaining = s[i+1:]
 		s = s[:i]
 	}
@@ -294,14 +304,14 @@ func parseAnsiCode(s string) (int, string) {
 		for _, ch := range []byte(s) {
 			ch -= '0'
 			if ch > 9 {
-				return -1, remaining
+				return -1, delimiter, remaining
 			}
 			code = code*10 + int(ch)
 		}
-		return code, remaining
+		return code, delimiter, remaining
 	}
 
-	return -1, remaining
+	return -1, delimiter, remaining
 }
 
 func interpretCode(ansiCode string, prevState *ansiState) ansiState {
@@ -329,9 +339,10 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	state256 := 0
 	ptr := &state.fg
 
+	var delimiter byte = 0
 	for len(ansiCode) != 0 {
 		var num int
-		if num, ansiCode = parseAnsiCode(ansiCode); num != -1 {
+		if num, delimiter, ansiCode = parseAnsiCode(ansiCode, delimiter); num != -1 {
 			switch state256 {
 			case 0:
 				switch num {

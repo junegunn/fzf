@@ -421,10 +421,10 @@ func TestPowershellCommands(t *testing.T) {
 }
 
 /*
-	Test typical valid placeholders and parsing of them.
+Test typical valid placeholders and parsing of them.
 
-	Also since the parser assumes the input is matched with `placeholder` regex,
-	the regex is tested here as well.
+Also since the parser assumes the input is matched with `placeholder` regex,
+the regex is tested here as well.
 */
 func TestParsePlaceholder(t *testing.T) {
 	// give, want pairs
