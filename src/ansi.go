@@ -107,19 +107,27 @@ func matchControlSequence(s string) int {
 	//                     ^ match starting here
 	//
 	i := 2 // prefix matched in nextAnsiEscapeSequence()
-	for ; i < len(s) && (isNumeric(s[i]) || s[i] == ';' || s[i] == ':' || s[i] == '?'); i++ {
-	}
-	if i < len(s) {
+	for ; i < len(s); i++ {
 		c := s[i]
-		if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '@' {
-			return i + 1
+		switch c {
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';', ':', '?':
+			// ok
+		default:
+			if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '@' {
+				return i + 1
+			}
+			return -1
 		}
 	}
 	return -1
 }
 
 func isCtrlSeqStart(c uint8) bool {
-	return c == '\\' || c == '[' || c == '(' || c == ')'
+	switch c {
+	case '\\', '[', '(', ')':
+		return true
+	}
+	return false
 }
 
 // nextAnsiEscapeSequence returns the ANSI escape sequence and is equivalent to
