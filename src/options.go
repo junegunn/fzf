@@ -1851,9 +1851,18 @@ func (o *Options) initProfiling() error {
 		util.AtExit(func() {
 			pprof.StopCPUProfile()
 			if err := f.Close(); err != nil {
-				fmt.Fprintln(os.Stderr, "Error closing cpu profile:", err)
+				fmt.Fprintln(os.Stderr, "Error: closing cpu profile:", err)
 			}
 		})
+	}
+
+	stopProfile := func(name string, f *os.File) {
+		if err := pprof.Lookup(name).WriteTo(f, 0); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not write %s profile: %v\n", name, err)
+		}
+		if err := f.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: closing %s profile: %v\n", name, err)
+		}
 	}
 
 	if o.MEMProfile != "" {
@@ -1863,12 +1872,7 @@ func (o *Options) initProfiling() error {
 		}
 		util.AtExit(func() {
 			runtime.GC()
-			if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: could not write MEM profile:", err)
-			}
-			if err := f.Close(); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: closing mem profile:", err)
-			}
+			util.AtExit(func() { stopProfile("allocs", f) })
 		})
 	}
 
@@ -1878,14 +1882,7 @@ func (o *Options) initProfiling() error {
 		if err != nil {
 			return fmt.Errorf("could not create BLOCK profile: %w", err)
 		}
-		util.AtExit(func() {
-			if err := pprof.Lookup("block").WriteTo(f, 0); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: could not write BLOCK profile:", err)
-			}
-			if err := f.Close(); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: closing block profile:", err)
-			}
-		})
+		util.AtExit(func() { stopProfile("block", f) })
 	}
 
 	if o.MutexProfile != "" {
@@ -1894,14 +1891,7 @@ func (o *Options) initProfiling() error {
 		if err != nil {
 			return fmt.Errorf("could not create MUTEX profile: %w", err)
 		}
-		util.AtExit(func() {
-			if err := pprof.Lookup("mutex").WriteTo(f, 0); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: could not write MUTEX profile:", err)
-			}
-			if err := f.Close(); err != nil {
-				fmt.Fprintln(os.Stderr, "Error: closing mutex profile:", err)
-			}
-		})
+		util.AtExit(func() { stopProfile("mutex", f) })
 	}
 
 	return nil
