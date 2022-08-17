@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/mattn/go-shellwords"
@@ -110,6 +113,11 @@ const usage = `usage: fzf [options]
     FZF_DEFAULT_OPTS      Default options
                           (e.g. '--layout=reverse --inline-info')
 
+  Development
+    --cpuprofile=FILE      Write a CPU profile to the specified file.
+    --memprofile=FILE      Write an allocation profile to the file before exiting.
+    --blockprofile=FILE    Write a goroutine blocking profile to the specified file.
+    --mutexprofile=FILE    Write a mutex contention profile to the specified file.
 `
 
 // Case denotes case-sensitivity of search
@@ -204,64 +212,68 @@ func (a previewOpts) sameContentLayout(b previewOpts) bool {
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Scheme      string
-	Extended    bool
-	Phony       bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []criterion
-	Multi       int
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      heightSpec
-	MinHeight   int
-	Layout      layoutType
-	Cycle       bool
-	KeepRight   bool
-	Hscroll     bool
-	HscrollOff  int
-	ScrollOff   int
-	FileWord    bool
-	InfoStyle   infoStyle
-	JumpLabels  string
-	Prompt      string
-	Pointer     string
-	Marker      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[tui.Event]string
-	Keymap      map[tui.Event][]*action
-	Preview     previewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	PrintSep    string
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	HeaderFirst bool
-	Ellipsis    string
-	Margin      [4]sizeSpec
-	Padding     [4]sizeSpec
-	BorderShape tui.BorderShape
-	Unicode     bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy        bool
+	FuzzyAlgo    algo.Algo
+	Scheme       string
+	Extended     bool
+	Phony        bool
+	Case         Case
+	Normalize    bool
+	Nth          []Range
+	WithNth      []Range
+	Delimiter    Delimiter
+	Sort         int
+	Tac          bool
+	Criteria     []criterion
+	Multi        int
+	Ansi         bool
+	Mouse        bool
+	Theme        *tui.ColorTheme
+	Black        bool
+	Bold         bool
+	Height       heightSpec
+	MinHeight    int
+	Layout       layoutType
+	Cycle        bool
+	KeepRight    bool
+	Hscroll      bool
+	HscrollOff   int
+	ScrollOff    int
+	FileWord     bool
+	InfoStyle    infoStyle
+	JumpLabels   string
+	Prompt       string
+	Pointer      string
+	Marker       string
+	Query        string
+	Select1      bool
+	Exit0        bool
+	Filter       *string
+	ToggleSort   bool
+	Expect       map[tui.Event]string
+	Keymap       map[tui.Event][]*action
+	Preview      previewOpts
+	PrintQuery   bool
+	ReadZero     bool
+	Printer      func(string)
+	PrintSep     string
+	Sync         bool
+	History      *History
+	Header       []string
+	HeaderLines  int
+	HeaderFirst  bool
+	Ellipsis     string
+	Margin       [4]sizeSpec
+	Padding      [4]sizeSpec
+	BorderShape  tui.BorderShape
+	Unicode      bool
+	Tabstop      int
+	ClearOnExit  bool
+	Version      bool
+	CPUProfile   string
+	MEMProfile   string
+	BlockProfile string
+	MutexProfile string
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -270,72 +282,77 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Scheme:      "default",
-		Extended:    true,
-		Phony:       false,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
-		Multi:       0,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Layout:      layoutDefault,
-		Cycle:       false,
-		KeepRight:   false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		ScrollOff:   0,
-		FileWord:    false,
-		InfoStyle:   infoDefault,
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Pointer:     ">",
-		Marker:      ">",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[tui.Event]string),
-		Keymap:      make(map[tui.Event][]*action),
-		Preview:     defaultPreviewOpts(""),
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		PrintSep:    "\n",
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		HeaderFirst: false,
-		Ellipsis:    "..",
-		Margin:      defaultMargin(),
-		Padding:     defaultMargin(),
-		Unicode:     true,
-		Tabstop:     8,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:        true,
+		FuzzyAlgo:    algo.FuzzyMatchV2,
+		Scheme:       "default",
+		Extended:     true,
+		Phony:        false,
+		Case:         CaseSmart,
+		Normalize:    true,
+		Nth:          make([]Range, 0),
+		WithNth:      make([]Range, 0),
+		Delimiter:    Delimiter{},
+		Sort:         1000,
+		Tac:          false,
+		Criteria:     []criterion{byScore, byLength},
+		Multi:        0,
+		Ansi:         false,
+		Mouse:        true,
+		Theme:        tui.EmptyTheme(),
+		Black:        false,
+		Bold:         true,
+		MinHeight:    10,
+		Layout:       layoutDefault,
+		Cycle:        false,
+		KeepRight:    false,
+		Hscroll:      true,
+		HscrollOff:   10,
+		ScrollOff:    0,
+		FileWord:     false,
+		InfoStyle:    infoDefault,
+		JumpLabels:   defaultJumpLabels,
+		Prompt:       "> ",
+		Pointer:      ">",
+		Marker:       ">",
+		Query:        "",
+		Select1:      false,
+		Exit0:        false,
+		Filter:       nil,
+		ToggleSort:   false,
+		Expect:       make(map[tui.Event]string),
+		Keymap:       make(map[tui.Event][]*action),
+		Preview:      defaultPreviewOpts(""),
+		PrintQuery:   false,
+		ReadZero:     false,
+		Printer:      func(str string) { fmt.Println(str) },
+		PrintSep:     "\n",
+		Sync:         false,
+		History:      nil,
+		Header:       make([]string, 0),
+		HeaderLines:  0,
+		HeaderFirst:  false,
+		Ellipsis:     "..",
+		Margin:       defaultMargin(),
+		Padding:      defaultMargin(),
+		Unicode:      true,
+		Tabstop:      8,
+		ClearOnExit:  true,
+		Version:      false,
+		CPUProfile:   "",
+		MEMProfile:   "",
+		BlockProfile: "",
+		MutexProfile: "",
+	}
 }
 
 func help(code int) {
 	os.Stdout.WriteString(usage)
-	os.Exit(code)
+	util.Exit(code)
 }
 
 func errorExit(msg string) {
 	os.Stderr.WriteString(msg + "\n")
-	os.Exit(exitError)
+	util.Exit(exitError)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1574,6 +1591,14 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = false
 		case "--version":
 			opts.Version = true
+		case "--cpuprofile":
+			opts.CPUProfile = nextString(allArgs, &i, "file path required: cpu")
+		case "--memprofile":
+			opts.MEMProfile = nextString(allArgs, &i, "file path required: mem")
+		case "--blockprofile":
+			opts.BlockProfile = nextString(allArgs, &i, "file path required: block")
+		case "--mutexprofile":
+			opts.MutexProfile = nextString(allArgs, &i, "file path required: mutex")
 		case "--":
 			// Ignored
 		default:
@@ -1812,6 +1837,76 @@ func postProcessOptions(opts *Options) {
 	}
 }
 
+func (o *Options) initProfiling() error {
+	if o.CPUProfile != "" {
+		f, err := os.Create(o.CPUProfile)
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+
+		util.AtExit(func() {
+			pprof.StopCPUProfile()
+			if err := f.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "Error closing cpu profile:", err)
+			}
+		})
+	}
+
+	if o.MEMProfile != "" {
+		f, err := os.Create(o.MEMProfile)
+		if err != nil {
+			return fmt.Errorf("could not create MEM profile: %w", err)
+		}
+		util.AtExit(func() {
+			runtime.GC()
+			if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: could not write MEM profile:", err)
+			}
+			if err := f.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: closing mem profile:", err)
+			}
+		})
+	}
+
+	if o.BlockProfile != "" {
+		runtime.SetBlockProfileRate(1)
+		f, err := os.Create(o.BlockProfile)
+		if err != nil {
+			return fmt.Errorf("could not create BLOCK profile: %w", err)
+		}
+		util.AtExit(func() {
+			if err := pprof.Lookup("block").WriteTo(f, 0); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: could not write BLOCK profile:", err)
+			}
+			if err := f.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: closing block profile:", err)
+			}
+		})
+	}
+
+	if o.MutexProfile != "" {
+		runtime.SetMutexProfileFraction(1)
+		f, err := os.Create(o.MutexProfile)
+		if err != nil {
+			return fmt.Errorf("could not create MUTEX profile: %w", err)
+		}
+		util.AtExit(func() {
+			if err := pprof.Lookup("mutex").WriteTo(f, 0); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: could not write MUTEX profile:", err)
+			}
+			if err := f.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: closing mutex profile:", err)
+			}
+		})
+	}
+
+	return nil
+}
+
 func expectsArbitraryString(opt string) bool {
 	switch opt {
 	case "-q", "--query", "-f", "--filter", "--header", "--prompt":
@@ -1840,6 +1935,12 @@ func ParseOptions() *Options {
 	// Options from command-line arguments
 	parseOptions(opts, os.Args[1:])
 
+	if err := opts.initProfiling(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error: failed to start pprof profiles:", err)
+		util.Exit(1)
+	}
+
 	postProcessOptions(opts)
+
 	return opts
 }
