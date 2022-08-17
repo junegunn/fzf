@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"unicode"
@@ -363,6 +365,10 @@ type Options struct {
 	WalkerRoot   string
 	WalkerSkip   []string
 	Version      bool
+	CPUProfile   string
+	MEMProfile   string
+	BlockProfile string
+	MutexProfile string
 }
 
 func filterNonEmpty(input []string) []string {
@@ -454,14 +460,14 @@ func defaultOptions() *Options {
 
 func help(code int) {
 	os.Stdout.WriteString(usage)
-	os.Exit(code)
+	util.Exit(code)
 }
 
 var errorContext = ""
 
 func errorExit(msg string) {
 	os.Stderr.WriteString(errorContext + msg + "\n")
-	os.Exit(exitError)
+	util.Exit(exitError)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1978,6 +1984,14 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.WalkerSkip = filterNonEmpty(strings.Split(nextString(allArgs, &i, "directory names to ignore required"), ","))
 		case "--version":
 			opts.Version = true
+		case "--profile-cpu":
+			opts.CPUProfile = nextString(allArgs, &i, "file path required: cpu")
+		case "--profile-mem":
+			opts.MEMProfile = nextString(allArgs, &i, "file path required: mem")
+		case "--profile-block":
+			opts.BlockProfile = nextString(allArgs, &i, "file path required: block")
+		case "--profile-mutex":
+			opts.MutexProfile = nextString(allArgs, &i, "file path required: mutex")
 		case "--":
 			// Ignored
 		default:
@@ -2252,6 +2266,66 @@ func postProcessOptions(opts *Options) {
 	}
 }
 
+func (o *Options) initProfiling() error {
+	if o.CPUProfile != "" {
+		f, err := os.Create(o.CPUProfile)
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+
+		util.AtExit(func() {
+			pprof.StopCPUProfile()
+			if err := f.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "Error: closing cpu profile:", err)
+			}
+		})
+	}
+
+	stopProfile := func(name string, f *os.File) {
+		if err := pprof.Lookup(name).WriteTo(f, 0); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not write %s profile: %v\n", name, err)
+		}
+		if err := f.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: closing %s profile: %v\n", name, err)
+		}
+	}
+
+	if o.MEMProfile != "" {
+		f, err := os.Create(o.MEMProfile)
+		if err != nil {
+			return fmt.Errorf("could not create MEM profile: %w", err)
+		}
+		util.AtExit(func() {
+			runtime.GC()
+			util.AtExit(func() { stopProfile("allocs", f) })
+		})
+	}
+
+	if o.BlockProfile != "" {
+		runtime.SetBlockProfileRate(1)
+		f, err := os.Create(o.BlockProfile)
+		if err != nil {
+			return fmt.Errorf("could not create BLOCK profile: %w", err)
+		}
+		util.AtExit(func() { stopProfile("block", f) })
+	}
+
+	if o.MutexProfile != "" {
+		runtime.SetMutexProfileFraction(1)
+		f, err := os.Create(o.MutexProfile)
+		if err != nil {
+			return fmt.Errorf("could not create MUTEX profile: %w", err)
+		}
+		util.AtExit(func() { stopProfile("mutex", f) })
+	}
+
+	return nil
+}
+
 func expectsArbitraryString(opt string) bool {
 	switch opt {
 	case "-q", "--query", "-f", "--filter", "--header", "--prompt":
@@ -2303,6 +2377,12 @@ func ParseOptions() *Options {
 	errorContext = ""
 	parseOptions(opts, os.Args[1:])
 
+	if err := opts.initProfiling(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error: failed to start pprof profiles:", err)
+		util.Exit(exitError)
+	}
+
 	postProcessOptions(opts)
+
 	return opts
 }
