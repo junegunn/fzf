@@ -10,6 +10,11 @@ CHANGELOG
   ```
 - Support `border-{up,down}` as the synonyms for `border-{top,bottom}` in
   `--preview-window`
+- Added support for ANSI `strikethrough`
+  ```sh
+  printf "\e[9mdeleted" | fzf --ansi
+  fzf --color fg+:strikethrough
+  ```
 
 0.32.1
 ------

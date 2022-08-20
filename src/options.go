@@ -700,6 +700,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 						cattr.Attr |= tui.Blink
 					case "reverse":
 						cattr.Attr |= tui.Reverse
+					case "strikethrough":
+						cattr.Attr |= tui.StrikeThrough
 					case "black":
 						cattr.Color = tui.Color(0)
 					case "red":

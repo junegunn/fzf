@@ -55,6 +55,9 @@ func (s *ansiState) ToString() string {
 	if s.attr&tui.Reverse > 0 {
 		ret += "7;"
 	}
+	if s.attr&tui.StrikeThrough > 0 {
+		ret += "9;"
+	}
 	ret += toAnsiString(s.fg, 30) + toAnsiString(s.bg, 40)
 
 	return "\x1b[" + strings.TrimSuffix(ret, ";") + "m"
@@ -376,6 +379,8 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 					state.attr = state.attr | tui.Blink
 				case 7:
 					state.attr = state.attr | tui.Reverse
+				case 9:
+					state.attr = state.attr | tui.StrikeThrough
 				case 23: // tput rmso
 					state.attr = state.attr &^ tui.Italic
 				case 24: // tput rmul
