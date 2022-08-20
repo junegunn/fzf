@@ -77,6 +77,7 @@ const (
 	Blink          = Attr(tcell.AttrBlink)
 	Reverse        = Attr(tcell.AttrReverse)
 	Underline      = Attr(tcell.AttrUnderline)
+	Strikethrough  = Attr(tcell.AttrStrikethrough)
 	Italic         = Attr(tcell.AttrItalic)
 )
 
@@ -561,6 +562,7 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 		style = style.
 			Reverse(a&Attr(tcell.AttrReverse) != 0).
 			Underline(a&Attr(tcell.AttrUnderline) != 0).
+			Strikethrough(a&Attr(tcell.AttrStrikethrough) != 0).
 			Italic(a&Attr(tcell.AttrItalic) != 0).
 			Blink(a&Attr(tcell.AttrBlink) != 0).
 			Dim(a&Attr(tcell.AttrDim) != 0)
@@ -612,6 +614,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Dim(a&Attr(tcell.AttrDim) != 0).
 		Reverse(a&Attr(tcell.AttrReverse) != 0).
 		Underline(a&Attr(tcell.AttrUnderline) != 0).
+		Strikethrough(a&Attr(tcell.AttrStrikethrough) != 0).
 		Italic(a&Attr(tcell.AttrItalic) != 0)
 
 	gr := uniseg.NewGraphemes(text)

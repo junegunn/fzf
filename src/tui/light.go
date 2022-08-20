@@ -856,6 +856,9 @@ func attrCodes(attr Attr) []string {
 	if (attr & Reverse) > 0 {
 		codes = append(codes, "7")
 	}
+	if (attr & Strikethrough) > 0 {
+		codes = append(codes, "9")
+	}
 	return codes
 }
 

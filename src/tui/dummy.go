@@ -16,6 +16,7 @@ const (
 	AttrUndefined = Attr(0)
 	AttrRegular   = Attr(1 << 7)
 	AttrClear     = Attr(1 << 8)
+	Strikethrough = Attr(1 << 9)
 
 	Bold      = Attr(1)
 	Dim       = Attr(1 << 1)
