@@ -1228,9 +1228,9 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.border = tui.BorderHorizontal
 		case "border-vertical":
 			opts.border = tui.BorderVertical
-		case "border-top":
+		case "border-up", "border-top":
 			opts.border = tui.BorderTop
-		case "border-bottom":
+		case "border-down", "border-bottom":
 			opts.border = tui.BorderBottom
 		case "border-left":
 			opts.border = tui.BorderLeft
