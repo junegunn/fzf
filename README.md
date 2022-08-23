@@ -627,10 +627,7 @@ fzf --height 40% --layout reverse --info inline --border \
 
 See the man page (`man fzf`) for the full list of options.
 
-For more advanced examples, see [Key bindings for git with fzf][fzf-git]
-([code](https://gist.github.com/junegunn/8b572b8d4b5eddd8b85e5f4d40f17236)).
-
-[fzf-git]: https://junegunn.kr/2016/07/fzf-git/
+More advanced examples can be found [here](https://github.com/junegunn/fzf/blob/master/ADVANCED.md).
 
 ----
 
