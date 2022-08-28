@@ -45,29 +45,29 @@ func TestFuzzyMatch(t *testing.T) {
 			assertMatch(t, fn, false, forward, "fooBarbaz1", "oBZ", 2, 9,
 				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtension*3)
 			assertMatch(t, fn, false, forward, "foo bar baz", "fbb", 0, 9,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+
-					bonusBoundaryWhite*2+2*scoreGapStart+4*scoreGapExtension)
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+
+					int(bonusBoundaryWhite)*2+2*scoreGapStart+4*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "/AutomatorDocument.icns", "rdoc", 9, 13,
 				scoreMatch*4+bonusCamel123+bonusConsecutive*2)
 			assertMatch(t, fn, false, forward, "/man1/zshcompctl.1", "zshc", 6, 10,
-				scoreMatch*4+bonusBoundaryDelimiter*bonusFirstCharMultiplier+bonusBoundaryDelimiter*3)
+				scoreMatch*4+int(bonusBoundaryDelimiter)*bonusFirstCharMultiplier+int(bonusBoundaryDelimiter)*3)
 			assertMatch(t, fn, false, forward, "/.oh-my-zsh/cache", "zshc", 8, 13,
-				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*2+scoreGapStart+bonusBoundaryDelimiter)
+				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*2+scoreGapStart+int(bonusBoundaryDelimiter))
 			assertMatch(t, fn, false, forward, "ab0123 456", "12356", 3, 10,
 				scoreMatch*5+bonusConsecutive*3+scoreGapStart+scoreGapExtension)
 			assertMatch(t, fn, false, forward, "abc123 456", "12356", 3, 10,
 				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+bonusConsecutive+scoreGapStart+scoreGapExtension)
 			assertMatch(t, fn, false, forward, "foo/bar/baz", "fbb", 0, 9,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+
-					bonusBoundaryDelimiter*2+2*scoreGapStart+4*scoreGapExtension)
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+
+					int(bonusBoundaryDelimiter)*2+2*scoreGapStart+4*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "fooBarBaz", "fbb", 0, 7,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+
 					bonusCamel123*2+2*scoreGapStart+2*scoreGapExtension)
 			assertMatch(t, fn, false, forward, "foo barbaz", "fbb", 0, 8,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusBoundaryWhite+
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryWhite)+
 					scoreGapStart*2+scoreGapExtension*3)
 			assertMatch(t, fn, false, forward, "fooBar Baz", "foob", 0, 4,
-				scoreMatch*4+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusBoundaryWhite*3)
+				scoreMatch*4+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryWhite)*3)
 			assertMatch(t, fn, false, forward, "xFoo-Bar Baz", "foo-b", 1, 6,
 				scoreMatch*5+bonusCamel123*bonusFirstCharMultiplier+bonusCamel123*2+
 					bonusNonWord+bonusBoundary)
@@ -75,14 +75,14 @@ func TestFuzzyMatch(t *testing.T) {
 			assertMatch(t, fn, true, forward, "fooBarbaz", "oBz", 2, 9,
 				scoreMatch*3+bonusCamel123+scoreGapStart+scoreGapExtension*3)
 			assertMatch(t, fn, true, forward, "Foo/Bar/Baz", "FBB", 0, 9,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusBoundaryDelimiter*2+
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryDelimiter)*2+
 					scoreGapStart*2+scoreGapExtension*4)
 			assertMatch(t, fn, true, forward, "FooBarBaz", "FBB", 0, 7,
-				scoreMatch*3+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusCamel123*2+
+				scoreMatch*3+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+bonusCamel123*2+
 					scoreGapStart*2+scoreGapExtension*2)
 			assertMatch(t, fn, true, forward, "FooBar Baz", "FooB", 0, 4,
-				scoreMatch*4+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusBoundaryWhite*2+
-					util.Max(bonusCamel123, bonusBoundaryWhite))
+				scoreMatch*4+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryWhite)*2+
+					util.Max(bonusCamel123, int(bonusBoundaryWhite)))
 
 			// Consecutive bonus updated
 			assertMatch(t, fn, true, forward, "foo-bar", "o-ba", 2, 6,
@@ -98,10 +98,10 @@ func TestFuzzyMatch(t *testing.T) {
 
 func TestFuzzyMatchBackward(t *testing.T) {
 	assertMatch(t, FuzzyMatchV1, false, true, "foobar fb", "fb", 0, 4,
-		scoreMatch*2+bonusBoundaryWhite*bonusFirstCharMultiplier+
+		scoreMatch*2+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+
 			scoreGapStart+scoreGapExtension)
 	assertMatch(t, FuzzyMatchV1, false, false, "foobar fb", "fb", 7, 9,
-		scoreMatch*2+bonusBoundaryWhite*bonusFirstCharMultiplier+bonusBoundaryWhite)
+		scoreMatch*2+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryWhite))
 }
 
 func TestExactMatchNaive(t *testing.T) {
@@ -114,9 +114,9 @@ func TestExactMatchNaive(t *testing.T) {
 		assertMatch(t, ExactMatchNaive, false, dir, "/AutomatorDocument.icns", "rdoc", 9, 13,
 			scoreMatch*4+bonusCamel123+bonusConsecutive*2)
 		assertMatch(t, ExactMatchNaive, false, dir, "/man1/zshcompctl.1", "zshc", 6, 10,
-			scoreMatch*4+bonusBoundaryDelimiter*(bonusFirstCharMultiplier+3))
+			scoreMatch*4+int(bonusBoundaryDelimiter)*(bonusFirstCharMultiplier+3))
 		assertMatch(t, ExactMatchNaive, false, dir, "/.oh-my-zsh/cache", "zsh/c", 8, 13,
-			scoreMatch*5+bonusBoundary*(bonusFirstCharMultiplier+3)+bonusBoundaryDelimiter)
+			scoreMatch*5+bonusBoundary*(bonusFirstCharMultiplier+3)+int(bonusBoundaryDelimiter))
 	}
 }
 
@@ -128,7 +128,7 @@ func TestExactMatchNaiveBackward(t *testing.T) {
 }
 
 func TestPrefixMatch(t *testing.T) {
-	score := scoreMatch*3 + bonusBoundaryWhite*bonusFirstCharMultiplier + bonusBoundaryWhite*2
+	score := scoreMatch*3 + int(bonusBoundaryWhite)*bonusFirstCharMultiplier + int(bonusBoundaryWhite)*2
 
 	for _, dir := range []bool{true, false} {
 		assertMatch(t, PrefixMatch, true, dir, "fooBarbaz", "Foo", -1, -1, 0)
@@ -159,7 +159,7 @@ func TestSuffixMatch(t *testing.T) {
 
 		// Only when the pattern doesn't end with a space
 		assertMatch(t, SuffixMatch, false, dir, "fooBarbaz ", "baz ", 6, 10,
-			scoreMatch*4+bonusConsecutive*2+bonusBoundaryWhite)
+			scoreMatch*4+bonusConsecutive*2+int(bonusBoundaryWhite))
 	}
 }
 

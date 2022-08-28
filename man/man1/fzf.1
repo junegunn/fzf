@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Aug 2022" "fzf 0.32.2" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Aug 2022" "fzf 0.33.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -50,6 +50,18 @@ Case-sensitive match
 .TP
 .B "--literal"
 Do not normalize latin script letters for matching.
+.TP
+.BI "--scheme=" SCHEME
+Choose scoring scheme tailored for different types of input.
+
+.br
+.BR default "  Generic scoring scheme designed to work well with any type of input"
+.br
+.BR path "     Scoring scheme for paths (additional bonus point only after path separator)
+.br
+.BR history "  Scoring scheme for command history (no additional bonus points).
+         Sets \fB--tiebreak=index\fR as well.
+.br
 .TP
 .BI "--algo=" TYPE
 Fuzzy matching algorithm (default: v2)

@@ -80,6 +80,7 @@ Scoring criteria
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -89,7 +90,8 @@ import (
 
 var DEBUG bool
 
-const delimiterChars = "/,:;|"
+var delimiterChars = "/,:;|"
+
 const whiteChars = " \t\n\v\f\r\x85\xA0"
 
 func indexAt(index int, max int, forward bool) int {
@@ -120,12 +122,6 @@ const (
 	// in web2 dictionary and my file system.
 	bonusBoundary = scoreMatch / 2
 
-	// Extra bonus for word boundary after whitespace character or beginning of the string
-	bonusBoundaryWhite = bonusBoundary + 2
-
-	// Extra bonus for word boundary after slash, colon, semi-colon, and comma
-	bonusBoundaryDelimiter = bonusBoundary + 1
-
 	// Although bonus point for non-word characters is non-contextual, we need it
 	// for computing bonus points for consecutive chunks starting with a non-word
 	// character.
@@ -149,6 +145,16 @@ const (
 	bonusFirstCharMultiplier = 2
 )
 
+var (
+	// Extra bonus for word boundary after whitespace character or beginning of the string
+	bonusBoundaryWhite int16 = bonusBoundary + 2
+
+	// Extra bonus for word boundary after slash, colon, semi-colon, and comma
+	bonusBoundaryDelimiter int16 = bonusBoundary + 1
+
+	initialCharClass charClass = charWhite
+)
+
 type charClass int
 
 const (
@@ -160,6 +166,29 @@ const (
 	charLetter
 	charNumber
 )
+
+func Init(scheme string) bool {
+	switch scheme {
+	case "default":
+		bonusBoundaryWhite = bonusBoundary + 2
+		bonusBoundaryDelimiter = bonusBoundary + 1
+	case "path":
+		bonusBoundaryWhite = bonusBoundary
+		bonusBoundaryDelimiter = bonusBoundary + 1
+		if os.PathSeparator == '/' {
+			delimiterChars = "/"
+		} else {
+			delimiterChars = string([]rune{os.PathSeparator, '/'})
+		}
+		initialCharClass = charDelimiter
+	case "history":
+		bonusBoundaryWhite = bonusBoundary
+		bonusBoundaryDelimiter = bonusBoundary
+	default:
+		return false
+	}
+	return true
+}
 
 func posArray(withPos bool, len int) *[]int {
 	if withPos {
@@ -407,7 +436,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Phase 2. Calculate bonus for each point
 	maxScore, maxScorePos := int16(0), 0
 	pidx, lastIdx := 0, 0
-	pchar0, pchar, prevH0, prevClass, inGap := pattern[0], pattern[0], int16(0), charWhite, false
+	pchar0, pchar, prevH0, prevClass, inGap := pattern[0], pattern[0], int16(0), initialCharClass, false
 	Tsub := T[idx:]
 	H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], B[idx:][:len(Tsub)]
 	for off, char := range Tsub {
@@ -910,8 +939,8 @@ func EqualMatch(caseSensitive bool, normalize bool, forward bool, text *util.Cha
 		match = runesStr == string(pattern)
 	}
 	if match {
-		return Result{trimmedLen, trimmedLen + lenPattern, (scoreMatch+bonusBoundaryWhite)*lenPattern +
-			(bonusFirstCharMultiplier-1)*bonusBoundaryWhite}, nil
+		return Result{trimmedLen, trimmedLen + lenPattern, (scoreMatch+int(bonusBoundaryWhite))*lenPattern +
+			(bonusFirstCharMultiplier-1)*int(bonusBoundaryWhite)}, nil
 	}
 	return Result{-1, -1, 0}, nil
 }

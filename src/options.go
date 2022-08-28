@@ -21,9 +21,9 @@ const usage = `usage: fzf [options]
     -x, --extended        Extended-search mode
                           (enabled by default; +x or --no-extended to disable)
     -e, --exact           Enable Exact-match
-    --algo=TYPE           Fuzzy matching algorithm: [v1|v2] (default: v2)
     -i                    Case-insensitive match (default: smart-case match)
     +i                    Case-sensitive match
+    --scheme=SCHEME       Scoring scheme [default|path|history]
     --literal             Do not normalize latin script letters before matching
     -n, --nth=N[,..]      Comma-separated list of field index expressions
                           for limiting search scope. Each can be a non-zero
@@ -194,6 +194,7 @@ func (a previewOpts) sameContentLayout(b previewOpts) bool {
 type Options struct {
 	Fuzzy       bool
 	FuzzyAlgo   algo.Algo
+	Scheme      string
 	Extended    bool
 	Phony       bool
 	Case        Case
@@ -259,6 +260,7 @@ func defaultOptions() *Options {
 	return &Options{
 		Fuzzy:       true,
 		FuzzyAlgo:   algo.FuzzyMatchV2,
+		Scheme:      "default",
 		Extended:    true,
 		Phony:       false,
 		Case:        CaseSmart,
@@ -439,6 +441,15 @@ func parseAlgo(str string) algo.Algo {
 		errorExit("invalid algorithm (expected: v1 or v2)")
 	}
 	return algo.FuzzyMatchV2
+}
+
+func processScheme(opts *Options) {
+	if !algo.Init(opts.Scheme) {
+		errorExit("invalid scoring scheme (expected: default|path|history)")
+	}
+	if opts.Scheme == "history" {
+		opts.Criteria = []criterion{byScore}
+	}
 }
 
 func parseBorder(str string, optional bool) tui.BorderShape {
@@ -1345,6 +1356,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Normalize = true
 		case "--algo":
 			opts.FuzzyAlgo = parseAlgo(nextString(allArgs, &i, "algorithm required (v1|v2)"))
+		case "--scheme":
+			opts.Scheme = strings.ToLower(nextString(allArgs, &i, "scoring scheme required (default|path|history)"))
 		case "--expect":
 			for k, v := range parseKeyChords(nextString(allArgs, &i, "key names required"), "key names required") {
 				opts.Expect[k] = v
@@ -1551,6 +1564,8 @@ func parseOptions(opts *Options, allArgs []string) {
 		default:
 			if match, value := optString(arg, "--algo="); match {
 				opts.FuzzyAlgo = parseAlgo(value)
+			} else if match, value := optString(arg, "--scheme="); match {
+				opts.Scheme = strings.ToLower(value)
 			} else if match, value := optString(arg, "-q", "--query="); match {
 				opts.Query = value
 			} else if match, value := optString(arg, "-f", "--filter="); match {
@@ -1751,6 +1766,10 @@ func postProcessOptions(opts *Options) {
 		theme.Input = boldify(theme.Input)
 		theme.Cursor = boldify(theme.Cursor)
 		theme.Spinner = boldify(theme.Spinner)
+	}
+
+	if opts.Scheme != "default" {
+		processScheme(opts)
 	}
 }
 

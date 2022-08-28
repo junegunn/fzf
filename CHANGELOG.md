@@ -1,8 +1,18 @@
 CHANGELOG
 =========
 
-0.32.2
+0.33.0
 ------
+- Added `--scheme=[default|path|history]` option to choose scoring scheme
+    - (Experimental)
+    - We updated the scoring algorithm in 0.32.0, however we have learned that
+      this new scheme (`default`) is not always giving the optimal result
+    - `path`: Additional bonus point is only given the the characters after
+      path separator. You might want to choose this scheme if you have many
+      files with spaces in their paths.
+    - `history`: No additional bonus points are given so that we give more
+      weight to the chronological ordering. This is equivalent to the scoring
+      scheme before 0.32.0. This also sets `--tiebreak=index`.
 - ANSI color sequences with colon delimiters are now supported.
   ```sh
   printf "\e[38;5;208mOption 1\e[m\nOption 2" | fzf --ansi
