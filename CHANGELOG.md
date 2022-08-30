@@ -7,7 +7,7 @@ CHANGELOG
     - (Experimental)
     - We updated the scoring algorithm in 0.32.0, however we have learned that
       this new scheme (`default`) is not always giving the optimal result
-    - `path`: Additional bonus point is only given the the characters after
+    - `path`: Additional bonus point is only given to the characters after
       path separator. You might want to choose this scheme if you have many
       files with spaces in their paths.
     - `history`: No additional bonus points are given so that we give more
