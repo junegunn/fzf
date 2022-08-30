@@ -189,6 +189,7 @@ type Terminal struct {
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
 	executing          *util.AtomicBool
+	tee                string
 }
 
 type selectedItem struct {
@@ -576,7 +577,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:           make(chan int),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
-		executing:          util.NewAtomicBool(false)}
+		executing:          util.NewAtomicBool(false),
+		tee:                opts.Tee,
+	}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -698,7 +701,20 @@ func (t *Terminal) output() bool {
 	if !found {
 		current := t.currentItem()
 		if current != nil {
-			t.printer(current.AsString(t.ansi))
+			result := current.AsString(t.ansi)
+			t.printer(result)
+			if t.tee != "" {
+				// todo: handle errors
+				file, open_err := os.OpenFile(t.tee, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o600)
+				defer func() { _ = file.Close() }()
+				if open_err == nil {
+					write_n, write_err := file.WriteString(result)
+					_ = write_n
+					_ = write_err
+				} else {
+					_ = open_err
+				}
+			}
 			found = true
 		}
 	} else {

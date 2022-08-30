@@ -101,6 +101,7 @@ const usage = `usage: fzf [options]
     --read0               Read input delimited by ASCII NUL characters
     --print0              Print output delimited by ASCII NUL characters
     --sync                Synchronous search for multi-staged filtering
+    -t, --tee=STR         Also save output into file
     --version             Display version information and exit
 
   Environment variables
@@ -250,6 +251,7 @@ type Options struct {
 	Tabstop     int
 	ClearOnExit bool
 	Version     bool
+	Tee         string
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -313,7 +315,9 @@ func defaultOptions() *Options {
 		Unicode:     true,
 		Tabstop:     8,
 		ClearOnExit: true,
-		Version:     false}
+		Version:     false,
+		Tee:         "",
+	}
 }
 
 func help(code int) {
@@ -1559,6 +1563,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = false
 		case "--version":
 			opts.Version = true
+		case "-t", "--tee":
+			opts.Tee = nextString(allArgs, &i, "tee string required")
 		case "--":
 			// Ignored
 		default:
@@ -1637,6 +1643,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
 				validateJumpLabels = true
+			} else if match, value := optString(arg, "--tee="); match {
+				opts.Tee = value
 			} else {
 				errorExit("unknown option: " + arg)
 			}
