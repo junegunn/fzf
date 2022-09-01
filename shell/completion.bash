@@ -288,7 +288,7 @@ _fzf_host_completion() {
 
 _fzf_var_completion() {
   _fzf_complete -m -- "$@" < <(
-    declare -xp | sed -En 's|^declare -x ([^=]+).*|\1|p'
+    declare -xp | sed -En 's|^declare [^ ]+ ([^=]+).*|\1|p'
   )
 }
 
