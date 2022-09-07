@@ -53,8 +53,10 @@ const usage = `usage: fzf [options]
     --jump-labels=CHARS   Label characters for jump and jump-accept
 
   Layout
-    --height=HEIGHT[%]    Display fzf window below the cursor with the given
-                          height instead of using fullscreen
+    --height=[~]HEIGHT[%] Display fzf window below the cursor with the given
+                          height instead of using fullscreen.
+                          If prefixed with '~', fzf will determine the height
+                          according to the input size.
     --min-height=HEIGHT   Minimum height when --height is given in percent
                           (default: 10)
     --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
@@ -131,6 +133,12 @@ const (
 	byEnd
 )
 
+type heightSpec struct {
+	size    float64
+	percent bool
+	auto    bool
+}
+
 type sizeSpec struct {
 	size    float64
 	percent bool
@@ -180,6 +188,10 @@ type previewOpts struct {
 	alternative *previewOpts
 }
 
+func (a previewOpts) aboveOrBelow() bool {
+	return a.size.size > 0 && (a.position == posUp || a.position == posDown)
+}
+
 func (a previewOpts) sameLayout(b previewOpts) bool {
 	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden && a.threshold == b.threshold &&
 		(a.alternative != nil && b.alternative != nil && a.alternative.sameLayout(*b.alternative) ||
@@ -211,7 +223,7 @@ type Options struct {
 	Theme       *tui.ColorTheme
 	Black       bool
 	Bold        bool
-	Height      sizeSpec
+	Height      heightSpec
 	MinHeight   int
 	Layout      layoutType
 	Cycle       bool
@@ -1076,11 +1088,6 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 					}
 					if t == actUnbind || t == actRebind {
 						parseKeyChords(actionArg, spec[0:offset]+" target required")
-					} else if t == actChangePreviewWindow {
-						opts := previewOpts{}
-						for _, arg := range strings.Split(actionArg, "|") {
-							parsePreviewWindow(&opts, arg)
-						}
 					}
 				}
 			}
@@ -1160,9 +1167,17 @@ func parseSize(str string, maxPercent float64, label string) sizeSpec {
 	return sizeSpec{val, percent}
 }
 
-func parseHeight(str string) sizeSpec {
+func parseHeight(str string) heightSpec {
+	heightSpec := heightSpec{}
+	if strings.HasPrefix(str, "~") {
+		heightSpec.auto = true
+		str = str[1:]
+	}
+
 	size := parseSize(str, 100, "height")
-	return size
+	heightSpec.size = size.size
+	heightSpec.percent = size.percent
+	return heightSpec
 }
 
 func parseLayout(str string) layoutType {
@@ -1525,11 +1540,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			parsePreviewWindow(&opts.Preview,
 				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-BORDER_OPT][,wrap][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"))
 		case "--height":
-			opts.Height = parseHeight(nextString(allArgs, &i, "height required: HEIGHT[%]"))
+			opts.Height = parseHeight(nextString(allArgs, &i, "height required: [~]HEIGHT[%]"))
 		case "--min-height":
 			opts.MinHeight = nextInt(allArgs, &i, "height required: HEIGHT")
 		case "--no-height":
-			opts.Height = sizeSpec{}
+			opts.Height = heightSpec{}
 		case "--no-margin":
 			opts.Margin = defaultMargin()
 		case "--no-padding":
@@ -1709,6 +1724,7 @@ func postProcessOptions(opts *Options) {
 	}
 
 	// Extend the default key map
+	previewEnabled := len(opts.Preview.command) > 0 || hasPreviewAction(opts)
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
 		var lastChangePreviewWindow *action
@@ -1719,8 +1735,18 @@ func postProcessOptions(opts *Options) {
 				opts.ToggleSort = true
 			case actChangePreviewWindow:
 				lastChangePreviewWindow = act
+				if !previewEnabled {
+					// Doesn't matter
+					continue
+				}
+				opts := previewOpts{}
+				for _, arg := range strings.Split(act.a, "|") {
+					// Make sure that each expression is valid
+					parsePreviewWindow(&opts, arg)
+				}
 			}
 		}
+
 		// Re-organize actions so that we only keep the last change-preview-window
 		// and it comes first in the list.
 		//  *  change-preview-window(up,+10)+preview(sleep 3; cat {})+change-preview-window(up,+20)
@@ -1737,6 +1763,19 @@ func postProcessOptions(opts *Options) {
 		keymap[key] = actions
 	}
 	opts.Keymap = keymap
+
+	if opts.Height.auto {
+		for _, s := range []sizeSpec{opts.Margin[0], opts.Margin[2]} {
+			if s.percent {
+				errorExit("adaptive height is not compatible with top/bottom percent margin")
+			}
+		}
+		for _, s := range []sizeSpec{opts.Padding[0], opts.Padding[2]} {
+			if s.percent {
+				errorExit("adaptive height is not compatible with top/bottom percent padding")
+			}
+		}
+	}
 
 	// If we're not using extended search mode, --nth option becomes irrelevant
 	// if it contains the whole range

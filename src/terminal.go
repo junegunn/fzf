@@ -100,6 +100,11 @@ type itemLine struct {
 	result   Result
 }
 
+type fitpad struct {
+	fit int
+	pad int
+}
+
 var emptyLine = itemLine{}
 
 // Terminal represents terminal input/output
@@ -183,7 +188,7 @@ type Terminal struct {
 	prevLines          []itemLine
 	suppress           bool
 	sigstop            bool
-	startChan          chan bool
+	startChan          chan fitpad
 	killChan           chan int
 	slab               *util.Slab
 	theme              *tui.ColorTheme
@@ -439,6 +444,13 @@ func makeSpinner(unicode bool) []string {
 	return []string{`-`, `\`, `|`, `/`, `-`, `\`, `|`, `/`}
 }
 
+func evaluateHeight(opts *Options, termHeight int) int {
+	if opts.Height.percent {
+		return util.Max(int(opts.Height.size*float64(termHeight)/100.0), opts.MinHeight)
+	}
+	return int(opts.Height.size)
+}
+
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
@@ -465,7 +477,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		strongAttr = tui.AttrRegular
 	}
 	var renderer tui.Renderer
-	fullscreen := opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100
+	fullscreen := !opts.Height.auto && (opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100)
 	if fullscreen {
 		if tui.HasFullscreenRenderer() {
 			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
@@ -475,24 +487,16 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 	} else {
 		maxHeightFunc := func(termHeight int) int {
-			var maxHeight int
-			if opts.Height.percent {
-				maxHeight = util.Max(int(opts.Height.size*float64(termHeight)/100.0), opts.MinHeight)
-			} else {
-				maxHeight = int(opts.Height.size)
-			}
-
+			// Minimum height required to render fzf excluding margin and padding
 			effectiveMinHeight := minHeight
-			if previewBox != nil && (opts.Preview.position == posUp || opts.Preview.position == posDown) {
-				effectiveMinHeight *= 2
+			if previewBox != nil && opts.Preview.aboveOrBelow() {
+				effectiveMinHeight += 1 + borderLines(opts.Preview.border)
 			}
 			if opts.InfoStyle != infoDefault {
 				effectiveMinHeight--
 			}
-			if opts.BorderShape != tui.BorderNone {
-				effectiveMinHeight += 2
-			}
-			return util.Min(termHeight, util.Max(maxHeight, effectiveMinHeight))
+			effectiveMinHeight += borderLines(opts.BorderShape)
+			return util.Min(termHeight, util.Max(evaluateHeight(opts, termHeight), effectiveMinHeight))
 		}
 		renderer = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
 	}
@@ -572,7 +576,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		sigstop:            false,
 		slab:               util.MakeSlab(slab16Size, slab32Size),
 		theme:              opts.Theme,
-		startChan:          make(chan bool, 1),
+		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
@@ -585,6 +589,32 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
 	return &t
+}
+
+func borderLines(shape tui.BorderShape) int {
+	switch shape {
+	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp:
+		return 2
+	case tui.BorderTop, tui.BorderBottom:
+		return 1
+	}
+	return 0
+}
+
+// Extra number of lines needed to display fzf
+func (t *Terminal) extraLines() int {
+	extra := len(t.header0) + t.headerLines + 1
+	if !t.noInfoLine() {
+		extra++
+	}
+	return extra
+}
+
+func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
+	_, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
+	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
+	fit := screenHeight - padHeight - t.extraLines()
+	return fit, padHeight
 }
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
@@ -725,22 +755,23 @@ func (t *Terminal) displayWidth(runes []rune) int {
 
 const (
 	minWidth  = 4
-	minHeight = 4
+	minHeight = 3
 )
 
 func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) int {
 	max := base - occupied
+	if max < minSize {
+		max = minSize
+	}
 	if size.percent {
 		return util.Constrain(int(float64(base)*0.01*size.size), minSize, max)
 	}
 	return util.Constrain(int(size.size)+pad, minSize, max)
 }
 
-func (t *Terminal) resizeWindows() {
+func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 	screenWidth := t.tui.MaxX()
 	screenHeight := t.tui.MaxY()
-	t.prevLines = make([]itemLine, screenHeight)
-
 	marginInt := [4]int{}  // TRBL
 	paddingInt := [4]int{} // TRBL
 	sizeSpecToInt := func(index int, spec sizeSpec) int {
@@ -789,31 +820,48 @@ func (t *Terminal) resizeWindows() {
 	}
 
 	adjust := func(idx1 int, idx2 int, max int, min int) {
-		if max >= min {
-			margin := marginInt[idx1] + marginInt[idx2] + paddingInt[idx1] + paddingInt[idx2]
-			if max-margin < min {
-				desired := max - min
-				paddingInt[idx1] = desired * paddingInt[idx1] / margin
-				paddingInt[idx2] = desired * paddingInt[idx2] / margin
-				marginInt[idx1] = util.Max(extraMargin[idx1], desired*marginInt[idx1]/margin)
-				marginInt[idx2] = util.Max(extraMargin[idx2], desired*marginInt[idx2]/margin)
-			}
+		if min > max {
+			min = max
+		}
+		margin := marginInt[idx1] + marginInt[idx2] + paddingInt[idx1] + paddingInt[idx2]
+		if max-margin < min {
+			desired := max - min
+			paddingInt[idx1] = desired * paddingInt[idx1] / margin
+			paddingInt[idx2] = desired * paddingInt[idx2] / margin
+			marginInt[idx1] = util.Max(extraMargin[idx1], desired*marginInt[idx1]/margin)
+			marginInt[idx2] = util.Max(extraMargin[idx2], desired*marginInt[idx2]/margin)
 		}
 	}
 
-	previewVisible := t.isPreviewEnabled() && t.previewOpts.size.size > 0
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
-	if previewVisible {
+	if t.noInfoLine() {
+		minAreaHeight -= 1
+	}
+	if t.isPreviewVisible() {
+		minPreviewHeight := 1 + borderLines(t.previewOpts.border)
+		minPreviewWidth := 5
 		switch t.previewOpts.position {
 		case posUp, posDown:
-			minAreaHeight *= 2
+			minAreaHeight += minPreviewHeight
+			minAreaWidth = util.Max(minPreviewWidth, minAreaWidth)
 		case posLeft, posRight:
-			minAreaWidth *= 2
+			minAreaWidth += minPreviewWidth
+			minAreaHeight = util.Max(minPreviewHeight, minAreaHeight)
 		}
 	}
 	adjust(1, 3, screenWidth, minAreaWidth)
 	adjust(0, 2, screenHeight, minAreaHeight)
+
+	return screenWidth, screenHeight, marginInt, paddingInt
+}
+
+func (t *Terminal) resizeWindows() {
+	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
+	width := screenWidth - marginInt[1] - marginInt[3]
+	height := screenHeight - marginInt[0] - marginInt[2]
+
+	t.prevLines = make([]itemLine, screenHeight)
 	if t.border != nil {
 		t.border.Close()
 	}
@@ -832,8 +880,6 @@ func (t *Terminal) resizeWindows() {
 	// Reset preview version so that full redraw occurs
 	t.previewed.version = 0
 
-	width := screenWidth - marginInt[1] - marginInt[3]
-	height := screenHeight - marginInt[0] - marginInt[2]
 	switch t.borderShape {
 	case tui.BorderHorizontal:
 		t.border = t.tui.NewWindow(
@@ -865,16 +911,16 @@ func (t *Terminal) resizeWindows() {
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 	}
 
-	// Add padding
+	// Add padding to margin
 	for idx, val := range paddingInt {
 		marginInt[idx] += val
 	}
-	width = screenWidth - marginInt[1] - marginInt[3]
-	height = screenHeight - marginInt[0] - marginInt[2]
+	width -= paddingInt[1] + paddingInt[3]
+	height -= paddingInt[0] + paddingInt[2]
 
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
-	if previewVisible {
+	if t.isPreviewVisible() {
 		var resizePreviewWindows func(previewOpts previewOpts)
 		resizePreviewWindows = func(previewOpts previewOpts) {
 			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
@@ -1863,6 +1909,10 @@ func (t *Terminal) isPreviewEnabled() bool {
 	return t.hasPreviewer() && t.previewer.enabled
 }
 
+func (t *Terminal) isPreviewVisible() bool {
+	return t.isPreviewEnabled() && t.previewOpts.size.size > 0
+}
+
 func (t *Terminal) hasPreviewWindow() bool {
 	return t.pwindow != nil && t.isPreviewEnabled()
 }
@@ -1962,7 +2012,28 @@ func (t *Terminal) cancelPreview() {
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
-	<-t.startChan
+	fitpad := <-t.startChan
+	fit := fitpad.fit
+	if fit >= 0 {
+		pad := fitpad.pad
+		t.tui.Resize(func(termHeight int) int {
+			contentHeight := fit + t.extraLines()
+			if t.hasPreviewer() {
+				if t.previewOpts.aboveOrBelow() {
+					if t.previewOpts.size.percent {
+						newContentHeight := int(float64(contentHeight) * 100. / (100. - t.previewOpts.size.size))
+						contentHeight = util.Max(contentHeight+1+borderLines(t.previewOpts.border), newContentHeight)
+					} else {
+						contentHeight += int(t.previewOpts.size.size) + borderLines(t.previewOpts.border)
+					}
+				} else {
+					// Minimum height if preview window can appear
+					contentHeight = util.Max(contentHeight, 1+borderLines(t.previewOpts.border))
+				}
+			}
+			return util.Min(termHeight, contentHeight+pad)
+		})
+	}
 	{ // Late initialization
 		intChan := make(chan os.Signal, 1)
 		signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)

@@ -155,6 +155,7 @@ target/$(BINARYLOONG64): $(SOURCES)
 	GOARCH=loong64 $(GO) build $(BUILD_FLAGS) -o $@
 
 bin/fzf: target/$(BINARY) | bin
+	-rm -f bin/fzf
 	cp -f target/$(BINARY) bin/fzf
 
 docker:

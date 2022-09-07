@@ -177,9 +177,11 @@ actions are affected:
 Label characters for \fBjump\fR and \fBjump-accept\fR
 .SS Layout
 .TP
-.BI "--height=" "HEIGHT[%]"
+.BI "--height=" "[~]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
-the full screen.
+the full screen. When prefixed with \fB~\fR, fzf will automatically determine
+the height in the range according to the input size. Note that adaptive height
+is not compatible with top/bottom margin and padding given in percent size.
 .TP
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).

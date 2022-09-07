@@ -194,10 +194,17 @@ func Run(opts *Options, version string, revision string) {
 
 	// Terminal I/O
 	terminal := NewTerminal(opts, eventBox)
+	maxFit := 0 // Maximum number of items that can fit on screen
+	padHeight := 0
+	heightUnknown := opts.Height.auto
+	if heightUnknown {
+		maxFit, padHeight = terminal.MaxFitAndPad(opts)
+	}
 	deferred := opts.Select1 || opts.Exit0
 	go terminal.Loop()
-	if !deferred {
-		terminal.startChan <- true
+	if !deferred && !heightUnknown {
+		// Start right away
+		terminal.startChan <- fitpad{-1, -1}
 	}
 
 	// Event coordination
@@ -216,7 +223,19 @@ func Run(opts *Options, version string, revision string) {
 		go reader.restart(command)
 	}
 	eventBox.Watch(EvtReadNew)
+	total := 0
 	query := []rune{}
+	determine := func(final bool) {
+		if heightUnknown {
+			if total >= maxFit || final {
+				heightUnknown = false
+				terminal.startChan <- fitpad{util.Min(total, maxFit), padHeight}
+			}
+		} else if deferred {
+			deferred = false
+			terminal.startChan <- fitpad{-1, -1}
+		}
+	}
 	for {
 		delay := true
 		ticks++
@@ -249,10 +268,14 @@ func Run(opts *Options, version string, revision string) {
 						reading = reading && evt == EvtReadNew
 					}
 					snapshot, count := chunkList.Snapshot()
-					terminal.UpdateCount(count, !reading, value.(*string))
+					total = count
+					terminal.UpdateCount(total, !reading, value.(*string))
 					if opts.Sync {
 						opts.Sync = false
 						terminal.UpdateList(PassMerger(&snapshot, opts.Tac), false)
+					}
+					if heightUnknown && !deferred {
+						determine(!reading)
 					}
 					reset := clearCache()
 					matcher.Reset(snapshot, input(reset), false, !reading, sort, reset)
@@ -295,8 +318,7 @@ func Run(opts *Options, version string, revision string) {
 						if deferred {
 							count := val.Length()
 							if opts.Select1 && count > 1 || opts.Exit0 && !opts.Select1 && count > 0 {
-								deferred = false
-								terminal.startChan <- true
+								determine(val.final)
 							} else if val.final {
 								if opts.Exit0 && count == 0 || opts.Select1 && count == 1 {
 									if opts.PrintQuery {
@@ -313,8 +335,7 @@ func Run(opts *Options, version string, revision string) {
 									}
 									os.Exit(exitNoMatch)
 								}
-								deferred = false
-								terminal.startChan <- true
+								determine(val.final)
 							}
 						}
 						terminal.UpdateList(val, clearSelection())
