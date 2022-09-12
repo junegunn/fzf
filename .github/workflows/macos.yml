@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
+    - uses: actions/checkout@61b9e3751b92087fd0b06925ba6dd6314e06f089 # v2
       with:
         fetch-depth: 0
 
