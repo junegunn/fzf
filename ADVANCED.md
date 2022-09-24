@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2021/05/22)*
+*(Last update: 2022/08/25)*
 
 <!-- vim-markdown-toc GFM -->
 
@@ -496,9 +496,17 @@ pods() {
 Key bindings for git objects
 ----------------------------
 
-I have [blogged](https://junegunn.kr/2016/07/fzf-git) about my fzf+git key
-bindings a few years ago. I'm going to show them here again, because they are
-seriously useful.
+Oftentimes, you want to put the identifiers of various Git object to the
+command-line. For example, it is common to write commands like these:
+
+```sh
+git checkout [SOME_COMMIT_HASH or BRANCH or TAG]
+git diff [SOME_COMMIT_HASH or BRANCH or TAG] [SOME_COMMIT_HASH or BRANCH or TAG]
+```
+
+[fzf-git.sh](https://github.com/junegunn/fzf-git.sh) project defines a set of
+fzf-based key bindings for Git objects. I strongly recommend that you check
+them out because they are seriously useful.
 
 ### Files listed in `git status`
 
@@ -517,9 +525,6 @@ seriously useful.
 <kbd>CTRL-G</kbd><kbd>CTRL-H</kbd>
 
 ![image](https://user-images.githubusercontent.com/700826/113473765-91692080-94a6-11eb-8d38-ed4d41f27ac1.png)
-
-
-The full source code can be found [here](https://gist.github.com/junegunn/8b572b8d4b5eddd8b85e5f4d40f17236).
 
 Color themes
 ------------

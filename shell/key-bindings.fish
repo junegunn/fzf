@@ -53,7 +53,7 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS --tiebreak=index --bind=ctrl-r:toggle-sort,ctrl-z:ignore $FZF_CTRL_R_OPTS +m"
+      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS --scheme=history --bind=ctrl-r:toggle-sort,ctrl-z:ignore $FZF_CTRL_R_OPTS +m"
 
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
@@ -87,7 +87,7 @@ function fzf_key_bindings
       eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
       if [ -n "$result" ]
-        builtin cd -- $result
+        cd -- $result
 
         # Remove last token from commandline.
         commandline -t ""

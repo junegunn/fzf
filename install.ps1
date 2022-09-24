@@ -1,4 +1,4 @@
-$version="0.32.1"
+$version="0.33.0"
 
 $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 

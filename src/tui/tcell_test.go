@@ -5,7 +5,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/junegunn/fzf/src/util"
 )
 

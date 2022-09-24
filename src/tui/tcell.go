@@ -8,8 +8,8 @@ import (
 
 	"runtime"
 
-	"github.com/gdamore/tcell"
-	"github.com/gdamore/tcell/encoding"
+	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v2/encoding"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
@@ -19,12 +19,20 @@ func HasFullscreenRenderer() bool {
 	return true
 }
 
-func (p ColorPair) style() tcell.Style {
-	style := tcell.StyleDefault
-	return style.Foreground(tcell.Color(p.Fg())).Background(tcell.Color(p.Bg()))
+func asTcellColor(color Color) tcell.Color {
+	value := uint64(tcell.ColorValid) + uint64(color)
+	if color.is24() {
+		value = value | uint64(tcell.ColorIsRGB)
+	}
+	return tcell.Color(value)
 }
 
-type Attr tcell.Style
+func (p ColorPair) style() tcell.Style {
+	style := tcell.StyleDefault
+	return style.Foreground(asTcellColor(p.Fg())).Background(asTcellColor(p.Bg()))
+}
+
+type Attr int32
 
 type TcellWindow struct {
 	color       bool
@@ -72,12 +80,13 @@ func (w *TcellWindow) FinishFill() {
 }
 
 const (
-	Bold      Attr = Attr(tcell.AttrBold)
-	Dim            = Attr(tcell.AttrDim)
-	Blink          = Attr(tcell.AttrBlink)
-	Reverse        = Attr(tcell.AttrReverse)
-	Underline      = Attr(tcell.AttrUnderline)
-	Italic         = Attr(tcell.AttrItalic)
+	Bold          Attr = Attr(tcell.AttrBold)
+	Dim                = Attr(tcell.AttrDim)
+	Blink              = Attr(tcell.AttrBlink)
+	Reverse            = Attr(tcell.AttrReverse)
+	Underline          = Attr(tcell.AttrUnderline)
+	StrikeThrough      = Attr(tcell.AttrStrikeThrough)
+	Italic             = Attr(tcell.AttrItalic)
 )
 
 const (
@@ -561,6 +570,7 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 		style = style.
 			Reverse(a&Attr(tcell.AttrReverse) != 0).
 			Underline(a&Attr(tcell.AttrUnderline) != 0).
+			StrikeThrough(a&Attr(tcell.AttrStrikeThrough) != 0).
 			Italic(a&Attr(tcell.AttrItalic) != 0).
 			Blink(a&Attr(tcell.AttrBlink) != 0).
 			Dim(a&Attr(tcell.AttrDim) != 0)
@@ -612,6 +622,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Dim(a&Attr(tcell.AttrDim) != 0).
 		Reverse(a&Attr(tcell.AttrReverse) != 0).
 		Underline(a&Attr(tcell.AttrUnderline) != 0).
+		StrikeThrough(a&Attr(tcell.AttrStrikeThrough) != 0).
 		Italic(a&Attr(tcell.AttrItalic) != 0)
 
 	gr := uniseg.NewGraphemes(text)

@@ -288,13 +288,13 @@ _fzf_host_completion() {
 
 _fzf_var_completion() {
   _fzf_complete -m -- "$@" < <(
-    declare -xp | sed 's/=.*//' | sed 's/.* //'
+    declare -xp | sed -En 's|^declare [^ ]+ ([^=]+).*|\1|p'
   )
 }
 
 _fzf_alias_completion() {
   _fzf_complete -m -- "$@" < <(
-    alias | sed 's/=.*//' | sed 's/.* //'
+    alias | sed -En 's|^alias ([^=]+).*|\1|p'
   )
 }
 
