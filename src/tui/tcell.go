@@ -20,6 +20,10 @@ func HasFullscreenRenderer() bool {
 }
 
 func asTcellColor(color Color) tcell.Color {
+	if color == colDefault {
+		return tcell.ColorDefault
+	}
+
 	value := uint64(tcell.ColorValid) + uint64(color)
 	if color.is24() {
 		value = value | uint64(tcell.ColorIsRGB)
