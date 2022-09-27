@@ -618,12 +618,6 @@ Read input delimited by ASCII NUL characters instead of newline characters
 .B "--print0"
 Print output delimited by ASCII NUL characters instead of newline characters
 .TP
-.B "--no-clear"
-Do not clear finder interface on exit. If fzf was started in full screen mode,
-it will not switch back to the original screen, so you'll have to manually run
-\fBtput rmcup\fR to return. This option can be used to avoid flickering of the
-screen when your application needs to start fzf multiple times in order.
-.TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.
