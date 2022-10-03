@@ -688,10 +688,14 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
-  elseif has('win32unix') && executable('cygpath') && $TERM !=# 'cygwin'
+  elseif has('win32unix')
     let shellscript = s:fzf_tempname()
     call s:writefile([command], shellscript)
-    let command = '$(cygpath $COMSPEC) /C '.fzf#shellescape('set "TERM=" & start /WAIT sh '.shellscript)
+    if executable('mintty')
+      let command = 'mintty sh '.shellscript
+    elseif executable('cygpath') && $TERM !=# 'cygwin'
+      let command = '$(cygpath $COMSPEC) /C '.fzf#shellescape('set "TERM=" & start /WAIT sh '.shellscript)
+    endif
     let a:temps.shellscript = shellscript
   endif
   if a:use_height
