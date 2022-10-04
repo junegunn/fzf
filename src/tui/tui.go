@@ -358,6 +358,7 @@ func MakeTransparentBorder() BorderStyle {
 
 type Renderer interface {
 	Init()
+	Resize(maxHeightFunc func(int) int)
 	Pause(clear bool)
 	Resume(clear bool, sigcont bool)
 	Clear()

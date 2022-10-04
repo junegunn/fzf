@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Aug 2022" "fzf 0.33.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Sep 2022" "fzf 0.34.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -177,9 +177,11 @@ actions are affected:
 Label characters for \fBjump\fR and \fBjump-accept\fR
 .SS Layout
 .TP
-.BI "--height=" "HEIGHT[%]"
+.BI "--height=" "[~]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
-the full screen.
+the full screen. When prefixed with \fB~\fR, fzf will automatically determine
+the height in the range according to the input size. Note that adaptive height
+is not compatible with top/bottom margin and padding given in percent size.
 .TP
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).
@@ -279,7 +281,7 @@ e.g.
 
 .TP
 .BI "--info=" "STYLE"
-Determines the display style of finder info.
+Determines the display style of finder info (match counters).
 
 .br
 .BR default "       Display on the next line to the prompt"
@@ -615,12 +617,6 @@ Read input delimited by ASCII NUL characters instead of newline characters
 .TP
 .B "--print0"
 Print output delimited by ASCII NUL characters instead of newline characters
-.TP
-.B "--no-clear"
-Do not clear finder interface on exit. If fzf was started in full screen mode,
-it will not switch back to the original screen, so you'll have to manually run
-\fBtput rmcup\fR to return. This option can be used to avoid flickering of the
-screen when your application needs to start fzf multiple times in order.
 .TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch

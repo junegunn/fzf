@@ -2245,6 +2245,93 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.until { |lines| assert_match(/^> SNIPSNIP.*SNIPSNIP$/, lines[-3]) }
   end
+
+  def assert_block(expected, lines)
+    cols = expected.lines.map(&:chomp).map(&:length).max
+    actual = lines.reverse.take(expected.lines.length).reverse.map { _1[0, cols].rstrip + "\n" }.join
+    assert_equal expected, actual
+  end
+
+  def test_height_range_fit
+    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border', :Enter
+    expected = <<~OUTPUT
+      ╭──────────
+      │   3
+      │   2
+      │ > 1
+      │ >   < 3/3
+      ╰──────────
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
+
+  def test_height_range_fit_preview_above
+    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border --preview "seq {}" --preview-window up,60%', :Enter
+    expected = <<~OUTPUT
+      ╭──────────
+      │ ╭────────
+      │ │ 1
+      │ │
+      │ │
+      │ │
+      │ ╰────────
+      │   3
+      │   2
+      │ > 1
+      │ >   < 3/3
+      ╰──────────
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
+
+  def test_height_range_fit_preview_above_alternative
+    tmux.send_keys 'seq 3 | fzf --height ~100% --border=sharp --preview "seq {}" --preview-window up,40%,border-bottom --padding 1 --exit-0 --header hello --header-lines=2', :Enter
+    expected = <<~OUTPUT
+      ┌─────────
+      │
+      │  1
+      │  2
+      │  3
+      │  ───────
+      │  > 3
+      │    2
+      │    1
+      │    hello
+      │    1/1
+      │  >
+      │
+      └─────────
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
+
+  def test_height_range_fit_preview_left
+    tmux.send_keys "seq 3 | fzf --height ~100% --border=vertical --preview 'seq {}' --preview-window left,5,border-right --padding 1 --exit-0 --header $'hello\\nworld' --header-lines=2", :Enter
+    expected = <<~OUTPUT
+      │
+      │  1       │> 3
+      │  2       │  2
+      │  3       │  1
+      │          │  hello
+      │          │  world
+      │          │  1/1
+      │          │>
+      │
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
+
+  def test_height_range_overflow
+    tmux.send_keys 'seq 100 | fzf --height ~5 --info=inline --border', :Enter
+    expected = <<~OUTPUT
+      ╭──────────────
+      │   2
+      │ > 1
+      │ >   < 100/100
+      ╰──────────────
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
 end
 
 module TestShell

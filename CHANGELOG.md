@@ -1,6 +1,37 @@
 CHANGELOG
 =========
 
+0.34.0
+------
+- Added support for adaptive `--height`. If the `--height` value is prefixed
+  with `~`, fzf will automatically determine the height in the range according
+  to the input size.
+  ```sh
+  seq 1 | fzf --height ~70% --border --padding 1 --margin 1
+  seq 10 | fzf --height ~70% --border --padding 1 --margin 1
+  seq 100 | fzf --height ~70% --border --padding 1 --margin 1
+  ```
+    - There are a few limitations
+        - Not compatible with percent top/bottom margin/padding
+          ```sh
+          # This is not allowed (top/bottom margin in percent value)
+          fzf --height ~50% --border --margin 5%,10%
+
+          # This is allowed (top/bottom margin in fixed value)
+          fzf --height ~50% --border --margin 2,10%
+          ```
+        - fzf will not start until it can determine the right height for the input
+          ```sh
+          # fzf will open immediately
+          (sleep 2; seq 10) | fzf --height 50%
+
+          # fzf will open after 2 seconds
+          (sleep 2; seq 10) | fzf --height ~50%
+          (sleep 2; seq 1000) | fzf --height ~50%
+          ```
+- Fixed tcell renderer used to render full-screen fzf on Windows
+- `--no-clear` is deprecated. Use `reload` action instead.
+
 0.33.0
 ------
 - Added `--scheme=[default|path|history]` option to choose scoring scheme

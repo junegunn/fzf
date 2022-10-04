@@ -99,6 +99,8 @@ const (
 	AttrClear     = Attr(1 << 8)
 )
 
+func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
+
 func (r *FullscreenRenderer) defaultTheme() *ColorTheme {
 	if _screen.Colors() >= 256 {
 		return Dark256

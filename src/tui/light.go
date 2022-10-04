@@ -189,6 +189,10 @@ func (r *LightRenderer) Init() {
 	}
 }
 
+func (r *LightRenderer) Resize(maxHeightFunc func(int) int) {
+	r.maxHeightFunc = maxHeightFunc
+}
+
 func (r *LightRenderer) makeSpace() {
 	r.stderr("\n")
 	r.csi("G")
@@ -676,6 +680,9 @@ func (r *LightRenderer) MaxX() int {
 }
 
 func (r *LightRenderer) MaxY() int {
+	if r.height == 0 {
+		r.updateTerminalSize()
+	}
 	return r.height
 }
 
