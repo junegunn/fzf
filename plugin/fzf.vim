@@ -143,7 +143,7 @@ function! fzf#install()
     if !filereadable(script)
       throw script.' not found'
     endif
-    let script = 'powershell -ExecutionPolicy Bypass -file ' . script
+    let script = 'powershell -ExecutionPolicy Bypass -file ' . shellescape(script)
   else
     let script = s:base_dir.'/install'
     if !executable(script)
