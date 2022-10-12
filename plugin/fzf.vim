@@ -484,7 +484,8 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call s:writefile(source, temps.input)
-      let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
+      "let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
+      let source_command = 'cat '.substitute(temps.input, '\', '/', 'g')
     else
       throw 'Invalid source type'
     endif
