@@ -55,8 +55,8 @@ __fzf_orig_completion() {
       cmd="${BASH_REMATCH[3]}"
       [[ "$f" = _fzf_* ]] && continue
       printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
-      if [[ "$l" = *" -o nospace "* ]] && [[ ! "$__fzf_nospace_commands" = *" $cmd "* ]]; then
-        __fzf_nospace_commands="$__fzf_nospace_commands $cmd "
+      if [[ "$l" = *" -o nospace "* ]] && [[ ! "${__fzf_nospace_commands-}" = *" $cmd "* ]]; then
+        __fzf_nospace_commands="${__fzf_nospace_commands-} $cmd "
       fi
     fi
   done
@@ -329,7 +329,7 @@ __fzf_defc() {
   func="$2"
   opts="$3"
   orig_var="_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}"
-  orig="${!orig_var}"
+  orig="${!orig_var-}"
   if [[ -n "$orig" ]]; then
     printf -v def "$orig" "$func"
     eval "$def"
