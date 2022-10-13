@@ -108,7 +108,7 @@ __fzf_comprun() {
     fi
   else
     shift
-    fzf "$@"
+    command fzf "$@"
   fi
 }
 
