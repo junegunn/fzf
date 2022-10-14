@@ -279,8 +279,8 @@ fzf-completion() {
   [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
 
   # When the trigger starts with ';', it becomes a separate token
-  if [[ ${LBUFFER} = *"${tokens[-2]}${tokens[-1]}" ]]; then
-    tokens[-2]="${tokens[-2]}${tokens[-1]}"
+  if [[ ${LBUFFER} = *"${tokens[-2]-}${tokens[-1]}" ]]; then
+    tokens[-2]="${tokens[-2]-}${tokens[-1]}"
     tokens=(${tokens[0,-2]})
   fi
 
