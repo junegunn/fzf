@@ -464,7 +464,7 @@ try
   let temps  = { 'result': s:fzf_tempname() }
   let optstr = s:evaluate_opts(get(dict, 'options', ''))
   try
-    let fzf_exec = fzf#shellescape(fzf#exec())
+    let fzf_exec = shellescape(fzf#exec())
   catch
     throw v:exception
   endtry
