@@ -139,17 +139,17 @@ _fzf_handle_dynamic_completion() {
   shift
   orig_cmd="$1"
   orig_var="_fzf_orig_completion_$cmd"
-  orig="${!orig_var##*#}"
+  orig="${!orig_var-##*#}"
   if [[ -n "$orig" ]] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
-  elif [[ -n "$_fzf_completion_loader" ]]; then
+  elif [[ -n "${_fzf_completion_loader-}" ]]; then
     orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
     _completion_loader "$@"
     ret=$?
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
       __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
-      if [[ "$__fzf_nospace_commands" = *" $orig_cmd "* ]]; then
+      if [[ "${__fzf_nospace_commands-}" = *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
       else
         eval "$orig_complete"
@@ -175,16 +175,16 @@ __fzf_generic_path_completion() {
 
     [[ $base = *"/"* ]] && dir="$base"
     while true; do
-      if [[ -z "$dir" ]] || [[ -d "$dir" ]]; then
-        leftover=${base/#"$dir"}
+      if [[ -z "${dir-}" ]] || [[ -d "${dir-}" ]]; then
+        leftover=${base/#"${dir-}"}
         leftover=${leftover/#\/}
-        [[ -z "$dir" ]] && dir='.'
-        [[ "$dir" != "/" ]] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        [[ -z "${dir-}" ]] && dir='.'
+        [[ "${dir-}" != "/" ]] && dir="${dir/%\//}"
+        matches=$(eval "$1 $(printf %q "${dir-}")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q " "${item%$3}$3"
         done)
         matches=${matches% }
-        [[ -z "$3" ]] && [[ "$__fzf_nospace_commands" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
+        [[ -z "$3" ]] && [[ "${__fzf_nospace_commands-}" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
         if [[ -n "$matches" ]]; then
           COMPREPLY=( "$matches" )
         else
@@ -193,8 +193,8 @@ __fzf_generic_path_completion() {
         printf '\e[5n'
         return 0
       fi
-      dir=$(dirname "$dir")
-      [[ "$dir" =~ /$ ]] || dir="$dir"/
+      dir=$(dirname "${dir-}")
+      [[ "${dir-}" =~ /$ ]] || dir="${dir-}"/
     done
   else
     shift
