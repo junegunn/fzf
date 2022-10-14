@@ -97,6 +97,14 @@ bindkey -M viins '\ec' fzf-cd-widget
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
+  # Regex explanation:
+  # `fc -rl 1` outputs lines such as
+  #     121* date
+  #     120 vi
+  #     119 man
+  # where the `*` indicates commands coming from other sessions
+  # (see https://github.com/junegunn/fzf/pull/2140 for details).
+  # We deduplicate `fc` outputs based on only the command part using `seen`.
   selected=( $(fc -rl 1 | awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
     FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} $FZF_DEFAULT_OPTS -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,ctrl-z:ignore $FZF_CTRL_R_OPTS --query=${(qqq)LBUFFER} +m" $(__fzfcmd)) )
   local ret=$?
