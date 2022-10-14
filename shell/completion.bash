@@ -37,7 +37,7 @@ bind '"\e[0n": redraw-current-line' 2> /dev/null
 __fzf_comprun() {
   if [[ "$(type -t _fzf_comprun 2>&1)" = function ]]; then
     _fzf_comprun "$@"
-  elif [[ -n "$TMUX_PANE" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; }; then
+  elif [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; }; then
     shift
     fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- "$@"
   else
@@ -180,7 +180,7 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [[ -z "${dir-}" ]] && dir='.'
         [[ "${dir-}" != "/" ]] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "${dir-}")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "${dir-}")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q " "${item%$3}$3"
         done)
         matches=${matches% }
@@ -236,7 +236,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
