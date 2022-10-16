@@ -139,7 +139,8 @@ _fzf_handle_dynamic_completion() {
   shift
   orig_cmd="$1"
   orig_var="_fzf_orig_completion_$cmd"
-  orig="${!orig_var-##*#}"
+  orig="${!orig_var-}"
+  orig="${orig##*#}"
   if [[ -n "$orig" ]] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
   elif [[ -n "${_fzf_completion_loader-}" ]]; then
