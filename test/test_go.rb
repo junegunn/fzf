@@ -2758,6 +2758,7 @@ class TestFish < TestBase
 end
 
 __END__
+set -u
 PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
 unset <%= UNSETS.join(' ') %>
 unset $(env | sed -n /^_fzf_orig/s/=.*//p)
@@ -2801,8 +2802,8 @@ _fzf_complete_g_post() {
   awk '{print "g" $0 $0}'
 }
 
-[ -n "$BASH" ] && complete -F _fzf_complete_f -o default -o bashdefault f
-[ -n "$BASH" ] && complete -F _fzf_complete_g -o default -o bashdefault g
+[ -n "${BASH-}" ] && complete -F _fzf_complete_f -o default -o bashdefault f
+[ -n "${BASH-}" ] && complete -F _fzf_complete_g -o default -o bashdefault g
 
 _comprun() {
   local command=$1
