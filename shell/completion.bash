@@ -177,11 +177,11 @@ __fzf_generic_path_completion() {
     [[ $base = *"/"* ]] && dir="$base"
     while true; do
       if [[ -z "$dir" ]] || [[ -d "$dir" ]]; then
-        leftover=${base/#"${dir-}"}
+        leftover=${base/#"$dir"}
         leftover=${leftover/#\/}
         [[ -z "$dir" ]] && dir='.'
         [[ "$dir" != "/" ]] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "${dir-}")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q " "${item%$3}$3"
         done)
         matches=${matches% }
