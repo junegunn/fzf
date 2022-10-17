@@ -99,6 +99,10 @@ archives:
     files:
       - non-existent*
 
+checksum:
+  extra_files:
+    - glob: ./dist/fzf-*darwin*.zip
+
 release:
   github:
     owner: junegunn

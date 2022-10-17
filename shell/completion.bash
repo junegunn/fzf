@@ -37,7 +37,7 @@ bind '"\e[0n": redraw-current-line' 2> /dev/null
 __fzf_comprun() {
   if [[ "$(type -t _fzf_comprun 2>&1)" = function ]]; then
     _fzf_comprun "$@"
-  elif [[ -n "$TMUX_PANE" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "$FZF_TMUX_OPTS" ]]; }; then
+  elif [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; }; then
     shift
     fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- "$@"
   else
@@ -55,8 +55,8 @@ __fzf_orig_completion() {
       cmd="${BASH_REMATCH[3]}"
       [[ "$f" = _fzf_* ]] && continue
       printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
-      if [[ "$l" = *" -o nospace "* ]] && [[ ! "$__fzf_nospace_commands" = *" $cmd "* ]]; then
-        __fzf_nospace_commands="$__fzf_nospace_commands $cmd "
+      if [[ "$l" = *" -o nospace "* ]] && [[ ! "${__fzf_nospace_commands-}" = *" $cmd "* ]]; then
+        __fzf_nospace_commands="${__fzf_nospace_commands-} $cmd "
       fi
     fi
   done
@@ -139,17 +139,18 @@ _fzf_handle_dynamic_completion() {
   shift
   orig_cmd="$1"
   orig_var="_fzf_orig_completion_$cmd"
-  orig="${!orig_var##*#}"
+  orig="${!orig_var-}"
+  orig="${orig##*#}"
   if [[ -n "$orig" ]] && type "$orig" > /dev/null 2>&1; then
     $orig "$@"
-  elif [[ -n "$_fzf_completion_loader" ]]; then
+  elif [[ -n "${_fzf_completion_loader-}" ]]; then
     orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
     _completion_loader "$@"
     ret=$?
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
       __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
-      if [[ "$__fzf_nospace_commands" = *" $orig_cmd "* ]]; then
+      if [[ "${__fzf_nospace_commands-}" = *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
       else
         eval "$orig_complete"
@@ -173,6 +174,7 @@ __fzf_generic_path_completion() {
     base=${cur:0:${#cur}-${#trigger}}
     eval "base=$base"
 
+    dir=
     [[ $base = *"/"* ]] && dir="$base"
     while true; do
       if [[ -z "$dir" ]] || [[ -d "$dir" ]]; then
@@ -180,11 +182,11 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [[ -z "$dir" ]] && dir='.'
         [[ "$dir" != "/" ]] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q " "${item%$3}$3"
         done)
         matches=${matches% }
-        [[ -z "$3" ]] && [[ "$__fzf_nospace_commands" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
+        [[ -z "$3" ]] && [[ "${__fzf_nospace_commands-}" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
         if [[ -n "$matches" ]]; then
           COMPREPLY=( "$matches" )
         else
@@ -236,7 +238,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
@@ -329,7 +331,7 @@ __fzf_defc() {
   func="$2"
   opts="$3"
   orig_var="_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}"
-  orig="${!orig_var}"
+  orig="${!orig_var-}"
   if [[ -n "$orig" ]]; then
     printf -v def "$orig" "$func"
     eval "$def"
