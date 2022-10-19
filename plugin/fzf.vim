@@ -26,7 +26,9 @@ if exists('g:loaded_fzf')
 endif
 let g:loaded_fzf = 1
 
-let s:is_win = has('win32') || has('win64')
+" On Windows, cmd.exe does not define a `SHELL` env var, whereas git-bash does.
+" Treat git-bash environment like a Unix shell.
+let s:is_win = has('win32') || has('win64') && !exists('$SHELL')
 if s:is_win && &shellslash
   set noshellslash
   let s:base_dir = expand('<sfile>:h:h')
