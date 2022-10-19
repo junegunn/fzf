@@ -94,7 +94,7 @@ function! s:shellesc_cmd(arg)
 endfunction
 
 function! fzf#shellescape(arg, ...)
-  let shell = get(a:000, 0, s:is_win_cmd ? 'cmd.exe' : 'sh')
+  let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
@@ -486,7 +486,9 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call s:writefile(source, temps.input)
-      let source_command = (s:is_win_cmd ? 'type ' : 'cat ').fzf#shellescape(temps.input)
+      " Disable shell escape for git bash, as it breaks the command here
+      let source_command = (s:is_win_cmd ? 'type ' : 'cat ')
+        \.(!s:is_win || !exists('$SHELL') ? fzf#shellescape(temps.input) : substitute(temps.input, '\', '/', 'g'))
     else
       throw 'Invalid source type'
     endif
