@@ -26,9 +26,9 @@ if exists('g:loaded_fzf')
 endif
 let g:loaded_fzf = 1
 
+let s:is_win = has('win32') || has('win64')
 " On Windows, cmd.exe does not define a `SHELL` env var, whereas git-bash does.
-" Treat git-bash environment like a Unix shell.
-let s:is_win = (has('win32') || has('win64')) && !exists('$SHELL')
+let s:is_win_cmd = s:is_win && !exists('$SHELL')
 if s:is_win && &shellslash
   set noshellslash
   let s:base_dir = expand('<sfile>:h:h')
@@ -94,7 +94,7 @@ function! s:shellesc_cmd(arg)
 endfunction
 
 function! fzf#shellescape(arg, ...)
-  let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
+  let shell = get(a:000, 0, s:is_win_cmd ? 'cmd.exe' : 'sh')
   if shell =~# 'cmd.exe$'
     return s:shellesc_cmd(a:arg)
   endif
@@ -486,7 +486,7 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call s:writefile(source, temps.input)
-      let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
+      let source_command = (s:is_win_cmd ? 'type ' : 'cat ').fzf#shellescape(temps.input)
     else
       throw 'Invalid source type'
     endif
