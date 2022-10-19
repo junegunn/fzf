@@ -37,9 +37,6 @@ endif
 if s:is_win
   let s:term_marker = '&::FZF'
 
-  " This is not bulletproof, but cmd.exe does not have SHELL env var.
-  let s:is_gitbash = has_key(environ(), 'SHELL')
-
   function! s:fzf_call(fn, ...)
     let shellslash = &shellslash
     try
@@ -487,8 +484,7 @@ try
     elseif type == 3
       let temps.input = s:fzf_tempname()
       call s:writefile(source, temps.input)
-      let source_command = (s:is_win && !s:is_gitbash ? 'type ' : 'cat ')
-        \.(s:is_gitbash ? substitute(temps.input, '\', '/', 'g') : fzf#shellescape(temps.input))
+      let source_command = (s:is_win ? 'type ' : 'cat ').fzf#shellescape(temps.input)
     else
       throw 'Invalid source type'
     endif
