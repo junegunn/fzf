@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.35.0
+------
+- Added `start` event that is triggered only once when fzf finder starts.
+  Since fzf consumes the input stream asynchronously, the input list is not
+  available unless you use `--sync`.
+  ```sh
+  seq 100 | fzf --multi --sync --bind 'start:last+select-all+preview(echo welcome)'
+  ```
+
 0.34.0
 ------
 - Added support for adaptive `--height`. If the `--height` value is prefixed

@@ -2332,6 +2332,14 @@ class TestGoFZF < TestBase
     OUTPUT
     tmux.until { assert_block(expected, _1) }
   end
+
+  def test_start_event
+    tmux.send_keys 'seq 100 | fzf --multi --sync --preview-window border-none --bind "start:select-all+last+preview(echo welcome)"', :Enter
+    tmux.until do |lines|
+      assert_match(/>100.*welcome/, lines[0])
+      assert_includes(lines[-2], '100/100 (100)')
+    end
+  end
 end
 
 module TestShell
