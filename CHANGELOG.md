@@ -9,6 +9,21 @@ CHANGELOG
   ```sh
   seq 100 | fzf --multi --sync --bind 'start:last+select-all+preview(echo welcome)'
   ```
+- Added `--border-label` and `--border-label-pos` for putting label on the border
+  ```sh
+  # ANSI color codes are supported
+  # (with https://github.com/busyloop/lolcat)
+  label=$(curl -s http://metaphorpsum.com/sentences/1 | lolcat -f)
+
+  # Border label at the center
+  fzf --height=10 --border-label="╢ $label ╟" --border --color=label:italic:black
+
+  # Left-aligned (positive integer)
+  fzf --height=10 --border-label="╢ $label ╟" --border=top --border-label-pos=3 --color=label:italic:black
+
+  # Right-aligned (negative integer)
+  fzf --height=10 --border-label="╢ $label ╟" --border=bottom --border-label-pos=-3 --color=label:italic:black
+  ```
 
 0.34.0
 ------

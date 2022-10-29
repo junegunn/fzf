@@ -114,6 +114,9 @@ type Terminal struct {
 	spinner            []string
 	prompt             func()
 	promptLen          int
+	borderLabel        func()
+	borderLabelLen     int
+	borderLabelPos     int
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -544,6 +547,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
 		borderShape:        opts.BorderShape,
+		borderLabel:        nil,
+		borderLabelPos:     opts.LabelPos,
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
 		strong:             strongAttr,
@@ -587,6 +592,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
+	if len(opts.Label) > 0 {
+		t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.Label)
+	}
 
 	return &t
 }
@@ -615,6 +623,25 @@ func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
 	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
 	fit := screenHeight - padHeight - t.extraLines()
 	return fit, padHeight
+}
+
+func (t *Terminal) parseBorderLabel(borderLabel string) (func(), int) {
+	text, colors, _ := extractColor(borderLabel, nil, nil)
+	runes := []rune(text)
+	item := &Item{text: util.RunesToChars(runes), colors: colors}
+	result := Result{item: item}
+
+	var offsets []colorOffset
+	borderLabelFn := func() {
+		if offsets == nil {
+			// tui.Col* are not initialized until renderer.Init()
+			offsets = result.colorOffsets(nil, t.theme, tui.ColBorderLabel, tui.ColBorderLabel, false)
+		}
+		text, _ := t.trimRight(runes, t.border.Width())
+		t.printColoredString(t.border, text, offsets, tui.ColBorderLabel)
+	}
+	borderLabelLen := runewidth.StringWidth(text)
+	return borderLabelFn, borderLabelLen
 }
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
@@ -909,6 +936,27 @@ func (t *Terminal) resizeWindows() {
 		t.border = t.tui.NewWindow(
 			marginInt[0]-1, marginInt[3]-2, width+4, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
+	}
+
+	// Print border label
+	if t.border != nil && t.borderLabel != nil {
+		switch t.borderShape {
+		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
+			var col int
+			if t.borderLabelPos == 0 {
+				col = util.Max(0, (t.border.Width()-t.borderLabelLen)/2)
+			} else if t.borderLabelPos < 0 {
+				col = util.Max(0, t.border.Width()+t.borderLabelPos+1-t.borderLabelLen)
+			} else {
+				col = util.Min(t.borderLabelPos-1, t.border.Width()-t.borderLabelLen)
+			}
+			row := 0
+			if t.borderShape == tui.BorderBottom {
+				row = t.border.Height() - 1
+			}
+			t.border.Move(row, col)
+			t.borderLabel()
+		}
 	}
 
 	// Add padding to margin
@@ -1394,6 +1442,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		displayWidth = t.displayWidthWithLimit(text, 0, displayWidth)
 	}
 
+	t.printColoredString(t.window, text, offsets, colBase)
+	return displayWidth
+}
+
+func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []colorOffset, colBase tui.ColorPair) {
 	var index int32
 	var substr string
 	var prefixWidth int
@@ -1403,11 +1456,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
 		substr, prefixWidth = t.processTabs(text[index:b], prefixWidth)
-		t.window.CPrint(colBase, substr)
+		window.CPrint(colBase, substr)
 
 		if b < e {
 			substr, prefixWidth = t.processTabs(text[b:e], prefixWidth)
-			t.window.CPrint(offset.color, substr)
+			window.CPrint(offset.color, substr)
 		}
 
 		index = e
@@ -1417,9 +1470,8 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	}
 	if index < maxOffset {
 		substr, _ = t.processTabs(text[index:], prefixWidth)
-		t.window.CPrint(colBase, substr)
+		window.CPrint(colBase, substr)
 	}
-	return displayWidth
 }
 
 func (t *Terminal) renderPreviewSpinner() {
