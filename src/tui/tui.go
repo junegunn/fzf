@@ -90,6 +90,7 @@ const (
 
 	Change
 	BackwardEOF
+	Start
 
 	AltBS
 

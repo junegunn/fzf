@@ -20,12 +20,12 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.18
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@3068fa83f9cbd7ae106cac45483635a2f3a195c9
+      uses: ruby/setup-ruby@v1
       with:
         ruby-version: 3.0.0
 

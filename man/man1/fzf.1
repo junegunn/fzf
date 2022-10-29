@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Sep 2022" "fzf 0.34.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Oct 2022" "fzf 0.35.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -811,6 +811,15 @@ e.g.
 or any single character
 
 .SS AVAILABLE EVENTS:
+\fIstart\fR
+.RS
+Triggered only once when fzf finder starts. Since fzf consumes the input stream
+asynchronously, the input list is not available unless you use \fI--sync\fR.
+
+e.g.
+     \fB# Move cursor to the last item and select all items
+     seq 1000 | fzf --multi --sync --bind start:last+select-all\fR
+.RE
 \fIchange\fR
 .RS
 Triggered whenever the query string is changed

@@ -2362,13 +2362,21 @@ func (t *Terminal) Loop() {
 	}()
 
 	looping := true
+	_, startEvent := t.keymap[tui.Start.AsEvent()]
+
 	for looping {
 		var newCommand *string
 		changed := false
 		beof := false
 		queryChanged := false
 
-		event := t.tui.GetChar()
+		var event tui.Event
+		if startEvent {
+			event = tui.Start.AsEvent()
+			startEvent = false
+		} else {
+			event = t.tui.GetChar()
+		}
 
 		t.mutex.Lock()
 		previousInput := t.input
