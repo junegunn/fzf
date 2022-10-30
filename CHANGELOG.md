@@ -24,6 +24,11 @@ CHANGELOG
   # Right-aligned (negative integer)
   fzf --height=10 --border-label="╢ $label ╟" --border=bottom --border-label-pos=-3 --color=label:italic:black
   ```
+- Info panel (counter) will be followed by a horizontal separator by default
+    - The color of the separator can be customized via `--color=separator:...`
+    - Separator can be disabled by adding `:nosep` to `--info`
+        - `--info=nosep`
+        - `--info=inline:nosep`
 
 0.34.0
 ------

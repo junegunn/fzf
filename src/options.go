@@ -69,7 +69,7 @@ const usage = `usage: fzf [options]
                             NEGATIVE_INTEGER: columns from right] (default: 0)
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --info=STYLE           Finder info style [default|inline|hidden]
+    --info=STYLE           Finder info style [default|inline|hidden[:nosep]]
     --prompt=STR           Input prompt (default: '> ')
     --pointer=STR          Pointer to the current line (default: '>')
     --marker=STR           Multi-select marker (default: '>')
@@ -169,10 +169,14 @@ const (
 	layoutReverseList
 )
 
-type infoStyle int
+type infoLayout int
+type infoStyle struct {
+	layout    infoLayout
+	separator bool
+}
 
 const (
-	infoDefault infoStyle = iota
+	infoDefault infoLayout = iota
 	infoInline
 	infoHidden
 )
@@ -310,7 +314,7 @@ func defaultOptions() *Options {
 		HscrollOff:  10,
 		ScrollOff:   0,
 		FileWord:    false,
-		InfoStyle:   infoDefault,
+		InfoStyle:   infoStyle{layout: infoDefault, separator: true},
 		JumpLabels:  defaultJumpLabels,
 		Prompt:      "> ",
 		Pointer:     ">",
@@ -813,6 +817,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				mergeAttr(&theme.CurrentMatch)
 			case "border":
 				mergeAttr(&theme.Border)
+			case "separator":
+				mergeAttr(&theme.Separator)
 			case "label":
 				mergeAttr(&theme.BorderLabel)
 			case "prompt":
@@ -1214,17 +1220,26 @@ func parseLayout(str string) layoutType {
 }
 
 func parseInfoStyle(str string) infoStyle {
-	switch str {
-	case "default":
-		return infoDefault
-	case "inline":
-		return infoInline
-	case "hidden":
-		return infoHidden
-	default:
-		errorExit("invalid info style (expected: default / inline / hidden)")
+	layout := infoDefault
+	separator := true
+
+	for _, token := range regexp.MustCompile("[,:]").Split(strings.ToLower(str), -1) {
+		switch token {
+		case "default":
+			layout = infoDefault
+		case "inline":
+			layout = infoInline
+		case "hidden":
+			layout = infoHidden
+		case "nosep":
+			separator = false
+		case "sep":
+			separator = true
+		default:
+			errorExit("invalid info style (expected: default|inline|hidden[:nosep])")
+		}
 	}
-	return infoDefault
+	return infoStyle{layout: layout, separator: separator}
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
@@ -1486,11 +1501,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.InfoStyle = parseInfoStyle(
 				nextString(allArgs, &i, "info style required"))
 		case "--no-info":
-			opts.InfoStyle = infoHidden
+			opts.InfoStyle.layout = infoHidden
 		case "--inline-info":
-			opts.InfoStyle = infoInline
+			opts.InfoStyle.layout = infoInline
 		case "--no-inline-info":
-			opts.InfoStyle = infoDefault
+			opts.InfoStyle.layout = infoDefault
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true

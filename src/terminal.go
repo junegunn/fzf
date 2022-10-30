@@ -495,7 +495,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
 				effectiveMinHeight += 1 + borderLines(opts.Preview.border)
 			}
-			if opts.InfoStyle != infoDefault {
+			if opts.InfoStyle.layout != infoDefault {
 				effectiveMinHeight--
 			}
 			effectiveMinHeight += borderLines(opts.BorderShape)
@@ -677,7 +677,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noInfoLine() bool {
-	return t.infoStyle != infoDefault
+	return t.infoStyle.layout != infoDefault
 }
 
 // Input returns current query string
@@ -1153,7 +1153,7 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
-	switch t.infoStyle {
+	switch t.infoStyle.layout {
 	case infoDefault:
 		t.move(line+1, 0, true)
 		if t.reading {
@@ -1202,8 +1202,17 @@ func (t *Terminal) printInfo() {
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
-	output = t.trimMessage(output, t.window.Width()-pos)
+	maxWidth := t.window.Width() - pos
+	output = t.trimMessage(output, maxWidth)
 	t.window.CPrint(tui.ColInfo, output)
+
+	if t.infoStyle.separator && len(output) < maxWidth-2 {
+		bar := "─"
+		if !t.unicode {
+			bar = "-"
+		}
+		t.window.CPrint(tui.ColSeparator, " "+strings.Repeat(bar, maxWidth-len(output)-2))
+	}
 }
 
 func (t *Terminal) printHeader() {
