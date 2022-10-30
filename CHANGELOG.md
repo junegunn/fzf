@@ -16,15 +16,18 @@ CHANGELOG
   label=$(curl -s http://metaphorpsum.com/sentences/1 | lolcat -f)
 
   # Border label at the center
-  fzf --height=10 --border-label="╢ $label ╟" --border --color=label:italic:black
+  fzf --height=10 --border --border-label="╢ $label ╟" --color=label:italic:black
 
   # Left-aligned (positive integer)
-  fzf --height=10 --border-label="╢ $label ╟" --border=top --border-label-pos=3 --color=label:italic:black
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=3 --color=label:italic:black
 
-  # Right-aligned (negative integer)
-  fzf --height=10 --border-label="╢ $label ╟" --border=bottom --border-label-pos=-3 --color=label:italic:black
+  # Right-aligned (negative integer) on the bottom line (:bottom)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=-3:bottom --color=label:italic:black
   ```
 - Also added `--preview-label` and `--preview-label-pos` for the border of the
+  ```sh
+  fzf --preview 'cat {}' --border --preview-label=' Preview ' --preview-label-pos=2
+  ```
   preview window
 - Info panel (counter) will be followed by a horizontal separator by default
     - The color of the separator can be customized via `--color=separator:...`

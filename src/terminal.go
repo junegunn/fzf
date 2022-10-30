@@ -114,12 +114,12 @@ type Terminal struct {
 	spinner            []string
 	prompt             func()
 	promptLen          int
-	borderLabel        func()
+	borderLabel        func(tui.Window)
 	borderLabelLen     int
-	borderLabelPos     int
-	previewLabel       func()
+	borderLabelOpts    labelOpts
+	previewLabel       func(tui.Window)
 	previewLabelLen    int
-	previewLabelPos    int
+	previewLabelOpts   labelOpts
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -551,9 +551,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		unicode:            opts.Unicode,
 		borderShape:        opts.BorderShape,
 		borderLabel:        nil,
-		borderLabelPos:     opts.LabelPos,
+		borderLabelOpts:    opts.BorderLabel,
 		previewLabel:       nil,
-		previewLabelPos:    opts.PLabelPos,
+		previewLabelOpts:   opts.PreviewLabel,
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
 		strong:             strongAttr,
@@ -597,12 +597,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
-	if len(opts.Label) > 0 {
-		t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.Label)
-	}
-	if len(opts.PLabel) > 0 {
-		t.previewLabel, t.previewLabelLen = t.parseBorderLabel(opts.PLabel)
-	}
+	t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.BorderLabel.label)
+	t.previewLabel, t.previewLabelLen = t.parseBorderLabel(opts.PreviewLabel.label)
 
 	return &t
 }
@@ -633,20 +629,23 @@ func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
 	return fit, padHeight
 }
 
-func (t *Terminal) parseBorderLabel(borderLabel string) (func(), int) {
+func (t *Terminal) parseBorderLabel(borderLabel string) (func(tui.Window), int) {
+	if len(borderLabel) == 0 {
+		return nil, 0
+	}
 	text, colors, _ := extractColor(borderLabel, nil, nil)
 	runes := []rune(text)
 	item := &Item{text: util.RunesToChars(runes), colors: colors}
 	result := Result{item: item}
 
 	var offsets []colorOffset
-	borderLabelFn := func() {
+	borderLabelFn := func(window tui.Window) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
 			offsets = result.colorOffsets(nil, t.theme, tui.ColBorderLabel, tui.ColBorderLabel, false)
 		}
-		text, _ := t.trimRight(runes, t.border.Width())
-		t.printColoredString(t.border, text, offsets, tui.ColBorderLabel)
+		text, _ := t.trimRight(runes, window.Width())
+		t.printColoredString(window, text, offsets, tui.ColBorderLabel)
 	}
 	borderLabelLen := runewidth.StringWidth(text)
 	return borderLabelFn, borderLabelLen
@@ -1052,7 +1051,7 @@ func (t *Terminal) resizeWindows() {
 	}
 
 	// Print border label
-	printLabel := func(window tui.Window, render func(), pos int, length int, borderShape tui.BorderShape) {
+	printLabel := func(window tui.Window, render func(tui.Window), opts labelOpts, length int, borderShape tui.BorderShape) {
 		if window == nil || render == nil {
 			return
 		}
@@ -1060,23 +1059,23 @@ func (t *Terminal) resizeWindows() {
 		switch borderShape {
 		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
 			var col int
-			if pos == 0 {
+			if opts.column == 0 {
 				col = util.Max(0, (window.Width()-length)/2)
-			} else if pos < 0 {
-				col = util.Max(0, window.Width()+pos+1-length)
+			} else if opts.column < 0 {
+				col = util.Max(0, window.Width()+opts.column+1-length)
 			} else {
-				col = util.Min(pos-1, window.Width()-length)
+				col = util.Min(opts.column-1, window.Width()-length)
 			}
 			row := 0
-			if borderShape == tui.BorderBottom {
+			if borderShape == tui.BorderBottom || opts.bottom {
 				row = window.Height() - 1
 			}
 			window.Move(row, col)
-			render()
+			render(window)
 		}
 	}
-	printLabel(t.border, t.borderLabel, t.borderLabelPos, t.borderLabelLen, t.borderShape)
-	printLabel(t.pborder, t.previewLabel, t.previewLabelPos, t.previewLabelLen, t.previewOpts.border)
+	printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape)
+	printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border)
 
 	for i := 0; i < t.window.Height(); i++ {
 		t.window.MoveAndClear(i, 0)

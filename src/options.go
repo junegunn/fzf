@@ -66,7 +66,8 @@ const usage = `usage: fzf [options]
     --border-label=LABEL   Label to print on the border
     --border-label-pos=COL Position of the border label
                            [POSITIVE_INTEGER: columns from left|
-                            NEGATIVE_INTEGER: columns from right] (default: 0)
+                            NEGATIVE_INTEGER: columns from right][:bottom]
+                           (default: 0 or center)
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE           Finder info style [default|inline|hidden[:nosep]]
@@ -97,7 +98,8 @@ const usage = `usage: fzf [options]
                            [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                            [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
     --preview-label=LABEL
-    --preview-label-pos=COL
+    --preview-label-pos=N  Same as --border-label and --border-label-pos,
+                           but for preview window
 
   Scripting
     -q, --query=STR        Start the finder with the given query
@@ -183,6 +185,12 @@ const (
 	infoHidden
 )
 
+type labelOpts struct {
+	label  string
+	column int
+	bottom bool
+}
+
 type previewOpts struct {
 	command     string
 	position    windowPosition
@@ -198,11 +206,21 @@ type previewOpts struct {
 	alternative *previewOpts
 }
 
-func parseLabelPosition(arg string) int {
-	if strings.ToLower(arg) == "center" {
-		return 0
+func parseLabelPosition(opts *labelOpts, arg string) {
+	opts.column = 0
+	opts.bottom = false
+	for _, token := range splitRegexp.Split(strings.ToLower(arg), -1) {
+		switch token {
+		case "center":
+			opts.column = 0
+		case "bottom":
+			opts.bottom = true
+		case "top":
+			opts.bottom = false
+		default:
+			opts.column = atoi(token)
+		}
 	}
-	return atoi(arg)
 }
 
 func (a previewOpts) aboveOrBelow() bool {
@@ -221,68 +239,66 @@ func (a previewOpts) sameContentLayout(b previewOpts) bool {
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Scheme      string
-	Extended    bool
-	Phony       bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []criterion
-	Multi       int
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      heightSpec
-	MinHeight   int
-	Layout      layoutType
-	Cycle       bool
-	KeepRight   bool
-	Hscroll     bool
-	HscrollOff  int
-	ScrollOff   int
-	FileWord    bool
-	InfoStyle   infoStyle
-	JumpLabels  string
-	Prompt      string
-	Pointer     string
-	Marker      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[tui.Event]string
-	Keymap      map[tui.Event][]*action
-	Preview     previewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	PrintSep    string
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	HeaderFirst bool
-	Ellipsis    string
-	Margin      [4]sizeSpec
-	Padding     [4]sizeSpec
-	BorderShape tui.BorderShape
-	Label       string
-	LabelPos    int
-	PLabel      string
-	PLabelPos   int
-	Unicode     bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy        bool
+	FuzzyAlgo    algo.Algo
+	Scheme       string
+	Extended     bool
+	Phony        bool
+	Case         Case
+	Normalize    bool
+	Nth          []Range
+	WithNth      []Range
+	Delimiter    Delimiter
+	Sort         int
+	Tac          bool
+	Criteria     []criterion
+	Multi        int
+	Ansi         bool
+	Mouse        bool
+	Theme        *tui.ColorTheme
+	Black        bool
+	Bold         bool
+	Height       heightSpec
+	MinHeight    int
+	Layout       layoutType
+	Cycle        bool
+	KeepRight    bool
+	Hscroll      bool
+	HscrollOff   int
+	ScrollOff    int
+	FileWord     bool
+	InfoStyle    infoStyle
+	JumpLabels   string
+	Prompt       string
+	Pointer      string
+	Marker       string
+	Query        string
+	Select1      bool
+	Exit0        bool
+	Filter       *string
+	ToggleSort   bool
+	Expect       map[tui.Event]string
+	Keymap       map[tui.Event][]*action
+	Preview      previewOpts
+	PrintQuery   bool
+	ReadZero     bool
+	Printer      func(string)
+	PrintSep     string
+	Sync         bool
+	History      *History
+	Header       []string
+	HeaderLines  int
+	HeaderFirst  bool
+	Ellipsis     string
+	Margin       [4]sizeSpec
+	Padding      [4]sizeSpec
+	BorderShape  tui.BorderShape
+	BorderLabel  labelOpts
+	PreviewLabel labelOpts
+	Unicode      bool
+	Tabstop      int
+	ClearOnExit  bool
+	Version      bool
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -291,66 +307,64 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Scheme:      "default",
-		Extended:    true,
-		Phony:       false,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
-		Multi:       0,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Layout:      layoutDefault,
-		Cycle:       false,
-		KeepRight:   false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		ScrollOff:   0,
-		FileWord:    false,
-		InfoStyle:   infoStyle{layout: infoDefault, separator: true},
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Pointer:     ">",
-		Marker:      ">",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[tui.Event]string),
-		Keymap:      make(map[tui.Event][]*action),
-		Preview:     defaultPreviewOpts(""),
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		PrintSep:    "\n",
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		HeaderFirst: false,
-		Ellipsis:    "..",
-		Margin:      defaultMargin(),
-		Padding:     defaultMargin(),
-		Unicode:     true,
-		Tabstop:     8,
-		Label:       "",
-		LabelPos:    0,
-		PLabel:      "",
-		PLabelPos:   0,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:        true,
+		FuzzyAlgo:    algo.FuzzyMatchV2,
+		Scheme:       "default",
+		Extended:     true,
+		Phony:        false,
+		Case:         CaseSmart,
+		Normalize:    true,
+		Nth:          make([]Range, 0),
+		WithNth:      make([]Range, 0),
+		Delimiter:    Delimiter{},
+		Sort:         1000,
+		Tac:          false,
+		Criteria:     []criterion{byScore, byLength},
+		Multi:        0,
+		Ansi:         false,
+		Mouse:        true,
+		Theme:        tui.EmptyTheme(),
+		Black:        false,
+		Bold:         true,
+		MinHeight:    10,
+		Layout:       layoutDefault,
+		Cycle:        false,
+		KeepRight:    false,
+		Hscroll:      true,
+		HscrollOff:   10,
+		ScrollOff:    0,
+		FileWord:     false,
+		InfoStyle:    infoStyle{layout: infoDefault, separator: true},
+		JumpLabels:   defaultJumpLabels,
+		Prompt:       "> ",
+		Pointer:      ">",
+		Marker:       ">",
+		Query:        "",
+		Select1:      false,
+		Exit0:        false,
+		Filter:       nil,
+		ToggleSort:   false,
+		Expect:       make(map[tui.Event]string),
+		Keymap:       make(map[tui.Event][]*action),
+		Preview:      defaultPreviewOpts(""),
+		PrintQuery:   false,
+		ReadZero:     false,
+		Printer:      func(str string) { fmt.Println(str) },
+		PrintSep:     "\n",
+		Sync:         false,
+		History:      nil,
+		Header:       make([]string, 0),
+		HeaderLines:  0,
+		HeaderFirst:  false,
+		Ellipsis:     "..",
+		Margin:       defaultMargin(),
+		Padding:      defaultMargin(),
+		Unicode:      true,
+		Tabstop:      8,
+		BorderLabel:  labelOpts{},
+		PreviewLabel: labelOpts{},
+		ClearOnExit:  true,
+		Version:      false}
 }
 
 func help(code int) {
@@ -847,7 +861,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 	return theme
 }
 
-var executeRegexp *regexp.Regexp
+var (
+	executeRegexp *regexp.Regexp
+	splitRegexp   *regexp.Regexp
+)
 
 func firstKey(keymap map[tui.Event]string) tui.Event {
 	for k := range keymap {
@@ -867,6 +884,7 @@ func init() {
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
 		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+	splitRegexp = regexp.MustCompile("[,:]+")
 }
 
 func parseKeymap(keymap map[tui.Event][]*action, str string) {
@@ -1229,7 +1247,7 @@ func parseInfoStyle(str string) infoStyle {
 	layout := infoDefault
 	separator := true
 
-	for _, token := range regexp.MustCompile("[,:]").Split(strings.ToLower(str), -1) {
+	for _, token := range splitRegexp.Split(strings.ToLower(str), -1) {
 		switch token {
 		case "default":
 			layout = infoDefault
@@ -1594,16 +1612,20 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--border":
 			hasArg, arg := optionalNextString(allArgs, &i)
 			opts.BorderShape = parseBorder(arg, !hasArg)
+		case "--no-border-label":
+			opts.BorderLabel.label = ""
 		case "--border-label":
-			opts.Label = nextString(allArgs, &i, "label required")
+			opts.BorderLabel.label = nextString(allArgs, &i, "label required")
 		case "--border-label-pos":
 			pos := nextString(allArgs, &i, "label position required (positive or negative integer or 'center')")
-			opts.LabelPos = parseLabelPosition(pos)
+			parseLabelPosition(&opts.BorderLabel, pos)
+		case "--no-preview-label":
+			opts.PreviewLabel.label = ""
 		case "--preview-label":
-			opts.PLabel = nextString(allArgs, &i, "preview label required")
+			opts.PreviewLabel.label = nextString(allArgs, &i, "preview label required")
 		case "--preview-label-pos":
 			pos := nextString(allArgs, &i, "preview label position required (positive or negative integer or 'center')")
-			opts.PLabelPos = parseLabelPosition(pos)
+			parseLabelPosition(&opts.PreviewLabel, pos)
 		case "--no-unicode":
 			opts.Unicode = false
 		case "--unicode":
@@ -1640,13 +1662,13 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--border="); match {
 				opts.BorderShape = parseBorder(value, false)
 			} else if match, value := optString(arg, "--border-label="); match {
-				opts.Label = value
+				opts.BorderLabel.label = value
 			} else if match, value := optString(arg, "--border-label-pos="); match {
-				opts.LabelPos = parseLabelPosition(value)
+				parseLabelPosition(&opts.BorderLabel, value)
 			} else if match, value := optString(arg, "--preview-label="); match {
-				opts.PLabel = value
+				opts.PreviewLabel.label = value
 			} else if match, value := optString(arg, "--preview-label-pos="); match {
-				opts.PLabelPos = parseLabelPosition(value)
+				parseLabelPosition(&opts.PreviewLabel, value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {

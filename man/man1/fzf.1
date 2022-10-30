@@ -250,20 +250,21 @@ e.g.
   label=$(curl -s http://metaphorpsum.com/sentences/1 | lolcat -f)
 
   # Border label at the center
-  fzf --height=10 --border-label="╢ $label ╟" --border --color=label:italic:black
+  fzf --height=10 --border --border-label="╢ $label ╟" --color=label:italic:black
 
   # Left-aligned (positive integer)
-  fzf --height=10 --border-label="╢ $label ╟" --border=top --border-label-pos=3 --color=label:italic:black
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=3 --color=label:italic:black
 
-  # Right-aligned (negative integer)
-  fzf --height=10 --border-label="╢ $label ╟" --border=bottom --border-label-pos=-3 --color=label:italic:black\fR
+  # Right-aligned (negative integer) on the bottom line (:bottom)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=-3:bottom --color=label:italic:black\fR
 
 .TP
-.BI "--border-label-pos" [=COL]
-Horizontal position of the border label on the border line. Specify a positive
-integer as the column position from the left. Specify a negative integer to
-right-align the label. The default value 0 (or \fBcenter\fR) will put
-the label at the center of the border line.
+.BI "--border-label-pos" [=N[:top|bottom]]
+Position of the border label on the border line. Specify a positive integer as
+the column position from the left. Specify a negative integer to right-align
+the label. Label is printed on the top border line by default, add
+\fB:bottom\fR to put it on the border line on the bottom. The default value
+\fB0 (or \fBcenter\fR) will put the label at the center of the border line.
 
 .TP
 .B "--no-unicode"
@@ -396,7 +397,7 @@ color mappings.
     \fBinfo       \fRInfo line (match counters)
     \fBseparator  \fRHorizontal separator on info line (match counters)
     \fBborder     \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
-    \fBlabel      \fRBorder label (\fB--border-label\fR)
+    \fBlabel      \fRBorder label (\fB--border-label\fR and \fB--preview-label\fR)
     \fBprompt     \fRPrompt
     \fBpointer    \fRPointer to the current line
     \fBmarker     \fRMulti-select marker
@@ -527,6 +528,33 @@ e.g.
         sleep 0.01
       done'\fR
 .RE
+
+.TP
+.BI "--preview-label" [=LABEL]
+Label to print on the horizontal border line of the preview window.
+Should be used with one of the following \fB--preview-window\fR options.
+
+.br
+.B * border-rounded (default)
+.br
+.B * border-sharp
+.br
+.B * border-horizontal
+.br
+.B * border-top
+.br
+.B * border-bottom
+.br
+
+.TP
+.BI "--preview-label-pos" [=N[:top|bottom]]
+Position of the border label on the border line of the preview window. Specify
+a positive integer as the column position from the left. Specify a negative
+integer to right-align the label. Label is printed on the top border line by
+default, add \fB:bottom\fR to put it on the border line on the bottom. The
+default value 0 (or \fBcenter\fR) will put the label at the center of the
+border line.
+
 .TP
 .BI "--preview-window=" "[POSITION][,SIZE[%]][,border-BORDER_OPT][,[no]wrap][,[no]follow][,[no]cycle][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
 
