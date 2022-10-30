@@ -117,6 +117,9 @@ type Terminal struct {
 	borderLabel        func()
 	borderLabelLen     int
 	borderLabelPos     int
+	previewLabel       func()
+	previewLabelLen    int
+	previewLabelPos    int
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -549,6 +552,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		borderShape:        opts.BorderShape,
 		borderLabel:        nil,
 		borderLabelPos:     opts.LabelPos,
+		previewLabel:       nil,
+		previewLabelPos:    opts.PLabelPos,
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
 		strong:             strongAttr,
@@ -594,6 +599,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 	if len(opts.Label) > 0 {
 		t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.Label)
+	}
+	if len(opts.PLabel) > 0 {
+		t.previewLabel, t.previewLabelLen = t.parseBorderLabel(opts.PLabel)
 	}
 
 	return &t
@@ -938,27 +946,6 @@ func (t *Terminal) resizeWindows() {
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 	}
 
-	// Print border label
-	if t.border != nil && t.borderLabel != nil {
-		switch t.borderShape {
-		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
-			var col int
-			if t.borderLabelPos == 0 {
-				col = util.Max(0, (t.border.Width()-t.borderLabelLen)/2)
-			} else if t.borderLabelPos < 0 {
-				col = util.Max(0, t.border.Width()+t.borderLabelPos+1-t.borderLabelLen)
-			} else {
-				col = util.Min(t.borderLabelPos-1, t.border.Width()-t.borderLabelLen)
-			}
-			row := 0
-			if t.borderShape == tui.BorderBottom {
-				row = t.border.Height() - 1
-			}
-			t.border.Move(row, col)
-			t.borderLabel()
-		}
-	}
-
 	// Add padding to margin
 	for idx, val := range paddingInt {
 		marginInt[idx] += val
@@ -1063,6 +1050,34 @@ func (t *Terminal) resizeWindows() {
 			width,
 			height, false, noBorder)
 	}
+
+	// Print border label
+	printLabel := func(window tui.Window, render func(), pos int, length int, borderShape tui.BorderShape) {
+		if window == nil || render == nil {
+			return
+		}
+
+		switch borderShape {
+		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
+			var col int
+			if pos == 0 {
+				col = util.Max(0, (window.Width()-length)/2)
+			} else if pos < 0 {
+				col = util.Max(0, window.Width()+pos+1-length)
+			} else {
+				col = util.Min(pos-1, window.Width()-length)
+			}
+			row := 0
+			if borderShape == tui.BorderBottom {
+				row = window.Height() - 1
+			}
+			window.Move(row, col)
+			render()
+		}
+	}
+	printLabel(t.border, t.borderLabel, t.borderLabelPos, t.borderLabelLen, t.borderShape)
+	printLabel(t.pborder, t.previewLabel, t.previewLabelPos, t.previewLabelLen, t.previewOpts.border)
+
 	for i := 0; i < t.window.Height(); i++ {
 		t.window.MoveAndClear(i, 0)
 	}

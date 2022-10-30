@@ -96,6 +96,8 @@ const usage = `usage: fzf [options]
                            [,border-BORDER_OPT]
                            [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                            [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
+    --preview-label=LABEL
+    --preview-label-pos=COL
 
   Scripting
     -q, --query=STR        Start the finder with the given query
@@ -275,6 +277,8 @@ type Options struct {
 	BorderShape tui.BorderShape
 	Label       string
 	LabelPos    int
+	PLabel      string
+	PLabelPos   int
 	Unicode     bool
 	Tabstop     int
 	ClearOnExit bool
@@ -343,6 +347,8 @@ func defaultOptions() *Options {
 		Tabstop:     8,
 		Label:       "",
 		LabelPos:    0,
+		PLabel:      "",
+		PLabelPos:   0,
 		ClearOnExit: true,
 		Version:     false}
 }
@@ -1593,6 +1599,11 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--border-label-pos":
 			pos := nextString(allArgs, &i, "label position required (positive or negative integer or 'center')")
 			opts.LabelPos = parseLabelPosition(pos)
+		case "--preview-label":
+			opts.PLabel = nextString(allArgs, &i, "preview label required")
+		case "--preview-label-pos":
+			pos := nextString(allArgs, &i, "preview label position required (positive or negative integer or 'center')")
+			opts.PLabelPos = parseLabelPosition(pos)
 		case "--no-unicode":
 			opts.Unicode = false
 		case "--unicode":
@@ -1632,6 +1643,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Label = value
 			} else if match, value := optString(arg, "--border-label-pos="); match {
 				opts.LabelPos = parseLabelPosition(value)
+			} else if match, value := optString(arg, "--preview-label="); match {
+				opts.PLabel = value
+			} else if match, value := optString(arg, "--preview-label-pos="); match {
+				opts.PLabelPos = parseLabelPosition(value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
