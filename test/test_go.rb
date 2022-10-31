@@ -192,6 +192,13 @@ class TestBase < Minitest::Test
     tmux.prepare
   end
 
+  alias assert_equal_org assert_equal
+  def assert_equal(expected, actual)
+    # Ignore info separator
+    actual = actual&.sub(/\s*─+$/, '') if actual.is_a?(String) && actual&.match?(%r{\d+/\d+})
+    assert_equal_org(expected, actual)
+  end
+
   def fzf(*opts)
     fzf!(*opts) + " > #{tempname}.tmp; mv #{tempname}.tmp #{tempname}"
   end
@@ -255,7 +262,7 @@ class TestGoFZF < TestBase
 
   def test_fzf_default_command_failure
     tmux.send_keys fzf.sub('FZF_DEFAULT_COMMAND=', 'FZF_DEFAULT_COMMAND=false'), :Enter
-    tmux.until { |lines| assert_equal '  [Command failed: false]', lines[-2] }
+    tmux.until { |lines| assert_includes lines[-2], '  [Command failed: false] ─' }
     tmux.send_keys :Enter
   end
 
@@ -447,7 +454,7 @@ class TestGoFZF < TestBase
   def test_scroll
     [true, false].each do |rev|
       tmux.send_keys "seq 1 100 | #{fzf(rev && :reverse)}", :Enter
-      tmux.until { |lines| assert_includes lines, '  100/100' }
+      tmux.until { |lines| assert_equal '  100/100', lines[rev ? 1 : -2] }
       tmux.send_keys(*Array.new(110) { rev ? :Down : :Up })
       tmux.until { |lines| assert_includes lines, '> 100' }
       tmux.send_keys :Enter
@@ -2249,7 +2256,7 @@ class TestGoFZF < TestBase
   def assert_block(expected, lines)
     cols = expected.lines.map(&:chomp).map(&:length).max
     actual = lines.reverse.take(expected.lines.length).reverse.map { _1[0, cols].rstrip + "\n" }.join
-    assert_equal expected, actual
+    assert_equal_org expected, actual
   end
 
   def test_height_range_fit
@@ -2297,7 +2304,7 @@ class TestGoFZF < TestBase
       │    2
       │    1
       │    hello
-      │    1/1
+      │    1/1 ─
       │  >
       │
       └─────────
@@ -2314,7 +2321,7 @@ class TestGoFZF < TestBase
       │  3       │  1
       │          │  hello
       │          │  world
-      │          │  1/1
+      │          │  1/1 ─
       │          │>
       │
     OUTPUT
@@ -2339,6 +2346,48 @@ class TestGoFZF < TestBase
       assert_match(/>100.*welcome/, lines[0])
       assert_includes(lines[-2], '100/100 (100)')
     end
+  end
+
+  def test_labels_center
+    tmux.send_keys ': | fzf --border --border-label foobar --preview : --preview-label barfoo', :Enter
+    tmux.until do
+      assert_includes(_1[0], '─foobar─')
+      assert_includes(_1[1], '─barfoo─')
+    end
+  end
+
+  def test_labels_left
+    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos 2 --preview : --preview-label barfoo --preview-label-pos 2', :Enter
+    tmux.until do
+      assert_includes(_1[0], '╭foobar─')
+      assert_includes(_1[1], '╭barfoo─')
+    end
+  end
+
+  def test_labels_right
+    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos -2 --preview : --preview-label barfoo --preview-label-pos -2', :Enter
+    tmux.until do
+      assert_includes(_1[0], '─foobar╮')
+      assert_includes(_1[1], '─barfoo╮')
+    end
+  end
+
+  def test_labels_bottom
+    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos 2:bottom --preview : --preview-label barfoo --preview-label-pos -2:bottom', :Enter
+    tmux.until do
+      assert_includes(_1[-1], '╰foobar─')
+      assert_includes(_1[-2], '─barfoo╯')
+    end
+  end
+
+  def test_info_separator
+    tmux.send_keys 'seq 100 | fzf -q55', :Enter
+    tmux.until { assert_includes(_1[-2], '  1/100 ─') }
+  end
+
+  def test_info_no_separator
+    tmux.send_keys 'seq 100 | fzf -q55 --info nosep', :Enter
+    tmux.until { assert(_1[-2] == '  1/100') }
   end
 end
 
