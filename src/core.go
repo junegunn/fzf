@@ -3,7 +3,6 @@ package fzf
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
@@ -20,6 +19,8 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 
 // Run starts fzf
 func Run(opts *Options, version string, revision string) {
+	defer util.RunAtExitFuncs()
+
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
@@ -29,7 +30,7 @@ func Run(opts *Options, version string, revision string) {
 		} else {
 			fmt.Println(version)
 		}
-		os.Exit(exitOk)
+		util.Exit(exitOk)
 	}
 
 	// Event channel
@@ -178,9 +179,9 @@ func Run(opts *Options, version string, revision string) {
 			}
 		}
 		if found {
-			os.Exit(exitOk)
+			util.Exit(exitOk)
 		}
-		os.Exit(exitNoMatch)
+		util.Exit(exitNoMatch)
 	}
 
 	// Synchronous search
@@ -258,7 +259,7 @@ func Run(opts *Options, version string, revision string) {
 					if reading {
 						reader.terminate()
 					}
-					os.Exit(value.(int))
+					util.Exit(value.(int))
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand)
@@ -331,9 +332,9 @@ func Run(opts *Options, version string, revision string) {
 										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
 									}
 									if count > 0 {
-										os.Exit(exitOk)
+										util.Exit(exitOk)
 									}
-									os.Exit(exitNoMatch)
+									util.Exit(exitNoMatch)
 								}
 								determine(val.final)
 							}
