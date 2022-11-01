@@ -25,10 +25,10 @@ CHANGELOG
   fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=-3:bottom --color=label:italic:black
   ```
 - Also added `--preview-label` and `--preview-label-pos` for the border of the
+  preview window
   ```sh
   fzf --preview 'cat {}' --border --preview-label=' Preview ' --preview-label-pos=2
   ```
-  preview window
 - Info panel (counter) will be followed by a horizontal separator by default
     - The color of the separator can be customized via `--color=separator:...`
     - Separator can be disabled by adding `:nosep` to `--info`
