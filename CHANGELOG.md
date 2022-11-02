@@ -9,6 +9,31 @@ CHANGELOG
   ```sh
   seq 100 | fzf --multi --sync --bind 'start:last+select-all+preview(echo welcome)'
   ```
+- Added `--border-label` and `--border-label-pos` for putting label on the border
+  ```sh
+  # ANSI color codes are supported
+  # (with https://github.com/busyloop/lolcat)
+  label=$(curl -s http://metaphorpsum.com/sentences/1 | lolcat -f)
+
+  # Border label at the center
+  fzf --height=10 --border --border-label="╢ $label ╟" --color=label:italic:black
+
+  # Left-aligned (positive integer)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=3 --color=label:italic:black
+
+  # Right-aligned (negative integer) on the bottom line (:bottom)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=-3:bottom --color=label:italic:black
+  ```
+- Also added `--preview-label` and `--preview-label-pos` for the border of the
+  preview window
+  ```sh
+  fzf --preview 'cat {}' --border --preview-label=' Preview ' --preview-label-pos=2
+  ```
+- Info panel (counter) will be followed by a horizontal separator by default
+    - The color of the separator can be customized via `--color=separator:...`
+    - Separator can be disabled by adding `:nosep` to `--info`
+        - `--info=nosep`
+        - `--info=inline:nosep`
 
 0.34.0
 ------

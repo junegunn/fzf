@@ -267,7 +267,9 @@ type ColorTheme struct {
 	Cursor       ColorAttr
 	Selected     ColorAttr
 	Header       ColorAttr
+	Separator    ColorAttr
 	Border       ColorAttr
+	BorderLabel  ColorAttr
 }
 
 type Event struct {
@@ -438,9 +440,11 @@ var (
 	ColSpinner              ColorPair
 	ColInfo                 ColorPair
 	ColHeader               ColorPair
+	ColSeparator            ColorPair
 	ColBorder               ColorPair
 	ColPreview              ColorPair
 	ColPreviewBorder        ColorPair
+	ColBorderLabel          ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -463,7 +467,10 @@ func EmptyTheme() *ColorTheme {
 		Cursor:       ColorAttr{colUndefined, AttrUndefined},
 		Selected:     ColorAttr{colUndefined, AttrUndefined},
 		Header:       ColorAttr{colUndefined, AttrUndefined},
-		Border:       ColorAttr{colUndefined, AttrUndefined}}
+		Separator:    ColorAttr{colUndefined, AttrUndefined},
+		Border:       ColorAttr{colUndefined, AttrUndefined},
+		BorderLabel:  ColorAttr{colUndefined, AttrUndefined},
+	}
 }
 
 func NoColorTheme() *ColorTheme {
@@ -486,7 +493,10 @@ func NoColorTheme() *ColorTheme {
 		Cursor:       ColorAttr{colDefault, AttrRegular},
 		Selected:     ColorAttr{colDefault, AttrRegular},
 		Header:       ColorAttr{colDefault, AttrRegular},
-		Border:       ColorAttr{colDefault, AttrRegular}}
+		Separator:    ColorAttr{colDefault, AttrRegular},
+		Border:       ColorAttr{colDefault, AttrRegular},
+		BorderLabel:  ColorAttr{colDefault, AttrRegular},
+	}
 }
 
 func errorExit(message string) {
@@ -514,7 +524,10 @@ func init() {
 		Cursor:       ColorAttr{colRed, AttrUndefined},
 		Selected:     ColorAttr{colMagenta, AttrUndefined},
 		Header:       ColorAttr{colCyan, AttrUndefined},
-		Border:       ColorAttr{colBlack, AttrUndefined}}
+		Separator:    ColorAttr{colBlack, AttrUndefined},
+		Border:       ColorAttr{colBlack, AttrUndefined},
+		BorderLabel:  ColorAttr{colWhite, AttrUndefined},
+	}
 	Dark256 = &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colDefault, AttrUndefined},
@@ -534,7 +547,10 @@ func init() {
 		Cursor:       ColorAttr{161, AttrUndefined},
 		Selected:     ColorAttr{168, AttrUndefined},
 		Header:       ColorAttr{109, AttrUndefined},
-		Border:       ColorAttr{59, AttrUndefined}}
+		Separator:    ColorAttr{59, AttrUndefined},
+		Border:       ColorAttr{59, AttrUndefined},
+		BorderLabel:  ColorAttr{145, AttrUndefined},
+	}
 	Light256 = &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colDefault, AttrUndefined},
@@ -554,7 +570,10 @@ func init() {
 		Cursor:       ColorAttr{161, AttrUndefined},
 		Selected:     ColorAttr{168, AttrUndefined},
 		Header:       ColorAttr{31, AttrUndefined},
-		Border:       ColorAttr{145, AttrUndefined}}
+		Separator:    ColorAttr{145, AttrUndefined},
+		Border:       ColorAttr{145, AttrUndefined},
+		BorderLabel:  ColorAttr{59, AttrUndefined},
+	}
 }
 
 func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
@@ -589,7 +608,9 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Cursor = o(baseTheme.Cursor, theme.Cursor)
 	theme.Selected = o(baseTheme.Selected, theme.Selected)
 	theme.Header = o(baseTheme.Header, theme.Header)
+	theme.Separator = o(baseTheme.Separator, theme.Separator)
 	theme.Border = o(baseTheme.Border, theme.Border)
+	theme.BorderLabel = o(baseTheme.BorderLabel, theme.BorderLabel)
 
 	initPalette(theme)
 }
@@ -621,7 +642,9 @@ func initPalette(theme *ColorTheme) {
 	ColSpinner = pair(theme.Spinner, theme.Bg)
 	ColInfo = pair(theme.Info, theme.Bg)
 	ColHeader = pair(theme.Header, theme.Bg)
+	ColSeparator = pair(theme.Separator, theme.Bg)
 	ColBorder = pair(theme.Border, theme.Bg)
+	ColBorderLabel = pair(theme.BorderLabel, theme.Bg)
 	ColPreview = pair(theme.PreviewFg, theme.PreviewBg)
 	ColPreviewBorder = pair(theme.Border, theme.PreviewBg)
 }

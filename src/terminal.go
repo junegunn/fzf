@@ -114,6 +114,12 @@ type Terminal struct {
 	spinner            []string
 	prompt             func()
 	promptLen          int
+	borderLabel        func(tui.Window)
+	borderLabelLen     int
+	borderLabelOpts    labelOpts
+	previewLabel       func(tui.Window)
+	previewLabelLen    int
+	previewLabelOpts   labelOpts
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -492,7 +498,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
 				effectiveMinHeight += 1 + borderLines(opts.Preview.border)
 			}
-			if opts.InfoStyle != infoDefault {
+			if opts.InfoStyle.layout != infoDefault {
 				effectiveMinHeight--
 			}
 			effectiveMinHeight += borderLines(opts.BorderShape)
@@ -544,6 +550,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
 		borderShape:        opts.BorderShape,
+		borderLabel:        nil,
+		borderLabelOpts:    opts.BorderLabel,
+		previewLabel:       nil,
+		previewLabelOpts:   opts.PreviewLabel,
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
 		strong:             strongAttr,
@@ -587,6 +597,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
+	t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.BorderLabel.label)
+	t.previewLabel, t.previewLabelLen = t.parseBorderLabel(opts.PreviewLabel.label)
 
 	return &t
 }
@@ -615,6 +627,28 @@ func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
 	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
 	fit := screenHeight - padHeight - t.extraLines()
 	return fit, padHeight
+}
+
+func (t *Terminal) parseBorderLabel(borderLabel string) (func(tui.Window), int) {
+	if len(borderLabel) == 0 {
+		return nil, 0
+	}
+	text, colors, _ := extractColor(borderLabel, nil, nil)
+	runes := []rune(text)
+	item := &Item{text: util.RunesToChars(runes), colors: colors}
+	result := Result{item: item}
+
+	var offsets []colorOffset
+	borderLabelFn := func(window tui.Window) {
+		if offsets == nil {
+			// tui.Col* are not initialized until renderer.Init()
+			offsets = result.colorOffsets(nil, t.theme, tui.ColBorderLabel, tui.ColBorderLabel, false)
+		}
+		text, _ := t.trimRight(runes, window.Width())
+		t.printColoredString(window, text, offsets, tui.ColBorderLabel)
+	}
+	borderLabelLen := runewidth.StringWidth(text)
+	return borderLabelFn, borderLabelLen
 }
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
@@ -650,7 +684,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noInfoLine() bool {
-	return t.infoStyle != infoDefault
+	return t.infoStyle.layout != infoDefault
 }
 
 // Input returns current query string
@@ -1015,6 +1049,34 @@ func (t *Terminal) resizeWindows() {
 			width,
 			height, false, noBorder)
 	}
+
+	// Print border label
+	printLabel := func(window tui.Window, render func(tui.Window), opts labelOpts, length int, borderShape tui.BorderShape) {
+		if window == nil || render == nil {
+			return
+		}
+
+		switch borderShape {
+		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
+			var col int
+			if opts.column == 0 {
+				col = util.Max(0, (window.Width()-length)/2)
+			} else if opts.column < 0 {
+				col = util.Max(0, window.Width()+opts.column+1-length)
+			} else {
+				col = util.Min(opts.column-1, window.Width()-length)
+			}
+			row := 0
+			if borderShape == tui.BorderBottom || opts.bottom {
+				row = window.Height() - 1
+			}
+			window.Move(row, col)
+			render(window)
+		}
+	}
+	printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape)
+	printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border)
+
 	for i := 0; i < t.window.Height(); i++ {
 		t.window.MoveAndClear(i, 0)
 	}
@@ -1105,7 +1167,7 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
-	switch t.infoStyle {
+	switch t.infoStyle.layout {
 	case infoDefault:
 		t.move(line+1, 0, true)
 		if t.reading {
@@ -1154,8 +1216,17 @@ func (t *Terminal) printInfo() {
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
-	output = t.trimMessage(output, t.window.Width()-pos)
+	maxWidth := t.window.Width() - pos
+	output = t.trimMessage(output, maxWidth)
 	t.window.CPrint(tui.ColInfo, output)
+
+	if t.infoStyle.separator && len(output) < maxWidth-2 {
+		bar := "─"
+		if !t.unicode {
+			bar = "-"
+		}
+		t.window.CPrint(tui.ColSeparator, " "+strings.Repeat(bar, maxWidth-len(output)-2))
+	}
 }
 
 func (t *Terminal) printHeader() {
@@ -1394,6 +1465,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		displayWidth = t.displayWidthWithLimit(text, 0, displayWidth)
 	}
 
+	t.printColoredString(t.window, text, offsets, colBase)
+	return displayWidth
+}
+
+func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []colorOffset, colBase tui.ColorPair) {
 	var index int32
 	var substr string
 	var prefixWidth int
@@ -1403,11 +1479,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
 
 		substr, prefixWidth = t.processTabs(text[index:b], prefixWidth)
-		t.window.CPrint(colBase, substr)
+		window.CPrint(colBase, substr)
 
 		if b < e {
 			substr, prefixWidth = t.processTabs(text[b:e], prefixWidth)
-			t.window.CPrint(offset.color, substr)
+			window.CPrint(offset.color, substr)
 		}
 
 		index = e
@@ -1417,9 +1493,8 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	}
 	if index < maxOffset {
 		substr, _ = t.processTabs(text[index:], prefixWidth)
-		t.window.CPrint(colBase, substr)
+		window.CPrint(colBase, substr)
 	}
-	return displayWidth
 }
 
 func (t *Terminal) renderPreviewSpinner() {

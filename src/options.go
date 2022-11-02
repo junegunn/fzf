@@ -18,97 +18,105 @@ import (
 const usage = `usage: fzf [options]
 
   Search
-    -x, --extended        Extended-search mode
-                          (enabled by default; +x or --no-extended to disable)
-    -e, --exact           Enable Exact-match
-    -i                    Case-insensitive match (default: smart-case match)
-    +i                    Case-sensitive match
-    --scheme=SCHEME       Scoring scheme [default|path|history]
-    --literal             Do not normalize latin script letters before matching
-    -n, --nth=N[,..]      Comma-separated list of field index expressions
-                          for limiting search scope. Each can be a non-zero
-                          integer or a range expression ([BEGIN]..[END]).
-    --with-nth=N[,..]     Transform the presentation of each line using
-                          field index expressions
-    -d, --delimiter=STR   Field delimiter regex (default: AWK-style)
-    +s, --no-sort         Do not sort the result
-    --tac                 Reverse the order of the input
-    --disabled            Do not perform search
-    --tiebreak=CRI[,..]   Comma-separated list of sort criteria to apply
-                          when the scores are tied [length|chunk|begin|end|index]
-                          (default: length)
+    -x, --extended         Extended-search mode
+                           (enabled by default; +x or --no-extended to disable)
+    -e, --exact            Enable Exact-match
+    -i                     Case-insensitive match (default: smart-case match)
+    +i                     Case-sensitive match
+    --scheme=SCHEME        Scoring scheme [default|path|history]
+    --literal              Do not normalize latin script letters before matching
+    -n, --nth=N[,..]       Comma-separated list of field index expressions
+                           for limiting search scope. Each can be a non-zero
+                           integer or a range expression ([BEGIN]..[END]).
+    --with-nth=N[,..]      Transform the presentation of each line using
+                           field index expressions
+    -d, --delimiter=STR    Field delimiter regex (default: AWK-style)
+    +s, --no-sort          Do not sort the result
+    --tac                  Reverse the order of the input
+    --disabled             Do not perform search
+    --tiebreak=CRI[,..]    Comma-separated list of sort criteria to apply
+                           when the scores are tied [length|chunk|begin|end|index]
+                           (default: length)
 
   Interface
-    -m, --multi[=MAX]     Enable multi-select with tab/shift-tab
-    --no-mouse            Disable mouse
-    --bind=KEYBINDS       Custom key bindings. Refer to the man page.
-    --cycle               Enable cyclic scroll
-    --keep-right          Keep the right end of the line visible on overflow
-    --scroll-off=LINES    Number of screen lines to keep above or below when
-                          scrolling to the top or to the bottom (default: 0)
-    --no-hscroll          Disable horizontal scroll
-    --hscroll-off=COLS    Number of screen columns to keep to the right of the
-                          highlighted substring (default: 10)
-    --filepath-word       Make word-wise movements respect path separators
-    --jump-labels=CHARS   Label characters for jump and jump-accept
+    -m, --multi[=MAX]      Enable multi-select with tab/shift-tab
+    --no-mouse             Disable mouse
+    --bind=KEYBINDS        Custom key bindings. Refer to the man page.
+    --cycle                Enable cyclic scroll
+    --keep-right           Keep the right end of the line visible on overflow
+    --scroll-off=LINES     Number of screen lines to keep above or below when
+                           scrolling to the top or to the bottom (default: 0)
+    --no-hscroll           Disable horizontal scroll
+    --hscroll-off=COLS     Number of screen columns to keep to the right of the
+                           highlighted substring (default: 10)
+    --filepath-word        Make word-wise movements respect path separators
+    --jump-labels=CHARS    Label characters for jump and jump-accept
 
   Layout
-    --height=[~]HEIGHT[%] Display fzf window below the cursor with the given
-                          height instead of using fullscreen.
-                          If prefixed with '~', fzf will determine the height
-                          according to the input size.
-    --min-height=HEIGHT   Minimum height when --height is given in percent
-                          (default: 10)
-    --layout=LAYOUT       Choose layout: [default|reverse|reverse-list]
-    --border[=STYLE]      Draw border around the finder
-                          [rounded|sharp|horizontal|vertical|
-                           top|bottom|left|right|none] (default: rounded)
-    --margin=MARGIN       Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --padding=PADDING     Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --info=STYLE          Finder info style [default|inline|hidden]
-    --prompt=STR          Input prompt (default: '> ')
-    --pointer=STR         Pointer to the current line (default: '>')
-    --marker=STR          Multi-select marker (default: '>')
-    --header=STR          String to print as header
-    --header-lines=N      The first N lines of the input are treated as header
-    --header-first        Print header before the prompt line
-    --ellipsis=STR        Ellipsis to show when line is truncated (default: '..')
+    --height=[~]HEIGHT[%]  Display fzf window below the cursor with the given
+                           height instead of using fullscreen.
+                           If prefixed with '~', fzf will determine the height
+                           according to the input size.
+    --min-height=HEIGHT    Minimum height when --height is given in percent
+                           (default: 10)
+    --layout=LAYOUT        Choose layout: [default|reverse|reverse-list]
+    --border[=STYLE]       Draw border around the finder
+                           [rounded|sharp|horizontal|vertical|
+                            top|bottom|left|right|none] (default: rounded)
+    --border-label=LABEL   Label to print on the border
+    --border-label-pos=COL Position of the border label
+                           [POSITIVE_INTEGER: columns from left|
+                            NEGATIVE_INTEGER: columns from right][:bottom]
+                           (default: 0 or center)
+    --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
+    --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
+    --info=STYLE           Finder info style [default|inline|hidden[:nosep]]
+    --prompt=STR           Input prompt (default: '> ')
+    --pointer=STR          Pointer to the current line (default: '>')
+    --marker=STR           Multi-select marker (default: '>')
+    --header=STR           String to print as header
+    --header-lines=N       The first N lines of the input are treated as header
+    --header-first         Print header before the prompt line
+    --ellipsis=STR         Ellipsis to show when line is truncated (default: '..')
 
   Display
-    --ansi                Enable processing of ANSI color codes
-    --tabstop=SPACES      Number of spaces for a tab character (default: 8)
-    --color=COLSPEC       Base scheme (dark|light|16|bw) and/or custom colors
-    --no-bold             Do not use bold text
+    --ansi                 Enable processing of ANSI color codes
+    --tabstop=SPACES       Number of spaces for a tab character (default: 8)
+    --color=COLSPEC        Base scheme (dark|light|16|bw) and/or custom colors
+    --no-bold              Do not use bold text
 
   History
-    --history=FILE        History file
-    --history-size=N      Maximum number of history entries (default: 1000)
+    --history=FILE         History file
+    --history-size=N       Maximum number of history entries (default: 1000)
 
   Preview
-    --preview=COMMAND     Command to preview highlighted line ({})
-    --preview-window=OPT  Preview window layout (default: right:50%)
-                          [up|down|left|right][,SIZE[%]]
-                          [,[no]wrap][,[no]cycle][,[no]follow][,[no]hidden]
-                          [,border-BORDER_OPT]
-                          [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
-                          [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
+    --preview=COMMAND      Command to preview highlighted line ({})
+    --preview-window=OPT   Preview window layout (default: right:50%)
+                           [up|down|left|right][,SIZE[%]]
+                           [,[no]wrap][,[no]cycle][,[no]follow][,[no]hidden]
+                           [,border-BORDER_OPT]
+                           [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
+                           [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
+    --preview-label=LABEL
+    --preview-label-pos=N  Same as --border-label and --border-label-pos,
+                           but for preview window
 
   Scripting
-    -q, --query=STR       Start the finder with the given query
-    -1, --select-1        Automatically select the only match
-    -0, --exit-0          Exit immediately when there's no match
-    -f, --filter=STR      Filter mode. Do not start interactive finder.
-    --print-query         Print query as the first line
-    --expect=KEYS         Comma-separated list of keys to complete fzf
-    --read0               Read input delimited by ASCII NUL characters
-    --print0              Print output delimited by ASCII NUL characters
-    --sync                Synchronous search for multi-staged filtering
-    --version             Display version information and exit
+    -q, --query=STR        Start the finder with the given query
+    -1, --select-1         Automatically select the only match
+    -0, --exit-0           Exit immediately when there's no match
+    -f, --filter=STR       Filter mode. Do not start interactive finder.
+    --print-query          Print query as the first line
+    --expect=KEYS          Comma-separated list of keys to complete fzf
+    --read0                Read input delimited by ASCII NUL characters
+    --print0               Print output delimited by ASCII NUL characters
+    --sync                 Synchronous search for multi-staged filtering
+    --version              Display version information and exit
 
   Environment variables
-    FZF_DEFAULT_COMMAND   Default command to use when input is tty
-    FZF_DEFAULT_OPTS      Default options
-                          (e.g. '--layout=reverse --inline-info')
+    FZF_DEFAULT_COMMAND    Default command to use when input is tty
+    FZF_DEFAULT_OPTS       Default options
+                           (e.g. '--layout=reverse --inline-info')
 
 `
 
@@ -165,13 +173,23 @@ const (
 	layoutReverseList
 )
 
-type infoStyle int
+type infoLayout int
+type infoStyle struct {
+	layout    infoLayout
+	separator bool
+}
 
 const (
-	infoDefault infoStyle = iota
+	infoDefault infoLayout = iota
 	infoInline
 	infoHidden
 )
+
+type labelOpts struct {
+	label  string
+	column int
+	bottom bool
+}
 
 type previewOpts struct {
 	command     string
@@ -186,6 +204,23 @@ type previewOpts struct {
 	headerLines int
 	threshold   int
 	alternative *previewOpts
+}
+
+func parseLabelPosition(opts *labelOpts, arg string) {
+	opts.column = 0
+	opts.bottom = false
+	for _, token := range splitRegexp.Split(strings.ToLower(arg), -1) {
+		switch token {
+		case "center":
+			opts.column = 0
+		case "bottom":
+			opts.bottom = true
+		case "top":
+			opts.bottom = false
+		default:
+			opts.column = atoi(token)
+		}
+	}
 }
 
 func (a previewOpts) aboveOrBelow() bool {
@@ -204,64 +239,66 @@ func (a previewOpts) sameContentLayout(b previewOpts) bool {
 
 // Options stores the values of command-line options
 type Options struct {
-	Fuzzy       bool
-	FuzzyAlgo   algo.Algo
-	Scheme      string
-	Extended    bool
-	Phony       bool
-	Case        Case
-	Normalize   bool
-	Nth         []Range
-	WithNth     []Range
-	Delimiter   Delimiter
-	Sort        int
-	Tac         bool
-	Criteria    []criterion
-	Multi       int
-	Ansi        bool
-	Mouse       bool
-	Theme       *tui.ColorTheme
-	Black       bool
-	Bold        bool
-	Height      heightSpec
-	MinHeight   int
-	Layout      layoutType
-	Cycle       bool
-	KeepRight   bool
-	Hscroll     bool
-	HscrollOff  int
-	ScrollOff   int
-	FileWord    bool
-	InfoStyle   infoStyle
-	JumpLabels  string
-	Prompt      string
-	Pointer     string
-	Marker      string
-	Query       string
-	Select1     bool
-	Exit0       bool
-	Filter      *string
-	ToggleSort  bool
-	Expect      map[tui.Event]string
-	Keymap      map[tui.Event][]*action
-	Preview     previewOpts
-	PrintQuery  bool
-	ReadZero    bool
-	Printer     func(string)
-	PrintSep    string
-	Sync        bool
-	History     *History
-	Header      []string
-	HeaderLines int
-	HeaderFirst bool
-	Ellipsis    string
-	Margin      [4]sizeSpec
-	Padding     [4]sizeSpec
-	BorderShape tui.BorderShape
-	Unicode     bool
-	Tabstop     int
-	ClearOnExit bool
-	Version     bool
+	Fuzzy        bool
+	FuzzyAlgo    algo.Algo
+	Scheme       string
+	Extended     bool
+	Phony        bool
+	Case         Case
+	Normalize    bool
+	Nth          []Range
+	WithNth      []Range
+	Delimiter    Delimiter
+	Sort         int
+	Tac          bool
+	Criteria     []criterion
+	Multi        int
+	Ansi         bool
+	Mouse        bool
+	Theme        *tui.ColorTheme
+	Black        bool
+	Bold         bool
+	Height       heightSpec
+	MinHeight    int
+	Layout       layoutType
+	Cycle        bool
+	KeepRight    bool
+	Hscroll      bool
+	HscrollOff   int
+	ScrollOff    int
+	FileWord     bool
+	InfoStyle    infoStyle
+	JumpLabels   string
+	Prompt       string
+	Pointer      string
+	Marker       string
+	Query        string
+	Select1      bool
+	Exit0        bool
+	Filter       *string
+	ToggleSort   bool
+	Expect       map[tui.Event]string
+	Keymap       map[tui.Event][]*action
+	Preview      previewOpts
+	PrintQuery   bool
+	ReadZero     bool
+	Printer      func(string)
+	PrintSep     string
+	Sync         bool
+	History      *History
+	Header       []string
+	HeaderLines  int
+	HeaderFirst  bool
+	Ellipsis     string
+	Margin       [4]sizeSpec
+	Padding      [4]sizeSpec
+	BorderShape  tui.BorderShape
+	BorderLabel  labelOpts
+	PreviewLabel labelOpts
+	Unicode      bool
+	Tabstop      int
+	ClearOnExit  bool
+	Version      bool
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -270,62 +307,64 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
-		Fuzzy:       true,
-		FuzzyAlgo:   algo.FuzzyMatchV2,
-		Scheme:      "default",
-		Extended:    true,
-		Phony:       false,
-		Case:        CaseSmart,
-		Normalize:   true,
-		Nth:         make([]Range, 0),
-		WithNth:     make([]Range, 0),
-		Delimiter:   Delimiter{},
-		Sort:        1000,
-		Tac:         false,
-		Criteria:    []criterion{byScore, byLength},
-		Multi:       0,
-		Ansi:        false,
-		Mouse:       true,
-		Theme:       tui.EmptyTheme(),
-		Black:       false,
-		Bold:        true,
-		MinHeight:   10,
-		Layout:      layoutDefault,
-		Cycle:       false,
-		KeepRight:   false,
-		Hscroll:     true,
-		HscrollOff:  10,
-		ScrollOff:   0,
-		FileWord:    false,
-		InfoStyle:   infoDefault,
-		JumpLabels:  defaultJumpLabels,
-		Prompt:      "> ",
-		Pointer:     ">",
-		Marker:      ">",
-		Query:       "",
-		Select1:     false,
-		Exit0:       false,
-		Filter:      nil,
-		ToggleSort:  false,
-		Expect:      make(map[tui.Event]string),
-		Keymap:      make(map[tui.Event][]*action),
-		Preview:     defaultPreviewOpts(""),
-		PrintQuery:  false,
-		ReadZero:    false,
-		Printer:     func(str string) { fmt.Println(str) },
-		PrintSep:    "\n",
-		Sync:        false,
-		History:     nil,
-		Header:      make([]string, 0),
-		HeaderLines: 0,
-		HeaderFirst: false,
-		Ellipsis:    "..",
-		Margin:      defaultMargin(),
-		Padding:     defaultMargin(),
-		Unicode:     true,
-		Tabstop:     8,
-		ClearOnExit: true,
-		Version:     false}
+		Fuzzy:        true,
+		FuzzyAlgo:    algo.FuzzyMatchV2,
+		Scheme:       "default",
+		Extended:     true,
+		Phony:        false,
+		Case:         CaseSmart,
+		Normalize:    true,
+		Nth:          make([]Range, 0),
+		WithNth:      make([]Range, 0),
+		Delimiter:    Delimiter{},
+		Sort:         1000,
+		Tac:          false,
+		Criteria:     []criterion{byScore, byLength},
+		Multi:        0,
+		Ansi:         false,
+		Mouse:        true,
+		Theme:        tui.EmptyTheme(),
+		Black:        false,
+		Bold:         true,
+		MinHeight:    10,
+		Layout:       layoutDefault,
+		Cycle:        false,
+		KeepRight:    false,
+		Hscroll:      true,
+		HscrollOff:   10,
+		ScrollOff:    0,
+		FileWord:     false,
+		InfoStyle:    infoStyle{layout: infoDefault, separator: true},
+		JumpLabels:   defaultJumpLabels,
+		Prompt:       "> ",
+		Pointer:      ">",
+		Marker:       ">",
+		Query:        "",
+		Select1:      false,
+		Exit0:        false,
+		Filter:       nil,
+		ToggleSort:   false,
+		Expect:       make(map[tui.Event]string),
+		Keymap:       make(map[tui.Event][]*action),
+		Preview:      defaultPreviewOpts(""),
+		PrintQuery:   false,
+		ReadZero:     false,
+		Printer:      func(str string) { fmt.Println(str) },
+		PrintSep:     "\n",
+		Sync:         false,
+		History:      nil,
+		Header:       make([]string, 0),
+		HeaderLines:  0,
+		HeaderFirst:  false,
+		Ellipsis:     "..",
+		Margin:       defaultMargin(),
+		Padding:      defaultMargin(),
+		Unicode:      true,
+		Tabstop:      8,
+		BorderLabel:  labelOpts{},
+		PreviewLabel: labelOpts{},
+		ClearOnExit:  true,
+		Version:      false}
 }
 
 func help(code int) {
@@ -798,6 +837,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				mergeAttr(&theme.CurrentMatch)
 			case "border":
 				mergeAttr(&theme.Border)
+			case "separator":
+				mergeAttr(&theme.Separator)
+			case "label":
+				mergeAttr(&theme.BorderLabel)
 			case "prompt":
 				mergeAttr(&theme.Prompt)
 			case "spinner":
@@ -818,7 +861,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 	return theme
 }
 
-var executeRegexp *regexp.Regexp
+var (
+	executeRegexp *regexp.Regexp
+	splitRegexp   *regexp.Regexp
+)
 
 func firstKey(keymap map[tui.Event]string) tui.Event {
 	for k := range keymap {
@@ -838,6 +884,7 @@ func init() {
 	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
 		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-prompt|change-preview-window|change-preview|(?:re|un)bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+	splitRegexp = regexp.MustCompile("[,:]+")
 }
 
 func parseKeymap(keymap map[tui.Event][]*action, str string) {
@@ -1197,17 +1244,26 @@ func parseLayout(str string) layoutType {
 }
 
 func parseInfoStyle(str string) infoStyle {
-	switch str {
-	case "default":
-		return infoDefault
-	case "inline":
-		return infoInline
-	case "hidden":
-		return infoHidden
-	default:
-		errorExit("invalid info style (expected: default / inline / hidden)")
+	layout := infoDefault
+	separator := true
+
+	for _, token := range splitRegexp.Split(strings.ToLower(str), -1) {
+		switch token {
+		case "default":
+			layout = infoDefault
+		case "inline":
+			layout = infoInline
+		case "hidden":
+			layout = infoHidden
+		case "nosep":
+			separator = false
+		case "sep":
+			separator = true
+		default:
+			errorExit("invalid info style (expected: default|inline|hidden[:nosep])")
+		}
 	}
-	return infoDefault
+	return infoStyle{layout: layout, separator: separator}
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
@@ -1469,11 +1525,11 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.InfoStyle = parseInfoStyle(
 				nextString(allArgs, &i, "info style required"))
 		case "--no-info":
-			opts.InfoStyle = infoHidden
+			opts.InfoStyle.layout = infoHidden
 		case "--inline-info":
-			opts.InfoStyle = infoInline
+			opts.InfoStyle.layout = infoInline
 		case "--no-inline-info":
-			opts.InfoStyle = infoDefault
+			opts.InfoStyle.layout = infoDefault
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true
@@ -1556,6 +1612,20 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--border":
 			hasArg, arg := optionalNextString(allArgs, &i)
 			opts.BorderShape = parseBorder(arg, !hasArg)
+		case "--no-border-label":
+			opts.BorderLabel.label = ""
+		case "--border-label":
+			opts.BorderLabel.label = nextString(allArgs, &i, "label required")
+		case "--border-label-pos":
+			pos := nextString(allArgs, &i, "label position required (positive or negative integer or 'center')")
+			parseLabelPosition(&opts.BorderLabel, pos)
+		case "--no-preview-label":
+			opts.PreviewLabel.label = ""
+		case "--preview-label":
+			opts.PreviewLabel.label = nextString(allArgs, &i, "preview label required")
+		case "--preview-label-pos":
+			pos := nextString(allArgs, &i, "preview label position required (positive or negative integer or 'center')")
+			parseLabelPosition(&opts.PreviewLabel, pos)
 		case "--no-unicode":
 			opts.Unicode = false
 		case "--unicode":
@@ -1591,6 +1661,14 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--border="); match {
 				opts.BorderShape = parseBorder(value, false)
+			} else if match, value := optString(arg, "--border-label="); match {
+				opts.BorderLabel.label = value
+			} else if match, value := optString(arg, "--border-label-pos="); match {
+				parseLabelPosition(&opts.BorderLabel, value)
+			} else if match, value := optString(arg, "--preview-label="); match {
+				opts.PreviewLabel.label = value
+			} else if match, value := optString(arg, "--preview-label-pos="); match {
+				parseLabelPosition(&opts.PreviewLabel, value)
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
