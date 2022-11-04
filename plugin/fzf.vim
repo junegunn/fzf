@@ -973,16 +973,16 @@ function! s:callback(dict, lines) abort
 endfunction
 
 if has('nvim')
-  function s:create_popup(hl, opts) abort
+  function s:create_popup(opts) abort
     let buf = nvim_create_buf(v:false, v:true)
     let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
     let win = nvim_open_win(buf, v:true, opts)
-    call setwinvar(win, '&winhighlight', 'NormalFloat:'..a:hl)
+    silent! call setwinvar(win, '&winhighlight', 'Pmenu:')
     call setwinvar(win, '&colorcolumn', '')
     return buf
   endfunction
 else
-  function! s:create_popup(hl, opts) abort
+  function! s:create_popup(opts) abort
     let s:popup_create = {buf -> popup_create(buf, #{
       \ line: a:opts.row,
       \ col: a:opts.col,
@@ -1017,7 +1017,7 @@ function! s:popup(opts) abort
   let row += !has('nvim')
   let col += !has('nvim')
 
-  call s:create_popup('Normal', {
+  call s:create_popup({
     \ 'row': row, 'col': col, 'width': width, 'height': height
   \ })
 endfunction
