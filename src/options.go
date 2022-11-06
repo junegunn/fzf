@@ -509,6 +509,10 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderRounded
 	case "sharp":
 		return tui.BorderSharp
+	case "bold":
+		return tui.BorderBold
+	case "double":
+		return tui.BorderDouble
 	case "horizontal":
 		return tui.BorderHorizontal
 	case "vertical":
@@ -527,7 +531,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		if optional && str == "" {
 			return tui.BorderRounded
 		}
-		errorExit("invalid border style (expected: rounded|sharp|horizontal|vertical|top|bottom|left|right|none)")
+		errorExit("invalid border style (expected: rounded|sharp|bold|double|horizontal|vertical|top|bottom|left|right|none)")
 	}
 	return tui.BorderNone
 }
@@ -1308,6 +1312,10 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			opts.border = tui.BorderRounded
 		case "sharp", "border-sharp":
 			opts.border = tui.BorderSharp
+		case "border-bold":
+			opts.border = tui.BorderBold
+		case "border-double":
+			opts.border = tui.BorderDouble
 		case "noborder", "border-none":
 			opts.border = tui.BorderNone
 		case "border-horizontal":

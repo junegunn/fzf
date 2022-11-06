@@ -705,31 +705,31 @@ func (w *TcellWindow) drawBorder() {
 	}
 
 	switch shape {
-	case BorderRounded, BorderSharp, BorderHorizontal, BorderTop:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
 		for x := left; x < right; x++ {
 			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderHorizontal, BorderBottom:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
 		for x := left; x < right; x++ {
 			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderVertical, BorderLeft:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
 		for y := top; y < bot; y++ {
 			_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderVertical, BorderRight:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
 		for y := top; y < bot; y++ {
 			_screen.SetContent(right-1, y, w.borderStyle.vertical, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
 		_screen.SetContent(right-1, top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)

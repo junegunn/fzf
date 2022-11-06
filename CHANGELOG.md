@@ -34,6 +34,8 @@ CHANGELOG
     - Separator can be disabled by adding `:nosep` to `--info`
         - `--info=nosep`
         - `--info=inline:nosep`
+- Added `--border=bold` and `--border=double` along with
+  `--preview-window=border-bold` and `--preview-window=border-double`
 
 0.34.0
 ------

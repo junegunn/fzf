@@ -294,6 +294,8 @@ const (
 	BorderNone BorderShape = iota
 	BorderRounded
 	BorderSharp
+	BorderBold
+	BorderDouble
 	BorderHorizontal
 	BorderVertical
 	BorderTop
@@ -315,18 +317,19 @@ type BorderStyle struct {
 type BorderCharacter int
 
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
-	if unicode {
-		if shape == BorderRounded {
-			return BorderStyle{
-				shape:       shape,
-				horizontal:  '─',
-				vertical:    '│',
-				topLeft:     '╭',
-				topRight:    '╮',
-				bottomLeft:  '╰',
-				bottomRight: '╯',
-			}
+	if !unicode {
+		return BorderStyle{
+			shape:       shape,
+			horizontal:  '-',
+			vertical:    '|',
+			topLeft:     '+',
+			topRight:    '+',
+			bottomLeft:  '+',
+			bottomRight: '+',
 		}
+	}
+	switch shape {
+	case BorderSharp:
 		return BorderStyle{
 			shape:       shape,
 			horizontal:  '─',
@@ -336,15 +339,35 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			bottomLeft:  '└',
 			bottomRight: '┘',
 		}
+	case BorderBold:
+		return BorderStyle{
+			shape:       shape,
+			horizontal:  '━',
+			vertical:    '┃',
+			topLeft:     '┏',
+			topRight:    '┓',
+			bottomLeft:  '┗',
+			bottomRight: '┛',
+		}
+	case BorderDouble:
+		return BorderStyle{
+			shape:       shape,
+			horizontal:  '═',
+			vertical:    '║',
+			topLeft:     '╔',
+			topRight:    '╗',
+			bottomLeft:  '╚',
+			bottomRight: '╝',
+		}
 	}
 	return BorderStyle{
 		shape:       shape,
-		horizontal:  '-',
-		vertical:    '|',
-		topLeft:     '+',
-		topRight:    '+',
-		bottomLeft:  '+',
-		bottomRight: '+',
+		horizontal:  '─',
+		vertical:    '│',
+		topLeft:     '╭',
+		topRight:    '╮',
+		bottomLeft:  '╰',
+		bottomRight: '╯',
 	}
 }
 

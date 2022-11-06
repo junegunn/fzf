@@ -605,7 +605,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 
 func borderLines(shape tui.BorderShape) int {
 	switch shape {
-	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp:
+	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 		return 2
 	case tui.BorderTop, tui.BorderBottom:
 		return 1
@@ -847,7 +847,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 			if idx == 3 {
 				extraMargin[idx] += 2
 			}
-		case tui.BorderRounded, tui.BorderSharp:
+		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 			extraMargin[idx] += 1 + idx%2
 		}
 		marginInt[idx] = sizeSpecToInt(idx, sizeSpec) + extraMargin[idx]
@@ -939,7 +939,7 @@ func (t *Terminal) resizeWindows() {
 		t.border = t.tui.NewWindow(
 			marginInt[0], marginInt[3], width+2, height,
 			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
-	case tui.BorderRounded, tui.BorderSharp:
+	case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 		t.border = t.tui.NewWindow(
 			marginInt[0]-1, marginInt[3]-2, width+4, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
@@ -969,7 +969,7 @@ func (t *Terminal) resizeWindows() {
 				}
 				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
 				switch previewOpts.border {
-				case tui.BorderSharp, tui.BorderRounded:
+				case tui.BorderSharp, tui.BorderRounded, tui.BorderBold, tui.BorderDouble:
 					pwidth -= 4
 					pheight -= 2
 					x += 2
@@ -1057,7 +1057,7 @@ func (t *Terminal) resizeWindows() {
 		}
 
 		switch borderShape {
-		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp:
+		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 			var col int
 			if opts.column == 0 {
 				col = util.Max(0, (window.Width()-length)/2)
