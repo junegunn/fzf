@@ -75,8 +75,6 @@ func (w *TcellWindow) Refresh() {
 	}
 	w.lastX = 0
 	w.lastY = 0
-
-	w.drawBorder()
 }
 
 func (w *TcellWindow) FinishFill() {
@@ -517,7 +515,7 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 	if preview {
 		normal = ColPreview
 	}
-	return &TcellWindow{
+	w := &TcellWindow{
 		color:       r.theme.Colored,
 		preview:     preview,
 		top:         top,
@@ -526,6 +524,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		height:      height,
 		normal:      normal,
 		borderStyle: borderStyle}
+	w.drawBorder()
+	return w
 }
 
 func (w *TcellWindow) Close() {
