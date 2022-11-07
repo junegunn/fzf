@@ -977,7 +977,7 @@ if has('nvim')
     let buf = nvim_create_buf(v:false, v:true)
     let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
     let win = nvim_open_win(buf, v:true, opts)
-    silent! call setwinvar(win, '&winhighlight', 'Pmenu:')
+    silent! call setwinvar(win, '&winhighlight', 'Pmenu:,Normal:Normal')
     call setwinvar(win, '&colorcolumn', '')
     return buf
   endfunction
