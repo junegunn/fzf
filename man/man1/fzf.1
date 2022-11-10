@@ -344,6 +344,18 @@ Determines the display style of finder info (match counters).
 A synonym for \fB--info=hidden\fB
 
 .TP
+.BI "--separator=" "STR"
+The given string will be repeated to form the horizontal separator on the info
+line (default: '─' or '-' depending on \fB--no-unicode\fR).
+
+ANSI color codes are supported.
+
+.TP
+.B "--no-separator"
+Do not display horizontal separator on the info line. A synonym for
+\fB--separator=''\fB
+
+.TP
 .BI "--prompt=" "STR"
 Input prompt (default: '> ')
 .TP

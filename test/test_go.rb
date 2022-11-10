@@ -2380,13 +2380,28 @@ class TestGoFZF < TestBase
     end
   end
 
-  def test_info_separator
+  def test_info_separator_unicode
     tmux.send_keys 'seq 100 | fzf -q55', :Enter
     tmux.until { assert_includes(_1[-2], '  1/100 ─') }
   end
 
+  def test_info_separator_no_unicode
+    tmux.send_keys 'seq 100 | fzf -q55 --no-unicode', :Enter
+    tmux.until { assert_includes(_1[-2], '  1/100 -') }
+  end
+
+  def test_info_separator_repeat
+    tmux.send_keys 'seq 100 | fzf -q55 --separator _-', :Enter
+    tmux.until { assert_includes(_1[-2], '  1/100 _-_-') }
+  end
+
+  def test_info_separator_ansi_colors_and_tabs
+    tmux.send_keys "seq 100 | fzf -q55 --tabstop 4 --separator $'\\x1b[33ma\\tb'", :Enter
+    tmux.until { assert_includes(_1[-2], '  1/100 a   ba   ba') }
+  end
+
   def test_info_no_separator
-    tmux.send_keys 'seq 100 | fzf -q55 --info nosep', :Enter
+    tmux.send_keys 'seq 100 | fzf -q55 --no-separator', :Enter
     tmux.until { assert(_1[-2] == '  1/100') }
   end
 end

@@ -29,11 +29,17 @@ CHANGELOG
   ```sh
   fzf --preview 'cat {}' --border --preview-label=' Preview ' --preview-label-pos=2
   ```
-- Info panel (counter) will be followed by a horizontal separator by default
+- Info panel (match counter) will be followed by a horizontal separator by
+  default
+    - Use `--no-separator` or `--separator=''` to hide the separator
+    - You can specify an arbitrary string that is repeated to form the
+      horizontal separator. e.g. `--separator=╸`
     - The color of the separator can be customized via `--color=separator:...`
-    - Separator can be disabled by adding `:nosep` to `--info`
-        - `--info=nosep`
-        - `--info=inline:nosep`
+    - ANSI color codes are also supported
+  ```sh
+  fzf --separator=╸ --color=separator:green
+  fzf --separator=$(lolcat -f -F 1.4 <<< ▁▁▂▃▄▅▆▆▅▄▃▂▁▁) --info=inline
+  ```
 - Added `--border=bold` and `--border=double` along with
   `--preview-window=border-bold` and `--preview-window=border-double`
 

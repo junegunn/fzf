@@ -107,17 +107,21 @@ type fitpad struct {
 
 var emptyLine = itemLine{}
 
+type labelPrinter func(tui.Window, int)
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
 	infoStyle          infoStyle
+	separator          labelPrinter
+	separatorLen       int
 	spinner            []string
 	prompt             func()
 	promptLen          int
-	borderLabel        func(tui.Window)
+	borderLabel        labelPrinter
 	borderLabelLen     int
 	borderLabelOpts    labelOpts
-	previewLabel       func(tui.Window)
+	previewLabel       labelPrinter
 	previewLabelLen    int
 	previewLabelOpts   labelOpts
 	pointer            string
@@ -498,7 +502,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
 				effectiveMinHeight += 1 + borderLines(opts.Preview.border)
 			}
-			if opts.InfoStyle.layout != infoDefault {
+			if opts.InfoStyle != infoDefault {
 				effectiveMinHeight--
 			}
 			effectiveMinHeight += borderLines(opts.BorderShape)
@@ -520,6 +524,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t := Terminal{
 		initDelay:          delay,
 		infoStyle:          opts.InfoStyle,
+		separator:          nil,
 		spinner:            makeSpinner(opts.Unicode),
 		queryLen:           [2]int{0, 0},
 		layout:             opts.Layout,
@@ -597,8 +602,17 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
-	t.borderLabel, t.borderLabelLen = t.parseBorderLabel(opts.BorderLabel.label)
-	t.previewLabel, t.previewLabelLen = t.parseBorderLabel(opts.PreviewLabel.label)
+	t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(opts.BorderLabel.label, &tui.ColBorderLabel, false)
+	t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(opts.PreviewLabel.label, &tui.ColBorderLabel, false)
+	if opts.Separator == nil || len(*opts.Separator) > 0 {
+		bar := "─"
+		if opts.Separator != nil {
+			bar = *opts.Separator
+		} else if !t.unicode {
+			bar = "-"
+		}
+		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
+	}
 
 	return &t
 }
@@ -629,26 +643,63 @@ func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
 	return fit, padHeight
 }
 
-func (t *Terminal) parseBorderLabel(borderLabel string) (func(tui.Window), int) {
-	if len(borderLabel) == 0 {
+func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool) (labelPrinter, int) {
+	// Nothing to do
+	if len(str) == 0 {
 		return nil, 0
 	}
-	text, colors, _ := extractColor(borderLabel, nil, nil)
-	runes := []rune(text)
-	item := &Item{text: util.RunesToChars(runes), colors: colors}
-	result := Result{item: item}
 
+	// Extract ANSI color codes
+	text, colors, _ := extractColor(str, nil, nil)
+	runes := []rune(text)
+
+	// Simpler printer for strings without ANSI colors or tab characters
+	if colors == nil && strings.IndexRune(str, '\t') < 0 {
+		length := runewidth.StringWidth(str)
+		if length == 0 {
+			return nil, 0
+		}
+		printFn := func(window tui.Window, limit int) {
+			if length > limit {
+				trimmedRunes, _ := t.trimRight(runes, limit)
+				window.CPrint(*color, string(trimmedRunes))
+			} else if fill {
+				window.CPrint(*color, util.RepeatToFill(str, length, limit))
+			} else {
+				window.CPrint(*color, str)
+			}
+		}
+		return printFn, len(text)
+	}
+
+	// Printer that correctly handles ANSI color codes and tab characters
+	item := &Item{text: util.RunesToChars(runes), colors: colors}
+	length := t.displayWidth(runes)
+	if length == 0 {
+		return nil, 0
+	}
+	result := Result{item: item}
 	var offsets []colorOffset
-	borderLabelFn := func(window tui.Window) {
+	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, t.theme, tui.ColBorderLabel, tui.ColBorderLabel, false)
+			offsets = result.colorOffsets(nil, t.theme, *color, *color, false)
 		}
-		text, _ := t.trimRight(runes, window.Width())
-		t.printColoredString(window, text, offsets, tui.ColBorderLabel)
+		for limit > 0 {
+			if length > limit {
+				trimmedRunes, _ := t.trimRight(runes, limit)
+				t.printColoredString(window, trimmedRunes, offsets, *color)
+				break
+			} else if fill {
+				t.printColoredString(window, runes, offsets, *color)
+				limit -= length
+			} else {
+				t.printColoredString(window, runes, offsets, *color)
+				break
+			}
+		}
 	}
-	borderLabelLen := runewidth.StringWidth(text)
-	return borderLabelFn, borderLabelLen
+	return printFn, length
 }
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
@@ -684,7 +735,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noInfoLine() bool {
-	return t.infoStyle.layout != infoDefault
+	return t.infoStyle != infoDefault
 }
 
 // Input returns current query string
@@ -1051,7 +1102,7 @@ func (t *Terminal) resizeWindows() {
 	}
 
 	// Print border label
-	printLabel := func(window tui.Window, render func(tui.Window), opts labelOpts, length int, borderShape tui.BorderShape) {
+	printLabel := func(window tui.Window, render labelPrinter, opts labelOpts, length int, borderShape tui.BorderShape) {
 		if window == nil || render == nil {
 			return
 		}
@@ -1071,7 +1122,7 @@ func (t *Terminal) resizeWindows() {
 				row = window.Height() - 1
 			}
 			window.Move(row, col)
-			render(window)
+			render(window, window.Width())
 		}
 	}
 	printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape)
@@ -1167,7 +1218,7 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
-	switch t.infoStyle.layout {
+	switch t.infoStyle {
 	case infoDefault:
 		t.move(line+1, 0, true)
 		if t.reading {
@@ -1220,12 +1271,10 @@ func (t *Terminal) printInfo() {
 	output = t.trimMessage(output, maxWidth)
 	t.window.CPrint(tui.ColInfo, output)
 
-	if t.infoStyle.separator && len(output) < maxWidth-2 {
-		bar := "─"
-		if !t.unicode {
-			bar = "-"
-		}
-		t.window.CPrint(tui.ColSeparator, " "+strings.Repeat(bar, maxWidth-len(output)-2))
+	fillLength := maxWidth - len(output) - 2
+	if t.separatorLen > 0 && fillLength > 0 {
+		t.window.CPrint(tui.ColSeparator, " ")
+		t.separator(t.window, fillLength)
 	}
 }
 
