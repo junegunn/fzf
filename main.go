@@ -5,7 +5,7 @@ import (
 	"github.com/junegunn/fzf/src/protector"
 )
 
-var version string = "0.34"
+var version string = "0.35"
 var revision string = "devel"
 
 func main() {
