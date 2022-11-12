@@ -712,7 +712,7 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 
 func (w *LightWindow) drawBorder() {
 	switch w.border.shape {
-	case BorderRounded, BorderSharp:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
 		w.drawBorderAround()
 	case BorderHorizontal:
 		w.drawBorderHorizontal(true, true)

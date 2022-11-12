@@ -153,3 +153,23 @@ func Once(nextResponse bool) func() bool {
 		return prevState
 	}
 }
+
+// RepeatToFill repeats the given string to fill the given width
+func RepeatToFill(str string, length int, limit int) string {
+	times := limit / length
+	rest := limit % length
+	output := strings.Repeat(str, times)
+	if rest > 0 {
+		for _, r := range str {
+			rest -= runewidth.RuneWidth(r)
+			if rest < 0 {
+				break
+			}
+			output += string(r)
+			if rest == 0 {
+				break
+			}
+		}
+	}
+	return output
+}

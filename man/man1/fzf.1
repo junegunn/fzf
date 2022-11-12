@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Oct 2022" "fzf 0.35.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Nov 2022" "fzf 0.35.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -211,6 +211,10 @@ Draw border around the finder
 .br
 .BR sharp "         Border with sharp corners"
 .br
+.BR bold "          Border with bold lines"
+.br
+.BR double "        Border with double lines"
+.br
 .BR horizontal "    Horizontal lines above and below the finder"
 .br
 .BR vertical "      Vertical lines on each side of the finder"
@@ -235,6 +239,10 @@ following \fB--border\fR options.
 .B * rounded
 .br
 .B * sharp
+.br
+.B * bold
+.br
+.B * double
 .br
 .B * horizontal
 .br
@@ -334,6 +342,18 @@ Determines the display style of finder info (match counters).
 .TP
 .B "--no-info"
 A synonym for \fB--info=hidden\fB
+
+.TP
+.BI "--separator=" "STR"
+The given string will be repeated to form the horizontal separator on the info
+line (default: '─' or '-' depending on \fB--no-unicode\fR).
+
+ANSI color codes are supported.
+
+.TP
+.B "--no-separator"
+Do not display horizontal separator on the info line. A synonym for
+\fB--separator=''\fB
 
 .TP
 .BI "--prompt=" "STR"
@@ -538,6 +558,10 @@ Should be used with one of the following \fB--preview-window\fR options.
 .B * border-rounded (default)
 .br
 .B * border-sharp
+.br
+.B * border-bold
+.br
+.B * border-double
 .br
 .B * border-horizontal
 .br
