@@ -30,7 +30,7 @@ strings. Acts as input validation for parsePlaceholder function.
 Describes the syntax, but it is fairly lenient.
 
 The following pseudo regex has been reverse engineered from the
-implementation. It is overly strict, but better describes whats possible.
+implementation. It is overly strict, but better describes what's possible.
 As such it is not useful for validation, but rather to generate test
 cases for example.
 
