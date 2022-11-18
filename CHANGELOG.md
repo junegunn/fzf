@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.35.1
+------
+- Fixed a bug where fzf with `--tiebreak=chunk` crashes on inverse match query
+
 0.35.0
 ------
 - Added `start` event that is triggered only once when fzf finder starts.
