@@ -779,6 +779,10 @@ class TestGoFZF < TestBase
       '2 foobar baz',
       '3 foo barbaz'
     ], `#{FZF} -fba --tiebreak=chunk < #{tempname}`.lines(chomp: true)
+
+    assert_equal [
+      '3 foo barbaz'
+    ], `#{FZF} -f'!foobar' --tiebreak=chunk < #{tempname}`.lines(chomp: true)
   end
 
   def test_invalid_cache
