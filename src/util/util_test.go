@@ -180,7 +180,7 @@ func TestRepeatToFill(t *testing.T) {
 	if RepeatToFill("abcde", 10, 50) != strings.Repeat("abcde", 5) {
 		t.Error("Expected:", strings.Repeat("abcde", 5))
 	}
-	if RepeatToFill("abcde", 10, 42) != strings.Repeat("abcde", 4) + "abcde"[:2] {
-		t.Error("Expected:", strings.Repeat("abcde", 4) + "abcde"[:2])
+	if RepeatToFill("abcde", 10, 42) != strings.Repeat("abcde", 4)+"abcde"[:2] {
+		t.Error("Expected:", strings.Repeat("abcde", 4)+"abcde"[:2])
 	}
 }
