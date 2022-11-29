@@ -426,7 +426,6 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.SDown, actPreviewDown)
 
 	add(tui.Mouse, actMouse)
-	add(tui.DoubleClick, actAccept)
 	add(tui.LeftClick, actIgnore)
 	add(tui.RightClick, actToggle)
 	return keymap
