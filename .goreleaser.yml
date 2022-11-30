@@ -73,6 +73,7 @@ builds:
       - arm
       - arm64
       - loong64
+      - ppc64le
     goarm:
       - 5
       - 6
