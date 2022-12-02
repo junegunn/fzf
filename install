@@ -176,7 +176,7 @@ case "$archi" in
   Linux\ armv8*)      download fzf-$version-linux_arm64.tar.gz   ;;
   Linux\ aarch64*)    download fzf-$version-linux_arm64.tar.gz   ;;
   Linux\ loongarch64) download fzf-$version-linux_loong64.tar.gz ;;
-  Linux\ ppc64le    ) download fzf-$version-linux_ppc64le.tar.gz ;;
+  Linux\ ppc64le)     download fzf-$version-linux_ppc64le.tar.gz ;;
   Linux\ *64)         download fzf-$version-linux_amd64.tar.gz   ;;
   FreeBSD\ *64)       download fzf-$version-freebsd_amd64.tar.gz ;;
   OpenBSD\ *64)       download fzf-$version-openbsd_amd64.tar.gz ;;
