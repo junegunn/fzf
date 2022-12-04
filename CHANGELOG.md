@@ -9,7 +9,7 @@ CHANGELOG
   # No need to bind 'double-click' to the same action
   fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
   ```
-- Minor rendering improvements
+- Minor bug fixes and improvements
 
 0.35.1
 ------
