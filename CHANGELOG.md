@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+0.35.2
+------
+- `double-click` will behave the same as `enter` unless otherwise specified,
+  so you don't have to repeat the same action twice in `--bind` in most cases.
+  ```sh
+  # No need to bind 'double-click' to the same action
+  fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
+  ```
+- Minor bug fixes and improvements
+
 0.35.1
 ------
 - Fixed a bug where fzf with `--tiebreak=chunk` crashes on inverse match query

@@ -617,7 +617,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, pattern []rune, sidx int, eidx int, withPos bool) (int, *[]int) {
 	pidx, score, inGap, consecutive, firstBonus := 0, 0, false, 0, int16(0)
 	pos := posArray(withPos, len(pattern))
-	prevClass := charWhite
+	prevClass := initialCharClass
 	if sidx > 0 {
 		prevClass = charClassOf(text.Get(sidx - 1))
 	}
