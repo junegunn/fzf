@@ -108,6 +108,7 @@ const usage = `usage: fzf [options]
     -1, --select-1         Automatically select the only match
     -0, --exit-0           Exit immediately when there's no match
     -f, --filter=STR       Filter mode. Do not start interactive finder.
+    --complete-1           Exit interactive finder when there's exactly one match
     --print-query          Print query as the first line
     --expect=KEYS          Comma-separated list of keys to complete fzf
     --read0                Read input delimited by ASCII NUL characters
@@ -274,6 +275,7 @@ type Options struct {
 	Query        string
 	Select1      bool
 	Exit0        bool
+	Complete1    bool
 	Filter       *string
 	ToggleSort   bool
 	Expect       map[tui.Event]string
@@ -342,6 +344,7 @@ func defaultOptions() *Options {
 		Query:        "",
 		Select1:      false,
 		Exit0:        false,
+		Complete1:    false,
 		Filter:       nil,
 		ToggleSort:   false,
 		Expect:       make(map[tui.Event]string),
@@ -1546,6 +1549,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Exit0 = true
 		case "+0", "--no-exit-0":
 			opts.Exit0 = false
+		case "--complete-1":
+			opts.Complete1 = true
 		case "--read0":
 			opts.ReadZero = true
 		case "--no-read0":

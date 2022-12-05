@@ -337,8 +337,14 @@ func Run(opts *Options, version string, revision string) {
 								}
 								determine(val.final)
 							}
+						} else {
+							if opts.Complete1 && val.Length() == 1 {
+								opts.Printer(val.Get(0).item.AsString(opts.Ansi))
+								terminal.reqBox.Set(reqClose, nil)
+							} else {
+								terminal.UpdateList(val, clearSelection())
+							}
 						}
-						terminal.UpdateList(val, clearSelection())
 					}
 				}
 			}
