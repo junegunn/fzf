@@ -12,7 +12,7 @@ import (
 )
 
 // RunesWidth returns runes width
-func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
+func RunesWidth(runes []rune, prefixWidth, tabstop, limit int) (int, int) {
 	width := 0
 	gr := uniseg.NewGraphemes(string(runes))
 	idx := 0
@@ -52,23 +52,23 @@ func Truncate(input string, limit int) ([]rune, int) {
 }
 
 // Max returns the largest integer
-func Max(first int, second int) int {
-	if first >= second {
+func Max(first, second int) int {
+	if first > second {
 		return first
 	}
 	return second
 }
 
-// Max16 returns the largest integer
-func Max16(first int16, second int16) int16 {
-	if first >= second {
+// Max16 returns the largest 16-bit integer
+func Max16(first, second int16) int16 {
+	if first > second {
 		return first
 	}
 	return second
 }
 
 // Max32 returns the largest 32-bit integer
-func Max32(first int32, second int32) int32 {
+func Max32(first, second int32) int32 {
 	if first > second {
 		return first
 	}
@@ -83,6 +83,14 @@ func Min(first int, second int) int {
 	return second
 }
 
+// Min16 returns the smallest 16-bit integer
+func Min16(first, second int16) int16 {
+	if first < second {
+		return first
+	}
+	return second
+}
+
 // Min32 returns the smallest 32-bit integer
 func Min32(first int32, second int32) int32 {
 	if first <= second {
@@ -92,7 +100,18 @@ func Min32(first int32, second int32) int32 {
 }
 
 // Constrain32 limits the given 32-bit integer with the upper and lower bounds
-func Constrain32(val int32, min int32, max int32) int32 {
+func Constrain32(val, min, max int32) int32 {
+	if val < min {
+		return min
+	}
+	if val > max {
+		return max
+	}
+	return val
+}
+
+// Constrain16 limits the given 16-bit integer with the upper and lower bounds
+func Constrain16(val, min, max int16) int16 {
 	if val < min {
 		return min
 	}
@@ -103,7 +122,7 @@ func Constrain32(val int32, min int32, max int32) int32 {
 }
 
 // Constrain limits the given integer with the upper and lower bounds
-func Constrain(val int, min int, max int) int {
+func Constrain(val, min, max int) int {
 	if val < min {
 		return min
 	}
@@ -122,9 +141,17 @@ func AsUint16(val int) uint16 {
 	return uint16(val)
 }
 
+func AsUint32(val int) uint32 {
+	if val > math.MaxUint32 {
+		return math.MaxUint32
+	} else if val < 0 {
+		return 0
+	}
+	return uint32(val)
+}
+
 // DurWithin limits the given time.Duration with the upper and lower bounds
-func DurWithin(
-	val time.Duration, min time.Duration, max time.Duration) time.Duration {
+func DurWithin(val, min, max time.Duration) time.Duration {
 	if val < min {
 		return min
 	}
