@@ -9,6 +9,8 @@ CHANGELOG
   # No need to bind 'double-click' to the same action
   fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
   ```
+- Added color name `preview-label` for `--preview-label` (defaults to `label`
+  for `--border-label`)
 - Minor bug fixes and improvements
 
 0.35.1

@@ -270,6 +270,7 @@ type ColorTheme struct {
 	Separator    ColorAttr
 	Border       ColorAttr
 	BorderLabel  ColorAttr
+	PreviewLabel ColorAttr
 }
 
 type Event struct {
@@ -468,6 +469,7 @@ var (
 	ColPreview              ColorPair
 	ColPreviewBorder        ColorPair
 	ColBorderLabel          ColorPair
+	ColPreviewLabel         ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -493,6 +495,7 @@ func EmptyTheme() *ColorTheme {
 		Separator:    ColorAttr{colUndefined, AttrUndefined},
 		Border:       ColorAttr{colUndefined, AttrUndefined},
 		BorderLabel:  ColorAttr{colUndefined, AttrUndefined},
+		PreviewLabel: ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -519,6 +522,7 @@ func NoColorTheme() *ColorTheme {
 		Separator:    ColorAttr{colDefault, AttrRegular},
 		Border:       ColorAttr{colDefault, AttrRegular},
 		BorderLabel:  ColorAttr{colDefault, AttrRegular},
+		PreviewLabel: ColorAttr{colDefault, AttrRegular},
 	}
 }
 
@@ -531,13 +535,9 @@ func init() {
 	Default16 = &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colDefault, AttrUndefined},
-		Disabled:     ColorAttr{colUndefined, AttrUndefined},
 		Fg:           ColorAttr{colDefault, AttrUndefined},
 		Bg:           ColorAttr{colDefault, AttrUndefined},
-		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
 		DarkBg:       ColorAttr{colBlack, AttrUndefined},
-		Gutter:       ColorAttr{colUndefined, AttrUndefined},
 		Prompt:       ColorAttr{colBlue, AttrUndefined},
 		Match:        ColorAttr{colGreen, AttrUndefined},
 		Current:      ColorAttr{colYellow, AttrUndefined},
@@ -554,13 +554,9 @@ func init() {
 	Dark256 = &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colDefault, AttrUndefined},
-		Disabled:     ColorAttr{colUndefined, AttrUndefined},
 		Fg:           ColorAttr{colDefault, AttrUndefined},
 		Bg:           ColorAttr{colDefault, AttrUndefined},
-		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
 		DarkBg:       ColorAttr{236, AttrUndefined},
-		Gutter:       ColorAttr{colUndefined, AttrUndefined},
 		Prompt:       ColorAttr{110, AttrUndefined},
 		Match:        ColorAttr{108, AttrUndefined},
 		Current:      ColorAttr{254, AttrUndefined},
@@ -577,13 +573,9 @@ func init() {
 	Light256 = &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colDefault, AttrUndefined},
-		Disabled:     ColorAttr{colUndefined, AttrUndefined},
 		Fg:           ColorAttr{colDefault, AttrUndefined},
 		Bg:           ColorAttr{colDefault, AttrUndefined},
-		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
 		DarkBg:       ColorAttr{251, AttrUndefined},
-		Gutter:       ColorAttr{colUndefined, AttrUndefined},
 		Prompt:       ColorAttr{25, AttrUndefined},
 		Match:        ColorAttr{66, AttrUndefined},
 		Current:      ColorAttr{237, AttrUndefined},
@@ -615,13 +607,9 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 		return c
 	}
 	theme.Input = o(baseTheme.Input, theme.Input)
-	theme.Disabled = o(theme.Input, o(baseTheme.Disabled, theme.Disabled))
 	theme.Fg = o(baseTheme.Fg, theme.Fg)
 	theme.Bg = o(baseTheme.Bg, theme.Bg)
-	theme.PreviewFg = o(theme.Fg, o(baseTheme.PreviewFg, theme.PreviewFg))
-	theme.PreviewBg = o(theme.Bg, o(baseTheme.PreviewBg, theme.PreviewBg))
 	theme.DarkBg = o(baseTheme.DarkBg, theme.DarkBg)
-	theme.Gutter = o(theme.DarkBg, o(baseTheme.Gutter, theme.Gutter))
 	theme.Prompt = o(baseTheme.Prompt, theme.Prompt)
 	theme.Match = o(baseTheme.Match, theme.Match)
 	theme.Current = o(baseTheme.Current, theme.Current)
@@ -634,6 +622,13 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Separator = o(baseTheme.Separator, theme.Separator)
 	theme.Border = o(baseTheme.Border, theme.Border)
 	theme.BorderLabel = o(baseTheme.BorderLabel, theme.BorderLabel)
+
+	// These colors are not defined in the base themes
+	theme.Disabled = o(theme.Input, theme.Disabled)
+	theme.Gutter = o(theme.DarkBg, theme.Gutter)
+	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
+	theme.PreviewBg = o(theme.Bg, theme.PreviewBg)
+	theme.PreviewLabel = o(theme.BorderLabel, theme.PreviewLabel)
 
 	initPalette(theme)
 }
@@ -668,6 +663,7 @@ func initPalette(theme *ColorTheme) {
 	ColSeparator = pair(theme.Separator, theme.Bg)
 	ColBorder = pair(theme.Border, theme.Bg)
 	ColBorderLabel = pair(theme.BorderLabel, theme.Bg)
+	ColPreviewLabel = pair(theme.PreviewLabel, theme.PreviewBg)
 	ColPreview = pair(theme.PreviewFg, theme.PreviewBg)
 	ColPreviewBorder = pair(theme.Border, theme.PreviewBg)
 }
