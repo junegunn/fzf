@@ -845,6 +845,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				mergeAttr(&theme.Separator)
 			case "label":
 				mergeAttr(&theme.BorderLabel)
+			case "preview-label":
+				mergeAttr(&theme.PreviewLabel)
 			case "prompt":
 				mergeAttr(&theme.Prompt)
 			case "spinner":

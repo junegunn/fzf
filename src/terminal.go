@@ -602,7 +602,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 	t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(opts.BorderLabel.label, &tui.ColBorderLabel, false)
-	t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(opts.PreviewLabel.label, &tui.ColBorderLabel, false)
+	t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(opts.PreviewLabel.label, &tui.ColPreviewLabel, false)
 	if opts.Separator == nil || len(*opts.Separator) > 0 {
 		bar := "─"
 		if opts.Separator != nil {
