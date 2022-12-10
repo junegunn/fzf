@@ -354,10 +354,10 @@ func TestDefaultCtrlNP(t *testing.T) {
 	f.Close()
 	hist := "--history=" + f.Name()
 	check([]string{hist}, tui.CtrlN, actNextHistory)
-	check([]string{hist}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist}, tui.CtrlP, actPrevHistory)
 
 	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
-	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, actPrevHistory)
 
 	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlN, actNextHistory)
 	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)

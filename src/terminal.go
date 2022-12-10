@@ -315,7 +315,7 @@ const (
 	actPreviewPageDown
 	actPreviewHalfPageUp
 	actPreviewHalfPageDown
-	actPreviousHistory
+	actPrevHistory
 	actNextHistory
 	actExecute
 	actExecuteSilent
@@ -2859,7 +2859,7 @@ func (t *Terminal) Loop() {
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++
-			case actPreviousHistory:
+			case actPrevHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
 					t.input = trimQuery(t.history.previous())
