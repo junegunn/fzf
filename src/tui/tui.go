@@ -476,13 +476,9 @@ func EmptyTheme() *ColorTheme {
 	return &ColorTheme{
 		Colored:      true,
 		Input:        ColorAttr{colUndefined, AttrUndefined},
-		Disabled:     ColorAttr{colUndefined, AttrUndefined},
 		Fg:           ColorAttr{colUndefined, AttrUndefined},
 		Bg:           ColorAttr{colUndefined, AttrUndefined},
-		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
 		DarkBg:       ColorAttr{colUndefined, AttrUndefined},
-		Gutter:       ColorAttr{colUndefined, AttrUndefined},
 		Prompt:       ColorAttr{colUndefined, AttrUndefined},
 		Match:        ColorAttr{colUndefined, AttrUndefined},
 		Current:      ColorAttr{colUndefined, AttrUndefined},
@@ -495,6 +491,10 @@ func EmptyTheme() *ColorTheme {
 		Separator:    ColorAttr{colUndefined, AttrUndefined},
 		Border:       ColorAttr{colUndefined, AttrUndefined},
 		BorderLabel:  ColorAttr{colUndefined, AttrUndefined},
+		Disabled:     ColorAttr{colUndefined, AttrUndefined},
+		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
+		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
+		Gutter:       ColorAttr{colUndefined, AttrUndefined},
 		PreviewLabel: ColorAttr{colUndefined, AttrUndefined},
 	}
 }
@@ -503,13 +503,9 @@ func NoColorTheme() *ColorTheme {
 	return &ColorTheme{
 		Colored:      false,
 		Input:        ColorAttr{colDefault, AttrRegular},
-		Disabled:     ColorAttr{colDefault, AttrRegular},
 		Fg:           ColorAttr{colDefault, AttrRegular},
 		Bg:           ColorAttr{colDefault, AttrRegular},
-		PreviewFg:    ColorAttr{colDefault, AttrRegular},
-		PreviewBg:    ColorAttr{colDefault, AttrRegular},
 		DarkBg:       ColorAttr{colDefault, AttrRegular},
-		Gutter:       ColorAttr{colDefault, AttrRegular},
 		Prompt:       ColorAttr{colDefault, AttrRegular},
 		Match:        ColorAttr{colDefault, Underline},
 		Current:      ColorAttr{colDefault, Reverse},
@@ -522,6 +518,10 @@ func NoColorTheme() *ColorTheme {
 		Separator:    ColorAttr{colDefault, AttrRegular},
 		Border:       ColorAttr{colDefault, AttrRegular},
 		BorderLabel:  ColorAttr{colDefault, AttrRegular},
+		Disabled:     ColorAttr{colDefault, AttrRegular},
+		PreviewFg:    ColorAttr{colDefault, AttrRegular},
+		PreviewBg:    ColorAttr{colDefault, AttrRegular},
+		Gutter:       ColorAttr{colDefault, AttrRegular},
 		PreviewLabel: ColorAttr{colDefault, AttrRegular},
 	}
 }
@@ -550,6 +550,11 @@ func init() {
 		Separator:    ColorAttr{colBlack, AttrUndefined},
 		Border:       ColorAttr{colBlack, AttrUndefined},
 		BorderLabel:  ColorAttr{colWhite, AttrUndefined},
+		Disabled:     ColorAttr{colUndefined, AttrUndefined},
+		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
+		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
+		Gutter:       ColorAttr{colUndefined, AttrUndefined},
+		PreviewLabel: ColorAttr{colUndefined, AttrUndefined},
 	}
 	Dark256 = &ColorTheme{
 		Colored:      true,
@@ -569,6 +574,11 @@ func init() {
 		Separator:    ColorAttr{59, AttrUndefined},
 		Border:       ColorAttr{59, AttrUndefined},
 		BorderLabel:  ColorAttr{145, AttrUndefined},
+		Disabled:     ColorAttr{colUndefined, AttrUndefined},
+		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
+		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
+		Gutter:       ColorAttr{colUndefined, AttrUndefined},
+		PreviewLabel: ColorAttr{colUndefined, AttrUndefined},
 	}
 	Light256 = &ColorTheme{
 		Colored:      true,
@@ -588,6 +598,11 @@ func init() {
 		Separator:    ColorAttr{145, AttrUndefined},
 		Border:       ColorAttr{145, AttrUndefined},
 		BorderLabel:  ColorAttr{59, AttrUndefined},
+		Disabled:     ColorAttr{colUndefined, AttrUndefined},
+		PreviewFg:    ColorAttr{colUndefined, AttrUndefined},
+		PreviewBg:    ColorAttr{colUndefined, AttrUndefined},
+		Gutter:       ColorAttr{colUndefined, AttrUndefined},
+		PreviewLabel: ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
