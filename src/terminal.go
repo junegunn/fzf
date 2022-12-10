@@ -316,7 +316,9 @@ const (
 	actPreviewHalfPageUp
 	actPreviewHalfPageDown
 	actPrevHistory
+	actPrevSelected
 	actNextHistory
+	actNextSelected
 	actExecute
 	actExecuteSilent
 	actExecuteMulti // Deprecated
@@ -3014,6 +3016,22 @@ func (t *Terminal) Loop() {
 					// Adjust scroll offset
 					if t.hasPreviewWindow() && currentPreviewOpts.scroll != t.previewOpts.scroll {
 						scrollPreviewTo(t.evaluateScrollOffset())
+					}
+				}
+			case actNextSelected, actPrevSelected:
+				if len(t.selected) > 0 {
+					total := t.merger.Length()
+					for i := 1; i < total; i++ {
+						y := (t.cy + i) % total
+						if t.layout == layoutDefault && a.t == actNextSelected ||
+							t.layout != layoutDefault && a.t == actPrevSelected {
+							y = (t.cy - i + total) % total
+						}
+						if _, found := t.selected[t.merger.Get(y).item.Index()]; found {
+							t.vset(y)
+							req(reqList)
+							break
+						}
 					}
 				}
 			}

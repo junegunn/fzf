@@ -1,8 +1,18 @@
 CHANGELOG
 =========
 
-0.35.2
+0.36.0
 ------
+- Added `next-selected` and `prev-selected` actions to move between selected
+  items
+  ```sh
+  # `next-selected` will move the pointer to the next selected item below the current line
+  # `prev-selected` will move the pointer to the previous selected item above the current line
+  seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected
+
+  # Both actions respect --layout option
+  seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
+  ```
 - `double-click` will behave the same as `enter` unless otherwise specified,
   so you don't have to repeat the same action twice in `--bind` in most cases.
   ```sh

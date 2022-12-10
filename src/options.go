@@ -1064,6 +1064,10 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 				appendAction(actPrevHistory)
 			case "next-history":
 				appendAction(actNextHistory)
+			case "prev-selected":
+				appendAction(actPrevSelected)
+			case "next-selected":
+				appendAction(actNextSelected)
 			case "toggle-preview":
 				appendAction(actTogglePreview)
 			case "toggle-preview-wrap":
