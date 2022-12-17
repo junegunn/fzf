@@ -3,6 +3,14 @@ CHANGELOG
 
 0.36.0
 ------
+- Added `--listen=HTTP_PORT` option to receive actions from external processes
+  ```sh
+  # Start HTTP server on port 6266
+  fzf --listen 6266
+
+  # Send actions to the server
+  curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+  ```
 - Added `next-selected` and `prev-selected` actions to move between selected
   items
   ```sh

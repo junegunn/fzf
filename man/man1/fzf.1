@@ -721,6 +721,19 @@ ncurses finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
+.B "--listen=HTTP_PORT"
+Start HTTP server on the given port to receive actions via POST requests.
+
+e.g.
+     \fB# Start HTTP server on port 6266
+     fzf --listen 6266
+
+     # Send action to the server
+     curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+     \fR
+
+The port number is exported as \fB$FZF_LISTEN_PORT\fR on the child processes.
+.TP
 .B "--version"
 Display version information and exit
 
