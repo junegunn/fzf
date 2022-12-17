@@ -15,7 +15,7 @@ Advanced fzf examples
   * [Toggling between data sources](#toggling-between-data-sources)
 * [Ripgrep integration](#ripgrep-integration)
   * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
-  * [Using fzf as interative Ripgrep launcher](#using-fzf-as-interative-ripgrep-launcher)
+  * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
   * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
   * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
 * [Log tailing](#log-tailing)
@@ -310,7 +310,7 @@ I know it's a lot to digest, let's try to break down the code.
 - Once we selected a line, we open the file with `vim` (`vim
   "${selected[0]}"`) and move the cursor to the line (`+${selected[1]}`).
 
-### Using fzf as interative Ripgrep launcher
+### Using fzf as interactive Ripgrep launcher
 
 We have learned that we can bind `reload` action to a key (e.g.
 `--bind=ctrl-r:execute(ps -ef)`). In the next example, we are going to **bind
