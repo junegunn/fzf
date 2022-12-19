@@ -266,6 +266,7 @@ const (
 	actBackwardWord
 	actCancel
 	actChangePrompt
+	actChangeQuery
 	actClearScreen
 	actClearQuery
 	actClearSelection
@@ -2647,6 +2648,9 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actChangeQuery:
+				t.input = []rune(a.a)
+				t.cx = len(t.input)
 			case actChangePrompt:
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)

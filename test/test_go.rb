@@ -1764,6 +1764,14 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '>', lines.last }
   end
 
+  def test_change_query
+    tmux.send_keys %(: | #{FZF} --query foo --bind space:change-query:foobar), :Enter
+    tmux.until { |lines| assert_equal 0, lines.item_count }
+    tmux.until { |lines| assert_equal '> foo', lines.last }
+    tmux.send_keys :Space, 'baz'
+    tmux.until { |lines| assert_equal '> foobarbaz', lines.last }
+  end
+
   def test_clear_selection
     tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
