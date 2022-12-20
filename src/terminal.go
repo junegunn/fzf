@@ -3070,7 +3070,12 @@ func (t *Terminal) Loop() {
 			return true
 		}
 
-		if t.jumping == jumpDisabled {
+		if t.jumping == jumpDisabled || len(actions) > 0 {
+			// Break out of jump mode if any action is submitted to the server
+			if t.jumping != jumpDisabled {
+				t.jumping = jumpDisabled
+				req(reqList)
+			}
 			if len(actions) == 0 {
 				actions = t.keymap[event.Comparable()]
 			}
