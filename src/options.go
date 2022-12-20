@@ -1131,7 +1131,7 @@ func parseKeymap(keymap map[tui.Event][]*action, str string, exit func(string)) 
 
 func isExecuteAction(str string) actionType {
 	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
-	if matches == nil || len(matches) != 1 {
+	if matches == nil || len(matches) != 1 || len(matches[0][0]) != len(str)+1 {
 		return actIgnore
 	}
 	prefix := matches[0][1]

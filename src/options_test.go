@@ -489,3 +489,13 @@ func TestParseSingleActionList(t *testing.T) {
 		t.Errorf("Invalid action parsed: %v", actions[3])
 	}
 }
+
+func TestParseSingleActionListError(t *testing.T) {
+	err := ""
+	parseSingleActionList("change-query(foobar)baz", func(e string) {
+		err = e
+	})
+	if len(err) == 0 {
+		t.Errorf("Failed to detect error")
+	}
+}
