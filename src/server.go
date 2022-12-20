@@ -97,7 +97,7 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 	}
 
 	errorMessage := ""
-	actions := parseSingleActionList(strings.TrimSpace(string(body)), func(message string) {
+	actions := parseSingleActionList(strings.Trim(string(body), "\r\n"), func(message string) {
 		errorMessage = message
 	})
 	if len(errorMessage) > 0 {
