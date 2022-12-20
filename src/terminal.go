@@ -3,10 +3,8 @@ package fzf
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
@@ -624,39 +622,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 
 	return &t
-}
-
-func (t *Terminal) startServer() {
-	if t.listenPort == 0 {
-		return
-	}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		response := ""
-		actions := parseSingleActionList(string(body), func(message string) {
-			response = message
-		})
-
-		if len(response) > 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintln(w, response)
-			return
-		}
-		t.serverChan <- actions
-	})
-	go func() {
-		http.ListenAndServe(fmt.Sprintf(":%d", t.listenPort), nil)
-	}()
 }
 
 func borderLines(shape tui.BorderShape) int {
@@ -2535,7 +2500,7 @@ func (t *Terminal) Loop() {
 	looping := true
 	_, startEvent := t.keymap[tui.Start.AsEvent()]
 
-	t.startServer()
+	startHttpServer(t.listenPort, t.serverChan)
 	eventChan := make(chan tui.Event)
 	needBarrier := true
 	barrier := make(chan bool)
