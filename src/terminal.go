@@ -621,6 +621,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
 
+	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
+		errorExit(err.Error())
+	}
+
 	return &t
 }
 
@@ -2500,7 +2504,6 @@ func (t *Terminal) Loop() {
 	looping := true
 	_, startEvent := t.keymap[tui.Start.AsEvent()]
 
-	startHttpServer(t.listenPort, t.serverChan)
 	eventChan := make(chan tui.Event)
 	needBarrier := true
 	barrier := make(chan bool)

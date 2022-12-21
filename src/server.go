@@ -16,14 +16,14 @@ const (
 	httpBadRequest = "HTTP/1.1 400 Bad Request" + crlf
 )
 
-func startHttpServer(port int, channel chan []*action) {
+func startHttpServer(port int, channel chan []*action) error {
 	if port == 0 {
-		return
+		return nil
 	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return
+		return fmt.Errorf("port not available: %d", port)
 	}
 
 	go func() {
@@ -41,6 +41,8 @@ func startHttpServer(port int, channel chan []*action) {
 		}
 		listener.Close()
 	}()
+
+	return nil
 }
 
 // Here we are writing a simplistic HTTP server without using net/http
