@@ -889,19 +889,58 @@ const (
 )
 
 func init() {
-	// Backreferences are not supported.
-	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
 
 func maskActionContents(action string) string {
-	masked := executeRegexp.ReplaceAllStringFunc(action, func(src string) string {
-		prefix := src[:1] + actionNameRegexp.FindString(src[1:])
-		return prefix + "(" + strings.Repeat(" ", len(src)-len(prefix)-2) + ")"
-	})
+	masked := ""
+Loop:
+	for len(action) > 0 {
+		loc := executeRegexp.FindStringIndex(action)
+		if loc == nil {
+			masked += action
+			break
+		}
+		masked += action[:loc[1]]
+		action = action[loc[1]:]
+		if len(action) == 0 {
+			break
+		}
+		cs := string(action[0])
+		ce := ")"
+		switch action[0] {
+		case ':':
+			masked += strings.Repeat(" ", len(action))
+			break Loop
+		case '(':
+			ce = ")"
+		case '{':
+			ce = "}"
+		case '[':
+			ce = "]"
+		case '<':
+			ce = ">"
+		case '~', '!', '@', '#', '$', '%', '^', '&', '*', ';', '/', '|':
+			ce = string(cs)
+		default:
+			continue
+		}
+		cs = regexp.QuoteMeta(cs)
+		ce = regexp.QuoteMeta(ce)
+
+		// @$ or @+
+		loc = regexp.MustCompile(fmt.Sprintf(`^%s.*?(%s[+,]|%s$)`, cs, ce, ce)).FindStringIndex(action)
+		if loc == nil {
+			masked += action
+			break
+		}
+		// Keep + or , at the end
+		masked += strings.Repeat(" ", loc[1]-1) + action[loc[1]-1:loc[1]]
+		action = action[loc[1]:]
+	}
 	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
 	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
 	masked = strings.Replace(masked, "+:", string([]rune{escapedPlus, ':'}), -1)
@@ -1130,14 +1169,13 @@ func parseKeymap(keymap map[tui.Event][]*action, str string, exit func(string)) 
 }
 
 func isExecuteAction(str string) actionType {
-	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
-	if matches == nil || len(matches) != 1 || len(matches[0][0]) != len(str)+1 {
+	masked := maskActionContents(":" + str)[1:]
+	if masked == str {
+		// Not masked
 		return actIgnore
 	}
-	prefix := matches[0][1]
-	if len(prefix) == 0 {
-		prefix = matches[0][2]
-	}
+
+	prefix := actionNameRegexp.FindString(str)
 	switch prefix {
 	case "reload":
 		return actReload
