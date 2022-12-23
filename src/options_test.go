@@ -499,3 +499,12 @@ func TestParseSingleActionListError(t *testing.T) {
 		t.Errorf("Failed to detect error")
 	}
 }
+
+func TestMaskActionContents(t *testing.T) {
+	original := ":execute((f)(o)(o)(b)(a)(r))+change-query@qu@ry@+up,x:reload:hello:world"
+	expected := ":execute                    +change-query       +up,x:reload            "
+	masked := maskActionContents(original)
+	if masked != expected {
+		t.Errorf("Not masked: %s", masked)
+	}
+}

@@ -938,7 +938,11 @@ Loop:
 			break
 		}
 		// Keep + or , at the end
-		masked += strings.Repeat(" ", loc[1]-1) + action[loc[1]-1:loc[1]]
+		lastChar := action[loc[1]-1]
+		if lastChar == '+' || lastChar == ',' {
+			loc[1]--
+		}
+		masked += strings.Repeat(" ", loc[1])
 		action = action[loc[1]:]
 	}
 	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
