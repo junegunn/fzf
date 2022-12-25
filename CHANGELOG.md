@@ -4,20 +4,13 @@ CHANGELOG
 0.36.0
 ------
 - Added `--listen=HTTP_PORT` option to start HTTP server. It allows external
-  processes to send actions to perform via POST method, or retrieve the
-  current state of the finder.
+  processes to send actions to perform via POST method.
   ```sh
   # Start HTTP server on port 6266
   fzf --listen 6266
 
-  # Send action to the server via POST method
-  curl localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
-
-  # Retrieve the current item
-  curl localhost:6266
-
-  # Retrieve the query string
-  curl localhost:6266/query
+  # Send actions to the server
+  curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
   ```
 - Added `next-selected` and `prev-selected` actions to move between selected
   items

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,18 +13,13 @@ import (
 
 const (
 	crlf             = "\r\n"
-	httpPattern      = "^(GET|POST) (/[^ ]*) HTTP"
 	httpOk           = "HTTP/1.1 200 OK" + crlf
 	httpBadRequest   = "HTTP/1.1 400 Bad Request" + crlf
 	httpReadTimeout  = 10 * time.Second
 	maxContentLength = 1024 * 1024
 )
 
-var (
-	httpRegexp *regexp.Regexp
-)
-
-func startHttpServer(port int, requestChan chan []*action, responseChan chan string) error {
+func startHttpServer(port int, channel chan []*action) error {
 	if port == 0 {
 		return nil
 	}
@@ -35,7 +29,6 @@ func startHttpServer(port int, requestChan chan []*action, responseChan chan str
 		return fmt.Errorf("port not available: %d", port)
 	}
 
-	httpRegexp = regexp.MustCompile(httpPattern)
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -46,7 +39,7 @@ func startHttpServer(port int, requestChan chan []*action, responseChan chan str
 					continue
 				}
 			}
-			conn.Write([]byte(handleHttpRequest(conn, requestChan, responseChan)))
+			conn.Write([]byte(handleHttpRequest(conn, channel)))
 			conn.Close()
 		}
 		listener.Close()
@@ -61,14 +54,12 @@ func startHttpServer(port int, requestChan chan []*action, responseChan chan str
 // * No --listen:            2.8MB
 // * --listen with net/http: 5.7MB
 // * --listen w/o net/http:  3.3MB
-func handleHttpRequest(conn net.Conn, requestChan chan []*action, responseChan chan string) string {
+func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 	contentLength := 0
 	body := ""
-	response := func(header string, message string) string {
-		return header + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
-	}
 	bad := func(message string) string {
-		return response(httpBadRequest, strings.TrimSpace(message)+"\n")
+		message += "\n"
+		return httpBadRequest + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
 	}
 	conn.SetReadDeadline(time.Now().Add(httpReadTimeout))
 	scanner := bufio.NewScanner(conn)
@@ -89,13 +80,8 @@ func handleHttpRequest(conn net.Conn, requestChan chan []*action, responseChan c
 		text := scanner.Text()
 		switch section {
 		case 0:
-			httpMatch := httpRegexp.FindStringSubmatch(text)
-			if len(httpMatch) != 3 {
-				return bad("invalid HTTP request: " + text)
-			}
-			if httpMatch[1] == "GET" {
-				requestChan <- []*action{{t: actEvaluate, a: httpMatch[2][1:]}}
-				return response(httpOk, <-responseChan)
+			if !strings.HasPrefix(text, "POST / HTTP") {
+				return bad("invalid request method")
 			}
 			section++
 		case 1:
@@ -134,6 +120,7 @@ func handleHttpRequest(conn net.Conn, requestChan chan []*action, responseChan c
 	if len(actions) == 0 {
 		return bad("no action specified")
 	}
-	requestChan <- actions
+
+	channel <- actions
 	return httpOk
 }

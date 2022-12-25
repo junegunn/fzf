@@ -113,7 +113,7 @@ const usage = `usage: fzf [options]
     --read0                Read input delimited by ASCII NUL characters
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
-    --listen=HTTP_PORT     Start HTTP server to receive actions
+    --listen=HTTP_PORT     Start HTTP server to receive actions (POST /)
     --version              Display version information and exit
 
   Environment variables
