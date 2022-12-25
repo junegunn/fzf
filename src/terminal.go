@@ -201,7 +201,8 @@ type Terminal struct {
 	sigstop            bool
 	startChan          chan fitpad
 	killChan           chan int
-	serverChan         chan []*action
+	serverRequestChan  chan []*action
+	serverResponseChan chan string
 	slab               *util.Slab
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
@@ -276,6 +277,7 @@ const (
 	actDeleteChar
 	actDeleteCharEOF
 	actEndOfLine
+	actEvaluate
 	actForwardChar
 	actForwardWord
 	actKillLine
@@ -599,7 +601,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
-		serverChan:         make(chan []*action),
+		serverRequestChan:  make(chan []*action),
+		serverResponseChan: make(chan string),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
@@ -621,7 +624,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
 
-	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
+	if err := startHttpServer(t.listenPort, t.serverRequestChan, t.serverResponseChan); err != nil {
 		errorExit(err.Error())
 	}
 
@@ -2531,7 +2534,7 @@ func (t *Terminal) Loop() {
 			select {
 			case event = <-eventChan:
 				needBarrier = true
-			case actions = <-t.serverChan:
+			case actions = <-t.serverRequestChan:
 				event = tui.Invalid.AsEvent()
 				needBarrier = false
 			}
@@ -2614,6 +2617,15 @@ func (t *Terminal) Loop() {
 				t.executeCommand(a.a, false, a.t == actExecuteSilent)
 			case actExecuteMulti:
 				t.executeCommand(a.a, true, false)
+			case actEvaluate:
+				response := ""
+				switch a.a {
+				case "", "current":
+					response = t.currentItem().AsString(t.ansi)
+				case "query":
+					response = string(t.input)
+				}
+				t.serverResponseChan <- response
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
