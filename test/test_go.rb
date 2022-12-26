@@ -1605,6 +1605,21 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_pos
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:pos(3),b:pos(-3),c:pos(1),d:pos(-1),e:pos(0)' --preview 'echo {}/{}'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], ' 3/3' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines[1], ' 998/998' }
+    tmux.send_keys :c
+    tmux.until { |lines| assert_includes lines[1], ' 1/1' }
+    tmux.send_keys :d
+    tmux.until { |lines| assert_includes lines[1], ' 1000/1000' }
+    tmux.send_keys :e
+    tmux.until { |lines| assert_includes lines[1], ' 1/1' }
+  end
+
   def test_accept_non_empty
     tmux.send_keys %(seq 1000 | #{fzf('--print-query --bind enter:accept-non-empty')}), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }

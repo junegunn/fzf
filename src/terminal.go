@@ -297,6 +297,7 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actPosition
 	actHalfPageUp
 	actHalfPageDown
 	actJump
@@ -2837,6 +2838,16 @@ func (t *Terminal) Loop() {
 			case actLast:
 				t.vset(t.merger.Length() - 1)
 				req(reqList)
+			case actPosition:
+				if n, e := strconv.Atoi(a.a); e == nil {
+					if n > 0 {
+						n--
+					} else if n < 0 {
+						n += t.merger.Length()
+					}
+					t.vset(n)
+					req(reqList)
+				}
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {

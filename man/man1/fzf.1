@@ -979,7 +979,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBend-of-line\fR                \fIctrl-e  end\fR
     \fBexecute(...)\fR               (see below for the details)
     \fBexecute-silent(...)\fR        (see below for the details)
-    \fBfirst\fR                      (move to the first match)
+    \fBfirst\fR                      (move to the first match; same as \fBpos(1)\fR)
     \fBforward-char\fR               \fIctrl-f  right\fR
     \fBforward-word\fR               \fIalt-f   shift-right\fR
     \fBignore\fR
@@ -987,13 +987,14 @@ A key or an event can be bound to one or more of the following actions.
     \fBjump-accept\fR                (jump and accept)
     \fBkill-line\fR
     \fBkill-word\fR                  \fIalt-d\fR
-    \fBlast\fR                       (move to the last match)
+    \fBlast\fR                       (move to the last match; same as \fBpos(-1)\fR)
     \fBnext-history\fR               (\fIctrl-n\fR on \fB--history\fR)
     \fBnext-selected\fR              (move to the next selected item)
     \fBpage-down\fR                  \fIpgdn\fR
     \fBpage-up\fR                    \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
+    \fBpos(...)\fR                   (move cursor to the numeric position; negative number to count from the end)
     \fBprev-history\fR               (\fIctrl-p\fR on \fB--history\fR)
     \fBprev-selected\fR              (move to the previous selected item)
     \fBpreview(...)\fR               (see below for the details)

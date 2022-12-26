@@ -890,7 +890,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind|pos)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1197,6 +1197,8 @@ func isExecuteAction(str string) actionType {
 		return actChangePrompt
 	case "change-query":
 		return actChangeQuery
+	case "pos":
+		return actPosition
 	case "execute":
 		return actExecute
 	case "execute-silent":

@@ -12,6 +12,15 @@ CHANGELOG
   # Send actions to the server
   curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
   ```
+- Added `pos(...)` action to move the cursor to the numeric position
+    - `first` and `last` are equivalent to `pos(1)` and `pos(-1)` respectively
+  ```sh
+  # Put the cursor on the 10th item
+  seq 100 | fzf --sync --bind 'start:pos(10)'
+
+  # Put the cursor on the 10th to last item
+  seq 100 | fzf --sync --bind 'start:pos(-10)'
+  ```
 - Added `next-selected` and `prev-selected` actions to move between selected
   items
   ```sh
