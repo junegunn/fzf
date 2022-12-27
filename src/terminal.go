@@ -2267,9 +2267,6 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
-						if t.listenPort > 0 {
-							env = append(env, fmt.Sprintf("FZF_LISTEN_PORT=%d", t.listenPort))
-						}
 						cmd.Env = env
 					}
 
