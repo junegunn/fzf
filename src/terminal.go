@@ -167,6 +167,7 @@ type Terminal struct {
 	padding            [4]sizeSpec
 	strong             tui.Attr
 	unicode            bool
+	listenPort         int
 	borderShape        tui.BorderShape
 	cleanExit          bool
 	paused             bool
@@ -200,6 +201,7 @@ type Terminal struct {
 	sigstop            bool
 	startChan          chan fitpad
 	killChan           chan int
+	serverChan         chan []*action
 	slab               *util.Slab
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
@@ -295,6 +297,7 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actPosition
 	actHalfPageUp
 	actHalfPageDown
 	actJump
@@ -481,7 +484,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	var previewBox *util.EventBox
 	showPreviewWindow := len(opts.Preview.command) > 0 && !opts.Preview.hidden
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) {
+	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort > 0 {
 		previewBox = util.NewEventBox()
 	}
 	strongAttr := tui.Bold
@@ -556,6 +560,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		margin:             opts.Margin,
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
+		listenPort:         opts.ListenPort,
 		borderShape:        opts.BorderShape,
 		borderLabel:        nil,
 		borderLabelOpts:    opts.BorderLabel,
@@ -595,6 +600,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
+		serverChan:         make(chan []*action),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
@@ -614,6 +620,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			bar = "-"
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
+	}
+
+	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
+		errorExit(err.Error())
 	}
 
 	return &t
@@ -2256,6 +2266,9 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
+						if t.listenPort > 0 {
+							env = append(env, fmt.Sprintf("FZF_LISTEN_PORT=%d", t.listenPort))
+						}
 						cmd.Env = env
 					}
 
@@ -2492,6 +2505,15 @@ func (t *Terminal) Loop() {
 	looping := true
 	_, startEvent := t.keymap[tui.Start.AsEvent()]
 
+	eventChan := make(chan tui.Event)
+	needBarrier := true
+	barrier := make(chan bool)
+	go func() {
+		for {
+			<-barrier
+			eventChan <- t.tui.GetChar()
+		}
+	}()
 	for looping {
 		var newCommand *string
 		changed := false
@@ -2499,11 +2521,21 @@ func (t *Terminal) Loop() {
 		queryChanged := false
 
 		var event tui.Event
+		actions := []*action{}
 		if startEvent {
 			event = tui.Start.AsEvent()
 			startEvent = false
 		} else {
-			event = t.tui.GetChar()
+			if needBarrier {
+				barrier <- true
+			}
+			select {
+			case event = <-eventChan:
+				needBarrier = true
+			case actions = <-t.serverChan:
+				event = tui.Invalid.AsEvent()
+				needBarrier = false
+			}
 		}
 
 		t.mutex.Lock()
@@ -2806,6 +2838,16 @@ func (t *Terminal) Loop() {
 			case actLast:
 				t.vset(t.merger.Length() - 1)
 				req(reqList)
+			case actPosition:
+				if n, e := strconv.Atoi(a.a); e == nil {
+					if n > 0 {
+						n--
+					} else if n < 0 {
+						n += t.merger.Length()
+					}
+					t.vset(n)
+					req(reqList)
+				}
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {
@@ -3042,8 +3084,15 @@ func (t *Terminal) Loop() {
 			return true
 		}
 
-		if t.jumping == jumpDisabled {
-			actions := t.keymap[event.Comparable()]
+		if t.jumping == jumpDisabled || len(actions) > 0 {
+			// Break out of jump mode if any action is submitted to the server
+			if t.jumping != jumpDisabled {
+				t.jumping = jumpDisabled
+				req(reqList)
+			}
+			if len(actions) == 0 {
+				actions = t.keymap[event.Comparable()]
+			}
 			if len(actions) == 0 && event.Type == tui.Rune {
 				doAction(&action{t: actRune})
 			} else if !doActions(actions) {

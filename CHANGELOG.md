@@ -3,6 +3,24 @@ CHANGELOG
 
 0.36.0
 ------
+- Added `--listen=HTTP_PORT` option to start HTTP server. It allows external
+  processes to send actions to perform via POST method.
+  ```sh
+  # Start HTTP server on port 6266
+  fzf --listen 6266
+
+  # Send actions to the server
+  curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+  ```
+- Added `pos(...)` action to move the cursor to the numeric position
+    - `first` and `last` are equivalent to `pos(1)` and `pos(-1)` respectively
+  ```sh
+  # Put the cursor on the 10th item
+  seq 100 | fzf --sync --bind 'start:pos(10)'
+
+  # Put the cursor on the 10th to last item
+  seq 100 | fzf --sync --bind 'start:pos(-10)'
+  ```
 - Added `next-selected` and `prev-selected` actions to move between selected
   items
   ```sh

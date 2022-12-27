@@ -721,6 +721,20 @@ ncurses finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
+.B "--listen=HTTP_PORT"
+Start HTTP server on the given port. It allows external processes to send
+actions to perform via POST method.
+
+e.g.
+     \fB# Start HTTP server on port 6266
+     fzf --listen 6266
+
+     # Send action to the server
+     curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+     \fR
+
+The port number is exported as \fB$FZF_LISTEN_PORT\fR on the child processes.
+.TP
 .B "--version"
 Display version information and exit
 
@@ -965,7 +979,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBend-of-line\fR                \fIctrl-e  end\fR
     \fBexecute(...)\fR               (see below for the details)
     \fBexecute-silent(...)\fR        (see below for the details)
-    \fBfirst\fR                      (move to the first match)
+    \fBfirst\fR                      (move to the first match; same as \fBpos(1)\fR)
     \fBforward-char\fR               \fIctrl-f  right\fR
     \fBforward-word\fR               \fIalt-f   shift-right\fR
     \fBignore\fR
@@ -973,13 +987,14 @@ A key or an event can be bound to one or more of the following actions.
     \fBjump-accept\fR                (jump and accept)
     \fBkill-line\fR
     \fBkill-word\fR                  \fIalt-d\fR
-    \fBlast\fR                       (move to the last match)
+    \fBlast\fR                       (move to the last match; same as \fBpos(-1)\fR)
     \fBnext-history\fR               (\fIctrl-n\fR on \fB--history\fR)
     \fBnext-selected\fR              (move to the next selected item)
     \fBpage-down\fR                  \fIpgdn\fR
     \fBpage-up\fR                    \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
+    \fBpos(...)\fR                   (move cursor to the numeric position; negative number to count from the end)
     \fBprev-history\fR               (\fIctrl-p\fR on \fB--history\fR)
     \fBprev-selected\fR              (move to the previous selected item)
     \fBpreview(...)\fR               (see below for the details)
@@ -1036,6 +1051,8 @@ that case, you can use any of the following alternative notations to avoid
 parse errors.
 
     \fBaction-name[...]\fR
+    \fBaction-name{...}\fR
+    \fBaction-name<...>\fR
     \fBaction-name~...~\fR
     \fBaction-name!...!\fR
     \fBaction-name@...@\fR

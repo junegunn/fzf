@@ -113,6 +113,7 @@ const usage = `usage: fzf [options]
     --read0                Read input delimited by ASCII NUL characters
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
+    --listen=HTTP_PORT     Start HTTP server to receive actions (POST /)
     --version              Display version information and exit
 
   Environment variables
@@ -296,6 +297,7 @@ type Options struct {
 	PreviewLabel labelOpts
 	Unicode      bool
 	Tabstop      int
+	ListenPort   int
 	ClearOnExit  bool
 	Version      bool
 }
@@ -868,8 +870,9 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 }
 
 var (
-	executeRegexp *regexp.Regexp
-	splitRegexp   *regexp.Regexp
+	executeRegexp    *regexp.Regexp
+	splitRegexp      *regexp.Regexp
+	actionNameRegexp *regexp.Regexp
 )
 
 func firstKey(keymap map[tui.Event]string) tui.Event {
@@ -886,50 +889,264 @@ const (
 )
 
 func init() {
-	// Backreferences are not supported.
-	// "~!@#$%^&*;/|".each_char.map { |c| Regexp.escape(c) }.map { |c| "#{c}[^#{c}]*#{c}" }.join('|')
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind):.+|[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind)(\([^)]*\)|\[[^\]]*\]|~[^~]*~|![^!]*!|@[^@]*@|\#[^\#]*\#|\$[^\$]*\$|%[^%]*%|\^[^\^]*\^|&[^&]*&|\*[^\*]*\*|;[^;]*;|/[^/]*/|\|[^\|]*\|)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind|pos)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
+	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
 
-func parseKeymap(keymap map[tui.Event][]*action, str string) {
-	masked := executeRegexp.ReplaceAllStringFunc(str, func(src string) string {
-		symbol := ":"
-		if strings.HasPrefix(src, "+") {
-			symbol = "+"
+func maskActionContents(action string) string {
+	masked := ""
+Loop:
+	for len(action) > 0 {
+		loc := executeRegexp.FindStringIndex(action)
+		if loc == nil {
+			masked += action
+			break
 		}
-		prefix := symbol + "execute"
-		if strings.HasPrefix(src[1:], "reload") {
-			prefix = symbol + "reload"
-		} else if strings.HasPrefix(src[1:], "change-preview-window") {
-			prefix = symbol + "change-preview-window"
-		} else if strings.HasPrefix(src[1:], "change-preview") {
-			prefix = symbol + "change-preview"
-		} else if strings.HasPrefix(src[1:], "preview") {
-			prefix = symbol + "preview"
-		} else if strings.HasPrefix(src[1:], "unbind") {
-			prefix = symbol + "unbind"
-		} else if strings.HasPrefix(src[1:], "rebind") {
-			prefix = symbol + "rebind"
-		} else if strings.HasPrefix(src[1:], "change-query") {
-			prefix = symbol + "change-query"
-		} else if strings.HasPrefix(src[1:], "change-prompt") {
-			prefix = symbol + "change-prompt"
-		} else if src[len(prefix)] == '-' {
-			c := src[len(prefix)+1]
-			if c == 's' || c == 'S' {
-				prefix += "-silent"
-			} else {
-				prefix += "-multi"
-			}
+		masked += action[:loc[1]]
+		action = action[loc[1]:]
+		if len(action) == 0 {
+			break
 		}
-		return prefix + "(" + strings.Repeat(" ", len(src)-len(prefix)-2) + ")"
-	})
+		cs := string(action[0])
+		ce := ")"
+		switch action[0] {
+		case ':':
+			masked += strings.Repeat(" ", len(action))
+			break Loop
+		case '(':
+			ce = ")"
+		case '{':
+			ce = "}"
+		case '[':
+			ce = "]"
+		case '<':
+			ce = ">"
+		case '~', '!', '@', '#', '$', '%', '^', '&', '*', ';', '/', '|':
+			ce = string(cs)
+		default:
+			continue
+		}
+		cs = regexp.QuoteMeta(cs)
+		ce = regexp.QuoteMeta(ce)
+
+		// @$ or @+
+		loc = regexp.MustCompile(fmt.Sprintf(`^%s.*?(%s[+,]|%s$)`, cs, ce, ce)).FindStringIndex(action)
+		if loc == nil {
+			masked += action
+			break
+		}
+		// Keep + or , at the end
+		lastChar := action[loc[1]-1]
+		if lastChar == '+' || lastChar == ',' {
+			loc[1]--
+		}
+		masked += strings.Repeat(" ", loc[1])
+		action = action[loc[1]:]
+	}
 	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
 	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
 	masked = strings.Replace(masked, "+:", string([]rune{escapedPlus, ':'}), -1)
+	return masked
+}
 
+func parseSingleActionList(str string, exit func(string)) []*action {
+	// We prepend a colon to satisfy executeRegexp and remove it later
+	masked := maskActionContents(":" + str)[1:]
+	return parseActionList(masked, str, []*action{}, false, exit)
+}
+
+func parseActionList(masked string, original string, prevActions []*action, putAllowed bool, exit func(string)) []*action {
+	maskedStrings := strings.Split(masked, "+")
+	originalStrings := make([]string, len(maskedStrings))
+	idx := 0
+	for i, maskedString := range maskedStrings {
+		originalStrings[i] = original[idx : idx+len(maskedString)]
+		idx += len(maskedString) + 1
+	}
+	actions := make([]*action, 0, len(maskedStrings))
+	appendAction := func(types ...actionType) {
+		actions = append(actions, toActions(types...)...)
+	}
+	prevSpec := ""
+	for specIndex, spec := range originalStrings {
+		spec = prevSpec + spec
+		specLower := strings.ToLower(spec)
+		switch specLower {
+		case "ignore":
+			appendAction(actIgnore)
+		case "beginning-of-line":
+			appendAction(actBeginningOfLine)
+		case "abort":
+			appendAction(actAbort)
+		case "accept":
+			appendAction(actAccept)
+		case "accept-non-empty":
+			appendAction(actAcceptNonEmpty)
+		case "print-query":
+			appendAction(actPrintQuery)
+		case "refresh-preview":
+			appendAction(actRefreshPreview)
+		case "replace-query":
+			appendAction(actReplaceQuery)
+		case "backward-char":
+			appendAction(actBackwardChar)
+		case "backward-delete-char":
+			appendAction(actBackwardDeleteChar)
+		case "backward-delete-char/eof":
+			appendAction(actBackwardDeleteCharEOF)
+		case "backward-word":
+			appendAction(actBackwardWord)
+		case "clear-screen":
+			appendAction(actClearScreen)
+		case "delete-char":
+			appendAction(actDeleteChar)
+		case "delete-char/eof":
+			appendAction(actDeleteCharEOF)
+		case "deselect":
+			appendAction(actDeselect)
+		case "end-of-line":
+			appendAction(actEndOfLine)
+		case "cancel":
+			appendAction(actCancel)
+		case "clear-query":
+			appendAction(actClearQuery)
+		case "clear-selection":
+			appendAction(actClearSelection)
+		case "forward-char":
+			appendAction(actForwardChar)
+		case "forward-word":
+			appendAction(actForwardWord)
+		case "jump":
+			appendAction(actJump)
+		case "jump-accept":
+			appendAction(actJumpAccept)
+		case "kill-line":
+			appendAction(actKillLine)
+		case "kill-word":
+			appendAction(actKillWord)
+		case "unix-line-discard", "line-discard":
+			appendAction(actUnixLineDiscard)
+		case "unix-word-rubout", "word-rubout":
+			appendAction(actUnixWordRubout)
+		case "yank":
+			appendAction(actYank)
+		case "backward-kill-word":
+			appendAction(actBackwardKillWord)
+		case "toggle-down":
+			appendAction(actToggle, actDown)
+		case "toggle-up":
+			appendAction(actToggle, actUp)
+		case "toggle-in":
+			appendAction(actToggleIn)
+		case "toggle-out":
+			appendAction(actToggleOut)
+		case "toggle-all":
+			appendAction(actToggleAll)
+		case "toggle-search":
+			appendAction(actToggleSearch)
+		case "select":
+			appendAction(actSelect)
+		case "select-all":
+			appendAction(actSelectAll)
+		case "deselect-all":
+			appendAction(actDeselectAll)
+		case "close":
+			appendAction(actClose)
+		case "toggle":
+			appendAction(actToggle)
+		case "down":
+			appendAction(actDown)
+		case "up":
+			appendAction(actUp)
+		case "first", "top":
+			appendAction(actFirst)
+		case "last":
+			appendAction(actLast)
+		case "page-up":
+			appendAction(actPageUp)
+		case "page-down":
+			appendAction(actPageDown)
+		case "half-page-up":
+			appendAction(actHalfPageUp)
+		case "half-page-down":
+			appendAction(actHalfPageDown)
+		case "prev-history", "previous-history":
+			appendAction(actPrevHistory)
+		case "next-history":
+			appendAction(actNextHistory)
+		case "prev-selected":
+			appendAction(actPrevSelected)
+		case "next-selected":
+			appendAction(actNextSelected)
+		case "toggle-preview":
+			appendAction(actTogglePreview)
+		case "toggle-preview-wrap":
+			appendAction(actTogglePreviewWrap)
+		case "toggle-sort":
+			appendAction(actToggleSort)
+		case "preview-top":
+			appendAction(actPreviewTop)
+		case "preview-bottom":
+			appendAction(actPreviewBottom)
+		case "preview-up":
+			appendAction(actPreviewUp)
+		case "preview-down":
+			appendAction(actPreviewDown)
+		case "preview-page-up":
+			appendAction(actPreviewPageUp)
+		case "preview-page-down":
+			appendAction(actPreviewPageDown)
+		case "preview-half-page-up":
+			appendAction(actPreviewHalfPageUp)
+		case "preview-half-page-down":
+			appendAction(actPreviewHalfPageDown)
+		case "enable-search":
+			appendAction(actEnableSearch)
+		case "disable-search":
+			appendAction(actDisableSearch)
+		case "put":
+			if putAllowed {
+				appendAction(actRune)
+			} else {
+				exit("unable to put non-printable character")
+			}
+		default:
+			t := isExecuteAction(specLower)
+			if t == actIgnore {
+				if specIndex == 0 && specLower == "" {
+					actions = append(prevActions, actions...)
+				} else {
+					exit("unknown action: " + spec)
+				}
+			} else {
+				offset := len(actionNameRegexp.FindString(spec))
+				var actionArg string
+				if spec[offset] == ':' {
+					if specIndex == len(originalStrings)-1 {
+						actionArg = spec[offset+1:]
+						actions = append(actions, &action{t: t, a: actionArg})
+					} else {
+						prevSpec = spec + "+"
+						continue
+					}
+				} else {
+					actionArg = spec[offset+1 : len(spec)-1]
+					actions = append(actions, &action{t: t, a: actionArg})
+				}
+				if t == actUnbind || t == actRebind {
+					parseKeyChords(actionArg, spec[0:offset]+" target required")
+				}
+			}
+		}
+		prevSpec = ""
+	}
+	return actions
+}
+
+func parseKeymap(keymap map[tui.Event][]*action, str string, exit func(string)) {
+	masked := maskActionContents(str)
 	idx := 0
 	for _, pairStr := range strings.Split(masked, ",") {
 		origPairStr := str[idx : idx+len(pairStr)]
@@ -937,7 +1154,7 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 
 		pair := strings.SplitN(pairStr, ":", 2)
 		if len(pair) < 2 {
-			errorExit("bind action not specified: " + origPairStr)
+			exit("bind action not specified: " + origPairStr)
 		}
 		var key tui.Event
 		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
@@ -950,225 +1167,19 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) {
 			keys := parseKeyChords(pair[0], "key name required")
 			key = firstKey(keys)
 		}
-
-		idx2 := len(pair[0]) + 1
-		specs := strings.Split(pair[1], "+")
-		actions := make([]*action, 0, len(specs))
-		appendAction := func(types ...actionType) {
-			actions = append(actions, toActions(types...)...)
-		}
-		prevSpec := ""
-		for specIndex, maskedSpec := range specs {
-			spec := origPairStr[idx2 : idx2+len(maskedSpec)]
-			idx2 += len(maskedSpec) + 1
-			spec = prevSpec + spec
-			specLower := strings.ToLower(spec)
-			switch specLower {
-			case "ignore":
-				appendAction(actIgnore)
-			case "beginning-of-line":
-				appendAction(actBeginningOfLine)
-			case "abort":
-				appendAction(actAbort)
-			case "accept":
-				appendAction(actAccept)
-			case "accept-non-empty":
-				appendAction(actAcceptNonEmpty)
-			case "print-query":
-				appendAction(actPrintQuery)
-			case "refresh-preview":
-				appendAction(actRefreshPreview)
-			case "replace-query":
-				appendAction(actReplaceQuery)
-			case "backward-char":
-				appendAction(actBackwardChar)
-			case "backward-delete-char":
-				appendAction(actBackwardDeleteChar)
-			case "backward-delete-char/eof":
-				appendAction(actBackwardDeleteCharEOF)
-			case "backward-word":
-				appendAction(actBackwardWord)
-			case "clear-screen":
-				appendAction(actClearScreen)
-			case "delete-char":
-				appendAction(actDeleteChar)
-			case "delete-char/eof":
-				appendAction(actDeleteCharEOF)
-			case "deselect":
-				appendAction(actDeselect)
-			case "end-of-line":
-				appendAction(actEndOfLine)
-			case "cancel":
-				appendAction(actCancel)
-			case "clear-query":
-				appendAction(actClearQuery)
-			case "clear-selection":
-				appendAction(actClearSelection)
-			case "forward-char":
-				appendAction(actForwardChar)
-			case "forward-word":
-				appendAction(actForwardWord)
-			case "jump":
-				appendAction(actJump)
-			case "jump-accept":
-				appendAction(actJumpAccept)
-			case "kill-line":
-				appendAction(actKillLine)
-			case "kill-word":
-				appendAction(actKillWord)
-			case "unix-line-discard", "line-discard":
-				appendAction(actUnixLineDiscard)
-			case "unix-word-rubout", "word-rubout":
-				appendAction(actUnixWordRubout)
-			case "yank":
-				appendAction(actYank)
-			case "backward-kill-word":
-				appendAction(actBackwardKillWord)
-			case "toggle-down":
-				appendAction(actToggle, actDown)
-			case "toggle-up":
-				appendAction(actToggle, actUp)
-			case "toggle-in":
-				appendAction(actToggleIn)
-			case "toggle-out":
-				appendAction(actToggleOut)
-			case "toggle-all":
-				appendAction(actToggleAll)
-			case "toggle-search":
-				appendAction(actToggleSearch)
-			case "select":
-				appendAction(actSelect)
-			case "select-all":
-				appendAction(actSelectAll)
-			case "deselect-all":
-				appendAction(actDeselectAll)
-			case "close":
-				appendAction(actClose)
-			case "toggle":
-				appendAction(actToggle)
-			case "down":
-				appendAction(actDown)
-			case "up":
-				appendAction(actUp)
-			case "first", "top":
-				appendAction(actFirst)
-			case "last":
-				appendAction(actLast)
-			case "page-up":
-				appendAction(actPageUp)
-			case "page-down":
-				appendAction(actPageDown)
-			case "half-page-up":
-				appendAction(actHalfPageUp)
-			case "half-page-down":
-				appendAction(actHalfPageDown)
-			case "prev-history", "previous-history":
-				appendAction(actPrevHistory)
-			case "next-history":
-				appendAction(actNextHistory)
-			case "prev-selected":
-				appendAction(actPrevSelected)
-			case "next-selected":
-				appendAction(actNextSelected)
-			case "toggle-preview":
-				appendAction(actTogglePreview)
-			case "toggle-preview-wrap":
-				appendAction(actTogglePreviewWrap)
-			case "toggle-sort":
-				appendAction(actToggleSort)
-			case "preview-top":
-				appendAction(actPreviewTop)
-			case "preview-bottom":
-				appendAction(actPreviewBottom)
-			case "preview-up":
-				appendAction(actPreviewUp)
-			case "preview-down":
-				appendAction(actPreviewDown)
-			case "preview-page-up":
-				appendAction(actPreviewPageUp)
-			case "preview-page-down":
-				appendAction(actPreviewPageDown)
-			case "preview-half-page-up":
-				appendAction(actPreviewHalfPageUp)
-			case "preview-half-page-down":
-				appendAction(actPreviewHalfPageDown)
-			case "enable-search":
-				appendAction(actEnableSearch)
-			case "disable-search":
-				appendAction(actDisableSearch)
-			case "put":
-				if key.Type == tui.Rune && unicode.IsGraphic(key.Char) {
-					appendAction(actRune)
-				} else {
-					errorExit("unable to put non-printable character: " + pair[0])
-				}
-			default:
-				t := isExecuteAction(specLower)
-				if t == actIgnore {
-					if specIndex == 0 && specLower == "" {
-						actions = append(keymap[key], actions...)
-					} else {
-						errorExit("unknown action: " + spec)
-					}
-				} else {
-					var offset int
-					switch t {
-					case actReload:
-						offset = len("reload")
-					case actPreview:
-						offset = len("preview")
-					case actChangePreviewWindow:
-						offset = len("change-preview-window")
-					case actChangePreview:
-						offset = len("change-preview")
-					case actChangePrompt:
-						offset = len("change-prompt")
-					case actChangeQuery:
-						offset = len("change-query")
-					case actUnbind:
-						offset = len("unbind")
-					case actRebind:
-						offset = len("rebind")
-					case actExecuteSilent:
-						offset = len("execute-silent")
-					case actExecuteMulti:
-						offset = len("execute-multi")
-					default:
-						offset = len("execute")
-					}
-					var actionArg string
-					if spec[offset] == ':' {
-						if specIndex == len(specs)-1 {
-							actionArg = spec[offset+1:]
-							actions = append(actions, &action{t: t, a: actionArg})
-						} else {
-							prevSpec = spec + "+"
-							continue
-						}
-					} else {
-						actionArg = spec[offset+1 : len(spec)-1]
-						actions = append(actions, &action{t: t, a: actionArg})
-					}
-					if t == actUnbind || t == actRebind {
-						parseKeyChords(actionArg, spec[0:offset]+" target required")
-					}
-				}
-			}
-			prevSpec = ""
-		}
-		keymap[key] = actions
+		putAllowed := key.Type == tui.Rune && unicode.IsGraphic(key.Char)
+		keymap[key] = parseActionList(pair[1], origPairStr[len(pair[0])+1:], keymap[key], putAllowed, exit)
 	}
 }
 
 func isExecuteAction(str string) actionType {
-	matches := executeRegexp.FindAllStringSubmatch(":"+str, -1)
-	if matches == nil || len(matches) != 1 {
+	masked := maskActionContents(":" + str)[1:]
+	if masked == str {
+		// Not masked
 		return actIgnore
 	}
-	prefix := matches[0][1]
-	if len(prefix) == 0 {
-		prefix = matches[0][2]
-	}
+
+	prefix := actionNameRegexp.FindString(str)
 	switch prefix {
 	case "reload":
 		return actReload
@@ -1186,6 +1197,8 @@ func isExecuteAction(str string) actionType {
 		return actChangePrompt
 	case "change-query":
 		return actChangeQuery
+	case "pos":
+		return actPosition
 	case "execute":
 		return actExecute
 	case "execute-silent":
@@ -1455,7 +1468,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--tiebreak":
 			opts.Criteria = parseTiebreak(nextString(allArgs, &i, "sort criterion required"))
 		case "--bind":
-			parseKeymap(opts.Keymap, nextString(allArgs, &i, "bind expression required"))
+			parseKeymap(opts.Keymap, nextString(allArgs, &i, "bind expression required"), errorExit)
 		case "--color":
 			_, spec := optionalNextString(allArgs, &i)
 			if len(spec) == 0 {
@@ -1657,6 +1670,10 @@ func parseOptions(opts *Options, allArgs []string) {
 				nextString(allArgs, &i, "padding required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
+		case "--listen":
+			opts.ListenPort = nextInt(allArgs, &i, "listen port required")
+		case "--no-listen":
+			opts.ListenPort = 0
 		case "--clear":
 			opts.ClearOnExit = true
 		case "--no-clear":
@@ -1723,7 +1740,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--color="); match {
 				opts.Theme = parseTheme(opts.Theme, value)
 			} else if match, value := optString(arg, "--bind="); match {
-				parseKeymap(opts.Keymap, value)
+				parseKeymap(opts.Keymap, value, errorExit)
 			} else if match, value := optString(arg, "--history="); match {
 				setHistory(value)
 			} else if match, value := optString(arg, "--history-size="); match {
@@ -1744,6 +1761,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Padding = parseMargin("padding", value)
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
+			} else if match, value := optString(arg, "--listen="); match {
+				opts.ListenPort = atoi(value)
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--scroll-off="); match {
@@ -1771,6 +1790,10 @@ func parseOptions(opts *Options, allArgs []string) {
 
 	if opts.Tabstop < 1 {
 		errorExit("tab stop must be a positive integer")
+	}
+
+	if opts.ListenPort < 0 || opts.ListenPort > 65535 {
+		errorExit("invalid listen port")
 	}
 
 	if len(opts.JumpLabels) == 0 {
