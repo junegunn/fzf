@@ -321,6 +321,7 @@ const (
 	actPreviewHalfPageDown
 	actPrevHistory
 	actPrevSelected
+	actPut
 	actNextHistory
 	actNextSelected
 	actExecute
@@ -2848,6 +2849,11 @@ func (t *Terminal) Loop() {
 					t.vset(n)
 					req(reqList)
 				}
+			case actPut:
+				str := []rune(a.a)
+				suffix := copySlice(t.input[t.cx:])
+				t.input = append(append(t.input[:t.cx], str...), suffix...)
+				t.cx += len(str)
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {

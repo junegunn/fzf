@@ -32,6 +32,11 @@ CHANGELOG
   seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
   ```
 - Added `change-query(...)` action
+- `put` action can optionally take an argument string
+  ```sh
+  # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
+  fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+  ```
 - `double-click` will behave the same as `enter` unless otherwise specified,
   so you don't have to repeat the same action twice in `--bind` in most cases.
   ```sh

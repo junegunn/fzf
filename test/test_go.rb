@@ -1620,6 +1620,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[1], ' 1/1' }
   end
 
+  def test_put
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:put+put,b:put+put(ravo)' --preview 'echo {q}/{q}'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], ' aa/aa' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines[1], ' aabravo/aabravo' }
+  end
+
   def test_accept_non_empty
     tmux.send_keys %(seq 1000 | #{fzf('--print-query --bind enter:accept-non-empty')}), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }
