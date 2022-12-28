@@ -7,6 +7,7 @@ require 'English'
 require 'shellwords'
 require 'erb'
 require 'tempfile'
+require 'net/http'
 
 TEMPLATE = DATA.read
 UNSETS = %w[
@@ -1604,6 +1605,30 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
   end
 
+  def test_pos
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:pos(3),b:pos(-3),c:pos(1),d:pos(-1),e:pos(0)' --preview 'echo {}/{}'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], ' 3/3' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines[1], ' 998/998' }
+    tmux.send_keys :c
+    tmux.until { |lines| assert_includes lines[1], ' 1/1' }
+    tmux.send_keys :d
+    tmux.until { |lines| assert_includes lines[1], ' 1000/1000' }
+    tmux.send_keys :e
+    tmux.until { |lines| assert_includes lines[1], ' 1/1' }
+  end
+
+  def test_put
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:put+put,b:put+put(ravo)' --preview 'echo {q}/{q}'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], ' aa/aa' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines[1], ' aabravo/aabravo' }
+  end
+
   def test_accept_non_empty
     tmux.send_keys %(seq 1000 | #{fzf('--print-query --bind enter:accept-non-empty')}), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }
@@ -1770,6 +1795,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> foo', lines.last }
     tmux.send_keys :Space, 'baz'
     tmux.until { |lines| assert_equal '> foobarbaz', lines.last }
+  end
+
+  def test_transform_query
+    tmux.send_keys %{#{FZF} --bind 'ctrl-r:transform-query(rev <<< {q}),ctrl-u:transform-query: tr "[:lower:]" "[:upper:]" <<< {q}' --query bar}, :Enter
+    tmux.until { |lines| assert_equal '> bar', lines[-1] }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_equal '> rab', lines[-1] }
+    tmux.send_keys 'C-u'
+    tmux.until { |lines| assert_equal '> RAB', lines[-1] }
   end
 
   def test_clear_selection
@@ -2434,6 +2468,14 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines, '>>1' }
     tmux.send_keys 'C-p'
     tmux.until { |lines| assert_includes lines, '>>2' }
+  end
+
+  def test_listen
+    tmux.send_keys 'seq 10 | fzf --listen 6266', :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    Net::HTTP.post(URI('http://localhost:6266'), 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
   end
 end
 

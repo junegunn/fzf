@@ -167,6 +167,7 @@ type Terminal struct {
 	padding            [4]sizeSpec
 	strong             tui.Attr
 	unicode            bool
+	listenPort         int
 	borderShape        tui.BorderShape
 	cleanExit          bool
 	paused             bool
@@ -200,6 +201,7 @@ type Terminal struct {
 	sigstop            bool
 	startChan          chan fitpad
 	killChan           chan int
+	serverChan         chan []*action
 	slab               *util.Slab
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
@@ -295,6 +297,7 @@ const (
 	actUp
 	actPageUp
 	actPageDown
+	actPosition
 	actHalfPageUp
 	actHalfPageDown
 	actJump
@@ -305,6 +308,7 @@ const (
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
+	actTransformQuery
 	actPreview
 	actChangePreview
 	actChangePreviewWindow
@@ -318,6 +322,7 @@ const (
 	actPreviewHalfPageDown
 	actPrevHistory
 	actPrevSelected
+	actPut
 	actNextHistory
 	actNextSelected
 	actExecute
@@ -481,7 +486,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	var previewBox *util.EventBox
 	showPreviewWindow := len(opts.Preview.command) > 0 && !opts.Preview.hidden
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) {
+	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort > 0 {
 		previewBox = util.NewEventBox()
 	}
 	strongAttr := tui.Bold
@@ -556,6 +562,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		margin:             opts.Margin,
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
+		listenPort:         opts.ListenPort,
 		borderShape:        opts.BorderShape,
 		borderLabel:        nil,
 		borderLabelOpts:    opts.BorderLabel,
@@ -595,6 +602,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
+		serverChan:         make(chan []*action, 10),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
@@ -614,6 +622,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			bar = "-"
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
+	}
+
+	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
+		errorExit(err.Error())
 	}
 
 	return &t
@@ -2003,10 +2015,11 @@ func (t *Terminal) redraw(clear bool) {
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool) {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, captureFirstLine bool) string {
+	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
 	if !valid {
-		return
+		return line
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
@@ -2022,11 +2035,21 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		cmd.Run()
+		if captureFirstLine {
+			out, _ := cmd.StdoutPipe()
+			reader := bufio.NewReader(out)
+			cmd.Start()
+			line, _ = reader.ReadString('\n')
+			line = strings.TrimRight(line, "\r\n")
+			cmd.Wait()
+		} else {
+			cmd.Run()
+		}
 		t.tui.Resume(false, false)
 	}
 	t.executing.Set(false)
 	cleanTemporaryFiles()
+	return line
 }
 
 func (t *Terminal) hasPreviewer() bool {
@@ -2492,6 +2515,15 @@ func (t *Terminal) Loop() {
 	looping := true
 	_, startEvent := t.keymap[tui.Start.AsEvent()]
 
+	eventChan := make(chan tui.Event)
+	needBarrier := true
+	barrier := make(chan bool)
+	go func() {
+		for {
+			<-barrier
+			eventChan <- t.tui.GetChar()
+		}
+	}()
 	for looping {
 		var newCommand *string
 		changed := false
@@ -2499,11 +2531,21 @@ func (t *Terminal) Loop() {
 		queryChanged := false
 
 		var event tui.Event
+		actions := []*action{}
 		if startEvent {
 			event = tui.Start.AsEvent()
 			startEvent = false
 		} else {
-			event = t.tui.GetChar()
+			if needBarrier {
+				barrier <- true
+			}
+			select {
+			case event = <-eventChan:
+				needBarrier = true
+			case actions = <-t.serverChan:
+				event = tui.Invalid.AsEvent()
+				needBarrier = false
+			}
 		}
 
 		t.mutex.Lock()
@@ -2580,9 +2622,9 @@ func (t *Terminal) Loop() {
 			switch a.t {
 			case actIgnore:
 			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent)
+				t.executeCommand(a.a, false, a.t == actExecuteSilent, false)
 			case actExecuteMulti:
-				t.executeCommand(a.a, true, false)
+				t.executeCommand(a.a, true, false, false)
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -2605,6 +2647,10 @@ func (t *Terminal) Loop() {
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
 				}
+			case actTransformQuery:
+				query := t.executeCommand(a.a, false, true, true)
+				t.input = []rune(query)
+				t.cx = len(t.input)
 			case actToggleSort:
 				t.sort = !t.sort
 				changed = true
@@ -2806,6 +2852,21 @@ func (t *Terminal) Loop() {
 			case actLast:
 				t.vset(t.merger.Length() - 1)
 				req(reqList)
+			case actPosition:
+				if n, e := strconv.Atoi(a.a); e == nil {
+					if n > 0 {
+						n--
+					} else if n < 0 {
+						n += t.merger.Length()
+					}
+					t.vset(n)
+					req(reqList)
+				}
+			case actPut:
+				str := []rune(a.a)
+				suffix := copySlice(t.input[t.cx:])
+				t.input = append(append(t.input[:t.cx], str...), suffix...)
+				t.cx += len(str)
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {
@@ -3042,8 +3103,15 @@ func (t *Terminal) Loop() {
 			return true
 		}
 
-		if t.jumping == jumpDisabled {
-			actions := t.keymap[event.Comparable()]
+		if t.jumping == jumpDisabled || len(actions) > 0 {
+			// Break out of jump mode if any action is submitted to the server
+			if t.jumping != jumpDisabled {
+				t.jumping = jumpDisabled
+				req(reqList)
+			}
+			if len(actions) == 0 {
+				actions = t.keymap[event.Comparable()]
+			}
 			if len(actions) == 0 && event.Type == tui.Rune {
 				doAction(&action{t: actRune})
 			} else if !doActions(actions) {
