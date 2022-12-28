@@ -602,7 +602,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
-		serverChan:         make(chan []*action),
+		serverChan:         make(chan []*action, 10),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
