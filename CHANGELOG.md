@@ -31,7 +31,28 @@ CHANGELOG
   # Both actions respect --layout option
   seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
   ```
-- Added `change-query(...)` action
+- Added `change-query(...)` action that simply changes the query string to the
+  given static string. This can be useful when used with `--listen`.
+  ```sh
+  curl localhost:6266 -d "change-query:$(date)"
+  ```
+- Added `transform-query(...)` action for transforming the query string using
+  an external command
+  ```sh
+  # Press space to convert the query to uppercase letters
+  fzf --bind 'space:transform-query(tr [:lower:] [:upper:] <<< {q})'
+
+  # Bind it to 'change' event for automatic conversion
+  fzf --bind 'change:transform-query(tr [:lower:] [:upper:] <<< {q})'
+
+  # Can only type numbers
+  fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
+  ```
+- `put` action can optionally take an argument string
+  ```sh
+  # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
+  fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+  ```
 - `double-click` will behave the same as `enter` unless otherwise specified,
   so you don't have to repeat the same action twice in `--bind` in most cases.
   ```sh

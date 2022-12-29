@@ -308,6 +308,7 @@ const (
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
+	actTransformQuery
 	actPreview
 	actChangePreview
 	actChangePreviewWindow
@@ -321,6 +322,7 @@ const (
 	actPreviewHalfPageDown
 	actPrevHistory
 	actPrevSelected
+	actPut
 	actNextHistory
 	actNextSelected
 	actExecute
@@ -600,7 +602,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
-		serverChan:         make(chan []*action),
+		serverChan:         make(chan []*action, 10),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
@@ -2013,10 +2015,11 @@ func (t *Terminal) redraw(clear bool) {
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool) {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, captureFirstLine bool) string {
+	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
 	if !valid {
-		return
+		return line
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
@@ -2032,11 +2035,21 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.refresh()
 	} else {
 		t.tui.Pause(false)
-		cmd.Run()
+		if captureFirstLine {
+			out, _ := cmd.StdoutPipe()
+			reader := bufio.NewReader(out)
+			cmd.Start()
+			line, _ = reader.ReadString('\n')
+			line = strings.TrimRight(line, "\r\n")
+			cmd.Wait()
+		} else {
+			cmd.Run()
+		}
 		t.tui.Resume(false, false)
 	}
 	t.executing.Set(false)
 	cleanTemporaryFiles()
+	return line
 }
 
 func (t *Terminal) hasPreviewer() bool {
@@ -2266,9 +2279,6 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
-						if t.listenPort > 0 {
-							env = append(env, fmt.Sprintf("FZF_LISTEN_PORT=%d", t.listenPort))
-						}
 						cmd.Env = env
 					}
 
@@ -2612,9 +2622,9 @@ func (t *Terminal) Loop() {
 			switch a.t {
 			case actIgnore:
 			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent)
+				t.executeCommand(a.a, false, a.t == actExecuteSilent, false)
 			case actExecuteMulti:
-				t.executeCommand(a.a, true, false)
+				t.executeCommand(a.a, true, false, false)
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -2637,6 +2647,10 @@ func (t *Terminal) Loop() {
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
 				}
+			case actTransformQuery:
+				query := t.executeCommand(a.a, false, true, true)
+				t.input = []rune(query)
+				t.cx = len(t.input)
 			case actToggleSort:
 				t.sort = !t.sort
 				changed = true
@@ -2848,6 +2862,11 @@ func (t *Terminal) Loop() {
 					t.vset(n)
 					req(reqList)
 				}
+			case actPut:
+				str := []rune(a.a)
+				suffix := copySlice(t.input[t.cx:])
+				t.input = append(append(t.input[:t.cx], str...), suffix...)
+				t.cx += len(str)
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {

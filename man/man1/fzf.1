@@ -732,8 +732,6 @@ e.g.
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
      \fR
-
-The port number is exported as \fB$FZF_LISTEN_PORT\fR on the child processes.
 .TP
 .B "--version"
 Display version information and exit
@@ -1008,6 +1006,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBpreview-top\fR
     \fBprint-query\fR                (print query and exit)
     \fBput\fR                        (put the character to the prompt)
+    \fBput(...)\fR                   (put the given string to the prompt)
     \fBrefresh-preview\fR
     \fBrebind(...)\fR                (rebind bindings after \fBunbind\fR)
     \fBreload(...)\fR                (see below for the details)
@@ -1024,6 +1023,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-search\fR              (toggle search functionality)
     \fBtoggle-sort\fR
     \fBtoggle+up\fR                  \fIbtab    (shift-tab)\fR
+    \fBtransform-query(...)\fR       (transform query string using an external command)
     \fBunbind(...)\fR                (unbind bindings)
     \fBunix-line-discard\fR          \fIctrl-u\fR
     \fBunix-word-rubout\fR           \fIctrl-w\fR
