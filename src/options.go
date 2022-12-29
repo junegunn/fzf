@@ -590,6 +590,8 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 			add(tui.BackwardEOF)
 		case "start":
 			add(tui.Start)
+		case "load":
+			add(tui.Load)
 		case "alt-enter", "alt-return":
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":

@@ -177,6 +177,8 @@ type Terminal struct {
 	pwindow            tui.Window
 	count              int
 	progress           int
+	hasLoadActions     bool
+	triggerLoad        bool
 	reading            bool
 	running            bool
 	failed             *string
@@ -202,6 +204,7 @@ type Terminal struct {
 	startChan          chan fitpad
 	killChan           chan int
 	serverChan         chan []*action
+	eventChan          chan tui.Event
 	slab               *util.Slab
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
@@ -579,6 +582,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
+		hasLoadActions:     false,
+		triggerLoad:        false,
 		reading:            true,
 		running:            true,
 		failed:             nil,
@@ -603,6 +608,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
 		serverChan:         make(chan []*action, 10),
+		eventChan:          make(chan tui.Event, 1),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
@@ -623,6 +629,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
+
+	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
 		errorExit(err.Error())
@@ -763,6 +771,9 @@ func (t *Terminal) Input() (bool, []rune) {
 func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 	t.mutex.Lock()
 	t.count = cnt
+	if t.hasLoadActions && t.reading && final {
+		t.triggerLoad = true
+	}
 	t.reading = !final
 	t.failed = failedCommand
 	t.mutex.Unlock()
@@ -810,6 +821,10 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	if reset {
 		t.selected = make(map[int32]selectedItem)
 		t.version++
+	}
+	if t.hasLoadActions && t.triggerLoad {
+		t.triggerLoad = false
+		t.eventChan <- tui.Load.AsEvent()
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
@@ -2515,13 +2530,12 @@ func (t *Terminal) Loop() {
 	looping := true
 	_, startEvent := t.keymap[tui.Start.AsEvent()]
 
-	eventChan := make(chan tui.Event)
 	needBarrier := true
 	barrier := make(chan bool)
 	go func() {
 		for {
 			<-barrier
-			eventChan <- t.tui.GetChar()
+			t.eventChan <- t.tui.GetChar()
 		}
 	}()
 	for looping {
@@ -2540,8 +2554,8 @@ func (t *Terminal) Loop() {
 				barrier <- true
 			}
 			select {
-			case event = <-eventChan:
-				needBarrier = true
+			case event = <-t.eventChan:
+				needBarrier = event != tui.Load.AsEvent()
 			case actions = <-t.serverChan:
 				event = tui.Invalid.AsEvent()
 				needBarrier = false

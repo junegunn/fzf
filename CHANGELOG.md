@@ -21,6 +21,16 @@ CHANGELOG
   # Put the cursor on the 10th to last item
   seq 100 | fzf --sync --bind 'start:pos(-10)'
   ```
+- Added `load` event that is triggered when the input stream is complete and
+  the initial processing of the list is complete.
+  ```sh
+  # Change the prompt to "loaded" when the input stream is complete
+  (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '
+
+  # You can use it instead of 'start' event without `--sync` if asynchronous
+  # trigger is not an issue.
+  (seq 10; sleep 1; seq 11 20) | fzf --bind 'load:last'
+  ```
 - Added `next-selected` and `prev-selected` actions to move between selected
   items
   ```sh

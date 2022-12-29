@@ -91,6 +91,7 @@ const (
 	Change
 	BackwardEOF
 	Start
+	Load
 
 	AltBS
 
