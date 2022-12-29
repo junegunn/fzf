@@ -335,6 +335,7 @@ const (
 	actFirst
 	actLast
 	actReload
+	actReloadSync
 	actDisableSearch
 	actEnableSearch
 	actSelect
@@ -353,6 +354,7 @@ type placeholderFlags struct {
 
 type searchRequest struct {
 	sort    bool
+	sync    bool
 	command *string
 }
 
@@ -2540,6 +2542,7 @@ func (t *Terminal) Loop() {
 	}()
 	for looping {
 		var newCommand *string
+		var reloadSync bool
 		changed := false
 		beof := false
 		queryChanged := false
@@ -3030,7 +3033,7 @@ func (t *Terminal) Loop() {
 						}
 					}
 				}
-			case actReload:
+			case actReload, actReloadSync:
 				t.failed = nil
 
 				valid, list := t.buildPlusList(a.a, false)
@@ -3044,6 +3047,7 @@ func (t *Terminal) Loop() {
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
 					newCommand = &command
+					reloadSync = a.t == actReloadSync
 					t.reading = true
 				}
 			case actUnbind:
@@ -3173,7 +3177,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed || newCommand != nil {
-			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, command: newCommand})
+			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, sync: reloadSync, command: newCommand})
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)

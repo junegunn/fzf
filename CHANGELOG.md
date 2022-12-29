@@ -12,63 +12,74 @@ CHANGELOG
   # Send actions to the server
   curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
   ```
-- Added `pos(...)` action to move the cursor to the numeric position
-    - `first` and `last` are equivalent to `pos(1)` and `pos(-1)` respectively
-  ```sh
-  # Put the cursor on the 10th item
-  seq 100 | fzf --sync --bind 'start:pos(10)'
+- New event
+    - Added `load` event that is triggered when the input stream is complete
+      and the initial processing of the list is complete.
+      ```sh
+      # Change the prompt to "loaded" when the input stream is complete
+      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '
 
-  # Put the cursor on the 10th to last item
-  seq 100 | fzf --sync --bind 'start:pos(-10)'
-  ```
-- Added `load` event that is triggered when the input stream is complete and
-  the initial processing of the list is complete.
-  ```sh
-  # Change the prompt to "loaded" when the input stream is complete
-  (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '
+      # You can use it instead of 'start' event without `--sync` if asynchronous
+      # trigger is not an issue.
+      (seq 10; sleep 1; seq 11 20) | fzf --bind 'load:last'
+      ```
+- New actions
+    - Added `pos(...)` action to move the cursor to the numeric position
+        - `first` and `last` are equivalent to `pos(1)` and `pos(-1)` respectively
+      ```sh
+      # Put the cursor on the 10th item
+      seq 100 | fzf --sync --bind 'start:pos(10)'
 
-  # You can use it instead of 'start' event without `--sync` if asynchronous
-  # trigger is not an issue.
-  (seq 10; sleep 1; seq 11 20) | fzf --bind 'load:last'
-  ```
-- Added `next-selected` and `prev-selected` actions to move between selected
-  items
-  ```sh
-  # `next-selected` will move the pointer to the next selected item below the current line
-  # `prev-selected` will move the pointer to the previous selected item above the current line
-  seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected
+      # Put the cursor on the 10th to last item
+      seq 100 | fzf --sync --bind 'start:pos(-10)'
+      ```
+    - Added `reload-sync(...)` action which replaces the current list only after
+      the reload process is complete. This is useful when the command takes
+      a while to produce the initial output and you don't want fzf to run against
+      an empty list while the command is running.
+      ```sh
+      # You can still filter and select entries from the initial list for 3 seconds
+      seq 100 | fzf --bind 'load:reload-sync(sleep 3; seq 1000)+unbind(load)'
+      ```
+    - Added `next-selected` and `prev-selected` actions to move between selected
+      items
+      ```sh
+      # `next-selected` will move the pointer to the next selected item below the current line
+      # `prev-selected` will move the pointer to the previous selected item above the current line
+      seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected
 
-  # Both actions respect --layout option
-  seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
-  ```
-- Added `change-query(...)` action that simply changes the query string to the
-  given static string. This can be useful when used with `--listen`.
-  ```sh
-  curl localhost:6266 -d "change-query:$(date)"
-  ```
-- Added `transform-query(...)` action for transforming the query string using
-  an external command
-  ```sh
-  # Press space to convert the query to uppercase letters
-  fzf --bind 'space:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      # Both actions respect --layout option
+      seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
+      ```
+    - Added `change-query(...)` action that simply changes the query string to the
+      given static string. This can be useful when used with `--listen`.
+      ```sh
+      curl localhost:6266 -d "change-query:$(date)"
+      ```
+    - Added `transform-query(...)` action for transforming the query string using
+      an external command
+      ```sh
+      # Press space to convert the query to uppercase letters
+      fzf --bind 'space:transform-query(tr [:lower:] [:upper:] <<< {q})'
 
-  # Bind it to 'change' event for automatic conversion
-  fzf --bind 'change:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      # Bind it to 'change' event for automatic conversion
+      fzf --bind 'change:transform-query(tr [:lower:] [:upper:] <<< {q})'
 
-  # Can only type numbers
-  fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
-  ```
-- `put` action can optionally take an argument string
-  ```sh
-  # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
-  fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
-  ```
-- `double-click` will behave the same as `enter` unless otherwise specified,
-  so you don't have to repeat the same action twice in `--bind` in most cases.
-  ```sh
-  # No need to bind 'double-click' to the same action
-  fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
-  ```
+      # Can only type numbers
+      fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
+      ```
+- Improvements
+    - `put` action can optionally take an argument string
+      ```sh
+      # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
+      fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+      ```
+    - `double-click` will behave the same as `enter` unless otherwise specified,
+      so you don't have to repeat the same action twice in `--bind` in most cases.
+      ```sh
+      # No need to bind 'double-click' to the same action
+      fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
+      ```
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Minor bug fixes and improvements

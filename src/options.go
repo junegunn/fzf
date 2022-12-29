@@ -892,7 +892,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind|pos|put|transform-query)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind|pos|put|transform-query)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1185,6 +1185,8 @@ func isExecuteAction(str string) actionType {
 	switch prefix {
 	case "reload":
 		return actReload
+	case "reload-sync":
+		return actReloadSync
 	case "unbind":
 		return actUnbind
 	case "rebind":

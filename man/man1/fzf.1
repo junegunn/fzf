@@ -1019,6 +1019,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBrefresh-preview\fR
     \fBrebind(...)\fR                (rebind bindings after \fBunbind\fR)
     \fBreload(...)\fR                (see below for the details)
+    \fBreload-sync(...)\fR           (see below for the details)
     \fBreplace-query\fR              (replace query string with the current selection)
     \fBselect\fR
     \fBselect-all\fR                 (select all matches)
@@ -1121,6 +1122,16 @@ e.g.
      FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \\
        fzf --bind "change:reload:$RG_PREFIX {q} || true" \\
            --ansi --disabled --query "$INITIAL_QUERY"\fR
+
+\fBreload-sync(...)\fR is a synchronous version of \fBreload\fR that replaces
+the list only when the command is complete. This is useful when the command
+takes a while to produce the initial output and you don't want fzf to run
+against an empty list while the command is running.
+
+
+e.g.
+     \fB# You can still filter and select entries from the initial list for 3 seconds
+     seq 100 | fzf --bind 'load:reload-sync(sleep 3; seq 1000)+unbind(load)'\fR
 
 .SS PREVIEW BINDING
 

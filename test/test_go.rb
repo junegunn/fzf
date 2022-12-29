@@ -2161,6 +2161,15 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[1], '4' }
   end
 
+  def test_reload_sync
+    tmux.send_keys "seq 100 | #{FZF} --bind 'load:reload-sync(sleep 1; seq 1000)+unbind(load)'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys '00'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    # After 1 second
+    tmux.until { |lines| assert_equal 10, lines.match_count }
+  end
+
   def test_scroll_off
     tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
     tmux.until { |lines| assert_equal 1000, lines.item_count }

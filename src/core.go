@@ -213,15 +213,6 @@ func Run(opts *Options, version string, revision string) {
 	clearSelection := util.Once(false)
 	ticks := 0
 	var nextCommand *string
-	restart := func(command string) {
-		reading = true
-		clearCache = util.Once(true)
-		clearSelection = util.Once(true)
-		chunkList.Clear()
-		itemIndex = 0
-		header = make([]string, 0, opts.HeaderLines)
-		go reader.restart(command)
-	}
 	eventBox.Watch(EvtReadNew)
 	total := 0
 	query := []rune{}
@@ -235,6 +226,25 @@ func Run(opts *Options, version string, revision string) {
 			deferred = false
 			terminal.startChan <- fitpad{-1, -1}
 		}
+	}
+
+	useSnapshot := false
+	var snapshot []*Chunk
+	var prevSnapshot []*Chunk
+	var count int
+	restart := func(command string) {
+		reading = true
+		clearCache = util.Once(true)
+		clearSelection = util.Once(true)
+		// We should not update snapshot if reload is triggered again while
+		// the previous reload is in progress
+		if useSnapshot && prevSnapshot != nil {
+			snapshot, count = chunkList.Snapshot()
+		}
+		chunkList.Clear()
+		itemIndex = 0
+		header = make([]string, 0, opts.HeaderLines)
+		go reader.restart(command)
 	}
 	for {
 		delay := true
@@ -267,7 +277,13 @@ func Run(opts *Options, version string, revision string) {
 					} else {
 						reading = reading && evt == EvtReadNew
 					}
-					snapshot, count := chunkList.Snapshot()
+					if useSnapshot && evt == EvtReadFin {
+						useSnapshot = false
+						prevSnapshot = nil
+					}
+					if !useSnapshot {
+						snapshot, count = chunkList.Snapshot()
+					}
 					total = count
 					terminal.UpdateCount(total, !reading, value.(*string))
 					if opts.Sync {
@@ -286,6 +302,9 @@ func Run(opts *Options, version string, revision string) {
 					case searchRequest:
 						sort = val.sort
 						command = val.command
+						if command != nil {
+							useSnapshot = val.sync
+						}
 					}
 					if command != nil {
 						if reading {
@@ -296,7 +315,9 @@ func Run(opts *Options, version string, revision string) {
 						}
 						break
 					}
-					snapshot, _ := chunkList.Snapshot()
+					if !useSnapshot {
+						snapshot, _ = chunkList.Snapshot()
+					}
 					reset := clearCache()
 					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)
 					delay = false
