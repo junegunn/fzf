@@ -2096,7 +2096,7 @@ func (t *Terminal) currentItem() *Item {
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
 	slot, plus, query := hasPreviewFlags(template)
-	if !(!slot || query && len(t.input) > 0 || (forcePlus || plus) && len(t.selected) > 0) {
+	if !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 

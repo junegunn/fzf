@@ -68,11 +68,21 @@ CHANGELOG
       # Can only type numbers
       fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
       ```
-- Improvements
     - `put` action can optionally take an argument string
       ```sh
       # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
       fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+      ```
+- Behavior changes
+    - fzf will always execute the preview command if the command template
+      contains `{q}` even when it's empty. If you prefer the old behavior,
+      you'll have to check if `{q}` is empty in your command.
+      ```sh
+      # This will show // even when the query is empty
+      : | fzf --preview 'echo /{q}/'
+
+      # But if you don't want it,
+      : | fzf --preview '[ -n {q} ] || exit; echo /{q}/'
       ```
     - `double-click` will behave the same as `enter` unless otherwise specified,
       so you don't have to repeat the same action twice in `--bind` in most cases.

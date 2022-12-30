@@ -536,7 +536,8 @@ e.g.
 Note that you can escape a placeholder pattern by prepending a backslash.
 
 Preview window will be updated even when there is no match for the current
-query if any of the placeholder expressions evaluates to a non-empty string.
+query if any of the placeholder expressions evaluates to a non-empty string
+or \fB{q}\fR is in the command template.
 
 Since 0.24.0, fzf can render partial preview content before the preview command
 completes. ANSI escape sequence for clearing the display (\fBCSI 2 J\fR) is
