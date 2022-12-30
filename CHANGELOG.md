@@ -60,13 +60,13 @@ CHANGELOG
       an external command
       ```sh
       # Press space to convert the query to uppercase letters
-      fzf --bind 'space:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      fzf --bind 'space:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
 
       # Bind it to 'change' event for automatic conversion
-      fzf --bind 'change:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      fzf --bind 'change:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
 
       # Can only type numbers
-      fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
+      fzf --bind 'change:transform-query(sed "s/[^0-9]//g" <<< {q})'
       ```
     - `put` action can optionally take an argument string
       ```sh
