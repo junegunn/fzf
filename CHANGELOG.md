@@ -56,6 +56,13 @@ CHANGELOG
       ```sh
       curl localhost:6266 -d "change-query:$(date)"
       ```
+    - Added `transform-prompt(...)` action for transforming the prompt string
+      using an external command
+      ```sh
+      # Press space to change the prompt string using an external command
+      # (only the first line of the output is taken)
+      fzf --bind 'space:reload(ls),load:transform-prompt(printf "%s> " "$(date)")'
+      ```
     - Added `transform-query(...)` action for transforming the query string using
       an external command
       ```sh

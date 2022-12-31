@@ -311,6 +311,7 @@ const (
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
+	actTransformPrompt
 	actTransformQuery
 	actPreview
 	actChangePreview
@@ -2034,8 +2035,10 @@ func (t *Terminal) redraw(clear bool) {
 
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, captureFirstLine bool) string {
 	line := ""
-	valid, list := t.buildPlusList(template, forcePlus)
-	if !valid {
+	valid, list := t.buildPlusList(template, forcePlus, false)
+	// captureFirstLine is used for transform-{prompt,query} and we don't want to
+	// return an empty string in those cases
+	if !valid && !captureFirstLine {
 		return line
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
@@ -2093,10 +2096,10 @@ func (t *Terminal) currentItem() *Item {
 	return nil
 }
 
-func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
+func (t *Terminal) buildPlusList(template string, forcePlus bool, forceEvaluation bool) (bool, []*Item) {
 	current := t.currentItem()
 	slot, plus, query := hasPreviewFlags(template)
-	if !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
+	if !forceEvaluation && !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -2421,7 +2424,7 @@ func (t *Terminal) Loop() {
 
 	refreshPreview := func(command string) {
 		if len(command) > 0 && t.isPreviewEnabled() {
-			_, list := t.buildPlusList(command, false)
+			_, list := t.buildPlusList(command, false, false)
 			t.cancelPreview()
 			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.evaluateScrollOffset(), list})
 		}
@@ -2649,7 +2652,7 @@ func (t *Terminal) Loop() {
 				if t.hasPreviewer() {
 					togglePreview(!t.previewer.enabled)
 					if t.previewer.enabled {
-						valid, list := t.buildPlusList(t.previewOpts.command, false)
+						valid, list := t.buildPlusList(t.previewOpts.command, false, false)
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
@@ -2664,6 +2667,10 @@ func (t *Terminal) Loop() {
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
 				}
+			case actTransformPrompt:
+				prompt := t.executeCommand(a.a, false, true, true)
+				t.prompt, t.promptLen = t.parsePrompt(prompt)
+				req(reqPrompt)
 			case actTransformQuery:
 				query := t.executeCommand(a.a, false, true, true)
 				t.input = []rune(query)
@@ -3036,7 +3043,7 @@ func (t *Terminal) Loop() {
 			case actReload, actReloadSync:
 				t.failed = nil
 
-				valid, list := t.buildPlusList(a.a, false)
+				valid, list := t.buildPlusList(a.a, false, false)
 				if !valid {
 					// We run the command even when there's no match
 					// 1. If the template doesn't have any slots
