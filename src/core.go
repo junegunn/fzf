@@ -293,7 +293,7 @@ func Run(opts *Options, version string, revision string) {
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
-					reset := clearCache()
+					reset := !useSnapshot && clearCache()
 					matcher.Reset(snapshot, input(reset), false, !reading, sort, reset)
 
 				case EvtSearchNew:
@@ -318,7 +318,7 @@ func Run(opts *Options, version string, revision string) {
 					if !useSnapshot {
 						snapshot, _ = chunkList.Snapshot()
 					}
-					reset := clearCache()
+					reset := !useSnapshot && clearCache()
 					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)
 					delay = false
 
