@@ -24,7 +24,7 @@ func startHttpServer(port int, channel chan []*action) error {
 		return nil
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		return fmt.Errorf("port not available: %d", port)
 	}
