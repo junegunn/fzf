@@ -2582,6 +2582,7 @@ func (t *Terminal) Loop() {
 			t.eventChan <- t.tui.GetChar()
 		}
 	}()
+	dragging := false
 	for looping {
 		var newCommand *string
 		var reloadSync bool
@@ -3038,8 +3039,6 @@ func (t *Terminal) Loop() {
 					}
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left()
-					bar := mx == t.window.Width()-1
-					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
 					my -= t.window.Top()
 					min := 2 + len(t.header)
 					if t.noInfoLine() {
@@ -3056,7 +3055,15 @@ func (t *Terminal) Loop() {
 							my = h - my - 1
 						}
 					}
-					if bar && my >= min {
+					dragging = me.Down && (dragging || my >= min && mx == t.window.Width()-1)
+					if me.Double {
+						// Double-click
+						if my >= min {
+							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
+								return doActions(actionsFor(tui.DoubleClick))
+							}
+						}
+					} else if dragging && my >= min {
 						barLength, barStart := t.getScrollbar()
 						if barLength > 0 {
 							maxItems := t.maxItems()
@@ -3069,14 +3076,8 @@ func (t *Terminal) Loop() {
 								req(reqList)
 							}
 						}
-					} else if me.Double {
-						// Double-click
-						if my >= min {
-							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doActions(actionsFor(tui.DoubleClick))
-							}
-						}
 					} else if me.Down {
+						mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
 						if my == t.promptLine() && mx >= 0 {
 							// Prompt
 							t.cx = mx + t.xoffset
