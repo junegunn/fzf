@@ -1421,11 +1421,21 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 	newLine := itemLine{current: current, selected: selected, label: label,
 		result: result, queryLen: len(t.input), width: 0, bar: bar}
 	prevLine := t.prevLines[i]
+	printBar := func() {
+		if len(t.scrollbar) > 0 && bar != prevLine.bar {
+			t.move(line, t.window.Width()-1, true)
+			if bar {
+				t.window.CPrint(tui.ColScrollbar, t.scrollbar)
+			}
+		}
+	}
+
 	if prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
 		prevLine.label == newLine.label &&
 		prevLine.queryLen == newLine.queryLen &&
 		prevLine.result == newLine.result {
+		printBar()
 		return
 	}
 
@@ -1459,12 +1469,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 	if fillSpaces > 0 {
 		t.window.Print(strings.Repeat(" ", fillSpaces))
 	}
-	if len(t.scrollbar) > 0 && bar != prevLine.bar {
-		t.move(line, t.window.Width()-1, true)
-		if bar {
-			t.window.CPrint(tui.ColScrollbar, t.scrollbar)
-		}
-	}
+	printBar()
 	t.prevLines[i] = newLine
 }
 
