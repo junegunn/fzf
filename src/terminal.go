@@ -636,7 +636,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	if opts.Scrollbar == nil {
 		if t.unicode {
-			t.scrollbar = "▏" // Left one eighth block
+			t.scrollbar = "│"
 		} else {
 			t.scrollbar = "|"
 		}

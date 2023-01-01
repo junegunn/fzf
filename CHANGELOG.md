@@ -105,6 +105,10 @@ CHANGELOG
       # No need to bind 'double-click' to the same action
       fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
       ```
+    - If the color for `separator` is not specified, it will default to the
+      color for `border`. Same holds true for `scrollbar`. This is to reduce
+      the number of configuration items required to achieve a consistent color
+      scheme.
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Minor bug fixes and improvements
