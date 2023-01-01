@@ -1423,6 +1423,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 	prevLine := t.prevLines[i]
 	printBar := func() {
 		if len(t.scrollbar) > 0 && bar != prevLine.bar {
+			t.prevLines[i].bar = bar
 			t.move(line, t.window.Width()-1, true)
 			if bar {
 				t.window.CPrint(tui.ColScrollbar, t.scrollbar)
