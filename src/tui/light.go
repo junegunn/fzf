@@ -631,6 +631,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
 		r.csi("?1000l")
+		r.csi("?1002l")
 		r.csi("?1006l")
 		r.mouse = false
 	}
@@ -671,6 +672,7 @@ func (r *LightRenderer) Close() {
 	}
 	if r.mouse {
 		r.csi("?1000l")
+		r.csi("?1002l")
 		r.csi("?1006l")
 	}
 	r.flush()
