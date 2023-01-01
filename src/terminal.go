@@ -97,6 +97,7 @@ type itemLine struct {
 	label    string
 	queryLen int
 	width    int
+	bar      bool
 	result   Result
 }
 
@@ -161,6 +162,7 @@ type Terminal struct {
 	header             []string
 	header0            []string
 	ellipsis           string
+	scrollbar          string
 	ansi               bool
 	tabstop            int
 	margin             [4]sizeSpec
@@ -632,6 +634,15 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
+	if opts.Scrollbar == nil {
+		if t.unicode {
+			t.scrollbar = "▏" // Left one eighth block
+		} else {
+			t.scrollbar = "|"
+		}
+	} else {
+		t.scrollbar = *opts.Scrollbar
+	}
 
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
@@ -761,6 +772,27 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 
 func (t *Terminal) noInfoLine() bool {
 	return t.infoStyle != infoDefault
+}
+
+func (t *Terminal) getScrollbar() (int, int) {
+	total := t.merger.Length()
+	if total == 0 {
+		return 0, 0
+	}
+
+	maxItems := t.maxItems()
+	barLength := util.Max(1, maxItems*maxItems/total)
+	if total <= maxItems {
+		return 0, 0
+	}
+
+	var barStart int
+	if total == maxItems {
+		barStart = 0
+	} else {
+		barStart = (maxItems - barLength) * t.offset / (total - maxItems)
+	}
+	return barLength, barStart
 }
 
 // Input returns current query string
@@ -1349,6 +1381,7 @@ func (t *Terminal) printHeader() {
 
 func (t *Terminal) printList() {
 	t.constrain()
+	barLength, barStart := t.getScrollbar()
 
 	maxy := t.maxItems()
 	count := t.merger.Length() - t.offset
@@ -1362,7 +1395,7 @@ func (t *Terminal) printList() {
 			line--
 		}
 		if i < count {
-			t.printItem(t.merger.Get(i+t.offset), line, i, i == t.cy-t.offset)
+			t.printItem(t.merger.Get(i+t.offset), line, i, i == t.cy-t.offset, i >= barStart && i < barStart+barLength)
 		} else if t.prevLines[i] != emptyLine {
 			t.prevLines[i] = emptyLine
 			t.move(line, 0, true)
@@ -1370,7 +1403,7 @@ func (t *Terminal) printList() {
 	}
 }
 
-func (t *Terminal) printItem(result Result, line int, i int, current bool) {
+func (t *Terminal) printItem(result Result, line int, i int, current bool, bar bool) {
 	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := ""
@@ -1386,7 +1419,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 
 	// Avoid unnecessary redraw
 	newLine := itemLine{current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0}
+		result: result, queryLen: len(t.input), width: 0, bar: bar}
 	prevLine := t.prevLines[i]
 	if prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
@@ -1425,6 +1458,12 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool) {
 	fillSpaces := prevLine.width - newLine.width
 	if fillSpaces > 0 {
 		t.window.Print(strings.Repeat(" ", fillSpaces))
+	}
+	if len(t.scrollbar) > 0 && bar != prevLine.bar {
+		t.move(line, t.window.Width()-1, true)
+		if bar {
+			t.window.CPrint(tui.ColScrollbar, t.scrollbar)
+		}
 	}
 	t.prevLines[i] = newLine
 }
@@ -2999,8 +3038,9 @@ func (t *Terminal) Loop() {
 					}
 				} else if t.window.Enclose(my, mx) {
 					mx -= t.window.Left()
-					my -= t.window.Top()
+					bar := mx == t.window.Width()-1
 					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
+					my -= t.window.Top()
 					min := 2 + len(t.header)
 					if t.noInfoLine() {
 						min--
@@ -3016,7 +3056,20 @@ func (t *Terminal) Loop() {
 							my = h - my - 1
 						}
 					}
-					if me.Double {
+					if bar && my >= min {
+						barLength, barStart := t.getScrollbar()
+						if barLength > 0 {
+							maxItems := t.maxItems()
+							if newBarStart := util.Constrain(my-min-barLength/2, 0, maxItems-barLength); newBarStart != barStart {
+								total := t.merger.Length()
+								prevOffset := t.offset
+								// barStart = (maxItems - barLength) * t.offset / (total - maxItems)
+								t.offset = int(math.Ceil(float64(newBarStart) * float64(total-maxItems) / float64(maxItems-barLength)))
+								t.cy = t.offset + t.cy - prevOffset
+								req(reqList)
+							}
+						}
+					} else if me.Double {
 						// Double-click
 						if my >= min {
 							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {

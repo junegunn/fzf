@@ -176,6 +176,7 @@ func (r *LightRenderer) Init() {
 
 	if r.mouse {
 		r.csi("?1000h")
+		r.csi("?1002h")
 		r.csi("?1006h")
 	}
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
@@ -569,12 +570,14 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	// ctrl := t & 0b1000
 	mod := t&0b1100 > 0
 
+	drag := t&0b100000 > 0
+
 	if scroll != 0 {
 		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
 	}
 
 	double := false
-	if down {
+	if down && !drag {
 		now := time.Now()
 		if !left { // Right double click is not allowed
 			r.clickY = []int{}

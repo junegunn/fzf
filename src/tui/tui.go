@@ -269,6 +269,7 @@ type ColorTheme struct {
 	Selected     ColorAttr
 	Header       ColorAttr
 	Separator    ColorAttr
+	Scrollbar    ColorAttr
 	Border       ColorAttr
 	BorderLabel  ColorAttr
 	PreviewLabel ColorAttr
@@ -466,6 +467,7 @@ var (
 	ColInfo                 ColorPair
 	ColHeader               ColorPair
 	ColSeparator            ColorPair
+	ColScrollbar            ColorPair
 	ColBorder               ColorPair
 	ColPreview              ColorPair
 	ColPreviewBorder        ColorPair
@@ -490,6 +492,7 @@ func EmptyTheme() *ColorTheme {
 		Selected:     ColorAttr{colUndefined, AttrUndefined},
 		Header:       ColorAttr{colUndefined, AttrUndefined},
 		Separator:    ColorAttr{colUndefined, AttrUndefined},
+		Scrollbar:    ColorAttr{colUndefined, AttrUndefined},
 		Border:       ColorAttr{colUndefined, AttrUndefined},
 		BorderLabel:  ColorAttr{colUndefined, AttrUndefined},
 		Disabled:     ColorAttr{colUndefined, AttrUndefined},
@@ -517,6 +520,7 @@ func NoColorTheme() *ColorTheme {
 		Selected:     ColorAttr{colDefault, AttrRegular},
 		Header:       ColorAttr{colDefault, AttrRegular},
 		Separator:    ColorAttr{colDefault, AttrRegular},
+		Scrollbar:    ColorAttr{colDefault, AttrRegular},
 		Border:       ColorAttr{colDefault, AttrRegular},
 		BorderLabel:  ColorAttr{colDefault, AttrRegular},
 		Disabled:     ColorAttr{colDefault, AttrRegular},
@@ -549,6 +553,7 @@ func init() {
 		Selected:     ColorAttr{colMagenta, AttrUndefined},
 		Header:       ColorAttr{colCyan, AttrUndefined},
 		Separator:    ColorAttr{colBlack, AttrUndefined},
+		Scrollbar:    ColorAttr{colBlack, AttrUndefined},
 		Border:       ColorAttr{colBlack, AttrUndefined},
 		BorderLabel:  ColorAttr{colWhite, AttrUndefined},
 		Disabled:     ColorAttr{colUndefined, AttrUndefined},
@@ -573,6 +578,7 @@ func init() {
 		Selected:     ColorAttr{168, AttrUndefined},
 		Header:       ColorAttr{109, AttrUndefined},
 		Separator:    ColorAttr{59, AttrUndefined},
+		Scrollbar:    ColorAttr{59, AttrUndefined},
 		Border:       ColorAttr{59, AttrUndefined},
 		BorderLabel:  ColorAttr{145, AttrUndefined},
 		Disabled:     ColorAttr{colUndefined, AttrUndefined},
@@ -597,6 +603,7 @@ func init() {
 		Selected:     ColorAttr{168, AttrUndefined},
 		Header:       ColorAttr{31, AttrUndefined},
 		Separator:    ColorAttr{145, AttrUndefined},
+		Scrollbar:    ColorAttr{145, AttrUndefined},
 		Border:       ColorAttr{145, AttrUndefined},
 		BorderLabel:  ColorAttr{59, AttrUndefined},
 		Disabled:     ColorAttr{colUndefined, AttrUndefined},
@@ -645,6 +652,7 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
 	theme.PreviewBg = o(theme.Bg, theme.PreviewBg)
 	theme.PreviewLabel = o(theme.BorderLabel, theme.PreviewLabel)
+	theme.Scrollbar = o(theme.Separator, theme.Scrollbar)
 
 	initPalette(theme)
 }
@@ -677,6 +685,7 @@ func initPalette(theme *ColorTheme) {
 	ColInfo = pair(theme.Info, theme.Bg)
 	ColHeader = pair(theme.Header, theme.Bg)
 	ColSeparator = pair(theme.Separator, theme.Bg)
+	ColScrollbar = pair(theme.Scrollbar, theme.Bg)
 	ColBorder = pair(theme.Border, theme.Bg)
 	ColBorderLabel = pair(theme.BorderLabel, theme.Bg)
 	ColPreviewLabel = pair(theme.PreviewLabel, theme.PreviewBg)

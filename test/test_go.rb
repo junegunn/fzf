@@ -23,7 +23,7 @@ DEFAULT_TIMEOUT = 10
 FILE = File.expand_path(__FILE__)
 BASE = File.expand_path('..', __dir__)
 Dir.chdir(BASE)
-FZF = "FZF_DEFAULT_OPTS= FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
+FZF = "FZF_DEFAULT_OPTS=--no-scrollbar FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
 def wait
   since = Time.now
@@ -65,7 +65,7 @@ class Shell
     end
 
     def fish
-      UNSETS.map { |v| v + '= ' }.join + 'fish'
+      UNSETS.map { |v| v + '= ' }.join + ' FZF_DEFAULT_OPTS=--no-scrollbar fish'
     end
   end
 end
@@ -2908,7 +2908,7 @@ class TestFish < TestBase
   end
 
   def new_shell
-    tmux.send_keys 'env FZF_TMUX=1 fish', :Enter
+    tmux.send_keys 'env FZF_TMUX=1 FZF_DEFAULT_OPTS=--no-scrollbar fish', :Enter
     tmux.send_keys 'function fish_prompt; end; clear', :Enter
     tmux.until { |lines| assert_empty lines }
   end
@@ -2926,6 +2926,8 @@ PS1= PROMPT_COMMAND= HISTFILE= HISTSIZE=100
 unset <%= UNSETS.join(' ') %>
 unset $(env | sed -n /^_fzf_orig/s/=.*//p)
 unset $(declare -F | sed -n "/_fzf/s/.*-f //p")
+
+export FZF_DEFAULT_OPTS=--no-scrollbar
 
 # Setup fzf
 # ---------
