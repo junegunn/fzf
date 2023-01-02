@@ -2588,7 +2588,9 @@ func (t *Terminal) Loop() {
 			t.eventChan <- t.tui.GetChar()
 		}
 	}()
-	dragging := false
+	previewDraggingPos := -1
+	barDragging := false
+	wasDown := false
 	for looping {
 		var newCommand *string
 		var reloadSync bool
@@ -3032,8 +3034,15 @@ func (t *Terminal) Loop() {
 			case actMouse:
 				me := event.MouseEvent
 				mx, my := me.X, me.Y
+				clicked := !wasDown && me.Down
+				wasDown = me.Down
+				if !me.Down {
+					barDragging = false
+					previewDraggingPos = -1
+				}
+
+				// Scrolling
 				if me.S != 0 {
-					// Scroll
 					if t.window.Enclose(my, mx) && t.merger.Length() > 0 {
 						if t.multi > 0 && me.Mod {
 							toggle()
@@ -3043,61 +3052,86 @@ func (t *Terminal) Loop() {
 					} else if t.hasPreviewWindow() && t.pwindow.Enclose(my, mx) {
 						scrollPreviewBy(-me.S)
 					}
-				} else if t.window.Enclose(my, mx) {
-					mx -= t.window.Left()
-					my -= t.window.Top()
-					min := 2 + len(t.header)
-					if t.noInfoLine() {
-						min--
+					break
+				}
+
+				// Preview dragging
+				if me.Down && (previewDraggingPos > 0 || clicked && t.hasPreviewWindow() && t.pwindow.Enclose(my, mx)) {
+					if previewDraggingPos > 0 {
+						scrollPreviewBy(previewDraggingPos - my)
 					}
-					h := t.window.Height()
-					switch t.layout {
-					case layoutDefault:
+					previewDraggingPos = my
+					break
+				}
+
+				// Ignored
+				if !t.window.Enclose(my, mx) && !barDragging {
+					break
+				}
+
+				// Translate coordinates
+				mx -= t.window.Left()
+				my -= t.window.Top()
+				min := 2 + len(t.header)
+				if t.noInfoLine() {
+					min--
+				}
+				h := t.window.Height()
+				switch t.layout {
+				case layoutDefault:
+					my = h - my - 1
+				case layoutReverseList:
+					if my < h-min {
+						my += min
+					} else {
 						my = h - my - 1
-					case layoutReverseList:
-						if my < h-min {
-							my += min
-						} else {
-							my = h - my - 1
+					}
+				}
+
+				// Scrollbar dragging
+				barDragging = me.Down && (barDragging || clicked && my >= min && mx == t.window.Width()-1)
+				if barDragging {
+					barLength, barStart := t.getScrollbar()
+					if barLength > 0 {
+						maxItems := t.maxItems()
+						if newBarStart := util.Constrain(my-min-barLength/2, 0, maxItems-barLength); newBarStart != barStart {
+							total := t.merger.Length()
+							prevOffset := t.offset
+							// barStart = (maxItems - barLength) * t.offset / (total - maxItems)
+							t.offset = int(math.Ceil(float64(newBarStart) * float64(total-maxItems) / float64(maxItems-barLength)))
+							t.cy = t.offset + t.cy - prevOffset
+							req(reqList)
 						}
 					}
-					dragging = me.Down && (dragging || my >= min && mx == t.window.Width()-1)
-					if me.Double {
-						// Double-click
-						if my >= min {
-							if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
-								return doActions(actionsFor(tui.DoubleClick))
-							}
+					break
+				}
+
+				// Double-click on an item
+				if me.Double && mx < t.window.Width()-1 {
+					// Double-click
+					if my >= min {
+						if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
+							return doActions(actionsFor(tui.DoubleClick))
 						}
-					} else if dragging && my >= min {
-						barLength, barStart := t.getScrollbar()
-						if barLength > 0 {
-							maxItems := t.maxItems()
-							if newBarStart := util.Constrain(my-min-barLength/2, 0, maxItems-barLength); newBarStart != barStart {
-								total := t.merger.Length()
-								prevOffset := t.offset
-								// barStart = (maxItems - barLength) * t.offset / (total - maxItems)
-								t.offset = int(math.Ceil(float64(newBarStart) * float64(total-maxItems) / float64(maxItems-barLength)))
-								t.cy = t.offset + t.cy - prevOffset
-								req(reqList)
-							}
+					}
+					break
+				}
+
+				if me.Down {
+					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
+					if my == t.promptLine() && mx >= 0 {
+						// Prompt
+						t.cx = mx + t.xoffset
+					} else if my >= min {
+						// List
+						if t.vset(t.offset+my-min) && t.multi > 0 && me.Mod {
+							toggle()
 						}
-					} else if me.Down {
-						mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
-						if my == t.promptLine() && mx >= 0 {
-							// Prompt
-							t.cx = mx + t.xoffset
-						} else if my >= min {
-							// List
-							if t.vset(t.offset+my-min) && t.multi > 0 && me.Mod {
-								toggle()
-							}
-							req(reqList)
-							if me.Left {
-								return doActions(actionsFor(tui.LeftClick))
-							}
-							return doActions(actionsFor(tui.RightClick))
+						req(reqList)
+						if me.Left {
+							return doActions(actionsFor(tui.LeftClick))
 						}
+						return doActions(actionsFor(tui.RightClick))
 					}
 				}
 			case actReload, actReloadSync:
