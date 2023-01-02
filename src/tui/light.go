@@ -591,6 +591,9 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 		if len(r.clicks) > 1 && r.clicks[0][0] == r.clicks[1][0] && r.clicks[0][1] == r.clicks[1][1] &&
 			time.Since(r.prevDownTime) < doubleClickDuration {
 			double = true
+			if double {
+				r.clicks = [][2]int{}
+			}
 		}
 	}
 	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
