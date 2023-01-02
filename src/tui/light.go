@@ -588,7 +588,8 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 		}
 		r.prevDownTime = now
 	} else {
-		if len(r.clicks) > 1 && r.clicks[0][0] == r.clicks[1][0] && r.clicks[0][1] == r.clicks[1][1] &&
+		n := len(r.clicks)
+		if len(r.clicks) > 1 && r.clicks[n-2][0] == r.clicks[n-1][0] && r.clicks[n-2][1] == r.clicks[n-1][1] &&
 			time.Since(r.prevDownTime) < doubleClickDuration {
 			double = true
 			if double {
