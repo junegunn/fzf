@@ -72,7 +72,7 @@ type LightRenderer struct {
 	forceBlack    bool
 	clearOnExit   bool
 	prevDownTime  time.Time
-	clickY        []int
+	clicks        [][2]int
 	ttyin         *os.File
 	buffer        []byte
 	origState     *term.State
@@ -580,15 +580,15 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	if down && !drag {
 		now := time.Now()
 		if !left { // Right double click is not allowed
-			r.clickY = []int{}
+			r.clicks = [][2]int{}
 		} else if now.Sub(r.prevDownTime) < doubleClickDuration {
-			r.clickY = append(r.clickY, y)
+			r.clicks = append(r.clicks, [2]int{x, y})
 		} else {
-			r.clickY = []int{y}
+			r.clicks = [][2]int{{x, y}}
 		}
 		r.prevDownTime = now
 	} else {
-		if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
+		if len(r.clicks) > 1 && r.clicks[0][0] == r.clicks[1][0] && r.clicks[0][1] == r.clicks[1][1] &&
 			time.Since(r.prevDownTime) < doubleClickDuration {
 			double = true
 		}

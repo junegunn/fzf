@@ -431,7 +431,7 @@ type FullscreenRenderer struct {
 	mouse        bool
 	forceBlack   bool
 	prevDownTime time.Time
-	clickY       []int
+	clicks       [][2]int
 }
 
 func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Renderer {
@@ -440,7 +440,7 @@ func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Rende
 		mouse:        mouse,
 		forceBlack:   forceBlack,
 		prevDownTime: time.Unix(0, 0),
-		clickY:       []int{}}
+		clicks:       [][2]int{}}
 	return r
 }
 

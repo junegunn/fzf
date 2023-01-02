@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"runtime"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
 
@@ -218,54 +216,38 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, false, mod}}
 		case button&tcell.WheelUp != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, false, mod}}
-		case button&tcell.Button1 != 0 && !drag:
-			// all potential double click events put their 'line' coordinate in the clickY array
-			// double click event has two conditions, temporal and spatial, the first is checked here
-			now := time.Now()
-			if now.Sub(r.prevDownTime) < doubleClickDuration {
-				r.clickY = append(r.clickY, y)
-			} else {
-				r.clickY = []int{y}
-			}
-			r.prevDownTime = now
+		case button&tcell.Button1 != 0:
+			double := false
+			if !drag {
+				// all potential double click events put their coordinates in the clicks array
+				// double click event has two conditions, temporal and spatial, the first is checked here
+				now := time.Now()
+				if now.Sub(r.prevDownTime) < doubleClickDuration {
+					r.clicks = append(r.clicks, [2]int{x, y})
+				} else {
+					r.clicks = [][2]int{{x, y}}
+				}
+				r.prevDownTime = now
 
-			// detect double clicks (also check for spatial condition)
-			n := len(r.clickY)
-			double := n > 1 && r.clickY[n-2] == r.clickY[n-1]
-			if double {
-				// make sure two consecutive double clicks require four clicks
-				r.clickY = []int{}
+				// detect double clicks (also check for spatial condition)
+				n := len(r.clicks)
+				double = n > 1 && r.clicks[n-2][0] == r.clicks[n-1][0] && r.clicks[n-2][1] == r.clicks[n-1][1]
+				if double {
+					// make sure two consecutive double clicks require four clicks
+					r.clicks = [][2]int{}
+				}
 			}
-
 			// fire single or double click event
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, true, !double, double, mod}}
-		case button&tcell.Button2 != 0 && !drag:
+		case button&tcell.Button2 != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, false, true, false, mod}}
-		case runtime.GOOS != "windows":
-
+		default:
 			// double and single taps on Windows don't quite work due to
 			// the console acting on the events and not allowing us
 			// to consume them.
-
 			left := button&tcell.Button1 != 0
 			down := left || button&tcell.Button3 != 0
 			double := false
-			if down {
-				now := time.Now()
-				if !left {
-					r.clickY = []int{}
-				} else if now.Sub(r.prevDownTime) < doubleClickDuration {
-					r.clickY = append(r.clickY, x)
-				} else {
-					r.clickY = []int{x}
-					r.prevDownTime = now
-				}
-			} else {
-				if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
-					time.Now().Sub(r.prevDownTime) < doubleClickDuration {
-					double = true
-				}
-			}
 
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
 		}
