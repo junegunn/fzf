@@ -73,6 +73,8 @@ const usage = `usage: fzf [options]
     --info=STYLE           Finder info style [default|inline|hidden]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
+    --scrollbar[=CHAR]     Scrollbar character
+    --no-scrollbar         Hide scrollbar
     --prompt=STR           Input prompt (default: '> ')
     --pointer=STR          Pointer to the current line (default: '>')
     --marker=STR           Multi-select marker (default: '>')
@@ -290,6 +292,7 @@ type Options struct {
 	HeaderLines  int
 	HeaderFirst  bool
 	Ellipsis     string
+	Scrollbar    *string
 	Margin       [4]sizeSpec
 	Padding      [4]sizeSpec
 	BorderShape  tui.BorderShape
@@ -359,6 +362,7 @@ func defaultOptions() *Options {
 		HeaderLines:  0,
 		HeaderFirst:  false,
 		Ellipsis:     "..",
+		Scrollbar:    nil,
 		Margin:       defaultMargin(),
 		Padding:      defaultMargin(),
 		Unicode:      true,
@@ -847,6 +851,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				mergeAttr(&theme.Border)
 			case "separator":
 				mergeAttr(&theme.Separator)
+			case "scrollbar":
+				mergeAttr(&theme.Scrollbar)
 			case "label":
 				mergeAttr(&theme.BorderLabel)
 			case "preview-label":
@@ -892,7 +898,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|change-query|change-prompt|change-preview-window|change-preview|(?:re|un)bind|pos|put|transform-query)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1211,6 +1217,8 @@ func isExecuteAction(str string) actionType {
 		return actExecuteMulti
 	case "put":
 		return actPut
+	case "transform-prompt":
+		return actTransformPrompt
 	case "transform-query":
 		return actTransformQuery
 	}
@@ -1568,6 +1576,16 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--no-separator":
 			nosep := ""
 			opts.Separator = &nosep
+		case "--scrollbar":
+			given, bar := optionalNextString(allArgs, &i)
+			if given {
+				opts.Scrollbar = &bar
+			} else {
+				opts.Scrollbar = nil
+			}
+		case "--no-scrollbar":
+			noBar := ""
+			opts.Scrollbar = &noBar
 		case "--jump-labels":
 			opts.JumpLabels = nextString(allArgs, &i, "label characters required")
 			validateJumpLabels = true
@@ -1737,6 +1755,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.InfoStyle = parseInfoStyle(value)
 			} else if match, value := optString(arg, "--separator="); match {
 				opts.Separator = &value
+			} else if match, value := optString(arg, "--scrollbar="); match {
+				opts.Scrollbar = &value
 			} else if match, value := optString(arg, "--toggle-sort="); match {
 				parseToggleSort(opts.Keymap, value)
 			} else if match, value := optString(arg, "--expect="); match {
@@ -1843,6 +1863,11 @@ func postProcessOptions(opts *Options) {
 	if !opts.Version && !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		errorExit("--height option is currently not supported on this platform")
 	}
+
+	if opts.Scrollbar != nil && runewidth.StringWidth(*opts.Scrollbar) > 1 {
+		errorExit("scrollbar display width should be 1")
+	}
+
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
 		if _, prs := opts.Keymap[tui.CtrlP.AsEvent()]; !prs {

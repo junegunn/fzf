@@ -357,6 +357,15 @@ Do not display horizontal separator on the info line. A synonym for
 \fB--separator=''\fB
 
 .TP
+.BI "--scrollbar=" "CHAR"
+Use the given character to render scrollbar. (default: '│' or ':' depending on
+\fB--no-unicode\fR).
+
+.TP
+.B "--no-scrollbar"
+Do not display scrollbar. A synonym for \fB--scrollbar=''\fB
+
+.TP
 .BI "--prompt=" "STR"
 Input prompt (default: '> ')
 .TP
@@ -404,27 +413,28 @@ color mappings.
     \fBbw      \fRNo colors (equivalent to \fB--no-color\fR)
 
 .B COLOR NAMES:
-    \fBfg            \fRText
-    \fBbg            \fRBackground
-    \fBpreview-fg    \fRPreview window text
-    \fBpreview-bg    \fRPreview window background
-    \fBhl            \fRHighlighted substrings
-    \fBfg+           \fRText (current line)
-    \fBbg+           \fRBackground (current line)
-    \fBgutter        \fRGutter on the left (defaults to \fBbg+\fR)
-    \fBhl+           \fRHighlighted substrings (current line)
-    \fBquery         \fRQuery string
-    \fBdisabled      \fRQuery string when search is disabled
-    \fBinfo          \fRInfo line (match counters)
-    \fBseparator     \fRHorizontal separator on info line (match counters)
-    \fBborder        \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
-    \fBlabel         \fRBorder label (\fB--border-label\fR and \fB--preview-label\fR)
-    \fBpreview-label \fRBorder label of the preview window (\fB--preview-label\fR)
-    \fBprompt        \fRPrompt
-    \fBpointer       \fRPointer to the current line
-    \fBmarker        \fRMulti-select marker
-    \fBspinner       \fRStreaming input indicator
-    \fBheader        \fRHeader
+    \fBfg              \fRText
+      \fBpreview-fg    \fRPreview window text
+    \fBbg              \fRBackground
+      \fBpreview-bg    \fRPreview window background
+    \fBhl              \fRHighlighted substrings
+    \fBfg+             \fRText (current line)
+    \fBbg+             \fRBackground (current line)
+      \fBgutter        \fRGutter on the left
+    \fBhl+             \fRHighlighted substrings (current line)
+    \fBquery           \fRQuery string
+      \fBdisabled      \fRQuery string when search is disabled (\fB--disabled\fR)
+    \fBinfo            \fRInfo line (match counters)
+    \fBborder          \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
+      \fBseparator     \fRHorizontal separator on info line
+      \fBscrollbar     \fRScrollbar
+    \fBlabel           \fRBorder label (\fB--border-label\fR and \fB--preview-label\fR)
+      \fBpreview-label \fRBorder label of the preview window (\fB--preview-label\fR)
+    \fBprompt          \fRPrompt
+    \fBpointer         \fRPointer to the current line
+    \fBmarker          \fRMulti-select marker
+    \fBspinner         \fRStreaming input indicator
+    \fBheader          \fRHeader
 
 .B ANSI COLORS:
     \fB-1         \fRDefault terminal foreground/background color
@@ -536,7 +546,8 @@ e.g.
 Note that you can escape a placeholder pattern by prepending a backslash.
 
 Preview window will be updated even when there is no match for the current
-query if any of the placeholder expressions evaluates to a non-empty string.
+query if any of the placeholder expressions evaluates to a non-empty string
+or \fB{q}\fR is in the command template.
 
 Since 0.24.0, fzf can render partial preview content before the preview command
 completes. ANSI escape sequence for clearing the display (\fBCSI 2 J\fR) is
@@ -1033,6 +1044,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-search\fR              (toggle search functionality)
     \fBtoggle-sort\fR
     \fBtoggle+up\fR                  \fIbtab    (shift-tab)\fR
+    \fBtransform-prompt(...)\fR      (transform prompt string using an external command)
     \fBtransform-query(...)\fR       (transform query string using an external command)
     \fBunbind(...)\fR                (unbind bindings)
     \fBunix-line-discard\fR          \fIctrl-u\fR

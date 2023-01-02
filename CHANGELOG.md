@@ -12,6 +12,14 @@ CHANGELOG
   # Send actions to the server
   curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
   ```
+- Added scrollbar on the main search window
+  ```sh
+  # Hide scrollbar
+  fzf --no-scrollbar
+
+  # Customize scrollbar
+  fzf --scrollbar ┆ --color scrollbar:blue
+  ```
 - New event
     - Added `load` event that is triggered when the input stream is complete
       and the initial processing of the list is complete.
@@ -56,23 +64,40 @@ CHANGELOG
       ```sh
       curl localhost:6266 -d "change-query:$(date)"
       ```
+    - Added `transform-prompt(...)` action for transforming the prompt string
+      using an external command
+      ```sh
+      # Press space to change the prompt string using an external command
+      # (only the first line of the output is taken)
+      fzf --bind 'space:reload(ls),load:transform-prompt(printf "%s> " "$(date)")'
+      ```
     - Added `transform-query(...)` action for transforming the query string using
       an external command
       ```sh
       # Press space to convert the query to uppercase letters
-      fzf --bind 'space:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      fzf --bind 'space:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
 
       # Bind it to 'change' event for automatic conversion
-      fzf --bind 'change:transform-query(tr [:lower:] [:upper:] <<< {q})'
+      fzf --bind 'change:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
 
       # Can only type numbers
-      fzf --bind 'change:transform-query(sed 's/[^0-9]//g' <<< {q})'
+      fzf --bind 'change:transform-query(sed "s/[^0-9]//g" <<< {q})'
       ```
-- Improvements
     - `put` action can optionally take an argument string
       ```sh
       # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
       fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+      ```
+- Behavior changes
+    - fzf will always execute the preview command if the command template
+      contains `{q}` even when it's empty. If you prefer the old behavior,
+      you'll have to check if `{q}` is empty in your command.
+      ```sh
+      # This will show // even when the query is empty
+      : | fzf --preview 'echo /{q}/'
+
+      # But if you don't want it,
+      : | fzf --preview '[ -n {q} ] || exit; echo /{q}/'
       ```
     - `double-click` will behave the same as `enter` unless otherwise specified,
       so you don't have to repeat the same action twice in `--bind` in most cases.
@@ -80,6 +105,10 @@ CHANGELOG
       # No need to bind 'double-click' to the same action
       fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
       ```
+    - If the color for `separator` is not specified, it will default to the
+      color for `border`. Same holds true for `scrollbar`. This is to reduce
+      the number of configuration items required to achieve a consistent color
+      scheme.
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Minor bug fixes and improvements
