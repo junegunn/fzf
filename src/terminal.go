@@ -2652,10 +2652,12 @@ func (t *Terminal) Loop() {
 			}
 			t.previewer.following = false
 			numLines := len(t.previewer.lines)
+			headerLines := t.previewOpts.headerLines
 			if t.previewOpts.cycle {
-				newOffset = (newOffset + numLines) % numLines
+				offsetRange := numLines - headerLines
+				newOffset = ((newOffset-headerLines)+offsetRange)%offsetRange + headerLines
 			}
-			newOffset = util.Constrain(newOffset, t.previewOpts.headerLines, numLines-1)
+			newOffset = util.Constrain(newOffset, headerLines, numLines-1)
 			if t.previewer.offset != newOffset {
 				t.previewer.offset = newOffset
 				req(reqPreviewRefresh)
