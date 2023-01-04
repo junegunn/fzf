@@ -523,7 +523,7 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 }
 
 func (w *TcellWindow) Erase() {
-	fill(w.left-1, w.top, w.width+1, w.height, w.normal, ' ')
+	fill(w.left-1, w.top, w.width+1, w.height-1, w.normal, ' ')
 }
 
 func (w *TcellWindow) Enclose(y int, x int) bool {
