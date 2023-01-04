@@ -110,12 +110,11 @@ func matchControlSequence(s string) int {
 	//                     ^ match starting here
 	//
 	i := 2 // prefix matched in nextAnsiEscapeSequence()
+    var c byte
 	for ; i < len(s); i++ {
-		c := s[i]
-		switch c {
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';', ':', '?':
-			// ok
-		default:
+		c = s[i]
+        // if c not in [0-9;:?]
+        if c < '0' && c > ';' || c != '?'{
 			if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '@' {
 				return i + 1
 			}
