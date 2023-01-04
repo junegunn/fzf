@@ -1682,6 +1682,7 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
 	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
+	spinnerRedraw := t.pwindow.Y() == 0
 	for _, line := range lines {
 		var lbg tui.Color = -1
 		if ansi != nil {
@@ -1693,6 +1694,13 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 			t.previewer.scrollable = true
 			break
 		} else if lineNo >= 0 {
+			if spinnerRedraw && lineNo > 0 {
+				spinnerRedraw = false
+				y := t.pwindow.Y()
+				x := t.pwindow.X()
+				t.renderPreviewSpinner()
+				t.pwindow.Move(y, x)
+			}
 			var fillRet tui.FillReturn
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
