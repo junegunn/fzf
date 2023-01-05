@@ -1682,6 +1682,7 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
 	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
+	spinnerRedraw := t.pwindow.Y() == 0
 	for _, line := range lines {
 		var lbg tui.Color = -1
 		if ansi != nil {
@@ -1693,6 +1694,13 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 			t.previewer.scrollable = true
 			break
 		} else if lineNo >= 0 {
+			if spinnerRedraw && lineNo > 0 {
+				spinnerRedraw = false
+				y := t.pwindow.Y()
+				x := t.pwindow.X()
+				t.renderPreviewSpinner()
+				t.pwindow.Move(y, x)
+			}
 			var fillRet tui.FillReturn
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
@@ -2652,10 +2660,12 @@ func (t *Terminal) Loop() {
 			}
 			t.previewer.following = false
 			numLines := len(t.previewer.lines)
+			headerLines := t.previewOpts.headerLines
 			if t.previewOpts.cycle {
-				newOffset = (newOffset + numLines) % numLines
+				offsetRange := numLines - headerLines
+				newOffset = ((newOffset-headerLines)+offsetRange)%offsetRange + headerLines
 			}
-			newOffset = util.Constrain(newOffset, t.previewOpts.headerLines, numLines-1)
+			newOffset = util.Constrain(newOffset, headerLines, numLines-1)
 			if t.previewer.offset != newOffset {
 				t.previewer.offset = newOffset
 				req(reqPreviewRefresh)
