@@ -77,6 +77,7 @@ type previewer struct {
 	final      bool
 	following  bool
 	spinner    string
+	bar        []bool
 }
 
 type previewed struct {
@@ -601,7 +602,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
-		previewer:          previewer{0, []string{}, 0, showPreviewWindow, false, true, false, ""},
+		previewer:          previewer{0, []string{}, 0, showPreviewWindow, false, true, false, "", []bool{}},
 		previewed:          previewed{0, 0, 0, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
@@ -774,25 +775,22 @@ func (t *Terminal) noInfoLine() bool {
 	return t.infoStyle != infoDefault
 }
 
-func (t *Terminal) getScrollbar() (int, int) {
-	total := t.merger.Length()
-	if total == 0 {
+func getScrollbar(total int, height int, offset int) (int, int) {
+	if total == 0 || total <= height {
 		return 0, 0
 	}
-
-	maxItems := t.maxItems()
-	barLength := util.Max(1, maxItems*maxItems/total)
-	if total <= maxItems {
-		return 0, 0
-	}
-
+	barLength := util.Max(1, height*height/total)
 	var barStart int
-	if total == maxItems {
+	if total == height {
 		barStart = 0
 	} else {
-		barStart = (maxItems - barLength) * t.offset / (total - maxItems)
+		barStart = (height - barLength) * offset / (total - height)
 	}
 	return barLength, barStart
+}
+
+func (t *Terminal) getScrollbar() (int, int) {
+	return getScrollbar(t.merger.Length(), t.maxItems(), t.offset)
 }
 
 // Input returns current query string
@@ -1106,6 +1104,10 @@ func (t *Terminal) resizeWindows() {
 					pwidth -= 4
 					x += 2
 				}
+				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
+					// Need a column to show scrollbar
+					pwidth -= 1
+				}
 				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 			}
 			verticalPad := 2
@@ -1127,6 +1129,10 @@ func (t *Terminal) resizeWindows() {
 					}
 					return
 				}
+				// Put scrollbar closer to the right border for consistent look
+				if t.borderShape.HasRight() {
+					width++
+				}
 				if previewOpts.position == posUp {
 					t.window = t.tui.NewWindow(
 						marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
@@ -1145,19 +1151,35 @@ func (t *Terminal) resizeWindows() {
 					return
 				}
 				if previewOpts.position == posLeft {
+					// Put scrollbar closer to the right border for consistent look
+					if t.borderShape.HasRight() {
+						width++
+					}
+					// Add a 1-column margin between the preview window and the main window
 					t.window = t.tui.NewWindow(
-						marginInt[0], marginInt[3]+pwidth, width-pwidth, height, false, noBorder)
+						marginInt[0], marginInt[3]+pwidth+1, width-pwidth-1, height, false, noBorder)
 					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 				} else {
 					t.window = t.tui.NewWindow(
 						marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
-					createPreviewWindow(marginInt[0], marginInt[3]+width-pwidth, pwidth, height)
+					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
+					x := marginInt[3] + width - pwidth
+					if !previewOpts.border.HasRight() && t.borderShape.HasRight() {
+						pwidth++
+					}
+					createPreviewWindow(marginInt[0], x, pwidth, height)
 				}
 			}
 		}
 		resizePreviewWindows(t.previewOpts)
 	}
+
+	// Without preview window
 	if t.window == nil {
+		if t.borderShape.HasRight() {
+			// Put scrollbar closer to the right border for consistent look
+			width++
+		}
 		t.window = t.tui.NewWindow(
 			marginInt[0],
 			marginInt[3],
@@ -1677,6 +1699,14 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if !unchanged {
 		t.pwindow.FinishFill()
 	}
+
+	if len(t.scrollbar) == 0 {
+		return
+	}
+
+	effectiveHeight := height - headerLines
+	barLength, barStart := getScrollbar(len(body), effectiveHeight, util.Min(len(body)-effectiveHeight, t.previewer.offset-headerLines))
+	t.renderPreviewScrollbar(headerLines, barLength, barStart)
 }
 
 func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
@@ -1738,6 +1768,40 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 			}
 		}
 		lineNo++
+	}
+}
+
+func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int) {
+	height := t.pwindow.Height()
+	w := t.pborder.Width()
+	if len(t.previewer.bar) != height {
+		t.previewer.bar = make([]bool, height)
+	}
+	xshift := -2
+	if !t.previewOpts.border.HasRight() {
+		xshift = -1
+	}
+	yshift := 1
+	if !t.previewOpts.border.HasTop() {
+		yshift = 0
+	}
+	for i := yoff; i < height; i++ {
+		x := w + xshift
+		y := i + yshift
+
+		// Avoid unnecessary redraws
+		bar := i >= yoff+barStart && i < yoff+barStart+barLength
+		if bar == t.previewer.bar[i] {
+			continue
+		}
+
+		t.previewer.bar[i] = bar
+		t.pborder.Move(y, x)
+		if i >= yoff+barStart && i < yoff+barStart+barLength {
+			t.pborder.CPrint(tui.ColScrollbar, t.scrollbar)
+		} else {
+			t.pborder.Print(" ")
+		}
 	}
 }
 
@@ -2598,6 +2662,7 @@ func (t *Terminal) Loop() {
 	}()
 	previewDraggingPos := -1
 	barDragging := false
+	pbarDragging := false
 	wasDown := false
 	for looping {
 		var newCommand *string
@@ -3048,6 +3113,7 @@ func (t *Terminal) Loop() {
 				wasDown = me.Down
 				if !me.Down {
 					barDragging = false
+					pbarDragging = false
 					previewDraggingPos = -1
 				}
 
@@ -3066,11 +3132,28 @@ func (t *Terminal) Loop() {
 				}
 
 				// Preview dragging
-				if me.Down && (previewDraggingPos > 0 || clicked && t.hasPreviewWindow() && t.pwindow.Enclose(my, mx)) {
+				if me.Down && (previewDraggingPos >= 0 || clicked && t.hasPreviewWindow() && t.pwindow.Enclose(my, mx)) {
 					if previewDraggingPos > 0 {
 						scrollPreviewBy(previewDraggingPos - my)
 					}
 					previewDraggingPos = my
+					break
+				}
+
+				// Prevew scrollbar dragging
+				headerLines := t.previewOpts.headerLines
+				pbarDragging = me.Down && (pbarDragging || clicked && t.hasPreviewWindow() && my >= t.pwindow.Top()+headerLines && my < t.pwindow.Top()+t.pwindow.Height() && mx == t.pwindow.Left()+t.pwindow.Width())
+				if pbarDragging {
+					effectiveHeight := t.pwindow.Height() - headerLines
+					numLines := len(t.previewer.lines) - headerLines
+					barLength, _ := getScrollbar(numLines, effectiveHeight, util.Min(numLines-effectiveHeight, t.previewer.offset-headerLines))
+					if barLength > 0 {
+						y := my - t.pwindow.Top() - headerLines - barLength/2
+						y = util.Constrain(y, 0, effectiveHeight-barLength)
+						// offset = (total - maxItems) * barStart / (maxItems - barLength)
+						t.previewer.offset = headerLines + int(math.Ceil(float64(y)*float64(numLines-effectiveHeight)/float64(effectiveHeight-barLength)))
+						req(reqPreviewRefresh)
+					}
 					break
 				}
 

@@ -12,7 +12,7 @@ CHANGELOG
   # Send actions to the server
   curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
   ```
-- Added scrollbar on the main search window
+- Added draggable scrollbar to the main search window and the preview window
   ```sh
   # Hide scrollbar
   fzf --no-scrollbar

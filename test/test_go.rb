@@ -2380,13 +2380,13 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 3 | fzf --height ~100% --border=vertical --preview 'seq {}' --preview-window left,5,border-right --padding 1 --exit-0 --header $'hello\\nworld' --header-lines=2", :Enter
     expected = <<~OUTPUT
       │
-      │  1       │> 3
-      │  2       │  2
-      │  3       │  1
-      │          │  hello
-      │          │  world
-      │          │  1/1 ─
-      │          │>
+      │  1       │ > 3
+      │  2       │   2
+      │  3       │   1
+      │          │   hello
+      │          │   world
+      │          │   1/1 ─
+      │          │ >
       │
     OUTPUT
     tmux.until { assert_block(expected, _1) }
