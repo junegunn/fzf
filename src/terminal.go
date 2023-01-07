@@ -2622,7 +2622,11 @@ func (t *Terminal) Loop() {
 						t.tui.Resume(t.fullscreen, t.sigstop)
 						t.redraw()
 					case reqFullRedraw:
+						wasHidden := t.pwindow == nil
 						t.redraw()
+						if wasHidden && t.pwindow != nil {
+							refreshPreview(t.previewOpts.command)
+						}
 					case reqClose:
 						exit(func() int {
 							if t.output() {
