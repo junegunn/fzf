@@ -207,6 +207,14 @@ type previewOpts struct {
 	alternative *previewOpts
 }
 
+func (o *previewOpts) Visible() bool {
+	return o.size.size > 0 || o.alternative != nil && o.alternative.size.size > 0
+}
+
+func (o *previewOpts) Toggle() {
+	o.hidden = !o.hidden
+}
+
 func parseLabelPosition(opts *labelOpts, arg string) {
 	opts.column = 0
 	opts.bottom = false
