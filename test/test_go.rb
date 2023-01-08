@@ -1502,7 +1502,7 @@ class TestGoFZF < TestBase
     rescue StandardError
       nil
     end
-    tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0 --bind space:toggle-preview), :Enter
     tmux.until do |lines|
       assert_equal 100, lines.item_count
       assert_equal '  100/100', lines[1]
@@ -1512,17 +1512,17 @@ class TestGoFZF < TestBase
       assert_path_exists tempname
       assert_equal %w[1], File.readlines(tempname, chomp: true)
     end
-    tmux.send_keys :Down
-    tmux.until { |lines| assert_equal '> 2', lines[3] }
-    wait do
-      assert_path_exists tempname
-      assert_equal %w[1 2], File.readlines(tempname, chomp: true)
-    end
-    tmux.send_keys :Down
+    tmux.send_keys :Space, :Down, :Down
     tmux.until { |lines| assert_equal '> 3', lines[4] }
     wait do
       assert_path_exists tempname
-      assert_equal %w[1 2 3], File.readlines(tempname, chomp: true)
+      assert_equal %w[1], File.readlines(tempname, chomp: true)
+    end
+    tmux.send_keys :Space, :Down
+    tmux.until { |lines| assert_equal '> 4', lines[5] }
+    wait do
+      assert_path_exists tempname
+      assert_equal %w[1 3 4], File.readlines(tempname, chomp: true)
     end
   end
 
@@ -2380,13 +2380,13 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 3 | fzf --height ~100% --border=vertical --preview 'seq {}' --preview-window left,5,border-right --padding 1 --exit-0 --header $'hello\\nworld' --header-lines=2", :Enter
     expected = <<~OUTPUT
       │
-      │  1       │> 3
-      │  2       │  2
-      │  3       │  1
-      │          │  hello
-      │          │  world
-      │          │  1/1 ─
-      │          │>
+      │  1       │ > 3
+      │  2       │   2
+      │  3       │   1
+      │          │   hello
+      │          │   world
+      │          │   1/1 ─
+      │          │ >
       │
     OUTPUT
     tmux.until { assert_block(expected, _1) }
@@ -2405,7 +2405,7 @@ class TestGoFZF < TestBase
   end
 
   def test_start_event
-    tmux.send_keys 'seq 100 | fzf --multi --sync --preview-window border-none --bind "start:select-all+last+preview(echo welcome)"', :Enter
+    tmux.send_keys 'seq 100 | fzf --multi --sync --preview-window hidden:border-none --bind "start:select-all+last+preview(echo welcome)"', :Enter
     tmux.until do |lines|
       assert_match(/>100.*welcome/, lines[0])
       assert_includes(lines[-2], '100/100 (100)')
@@ -2494,6 +2494,14 @@ class TestGoFZF < TestBase
     Net::HTTP.post(URI('http://localhost:6266'), 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
     tmux.until { |lines| assert_equal 100, lines.item_count }
     tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+  end
+
+  def test_toggle_alternative_preview_window
+    tmux.send_keys "seq 10 | #{FZF} --bind space:toggle-preview --preview-window '<100000(hidden,up,border-none)' --preview 'echo /{}/{}/'", :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| refute_includes lines, '/1/1/' }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines, '/1/1/' }
   end
 end
 

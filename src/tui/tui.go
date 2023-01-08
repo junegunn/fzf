@@ -307,6 +307,22 @@ const (
 	BorderRight
 )
 
+func (s BorderShape) HasRight() bool {
+	switch s {
+	case BorderNone, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
+		return false
+	}
+	return true
+}
+
+func (s BorderShape) HasTop() bool {
+	switch s {
+	case BorderNone, BorderLeft, BorderRight, BorderBottom, BorderVertical: // No top
+		return false
+	}
+	return true
+}
+
 type BorderStyle struct {
 	shape       BorderShape
 	horizontal  rune

@@ -207,6 +207,14 @@ type previewOpts struct {
 	alternative *previewOpts
 }
 
+func (o *previewOpts) Visible() bool {
+	return o.size.size > 0 || o.alternative != nil && o.alternative.size.size > 0
+}
+
+func (o *previewOpts) Toggle() {
+	o.hidden = !o.hidden
+}
+
 func parseLabelPosition(opts *labelOpts, arg string) {
 	opts.column = 0
 	opts.bottom = false
@@ -543,8 +551,13 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 }
 
 func parseKeyChords(str string, message string) map[tui.Event]string {
+	return parseKeyChordsImpl(str, message, errorExit)
+}
+
+func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.Event]string {
 	if len(str) == 0 {
-		errorExit(message)
+		exit(message)
+		return nil
 	}
 
 	str = regexp.MustCompile("(?i)(alt-),").ReplaceAllString(str, "$1"+string([]rune{escapedComma}))
@@ -678,7 +691,8 @@ func parseKeyChords(str string, message string) map[tui.Event]string {
 			} else if len(runes) == 1 {
 				chords[tui.Key(runes[0])] = key
 			} else {
-				errorExit("unsupported key: " + key)
+				exit("unsupported key: " + key)
+				return nil
 			}
 		}
 	}
@@ -1143,8 +1157,15 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actionArg = spec[offset+1 : len(spec)-1]
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
-				if t == actUnbind || t == actRebind {
-					parseKeyChords(actionArg, spec[0:offset]+" target required")
+				switch t {
+				case actUnbind, actRebind:
+					parseKeyChordsImpl(actionArg, spec[0:offset]+" target required", exit)
+				case actChangePreviewWindow:
+					opts := previewOpts{}
+					for _, arg := range strings.Split(actionArg, "|") {
+						// Make sure that each expression is valid
+						parsePreviewWindowImpl(&opts, arg, exit)
+					}
 				}
 			}
 		}
@@ -1172,7 +1193,7 @@ func parseKeymap(keymap map[tui.Event][]*action, str string, exit func(string)) 
 		} else if len(pair[0]) == 1 && pair[0][0] == escapedPlus {
 			key = tui.Key('+')
 		} else {
-			keys := parseKeyChords(pair[0], "key name required")
+			keys := parseKeyChordsImpl(pair[0], "key name required", exit)
 			key = firstKey(keys)
 		}
 		putAllowed := key.Type == tui.Rune && unicode.IsGraphic(key.Char)
@@ -1303,6 +1324,10 @@ func parseInfoStyle(str string) infoStyle {
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
+	parsePreviewWindowImpl(opts, input, errorExit)
+}
+
+func parsePreviewWindowImpl(opts *previewOpts, input string, exit func(string)) {
 	tokenRegex := regexp.MustCompile(`[:,]*(<([1-9][0-9]*)\(([^)<]+)\)|[^,:]+)`)
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
 	offsetRegex := regexp.MustCompile(`^(\+{-?[0-9]+})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
@@ -1374,7 +1399,8 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 			} else if offsetRegex.MatchString(token) {
 				opts.scroll = token
 			} else {
-				errorExit("invalid preview window option: " + token)
+				exit("invalid preview window option: " + token)
+				return
 			}
 		}
 	}
@@ -1383,7 +1409,7 @@ func parsePreviewWindow(opts *previewOpts, input string) {
 		opts.alternative = &alternativeOpts
 		opts.alternative.hidden = false
 		opts.alternative.alternative = nil
-		parsePreviewWindow(opts.alternative, alternative)
+		parsePreviewWindowImpl(opts.alternative, alternative, exit)
 	}
 }
 
@@ -1879,7 +1905,6 @@ func postProcessOptions(opts *Options) {
 	}
 
 	// Extend the default key map
-	previewEnabled := len(opts.Preview.command) > 0 || hasPreviewAction(opts)
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
 		var lastChangePreviewWindow *action
@@ -1890,15 +1915,6 @@ func postProcessOptions(opts *Options) {
 				opts.ToggleSort = true
 			case actChangePreviewWindow:
 				lastChangePreviewWindow = act
-				if !previewEnabled {
-					// Doesn't matter
-					continue
-				}
-				opts := previewOpts{}
-				for _, arg := range strings.Split(act.a, "|") {
-					// Make sure that each expression is valid
-					parsePreviewWindow(&opts, arg)
-				}
 			}
 		}
 
