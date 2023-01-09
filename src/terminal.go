@@ -3320,6 +3320,9 @@ func (t *Terminal) Loop() {
 				if t.hasPreviewWindow() && currentPreviewOpts.scroll != t.previewOpts.scroll {
 					scrollPreviewTo(t.evaluateScrollOffset())
 				}
+
+				// Resume following
+				t.previewer.following = t.previewOpts.follow
 			case actNextSelected, actPrevSelected:
 				if len(t.selected) > 0 {
 					total := t.merger.Length()
