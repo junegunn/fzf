@@ -115,7 +115,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | Package Manager | Linux Distribution      | Command                            |
 | ---             | ---                     | ---                                |
 | APK             | Alpine Linux            | `sudo apk add fzf`                 |
-| APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt-get install fzf`         |
+| APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt install fzf`         |
 | Conda           |                         | `conda install -c conda-forge fzf` |
 | DNF             | Fedora                  | `sudo dnf install fzf`             |
 | Nix             | NixOS, etc.             | `nix-env -iA nixpkgs.fzf`          |
@@ -129,7 +129,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 > :warning: **Key bindings (CTRL-T / CTRL-R / ALT-C) and fuzzy auto-completion
 > may not be enabled by default.**
 >
-> Refer to the package documentation for more information. (e.g. `apt-cache show fzf`)
+> Refer to the package documentation for more information. (e.g. `apt show fzf`)
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
 
