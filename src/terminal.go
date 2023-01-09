@@ -3177,6 +3177,7 @@ func (t *Terminal) Loop() {
 						y = util.Constrain(y, 0, effectiveHeight-barLength)
 						// offset = (total - maxItems) * barStart / (maxItems - barLength)
 						t.previewer.offset = headerLines + int(math.Ceil(float64(y)*float64(numLines-effectiveHeight)/float64(effectiveHeight-barLength)))
+						t.previewer.following = false
 						req(reqPreviewRefresh)
 					}
 					break
