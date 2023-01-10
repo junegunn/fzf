@@ -351,6 +351,29 @@ More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/C
 Fuzzy completion for bash and zsh
 ---------------------------------
 
+Hook script to enable fuzzy completion by fzf for bash, zsh, and fish are
+included in this source under `shell/` and may be installed to the system under
+`/usr/share/doc/fzf/examples/` by the distribution (for Debian/Ubuntu/..).
+
+For bash, you should enable fuzzy completion by adding followings at the end of
+'~/.bashrc`.
+
+```sh
+FZF_KEYBINDINGS_PATH=/usr/share/doc/fzf/examples/key-bindings.bash
+if [ -f $FZF_KEYBINDINGS_PATH ]; then
+  . $FZF_KEYBINDINGS_PATH
+fi
+FZF_COMPLETION_PATH=/usr/share/doc/fzf/examples/completion.bash
+if [ -f $FZF_COMPLETION_PATH ]; then
+  . $FZF_COMPLETION_PATH
+fi
+```
+
+Please note this must be sourced after sourcing the bash-completion package
+scripts. Otherwise, setting from bash-completion package will override the fzf
+settings.
+
+
 #### Files and directories
 
 Fuzzy completion for files and directories can be triggered if the word before
