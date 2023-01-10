@@ -3177,6 +3177,7 @@ func (t *Terminal) Loop() {
 						y = util.Constrain(y, 0, effectiveHeight-barLength)
 						// offset = (total - maxItems) * barStart / (maxItems - barLength)
 						t.previewer.offset = headerLines + int(math.Ceil(float64(y)*float64(numLines-effectiveHeight)/float64(effectiveHeight-barLength)))
+						t.previewer.following = false
 						req(reqPreviewRefresh)
 					}
 					break
@@ -3319,6 +3320,9 @@ func (t *Terminal) Loop() {
 				if t.hasPreviewWindow() && currentPreviewOpts.scroll != t.previewOpts.scroll {
 					scrollPreviewTo(t.evaluateScrollOffset())
 				}
+
+				// Resume following
+				t.previewer.following = t.previewOpts.follow
 			case actNextSelected, actPrevSelected:
 				if len(t.selected) > 0 {
 					total := t.merger.Length()
