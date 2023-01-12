@@ -1943,8 +1943,69 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_window_follow
-    tmux.send_keys "#{FZF} --preview 'seq 1000 | nl' --preview-window down:noborder:follow", :Enter
-    tmux.until { |lines| assert_equal '1000  1000', lines[-1].strip }
+    file = Tempfile.new('fzf-follow')
+    file.sync = true
+
+    tmux.send_keys %[seq 100 | #{FZF} --preview 'tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~3'], :Enter
+    tmux.until { |lines| lines.item_count == 100 }
+
+    # Write to the temporary file, and check if the preview window is showing
+    # the last line of the file
+    3.times { file.puts _1 } # header lines
+    1000.times { file.puts _1 }
+    tmux.until { |lines| assert_includes lines[1], '/1003' }
+    tmux.until { |lines| assert_includes lines[-2], '999' }
+
+    # Scroll the preview window and fzf should stop following the file content
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[-2], '998' }
+    file.puts 'foo', 'bar'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1005'
+      assert_includes lines[-2], '998'
+    end
+
+    # Scroll back to the bottom and fzf should start following the file again
+    %w[999 foo bar].each do |item|
+      wait do
+        tmux.send_keys :Down
+        tmux.until { |lines| assert_includes lines[-2], item }
+      end
+    end
+    file.puts 'baz'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1006'
+      assert_includes lines[-2], 'baz'
+    end
+
+    # Scroll upwards to stop following
+    tmux.send_keys :Up
+    wait { |line| assert_includes lines[-2], 'bar' }
+    file.puts 'aaa'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1007'
+      assert_includes lines[-2], 'bar'
+    end
+
+    # Manually enable following
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines[-2], 'aaa' }
+    file.puts 'bbb'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1008'
+      assert_includes lines[-2], 'bbb'
+    end
+
+    # Disable following
+    tmux.send_keys :Space
+    file.puts 'ccc', 'ddd'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1010'
+      assert_includes lines[-2], 'bbb'
+    end
+  rescue
+    file.close
+    file.unlink
   end
 
   def test_toggle_preview_wrap
