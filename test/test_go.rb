@@ -922,7 +922,7 @@ class TestGoFZF < TestBase
     end
     wait do
       assert_path_exists history_file
-      assert_equal input[1..-1], File.readlines(history_file, chomp: true)
+      assert_equal input[1..], File.readlines(history_file, chomp: true)
     end
 
     # Update history entries (not changed on disk)
@@ -1946,7 +1946,7 @@ class TestGoFZF < TestBase
     file = Tempfile.new('fzf-follow')
     file.sync = true
 
-    tmux.send_keys %[seq 100 | #{FZF} --preview 'tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~3'], :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --preview 'tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~3'), :Enter
     tmux.until { |lines| lines.item_count == 100 }
 
     # Write to the temporary file, and check if the preview window is showing
@@ -2003,7 +2003,7 @@ class TestGoFZF < TestBase
       assert_includes lines[1], '/1010'
       assert_includes lines[-2], 'bbb'
     end
-  rescue
+  rescue StandardError
     file.close
     file.unlink
   end
@@ -2634,7 +2634,7 @@ module TestShell
     tmux.prepare
     tmux.send_keys :Escape, :c
     lines = tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..-1]
+    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..]
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -2687,7 +2687,7 @@ module TestShell
 
   def test_ctrl_r_multiline
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
-    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
     tmux.prepare
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
@@ -2696,7 +2696,7 @@ module TestShell
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines[-1]&.end_with?('bar"') }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
   end
 
   def test_ctrl_r_abort
@@ -2887,7 +2887,7 @@ module CompletionTest
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_match(/cat .*fzf-unicode.*1.* .*fzf-unicode.*2/, lines[-1]) }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal %w[test3 test4], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[test3 test4], lines[-2..] }
   end
 
   def test_custom_completion_api
