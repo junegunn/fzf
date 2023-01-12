@@ -1980,7 +1980,7 @@ class TestGoFZF < TestBase
 
     # Scroll upwards to stop following
     tmux.send_keys :Up
-    wait { |lines| assert_includes lines[-2], 'bar' }
+    wait { assert_includes lines[-2], 'bar' }
     file.puts 'aaa'
     tmux.until do |lines|
       assert_includes lines[1], '/1007'
