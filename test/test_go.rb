@@ -922,7 +922,7 @@ class TestGoFZF < TestBase
     end
     wait do
       assert_path_exists history_file
-      assert_equal input[1..-1], File.readlines(history_file, chomp: true)
+      assert_equal input[1..], File.readlines(history_file, chomp: true)
     end
 
     # Update history entries (not changed on disk)
@@ -1943,8 +1943,69 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_window_follow
-    tmux.send_keys "#{FZF} --preview 'seq 1000 | nl' --preview-window down:noborder:follow", :Enter
-    tmux.until { |lines| assert_equal '1000  1000', lines[-1].strip }
+    file = Tempfile.new('fzf-follow')
+    file.sync = true
+
+    tmux.send_keys %(seq 100 | #{FZF} --preview 'tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~3'), :Enter
+    tmux.until { |lines| lines.item_count == 100 }
+
+    # Write to the temporary file, and check if the preview window is showing
+    # the last line of the file
+    3.times { file.puts _1 } # header lines
+    1000.times { file.puts _1 }
+    tmux.until { |lines| assert_includes lines[1], '/1003' }
+    tmux.until { |lines| assert_includes lines[-2], '999' }
+
+    # Scroll the preview window and fzf should stop following the file content
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[-2], '998' }
+    file.puts 'foo', 'bar'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1005'
+      assert_includes lines[-2], '998'
+    end
+
+    # Scroll back to the bottom and fzf should start following the file again
+    %w[999 foo bar].each do |item|
+      wait do
+        tmux.send_keys :Down
+        tmux.until { |lines| assert_includes lines[-2], item }
+      end
+    end
+    file.puts 'baz'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1006'
+      assert_includes lines[-2], 'baz'
+    end
+
+    # Scroll upwards to stop following
+    tmux.send_keys :Up
+    wait { assert_includes lines[-2], 'bar' }
+    file.puts 'aaa'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1007'
+      assert_includes lines[-2], 'bar'
+    end
+
+    # Manually enable following
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines[-2], 'aaa' }
+    file.puts 'bbb'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1008'
+      assert_includes lines[-2], 'bbb'
+    end
+
+    # Disable following
+    tmux.send_keys :Space
+    file.puts 'ccc', 'ddd'
+    tmux.until do |lines|
+      assert_includes lines[1], '/1010'
+      assert_includes lines[-2], 'bbb'
+    end
+  rescue StandardError
+    file.close
+    file.unlink
   end
 
   def test_toggle_preview_wrap
@@ -2573,7 +2634,7 @@ module TestShell
     tmux.prepare
     tmux.send_keys :Escape, :c
     lines = tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..-1]
+    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..]
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -2626,7 +2687,7 @@ module TestShell
 
   def test_ctrl_r_multiline
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
-    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
     tmux.prepare
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
@@ -2635,7 +2696,7 @@ module TestShell
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines[-1]&.end_with?('bar"') }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
   end
 
   def test_ctrl_r_abort
@@ -2826,7 +2887,7 @@ module CompletionTest
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_match(/cat .*fzf-unicode.*1.* .*fzf-unicode.*2/, lines[-1]) }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal %w[test3 test4], lines[-2..-1] }
+    tmux.until { |lines| assert_equal %w[test3 test4], lines[-2..] }
   end
 
   def test_custom_completion_api

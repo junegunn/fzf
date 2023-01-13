@@ -68,6 +68,38 @@ const (
 	jumpAcceptEnabled
 )
 
+type resumableState int
+
+const (
+	disabledState resumableState = iota
+	pausedState
+	enabledState
+)
+
+func (s resumableState) Enabled() bool {
+	return s == enabledState
+}
+
+func (s *resumableState) Force(flag bool) {
+	if flag {
+		*s = enabledState
+	} else {
+		*s = disabledState
+	}
+}
+
+func (s *resumableState) Set(flag bool) {
+	if *s == disabledState {
+		return
+	}
+
+	if flag {
+		*s = enabledState
+	} else {
+		*s = pausedState
+	}
+}
+
 type previewer struct {
 	version    int64
 	lines      []string
@@ -75,7 +107,7 @@ type previewer struct {
 	enabled    bool
 	scrollable bool
 	final      bool
-	following  bool
+	following  resumableState
 	spinner    string
 	bar        []bool
 }
@@ -601,7 +633,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
-		previewer:          previewer{0, []string{}, 0, len(opts.Preview.command) > 0, false, true, false, "", []bool{}},
+		previewer:          previewer{0, []string{}, 0, len(opts.Preview.command) > 0, false, true, disabledState, "", []bool{}},
 		previewed:          previewed{0, 0, 0, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
@@ -2639,12 +2671,15 @@ func (t *Terminal) Loop() {
 						result := value.(previewResult)
 						if t.previewer.version != result.version {
 							t.previewer.version = result.version
-							t.previewer.following = t.previewOpts.follow
+							t.previewer.following.Force(t.previewOpts.follow)
+							if t.previewer.following.Enabled() {
+								t.previewer.offset = 0
+							}
 						}
 						t.previewer.lines = result.lines
 						t.previewer.spinner = result.spinner
-						if t.previewer.following {
-							t.previewer.offset = len(t.previewer.lines) - t.pwindow.Height()
+						if t.previewer.following.Enabled() {
+							t.previewer.offset = util.Max(t.previewer.offset, len(t.previewer.lines)-(t.pwindow.Height()-t.previewOpts.headerLines))
 						} else if result.offset >= 0 {
 							t.previewer.offset = util.Constrain(result.offset, t.previewOpts.headerLines, len(t.previewer.lines)-1)
 						}
@@ -2741,7 +2776,6 @@ func (t *Terminal) Loop() {
 			if !t.previewer.scrollable {
 				return
 			}
-			t.previewer.following = false
 			numLines := len(t.previewer.lines)
 			headerLines := t.previewOpts.headerLines
 			if t.previewOpts.cycle {
@@ -2751,6 +2785,7 @@ func (t *Terminal) Loop() {
 			newOffset = util.Constrain(newOffset, headerLines, numLines-1)
 			if t.previewer.offset != newOffset {
 				t.previewer.offset = newOffset
+				t.previewer.following.Set(t.previewer.offset >= numLines-(t.pwindow.Height()-headerLines))
 				req(reqPreviewRefresh)
 			}
 		}
@@ -3177,7 +3212,7 @@ func (t *Terminal) Loop() {
 						y = util.Constrain(y, 0, effectiveHeight-barLength)
 						// offset = (total - maxItems) * barStart / (maxItems - barLength)
 						t.previewer.offset = headerLines + int(math.Ceil(float64(y)*float64(numLines-effectiveHeight)/float64(effectiveHeight-barLength)))
-						t.previewer.following = false
+						t.previewer.following.Set(t.previewer.offset >= numLines-effectiveHeight)
 						req(reqPreviewRefresh)
 					}
 					break
@@ -3322,7 +3357,7 @@ func (t *Terminal) Loop() {
 				}
 
 				// Resume following
-				t.previewer.following = t.previewOpts.follow
+				t.previewer.following.Force(t.previewOpts.follow)
 			case actNextSelected, actPrevSelected:
 				if len(t.selected) > 0 {
 					total := t.merger.Length()

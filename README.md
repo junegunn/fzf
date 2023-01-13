@@ -25,43 +25,43 @@ Table of Contents
 <!-- vim-markdown-toc GFM -->
 
 * [Installation](#installation)
-  * [Using Homebrew](#using-homebrew)
-  * [Using git](#using-git)
-  * [Using Linux package managers](#using-linux-package-managers)
-  * [Windows](#windows)
-  * [As Vim plugin](#as-vim-plugin)
+    * [Using Homebrew](#using-homebrew)
+    * [Using git](#using-git)
+    * [Using Linux package managers](#using-linux-package-managers)
+    * [Windows](#windows)
+    * [As Vim plugin](#as-vim-plugin)
 * [Upgrading fzf](#upgrading-fzf)
 * [Building fzf](#building-fzf)
 * [Usage](#usage)
-    * [Using the finder](#using-the-finder)
-    * [Layout](#layout)
-    * [Search syntax](#search-syntax)
-    * [Environment variables](#environment-variables)
-    * [Options](#options)
-    * [Demo](#demo)
+        * [Using the finder](#using-the-finder)
+        * [Layout](#layout)
+        * [Search syntax](#search-syntax)
+        * [Environment variables](#environment-variables)
+        * [Options](#options)
+        * [Demo](#demo)
 * [Examples](#examples)
 * [`fzf-tmux` script](#fzf-tmux-script)
 * [Key bindings for command-line](#key-bindings-for-command-line)
 * [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
-    * [Files and directories](#files-and-directories)
-    * [Process IDs](#process-ids)
-    * [Host names](#host-names)
-    * [Environment variables / Aliases](#environment-variables--aliases)
-    * [Settings](#settings)
-    * [Supported commands](#supported-commands)
-    * [Custom fuzzy completion](#custom-fuzzy-completion)
+        * [Files and directories](#files-and-directories)
+        * [Process IDs](#process-ids)
+        * [Host names](#host-names)
+        * [Environment variables / Aliases](#environment-variables--aliases)
+        * [Settings](#settings)
+        * [Supported commands](#supported-commands)
+        * [Custom fuzzy completion](#custom-fuzzy-completion)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
-  * [Performance](#performance)
-  * [Executing external programs](#executing-external-programs)
-  * [Reloading the candidate list](#reloading-the-candidate-list)
-    * [1. Update the list of processes by pressing CTRL-R](#1-update-the-list-of-processes-by-pressing-ctrl-r)
-    * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
-    * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
-  * [Preview window](#preview-window)
+    * [Performance](#performance)
+    * [Executing external programs](#executing-external-programs)
+    * [Reloading the candidate list](#reloading-the-candidate-list)
+        * [1. Update the list of processes by pressing CTRL-R](#1-update-the-list-of-processes-by-pressing-ctrl-r)
+        * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
+        * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
+    * [Preview window](#preview-window)
 * [Tips](#tips)
-    * [Respecting `.gitignore`](#respecting-gitignore)
-    * [Fish shell](#fish-shell)
+        * [Respecting `.gitignore`](#respecting-gitignore)
+        * [Fish shell](#fish-shell)
 * [Related projects](#related-projects)
 * [License](#license)
 
@@ -334,13 +334,33 @@ fish.
 - `CTRL-T` - Paste the selected files and directories onto the command-line
     - Set `FZF_CTRL_T_COMMAND` to override the default command
     - Set `FZF_CTRL_T_OPTS` to pass additional options to fzf
+      ```sh
+      # Preview file content using bat (https://github.com/sharkdp/fd)
+      export FZF_CTRL_T_OPTS="
+        --preview 'bat -n --color=always {}'
+        --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+      ```
 - `CTRL-R` - Paste the selected command from history onto the command-line
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
     - Set `FZF_CTRL_R_OPTS` to pass additional options to fzf
+      ```sh
+      # CTRL-/ to toggle small preview window to see the full command
+      # CTRL-Y to copy the command into clipboard using pbcopy
+      export FZF_CTRL_R_OPTS="
+        --preview 'echo {}' --preview-window up:3:hidden:wrap
+        --bind 'ctrl-/:toggle-preview'
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+        --color header:italic
+        --header 'Press CTRL-Y to copy command into clipboard'"
+      ```
 - `ALT-C` - cd into the selected directory
     - Set `FZF_ALT_C_COMMAND` to override the default command
     - Set `FZF_ALT_C_OPTS` to pass additional options to fzf
+      ```sh
+      # Print tree structure in the preview window
+      export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
+      ```
 
 If you're on a tmux session, you can start fzf in a tmux split-pane or in
 a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `-d 40%`).
@@ -429,7 +449,7 @@ _fzf_compgen_dir() {
   fd --type d --hidden --follow --exclude ".git" . "$1"
 }
 
-# (EXPERIMENTAL) Advanced customization of fzf options via _fzf_comprun function
+# Advanced customization of fzf options via _fzf_comprun function
 # - The first argument to the function is the name of the command.
 # - You should make sure to pass the rest of the arguments to fzf.
 _fzf_comprun() {
@@ -437,10 +457,10 @@ _fzf_comprun() {
   shift
 
   case "$command" in
-    cd)           fzf "$@" --preview 'tree -C {} | head -200' ;;
-    export|unset) fzf "$@" --preview "eval 'echo \$'{}" ;;
-    ssh)          fzf "$@" --preview 'dig {}' ;;
-    *)            fzf "$@" ;;
+    cd)           fzf --preview 'tree -C {} | head -200'   "$@" ;;
+    export|unset) fzf --preview "eval 'echo \$'{}"         "$@" ;;
+    ssh)          fzf --preview 'dig {}'                   "$@" ;;
+    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
   esac
 }
 ```
@@ -517,9 +537,8 @@ Advanced topics
 
 ### Performance
 
-fzf is fast and is [getting even faster][perf]. Performance should not be
-a problem in most use cases. However, you might want to be aware of the
-options that affect performance.
+fzf is fast. Performance should not be a problem in most use cases. However,
+you might want to be aware of the options that can affect performance.
 
 - `--ansi` tells fzf to extract and parse ANSI color codes in the input, and it
   makes the initial scanning slower. So it's not recommended that you add it
@@ -527,12 +546,6 @@ options that affect performance.
 - `--nth` makes fzf slower because it has to tokenize each line.
 - `--with-nth` makes fzf slower as fzf has to tokenize and reassemble each
   line.
-- If you absolutely need better performance, you can consider using
-  `--algo=v1` (the default being `v2`) to make fzf use a faster greedy
-  algorithm. However, this algorithm is not guaranteed to find the optimal
-  ordering of the matches and is not recommended.
-
-[perf]: https://junegunn.kr/images/fzf-0.17.0.png
 
 ### Executing external programs
 
@@ -612,7 +625,7 @@ syntax-highlights the content of a file, such as
 [Highlight](http://www.andre-simon.de/doku/highlight/en/highlight.php):
 
 ```bash
-fzf --preview 'bat --style=numbers --color=always --line-range :500 {}'
+fzf --preview 'bat --color=always {}' --preview-window '~3'
 ```
 
 You can customize the size, position, and border of the preview window using
@@ -622,6 +635,7 @@ You can customize the size, position, and border of the preview window using
 ```bash
 fzf --height 40% --layout reverse --info inline --border \
     --preview 'file {}' --preview-window up,1,border-horizontal \
+    --bind 'ctrl-/:change-preview-window(50%|hidden|)' \
     --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'
 ```
 

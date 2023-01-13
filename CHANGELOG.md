@@ -109,6 +109,11 @@ CHANGELOG
       color for `border`. Same holds true for `scrollbar`. This is to reduce
       the number of configuration items required to achieve a consistent color
       scheme.
+    - If `follow` flag is specified in `--preview-window` option, fzf will
+      automatically scroll to the bottom of the streaming preview output. But
+      when the user manually scrolls the window, the following stops. With
+      this version, fzf will resume following if the user scrolls the window
+      to the bottom.
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Minor bug fixes and improvements
