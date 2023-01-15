@@ -230,6 +230,10 @@ Draw border around the finder
 .BR none
 .br
 
+If you use a terminal emulator where box-drawing characters take 2 columns,
+try setting \fBRUNEWIDTH_EASTASIAN\fR to \fB1\fR. If the border is still
+not properly rendered, set \fB--no-unicode\fR.
+
 .TP
 .BI "--border-label" [=LABEL]
 Label to print on the horizontal border line. Should be used with one of the
@@ -568,9 +572,9 @@ Label to print on the horizontal border line of the preview window.
 Should be used with one of the following \fB--preview-window\fR options.
 
 .br
-.B * border-rounded (default)
+.B * border-rounded (default on non-Windows platforms)
 .br
-.B * border-sharp
+.B * border-sharp (default on Windows)
 .br
 .B * border-bold
 .br

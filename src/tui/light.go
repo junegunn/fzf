@@ -651,6 +651,10 @@ func (r *LightRenderer) Clear() {
 	r.flush()
 }
 
+func (r *LightRenderer) NeedScrollbarRedraw() bool {
+	return false
+}
+
 func (r *LightRenderer) RefreshWindows(windows []Window) {
 	r.flush()
 }
@@ -743,13 +747,14 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
+	hw := runewidth.RuneWidth(w.border.horizontal)
 	if top {
 		w.Move(0, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width))
+		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
 	}
 	if bottom {
 		w.Move(w.height-1, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width))
+		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
 	}
 }
 
@@ -780,15 +785,19 @@ func (w *LightWindow) drawBorderAround() {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
+	hw := runewidth.RuneWidth(w.border.horizontal)
+	vw := runewidth.RuneWidth(w.border.vertical)
+	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
+	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
 		w.CPrint(color, string(w.border.vertical))
-		w.CPrint(color, repeat(' ', w.width-2))
+		w.CPrint(color, repeat(' ', w.width-vw*2))
 		w.CPrint(color, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {

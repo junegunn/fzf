@@ -17,6 +17,8 @@ func HasFullscreenRenderer() bool {
 	return true
 }
 
+var DefaultBorderShape BorderShape = BorderSharp
+
 func asTcellColor(color Color) tcell.Color {
 	if color == colDefault {
 		return tcell.ColorDefault
@@ -185,6 +187,10 @@ func (w *TcellWindow) Y() int {
 func (r *FullscreenRenderer) Clear() {
 	_screen.Sync()
 	_screen.Clear()
+}
+
+func (r *FullscreenRenderer) NeedScrollbarRedraw() bool {
+	return true
 }
 
 func (r *FullscreenRenderer) Refresh() {
@@ -686,15 +692,16 @@ func (w *TcellWindow) drawBorder() {
 		style = w.normal.style()
 	}
 
+	hw := runewidth.RuneWidth(w.borderStyle.horizontal)
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
-		for x := left; x < right; x++ {
+		for x := left; x <= right-hw; x += hw {
 			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
 		}
 	}
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
-		for x := left; x < right; x++ {
+		for x := left; x <= right-hw; x += hw {
 			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 		}
 	}
@@ -707,14 +714,14 @@ func (w *TcellWindow) drawBorder() {
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
 		for y := top; y < bot; y++ {
-			_screen.SetContent(right-1, y, w.borderStyle.vertical, nil, style)
+			_screen.SetContent(right-hw, y, w.borderStyle.vertical, nil, style)
 		}
 	}
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
-		_screen.SetContent(right-1, top, w.borderStyle.topRight, nil, style)
+		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
-		_screen.SetContent(right-1, bot-1, w.borderStyle.bottomRight, nil, style)
+		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.bottomRight), bot-1, w.borderStyle.bottomRight, nil, style)
 	}
 }

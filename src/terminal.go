@@ -210,6 +210,7 @@ type Terminal struct {
 	window             tui.Window
 	pborder            tui.Window
 	pwindow            tui.Window
+	borderWidth        int
 	count              int
 	progress           int
 	hasLoadActions     bool
@@ -604,6 +605,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		unicode:            opts.Unicode,
 		listenPort:         opts.ListenPort,
 		borderShape:        opts.BorderShape,
+		borderWidth:        1,
 		borderLabel:        nil,
 		borderLabelOpts:    opts.BorderLabel,
 		previewLabel:       nil,
@@ -666,8 +668,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
+	if t.unicode {
+		t.borderWidth = runewidth.RuneWidth('│')
+	}
 	if opts.Scrollbar == nil {
-		if t.unicode {
+		if t.unicode && t.borderWidth == 1 {
 			t.scrollbar = "│"
 		} else {
 			t.scrollbar = "|"
@@ -968,20 +973,21 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 		paddingInt[idx] = sizeSpecToInt(idx, sizeSpec)
 	}
 
+	bw := t.borderWidth
 	extraMargin := [4]int{} // TRBL
 	for idx, sizeSpec := range t.margin {
 		switch t.borderShape {
 		case tui.BorderHorizontal:
 			extraMargin[idx] += 1 - idx%2
 		case tui.BorderVertical:
-			extraMargin[idx] += 2 * (idx % 2)
+			extraMargin[idx] += (1 + bw) * (idx % 2)
 		case tui.BorderTop:
 			if idx == 0 {
 				extraMargin[idx]++
 			}
 		case tui.BorderRight:
 			if idx == 1 {
-				extraMargin[idx] += 2
+				extraMargin[idx] += 1 + bw
 			}
 		case tui.BorderBottom:
 			if idx == 2 {
@@ -989,10 +995,10 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 			}
 		case tui.BorderLeft:
 			if idx == 3 {
-				extraMargin[idx] += 2
+				extraMargin[idx] += 1 + bw
 			}
 		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
-			extraMargin[idx] += 1 + idx%2
+			extraMargin[idx] += 1 + bw*(idx%2)
 		}
 		marginInt[idx] = sizeSpecToInt(idx, sizeSpec) + extraMargin[idx]
 	}
@@ -1106,6 +1112,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				return
 			}
 			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
+			bw := t.borderWidth
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
 				pheight := h
@@ -1118,15 +1125,15 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
 				switch previewOpts.border {
 				case tui.BorderSharp, tui.BorderRounded, tui.BorderBold, tui.BorderDouble:
-					pwidth -= 4
+					pwidth -= (1 + bw) * 2
 					pheight -= 2
-					x += 2
+					x += 1 + bw
 					y += 1
 				case tui.BorderLeft:
-					pwidth -= 2
-					x += 2
+					pwidth -= 1 + bw
+					x += 1 + bw
 				case tui.BorderRight:
-					pwidth -= 2
+					pwidth -= 1 + bw
 				case tui.BorderTop:
 					pheight -= 1
 					y += 1
@@ -1136,8 +1143,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					pheight -= 2
 					y += 1
 				case tui.BorderVertical:
-					pwidth -= 4
-					x += 2
+					pwidth -= (1 + bw) * 2
+					x += 1 + bw
 				}
 				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
 					// Need a column to show scrollbar
@@ -1832,7 +1839,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 	if len(t.previewer.bar) != height {
 		t.previewer.bar = make([]bool, height)
 	}
-	xshift := -2
+	xshift := -1 - t.borderWidth
 	if !t.previewOpts.border.HasRight() {
 		xshift = -1
 	}
@@ -1846,7 +1853,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 
 		// Avoid unnecessary redraws
 		bar := i >= yoff+barStart && i < yoff+barStart+barLength
-		if bar == t.previewer.bar[i] {
+		if bar == t.previewer.bar[i] && !t.tui.NeedScrollbarRedraw() {
 			continue
 		}
 

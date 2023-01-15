@@ -314,7 +314,7 @@ type Options struct {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.BorderRounded, 0, 0, nil}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.DefaultBorderShape, 0, 0, nil}
 }
 
 func defaultOptions() *Options {
@@ -543,7 +543,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderNone
 	default:
 		if optional && str == "" {
-			return tui.BorderRounded
+			return tui.DefaultBorderShape
 		}
 		errorExit("invalid border style (expected: rounded|sharp|bold|double|horizontal|vertical|top|bottom|left|right|none)")
 	}
