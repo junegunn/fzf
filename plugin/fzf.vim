@@ -1,4 +1,4 @@
-" Copyright (c) 2017 Junegunn Choi
+" Copyright (c) 2013-2023 Junegunn Choi
 "
 " MIT License
 "
