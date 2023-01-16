@@ -830,6 +830,17 @@ if exists(':tnoremap')
   tnoremap <silent> <Plug>(fzf-normal) <C-\><C-n>
 endif
 
+let s:warned = 0
+function! s:handle_ambidouble(dict)
+  if &ambiwidth == 'double'
+    let a:dict.env = { 'RUNEWIDTH_EASTASIAN': '1' }
+  elseif !s:warned && $RUNEWIDTH_EASTASIAN == '1' && &ambiwidth !=# 'double'
+    call s:warn("$RUNEWIDTH_EASTASIAN is '1' but &ambiwidth is not 'double'")
+    2sleep
+    let s:warned = 1
+  endif
+endfunction
+
 function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
   let pbuf = bufnr('')
@@ -899,6 +910,7 @@ function! s:execute_term(dict, command, temps) abort
     endif
     let command .= s:term_marker
     if has('nvim')
+      call s:handle_ambidouble(fzf)
       call termopen(command, fzf)
     else
       let term_opts = {'exit_cb': function(fzf.on_exit)}
@@ -910,6 +922,7 @@ function! s:execute_term(dict, command, temps) abort
       else
         let term_opts.curwin = 1
       endif
+      call s:handle_ambidouble(term_opts)
       let fzf.buf = term_start([&shell, &shellcmdflag, command], term_opts)
       if is_popup && exists('#TerminalWinOpen')
         doautocmd <nomodeline> TerminalWinOpen
