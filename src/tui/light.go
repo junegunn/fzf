@@ -789,7 +789,8 @@ func (w *LightWindow) drawBorderAround() {
 	vw := runewidth.RuneWidth(w.border.vertical)
 	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
 	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
-	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+string(w.border.topRight))
+	rem := (w.width - tcw) % hw
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
 		w.CPrint(color, string(w.border.vertical))
@@ -797,7 +798,8 @@ func (w *LightWindow) drawBorderAround() {
 		w.CPrint(color, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+string(w.border.bottomRight))
+	rem = (w.width - bcw) % hw
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {
