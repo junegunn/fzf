@@ -511,7 +511,10 @@ try
     let height = s:calc_size(&lines, dict.down, dict)
     let optstr .= ' --height='.height
   endif
-  let optstr .= s:border_opt(get(dict, 'window', 0))
+  " Respect --border option given in 'options'
+  if stridx(optstr, '--border') < 0 && stridx(optstr, '--no-border') < 0
+    let optstr .= s:border_opt(get(dict, 'window', 0))
+  endif
   let prev_default_command = $FZF_DEFAULT_COMMAND
   if len(source_command)
     let $FZF_DEFAULT_COMMAND = source_command
@@ -755,9 +758,9 @@ function! s:border_opt(window)
   endif
 
   " Border style
-  let style = tolower(get(a:window, 'border', 'rounded'))
-  if !has_key(a:window, 'border') && !get(a:window, 'rounded', 1)
-    let style = 'sharp'
+  let style = tolower(get(a:window, 'border', ''))
+  if !has_key(a:window, 'border') && has_key(a:window, 'rounded')
+    let style = a:window.rounded ? 'rounded' : 'sharp'
   endif
   if style == 'none' || style == 'no'
     return ''
@@ -765,7 +768,7 @@ function! s:border_opt(window)
 
   " For --border styles, we need fzf 0.24.0 or above
   call fzf#exec('0.24.0')
-  let opt = ' --border=' . style
+  let opt = ' --border ' . style
   if has_key(a:window, 'highlight')
     let color = s:get_color('fg', a:window.highlight)
     if len(color)

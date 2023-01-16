@@ -312,7 +312,7 @@ following options are allowed:
     - `yoffset` [float default 0.5 range [0 ~ 1]]
     - `xoffset` [float default 0.5 range [0 ~ 1]]
     - `relative` [boolean default v:false]
-    - `border` [string default `rounded`]: Border style
+    - `border` [string default `rounded` (`sharp` on Windows)]: Border style
         - `rounded` / `sharp` / `horizontal` / `vertical` / `top` / `bottom` / `left` / `right` / `no[ne]`
 
 `fzf#wrap`
