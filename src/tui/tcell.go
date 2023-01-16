@@ -695,13 +695,26 @@ func (w *TcellWindow) drawBorder() {
 	hw := runewidth.RuneWidth(w.borderStyle.horizontal)
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
-		for x := left; x <= right-hw; x += hw {
+		max := right - 2*hw
+		if shape == BorderHorizontal || shape == BorderTop {
+			max = right - hw
+		}
+		// tcell has an issue displaying two overlapping wide runes
+		// e.g.  SetContent(  HH  )
+		//       SetContent(   TR )
+		//       ==================
+		//                 (  HH  ) => TR is ignored
+		for x := left; x <= max; x += hw {
 			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
 		}
 	}
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
-		for x := left; x <= right-hw; x += hw {
+		max := right - 2*hw
+		if shape == BorderHorizontal || shape == BorderBottom {
+			max = right - hw
+		}
+		for x := left; x <= max; x += hw {
 			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 		}
 	}
@@ -713,8 +726,9 @@ func (w *TcellWindow) drawBorder() {
 	}
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
+		vw := runewidth.RuneWidth(w.borderStyle.vertical)
 		for y := top; y < bot; y++ {
-			_screen.SetContent(right-hw, y, w.borderStyle.vertical, nil, style)
+			_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
 		}
 	}
 	switch shape {

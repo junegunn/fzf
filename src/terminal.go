@@ -1064,6 +1064,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 	// Reset preview version so that full redraw occurs
 	t.previewed.version = 0
 
+	bw := t.borderWidth
 	switch t.borderShape {
 	case tui.BorderHorizontal:
 		t.border = t.tui.NewWindow(
@@ -1071,7 +1072,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 			false, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
 	case tui.BorderVertical:
 		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3]-2, width+4, height,
+			marginInt[0], marginInt[3]-(1+bw), width+(1+bw)*2, height,
 			false, tui.MakeBorderStyle(tui.BorderVertical, t.unicode))
 	case tui.BorderTop:
 		t.border = t.tui.NewWindow(
@@ -1083,15 +1084,15 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 			false, tui.MakeBorderStyle(tui.BorderBottom, t.unicode))
 	case tui.BorderLeft:
 		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3]-2, width+2, height,
+			marginInt[0], marginInt[3]-(1+bw), width+(1+bw), height,
 			false, tui.MakeBorderStyle(tui.BorderLeft, t.unicode))
 	case tui.BorderRight:
 		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3], width+2, height,
+			marginInt[0], marginInt[3], width+(1+bw), height,
 			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
 	case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 		t.border = t.tui.NewWindow(
-			marginInt[0]-1, marginInt[3]-2, width+4, height+2,
+			marginInt[0]-1, marginInt[3]-(1+bw), width+(1+bw)*2, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 	}
 
@@ -1112,7 +1113,6 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				return
 			}
 			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
-			bw := t.borderWidth
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
 				pheight := h
