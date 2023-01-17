@@ -335,7 +335,7 @@ fish.
     - Set `FZF_CTRL_T_COMMAND` to override the default command
     - Set `FZF_CTRL_T_OPTS` to pass additional options to fzf
       ```sh
-      # Preview file content using bat (https://github.com/sharkdp/fd)
+      # Preview file content using bat (https://github.com/sharkdp/bat)
       export FZF_CTRL_T_OPTS="
         --preview 'bat -n --color=always {}'
         --bind 'ctrl-/:change-preview-window(down|hidden|)'"
