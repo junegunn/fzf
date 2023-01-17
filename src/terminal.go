@@ -306,6 +306,8 @@ const (
 	actBackwardDeleteCharEOF
 	actBackwardWord
 	actCancel
+	actChangeBorderLabel
+	actChangePreviewLabel
 	actChangePrompt
 	actChangeQuery
 	actClearScreen
@@ -2909,6 +2911,12 @@ func (t *Terminal) Loop() {
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
+			case actChangeBorderLabel:
+				t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
+				req(reqFullRedraw)
+			case actChangePreviewLabel:
+				t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
+				req(reqFullRedraw)
 			case actChangePrompt:
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
