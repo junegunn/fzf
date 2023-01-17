@@ -1,7 +1,7 @@
 .ig
 The MIT License (MIT)
 
-Copyright (c) 2013-2021 Junegunn Choi
+Copyright (c) 2013-2023 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2022" "fzf 0.35.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2023" "fzf 0.36.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -229,6 +229,10 @@ Draw border around the finder
 .br
 .BR none
 .br
+
+If you use a terminal emulator where each box-drawing character takes
+2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR to \fB1\fR. If the border is
+still not properly rendered, set \fB--no-unicode\fR.
 
 .TP
 .BI "--border-label" [=LABEL]
@@ -568,9 +572,9 @@ Label to print on the horizontal border line of the preview window.
 Should be used with one of the following \fB--preview-window\fR options.
 
 .br
-.B * border-rounded (default)
+.B * border-rounded (default on non-Windows platforms)
 .br
-.B * border-sharp
+.B * border-sharp (default on Windows)
 .br
 .B * border-bold
 .br
