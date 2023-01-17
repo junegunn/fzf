@@ -463,6 +463,9 @@ try
   let dict   = exists('a:1') ? copy(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
   let optstr = s:evaluate_opts(get(dict, 'options', ''))
+  if exists('g:fzf_run_options')
+    let optstr = printf("%s %s", optstr, g:fzf_run_options)
+  endif
   try
     let fzf_exec = shellescape(fzf#exec())
   catch
