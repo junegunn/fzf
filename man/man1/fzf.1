@@ -972,91 +972,93 @@ e.g.
 .SS AVAILABLE ACTIONS:
 A key or an event can be bound to one or more of the following actions.
 
-  \fBACTION:                   DEFAULT BINDINGS (NOTES):
-    \fBabort\fR                      \fIctrl-c  ctrl-g  ctrl-q  esc\fR
-    \fBaccept\fR                     \fIenter   double-click\fR
-    \fBaccept-non-empty\fR           (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
-    \fBbackward-char\fR              \fIctrl-b  left\fR
-    \fBbackward-delete-char\fR       \fIctrl-h  bspace\fR
-    \fBbackward-delete-char/eof\fR   (same as \fBbackward-delete-char\fR except aborts fzf if query is empty)
-    \fBbackward-kill-word\fR         \fIalt-bs\fR
-    \fBbackward-word\fR              \fIalt-b   shift-left\fR
-    \fBbeginning-of-line\fR          \fIctrl-a  home\fR
-    \fBcancel\fR                     (clear query string if not empty, abort fzf otherwise)
-    \fBchange-preview(...)\fR        (change \fB--preview\fR option)
-    \fBchange-preview-window(...)\fR (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
-    \fBchange-preview-label(...)\fR  (change \fB--preview-label\fR to the given string)
-    \fBchange-prompt(...)\fR         (change prompt to the given string)
-    \fBchange-border-label(...)\fR   (change \fB--border-label\fR to the given string) 
-    \fBchange-query(...)\fR          (change query string to the given string)
-    \fBclear-screen\fR               \fIctrl-l\fR
-    \fBclear-selection\fR            (clear multi-selection)
-    \fBclose\fR                      (close preview window if open, abort fzf otherwise)
-    \fBclear-query\fR                (clear query string)
-    \fBdelete-char\fR                \fIdel\fR
-    \fBdelete-char/eof\fR            \fIctrl-d\fR (same as \fBdelete-char\fR except aborts fzf if query is empty)
+  \fBACTION:                      DEFAULT BINDINGS (NOTES):
+    \fBabort\fR                        \fIctrl-c  ctrl-g  ctrl-q  esc\fR
+    \fBaccept\fR                       \fIenter   double-click\fR
+    \fBaccept-non-empty\fR             (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
+    \fBbackward-char\fR                \fIctrl-b  left\fR
+    \fBbackward-delete-char\fR         \fIctrl-h  bspace\fR
+    \fBbackward-delete-char/eof\fR     (same as \fBbackward-delete-char\fR except aborts fzf if query is empty)
+    \fBbackward-kill-word\fR           \fIalt-bs\fR
+    \fBbackward-word\fR                \fIalt-b   shift-left\fR
+    \fBbeginning-of-line\fR            \fIctrl-a  home\fR
+    \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
+    \fBchange-preview(...)\fR          (change \fB--preview\fR option)
+    \fBchange-preview-window(...)\fR   (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
+    \fBchange-preview-label(...)\fR    (change \fB--preview-label\fR to the given string)
+    \fBchange-prompt(...)\fR           (change prompt to the given string)
+    \fBchange-border-label(...)\fR     (change \fB--border-label\fR to the given string)
+    \fBchange-query(...)\fR            (change query string to the given string)
+    \fBclear-screen\fR                 \fIctrl-l\fR
+    \fBclear-selection\fR              (clear multi-selection)
+    \fBclose\fR                        (close preview window if open, abort fzf otherwise)
+    \fBclear-query\fR                  (clear query string)
+    \fBdelete-char\fR                  \fIdel\fR
+    \fBdelete-char/eof\fR              \fIctrl-d\fR (same as \fBdelete-char\fR except aborts fzf if query is empty)
     \fBdeselect\fR
-    \fBdeselect-all\fR               (deselect all matches)
-    \fBdisable-search\fR             (disable search functionality)
-    \fBdown\fR                       \fIctrl-j  ctrl-n  down\fR
-    \fBenable-search\fR              (enable search functionality)
-    \fBend-of-line\fR                \fIctrl-e  end\fR
-    \fBexecute(...)\fR               (see below for the details)
-    \fBexecute-silent(...)\fR        (see below for the details)
-    \fBfirst\fR                      (move to the first match; same as \fBpos(1)\fR)
-    \fBforward-char\fR               \fIctrl-f  right\fR
-    \fBforward-word\fR               \fIalt-f   shift-right\fR
+    \fBdeselect-all\fR                 (deselect all matches)
+    \fBdisable-search\fR               (disable search functionality)
+    \fBdown\fR                         \fIctrl-j  ctrl-n  down\fR
+    \fBenable-search\fR                (enable search functionality)
+    \fBend-of-line\fR                  \fIctrl-e  end\fR
+    \fBexecute(...)\fR                 (see below for the details)
+    \fBexecute-silent(...)\fR          (see below for the details)
+    \fBfirst\fR                        (move to the first match; same as \fBpos(1)\fR)
+    \fBforward-char\fR                 \fIctrl-f  right\fR
+    \fBforward-word\fR                 \fIalt-f   shift-right\fR
     \fBignore\fR
-    \fBjump\fR                       (EasyMotion-like 2-keystroke movement)
-    \fBjump-accept\fR                (jump and accept)
+    \fBjump\fR                         (EasyMotion-like 2-keystroke movement)
+    \fBjump-accept\fR                  (jump and accept)
     \fBkill-line\fR
-    \fBkill-word\fR                  \fIalt-d\fR
-    \fBlast\fR                       (move to the last match; same as \fBpos(-1)\fR)
-    \fBnext-history\fR               (\fIctrl-n\fR on \fB--history\fR)
-    \fBnext-selected\fR              (move to the next selected item)
-    \fBpage-down\fR                  \fIpgdn\fR
-    \fBpage-up\fR                    \fIpgup\fR
+    \fBkill-word\fR                    \fIalt-d\fR
+    \fBlast\fR                         (move to the last match; same as \fBpos(-1)\fR)
+    \fBnext-history\fR                 (\fIctrl-n\fR on \fB--history\fR)
+    \fBnext-selected\fR                (move to the next selected item)
+    \fBpage-down\fR                    \fIpgdn\fR
+    \fBpage-up\fR                      \fIpgup\fR
     \fBhalf-page-down\fR
     \fBhalf-page-up\fR
-    \fBpos(...)\fR                   (move cursor to the numeric position; negative number to count from the end)
-    \fBprev-history\fR               (\fIctrl-p\fR on \fB--history\fR)
-    \fBprev-selected\fR              (move to the previous selected item)
-    \fBpreview(...)\fR               (see below for the details)
-    \fBpreview-down\fR               \fIshift-down\fR
-    \fBpreview-up\fR                 \fIshift-up\fR
+    \fBpos(...)\fR                     (move cursor to the numeric position; negative number to count from the end)
+    \fBprev-history\fR                 (\fIctrl-p\fR on \fB--history\fR)
+    \fBprev-selected\fR                (move to the previous selected item)
+    \fBpreview(...)\fR                 (see below for the details)
+    \fBpreview-down\fR                 \fIshift-down\fR
+    \fBpreview-up\fR                   \fIshift-up\fR
     \fBpreview-page-down\fR
     \fBpreview-page-up\fR
     \fBpreview-half-page-down\fR
     \fBpreview-half-page-up\fR
     \fBpreview-bottom\fR
     \fBpreview-top\fR
-    \fBprint-query\fR                (print query and exit)
-    \fBput\fR                        (put the character to the prompt)
-    \fBput(...)\fR                   (put the given string to the prompt)
+    \fBprint-query\fR                  (print query and exit)
+    \fBput\fR                          (put the character to the prompt)
+    \fBput(...)\fR                     (put the given string to the prompt)
     \fBrefresh-preview\fR
-    \fBrebind(...)\fR                (rebind bindings after \fBunbind\fR)
-    \fBreload(...)\fR                (see below for the details)
-    \fBreload-sync(...)\fR           (see below for the details)
-    \fBreplace-query\fR              (replace query string with the current selection)
+    \fBrebind(...)\fR                  (rebind bindings after \fBunbind\fR)
+    \fBreload(...)\fR                  (see below for the details)
+    \fBreload-sync(...)\fR             (see below for the details)
+    \fBreplace-query\fR                (replace query string with the current selection)
     \fBselect\fR
-    \fBselect-all\fR                 (select all matches)
-    \fBtoggle\fR                     (\fIright-click\fR)
-    \fBtoggle-all\fR                 (toggle all matches)
-    \fBtoggle+down\fR                \fIctrl-i  (tab)\fR
-    \fBtoggle-in\fR                  (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
-    \fBtoggle-out\fR                 (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBselect-all\fR                   (select all matches)
+    \fBtoggle\fR                       (\fIright-click\fR)
+    \fBtoggle-all\fR                   (toggle all matches)
+    \fBtoggle+down\fR                  \fIctrl-i  (tab)\fR
+    \fBtoggle-in\fR                    (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
+    \fBtoggle-out\fR                   (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
-    \fBtoggle-search\fR              (toggle search functionality)
+    \fBtoggle-search\fR                (toggle search functionality)
     \fBtoggle-sort\fR
-    \fBtoggle+up\fR                  \fIbtab    (shift-tab)\fR
-    \fBtransform-prompt(...)\fR      (transform prompt string using an external command)
-    \fBtransform-query(...)\fR       (transform query string using an external command)
-    \fBunbind(...)\fR                (unbind bindings)
-    \fBunix-line-discard\fR          \fIctrl-u\fR
-    \fBunix-word-rubout\fR           \fIctrl-w\fR
-    \fBup\fR                         \fIctrl-k  ctrl-p  up\fR
-    \fByank\fR                       \fIctrl-y\fR
+    \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
+    \fBtransform-border-label(...)\fR  (transform border label using an external command)
+    \fBtransform-preview-label(...)\fR (transform preview label using an external command)
+    \fBtransform-prompt(...)\fR        (transform prompt string using an external command)
+    \fBtransform-query(...)\fR         (transform query string using an external command)
+    \fBunbind(...)\fR                  (unbind bindings)
+    \fBunix-line-discard\fR            \fIctrl-u\fR
+    \fBunix-word-rubout\fR             \fIctrl-w\fR
+    \fBup\fR                           \fIctrl-k  ctrl-p  up\fR
+    \fByank\fR                         \fIctrl-y\fR
 
 .SS ACTION COMPOSITION
 

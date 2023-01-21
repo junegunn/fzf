@@ -912,7 +912,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt)|change-preview-window|change-preview-label|change-border-label|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1220,16 +1220,16 @@ func isExecuteAction(str string) actionType {
 		return actRebind
 	case "preview":
 		return actPreview
+	case "change-border-label":
+		return actChangeBorderLabel
+	case "change-preview-label":
+		return actChangePreviewLabel
 	case "change-preview-window":
 		return actChangePreviewWindow
 	case "change-preview":
 		return actChangePreview
-	case "change-preview-label":
-		return actChangePreviewLabel
 	case "change-prompt":
 		return actChangePrompt
-	case "change-border-label":
-		return actChangeBorderLabel
 	case "change-query":
 		return actChangeQuery
 	case "pos":
@@ -1242,6 +1242,10 @@ func isExecuteAction(str string) actionType {
 		return actExecuteMulti
 	case "put":
 		return actPut
+	case "transform-border-label":
+		return actTransformBorderLabel
+	case "transform-preview-label":
+		return actTransformPreviewLabel
 	case "transform-prompt":
 		return actTransformPrompt
 	case "transform-query":
