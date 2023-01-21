@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.36.1
+------
+- Bug fixes and improvements
+
 0.36.0
 ------
 - Added `--listen=HTTP_PORT` option to start HTTP server. It allows external

@@ -954,7 +954,7 @@ Loop:
 		ce = regexp.QuoteMeta(ce)
 
 		// @$ or @+
-		loc = regexp.MustCompile(fmt.Sprintf(`^%s.*?(%s[+,]|%s$)`, cs, ce, ce)).FindStringIndex(action)
+		loc = regexp.MustCompile(fmt.Sprintf(`(?s)^%s.*?(%s[+,]|%s$)`, cs, ce, ce)).FindStringIndex(action)
 		if loc == nil {
 			masked += action
 			break
