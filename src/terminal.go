@@ -276,6 +276,8 @@ const (
 	reqRefresh
 	reqReinit
 	reqFullRedraw
+	reqRedrawBorderLabel
+	reqRedrawPreviewLabel
 	reqClose
 	reqPrintQuery
 	reqPreviewEnqueue
@@ -349,6 +351,8 @@ const (
 	actToggleSort
 	actTogglePreview
 	actTogglePreviewWrap
+	actTransformBorderLabel
+	actTransformPreviewLabel
 	actTransformPrompt
 	actTransformQuery
 	actPreview
@@ -1252,34 +1256,38 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 	}
 
 	// Print border label
-	printLabel := func(window tui.Window, render labelPrinter, opts labelOpts, length int, borderShape tui.BorderShape) {
-		if window == nil || render == nil {
-			return
-		}
-
-		switch borderShape {
-		case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
-			var col int
-			if opts.column == 0 {
-				col = util.Max(0, (window.Width()-length)/2)
-			} else if opts.column < 0 {
-				col = util.Max(0, window.Width()+opts.column+1-length)
-			} else {
-				col = util.Min(opts.column-1, window.Width()-length)
-			}
-			row := 0
-			if borderShape == tui.BorderBottom || opts.bottom {
-				row = window.Height() - 1
-			}
-			window.Move(row, col)
-			render(window, window.Width())
-		}
-	}
-	printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape)
-	printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border)
+	t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, false)
+	t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border, false)
 
 	for i := 0; i < t.window.Height(); i++ {
 		t.window.MoveAndClear(i, 0)
+	}
+}
+
+func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts labelOpts, length int, borderShape tui.BorderShape, redrawBorder bool) {
+	if window == nil || render == nil {
+		return
+	}
+
+	switch borderShape {
+	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
+		if redrawBorder {
+			window.DrawHBorder()
+		}
+		var col int
+		if opts.column == 0 {
+			col = util.Max(0, (window.Width()-length)/2)
+		} else if opts.column < 0 {
+			col = util.Max(0, window.Width()+opts.column+1-length)
+		} else {
+			col = util.Min(opts.column-1, window.Width()-length)
+		}
+		row := 0
+		if borderShape == tui.BorderBottom || opts.bottom {
+			row = window.Height() - 1
+		}
+		window.Move(row, col)
+		render(window, window.Width())
 	}
 }
 
@@ -2659,6 +2667,10 @@ func (t *Terminal) Loop() {
 						t.printHeader()
 					case reqRefresh:
 						t.suppress = false
+					case reqRedrawBorderLabel:
+						t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, true)
+					case reqRedrawPreviewLabel:
+						t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border, true)
 					case reqReinit:
 						t.tui.Resume(t.fullscreen, t.sigstop)
 						t.redraw()
@@ -2912,11 +2924,27 @@ func (t *Terminal) Loop() {
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
 			case actChangeBorderLabel:
-				t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
-				req(reqFullRedraw)
+				if t.border != nil {
+					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
+					req(reqRedrawBorderLabel)
+				}
 			case actChangePreviewLabel:
-				t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
-				req(reqFullRedraw)
+				if t.pborder != nil {
+					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
+					req(reqRedrawPreviewLabel)
+				}
+			case actTransformBorderLabel:
+				if t.border != nil {
+					label := t.executeCommand(a.a, false, true, true)
+					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
+					req(reqRedrawBorderLabel)
+				}
+			case actTransformPreviewLabel:
+				if t.pborder != nil {
+					label := t.executeCommand(a.a, false, true, true)
+					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
+					req(reqRedrawPreviewLabel)
+				}
 			case actChangePrompt:
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)

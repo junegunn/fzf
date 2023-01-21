@@ -426,6 +426,7 @@ type Window interface {
 	Width() int
 	Height() int
 
+	DrawHBorder()
 	Refresh()
 	FinishFill()
 	Close()

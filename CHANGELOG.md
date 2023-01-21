@@ -1,8 +1,13 @@
 CHANGELOG
 =========
 
-0.36.1
+0.37.0
 ------
+- New actions
+    - `change-border-label`
+    - `change-preview-label`
+    - `transform-border-label`
+    - `transform-preview-label`
 - Bug fixes and improvements
 
 0.36.0
