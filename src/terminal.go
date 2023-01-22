@@ -2241,7 +2241,6 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.redraw()
 		t.refresh()
 	} else {
-		t.tui.Pause(false)
 		if captureFirstLine {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -2252,7 +2251,6 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		} else {
 			cmd.Run()
 		}
-		t.tui.Resume(false, false)
 	}
 	t.executing.Set(false)
 	cleanTemporaryFiles()
