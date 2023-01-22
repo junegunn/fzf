@@ -268,7 +268,7 @@ func TestBind(t *testing.T) {
 	}
 	parseKeymap(keymap,
 		"ctrl-a:kill-line,ctrl-b:toggle-sort+up+down,c:page-up,alt-z:page-down,"+
-			"f1:execute(ls {+})+abort+execute(echo {+})+select-all,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
+			"f1:execute(ls {+})+abort+execute(echo \n{+})+select-all,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 			"alt-a:execute-Multi@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};,"+
 			"x:Execute(foo+bar),X:execute/bar+baz/"+
 			",f1:+first,f1:+top"+

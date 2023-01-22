@@ -512,7 +512,7 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		height:      height,
 		normal:      normal,
 		borderStyle: borderStyle}
-	w.drawBorder()
+	w.drawBorder(false)
 	return w
 }
 
@@ -670,7 +670,11 @@ func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	return w.fillString(str, NewColorPair(fg, bg, a))
 }
 
-func (w *TcellWindow) drawBorder() {
+func (w *TcellWindow) DrawHBorder() {
+	w.drawBorder(true)
+}
+
+func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	shape := w.borderStyle.shape
 	if shape == BorderNone {
 		return
@@ -718,17 +722,19 @@ func (w *TcellWindow) drawBorder() {
 			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 		}
 	}
-	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
-		for y := top; y < bot; y++ {
-			_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+	if !onlyHorizontal {
+		switch shape {
+		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
+			for y := top; y < bot; y++ {
+				_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+			}
 		}
-	}
-	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
-		vw := runewidth.RuneWidth(w.borderStyle.vertical)
-		for y := top; y < bot; y++ {
-			_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
+		switch shape {
+		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
+			vw := runewidth.RuneWidth(w.borderStyle.vertical)
+			for y := top; y < bot; y++ {
+				_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
+			}
 		}
 	}
 	switch shape {

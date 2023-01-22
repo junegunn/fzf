@@ -363,7 +363,7 @@ fish.
       ```
 
 If you're on a tmux session, you can start fzf in a tmux split-pane or in
-a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `-d 40%`).
+a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `export FZF_TMUX_OPTS='-p80%,60%'`).
 See `fzf-tmux --help` for available options.
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
