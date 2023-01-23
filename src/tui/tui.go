@@ -92,6 +92,7 @@ const (
 	BackwardEOF
 	Start
 	Load
+	Focus
 
 	AltBS
 

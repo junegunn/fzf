@@ -3,6 +3,20 @@ CHANGELOG
 
 0.37.0
 ------
+- New event
+    - `focus` - Triggered when the focus changes due to a vertical cursor
+      movement or a search result update
+      ```sh
+      fzf --bind 'focus:transform-preview-label:echo [ {} ]' --border --preview 'cat {}'
+
+      # Any action bound to the event runs synchronously and thus can make the interface sluggish
+      # e.g. lolcat isn't one of the fastest programs, and every cursor movement in
+      #      fzf will be noticeably affected by its execution time
+      fzf --bind 'focus:transform-preview-label:echo [ {} ] | lolcat -f' --border --preview 'cat {}'
+
+      # Beware not to introduce an infinite loop
+      seq 10 | fzf --bind 'focus:up' --cycle
+      ```
 - New actions
     - `change-border-label`
     - `change-preview-label`
