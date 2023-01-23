@@ -115,7 +115,7 @@ func TestAsUint16(t *testing.T) {
 	if AsUint16(math.MinInt16) != 0 {
 		t.Error("Expected", 0)
 	}
-	if AsUint16(math.MaxUint32) != math.MaxUint16 {
+	if AsUint16(math.MaxUint16+1) != math.MaxUint16 {
 		t.Error("Expected", math.MaxUint16)
 	}
 }

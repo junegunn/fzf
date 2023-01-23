@@ -1265,7 +1265,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 }
 
 func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts labelOpts, length int, borderShape tui.BorderShape, redrawBorder bool) {
-	if window == nil || render == nil {
+	if window == nil {
 		return
 	}
 
@@ -1273,6 +1273,9 @@ func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts label
 	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
 		if redrawBorder {
 			window.DrawHBorder()
+		}
+		if render == nil {
+			return
 		}
 		var col int
 		if opts.column == 0 {
@@ -2241,7 +2244,6 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.redraw()
 		t.refresh()
 	} else {
-		t.tui.Pause(false)
 		if captureFirstLine {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -2252,7 +2254,6 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		} else {
 			cmd.Run()
 		}
-		t.tui.Resume(false, false)
 	}
 	t.executing.Set(false)
 	cleanTemporaryFiles()
@@ -2618,6 +2619,11 @@ func (t *Terminal) Loop() {
 		}
 	}
 
+	var onFocus []*action
+	if actions, prs := t.keymap[tui.Focus.AsEvent()]; prs {
+		onFocus = actions
+	}
+
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
@@ -2653,7 +2659,11 @@ func (t *Terminal) Loop() {
 						if currentItem != nil {
 							currentIndex = currentItem.Index()
 						}
-						if focusedIndex != currentIndex || version != t.version {
+						focusChanged := focusedIndex != currentIndex
+						if onFocus != nil && focusChanged {
+							t.serverChan <- onFocus
+						}
+						if focusChanged || version != t.version {
 							version = t.version
 							focusedIndex = currentIndex
 							refreshPreview(t.previewOpts.command)

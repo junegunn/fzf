@@ -33,23 +33,23 @@ Table of Contents
 * [Upgrading fzf](#upgrading-fzf)
 * [Building fzf](#building-fzf)
 * [Usage](#usage)
-        * [Using the finder](#using-the-finder)
-        * [Layout](#layout)
-        * [Search syntax](#search-syntax)
-        * [Environment variables](#environment-variables)
-        * [Options](#options)
-        * [Demo](#demo)
+    * [Using the finder](#using-the-finder)
+    * [Layout](#layout)
+    * [Search syntax](#search-syntax)
+    * [Environment variables](#environment-variables)
+    * [Options](#options)
+    * [Demo](#demo)
 * [Examples](#examples)
 * [`fzf-tmux` script](#fzf-tmux-script)
 * [Key bindings for command-line](#key-bindings-for-command-line)
 * [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
-        * [Files and directories](#files-and-directories)
-        * [Process IDs](#process-ids)
-        * [Host names](#host-names)
-        * [Environment variables / Aliases](#environment-variables--aliases)
-        * [Settings](#settings)
-        * [Supported commands](#supported-commands)
-        * [Custom fuzzy completion](#custom-fuzzy-completion)
+    * [Files and directories](#files-and-directories)
+    * [Process IDs](#process-ids)
+    * [Host names](#host-names)
+    * [Environment variables / Aliases](#environment-variables--aliases)
+    * [Settings](#settings)
+    * [Supported commands](#supported-commands)
+    * [Custom fuzzy completion](#custom-fuzzy-completion)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Performance](#performance)
@@ -202,7 +202,7 @@ files excluding hidden ones. (You can override the default command with
 vim $(fzf)
 ```
 
-#### Using the finder
+### Using the finder
 
 - `CTRL-K` / `CTRL-J` (or `CTRL-P` / `CTRL-N`) to move cursor up and down
 - `Enter` key to select the item, `CTRL-C` / `CTRL-G` / `ESC` to exit
@@ -211,7 +211,7 @@ vim $(fzf)
 - Mouse: scroll, click, double-click; shift-click and shift-scroll on
   multi-select mode
 
-#### Layout
+### Layout
 
 fzf by default starts in fullscreen mode, but you can make it start below the
 cursor with `--height` option.
@@ -234,7 +234,7 @@ default. For example,
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
 ```
 
-#### Search syntax
+### Search syntax
 
 Unless otherwise specified, fzf starts in "extended-search mode" where you can
 type in multiple search terms delimited by spaces. e.g. `^music .mp3$ sbtrkt
@@ -262,7 +262,7 @@ or `py`.
 ^core go$ | rb$ | py$
 ```
 
-#### Environment variables
+### Environment variables
 
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
@@ -278,11 +278,11 @@ or `py`.
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
 
-#### Options
+### Options
 
 See the man page (`man fzf`) for the full list of options.
 
-#### Demo
+### Demo
 If you learn by watching videos, check out this screencast by [@samoshkin](https://github.com/samoshkin) to explore `fzf` features.
 
 <a title="fzf - command-line fuzzy finder" href="https://www.youtube.com/watch?v=qgG5Jhi_Els">
@@ -335,7 +335,7 @@ fish.
     - Set `FZF_CTRL_T_COMMAND` to override the default command
     - Set `FZF_CTRL_T_OPTS` to pass additional options to fzf
       ```sh
-      # Preview file content using bat (https://github.com/sharkdp/fd)
+      # Preview file content using bat (https://github.com/sharkdp/bat)
       export FZF_CTRL_T_OPTS="
         --preview 'bat -n --color=always {}'
         --bind 'ctrl-/:change-preview-window(down|hidden|)'"
@@ -371,7 +371,7 @@ More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/C
 Fuzzy completion for bash and zsh
 ---------------------------------
 
-#### Files and directories
+### Files and directories
 
 Fuzzy completion for files and directories can be triggered if the word before
 the cursor ends with the trigger sequence, which is by default `**`.
@@ -400,7 +400,7 @@ cd **<TAB>
 cd ~/github/fzf**<TAB>
 ```
 
-#### Process IDs
+### Process IDs
 
 Fuzzy completion for PIDs is provided for kill command.
 
@@ -409,7 +409,7 @@ Fuzzy completion for PIDs is provided for kill command.
 kill -9 **<TAB>
 ```
 
-#### Host names
+### Host names
 
 For ssh and telnet commands, fuzzy completion for hostnames is provided. The
 names are extracted from /etc/hosts and ~/.ssh/config.
@@ -419,7 +419,7 @@ ssh **<TAB>
 telnet **<TAB>
 ```
 
-#### Environment variables / Aliases
+### Environment variables / Aliases
 
 ```sh
 unset **<TAB>
@@ -427,7 +427,7 @@ export **<TAB>
 unalias **<TAB>
 ```
 
-#### Settings
+### Settings
 
 ```sh
 # Use ~~ as the trigger sequence instead of the default **
@@ -465,7 +465,7 @@ _fzf_comprun() {
 }
 ```
 
-#### Supported commands
+### Supported commands
 
 On bash, fuzzy completion is enabled only for a predefined set of commands
 (`complete | grep _fzf` to see the list). But you can enable it for other
@@ -477,7 +477,7 @@ _fzf_setup_completion path ag git kubectl
 _fzf_setup_completion dir tree
 ```
 
-#### Custom fuzzy completion
+### Custom fuzzy completion
 
 _**(Custom completion API is experimental and subject to change)**_
 
