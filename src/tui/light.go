@@ -605,6 +605,7 @@ func (r *LightRenderer) rmcup() {
 }
 
 func (r *LightRenderer) Pause(clear bool) {
+	r.disableMouse()
 	r.restoreTerminal()
 	if clear {
 		if r.fullscreen {
@@ -630,7 +631,6 @@ func (r *LightRenderer) disableMouse() {
 		r.csi("?1000l")
 		r.csi("?1002l")
 		r.csi("?1006l")
-		r.mouse = false
 	}
 }
 
@@ -649,6 +649,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
 		r.disableMouse()
+		r.mouse = false
 	}
 }
 
