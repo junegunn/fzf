@@ -731,6 +731,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	}
 
 	// Extract ANSI color codes
+	str = firstLine(str)
 	text, colors, _ := extractColor(str, nil, nil)
 	runes := []rune(text)
 
@@ -785,6 +786,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	var state *ansiState
+	prompt = firstLine(prompt)
 	trimmed, colors, _ := extractColor(prompt, state, nil)
 	item := &Item{text: util.ToChars([]byte(trimmed)), colors: colors}
 

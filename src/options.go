@@ -248,6 +248,10 @@ func (a previewOpts) sameContentLayout(b previewOpts) bool {
 	return a.wrap == b.wrap && a.headerLines == b.headerLines
 }
 
+func firstLine(s string) string {
+	return strings.SplitN(s, "\n", 2)[0]
+}
+
 // Options stores the values of command-line options
 type Options struct {
 	Fuzzy        bool
@@ -1658,10 +1662,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--prompt":
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
 		case "--pointer":
-			opts.Pointer = nextString(allArgs, &i, "pointer sign string required")
+			opts.Pointer = firstLine(nextString(allArgs, &i, "pointer sign string required"))
 			validatePointer = true
 		case "--marker":
-			opts.Marker = nextString(allArgs, &i, "selected sign string required")
+			opts.Marker = firstLine(nextString(allArgs, &i, "selected sign string required"))
 			validateMarker = true
 		case "--sync":
 			opts.Sync = true
@@ -1776,10 +1780,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
-				opts.Pointer = value
+				opts.Pointer = firstLine(value)
 				validatePointer = true
 			} else if match, value := optString(arg, "--marker="); match {
-				opts.Marker = value
+				opts.Marker = firstLine(value)
 				validateMarker = true
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
