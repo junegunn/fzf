@@ -644,7 +644,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		}
 		r.enableMouse()
 		r.flush()
-	} else if sigcont && !r.fullscreen {
+	} else if sigcont && !r.fullscreen && r.mouse {
 		// NOTE: SIGCONT (Coming back from CTRL-Z):
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
