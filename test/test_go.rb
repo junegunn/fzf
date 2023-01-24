@@ -1587,6 +1587,11 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> 1', lines[-2] }
   end
 
+  def test_info_inline_separator
+    tmux.send_keys 'seq 10 | fzf --info=inline:___ --no-separator', :Enter
+    tmux.until { |lines| assert_equal '>  ___10/10', lines[-1] }
+  end
+
   def test_change_first_last
     tmux.send_keys %(seq 1000 | #{FZF} --bind change:first,alt-Z:last), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }

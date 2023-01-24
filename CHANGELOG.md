@@ -3,6 +3,10 @@ CHANGELOG
 
 0.37.0
 ------
+- Added a way to customize the separator of inline info
+  ```sh
+  fzf --info 'inline: ╱ ' --prompt '╱ ' --color prompt:bright-yellow
+  ```
 - New event
     - `focus` - Triggered when the focus changes due to a vertical cursor
       movement or a search result update

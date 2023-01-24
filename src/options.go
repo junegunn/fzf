@@ -70,7 +70,7 @@ const usage = `usage: fzf [options]
                            (default: 0 or center)
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --info=STYLE           Finder info style [default|inline|hidden]
+    --info=STYLE           Finder info style [default|hidden|inline|inline:SEPARATOR]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
     --scrollbar[=CHAR]     Scrollbar character
@@ -124,6 +124,8 @@ const usage = `usage: fzf [options]
                            (e.g. '--layout=reverse --inline-info')
 
 `
+
+const defaultInfoSep = " < "
 
 // Case denotes case-sensitivity of search
 type Case int
@@ -277,6 +279,7 @@ type Options struct {
 	ScrollOff    int
 	FileWord     bool
 	InfoStyle    infoStyle
+	InfoSep      string
 	Separator    *string
 	JumpLabels   string
 	Prompt       string
@@ -1319,18 +1322,22 @@ func parseLayout(str string) layoutType {
 	return layoutDefault
 }
 
-func parseInfoStyle(str string) infoStyle {
+func parseInfoStyle(str string) (infoStyle, string) {
 	switch str {
 	case "default":
-		return infoDefault
+		return infoDefault, ""
 	case "inline":
-		return infoInline
+		return infoInline, defaultInfoSep
 	case "hidden":
-		return infoHidden
+		return infoHidden, ""
 	default:
-		errorExit("invalid info style (expected: default|inline|hidden)")
+		prefix := "inline:"
+		if strings.HasPrefix(str, prefix) {
+			return infoInline, strings.ReplaceAll(str[len(prefix):], "\n", " ")
+		}
+		errorExit("invalid info style (expected: default|hidden|inline|inline:SEPARATOR)")
 	}
-	return infoDefault
+	return infoDefault, ""
 }
 
 func parsePreviewWindow(opts *previewOpts, input string) {
@@ -1598,12 +1605,13 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--no-filepath-word":
 			opts.FileWord = false
 		case "--info":
-			opts.InfoStyle = parseInfoStyle(
+			opts.InfoStyle, opts.InfoSep = parseInfoStyle(
 				nextString(allArgs, &i, "info style required"))
 		case "--no-info":
 			opts.InfoStyle = infoHidden
 		case "--inline-info":
 			opts.InfoStyle = infoInline
+			opts.InfoSep = defaultInfoSep
 		case "--no-inline-info":
 			opts.InfoStyle = infoDefault
 		case "--separator":
@@ -1788,7 +1796,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--layout="); match {
 				opts.Layout = parseLayout(value)
 			} else if match, value := optString(arg, "--info="); match {
-				opts.InfoStyle = parseInfoStyle(value)
+				opts.InfoStyle, opts.InfoSep = parseInfoStyle(value)
 			} else if match, value := optString(arg, "--separator="); match {
 				opts.Separator = &value
 			} else if match, value := optString(arg, "--scrollbar="); match {
