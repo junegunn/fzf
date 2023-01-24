@@ -174,11 +174,7 @@ func (r *LightRenderer) Init() {
 		}
 	}
 
-	if r.mouse {
-		r.csi("?1000h")
-		r.csi("?1002h")
-		r.csi("?1006h")
-	}
+	r.enableMouse()
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
@@ -621,6 +617,23 @@ func (r *LightRenderer) Pause(clear bool) {
 	}
 }
 
+func (r *LightRenderer) enableMouse() {
+	if r.mouse {
+		r.csi("?1000h")
+		r.csi("?1002h")
+		r.csi("?1006h")
+	}
+}
+
+func (r *LightRenderer) disableMouse() {
+	if r.mouse {
+		r.csi("?1000l")
+		r.csi("?1002l")
+		r.csi("?1006l")
+		r.mouse = false
+	}
+}
+
 func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
 	if clear {
@@ -629,15 +642,13 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		} else {
 			r.rmcup()
 		}
+		r.enableMouse()
 		r.flush()
-	} else if sigcont && !r.fullscreen && r.mouse {
+	} else if sigcont && !r.fullscreen {
 		// NOTE: SIGCONT (Coming back from CTRL-Z):
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
-		r.csi("?1000l")
-		r.csi("?1002l")
-		r.csi("?1006l")
-		r.mouse = false
+		r.disableMouse()
 	}
 }
 
@@ -678,11 +689,7 @@ func (r *LightRenderer) Close() {
 	} else if !r.fullscreen {
 		r.csi("u")
 	}
-	if r.mouse {
-		r.csi("?1000l")
-		r.csi("?1002l")
-		r.csi("?1006l")
-	}
+	r.disableMouse()
 	r.flush()
 	r.closePlatform()
 	r.restoreTerminal()
