@@ -147,6 +147,7 @@ type labelPrinter func(tui.Window, int)
 type Terminal struct {
 	initDelay          time.Duration
 	infoStyle          infoStyle
+	infoSep            string
 	separator          labelPrinter
 	separatorLen       int
 	spinner            []string
@@ -579,6 +580,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t := Terminal{
 		initDelay:          delay,
 		infoStyle:          opts.InfoStyle,
+		infoSep:            opts.InfoSep,
 		separator:          nil,
 		spinner:            makeSpinner(opts.Unicode),
 		queryLen:           [2]int{0, 0},
@@ -729,6 +731,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	}
 
 	// Extract ANSI color codes
+	str = firstLine(str)
 	text, colors, _ := extractColor(str, nil, nil)
 	runes := []rune(text)
 
@@ -783,6 +786,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 
 func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	var state *ansiState
+	prompt = firstLine(prompt)
 	trimmed, colors, _ := extractColor(prompt, state, nil)
 	item := &Item{text: util.ToChars([]byte(trimmed)), colors: colors}
 
@@ -1393,16 +1397,21 @@ func (t *Terminal) printInfo() {
 		pos = 2
 	case infoInline:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-		if pos+len(" < ") > t.window.Width() {
-			return
+		str := t.infoSep
+		maxWidth := t.window.Width() - pos
+		width := runewidth.StringWidth(str)
+		if width > maxWidth {
+			trimmed, _ := t.trimRight([]rune(str), maxWidth)
+			str = string(trimmed)
+			width = maxWidth
 		}
 		t.move(line, pos, t.separatorLen == 0)
 		if t.reading {
-			t.window.CPrint(tui.ColSpinner, " < ")
+			t.window.CPrint(tui.ColSpinner, str)
 		} else {
-			t.window.CPrint(tui.ColPrompt, " < ")
+			t.window.CPrint(tui.ColPrompt, str)
 		}
-		pos += len(" < ")
+		pos += width
 	case infoHidden:
 		return
 	}
