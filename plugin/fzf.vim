@@ -512,9 +512,7 @@ try
     let optstr .= ' --height='.height
   endif
   " Respect --border option given in 'options'
-  if stridx(optstr, '--border') < 0 && stridx(optstr, '--no-border') < 0
-    let optstr .= s:border_opt(get(dict, 'window', 0))
-  endif
+  let optstr = join([s:border_opt(get(dict, 'window', 0)), optstr])
   let prev_default_command = $FZF_DEFAULT_COMMAND
   if len(source_command)
     let $FZF_DEFAULT_COMMAND = source_command
@@ -741,7 +739,7 @@ function! s:calc_size(max, val, dict)
     return size
   endif
   let margin = match(opts, '--inline-info\|--info[^-]\{-}inline') > match(opts, '--no-inline-info\|--info[^-]\{-}\(default\|hidden\)') ? 1 : 2
-  let margin += stridx(opts, '--border') > stridx(opts, '--no-border') ? 2 : 0
+  let margin += match(opts, '--border\([^-]\|$\)') > match(opts, '--no-border\([^-]\|$\)') ? 2 : 0
   if stridx(opts, '--header') > stridx(opts, '--no-header')
     let margin += len(split(opts, "\n"))
   endif
