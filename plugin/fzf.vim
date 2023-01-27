@@ -512,9 +512,7 @@ try
     let optstr .= ' --height='.height
   endif
   " Respect --border option given in 'options'
-  if match(optstr, '--border\([^-]\|$\)') < 0 && match(optstr, '--no-border\([^-]\|$\)') < 0
-    let optstr .= s:border_opt(get(dict, 'window', 0))
-  endif
+  let optstr = join([s:border_opt(get(dict, 'window', 0)), optstr])
   let prev_default_command = $FZF_DEFAULT_COMMAND
   if len(source_command)
     let $FZF_DEFAULT_COMMAND = source_command
