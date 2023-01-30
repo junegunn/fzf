@@ -1457,6 +1457,44 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[1], ' {5-1  3 4} ' }
   end
 
+  def test_toggle_preview_without_default_preview_command
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'space:preview(echo [{}]),enter:toggle-preview' --preview-window up,border-double), :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      refute_includes lines[1], '║ [1]'
+    end
+
+    # toggle-preview should do nothing
+    tmux.send_keys :Enter
+    tmux.until { |lines| refute_includes lines[1], '║ [1]' }
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      refute_includes lines[1], '║ [1]'
+      refute_includes lines[1], '║ [2]'
+    end
+
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      assert_includes lines, '> 3'
+      refute_includes lines[1], '║ [3]'
+    end
+
+    # One-off preview action
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines[1], '║ [3]' }
+
+    # toggle-preview to hide it
+    tmux.send_keys :Enter
+    tmux.until { |lines| refute_includes lines[1], '║ [3]' }
+
+    # toggle-preview again does nothing
+    tmux.send_keys :Enter, :Up
+    tmux.until do |lines|
+      assert_includes lines, '> 4'
+      refute_includes lines[1], '║ [4]'
+    end
+  end
+
   def test_preview_hidden
     tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-$FZF_PREVIEW_LINES-$FZF_PREVIEW_COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
     tmux.until { |lines| assert_equal '>', lines[-1] }

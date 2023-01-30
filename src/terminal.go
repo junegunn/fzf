@@ -2867,7 +2867,7 @@ func (t *Terminal) Loop() {
 				t.mutex.Unlock()
 				return false
 			case actTogglePreview:
-				if t.hasPreviewer() {
+				if t.hasPreviewWindow() || len(t.previewOpts.command) > 0 {
 					t.activePreviewOpts.Toggle()
 					updatePreviewWindow(false)
 					if t.isPreviewEnabled() {
