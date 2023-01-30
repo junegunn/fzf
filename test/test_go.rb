@@ -180,7 +180,7 @@ class TestBase < Minitest::Test
   end
 
   def writelines(path, lines)
-    File.unlink(path) while File.exist?(path)
+    FileUtils.rm_f(path) while File.exist?(path)
     File.open(path, 'w') { |f| f.puts lines }
   end
 
@@ -188,7 +188,7 @@ class TestBase < Minitest::Test
     wait { assert_path_exists tempname }
     File.read(tempname)
   ensure
-    File.unlink(tempname) while File.exist?(tempname)
+    FileUtils.rm_f(tempname) while File.exist?(tempname)
     @temp_suffix += 1
     tmux.prepare
   end
@@ -905,11 +905,7 @@ class TestGoFZF < TestBase
     history_file = '/tmp/fzf-test-history'
 
     # History with limited number of entries
-    begin
-      File.unlink(history_file)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(history_file)
     opts = "--history=#{history_file} --history-size=4"
     input = %w[00 11 22 33 44]
     input.each do |keys|
@@ -955,7 +951,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> 33', lines[-1] }
     tmux.send_keys :Enter
   ensure
-    File.unlink(history_file)
+    FileUtils.rm_f(history_file)
   end
 
   def test_execute
@@ -984,11 +980,7 @@ class TestGoFZF < TestBase
       ], File.readlines(output, chomp: true)
     end
   ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
   end
 
   def test_execute_multi
@@ -1013,20 +1005,12 @@ class TestGoFZF < TestBase
       ], File.readlines(output, chomp: true)
     end
   ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
   end
 
   def test_execute_plus_flag
     output = tempname + '.tmp'
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
     writelines(tempname, ['foo bar', '123 456'])
 
     tmux.send_keys "cat #{tempname} | #{FZF} --multi --bind 'x:execute-silent(echo {+}/{}/{+2}/{2} >> #{output})'", :Enter
@@ -1059,21 +1043,13 @@ class TestGoFZF < TestBase
       ], File.readlines(output, chomp: true)
     end
   rescue StandardError
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
   end
 
   def test_execute_shell
     # Custom script to use as $SHELL
     output = tempname + '.out'
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
     writelines(tempname,
                ['#!/usr/bin/env bash', "echo $1 / $2 > #{output}"])
     system("chmod +x #{tempname}")
@@ -1087,11 +1063,7 @@ class TestGoFZF < TestBase
       assert_equal ["-c / 'foo'bar"], File.readlines(output, chomp: true)
     end
   ensure
-    begin
-      File.unlink(output)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(output)
   end
 
   def test_cycle
@@ -1497,11 +1469,7 @@ class TestGoFZF < TestBase
   end
 
   def test_preview_size_0
-    begin
-      File.unlink(tempname)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(tempname)
     tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0 --bind space:toggle-preview), :Enter
     tmux.until do |lines|
       assert_equal 100, lines.item_count
@@ -1523,6 +1491,32 @@ class TestGoFZF < TestBase
     wait do
       assert_path_exists tempname
       assert_equal %w[1 3 4], File.readlines(tempname, chomp: true)
+    end
+  end
+
+  def test_preview_size_0_hidden
+    FileUtils.rm_f(tempname)
+    tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0,hidden --bind space:toggle-preview), :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys :Down, :Down
+    tmux.until { |lines| assert_includes lines, '> 3' }
+    wait { refute_path_exists tempname }
+    tmux.send_keys :Space
+    wait do
+      assert_path_exists tempname
+      assert_equal %w[3], File.readlines(tempname, chomp: true)
+    end
+    tmux.send_keys :Down
+    wait do
+      assert_equal %w[3 4], File.readlines(tempname, chomp: true)
+    end
+    tmux.send_keys :Space, :Down
+    tmux.until { |lines| assert_includes lines, '> 5' }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert_includes lines, '> 6' }
+    tmux.send_keys :Space
+    wait do
+      assert_equal %w[3 4 6], File.readlines(tempname, chomp: true)
     end
   end
 
@@ -2087,11 +2081,7 @@ class TestGoFZF < TestBase
     wait { refute system("pgrep -f #{script}") }
   ensure
     system("pkill -9 -f #{script}")
-    begin
-      File.unlink(script)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(script)
   end
 
   def test_kill_default_command_on_accept
@@ -2109,11 +2099,7 @@ class TestGoFZF < TestBase
     wait { refute system("pgrep -f #{script}") }
   ensure
     system("pkill -9 -f #{script}")
-    begin
-      File.unlink(script)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(script)
   end
 
   def test_kill_reload_command_on_abort
@@ -2134,11 +2120,7 @@ class TestGoFZF < TestBase
     wait { refute system("pgrep -f #{script}") }
   ensure
     system("pkill -9 -f #{script}")
-    begin
-      File.unlink(script)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(script)
   end
 
   def test_kill_reload_command_on_accept
@@ -2158,11 +2140,7 @@ class TestGoFZF < TestBase
     wait { refute system("pgrep -f #{script}") }
   ensure
     system("pkill -9 -f #{script}")
-    begin
-      File.unlink(script)
-    rescue StandardError
-      nil
-    end
+    FileUtils.rm_f(script)
   end
 
   def test_preview_header
