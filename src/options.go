@@ -1111,6 +1111,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actPrevSelected)
 		case "next-selected":
 			appendAction(actNextSelected)
+		case "show-preview":
+			appendAction(actShowPreview)
+		case "hide-preview":
+			appendAction(actHidePreview)
 		case "toggle-preview":
 			appendAction(actTogglePreview)
 		case "toggle-preview-wrap":

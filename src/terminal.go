@@ -350,6 +350,8 @@ const (
 	actRefreshPreview
 	actReplaceQuery
 	actToggleSort
+	actShowPreview
+	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
 	actTransformBorderLabel
@@ -1244,6 +1246,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 			}
 		}
 		resizePreviewWindows(&t.previewOpts)
+	} else {
+		t.activePreviewOpts = &t.previewOpts
 	}
 
 	// Without preview window
@@ -2279,7 +2283,7 @@ func (t *Terminal) mayNeedPreviewWindow() bool {
 
 // Check if previewer is currently in action (invisible previewer with size 0 or visible previewer)
 func (t *Terminal) isPreviewEnabled() bool {
-	return t.hasPreviewer() && t.previewer.enabled && (!t.previewOpts.Visible() || t.pwindow != nil)
+	return t.hasPreviewer() && t.previewer.enabled && (!t.previewOpts.Visible() && !t.previewOpts.hidden || t.pwindow != nil)
 }
 
 func (t *Terminal) hasPreviewWindow() bool {
@@ -2864,13 +2868,18 @@ func (t *Terminal) Loop() {
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
-			case actTogglePreview:
-				if t.hasPreviewer() {
-					if t.activePreviewOpts != nil {
-						t.activePreviewOpts.Toggle()
-					} else if !t.previewOpts.Visible() {
-						t.previewer.enabled = !t.previewer.enabled
-					}
+			case actTogglePreview, actShowPreview, actHidePreview:
+				var act bool
+				switch a.t {
+				case actShowPreview:
+					act = !t.hasPreviewWindow() && len(t.previewOpts.command) > 0
+				case actHidePreview:
+					act = t.hasPreviewWindow()
+				case actTogglePreview:
+					act = t.hasPreviewWindow() || len(t.previewOpts.command) > 0
+				}
+				if act {
+					t.activePreviewOpts.Toggle()
 					updatePreviewWindow(false)
 					if t.isPreviewEnabled() {
 						valid, list := t.buildPlusList(t.previewOpts.command, false, false)
