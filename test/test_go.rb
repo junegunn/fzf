@@ -1495,6 +1495,45 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_show_and_hide_preview
+    tmux.send_keys %(seq 100 | #{FZF} --preview-window hidden,border-bold --preview 'echo [{}]' --bind 'a:show-preview,b:hide-preview'), :Enter
+
+    # Hidden by default
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      refute_includes lines[1], '┃ [1]'
+    end
+
+    # Show
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], '┃ [1]' }
+
+    # Already shown
+    tmux.send_keys :a
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines[1], '┃ [2]' }
+
+    # Hide
+    tmux.send_keys :b
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      assert_includes lines, '> 3'
+      refute_includes lines[1], '┃ [3]'
+    end
+
+    # Already hidden
+    tmux.send_keys :b
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      assert_includes lines, '> 4'
+      refute_includes lines[1], '┃ [4]'
+    end
+
+    # Show it again
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines[1], '┃ [4]' }
+  end
+
   def test_preview_hidden
     tmux.send_keys %(seq 1000 | #{FZF} --preview 'echo {{}-{}-$FZF_PREVIEW_LINES-$FZF_PREVIEW_COLUMNS}' --preview-window down:1:hidden --bind ?:toggle-preview), :Enter
     tmux.until { |lines| assert_equal '>', lines[-1] }

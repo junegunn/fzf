@@ -1,8 +1,11 @@
 CHANGELOG
 =========
 
-0.37.1
+0.38.0
 ------
+- New actions
+    - `show-preview`
+    - `hide-preview`
 - Bug fixes
     - `--preview-window 0,hidden` should not execute the preview command until
       `toggle-preview` action is triggered

@@ -350,6 +350,8 @@ const (
 	actRefreshPreview
 	actReplaceQuery
 	actToggleSort
+	actShowPreview
+	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
 	actTransformBorderLabel
@@ -2866,8 +2868,17 @@ func (t *Terminal) Loop() {
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
-			case actTogglePreview:
-				if t.hasPreviewWindow() || len(t.previewOpts.command) > 0 {
+			case actTogglePreview, actShowPreview, actHidePreview:
+				var act bool
+				switch a.t {
+				case actShowPreview:
+					act = !t.hasPreviewWindow() && len(t.previewOpts.command) > 0
+				case actHidePreview:
+					act = t.hasPreviewWindow()
+				case actTogglePreview:
+					act = t.hasPreviewWindow() || len(t.previewOpts.command) > 0
+				}
+				if act {
 					t.activePreviewOpts.Toggle()
 					updatePreviewWindow(false)
 					if t.isPreviewEnabled() {
