@@ -104,7 +104,6 @@ type previewer struct {
 	version    int64
 	lines      []string
 	offset     int
-	enabled    bool
 	scrollable bool
 	final      bool
 	following  resumableState
@@ -645,7 +644,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
-		previewer:          previewer{0, []string{}, 0, len(opts.Preview.command) > 0, false, true, disabledState, "", []bool{}},
+		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}},
 		previewed:          previewed{0, 0, 0, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
@@ -1034,7 +1033,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 	if t.noInfoLine() {
 		minAreaHeight -= 1
 	}
-	if t.mayNeedPreviewWindow() {
+	if t.needPreviewWindow() {
 		minPreviewHeight := 1 + borderLines(t.previewOpts.border)
 		minPreviewWidth := 5
 		switch t.previewOpts.position {
@@ -1117,7 +1116,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
-	if t.mayNeedPreviewWindow() {
+	if forcePreview || t.needPreviewWindow() {
 		var resizePreviewWindows func(previewOpts *previewOpts)
 		resizePreviewWindows = func(previewOpts *previewOpts) {
 			t.activePreviewOpts = previewOpts
@@ -2277,13 +2276,13 @@ func (t *Terminal) hasPreviewer() bool {
 	return t.previewBox != nil
 }
 
-func (t *Terminal) mayNeedPreviewWindow() bool {
-	return t.hasPreviewer() && t.previewer.enabled && t.previewOpts.Visible()
+func (t *Terminal) needPreviewWindow() bool {
+	return t.hasPreviewer() && len(t.previewOpts.command) > 0 && t.previewOpts.Visible()
 }
 
 // Check if previewer is currently in action (invisible previewer with size 0 or visible previewer)
-func (t *Terminal) isPreviewEnabled() bool {
-	return t.hasPreviewer() && t.previewer.enabled && (!t.previewOpts.Visible() && !t.previewOpts.hidden || t.pwindow != nil)
+func (t *Terminal) canPreview() bool {
+	return t.hasPreviewer() && (!t.previewOpts.Visible() && !t.previewOpts.hidden || t.hasPreviewWindow())
 }
 
 func (t *Terminal) hasPreviewWindow() bool {
@@ -2391,7 +2390,7 @@ func (t *Terminal) Loop() {
 		pad := fitpad.pad
 		t.tui.Resize(func(termHeight int) int {
 			contentHeight := fit + t.extraLines()
-			if t.mayNeedPreviewWindow() {
+			if t.needPreviewWindow() {
 				if t.previewOpts.aboveOrBelow() {
 					if t.previewOpts.size.percent {
 						newContentHeight := int(float64(contentHeight) * 100. / (100. - t.previewOpts.size.size))
@@ -2625,7 +2624,7 @@ func (t *Terminal) Loop() {
 	}
 
 	refreshPreview := func(command string) {
-		if len(command) > 0 && t.isPreviewEnabled() {
+		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false, false)
 			t.cancelPreview()
 			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.evaluateScrollOffset(), list})
@@ -2700,7 +2699,7 @@ func (t *Terminal) Loop() {
 					case reqFullRedraw:
 						wasHidden := t.pwindow == nil
 						t.redraw()
-						if wasHidden && t.pwindow != nil {
+						if wasHidden && t.hasPreviewWindow() {
 							refreshPreview(t.previewOpts.command)
 						}
 					case reqClose:
@@ -2881,7 +2880,7 @@ func (t *Terminal) Loop() {
 				if act {
 					t.activePreviewOpts.Toggle()
 					updatePreviewWindow(false)
-					if t.isPreviewEnabled() {
+					if t.canPreview() {
 						valid, list := t.buildPlusList(t.previewOpts.command, false, false)
 						if valid {
 							t.cancelPreview()
@@ -2977,7 +2976,6 @@ func (t *Terminal) Loop() {
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
 			case actPreview:
-				t.previewer.enabled = true
 				updatePreviewWindow(true)
 				refreshPreview(a.a)
 			case actRefreshPreview:
@@ -3390,9 +3388,8 @@ func (t *Terminal) Loop() {
 				}
 			case actChangePreview:
 				if t.previewOpts.command != a.a {
-					t.previewer.enabled = len(a.a) > 0
-					updatePreviewWindow(false)
 					t.previewOpts.command = a.a
+					updatePreviewWindow(false)
 					refreshPreview(t.previewOpts.command)
 				}
 			case actChangePreviewWindow:
@@ -3412,7 +3409,7 @@ func (t *Terminal) Loop() {
 				if !currentPreviewOpts.sameLayout(t.previewOpts) {
 					wasHidden := t.pwindow == nil
 					updatePreviewWindow(false)
-					if wasHidden && t.pwindow != nil {
+					if wasHidden && t.hasPreviewWindow() {
 						refreshPreview(t.previewOpts.command)
 					} else {
 						req(reqPreviewRefresh)
@@ -3489,12 +3486,10 @@ func (t *Terminal) Loop() {
 			req(reqList)
 		}
 
-		if queryChanged {
-			if t.isPreviewEnabled() {
-				_, _, q := hasPreviewFlags(t.previewOpts.command)
-				if q {
-					t.version++
-				}
+		if queryChanged && t.canPreview() && len(t.previewOpts.command) > 0 {
+			_, _, q := hasPreviewFlags(t.previewOpts.command)
+			if q {
+				t.version++
 			}
 		}
 
