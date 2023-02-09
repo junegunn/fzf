@@ -7,14 +7,13 @@ auto_completion=
 key_bindings=
 update_config=2
 shells="bash zsh fish"
-prefix='~/.fzf'
+prefix="$HOME/.fzf"
 prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
 help() {
   cat << EOF
 usage: $0 [OPTIONS]
-
     --help               Show this message
     --bin                Download fzf binary only; Do not generate ~/.fzf.{bash,zsh}
     --all                Download fzf binary and update configuration files
@@ -23,7 +22,6 @@ usage: $0 [OPTIONS]
     --[no-]key-bindings  Enable/disable key bindings (CTRL-T, CTRL-R, ALT-C)
     --[no-]completion    Enable/disable fuzzy completion (bash & zsh)
     --[no-]update-rc     Whether or not to update shell configuration files
-
     --no-bash            Do not set up bash configuration
     --no-zsh             Do not set up zsh configuration
     --no-fish            Do not set up fish configuration
@@ -42,7 +40,7 @@ for opt in "$@"; do
       update_config=1
       ;;
     --xdg)
-      prefix='"${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf'
+      prefix="${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf"
       prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
       mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/fzf"
       ;;
@@ -64,7 +62,7 @@ for opt in "$@"; do
   esac
 done
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit
 fzf_base=$(pwd)
 fzf_base_esc=$(printf %q "$fzf_base")
 
@@ -83,8 +81,7 @@ ask() {
 check_binary() {
   echo -n "  - Checking fzf executable ... "
   local output
-  output=$("$fzf_base"/bin/fzf --version 2>&1)
-  if [ $? -ne 0 ]; then
+  if ! output=$("$fzf_base"/bin/fzf --version 2>&1); then
     echo "Error: $output"
     binary_error="Invalid binary"
   else
@@ -115,20 +112,20 @@ link_fzf_in_path() {
 try_curl() {
   command -v curl > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar -xzf -
+    curl -fL "$1" | tar -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
-    curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+    curl -fLo "$temp" "$1" && unzip -o "$temp" && rm -f "$temp"
   fi
 }
 
 try_wget() {
   command -v wget > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    wget -O - $1 | tar -xzf -
+    wget -O - "$1" | tar -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
-    wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+    wget -O "$temp" "$1" && unzip -o "$temp" && rm -f "$temp"
   fi
 }
 
@@ -139,8 +136,7 @@ download() {
     check_binary && return
   fi
   link_fzf_in_path && return
-  mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin
-  if [ $? -ne 0 ]; then
+  if ! mkdir -p "$fzf_base"/bin && cd "$fzf_base"/bin; then
     binary_error="Failed to create bin directory"
     return
   fi
@@ -148,7 +144,7 @@ download() {
   local url
   url=https://github.com/junegunn/fzf/releases/download/$version/${1}
   set -o pipefail
-  if ! (try_curl $url || try_wget $url); then
+  if ! (try_curl "$url" || try_wget "$url"); then
     set +o pipefail
     binary_error="Failed to download with curl and wget"
     return
@@ -187,7 +183,7 @@ case "$archi" in
   *)                  binary_available=0 binary_error=1          ;;
 esac
 
-cd "$fzf_base"
+cd "$fzf_base" || exit
 if [ -n "$binary_error" ]; then
   if [ $binary_available -eq 0 ]; then
     echo "No prebuilt binary for $archi ..."
@@ -260,11 +256,9 @@ for shell in $shells; do
 if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
   PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
 fi
-
 # Auto-completion
 # ---------------
 $fzf_completion
-
 # Key bindings
 # ------------
 $fzf_key_bindings
@@ -316,7 +310,7 @@ append_line() {
   if [ -n "$lno" ]; then
     echo "    - Already exists: line #$lno"
   else
-    if [ $update -eq 1 ]; then
+    if [ "$update" -eq 1 ]; then
       [ -f "$file" ] && echo >> "$file"
       echo "$line" >> "$file"
       echo "    + Added"
@@ -347,7 +341,7 @@ fi
 echo
 for shell in $shells; do
   [[ "$shell" = fish ]] && continue
-  [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
+  [ "$shell" = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
