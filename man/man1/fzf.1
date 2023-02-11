@@ -999,6 +999,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbackward-delete-char/eof\fR     (same as \fBbackward-delete-char\fR except aborts fzf if query is empty)
     \fBbackward-kill-word\fR           \fIalt-bs\fR
     \fBbackward-word\fR                \fIalt-b   shift-left\fR
+    \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning-of-line\fR            \fIctrl-a  home\fR
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange-border-label(...)\fR     (change \fB--border-label\fR to the given string)
@@ -1142,6 +1143,14 @@ your command as a background process (i.e. appending \fB&\fR).
 On *nix systems, fzf runs the command with \fB$SHELL -c\fR if \fBSHELL\fR is
 set, otherwise with \fBsh -c\fR, so in this case make sure that the command is
 POSIX-compliant.
+
+\fBbecome(...)\fR action is similar to \fBexecute(...)\fR, but it replaces the
+current fzf process with the specifed command using \fBexecve(2)\fR system
+call.
+
+    \fBfzf --bind "enter:become(vim {})"\fR
+
+\fBbecome(...)\fR is not supported on Windows.
 
 .SS RELOAD INPUT
 

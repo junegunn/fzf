@@ -10,6 +10,7 @@ import (
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/mattn/go-shellwords"
@@ -921,7 +922,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1171,6 +1172,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
 				switch t {
+				case actBecome:
+					if util.IsWindows() {
+						exit("become action is not supported on Windows")
+					}
 				case actUnbind, actRebind:
 					parseKeyChordsImpl(actionArg, spec[0:offset]+" target required", exit)
 				case actChangePreviewWindow:
@@ -1223,6 +1228,8 @@ func isExecuteAction(str string) actionType {
 
 	prefix := actionNameRegexp.FindString(str)
 	switch prefix {
+	case "become":
+		return actBecome
 	case "reload":
 		return actReload
 	case "reload-sync":

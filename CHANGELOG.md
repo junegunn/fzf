@@ -4,6 +4,15 @@ CHANGELOG
 0.38.0
 ------
 - New actions
+    - `become(...)` - Replace the current fzf process with the specified
+      command using `execve(2)` system call. This action enables a simpler
+      alternative to using `--expect` and checking the output in the wrapping
+      script.
+      ```sh
+      # Open selected files in different editors
+      fzf --multi --bind 'enter:become($EDITOR {+}),ctrl-n:become(nano {+})'
+      ```
+        - This action is not supported on Windows
     - `show-preview`
     - `hide-preview`
 - Bug fixes
