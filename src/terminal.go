@@ -2863,19 +2863,21 @@ func (t *Terminal) Loop() {
 			switch a.t {
 			case actIgnore:
 			case actBecome:
-				_, list := t.buildPlusList(a.a, false)
-				command := t.replacePlaceholder(a.a, false, string(t.input), list)
-				shell := os.Getenv("SHELL")
-				if len(shell) == 0 {
-					shell = "sh"
-				}
-				shellPath, err := exec.LookPath(shell)
-				if err == nil {
-					t.tui.Close()
-					if t.history != nil {
-						t.history.append(string(t.input))
+				valid, list := t.buildPlusList(a.a, false)
+				if valid {
+					command := t.replacePlaceholder(a.a, false, string(t.input), list)
+					shell := os.Getenv("SHELL")
+					if len(shell) == 0 {
+						shell = "sh"
 					}
-					syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
+					shellPath, err := exec.LookPath(shell)
+					if err == nil {
+						t.tui.Close()
+						if t.history != nil {
+							t.history.append(string(t.input))
+						}
+						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
+					}
 				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false)
