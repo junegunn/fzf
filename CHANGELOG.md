@@ -5,12 +5,12 @@ CHANGELOG
 ------
 - New actions
     - `become(...)` - Replace the current fzf process with the specified
-      command using `execve(2)` system call. This action enables a simpler
-      alternative to using `--expect` and checking the output in the wrapping
-      script.
+      command using `execve(2)` system call.
+      See https://github.com/junegunn/fzf#turning-into-a-different-process.
       ```sh
-      # Open selected files in different editors
-      fzf --multi --bind 'enter:become($EDITOR {+}),ctrl-n:become(nano {+})'
+      # Open the file in Vim and go to the line
+      git grep --line-number . |
+          fzf --delimiter : --nth 3.. --bind 'enter:become(vim {1} +{2})'
       ```
         - This action is not supported on Windows
     - `show-preview`
