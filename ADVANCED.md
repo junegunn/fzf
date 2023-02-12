@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2022/08/25)*
+*(Last update: 2023/02/12)*
 
 <!-- vim-markdown-toc GFM -->
 
@@ -408,10 +408,10 @@ IFS=: read -ra selected < <(
 
 ### Switching between Ripgrep mode and fzf mode
 
-*(Requires fzf 0.30.0 or above)*
+*(Requires fzf 0.36.0 or above)*
 
-fzf 0.30.0 added `rebind` action so we can "rebind" the bindings that were
-previously "unbound" via `unbind`.
+[fzf 0.30.0][0.30.0] added `rebind` action so we can "rebind" the bindings
+that were previously "unbound" via `unbind`.
 
 This is an improved version of the previous example that allows us to switch
 between Ripgrep launcher mode and fzf-only filtering mode via CTRL-R and
@@ -421,6 +421,7 @@ CTRL-F.
 #!/usr/bin/env bash
 
 # Switch between Ripgrep launcher mode (CTRL-R) and fzf filtering mode (CTRL-F)
+rm -f /tmp/rg-fzf-{r,f}
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
 IFS=: read -ra selected < <(
@@ -429,16 +430,26 @@ IFS=: read -ra selected < <(
       --color "hl:-1:underline,hl+:-1:underline:reverse" \
       --disabled --query "$INITIAL_QUERY" \
       --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+clear-query+rebind(ctrl-r)" \
-      --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)" \
-      --prompt '1. Ripgrep> ' \
+      --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+      --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+      --bind "start:unbind(ctrl-r)" \
+      --prompt '1. ripgrep> ' \
       --delimiter : \
-      --header '╱ CTRL-R (Ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+      --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
       --preview 'bat --color=always {1} --highlight-line {2}' \
       --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
 )
 [ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
 ```
+
+- To restore the query string when switching between modes, we store the
+  current query in `/tmp/rg-fzf-{r,f}` files and restore the query using
+  `transform-query` action which was added in [fzf 0.36.0][0.36.0].
+- Also note that we unbind `ctrl-r` binding on `start` event which is
+  triggered once when fzf starts.
+
+[0.30.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0300
+[0.36.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0360
 
 Log tailing
 -----------
