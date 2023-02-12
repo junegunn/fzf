@@ -373,7 +373,7 @@ _fzf_setup_completion() {
 }
 
 # Environment variables / Aliases / Hosts / Process
-_fzf_setup_completion 'var'   export unset
+_fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  ssh telnet
 _fzf_setup_completion 'proc'  kill
