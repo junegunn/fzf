@@ -2643,6 +2643,19 @@ class TestGoFZF < TestBase
     tmux.send_keys :Space
     tmux.until { |lines| assert_includes lines, '/1/1/' }
   end
+
+  def test_become
+    tmux.send_keys "seq 100 | #{FZF} --bind 'enter:become:seq {} | #{FZF}'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys 999
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 99, lines.item_count }
+  end
 end
 
 module TestShell

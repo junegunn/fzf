@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"os/signal"
 	"regexp"
 	"sort"
@@ -387,6 +388,7 @@ const (
 	actDeselect
 	actUnbind
 	actRebind
+	actBecome
 )
 
 type placeholderFlags struct {
@@ -2237,7 +2239,7 @@ func (t *Terminal) redraw() {
 
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, captureFirstLine bool) string {
 	line := ""
-	valid, list := t.buildPlusList(template, forcePlus, false)
+	valid, list := t.buildPlusList(template, forcePlus)
 	// captureFirstLine is used for transform-{prompt,query} and we don't want to
 	// return an empty string in those cases
 	if !valid && !captureFirstLine {
@@ -2297,10 +2299,10 @@ func (t *Terminal) currentItem() *Item {
 	return nil
 }
 
-func (t *Terminal) buildPlusList(template string, forcePlus bool, forceEvaluation bool) (bool, []*Item) {
+func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
 	slot, plus, query := hasPreviewFlags(template)
-	if !forceEvaluation && !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
+	if !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -2625,7 +2627,7 @@ func (t *Terminal) Loop() {
 
 	refreshPreview := func(command string) {
 		if len(command) > 0 && t.canPreview() {
-			_, list := t.buildPlusList(command, false, false)
+			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
 			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.evaluateScrollOffset(), list})
 		}
@@ -2860,6 +2862,23 @@ func (t *Terminal) Loop() {
 		doAction = func(a *action) bool {
 			switch a.t {
 			case actIgnore:
+			case actBecome:
+				valid, list := t.buildPlusList(a.a, false)
+				if valid {
+					command := t.replacePlaceholder(a.a, false, string(t.input), list)
+					shell := os.Getenv("SHELL")
+					if len(shell) == 0 {
+						shell = "sh"
+					}
+					shellPath, err := exec.LookPath(shell)
+					if err == nil {
+						t.tui.Close()
+						if t.history != nil {
+							t.history.append(string(t.input))
+						}
+						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
+					}
+				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false)
 			case actExecuteMulti:
@@ -2881,7 +2900,7 @@ func (t *Terminal) Loop() {
 					t.activePreviewOpts.Toggle()
 					updatePreviewWindow(false)
 					if t.canPreview() {
-						valid, list := t.buildPlusList(t.previewOpts.command, false, false)
+						valid, list := t.buildPlusList(t.previewOpts.command, false)
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
@@ -3360,7 +3379,7 @@ func (t *Terminal) Loop() {
 			case actReload, actReloadSync:
 				t.failed = nil
 
-				valid, list := t.buildPlusList(a.a, false, false)
+				valid, list := t.buildPlusList(a.a, false)
 				if !valid {
 					// We run the command even when there's no match
 					// 1. If the template doesn't have any slots
