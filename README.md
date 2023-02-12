@@ -54,6 +54,7 @@ Table of Contents
 * [Advanced topics](#advanced-topics)
     * [Performance](#performance)
     * [Executing external programs](#executing-external-programs)
+    * [Turning into a different process](#turning-into-a-different-process)
     * [Reloading the candidate list](#reloading-the-candidate-list)
         * [1. Update the list of processes by pressing CTRL-R](#1-update-the-list-of-processes-by-pressing-ctrl-r)
         * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
@@ -201,6 +202,15 @@ files excluding hidden ones. (You can override the default command with
 ```sh
 vim $(fzf)
 ```
+
+> :bulb: fzf also has the ability to turn itself into a different process.
+>
+> ```sh
+> fzf --bind 'enter:become(vim {})'
+> ```
+>
+> See [Turning into a different process](#turning-into-a-different-process)
+> for more information
 
 ### Using the finder
 
@@ -559,6 +569,48 @@ fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort
 ```
 
 See *KEY BINDINGS* section of the man page for details.
+
+### Turning into a different process
+
+`become(...)` is similar to `execute(...)`/`execute-silent(...)` described
+above, but instead of executing the command and coming back to fzf on
+complete, it turns fzf into a new process for the command.
+
+```sh
+fzf --bind 'enter:become(vim {})'
+```
+
+Compared to the seemingly equivalent command substitution `vim "$(fzf)"`, this
+approach has a few benefits:
+
+* Vim will not open when you terminate fzf with CTRL-C
+* Vim will not open when you press enter on an empty result
+* Can easily handle multiple selections
+  ```sh
+  fzf --multi --bind 'enter:become(vim {+})'
+  # vim "$(fzf --multi)" simply doesn't work for multiple selections
+  # vim $(fzf --multi) cannot properly handle selections with whitespaces
+  #
+  # The above has none of the issues
+  ```
+* You can specify multiple ways to handle the result without any wrapping
+  script
+  ```sh
+  fzf --bind 'enter:become(vim {}),ctrl-e:become(emacs {})'
+  ```
+  * Previously, you would have to use `--expect=ctrl-e` and check the first
+    line of the output of fzf
+
+Another benefit of `become` is that you can easily build the subsequent
+command using the field index expression of fzf.
+
+```sh
+# Open file and go to the line
+#
+# Note that '< /dev/tty' is required to attach TTY to the subsequent command
+rg --line-number --color=always '' |
+  fzf --ansi --delimiter=: --bind 'enter:become:vim {1} +{2} < /dev/tty'
+```
 
 ### Reloading the candidate list
 
