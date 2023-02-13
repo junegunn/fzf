@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.33.0
+version=0.37.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -168,21 +168,23 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ arm64)   download fzf-$version-darwin_arm64.zip     ;;
-  Darwin\ x86_64)  download fzf-$version-darwin_amd64.zip     ;;
-  Linux\ armv5*)   download fzf-$version-linux_armv5.tar.gz   ;;
-  Linux\ armv6*)   download fzf-$version-linux_armv6.tar.gz   ;;
-  Linux\ armv7*)   download fzf-$version-linux_armv7.tar.gz   ;;
-  Linux\ armv8*)   download fzf-$version-linux_arm64.tar.gz   ;;
-  Linux\ aarch64*) download fzf-$version-linux_arm64.tar.gz   ;;
-  Linux\ *64)      download fzf-$version-linux_amd64.tar.gz   ;;
-  FreeBSD\ *64)    download fzf-$version-freebsd_amd64.tar.gz ;;
-  OpenBSD\ *64)    download fzf-$version-openbsd_amd64.tar.gz ;;
-  CYGWIN*\ *64)    download fzf-$version-windows_amd64.zip    ;;
-  MINGW*\ *64)     download fzf-$version-windows_amd64.zip    ;;
-  MSYS*\ *64)      download fzf-$version-windows_amd64.zip    ;;
-  Windows*\ *64)   download fzf-$version-windows_amd64.zip    ;;
-  *)               binary_available=0 binary_error=1 ;;
+  Darwin\ arm64)      download fzf-$version-darwin_arm64.zip     ;;
+  Darwin\ x86_64)     download fzf-$version-darwin_amd64.zip     ;;
+  Linux\ armv5*)      download fzf-$version-linux_armv5.tar.gz   ;;
+  Linux\ armv6*)      download fzf-$version-linux_armv6.tar.gz   ;;
+  Linux\ armv7*)      download fzf-$version-linux_armv7.tar.gz   ;;
+  Linux\ armv8*)      download fzf-$version-linux_arm64.tar.gz   ;;
+  Linux\ aarch64*)    download fzf-$version-linux_arm64.tar.gz   ;;
+  Linux\ loongarch64) download fzf-$version-linux_loong64.tar.gz ;;
+  Linux\ ppc64le)     download fzf-$version-linux_ppc64le.tar.gz ;;
+  Linux\ *64)         download fzf-$version-linux_amd64.tar.gz   ;;
+  FreeBSD\ *64)       download fzf-$version-freebsd_amd64.tar.gz ;;
+  OpenBSD\ *64)       download fzf-$version-openbsd_amd64.tar.gz ;;
+  CYGWIN*\ *64)       download fzf-$version-windows_amd64.zip    ;;
+  MINGW*\ *64)        download fzf-$version-windows_amd64.zip    ;;
+  MSYS*\ *64)         download fzf-$version-windows_amd64.zip    ;;
+  Windows*\ *64)      download fzf-$version-windows_amd64.zip    ;;
+  *)                  binary_available=0 binary_error=1          ;;
 esac
 
 cd "$fzf_base"

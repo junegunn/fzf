@@ -15,25 +15,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.19
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@ebaea52cb20fea395b0904125276395e37183dac
+      uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.0.0
+        ruby-version: 3.1.0
 
     - name: Install packages
       run: sudo apt-get install --yes zsh fish tmux
 
     - name: Install Ruby gems
-      run: sudo gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1
+      run: sudo gem install --no-document minitest:5.17.0 rubocop:1.43.0 rubocop-minitest:0.25.1 rubocop-performance:1.15.2
 
     - name: Rubocop
       run: rubocop --require rubocop-minitest --require rubocop-performance

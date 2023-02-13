@@ -8,6 +8,8 @@ func HasFullscreenRenderer() bool {
 	return false
 }
 
+var DefaultBorderShape BorderShape = BorderRounded
+
 func (a Attr) Merge(b Attr) Attr {
 	return a | b
 }
@@ -27,12 +29,14 @@ const (
 	StrikeThrough = Attr(1 << 7)
 )
 
-func (r *FullscreenRenderer) Init()             {}
-func (r *FullscreenRenderer) Pause(bool)        {}
-func (r *FullscreenRenderer) Resume(bool, bool) {}
-func (r *FullscreenRenderer) Clear()            {}
-func (r *FullscreenRenderer) Refresh()          {}
-func (r *FullscreenRenderer) Close()            {}
+func (r *FullscreenRenderer) Init()                              {}
+func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
+func (r *FullscreenRenderer) Pause(bool)                         {}
+func (r *FullscreenRenderer) Resume(bool, bool)                  {}
+func (r *FullscreenRenderer) Clear()                             {}
+func (r *FullscreenRenderer) NeedScrollbarRedraw() bool          { return false }
+func (r *FullscreenRenderer) Refresh()                           {}
+func (r *FullscreenRenderer) Close()                             {}
 
 func (r *FullscreenRenderer) GetChar() Event { return Event{} }
 func (r *FullscreenRenderer) MaxX() int      { return 0 }

@@ -72,7 +72,7 @@ type LightRenderer struct {
 	forceBlack    bool
 	clearOnExit   bool
 	prevDownTime  time.Time
-	clickY        []int
+	clicks        [][2]int
 	ttyin         *os.File
 	buffer        []byte
 	origState     *term.State
@@ -174,10 +174,7 @@ func (r *LightRenderer) Init() {
 		}
 	}
 
-	if r.mouse {
-		r.csi("?1000h")
-		r.csi("?1006h")
-	}
+	r.enableMouse()
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
@@ -187,6 +184,10 @@ func (r *LightRenderer) Init() {
 	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
+}
+
+func (r *LightRenderer) Resize(maxHeightFunc func(int) int) {
+	r.maxHeightFunc = maxHeightFunc
 }
 
 func (r *LightRenderer) makeSpace() {
@@ -541,7 +542,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	t := atoi(elems[0], -1)
 	x := atoi(elems[1], -1) - 1
 	y := atoi(elems[2], -1) - 1 - r.yoffset
-	if t < 0 || x < 0 || y < 0 {
+	if t < 0 || x < 0 {
 		return Event{Invalid, 0, nil}
 	}
 	*sz += end + 1
@@ -565,25 +566,31 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	// ctrl := t & 0b1000
 	mod := t&0b1100 > 0
 
+	drag := t&0b100000 > 0
+
 	if scroll != 0 {
 		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
 	}
 
 	double := false
-	if down {
+	if down && !drag {
 		now := time.Now()
 		if !left { // Right double click is not allowed
-			r.clickY = []int{}
+			r.clicks = [][2]int{}
 		} else if now.Sub(r.prevDownTime) < doubleClickDuration {
-			r.clickY = append(r.clickY, y)
+			r.clicks = append(r.clicks, [2]int{x, y})
 		} else {
-			r.clickY = []int{y}
+			r.clicks = [][2]int{{x, y}}
 		}
 		r.prevDownTime = now
 	} else {
-		if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
+		n := len(r.clicks)
+		if len(r.clicks) > 1 && r.clicks[n-2][0] == r.clicks[n-1][0] && r.clicks[n-2][1] == r.clicks[n-1][1] &&
 			time.Since(r.prevDownTime) < doubleClickDuration {
 			double = true
+			if double {
+				r.clicks = [][2]int{}
+			}
 		}
 	}
 	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
@@ -598,6 +605,7 @@ func (r *LightRenderer) rmcup() {
 }
 
 func (r *LightRenderer) Pause(clear bool) {
+	r.disableMouse()
 	r.restoreTerminal()
 	if clear {
 		if r.fullscreen {
@@ -610,6 +618,22 @@ func (r *LightRenderer) Pause(clear bool) {
 	}
 }
 
+func (r *LightRenderer) enableMouse() {
+	if r.mouse {
+		r.csi("?1000h")
+		r.csi("?1002h")
+		r.csi("?1006h")
+	}
+}
+
+func (r *LightRenderer) disableMouse() {
+	if r.mouse {
+		r.csi("?1000l")
+		r.csi("?1002l")
+		r.csi("?1006l")
+	}
+}
+
 func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
 	if clear {
@@ -618,13 +642,13 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		} else {
 			r.rmcup()
 		}
+		r.enableMouse()
 		r.flush()
 	} else if sigcont && !r.fullscreen && r.mouse {
 		// NOTE: SIGCONT (Coming back from CTRL-Z):
 		// It's highly likely that the offset we obtained at the beginning is
 		// no longer correct, so we simply disable mouse input.
-		r.csi("?1000l")
-		r.csi("?1006l")
+		r.disableMouse()
 		r.mouse = false
 	}
 }
@@ -637,6 +661,10 @@ func (r *LightRenderer) Clear() {
 	r.origin()
 	r.csi("J")
 	r.flush()
+}
+
+func (r *LightRenderer) NeedScrollbarRedraw() bool {
+	return false
 }
 
 func (r *LightRenderer) RefreshWindows(windows []Window) {
@@ -662,10 +690,7 @@ func (r *LightRenderer) Close() {
 	} else if !r.fullscreen {
 		r.csi("u")
 	}
-	if r.mouse {
-		r.csi("?1000l")
-		r.csi("?1006l")
-	}
+	r.disableMouse()
 	r.flush()
 	r.closePlatform()
 	r.restoreTerminal()
@@ -676,6 +701,9 @@ func (r *LightRenderer) MaxX() int {
 }
 
 func (r *LightRenderer) MaxY() int {
+	if r.height == 0 {
+		r.updateTerminalSize()
+	}
 	return r.height
 }
 
@@ -699,25 +727,38 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 		w.fg = r.theme.Fg.Color
 		w.bg = r.theme.Bg.Color
 	}
-	w.drawBorder()
+	w.drawBorder(false)
 	return w
 }
 
-func (w *LightWindow) drawBorder() {
+func (w *LightWindow) DrawHBorder() {
+	w.drawBorder(true)
+}
+
+func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 	switch w.border.shape {
-	case BorderRounded, BorderSharp:
-		w.drawBorderAround()
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
+		w.drawBorderAround(onlyHorizontal)
 	case BorderHorizontal:
 		w.drawBorderHorizontal(true, true)
 	case BorderVertical:
+		if onlyHorizontal {
+			return
+		}
 		w.drawBorderVertical(true, true)
 	case BorderTop:
 		w.drawBorderHorizontal(true, false)
 	case BorderBottom:
 		w.drawBorderHorizontal(false, true)
 	case BorderLeft:
+		if onlyHorizontal {
+			return
+		}
 		w.drawBorderVertical(true, false)
 	case BorderRight:
+		if onlyHorizontal {
+			return
+		}
 		w.drawBorderVertical(false, true)
 	}
 }
@@ -727,13 +768,14 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
+	hw := runewidth.RuneWidth(w.border.horizontal)
 	if top {
 		w.Move(0, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width))
+		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
 	}
 	if bottom {
 		w.Move(w.height-1, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width))
+		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
 	}
 }
 
@@ -758,21 +800,29 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 	}
 }
 
-func (w *LightWindow) drawBorderAround() {
+func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	w.Move(0, 0)
 	color := ColBorder
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
-	for y := 1; y < w.height-1; y++ {
-		w.Move(y, 0)
-		w.CPrint(color, string(w.border.vertical))
-		w.CPrint(color, repeat(' ', w.width-2))
-		w.CPrint(color, string(w.border.vertical))
+	hw := runewidth.RuneWidth(w.border.horizontal)
+	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
+	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
+	rem := (w.width - tcw) % hw
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
+	if !onlyHorizontal {
+		vw := runewidth.RuneWidth(w.border.vertical)
+		for y := 1; y < w.height-1; y++ {
+			w.Move(y, 0)
+			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, repeat(' ', w.width-vw*2))
+			w.CPrint(color, string(w.border.vertical))
+		}
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
+	rem = (w.width - bcw) % hw
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {
@@ -1013,7 +1063,7 @@ func (w *LightWindow) FinishFill() {
 }
 
 func (w *LightWindow) Erase() {
-	w.drawBorder()
+	w.drawBorder(false)
 	// We don't erase the window here to avoid flickering during scroll
 	w.Move(0, 0)
 }

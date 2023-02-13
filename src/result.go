@@ -50,20 +50,21 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 			// Higher is better
 			val = math.MaxUint16 - util.AsUint16(score)
 		case byChunk:
-			b := minBegin
-			e := maxEnd
-			l := item.text.Length()
-			for ; b >= 1; b-- {
-				if unicode.IsSpace(item.text.Get(b - 1)) {
-					break
+			if validOffsetFound {
+				b := minBegin
+				e := maxEnd
+				for ; b >= 1; b-- {
+					if unicode.IsSpace(item.text.Get(b - 1)) {
+						break
+					}
 				}
-			}
-			for ; e < l; e++ {
-				if unicode.IsSpace(item.text.Get(e)) {
-					break
+				for ; e < numChars; e++ {
+					if unicode.IsSpace(item.text.Get(e)) {
+						break
+					}
 				}
+				val = util.AsUint16(e - b)
 			}
-			val = util.AsUint16(e - b)
 		case byLength:
 			val = item.TrimLength()
 		case byBegin, byEnd:

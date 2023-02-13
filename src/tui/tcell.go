@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"runtime"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
 
@@ -19,7 +17,13 @@ func HasFullscreenRenderer() bool {
 	return true
 }
 
+var DefaultBorderShape BorderShape = BorderSharp
+
 func asTcellColor(color Color) tcell.Color {
+	if color == colDefault {
+		return tcell.ColorDefault
+	}
+
 	value := uint64(tcell.ColorValid) + uint64(color)
 	if color.is24() {
 		value = value | uint64(tcell.ColorIsRGB)
@@ -71,8 +75,6 @@ func (w *TcellWindow) Refresh() {
 	}
 	w.lastX = 0
 	w.lastY = 0
-
-	w.drawBorder()
 }
 
 func (w *TcellWindow) FinishFill() {
@@ -94,6 +96,8 @@ const (
 	AttrRegular   = Attr(1 << 7)
 	AttrClear     = Attr(1 << 8)
 )
+
+func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
 
 func (r *FullscreenRenderer) defaultTheme() *ColorTheme {
 	if _screen.Colors() >= 256 {
@@ -185,6 +189,10 @@ func (r *FullscreenRenderer) Clear() {
 	_screen.Clear()
 }
 
+func (r *FullscreenRenderer) NeedScrollbarRedraw() bool {
+	return true
+}
+
 func (r *FullscreenRenderer) Refresh() {
 	// noop
 }
@@ -214,54 +222,38 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, false, mod}}
 		case button&tcell.WheelUp != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, false, mod}}
-		case button&tcell.Button1 != 0 && !drag:
-			// all potential double click events put their 'line' coordinate in the clickY array
-			// double click event has two conditions, temporal and spatial, the first is checked here
-			now := time.Now()
-			if now.Sub(r.prevDownTime) < doubleClickDuration {
-				r.clickY = append(r.clickY, y)
-			} else {
-				r.clickY = []int{y}
-			}
-			r.prevDownTime = now
+		case button&tcell.Button1 != 0:
+			double := false
+			if !drag {
+				// all potential double click events put their coordinates in the clicks array
+				// double click event has two conditions, temporal and spatial, the first is checked here
+				now := time.Now()
+				if now.Sub(r.prevDownTime) < doubleClickDuration {
+					r.clicks = append(r.clicks, [2]int{x, y})
+				} else {
+					r.clicks = [][2]int{{x, y}}
+				}
+				r.prevDownTime = now
 
-			// detect double clicks (also check for spatial condition)
-			n := len(r.clickY)
-			double := n > 1 && r.clickY[n-2] == r.clickY[n-1]
-			if double {
-				// make sure two consecutive double clicks require four clicks
-				r.clickY = []int{}
+				// detect double clicks (also check for spatial condition)
+				n := len(r.clicks)
+				double = n > 1 && r.clicks[n-2][0] == r.clicks[n-1][0] && r.clicks[n-2][1] == r.clicks[n-1][1]
+				if double {
+					// make sure two consecutive double clicks require four clicks
+					r.clicks = [][2]int{}
+				}
 			}
-
 			// fire single or double click event
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, true, !double, double, mod}}
-		case button&tcell.Button2 != 0 && !drag:
+		case button&tcell.Button2 != 0:
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, false, true, false, mod}}
-		case runtime.GOOS != "windows":
-
+		default:
 			// double and single taps on Windows don't quite work due to
 			// the console acting on the events and not allowing us
 			// to consume them.
-
 			left := button&tcell.Button1 != 0
 			down := left || button&tcell.Button3 != 0
 			double := false
-			if down {
-				now := time.Now()
-				if !left {
-					r.clickY = []int{}
-				} else if now.Sub(r.prevDownTime) < doubleClickDuration {
-					r.clickY = append(r.clickY, x)
-				} else {
-					r.clickY = []int{x}
-					r.prevDownTime = now
-				}
-			} else {
-				if len(r.clickY) > 1 && r.clickY[0] == r.clickY[1] &&
-					time.Now().Sub(r.prevDownTime) < doubleClickDuration {
-					double = true
-				}
-			}
 
 			return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
 		}
@@ -511,7 +503,7 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 	if preview {
 		normal = ColPreview
 	}
-	return &TcellWindow{
+	w := &TcellWindow{
 		color:       r.theme.Colored,
 		preview:     preview,
 		top:         top,
@@ -520,6 +512,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		height:      height,
 		normal:      normal,
 		borderStyle: borderStyle}
+	w.drawBorder(false)
+	return w
 }
 
 func (w *TcellWindow) Close() {
@@ -535,7 +529,7 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 }
 
 func (w *TcellWindow) Erase() {
-	fill(w.left-1, w.top, w.width+1, w.height, w.normal, ' ')
+	fill(w.left-1, w.top, w.width+1, w.height-1, w.normal, ' ')
 }
 
 func (w *TcellWindow) Enclose(y int, x int) bool {
@@ -676,7 +670,11 @@ func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
 	return w.fillString(str, NewColorPair(fg, bg, a))
 }
 
-func (w *TcellWindow) drawBorder() {
+func (w *TcellWindow) DrawHBorder() {
+	w.drawBorder(true)
+}
+
+func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	shape := w.borderStyle.shape
 	if shape == BorderNone {
 		return
@@ -698,35 +696,52 @@ func (w *TcellWindow) drawBorder() {
 		style = w.normal.style()
 	}
 
+	hw := runewidth.RuneWidth(w.borderStyle.horizontal)
 	switch shape {
-	case BorderRounded, BorderSharp, BorderHorizontal, BorderTop:
-		for x := left; x < right; x++ {
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
+		max := right - 2*hw
+		if shape == BorderHorizontal || shape == BorderTop {
+			max = right - hw
+		}
+		// tcell has an issue displaying two overlapping wide runes
+		// e.g.  SetContent(  HH  )
+		//       SetContent(   TR )
+		//       ==================
+		//                 (  HH  ) => TR is ignored
+		for x := left; x <= max; x += hw {
 			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderHorizontal, BorderBottom:
-		for x := left; x < right; x++ {
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
+		max := right - 2*hw
+		if shape == BorderHorizontal || shape == BorderBottom {
+			max = right - hw
+		}
+		for x := left; x <= max; x += hw {
 			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
 		}
 	}
-	switch shape {
-	case BorderRounded, BorderSharp, BorderVertical, BorderLeft:
-		for y := top; y < bot; y++ {
-			_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+	if !onlyHorizontal {
+		switch shape {
+		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
+			for y := top; y < bot; y++ {
+				_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+			}
+		}
+		switch shape {
+		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
+			vw := runewidth.RuneWidth(w.borderStyle.vertical)
+			for y := top; y < bot; y++ {
+				_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
+			}
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderVertical, BorderRight:
-		for y := top; y < bot; y++ {
-			_screen.SetContent(right-1, y, w.borderStyle.vertical, nil, style)
-		}
-	}
-	switch shape {
-	case BorderRounded, BorderSharp:
+	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
-		_screen.SetContent(right-1, top, w.borderStyle.topRight, nil, style)
+		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
-		_screen.SetContent(right-1, bot-1, w.borderStyle.bottomRight, nil, style)
+		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.bottomRight), bot-1, w.borderStyle.bottomRight, nil, style)
 	}
 }

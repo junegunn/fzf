@@ -1,6 +1,252 @@
 CHANGELOG
 =========
 
+0.38.0
+------
+- New actions
+    - `become(...)` - Replace the current fzf process with the specified
+      command using `execve(2)` system call. This action enables a simpler
+      alternative to using `--expect` and checking the output in the wrapping
+      script.
+      ```sh
+      # Open selected files in different editors
+      fzf --multi --bind 'enter:become($EDITOR {+}),ctrl-n:become(nano {+})'
+      ```
+        - This action is not supported on Windows
+    - `show-preview`
+    - `hide-preview`
+- Bug fixes
+    - `--preview-window 0,hidden` should not execute the preview command until
+      `toggle-preview` action is triggered
+
+0.37.0
+------
+- Added a way to customize the separator of inline info
+  ```sh
+  fzf --info 'inline: ╱ ' --prompt '╱ ' --color prompt:bright-yellow
+  ```
+- New event
+    - `focus` - Triggered when the focus changes due to a vertical cursor
+      movement or a search result update
+      ```sh
+      fzf --bind 'focus:transform-preview-label:echo [ {} ]' --preview 'cat {}'
+
+      # Any action bound to the event runs synchronously and thus can make the interface sluggish
+      # e.g. lolcat isn't one of the fastest programs, and every cursor movement in
+      #      fzf will be noticeably affected by its execution time
+      fzf --bind 'focus:transform-preview-label:echo [ {} ] | lolcat -f' --preview 'cat {}'
+
+      # Beware not to introduce an infinite loop
+      seq 10 | fzf --bind 'focus:up' --cycle
+      ```
+- New actions
+    - `change-border-label`
+    - `change-preview-label`
+    - `transform-border-label`
+    - `transform-preview-label`
+- Bug fixes and improvements
+
+0.36.0
+------
+- Added `--listen=HTTP_PORT` option to start HTTP server. It allows external
+  processes to send actions to perform via POST method.
+  ```sh
+  # Start HTTP server on port 6266
+  fzf --listen 6266
+
+  # Send actions to the server
+  curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+  ```
+- Added draggable scrollbar to the main search window and the preview window
+  ```sh
+  # Hide scrollbar
+  fzf --no-scrollbar
+
+  # Customize scrollbar
+  fzf --scrollbar ┆ --color scrollbar:blue
+  ```
+- New event
+    - Added `load` event that is triggered when the input stream is complete
+      and the initial processing of the list is complete.
+      ```sh
+      # Change the prompt to "loaded" when the input stream is complete
+      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '
+
+      # You can use it instead of 'start' event without `--sync` if asynchronous
+      # trigger is not an issue.
+      (seq 10; sleep 1; seq 11 20) | fzf --bind 'load:last'
+      ```
+- New actions
+    - Added `pos(...)` action to move the cursor to the numeric position
+        - `first` and `last` are equivalent to `pos(1)` and `pos(-1)` respectively
+      ```sh
+      # Put the cursor on the 10th item
+      seq 100 | fzf --sync --bind 'start:pos(10)'
+
+      # Put the cursor on the 10th to last item
+      seq 100 | fzf --sync --bind 'start:pos(-10)'
+      ```
+    - Added `reload-sync(...)` action which replaces the current list only after
+      the reload process is complete. This is useful when the command takes
+      a while to produce the initial output and you don't want fzf to run against
+      an empty list while the command is running.
+      ```sh
+      # You can still filter and select entries from the initial list for 3 seconds
+      seq 100 | fzf --bind 'load:reload-sync(sleep 3; seq 1000)+unbind(load)'
+      ```
+    - Added `next-selected` and `prev-selected` actions to move between selected
+      items
+      ```sh
+      # `next-selected` will move the pointer to the next selected item below the current line
+      # `prev-selected` will move the pointer to the previous selected item above the current line
+      seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected
+
+      # Both actions respect --layout option
+      seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected --layout reverse
+      ```
+    - Added `change-query(...)` action that simply changes the query string to the
+      given static string. This can be useful when used with `--listen`.
+      ```sh
+      curl localhost:6266 -d "change-query:$(date)"
+      ```
+    - Added `transform-prompt(...)` action for transforming the prompt string
+      using an external command
+      ```sh
+      # Press space to change the prompt string using an external command
+      # (only the first line of the output is taken)
+      fzf --bind 'space:reload(ls),load:transform-prompt(printf "%s> " "$(date)")'
+      ```
+    - Added `transform-query(...)` action for transforming the query string using
+      an external command
+      ```sh
+      # Press space to convert the query to uppercase letters
+      fzf --bind 'space:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
+
+      # Bind it to 'change' event for automatic conversion
+      fzf --bind 'change:transform-query(tr "[:lower:]" "[:upper:]" <<< {q})'
+
+      # Can only type numbers
+      fzf --bind 'change:transform-query(sed "s/[^0-9]//g" <<< {q})'
+      ```
+    - `put` action can optionally take an argument string
+      ```sh
+      # a will put 'alpha' on the prompt, ctrl-b will put 'bravo'
+      fzf --bind 'a:put+put(lpha),ctrl-b:put(bravo)'
+      ```
+- Added color name `preview-label` for `--preview-label` (defaults to `label`
+  for `--border-label`)
+- Better support for (Windows) terminals where each box-drawing character
+  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `1`.
+    - On Vim, the variable will be automatically set if `&ambiwidth` is `double`
+- Behavior changes
+    - fzf will always execute the preview command if the command template
+      contains `{q}` even when it's empty. If you prefer the old behavior,
+      you'll have to check if `{q}` is empty in your command.
+      ```sh
+      # This will show // even when the query is empty
+      : | fzf --preview 'echo /{q}/'
+
+      # But if you don't want it,
+      : | fzf --preview '[ -n {q} ] || exit; echo /{q}/'
+      ```
+    - `double-click` will behave the same as `enter` unless otherwise specified,
+      so you don't have to repeat the same action twice in `--bind` in most cases.
+      ```sh
+      # No need to bind 'double-click' to the same action
+      fzf --bind 'enter:execute:less {}' # --bind 'double-click:execute:less {}'
+      ```
+    - If the color for `separator` is not specified, it will default to the
+      color for `border`. Same holds true for `scrollbar`. This is to reduce
+      the number of configuration items required to achieve a consistent color
+      scheme.
+    - If `follow` flag is specified in `--preview-window` option, fzf will
+      automatically scroll to the bottom of the streaming preview output. But
+      when the user manually scrolls the window, the following stops. With
+      this version, fzf will resume following if the user scrolls the window
+      to the bottom.
+    - Default border style on Windows is changed to `sharp` because some
+      Windows terminals are not capable of displaying `rounded` border
+      characters correctly.
+- Minor bug fixes and improvements
+
+0.35.1
+------
+- Fixed a bug where fzf with `--tiebreak=chunk` crashes on inverse match query
+- Fixed a bug where clicking above fzf would paste escape sequences
+
+0.35.0
+------
+- Added `start` event that is triggered only once when fzf finder starts.
+  Since fzf consumes the input stream asynchronously, the input list is not
+  available unless you use `--sync`.
+  ```sh
+  seq 100 | fzf --multi --sync --bind 'start:last+select-all+preview(echo welcome)'
+  ```
+- Added `--border-label` and `--border-label-pos` for putting label on the border
+  ```sh
+  # ANSI color codes are supported
+  # (with https://github.com/busyloop/lolcat)
+  label=$(curl -s http://metaphorpsum.com/sentences/1 | lolcat -f)
+
+  # Border label at the center
+  fzf --height=10 --border --border-label="╢ $label ╟" --color=label:italic:black
+
+  # Left-aligned (positive integer)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=3 --color=label:italic:black
+
+  # Right-aligned (negative integer) on the bottom line (:bottom)
+  fzf --height=10 --border --border-label="╢ $label ╟" --border-label-pos=-3:bottom --color=label:italic:black
+  ```
+- Also added `--preview-label` and `--preview-label-pos` for the border of the
+  preview window
+  ```sh
+  fzf --preview 'cat {}' --border --preview-label=' Preview ' --preview-label-pos=2
+  ```
+- Info panel (match counter) will be followed by a horizontal separator by
+  default
+    - Use `--no-separator` or `--separator=''` to hide the separator
+    - You can specify an arbitrary string that is repeated to form the
+      horizontal separator. e.g. `--separator=╸`
+    - The color of the separator can be customized via `--color=separator:...`
+    - ANSI color codes are also supported
+  ```sh
+  fzf --separator=╸ --color=separator:green
+  fzf --separator=$(lolcat -f -F 1.4 <<< ▁▁▂▃▄▅▆▆▅▄▃▂▁▁) --info=inline
+  ```
+- Added `--border=bold` and `--border=double` along with
+  `--preview-window=border-bold` and `--preview-window=border-double`
+
+0.34.0
+------
+- Added support for adaptive `--height`. If the `--height` value is prefixed
+  with `~`, fzf will automatically determine the height in the range according
+  to the input size.
+  ```sh
+  seq 1 | fzf --height ~70% --border --padding 1 --margin 1
+  seq 10 | fzf --height ~70% --border --padding 1 --margin 1
+  seq 100 | fzf --height ~70% --border --padding 1 --margin 1
+  ```
+    - There are a few limitations
+        - Not compatible with percent top/bottom margin/padding
+          ```sh
+          # This is not allowed (top/bottom margin in percent value)
+          fzf --height ~50% --border --margin 5%,10%
+
+          # This is allowed (top/bottom margin in fixed value)
+          fzf --height ~50% --border --margin 2,10%
+          ```
+        - fzf will not start until it can determine the right height for the input
+          ```sh
+          # fzf will open immediately
+          (sleep 2; seq 10) | fzf --height 50%
+
+          # fzf will open after 2 seconds
+          (sleep 2; seq 10) | fzf --height ~50%
+          (sleep 2; seq 1000) | fzf --height ~50%
+          ```
+- Fixed tcell renderer used to render full-screen fzf on Windows
+- `--no-clear` is deprecated. Use `reload` action instead.
+
 0.33.0
 ------
 - Added `--scheme=[default|path|history]` option to choose scoring scheme

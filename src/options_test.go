@@ -262,13 +262,17 @@ func TestBind(t *testing.T) {
 		}
 	}
 	check(tui.CtrlA.AsEvent(), "", actBeginningOfLine)
+	errorString := ""
+	errorFn := func(e string) {
+		errorString = e
+	}
 	parseKeymap(keymap,
 		"ctrl-a:kill-line,ctrl-b:toggle-sort+up+down,c:page-up,alt-z:page-down,"+
-			"f1:execute(ls {+})+abort+execute(echo {+})+select-all,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
+			"f1:execute(ls {+})+abort+execute(echo \n{+})+select-all,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 			"alt-a:execute-Multi@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};,"+
 			"x:Execute(foo+bar),X:execute/bar+baz/"+
 			",f1:+first,f1:+top"+
-			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up")
+			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up", errorFn)
 	check(tui.CtrlA.AsEvent(), "", actKillLine)
 	check(tui.CtrlB.AsEvent(), "", actToggleSort, actUp, actDown)
 	check(tui.Key('c'), "", actPageUp)
@@ -286,12 +290,15 @@ func TestBind(t *testing.T) {
 	check(tui.Key('+'), "++\nfoobar,Y:execute(baz)+up", actExecute)
 
 	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ';', '/'} {
-		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
+		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char), errorFn)
 		check(tui.Key([]rune(fmt.Sprintf("%d", idx%10))[0]), "foobar", actExecute)
 	}
 
-	parseKeymap(keymap, "f1:abort")
+	parseKeymap(keymap, "f1:abort", errorFn)
 	check(tui.F1.AsEvent(), "", actAbort)
+	if len(errorString) > 0 {
+		t.Errorf("error parsing keymap: %s", errorString)
+	}
 }
 
 func TestColorSpec(t *testing.T) {
@@ -354,10 +361,10 @@ func TestDefaultCtrlNP(t *testing.T) {
 	f.Close()
 	hist := "--history=" + f.Name()
 	check([]string{hist}, tui.CtrlN, actNextHistory)
-	check([]string{hist}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist}, tui.CtrlP, actPrevHistory)
 
 	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
-	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, actPreviousHistory)
+	check([]string{hist, "--bind=ctrl-n:accept"}, tui.CtrlP, actPrevHistory)
 
 	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlN, actNextHistory)
 	check([]string{hist, "--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)
@@ -464,5 +471,40 @@ func TestValidateSign(t *testing.T) {
 		if !testCase.isValid && err == nil {
 			t.Errorf("Input sign `%s` did not cause error", testCase.inputSign)
 		}
+	}
+}
+
+func TestParseSingleActionList(t *testing.T) {
+	actions := parseSingleActionList("Execute@foo+bar,baz@+up+up+reload:down+down", func(string) {})
+	if len(actions) != 4 {
+		t.Errorf("Invalid number of actions parsed:%d", len(actions))
+	}
+	if actions[0].t != actExecute || actions[0].a != "foo+bar,baz" {
+		t.Errorf("Invalid action parsed: %v", actions[0])
+	}
+	if actions[1].t != actUp || actions[2].t != actUp {
+		t.Errorf("Invalid action parsed: %v / %v", actions[1], actions[2])
+	}
+	if actions[3].t != actReload || actions[3].a != "down+down" {
+		t.Errorf("Invalid action parsed: %v", actions[3])
+	}
+}
+
+func TestParseSingleActionListError(t *testing.T) {
+	err := ""
+	parseSingleActionList("change-query(foobar)baz", func(e string) {
+		err = e
+	})
+	if len(err) == 0 {
+		t.Errorf("Failed to detect error")
+	}
+}
+
+func TestMaskActionContents(t *testing.T) {
+	original := ":execute((f)(o)(o)(b)(a)(r))+change-query@qu@ry@+up,x:reload:hello:world"
+	expected := ":execute                    +change-query       +up,x:reload            "
+	masked := maskActionContents(original)
+	if masked != expected {
+		t.Errorf("Not masked: %s", masked)
 	}
 }
