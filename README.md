@@ -136,15 +136,17 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
-available via [Chocolatey][choco] and [Scoop][scoop]:
+available via [Chocolatey][choco], [Scoop][scoop], and [Winget][winget]:
 
-| Package manager | Command             |
-| ---             | ---                 |
-| Chocolatey      | `choco install fzf` |
-| Scoop           | `scoop install fzf` |
+| Package manager | Command              |
+| ---             | ---                  |
+| Chocolatey      | `choco install fzf`  |
+| Scoop           | `scoop install fzf`  |
+| Winget          | `winget install fzf` |
 
 [choco]: https://chocolatey.org/packages/fzf
 [scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
+[winget]: https://github.com/microsoft/winget-pkgs/tree/master/manifests/j/junegunn/fzf
 
 Known issues and limitations on Windows can be found on [the wiki
 page][windows-wiki].
