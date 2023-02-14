@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // ExecCommand executes the given command with $SHELL
@@ -44,4 +46,8 @@ func SetNonblock(file *os.File, nonblock bool) {
 // Read executes syscall.Read on file descriptor
 func Read(fd int, b []byte) (int, error) {
 	return syscall.Read(int(fd), b)
+}
+
+func SetStdin(file *os.File) {
+	unix.Dup2(int(file.Fd()), 0)
 }
