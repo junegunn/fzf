@@ -81,3 +81,7 @@ func SetNonblock(file *os.File, nonblock bool) {
 func Read(fd int, b []byte) (int, error) {
 	return syscall.Read(syscall.Handle(fd), b)
 }
+
+func SetStdin(file *os.File) {
+	// No-op
+}

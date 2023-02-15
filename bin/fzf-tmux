@@ -179,9 +179,10 @@ trap 'cleanup' EXIT
 
 envs="export TERM=$TERM "
 if [[ "$opt" =~ "-E" ]]; then
-  FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
   tmux_version=$(tmux -V)
-  if [[ ! $tmux_version =~ 3\.2 ]]; then
+  if [[ $tmux_version =~ ^tmux\ 3\.2[a-z]?$ ]]; then
+    FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
+  else
     FZF_DEFAULT_OPTS="--border $FZF_DEFAULT_OPTS"
     opt="-B $opt"
   fi

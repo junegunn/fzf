@@ -54,6 +54,7 @@ Table of Contents
 * [Advanced topics](#advanced-topics)
     * [Performance](#performance)
     * [Executing external programs](#executing-external-programs)
+    * [Turning into a different process](#turning-into-a-different-process)
     * [Reloading the candidate list](#reloading-the-candidate-list)
         * [1. Update the list of processes by pressing CTRL-R](#1-update-the-list-of-processes-by-pressing-ctrl-r)
         * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
@@ -136,15 +137,17 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### Windows
 
 Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
-available via [Chocolatey][choco] and [Scoop][scoop]:
+available via [Chocolatey][choco], [Scoop][scoop], and [Winget][winget]:
 
-| Package manager | Command             |
-| ---             | ---                 |
-| Chocolatey      | `choco install fzf` |
-| Scoop           | `scoop install fzf` |
+| Package manager | Command              |
+| ---             | ---                  |
+| Chocolatey      | `choco install fzf`  |
+| Scoop           | `scoop install fzf`  |
+| Winget          | `winget install fzf` |
 
 [choco]: https://chocolatey.org/packages/fzf
 [scoop]: https://github.com/ScoopInstaller/Main/blob/master/bucket/fzf.json
+[winget]: https://github.com/microsoft/winget-pkgs/tree/master/manifests/j/junegunn/fzf
 
 Known issues and limitations on Windows can be found on [the wiki
 page][windows-wiki].
@@ -201,6 +204,22 @@ files excluding hidden ones. (You can override the default command with
 ```sh
 vim $(fzf)
 ```
+
+> *:bulb: A more robust solution would be to use `xargs` but we've presented
+> the above as it's easier to grasp*
+> ```sh
+> fzf --print0 | xargs -0 -o vim
+> ```
+
+>
+> *:bulb: fzf also has the ability to turn itself into a different process.*
+>
+> ```sh
+> fzf --bind 'enter:become(vim {})'
+> ```
+>
+> *See [Turning into a different process](#turning-into-a-different-process)
+> for more information.*
 
 ### Using the finder
 
@@ -559,6 +578,47 @@ fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort
 ```
 
 See *KEY BINDINGS* section of the man page for details.
+
+### Turning into a different process
+
+`become(...)` is similar to `execute(...)`/`execute-silent(...)` described
+above, but instead of executing the command and coming back to fzf on
+complete, it turns fzf into a new process for the command.
+
+```sh
+fzf --bind 'enter:become(vim {})'
+```
+
+Compared to the seemingly equivalent command substitution `vim "$(fzf)"`, this
+approach has several advantages:
+
+* Vim will not open an empty file when you terminate fzf with
+  <kbd>CTRL-C</kbd>
+* Vim will not open an empty file when you press <kbd>ENTER</kbd> on an empty
+  result
+* Can handle multiple selections even when they have whitespaces
+  ```sh
+  fzf --multi --bind 'enter:become(vim {+})'
+  ```
+
+To be fair, running `fzf --print0 | xargs -0 -o vim` instead of `vim "$(fzf)"`
+resolves all of the issues mentioned. Nonetheless, `become(...)` still offers
+additional benefits in different scenarios.
+
+* You can set up multiple bindings to handle the result in different ways
+  without any wrapping script
+  ```sh
+  fzf --bind 'enter:become(vim {}),ctrl-e:become(emacs {})'
+  ```
+  * Previously, you would have to use `--expect=ctrl-e` and check the first
+    line of the output of fzf
+* You can easily build the subsequent command using the field index
+  expressions of fzf
+  ```sh
+  # Open the file in Vim and go to the line
+  git grep --line-number . |
+      fzf --delimiter : --nth 3.. --bind 'enter:become(vim {1} +{2})'
+  ```
 
 ### Reloading the candidate list
 

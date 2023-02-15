@@ -1,30 +1,33 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2023/02/12)*
+* *Last update: 2023/02/15*
+* *Requires fzf 0.38.0 or above*
+
+---
 
 <!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
 * [Screen Layout](#screen-layout)
-  * [`--height`](#--height)
-  * [`fzf-tmux`](#fzf-tmux)
-    * [Popup window support](#popup-window-support)
+    * [`--height`](#--height)
+    * [`fzf-tmux`](#fzf-tmux)
+        * [Popup window support](#popup-window-support)
 * [Dynamic reloading of the list](#dynamic-reloading-of-the-list)
-  * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
-  * [Toggling between data sources](#toggling-between-data-sources)
+    * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
+    * [Toggling between data sources](#toggling-between-data-sources)
 * [Ripgrep integration](#ripgrep-integration)
-  * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
-  * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
-  * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
-  * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
+    * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
+    * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
+    * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
+    * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
-  * [Files listed in `git status`](#files-listed-in-git-status)
-  * [Branches](#branches)
-  * [Commit hashes](#commit-hashes)
+    * [Files listed in `git status`](#files-listed-in-git-status)
+    * [Branches](#branches)
+    * [Commit hashes](#commit-hashes)
 * [Color themes](#color-themes)
-  * [Generating fzf color theme from Vim color schemes](#generating-fzf-color-theme-from-vim-color-schemes)
+    * [Generating fzf color theme from Vim color schemes](#generating-fzf-color-theme-from-vim-color-schemes)
 
 <!-- vim-markdown-toc -->
 
@@ -236,15 +239,13 @@ file called `rfv`.
 # 1. Search for text in files using Ripgrep
 # 2. Interactively narrow down the list using fzf
 # 3. Open the file in Vim
-IFS=: read -ra selected < <(
-  rg --color=always --line-number --no-heading --smart-case "${*:-}" |
-    fzf --ansi \
-        --color "hl:-1:underline,hl+:-1:underline:reverse" \
-        --delimiter : \
-        --preview 'bat --color=always {1} --highlight-line {2}' \
-        --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+rg --color=always --line-number --no-heading --smart-case "${*:-}" |
+  fzf --ansi \
+      --color "hl:-1:underline,hl+:-1:underline:reverse" \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+      --bind 'enter:become(vim {1} +{2})'
 ```
 
 And run it with an initial query string.
@@ -307,8 +308,12 @@ I know it's a lot to digest, let's try to break down the code.
       position in the window
     - `~3` makes the top three lines fixed header so that they are always
       visible regardless of the scroll offset
-- Once we selected a line, we open the file with `vim` (`vim
-  "${selected[0]}"`) and move the cursor to the line (`+${selected[1]}`).
+- Instead of using shell script to process the final output of fzf, we use
+  `become(...)` action which was added in [fzf 0.38.0][0.38.0] to turn fzf
+  into a new process that opens the file with `vim` (`vim {1}`) and move the
+  cursor to the line (`+{2}`).
+
+[0.38.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0380
 
 ### Using fzf as interactive Ripgrep launcher
 
@@ -331,16 +336,14 @@ projects, and it will free up memory as you narrow down the results.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --delimiter : \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
+fzf --ansi \
+    --disabled --query "$INITIAL_QUERY" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 ![image](https://user-images.githubusercontent.com/700826/113684212-f9ff0a00-96ff-11eb-8737-7bb571d320cc.png)
@@ -358,8 +361,6 @@ IFS=: read -ra selected < <(
 
 ### Switching to fzf-only search mode
 
-*(Requires fzf 0.27.1 or above)*
-
 In the previous example, we lost fuzzy matching capability as we completely
 delegated search functionality to Ripgrep. But we can dynamically switch to
 fzf-only search mode by *"unbinding"* `reload` action from `change` event.
@@ -375,19 +376,17 @@ fzf-only search mode by *"unbinding"* `reload` action from `change` event.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --color "hl:-1:underline,hl+:-1:underline:reverse" \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
-      --prompt '1. ripgrep> ' \
-      --delimiter : \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
+fzf --ansi \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --disabled --query "$INITIAL_QUERY" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 * Phase 1. Filtering with Ripgrep
@@ -408,8 +407,6 @@ IFS=: read -ra selected < <(
 
 ### Switching between Ripgrep mode and fzf mode
 
-*(Requires fzf 0.36.0 or above)*
-
 [fzf 0.30.0][0.30.0] added `rebind` action so we can "rebind" the bindings
 that were previously "unbound" via `unbind`.
 
@@ -424,22 +421,20 @@ CTRL-F.
 rm -f /tmp/rg-fzf-{r,f}
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --color "hl:-1:underline,hl+:-1:underline:reverse" \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
-      --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
-      --bind "start:unbind(ctrl-r)" \
-      --prompt '1. ripgrep> ' \
-      --delimiter : \
-      --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
+fzf --ansi \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --disabled --query "$INITIAL_QUERY" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --bind "start:unbind(ctrl-r)" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 - To restore the query string when switching between modes, we store the

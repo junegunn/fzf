@@ -2876,6 +2876,7 @@ func (t *Terminal) Loop() {
 						if t.history != nil {
 							t.history.append(string(t.input))
 						}
+						util.SetStdin(tui.TtyIn())
 						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
 					}
 				}
