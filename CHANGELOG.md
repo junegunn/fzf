@@ -6,8 +6,12 @@ CHANGELOG
 - New actions
     - `become(...)` - Replace the current fzf process with the specified
       command using `execve(2)` system call.
-      See https://github.com/junegunn/fzf#turning-into-a-different-process.
+      See https://github.com/junegunn/fzf#turning-into-a-different-process for
+      more information.
       ```sh
+      # Open selected files in Vim
+      fzf --multi --bind 'enter:become(vim {+})'
+
       # Open the file in Vim and go to the line
       git grep --line-number . |
           fzf --delimiter : --nth 3.. --bind 'enter:become(vim {1} +{2})'
