@@ -1338,8 +1338,7 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 
 	_, overflow := t.trimLeft(t.input[:t.cx], maxWidth)
 	minOffset := int(overflow)
-	maxOffset := util.Min(util.Min(len(t.input), minOffset+maxWidth), t.cx)
-
+	maxOffset := minOffset + (maxWidth-util.Max(0, maxWidth-t.cx))/2
 	t.xoffset = util.Constrain(t.xoffset, minOffset, maxOffset)
 	before, _ := t.trimLeft(t.input[t.xoffset:t.cx], maxWidth)
 	beforeLen := t.displayWidth(before)
