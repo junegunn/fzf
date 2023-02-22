@@ -74,6 +74,7 @@ builds:
       - arm64
       - loong64
       - ppc64le
+      - s390x
     goarm:
       - 5
       - 6
