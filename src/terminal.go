@@ -3288,7 +3288,7 @@ func (t *Terminal) Loop() {
 					break
 				}
 
-				// Prevew scrollbar dragging
+				// Preview scrollbar dragging
 				headerLines := t.previewOpts.headerLines
 				pbarDragging = me.Down && (pbarDragging || clicked && t.hasPreviewWindow() && my >= t.pwindow.Top()+headerLines && my < t.pwindow.Top()+t.pwindow.Height() && mx == t.pwindow.Left()+t.pwindow.Width())
 				if pbarDragging {
