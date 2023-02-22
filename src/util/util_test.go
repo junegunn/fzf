@@ -70,7 +70,7 @@ func TestMin32(t *testing.T) {
 	}
 }
 
-func TestContrain(t *testing.T) {
+func TestConstrain(t *testing.T) {
 	if Constrain(-3, -1, 3) != -1 {
 		t.Error("Expected", -1)
 	}
@@ -83,7 +83,7 @@ func TestContrain(t *testing.T) {
 	}
 }
 
-func TestContrain32(t *testing.T) {
+func TestConstrain32(t *testing.T) {
 	if Constrain32(-3, -1, 3) != -1 {
 		t.Error("Expected", -1)
 	}
