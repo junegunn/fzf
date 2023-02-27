@@ -92,7 +92,7 @@ function! s:shellesc_win(arg)
   if (&shell ==? 'powershell' || &shell ==? 'pwsh')
       let quote_str= '"'
   endif
-  return quoteStr.substitute(escaped, '\(\\\+\)$', '\1\1', '').quoteStr
+  return quote_str.substitute(escaped, '\(\\\+\)$', '\1\1', '').quote_str
 endfunction
 
 function! fzf#shellescape(arg, ...)
