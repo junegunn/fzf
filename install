@@ -7,7 +7,7 @@ auto_completion=
 key_bindings=
 update_config=2
 shells="bash zsh fish"
-prefix="$HOME/.fzf"
+prefix='~/.fzf'
 prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
 
