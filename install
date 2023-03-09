@@ -115,10 +115,10 @@ link_fzf_in_path() {
 try_curl() {
   command -v curl > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar -xzf -
+    curl -fL $FWDPROXY_CURL $1 | tar -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
-    curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+    curl -fLo "$temp" $FWDPROXY_CURL $1 && unzip -o "$temp" && rm -f "$temp"
   fi
 }
 
