@@ -118,7 +118,7 @@ let g:fzf_action = {
 
 " An action can be a reference to a function that processes selected lines
 function! s:build_quickfix_list(lines)
-  call setqflist(map(copy(a:lines), '{ "filename": v:val }'))
+  call setqflist(map(copy(a:lines), '{ "filename": v:val, "lnum": 1 }'))
   copen
   cc
 endfunction
