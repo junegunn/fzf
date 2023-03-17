@@ -1828,12 +1828,14 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 					trimmed, isTrimmed = t.trimRight(trimmed, maxWidth-t.pwindow.X())
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
-				prefixWidth += width
-				if t.theme.Colored && ansi != nil && ansi.colored() {
-					lbg = ansi.lbg
-					fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
-				} else {
-					fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
+				if width > prefixWidth {
+					prefixWidth = width
+					if t.theme.Colored && ansi != nil && ansi.colored() {
+						lbg = ansi.lbg
+						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
+					} else {
+						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
+					}
 				}
 				return !isTrimmed &&
 					(fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine)

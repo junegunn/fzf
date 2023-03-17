@@ -2656,6 +2656,23 @@ class TestGoFZF < TestBase
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal 99, lines.item_count }
   end
+
+  def test_no_extra_newline_issue_3209
+    tmux.send_keys(%(seq 100 | #{FZF} --height 10 --preview-window up,wrap --preview 'printf "─%.0s" $(seq 1 "$((FZF_PREVIEW_COLUMNS - 5))"); printf $"\\e[7m%s\\e[0m" title; echo; echo something'), :Enter)
+    expected = <<~OUTPUT
+      ╭──────────
+      │ ─────────
+      │ something
+      │
+      ╰──────────
+        3
+        2
+      > 1
+        100/100 ─
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
 end
 
 module TestShell
