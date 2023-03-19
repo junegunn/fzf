@@ -2629,11 +2629,17 @@ class TestGoFZF < TestBase
   end
 
   def test_listen
-    tmux.send_keys 'seq 10 | fzf --listen 6266', :Enter
-    tmux.until { |lines| assert_equal 10, lines.item_count }
-    Net::HTTP.post(URI('http://localhost:6266'), 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
-    tmux.until { |lines| assert_equal 100, lines.item_count }
-    tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+    { '--listen 6266' => -> { URI('http://localhost:6266') },
+      "--listen --sync --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'" =>
+        -> { URI("http://localhost:#{File.read('/tmp/fzf-port').chomp}") } }.each do |opts, fn|
+      tmux.send_keys "seq 10 | fzf #{opts}", :Enter
+      tmux.until { |lines| assert_equal 10, lines.item_count }
+      Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
+      tmux.until { |lines| assert_equal 100, lines.item_count }
+      tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+      teardown
+      setup
+    end
   end
 
   def test_toggle_alternative_preview_window
@@ -2655,6 +2661,23 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal 99, lines.item_count }
+  end
+
+  def test_no_extra_newline_issue_3209
+    tmux.send_keys(%(seq 100 | #{FZF} --height 10 --preview-window up,wrap --preview 'printf "─%.0s" $(seq 1 "$((FZF_PREVIEW_COLUMNS - 5))"); printf $"\\e[7m%s\\e[0m" title; echo; echo something'), :Enter)
+    expected = <<~OUTPUT
+      ╭──────────
+      │ ─────────
+      │ something
+      │
+      ╰──────────
+        3
+        2
+      > 1
+        100/100 ─
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
   end
 end
 

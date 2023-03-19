@@ -116,7 +116,7 @@ const usage = `usage: fzf [options]
     --read0                Read input delimited by ASCII NUL characters
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
-    --listen=HTTP_PORT     Start HTTP server to receive actions (POST /)
+    --listen[=HTTP_PORT]   Start HTTP server to receive actions (POST /)
     --version              Display version information and exit
 
   Environment variables
@@ -316,7 +316,7 @@ type Options struct {
 	PreviewLabel labelOpts
 	Unicode      bool
 	Tabstop      int
-	ListenPort   int
+	ListenPort   *int
 	ClearOnExit  bool
 	Version      bool
 }
@@ -1756,9 +1756,10 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
 		case "--listen":
-			opts.ListenPort = nextInt(allArgs, &i, "listen port required")
+			port := optionalNumeric(allArgs, &i, 0)
+			opts.ListenPort = &port
 		case "--no-listen":
-			opts.ListenPort = 0
+			opts.ListenPort = nil
 		case "--clear":
 			opts.ClearOnExit = true
 		case "--no-clear":
@@ -1849,7 +1850,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--listen="); match {
-				opts.ListenPort = atoi(value)
+				port := atoi(value)
+				opts.ListenPort = &port
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--scroll-off="); match {
@@ -1879,7 +1881,7 @@ func parseOptions(opts *Options, allArgs []string) {
 		errorExit("tab stop must be a positive integer")
 	}
 
-	if opts.ListenPort < 0 || opts.ListenPort > 65535 {
+	if opts.ListenPort != nil && (*opts.ListenPort < 0 || *opts.ListenPort > 65535) {
 		errorExit("invalid listen port")
 	}
 

@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.39.0
+------
+- If you use `--listen` option without a port number fzf will automatically
+  allocate an available port and export it as `$FZF_PORT` environment
+  variable.
+  ```sh
+  # Automatic port assignment
+  fzf --listen --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'
+
+  # Say hello
+  curl "localhost:$(cat /tmp/fzf-port)" -d 'preview:echo Hello, fzf is listening on $FZF_PORT.'
+  ```
+- Bug fixes
+
 0.38.0
 ------
 - New actions
