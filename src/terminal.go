@@ -203,7 +203,7 @@ type Terminal struct {
 	padding            [4]sizeSpec
 	strong             tui.Attr
 	unicode            bool
-	listenPort         int
+	listenPort         *int
 	borderShape        tui.BorderShape
 	cleanExit          bool
 	paused             bool
@@ -538,7 +538,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	var previewBox *util.EventBox
 	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort > 0 {
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort != nil {
 		previewBox = util.NewEventBox()
 	}
 	strongAttr := tui.Bold
@@ -694,11 +694,23 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
-	if err := startHttpServer(t.listenPort, t.serverChan); err != nil {
-		errorExit(err.Error())
+	if t.listenPort != nil {
+		err, port := startHttpServer(*t.listenPort, t.serverChan)
+		if err != nil {
+			errorExit(err.Error())
+		}
+		t.listenPort = &port
 	}
 
 	return &t
+}
+
+func (t *Terminal) environ() []string {
+	env := os.Environ()
+	if t.listenPort != nil {
+		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
+	}
+	return env
 }
 
 func borderLines(shape tui.BorderShape) int {
@@ -2248,6 +2260,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
+	cmd.Env = t.environ()
 	t.executing.Set(true)
 	if !background {
 		cmd.Stdin = tui.TtyIn()
@@ -2494,17 +2507,17 @@ func (t *Terminal) Loop() {
 					_, query := t.Input()
 					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
 					cmd := util.ExecCommand(command, true)
+					env := t.environ()
 					if pwindow != nil {
 						height := pwindow.Height()
-						env := os.Environ()
 						lines := fmt.Sprintf("LINES=%d", height)
 						columns := fmt.Sprintf("COLUMNS=%d", pwindow.Width())
 						env = append(env, lines)
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
-						cmd.Env = env
 					}
+					cmd.Env = env
 
 					out, _ := cmd.StdoutPipe()
 					cmd.Stderr = cmd.Stdout

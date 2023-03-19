@@ -19,14 +19,26 @@ const (
 	maxContentLength = 1024 * 1024
 )
 
-func startHttpServer(port int, channel chan []*action) error {
-	if port == 0 {
-		return nil
+func startHttpServer(port int, channel chan []*action) (error, int) {
+	if port < 0 {
+		return nil, port
 	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		return fmt.Errorf("port not available: %d", port)
+		return fmt.Errorf("port not available: %d", port), port
+	}
+	if port == 0 {
+		addr := listener.Addr().String()
+		parts := strings.SplitN(addr, ":", 2)
+		if len(parts) < 2 {
+			return fmt.Errorf("cannot extract port: %s", addr), port
+		}
+		var err error
+		port, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return err, port
+		}
 	}
 
 	go func() {
@@ -45,7 +57,7 @@ func startHttpServer(port int, channel chan []*action) error {
 		listener.Close()
 	}()
 
-	return nil
+	return nil, port
 }
 
 // Here we are writing a simplistic HTTP server without using net/http

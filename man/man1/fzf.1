@@ -738,9 +738,12 @@ ncurses finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
-.B "--listen=HTTP_PORT"
+.B "--listen[=HTTP_PORT]"
 Start HTTP server on the given port. It allows external processes to send
-actions to perform via POST method.
+actions to perform via POST method. If the port number is omitted or given as
+0, fzf will choose the port automatically and export it as \fBFZF_PORT\fR
+environment variable to the child processes started via \fBexecute\fR and
+\fBexecute-silent\fR actions.
 
 e.g.
      \fB# Start HTTP server on port 6266
@@ -748,6 +751,9 @@ e.g.
 
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+
+     # Choose port automatically and export it as $FZF_PORT to the child process
+     fzf --listen --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'
      \fR
 .TP
 .B "--version"
