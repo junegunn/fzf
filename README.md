@@ -61,8 +61,8 @@ Table of Contents
         * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
     * [Preview window](#preview-window)
 * [Tips](#tips)
-        * [Respecting `.gitignore`](#respecting-gitignore)
-        * [Fish shell](#fish-shell)
+    * [Respecting `.gitignore`](#respecting-gitignore)
+    * [Fish shell](#fish-shell)
 * [Related projects](#related-projects)
 * [License](#license)
 
