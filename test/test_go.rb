@@ -2629,9 +2629,9 @@ class TestGoFZF < TestBase
   end
 
   def test_listen
-    { '--listen 6266' => lambda { URI('http://localhost:6266') },
+    { '--listen 6266' => -> { URI('http://localhost:6266') },
       "--listen --sync --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'" =>
-        lambda { URI("http://localhost:#{File.read('/tmp/fzf-port').chomp}") } }.each do |opts, fn|
+        -> { URI("http://localhost:#{File.read('/tmp/fzf-port').chomp}") } }.each do |opts, fn|
       tmux.send_keys "seq 10 | fzf #{opts}", :Enter
       tmux.until { |lines| assert_equal 10, lines.item_count }
       Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
