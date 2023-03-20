@@ -61,8 +61,8 @@ Table of Contents
         * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
     * [Preview window](#preview-window)
 * [Tips](#tips)
-        * [Respecting `.gitignore`](#respecting-gitignore)
-        * [Fish shell](#fish-shell)
+    * [Respecting `.gitignore`](#respecting-gitignore)
+    * [Fish shell](#fish-shell)
 * [Related projects](#related-projects)
 * [License](#license)
 
@@ -723,7 +723,7 @@ history | fzf
 Tips
 ----
 
-#### Respecting `.gitignore`
+### Respecting `.gitignore`
 
 You can use [fd](https://github.com/sharkdp/fd),
 [ripgrep](https://github.com/BurntSushi/ripgrep), or [the silver
@@ -752,7 +752,7 @@ hidden files, use the following command:
 export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
 ```
 
-#### Fish shell
+### Fish shell
 
 `CTRL-T` key binding of fish, unlike those of bash and zsh, will use the last
 token on the command-line as the root directory for the recursive search. For
