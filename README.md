@@ -124,6 +124,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
 | pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
+| Portage         | Gentoo                  | `emerge fzf`                       |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
