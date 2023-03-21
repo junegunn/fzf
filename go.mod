@@ -8,7 +8,7 @@ require (
 	github.com/rivo/uniseg v0.4.2
 	github.com/saracen/walker v0.1.3
 	golang.org/x/sys v0.6.0
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	golang.org/x/term v0.6.0
 )
 
 require (
