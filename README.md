@@ -61,8 +61,8 @@ Table of Contents
         * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
     * [Preview window](#preview-window)
 * [Tips](#tips)
-        * [Respecting `.gitignore`](#respecting-gitignore)
-        * [Fish shell](#fish-shell)
+    * [Respecting `.gitignore`](#respecting-gitignore)
+    * [Fish shell](#fish-shell)
 * [Related projects](#related-projects)
 * [License](#license)
 
@@ -124,6 +124,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | pkg             | FreeBSD                 | `pkg install fzf`                  |
 | pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
+| Portage         | Gentoo                  | `emerge --ask app-shells/fzf`      |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
@@ -723,7 +724,7 @@ history | fzf
 Tips
 ----
 
-#### Respecting `.gitignore`
+### Respecting `.gitignore`
 
 You can use [fd](https://github.com/sharkdp/fd),
 [ripgrep](https://github.com/BurntSushi/ripgrep), or [the silver
@@ -752,7 +753,7 @@ hidden files, use the following command:
 export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
 ```
 
-#### Fish shell
+### Fish shell
 
 `CTRL-T` key binding of fish, unlike those of bash and zsh, will use the last
 token on the command-line as the root directory for the recursive search. For

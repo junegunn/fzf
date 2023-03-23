@@ -15,7 +15,7 @@ set rtp+=/usr/local/opt/fzf
 " If installed using Homebrew on Apple Silicon
 set rtp+=/opt/homebrew/opt/fzf
 
-" If installed using git
+" If you have cloned fzf on ~/.fzf directory
 set rtp+=~/.fzf
 ```
 
@@ -26,7 +26,7 @@ written as:
 " If installed using Homebrew
 Plug '/usr/local/opt/fzf'
 
-" If installed using git
+" If you have cloned fzf on ~/.fzf directory
 Plug '~/.fzf'
 ```
 
