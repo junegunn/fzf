@@ -271,7 +271,7 @@ _fzf_complete_kill() {
 
 _fzf_proc_completion() {
   _fzf_complete -m --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
-    command ps -ef | sed 1d
+    command ps -o user,pid,time,args | sed 1d
   )
 }
 
