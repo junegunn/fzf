@@ -1930,7 +1930,7 @@ class TestGoFZF < TestBase
 
   def test_keep_right
     tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right", :Enter
-    tmux.until { |lines| assert lines.any_include?('9999 10000') }
+    tmux.until { |lines| assert lines.any_include?('9999␊10000') }
   end
 
   def test_backward_eof
@@ -2807,9 +2807,9 @@ module TestShell
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 'foo bar'
-    tmux.until { |lines| assert lines[-3]&.end_with?('bar"') }
+    tmux.until { |lines| assert lines[-3]&.match?(/bar"␊?/) }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert lines[-1]&.end_with?('bar"') }
+    tmux.until { |lines| assert lines[-1]&.match?(/bar"␊?/) }
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
   end

@@ -13,7 +13,17 @@ CHANGELOG
   # Say hello
   curl "localhost:$(cat /tmp/fzf-port)" -d 'preview:echo Hello, fzf is listening on $FZF_PORT.'
   ```
-- Bug fixes
+- A carriage return and a line feed character will be rendered as dim ␍ and
+  ␊ respectively.
+  ```sh
+  printf "foo\rbar\nbaz" | fzf --read0 --preview 'echo {}'
+  ```
+- fzf will stop rendering a non-displayable characters as a space. This will
+  likely cause less glitches in the preview window.
+  ```sh
+  fzf --preview 'head -1000 /dev/random'
+  ```
+- Bug fixes and improvements
 
 0.38.0
 ------

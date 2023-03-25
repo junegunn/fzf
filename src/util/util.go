@@ -11,6 +11,11 @@ import (
 	"github.com/rivo/uniseg"
 )
 
+// StringWidth returns string width where each CR/LF character takes 1 column
+func StringWidth(s string) int {
+	return runewidth.StringWidth(s) + strings.Count(s, "\n") + strings.Count(s, "\r")
+}
+
 // RunesWidth returns runes width
 func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
 	width := 0
@@ -22,8 +27,7 @@ func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int
 		if len(rs) == 1 && rs[0] == '\t' {
 			w = tabstop - (prefixWidth+width)%tabstop
 		} else {
-			s := string(rs)
-			w = runewidth.StringWidth(s) + strings.Count(s, "\n")
+			w = StringWidth(string(rs))
 		}
 		width += w
 		if width > limit {
@@ -41,7 +45,7 @@ func Truncate(input string, limit int) ([]rune, int) {
 	gr := uniseg.NewGraphemes(input)
 	for gr.Next() {
 		rs := gr.Runes()
-		w := runewidth.StringWidth(string(rs))
+		w := StringWidth(string(rs))
 		if width+w > limit {
 			return runes, width
 		}
