@@ -8,6 +8,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
@@ -572,26 +573,27 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 
 	gr := uniseg.NewGraphemes(text)
 	for gr.Next() {
+		st := style
 		rs := gr.Runes()
 
 		if len(rs) == 1 {
 			r := rs[0]
-			if r < rune(' ') { // ignore control characters
-				continue
+			if r == '\r' {
+				st = style.Dim(true)
+				rs[0] = '␍'
 			} else if r == '\n' {
-				w.lastY++
-				lx = 0
-				continue
-			} else if r == '\u000D' { // skip carriage return
+				st = style.Dim(true)
+				rs[0] = '␊'
+			} else if r < rune(' ') { // ignore control characters
 				continue
 			}
 		}
 		var xPos = w.left + w.lastX + lx
 		var yPos = w.top + w.lastY
 		if xPos < (w.left+w.width) && yPos < (w.top+w.height) {
-			_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
+			_screen.SetContent(xPos, yPos, rs[0], rs[1:], st)
 		}
-		lx += runewidth.StringWidth(string(rs))
+		lx += util.StringWidth(string(rs))
 	}
 	w.lastX += lx
 }
@@ -620,13 +622,22 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Italic(a&Attr(tcell.AttrItalic) != 0)
 
 	gr := uniseg.NewGraphemes(text)
+Loop:
 	for gr.Next() {
+		st := style
 		rs := gr.Runes()
-		if len(rs) == 1 && rs[0] == '\n' {
-			w.lastY++
-			w.lastX = 0
-			lx = 0
-			continue
+		if len(rs) == 1 {
+			r := rs[0]
+			switch r {
+			case '\r':
+				st = style.Dim(true)
+				rs[0] = '␍'
+			case '\n':
+				w.lastY++
+				w.lastX = 0
+				lx = 0
+				continue Loop
+			}
 		}
 
 		// word wrap:
@@ -643,8 +654,8 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 			return FillSuspend
 		}
 
-		_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
-		lx += runewidth.StringWidth(string(rs))
+		_screen.SetContent(xPos, yPos, rs[0], rs[1:], st)
+		lx += util.StringWidth(string(rs))
 	}
 	w.lastX += lx
 	if w.lastX == w.width {

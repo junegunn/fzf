@@ -752,7 +752,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 
 	// Simpler printer for strings without ANSI colors or tab characters
 	if colors == nil && strings.IndexRune(str, '\t') < 0 {
-		length := runewidth.StringWidth(str)
+		length := util.StringWidth(str)
 		if length == 0 {
 			return nil, 0
 		}
@@ -1415,7 +1415,7 @@ func (t *Terminal) printInfo() {
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 		str := t.infoSep
 		maxWidth := t.window.Width() - pos
-		width := runewidth.StringWidth(str)
+		width := util.StringWidth(str)
 		if width > maxWidth {
 			trimmed, _ := t.trimRight([]rune(str), maxWidth)
 			str = string(trimmed)
@@ -1950,7 +1950,7 @@ func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
 			w = t.tabstop - l%t.tabstop
 			strbuf.WriteString(strings.Repeat(" ", w))
 		} else {
-			w = runewidth.StringWidth(str)
+			w = util.StringWidth(str)
 			strbuf.WriteString(str)
 		}
 		l += w
