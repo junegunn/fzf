@@ -2003,9 +2003,7 @@ func postProcessOptions(opts *Options) {
 		theme := opts.Theme
 		boldify := func(c tui.ColorAttr) tui.ColorAttr {
 			dup := c
-			if !theme.Colored {
-				dup.Attr |= tui.Bold
-			} else if (c.Attr & tui.AttrRegular) == 0 {
+			if (c.Attr & tui.AttrRegular) == 0 {
 				dup.Attr |= tui.Bold
 			}
 			return dup

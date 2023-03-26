@@ -201,7 +201,6 @@ type Terminal struct {
 	tabstop            int
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
-	strong             tui.Attr
 	unicode            bool
 	listenPort         *int
 	borderShape        tui.BorderShape
@@ -541,10 +540,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort != nil {
 		previewBox = util.NewEventBox()
 	}
-	strongAttr := tui.Bold
-	if !opts.Bold {
-		strongAttr = tui.AttrRegular
-	}
 	var renderer tui.Renderer
 	fullscreen := !opts.Height.auto && (opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100)
 	if fullscreen {
@@ -623,7 +618,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		previewLabelOpts:   opts.PreviewLabel,
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
-		strong:             strongAttr,
 		cycle:              opts.Cycle,
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
