@@ -251,8 +251,13 @@ _fzf_complete_unalias() {
 }
 
 _fzf_complete_kill() {
+  if test $(readlink /bin/ps); then
+    local ps_args='-o user,pid,time,args'
+  else
+    local ps_args='-ef'
+  fi
   _fzf_complete -m --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
-    command ps -o user,pid,time,args | sed 1d
+    command ps $ps_args | sed 1d
   )
 }
 
