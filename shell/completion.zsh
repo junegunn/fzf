@@ -251,7 +251,7 @@ _fzf_complete_unalias() {
 }
 
 _fzf_complete_kill() {
-  if test $(readlink /bin/ps); then
+  if [ $(ps --help 2>&1 | head -c7) == 'BusyBox' ]; then
     local ps_args='-o user,pid,time,args'
   else
     local ps_args='-ef'
