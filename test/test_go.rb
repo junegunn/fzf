@@ -2679,6 +2679,29 @@ class TestGoFZF < TestBase
     OUTPUT
     tmux.until { assert_block(expected, _1) }
   end
+
+  def test_track
+    tmux.send_keys "seq 1000 | #{FZF} --query 555 --track", :Enter
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 555'
+    end
+    tmux.send_keys :BSpace
+    index = tmux.until do |lines|
+      assert_equal 28, lines.match_count
+      assert_includes lines, '> 555'
+    end.index('> 555')
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 271, lines.match_count
+      assert_equal '> 555', lines[index]
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_equal '> 555', lines[index]
+    end
+  end
 end
 
 module TestShell

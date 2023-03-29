@@ -183,6 +183,7 @@ type Terminal struct {
 	multi              int
 	sort               bool
 	toggleSort         bool
+	track              bool
 	delimiter          Delimiter
 	expect             map[tui.Event]string
 	keymap             map[tui.Event][]*action
@@ -599,6 +600,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		multi:              opts.Multi,
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
+		track:              opts.Track,
 		delimiter:          opts.Delimiter,
 		expect:             opts.Expect,
 		keymap:             opts.Keymap,
@@ -904,6 +906,10 @@ func (t *Terminal) UpdateProgress(progress float32) {
 // UpdateList updates Merger to display the list
 func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.mutex.Lock()
+	var prevIndex int32 = -1
+	if !reset && t.track && t.merger.Length() > 0 {
+		prevIndex = t.merger.Get(t.cy).item.Index()
+	}
 	t.progress = 100
 	t.merger = merger
 	if reset {
@@ -913,6 +919,18 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	if t.hasLoadActions && t.triggerLoad {
 		t.triggerLoad = false
 		t.eventChan <- tui.Load.AsEvent()
+	}
+	if prevIndex >= 0 {
+		pos := t.cy - t.offset
+		count := t.merger.Length()
+		i := t.merger.FindIndex(prevIndex)
+		if i >= 0 {
+			t.cy = i
+			t.offset = t.cy - pos
+		} else if t.cy > count {
+			// Try to keep the vertical position when the list shrinks
+			t.cy = count - util.Min(count, t.maxItems()) + pos
+		}
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)

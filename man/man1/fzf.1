@@ -92,6 +92,16 @@ interface rather than a "fuzzy finder". You can later enable the search using
 .B "+s, --no-sort"
 Do not sort the result
 .TP
+.B "--track"
+Make fzf track the current selection when the result list is updated.
+This can be useful when browsing logs using fzf with sorting disabled.
+
+.RS
+e.g.
+     \fBgit log --oneline --graph --color=always | nl |
+         fzf --ansi --track --no-sort --layout=reverse-list\fR
+.RE
+.TP
 .B "--tac"
 Reverse the order of the input
 
