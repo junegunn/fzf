@@ -932,6 +932,12 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 			t.cy = count - util.Min(count, t.maxItems()) + pos
 		}
 	}
+	if !t.reading && t.merger.Length() == 1 {
+		one := tui.One.AsEvent()
+		if _, prs := t.keymap[one]; prs {
+			t.eventChan <- one
+		}
+	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	t.reqBox.Set(reqList, nil)

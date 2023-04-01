@@ -3,6 +3,11 @@ CHANGELOG
 
 0.39.0
 ------
+- Added `one` event that is triggered when there's only one match
+  ```sh
+  # Automatically select the only match
+  seq 10 | fzf --bind one:accept
+  ```
 - Added `--track` option that makes fzf track the current selection when the
   result list is updated. This can be useful when browsing logs using fzf with
   sorting disabled.

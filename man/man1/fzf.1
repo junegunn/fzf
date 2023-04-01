@@ -993,6 +993,17 @@ e.g.
      # Beware not to introduce an infinite loop
      seq 10 | fzf --bind 'focus:up' --cycle\fR
 .RE
+\fIone\fR
+.RS
+Triggered when there's only one match. \fBone:accept\fR binding is comparable
+to \fB--select-1\fR option, but the difference is that \fB--select-1\fR is only
+effective before the interactive finder starts but \fBone\fR event is triggered
+by the interactive finder.
+
+e.g.
+     \fB# Automatically select the only match
+     seq 10 | fzf --bind one:accept\fR
+.RE
 
 \fIbackward-eof\fR
 .RS
