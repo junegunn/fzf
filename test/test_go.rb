@@ -2708,12 +2708,12 @@ class TestGoFZF < TestBase
     tmux.send_keys '1'
     tmux.until do |lines|
       assert_equal 2, lines.match_count
-      refute lines.any? { _1.include?('only match') }
+      refute(lines.any? { _1.include?('only match') })
     end
     tmux.send_keys '0'
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert lines.any? { _1.include?('only match') }
+      assert(lines.any? { _1.include?('only match') })
     end
   end
 end
