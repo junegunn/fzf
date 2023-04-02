@@ -219,6 +219,7 @@ func Run(opts *Options, version string, revision string) {
 	determine := func(final bool) {
 		if heightUnknown {
 			if total >= maxFit || final {
+				deferred = false
 				heightUnknown = false
 				terminal.startChan <- fitpad{util.Min(total, maxFit), padHeight}
 			}
