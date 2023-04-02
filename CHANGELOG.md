@@ -3,6 +3,18 @@ CHANGELOG
 
 0.39.0
 ------
+- Added `one` event that is triggered when there's only one match
+  ```sh
+  # Automatically select the only match
+  seq 10 | fzf --bind one:accept
+  ```
+- Added `--track` option that makes fzf track the current selection when the
+  result list is updated. This can be useful when browsing logs using fzf with
+  sorting disabled.
+  ```sh
+  git log --oneline --graph --color=always | nl |
+      fzf --ansi --track --no-sort --layout=reverse-list
+  ```
 - If you use `--listen` option without a port number fzf will automatically
   allocate an available port and export it as `$FZF_PORT` environment
   variable.

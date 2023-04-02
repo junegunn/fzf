@@ -17,6 +17,7 @@ type Merger struct {
 	tac     bool
 	final   bool
 	count   int
+	pass    bool
 }
 
 // PassMerger returns a new Merger that simply returns the items in the
@@ -26,7 +27,8 @@ func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 		pattern: nil,
 		chunks:  chunks,
 		tac:     tac,
-		count:   0}
+		count:   0,
+		pass:    true}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += chunk.count
@@ -56,6 +58,19 @@ func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool) *Merge
 // Length returns the number of items
 func (mg *Merger) Length() int {
 	return mg.count
+}
+
+// FindIndex returns the index of the item with the given item index
+func (mg *Merger) FindIndex(itemIndex int32) int {
+	if mg.pass {
+		return int(itemIndex)
+	}
+	for i := 0; i < mg.count; i++ {
+		if mg.Get(i).item.Index() == itemIndex {
+			return i
+		}
+	}
+	return -1
 }
 
 // Get returns the pointer to the Result object indexed by the given integer

@@ -33,6 +33,7 @@ const usage = `usage: fzf [options]
                            field index expressions
     -d, --delimiter=STR    Field delimiter regex (default: AWK-style)
     +s, --no-sort          Do not sort the result
+    --track                Track the current selection when the result is updated
     --tac                  Reverse the order of the input
     --disabled             Do not perform search
     --tiebreak=CRI[,..]    Comma-separated list of sort criteria to apply
@@ -266,6 +267,7 @@ type Options struct {
 	WithNth      []Range
 	Delimiter    Delimiter
 	Sort         int
+	Track        bool
 	Tac          bool
 	Criteria     []criterion
 	Multi        int
@@ -338,6 +340,7 @@ func defaultOptions() *Options {
 		WithNth:      make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
+		Track:        false,
 		Tac:          false,
 		Criteria:     []criterion{byScore, byLength},
 		Multi:        0,
@@ -619,6 +622,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.Load)
 		case "focus":
 			add(tui.Focus)
+		case "one":
+			add(tui.One)
 		case "alt-enter", "alt-return":
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":
@@ -1562,6 +1567,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Sort = optionalNumeric(allArgs, &i, 1)
 		case "+s", "--no-sort":
 			opts.Sort = 0
+		case "--track":
+			opts.Track = true
+		case "--no-track":
+			opts.Track = false
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":

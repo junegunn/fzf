@@ -93,6 +93,7 @@ const (
 	Start
 	Load
 	Focus
+	One
 
 	AltBS
 

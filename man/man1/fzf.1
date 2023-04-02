@@ -92,6 +92,16 @@ interface rather than a "fuzzy finder". You can later enable the search using
 .B "+s, --no-sort"
 Do not sort the result
 .TP
+.B "--track"
+Make fzf track the current selection when the result list is updated.
+This can be useful when browsing logs using fzf with sorting disabled.
+
+.RS
+e.g.
+     \fBgit log --oneline --graph --color=always | nl |
+         fzf --ansi --track --no-sort --layout=reverse-list\fR
+.RE
+.TP
 .B "--tac"
 Reverse the order of the input
 
@@ -982,6 +992,17 @@ e.g.
 
      # Beware not to introduce an infinite loop
      seq 10 | fzf --bind 'focus:up' --cycle\fR
+.RE
+\fIone\fR
+.RS
+Triggered when there's only one match. \fBone:accept\fR binding is comparable
+to \fB--select-1\fR option, but the difference is that \fB--select-1\fR is only
+effective before the interactive finder starts but \fBone\fR event is triggered
+by the interactive finder.
+
+e.g.
+     \fB# Automatically select the only match
+     seq 10 | fzf --bind one:accept\fR
 .RE
 
 \fIbackward-eof\fR

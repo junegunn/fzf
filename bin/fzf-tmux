@@ -179,12 +179,15 @@ trap 'cleanup' EXIT
 
 envs="export TERM=$TERM "
 if [[ "$opt" =~ "-E" ]]; then
-  tmux_version=$(tmux -V)
-  if [[ $tmux_version =~ ^tmux\ 3\.2[a-z]?$ ]]; then
-    FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
-  else
+  tmux_version=$(tmux -V | sed 's/[^0-9.]//g')
+  if [[ $(bc -l <<< "$tmux_version > 3.2") = 1 ]]; then
     FZF_DEFAULT_OPTS="--border $FZF_DEFAULT_OPTS"
     opt="-B $opt"
+  elif [[ $tmux_version = 3.2 ]]; then
+    FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
+  else
+    echo "fzf-tmux: tmux 3.2 or above is required for popup mode" >&2
+    exit 2
   fi
 fi
 [[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
