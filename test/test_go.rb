@@ -2716,6 +2716,13 @@ class TestGoFZF < TestBase
       assert(lines.any? { _1.include?('only match') })
     end
   end
+
+  def test_height_range_with_exit_0
+    tmux.send_keys "seq 10 | #{FZF} --height ~10% --exit-0", :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.send_keys :c
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+  end
 end
 
 module TestShell
