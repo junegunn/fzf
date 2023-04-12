@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.39.1
+------
+- Disallow using `--track` with `--tac` as the result can be very confusing
+- Bug fixes and improvements
+
 0.39.0
 ------
 - Added `one` event that is triggered when there's only one match
