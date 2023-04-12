@@ -1938,6 +1938,10 @@ func postProcessOptions(opts *Options) {
 		errorExit("scrollbar display width should be 1")
 	}
 
+	if opts.Track && opts.Tac {
+		errorExit("--track cannot be used with --tac")
+	}
+
 	// Default actions for CTRL-N / CTRL-P when --history is set
 	if opts.History != nil {
 		if _, prs := opts.Keymap[tui.CtrlP.AsEvent()]; !prs {

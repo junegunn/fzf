@@ -180,7 +180,7 @@ trap 'cleanup' EXIT
 envs="export TERM=$TERM "
 if [[ "$opt" =~ "-E" ]]; then
   tmux_version=$(tmux -V | sed 's/[^0-9.]//g')
-  if [[ $(bc -l <<< "$tmux_version > 3.2" 2> /dev/null || awk '{print ($1 > 3.2)}' <<< "$tmux_version") = 1 ]]; then
+  if [[ $(awk '{print ($1 > 3.2)}' <<< "$tmux_version" 2> /dev/null || bc -l <<< "$tmux_version > 3.2") = 1 ]]; then
     FZF_DEFAULT_OPTS="--border $FZF_DEFAULT_OPTS"
     opt="-B $opt"
   elif [[ $tmux_version = 3.2 ]]; then
