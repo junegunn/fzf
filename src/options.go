@@ -1083,6 +1083,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleAll)
 		case "toggle-search":
 			appendAction(actToggleSearch)
+		case "toggle-track":
+			appendAction(actToggleTrack)
 		case "select":
 			appendAction(actSelect)
 		case "select-all":
@@ -1936,10 +1938,6 @@ func postProcessOptions(opts *Options) {
 
 	if opts.Scrollbar != nil && runewidth.StringWidth(*opts.Scrollbar) > 1 {
 		errorExit("scrollbar display width should be 1")
-	}
-
-	if opts.Track && opts.Tac {
-		errorExit("--track cannot be used with --tac")
 	}
 
 	// Default actions for CTRL-N / CTRL-P when --history is set

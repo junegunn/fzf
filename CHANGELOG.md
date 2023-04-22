@@ -3,7 +3,9 @@ CHANGELOG
 
 0.39.1
 ------
-- Disallow using `--track` with `--tac` as the result can be very confusing
+- Fixed `--track` behavior when used with `--tac`
+    - However, using `--track` with `--tac` is not recommended. The resulting
+      behavior can be very confusing.
 - Bug fixes and improvements
 
 0.39.0

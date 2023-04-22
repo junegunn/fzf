@@ -907,8 +907,12 @@ func (t *Terminal) UpdateProgress(progress float32) {
 func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.mutex.Lock()
 	var prevIndex int32 = -1
-	if !reset && t.track && t.merger.Length() > 0 {
-		prevIndex = t.merger.Get(t.cy).item.Index()
+	if !reset && t.track {
+		if t.merger.Length() > 0 {
+			prevIndex = t.merger.Get(t.cy).item.Index()
+		} else if merger.Length() > 0 {
+			prevIndex = merger.First().item.Index()
+		}
 	}
 	t.progress = 100
 	t.merger = merger

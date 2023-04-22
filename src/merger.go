@@ -60,17 +60,30 @@ func (mg *Merger) Length() int {
 	return mg.count
 }
 
+func (mg *Merger) First() Result {
+	if mg.tac && !mg.sorted {
+		return mg.Get(mg.count - 1)
+	}
+	return mg.Get(0)
+}
+
 // FindIndex returns the index of the item with the given item index
 func (mg *Merger) FindIndex(itemIndex int32) int {
+	index := -1
 	if mg.pass {
-		return int(itemIndex)
-	}
-	for i := 0; i < mg.count; i++ {
-		if mg.Get(i).item.Index() == itemIndex {
-			return i
+		index = int(itemIndex)
+		if mg.tac {
+			index = mg.count - index - 1
+		}
+	} else {
+		for i := 0; i < mg.count; i++ {
+			if mg.Get(i).item.Index() == itemIndex {
+				index = i
+				break
+			}
 		}
 	}
-	return -1
+	return index
 }
 
 // Get returns the pointer to the Result object indexed by the given integer
