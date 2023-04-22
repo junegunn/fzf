@@ -165,6 +165,14 @@ func defaultMargin() [4]sizeSpec {
 	return [4]sizeSpec{}
 }
 
+type trackOption int
+
+const (
+	trackDisabled trackOption = iota
+	trackEnabled
+	trackCurrent
+)
+
 type windowPosition int
 
 const (
@@ -267,7 +275,7 @@ type Options struct {
 	WithNth      []Range
 	Delimiter    Delimiter
 	Sort         int
-	Track        bool
+	Track        trackOption
 	Tac          bool
 	Criteria     []criterion
 	Multi        int
@@ -340,7 +348,7 @@ func defaultOptions() *Options {
 		WithNth:      make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
-		Track:        false,
+		Track:        trackDisabled,
 		Tac:          false,
 		Criteria:     []criterion{byScore, byLength},
 		Multi:        0,
@@ -1085,6 +1093,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleSearch)
 		case "toggle-track":
 			appendAction(actToggleTrack)
+		case "track":
+			appendAction(actTrack)
 		case "select":
 			appendAction(actSelect)
 		case "select-all":
@@ -1574,9 +1584,9 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "+s", "--no-sort":
 			opts.Sort = 0
 		case "--track":
-			opts.Track = true
+			opts.Track = trackEnabled
 		case "--no-track":
-			opts.Track = false
+			opts.Track = trackDisabled
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":

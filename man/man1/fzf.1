@@ -94,7 +94,10 @@ Do not sort the result
 .TP
 .B "--track"
 Make fzf track the current selection when the result list is updated.
-This can be useful when browsing logs using fzf with sorting disabled.
+This can be useful when browsing logs using fzf with sorting disabled. It is
+not recommended to use this option with \fB--tac\fR as the resulting behavior
+can be confusing. Also, consider using \fBtrack\fR action instead of this
+option.
 
 .RS
 e.g.
@@ -1099,7 +1102,9 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-preview-wrap\fR
     \fBtoggle-search\fR                (toggle search functionality)
     \fBtoggle-sort\fR
+    \fBtoggle-track\fR
     \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
+    \fBtrack\fR                        (track the current item; automatically disabled if focus changes)
     \fBtransform-border-label(...)\fR  (transform border label using an external command)
     \fBtransform-header(...)\fR        (transform header using an external command)
     \fBtransform-preview-label(...)\fR (transform preview label using an external command)

@@ -4,19 +4,25 @@ CHANGELOG
 0.40.0
 ------
 - New actions
-    - Added `change-header(...)`
-    - Added `transform-header(...)`
-    - Added `toggle-track` action. Temporarily enabling tracking is useful when
-      you want to see the surrounding items by deleting the query string.
+    - Added `track` action which makes fzf track the current item when the
+      search result is updated. If the user manually moves the cursor, or the
+      item is not in the updated search result, tracking is automatically
+      disabled. Tracking is useful when you want to see the surrounding items
+      by deleting the query string.
       ```sh
+      # Narrow down the list with a query, point to a command,
+      # and hit CTRL-T to see its surrounding commands.
       export FZF_CTRL_R_OPTS="
         --preview 'echo {}' --preview-window up:3:hidden:wrap
         --bind 'ctrl-/:toggle-preview'
-        --bind 'ctrl-t:toggle-track'
+        --bind 'ctrl-t:track+clear-query'
         --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
         --color header:italic
         --header 'Press CTRL-Y to copy command into clipboard'"
       ```
+    - Added `change-header(...)`
+    - Added `transform-header(...)`
+    - Added `toggle-track` action
 - Fixed `--track` behavior when used with `--tac`
     - However, using `--track` with `--tac` is not recommended. The resulting
       behavior can be very confusing.

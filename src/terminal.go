@@ -184,7 +184,7 @@ type Terminal struct {
 	multi              int
 	sort               bool
 	toggleSort         bool
-	track              bool
+	track              trackOption
 	delimiter          Delimiter
 	expect             map[tui.Event]string
 	keymap             map[tui.Event][]*action
@@ -340,6 +340,7 @@ const (
 	actToggleIn
 	actToggleOut
 	actToggleTrack
+	actTrack
 	actDown
 	actUp
 	actPageUp
@@ -922,7 +923,7 @@ func (t *Terminal) UpdateProgress(progress float32) {
 func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.mutex.Lock()
 	var prevIndex int32 = -1
-	if !reset && t.track {
+	if !reset && t.track != trackDisabled {
 		if t.merger.Length() > 0 {
 			prevIndex = t.merger.Get(t.cy).item.Index()
 		} else if merger.Length() > 0 {
@@ -946,6 +947,10 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 		if i >= 0 {
 			t.cy = i
 			t.offset = t.cy - pos
+		} else if t.track == trackCurrent {
+			t.track = trackDisabled
+			t.cy = pos
+			t.offset = 0
 		} else if t.cy > count {
 			// Try to keep the vertical position when the list shrinks
 			t.cy = count - util.Min(count, t.maxItems()) + pos
@@ -1479,7 +1484,7 @@ func (t *Terminal) printInfo() {
 			output += " -S"
 		}
 	}
-	if t.track {
+	if t.track != trackDisabled {
 		output += " +T"
 	}
 	if t.multi > 0 {
@@ -2733,6 +2738,10 @@ func (t *Terminal) Loop() {
 							currentIndex = currentItem.Index()
 						}
 						focusChanged := focusedIndex != currentIndex
+						if focusChanged && t.track == trackCurrent {
+							t.track = trackDisabled
+							t.printInfo()
+						}
 						if onFocus != nil && focusChanged {
 							t.serverChan <- onFocus
 						}
@@ -3311,7 +3320,17 @@ func (t *Terminal) Loop() {
 				changed = !t.paused
 				req(reqPrompt)
 			case actToggleTrack:
-				t.track = !t.track
+				switch t.track {
+				case trackEnabled:
+					t.track = trackDisabled
+				case trackDisabled:
+					t.track = trackEnabled
+				}
+				req(reqInfo)
+			case actTrack:
+				if t.track == trackDisabled {
+					t.track = trackCurrent
+				}
 				req(reqInfo)
 			case actEnableSearch:
 				t.paused = false

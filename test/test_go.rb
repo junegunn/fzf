@@ -2793,6 +2793,48 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_track_action
+    tmux.send_keys "seq 1000 | #{FZF} --query 555 --bind t:track", :Enter
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 555'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 28, lines.match_count
+      assert_includes lines, '> 55'
+    end
+    tmux.send_keys :t
+    tmux.until do |lines|
+      assert_includes lines[-2], '+T'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 271, lines.match_count
+      assert_includes lines, '> 55'
+    end
+
+    # Automatically disabled when the tracking item is no longer visible
+    tmux.send_keys '4'
+    tmux.until do |lines|
+      assert_equal 28, lines.match_count
+      refute_includes lines[-2], '+T'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 271, lines.match_count
+      assert_includes lines, '> 5'
+    end
+    tmux.send_keys :t
+    tmux.until do |lines|
+      assert_includes lines[-2], '+T'
+    end
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      refute_includes lines[-2], '+T'
+    end
+  end
+
   def test_one
     tmux.send_keys "seq 10 | #{FZF} --bind 'one:preview:echo {} is the only match'", :Enter
     tmux.send_keys '1'
