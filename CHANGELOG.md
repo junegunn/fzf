@@ -194,7 +194,7 @@ CHANGELOG
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Better support for (Windows) terminals where each box-drawing character
-  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `1`.
+  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `0` or `1`.
     - On Vim, the variable will be automatically set if `&ambiwidth` is `double`
 - Behavior changes
     - fzf will always execute the preview command if the command template
