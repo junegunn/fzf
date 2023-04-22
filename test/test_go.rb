@@ -1865,6 +1865,67 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '>', lines.last }
   end
 
+  def test_change_and_transform_header
+    [
+      'space:change-header:$(seq 4)',
+      'space:transform-header:seq 4'
+    ].each_with_index do |binding, i|
+      tmux.send_keys %(seq 3 | #{FZF} --header-lines 2 --header bar --bind "#{binding}"), :Enter
+      expected = <<~OUTPUT
+        > 3
+          2
+          1
+          bar
+          1/1
+        >
+      OUTPUT
+      tmux.until { assert_block(expected, _1) }
+      tmux.send_keys :Space
+      expected = <<~OUTPUT
+        > 3
+          2
+          1
+          1
+          2
+          3
+          4
+          1/1
+        >
+      OUTPUT
+      tmux.until { assert_block(expected, _1) }
+      next unless i.zero?
+
+      teardown
+      setup
+    end
+  end
+
+  def test_change_header
+    tmux.send_keys %(seq 3 | #{FZF} --header-lines 2 --header bar --bind "space:change-header:$(seq 4)"), :Enter
+    expected = <<~OUTPUT
+      > 3
+        2
+        1
+        bar
+        1/1
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+    tmux.send_keys :Space
+    expected = <<~OUTPUT
+      > 3
+        2
+        1
+        1
+        2
+        3
+        4
+        1/1
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
+
   def test_change_query
     tmux.send_keys %(: | #{FZF} --query foo --bind space:change-query:foobar), :Enter
     tmux.until { |lines| assert_equal 0, lines.item_count }

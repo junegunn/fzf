@@ -927,7 +927,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1249,6 +1249,8 @@ func isExecuteAction(str string) actionType {
 		return actPreview
 	case "change-border-label":
 		return actChangeBorderLabel
+	case "change-header":
+		return actChangeHeader
 	case "change-preview-label":
 		return actChangePreviewLabel
 	case "change-preview-window":
@@ -1273,6 +1275,8 @@ func isExecuteAction(str string) actionType {
 		return actTransformBorderLabel
 	case "transform-preview-label":
 		return actTransformPreviewLabel
+	case "transform-header":
+		return actTransformHeader
 	case "transform-prompt":
 		return actTransformPrompt
 	case "transform-query":

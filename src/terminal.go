@@ -3,6 +3,7 @@ package fzf
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -310,6 +311,7 @@ const (
 	actBackwardWord
 	actCancel
 	actChangeBorderLabel
+	actChangeHeader
 	actChangePreviewLabel
 	actChangePrompt
 	actChangeQuery
@@ -356,6 +358,7 @@ const (
 	actTogglePreview
 	actTogglePreviewWrap
 	actTransformBorderLabel
+	actTransformHeader
 	actTransformPreviewLabel
 	actTransformPrompt
 	actTransformQuery
@@ -624,7 +627,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		cycle:              opts.Cycle,
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
-		header:             header,
+		header:             []string{},
 		header0:            header,
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
@@ -883,10 +886,21 @@ func reverseStringArray(input []string) []string {
 	return reversed
 }
 
+func (t *Terminal) changeHeader(header string) bool {
+	lines := strings.Split(strings.TrimSuffix(header, "\n"), "\n")
+	switch t.layout {
+	case layoutDefault, layoutReverseList:
+		lines = reverseStringArray(lines)
+	}
+	needFullRedraw := len(t.header0) != len(lines)
+	t.header0 = lines
+	return needFullRedraw
+}
+
 // UpdateHeader updates the header
 func (t *Terminal) UpdateHeader(header []string) {
 	t.mutex.Lock()
-	t.header = append(append([]string{}, t.header0...), header...)
+	t.header = header
 	t.mutex.Unlock()
 	t.reqBox.Set(reqHeader, nil)
 }
@@ -1345,7 +1359,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 	case layoutDefault:
 		y = h - y - 1
 	case layoutReverseList:
-		n := 2 + len(t.header)
+		n := 2 + len(t.header0) + len(t.header)
 		if t.noInfoLine() {
 			n--
 		}
@@ -1493,7 +1507,7 @@ func (t *Terminal) printInfo() {
 }
 
 func (t *Terminal) printHeader() {
-	if len(t.header) == 0 {
+	if len(t.header0)+len(t.header) == 0 {
 		return
 	}
 	max := t.window.Height()
@@ -1504,7 +1518,7 @@ func (t *Terminal) printHeader() {
 		}
 	}
 	var state *ansiState
-	for idx, lineStr := range t.header {
+	for idx, lineStr := range append(append([]string{}, t.header0...), t.header...) {
 		line := idx
 		if !t.headerFirst {
 			line++
@@ -1538,7 +1552,7 @@ func (t *Terminal) printList() {
 		if t.layout == layoutDefault {
 			i = maxy - 1 - j
 		}
-		line := i + 2 + len(t.header)
+		line := i + 2 + len(t.header0) + len(t.header)
 		if t.noInfoLine() {
 			line--
 		}
@@ -2276,12 +2290,12 @@ func (t *Terminal) redraw() {
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, captureFirstLine bool) string {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool) string {
 	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
-	// captureFirstLine is used for transform-{prompt,query} and we don't want to
+	// 'capture' is used for transform-* and we don't want to
 	// return an empty string in those cases
-	if !valid && !captureFirstLine {
+	if !valid && !capture {
 		return line
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
@@ -2298,12 +2312,17 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		t.redraw()
 		t.refresh()
 	} else {
-		if captureFirstLine {
+		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
 			cmd.Start()
-			line, _ = reader.ReadString('\n')
-			line = strings.TrimRight(line, "\r\n")
+			if firstLineOnly {
+				line, _ = reader.ReadString('\n')
+				line = strings.TrimRight(line, "\r\n")
+			} else {
+				bytes, _ := io.ReadAll(reader)
+				line = string(bytes)
+			}
 			cmd.Wait()
 		} else {
 			cmd.Run()
@@ -2921,9 +2940,9 @@ func (t *Terminal) Loop() {
 					}
 				}
 			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent, false)
+				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)
 			case actExecuteMulti:
-				t.executeCommand(a.a, true, false, false)
+				t.executeCommand(a.a, true, false, false, false)
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -2957,11 +2976,11 @@ func (t *Terminal) Loop() {
 					req(reqPreviewRefresh)
 				}
 			case actTransformPrompt:
-				prompt := t.executeCommand(a.a, false, true, true)
+				prompt := t.executeCommand(a.a, false, true, true, true)
 				t.prompt, t.promptLen = t.parsePrompt(prompt)
 				req(reqPrompt)
 			case actTransformQuery:
-				query := t.executeCommand(a.a, false, true, true)
+				query := t.executeCommand(a.a, false, true, true, true)
 				t.input = []rune(query)
 				t.cx = len(t.input)
 			case actToggleSort:
@@ -3010,6 +3029,19 @@ func (t *Terminal) Loop() {
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
+			case actTransformHeader:
+				header := t.executeCommand(a.a, false, true, true, false)
+				if t.changeHeader(header) {
+					req(reqFullRedraw)
+				} else {
+					req(reqHeader)
+				}
+			case actChangeHeader:
+				if t.changeHeader(a.a) {
+					req(reqFullRedraw)
+				} else {
+					req(reqHeader)
+				}
 			case actChangeBorderLabel:
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
@@ -3022,13 +3054,13 @@ func (t *Terminal) Loop() {
 				}
 			case actTransformBorderLabel:
 				if t.border != nil {
-					label := t.executeCommand(a.a, false, true, true)
+					label := t.executeCommand(a.a, false, true, true, true)
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
 			case actTransformPreviewLabel:
 				if t.pborder != nil {
-					label := t.executeCommand(a.a, false, true, true)
+					label := t.executeCommand(a.a, false, true, true, true)
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
 					req(reqRedrawPreviewLabel)
 				}
@@ -3358,7 +3390,7 @@ func (t *Terminal) Loop() {
 				// Translate coordinates
 				mx -= t.window.Left()
 				my -= t.window.Top()
-				min := 2 + len(t.header)
+				min := 2 + len(t.header0) + len(t.header)
 				if t.noInfoLine() {
 					min--
 				}
@@ -3627,7 +3659,7 @@ func (t *Terminal) vset(o int) bool {
 }
 
 func (t *Terminal) maxItems() int {
-	max := t.window.Height() - 2 - len(t.header)
+	max := t.window.Height() - 2 - len(t.header0) - len(t.header)
 	if t.noInfoLine() {
 		max++
 	}
