@@ -337,6 +337,7 @@ const (
 	actToggleUp
 	actToggleIn
 	actToggleOut
+	actToggleTrack
 	actDown
 	actUp
 	actPageUp
@@ -1463,6 +1464,9 @@ func (t *Terminal) printInfo() {
 		} else {
 			output += " -S"
 		}
+	}
+	if t.track {
+		output += " +T"
 	}
 	if t.multi > 0 {
 		if t.multi == maxMulti {
@@ -3274,6 +3278,9 @@ func (t *Terminal) Loop() {
 				t.paused = !t.paused
 				changed = !t.paused
 				req(reqPrompt)
+			case actToggleTrack:
+				t.track = !t.track
+				req(reqInfo)
 			case actEnableSearch:
 				t.paused = false
 				changed = true

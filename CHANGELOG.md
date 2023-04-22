@@ -3,6 +3,17 @@ CHANGELOG
 
 0.39.1
 ------
+- Added `toggle-track` action. Temporarily enabling tracking is useful when
+  you want to see the surrounding items by deleting the query string.
+  ```sh
+  export FZF_CTRL_R_OPTS="
+    --preview 'echo {}' --preview-window up:3:hidden:wrap
+    --bind 'ctrl-/:toggle-preview'
+    --bind 'ctrl-t:toggle-track'
+    --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+    --color header:italic
+    --header 'Press CTRL-Y to copy command into clipboard'"
+  ```
 - Fixed `--track` behavior when used with `--tac`
     - However, using `--track` with `--tac` is not recommended. The resulting
       behavior can be very confusing.

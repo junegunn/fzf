@@ -2681,7 +2681,7 @@ class TestGoFZF < TestBase
   end
 
   def test_track
-    tmux.send_keys "seq 1000 | #{FZF} --query 555 --track", :Enter
+    tmux.send_keys "seq 1000 | #{FZF} --query 555 --track --bind t:toggle-track", :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
       assert_includes lines, '> 555'
@@ -2700,6 +2700,35 @@ class TestGoFZF < TestBase
     tmux.until do |lines|
       assert_equal 1000, lines.match_count
       assert_equal '> 555', lines[index]
+    end
+    tmux.send_keys '555'
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 555'
+      assert_includes lines[-2], '+T'
+    end
+    tmux.send_keys 't'
+    tmux.until do |lines|
+      refute_includes lines[-2], '+T'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 28, lines.match_count
+      assert_includes lines, '> 55'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 271, lines.match_count
+      assert_includes lines, '> 5'
+    end
+    tmux.send_keys 't'
+    tmux.until do |lines|
+      assert_includes lines[-2], '+T'
+    end
+    tmux.send_keys :BSpace
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 5'
     end
   end
 
