@@ -1,9 +1,31 @@
 CHANGELOG
 =========
 
-0.39.1
+0.40.0
 ------
-- Disallow using `--track` with `--tac` as the result can be very confusing
+- New actions
+    - Added `track` action which makes fzf track the current item when the
+      search result is updated. If the user manually moves the cursor, or the
+      item is not in the updated search result, tracking is automatically
+      disabled. Tracking is useful when you want to see the surrounding items
+      by deleting the query string.
+      ```sh
+      # Narrow down the list with a query, point to a command,
+      # and hit CTRL-T to see its surrounding commands.
+      export FZF_CTRL_R_OPTS="
+        --preview 'echo {}' --preview-window up:3:hidden:wrap
+        --bind 'ctrl-/:toggle-preview'
+        --bind 'ctrl-t:track+clear-query'
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+        --color header:italic
+        --header 'Press CTRL-Y to copy command into clipboard'"
+      ```
+    - Added `change-header(...)`
+    - Added `transform-header(...)`
+    - Added `toggle-track` action
+- Fixed `--track` behavior when used with `--tac`
+    - However, using `--track` with `--tac` is not recommended. The resulting
+      behavior can be very confusing.
 - Bug fixes and improvements
 
 0.39.0
@@ -181,7 +203,7 @@ CHANGELOG
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Better support for (Windows) terminals where each box-drawing character
-  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `1`.
+  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `0` or `1`.
     - On Vim, the variable will be automatically set if `&ambiwidth` is `double`
 - Behavior changes
     - fzf will always execute the preview command if the command template

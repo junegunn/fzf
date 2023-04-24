@@ -165,6 +165,14 @@ func defaultMargin() [4]sizeSpec {
 	return [4]sizeSpec{}
 }
 
+type trackOption int
+
+const (
+	trackDisabled trackOption = iota
+	trackEnabled
+	trackCurrent
+)
+
 type windowPosition int
 
 const (
@@ -267,7 +275,7 @@ type Options struct {
 	WithNth      []Range
 	Delimiter    Delimiter
 	Sort         int
-	Track        bool
+	Track        trackOption
 	Tac          bool
 	Criteria     []criterion
 	Multi        int
@@ -340,7 +348,7 @@ func defaultOptions() *Options {
 		WithNth:      make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
-		Track:        false,
+		Track:        trackDisabled,
 		Tac:          false,
 		Criteria:     []criterion{byScore, byLength},
 		Multi:        0,
@@ -927,7 +935,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1083,6 +1091,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleAll)
 		case "toggle-search":
 			appendAction(actToggleSearch)
+		case "toggle-track":
+			appendAction(actToggleTrack)
+		case "track":
+			appendAction(actTrack)
 		case "select":
 			appendAction(actSelect)
 		case "select-all":
@@ -1247,6 +1259,8 @@ func isExecuteAction(str string) actionType {
 		return actPreview
 	case "change-border-label":
 		return actChangeBorderLabel
+	case "change-header":
+		return actChangeHeader
 	case "change-preview-label":
 		return actChangePreviewLabel
 	case "change-preview-window":
@@ -1271,6 +1285,8 @@ func isExecuteAction(str string) actionType {
 		return actTransformBorderLabel
 	case "transform-preview-label":
 		return actTransformPreviewLabel
+	case "transform-header":
+		return actTransformHeader
 	case "transform-prompt":
 		return actTransformPrompt
 	case "transform-query":
@@ -1568,9 +1584,9 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "+s", "--no-sort":
 			opts.Sort = 0
 		case "--track":
-			opts.Track = true
+			opts.Track = trackEnabled
 		case "--no-track":
-			opts.Track = false
+			opts.Track = trackDisabled
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":
@@ -1936,10 +1952,6 @@ func postProcessOptions(opts *Options) {
 
 	if opts.Scrollbar != nil && runewidth.StringWidth(*opts.Scrollbar) > 1 {
 		errorExit("scrollbar display width should be 1")
-	}
-
-	if opts.Track && opts.Tac {
-		errorExit("--track cannot be used with --tac")
 	}
 
 	// Default actions for CTRL-N / CTRL-P when --history is set

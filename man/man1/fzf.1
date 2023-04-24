@@ -94,8 +94,10 @@ Do not sort the result
 .TP
 .B "--track"
 Make fzf track the current selection when the result list is updated.
-This can be useful when browsing logs using fzf with sorting disabled.
-This option is not compatible with \fB--tac\fR.
+This can be useful when browsing logs using fzf with sorting disabled. It is
+not recommended to use this option with \fB--tac\fR as the resulting behavior
+can be confusing. Also, consider using \fBtrack\fR action instead of this
+option.
 
 .RS
 e.g.
@@ -242,8 +244,9 @@ Draw border around the finder
 .br
 
 If you use a terminal emulator where each box-drawing character takes
-2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR to \fB1\fR. If the border is
-still not properly rendered, set \fB--no-unicode\fR.
+2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR environment variable to
+\fB0\fR or \fB1\fR. If the border is still not properly rendered, set
+\fB--no-unicode\fR.
 
 .TP
 .BI "--border-label" [=LABEL]
@@ -1031,6 +1034,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbeginning-of-line\fR            \fIctrl-a  home\fR
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange-border-label(...)\fR     (change \fB--border-label\fR to the given string)
+    \fBchange-header(...)\fR           (change header to the given string; doesn't affect \fB--header-lines\fR)
     \fBchange-preview(...)\fR          (change \fB--preview\fR option)
     \fBchange-preview-label(...)\fR    (change \fB--preview-label\fR to the given string)
     \fBchange-preview-window(...)\fR   (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
@@ -1098,8 +1102,11 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-preview-wrap\fR
     \fBtoggle-search\fR                (toggle search functionality)
     \fBtoggle-sort\fR
+    \fBtoggle-track\fR
     \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
+    \fBtrack\fR                        (track the current item; automatically disabled if focus changes)
     \fBtransform-border-label(...)\fR  (transform border label using an external command)
+    \fBtransform-header(...)\fR        (transform header using an external command)
     \fBtransform-preview-label(...)\fR (transform preview label using an external command)
     \fBtransform-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform-query(...)\fR         (transform query string using an external command)
