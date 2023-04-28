@@ -88,10 +88,7 @@ function! s:shellesc_win(arg)
   let escaped = substitute(escaped, '%', '%%', 'g')
   let escaped = substitute(escaped, '"', '\\^&', 'g')
   let escaped = substitute(escaped, '\(\\\+\)\(\\^\)', '\1\1\2', 'g')
-  let quote_str= '^"'
-  if &shell =~ 'powershell\|pwsh'
-    let quote_str= '"'
-  endif
+  let quote_str = &shell =~ 'powershell\|pwsh' ? '"' : '^"'
   return quote_str.substitute(escaped, '\(\\\+\)$', '\1\1', '').quote_str
 endfunction
 
