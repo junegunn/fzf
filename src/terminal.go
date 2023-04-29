@@ -408,6 +408,7 @@ type searchRequest struct {
 	sort    bool
 	sync    bool
 	command *string
+	changed bool
 }
 
 type previewRequest struct {
@@ -3622,7 +3623,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if changed || newCommand != nil {
-			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, sync: reloadSync, command: newCommand})
+			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, sync: reloadSync, command: newCommand, changed: changed})
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)
