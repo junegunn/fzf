@@ -937,7 +937,7 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 		t.selected = make(map[int32]selectedItem)
 		t.version++
 	}
-	if t.hasLoadActions && t.triggerLoad {
+	if t.triggerLoad {
 		t.triggerLoad = false
 		t.eventChan <- tui.Load.AsEvent()
 	}
