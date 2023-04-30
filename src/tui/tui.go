@@ -94,6 +94,7 @@ const (
 	Load
 	Focus
 	One
+	Zero
 
 	AltBS
 
@@ -281,6 +282,15 @@ type Event struct {
 	Type       EventType
 	Char       rune
 	MouseEvent *MouseEvent
+}
+
+func (e Event) Is(types ...EventType) bool {
+	for _, t := range types {
+		if e.Type == t {
+			return true
+		}
+	}
+	return false
 }
 
 type MouseEvent struct {

@@ -1008,6 +1008,17 @@ e.g.
      \fB# Automatically select the only match
      seq 10 | fzf --bind one:accept\fR
 .RE
+\fIzero\fR
+.RS
+Triggered when there's no match. \fBzero:abort\fR binding is comparable to
+\fB--exit-0\fR option, but the difference is that \fB--exit-0\fR is only
+effective before the interactive finder starts but \fBzero\fR event is
+triggered by the interactive finder.
+
+e.g.
+     \fB# Reload the candidate list when there's no match
+     echo $RANDOM | fzf --bind 'zero:reload(echo $RANDOM)+clear-query' --height 3\fR
+.RE
 
 \fIbackward-eof\fR
 .RS

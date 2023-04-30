@@ -956,10 +956,18 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 			t.cy = count - util.Min(count, t.maxItems()) + pos
 		}
 	}
-	if !t.reading && t.merger.Length() == 1 {
-		one := tui.One.AsEvent()
-		if _, prs := t.keymap[one]; prs {
-			t.eventChan <- one
+	if !t.reading {
+		switch t.merger.Length() {
+		case 0:
+			zero := tui.Zero.AsEvent()
+			if _, prs := t.keymap[zero]; prs {
+				t.eventChan <- zero
+			}
+		case 1:
+			one := tui.One.AsEvent()
+			if _, prs := t.keymap[one]; prs {
+				t.eventChan <- one
+			}
 		}
 	}
 	t.mutex.Unlock()
@@ -2854,7 +2862,7 @@ func (t *Terminal) Loop() {
 			}
 			select {
 			case event = <-t.eventChan:
-				needBarrier = event != tui.Load.AsEvent()
+				needBarrier = !event.Is(tui.Load, tui.One, tui.Zero)
 			case actions = <-t.serverChan:
 				event = tui.Invalid.AsEvent()
 				needBarrier = false
