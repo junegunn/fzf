@@ -3,7 +3,7 @@ CHANGELOG
 
 0.41.0
 ------
-- Bug fixes
+- Bug fixes and improvements
 
 0.40.0
 ------

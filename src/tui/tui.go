@@ -503,6 +503,7 @@ var (
 	ColPreviewBorder        ColorPair
 	ColBorderLabel          ColorPair
 	ColPreviewLabel         ColorPair
+	ColPreviewScrollbar     ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -721,4 +722,5 @@ func initPalette(theme *ColorTheme) {
 	ColPreviewLabel = pair(theme.PreviewLabel, theme.PreviewBg)
 	ColPreview = pair(theme.PreviewFg, theme.PreviewBg)
 	ColPreviewBorder = pair(theme.Border, theme.PreviewBg)
+	ColPreviewScrollbar = pair(theme.Scrollbar, theme.PreviewBg)
 }
