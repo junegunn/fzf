@@ -299,10 +299,12 @@ func Run(opts *Options, version string, revision string) {
 
 				case EvtSearchNew:
 					var command *string
+					var changed bool
 					switch val := value.(type) {
 					case searchRequest:
 						sort = val.sort
 						command = val.command
+						changed = val.changed
 						if command != nil {
 							useSnapshot = val.sync
 						}
@@ -314,10 +316,17 @@ func Run(opts *Options, version string, revision string) {
 						} else {
 							restart(*command)
 						}
+					}
+					if !changed {
 						break
 					}
 					if !useSnapshot {
-						snapshot, _ = chunkList.Snapshot()
+						newSnapshot, _ := chunkList.Snapshot()
+						// We want to avoid showing empty list when reload is triggered
+						// and the query string is changed at the same time i.e. command != nil && changed
+						if command == nil || len(newSnapshot) > 0 {
+							snapshot = newSnapshot
+						}
 					}
 					reset := !useSnapshot && clearCache()
 					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)

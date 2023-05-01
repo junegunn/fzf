@@ -2861,6 +2861,11 @@ class TestGoFZF < TestBase
     tmux.send_keys :c
     tmux.until { |lines| assert_equal 0, lines.match_count }
   end
+
+  def test_reload_and_change
+    tmux.send_keys "(echo foo; echo bar) | #{FZF} --bind 'load:reload-sync(sleep 60)+change-query(bar)'", :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
 end
 
 module TestShell
