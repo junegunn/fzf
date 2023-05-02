@@ -155,8 +155,14 @@ page][windows-wiki].
 
 [windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
 
-### As Vim plugin
+### Using `bin`
+You can install (and update) fzf binaries using the [bin](https://github.com/marcosnils/bin) tool.
 
+```sh
+bin install github.com/junegunn/fzf
+```
+
+### As Vim plugin
 If you use
 [vim-plug](https://github.com/junegunn/vim-plug), add this line to your Vim
 configuration file:
@@ -182,6 +188,7 @@ method used.
 - macports: `sudo port upgrade fzf`
 - chocolatey: `choco upgrade fzf`
 - vim-plug: `:PlugUpdate fzf`
+- [bin](https://github.com/marcosnils/bin): `bin update github.com/junegunn/fzf`
 
 Building fzf
 ------------
