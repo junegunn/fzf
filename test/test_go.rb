@@ -2866,6 +2866,24 @@ class TestGoFZF < TestBase
     tmux.send_keys "(echo foo; echo bar) | #{FZF} --bind 'load:reload-sync(sleep 60)+change-query(bar)'", :Enter
     tmux.until { |lines| assert_equal 1, lines.match_count }
   end
+
+  def test_reload_and_change_cache
+    tmux.send_keys "echo bar | #{FZF} --bind 'zero:change-header(foo)+reload(echo foo)+clear-query'", :Enter
+    expected = <<~OUTPUT
+      > bar
+        1/1
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+    tmux.send_keys :z
+    expected = <<~OUTPUT
+      > foo
+        foo
+        1/1
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, _1) }
+  end
 end
 
 module TestShell

@@ -320,15 +320,16 @@ func Run(opts *Options, version string, revision string) {
 					if !changed {
 						break
 					}
+					reset := false
 					if !useSnapshot {
 						newSnapshot, _ := chunkList.Snapshot()
 						// We want to avoid showing empty list when reload is triggered
 						// and the query string is changed at the same time i.e. command != nil && changed
 						if command == nil || len(newSnapshot) > 0 {
 							snapshot = newSnapshot
+							reset = clearCache()
 						}
 					}
-					reset := !useSnapshot && clearCache()
 					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)
 					delay = false
 

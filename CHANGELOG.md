@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.41.0
+------
+- Bug fixes and improvements
+
 0.40.0
 ------
 - Added `zero` event that is triggered when there's no match
