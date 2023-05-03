@@ -13,18 +13,39 @@
 
 # Key bindings
 # ------------
+__fzf_new_tmp_file() {
+  local fifo="/tmp/$RANDOM$RANDOM$RANDOM$RANDOM$RANDOM$RANDOM"
+  echo "$fifo"
+  > "$fifo" || {
+      builtin echo "write tmp file error. path: ${fifo@Q}" >&2
+      builtin return 3
+  }
+}
+__fzf_get_and_kill() {
+  # kill pid in file and rm file
+  # args: <pid_file>
+  local pid=$(< "$1")
+  builtin test -d "/proc/$pid" && builtin kill -- "$pid"
+  command rm "$1"
+}
+__fzf_eval_and_out_pid() {
+  # args: <command> <oid_out_file>
+  builtin eval "$1" & echo $! > "$2"
+}
 __fzf_select__() {
-  local cmd opts
+  local cmd opts fifo
+  fifo="$(__fzf_new_tmp_file)" || return
   cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-} -m"
-  eval "$cmd" |
+  __fzf_eval_and_out_pid "$cmd" "$fifo" |
     FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) "$@" |
     while read -r item; do
       printf '%q ' "$item"  # escape special chars
     done
+  __fzf_get_and_kill "$fifo"
 }
 
 if [[ $- =~ i ]]; then
@@ -41,11 +62,13 @@ fzf-file-widget() {
 }
 
 __fzf_cd__() {
-  local cmd opts dir
+  local cmd opts dir fifo
+  fifo="$(__fzf_new_tmp_file)" || return
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | cut -b3-"}"
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-} +m"
-  dir=$(eval "$cmd" | FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)) && printf 'builtin cd -- %q' "$dir"
+  dir=$(__fzf_eval_and_out_pid "$cmd" "$fifo" | FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)) && printf 'builtin cd -- %q' "$dir"
+  __fzf_get_and_kill "$fifo"
 }
 
 __fzf_history__() {
