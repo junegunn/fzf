@@ -1969,25 +1969,25 @@ func postProcessOptions(opts *Options) {
 	// Extend the default key map
 	keymap := defaultKeymap()
 	for key, actions := range opts.Keymap {
-		var lastChangePreviewWindow *action
+		reordered := []*action{}
 		for _, act := range actions {
 			switch act.t {
 			case actToggleSort:
 				// To display "+S"/"-S" on info line
 				opts.ToggleSort = true
-			case actChangePreviewWindow:
-				lastChangePreviewWindow = act
+			case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow:
+				reordered = append(reordered, act)
 			}
 		}
 
-		// Re-organize actions so that we only keep the last change-preview-window
-		// and it comes first in the list.
+		// Re-organize actions so that we put actions that change the preview window first in the list.
 		//  *  change-preview-window(up,+10)+preview(sleep 3; cat {})+change-preview-window(up,+20)
-		//  -> change-preview-window(up,+20)+preview(sleep 3; cat {})
-		if lastChangePreviewWindow != nil {
-			reordered := []*action{lastChangePreviewWindow}
+		//  -> change-preview-window(up,+10)+change-preview-window(up,+20)+preview(sleep 3; cat {})
+		if len(reordered) > 0 {
 			for _, act := range actions {
-				if act.t != actChangePreviewWindow {
+				switch act.t {
+				case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow:
+				default:
 					reordered = append(reordered, act)
 				}
 			}
