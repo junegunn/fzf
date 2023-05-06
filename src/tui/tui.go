@@ -41,6 +41,7 @@ const (
 	CtrlZ
 	ESC
 	CtrlSpace
+	CtrlDelete
 
 	// https://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control-slash-to-the-terminal
 	CtrlBackSlash
@@ -74,6 +75,7 @@ const (
 	SDown
 	SLeft
 	SRight
+	SDelete
 
 	F1
 	F2

@@ -346,6 +346,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 		// section 2: Ctrl+[ \]_]
 		case tcell.KeyCtrlSpace:
 			return Event{CtrlSpace, 0, nil}
+		case tcell.KeyCtrlDelete:
+			return Event{CtrlDelete, 0, nil}
 		case tcell.KeyCtrlBackslash:
 			return Event{CtrlBackSlash, 0, nil}
 		case tcell.KeyCtrlRightSq:
@@ -406,6 +408,8 @@ func (r *FullscreenRenderer) GetChar() Event {
 				return Event{AltRight, 0, nil}
 			}
 			return Event{Right, 0, nil}
+		case tcell.KeySDelete:
+			return Event{SDelete, 0, nil}
 
 		// section 5: (Insert|Home|Delete|End|PgUp|PgDn|BackTab|F1-F12)
 		case tcell.KeyInsert:

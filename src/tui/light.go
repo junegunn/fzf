@@ -430,7 +430,19 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				return Event{Invalid, 0, nil} // INS
 			case '3':
-				return Event{Del, 0, nil}
+				if r.buffer[3] == '~' {
+					return Event{Del, 0, nil}
+				}
+				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+					*sz = 6
+					switch r.buffer[4] {
+					case '5':
+						return Event{CtrlDelete, 0, nil}
+					case '2':
+						return Event{SDelete, 0, nil}
+					}
+				}
+				return Event{Invalid, 0, nil}
 			case '4':
 				return Event{End, 0, nil}
 			case '5':
