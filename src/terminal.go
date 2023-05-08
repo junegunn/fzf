@@ -3523,6 +3523,9 @@ func (t *Terminal) Loop() {
 
 				// Split window options
 				tokens := strings.Split(a.a, "|")
+				if len(tokens[0]) > 0 && t.initialPreviewOpts.hidden {
+					t.previewOpts.hidden = false
+				}
 				parsePreviewWindow(&t.previewOpts, tokens[0])
 				if len(tokens) > 1 {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
