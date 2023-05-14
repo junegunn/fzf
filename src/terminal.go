@@ -1930,7 +1930,9 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int) {
 	height := t.pwindow.Height()
 	w := t.pborder.Width()
+	redraw := false
 	if len(t.previewer.bar) != height {
+		redraw = true
 		t.previewer.bar = make([]bool, height)
 	}
 	xshift := -1 - t.borderWidth
@@ -1947,7 +1949,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 
 		// Avoid unnecessary redraws
 		bar := i >= yoff+barStart && i < yoff+barStart+barLength
-		if bar == t.previewer.bar[i] && !t.tui.NeedScrollbarRedraw() {
+		if !redraw && bar == t.previewer.bar[i] && !t.tui.NeedScrollbarRedraw() {
 			continue
 		}
 
@@ -1956,7 +1958,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 		if i >= yoff+barStart && i < yoff+barStart+barLength {
 			t.pborder.CPrint(tui.ColPreviewScrollbar, t.scrollbar)
 		} else {
-			t.pborder.Print(" ")
+			t.pborder.CPrint(tui.ColPreviewScrollbar, " ")
 		}
 	}
 }
