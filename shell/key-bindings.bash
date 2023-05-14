@@ -51,10 +51,14 @@ __fzf_cd__() {
 __fzf_history__() {
   local output opts script
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
-  script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
+  script='BEGIN { RS = "\n\t"; getline; histcount = $1; getline } !seen[$0]++ { sub(/^[ *]/, ""); printf "%d\t%s\0", histcount - nr++, $0 }'
   output=$(
-    builtin fc -lnr -2147483648 |
-      last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
+    {
+      HISTTIMEFORMAT=$'\n\t' builtin history 1 # set histcount & normalize input for RS
+      builtin fc -lnr -2147483648              # format '\t'<(multi-line )entry>'\n'
+      printf "\t"                              # fix issue: dangling LF in first entry
+    } |
+      awk "$script" |
       FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
