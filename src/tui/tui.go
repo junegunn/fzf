@@ -312,6 +312,7 @@ const (
 	BorderRounded
 	BorderSharp
 	BorderBold
+	BorderBlock
 	BorderDouble
 	BorderHorizontal
 	BorderVertical
@@ -339,8 +340,10 @@ func (s BorderShape) HasTop() bool {
 
 type BorderStyle struct {
 	shape       BorderShape
-	horizontal  rune
-	vertical    rune
+	top         rune
+	bottom      rune
+	left        rune
+	right       rune
 	topLeft     rune
 	topRight    rune
 	bottomLeft  rune
@@ -353,8 +356,10 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	if !unicode {
 		return BorderStyle{
 			shape:       shape,
-			horizontal:  '-',
-			vertical:    '|',
+			top:         '-',
+			bottom:      '-',
+			left:        '|',
+			right:       '|',
 			topLeft:     '+',
 			topRight:    '+',
 			bottomLeft:  '+',
@@ -365,8 +370,10 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	case BorderSharp:
 		return BorderStyle{
 			shape:       shape,
-			horizontal:  '─',
-			vertical:    '│',
+			top:         '─',
+			bottom:      '─',
+			left:        '│',
+			right:       '│',
 			topLeft:     '┌',
 			topRight:    '┐',
 			bottomLeft:  '└',
@@ -375,18 +382,37 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	case BorderBold:
 		return BorderStyle{
 			shape:       shape,
-			horizontal:  '━',
-			vertical:    '┃',
+			top:         '━',
+			bottom:      '━',
+			left:        '┃',
+			right:       '┃',
 			topLeft:     '┏',
 			topRight:    '┓',
 			bottomLeft:  '┗',
 			bottomRight: '┛',
 		}
+	case BorderBlock:
+		// ▛▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▜
+		// ▌                  ▐
+		// ▙▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▟
+		return BorderStyle{
+			shape:       shape,
+			top:         '▀',
+			bottom:      '▄',
+			left:        '▌',
+			right:       '▐',
+			topLeft:     '▛',
+			topRight:    '▜',
+			bottomLeft:  '▙',
+			bottomRight: '▟',
+		}
 	case BorderDouble:
 		return BorderStyle{
 			shape:       shape,
-			horizontal:  '═',
-			vertical:    '║',
+			top:         '═',
+			bottom:      '═',
+			left:        '║',
+			right:       '║',
 			topLeft:     '╔',
 			topRight:    '╗',
 			bottomLeft:  '╚',
@@ -395,8 +421,10 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	}
 	return BorderStyle{
 		shape:       shape,
-		horizontal:  '─',
-		vertical:    '│',
+		top:         '─',
+		bottom:      '─',
+		left:        '│',
+		right:       '│',
 		topLeft:     '╭',
 		topRight:    '╮',
 		bottomLeft:  '╰',
@@ -407,8 +435,10 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 func MakeTransparentBorder() BorderStyle {
 	return BorderStyle{
 		shape:       BorderRounded,
-		horizontal:  ' ',
-		vertical:    ' ',
+		top:         ' ',
+		bottom:      ' ',
+		left:        ' ',
+		right:       ' ',
 		topLeft:     ' ',
 		topRight:    ' ',
 		bottomLeft:  ' ',

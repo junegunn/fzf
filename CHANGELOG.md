@@ -3,6 +3,8 @@ CHANGELOG
 
 0.41.0
 ------
+- Added color name `preview-border` and `preview-scrollbar`
+- Added new border style `block` which uses [block elements](https://en.wikipedia.org/wiki/Block_Elements)
 - Bug fixes and improvements
 
 0.40.0
