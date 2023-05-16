@@ -75,7 +75,7 @@ const usage = `usage: fzf [options]
     --info=STYLE           Finder info style [default|hidden|inline|inline:SEPARATOR]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
-    --scrollbar[=CHAR]     Scrollbar character
+    --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
     --no-scrollbar         Hide scrollbar
     --prompt=STR           Input prompt (default: '> ')
     --pointer=STR          Pointer to the current line (default: '>')
@@ -1960,8 +1960,16 @@ func postProcessOptions(opts *Options) {
 		errorExit("--height option is currently not supported on this platform")
 	}
 
-	if opts.Scrollbar != nil && runewidth.StringWidth(*opts.Scrollbar) > 1 {
-		errorExit("scrollbar display width should be 1")
+	if opts.Scrollbar != nil {
+		runes := []rune(*opts.Scrollbar)
+		if len(runes) > 2 {
+			errorExit("--scrollbar should be given one or two characters")
+		}
+		for _, r := range runes {
+			if runewidth.RuneWidth(r) != 1 {
+				errorExit("scrollbar display width should be 1")
+			}
+		}
 	}
 
 	// Default actions for CTRL-N / CTRL-P when --history is set
