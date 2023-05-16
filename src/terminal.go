@@ -1235,6 +1235,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					// Need a column to show scrollbar
 					pwidth -= 1
 				}
+				pwidth = util.Max(0, pwidth)
+				pheight = util.Max(0, pheight)
 				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 			}
 			verticalPad := 2
@@ -1973,7 +1975,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 }
 
 func (t *Terminal) printPreview() {
-	if !t.hasPreviewWindow() {
+	if !t.hasPreviewWindow() || t.pwindow.Height() == 0 {
 		return
 	}
 	numLines := len(t.previewer.lines)
