@@ -421,6 +421,7 @@ CTRL-F.
 rm -f /tmp/rg-fzf-{r,f}
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
+FZF_DEFAULT_COMMAND_SAVED="$FZF_DEFAULT_COMMAND"
 FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
 fzf --ansi \
     --color "hl:-1:underline,hl+:-1:underline:reverse" \
@@ -434,7 +435,7 @@ fzf --ansi \
     --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
     --preview 'bat --color=always {1} --highlight-line {2}' \
     --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
-    --bind 'enter:become(vim {1} +{2})'
+    --bind 'enter:become(FZF_DEFAULT_COMMAND=$FZF_DEFAULT_COMMAND_SAVED vim {1} +{2})'
 ```
 
 - To restore the query string when switching between modes, we store the
@@ -442,6 +443,8 @@ fzf --ansi \
   `transform-query` action which was added in [fzf 0.36.0][0.36.0].
 - Also note that we unbind `ctrl-r` binding on `start` event which is
   triggered once when fzf starts.
+- We restored the `FZF_DEFAULT_COMMAND` to its original value so that invocation
+  of `fzf` inside `Vim` does not include `ripgrep` artifacts. 
 
 [0.30.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0300
 [0.36.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0360
