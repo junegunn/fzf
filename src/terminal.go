@@ -2719,11 +2719,6 @@ func (t *Terminal) Loop() {
 		}
 	}
 
-	var onFocus []*action
-	if actions, prs := t.keymap[tui.Focus.AsEvent()]; prs {
-		onFocus = actions
-	}
-
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
@@ -2764,7 +2759,7 @@ func (t *Terminal) Loop() {
 							t.track = trackDisabled
 							t.printInfo()
 						}
-						if onFocus != nil && focusChanged {
+						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged {
 							t.serverChan <- onFocus
 						}
 						if focusChanged || version != t.version {

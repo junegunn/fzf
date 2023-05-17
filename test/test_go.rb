@@ -2628,12 +2628,16 @@ class TestGoFZF < TestBase
   end
 
   def test_focus_event
-    tmux.send_keys 'seq 100 | fzf --bind "focus:transform-prompt(echo [[{}]])"', :Enter
+    tmux.send_keys 'seq 100 | fzf --bind "focus:transform-prompt(echo [[{}]]),?:unbind(focus)"', :Enter
     tmux.until { |lines| assert_includes(lines[-1], '[[1]]') }
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes(lines[-1], '[[2]]') }
     tmux.send_keys :X
     tmux.until { |lines| assert_includes(lines[-1], '[[]]') }
+    tmux.send_keys '?'
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until { |lines| refute_includes(lines[-1], '[[1]]') }
   end
 
   def test_labels_center
