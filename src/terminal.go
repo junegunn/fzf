@@ -199,6 +199,7 @@ type Terminal struct {
 	header0            []string
 	ellipsis           string
 	scrollbar          string
+	previewScrollbar   string
 	ansi               bool
 	tabstop            int
 	margin             [4]sizeSpec
@@ -690,8 +691,16 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		} else {
 			t.scrollbar = "|"
 		}
+		t.previewScrollbar = t.scrollbar
 	} else {
-		t.scrollbar = *opts.Scrollbar
+		runes := []rune(*opts.Scrollbar)
+		if len(runes) > 0 {
+			t.scrollbar = string(runes[0])
+			t.previewScrollbar = t.scrollbar
+			if len(runes) > 1 {
+				t.previewScrollbar = string(runes[1])
+			}
+		}
 	}
 
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
@@ -717,7 +726,7 @@ func (t *Terminal) environ() []string {
 
 func borderLines(shape tui.BorderShape) int {
 	switch shape {
-	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
+	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderDouble:
 		return 2
 	case tui.BorderTop, tui.BorderBottom:
 		return 1
@@ -1073,7 +1082,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 			if idx == 3 {
 				extraMargin[idx] += 1 + bw
 			}
-		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
+		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderDouble:
 			extraMargin[idx] += 1 + bw*(idx%2)
 		}
 		marginInt[idx] = sizeSpecToInt(idx, sizeSpec) + extraMargin[idx]
@@ -1166,7 +1175,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 		t.border = t.tui.NewWindow(
 			marginInt[0], marginInt[3], width+(1+bw), height,
 			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
-	case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
+	case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderDouble:
 		t.border = t.tui.NewWindow(
 			marginInt[0]-1, marginInt[3]-(1+bw), width+(1+bw)*2, height+2,
 			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
@@ -1200,7 +1209,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				}
 				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
 				switch previewOpts.border {
-				case tui.BorderSharp, tui.BorderRounded, tui.BorderBold, tui.BorderDouble:
+				case tui.BorderSharp, tui.BorderRounded, tui.BorderBold, tui.BorderBlock, tui.BorderDouble:
 					pwidth -= (1 + bw) * 2
 					pheight -= 2
 					x += 1 + bw
@@ -1226,6 +1235,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					// Need a column to show scrollbar
 					pwidth -= 1
 				}
+				pwidth = util.Max(0, pwidth)
+				pheight = util.Max(0, pheight)
 				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
 			}
 			verticalPad := 2
@@ -1342,7 +1353,7 @@ func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts label
 	}
 
 	switch borderShape {
-	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderDouble:
+	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderDouble:
 		if redrawBorder {
 			window.DrawHBorder()
 		}
@@ -1930,7 +1941,9 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int) {
 	height := t.pwindow.Height()
 	w := t.pborder.Width()
+	redraw := false
 	if len(t.previewer.bar) != height {
+		redraw = true
 		t.previewer.bar = make([]bool, height)
 	}
 	xshift := -1 - t.borderWidth
@@ -1947,22 +1960,22 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 
 		// Avoid unnecessary redraws
 		bar := i >= yoff+barStart && i < yoff+barStart+barLength
-		if bar == t.previewer.bar[i] && !t.tui.NeedScrollbarRedraw() {
+		if !redraw && bar == t.previewer.bar[i] && !t.tui.NeedScrollbarRedraw() {
 			continue
 		}
 
 		t.previewer.bar[i] = bar
 		t.pborder.Move(y, x)
 		if i >= yoff+barStart && i < yoff+barStart+barLength {
-			t.pborder.CPrint(tui.ColPreviewScrollbar, t.scrollbar)
+			t.pborder.CPrint(tui.ColPreviewScrollbar, t.previewScrollbar)
 		} else {
-			t.pborder.Print(" ")
+			t.pborder.CPrint(tui.ColPreviewScrollbar, " ")
 		}
 	}
 }
 
 func (t *Terminal) printPreview() {
-	if !t.hasPreviewWindow() {
+	if !t.hasPreviewWindow() || t.pwindow.Height() == 0 {
 		return
 	}
 	numLines := len(t.previewer.lines)
@@ -2706,11 +2719,6 @@ func (t *Terminal) Loop() {
 		}
 	}
 
-	var onFocus []*action
-	if actions, prs := t.keymap[tui.Focus.AsEvent()]; prs {
-		onFocus = actions
-	}
-
 	go func() {
 		var focusedIndex int32 = minItem.Index()
 		var version int64 = -1
@@ -2751,7 +2759,7 @@ func (t *Terminal) Loop() {
 							t.track = trackDisabled
 							t.printInfo()
 						}
-						if onFocus != nil && focusChanged {
+						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged {
 							t.serverChan <- onFocus
 						}
 						if focusChanged || version != t.version {

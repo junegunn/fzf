@@ -745,7 +745,7 @@ func (w *LightWindow) DrawHBorder() {
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 	switch w.border.shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
 	case BorderHorizontal:
 		w.drawBorderHorizontal(true, true)
@@ -776,14 +776,14 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.horizontal)
+	hw := runewidth.RuneWidth(w.border.top)
 	if top {
 		w.Move(0, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
+		w.CPrint(color, repeat(w.border.top, w.width/hw))
 	}
 	if bottom {
 		w.Move(w.height-1, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
+		w.CPrint(color, repeat(w.border.bottom, w.width/hw))
 	}
 }
 
@@ -799,11 +799,11 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 	for y := 0; y < w.height; y++ {
 		w.Move(y, 0)
 		if left {
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.left))
 		}
 		w.CPrint(color, repeat(' ', width))
 		if right {
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.right))
 		}
 	}
 }
@@ -814,23 +814,23 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.horizontal)
+	hw := runewidth.RuneWidth(w.border.top)
 	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
 	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
 	rem := (w.width - tcw) % hw
-	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.top, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
 	if !onlyHorizontal {
-		vw := runewidth.RuneWidth(w.border.vertical)
+		vw := runewidth.RuneWidth(w.border.left)
 		for y := 1; y < w.height-1; y++ {
 			w.Move(y, 0)
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.left))
 			w.CPrint(color, repeat(' ', w.width-vw*2))
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.right))
 		}
 	}
 	w.Move(w.height-1, 0)
 	rem = (w.width - bcw) % hw
-	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.bottom, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) string {
