@@ -711,9 +711,9 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		style = w.normal.style()
 	}
 
-	hw := runewidth.RuneWidth(w.borderStyle.horizontal)
+	hw := runewidth.RuneWidth(w.borderStyle.top)
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderHorizontal, BorderTop:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderTop {
 			max = right - hw
@@ -724,36 +724,36 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		//       ==================
 		//                 (  HH  ) => TR is ignored
 		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
+			_screen.SetContent(x, top, w.borderStyle.top, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderHorizontal, BorderBottom:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderBottom {
 			max = right - hw
 		}
 		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
+			_screen.SetContent(x, bot-1, w.borderStyle.bottom, nil, style)
 		}
 	}
 	if !onlyHorizontal {
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderVertical, BorderLeft:
 			for y := top; y < bot; y++ {
-				_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+				_screen.SetContent(left, y, w.borderStyle.left, nil, style)
 			}
 		}
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
-			vw := runewidth.RuneWidth(w.borderStyle.vertical)
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderVertical, BorderRight:
+			vw := runewidth.RuneWidth(w.borderStyle.right)
 			for y := top; y < bot; y++ {
-				_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
+				_screen.SetContent(right-vw, y, w.borderStyle.right, nil, style)
 			}
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
 		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)

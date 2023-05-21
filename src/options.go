@@ -63,7 +63,7 @@ const usage = `usage: fzf [options]
                            (default: 10)
     --layout=LAYOUT        Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]       Draw border around the finder
-                           [rounded|sharp|horizontal|vertical|
+                           [rounded|sharp|bold|block|double|horizontal|vertical|
                             top|bottom|left|right|none] (default: rounded)
     --border-label=LABEL   Label to print on the border
     --border-label-pos=COL Position of the border label
@@ -75,7 +75,7 @@ const usage = `usage: fzf [options]
     --info=STYLE           Finder info style [default|hidden|inline|inline:SEPARATOR]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
-    --scrollbar[=CHAR]     Scrollbar character
+    --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
     --no-scrollbar         Hide scrollbar
     --prompt=STR           Input prompt (default: '> ')
     --pointer=STR          Pointer to the current line (default: '>')
@@ -544,6 +544,8 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderSharp
 	case "bold":
 		return tui.BorderBold
+	case "block":
+		return tui.BorderBlock
 	case "double":
 		return tui.BorderDouble
 	case "horizontal":
@@ -564,7 +566,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		if optional && str == "" {
 			return tui.DefaultBorderShape
 		}
-		errorExit("invalid border style (expected: rounded|sharp|bold|double|horizontal|vertical|top|bottom|left|right|none)")
+		errorExit("invalid border style (expected: rounded|sharp|bold|block|double|horizontal|vertical|top|bottom|left|right|none)")
 	}
 	return tui.BorderNone
 }
@@ -892,10 +894,14 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 				mergeAttr(&theme.CurrentMatch)
 			case "border":
 				mergeAttr(&theme.Border)
+			case "preview-border":
+				mergeAttr(&theme.PreviewBorder)
 			case "separator":
 				mergeAttr(&theme.Separator)
 			case "scrollbar":
 				mergeAttr(&theme.Scrollbar)
+			case "preview-scrollbar":
+				mergeAttr(&theme.PreviewScrollbar)
 			case "label":
 				mergeAttr(&theme.BorderLabel)
 			case "preview-label":
@@ -1430,6 +1436,8 @@ func parsePreviewWindowImpl(opts *previewOpts, input string, exit func(string)) 
 			opts.border = tui.BorderSharp
 		case "border-bold":
 			opts.border = tui.BorderBold
+		case "border-block":
+			opts.border = tui.BorderBlock
 		case "border-double":
 			opts.border = tui.BorderDouble
 		case "noborder", "border-none":
@@ -1956,8 +1964,16 @@ func postProcessOptions(opts *Options) {
 		errorExit("--height option is currently not supported on this platform")
 	}
 
-	if opts.Scrollbar != nil && runewidth.StringWidth(*opts.Scrollbar) > 1 {
-		errorExit("scrollbar display width should be 1")
+	if opts.Scrollbar != nil {
+		runes := []rune(*opts.Scrollbar)
+		if len(runes) > 2 {
+			errorExit("--scrollbar should be given one or two characters")
+		}
+		for _, r := range runes {
+			if runewidth.RuneWidth(r) != 1 {
+				errorExit("scrollbar display width should be 1")
+			}
+		}
 	}
 
 	// Default actions for CTRL-N / CTRL-P when --history is set

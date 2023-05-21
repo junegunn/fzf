@@ -1,4 +1,4 @@
-FROM archlinux
+FROM --platform=linux/amd64 archlinux
 RUN pacman -Sy && pacman --noconfirm -S awk git tmux zsh fish ruby procps go make gcc
 RUN gem install --no-document -v 5.14.2 minitest
 RUN echo '. /usr/share/bash-completion/completions/git' >> ~/.bashrc
