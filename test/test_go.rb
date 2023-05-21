@@ -2921,6 +2921,11 @@ class TestGoFZF < TestBase
     OUTPUT
     tmux.until { assert_block(expected, _1) }
   end
+
+  def test_become_tty
+    tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty'", :Enter
+    tmux.until { |lines| assert_includes lines, '/dev/tty' }
+  end
 end
 
 module TestShell
