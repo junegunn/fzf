@@ -413,6 +413,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyHome:
 			return Event{Home, 0, nil}
 		case tcell.KeyDelete:
+			if ctrl {
+				return Event{CtrlDelete, 0, nil}
+			}
+			if shift {
+				return Event{SDelete, 0, nil}
+			}
 			return Event{Del, 0, nil}
 		case tcell.KeyEnd:
 			return Event{End, 0, nil}
