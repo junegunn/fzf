@@ -2929,6 +2929,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '[3]', lines[-1] }
     tmux.send_keys 'S-Delete'
     tmux.until { |lines| assert_equal '[2]', lines[-1] }
+  end
 
   def test_become_tty
     tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty'", :Enter
