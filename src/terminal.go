@@ -2961,6 +2961,14 @@ func (t *Terminal) Loop() {
 						if t.history != nil {
 							t.history.append(string(t.input))
 						}
+						/*
+							FIXME: It is not at all clear why this is required.
+							The following command will report 'not a tty', unless we open
+							/dev/tty *twice* after closing the standard input for 'reload'
+							in Reader.terminate().
+								: | fzf --bind 'start:reload:ls' --bind 'enter:become:tty'
+						*/
+						tui.TtyIn()
 						util.SetStdin(tui.TtyIn())
 						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
 					}

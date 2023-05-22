@@ -88,7 +88,7 @@ bench:
 install: bin/fzf
 
 build:
-	goreleaser --rm-dist --snapshot
+	goreleaser build --rm-dist --snapshot --skip-post-hooks
 
 release:
 ifndef GITHUB_TOKEN

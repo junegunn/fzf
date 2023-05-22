@@ -2921,6 +2921,20 @@ class TestGoFZF < TestBase
     OUTPUT
     tmux.until { assert_block(expected, _1) }
   end
+
+  def test_delete_with_modifiers
+    tmux.send_keys "seq 100 | #{FZF} --bind 'ctrl-delete:up+up,shift-delete:down,focus:transform-prompt:echo [{}]'", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys 'C-Delete'
+    tmux.until { |lines| assert_equal '[3]', lines[-1] }
+    tmux.send_keys 'S-Delete'
+    tmux.until { |lines| assert_equal '[2]', lines[-1] }
+  end
+
+  def test_become_tty
+    tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty'", :Enter
+    tmux.until { |lines| assert_includes lines, '/dev/tty' }
+  end
 end
 
 module TestShell

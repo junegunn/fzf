@@ -614,6 +614,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.BSpace)
 		case "ctrl-space":
 			add(tui.CtrlSpace)
+		case "ctrl-delete":
+			add(tui.CtrlDelete)
 		case "ctrl-^", "ctrl-6":
 			add(tui.CtrlCaret)
 		case "ctrl-/", "ctrl-_":
@@ -684,6 +686,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.SLeft)
 		case "shift-right":
 			add(tui.SRight)
+		case "shift-delete":
+			add(tui.SDelete)
 		case "left-click":
 			add(tui.LeftClick)
 		case "right-click":
