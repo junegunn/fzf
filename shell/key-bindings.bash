@@ -49,12 +49,50 @@ __fzf_cd__() {
 }
 
 __fzf_history__() {
-  local output opts script
+  local output opts
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
-  script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
   output=$(
+    # sequence of $'\t '<multi-line-entry>$'\n'
     builtin fc -lnr -2147483648 |
-      last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
+    ( # loop:
+      # input  ' '<multi-line-entry> separated by $'\n\t'
+      # output <counter>$'\t'<multi-line-entry> separated by NUL
+
+      IFS= read -r -n1 -d '' c # trim initial \t
+
+      set -- $(HISTTIMEFORMAT='' builtin history 1)
+      declare -i ri=0 last_hist=$1
+      if (( BASH_VERSINFO[0] > 3 )); then
+        declare -A seen; set +u # seen[key] is used unbound deliberately
+        putrec() {
+          if [ -z "${seen["$record"]}" ]; then
+            record="${record# }"
+            builtin printf -- "$((last_hist - ri))\t%s\000" "${record%$'\n\t'}"
+            seen["$record"]=1
+          fi
+          record= out= ri+=1
+        }
+      else
+        putrec() {
+          record="${record# }"
+          builtin printf -- "$((last_hist - ri))\t%s\000" "${record%$'\n\t'}"
+          record= out= ri+=1
+        }
+      fi
+      record= state=0
+      while IFS= read -r -n1 -d '' c; do
+        case $state in
+          (0) [ "$c" = $'\n' ] && state=1 || : ;;
+          (1) [ "$c" = $'\t' ] && state=2 || state=0 ;;
+          (2) [ "$c" = $'\n' ] && state=1 || state=0; putrec ;;
+        esac
+        record+="$c" out=1
+      done
+      if [ -n $out ]; then
+        record+=$'\t' # this + the last $'\n' by `fc` ends the last input record
+        putrec
+      fi
+    ) |
       FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
   ) || return
   READLINE_LINE=${output#*$'\t'}
