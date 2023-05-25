@@ -1,8 +1,8 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2023/02/15*
-* *Requires fzf 0.38.0 or above*
+* *Last update: 2023/05/26*
+* *Requires fzf 0.41.0 or above*
 
 ---
 
@@ -336,9 +336,8 @@ projects, and it will free up memory as you narrow down the results.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-fzf --ansi \
-    --disabled --query "$INITIAL_QUERY" \
+: | fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
@@ -348,11 +347,11 @@ fzf --ansi \
 
 ![image](https://user-images.githubusercontent.com/700826/113684212-f9ff0a00-96ff-11eb-8737-7bb571d320cc.png)
 
-- Instead of starting fzf in `rg ... | fzf` form, we start fzf without an
-  explicit input, but with a custom `FZF_DEFAULT_COMMAND` variable. This way
-  fzf can kill the initial Ripgrep process it starts with the initial query.
-  Otherwise, the initial Ripgrep process will keep consuming system resources
-  even after `reload` is triggered.
+- Instead of starting fzf in the usual `rg ... | fzf` form, we start fzf with
+  an empty input (`: | fzf`), then we make it start the initial Ripgrep
+  process immediately via `start:reload` binding. This way, fzf owns the
+  initial Ripgrep process so it can kill it on the next `reload`. Otherwise,
+  the process will keep running in the background.
 - Filtering is no longer a responsibility of fzf; hence `--disabled`
 - `{q}` in the reload command evaluates to the query string on fzf prompt.
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
@@ -376,12 +375,11 @@ fzf-only search mode by *"unbinding"* `reload` action from `change` event.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-fzf --ansi \
-    --color "hl:-1:underline,hl+:-1:underline:reverse" \
-    --disabled --query "$INITIAL_QUERY" \
+: | fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
     --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --prompt '1. ripgrep> ' \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
@@ -421,14 +419,12 @@ CTRL-F.
 rm -f /tmp/rg-fzf-{r,f}
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-fzf --ansi \
-    --color "hl:-1:underline,hl+:-1:underline:reverse" \
-    --disabled --query "$INITIAL_QUERY" \
+: | fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload($RG_PREFIX {q})+unbind(ctrl-r)" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
     --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
     --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
-    --bind "start:unbind(ctrl-r)" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --prompt '1. ripgrep> ' \
     --delimiter : \
     --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
@@ -471,16 +467,17 @@ Kubernetes pods.
 
 ```bash
 pods() {
-  FZF_DEFAULT_COMMAND="kubectl get pods --all-namespaces" \
-    fzf --info=inline --layout=reverse --header-lines=1 \
-        --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
-        --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
-        --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
-        --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
-        --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
-        --bind 'ctrl-r:reload:$FZF_DEFAULT_COMMAND' \
-        --preview-window up:follow \
-        --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+  : | command='kubectl get pods --all-namespaces' fzf \
+    --info=inline --layout=reverse --header-lines=1 \
+    --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+    --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
+    --bind 'start:reload:$command' \
+    --bind 'ctrl-r:reload:$command' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
+    --preview-window up:follow \
+    --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
 }
 ```
 
