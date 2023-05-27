@@ -228,6 +228,7 @@ type Terminal struct {
 	merger             *Merger
 	selected           map[int32]selectedItem
 	version            int64
+	revision           int
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
@@ -644,7 +645,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		jumpLabels:         opts.JumpLabels,
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
-		merger:             EmptyMerger,
+		merger:             EmptyMerger(0),
 		selected:           make(map[int32]selectedItem),
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
@@ -930,9 +931,10 @@ func (t *Terminal) UpdateProgress(progress float32) {
 }
 
 // UpdateList updates Merger to display the list
-func (t *Terminal) UpdateList(merger *Merger, reset bool) {
+func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Lock()
 	var prevIndex int32 = -1
+	reset := t.revision != merger.Revision()
 	if !reset && t.track != trackDisabled {
 		if t.merger.Length() > 0 {
 			prevIndex = t.merger.Get(t.cy).item.Index()
@@ -944,6 +946,7 @@ func (t *Terminal) UpdateList(merger *Merger, reset bool) {
 	t.merger = merger
 	if reset {
 		t.selected = make(map[int32]selectedItem)
+		t.revision = merger.Revision()
 		t.version++
 	}
 	if t.triggerLoad {
