@@ -23,10 +23,10 @@ func randResult() Result {
 }
 
 func TestEmptyMerger(t *testing.T) {
-	assert(t, EmptyMerger.Length() == 0, "Not empty")
-	assert(t, EmptyMerger.count == 0, "Invalid count")
-	assert(t, len(EmptyMerger.lists) == 0, "Invalid lists")
-	assert(t, len(EmptyMerger.merged) == 0, "Invalid merged list")
+	assert(t, EmptyMerger(0).Length() == 0, "Not empty")
+	assert(t, EmptyMerger(0).count == 0, "Invalid count")
+	assert(t, len(EmptyMerger(0).lists) == 0, "Invalid lists")
+	assert(t, len(EmptyMerger(0).merged) == 0, "Invalid merged list")
 }
 
 func buildLists(partiallySorted bool) ([][]Result, []Result) {
