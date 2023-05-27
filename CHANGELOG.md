@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.41.1
+------
+- Fixed a bug where preview window is not updated when `--disabled` is set and
+  a reload is triggered by `change:reload` binding
+
 0.41.0
 ------
 - Added color name `preview-border` and `preview-scrollbar`
