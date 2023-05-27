@@ -7,11 +7,11 @@ CHANGELOG
 - Added new border style `block` which uses [block elements](https://en.wikipedia.org/wiki/Block_Elements)
 - `--scrollbar` can take two characters, one for the main window, the other
   for the preview window
-- Putting it altogether
+- Putting it altogether:
   ```sh
   fzf-tmux -p 80% --padding 1,2 --preview 'bat --style=plain --color=always {}' \
-      --color 'bg:#222233,bg+:#333344,gutter:#222233,border:#111122,scrollbar:#ffaa00' \
-      --color 'preview-bg:#332233,preview-border:#222222,preview-scrollbar:#00aaff' \
+      --color 'bg:237,bg+:235,gutter:237,border:238,scrollbar:236' \
+      --color 'preview-bg:235,preview-border:236,preview-scrollbar:234' \
       --preview-window 'border-block' --border block --scrollbar '▌▐'
   ```
 - Bug fixes and improvements

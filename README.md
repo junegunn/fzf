@@ -630,8 +630,8 @@ more details.
 #### 1. Update the list of processes by pressing CTRL-R
 
 ```sh
-FZF_DEFAULT_COMMAND='ps -ef' \
-  fzf --bind 'ctrl-r:reload(eval "$FZF_DEFAULT_COMMAND")' \
+ps -ef |
+  fzf --bind 'ctrl-r:reload(ps -ef)' \
       --header 'Press CTRL-R to reload' --header-lines=1 \
       --height=50% --layout=reverse
 ```
@@ -653,12 +653,12 @@ expression `{q}`. Also, note that we used `--disabled` option so that fzf
 doesn't perform any secondary filtering.
 
 ```sh
-INITIAL_QUERY=""
-RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
-FZF_DEFAULT_COMMAND="$RG_PREFIX '$INITIAL_QUERY'" \
-  fzf --bind "change:reload:$RG_PREFIX {q} || true" \
-      --ansi --disabled --query "$INITIAL_QUERY" \
-      --height=50% --layout=reverse
+: | rg_prefix='rg --column --line-number --no-heading --color=always --smart-case' \
+    fzf --bind 'start:reload:$rg_prefix ""' \
+        --bind 'change:reload:$rg_prefix {q} || true' \
+        --bind 'enter:become(vim {1} +{2})' \
+        --ansi --disabled \
+        --height=50% --layout=reverse
 ```
 
 If ripgrep doesn't find any matches, it will exit with a non-zero exit status,
@@ -666,7 +666,7 @@ and fzf will warn you about it. To suppress the warning message, we added
 `|| true` to the command, so that it always exits with 0.
 
 See ["Using fzf as interactive Ripgrep launcher"](https://github.com/junegunn/fzf/blob/master/ADVANCED.md#using-fzf-as-interactive-ripgrep-launcher)
-for a fuller example with preview window options.
+for more sophisticated examples.
 
 ### Preview window
 
