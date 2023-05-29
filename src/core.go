@@ -138,7 +138,9 @@ func Run(opts *Options, version string, revision string) {
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
 			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
 	}
-	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox)
+	inputRevision := 0
+	snapshotRevision := 0
+	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
 	if opts.Filter != nil {
@@ -209,8 +211,6 @@ func Run(opts *Options, version string, revision string) {
 
 	// Event coordination
 	reading := true
-	clearCache := util.Once(false)
-	clearSelection := util.Once(false)
 	ticks := 0
 	var nextCommand *string
 	eventBox.Watch(EvtReadNew)
@@ -231,26 +231,20 @@ func Run(opts *Options, version string, revision string) {
 
 	useSnapshot := false
 	var snapshot []*Chunk
-	var prevSnapshot []*Chunk
 	var count int
 	restart := func(command string) {
 		reading = true
-		clearCache = util.Once(true)
-		clearSelection = util.Once(true)
-		// We should not update snapshot if reload is triggered again while
-		// the previous reload is in progress
-		if useSnapshot && prevSnapshot != nil {
-			snapshot, count = chunkList.Snapshot()
-		}
 		chunkList.Clear()
 		itemIndex = 0
+		inputRevision++
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command)
 	}
 	for {
 		delay := true
 		ticks++
-		input := func(reloaded bool) []rune {
+		input := func() []rune {
+			reloaded := snapshotRevision != inputRevision
 			paused, input := terminal.Input()
 			if reloaded && paused {
 				query = []rune{}
@@ -280,22 +274,21 @@ func Run(opts *Options, version string, revision string) {
 					}
 					if useSnapshot && evt == EvtReadFin {
 						useSnapshot = false
-						prevSnapshot = nil
 					}
 					if !useSnapshot {
 						snapshot, count = chunkList.Snapshot()
+						snapshotRevision = inputRevision
 					}
 					total = count
 					terminal.UpdateCount(total, !reading, value.(*string))
 					if opts.Sync {
 						opts.Sync = false
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac), false)
+						terminal.UpdateList(PassMerger(&snapshot, opts.Tac, snapshotRevision))
 					}
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
-					reset := !useSnapshot && clearCache()
-					matcher.Reset(snapshot, input(reset), false, !reading, sort, reset)
+					matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
 
 				case EvtSearchNew:
 					var command *string
@@ -320,17 +313,16 @@ func Run(opts *Options, version string, revision string) {
 					if !changed {
 						break
 					}
-					reset := false
 					if !useSnapshot {
 						newSnapshot, _ := chunkList.Snapshot()
 						// We want to avoid showing empty list when reload is triggered
 						// and the query string is changed at the same time i.e. command != nil && changed
 						if command == nil || len(newSnapshot) > 0 {
 							snapshot = newSnapshot
-							reset = clearCache()
+							snapshotRevision = inputRevision
 						}
 					}
-					matcher.Reset(snapshot, input(reset), true, !reading, sort, reset)
+					matcher.Reset(snapshot, input(), true, !reading, sort, snapshotRevision)
 					delay = false
 
 				case EvtSearchProgress:
@@ -370,7 +362,7 @@ func Run(opts *Options, version string, revision string) {
 								determine(val.final)
 							}
 						}
-						terminal.UpdateList(val, clearSelection())
+						terminal.UpdateList(val)
 					}
 				}
 			}

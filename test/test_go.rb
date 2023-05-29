@@ -2935,6 +2935,14 @@ class TestGoFZF < TestBase
     tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty'", :Enter
     tmux.until { |lines| assert_includes lines, '/dev/tty' }
   end
+
+  def test_disabled_preview_update
+    tmux.send_keys "echo bar | #{FZF} --disabled --bind 'change:reload:echo foo' --preview 'echo [{q}-{}]'", :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('[-bar]') }) }
+    tmux.send_keys :x
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('[x-foo]') }) }
+  end
 end
 
 module TestShell
