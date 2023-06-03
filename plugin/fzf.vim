@@ -456,6 +456,30 @@ function! s:writefile(...)
   endif
 endfunction
 
+function! s:extract_option(opts, name)
+  let opt = ''
+  let expect = 0
+  " There are a few cases where this function doesn't work as expected.
+  " Let's just assume such cases are extremely unlikely in real world.
+  "   e.g. --query --border
+  for word in split(a:opts)
+    if expect && word !~ '^"\=-'
+      let opt = opt . ' ' . word
+      let expect = 0
+    elseif word == '--no-'.a:name
+      let opt = ''
+    elseif word =~ '^--'.a:name.'='
+      let opt = word
+    elseif word =~ '^--'.a:name.'$'
+      let opt = word
+      let expect = 1
+    elseif expect
+      let expect = 0
+    endif
+  endfor
+  return opt
+endfunction
+
 function! fzf#run(...) abort
 try
   let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
@@ -512,7 +536,7 @@ try
     let optstr .= ' --height='.height
   endif
   " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
-  let optstr = join([s:border_opt(get(dict, 'window', 0)), $FZF_DEFAULT_OPTS, optstr])
+  let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
   let prev_default_command = $FZF_DEFAULT_COMMAND
   if len(source_command)
     let $FZF_DEFAULT_COMMAND = source_command
