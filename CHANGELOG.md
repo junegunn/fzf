@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.41.2
+------
+- Added new border style `thinblock` which uses symbols for legacy computing [one eighth block elements](https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing)
+
 0.41.1
 ------
 - Fixed a bug where preview window is not updated when `--disabled` is set and
@@ -25,7 +29,7 @@ CHANGELOG
 ------
 - Added `zero` event that is triggered when there's no match
   ```sh
-  # Reload the candidate list when there's no match
+ https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing#:~:text=Symbols%20for%20Legacy%20Computing%20is,and%20in%20Teletext%20broadcasting%20standards # Reload the candidate list when there's no match
   echo $RANDOM | fzf --bind 'zero:reload(echo $RANDOM)+clear-query' --height 3
   ```
 - New actions
