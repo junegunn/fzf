@@ -29,7 +29,7 @@ CHANGELOG
 ------
 - Added `zero` event that is triggered when there's no match
   ```sh
- https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing#:~:text=Symbols%20for%20Legacy%20Computing%20is,and%20in%20Teletext%20broadcasting%20standards # Reload the candidate list when there's no match
+  # Reload the candidate list when there's no match
   echo $RANDOM | fzf --bind 'zero:reload(echo $RANDOM)+clear-query' --height 3
   ```
 - New actions
