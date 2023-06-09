@@ -1823,7 +1823,7 @@ func (t *Terminal) renderPreviewSpinner() {
 		if !t.previewer.scrollable {
 			if maxWidth > 0 {
 				t.pwindow.Move(0, maxWidth-1)
-				t.pwindow.CPrint(tui.ColSpinner, spin)
+				t.pwindow.CPrint(tui.ColPreviewSpinner, spin)
 			}
 		} else {
 			offsetString := fmt.Sprintf("%d/%d", t.previewer.offset+1, numLines)
@@ -1835,7 +1835,7 @@ func (t *Terminal) renderPreviewSpinner() {
 			pos := maxWidth - t.displayWidth(offsetRunes)
 			t.pwindow.Move(0, pos)
 			if maxWidth > 0 {
-				t.pwindow.CPrint(tui.ColSpinner, spin)
+				t.pwindow.CPrint(tui.ColPreviewSpinner, spin)
 				t.pwindow.CPrint(tui.ColInfo.WithAttr(tui.Reverse), string(offsetRunes))
 			}
 		}
