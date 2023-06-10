@@ -1464,9 +1464,7 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
-	switch t.infoStyle {
-	case infoDefault:
-		t.move(line+1, 0, t.separatorLen == 0)
+	printSpinner := func() {
 		if t.reading {
 			duration := int64(spinnerDuration)
 			idx := (time.Now().UnixNano() % (duration * int64(len(t.spinner)))) / duration
@@ -1474,8 +1472,16 @@ func (t *Terminal) printInfo() {
 		} else {
 			t.window.Print(" ") // Clear spinner
 		}
+	}
+	switch t.infoStyle {
+	case infoDefault:
+		t.move(line+1, 0, t.separatorLen == 0)
+		printSpinner()
 		t.move(line+1, 2, false)
 		pos = 2
+	case infoInlineRight:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		t.move(line, pos, true)
 	case infoInline:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 		str := t.infoSep
@@ -1522,6 +1528,16 @@ func (t *Terminal) printInfo() {
 	}
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
+	}
+	if t.infoStyle == infoInlineRight {
+		pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+		if pos >= t.window.Width() {
+			return
+		}
+		t.move(line, pos, false)
+		printSpinner()
+		t.window.Print(" ")
+		pos += 2
 	}
 	maxWidth := t.window.Width() - pos
 	output = t.trimMessage(output, maxWidth)

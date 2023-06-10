@@ -72,7 +72,7 @@ const usage = `usage: fzf [options]
                            (default: 0 or center)
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --info=STYLE           Finder info style [default|hidden|inline|inline:SEPARATOR]
+    --info=STYLE           Finder info style [default|hidden|inline[:SEPARATOR]|inline-right]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
     --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
@@ -195,6 +195,7 @@ type infoStyle int
 const (
 	infoDefault infoStyle = iota
 	infoInline
+	infoInlineRight
 	infoHidden
 )
 
@@ -1378,6 +1379,8 @@ func parseInfoStyle(str string) (infoStyle, string) {
 		return infoDefault, ""
 	case "inline":
 		return infoInline, defaultInfoSep
+	case "inline-right":
+		return infoInlineRight, ""
 	case "hidden":
 		return infoHidden, ""
 	default:
@@ -1385,7 +1388,7 @@ func parseInfoStyle(str string) (infoStyle, string) {
 		if strings.HasPrefix(str, prefix) {
 			return infoInline, strings.ReplaceAll(str[len(prefix):], "\n", " ")
 		}
-		errorExit("invalid info style (expected: default|hidden|inline|inline:SEPARATOR)")
+		errorExit("invalid info style (expected: default|hidden|inline[:SEPARATOR]|inline-right)")
 	}
 	return infoDefault, ""
 }
