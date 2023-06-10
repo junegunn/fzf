@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+0.41.2
+------
+- Added new border style `thinblock` which uses symbols for legacy computing
+  [one eighth block elements](https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing)
+    - Similarly to `block`, this style is suitable when using a different
+      background color because the window is completely contained within the border.
+      ```sh
+      fzf --preview 'cat {}' --border thinblock --preview-window border-thinblock \
+          --color border:233,bg:234,separator:235,preview-border:235,preview-bg:236
+      ```
+    - This style may not render correctly depending on the font and the
+      terminal emulator.
+
 0.41.1
 ------
 - Fixed a bug where preview window is not updated when `--disabled` is set and

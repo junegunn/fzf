@@ -63,7 +63,7 @@ const usage = `usage: fzf [options]
                            (default: 10)
     --layout=LAYOUT        Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]       Draw border around the finder
-                           [rounded|sharp|bold|block|double|horizontal|vertical|
+                           [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
                             top|bottom|left|right|none] (default: rounded)
     --border-label=LABEL   Label to print on the border
     --border-label-pos=COL Position of the border label
@@ -546,6 +546,8 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderBold
 	case "block":
 		return tui.BorderBlock
+	case "thinblock":
+		return tui.BorderThinBlock
 	case "double":
 		return tui.BorderDouble
 	case "horizontal":
@@ -566,7 +568,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		if optional && str == "" {
 			return tui.DefaultBorderShape
 		}
-		errorExit("invalid border style (expected: rounded|sharp|bold|block|double|horizontal|vertical|top|bottom|left|right|none)")
+		errorExit("invalid border style (expected: rounded|sharp|bold|block|thinblock|double|horizontal|vertical|top|bottom|left|right|none)")
 	}
 	return tui.BorderNone
 }
@@ -1438,6 +1440,8 @@ func parsePreviewWindowImpl(opts *previewOpts, input string, exit func(string)) 
 			opts.border = tui.BorderBold
 		case "border-block":
 			opts.border = tui.BorderBlock
+		case "border-thinblock":
+			opts.border = tui.BorderThinBlock
 		case "border-double":
 			opts.border = tui.BorderDouble
 		case "noborder", "border-none":

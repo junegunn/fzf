@@ -315,6 +315,7 @@ const (
 	BorderSharp
 	BorderBold
 	BorderBlock
+	BorderThinBlock
 	BorderDouble
 	BorderHorizontal
 	BorderVertical
@@ -408,6 +409,23 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			bottomLeft:  '▙',
 			bottomRight: '▟',
 		}
+
+	case BorderThinBlock:
+		// 🭽▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔🭾
+		// ▏                  ▕
+		// 🭼▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁🭿
+		return BorderStyle{
+			shape:       shape,
+			top:         '▔',
+			bottom:      '▁',
+			left:        '▏',
+			right:       '▕',
+			topLeft:     '🭽',
+			topRight:    '🭾',
+			bottomLeft:  '🭼',
+			bottomRight: '🭿',
+		}
+
 	case BorderDouble:
 		return BorderStyle{
 			shape:       shape,
