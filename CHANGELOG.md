@@ -3,6 +3,7 @@ CHANGELOG
 
 0.42.0
 ------
+- Added new info style: `--info=right`
 - Added new info style: `--info=inline-right`
 - Added new border style `thinblock` which uses symbols for legacy computing
   [one eighth block elements](https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing)
