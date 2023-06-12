@@ -315,6 +315,7 @@ const (
 	BorderSharp
 	BorderBold
 	BorderBlock
+	BorderThinBlock
 	BorderDouble
 	BorderHorizontal
 	BorderVertical
@@ -408,6 +409,23 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			bottomLeft:  '▙',
 			bottomRight: '▟',
 		}
+
+	case BorderThinBlock:
+		// 🭽▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔🭾
+		// ▏                  ▕
+		// 🭼▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁🭿
+		return BorderStyle{
+			shape:       shape,
+			top:         '▔',
+			bottom:      '▁',
+			left:        '▏',
+			right:       '▕',
+			topLeft:     '🭽',
+			topRight:    '🭾',
+			bottomLeft:  '🭼',
+			bottomRight: '🭿',
+		}
+
 	case BorderDouble:
 		return BorderStyle{
 			shape:       shape,
@@ -538,6 +556,7 @@ var (
 	ColBorderLabel          ColorPair
 	ColPreviewLabel         ColorPair
 	ColPreviewScrollbar     ColorPair
+	ColPreviewSpinner       ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -769,4 +788,5 @@ func initPalette(theme *ColorTheme) {
 	ColPreview = pair(theme.PreviewFg, theme.PreviewBg)
 	ColPreviewBorder = pair(theme.PreviewBorder, theme.PreviewBg)
 	ColPreviewScrollbar = pair(theme.PreviewScrollbar, theme.PreviewBg)
+	ColPreviewSpinner = pair(theme.Spinner, theme.PreviewBg)
 }
