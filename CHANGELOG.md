@@ -10,8 +10,9 @@ CHANGELOG
     - Similarly to `block`, this style is suitable when using a different
       background color because the window is completely contained within the border.
       ```sh
-      fzf --preview 'cat {}' --border thinblock --preview-window border-thinblock \
-          --color border:233,bg:234,separator:235,preview-border:235,preview-bg:236
+      BAT_THEME=GitHub fzf --info=right --border=thinblock --preview-window=border-thinblock \
+          --margin=3 --scrollbar=▏▕ --preview='bat --color=always --style=numbers {}' \
+          --color=light,query:238,fg:238,bg:251,bg+:249,gutter:251,border:248,preview-bg:253
       ```
     - This style may not render correctly depending on the font and the
       terminal emulator.
