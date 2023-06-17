@@ -763,7 +763,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	runes := []rune(text)
 
 	// Simpler printer for strings without ANSI colors or tab characters
-	if colors == nil && strings.IndexRune(str, '\t') < 0 {
+	if colors == nil && !strings.ContainsRune(str, '\t') {
 		length := util.StringWidth(str)
 		if length == 0 {
 			return nil, 0
