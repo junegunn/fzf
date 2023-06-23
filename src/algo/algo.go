@@ -936,6 +936,6 @@ func EqualMatch(caseSensitive bool, normalize bool, forward bool, text *util.Cha
 		}
 	}
 
-	score := (scoreMatch + int(bonusBoundaryWhite)) * lenPattern + (bonusFirstCharMultiplier-1) * int(bonusBoundaryWhite)
+	score := (scoreMatch+int(bonusBoundaryWhite))*lenPattern + (bonusFirstCharMultiplier-1)*int(bonusBoundaryWhite)
 	return Result{trimmedLen, trimmedLen + lenPattern, score}, nil
 }
