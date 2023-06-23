@@ -902,14 +902,11 @@ func EqualMatch(caseSensitive bool, normalize bool, forward bool, text *util.Cha
 		return Result{-1, -1, 0}, nil
 	}
 
-	// Strip leading whitespaces
-	trimmedLen := 0
+	// Strip leading and trailing whitespaces
+	trimmedLen, trimmedEndLen := 0, 0
 	if !unicode.IsSpace(pattern[0]) {
 		trimmedLen = text.LeadingWhitespaces()
 	}
-
-	// Strip trailing whitespaces
-	trimmedEndLen := 0
 	if !unicode.IsSpace(pattern[lenPattern-1]) {
 		trimmedEndLen = text.TrailingWhitespaces()
 	}
@@ -917,30 +914,28 @@ func EqualMatch(caseSensitive bool, normalize bool, forward bool, text *util.Cha
 	if text.Length()-trimmedLen-trimmedEndLen != lenPattern {
 		return Result{-1, -1, 0}, nil
 	}
-	match := true
+
+	textRunes := text.ToRunes()
 	if normalize {
-		runes := text.ToRunes()
 		for idx, pchar := range pattern {
-			char := runes[trimmedLen+idx]
+			char := textRunes[trimmedLen+idx]
 			if !caseSensitive {
 				char = unicode.To(unicode.LowerCase, char)
 			}
 			if normalizeRune(pchar) != normalizeRune(char) {
-				match = false
-				break
+				return Result{-1, -1, 0}, nil
 			}
 		}
 	} else {
-		runes := text.ToRunes()
-		runesStr := string(runes[trimmedLen : len(runes)-trimmedEndLen])
+		runesStr := string(textRunes[trimmedLen : len(textRunes)-trimmedEndLen])
 		if !caseSensitive {
 			runesStr = strings.ToLower(runesStr)
 		}
-		match = runesStr == string(pattern)
+		if runesStr != string(pattern) {
+			return Result{-1, -1, 0}, nil
+		}
 	}
-	if match {
-		return Result{trimmedLen, trimmedLen + lenPattern, (scoreMatch+int(bonusBoundaryWhite))*lenPattern +
-			(bonusFirstCharMultiplier-1)*int(bonusBoundaryWhite)}, nil
-	}
-	return Result{-1, -1, 0}, nil
+
+	score := (scoreMatch + int(bonusBoundaryWhite)) * lenPattern + (bonusFirstCharMultiplier-1) * int(bonusBoundaryWhite)
+	return Result{trimmedLen, trimmedLen + lenPattern, score}, nil
 }
