@@ -2445,7 +2445,7 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item
 	}
 
 	// We would still want to update preview window even if there is no match if
-	//   1. command template contains {q} and the query string is not empty
+	//   1. the command template contains {q}
 	//   2. or it contains {+} and we have more than one item already selected.
 	// To do so, we pass an empty Item instead of nil to trigger an update.
 	if current == nil {
