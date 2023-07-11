@@ -177,3 +177,13 @@ func RepeatToFill(str string, length int, limit int) string {
 	}
 	return output
 }
+
+// InArray checks if a string is contained in the array
+func InArray(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

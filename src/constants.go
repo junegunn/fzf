@@ -54,6 +54,7 @@ const (
 	defaultJumpLabels string = "asdfghjklqwertyuiopzxcvbnm1234567890ASDFGHJKLQWERTYUIOPZXCVBNM`~;:,<.>/?'\"!@#$%^&*()[{]}-_=+"
 )
 
+var supportedShells = []string {"bash", "zsh", "ksh", "ash", "hush", "yash"}
 var defaultCommand string
 
 func init() {

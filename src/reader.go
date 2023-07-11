@@ -98,9 +98,15 @@ func (r *Reader) ReadSource() {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
-		// The default command for *nix requires bash
-		shell := "bash"
+		shell := os.Getenv("SHELL")
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
+
+		// The default command for *nix requires support for 'set -o pipefail'.
+		// Check if the current shell supports it and if not fallback to bash.
+		if ! util.InArray(supportedShells, filepath.Base(shell)) {
+			shell = "bash"
+		}
+
 		if len(cmd) == 0 {
 			if defaultCommand != "" {
 				success = r.readFromCommand(&shell, defaultCommand)
