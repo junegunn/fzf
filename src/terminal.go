@@ -2,6 +2,8 @@ package fzf
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/base32"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -250,6 +253,7 @@ type Terminal struct {
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
 	executing          *util.AtomicBool
+	feedbackFilename   string
 }
 
 type selectedItem struct {
@@ -721,6 +725,9 @@ func (t *Terminal) environ() []string {
 	env := os.Environ()
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
+	}
+	if t.feedbackFilename != "" {
+		env = append(env, fmt.Sprintf("FZF_FEEDBACK_FILE=%s", t.feedbackFilename))
 	}
 	return env
 }
@@ -2377,6 +2384,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid && !capture {
 		return line
 	}
+	t.setupFeedback()
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
 	cmd.Env = t.environ()
@@ -2408,6 +2416,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		}
 	}
 	t.executing.Set(false)
+	t.consumeFeedback()
 	cleanTemporaryFiles()
 	return line
 }
@@ -3764,3 +3773,58 @@ func (t *Terminal) maxItems() int {
 	}
 	return util.Max(max, 0)
 }
+
+func (t *Terminal) setupFeedback() {
+	secretIdStr := generateSecretKey()
+	if secretIdStr == "" {
+		return // id generation failed
+	}
+	t.feedbackFilename = path.Join(os.TempDir(), "fzf-feedback-"+secretIdStr)
+}
+
+func (t *Terminal) consumeFeedback() {
+	filename := t.feedbackFilename
+	t.feedbackFilename = ""
+	f, err := os.Open(filename)
+	if err != nil {
+		_ = os.Remove(filename) // Remove file in case it was created but is not readable
+		return                  // We do not need to run any feedback actions if file feedback file was not created
+	}
+
+	// Close and remove the file after we're done
+	// Assign cleanup to a local function, so we can call it before forced exit.
+	cleanup := func() {
+		_ = os.Remove(filename)
+		_ = f.Close()
+	}
+	defer cleanup()
+
+	// Read action lines from file
+	var actions []*action
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.Trim(line, " \t\r\n")
+		if line == "" {
+			continue
+		}
+		lineActions := parseSingleActionList(line, func(message string) {
+			cleanup()
+			errorExit("Error in feedback from external command: " + message)
+		})
+		actions = append(actions, lineActions...)
+	}
+	t.serverChan <- actions
+}
+
+func generateSecretKey() string {
+	var secretKey [secretKeySize]byte
+	if n, err := rand.Read(secretKey[:]); err != nil || n != secretKeySize {
+		return ""
+	}
+	return secretKeyEncoding.EncodeToString(secretKey[:])
+}
+
+const secretKeySize = 24
+
+var secretKeyEncoding = base32.StdEncoding.WithPadding(base32.NoPadding)
