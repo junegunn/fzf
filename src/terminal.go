@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -2208,7 +2207,7 @@ func hasPreviewFlags(template string) (slot bool, plus bool, query bool) {
 }
 
 func writeTemporaryFile(data []string, printSep string) string {
-	f, err := ioutil.TempFile("", "fzf-preview-*")
+	f, err := os.CreateTemp("", "fzf-preview-*")
 	if err != nil {
 		errorExit("Unable to create temporary file")
 	}
