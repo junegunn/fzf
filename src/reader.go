@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -98,8 +99,17 @@ func (r *Reader) ReadSource() {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
-		// The default command for *nix requires bash
+		// The default command for *nix requires a shell that supports "pipefail"
+		// https://unix.stackexchange.com/a/654932/62171
 		shell := "bash"
+		currentShell := os.Getenv("SHELL")
+		currentShellName := path.Base(currentShell)
+		for _, shellName := range []string{"bash", "zsh", "ksh", "ash", "hush", "mksh", "yash"} {
+			if currentShellName == shellName {
+				shell = currentShell
+				break
+			}
+		}
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			if defaultCommand != "" {
