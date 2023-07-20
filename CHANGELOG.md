@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.42.1
+------
+- `--listen` server can be secured by setting `$FZF_API_KEY` environment
+  variable.
+  ```sh
+  export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+
+  # Server
+  fzf --listen 6266
+
+  # Client
+  curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
+  ```
+
 0.42.0
 ------
 - Added new info style: `--info=right`
