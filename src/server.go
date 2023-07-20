@@ -3,9 +3,11 @@ package fzf
 import (
 	"bufio"
 	"bytes"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -15,9 +17,15 @@ const (
 	crlf             = "\r\n"
 	httpOk           = "HTTP/1.1 200 OK" + crlf
 	httpBadRequest   = "HTTP/1.1 400 Bad Request" + crlf
+	httpUnauthorized = "HTTP/1.1 401 Unauthorized" + crlf
 	httpReadTimeout  = 10 * time.Second
 	maxContentLength = 1024 * 1024
 )
+
+type httpServer struct {
+	apiKey  []byte
+	channel chan []*action
+}
 
 func startHttpServer(port int, channel chan []*action) (error, int) {
 	if port < 0 {
@@ -41,6 +49,11 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 		}
 	}
 
+	server := httpServer{
+		apiKey:  []byte(os.Getenv("FZF_API_KEY")),
+		channel: channel,
+	}
+
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -51,7 +64,7 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 					continue
 				}
 			}
-			conn.Write([]byte(handleHttpRequest(conn, channel)))
+			conn.Write([]byte(server.handleHttpRequest(conn)))
 			conn.Close()
 		}
 		listener.Close()
@@ -66,9 +79,14 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 // * No --listen:            2.8MB
 // * --listen with net/http: 5.7MB
 // * --listen w/o net/http:  3.3MB
-func handleHttpRequest(conn net.Conn, channel chan []*action) string {
+func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	contentLength := 0
+	apiKey := ""
 	body := ""
+	unauthorized := func(message string) string {
+		message += "\n"
+		return httpUnauthorized + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+	}
 	bad := func(message string) string {
 		message += "\n"
 		return httpBadRequest + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
@@ -105,16 +123,25 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 				continue
 			}
 			pair := strings.SplitN(text, ":", 2)
-			if len(pair) == 2 && strings.ToLower(pair[0]) == "content-length" {
-				length, err := strconv.Atoi(strings.TrimSpace(pair[1]))
-				if err != nil || length <= 0 || length > maxContentLength {
-					return bad("invalid content length")
+			if len(pair) == 2 {
+				switch strings.ToLower(pair[0]) {
+				case "content-length":
+					length, err := strconv.Atoi(strings.TrimSpace(pair[1]))
+					if err != nil || length <= 0 || length > maxContentLength {
+						return bad("invalid content length")
+					}
+					contentLength = length
+				case "x-api-key":
+					apiKey = strings.TrimSpace(pair[1])
 				}
-				contentLength = length
 			}
 		case 2:
 			body += text
 		}
+	}
+
+	if len(server.apiKey) != 0 && subtle.ConstantTimeCompare([]byte(apiKey), server.apiKey) != 1 {
+		return unauthorized("invalid api key")
 	}
 
 	if len(body) < contentLength {
@@ -133,6 +160,6 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 		return bad("no action specified")
 	}
 
-	channel <- actions
+	server.channel <- actions
 	return httpOk
 }
