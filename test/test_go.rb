@@ -2753,10 +2753,10 @@ class TestGoFZF < TestBase
 
   def test_listen_with_api_key
     post_uri = URI('http://localhost:6266')
-    tmux.send_keys "seq 10 | FZF_API_KEY=123abc fzf --listen 6266", :Enter
+    tmux.send_keys 'seq 10 | FZF_API_KEY=123abc fzf --listen 6266', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }
     # Incorrect API Key
-    [nil, { 'x-api-key' => "" }, { 'x-api-key' => '124abc' }].each do |headers|
+    [nil, { 'x-api-key' => '' }, { 'x-api-key' => '124abc' }].each do |headers|
       res = Net::HTTP.post(post_uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
       assert_equal '401', res.code
       assert_equal 'Unauthorized', res.message
@@ -2769,8 +2769,6 @@ class TestGoFZF < TestBase
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
     end
-    teardown
-    setup
   end
 
   def test_toggle_alternative_preview_window
