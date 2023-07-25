@@ -1213,6 +1213,39 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_toggle_header
+    tmux.send_keys "seq 4 | #{FZF} --header-lines 2 --header foo --bind space:toggle-header --header-first --height 10 --border", :Enter
+    before = <<~OUTPUT
+      ╭───────
+      │
+      │   4
+      │ > 3
+      │   2/2
+      │ >
+      │   2
+      │   1
+      │   foo
+      ╰───────
+    OUTPUT
+    tmux.until { assert_block(before, _1) }
+    tmux.send_keys :Space
+    after = <<~OUTPUT
+      ╭───────
+      │
+      │
+      │
+      │
+      │   4
+      │ > 3
+      │   2/2
+      │ >
+      ╰───────
+    OUTPUT
+    tmux.until { assert_block(after, _1) }
+    tmux.send_keys :Space
+    tmux.until { assert_block(before, _1) }
+  end
+
   def test_cancel
     tmux.send_keys "seq 10 | #{fzf('--bind 2:cancel')}", :Enter
     tmux.until { |lines| assert_equal '  10/10', lines[-2] }

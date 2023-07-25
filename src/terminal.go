@@ -125,6 +125,7 @@ type eachLine struct {
 }
 
 type itemLine struct {
+	offset   int
 	current  bool
 	selected bool
 	label    string
@@ -192,6 +193,7 @@ type Terminal struct {
 	printQuery         bool
 	history            *History
 	cycle              bool
+	headerVisible      bool
 	headerFirst        bool
 	headerLines        int
 	header             []string
@@ -341,6 +343,7 @@ const (
 	actToggleIn
 	actToggleOut
 	actToggleTrack
+	actToggleHeader
 	actTrack
 	actDown
 	actUp
@@ -628,6 +631,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		cleanExit:          opts.ClearOnExit,
 		paused:             opts.Phony,
 		cycle:              opts.Cycle,
+		headerVisible:      true,
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
 		header:             []string{},
@@ -734,9 +738,16 @@ func borderLines(shape tui.BorderShape) int {
 	return 0
 }
 
+func (t *Terminal) visibleHeaderLines() int {
+	if !t.headerVisible {
+		return 0
+	}
+	return len(t.header0) + t.headerLines
+}
+
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
-	extra := len(t.header0) + t.headerLines + 1
+	extra := t.visibleHeaderLines() + 1
 	if !t.noInfoLine() {
 		extra++
 	}
@@ -1386,7 +1397,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 	case layoutDefault:
 		y = h - y - 1
 	case layoutReverseList:
-		n := 2 + len(t.header0) + len(t.header)
+		n := 2 + t.visibleHeaderLines()
 		if t.noInfoLine() {
 			n--
 		}
@@ -1430,7 +1441,7 @@ func (t *Terminal) promptLine() int {
 		if !t.noInfoLine() {
 			max--
 		}
-		return util.Min(len(t.header0)+t.headerLines, max)
+		return util.Min(t.visibleHeaderLines(), max)
 	}
 	return 0
 }
@@ -1583,7 +1594,7 @@ func (t *Terminal) printInfo() {
 }
 
 func (t *Terminal) printHeader() {
-	if len(t.header0)+len(t.header) == 0 {
+	if t.visibleHeaderLines() == 0 {
 		return
 	}
 	max := t.window.Height()
@@ -1611,7 +1622,8 @@ func (t *Terminal) printHeader() {
 			text:   util.ToChars([]byte(trimmed)),
 			colors: colors}
 
-		t.move(line, 2, true)
+		t.move(line, 0, true)
+		t.window.Print("  ")
 		t.printHighlighted(Result{item: item},
 			tui.ColHeader, tui.ColHeader, false, false)
 	}
@@ -1628,13 +1640,13 @@ func (t *Terminal) printList() {
 		if t.layout == layoutDefault {
 			i = maxy - 1 - j
 		}
-		line := i + 2 + len(t.header0) + len(t.header)
+		line := i + 2 + t.visibleHeaderLines()
 		if t.noInfoLine() {
 			line--
 		}
 		if i < count {
 			t.printItem(t.merger.Get(i+t.offset), line, i, i == t.cy-t.offset, i >= barStart && i < barStart+barLength)
-		} else if t.prevLines[i] != emptyLine {
+		} else if t.prevLines[i] != emptyLine || t.prevLines[i].offset != line {
 			t.prevLines[i] = emptyLine
 			t.move(line, 0, true)
 		}
@@ -1656,11 +1668,12 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{current: current, selected: selected, label: label,
+	newLine := itemLine{offset: line, current: current, selected: selected, label: label,
 		result: result, queryLen: len(t.input), width: 0, bar: bar}
 	prevLine := t.prevLines[i]
+	forceRedraw := prevLine.offset != newLine.offset
 	printBar := func() {
-		if len(t.scrollbar) > 0 && bar != prevLine.bar {
+		if len(t.scrollbar) > 0 && (bar != prevLine.bar || forceRedraw) {
 			t.prevLines[i].bar = bar
 			t.move(line, t.window.Width()-1, true)
 			if bar {
@@ -1669,7 +1682,8 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		}
 	}
 
-	if prevLine.current == newLine.current &&
+	if !forceRedraw &&
+		prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
 		prevLine.label == newLine.label &&
 		prevLine.queryLen == newLine.queryLen &&
@@ -1678,7 +1692,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		return
 	}
 
-	t.move(line, 0, false)
+	t.move(line, 0, forceRedraw)
 	if current {
 		if len(label) == 0 {
 			t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
@@ -3403,6 +3417,9 @@ func (t *Terminal) Loop() {
 					t.track = trackEnabled
 				}
 				req(reqInfo)
+			case actToggleHeader:
+				t.headerVisible = !t.headerVisible
+				req(reqList, reqInfo, reqPrompt, reqHeader)
 			case actTrack:
 				if t.track == trackDisabled {
 					t.track = trackCurrent
@@ -3485,7 +3502,7 @@ func (t *Terminal) Loop() {
 				// Translate coordinates
 				mx -= t.window.Left()
 				my -= t.window.Top()
-				min := 2 + len(t.header0) + len(t.header)
+				min := 2 + t.visibleHeaderLines()
 				if t.noInfoLine() {
 					min--
 				}
@@ -3757,7 +3774,7 @@ func (t *Terminal) vset(o int) bool {
 }
 
 func (t *Terminal) maxItems() int {
-	max := t.window.Height() - 2 - len(t.header0) - len(t.header)
+	max := t.window.Height() - 2 - t.visibleHeaderLines()
 	if t.noInfoLine() {
 		max++
 	}
