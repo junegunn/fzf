@@ -533,13 +533,6 @@ func evaluateHeight(opts *Options, termHeight int) int {
 // NewTerminal returns new Terminal object
 func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	input := trimQuery(opts.Query)
-	var header []string
-	switch opts.Layout {
-	case layoutDefault, layoutReverseList:
-		header = reverseStringArray(opts.Header)
-	default:
-		header = opts.Header
-	}
 	var delay time.Duration
 	if opts.Tac {
 		delay = initialDelayTac
@@ -635,7 +628,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
 		header:             []string{},
-		header0:            header,
+		header0:            opts.Header,
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
@@ -899,21 +892,8 @@ func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 	}
 }
 
-func reverseStringArray(input []string) []string {
-	size := len(input)
-	reversed := make([]string, size)
-	for idx, str := range input {
-		reversed[size-idx-1] = str
-	}
-	return reversed
-}
-
 func (t *Terminal) changeHeader(header string) bool {
 	lines := strings.Split(strings.TrimSuffix(header, "\n"), "\n")
-	switch t.layout {
-	case layoutDefault, layoutReverseList:
-		lines = reverseStringArray(lines)
-	}
 	needFullRedraw := len(t.header0) != len(lines)
 	t.header0 = lines
 	return needFullRedraw
@@ -1605,8 +1585,16 @@ func (t *Terminal) printHeader() {
 		}
 	}
 	var state *ansiState
+	needReverse := false
+	switch t.layout {
+	case layoutDefault, layoutReverseList:
+		needReverse = true
+	}
 	for idx, lineStr := range append(append([]string{}, t.header0...), t.header...) {
 		line := idx
+		if needReverse && idx < len(t.header0) {
+			line = len(t.header0) - idx - 1
+		}
 		if !t.headerFirst {
 			line++
 			if !t.noInfoLine() {
