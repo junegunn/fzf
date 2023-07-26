@@ -1115,6 +1115,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleSearch)
 		case "toggle-track":
 			appendAction(actToggleTrack)
+		case "toggle-header":
+			appendAction(actToggleHeader)
 		case "track":
 			appendAction(actTrack)
 		case "select":

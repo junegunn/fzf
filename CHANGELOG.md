@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.42.1
+0.43.0
 ------
 - `--listen` server can be secured by setting `$FZF_API_KEY` environment
   variable.
@@ -14,6 +14,7 @@ CHANGELOG
   # Client
   curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
   ```
+- Added `toggle-header` action
 
 0.42.0
 ------
