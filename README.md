@@ -121,7 +121,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | DNF             | Fedora                  | `sudo dnf install fzf`             |
 | Nix             | NixOS, etc.             | `nix-env -iA nixpkgs.fzf`          |
 | Pacman          | Arch Linux              | `sudo pacman -S fzf`               |
-| pkg             | FreeBSD                 | `pkg install fzf`                  |
+| pkg             | FreeBSD, Android        | `pkg install fzf`                  |
 | pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | Portage         | Gentoo                  | `emerge --ask app-shells/fzf`      |
