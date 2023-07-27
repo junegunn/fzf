@@ -14,7 +14,8 @@
 # Key bindings
 # ------------
 __fzf_select__() {
-  local cmd opts
+  local cmd opts -
+  set +o pipefail # restored on return because we declared $- local above
   cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
     -o -type d -print \
@@ -50,7 +51,8 @@ __fzf_cd__() {
 }
 
 __fzf_history__() {
-  local output opts script
+  local output opts script -
+  set +o pipefail # restored on return because we declared $- local above
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
   script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
   output=$(
