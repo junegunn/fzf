@@ -26,6 +26,9 @@ written as:
 " If installed using Homebrew
 Plug '/usr/local/opt/fzf'
 
+" If installed using Homebrew on Apple Silicon
+Plug '/opt/homebrew/opt/fzf'
+
 " If you have cloned fzf on ~/.fzf directory
 Plug '~/.fzf'
 ```
