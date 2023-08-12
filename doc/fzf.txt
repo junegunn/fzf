@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: Mar 20 2023
+fzf.txt	fzf	Last change: Aug 12 2023
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -32,6 +32,9 @@ depending on the package manager.
     " If installed using Homebrew
     set rtp+=/usr/local/opt/fzf
 
+    " If installed using Homebrew on Apple Silicon
+    set rtp+=/opt/homebrew/opt/fzf
+
     " If you have cloned fzf on ~/.fzf directory
     set rtp+=~/.fzf
 <
@@ -39,6 +42,9 @@ If you use {vim-plug}{1}, the same can be written as:
 >
     " If installed using Homebrew
     Plug '/usr/local/opt/fzf'
+
+    " If installed using Homebrew on Apple Silicon
+    Plug '/opt/homebrew/opt/fzf'
 
     " If you have cloned fzf on ~/.fzf directory
     Plug '~/.fzf'
