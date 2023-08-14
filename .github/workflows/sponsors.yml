@@ -1,6 +1,8 @@
 ---
 name: Generate Sponsors README
 on:
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
   schedule:
     - cron: 0 * * * *
