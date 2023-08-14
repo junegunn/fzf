@@ -4,3 +4,6 @@ ba = "ba"
 fo = "fo"
 enew = "enew"
 tabe = "tabe"
+
+[files]
+extend-exclude = ["README.md"]
