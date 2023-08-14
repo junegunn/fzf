@@ -19,6 +19,16 @@ Pros
 - Batteries included
     - Vim/Neovim plugin, key bindings, and fuzzy auto-completion
 
+Sponsors ❤️
+-----------
+
+I would like to thank all the sponsors of this project who make it possible for me to continue to improve fzf.
+
+If you'd like to sponsor this project, please visit https://github.com/sponsors/junegunn.
+
+<!-- sponsors -->
+<!-- sponsors -->
+
 Table of Contents
 -----------------
 
