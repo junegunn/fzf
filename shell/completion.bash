@@ -156,7 +156,7 @@ _fzf_handle_dynamic_completion() {
         eval "$orig_complete"
       fi
     fi
-    return $ret
+    return "$ret"
   fi
 }
 
