@@ -22,19 +22,25 @@ function fzf_key_bindings
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
-    # "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
-    # $dir itself, even if hidden.
-    test -n "$FZF_CTRL_T_COMMAND"; or set -l FZF_CTRL_T_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
-    -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed 's@^\./@@'"
-
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    begin
       set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS"
+
+    string match -q -r "(?<server_part>.*):(?<after>.*)" $fzf_query
+
+    if test $server_part
+      test -n "$FZF_CTRL_T_COMMAND"; or set -l FZF_CTRL_T_COMMAND "command ssh $server_part find | sed 's@^\./@@'"
+      eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)' -m --query "'$after'"' | while read -l r; set result $result "$server_part:$r"; end
+    else
+      # "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
+      # $dir itself, even if hidden.
+      test -n "$FZF_CTRL_T_COMMAND"; or set -l FZF_CTRL_T_COMMAND "
+      command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
+      -o -type f -print \
+      -o -type d -print \
+      -o -type l -print 2> /dev/null | sed 's@^\./@@'"
       eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)' -m --query "'$fzf_query'"' | while read -l r; set result $result $r; end
     end
+
     if [ -z "$result" ]
       commandline -f repaint
       return
