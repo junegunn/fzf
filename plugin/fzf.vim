@@ -549,7 +549,6 @@ try
 
   let lines = use_tmux ? s:execute_tmux(dict, command, temps)
                  \ : s:execute(dict, command, use_height, temps)
-  call s:callback(dict, lines)
   return lines
 finally
   if exists('source_command') && len(source_command)
@@ -738,11 +737,24 @@ function! s:execute_tmux(dict, command, temps) abort
     let command = join(['cd', fzf#shellescape(cwd), '&&', command])
   endif
 
-  call system(command)
-  let exit_status = v:shell_error
-  redraw!
-  let lines = s:collect(a:temps)
-  return s:exit_handler(exit_status, command) ? lines : []
+  if has('nvim')
+    let fzf = {}
+    let fzf.dict = a:dict
+    let fzf.temps = a:temps
+    function! fzf.on_exit(job_id, exit_status, event) dict
+      call s:pushd(self.dict)
+      let lines = s:collect(self.temps)
+      call s:callback(self.dict, lines)
+    endfunction
+    call jobstart(command, fzf)
+    return []
+  else
+    call system(command)
+    let exit_status = v:shell_error
+    redraw!
+    let lines = s:collect(a:temps)
+    return s:exit_handler(exit_status, command) ? lines : []
+  endif
 endfunction
 
 function! s:calc_size(max, val, dict)
