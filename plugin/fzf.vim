@@ -945,7 +945,7 @@ function! s:execute_term(dict, command, temps) abort
         let term_opts.curwin = 1
       endif
       call s:handle_ambidouble(term_opts)
-      let fzf.buf = term_start([&shell, &shellcmdflag, command], term_opts)
+      keepjumps let fzf.buf = term_start([&shell, &shellcmdflag, command], term_opts)
       if is_popup && exists('#TerminalWinOpen')
         doautocmd <nomodeline> TerminalWinOpen
       endif
