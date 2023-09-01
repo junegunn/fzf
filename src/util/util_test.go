@@ -184,3 +184,10 @@ func TestRepeatToFill(t *testing.T) {
 		t.Error("Expected:", strings.Repeat("abcde", 4)+"abcde"[:2])
 	}
 }
+
+func TestStringWidth(t *testing.T) {
+	w := StringWidth("─")
+	if w != 1 {
+		t.Errorf("Expected: %d, Actual: %d", 1, w)
+	}
+}
