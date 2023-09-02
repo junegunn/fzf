@@ -15,6 +15,7 @@ CHANGELOG
   curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
   ```
 - Added `toggle-header` action
+- Bug fixes
 
 0.42.0
 ------
