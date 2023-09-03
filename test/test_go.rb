@@ -8,6 +8,7 @@ require 'shellwords'
 require 'erb'
 require 'tempfile'
 require 'net/http'
+require 'json'
 
 TEMPLATE = DATA.read
 UNSETS = %w[
@@ -2776,9 +2777,21 @@ class TestGoFZF < TestBase
         -> { URI("http://localhost:#{File.read('/tmp/fzf-port').chomp}") } }.each do |opts, fn|
       tmux.send_keys "seq 10 | fzf #{opts}", :Enter
       tmux.until { |lines| assert_equal 10, lines.item_count }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal 10, state[:totalCount]
+      assert_equal 10, state[:matchCount]
+      assert_empty state[:query]
+      assert_equal({ index: 0, text: '1' }, state[:current])
+
       Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal 100, state[:totalCount]
+      assert_equal 0, state[:matchCount]
+      assert_equal 'yo', state[:query]
+      assert_nil state[:current]
+
       teardown
       setup
     end
