@@ -237,8 +237,10 @@ _fzf_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
+    [ -z "${prefix}" ] && prefix="${cur}"
+    prefix=${prefix%% }
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$prefix" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
@@ -287,6 +289,38 @@ _fzf_host_completion() {
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
   )
+}
+
+_fzf_ssh_completion() {
+  local user prefix trigger
+  trigger="${FZF_COMPLETION_TRIGGER-'**'}"
+  case ${COMP_WORDS[$COMP_CWORD-1]} in
+    -i|-F|-E)
+      _fzf_path_completion $@
+      ;;
+    *)
+      # Match user@address part. Cant use $COMP_WORDS because $COMP_WORDBREAKS
+      # may or may not contain '@' symbol. Details on aforementioned vars
+      # https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html
+      if [[ ${COMP_LINE} =~ ([^\ ]+?@)([^\ ]+?)"$trigger" ]]; then
+        user=${BASH_REMATCH[1]}
+        prefix=${BASH_REMATCH[2]}
+        # in case it was just user@**
+        [ -z ${prefix} ] && prefix=' '
+      fi
+
+      _fzf_complete +m -- "$@" < <(
+      command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
+        awk '{if (length($2) > 0) {print $2}}' | sort -u
+      )
+      ;;
+  esac
+}
+
+_fzf_ssh_completion_post() {
+  xargs -I%s echo "$user%s"
 }
 
 _fzf_var_completion() {
@@ -376,7 +410,8 @@ _fzf_setup_completion() {
 # Environment variables / Aliases / Hosts / Process
 _fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
-_fzf_setup_completion 'host'  ssh telnet
+_fzf_setup_completion 'host'  telnet
+_fzf_setup_completion 'ssh'   ssh
 _fzf_setup_completion 'proc'  kill
 
 fi
