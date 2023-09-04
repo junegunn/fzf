@@ -23,11 +23,12 @@ const (
 )
 
 type httpServer struct {
-	apiKey  []byte
-	channel chan []*action
+	apiKey          []byte
+	actionChannel   chan []*action
+	responseChannel chan string
 }
 
-func startHttpServer(port int, channel chan []*action) (error, int) {
+func startHttpServer(port int, actionChannel chan []*action, responseChannel chan string) (error, int) {
 	if port < 0 {
 		return nil, port
 	}
@@ -50,8 +51,9 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 	}
 
 	server := httpServer{
-		apiKey:  []byte(os.Getenv("FZF_API_KEY")),
-		channel: channel,
+		apiKey:          []byte(os.Getenv("FZF_API_KEY")),
+		actionChannel:   actionChannel,
+		responseChannel: responseChannel,
 	}
 
 	go func() {
@@ -83,13 +85,18 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	contentLength := 0
 	apiKey := ""
 	body := ""
-	unauthorized := func(message string) string {
+	answer := func(code string, message string) string {
 		message += "\n"
-		return httpUnauthorized + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+		return code + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+	}
+	unauthorized := func(message string) string {
+		return answer(httpUnauthorized, message)
 	}
 	bad := func(message string) string {
-		message += "\n"
-		return httpBadRequest + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+		return answer(httpBadRequest, message)
+	}
+	good := func(message string) string {
+		return answer(httpOk+"Content-Type: application/json"+crlf, message)
 	}
 	conn.SetReadDeadline(time.Now().Add(httpReadTimeout))
 	scanner := bufio.NewScanner(conn)
@@ -110,7 +117,12 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		text := scanner.Text()
 		switch section {
 		case 0:
-			if !strings.HasPrefix(text, "POST / HTTP") {
+			// TODO: Parameter support e.g. "GET /?limit=100 HTTP"
+			if strings.HasPrefix(text, "GET / HTTP") {
+				server.actionChannel <- []*action{{t: actResponse}}
+				response := <-server.responseChannel
+				return good(response)
+			} else if !strings.HasPrefix(text, "POST / HTTP") {
 				return bad("invalid request method")
 			}
 			section++
@@ -160,6 +172,6 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		return bad("no action specified")
 	}
 
-	server.channel <- actions
+	server.actionChannel <- actions
 	return httpOk
 }

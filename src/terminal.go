@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -144,6 +145,23 @@ var emptyLine = itemLine{}
 
 type labelPrinter func(tui.Window, int)
 
+type StatusItem struct {
+	Index int    `json:"index"`
+	Text  string `json:"text"`
+}
+
+type Status struct {
+	Reading    bool         `json:"reading"`
+	Query      string       `json:"query"`
+	Position   int          `json:"position"`
+	Sort       bool         `json:"sort"`
+	TotalCount int          `json:"totalCount"`
+	MatchCount int          `json:"matchCount"`
+	Current    *StatusItem  `json:"current"`
+	Matches    []StatusItem `json:"matches"`
+	Selected   []StatusItem `json:"selected"`
+}
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
@@ -245,7 +263,8 @@ type Terminal struct {
 	sigstop            bool
 	startChan          chan fitpad
 	killChan           chan int
-	serverChan         chan []*action
+	serverInputChan    chan []*action
+	serverOutputChan   chan string
 	eventChan          chan tui.Event
 	slab               *util.Slab
 	theme              *tui.ColorTheme
@@ -398,6 +417,7 @@ const (
 	actUnbind
 	actRebind
 	actBecome
+	actResponse
 )
 
 type placeholderFlags struct {
@@ -657,7 +677,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan int),
-		serverChan:         make(chan []*action, 10),
+		serverInputChan:    make(chan []*action, 10),
+		serverOutputChan:   make(chan string),
 		eventChan:          make(chan tui.Event, 1),
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
@@ -703,7 +724,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenPort != nil {
-		err, port := startHttpServer(*t.listenPort, t.serverChan)
+		err, port := startHttpServer(*t.listenPort, t.serverInputChan, t.serverOutputChan)
 		if err != nil {
 			errorExit(err.Error())
 		}
@@ -781,7 +802,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 				window.CPrint(*color, str)
 			}
 		}
-		return printFn, len(text)
+		return printFn, length
 	}
 
 	// Printer that correctly handles ANSI color codes and tab characters
@@ -2813,7 +2834,7 @@ func (t *Terminal) Loop() {
 							t.printInfo()
 						}
 						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged {
-							t.serverChan <- onFocus
+							t.serverInputChan <- onFocus
 						}
 						if focusChanged || version != t.version {
 							version = t.version
@@ -2925,7 +2946,7 @@ func (t *Terminal) Loop() {
 			select {
 			case event = <-t.eventChan:
 				needBarrier = !event.Is(tui.Load, tui.One, tui.Zero)
-			case actions = <-t.serverChan:
+			case actions = <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
 				needBarrier = false
 			}
@@ -3000,6 +3021,8 @@ func (t *Terminal) Loop() {
 		doAction = func(a *action) bool {
 			switch a.t {
 			case actIgnore:
+			case actResponse:
+				t.serverOutputChan <- t.dumpStatus()
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
@@ -3767,4 +3790,50 @@ func (t *Terminal) maxItems() int {
 		max++
 	}
 	return util.Max(max, 0)
+}
+
+func (t *Terminal) dumpItem(i *Item) StatusItem {
+	if i == nil {
+		return StatusItem{}
+	}
+	return StatusItem{
+		Index: int(i.Index()),
+		Text:  i.AsString(t.ansi),
+	}
+}
+
+const dumpItemLimit = 100 // TODO: Make configurable via GET parameter
+
+func (t *Terminal) dumpStatus() string {
+	selectedItems := t.sortSelected()
+	selected := make([]StatusItem, util.Min(dumpItemLimit, len(selectedItems)))
+	for i, selectedItem := range selectedItems[:len(selected)] {
+		selected[i] = t.dumpItem(selectedItem.item)
+	}
+
+	matches := make([]StatusItem, util.Min(dumpItemLimit, t.merger.Length()))
+	for i := range matches {
+		matches[i] = t.dumpItem(t.merger.Get(i).item)
+	}
+
+	var current *StatusItem
+	currentItem := t.currentItem()
+	if currentItem != nil {
+		item := t.dumpItem(currentItem)
+		current = &item
+	}
+
+	dump := Status{
+		Reading:    t.reading,
+		Query:      string(t.input),
+		Position:   t.cy,
+		Sort:       t.sort,
+		TotalCount: t.count,
+		MatchCount: t.merger.Length(),
+		Current:    current,
+		Matches:    matches,
+		Selected:   selected,
+	}
+	bytes, _ := json.Marshal(&dump) // TODO: Errors?
+	return string(bytes)
 }
