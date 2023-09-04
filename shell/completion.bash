@@ -291,24 +291,25 @@ _fzf_host_completion() {
   )
 }
 
+# Values for $1 $2 $3 are described here
+# https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html
 _fzf_ssh_completion() {
   local user prefix trigger
-  trigger="${FZF_COMPLETION_TRIGGER-'**'}"
-  case ${COMP_WORDS[$COMP_CWORD-1]} in
+  trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  case $3 in
     -i|-F|-E)
       _fzf_path_completion $@
       ;;
     *)
-      # Match user@address part. Cant use $COMP_WORDS because $COMP_WORDBREAKS
-      # may or may not contain '@' symbol. Details on aforementioned vars
-      # https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html
-      if [[ ${COMP_LINE} =~ ([^\ ]+?@)([^\ ]+?)"$trigger" ]]; then
+      # match (user@)(address)$trigger
+      if [[ $2 =~ ([^\ ]+?@)([^\ ]+?)"$trigger" ]]; then
         user=${BASH_REMATCH[1]}
         prefix=${BASH_REMATCH[2]}
         # in case it was just user@**
         [ -z ${prefix} ] && prefix=' '
+      else
+        prefix=${2%%$trigger}
       fi
-
       _fzf_complete +m -- "$@" < <(
       command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
@@ -320,7 +321,7 @@ _fzf_ssh_completion() {
 }
 
 _fzf_ssh_completion_post() {
-  xargs -I%s echo "$user%s"
+  [ -n $user ] && xargs -I%s echo "$user%s"
 }
 
 _fzf_var_completion() {
