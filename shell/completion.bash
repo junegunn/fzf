@@ -237,7 +237,7 @@ _fzf_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
-    [ -z "${prefix}" ] && prefix="${cur}"
+    [ -z "${prefix:-}" ] && prefix="${cur}"
     prefix=${prefix%% }
 
     selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$prefix" | $post | tr '\n' ' ')
