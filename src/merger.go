@@ -3,30 +3,36 @@ package fzf
 import "fmt"
 
 // EmptyMerger is a Merger with no data
-var EmptyMerger = NewMerger(nil, [][]Result{}, false, false)
+func EmptyMerger(revision int) *Merger {
+	return NewMerger(nil, [][]Result{}, false, false, revision)
+}
 
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
 type Merger struct {
-	pattern *Pattern
-	lists   [][]Result
-	merged  []Result
-	chunks  *[]*Chunk
-	cursors []int
-	sorted  bool
-	tac     bool
-	final   bool
-	count   int
+	pattern  *Pattern
+	lists    [][]Result
+	merged   []Result
+	chunks   *[]*Chunk
+	cursors  []int
+	sorted   bool
+	tac      bool
+	final    bool
+	count    int
+	pass     bool
+	revision int
 }
 
 // PassMerger returns a new Merger that simply returns the items in the
 // original order
-func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
+func PassMerger(chunks *[]*Chunk, tac bool, revision int) *Merger {
 	mg := Merger{
-		pattern: nil,
-		chunks:  chunks,
-		tac:     tac,
-		count:   0}
+		pattern:  nil,
+		chunks:   chunks,
+		tac:      tac,
+		count:    0,
+		pass:     true,
+		revision: revision}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += chunk.count
@@ -35,17 +41,18 @@ func PassMerger(chunks *[]*Chunk, tac bool) *Merger {
 }
 
 // NewMerger returns a new Merger
-func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool) *Merger {
+func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revision int) *Merger {
 	mg := Merger{
-		pattern: pattern,
-		lists:   lists,
-		merged:  []Result{},
-		chunks:  nil,
-		cursors: make([]int, len(lists)),
-		sorted:  sorted,
-		tac:     tac,
-		final:   false,
-		count:   0}
+		pattern:  pattern,
+		lists:    lists,
+		merged:   []Result{},
+		chunks:   nil,
+		cursors:  make([]int, len(lists)),
+		sorted:   sorted,
+		tac:      tac,
+		final:    false,
+		count:    0,
+		revision: revision}
 
 	for _, list := range mg.lists {
 		mg.count += len(list)
@@ -53,9 +60,40 @@ func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool) *Merge
 	return &mg
 }
 
+// Revision returns revision number
+func (mg *Merger) Revision() int {
+	return mg.revision
+}
+
 // Length returns the number of items
 func (mg *Merger) Length() int {
 	return mg.count
+}
+
+func (mg *Merger) First() Result {
+	if mg.tac && !mg.sorted {
+		return mg.Get(mg.count - 1)
+	}
+	return mg.Get(0)
+}
+
+// FindIndex returns the index of the item with the given item index
+func (mg *Merger) FindIndex(itemIndex int32) int {
+	index := -1
+	if mg.pass {
+		index = int(itemIndex)
+		if mg.tac {
+			index = mg.count - index - 1
+		}
+	} else {
+		for i := 0; i < mg.count; i++ {
+			if mg.Get(i).item.Index() == itemIndex {
+				index = i
+				break
+			}
+		}
+	}
+	return index
 }
 
 // Get returns the pointer to the Result object indexed by the given integer

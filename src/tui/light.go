@@ -32,20 +32,26 @@ var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]
 var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
 func (r *LightRenderer) stderr(str string) {
-	r.stderrInternal(str, true)
+	r.stderrInternal(str, true, "")
 }
 
-// FIXME: Need better handling of non-displayable characters
-func (r *LightRenderer) stderrInternal(str string, allowNLCR bool) {
+const CR string = "\x1b[2m␍"
+const LF string = "\x1b[2m␊"
+
+func (r *LightRenderer) stderrInternal(str string, allowNLCR bool, resetCode string) {
 	bytes := []byte(str)
 	runes := []rune{}
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
 		nlcr := r == '\n' || r == '\r'
 		if r >= 32 || r == '\x1b' || nlcr {
-			if r == utf8.RuneError || nlcr && !allowNLCR {
-				runes = append(runes, ' ')
-			} else {
+			if nlcr && !allowNLCR {
+				if r == '\r' {
+					runes = append(runes, []rune(CR+resetCode)...)
+				} else {
+					runes = append(runes, []rune(LF+resetCode)...)
+				}
+			} else if r != utf8.RuneError {
 				runes = append(runes, r)
 			}
 		}
@@ -54,8 +60,10 @@ func (r *LightRenderer) stderrInternal(str string, allowNLCR bool) {
 	r.queued.WriteString(string(runes))
 }
 
-func (r *LightRenderer) csi(code string) {
-	r.stderr("\x1b[" + code)
+func (r *LightRenderer) csi(code string) string {
+	fullcode := "\x1b[" + code
+	r.stderr(fullcode)
+	return fullcode
 }
 
 func (r *LightRenderer) flush() {
@@ -422,7 +430,19 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				return Event{Invalid, 0, nil} // INS
 			case '3':
-				return Event{Del, 0, nil}
+				if r.buffer[3] == '~' {
+					return Event{Del, 0, nil}
+				}
+				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+					*sz = 6
+					switch r.buffer[4] {
+					case '5':
+						return Event{CtrlDelete, 0, nil}
+					case '2':
+						return Event{SDelete, 0, nil}
+					}
+				}
+				return Event{Invalid, 0, nil}
 			case '4':
 				return Event{End, 0, nil}
 			case '5':
@@ -737,7 +757,7 @@ func (w *LightWindow) DrawHBorder() {
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 	switch w.border.shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
 	case BorderHorizontal:
 		w.drawBorderHorizontal(true, true)
@@ -768,14 +788,14 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.horizontal)
+	hw := runewidth.RuneWidth(w.border.top)
 	if top {
 		w.Move(0, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
+		w.CPrint(color, repeat(w.border.top, w.width/hw))
 	}
 	if bottom {
 		w.Move(w.height-1, 0)
-		w.CPrint(color, repeat(w.border.horizontal, w.width/hw))
+		w.CPrint(color, repeat(w.border.bottom, w.width/hw))
 	}
 }
 
@@ -791,11 +811,11 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 	for y := 0; y < w.height; y++ {
 		w.Move(y, 0)
 		if left {
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.left))
 		}
 		w.CPrint(color, repeat(' ', width))
 		if right {
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.right))
 		}
 	}
 }
@@ -806,31 +826,31 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.horizontal)
+	hw := runewidth.RuneWidth(w.border.top)
 	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
 	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
 	rem := (w.width - tcw) % hw
-	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.top, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
 	if !onlyHorizontal {
-		vw := runewidth.RuneWidth(w.border.vertical)
+		vw := runewidth.RuneWidth(w.border.left)
 		for y := 1; y < w.height-1; y++ {
 			w.Move(y, 0)
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.left))
 			w.CPrint(color, repeat(' ', w.width-vw*2))
-			w.CPrint(color, string(w.border.vertical))
+			w.CPrint(color, string(w.border.right))
 		}
 	}
 	w.Move(w.height-1, 0)
 	rem = (w.width - bcw) % hw
-	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.bottom, (w.width-bcw)/hw)+repeat(' ', rem)+string(w.border.bottomRight))
 }
 
-func (w *LightWindow) csi(code string) {
-	w.renderer.csi(code)
+func (w *LightWindow) csi(code string) string {
+	return w.renderer.csi(code)
 }
 
-func (w *LightWindow) stderrInternal(str string, allowNLCR bool) {
-	w.renderer.stderrInternal(str, allowNLCR)
+func (w *LightWindow) stderrInternal(str string, allowNLCR bool, resetCode string) {
+	w.renderer.stderrInternal(str, allowNLCR, resetCode)
 }
 
 func (w *LightWindow) Top() int {
@@ -936,10 +956,10 @@ func colorCodes(fg Color, bg Color) []string {
 	return codes
 }
 
-func (w *LightWindow) csiColor(fg Color, bg Color, attr Attr) bool {
+func (w *LightWindow) csiColor(fg Color, bg Color, attr Attr) (bool, string) {
 	codes := append(attrCodes(attr), colorCodes(fg, bg)...)
-	w.csi(";" + strings.Join(codes, ";") + "m")
-	return len(codes) > 0
+	code := w.csi(";" + strings.Join(codes, ";") + "m")
+	return len(codes) > 0, code
 }
 
 func (w *LightWindow) Print(text string) {
@@ -951,16 +971,17 @@ func cleanse(str string) string {
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, text string) {
-	w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
-	w.stderrInternal(cleanse(text), false)
+	_, code := w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
+	w.stderrInternal(cleanse(text), false, code)
 	w.csi("m")
 }
 
 func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
-	if w.csiColor(fg, bg, attr) {
+	hasColors, code := w.csiColor(fg, bg, attr)
+	if hasColors {
 		defer w.csi("m")
 	}
-	w.stderrInternal(cleanse(text), false)
+	w.stderrInternal(cleanse(text), false, code)
 }
 
 type wrappedLine struct {
@@ -980,6 +1001,8 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 		if len(rs) == 1 && rs[0] == '\t' {
 			w = tabstop - (prefixLength+width)%tabstop
 			str = repeat(' ', w)
+		} else if rs[0] == '\r' {
+			w++
 		} else {
 			w = runewidth.StringWidth(str)
 		}
@@ -998,12 +1021,12 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 	return lines
 }
 
-func (w *LightWindow) fill(str string, onMove func()) FillReturn {
+func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 	allLines := strings.Split(str, "\n")
 	for i, line := range allLines {
 		lines := wrapLine(line, w.posx, w.width, w.tabstop)
 		for j, wl := range lines {
-			w.stderrInternal(wl.text, false)
+			w.stderrInternal(wl.text, false, resetCode)
 			w.posx += wl.displayWidth
 
 			// Wrap line
@@ -1013,7 +1036,7 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 				}
 				w.MoveAndClear(w.posy, w.posx)
 				w.Move(w.posy+1, 0)
-				onMove()
+				w.renderer.stderr(resetCode)
 			}
 		}
 	}
@@ -1022,22 +1045,26 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 			return FillSuspend
 		}
 		w.Move(w.posy+1, 0)
-		onMove()
+		w.renderer.stderr(resetCode)
 		return FillNextLine
 	}
 	return FillContinue
 }
 
-func (w *LightWindow) setBg() {
+func (w *LightWindow) setBg() string {
 	if w.bg != colDefault {
-		w.csiColor(colDefault, w.bg, AttrRegular)
+		_, code := w.csiColor(colDefault, w.bg, AttrRegular)
+		return code
 	}
+	// Should clear dim attribute after ␍ in the preview window
+	// e.g. printf "foo\rbar" | fzf --ansi --preview 'printf "foo\rbar"'
+	return "\x1b[m"
 }
 
 func (w *LightWindow) Fill(text string) FillReturn {
 	w.Move(w.posy, w.posx)
-	w.setBg()
-	return w.fill(text, w.setBg)
+	code := w.setBg()
+	return w.fill(text, code)
 }
 
 func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillReturn {
@@ -1048,11 +1075,11 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 	if bg == colDefault {
 		bg = w.bg
 	}
-	if w.csiColor(fg, bg, attr) {
+	if hasColors, resetCode := w.csiColor(fg, bg, attr); hasColors {
 		defer w.csi("m")
-		return w.fill(text, func() { w.csiColor(fg, bg, attr) })
+		return w.fill(text, resetCode)
 	}
-	return w.fill(text, w.setBg)
+	return w.fill(text, w.setBg())
 }
 
 func (w *LightWindow) FinishFill() {

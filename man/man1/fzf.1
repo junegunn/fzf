@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Feb 2023" "fzf 0.38.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2023" "fzf 0.42.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -57,9 +57,9 @@ Choose scoring scheme tailored for different types of input.
 .br
 .BR default "  Generic scoring scheme designed to work well with any type of input"
 .br
-.BR path "     Scoring scheme for paths (additional bonus point only after path separator)
+.BR path "     Scoring scheme well suited for file paths
 .br
-.BR history "  Scoring scheme for command history (no additional bonus points).
+.BR history "  Scoring scheme well suited for command history or any input where chronological ordering is important
          Sets \fB--tiebreak=index\fR as well.
 .br
 .TP
@@ -91,6 +91,19 @@ interface rather than a "fuzzy finder". You can later enable the search using
 .TP
 .B "+s, --no-sort"
 Do not sort the result
+.TP
+.B "--track"
+Make fzf track the current selection when the result list is updated.
+This can be useful when browsing logs using fzf with sorting disabled. It is
+not recommended to use this option with \fB--tac\fR as the resulting behavior
+can be confusing. Also, consider using \fBtrack\fR action instead of this
+option.
+
+.RS
+e.g.
+     \fBgit log --oneline --graph --color=always | nl |
+         fzf --ansi --track --no-sort --layout=reverse-list\fR
+.RE
 .TP
 .B "--tac"
 Reverse the order of the input
@@ -215,6 +228,10 @@ Draw border around the finder
 .br
 .BR double "        Border with double lines"
 .br
+.BR block "         Border using block elements; suitable when using different background colors"
+.br
+.BR thinblock "     Border using legacy computing symbols; may not be displayed on some terminals"
+.br
 .BR horizontal "    Horizontal lines above and below the finder"
 .br
 .BR vertical "      Vertical lines on each side of the finder"
@@ -231,8 +248,9 @@ Draw border around the finder
 .br
 
 If you use a terminal emulator where each box-drawing character takes
-2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR to \fB1\fR. If the border is
-still not properly rendered, set \fB--no-unicode\fR.
+2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR environment variable to
+\fB0\fR or \fB1\fR. If the border is still not properly rendered, set
+\fB--no-unicode\fR.
 
 .TP
 .BI "--border-label" [=LABEL]
@@ -339,9 +357,13 @@ Determines the display style of finder info (match counters).
 .br
 .BR default "          Display on the next line to the prompt"
 .br
+.BR right "            Display on the right end of the next line to the prompt"
+.br
 .BR inline "           Display on the same line with the default separator ' < '"
 .br
 .BR inline:SEPARATOR " Display on the same line with a non-default separator"
+.br
+.BR inline-right "     Display on the right end of the same line
 .br
 .BR hidden "           Do not display finder info"
 .br
@@ -363,9 +385,10 @@ Do not display horizontal separator on the info line. A synonym for
 \fB--separator=''\fB
 
 .TP
-.BI "--scrollbar=" "CHAR"
+.BI "--scrollbar=" "CHAR1[CHAR2]"
 Use the given character to render scrollbar. (default: '│' or ':' depending on
-\fB--no-unicode\fR).
+\fB--no-unicode\fR). The optional \fBCHAR2\fR is used to render scrollbar of
+the preview window.
 
 .TP
 .B "--no-scrollbar"
@@ -419,28 +442,30 @@ color mappings.
     \fBbw      \fRNo colors (equivalent to \fB--no-color\fR)
 
 .B COLOR NAMES:
-    \fBfg              \fRText
-      \fBpreview-fg    \fRPreview window text
-    \fBbg              \fRBackground
-      \fBpreview-bg    \fRPreview window background
-    \fBhl              \fRHighlighted substrings
-    \fBfg+             \fRText (current line)
-    \fBbg+             \fRBackground (current line)
-      \fBgutter        \fRGutter on the left
-    \fBhl+             \fRHighlighted substrings (current line)
-    \fBquery           \fRQuery string
-      \fBdisabled      \fRQuery string when search is disabled (\fB--disabled\fR)
-    \fBinfo            \fRInfo line (match counters)
-    \fBborder          \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
-      \fBseparator     \fRHorizontal separator on info line
-      \fBscrollbar     \fRScrollbar
-    \fBlabel           \fRBorder label (\fB--border-label\fR and \fB--preview-label\fR)
-      \fBpreview-label \fRBorder label of the preview window (\fB--preview-label\fR)
-    \fBprompt          \fRPrompt
-    \fBpointer         \fRPointer to the current line
-    \fBmarker          \fRMulti-select marker
-    \fBspinner         \fRStreaming input indicator
-    \fBheader          \fRHeader
+    \fBfg                  \fRText
+      \fBpreview-fg        \fRPreview window text
+    \fBbg                  \fRBackground
+      \fBpreview-bg        \fRPreview window background
+    \fBhl                  \fRHighlighted substrings
+    \fBfg+                 \fRText (current line)
+    \fBbg+                 \fRBackground (current line)
+      \fBgutter            \fRGutter on the left
+    \fBhl+                 \fRHighlighted substrings (current line)
+    \fBquery               \fRQuery string
+      \fBdisabled          \fRQuery string when search is disabled (\fB--disabled\fR)
+    \fBinfo                \fRInfo line (match counters)
+    \fBborder              \fRBorder around the window (\fB--border\fR and \fB--preview\fR)
+      \fBscrollbar         \fRScrollbar
+      \fBpreview-border    \fRBorder around the preview window (\fB--preview\fR)
+      \fBpreview-scrollbar \fRScrollbar
+      \fBseparator         \fRHorizontal separator on info line
+    \fBlabel               \fRBorder label (\fB--border-label\fR and \fB--preview-label\fR)
+      \fBpreview-label     \fRBorder label of the preview window (\fB--preview-label\fR)
+    \fBprompt              \fRPrompt
+    \fBpointer             \fRPointer to the current line
+    \fBmarker              \fRMulti-select marker
+    \fBspinner             \fRStreaming input indicator
+    \fBheader              \fRHeader
 
 .B ANSI COLORS:
     \fB-1         \fRDefault terminal foreground/background color
@@ -581,6 +606,10 @@ Should be used with one of the following \fB--preview-window\fR options.
 .B * border-bold
 .br
 .B * border-double
+.br
+.B * border-block
+.br
+.B * border-thinblock
 .br
 .B * border-horizontal
 .br
@@ -730,6 +759,21 @@ Read input delimited by ASCII NUL characters instead of newline characters
 .B "--print0"
 Print output delimited by ASCII NUL characters instead of newline characters
 .TP
+.B "--no-clear"
+Do not clear finder interface on exit. If fzf was started in full screen mode,
+it will not switch back to the original screen, so you'll have to manually run
+\fBtput rmcup\fR to return. This option can be used to avoid flickering of the
+screen when your application needs to start fzf multiple times in order. (Note
+that in most cases, it is preferable to use \fBreload\fR action instead.)
+
+e.g.
+     \fBfoo=$(seq 100 | fzf --no-clear) || (
+       # Need to manually switch back to the main screen when cancelled
+       tput rmcup
+       exit 1
+     ) && seq "$foo" 100 | fzf
+
+.TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.
@@ -743,14 +787,23 @@ Start HTTP server on the given port. It allows external processes to send
 actions to perform via POST method. If the port number is omitted or given as
 0, fzf will choose the port automatically and export it as \fBFZF_PORT\fR
 environment variable to the child processes started via \fBexecute\fR and
-\fBexecute-silent\fR actions.
+\fBexecute-silent\fR actions. If \fBFZF_API_KEY\fR environment variable is
+set, the server would require sending an API key with the same value in the
+\fBx-api-key\fR HTTP header.
 
 e.g.
      \fB# Start HTTP server on port 6266
      fzf --listen 6266
 
+     # Get program state in JSON format (experimental)
+     curl localhost:6266
+
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+
+     # Start HTTP server on port 6266 and send an authenticated action
+     export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+     curl -XPOST localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
 
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf --listen --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'
@@ -771,6 +824,11 @@ this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
+.TP
+.B FZF_API_KEY
+Can be used to require an API key when using \fB--listen\fR option. If not set,
+no authentication will be required by the server. You can set this value if
+you need to protect against DNS rebinding and privilege escalation attacks.
 
 .SH EXIT STATUS
 .BR 0 "      Normal exit"
@@ -856,6 +914,8 @@ e.g.
 .br
 \fIctrl-space\fR
 .br
+\fIctrl-delete\fR
+.br
 \fIctrl-\\\fR
 .br
 \fIctrl-]\fR
@@ -924,6 +984,8 @@ e.g.
 .br
 \fIshift-right\fR
 .br
+\fIshift-delete\fR
+.br
 \fIalt-shift-up\fR
 .br
 \fIalt-shift-down\fR
@@ -983,6 +1045,28 @@ e.g.
      # Beware not to introduce an infinite loop
      seq 10 | fzf --bind 'focus:up' --cycle\fR
 .RE
+\fIone\fR
+.RS
+Triggered when there's only one match. \fBone:accept\fR binding is comparable
+to \fB--select-1\fR option, but the difference is that \fB--select-1\fR is only
+effective before the interactive finder starts but \fBone\fR event is triggered
+by the interactive finder.
+
+e.g.
+     \fB# Automatically select the only match
+     seq 10 | fzf --bind one:accept\fR
+.RE
+\fIzero\fR
+.RS
+Triggered when there's no match. \fBzero:abort\fR binding is comparable to
+\fB--exit-0\fR option, but the difference is that \fB--exit-0\fR is only
+effective before the interactive finder starts but \fBzero\fR event is
+triggered by the interactive finder.
+
+e.g.
+     \fB# Reload the candidate list when there's no match
+     echo $RANDOM | fzf --bind 'zero:reload(echo $RANDOM)+clear-query' --height 3\fR
+.RE
 
 \fIbackward-eof\fR
 .RS
@@ -1009,6 +1093,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbeginning-of-line\fR            \fIctrl-a  home\fR
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange-border-label(...)\fR     (change \fB--border-label\fR to the given string)
+    \fBchange-header(...)\fR           (change header to the given string; doesn't affect \fB--header-lines\fR)
     \fBchange-preview(...)\fR          (change \fB--preview\fR option)
     \fBchange-preview-label(...)\fR    (change \fB--preview-label\fR to the given string)
     \fBchange-preview-window(...)\fR   (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
@@ -1070,14 +1155,18 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\fR                       (\fIright-click\fR)
     \fBtoggle-all\fR                   (toggle all matches)
     \fBtoggle+down\fR                  \fIctrl-i  (tab)\fR
+    \fBtoggle-header\fR
     \fBtoggle-in\fR                    (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
     \fBtoggle-out\fR                   (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR
     \fBtoggle-preview-wrap\fR
     \fBtoggle-search\fR                (toggle search functionality)
     \fBtoggle-sort\fR
+    \fBtoggle-track\fR
     \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
+    \fBtrack\fR                        (track the current item; automatically disabled if focus changes)
     \fBtransform-border-label(...)\fR  (transform border label using an external command)
+    \fBtransform-header(...)\fR        (transform header using an external command)
     \fBtransform-preview-label(...)\fR (transform preview label using an external command)
     \fBtransform-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform-query(...)\fR         (transform query string using an external command)

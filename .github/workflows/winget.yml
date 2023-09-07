@@ -5,7 +5,7 @@ on:
 
 jobs:
   publish:
-    runs-on: windows-latest # Action can only run on Windows
+    runs-on: ubuntu-latest
     steps:
       - uses: vedantmgoyal2009/winget-releaser@v2
         with:

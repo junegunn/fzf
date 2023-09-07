@@ -221,9 +221,9 @@ func charClassOfAscii(char rune) charClass {
 		return charUpper
 	} else if char >= '0' && char <= '9' {
 		return charNumber
-	} else if strings.IndexRune(whiteChars, char) >= 0 {
+	} else if strings.ContainsRune(whiteChars, char) {
 		return charWhite
-	} else if strings.IndexRune(delimiterChars, char) >= 0 {
+	} else if strings.ContainsRune(delimiterChars, char) {
 		return charDelimiter
 	}
 	return charNonWord
@@ -240,7 +240,7 @@ func charClassOfNonAscii(char rune) charClass {
 		return charLetter
 	} else if unicode.IsSpace(char) {
 		return charWhite
-	} else if strings.IndexRune(delimiterChars, char) >= 0 {
+	} else if strings.ContainsRune(delimiterChars, char) {
 		return charDelimiter
 	}
 	return charNonWord

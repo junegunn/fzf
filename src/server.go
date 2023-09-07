@@ -3,9 +3,11 @@ package fzf
 import (
 	"bufio"
 	"bytes"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -15,11 +17,18 @@ const (
 	crlf             = "\r\n"
 	httpOk           = "HTTP/1.1 200 OK" + crlf
 	httpBadRequest   = "HTTP/1.1 400 Bad Request" + crlf
+	httpUnauthorized = "HTTP/1.1 401 Unauthorized" + crlf
 	httpReadTimeout  = 10 * time.Second
 	maxContentLength = 1024 * 1024
 )
 
-func startHttpServer(port int, channel chan []*action) (error, int) {
+type httpServer struct {
+	apiKey          []byte
+	actionChannel   chan []*action
+	responseChannel chan string
+}
+
+func startHttpServer(port int, actionChannel chan []*action, responseChannel chan string) (error, int) {
 	if port < 0 {
 		return nil, port
 	}
@@ -41,6 +50,12 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 		}
 	}
 
+	server := httpServer{
+		apiKey:          []byte(os.Getenv("FZF_API_KEY")),
+		actionChannel:   actionChannel,
+		responseChannel: responseChannel,
+	}
+
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -51,7 +66,7 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 					continue
 				}
 			}
-			conn.Write([]byte(handleHttpRequest(conn, channel)))
+			conn.Write([]byte(server.handleHttpRequest(conn)))
 			conn.Close()
 		}
 		listener.Close()
@@ -66,12 +81,22 @@ func startHttpServer(port int, channel chan []*action) (error, int) {
 // * No --listen:            2.8MB
 // * --listen with net/http: 5.7MB
 // * --listen w/o net/http:  3.3MB
-func handleHttpRequest(conn net.Conn, channel chan []*action) string {
+func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	contentLength := 0
+	apiKey := ""
 	body := ""
-	bad := func(message string) string {
+	answer := func(code string, message string) string {
 		message += "\n"
-		return httpBadRequest + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+		return code + fmt.Sprintf("Content-Length: %d%s", len(message), crlf+crlf+message)
+	}
+	unauthorized := func(message string) string {
+		return answer(httpUnauthorized, message)
+	}
+	bad := func(message string) string {
+		return answer(httpBadRequest, message)
+	}
+	good := func(message string) string {
+		return answer(httpOk+"Content-Type: application/json"+crlf, message)
 	}
 	conn.SetReadDeadline(time.Now().Add(httpReadTimeout))
 	scanner := bufio.NewScanner(conn)
@@ -92,7 +117,12 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 		text := scanner.Text()
 		switch section {
 		case 0:
-			if !strings.HasPrefix(text, "POST / HTTP") {
+			// TODO: Parameter support e.g. "GET /?limit=100 HTTP"
+			if strings.HasPrefix(text, "GET / HTTP") {
+				server.actionChannel <- []*action{{t: actResponse}}
+				response := <-server.responseChannel
+				return good(response)
+			} else if !strings.HasPrefix(text, "POST / HTTP") {
 				return bad("invalid request method")
 			}
 			section++
@@ -105,16 +135,25 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 				continue
 			}
 			pair := strings.SplitN(text, ":", 2)
-			if len(pair) == 2 && strings.ToLower(pair[0]) == "content-length" {
-				length, err := strconv.Atoi(strings.TrimSpace(pair[1]))
-				if err != nil || length <= 0 || length > maxContentLength {
-					return bad("invalid content length")
+			if len(pair) == 2 {
+				switch strings.ToLower(pair[0]) {
+				case "content-length":
+					length, err := strconv.Atoi(strings.TrimSpace(pair[1]))
+					if err != nil || length <= 0 || length > maxContentLength {
+						return bad("invalid content length")
+					}
+					contentLength = length
+				case "x-api-key":
+					apiKey = strings.TrimSpace(pair[1])
 				}
-				contentLength = length
 			}
 		case 2:
 			body += text
 		}
+	}
+
+	if len(server.apiKey) != 0 && subtle.ConstantTimeCompare([]byte(apiKey), server.apiKey) != 1 {
+		return unauthorized("invalid api key")
 	}
 
 	if len(body) < contentLength {
@@ -133,6 +172,6 @@ func handleHttpRequest(conn net.Conn, channel chan []*action) string {
 		return bad("no action specified")
 	}
 
-	channel <- actions
+	server.actionChannel <- actions
 	return httpOk
 }

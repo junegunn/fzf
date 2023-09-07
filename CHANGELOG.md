@@ -1,8 +1,112 @@
 CHANGELOG
 =========
 
+0.43.0
+------
+- `--listen` server can be secured by setting `$FZF_API_KEY` environment
+  variable.
+  ```sh
+  export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+
+  # Server
+  fzf --listen 6266
+
+  # Client
+  curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
+  ```
+- `--listen` server can report program state in JSON format (`GET /`)
+  ```sh
+  # fzf server started in "headless" mode
+  fzf --listen 6266 2> /dev/null
+
+  # Get program state
+  curl localhost:6266 | jq .
+  ```
+- Added `toggle-header` action
+- Bug fixes
+
+0.42.0
+------
+- Added new info style: `--info=right`
+- Added new info style: `--info=inline-right`
+- Added new border style `thinblock` which uses symbols for legacy computing
+  [one eighth block elements](https://en.wikipedia.org/wiki/Symbols_for_Legacy_Computing)
+    - Similarly to `block`, this style is suitable when using a different
+      background color because the window is completely contained within the border.
+      ```sh
+      BAT_THEME=GitHub fzf --info=right --border=thinblock --preview-window=border-thinblock \
+          --margin=3 --scrollbar=▏▕ --preview='bat --color=always --style=numbers {}' \
+          --color=light,query:238,fg:238,bg:251,bg+:249,gutter:251,border:248,preview-bg:253
+      ```
+    - This style may not render correctly depending on the font and the
+      terminal emulator.
+
+0.41.1
+------
+- Fixed a bug where preview window is not updated when `--disabled` is set and
+  a reload is triggered by `change:reload` binding
+
+0.41.0
+------
+- Added color name `preview-border` and `preview-scrollbar`
+- Added new border style `block` which uses [block elements](https://en.wikipedia.org/wiki/Block_Elements)
+- `--scrollbar` can take two characters, one for the main window, the other
+  for the preview window
+- Putting it altogether:
+  ```sh
+  fzf-tmux -p 80% --padding 1,2 --preview 'bat --style=plain --color=always {}' \
+      --color 'bg:237,bg+:235,gutter:237,border:238,scrollbar:236' \
+      --color 'preview-bg:235,preview-border:236,preview-scrollbar:234' \
+      --preview-window 'border-block' --border block --scrollbar '▌▐'
+  ```
+- Bug fixes and improvements
+
+0.40.0
+------
+- Added `zero` event that is triggered when there's no match
+  ```sh
+  # Reload the candidate list when there's no match
+  echo $RANDOM | fzf --bind 'zero:reload(echo $RANDOM)+clear-query' --height 3
+  ```
+- New actions
+    - Added `track` action which makes fzf track the current item when the
+      search result is updated. If the user manually moves the cursor, or the
+      item is not in the updated search result, tracking is automatically
+      disabled. Tracking is useful when you want to see the surrounding items
+      by deleting the query string.
+      ```sh
+      # Narrow down the list with a query, point to a command,
+      # and hit CTRL-T to see its surrounding commands.
+      export FZF_CTRL_R_OPTS="
+        --preview 'echo {}' --preview-window up:3:hidden:wrap
+        --bind 'ctrl-/:toggle-preview'
+        --bind 'ctrl-t:track+clear-query'
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+        --color header:italic
+        --header 'Press CTRL-Y to copy command into clipboard'"
+      ```
+    - Added `change-header(...)`
+    - Added `transform-header(...)`
+    - Added `toggle-track` action
+- Fixed `--track` behavior when used with `--tac`
+    - However, using `--track` with `--tac` is not recommended. The resulting
+      behavior can be very confusing.
+- Bug fixes and improvements
+
 0.39.0
 ------
+- Added `one` event that is triggered when there's only one match
+  ```sh
+  # Automatically select the only match
+  seq 10 | fzf --bind one:accept
+  ```
+- Added `--track` option that makes fzf track the current selection when the
+  result list is updated. This can be useful when browsing logs using fzf with
+  sorting disabled.
+  ```sh
+  git log --oneline --graph --color=always | nl |
+      fzf --ansi --track --no-sort --layout=reverse-list
+  ```
 - If you use `--listen` option without a port number fzf will automatically
   allocate an available port and export it as `$FZF_PORT` environment
   variable.
@@ -13,7 +117,17 @@ CHANGELOG
   # Say hello
   curl "localhost:$(cat /tmp/fzf-port)" -d 'preview:echo Hello, fzf is listening on $FZF_PORT.'
   ```
-- Bug fixes
+- A carriage return and a line feed character will be rendered as dim ␍ and
+  ␊ respectively.
+  ```sh
+  printf "foo\rbar\nbaz" | fzf --read0 --preview 'echo {}'
+  ```
+- fzf will stop rendering a non-displayable characters as a space. This will
+  likely cause less glitches in the preview window.
+  ```sh
+  fzf --preview 'head -1000 /dev/random'
+  ```
+- Bug fixes and improvements
 
 0.38.0
 ------
@@ -154,7 +268,7 @@ CHANGELOG
 - Added color name `preview-label` for `--preview-label` (defaults to `label`
   for `--border-label`)
 - Better support for (Windows) terminals where each box-drawing character
-  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `1`.
+  takes 2 columns. Set `RUNEWIDTH_EASTASIAN` environment variable to `0` or `1`.
     - On Vim, the variable will be automatically set if `&ambiwidth` is `double`
 - Behavior changes
     - fzf will always execute the preview command if the command template
@@ -263,7 +377,7 @@ CHANGELOG
           (sleep 2; seq 1000) | fzf --height ~50%
           ```
 - Fixed tcell renderer used to render full-screen fzf on Windows
-- `--no-clear` is deprecated. Use `reload` action instead.
+- ~~`--no-clear` is deprecated. Use `reload` action instead.~~
 
 0.33.0
 ------

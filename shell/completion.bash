@@ -270,8 +270,9 @@ _fzf_complete_kill() {
 }
 
 _fzf_proc_completion() {
-  _fzf_complete -m --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
-    command ps -ef | sed 1d
+  _fzf_complete -m --header-lines=1 --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
+    command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
+      command ps -eo user,pid,ppid,time,args # For BusyBox
   )
 }
 
@@ -309,7 +310,7 @@ complete -o default -F _fzf_opts_completion fzf-tmux
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
 a_cmds="
-  awk cat diff diff3
+  awk bat cat diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg hx java
   javac ld less more mvim nvim patch perl python ruby
   sed sftp sort source tail tee uniq vi view vim wc xdg-open

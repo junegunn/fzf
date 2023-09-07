@@ -20,7 +20,7 @@ VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
 ifdef FZF_REVISION
 REVISION       := $(FZF_REVISION)
 else
-REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES) 2> /dev/null)
+REVISION       := $(shell git log -n 1 --pretty=format:%h --abbrev=8 -- $(SOURCES) 2> /dev/null)
 endif
 ifeq ($(REVISION),)
 $(error Not on git repository; cannot determine $$FZF_REVISION)
@@ -88,7 +88,7 @@ bench:
 install: bin/fzf
 
 build:
-	goreleaser --rm-dist --snapshot
+	goreleaser build --rm-dist --snapshot --skip-post-hooks
 
 release:
 ifndef GITHUB_TOKEN

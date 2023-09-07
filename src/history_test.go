@@ -1,7 +1,6 @@
 package fzf
 
 import (
-	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
@@ -25,7 +24,7 @@ func TestHistory(t *testing.T) {
 		}
 	}
 
-	f, _ := ioutil.TempFile("", "fzf-history")
+	f, _ := os.CreateTemp("", "fzf-history")
 	f.Close()
 
 	{ // Append lines

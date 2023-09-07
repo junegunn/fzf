@@ -8,6 +8,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
@@ -412,6 +413,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyHome:
 			return Event{Home, 0, nil}
 		case tcell.KeyDelete:
+			if ctrl {
+				return Event{CtrlDelete, 0, nil}
+			}
+			if shift {
+				return Event{SDelete, 0, nil}
+			}
 			return Event{Del, 0, nil}
 		case tcell.KeyEnd:
 			return Event{End, 0, nil}
@@ -572,26 +579,27 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 
 	gr := uniseg.NewGraphemes(text)
 	for gr.Next() {
+		st := style
 		rs := gr.Runes()
 
 		if len(rs) == 1 {
 			r := rs[0]
-			if r < rune(' ') { // ignore control characters
-				continue
+			if r == '\r' {
+				st = style.Dim(true)
+				rs[0] = '␍'
 			} else if r == '\n' {
-				w.lastY++
-				lx = 0
-				continue
-			} else if r == '\u000D' { // skip carriage return
+				st = style.Dim(true)
+				rs[0] = '␊'
+			} else if r < rune(' ') { // ignore control characters
 				continue
 			}
 		}
 		var xPos = w.left + w.lastX + lx
 		var yPos = w.top + w.lastY
 		if xPos < (w.left+w.width) && yPos < (w.top+w.height) {
-			_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
+			_screen.SetContent(xPos, yPos, rs[0], rs[1:], st)
 		}
-		lx += runewidth.StringWidth(string(rs))
+		lx += util.StringWidth(string(rs))
 	}
 	w.lastX += lx
 }
@@ -620,13 +628,22 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Italic(a&Attr(tcell.AttrItalic) != 0)
 
 	gr := uniseg.NewGraphemes(text)
+Loop:
 	for gr.Next() {
+		st := style
 		rs := gr.Runes()
-		if len(rs) == 1 && rs[0] == '\n' {
-			w.lastY++
-			w.lastX = 0
-			lx = 0
-			continue
+		if len(rs) == 1 {
+			r := rs[0]
+			switch r {
+			case '\r':
+				st = style.Dim(true)
+				rs[0] = '␍'
+			case '\n':
+				w.lastY++
+				w.lastX = 0
+				lx = 0
+				continue Loop
+			}
 		}
 
 		// word wrap:
@@ -643,8 +660,8 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 			return FillSuspend
 		}
 
-		_screen.SetContent(xPos, yPos, rs[0], rs[1:], style)
-		lx += runewidth.StringWidth(string(rs))
+		_screen.SetContent(xPos, yPos, rs[0], rs[1:], st)
+		lx += util.StringWidth(string(rs))
 	}
 	w.lastX += lx
 	if w.lastX == w.width {
@@ -696,9 +713,9 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		style = w.normal.style()
 	}
 
-	hw := runewidth.RuneWidth(w.borderStyle.horizontal)
+	hw := runewidth.RuneWidth(w.borderStyle.top)
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderTop:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderTop:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderTop {
 			max = right - hw
@@ -709,36 +726,36 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		//       ==================
 		//                 (  HH  ) => TR is ignored
 		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, top, w.borderStyle.horizontal, nil, style)
+			_screen.SetContent(x, top, w.borderStyle.top, nil, style)
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderHorizontal, BorderBottom:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderBottom:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderBottom {
 			max = right - hw
 		}
 		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, bot-1, w.borderStyle.horizontal, nil, style)
+			_screen.SetContent(x, bot-1, w.borderStyle.bottom, nil, style)
 		}
 	}
 	if !onlyHorizontal {
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderLeft:
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderLeft:
 			for y := top; y < bot; y++ {
-				_screen.SetContent(left, y, w.borderStyle.vertical, nil, style)
+				_screen.SetContent(left, y, w.borderStyle.left, nil, style)
 			}
 		}
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderDouble, BorderVertical, BorderRight:
-			vw := runewidth.RuneWidth(w.borderStyle.vertical)
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderRight:
+			vw := runewidth.RuneWidth(w.borderStyle.right)
 			for y := top; y < bot; y++ {
-				_screen.SetContent(right-vw, y, w.borderStyle.vertical, nil, style)
+				_screen.SetContent(right-vw, y, w.borderStyle.right, nil, style)
 			}
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
 		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
