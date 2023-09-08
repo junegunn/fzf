@@ -795,6 +795,9 @@ e.g.
      \fB# Start HTTP server on port 6266
      fzf --listen 6266
 
+     # Get program state in JSON format (experimental)
+     curl localhost:6266
+
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
 

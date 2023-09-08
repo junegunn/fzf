@@ -14,6 +14,14 @@ CHANGELOG
   # Client
   curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
   ```
+- `--listen` server can report program state in JSON format (`GET /`)
+  ```sh
+  # fzf server started in "headless" mode
+  fzf --listen 6266 2> /dev/null
+
+  # Get program state
+  curl localhost:6266 | jq .
+  ```
 - Added `toggle-header` action
 - Bug fixes
 
