@@ -223,7 +223,7 @@ _fzf_complete_telnet() {
 }
 
 _fzf_complete_ssh() {
-  local tokens
+  local tokens match mbegin mend
   tokens=(${(z)lbuf})
   case ${tokens[-1]} in
     -i|-F|-E)
