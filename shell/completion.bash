@@ -301,11 +301,12 @@ _fzf_ssh_completion() {
       _fzf_path_completion $@
       ;;
     *)
-      if [[ $2 =~ '@' ]]; then
+      if [[ "$2" =~ '@' ]]; then
         user="${2%%@*}@"
         prefix="${2##*@}"
+        prefix="${prefix%%$trigger}"
         # in case it was just user@**
-        [ -z ${prefix} ] && prefix=' '
+        [ -z "${prefix}" ] && prefix=' '
       else
         prefix=${2%%$trigger}
       fi

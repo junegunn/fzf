@@ -231,7 +231,7 @@ _fzf_complete_ssh() {
       ;;
     *)
       local user
-      if [[ ${prefix} =~ '@' ]]; then
+      if [[ "${prefix}" =~ '@' ]]; then
         user="${prefix%%@*}@"
         prefix="${prefix##*@}"
       fi
