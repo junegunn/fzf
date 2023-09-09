@@ -301,10 +301,9 @@ _fzf_ssh_completion() {
       _fzf_path_completion $@
       ;;
     *)
-      # match (user@)(address)$trigger
-      if [[ $2 =~ ([^\ ]+?@)([^\ ]+?)"$trigger" ]]; then
-        user=${BASH_REMATCH[1]}
-        prefix=${BASH_REMATCH[2]}
+      if [[ $2 =~ '@' ]]; then
+        user="${2%%@*}@"
+        prefix="${2##*@}"
         # in case it was just user@**
         [ -z ${prefix} ] && prefix=' '
       else

@@ -231,9 +231,9 @@ _fzf_complete_ssh() {
       ;;
     *)
       local user
-      if [[ ${prefix} =~ ([^\ ]*@)([^\ ]*) ]]; then
-        user="$match[1]"
-        prefix="$match[2]"
+      if [[ ${prefix} =~ '@' ]]; then
+        user="${prefix%%@*}@"
+        prefix="${prefix##*@}"
       fi
       _fzf_complete +m -- "$@" < <(
         setopt localoptions nonomatch
