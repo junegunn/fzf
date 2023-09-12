@@ -57,7 +57,9 @@ else ifeq ($(UNAME_M),armv6l)
 else ifeq ($(UNAME_M),armv7l)
 	BINARY := $(BINARYARM7)
 else ifeq ($(UNAME_M),armv8l)
-	BINARY := $(BINARYARM8)
+	# armv8l is always 32-bit and should implement the armv7 ISA, so
+	# just use the same filename as for armv7.
+	BINARY := $(BINARYARM7)
 else ifeq ($(UNAME_M),arm64)
 	BINARY := $(BINARYARM8)
 else ifeq ($(UNAME_M),aarch64)
