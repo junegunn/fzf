@@ -237,10 +237,8 @@ _fzf_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
-    [ -z "${prefix:-}" ] && prefix="${cur}"
-    prefix=${prefix%% }
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$prefix" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
@@ -282,46 +280,33 @@ _fzf_proc_completion_post() {
   awk '{print $2}'
 }
 
+__fzf_list_hosts() {
+  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+    <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
+    awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | sort -u
+}
+
 _fzf_host_completion() {
-  _fzf_complete +m -- "$@" < <(
-    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-  )
+  _fzf_complete +m -- "$@" < <(__fzf_list_hosts "")
 }
 
 # Values for $1 $2 $3 are described here
 # https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html
-_fzf_ssh_completion() {
-  local user prefix trigger
-  trigger=${FZF_COMPLETION_TRIGGER-'**'}
+# > the first argument ($1) is the name of the command whose arguments are being completed,
+# > the second argument ($2) is the word being completed,
+# > and the third argument ($3) is the word preceding the word being completed on the current command line.
+_fzf_complete_ssh() {
   case $3 in
     -i|-F|-E)
-      _fzf_path_completion $@
+      _fzf_path_completion "$@"
       ;;
     *)
-      if [[ "$2" =~ '@' ]]; then
-        user="${2%%@*}@"
-        prefix="${2##*@}"
-        prefix="${prefix%%$trigger}"
-        # in case it was just user@**
-        [ -z "${prefix}" ] && prefix=' '
-      else
-        prefix=${2%%$trigger}
-      fi
-      _fzf_complete +m -- "$@" < <(
-      command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-      )
+      local user
+      [[ "$2" =~ '@' ]] && user="${2%%@*}@"
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
       ;;
   esac
-}
-
-_fzf_ssh_completion_post() {
-  [ -n $user ] && xargs -I%s echo "$user%s"
 }
 
 _fzf_var_completion() {
@@ -386,6 +371,9 @@ for cmd in $d_cmds; do
   __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
+# ssh
+__fzf_defc ssh _fzf_complete_ssh "-o default -o bashdefault"
+
 unset cmd d_cmds a_cmds
 
 _fzf_setup_completion() {
@@ -412,7 +400,6 @@ _fzf_setup_completion() {
 _fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  telnet
-_fzf_setup_completion 'ssh'   ssh
 _fzf_setup_completion 'proc'  kill
 
 fi
