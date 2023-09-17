@@ -8,10 +8,22 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var getRegex *regexp.Regexp
+
+func init() {
+	getRegex = regexp.MustCompile(`^GET /(?:\?([a-z0-9=&]+))? HTTP`)
+}
+
+type getParams struct {
+	limit  int
+	offset int
+}
 
 const (
 	crlf             = "\r\n"
@@ -117,9 +129,9 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		text := scanner.Text()
 		switch section {
 		case 0:
-			// TODO: Parameter support e.g. "GET /?limit=100 HTTP"
-			if strings.HasPrefix(text, "GET / HTTP") {
-				server.actionChannel <- []*action{{t: actResponse}}
+			getMatch := getRegex.FindStringSubmatch(text)
+			if len(getMatch) > 0 {
+				server.actionChannel <- []*action{{t: actResponse, a: getMatch[1]}}
 				response := <-server.responseChannel
 				return good(response)
 			} else if !strings.HasPrefix(text, "POST / HTTP") {
@@ -174,4 +186,26 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 
 	server.actionChannel <- actions
 	return httpOk
+}
+
+func parseGetParams(query string) getParams {
+	params := getParams{limit: 100, offset: 0}
+	for _, pair := range strings.Split(query, "&") {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) == 2 {
+			switch parts[0] {
+			case "limit":
+				val, err := strconv.Atoi(parts[1])
+				if err == nil {
+					params.limit = val
+				}
+			case "offset":
+				val, err := strconv.Atoi(parts[1])
+				if err == nil {
+					params.offset = val
+				}
+			}
+		}
+	}
+	return params
 }

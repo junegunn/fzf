@@ -152,6 +152,7 @@ type StatusItem struct {
 
 type Status struct {
 	Reading    bool         `json:"reading"`
+	Progress   int          `json:"progress"`
 	Query      string       `json:"query"`
 	Position   int          `json:"position"`
 	Sort       bool         `json:"sort"`
@@ -3022,7 +3023,7 @@ func (t *Terminal) Loop() {
 			switch a.t {
 			case actIgnore:
 			case actResponse:
-				t.serverOutputChan <- t.dumpStatus()
+				t.serverOutputChan <- t.dumpStatus(parseGetParams(a.a))
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
@@ -3802,18 +3803,16 @@ func (t *Terminal) dumpItem(i *Item) StatusItem {
 	}
 }
 
-const dumpItemLimit = 100 // TODO: Make configurable via GET parameter
-
-func (t *Terminal) dumpStatus() string {
+func (t *Terminal) dumpStatus(params getParams) string {
 	selectedItems := t.sortSelected()
-	selected := make([]StatusItem, util.Min(dumpItemLimit, len(selectedItems)))
-	for i, selectedItem := range selectedItems[:len(selected)] {
-		selected[i] = t.dumpItem(selectedItem.item)
+	selected := make([]StatusItem, util.Max(0, util.Min(params.limit, len(selectedItems)-params.offset)))
+	for i := range selected {
+		selected[i] = t.dumpItem(selectedItems[i+params.offset].item)
 	}
 
-	matches := make([]StatusItem, util.Min(dumpItemLimit, t.merger.Length()))
+	matches := make([]StatusItem, util.Max(0, util.Min(params.limit, t.merger.Length()-params.offset)))
 	for i := range matches {
-		matches[i] = t.dumpItem(t.merger.Get(i).item)
+		matches[i] = t.dumpItem(t.merger.Get(i + params.offset).item)
 	}
 
 	var current *StatusItem
@@ -3825,6 +3824,7 @@ func (t *Terminal) dumpStatus() string {
 
 	dump := Status{
 		Reading:    t.reading,
+		Progress:   t.progress,
 		Query:      string(t.input),
 		Position:   t.cy,
 		Sort:       t.sort,
