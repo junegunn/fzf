@@ -236,7 +236,7 @@ _fzf_complete_ssh() {
       _fzf_path_completion "$prefix" "$1"
       ;;
     *)
-      local user
+      local user=
       [[ $prefix =~ @ ]] && user="${prefix%%@*}@"
       _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
       ;;

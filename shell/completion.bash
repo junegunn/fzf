@@ -302,7 +302,7 @@ _fzf_complete_ssh() {
       _fzf_path_completion "$@"
       ;;
     *)
-      local user
+      local user=
       [[ "$2" =~ '@' ]] && user="${2%%@*}@"
       _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
       ;;
