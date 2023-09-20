@@ -280,13 +280,33 @@ _fzf_proc_completion_post() {
   awk '{print $2}'
 }
 
+__fzf_list_hosts() {
+  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+    <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
+    awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | sort -u
+}
+
 _fzf_host_completion() {
-  _fzf_complete +m -- "$@" < <(
-    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-  )
+  _fzf_complete +m -- "$@" < <(__fzf_list_hosts "")
+}
+
+# Values for $1 $2 $3 are described here
+# https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion.html
+# > the first argument ($1) is the name of the command whose arguments are being completed,
+# > the second argument ($2) is the word being completed,
+# > and the third argument ($3) is the word preceding the word being completed on the current command line.
+_fzf_complete_ssh() {
+  case $3 in
+    -i|-F|-E)
+      _fzf_path_completion "$@"
+      ;;
+    *)
+      local user=
+      [[ "$2" =~ '@' ]] && user="${2%%@*}@"
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
+      ;;
+  esac
 }
 
 _fzf_var_completion() {
@@ -351,6 +371,9 @@ for cmd in $d_cmds; do
   __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
 done
 
+# ssh
+__fzf_defc ssh _fzf_complete_ssh "-o default -o bashdefault"
+
 unset cmd d_cmds a_cmds
 
 _fzf_setup_completion() {
@@ -376,7 +399,7 @@ _fzf_setup_completion() {
 # Environment variables / Aliases / Hosts / Process
 _fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
-_fzf_setup_completion 'host'  ssh telnet
+_fzf_setup_completion 'host'  telnet
 _fzf_setup_completion 'proc'  kill
 
 fi

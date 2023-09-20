@@ -3365,6 +3365,34 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'unset -f _fzf_comprun', :Enter
   end
+
+  def test_ssh_completion
+    (1..5).each { |i| FileUtils.touch("/tmp/fzf-test-ssh-#{i}") }
+
+    tmux.send_keys 'ssh jg@localhost**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 1
+    end
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('ssh jg@localhost') }
+    tmux.send_keys ' -i /tmp/fzf-test-ssh**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 5
+      assert_equal 0, lines.select_count
+    end
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until do |lines|
+      assert_equal 3, lines.select_count
+    end
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('ssh jg@localhost  -i /tmp/fzf-test-ssh-') }
+
+    tmux.send_keys 'localhost**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 1
+    end
+  end
 end
 
 class TestBash < TestBase
