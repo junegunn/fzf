@@ -3,7 +3,6 @@
 package tui
 
 import (
-	"io/ioutil"
 	"os"
 	"syscall"
 )
@@ -17,13 +16,17 @@ func ttyname() string {
 	}
 
 	for _, prefix := range devPrefixes {
-		files, err := ioutil.ReadDir(prefix)
+		files, err := os.ReadDir(prefix)
 		if err != nil {
 			continue
 		}
 
 		for _, file := range files {
-			if stat, ok := file.Sys().(*syscall.Stat_t); ok && stat.Rdev == stderr.Rdev {
+			info, err := file.Info()
+			if err != nil {
+				continue
+			}
+			if stat, ok := info.Sys().(*syscall.Stat_t); ok && stat.Rdev == stderr.Rdev {
 				return prefix + file.Name()
 			}
 		}

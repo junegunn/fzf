@@ -145,7 +145,7 @@ __fzf_generic_path_completion() {
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-}" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
+      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-}" __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
         item="${item%$suffix}$suffix"
         echo -n "${(q)item} "
       done)
@@ -215,21 +215,32 @@ _fzf_complete() {
   command rm -f "$fifo"
 }
 
-_fzf_complete_telnet() {
-  _fzf_complete +m -- "$@" < <(
-    command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0' |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-  )
+__fzf_list_hosts() {
+  setopt localoptions nonomatch
+  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+    <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
+    awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | sort -u
 }
 
+_fzf_complete_telnet() {
+  _fzf_complete +m -- "$@" < <(__fzf_list_hosts "")
+}
+
+# The first and the only argument is the LBUFFER without the current word that contains the trigger.
+# The current word without the trigger is in the $prefix variable passed from the caller.
 _fzf_complete_ssh() {
-  _fzf_complete +m -- "$@" < <(
-    setopt localoptions nonomatch
-    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-        awk '{if (length($2) > 0) {print $2}}' | sort -u
-  )
+  local tokens=(${(z)1})
+  case ${tokens[-1]} in
+    -i|-F|-E)
+      _fzf_path_completion "$prefix" "$1"
+      ;;
+    *)
+      local user=
+      [[ $prefix =~ @ ]] && user="${prefix%%@*}@"
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
+      ;;
+  esac
 }
 
 _fzf_complete_export() {

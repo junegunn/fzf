@@ -151,7 +151,13 @@ argsf="${TMPDIR:-/tmp}/fzf-args-$id"
 fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
 fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
 fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
-tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
+if tmux_win_opts=$(tmux show-options -p remain-on-exit \; show-options -p synchronize-panes 2> /dev/null); then
+  tmux_win_opts=( $(sed '/ off/d; s/synchronize-panes/set-option -p synchronize-panes/; s/remain-on-exit/set-option -p remain-on-exit/; s/$/ \\;/' <<< "$tmux_win_opts") )
+  tmux_off_opts='; set-option -p synchronize-panes off ; set-option -p remain-on-exit off'
+else
+  tmux_win_opts=( $(tmux show-window-options remain-on-exit \; show-window-options synchronize-panes | sed '/ off/d; s/^/set-window-option /; s/$/ \\;/') )
+  tmux_off_opts='; set-window-option synchronize-panes off ; set-window-option remain-on-exit off'
+fi
 cleanup() {
   \rm -f $argsf $fifo1 $fifo2 $fifo3
 
@@ -192,6 +198,8 @@ if [[ "$opt" =~ "-E" ]]; then
 fi
 [[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
 [[ -n "$FZF_DEFAULT_COMMAND" ]] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
+[[ -n "$RUNEWIDTH_EASTASIAN" ]] && envs="$envs RUNEWIDTH_EASTASIAN=$(printf %q "$RUNEWIDTH_EASTASIAN")"
+[[ -n "$BAT_THEME" ]] && envs="$envs BAT_THEME=$(printf %q "$BAT_THEME")"
 echo "$envs;" > "$argsf"
 
 # Build arguments to fzf
@@ -225,9 +233,9 @@ else
   cat <<< "\"$fzf\" $opts < $fifo1 > $fifo2; echo \$? > $fifo3 $close" >> $argsf
   cat <&0 > $fifo1 &
 fi
-tmux set-window-option synchronize-panes off \;\
-  set-window-option remain-on-exit off \;\
+tmux \
   split-window -c "$PWD" $opt "bash -c 'exec -a fzf bash $argsf'" $swap \
+  $tmux_off_opts \
   > /dev/null 2>&1 || { "$fzf" "${args[@]}"; exit $?; }
 cat $fifo2
 exit "$(cat $fifo3)"

@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "May 2023" "fzf 0.41.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2023" "fzf 0.42.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -57,9 +57,9 @@ Choose scoring scheme tailored for different types of input.
 .br
 .BR default "  Generic scoring scheme designed to work well with any type of input"
 .br
-.BR path "     Scoring scheme for paths (additional bonus point only after path separator)
+.BR path "     Scoring scheme well suited for file paths
 .br
-.BR history "  Scoring scheme for command history (no additional bonus points).
+.BR history "  Scoring scheme well suited for command history or any input where chronological ordering is important
          Sets \fB--tiebreak=index\fR as well.
 .br
 .TP
@@ -228,6 +228,10 @@ Draw border around the finder
 .br
 .BR double "        Border with double lines"
 .br
+.BR block "         Border using block elements; suitable when using different background colors"
+.br
+.BR thinblock "     Border using legacy computing symbols; may not be displayed on some terminals"
+.br
 .BR horizontal "    Horizontal lines above and below the finder"
 .br
 .BR vertical "      Vertical lines on each side of the finder"
@@ -353,9 +357,13 @@ Determines the display style of finder info (match counters).
 .br
 .BR default "          Display on the next line to the prompt"
 .br
+.BR right "            Display on the right end of the next line to the prompt"
+.br
 .BR inline "           Display on the same line with the default separator ' < '"
 .br
 .BR inline:SEPARATOR " Display on the same line with a non-default separator"
+.br
+.BR inline-right "     Display on the right end of the same line
 .br
 .BR hidden "           Do not display finder info"
 .br
@@ -599,6 +607,10 @@ Should be used with one of the following \fB--preview-window\fR options.
 .br
 .B * border-double
 .br
+.B * border-block
+.br
+.B * border-thinblock
+.br
 .B * border-horizontal
 .br
 .B * border-top
@@ -747,6 +759,21 @@ Read input delimited by ASCII NUL characters instead of newline characters
 .B "--print0"
 Print output delimited by ASCII NUL characters instead of newline characters
 .TP
+.B "--no-clear"
+Do not clear finder interface on exit. If fzf was started in full screen mode,
+it will not switch back to the original screen, so you'll have to manually run
+\fBtput rmcup\fR to return. This option can be used to avoid flickering of the
+screen when your application needs to start fzf multiple times in order. (Note
+that in most cases, it is preferable to use \fBreload\fR action instead.)
+
+e.g.
+     \fBfoo=$(seq 100 | fzf --no-clear) || (
+       # Need to manually switch back to the main screen when cancelled
+       tput rmcup
+       exit 1
+     ) && seq "$foo" 100 | fzf
+
+.TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 ncurses finder only after the input stream is complete.
@@ -760,14 +787,23 @@ Start HTTP server on the given port. It allows external processes to send
 actions to perform via POST method. If the port number is omitted or given as
 0, fzf will choose the port automatically and export it as \fBFZF_PORT\fR
 environment variable to the child processes started via \fBexecute\fR and
-\fBexecute-silent\fR actions.
+\fBexecute-silent\fR actions. If \fBFZF_API_KEY\fR environment variable is
+set, the server would require sending an API key with the same value in the
+\fBx-api-key\fR HTTP header.
 
 e.g.
      \fB# Start HTTP server on port 6266
      fzf --listen 6266
 
+     # Get program state in JSON format (experimental)
+     curl localhost:6266
+
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+
+     # Start HTTP server on port 6266 and send an authenticated action
+     export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+     curl -XPOST localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
 
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf --listen --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'
@@ -788,6 +824,11 @@ this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
+.TP
+.B FZF_API_KEY
+Can be used to require an API key when using \fB--listen\fR option. If not set,
+no authentication will be required by the server. You can set this value if
+you need to protect against DNS rebinding and privilege escalation attacks.
 
 .SH EXIT STATUS
 .BR 0 "      Normal exit"
@@ -1114,6 +1155,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\fR                       (\fIright-click\fR)
     \fBtoggle-all\fR                   (toggle all matches)
     \fBtoggle+down\fR                  \fIctrl-i  (tab)\fR
+    \fBtoggle-header\fR
     \fBtoggle-in\fR                    (\fB--layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
     \fBtoggle-out\fR                   (\fB--layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
     \fBtoggle-preview\fR

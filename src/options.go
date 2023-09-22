@@ -63,7 +63,7 @@ const usage = `usage: fzf [options]
                            (default: 10)
     --layout=LAYOUT        Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]       Draw border around the finder
-                           [rounded|sharp|bold|block|double|horizontal|vertical|
+                           [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
                             top|bottom|left|right|none] (default: rounded)
     --border-label=LABEL   Label to print on the border
     --border-label-pos=COL Position of the border label
@@ -72,7 +72,8 @@ const usage = `usage: fzf [options]
                            (default: 0 or center)
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
-    --info=STYLE           Finder info style [default|hidden|inline|inline:SEPARATOR]
+    --info=STYLE           Finder info style
+                           [default|right|hidden|inline[:SEPARATOR]|inline-right]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
     --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
@@ -124,6 +125,7 @@ const usage = `usage: fzf [options]
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
     FZF_DEFAULT_OPTS       Default options
                            (e.g. '--layout=reverse --inline-info')
+    FZF_API_KEY            X-API-Key header for HTTP server (--listen)
 
 `
 
@@ -194,9 +196,15 @@ type infoStyle int
 
 const (
 	infoDefault infoStyle = iota
+	infoRight
 	infoInline
+	infoInlineRight
 	infoHidden
 )
+
+func (s infoStyle) noExtraLine() bool {
+	return s == infoInline || s == infoInlineRight || s == infoHidden
+}
 
 type labelOpts struct {
 	label  string
@@ -546,6 +554,8 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		return tui.BorderBold
 	case "block":
 		return tui.BorderBlock
+	case "thinblock":
+		return tui.BorderThinBlock
 	case "double":
 		return tui.BorderDouble
 	case "horizontal":
@@ -566,7 +576,7 @@ func parseBorder(str string, optional bool) tui.BorderShape {
 		if optional && str == "" {
 			return tui.DefaultBorderShape
 		}
-		errorExit("invalid border style (expected: rounded|sharp|bold|block|double|horizontal|vertical|top|bottom|left|right|none)")
+		errorExit("invalid border style (expected: rounded|sharp|bold|block|thinblock|double|horizontal|vertical|top|bottom|left|right|none)")
 	}
 	return tui.BorderNone
 }
@@ -1105,6 +1115,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleSearch)
 		case "toggle-track":
 			appendAction(actToggleTrack)
+		case "toggle-header":
+			appendAction(actToggleHeader)
 		case "track":
 			appendAction(actTrack)
 		case "select":
@@ -1374,8 +1386,12 @@ func parseInfoStyle(str string) (infoStyle, string) {
 	switch str {
 	case "default":
 		return infoDefault, ""
+	case "right":
+		return infoRight, ""
 	case "inline":
 		return infoInline, defaultInfoSep
+	case "inline-right":
+		return infoInlineRight, ""
 	case "hidden":
 		return infoHidden, ""
 	default:
@@ -1383,7 +1399,7 @@ func parseInfoStyle(str string) (infoStyle, string) {
 		if strings.HasPrefix(str, prefix) {
 			return infoInline, strings.ReplaceAll(str[len(prefix):], "\n", " ")
 		}
-		errorExit("invalid info style (expected: default|hidden|inline|inline:SEPARATOR)")
+		errorExit("invalid info style (expected: default|right|hidden|inline[:SEPARATOR]|inline-right)")
 	}
 	return infoDefault, ""
 }
@@ -1438,6 +1454,8 @@ func parsePreviewWindowImpl(opts *previewOpts, input string, exit func(string)) 
 			opts.border = tui.BorderBold
 		case "border-block":
 			opts.border = tui.BorderBlock
+		case "border-thinblock":
+			opts.border = tui.BorderThinBlock
 		case "border-double":
 			opts.border = tui.BorderDouble
 		case "noborder", "border-none":

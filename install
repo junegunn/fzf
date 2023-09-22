@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.41.1
+version=0.42.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -196,12 +196,12 @@ if [ -n "$binary_error" ]; then
     echo "  - $binary_error !!!"
   fi
   if command -v go > /dev/null; then
-    echo -n "Building binary (go get -u github.com/junegunn/fzf) ... "
+    echo -n "Building binary (go install github.com/junegunn/fzf) ... "
     if [ -z "${GOPATH-}" ]; then
       export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
       mkdir -p "$GOPATH"
     fi
-    if go get -ldflags "-s -w -X main.version=$version -X main.revision=go-get" github.com/junegunn/fzf; then
+    if go install -ldflags "-s -w -X main.version=$version -X main.revision=go-install" github.com/junegunn/fzf; then
       echo "OK"
       cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
     else

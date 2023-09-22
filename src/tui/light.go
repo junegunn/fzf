@@ -757,7 +757,7 @@ func (w *LightWindow) DrawHBorder() {
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 	switch w.border.shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
 	case BorderHorizontal:
 		w.drawBorderHorizontal(true, true)

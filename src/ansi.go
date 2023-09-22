@@ -381,10 +381,19 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 					state.attr = state.attr | tui.Reverse
 				case 9:
 					state.attr = state.attr | tui.StrikeThrough
+				case 22:
+					state.attr = state.attr &^ tui.Bold
+					state.attr = state.attr &^ tui.Dim
 				case 23: // tput rmso
 					state.attr = state.attr &^ tui.Italic
 				case 24: // tput rmul
 					state.attr = state.attr &^ tui.Underline
+				case 25:
+					state.attr = state.attr &^ tui.Blink
+				case 27:
+					state.attr = state.attr &^ tui.Reverse
+				case 29:
+					state.attr = state.attr &^ tui.StrikeThrough
 				case 0:
 					state.fg = -1
 					state.bg = -1

@@ -8,6 +8,7 @@ require 'shellwords'
 require 'erb'
 require 'tempfile'
 require 'net/http'
+require 'json'
 
 TEMPLATE = DATA.read
 UNSETS = %w[
@@ -16,6 +17,7 @@ UNSETS = %w[
   FZF_CTRL_T_COMMAND FZF_CTRL_T_OPTS
   FZF_ALT_C_COMMAND
   FZF_ALT_C_OPTS FZF_CTRL_R_OPTS
+  FZF_API_KEY
   fish_history
 ].freeze
 DEFAULT_TIMEOUT = 10
@@ -1210,6 +1212,39 @@ class TestGoFZF < TestBase
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7...-2]
       assert_equal ('  1'..'  10').to_a.reverse, lines[-17...-7]
     end
+  end
+
+  def test_toggle_header
+    tmux.send_keys "seq 4 | #{FZF} --header-lines 2 --header foo --bind space:toggle-header --header-first --height 10 --border", :Enter
+    before = <<~OUTPUT
+      ╭───────
+      │
+      │   4
+      │ > 3
+      │   2/2
+      │ >
+      │   2
+      │   1
+      │   foo
+      ╰───────
+    OUTPUT
+    tmux.until { assert_block(before, _1) }
+    tmux.send_keys :Space
+    after = <<~OUTPUT
+      ╭───────
+      │
+      │
+      │
+      │
+      │   4
+      │ > 3
+      │   2/2
+      │ >
+      ╰───────
+    OUTPUT
+    tmux.until { assert_block(after, _1) }
+    tmux.send_keys :Space
+    tmux.until { assert_block(before, _1) }
   end
 
   def test_cancel
@@ -2707,6 +2742,16 @@ class TestGoFZF < TestBase
     tmux.until { assert(_1[-2] == '  1/100') }
   end
 
+  def test_info_right
+    tmux.send_keys "#{FZF} --info=right --separator x --bind 'start:reload:seq 100; sleep 10'", :Enter
+    tmux.until { assert_match(%r{xxx [⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, _1[-2]) }
+  end
+
+  def test_info_inline_right
+    tmux.send_keys "#{FZF} --info=inline-right --bind 'start:reload:seq 100; sleep 10'", :Enter
+    tmux.until { assert_match(%r{[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, _1[-1]) }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }
@@ -2732,11 +2777,43 @@ class TestGoFZF < TestBase
         -> { URI("http://localhost:#{File.read('/tmp/fzf-port').chomp}") } }.each do |opts, fn|
       tmux.send_keys "seq 10 | fzf #{opts}", :Enter
       tmux.until { |lines| assert_equal 10, lines.item_count }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal 10, state[:totalCount]
+      assert_equal 10, state[:matchCount]
+      assert_empty state[:query]
+      assert_equal({ index: 0, text: '1' }, state[:current])
+
       Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal 100, state[:totalCount]
+      assert_equal 0, state[:matchCount]
+      assert_equal 'yo', state[:query]
+      assert_nil state[:current]
+
       teardown
       setup
+    end
+  end
+
+  def test_listen_with_api_key
+    post_uri = URI('http://localhost:6266')
+    tmux.send_keys 'seq 10 | FZF_API_KEY=123abc fzf --listen 6266', :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    # Incorrect API Key
+    [nil, { 'x-api-key' => '' }, { 'x-api-key' => '124abc' }].each do |headers|
+      res = Net::HTTP.post(post_uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
+      assert_equal '401', res.code
+      assert_equal 'Unauthorized', res.message
+      assert_equal "invalid api key\n", res.body
+    end
+    # Valid API Key
+    [{ 'x-api-key' => '123abc' }, { 'X-API-Key' => '123abc' }].each do |headers|
+      res = Net::HTTP.post(post_uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
+      assert_equal '200', res.code
+      tmux.until { |lines| assert_equal 100, lines.item_count }
+      tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
     end
   end
 
@@ -3287,6 +3364,34 @@ module CompletionTest
   ensure
     tmux.prepare
     tmux.send_keys 'unset -f _fzf_comprun', :Enter
+  end
+
+  def test_ssh_completion
+    (1..5).each { |i| FileUtils.touch("/tmp/fzf-test-ssh-#{i}") }
+
+    tmux.send_keys 'ssh jg@localhost**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 1
+    end
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('ssh jg@localhost') }
+    tmux.send_keys ' -i /tmp/fzf-test-ssh**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 5
+      assert_equal 0, lines.select_count
+    end
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until do |lines|
+      assert_equal 3, lines.select_count
+    end
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('ssh jg@localhost  -i /tmp/fzf-test-ssh-') }
+
+    tmux.send_keys 'localhost**', :Tab
+    tmux.until do |lines|
+      assert lines.match_count >= 1
+    end
   end
 end
 

@@ -715,7 +715,7 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 
 	hw := runewidth.RuneWidth(w.borderStyle.top)
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderHorizontal, BorderTop:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderTop:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderTop {
 			max = right - hw
@@ -730,7 +730,7 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderHorizontal, BorderBottom:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderBottom:
 		max := right - 2*hw
 		if shape == BorderHorizontal || shape == BorderBottom {
 			max = right - hw
@@ -741,13 +741,13 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	}
 	if !onlyHorizontal {
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderVertical, BorderLeft:
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderLeft:
 			for y := top; y < bot; y++ {
 				_screen.SetContent(left, y, w.borderStyle.left, nil, style)
 			}
 		}
 		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble, BorderVertical, BorderRight:
+		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderRight:
 			vw := runewidth.RuneWidth(w.borderStyle.right)
 			for y := top; y < bot; y++ {
 				_screen.SetContent(right-vw, y, w.borderStyle.right, nil, style)
@@ -755,7 +755,7 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		}
 	}
 	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderDouble:
+	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
 		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
