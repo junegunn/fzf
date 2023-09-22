@@ -19,7 +19,7 @@ __fzf_select__() {
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"}"
-  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-} -m"
+  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse --scheme=path ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-} -m"
   eval "$cmd" |
     FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) "$@" |
     while read -r item; do
@@ -44,27 +44,60 @@ __fzf_cd__() {
   local cmd opts dir
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type d -print 2> /dev/null | cut -b3-"}"
-  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-} +m"
+  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse --scheme=path ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-} +m"
   dir=$(set +o pipefail; eval "$cmd" | FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)) && printf 'builtin cd -- %q' "$dir"
 }
 
-__fzf_history__() {
-  local output opts script
-  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
-  script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
-  output=$(
-    set +o pipefail
-    builtin fc -lnr -2147483648 |
-      last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
-      FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
-  ) || return
-  READLINE_LINE=${output#*$'\t'}
-  if [[ -z "$READLINE_POINT" ]]; then
-    echo "$READLINE_LINE"
-  else
-    READLINE_POINT=0x7fffffff
-  fi
-}
+if command -v perl > /dev/null; then
+  __fzf_history__() {
+    local output opts script
+    opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
+    script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
+    output=$(
+      set +o pipefail
+      builtin fc -lnr -2147483648 |
+        last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
+        FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
+    ) || return
+    READLINE_LINE=${output#*$'\t'}
+    if [[ -z "$READLINE_POINT" ]]; then
+      echo "$READLINE_LINE"
+    else
+      READLINE_POINT=0x7fffffff
+    fi
+  }
+else # awk
+  __fzf_history__() {
+    local output opts script
+    if [[ -z $__fzf_awk ]]; then
+      __fzf_awk=awk
+      # if installed, mawk is faster
+      command -v mawk > /dev/null &&
+        mawk --version |          # at least 1.3.4
+          awk 'NR == 1 { split($2, a, "."); v=(a[1]*1000000+ a[2]*1000+ a[3]*1); exit !(v >= 1003004) }' &&
+          __fzf_awk=mawk
+    fi
+    opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
+    [[ $(HISTTIMEFORMAT='' builtin history 1) =~ [[:digit:]]+ ]]    # how many history entries
+    script='function P(b) { ++n; sub(/^[ *]/, "", b); if (!seen[b]++) { printf "%d\t%s%c", '$((BASH_REMATCH + 1))' - n, b, 0 } }
+    NR==1 { b = substr($0, 2); next }
+    /^\t/ { P(b); b = substr($0, 2); next }
+    { b = b RS $0 }
+    END { if (NR) P(b) }'
+    output=$(
+      set +o pipefail
+      builtin fc -lnr -2147483648 2> /dev/null |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
+        $__fzf_awk "$script"                          |   # ( <counter>$'\t'<lines>$'\000' )*
+        FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
+    ) || return
+    READLINE_LINE=${output#*$'\t'}
+    if [[ -z "$READLINE_POINT" ]]; then
+      echo "$READLINE_LINE"
+    else
+      READLINE_POINT=0x7fffffff
+    fi
+  }
+fi
 
 # Required to refresh the prompt after fzf
 bind -m emacs-standard '"\er": redraw-current-line'
