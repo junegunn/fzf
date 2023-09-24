@@ -11,6 +11,9 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+if status is-interactive
+
+
 # Key bindings
 # ------------
 function fzf_key_bindings
@@ -168,5 +171,8 @@ function fzf_key_bindings
 
     echo $dir
   end
+
+end
+
 
 end
