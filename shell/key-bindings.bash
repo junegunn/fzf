@@ -27,7 +27,7 @@ __fzf_select__() {
     done
 }
 
-if [[ $- =~ i ]]; then
+[[ $- =~ i ]] || return 0
 
 __fzfcmd() {
   [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; } &&
@@ -130,5 +130,3 @@ fi
 bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
 bind -m vi-command '"\ec": "\C-z\ec\C-z"'
 bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
-
-fi
