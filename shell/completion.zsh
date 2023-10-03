@@ -143,6 +143,9 @@ __fzf_generic_path_completion() {
   tail=$6
 
   setopt localoptions nonomatch
+  if [[ $base = *'$('* ]] || [[ $base = *'<('* ]] || [[ $base = *'`'* ]]; then
+    return
+  fi
   eval "base=$base"
   [[ $base = *"/"* ]] && dir="$base"
   while [ 1 ]; do
@@ -310,6 +313,9 @@ fzf-completion() {
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir})
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
+    if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'`'* ]]; then
+      return
+    fi
     [ -n "${tokens[-1]}" ] && lbuf=${lbuf:0:-${#tokens[-1]}}
 
     if eval "type _fzf_complete_${cmd} > /dev/null"; then
