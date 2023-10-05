@@ -18,7 +18,7 @@ if ! declare -F _fzf_compgen_path > /dev/null; then
     echo "$1"
     command find -L "$1" \
       -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+      -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
   }
 fi
 
@@ -26,7 +26,7 @@ if ! declare -F _fzf_compgen_dir > /dev/null; then
   _fzf_compgen_dir() {
     command find -L "$1" \
       -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
-      -a -not -path "$1" -print 2> /dev/null | sed 's@^\./@@'
+      -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
   }
 fi
 
@@ -196,7 +196,7 @@ __fzf_generic_path_completion() {
         printf '\e[5n'
         return 0
       fi
-      dir=$(dirname "$dir")
+      dir=$(command dirname "$dir")
       [[ "$dir" =~ /$ ]] || dir="$dir"/
     done
   else
@@ -230,8 +230,8 @@ _fzf_complete() {
   fi
 
   local cur selected trigger cmd post
-  post="$(caller 0 | awk '{print $2}')_post"
-  type -t "$post" > /dev/null 2>&1 || post=cat
+  post="$(caller 0 | command awk '{print $2}')_post"
+  type -t "$post" > /dev/null 2>&1 || post='command cat'
 
   cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
@@ -239,7 +239,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | command tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
@@ -278,14 +278,14 @@ _fzf_proc_completion() {
 }
 
 _fzf_proc_completion_post() {
-  awk '{print $2}'
+  command awk '{print $2}'
 }
 
 __fzf_list_hosts() {
-  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
     <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-    awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | sort -u
+    command awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | command sort -u
 }
 
 _fzf_host_completion() {
@@ -312,13 +312,13 @@ _fzf_complete_ssh() {
 
 _fzf_var_completion() {
   _fzf_complete -m -- "$@" < <(
-    declare -xp | sed -En 's|^declare [^ ]+ ([^=]+).*|\1|p'
+    declare -xp | command sed -En 's|^declare [^ ]+ ([^=]+).*|\1|p'
   )
 }
 
 _fzf_alias_completion() {
   _fzf_complete -m -- "$@" < <(
-    alias | sed -En 's|^alias ([^=]+).*|\1|p'
+    alias | command sed -En 's|^alias ([^=]+).*|\1|p'
   )
 }
 
