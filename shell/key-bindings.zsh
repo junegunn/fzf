@@ -38,6 +38,20 @@ fi
 
 [[ -o interactive ]] || return 0
 
+fzf_binding() {
+  local -A default
+  default=(
+    file '^T'
+    cd '\ec'
+    history '^R'
+  )
+  local binding
+  if ! zstyle -s ':fzf:bindings' "$1" binding; then
+    binding="${default[$1]}"
+  fi
+  echo -n "$binding"
+}
+
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
   local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
@@ -65,10 +79,10 @@ fzf-file-widget() {
   zle reset-prompt
   return $ret
 }
-zle     -N            fzf-file-widget
-bindkey -M emacs '^T' fzf-file-widget
-bindkey -M vicmd '^T' fzf-file-widget
-bindkey -M viins '^T' fzf-file-widget
+zle     -N                             fzf-file-widget
+bindkey -M emacs "$(fzf_binding file)" fzf-file-widget
+bindkey -M vicmd "$(fzf_binding file)" fzf-file-widget
+bindkey -M viins "$(fzf_binding file)" fzf-file-widget
 
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
@@ -81,17 +95,17 @@ fzf-cd-widget() {
     return 0
   fi
   zle push-line # Clear buffer. Auto-restored on next prompt.
-  BUFFER="builtin cd -- ${(q)dir}"
+  BUFFER="cd -- ${(q)dir}"
   zle accept-line
   local ret=$?
   unset dir # ensure this doesn't end up appearing in prompt expansion
   zle reset-prompt
   return $ret
 }
-zle     -N             fzf-cd-widget
-bindkey -M emacs '\ec' fzf-cd-widget
-bindkey -M vicmd '\ec' fzf-cd-widget
-bindkey -M viins '\ec' fzf-cd-widget
+zle     -N                           fzf-cd-widget
+bindkey -M emacs "$(fzf_binding cd)" fzf-cd-widget
+bindkey -M vicmd "$(fzf_binding cd)" fzf-cd-widget
+bindkey -M viins "$(fzf_binding cd)" fzf-cd-widget
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
@@ -109,10 +123,12 @@ fzf-history-widget() {
   zle reset-prompt
   return $ret
 }
-zle     -N            fzf-history-widget
-bindkey -M emacs '^R' fzf-history-widget
-bindkey -M vicmd '^R' fzf-history-widget
-bindkey -M viins '^R' fzf-history-widget
+zle     -N                                fzf-history-widget
+bindkey -M emacs "$(fzf_binding history)" fzf-history-widget
+bindkey -M vicmd "$(fzf_binding history)" fzf-history-widget
+bindkey -M viins "$(fzf_binding history)" fzf-history-widget
+
+unset -f fzf_binding
 
 } always {
   eval $__fzf_key_bindings_options
