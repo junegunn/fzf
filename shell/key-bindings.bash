@@ -48,7 +48,7 @@ __fzf_cd__() {
   dir=$(set +o pipefail; eval "$cmd" | FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)) && printf 'builtin cd -- %q' "$dir"
 }
 
-if command -v perl > /dev/null; then
+if command -v perl >&- ; then
   __fzf_history__() {
     local output opts script
     opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
@@ -56,7 +56,7 @@ if command -v perl > /dev/null; then
     output=$(
       set +o pipefail
       builtin fc -lnr -2147483648 |
-        last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
+        last_hist=$(HISTTIMEFORMAT='' builtin history 1) command perl -n -l0 -e "$script" |
         FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
     ) || return
     READLINE_LINE=${output#*$'\t'}
@@ -66,16 +66,14 @@ if command -v perl > /dev/null; then
       READLINE_POINT=0x7fffffff
     fi
   }
-else # awk
+elif command -v awk >&- || command -v mawk >&- ; then # awk - fallback for POSIX systems
   __fzf_history__() {
-    local output opts script
+    local output opts script n x y z d
     if [[ -z $__fzf_awk ]]; then
       __fzf_awk=awk
-      # if installed, mawk is faster
-      command -v mawk > /dev/null &&
-        mawk --version |          # at least 1.3.4
-          awk 'NR == 1 { split($2, a, "."); v=(a[1]*1000000+ a[2]*1000+ a[3]*1); exit !(v >= 1003004) }' &&
-          __fzf_awk=mawk
+      # choose the faster mawk if: it's installed && build date >= 20230322 && version >= 1.3.4
+      IFS=' .' read n x y z d <<< $(command mawk -W version 2>&-)
+      [[ $n == mawk ]] && (( d >= 20230302 && (x *1000 +y) *1000 +z >= 1003004 )) && __fzf_awk=mawk
     fi
     opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
     [[ $(HISTTIMEFORMAT='' builtin history 1) =~ [[:digit:]]+ ]]    # how many history entries
@@ -86,8 +84,8 @@ else # awk
     END { if (NR) P(b) }'
     output=$(
       set +o pipefail
-      builtin fc -lnr -2147483648 2> /dev/null |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
-        $__fzf_awk "$script"                          |   # ( <counter>$'\t'<lines>$'\000' )*
+      builtin fc -lnr -2147483648 2>&-   |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
+        command $__fzf_awk "$script"     |   # ( <counter>$'\t'<lines>$'\000' )*
         FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
     ) || return
     READLINE_LINE=${output#*$'\t'}
@@ -112,20 +110,24 @@ if (( BASH_VERSINFO[0] < 4 )); then
   bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
   bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
 
-  # CTRL-R - Paste the selected command from history into the command line
-  bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
-  bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
-  bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
+  if [[ $(type -t __fzf_history__) == function ]]; then
+    # CTRL-R - Paste the selected command from history into the command line
+    bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
+    bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
+    bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
+  fi
 else
   # CTRL-T - Paste the selected file path into the command line
   bind -m emacs-standard -x '"\C-t": fzf-file-widget'
   bind -m vi-command -x '"\C-t": fzf-file-widget'
   bind -m vi-insert -x '"\C-t": fzf-file-widget'
 
-  # CTRL-R - Paste the selected command from history into the command line
-  bind -m emacs-standard -x '"\C-r": __fzf_history__'
-  bind -m vi-command -x '"\C-r": __fzf_history__'
-  bind -m vi-insert -x '"\C-r": __fzf_history__'
+  if [[ $(type -t __fzf_history__) == function ]]; then
+    # CTRL-R - Paste the selected command from history into the command line
+    bind -m emacs-standard -x '"\C-r": __fzf_history__'
+    bind -m vi-command -x '"\C-r": __fzf_history__'
+    bind -m vi-insert -x '"\C-r": __fzf_history__'
+  fi
 fi
 
 # ALT-C - cd into the selected directory
