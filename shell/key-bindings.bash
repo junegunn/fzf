@@ -66,7 +66,7 @@ if command -v perl > /dev/null; then
       READLINE_POINT=0x7fffffff
     fi
   }
-elif command -v awk > /dev/null || command -v mawk > /dev/null ; then # awk - fallback for POSIX systems
+elif command -v awk > /dev/null || command -v mawk > /dev/null; then # awk - fallback for POSIX systems
   __fzf_history__() {
     local output opts script n x y z d
     if [[ -z $__fzf_awk ]]; then
