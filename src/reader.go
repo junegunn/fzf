@@ -95,7 +95,7 @@ func (r *Reader) restart(command string) {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource() {
+func (r *Reader) ReadSource(readDirs bool) {
 	r.startEventPoller()
 	var success bool
 	if util.IsTty() {
@@ -115,7 +115,7 @@ func (r *Reader) ReadSource() {
 			if defaultCommand != "" {
 				success = r.readFromCommand(&shell, defaultCommand)
 			} else {
-				success = r.readFiles()
+				success = r.readFilesOrDirs(readDirs)
 			}
 		} else {
 			success = r.readFromCommand(nil, cmd)
@@ -161,7 +161,7 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
-func (r *Reader) readFiles() bool {
+func (r *Reader) readFilesOrDirs(readDirs bool) bool {
 	r.killed = false
 	fn := func(path string, mode os.FileInfo) error {
 		path = filepath.Clean(path)
@@ -170,7 +170,7 @@ func (r *Reader) readFiles() bool {
 			if isDir && filepath.Base(path)[0] == '.' {
 				return filepath.SkipDir
 			}
-			if !isDir && r.pusher([]byte(path)) {
+			if ((isDir && readDirs) || (!isDir && !readDirs)) && r.pusher([]byte(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}

@@ -39,6 +39,8 @@ const usage = `usage: fzf [options]
     --tiebreak=CRI[,..]    Comma-separated list of sort criteria to apply
                            when the scores are tied [length|chunk|begin|end|index]
                            (default: length)
+    --builtin-filter-dirs  Filter directories instead of files when FZF_DEFAULT_COMMAND
+                           is not set and input is not tty
 
   Interface
     -m, --multi[=MAX]      Enable multi-select with tab/shift-tab
@@ -336,6 +338,7 @@ type Options struct {
 	Tabstop      int
 	ListenPort   *int
 	ClearOnExit  bool
+	FilterDirs   bool
 	Version      bool
 }
 
@@ -405,6 +408,7 @@ func defaultOptions() *Options {
 		BorderLabel:  labelOpts{},
 		PreviewLabel: labelOpts{},
 		ClearOnExit:  true,
+		FilterDirs:   false,
 		Version:      false}
 }
 
@@ -1821,6 +1825,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = true
 		case "--no-clear":
 			opts.ClearOnExit = false
+		case "--builtin-filter-dirs":
+			opts.FilterDirs = true
 		case "--version":
 			opts.Version = true
 		case "--":
