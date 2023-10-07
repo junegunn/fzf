@@ -3,6 +3,19 @@ CHANGELOG
 
 0.43.0
 ------
+- Experimental, partial support for Kitty image protocol in the preview window
+  ```sh
+  fzf --preview='
+    if file --mime-type {} | grep -qF 'image/'; then
+      # --transfer-mode=memory is the fastest option but if you want fzf to be able
+      # to redraw the image on terminal resize or on 'change-preview-window',
+      # you need to use --transfer-mode=stream.
+      kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {}
+    else
+      bat --color=always {}
+    fi
+  '
+  ```
 - `--listen` server can report program state in JSON format (`GET /`)
   ```sh
   # fzf server started in "headless" mode

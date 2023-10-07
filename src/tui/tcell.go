@@ -98,6 +98,11 @@ const (
 	AttrClear     = Attr(1 << 8)
 )
 
+func (r *FullscreenRenderer) PassThrough(str string) {
+	// No-op
+	// https://github.com/gdamore/tcell/issues/363#issuecomment-680665073
+}
+
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
 
 func (r *FullscreenRenderer) defaultTheme() *ColorTheme {

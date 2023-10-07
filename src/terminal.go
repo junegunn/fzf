@@ -51,6 +51,7 @@ var whiteSuffix *regexp.Regexp
 var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
+var passThroughRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
 
@@ -60,6 +61,11 @@ func init() {
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
 	activeTempFiles = []string{}
+
+	// Parts of the preview output that should be passed through to the terminal
+	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b_G.*?\x1b\\`)
 }
 
 type jumpMode int
@@ -1958,7 +1964,13 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 		if ansi != nil {
 			ansi.lbg = -1
 		}
-		line = strings.TrimRight(line, "\r\n")
+
+		passThroughs := passThroughRegex.FindAllString(line, -1)
+		if passThroughs != nil {
+			line = passThroughRegex.ReplaceAllString(line, "")
+		}
+		line = strings.TrimLeft(strings.TrimRight(line, "\r\n"), "\r")
+
 		if lineNo >= height || t.pwindow.Y() == height-1 && t.pwindow.X() > 0 {
 			t.previewed.filled = true
 			t.previewer.scrollable = true
@@ -1970,6 +1982,9 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 				x := t.pwindow.X()
 				t.renderPreviewSpinner()
 				t.pwindow.Move(y, x)
+			}
+			for _, passThrough := range passThroughs {
+				t.tui.PassThrough(passThrough)
 			}
 			var fillRet tui.FillReturn
 			prefixWidth := 0
