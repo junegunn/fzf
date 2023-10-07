@@ -66,7 +66,7 @@ if command -v perl > /dev/null; then
       READLINE_POINT=0x7fffffff
     fi
   }
-elif command -v awk > /dev/null || command -v mawk > /dev/null; then # awk - fallback for POSIX systems
+else # awk - fallback for POSIX systems
   __fzf_history__() {
     local output opts script n x y z d
     if [[ -z $__fzf_awk ]]; then
@@ -110,24 +110,20 @@ if (( BASH_VERSINFO[0] < 4 )); then
   bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
   bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
 
-  if [[ $(type -t __fzf_history__) == function ]]; then
-    # CTRL-R - Paste the selected command from history into the command line
-    bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
-    bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
-    bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
-  fi
+  # CTRL-R - Paste the selected command from history into the command line
+  bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
+  bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
+  bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
 else
   # CTRL-T - Paste the selected file path into the command line
   bind -m emacs-standard -x '"\C-t": fzf-file-widget'
   bind -m vi-command -x '"\C-t": fzf-file-widget'
   bind -m vi-insert -x '"\C-t": fzf-file-widget'
 
-  if [[ $(type -t __fzf_history__) == function ]]; then
-    # CTRL-R - Paste the selected command from history into the command line
-    bind -m emacs-standard -x '"\C-r": __fzf_history__'
-    bind -m vi-command -x '"\C-r": __fzf_history__'
-    bind -m vi-insert -x '"\C-r": __fzf_history__'
-  fi
+  # CTRL-R - Paste the selected command from history into the command line
+  bind -m emacs-standard -x '"\C-r": __fzf_history__'
+  bind -m vi-command -x '"\C-r": __fzf_history__'
+  bind -m vi-insert -x '"\C-r": __fzf_history__'
 fi
 
 # ALT-C - cd into the selected directory
