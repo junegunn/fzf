@@ -84,8 +84,8 @@ elif command -v awk > /dev/null || command -v mawk > /dev/null; then # awk - fal
     END { if (NR) P(b) }'
     output=$(
       set +o pipefail
-      builtin fc -lnr -2147483648 2> /dev/null   |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
-        command $__fzf_awk "$script"             |   # ( <counter>$'\t'<lines>$'\000' )*
+      builtin fc -lnr -2147483648 2> /dev/null |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
+        command $__fzf_awk "$script"           |   # ( <counter>$'\t'<lines>$'\000' )*
         FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
     ) || return
     READLINE_LINE=${output#*$'\t'}
