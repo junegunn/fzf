@@ -67,7 +67,7 @@ fi
 # control. There are several others that could wreck havoc if they are set
 # to values we don't expect. With the following `emulate` command we
 # sidestep this issue entirely.
-'emulate' 'zsh' '-o' 'no_aliases'
+'builtin' 'emulate' 'zsh' && 'builtin' 'setopt' 'no_aliases'
 
 # This brace is the start of try-always block. The `always` part is like
 # `finally` in lesser languages. We use it to *always* restore user options.
