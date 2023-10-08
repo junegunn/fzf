@@ -69,6 +69,7 @@ Table of Contents
         * [2. Switch between sources by pressing CTRL-D or CTRL-F](#2-switch-between-sources-by-pressing-ctrl-d-or-ctrl-f)
         * [3. Interactive ripgrep integration](#3-interactive-ripgrep-integration)
     * [Preview window](#preview-window)
+    * [Previewing an image](#previewing-an-image)
 * [Tips](#tips)
     * [Respecting `.gitignore`](#respecting-gitignore)
     * [Fish shell](#fish-shell)
@@ -728,6 +729,22 @@ export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always --line-ra
 ps -ef | fzf
 seq 100 | fzf
 history | fzf
+```
+
+### Previewing an image
+
+Since 0.43.0, fzf has experimental support for [Kitty graphics
+protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/), so if you use
+Kitty, you can make fzf display an image in the preview window.
+
+```sh
+fzf --preview='
+  if file --mime-type {} | grep -qF image/; then
+    kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {}
+  else
+    bat --color=always {}
+  fi
+'
 ```
 
 Tips

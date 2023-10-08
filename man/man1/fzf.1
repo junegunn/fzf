@@ -591,6 +591,18 @@ e.g.
         echo "$i"
         sleep 0.01
       done'\fR
+
+Since 0.43.0, fzf has experimental support for Kitty graphics protocol,
+so if you use Kitty, you can make fzf display an image in the preview window.
+
+e.g.
+      \fBfzf --preview='
+        if file --mime-type {} | grep -qF "image/"; then
+          kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {}
+        else
+          bat --color=always {}
+        fi
+      '\fR
 .RE
 
 .TP
