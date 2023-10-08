@@ -11,6 +11,9 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+[[ -o interactive ]] || return 0
+
+
 # Key bindings
 # ------------
 
@@ -35,8 +38,6 @@ fi
 'emulate' 'zsh' '-o' 'no_aliases'
 
 {
-
-[[ -o interactive ]] || return 0
 
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {

@@ -11,6 +11,9 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+[[ $- =~ i ]] || return 0
+
+
 # Key bindings
 # ------------
 __fzf_select__() {
@@ -26,8 +29,6 @@ __fzf_select__() {
       printf '%q ' "$item"  # escape special chars
     done
 }
-
-if [[ $- =~ i ]]; then
 
 __fzfcmd() {
   [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; } &&
@@ -130,5 +131,3 @@ fi
 bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
 bind -m vi-command '"\ec": "\C-z\ec\C-z"'
 bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
-
-fi

@@ -9,6 +9,9 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
+[[ -o interactive ]] || return 0
+
+
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
 # all options to the same values they currently have. We'll do just that at
@@ -72,9 +75,6 @@ fi
 # This brace is the start of try-always block. The `always` part is like
 # `finally` in lesser languages. We use it to *always* restore user options.
 {
-
-# Bail out if not interactive shell.
-[[ -o interactive ]] || return 0
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -f _fzf_compgen_path > /dev/null; then

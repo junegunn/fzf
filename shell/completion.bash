@@ -9,7 +9,8 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
-if [[ $- =~ i ]]; then
+[[ $- =~ i ]] || return 0
+
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -F _fzf_compgen_path > /dev/null; then
@@ -401,5 +402,3 @@ _fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  telnet
 _fzf_setup_completion 'proc'  kill
-
-fi
