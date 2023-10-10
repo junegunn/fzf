@@ -702,8 +702,24 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.LeftClick)
 		case "right-click":
 			add(tui.RightClick)
+		case "shift-left-click":
+			add(tui.SLeftClick)
+		case "shift-right-click":
+			add(tui.SRightClick)
 		case "double-click":
 			add(tui.DoubleClick)
+		case "scroll-up":
+			add(tui.ScrollUp)
+		case "scroll-down":
+			add(tui.ScrollDown)
+		case "shift-scroll-up":
+			add(tui.SScrollUp)
+		case "shift-scroll-down":
+			add(tui.SScrollDown)
+		case "preview-scroll-up":
+			add(tui.PreviewScrollUp)
+		case "preview-scroll-down":
+			add(tui.PreviewScrollDown)
 		case "f10":
 			add(tui.F10)
 		case "f11":

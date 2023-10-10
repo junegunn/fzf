@@ -525,6 +525,16 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.Mouse, actMouse)
 	add(tui.LeftClick, actIgnore)
 	add(tui.RightClick, actToggle)
+	add(tui.SLeftClick, actToggle)
+	add(tui.SRightClick, actToggle)
+
+	add(tui.ScrollUp, actUp)
+	add(tui.ScrollDown, actDown)
+	keymap[tui.SScrollUp.AsEvent()] = toActions(actToggle, actUp)
+	keymap[tui.SScrollDown.AsEvent()] = toActions(actToggle, actDown)
+
+	add(tui.PreviewScrollUp, actPreviewUp)
+	add(tui.PreviewScrollDown, actPreviewDown)
 	return keymap
 }
 
@@ -3483,13 +3493,23 @@ func (t *Terminal) Loop() {
 				// Scrolling
 				if me.S != 0 {
 					if t.window.Enclose(my, mx) && t.merger.Length() > 0 {
-						if t.multi > 0 && me.Mod {
-							toggle()
+						evt := tui.ScrollUp
+						if me.Mod {
+							evt = tui.SScrollUp
 						}
-						t.vmove(me.S, true)
-						req(reqList)
+						if me.S < 0 {
+							evt = tui.ScrollDown
+							if me.Mod {
+								evt = tui.SScrollDown
+							}
+						}
+						return doActions(actionsFor(evt))
 					} else if t.hasPreviewWindow() && t.pwindow.Enclose(my, mx) {
-						scrollPreviewBy(-me.S)
+						evt := tui.PreviewScrollUp
+						if me.S < 0 {
+							evt = tui.PreviewScrollDown
+						}
+						return doActions(actionsFor(evt))
 					}
 					break
 				}
@@ -3580,15 +3600,19 @@ func (t *Terminal) Loop() {
 						// Prompt
 						t.cx = mx + t.xoffset
 					} else if my >= min {
-						// List
-						if t.vset(t.offset+my-min) && t.multi > 0 && me.Mod {
-							toggle()
-						}
+						t.vset(t.offset + my - min)
 						req(reqList)
-						if me.Left {
-							return doActions(actionsFor(tui.LeftClick))
+						evt := tui.RightClick
+						if me.Mod {
+							evt = tui.SRightClick
 						}
-						return doActions(actionsFor(tui.RightClick))
+						if me.Left {
+							evt = tui.LeftClick
+							if me.Mod {
+								evt = tui.SLeftClick
+							}
+						}
+						return doActions(actionsFor(evt))
 					}
 				}
 			case actReload, actReloadSync:

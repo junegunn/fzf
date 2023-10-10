@@ -55,6 +55,14 @@ const (
 	DoubleClick
 	LeftClick
 	RightClick
+	SLeftClick
+	SRightClick
+	ScrollUp
+	ScrollDown
+	SScrollUp
+	SScrollDown
+	PreviewScrollUp
+	PreviewScrollDown
 
 	BTab
 	BSpace

@@ -39,6 +39,22 @@ CHANGELOG
   curl localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
   ```
 - Added `toggle-header` action
+- Added mouse events for `--bind`
+    - `scroll-up` (bound to `up`)
+    - `scroll-down` (bound to `down`)
+    - `shift-scroll-up` (bound to `toggle+up`)
+    - `shift-scroll-down` (bound to `toggle+down`)
+    - `shift-left-click` (bound to `toggle`)
+    - `shift-right-click` (bound to `toggle`)
+    - `preview-scroll-up` (bound to `preview-up`)
+    - `preview-scroll-down` (bound to `preview-down`)
+    ```sh
+    # Twice faster scrolling both in the main window and the preview window
+    fzf --bind 'scroll-up:up+up,scroll-down:down+down' \
+        --bind 'preview-scroll-up:preview-up+preview-up' \
+        --bind 'preview-scroll-down:preview-down+preview-down' \
+        --preview 'cat {}'
+    ```
 - Shell extensions
     - bash key bindings no longer requires perl; it will use awk or mawk
       instead if perl is not found
