@@ -1179,6 +1179,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actTogglePreviewWrap)
 		case "toggle-sort":
 			appendAction(actToggleSort)
+		case "offset-up":
+			appendAction(actOffsetUp)
+		case "offset-down":
+			appendAction(actOffsetDown)
 		case "preview-top":
 			appendAction(actPreviewTop)
 		case "preview-bottom":

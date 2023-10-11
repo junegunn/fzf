@@ -378,6 +378,8 @@ const (
 	actPosition
 	actHalfPageUp
 	actHalfPageDown
+	actOffsetUp
+	actOffsetDown
 	actJump
 	actJumpAccept
 	actPrintQuery
@@ -3403,6 +3405,19 @@ func (t *Terminal) Loop() {
 				req(reqList)
 			case actHalfPageDown:
 				t.vmove(-(t.maxItems() / 2), false)
+				req(reqList)
+			case actOffsetUp, actOffsetDown:
+				diff := 1
+				if a.t == actOffsetDown {
+					diff = -1
+				}
+				t.offset += diff
+				before := t.offset
+				t.constrain()
+				if before != t.offset {
+					t.offset = before
+					t.vmove(diff, false)
+				}
 				req(reqList)
 			case actJump:
 				t.jumping = jumpEnabled

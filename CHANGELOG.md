@@ -55,7 +55,15 @@ CHANGELOG
         --bind 'preview-scroll-down:preview-down+preview-down' \
         --preview 'cat {}'
     ```
+- Added `offset-up` and `offset-down` actions
+  ```sh
+  # Scrolling will behave similarly to CTRL-E and CTRL-Y of vim
+  fzf --bind scroll-up:offset-up,scroll-down:offset-down \
+      --bind ctrl-y:offset-up,ctrl-e:offset-down \
+      --scroll-off=5
+  ```
 - Shell extensions
+    - Updated bash completion for fzf options
     - bash key bindings no longer requires perl; it will use awk or mawk
       instead if perl is not found
     - Basic context-aware completion for ssh command
