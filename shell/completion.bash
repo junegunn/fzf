@@ -250,10 +250,6 @@ _fzf_opts_completion() {
     COMPREPLY=( $(compgen -W "center bottom top" -- "$cur") )
     return 0
     ;;
-  --history)
-    COMPREPLY=()
-    return 0
-    ;;
   esac
 
   if [[ "$cur" =~ ^-|\+ ]]; then
