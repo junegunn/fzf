@@ -55,6 +55,14 @@ const (
 	DoubleClick
 	LeftClick
 	RightClick
+	SLeftClick
+	SRightClick
+	ScrollUp
+	ScrollDown
+	SScrollUp
+	SScrollDown
+	PreviewScrollUp
+	PreviewScrollDown
 
 	BTab
 	BSpace
@@ -474,6 +482,7 @@ type Renderer interface {
 	RefreshWindows(windows []Window)
 	Refresh()
 	Close()
+	PassThrough(string)
 	NeedScrollbarRedraw() bool
 
 	GetChar() Event

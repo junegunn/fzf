@@ -11,6 +11,9 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+[[ $- =~ i ]] || return 0
+
+
 # Key bindings
 # ------------
 __fzf_select__() {
@@ -18,7 +21,7 @@ __fzf_select__() {
   cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
     -o -type d -print \
-    -o -type l -print 2> /dev/null | cut -b3-"}"
+    -o -type l -print 2> /dev/null | command cut -b3-"}"
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse --scheme=path ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-} -m"
   eval "$cmd" |
     FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) "$@" |
@@ -26,8 +29,6 @@ __fzf_select__() {
       printf '%q ' "$item"  # escape special chars
     done
 }
-
-if [[ $- =~ i ]]; then
 
 __fzfcmd() {
   [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; } &&
@@ -43,7 +44,7 @@ fzf-file-widget() {
 __fzf_cd__() {
   local cmd opts dir
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
-    -o -type d -print 2> /dev/null | cut -b3-"}"
+    -o -type d -print 2> /dev/null | command cut -b3-"}"
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse --scheme=path ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-} +m"
   dir=$(set +o pipefail; eval "$cmd" | FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)) && printf 'builtin cd -- %q' "$dir"
 }
@@ -56,7 +57,7 @@ if command -v perl > /dev/null; then
     output=$(
       set +o pipefail
       builtin fc -lnr -2147483648 |
-        last_hist=$(HISTTIMEFORMAT='' builtin history 1) perl -n -l0 -e "$script" |
+        last_hist=$(HISTTIMEFORMAT='' builtin history 1) command perl -n -l0 -e "$script" |
         FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
     ) || return
     READLINE_LINE=${output#*$'\t'}
@@ -66,16 +67,14 @@ if command -v perl > /dev/null; then
       READLINE_POINT=0x7fffffff
     fi
   }
-else # awk
+else # awk - fallback for POSIX systems
   __fzf_history__() {
-    local output opts script
+    local output opts script n x y z d
     if [[ -z $__fzf_awk ]]; then
       __fzf_awk=awk
-      # if installed, mawk is faster
-      command -v mawk > /dev/null &&
-        mawk --version |          # at least 1.3.4
-          awk 'NR == 1 { split($2, a, "."); v=(a[1]*1000000+ a[2]*1000+ a[3]*1); exit !(v >= 1003004) }' &&
-          __fzf_awk=mawk
+      # choose the faster mawk if: it's installed && build date >= 20230322 && version >= 1.3.4
+      IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+      [[ $n == mawk ]] && (( d >= 20230302 && (x *1000 +y) *1000 +z >= 1003004 )) && __fzf_awk=mawk
     fi
     opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} +m --read0"
     [[ $(HISTTIMEFORMAT='' builtin history 1) =~ [[:digit:]]+ ]]    # how many history entries
@@ -87,7 +86,7 @@ else # awk
     output=$(
       set +o pipefail
       builtin fc -lnr -2147483648 2> /dev/null |   # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
-        $__fzf_awk "$script"                          |   # ( <counter>$'\t'<lines>$'\000' )*
+        command $__fzf_awk "$script"           |   # ( <counter>$'\t'<lines>$'\000' )*
         FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) --query "$READLINE_LINE"
     ) || return
     READLINE_LINE=${output#*$'\t'}
@@ -132,5 +131,3 @@ fi
 bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
 bind -m vi-command '"\ec": "\C-z\ec\C-z"'
 bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
-
-fi

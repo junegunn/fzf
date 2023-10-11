@@ -245,7 +245,7 @@ for shell in $shells; do
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
-  fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
+  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi

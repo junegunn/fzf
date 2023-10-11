@@ -9,6 +9,9 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
+[[ -o interactive ]] || return 0
+
+
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
 # all options to the same values they currently have. We'll do just that at
@@ -72,9 +75,6 @@ fi
 # This brace is the start of try-always block. The `always` part is like
 # `finally` in lesser languages. We use it to *always* restore user options.
 {
-
-# Bail out if not interactive shell.
-[[ -o interactive ]] || return 0
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
 if ! declare -f _fzf_compgen_path > /dev/null; then
@@ -143,10 +143,10 @@ __fzf_generic_path_completion() {
   tail=$6
 
   setopt localoptions nonomatch
-  if [[ $base = *'$('* ]] || [[ $base = *'<('* ]] || [[ $base = *'`'* ]]; then
+  if [[ $base = *'$('* ]] || [[ $base = *'<('* ]] || [[ $base = *'>('* ]] || [[ $base = *':='* ]] || [[ $base = *'`'* ]]; then
     return
   fi
-  eval "base=$base"
+  eval "base=$base" 2> /dev/null || return
   [[ $base = *"/"* ]] && dir="$base"
   while [ 1 ]; do
     if [[ -z "$dir" || -d ${dir} ]]; then
@@ -313,7 +313,7 @@ fzf-completion() {
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir})
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
-    if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'`'* ]]; then
+    if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'>('* ]] || [[ $prefix = *':='* ]] || [[ $prefix = *'`'* ]]; then
       return
     fi
     [ -n "${tokens[-1]}" ] && lbuf=${lbuf:0:-${#tokens[-1]}}
