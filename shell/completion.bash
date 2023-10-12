@@ -410,27 +410,22 @@ _fzf_proc_completion_post() {
 # To use custom hostname lists, override __fzf_list_hosts.
 # The function is expected to print hostnames, one per line as well as in the
 # desired sorting and with any duplicates removed, to standard output.
+#
+# e.g.
+#   # Use bash-completions’s _known_hosts_real() for getting the list of hosts
+#   __fzf_list_hosts() {
+#     # Set the local attribute for any non-local variable that is set by _known_hosts_real()
+#     local COMPREPLY=()
+#     _known_hosts_real ''
+#     printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
+#   }
 if ! declare -F __fzf_list_hosts > /dev/null; then
-  if declare -F _known_hosts_real > /dev/null; then
-    # if available, use bash-completions’s _known_hosts_real() for getting the list of hosts
-
-    __fzf_list_hosts() {
-      # set the local attribute for any non-local variable that is set by _known_hosts_real()
-      local COMPREPLY=()
-
-      _known_hosts_real ''
-      printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
-    }
-  else
-    # otherwise, get a list of hosts on our own
-
-    __fzf_list_hosts() {
-      command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-        <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
-        <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0') |
-        command awk '{if (length($2) > 0) {print $2}}' | command sort -u
-    }
-  fi
+  __fzf_list_hosts() {
+    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+      <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
+      <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0') |
+      command awk '{if (length($2) > 0) {print $2}}' | command sort -u
+  }
 fi
 
 _fzf_host_completion() {
