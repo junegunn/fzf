@@ -411,8 +411,18 @@ _fzf_proc_completion_post() {
 # The function is expected to print hostnames, one per line as well as in the
 # desired sorting and with any duplicates removed, to standard output.
 if ! declare -F __fzf_list_hosts > /dev/null; then
-  if declare -F _known_hosts_real > /dev/null; then
-    # if available, use bash-completions’s _known_hosts_real() for getting the list of hosts
+  if declare -F _comp_compgen_known_hosts > /dev/null; then
+    # if available, use bash-completions’s _comp_compgen_known_hosts() for getting the list of hosts
+
+    __fzf_list_hosts() {
+      # set the local attribute for any non-local variable that is set by _comp_compgen_known_hosts()
+      local COMPREPLY=()
+
+      _comp_compgen_known_hosts ''
+      printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
+    }
+  elif declare -F _known_hosts_real > /dev/null; then
+    # if available, use old bash-completions’s _known_hosts_real() for getting the list of hosts
 
     __fzf_list_hosts() {
       # set the local attribute for any non-local variable that is set by _known_hosts_real()
