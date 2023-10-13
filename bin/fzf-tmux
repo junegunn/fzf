@@ -162,7 +162,7 @@ cleanup() {
   \rm -f $argsf $fifo1 $fifo2 $fifo3
 
   # Restore tmux window options
-  if [[ "${#tmux_win_opts[@]}" -gt 0 ]]; then
+  if [[ "${#tmux_win_opts[@]}" -gt 1 ]]; then
     eval "tmux ${tmux_win_opts[*]}"
   fi
 
