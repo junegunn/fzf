@@ -3411,11 +3411,17 @@ func (t *Terminal) Loop() {
 				if a.t == actOffsetDown {
 					diff = -1
 				}
+				if t.layout == layoutReverse {
+					diff *= -1
+				}
 				t.offset += diff
 				before := t.offset
 				t.constrain()
 				if before != t.offset {
 					t.offset = before
+					if t.layout == layoutReverse {
+						diff *= -1
+					}
 					t.vmove(diff, false)
 				}
 				req(reqList)

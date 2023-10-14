@@ -224,16 +224,21 @@ _fzf_complete() {
   command rm -f "$fifo"
 }
 
-__fzf_list_hosts() {
-  setopt localoptions nonomatch
-  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
-    <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-    awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | sort -u
-}
+# To use custom hostname lists, override __fzf_list_hosts.
+# The function is expected to print hostnames, one per line as well as in the
+# desired sorting and with any duplicates removed, to standard output.
+if ! declare -f __fzf_list_hosts > /dev/null; then
+  __fzf_list_hosts() {
+    setopt localoptions nonomatch
+    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+      <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
+      <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0') |
+      awk '{if (length($2) > 0) {print $2}}' | sort -u
+  }
+fi
 
 _fzf_complete_telnet() {
-  _fzf_complete +m -- "$@" < <(__fzf_list_hosts "")
+  _fzf_complete +m -- "$@" < <(__fzf_list_hosts)
 }
 
 # The first and the only argument is the LBUFFER without the current word that contains the trigger.
@@ -247,7 +252,7 @@ _fzf_complete_ssh() {
     *)
       local user=
       [[ $prefix =~ @ ]] && user="${prefix%%@*}@"
-      _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | awk -v user="$user" '{print user $0}')
       ;;
   esac
 }

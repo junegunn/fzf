@@ -11,6 +11,9 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+status is-interactive; or exit 0
+
+
 # Key bindings
 # ------------
 function fzf_key_bindings

@@ -407,15 +407,29 @@ _fzf_proc_completion_post() {
   command awk '{print $2}'
 }
 
-__fzf_list_hosts() {
-  command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-    <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
-    <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
-    command awk -v "user=$1" '{if (length($2) > 0) {print user $2}}' | command sort -u
-}
+# To use custom hostname lists, override __fzf_list_hosts.
+# The function is expected to print hostnames, one per line as well as in the
+# desired sorting and with any duplicates removed, to standard output.
+#
+# e.g.
+#   # Use bash-completions’s _known_hosts_real() for getting the list of hosts
+#   __fzf_list_hosts() {
+#     # Set the local attribute for any non-local variable that is set by _known_hosts_real()
+#     local COMPREPLY=()
+#     _known_hosts_real ''
+#     printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
+#   }
+if ! declare -F __fzf_list_hosts > /dev/null; then
+  __fzf_list_hosts() {
+    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+      <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
+      <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0') |
+      command awk '{if (length($2) > 0) {print $2}}' | command sort -u
+  }
+fi
 
 _fzf_host_completion() {
-  _fzf_complete +m -- "$@" < <(__fzf_list_hosts "")
+  _fzf_complete +m -- "$@" < <(__fzf_list_hosts)
 }
 
 # Values for $1 $2 $3 are described here
@@ -431,7 +445,7 @@ _fzf_complete_ssh() {
     *)
       local user=
       [[ "$2" =~ '@' ]] && user="${2%%@*}@"
-      _fzf_complete +m -- "$@" < <(__fzf_list_hosts "$user")
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | command awk -v user="$user" '{print user $0}')
       ;;
   esac
 }
