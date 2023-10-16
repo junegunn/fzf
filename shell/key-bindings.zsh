@@ -35,7 +35,7 @@ else
   }
 fi
 
-'emulate' 'zsh' '-o' 'no_aliases'
+'builtin' 'emulate' 'zsh' && 'builtin' 'setopt' 'no_aliases'
 
 {
 

@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jun 2023" "fzf 0.42.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Oct 2023" "fzf 0.43.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -598,7 +598,7 @@ so if you use Kitty, you can make fzf display an image in the preview window.
 e.g.
       \fBfzf --preview='
         if file --mime-type {} | grep -qF "image/"; then
-          kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {}
+          kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \\$d
         else
           bat --color=always {}
         fi
