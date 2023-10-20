@@ -2081,7 +2081,7 @@ func (t *Terminal) printPreview() {
 	unchanged := (t.previewed.filled || numLines == t.previewed.numLines) &&
 		t.previewer.version == t.previewed.version &&
 		t.previewer.offset == t.previewed.offset
-	t.previewer.scrollable = t.previewer.offset > 0 || numLines > height
+	t.previewer.scrollable = t.previewer.offset > t.previewOpts.headerLines || numLines > height
 	t.renderPreviewArea(unchanged)
 	t.renderPreviewSpinner()
 	t.previewed.numLines = numLines
