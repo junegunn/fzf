@@ -1301,10 +1301,6 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				if previewOpts.hidden {
 					return
 				}
-				// Put scrollbar closer to the right border for consistent look
-				if t.borderShape.HasRight() {
-					width++
-				}
 				if previewOpts.position == posUp {
 					t.window = t.tui.NewWindow(
 						marginInt[0]+pheight, marginInt[3], width, height-pheight, false, noBorder)
