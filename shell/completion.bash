@@ -481,7 +481,7 @@ a_cmds="
   svn tar unzip zip"
 
 # Preserve existing completion
-__fzf_orig_completion < <(complete -p $d_cmds $a_cmds 2> /dev/null)
+__fzf_orig_completion < <(complete -p $d_cmds $a_cmds ssh 2> /dev/null)
 
 if type _completion_loader > /dev/null 2>&1; then
   _fzf_completion_loader=1
