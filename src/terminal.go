@@ -3100,6 +3100,10 @@ func (t *Terminal) Loop() {
 							t.previewBox.Set(reqPreviewEnqueue,
 								previewRequest{t.previewOpts.command, t.pwindow, t.evaluateScrollOffset(), list})
 						}
+					} else {
+						// Discard the preview content so that it won't accidentally appear
+						// when preview window is re-enabled and previewDelay is triggered
+						t.previewer.lines = nil
 					}
 				}
 			case actTogglePreviewWrap:
