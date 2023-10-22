@@ -65,7 +65,8 @@ func init() {
 	// Parts of the preview output that should be passed through to the terminal
 	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b_G.*?\x1b\\`)
+	// * https://en.wikipedia.org/wiki/Sixel
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\`)
 }
 
 type jumpMode int
@@ -1929,11 +1930,15 @@ func (t *Terminal) renderPreviewSpinner() {
 }
 
 func (t *Terminal) renderPreviewArea(unchanged bool) {
-	if unchanged {
+	if t.previewOpts.clear {
+		t.pwindow.Erase()
+	} else if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
 		t.previewed.filled = false
-		t.pwindow.Erase()
+		// We don't erase the window here to avoid flickering during scroll
+		t.pwindow.DrawBorder()
+		t.pwindow.Move(0, 0)
 	}
 
 	height := t.pwindow.Height()
@@ -1946,11 +1951,15 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 		body = t.previewer.lines[headerLines:]
 		// Always redraw header
 		t.renderPreviewText(height, header, 0, false)
-		t.pwindow.MoveAndClear(t.pwindow.Y(), 0)
+		if t.previewOpts.clear {
+			t.pwindow.Move(t.pwindow.Y(), 0)
+		} else {
+			t.pwindow.MoveAndClear(t.pwindow.Y(), 0)
+		}
 	}
 	t.renderPreviewText(height, body, -t.previewer.offset+headerLines, unchanged)
 
-	if !unchanged {
+	if !unchanged && !t.previewOpts.clear {
 		t.pwindow.FinishFill()
 	}
 
@@ -1994,6 +2003,10 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 			for _, passThrough := range passThroughs {
 				t.tui.PassThrough(passThrough)
 			}
+			if len(passThroughs) > 0 && len(line) == 0 {
+				continue
+			}
+
 			var fillRet tui.FillReturn
 			prefixWidth := 0
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
@@ -2686,6 +2699,11 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
+						size, err := t.tui.Size()
+						if err == nil {
+							env = append(env, fmt.Sprintf("FZF_PREVIEW_WIDTH=%d", pwindow.Width()*size.Width/size.Columns))
+							env = append(env, fmt.Sprintf("FZF_PREVIEW_HEIGHT=%d", height*size.Height/size.Lines))
+						}
 					}
 					cmd.Env = env
 

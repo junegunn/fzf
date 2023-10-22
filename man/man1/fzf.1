@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Oct 2023" "fzf 0.43.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Oct 2023" "fzf 0.43.1" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -603,6 +603,24 @@ e.g.
           bat --color=always {}
         fi
       '\fR
+
+fzf also has experimental support for Sixel graphics.
+
+e.g.
+      \fB# 1. $FZF_PREVIEW_WIDTH and $FZF_PREVIEW_HEIGHT will be set to
+      #    the pixel width and height of the preview window
+      # 2. Special preview window flag 'clear' is needed to always completely
+      #    erase the preview window
+      fzf --preview='
+        if file --mime-type {} | grep -qvF image/; then
+          bat --color=always {}
+        elif [[ -n $FZF_PREVIEW_WIDTH ]]; then
+          convert {} -resize ${FZF_PREVIEW_WIDTH}x${FZF_PREVIEW_HEIGHT} sixel:-
+        else
+          echo "Cannot display image data (unsupported platform)"
+        fi
+      ' --preview-window clear\fR
+
 .RE
 
 .TP

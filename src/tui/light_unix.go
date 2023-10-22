@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"unsafe"
 
 	"github.com/junegunn/fzf/src/util"
 	"golang.org/x/term"
@@ -107,4 +108,20 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 		return 0, false
 	}
 	return int(b[0]), true
+}
+
+type window struct {
+	lines   uint16
+	columns uint16
+	width   uint16
+	height  uint16
+}
+
+func (r *LightRenderer) Size() (termSize, error) {
+	w := new(window)
+	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, r.ttyin.Fd(), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(w)))
+	if err != 0 {
+		return termSize{}, err
+	}
+	return termSize{int(w.lines), int(w.columns), int(w.width), int(w.height)}, nil
 }
