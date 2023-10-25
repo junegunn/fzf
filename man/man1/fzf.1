@@ -592,34 +592,12 @@ e.g.
         sleep 0.01
       done'\fR
 
-Since 0.43.0, fzf has experimental support for Kitty graphics protocol,
-so if you use Kitty, you can make fzf display an image in the preview window.
+fzf has experimental support for Kitty graphics protocol and Sixel graphics.
+The following example uses https://github.com/junegunn/fzf/blob/master/bin/fzf-preview.sh
+script to render an image using either of the protocols inside the preview window.
 
 e.g.
-      \fBfzf --preview='
-        if file --mime-type {} | grep -qF "image/"; then
-          kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \\$d
-        else
-          bat --color=always {}
-        fi
-      '\fR
-
-fzf also has experimental support for Sixel graphics.
-
-e.g.
-      \fB# 1. $FZF_PREVIEW_WIDTH and $FZF_PREVIEW_HEIGHT will be set to
-      #    the pixel width and height of the preview window
-      # 2. Special preview window flag 'clear' is needed to always completely
-      #    erase the preview window
-      fzf --preview='
-        if file --mime-type {} | grep -qvF image/; then
-          bat --color=always {}
-        elif [[ -n $FZF_PREVIEW_WIDTH ]]; then
-          convert {} -resize ${FZF_PREVIEW_WIDTH}x${FZF_PREVIEW_HEIGHT} sixel:-
-        else
-          echo "Cannot display image data (unsupported platform)"
-        fi
-      ' --preview-window clear\fR
+      \fBfzf --preview='fzf-preview.sh {}'
 
 .RE
 

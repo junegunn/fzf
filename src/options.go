@@ -219,7 +219,6 @@ type previewOpts struct {
 	scroll      string
 	hidden      bool
 	wrap        bool
-	clear       bool
 	cycle       bool
 	follow      bool
 	border      tui.BorderShape
@@ -341,7 +340,7 @@ type Options struct {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, false, tui.DefaultBorderShape, 0, 0, nil}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.DefaultBorderShape, 0, 0, nil}
 }
 
 func defaultOptions() *Options {
@@ -1455,10 +1454,6 @@ func parsePreviewWindowImpl(opts *previewOpts, input string, exit func(string)) 
 			opts.wrap = true
 		case "nowrap":
 			opts.wrap = false
-		case "clear":
-			opts.clear = true
-		case "noclear":
-			opts.clear = false
 		case "cycle":
 			opts.cycle = true
 		case "nocycle":
@@ -1793,7 +1788,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Preview.command = ""
 		case "--preview-window":
 			parsePreviewWindow(&opts.Preview,
-				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-BORDER_OPT][,wrap][,clear][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"))
+				nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-BORDER_OPT][,wrap][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]"))
 		case "--height":
 			opts.Height = parseHeight(nextString(allArgs, &i, "height required: [~]HEIGHT[%]"))
 		case "--min-height":

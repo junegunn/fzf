@@ -110,10 +110,10 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 	return int(b[0]), true
 }
 
-func (r *LightRenderer) Size() (termSize, error) {
+func (r *LightRenderer) Size() TermSize {
 	ws, err := unix.IoctlGetWinsize(int(r.ttyin.Fd()), unix.TIOCGWINSZ)
 	if err != nil {
-		return termSize{}, err
+		return TermSize{}
 	}
-	return termSize{int(ws.Row), int(ws.Col), int(ws.Xpixel), int(ws.Ypixel)}, nil
+	return TermSize{int(ws.Row), int(ws.Col), int(ws.Xpixel), int(ws.Ypixel)}
 }

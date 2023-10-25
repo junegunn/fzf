@@ -203,9 +203,10 @@ func (r *FullscreenRenderer) Refresh() {
 	// noop
 }
 
-func (r *FullscreenRenderer) Size() (termSize, error) {
+// TODO: Pixel width and height not implemented
+func (r *FullscreenRenderer) Size() TermSize {
 	cols, lines := _screen.Size()
-	return termSize{lines, cols, 0, 0}, error("Not implemented")
+	return TermSize{lines, cols, 0, 0}
 }
 
 func (r *FullscreenRenderer) GetChar() Event {

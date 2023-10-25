@@ -38,9 +38,7 @@ func (r *FullscreenRenderer) Clear()                             {}
 func (r *FullscreenRenderer) NeedScrollbarRedraw() bool          { return false }
 func (r *FullscreenRenderer) Refresh()                           {}
 func (r *FullscreenRenderer) Close()                             {}
-func (r *FullscreenRenderer) Size() (termSize, error) {
-	return termSize{}, nil
-}
+func (r *FullscreenRenderer) Size() TermSize                     { return TermSize{} }
 
 func (r *FullscreenRenderer) GetChar() Event { return Event{} }
 func (r *FullscreenRenderer) MaxX() int      { return 0 }

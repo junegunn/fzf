@@ -1092,7 +1092,9 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 }
 
 func (w *LightWindow) FinishFill() {
-	w.MoveAndClear(w.posy, w.posx)
+	if w.posy < w.height {
+		w.MoveAndClear(w.posy, w.posx)
+	}
 	for y := w.posy + 1; y < w.height; y++ {
 		w.MoveAndClear(y, 0)
 	}
