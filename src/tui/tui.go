@@ -473,6 +473,13 @@ func MakeTransparentBorder() BorderStyle {
 		bottomRight: ' '}
 }
 
+type TermSize struct {
+	Lines    int
+	Columns  int
+	PxWidth  int
+	PxHeight int
+}
+
 type Renderer interface {
 	Init()
 	Resize(maxHeightFunc func(int) int)
@@ -490,6 +497,8 @@ type Renderer interface {
 	MaxX() int
 	MaxY() int
 
+	Size() TermSize
+
 	NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window
 }
 
@@ -499,6 +508,7 @@ type Window interface {
 	Width() int
 	Height() int
 
+	DrawBorder()
 	DrawHBorder()
 	Refresh()
 	FinishFill()

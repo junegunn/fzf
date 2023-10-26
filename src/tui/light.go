@@ -32,7 +32,7 @@ var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]
 var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
 func (r *LightRenderer) PassThrough(str string) {
-	r.queued.WriteString(str)
+	r.queued.WriteString("\x1b7" + str + "\x1b8")
 	r.flush()
 }
 
@@ -756,6 +756,10 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 	return w
 }
 
+func (w *LightWindow) DrawBorder() {
+	w.drawBorder(false)
+}
+
 func (w *LightWindow) DrawHBorder() {
 	w.drawBorder(true)
 }
@@ -1088,14 +1092,17 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 }
 
 func (w *LightWindow) FinishFill() {
-	w.MoveAndClear(w.posy, w.posx)
+	if w.posy < w.height {
+		w.MoveAndClear(w.posy, w.posx)
+	}
 	for y := w.posy + 1; y < w.height; y++ {
 		w.MoveAndClear(y, 0)
 	}
 }
 
 func (w *LightWindow) Erase() {
-	w.drawBorder(false)
-	// We don't erase the window here to avoid flickering during scroll
+	w.DrawBorder()
+	w.Move(0, 0)
+	w.FinishFill()
 	w.Move(0, 0)
 }

@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/junegunn/fzf/src/util"
+	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 )
 
@@ -107,4 +108,12 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 		return 0, false
 	}
 	return int(b[0]), true
+}
+
+func (r *LightRenderer) Size() TermSize {
+	ws, err := unix.IoctlGetWinsize(int(r.ttyin.Fd()), unix.TIOCGWINSZ)
+	if err != nil {
+		return TermSize{}
+	}
+	return TermSize{int(ws.Row), int(ws.Col), int(ws.Xpixel), int(ws.Ypixel)}
 }

@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Oct 2023" "fzf 0.43.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Oct 2023" "fzf 0.43.1" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -592,17 +592,13 @@ e.g.
         sleep 0.01
       done'\fR
 
-Since 0.43.0, fzf has experimental support for Kitty graphics protocol,
-so if you use Kitty, you can make fzf display an image in the preview window.
+fzf has experimental support for Kitty graphics protocol and Sixel graphics.
+The following example uses https://github.com/junegunn/fzf/blob/master/bin/fzf-preview.sh
+script to render an image using either of the protocols inside the preview window.
 
 e.g.
-      \fBfzf --preview='
-        if file --mime-type {} | grep -qF "image/"; then
-          kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \\$d
-        else
-          bat --color=always {}
-        fi
-      '\fR
+      \fBfzf --preview='fzf-preview.sh {}'
+
 .RE
 
 .TP
