@@ -2775,10 +2775,6 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
-						if pwindowSize.PxWidth > 0 {
-							env = append(env, fmt.Sprintf("FZF_PREVIEW_PIXEL_WIDTH=%d", pwindowSize.PxWidth))
-							env = append(env, fmt.Sprintf("FZF_PREVIEW_PIXEL_HEIGHT=%d", pwindowSize.PxHeight))
-						}
 					}
 					cmd.Env = env
 

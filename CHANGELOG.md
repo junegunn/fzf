@@ -4,8 +4,6 @@ CHANGELOG
 0.43.1
 ------
 - (Experimental) Sixel image support in preview window (not available on Windows)
-    - `$FZF_PREVIEW_PIXEL_WIDTH` and `$FZF_PREVIEW_PIXEL_HEIGHT` are set to
-      the pixel width and height of the preview window
     - [bin/fzf-preview.sh](bin/fzf-preview.sh) is added to demonstrate how to
       display an image using Kitty image protocol or Sixel. You can use it
       like so:
