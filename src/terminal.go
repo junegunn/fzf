@@ -125,6 +125,7 @@ type previewed struct {
 	numLines  int
 	offset    int
 	filled    bool
+	sixel     bool
 	wipe      bool
 	wireframe bool
 }
@@ -691,7 +692,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
 		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}},
-		previewed:          previewed{0, 0, 0, false, false, false},
+		previewed:          previewed{0, 0, 0, false, false, false, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
 		mutex:              sync.Mutex{},
@@ -1994,6 +1995,8 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
 	spinnerRedraw := t.pwindow.Y() == 0
+	sixel := false
+	wireframe := false
 Loop:
 	for _, line := range lines {
 		var lbg tui.Color = -1
@@ -2022,7 +2025,8 @@ Loop:
 			for _, passThrough := range passThroughs {
 				// Handling Sixel output
 				requiredLines := 0
-				if strings.HasPrefix(passThrough, "\x1bP") {
+				isSixel := strings.HasPrefix(passThrough, "\x1bP")
+				if isSixel {
 					t.previewed.wipe = true
 					if t.termSize.PxHeight > 0 {
 						rows := util.Max(0, strings.Count(passThrough, "-")-1)
@@ -2030,7 +2034,7 @@ Loop:
 					}
 				}
 
-				// Overflow
+				// Render wireframe when Sixel image cannot be displayed entirely
 				if requiredLines > 0 && y+requiredLines > height {
 					top := true
 					for ; y < height; y++ {
@@ -2038,18 +2042,19 @@ Loop:
 						t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, t.makeImageBorder(maxWidth, top))
 						top = false
 					}
-					t.previewed.wireframe = true
+					wireframe = true
 					t.previewed.filled = true
 					t.previewer.scrollable = true
-					continue
+					break Loop
 				}
 
-				if t.previewed.wireframe {
-					t.previewed.wireframe = false
+				// Clear previous wireframe or any other text
+				if t.previewed.wireframe || isSixel && !t.previewed.sixel {
 					for i := y + 1; i < height; i++ {
 						t.pwindow.MoveAndClear(i, 0)
 					}
 				}
+				sixel = sixel || isSixel
 				t.pwindow.MoveAndClear(y, x)
 				t.tui.PassThrough(passThrough)
 
@@ -2057,7 +2062,6 @@ Loop:
 					if y+requiredLines == height {
 						t.pwindow.Move(y+requiredLines, 0)
 						t.previewed.filled = true
-						t.previewer.scrollable = true
 						break Loop
 					} else {
 						t.pwindow.MoveAndClear(y+requiredLines, 0)
@@ -2109,6 +2113,8 @@ Loop:
 		}
 		lineNo++
 	}
+	t.previewed.sixel = sixel
+	t.previewed.wireframe = wireframe
 }
 
 func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int) {
