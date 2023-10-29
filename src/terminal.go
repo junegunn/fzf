@@ -2031,7 +2031,7 @@ Loop:
 					t.previewed.wipe = true
 					if t.termSize.PxHeight > 0 {
 						rows := strings.Count(passThrough, "-")
-						requiredLines = int(math.Floor(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
+						requiredLines = int(math.Ceil(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
 					}
 				}
 
