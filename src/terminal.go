@@ -1936,6 +1936,7 @@ func (t *Terminal) renderPreviewSpinner() {
 
 func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if t.previewed.wipe && t.previewed.version != t.previewer.version {
+		t.previewed.wipe = false
 		t.pwindow.Erase()
 	} else if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
@@ -2029,8 +2030,8 @@ Loop:
 				if isSixel {
 					t.previewed.wipe = true
 					if t.termSize.PxHeight > 0 {
-						rows := util.Max(0, strings.Count(passThrough, "-")-1)
-						requiredLines = int(math.Ceil(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
+						rows := strings.Count(passThrough, "-")
+						requiredLines = int(math.Floor(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
 					}
 				}
 
@@ -2168,7 +2169,6 @@ func (t *Terminal) printPreview() {
 	t.previewed.numLines = numLines
 	t.previewed.version = t.previewer.version
 	t.previewed.offset = t.previewer.offset
-	t.previewed.wipe = false
 }
 
 func (t *Terminal) printPreviewDelayed() {
