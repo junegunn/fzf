@@ -7,7 +7,12 @@
 # - https://github.com/hpjansson/chafa
 # - https://github.com/sharkdp/bat
 
-file=$1
+if [[ $# -ne 1 ]]; then
+  >&2 echo "usage: $0 FILENAME"
+  exit 1
+fi
+
+file=${1/#\~\//$HOME/}
 type=$(file --mime-type "$file")
 
 if [[ ! $type =~ image/ ]]; then
