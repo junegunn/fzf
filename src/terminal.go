@@ -2061,7 +2061,10 @@ Loop:
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {
-						t.pwindow.Move(y+requiredLines, 0)
+						if t.tui.MaxY() == t.pwindow.Top()+height {
+							t.tui.PassThrough("\x1b[1T")
+						}
+						t.pwindow.Move(height-1, maxWidth-1)
 						t.previewed.filled = true
 						break Loop
 					} else {
