@@ -15,6 +15,11 @@ fi
 file=${1/#\~\//$HOME/}
 type=$(file --mime-type "$file")
 
+dim=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}
+if [[ $dim = x ]]; then
+  dim=$(stty size | awk '{print $2 "x" $1}')
+fi
+
 if [[ ! $type =~ image/ ]]; then
   # Sometimes bat is installed as batcat.
   if command -v batcat > /dev/null; then
@@ -34,9 +39,10 @@ elif [[ $KITTY_WINDOW_ID ]]; then
   # 2. The last line of the output is the ANSI reset code without newline.
   #    This confuses fzf and makes it render scroll offset indicator.
   #    So we remove the last line and append the reset code to its previous line.
-  kitty icat --clear --transfer-mode=memory --stdin=no --place="${FZF_PREVIEW_COLUMNS}x$((FZF_PREVIEW_LINES))@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
+  kitty icat --clear --transfer-mode=memory --stdin=no --place="$dim@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
 elif command -v chafa > /dev/null; then
-  chafa -f sixel -s "${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}" "$file"
+  chafa -f sixel -s "$dim" "$file"
+  echo
 else
   file "$file"
 fi
