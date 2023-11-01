@@ -41,6 +41,7 @@ func (r *FullscreenRenderer) Close()                             {}
 func (r *FullscreenRenderer) Size() TermSize                     { return TermSize{} }
 
 func (r *FullscreenRenderer) GetChar() Event { return Event{} }
+func (r *FullscreenRenderer) Top() int       { return 0 }
 func (r *FullscreenRenderer) MaxX() int      { return 0 }
 func (r *FullscreenRenderer) MaxY() int      { return 0 }
 

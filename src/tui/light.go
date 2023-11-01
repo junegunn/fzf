@@ -720,6 +720,10 @@ func (r *LightRenderer) Close() {
 	r.restoreTerminal()
 }
 
+func (r *LightRenderer) Top() int {
+	return r.yoffset
+}
+
 func (r *LightRenderer) MaxX() int {
 	return r.width
 }

@@ -494,6 +494,7 @@ type Renderer interface {
 
 	GetChar() Event
 
+	Top() int
 	MaxX() int
 	MaxY() int
 

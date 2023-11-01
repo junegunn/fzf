@@ -2067,9 +2067,6 @@ Loop:
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {
-						if t.tui.MaxY() == t.pwindow.Top()+height {
-							t.tui.PassThrough("\x1b[1T")
-						}
 						t.pwindow.Move(height-1, maxWidth-1)
 						t.previewed.filled = true
 						break Loop
@@ -2790,6 +2787,8 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+t.pwindow.Top()))
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", t.pwindow.Left()))
 					}
 					cmd.Env = env
 

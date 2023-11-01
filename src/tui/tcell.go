@@ -172,6 +172,10 @@ func (r *FullscreenRenderer) Init() {
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 }
 
+func (r *FullscreenRenderer) Top() int {
+	return 0
+}
+
 func (r *FullscreenRenderer) MaxX() int {
 	ncols, _ := _screen.Size()
 	return int(ncols)

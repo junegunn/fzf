@@ -548,6 +548,9 @@ they represent the exact size of the preview window. (It also overrides
 by the default shell, so prefer to refer to the ones with \fBFZF_PREVIEW_\fR
 prefix.)
 
+fzf also exports \fB$FZF_PREVIEW_TOP\fR and \fB$FZF_PREVIEW_LEFT\fR so that
+the preview command can determine the position of the preview window.
+
 A placeholder expression starting with \fB+\fR flag will be replaced to the
 space-separated list of the selected lines (or the current line if no selection
 was made) individually quoted.
