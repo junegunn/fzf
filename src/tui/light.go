@@ -1109,3 +1109,7 @@ func (w *LightWindow) Erase() {
 	w.FinishFill()
 	w.Move(0, 0)
 }
+
+func (w *LightWindow) EraseMaybe() bool {
+	return false
+}

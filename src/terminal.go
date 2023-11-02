@@ -1942,9 +1942,14 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
 		t.previewed.filled = false
-		// We don't erase the window here to avoid flickering during scroll
-		t.pwindow.DrawBorder()
-		t.pwindow.Move(0, 0)
+		// We don't erase the window here to avoid flickering during scroll.
+		// However, tcell renderer uses double-buffering technique and there's no
+		// flickering. So we just erase the window and make the rest of the code
+		// simpler.
+		if !t.pwindow.EraseMaybe() {
+			t.pwindow.DrawBorder()
+			t.pwindow.Move(0, 0)
+		}
 	}
 
 	height := t.pwindow.Height()
