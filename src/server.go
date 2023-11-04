@@ -80,7 +80,9 @@ func startHttpServer(address string, actionChannel chan []*action, responseChann
 		if len(parts) < 2 {
 			return fmt.Errorf("cannot extract port: %s", addr), port
 		}
-		if port, err := strconv.Atoi(parts[len(parts)-1]); err != nil {
+		var err error
+		port, err = strconv.Atoi(parts[len(parts)-1])
+		if err != nil {
 			return err, port
 		}
 	}
