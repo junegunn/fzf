@@ -235,6 +235,7 @@ type Terminal struct {
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
 	unicode            bool
+	listenAddr         *string
 	listenPort         *int
 	borderShape        tui.BorderShape
 	cleanExit          bool
@@ -586,7 +587,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	var previewBox *util.EventBox
 	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort != nil {
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenAddr != nil {
 		previewBox = util.NewEventBox()
 	}
 	var renderer tui.Renderer
@@ -659,7 +660,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		margin:             opts.Margin,
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
-		listenPort:         opts.ListenPort,
+		listenAddr:         opts.ListenAddr,
 		borderShape:        opts.BorderShape,
 		borderWidth:        1,
 		borderLabel:        nil,
@@ -748,8 +749,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
-	if t.listenPort != nil {
-		err, port := startHttpServer(*t.listenPort, t.serverInputChan, t.serverOutputChan)
+	if t.listenAddr != nil {
+		err, port := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
 		if err != nil {
 			errorExit(err.Error())
 		}

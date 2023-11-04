@@ -793,14 +793,14 @@ ncurses finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
-.B "--listen[=HTTP_PORT]"
-Start HTTP server on the given port. It allows external processes to send
-actions to perform via POST method. If the port number is omitted or given as
-0, fzf will choose the port automatically and export it as \fBFZF_PORT\fR
-environment variable to the child processes started via \fBexecute\fR and
-\fBexecute-silent\fR actions. If \fBFZF_API_KEY\fR environment variable is
-set, the server would require sending an API key with the same value in the
-\fBx-api-key\fR HTTP header.
+.B "--listen[=[ADDR:]PORT]"
+Start HTTP server and listen on the given address. It allows external processes
+to send actions to perform via POST method. If the port number is omitted or
+given as 0, fzf will automatically choose a port and export it as
+\fBFZF_PORT\fR environment variable to the child processes. If
+\fBFZF_API_KEY\fR environment variable is set, the server would require sending
+an API key with the same value in the \fBx-api-key\fR HTTP header.
+\fBFZF_API_KEY\fR is required for a non-localhost listen address.
 
 e.g.
      \fB# Start HTTP server on port 6266
@@ -812,8 +812,12 @@ e.g.
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
 
-     # Start HTTP server on port 6266 and send an authenticated action
+     # Start HTTP server on port 6266 with remote connections allowed
+     # * Listening on non-localhost address requires using an API key
      export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+     fzf --listen 0.0.0.0:6266
+
+     # Send an authenticated action
      curl -XPOST localhost:6266 -H "x-api-key: $FZF_API_KEY" -d 'change-query(yo)'
 
      # Choose port automatically and export it as $FZF_PORT to the child process
