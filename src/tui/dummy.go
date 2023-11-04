@@ -33,7 +33,8 @@ func (r *FullscreenRenderer) Init()                              {}
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
 func (r *FullscreenRenderer) Pause(bool)                         {}
 func (r *FullscreenRenderer) Resume(bool, bool)                  {}
-func (r *FullscreenRenderer) PassThrough(string)                 {}
+func (r *FullscreenRenderer) PassThrough(int, int, string)       {}
+func (r *FullscreenRenderer) Sync(bool)                          {}
 func (r *FullscreenRenderer) Clear()                             {}
 func (r *FullscreenRenderer) NeedScrollbarRedraw() bool          { return false }
 func (r *FullscreenRenderer) Refresh()                           {}
@@ -41,6 +42,7 @@ func (r *FullscreenRenderer) Close()                             {}
 func (r *FullscreenRenderer) Size() TermSize                     { return TermSize{} }
 
 func (r *FullscreenRenderer) GetChar() Event { return Event{} }
+func (r *FullscreenRenderer) Top() int       { return 0 }
 func (r *FullscreenRenderer) MaxX() int      { return 0 }
 func (r *FullscreenRenderer) MaxY() int      { return 0 }
 

@@ -1,15 +1,22 @@
 CHANGELOG
 =========
 
-0.43.1
+0.44.0
 ------
-- (Experimental) Sixel image support in preview window (not available on Windows)
+- (Experimental) Sixel image support in preview window
     - [bin/fzf-preview.sh](bin/fzf-preview.sh) is added to demonstrate how to
       display an image using Kitty image protocol or Sixel. You can use it
       like so:
       ```sh
       fzf --preview='fzf-preview.sh {}'
       ```
+- (Experimental) Sixel and Kitty image support now also available on Windows
+- HTTP server can be configured to accept remote connections
+  ```sh
+  # FZF_API_KEY is required for a non-localhost listen address
+  export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
+  fzf --listen 0.0.0.0:6266
+  ```
 - Bug fixes
 
 0.43.0

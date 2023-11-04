@@ -98,9 +98,22 @@ const (
 	AttrClear     = Attr(1 << 8)
 )
 
-func (r *FullscreenRenderer) PassThrough(str string) {
-	// No-op
-	// https://github.com/gdamore/tcell/issues/363#issuecomment-680665073
+func (r *FullscreenRenderer) PassThrough(y int, x int, data string) {
+	tty, _ := _screen.Tty()
+	ti, err := tcell.LookupTerminfo(os.Getenv("TERM"))
+	if err != nil {
+		return
+	}
+	ti.TPuts(tty, ti.TGoto(x, y))
+	ti.TPuts(tty, data)
+}
+
+func (r *FullscreenRenderer) Sync(hard bool) {
+	if hard {
+		_screen.Sync()
+	} else {
+		_screen.Show()
+	}
 }
 
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
@@ -172,6 +185,10 @@ func (r *FullscreenRenderer) Init() {
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 }
 
+func (r *FullscreenRenderer) Top() int {
+	return 0
+}
+
 func (r *FullscreenRenderer) MaxX() int {
 	ncols, _ := _screen.Size()
 	return int(ncols)
@@ -203,10 +220,10 @@ func (r *FullscreenRenderer) Refresh() {
 	// noop
 }
 
-// TODO: Pixel width and height not implemented
 func (r *FullscreenRenderer) Size() TermSize {
-	cols, lines := _screen.Size()
-	return TermSize{lines, cols, 0, 0}
+	tty, _ := _screen.Tty()
+	ws, _ := tty.WindowSize()
+	return TermSize{ws.Height, ws.Width, ws.PixelWidth, ws.PixelHeight}
 }
 
 func (r *FullscreenRenderer) GetChar() Event {
@@ -549,6 +566,11 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 func (w *TcellWindow) Erase() {
 	w.drawBorder(false)
 	fill(w.left-1, w.top, w.width+1, w.height-1, w.normal, ' ')
+}
+
+func (w *TcellWindow) EraseMaybe() bool {
+	w.Erase()
+	return true
 }
 
 func (w *TcellWindow) Enclose(y int, x int) bool {

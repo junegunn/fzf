@@ -66,7 +66,7 @@ func init() {
 	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
 	// * https://en.wikipedia.org/wiki/Sixel
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\`)
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?`)
 }
 
 type jumpMode int
@@ -235,6 +235,7 @@ type Terminal struct {
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
 	unicode            bool
+	listenAddr         *string
 	listenPort         *int
 	borderShape        tui.BorderShape
 	cleanExit          bool
@@ -586,7 +587,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	}
 	var previewBox *util.EventBox
 	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenPort != nil {
+	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenAddr != nil {
 		previewBox = util.NewEventBox()
 	}
 	var renderer tui.Renderer
@@ -659,7 +660,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		margin:             opts.Margin,
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
-		listenPort:         opts.ListenPort,
+		listenAddr:         opts.ListenAddr,
 		borderShape:        opts.BorderShape,
 		borderWidth:        1,
 		borderLabel:        nil,
@@ -748,8 +749,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
-	if t.listenPort != nil {
-		err, port := startHttpServer(*t.listenPort, t.serverInputChan, t.serverOutputChan)
+	if t.listenAddr != nil {
+		err, port := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
 		if err != nil {
 			errorExit(err.Error())
 		}
@@ -1938,13 +1939,20 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if t.previewed.wipe && t.previewed.version != t.previewer.version {
 		t.previewed.wipe = false
 		t.pwindow.Erase()
+		// Required for tcell to clear the previous image
+		t.tui.Sync(true)
 	} else if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
 		t.previewed.filled = false
-		// We don't erase the window here to avoid flickering during scroll
-		t.pwindow.DrawBorder()
-		t.pwindow.Move(0, 0)
+		// We don't erase the window here to avoid flickering during scroll.
+		// However, tcell renderer uses double-buffering technique and there's no
+		// flickering. So we just erase the window and make the rest of the code
+		// simpler.
+		if !t.pwindow.EraseMaybe() {
+			t.pwindow.DrawBorder()
+			t.pwindow.Move(0, 0)
+		}
 	}
 
 	height := t.pwindow.Height()
@@ -1996,6 +2004,7 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
 	spinnerRedraw := t.pwindow.Y() == 0
+	wiped := false
 	sixel := false
 	wireframe := false
 Loop:
@@ -2023,7 +2032,7 @@ Loop:
 				t.renderPreviewSpinner()
 				t.pwindow.Move(y, x)
 			}
-			for _, passThrough := range passThroughs {
+			for idx, passThrough := range passThroughs {
 				// Handling Sixel output
 				requiredLines := 0
 				isSixel := strings.HasPrefix(passThrough, "\x1bP")
@@ -2031,7 +2040,7 @@ Loop:
 					t.previewed.wipe = true
 					if t.termSize.PxHeight > 0 {
 						rows := strings.Count(passThrough, "-")
-						requiredLines = int(math.Floor(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
+						requiredLines = int(math.Ceil(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
 					}
 				}
 
@@ -2050,18 +2059,27 @@ Loop:
 				}
 
 				// Clear previous wireframe or any other text
-				if t.previewed.wireframe || isSixel && !t.previewed.sixel {
+				if (t.previewed.wireframe || isSixel && !t.previewed.sixel) && !wiped {
+					wiped = true
 					for i := y + 1; i < height; i++ {
 						t.pwindow.MoveAndClear(i, 0)
 					}
+					// Required for tcell to clear the previous text
+					if !t.previewed.sixel {
+						t.tui.Sync(false)
+					}
 				}
 				sixel = sixel || isSixel
-				t.pwindow.MoveAndClear(y, x)
-				t.tui.PassThrough(passThrough)
+				if idx == 0 {
+					t.pwindow.MoveAndClear(y, x)
+				} else {
+					t.pwindow.Move(y, x)
+				}
+				t.tui.PassThrough(t.pwindow.Top()+y, t.pwindow.Left()+x, passThrough)
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {
-						t.pwindow.Move(y+requiredLines, 0)
+						t.pwindow.Move(height-1, maxWidth-1)
 						t.previewed.filled = true
 						break Loop
 					} else {
@@ -2781,6 +2799,8 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+t.pwindow.Top()))
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", t.pwindow.Left()))
 					}
 					cmd.Env = env
 
