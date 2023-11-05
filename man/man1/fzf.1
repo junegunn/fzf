@@ -793,14 +793,19 @@ ncurses finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
-.B "--listen[=[ADDR:]PORT]"
+.B "--listen[=[ADDR:]PORT]" "--listen-unsafe[=[ADDR:]PORT]"
 Start HTTP server and listen on the given address. It allows external processes
-to send actions to perform via POST method. If the port number is omitted or
-given as 0, fzf will automatically choose a port and export it as
-\fBFZF_PORT\fR environment variable to the child processes. If
-\fBFZF_API_KEY\fR environment variable is set, the server would require sending
-an API key with the same value in the \fBx-api-key\fR HTTP header.
-\fBFZF_API_KEY\fR is required for a non-localhost listen address.
+to send actions to perform via POST method.
+
+- If the port number is omitted or given as 0, fzf will automatically choose
+a port and export it as \fBFZF_PORT\fR environment variable to the child processes
+
+- If \fBFZF_API_KEY\fR environment variable is set, the server would require
+sending an API key with the same value in the \fBx-api-key\fR HTTP header
+
+- \fBFZF_API_KEY\fR is required for a non-localhost listen address
+
+- To allow remote process execution, use \fB--listen-unsafe\fR
 
 e.g.
      \fB# Start HTTP server on port 6266

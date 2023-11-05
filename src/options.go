@@ -119,6 +119,7 @@ const usage = `usage: fzf [options]
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
     --listen[=[ADDR:]PORT] Start HTTP server to receive actions (POST /)
+                           (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit
 
   Environment variables
@@ -334,7 +335,8 @@ type Options struct {
 	PreviewLabel labelOpts
 	Unicode      bool
 	Tabstop      int
-	ListenAddr   *string
+	ListenAddr   *listenAddress
+	Unsafe       bool
 	ClearOnExit  bool
 	Version      bool
 }
@@ -404,6 +406,7 @@ func defaultOptions() *Options {
 		Tabstop:      8,
 		BorderLabel:  labelOpts{},
 		PreviewLabel: labelOpts{},
+		Unsafe:       false,
 		ClearOnExit:  true,
 		Version:      false}
 }
@@ -1832,14 +1835,21 @@ func parseOptions(opts *Options, allArgs []string) {
 				nextString(allArgs, &i, "padding required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
-		case "--listen":
-			given, addr := optionalNextString(allArgs, &i)
-			if !given {
-				addr = defaultListenAddr
+		case "--listen", "--listen-unsafe":
+			given, str := optionalNextString(allArgs, &i)
+			addr := defaultListenAddr
+			if given {
+				var err error
+				err, addr = parseListenAddress(str)
+				if err != nil {
+					errorExit(err.Error())
+				}
 			}
 			opts.ListenAddr = &addr
-		case "--no-listen":
+			opts.Unsafe = arg == "--listen-unsafe"
+		case "--no-listen", "--no-listen-unsafe":
 			opts.ListenAddr = nil
+			opts.Unsafe = false
 		case "--clear":
 			opts.ClearOnExit = true
 		case "--no-clear":
@@ -1930,7 +1940,19 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--listen="); match {
-				opts.ListenAddr = &value
+				err, addr := parseListenAddress(value)
+				if err != nil {
+					errorExit(err.Error())
+				}
+				opts.ListenAddr = &addr
+				opts.Unsafe = false
+			} else if match, value := optString(arg, "--listen-unsafe="); match {
+				err, addr := parseListenAddress(value)
+				if err != nil {
+					errorExit(err.Error())
+				}
+				opts.ListenAddr = &addr
+				opts.Unsafe = true
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--scroll-off="); match {

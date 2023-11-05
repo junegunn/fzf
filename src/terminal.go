@@ -235,8 +235,9 @@ type Terminal struct {
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
 	unicode            bool
-	listenAddr         *string
+	listenAddr         *listenAddress
 	listenPort         *int
+	listenUnsafe       bool
 	borderShape        tui.BorderShape
 	cleanExit          bool
 	paused             bool
@@ -435,6 +436,26 @@ const (
 	actBecome
 	actResponse
 )
+
+func processExecution(action actionType) bool {
+	switch action {
+	case actTransformBorderLabel,
+		actTransformHeader,
+		actTransformPreviewLabel,
+		actTransformPrompt,
+		actTransformQuery,
+		actPreview,
+		actChangePreview,
+		actExecute,
+		actExecuteSilent,
+		actExecuteMulti,
+		actReload,
+		actReloadSync,
+		actBecome:
+		return true
+	}
+	return false
+}
 
 type placeholderFlags struct {
 	plus          bool
@@ -661,6 +682,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
 		listenAddr:         opts.ListenAddr,
+		listenUnsafe:       opts.Unsafe,
 		borderShape:        opts.BorderShape,
 		borderWidth:        1,
 		borderLabel:        nil,
@@ -3088,8 +3110,18 @@ func (t *Terminal) Loop() {
 			select {
 			case event = <-t.eventChan:
 				needBarrier = !event.Is(tui.Load, tui.One, tui.Zero)
-			case actions = <-t.serverInputChan:
+			case serverActions := <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
+				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
+					actions = serverActions
+				} else {
+					for _, action := range serverActions {
+						if !processExecution(action.t) {
+							actions = append(actions, action)
+						}
+					}
+				}
+
 				needBarrier = false
 			}
 		}

@@ -26,13 +26,12 @@ type getParams struct {
 }
 
 const (
-	crlf              = "\r\n"
-	httpOk            = "HTTP/1.1 200 OK" + crlf
-	httpBadRequest    = "HTTP/1.1 400 Bad Request" + crlf
-	httpUnauthorized  = "HTTP/1.1 401 Unauthorized" + crlf
-	httpReadTimeout   = 10 * time.Second
-	maxContentLength  = 1024 * 1024
-	defaultListenAddr = "localhost:0"
+	crlf             = "\r\n"
+	httpOk           = "HTTP/1.1 200 OK" + crlf
+	httpBadRequest   = "HTTP/1.1 400 Bad Request" + crlf
+	httpUnauthorized = "HTTP/1.1 401 Unauthorized" + crlf
+	httpReadTimeout  = 10 * time.Second
+	maxContentLength = 1024 * 1024
 )
 
 type httpServer struct {
@@ -41,38 +40,47 @@ type httpServer struct {
 	responseChannel chan string
 }
 
-func parseListenAddress(address string) (error, string, int) {
+type listenAddress struct {
+	host string
+	port int
+}
+
+func (addr listenAddress) IsLocal() bool {
+	return addr.host == "localhost" || addr.host == "127.0.0.1"
+}
+
+var defaultListenAddr = listenAddress{"localhost", 0}
+
+func parseListenAddress(address string) (error, listenAddress) {
 	parts := strings.SplitN(address, ":", 3)
 	if len(parts) == 1 {
 		parts = []string{"localhost", parts[0]}
 	}
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid listen address: %s", address), "", 0
+		return fmt.Errorf("invalid listen address: %s", address), defaultListenAddr
 	}
 	portStr := parts[len(parts)-1]
 	port, err := strconv.Atoi(portStr)
 	if err != nil || port < 0 || port > 65535 {
-		return fmt.Errorf("invalid listen port: %s", portStr), "", 0
+		return fmt.Errorf("invalid listen port: %s", portStr), defaultListenAddr
 	}
 	if len(parts[0]) == 0 {
 		parts[0] = "localhost"
 	}
-	return nil, parts[0], port
+	return nil, listenAddress{parts[0], port}
 }
 
-func startHttpServer(address string, actionChannel chan []*action, responseChannel chan string) (error, int) {
-	err, host, port := parseListenAddress(address)
-	if err != nil {
-		return err, port
-	}
-
+func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (error, int) {
+	host := address.host
+	port := address.port
 	apiKey := os.Getenv("FZF_API_KEY")
-	if host != "localhost" && host != "127.0.0.1" && len(apiKey) == 0 {
-		return fmt.Errorf("FZF_API_KEY is required for remote access"), port
+	if !address.IsLocal() && len(apiKey) == 0 {
+		return fmt.Errorf("FZF_API_KEY is required to allow remote access"), port
 	}
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
+	addrStr := fmt.Sprintf("%s:%d", host, port)
+	listener, err := net.Listen("tcp", addrStr)
 	if err != nil {
-		return fmt.Errorf("failed to listen on %s", address), port
+		return fmt.Errorf("failed to listen on %s", addrStr), port
 	}
 	if port == 0 {
 		addr := listener.Addr().String()
