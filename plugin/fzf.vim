@@ -403,6 +403,9 @@ function! fzf#wrap(...)
         call remove(opts, key)
       endif
     endfor
+    if exists('g:fzf_fullscreen_layout')
+      let opts = extend(opts, s:validate_layout(get(g:, 'fzf_fullscreen_layout', {})))
+    endif
   elseif !s:has_any(opts, s:layout_keys)
     if !exists('g:fzf_layout') && exists('g:fzf_height')
       let opts.down = g:fzf_height
