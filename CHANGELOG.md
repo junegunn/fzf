@@ -16,11 +16,12 @@ CHANGELOG
   # FZF_API_KEY is required for a non-localhost listen address
   export FZF_API_KEY="$(head -c 32 /dev/urandom | base64)"
   fzf --listen 0.0.0.0:6266
-
-  # To allow remote process execution, use `--listen-unsafe` instead
-  # (execute, reload, become, preview, change-preview, tranform-*, etc.)
-  fzf --listen-unsafe 0.0.0.0:6266
   ```
+    - To allow remote process execution, use `--listen-unsafe` instead
+      (`execute*`, `reload*`, `become`, `preview`, `change-preview`, `transform-*`)
+      ```sh
+      fzf --listen-unsafe 0.0.0.0:6266
+      ```
 - Bug fixes
 
 0.43.0
