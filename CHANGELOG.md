@@ -10,7 +10,12 @@ CHANGELOG
       ```sh
       fzf --preview='fzf-preview.sh {}'
       ```
-- (Experimental) Sixel and Kitty image support now also available on Windows
+- (Experimental) iTerm2 inline image protocol support in preview window
+  ```sh
+  # Using https://iterm2.com/utilities/imgcat
+  fzf --preview 'imgcat -W $FZF_PREVIEW_COLUMNS -H $FZF_PREVIEW_LINES {}'
+  ```
+- (Experimental) Sixel, Kitty, and iTerm2 image support now also available on Windows
 - HTTP server can be configured to accept remote connections
   ```sh
   # FZF_API_KEY is required for a non-localhost listen address

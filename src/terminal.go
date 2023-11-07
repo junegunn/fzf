@@ -66,7 +66,8 @@ func init() {
 	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
 	// * https://en.wikipedia.org/wiki/Sixel
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?`)
+	// * https://iterm2.com/documentation-images.html
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?\a`)
 }
 
 type jumpMode int
@@ -125,7 +126,7 @@ type previewed struct {
 	numLines  int
 	offset    int
 	filled    bool
-	sixel     bool
+	image     bool
 	wipe      bool
 	wireframe bool
 }
@@ -2027,7 +2028,7 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 	var ansi *ansiState
 	spinnerRedraw := t.pwindow.Y() == 0
 	wiped := false
-	sixel := false
+	image := false
 	wireframe := false
 Loop:
 	for _, line := range lines {
@@ -2055,18 +2056,25 @@ Loop:
 				t.pwindow.Move(y, x)
 			}
 			for idx, passThrough := range passThroughs {
-				// Handling Sixel output
+				// Handling Sixel/iTerm image
 				requiredLines := 0
 				isSixel := strings.HasPrefix(passThrough, "\x1bP")
-				if isSixel {
+				isItermImage := strings.HasPrefix(passThrough, "\x1b]1337;")
+				isImage := isSixel || isItermImage
+				if isImage {
 					t.previewed.wipe = true
-					if t.termSize.PxHeight > 0 {
+					// NOTE: We don't have a good way to get the height of an iTerm image,
+					// so we assume that it requires the full height of the preview
+					// window.
+					requiredLines = height
+
+					if isSixel && t.termSize.PxHeight > 0 {
 						rows := strings.Count(passThrough, "-")
 						requiredLines = int(math.Ceil(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
 					}
 				}
 
-				// Render wireframe when Sixel image cannot be displayed entirely
+				// Render wireframe when the image cannot be displayed entirely
 				if requiredLines > 0 && y+requiredLines > height {
 					top := true
 					for ; y < height; y++ {
@@ -2081,17 +2089,17 @@ Loop:
 				}
 
 				// Clear previous wireframe or any other text
-				if (t.previewed.wireframe || isSixel && !t.previewed.sixel) && !wiped {
+				if (t.previewed.wireframe || isImage && !t.previewed.image) && !wiped {
 					wiped = true
 					for i := y + 1; i < height; i++ {
 						t.pwindow.MoveAndClear(i, 0)
 					}
 					// Required for tcell to clear the previous text
-					if !t.previewed.sixel {
+					if !t.previewed.image {
 						t.tui.Sync(false)
 					}
 				}
-				sixel = sixel || isSixel
+				image = image || isImage
 				if idx == 0 {
 					t.pwindow.MoveAndClear(y, x)
 				} else {
@@ -2154,7 +2162,7 @@ Loop:
 		}
 		lineNo++
 	}
-	t.previewed.sixel = sixel
+	t.previewed.image = image
 	t.previewed.wireframe = wireframe
 }
 
