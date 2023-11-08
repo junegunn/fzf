@@ -406,7 +406,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			return Event{F3, 0, nil}
 		case 'S':
 			return Event{F4, 0, nil}
-		case '1', '2', '3', '4', '5', '6':
+		case '1', '2', '3', '4', '5', '6', '7', '8':
 			if len(r.buffer) < 4 {
 				return Event{Invalid, 0, nil}
 			}
@@ -457,6 +457,10 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				return Event{PgUp, 0, nil}
 			case '6':
 				return Event{PgDn, 0, nil}
+			case '7':
+				return Event{Home, 0, nil}
+			case '8':
+				return Event{End, 0, nil}
 			case '1':
 				switch r.buffer[3] {
 				case '~':
