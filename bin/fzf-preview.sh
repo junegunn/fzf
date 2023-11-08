@@ -64,7 +64,7 @@ elif command -v chafa > /dev/null; then
 # 3. If chafa is not found but imgcat is available, use it on iTerm2
 elif command -v imgcat > /dev/null; then
   # NOTE: We should use https://iterm2.com/utilities/it2check to check if the
-  # user is running iTerm2. But for the sake of simplicty, we just assume
+  # user is running iTerm2. But for the sake of simplicity, we just assume
   # that's the case here.
   imgcat -W "${dim%%x*}" -H "${dim##*x}" "$file"
 
