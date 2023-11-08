@@ -897,6 +897,11 @@ A term that is prefixed by a single-quote character (\fB'\fR) is interpreted as
 an "exact-match" (or "non-fuzzy") term. fzf will search for the exact
 occurrences of the string.
 
+.SS Exact-match + Case-sensitive (double-quoted)
+A term that is prefixed by a double-quote character (\fB"\fR) is interpreted as
+an "exact-match" (or "non-fuzzy") term, including case. fzf will search for the
+exact case-sensitive occurrences of the string.
+
 .SS Anchored-match
 A term can be prefixed by \fB^\fR, or suffixed by \fB$\fR to become an
 anchored-match term. Then fzf will search for the lines that start with or end
