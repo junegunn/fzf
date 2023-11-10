@@ -489,8 +489,7 @@ type Renderer interface {
 	RefreshWindows(windows []Window)
 	Refresh()
 	Close()
-	PassThrough(y int, x int, data string)
-	Sync(bool)
+	PassThrough(string)
 	NeedScrollbarRedraw() bool
 
 	GetChar() Event

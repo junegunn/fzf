@@ -1962,8 +1962,6 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if t.previewed.wipe && t.previewed.version != t.previewer.version {
 		t.previewed.wipe = false
 		t.pwindow.Erase()
-		// Required for tcell to clear the previous image
-		t.tui.Sync(true)
 	} else if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
@@ -2094,10 +2092,6 @@ Loop:
 					for i := y + 1; i < height; i++ {
 						t.pwindow.MoveAndClear(i, 0)
 					}
-					// Required for tcell to clear the previous text
-					if !t.previewed.image {
-						t.tui.Sync(false)
-					}
 				}
 				image = image || isImage
 				if idx == 0 {
@@ -2105,7 +2099,7 @@ Loop:
 				} else {
 					t.pwindow.Move(y, x)
 				}
-				t.tui.PassThrough(t.pwindow.Top()+y, t.pwindow.Left()+x, passThrough)
+				t.tui.PassThrough(passThrough)
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {
