@@ -66,7 +66,8 @@ func init() {
 	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
 	// * https://en.wikipedia.org/wiki/Sixel
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?`)
+	// * https://iterm2.com/documentation-images.html
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?\a`)
 }
 
 type jumpMode int
@@ -125,7 +126,7 @@ type previewed struct {
 	numLines  int
 	offset    int
 	filled    bool
-	sixel     bool
+	image     bool
 	wipe      bool
 	wireframe bool
 }
@@ -235,8 +236,9 @@ type Terminal struct {
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
 	unicode            bool
-	listenAddr         *string
+	listenAddr         *listenAddress
 	listenPort         *int
+	listenUnsafe       bool
 	borderShape        tui.BorderShape
 	cleanExit          bool
 	paused             bool
@@ -435,6 +437,26 @@ const (
 	actBecome
 	actResponse
 )
+
+func processExecution(action actionType) bool {
+	switch action {
+	case actTransformBorderLabel,
+		actTransformHeader,
+		actTransformPreviewLabel,
+		actTransformPrompt,
+		actTransformQuery,
+		actPreview,
+		actChangePreview,
+		actExecute,
+		actExecuteSilent,
+		actExecuteMulti,
+		actReload,
+		actReloadSync,
+		actBecome:
+		return true
+	}
+	return false
+}
 
 type placeholderFlags struct {
 	plus          bool
@@ -661,6 +683,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		padding:            opts.Padding,
 		unicode:            opts.Unicode,
 		listenAddr:         opts.ListenAddr,
+		listenUnsafe:       opts.Unsafe,
 		borderShape:        opts.BorderShape,
 		borderWidth:        1,
 		borderLabel:        nil,
@@ -1939,8 +1962,6 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	if t.previewed.wipe && t.previewed.version != t.previewer.version {
 		t.previewed.wipe = false
 		t.pwindow.Erase()
-		// Required for tcell to clear the previous image
-		t.tui.Sync(true)
 	} else if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
@@ -2005,7 +2026,7 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 	var ansi *ansiState
 	spinnerRedraw := t.pwindow.Y() == 0
 	wiped := false
-	sixel := false
+	image := false
 	wireframe := false
 Loop:
 	for _, line := range lines {
@@ -2033,18 +2054,25 @@ Loop:
 				t.pwindow.Move(y, x)
 			}
 			for idx, passThrough := range passThroughs {
-				// Handling Sixel output
+				// Handling Sixel/iTerm image
 				requiredLines := 0
 				isSixel := strings.HasPrefix(passThrough, "\x1bP")
-				if isSixel {
+				isItermImage := strings.HasPrefix(passThrough, "\x1b]1337;")
+				isImage := isSixel || isItermImage
+				if isImage {
 					t.previewed.wipe = true
-					if t.termSize.PxHeight > 0 {
+					// NOTE: We don't have a good way to get the height of an iTerm image,
+					// so we assume that it requires the full height of the preview
+					// window.
+					requiredLines = height
+
+					if isSixel && t.termSize.PxHeight > 0 {
 						rows := strings.Count(passThrough, "-")
 						requiredLines = int(math.Ceil(float64(rows*6*t.termSize.Lines) / float64(t.termSize.PxHeight)))
 					}
 				}
 
-				// Render wireframe when Sixel image cannot be displayed entirely
+				// Render wireframe when the image cannot be displayed entirely
 				if requiredLines > 0 && y+requiredLines > height {
 					top := true
 					for ; y < height; y++ {
@@ -2059,23 +2087,19 @@ Loop:
 				}
 
 				// Clear previous wireframe or any other text
-				if (t.previewed.wireframe || isSixel && !t.previewed.sixel) && !wiped {
+				if (t.previewed.wireframe || isImage && !t.previewed.image) && !wiped {
 					wiped = true
 					for i := y + 1; i < height; i++ {
 						t.pwindow.MoveAndClear(i, 0)
 					}
-					// Required for tcell to clear the previous text
-					if !t.previewed.sixel {
-						t.tui.Sync(false)
-					}
 				}
-				sixel = sixel || isSixel
+				image = image || isImage
 				if idx == 0 {
 					t.pwindow.MoveAndClear(y, x)
 				} else {
 					t.pwindow.Move(y, x)
 				}
-				t.tui.PassThrough(t.pwindow.Top()+y, t.pwindow.Left()+x, passThrough)
+				t.tui.PassThrough(passThrough)
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {
@@ -2132,7 +2156,7 @@ Loop:
 		}
 		lineNo++
 	}
-	t.previewed.sixel = sixel
+	t.previewed.image = image
 	t.previewed.wireframe = wireframe
 }
 
@@ -3088,8 +3112,18 @@ func (t *Terminal) Loop() {
 			select {
 			case event = <-t.eventChan:
 				needBarrier = !event.Is(tui.Load, tui.One, tui.Zero)
-			case actions = <-t.serverInputChan:
+			case serverActions := <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
+				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
+					actions = serverActions
+				} else {
+					for _, action := range serverActions {
+						if !processExecution(action.t) {
+							actions = append(actions, action)
+						}
+					}
+				}
+
 				needBarrier = false
 			}
 		}

@@ -4,6 +4,7 @@ ba = "ba"
 fo = "fo"
 enew = "enew"
 tabe = "tabe"
+Iterm = "Iterm"
 
 [files]
 extend-exclude = ["README.md"]

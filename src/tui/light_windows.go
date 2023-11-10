@@ -110,16 +110,24 @@ func (r *LightRenderer) restoreTerminal() error {
 	return windows.SetConsoleMode(windows.Handle(r.outHandle), r.origStateOutput)
 }
 
-func (r *LightRenderer) updateTerminalSize() {
+func (r *LightRenderer) Size() TermSize {
+	var w, h int
 	var bufferInfo windows.ConsoleScreenBufferInfo
 	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(r.outHandle), &bufferInfo); err != nil {
-		r.width = getEnv("COLUMNS", defaultWidth)
-		r.height = r.maxHeightFunc(getEnv("LINES", defaultHeight))
+		w = getEnv("COLUMNS", defaultWidth)
+		h = r.maxHeightFunc(getEnv("LINES", defaultHeight))
 
 	} else {
-		r.width = int(bufferInfo.Window.Right - bufferInfo.Window.Left)
-		r.height = r.maxHeightFunc(int(bufferInfo.Window.Bottom - bufferInfo.Window.Top))
+		w = int(bufferInfo.Window.Right - bufferInfo.Window.Left)
+		h = r.maxHeightFunc(int(bufferInfo.Window.Bottom - bufferInfo.Window.Top))
 	}
+	return TermSize{h, w, 0, 0}
+}
+
+func (r *LightRenderer) updateTerminalSize() {
+	size := r.Size()
+	r.width = size.Columns
+	r.height = size.Lines
 }
 
 func (r *LightRenderer) findOffset() (row int, col int) {
