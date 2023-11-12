@@ -93,6 +93,10 @@ build:
 	goreleaser build --rm-dist --snapshot --skip-post-hooks
 
 release:
+	# Make sure that the tests pass and the build works
+	TAGS=tcell make test
+	make test build clean
+
 ifndef GITHUB_TOKEN
 	$(error GITHUB_TOKEN is not defined)
 endif

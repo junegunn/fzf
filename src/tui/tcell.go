@@ -100,7 +100,7 @@ const (
 
 func (r *FullscreenRenderer) PassThrough(str string) {
 	// No-op
-	// https://github.com/gdamore/tcell/issues/363#issuecomment-680665073
+	// https://github.com/gdamore/tcell/pull/650#issuecomment-1806442846
 }
 
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
