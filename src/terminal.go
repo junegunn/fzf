@@ -3310,6 +3310,7 @@ func (t *Terminal) Loop() {
 				}
 			case actBeginningOfLine:
 				t.cx = 0
+				t.xoffset = 0
 			case actBackwardChar:
 				if t.cx > 0 {
 					t.cx--
