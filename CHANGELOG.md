@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.44.1
+------
+- Fixed crash when preview window is hidden on `focus` event
+
 0.44.0
 ------
 - (Experimental) Sixel image support in preview window (not available on Windows)
