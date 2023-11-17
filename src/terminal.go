@@ -475,6 +475,7 @@ type searchRequest struct {
 
 type previewRequest struct {
 	template     string
+	pwindow      tui.Window
 	pwindowSize  tui.TermSize
 	scrollOffset int
 	list         []*Item
@@ -2794,6 +2795,7 @@ func (t *Terminal) Loop() {
 			for {
 				var items []*Item
 				var commandTemplate string
+				var pwindow tui.Window
 				var pwindowSize tui.TermSize
 				initialOffset := 0
 				t.previewBox.Wait(func(events *util.Events) {
@@ -2804,6 +2806,7 @@ func (t *Terminal) Loop() {
 							commandTemplate = request.template
 							initialOffset = request.scrollOffset
 							items = request.list
+							pwindow = request.pwindow
 							pwindowSize = request.pwindowSize
 						}
 					}
@@ -2823,8 +2826,8 @@ func (t *Terminal) Loop() {
 						env = append(env, "FZF_PREVIEW_"+lines)
 						env = append(env, columns)
 						env = append(env, "FZF_PREVIEW_"+columns)
-						env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+t.pwindow.Top()))
-						env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", t.pwindow.Left()))
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+pwindow.Top()))
+						env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", pwindow.Left()))
 					}
 					cmd.Env = env
 
@@ -2952,7 +2955,7 @@ func (t *Terminal) Loop() {
 		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindowSize(), t.evaluateScrollOffset(), list})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list})
 		}
 	}
 
@@ -3250,7 +3253,7 @@ func (t *Terminal) Loop() {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.previewOpts.command, t.pwindowSize(), t.evaluateScrollOffset(), list})
+								previewRequest{t.previewOpts.command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list})
 						}
 					} else {
 						// Discard the preview content so that it won't accidentally appear
