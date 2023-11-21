@@ -6,5 +6,5 @@ import "golang.org/x/sys/unix"
 
 // Protect calls OS specific protections like pledge on OpenBSD
 func Protect() {
-	unix.PledgePromises("stdio rpath tty proc exec inet")
+	unix.PledgePromises("stdio rpath tty proc exec inet tmppath")
 }
