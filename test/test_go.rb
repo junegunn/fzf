@@ -3020,6 +3020,13 @@ class TestGoFZF < TestBase
     tmux.send_keys :x
     tmux.until { |lines| assert(lines.any? { |line| line.include?('[x-foo]') }) }
   end
+
+  def test_preview_window_hidden_on_focus
+    tmux.send_keys "seq 3 | #{FZF} --preview 'echo {}' --bind focus:hide-preview", :Enter
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2' }
+  end
 end
 
 module TestShell
