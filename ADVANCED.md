@@ -579,6 +579,31 @@ explanation [here](https://github.com/junegunn/fzf/blob/master/README-VIM.md#exp
 
 Here is an example. Add this to your Vim configuration file.
 
+#### Lua
+```lua
+vim.g.fzf_colors = {
+    fg = {"fg", "Normal"},
+    bg = {"bg", "Normal"},
+    ['preview-fg'] = {"bg", "Normal"},
+    ['preview-bg'] = {"bg", "NormalFloat"},
+    hl = {"fg", "Comment"},
+    ['fg+'] = {"fg", "CursorLine", "CursorColumn", "Normal"},
+    ['bg+'] = {"bg", "CursorLine", "CursorColumn"},
+    ['hl+'] = {"fg", "Statement"},
+    info = {"fg", "PreProc"},
+    border = {"fg", "Ignore"},
+    prompt = {"fg", "Conditional"},
+    pointer = {"fg", "Exception"},
+    marker = {"fg", "Keyword"},
+    spinner = {"fg", "Label"},
+    gutter = {"bg", "SignColumn"},
+    query = {"fg", "Comment"},
+    disabled = {"fg", "Ignore"},
+    header = {"fg", "Comment"},
+}
+```
+
+#### Vimscript
 ```vim
 let g:fzf_colors =
 \ { 'fg':         ['fg', 'Normal'],
