@@ -583,6 +583,7 @@ Here is an example. Add this to your Vim configuration file.
 let g:fzf_colors =
 \ { 'fg':         ['fg', 'Normal'],
   \ 'bg':         ['bg', 'Normal'],
+  \ 'preview-fg': ['bg', 'Normal'],
   \ 'preview-bg': ['bg', 'NormalFloat'],
   \ 'hl':         ['fg', 'Comment'],
   \ 'fg+':        ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
@@ -594,6 +595,9 @@ let g:fzf_colors =
   \ 'pointer':    ['fg', 'Exception'],
   \ 'marker':     ['fg', 'Keyword'],
   \ 'spinner':    ['fg', 'Label'],
+  \ 'gutter':     ['bg', 'SignColumn'],
+  \ 'query':      ['fg', 'Comment'],
+  \ 'disabled':   ['fg', 'Ignore'],
   \ 'header':     ['fg', 'Comment'] }
 ```
 
