@@ -538,35 +538,35 @@ display 24-bit colors.
 
 ```sh
 # junegunn/seoul256.vim (dark)
-export FZF_DEFAULT_OPTS='--color=bg+:#3F3F3F,bg:#4B4B4B,border:#6B6B6B,spinner:#98BC99,hl:#719872,fg:#D9D9D9,header:#719872,info:#BDBB72,pointer:#E12672,marker:#E17899,fg+:#D9D9D9,preview-bg:#3F3F3F,prompt:#98BEDE,hl+:#98BC99'
+export FZF_DEFAULT_OPTS='--color=border:#6b6b6b,fg+:#d9d9d9,preview-bg:#3f3f3f,info:#bdbb72,spinner:#98bc99,prompt:#98bede,bg+:#3f3f3f,fg:#d9d9d9,disabled:#6b6b6b,header:#719872,marker:#e17899,hl+:#98bc99,query:#719872,hl:#719872,pointer:#e12672'
 ```
 
 ![seoul256](https://user-images.githubusercontent.com/700826/113475011-2c192d80-94ae-11eb-9d17-1e5867bae01f.png)
 
 ```sh
 # junegunn/seoul256.vim (light)
-export FZF_DEFAULT_OPTS='--color=bg+:#D9D9D9,bg:#E1E1E1,border:#C8C8C8,spinner:#719899,hl:#719872,fg:#616161,header:#719872,info:#727100,pointer:#E12672,marker:#E17899,fg+:#616161,preview-bg:#D9D9D9,prompt:#0099BD,hl+:#719899'
+export FZF_DEFAULT_OPTS='--color=border:#c8c8c8,fg+:#616161,preview-bg:#d9d9d9,info:#727100,spinner:#719899,prompt:#0099bd,bg+:#d9d9d9,fg:#616161,disabled:#c8c8c8,header:#719872,marker:#e17899,hl+:#719899,query:#719872,hl:#719872,pointer:#e12672'
 ```
 
 ![seoul256-light](https://user-images.githubusercontent.com/700826/113475022-389d8600-94ae-11eb-905f-0939dd535837.png)
 
 ```sh
 # morhetz/gruvbox
-export FZF_DEFAULT_OPTS='--color=bg+:#3c3836,bg:#32302f,spinner:#fb4934,hl:#928374,fg:#ebdbb2,header:#928374,info:#8ec07c,pointer:#fb4934,marker:#fb4934,fg+:#ebdbb2,prompt:#fb4934,hl+:#fb4934'
+export FZF_DEFAULT_OPTS='--color=fg+:#3c3836,preview-bg:#d5c4a1,info:#427b58,spinner:#9d0006,prompt:#9d0006,fg:#3c3836,header:#928374,marker:#9d0006,hl+:#9d0006,query:#928374,hl:#928374,pointer:#9d0006'
 ```
 
 ![gruvbox](https://user-images.githubusercontent.com/700826/113475042-494dfc00-94ae-11eb-9322-cd03a027305a.png)
 
 ```sh
 # arcticicestudio/nord-vim
-export FZF_DEFAULT_OPTS='--color=bg+:#3B4252,bg:#2E3440,spinner:#81A1C1,hl:#616E88,fg:#D8DEE9,header:#616E88,info:#81A1C1,pointer:#81A1C1,marker:#81A1C1,fg+:#D8DEE9,prompt:#81A1C1,hl+:#81A1C1'
+export FZF_DEFAULT_OPTS='--color=fg+:#d8dee9,preview-bg:#434c5e,info:#81a1c1,spinner:#81a1c1,prompt:#81a1c1,bg+:#3b4252,fg:#d8dee9,header:#616e88,marker:#81a1c1,hl+:#81a1c1,query:#616e88,hl:#616e88,pointer:#81a1c1'
 ```
 
 ![nord](https://user-images.githubusercontent.com/700826/113475063-67b3f780-94ae-11eb-9b24-5f0d22b63399.png)
 
 ```sh
 # tomasr/molokai
-export FZF_DEFAULT_OPTS='--color=bg+:#293739,bg:#1B1D1E,border:#808080,spinner:#E6DB74,hl:#7E8E91,fg:#F8F8F2,header:#7E8E91,info:#A6E22E,pointer:#A6E22E,marker:#F92672,fg+:#F8F8F2,prompt:#F92672,hl+:#F92672'
+export FZF_DEFAULT_OPTS='--color=border:#808080,fg+:#f8f8f2,preview-bg:#000000,info:#a6e22e,spinner:#e6db74,prompt:#f92672,bg+:#293739,fg:#f8f8f2,disabled:#808080,header:#7e8e91,marker:#f92672,hl+:#f92672,query:#7e8e91,hl:#7e8e91,pointer:#a6e22e'
 ```
 
 ![molokai](https://user-images.githubusercontent.com/700826/113475085-8619f300-94ae-11eb-85e4-2766fc3246bf.png)
