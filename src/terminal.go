@@ -729,7 +729,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:           make(chan int),
 		serverInputChan:    make(chan []*action, 10),
 		serverOutputChan:   make(chan string),
-		eventChan:          make(chan tui.Event, 1),
+		eventChan:          make(chan tui.Event, 3), // load / zero|one | GetChar
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false)}
