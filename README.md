@@ -124,7 +124,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### Using Linux package managers
 
 | Package Manager | Linux Distribution      | Command                            |
-| ---             | ---                     | ---                                |
+|-----------------|-------------------------|------------------------------------|
 | APK             | Alpine Linux            | `sudo apk add fzf`                 |
 | APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt install fzf`             |
 | Conda           |                         | `conda install -c conda-forge fzf` |
@@ -135,6 +135,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | pkgin           | NetBSD                  | `pkgin install fzf`                |
 | pkg_add         | OpenBSD                 | `pkg_add fzf`                      |
 | Portage         | Gentoo                  | `emerge --ask app-shells/fzf`      |
+| Spack           |                         | `spack install fzf`                |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
@@ -151,7 +152,7 @@ Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
 available via [Chocolatey][choco], [Scoop][scoop], and [Winget][winget]:
 
 | Package manager | Command              |
-| ---             | ---                  |
+|-----------------|----------------------|
 | Chocolatey      | `choco install fzf`  |
 | Scoop           | `scoop install fzf`  |
 | Winget          | `winget install fzf` |
