@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"math"
 	"os"
 	"time"
 
@@ -8,9 +9,6 @@ import (
 )
 
 const (
-	// Current version
-	version = "0.17.3"
-
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
 	coordinatorDelayStep time.Duration = 10 * time.Millisecond
@@ -22,9 +20,14 @@ const (
 	readerPollIntervalMax  = 50 * time.Millisecond
 
 	// Terminal
-	initialDelay    = 20 * time.Millisecond
-	initialDelayTac = 100 * time.Millisecond
-	spinnerDuration = 200 * time.Millisecond
+	initialDelay      = 20 * time.Millisecond
+	initialDelayTac   = 100 * time.Millisecond
+	spinnerDuration   = 100 * time.Millisecond
+	previewCancelWait = 500 * time.Millisecond
+	previewChunkDelay = 100 * time.Millisecond
+	previewDelayed    = 500 * time.Millisecond
+	maxPatternLength  = 300
+	maxMulti          = math.MaxInt32
 
 	// Matcher
 	numPartitionsMultiplier = 8
@@ -55,11 +58,9 @@ var defaultCommand string
 
 func init() {
 	if !util.IsWindows() {
-		defaultCommand = `set -o pipefail; command find -L . -mindepth 1 \( -path '*/\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune -o -type f -print -o -type l -print 2> /dev/null | cut -b3-`
+		defaultCommand = `set -o pipefail; command find -L . -mindepth 1 \( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune -o -type f -print -o -type l -print 2> /dev/null | cut -b3-`
 	} else if os.Getenv("TERM") == "cygwin" {
-		defaultCommand = `sh -c "command find -L . -mindepth 1 -path '*/\.*' -prune -o -type f -print -o -type l -print 2> /dev/null | cut -b3-"`
-	} else {
-		defaultCommand = `for /r %P in (*) do @(set "_curfile=%P" & set "_curfile=!_curfile:%__CD__%=!" & echo !_curfile!)`
+		defaultCommand = `sh -c "command find -L . -mindepth 1 -path '*/.*' -prune -o -type f -print -o -type l -print 2> /dev/null | cut -b3-"`
 	}
 }
 
@@ -72,9 +73,11 @@ const (
 	EvtSearchFin
 	EvtHeader
 	EvtReady
+	EvtQuit
 )
 
 const (
+	exitCancel    = -1
 	exitOk        = 0
 	exitNoMatch   = 1
 	exitError     = 2

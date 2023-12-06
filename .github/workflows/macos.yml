@@ -1,0 +1,45 @@
+---
+name: Test fzf on macOS
+
+on:
+  push:
+    branches: [ master, devel ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.18
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.0.0
+
+    - name: Install packages
+      run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew install fish zsh tmux
+
+    - name: Install Ruby gems
+      run: gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1
+
+    - name: Rubocop
+      run: rubocop --require rubocop-minitest --require rubocop-performance
+
+    - name: Unit test
+      run: make test
+
+    - name: Integration test
+      run: make install && ./install --all && LC_ALL=C tmux new-session -d && ruby test/test_go.rb --verbose

@@ -1,0 +1,45 @@
+---
+name: Test fzf on Linux
+
+on:
+  push:
+    branches: [ master, devel ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.19
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.1.0
+
+    - name: Install packages
+      run: sudo apt-get install --yes zsh fish tmux
+
+    - name: Install Ruby gems
+      run: sudo gem install --no-document minitest:5.17.0 rubocop:1.43.0 rubocop-minitest:0.25.1 rubocop-performance:1.15.2
+
+    - name: Rubocop
+      run: rubocop --require rubocop-minitest --require rubocop-performance
+
+    - name: Unit test
+      run: make test
+
+    - name: Integration test
+      run: make install && ./install --all && LC_ALL=C tmux new-session -d && ruby test/test_go.rb --verbose

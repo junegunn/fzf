@@ -35,7 +35,7 @@ type Delimiter struct {
 	str   *string
 }
 
-// String returns the string representation of a Delimeter.
+// String returns the string representation of a Delimiter.
 func (d Delimiter) String() string {
 	return fmt.Sprintf("Delimiter{regex: %v, str: &%q}", d.regex, *d.str)
 }
@@ -156,14 +156,14 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	// FIXME performance
 	var tokens []string
 	if delimiter.regex != nil {
-		for len(text) > 0 {
-			loc := delimiter.regex.FindStringIndex(text)
-			if len(loc) < 2 {
-				loc = []int{0, len(text)}
-			}
-			last := util.Max(loc[1], 1)
-			tokens = append(tokens, text[:last])
-			text = text[last:]
+		locs := delimiter.regex.FindAllStringIndex(text, -1)
+		begin := 0
+		for _, loc := range locs {
+			tokens = append(tokens, text[begin:loc[1]])
+			begin = loc[1]
+		}
+		if begin < len(text) {
+			tokens = append(tokens, text[begin:])
 		}
 	}
 	return withPrefixLengths(tokens, 0)
@@ -238,7 +238,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 			for _, part := range parts {
 				output.WriteString(part.ToString())
 			}
-			merged = util.ToChars([]byte(output.String()))
+			merged = util.ToChars(output.Bytes())
 		}
 
 		var prefixLength int32

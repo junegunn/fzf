@@ -130,6 +130,18 @@ func (chars *Chars) TrimLength() uint16 {
 	return chars.trimLength
 }
 
+func (chars *Chars) LeadingWhitespaces() int {
+	whitespaces := 0
+	for i := 0; i < chars.Length(); i++ {
+		char := chars.Get(i)
+		if !unicode.IsSpace(char) {
+			break
+		}
+		whitespaces++
+	}
+	return whitespaces
+}
+
 func (chars *Chars) TrailingWhitespaces() int {
 	whitespaces := 0
 	for i := chars.Length() - 1; i >= 0; i-- {
@@ -140,6 +152,11 @@ func (chars *Chars) TrailingWhitespaces() int {
 		whitespaces++
 	}
 	return whitespaces
+}
+
+func (chars *Chars) TrimTrailingWhitespaces() {
+	whitespaces := chars.TrailingWhitespaces()
+	chars.slice = chars.slice[0 : len(chars.slice)-whitespaces]
 }
 
 func (chars *Chars) ToString() string {
@@ -169,5 +186,13 @@ func (chars *Chars) CopyRunes(dest []rune) {
 	for idx, b := range chars.slice[:len(dest)] {
 		dest[idx] = rune(b)
 	}
-	return
+}
+
+func (chars *Chars) Prepend(prefix string) {
+	if runes := chars.optionalRunes(); runes != nil {
+		runes = append([]rune(prefix), runes...)
+		chars.slice = *(*[]byte)(unsafe.Pointer(&runes))
+	} else {
+		chars.slice = append([]byte(prefix), chars.slice...)
+	}
 }

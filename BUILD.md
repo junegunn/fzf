@@ -6,11 +6,9 @@ Build instructions
 
 ### Prerequisites
 
-- `go` executable in $PATH
+- Go 1.18 or above
 
 ### Using Makefile
-
-Makefile will set up and use its own `$GOPATH` under the project root.
 
 ```sh
 # Build fzf binary for your platform in target
@@ -19,21 +17,19 @@ make
 # Build fzf binary and copy it to bin directory
 make install
 
-# Build 32-bit and 64-bit executables and tarballs in target
+# Build fzf binaries and archives for all platforms using goreleaser
+make build
+
+# Publish GitHub release
 make release
-
-# Make release archives for all supported platforms in target
-make release-all
 ```
 
-### Using `go get`
-
-Alternatively, you can build fzf directly with `go get` command without
-manually cloning the repository.
-
-```sh
-go get -u github.com/junegunn/fzf
-```
+> :warning: Makefile uses git commands to determine the version and the
+> revision information for `fzf --version`. So if you're building fzf from an
+> environment where its git information is not available, you have to manually
+> set `$FZF_VERSION` and `$FZF_REVISION`.
+>
+> e.g. `FZF_VERSION=0.24.0 FZF_REVISION=tarball make`
 
 Third-party libraries used
 --------------------------

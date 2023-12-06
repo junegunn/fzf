@@ -1,0 +1,15 @@
+name: Publish to Winget
+on:
+  release:
+    types: [released]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: junegunn.fzf
+          version: ${{ github.event.release.tag_name }}
+          installers-regex: '-windows_(armv7|arm64|amd64)\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

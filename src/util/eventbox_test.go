@@ -9,7 +9,6 @@ const (
 	EvtSearchNew
 	EvtSearchProgress
 	EvtSearchFin
-	EvtClose
 )
 
 func TestEventBox(t *testing.T) {

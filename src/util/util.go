@@ -3,25 +3,56 @@ package util
 import (
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
-var _runeWidths = make(map[rune]int)
+// StringWidth returns string width where each CR/LF character takes 1 column
+func StringWidth(s string) int {
+	return runewidth.StringWidth(s) + strings.Count(s, "\n") + strings.Count(s, "\r")
+}
 
-// RuneWidth returns rune width
-func RuneWidth(r rune, prefixWidth int, tabstop int) int {
-	if r == '\t' {
-		return tabstop - prefixWidth%tabstop
-	} else if w, found := _runeWidths[r]; found {
-		return w
-	} else {
-		w := Max(runewidth.RuneWidth(r), 1)
-		_runeWidths[r] = w
-		return w
+// RunesWidth returns runes width
+func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
+	width := 0
+	gr := uniseg.NewGraphemes(string(runes))
+	idx := 0
+	for gr.Next() {
+		rs := gr.Runes()
+		var w int
+		if len(rs) == 1 && rs[0] == '\t' {
+			w = tabstop - (prefixWidth+width)%tabstop
+		} else {
+			w = StringWidth(string(rs))
+		}
+		width += w
+		if width > limit {
+			return width, idx
+		}
+		idx += len(rs)
 	}
+	return width, -1
+}
+
+// Truncate returns the truncated runes and its width
+func Truncate(input string, limit int) ([]rune, int) {
+	runes := []rune{}
+	width := 0
+	gr := uniseg.NewGraphemes(input)
+	for gr.Next() {
+		rs := gr.Runes()
+		w := StringWidth(string(rs))
+		if width+w > limit {
+			return runes, width
+		}
+		width += w
+		runes = append(runes, rs...)
+	}
+	return runes, width
 }
 
 // Max returns the largest integer
@@ -107,7 +138,42 @@ func DurWithin(
 	return val
 }
 
-// IsTty returns true is stdin is a terminal
+// IsTty returns true if stdin is a terminal
 func IsTty() bool {
 	return isatty.IsTerminal(os.Stdin.Fd())
+}
+
+// ToTty returns true if stdout is a terminal
+func ToTty() bool {
+	return isatty.IsTerminal(os.Stdout.Fd())
+}
+
+// Once returns a function that returns the specified boolean value only once
+func Once(nextResponse bool) func() bool {
+	state := nextResponse
+	return func() bool {
+		prevState := state
+		state = false
+		return prevState
+	}
+}
+
+// RepeatToFill repeats the given string to fill the given width
+func RepeatToFill(str string, length int, limit int) string {
+	times := limit / length
+	rest := limit % length
+	output := strings.Repeat(str, times)
+	if rest > 0 {
+		for _, r := range str {
+			rest -= runewidth.RuneWidth(r)
+			if rest < 0 {
+				break
+			}
+			output += string(r)
+			if rest == 0 {
+				break
+			}
+		}
+	}
+	return output
 }
