@@ -319,6 +319,11 @@ function! s:common_sink(action, lines) abort
     " Preserve the current working directory in case it's changed during
     " the execution (e.g. `set autochdir` or `autocmd BufEnter * lcd ...`)
     let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
+    " If the command populates the argument list then initiate the list with
+    " the current file but only if it's not already in the list
+    if !empty && Cmd[0:2] ==# 'arg' && argv(argidx()) !=# @%
+      execute 'argadd'
+    endif
     for item in a:lines
       if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
         let sep = s:is_win ? '\' : '/'
@@ -326,6 +331,11 @@ function! s:common_sink(action, lines) abort
       endif
       if empty
         execute 'e' s:escape(item)
+        " If the command populates the argument list then initiate the list
+        " with this first file
+        if Cmd[0:2] ==# 'arg'
+          execute 'argadd'
+        endif
         let empty = 0
       else
         call s:open(Cmd, item)
