@@ -1070,6 +1070,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actAccept)
 		case "accept-non-empty":
 			appendAction(actAcceptNonEmpty)
+		case "accept-or-print-query":
+			appendAction(actAcceptOrPrintQuery)
 		case "print-query":
 			appendAction(actPrintQuery)
 		case "refresh-preview":

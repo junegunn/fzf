@@ -343,6 +343,7 @@ const (
 	actAbort
 	actAccept
 	actAcceptNonEmpty
+	actAcceptOrPrintQuery
 	actBackwardChar
 	actBackwardDeleteChar
 	actBackwardDeleteCharEOF
@@ -3496,6 +3497,12 @@ func (t *Terminal) Loop() {
 			case actAcceptNonEmpty:
 				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
 					req(reqClose)
+				}
+			case actAcceptOrPrintQuery:
+				if len(t.selected) > 0 || t.merger.Length() > 0 {
+					req(reqClose)
+				} else {
+					req(reqPrintQuery)
 				}
 			case actClearScreen:
 				req(reqFullRedraw)
