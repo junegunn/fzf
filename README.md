@@ -124,7 +124,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### Using Linux package managers
 
 | Package Manager | Linux Distribution      | Command                            |
-|-----------------|-------------------------|------------------------------------|
+| --------------- | ----------------------- | ---------------------------------- |
 | APK             | Alpine Linux            | `sudo apk add fzf`                 |
 | APT             | Debian 9+/Ubuntu 19.10+ | `sudo apt install fzf`             |
 | Conda           |                         | `conda install -c conda-forge fzf` |
