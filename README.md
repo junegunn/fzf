@@ -152,7 +152,7 @@ Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
 available via [Chocolatey][choco], [Scoop][scoop], and [Winget][winget]:
 
 | Package manager | Command              |
-|-----------------|----------------------|
+| --------------- | -------------------- |
 | Chocolatey      | `choco install fzf`  |
 | Scoop           | `scoop install fzf`  |
 | Winget          | `winget install fzf` |
