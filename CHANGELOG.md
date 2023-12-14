@@ -9,6 +9,10 @@ CHANGELOG
   # You can make CTRL-R paste the current query when there's no match
   export FZF_CTRL_R_OPTS='--bind enter:accept-or-print-query'
   ```
+  - Note that this new action isn't fundamentally different from the following `become` binding. `become` is apparently more versatile but it's not available on Windows.
+    ```sh
+    export FZF_CTRL_R_OPTS='--bind "enter:become:if [[ -n {} ]]; then echo {}; else echo {q}; fi"'
+    ```
 - Bug fixes
 
 0.44.1
