@@ -218,7 +218,7 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	}
 
 	server.actionChannel <- actions
-	return httpOk
+	return httpOk + crlf
 }
 
 func parseGetParams(query string) getParams {
