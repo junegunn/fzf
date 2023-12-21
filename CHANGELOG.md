@@ -1,8 +1,14 @@
 CHANGELOG
 =========
 
-0.44.2
+0.45.0
 ------
+- Added support for negative height
+  ```sh
+  # Terminal height minus 1, so you can still see the command line
+  fzf --height=-1
+  ```
+  - This handles a terminal resize better than `--height=$(($(tput lines) - 1))`
 - Added `accept-or-print-query` action that acts like `accept` but prints the
   current query when there's no match for the query
   ```sh

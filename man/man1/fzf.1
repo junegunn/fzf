@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2023" "fzf 0.44.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Dec 2023" "fzf 0.45.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -192,9 +192,21 @@ Label characters for \fBjump\fR and \fBjump-accept\fR
 .TP
 .BI "--height=" "[~]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
-the full screen. When prefixed with \fB~\fR, fzf will automatically determine
-the height in the range according to the input size. Note that adaptive height
-is not compatible with top/bottom margin and padding given in percent size.
+the full screen.
+
+If a negative value is specified, the height is calculated as the terminal
+height minus the given value.
+
+  fzf --height=-1
+
+When prefixed with \fB~\fR, fzf will automatically determine the height in the
+range according to the input size. Note that adaptive height is not compatible
+with top/bottom margin and padding given in percent size. It is also not
+compatible with a negative height value.
+
+  # Will not take up 100% of the screen
+  seq 5 | fzf --height=~100%
+
 .TP
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).

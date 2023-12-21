@@ -594,10 +594,17 @@ func makeSpinner(unicode bool) []string {
 }
 
 func evaluateHeight(opts *Options, termHeight int) int {
+	size := opts.Height.size
 	if opts.Height.percent {
-		return util.Max(int(opts.Height.size*float64(termHeight)/100.0), opts.MinHeight)
+		if opts.Height.inverse {
+			size = 100 - size
+		}
+		return util.Max(int(size*float64(termHeight)/100.0), opts.MinHeight)
 	}
-	return int(opts.Height.size)
+	if opts.Height.inverse {
+		size = float64(termHeight) - size
+	}
+	return int(size)
 }
 
 // NewTerminal returns new Terminal object
@@ -819,7 +826,7 @@ func (t *Terminal) extraLines() int {
 	return extra
 }
 
-func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
+func (t *Terminal) MaxFitAndPad() (int, int) {
 	_, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
 	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
 	fit := screenHeight - padHeight - t.extraLines()
