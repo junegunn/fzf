@@ -574,10 +574,6 @@ e.g.
 When using a field index expression, leading and trailing whitespace is stripped
 from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
 
-Also, \fB{q}\fR is replaced to the current query string, and \fB{n}\fR is
-replaced to zero-based ordinal index of the line. Use \fB{+n}\fR if you want
-all index numbers when multiple lines are selected.
-
 A placeholder expression with \fBf\fR flag is replaced to the path of
 a temporary file that holds the evaluated list. This is useful when you
 multi-select a large number of items and the length of the evaluated string may
@@ -588,6 +584,15 @@ e.g.
      # This won't work properly without 'f' flag due to ARG_MAX limit.
      seq 100000 | fzf --multi --bind ctrl-a:select-all \\
                       --preview "awk '{sum+=\\$1} END {print sum}' {+f}"\fR
+
+Also,
+
+* \fB{q}\fR (or \fB{fzf:query}\fR) is replaced to the current query string
+.br
+* \fB{n}\fR is replaced to the zero-based ordinal index of the current item.
+  Use \fB{+n}\fR if you want all index numbers when multiple lines are selected.
+.br
+* \fB{fzf:action}\fR is replaced to to the name of the last action performed
 
 Note that you can escape a placeholder pattern by prepending a backslash.
 

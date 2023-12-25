@@ -52,90 +52,90 @@ func TestReplacePlaceholder(t *testing.T) {
 	*/
 
 	// {}, preserve ansi
-	result = replacePlaceholder("echo {}", false, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {}", false, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar \x1b[31mbaz\x1b[m{{.O}}")
 
 	// {}, strip ansi
-	result = replacePlaceholder("echo {}", true, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {}", true, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}")
 
 	// {}, with multiple items
-	result = replacePlaceholder("echo {}", true, Delimiter{}, printsep, false, "query", items2)
+	result = replacePlaceholder("echo {}", true, Delimiter{}, printsep, false, "query", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar baz{{.O}}")
 
 	// {..}, strip leading whitespaces, preserve ansi
-	result = replacePlaceholder("echo {..}", false, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {..}", false, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar \x1b[31mbaz\x1b[m{{.O}}")
 
 	// {..}, strip leading whitespaces, strip ansi
-	result = replacePlaceholder("echo {..}", true, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {..}", true, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar baz{{.O}}")
 
 	// {q}
-	result = replacePlaceholder("echo {} {q}", true, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {} {q}", true, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}} {{.O}}query{{.O}}")
 
 	// {q}, multiple items
-	result = replacePlaceholder("echo {+}{q}{+}", true, Delimiter{}, printsep, false, "query 'string'", items2)
+	result = replacePlaceholder("echo {+}{q}{+}", true, Delimiter{}, printsep, false, "query 'string'", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar baz{{.O}} {{.O}}FOO{{.I}}BAR BAZ{{.O}}{{.O}}query {{.I}}string{{.I}}{{.O}}{{.O}}foo{{.I}}bar baz{{.O}} {{.O}}FOO{{.I}}BAR BAZ{{.O}}")
 
-	result = replacePlaceholder("echo {}{q}{}", true, Delimiter{}, printsep, false, "query 'string'", items2)
+	result = replacePlaceholder("echo {}{q}{}", true, Delimiter{}, printsep, false, "query 'string'", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar baz{{.O}}{{.O}}query {{.I}}string{{.I}}{{.O}}{{.O}}foo{{.I}}bar baz{{.O}}")
 
-	result = replacePlaceholder("echo {1}/{2}/{2,1}/{-1}/{-2}/{}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {1}/{2}/{2,1}/{-1}/{-2}/{}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar{{.O}}/{{.O}}baz{{.O}}/{{.O}}bazfoo{{.I}}bar{{.O}}/{{.O}}baz{{.O}}/{{.O}}foo{{.I}}bar{{.O}}/{{.O}}  foo{{.I}}bar baz{{.O}}/{{.O}}foo{{.I}}bar baz{{.O}}/{n.t}/{}/{1}/{q}/{{.O}}{{.O}}")
 
-	result = replacePlaceholder("echo {1}/{2}/{-1}/{-2}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, false, "query", items2)
+	result = replacePlaceholder("echo {1}/{2}/{-1}/{-2}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, false, "query", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar{{.O}}/{{.O}}baz{{.O}}/{{.O}}baz{{.O}}/{{.O}}foo{{.I}}bar{{.O}}/{{.O}}foo{{.I}}bar baz{{.O}}/{n.t}/{}/{1}/{q}/{{.O}}{{.O}}")
 
-	result = replacePlaceholder("echo {+1}/{+2}/{+-1}/{+-2}/{+..}/{n.t}/\\{}/\\{1}/\\{q}/{+3}", true, Delimiter{}, printsep, false, "query", items2)
+	result = replacePlaceholder("echo {+1}/{+2}/{+-1}/{+-2}/{+..}/{n.t}/\\{}/\\{1}/\\{q}/{+3}", true, Delimiter{}, printsep, false, "query", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar{{.O}} {{.O}}FOO{{.I}}BAR{{.O}}/{{.O}}baz{{.O}} {{.O}}BAZ{{.O}}/{{.O}}baz{{.O}} {{.O}}BAZ{{.O}}/{{.O}}foo{{.I}}bar{{.O}} {{.O}}FOO{{.I}}BAR{{.O}}/{{.O}}foo{{.I}}bar baz{{.O}} {{.O}}FOO{{.I}}BAR BAZ{{.O}}/{n.t}/{}/{1}/{q}/{{.O}}{{.O}} {{.O}}{{.O}}")
 
 	// forcePlus
-	result = replacePlaceholder("echo {1}/{2}/{-1}/{-2}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, true, "query", items2)
+	result = replacePlaceholder("echo {1}/{2}/{-1}/{-2}/{..}/{n.t}/\\{}/\\{1}/\\{q}/{3}", true, Delimiter{}, printsep, true, "query", items2, actIgnore)
 	checkFormat("echo {{.O}}foo{{.I}}bar{{.O}} {{.O}}FOO{{.I}}BAR{{.O}}/{{.O}}baz{{.O}} {{.O}}BAZ{{.O}}/{{.O}}baz{{.O}} {{.O}}BAZ{{.O}}/{{.O}}foo{{.I}}bar{{.O}} {{.O}}FOO{{.I}}BAR{{.O}}/{{.O}}foo{{.I}}bar baz{{.O}} {{.O}}FOO{{.I}}BAR BAZ{{.O}}/{n.t}/{}/{1}/{q}/{{.O}}{{.O}} {{.O}}{{.O}}")
 
 	// Whitespace preserving flag with "'" delimiter
-	result = replacePlaceholder("echo {s1}", true, Delimiter{str: &delim}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s1}", true, Delimiter{str: &delim}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.O}}")
 
-	result = replacePlaceholder("echo {s2}", true, Delimiter{str: &delim}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s2}", true, Delimiter{str: &delim}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}bar baz{{.O}}")
 
-	result = replacePlaceholder("echo {s}", true, Delimiter{str: &delim}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s}", true, Delimiter{str: &delim}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}")
 
-	result = replacePlaceholder("echo {s..}", true, Delimiter{str: &delim}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s..}", true, Delimiter{str: &delim}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}")
 
 	// Whitespace preserving flag with regex delimiter
 	regex = regexp.MustCompile(`\w+`)
 
-	result = replacePlaceholder("echo {s1}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s1}", true, Delimiter{regex: regex}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  {{.O}}")
 
-	result = replacePlaceholder("echo {s2}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s2}", true, Delimiter{regex: regex}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}{{.I}}{{.O}}")
 
-	result = replacePlaceholder("echo {s3}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {s3}", true, Delimiter{regex: regex}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}} {{.O}}")
 
 	// No match
-	result = replacePlaceholder("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, nil})
+	result = replacePlaceholder("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, nil}, actIgnore)
 	check("echo /")
 
 	// No match, but with selections
-	result = replacePlaceholder("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, item1})
+	result = replacePlaceholder("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, item1}, actIgnore)
 	checkFormat("echo /{{.O}}  foo{{.I}}bar baz{{.O}}")
 
 	// String delimiter
-	result = replacePlaceholder("echo {}/{1}/{2}", true, Delimiter{str: &delim}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {}/{1}/{2}", true, Delimiter{str: &delim}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}/{{.O}}foo{{.O}}/{{.O}}bar baz{{.O}}")
 
 	// Regex delimiter
 	regex = regexp.MustCompile("[oa]+")
 	// foo'bar baz
-	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{regex: regex}, printsep, false, "query", items1)
+	result = replacePlaceholder("echo {}/{1}/{3}/{2..3}", true, Delimiter{regex: regex}, printsep, false, "query", items1, actIgnore)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}/{{.O}}f{{.O}}/{{.O}}r b{{.O}}/{{.O}}{{.I}}bar b{{.O}}")
 
 	/*
@@ -198,18 +198,23 @@ func TestReplacePlaceholder(t *testing.T) {
 	// query flag is not removed after parsing, so it gets doubled
 	// while the double q is invalid, it is useful here for testing purposes
 	templateToOutput[`{q}`] = "{{.O}}" + query + "{{.O}}"
+	templateToOutput[`{fzf:query}`] = "{{.O}}" + query + "{{.O}}"
+	templateToOutput[`{fzf:action}`] = "backward-delete-char-eof"
 
 	// IV. escaping placeholder
 	templateToOutput[`\{}`] = `{}`
+	templateToOutput[`\{q}`] = `{q}`
+	templateToOutput[`\{fzf:query}`] = `{fzf:query}`
+	templateToOutput[`\{fzf:action}`] = `{fzf:action}`
 	templateToOutput[`\{++}`] = `{++}`
 	templateToOutput[`{++}`] = templateToOutput[`{+}`]
 
 	for giveTemplate, wantOutput := range templateToOutput {
-		result = replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3)
+		result = replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3, actBackwardDeleteCharEof)
 		checkFormat(wantOutput)
 	}
 	for giveTemplate, wantOutput := range templateToFile {
-		path := replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3)
+		path := replacePlaceholder(giveTemplate, stripAnsi, Delimiter{}, printsep, forcePlus, query, items3, actIgnore)
 
 		data, err := readFile(path)
 		if err != nil {
@@ -566,7 +571,7 @@ func testCommands(t *testing.T, tests []testCase) {
 		gotOutput := replacePlaceholder(
 			test.give.template, stripAnsi, delimiter, printsep, forcePlus,
 			test.give.query,
-			test.give.allItems)
+			test.give.allItems, actIgnore)
 		switch {
 		case test.want.output != "":
 			if gotOutput != test.want.output {

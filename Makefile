@@ -89,6 +89,9 @@ bench:
 
 install: bin/fzf
 
+generate:
+	PATH=$(PATH):$(GOPATH)/bin $(GO) generate ./...
+
 build:
 	goreleaser build --rm-dist --snapshot --skip-post-hooks
 
@@ -181,4 +184,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all build release test bench install clean docker docker-test update
+.PHONY: all generate build release test bench install clean docker docker-test update
