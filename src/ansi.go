@@ -351,9 +351,11 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	ptr := &state.fg
 
 	var delimiter byte = 0
+	count := 0
 	for len(ansiCode) != 0 {
 		var num int
 		if num, delimiter, ansiCode = parseAnsiCode(ansiCode, delimiter); num != -1 {
+			count++
 			switch state256 {
 			case 0:
 				switch num {
@@ -433,6 +435,13 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 				state256 = 0
 			}
 		}
+	}
+
+	// Empty sequence: reset
+	if count == 0 {
+		state.fg = -1
+		state.bg = -1
+		state.attr = 0
 	}
 
 	if state256 > 0 {
