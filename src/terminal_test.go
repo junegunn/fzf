@@ -610,7 +610,7 @@ func (flags placeholderFlags) encodePlaceholder() string {
 	if flags.file {
 		encoded += "f"
 	}
-	if flags.query {
+	if flags.forceUpdate { // FIXME
 		encoded += "q"
 	}
 	return encoded

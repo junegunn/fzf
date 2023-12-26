@@ -471,7 +471,7 @@ type placeholderFlags struct {
 	plus          bool
 	preserveSpace bool
 	number        bool
-	query         bool
+	forceUpdate   bool
 	file          bool
 }
 
@@ -2354,6 +2354,8 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	}
 
 	if strings.HasPrefix(match, "{fzf:") {
+		// Both {fzf:query} and {fzf:action} are not determined by the current item
+		flags.forceUpdate = true
 		return false, match, flags
 	}
 
@@ -2373,7 +2375,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			flags.file = true
 			skipChars++
 		case 'q':
-			flags.query = true
+			flags.forceUpdate = true
 			// query flag is not skipped
 		default:
 			break
@@ -2385,14 +2387,14 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (slot bool, plus bool, query bool) {
+func hasPreviewFlags(template string) (slot bool, plus bool, forceUpdate bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
 			plus = true
 		}
-		if flags.query {
-			query = true
+		if flags.forceUpdate {
+			forceUpdate = true
 		}
 		slot = true
 	}
@@ -2640,8 +2642,8 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	slot, plus, query := hasPreviewFlags(template)
-	if !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
+	slot, plus, forceUpdate := hasPreviewFlags(template)
+	if !(!slot || forceUpdate || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -3840,8 +3842,8 @@ func (t *Terminal) Loop() {
 					// We run the command even when there's no match
 					// 1. If the template doesn't have any slots
 					// 2. If the template has {q}
-					slot, _, query := hasPreviewFlags(a.a)
-					valid = !slot || query
+					slot, _, forceUpdate := hasPreviewFlags(a.a)
+					valid = !slot || forceUpdate
 				}
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
@@ -3969,8 +3971,8 @@ func (t *Terminal) Loop() {
 		}
 
 		if queryChanged && t.canPreview() && len(t.previewOpts.command) > 0 {
-			_, _, q := hasPreviewFlags(t.previewOpts.command)
-			if q {
+			_, _, forceUpdate := hasPreviewFlags(t.previewOpts.command)
+			if forceUpdate {
 				t.version++
 			}
 		}
