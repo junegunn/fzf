@@ -741,6 +741,12 @@ class TestGoFZF < TestBase
       'xxoxxxxxxx',
       'xoxxxxxxxx'
     ], `#{FZF} -fo --tiebreak=end,length,begin < #{tempname}`.lines(chomp: true)
+
+    writelines(tempname, ['/bar/baz', '/foo/bar/baz'])
+    assert_equal [
+      '/foo/bar/baz',
+      '/bar/baz',
+    ], `#{FZF} -fbaz --tiebreak=end < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_length_with_nth
