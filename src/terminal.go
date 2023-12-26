@@ -3379,7 +3379,7 @@ func (t *Terminal) Loop() {
 			case actTransform:
 				body := t.executeCommand(a.a, false, true, true, false)
 				actions := parseSingleActionList(strings.Trim(body, "\r\n"), func(message string) {})
-				t.serverInputChan <- actions
+				return doActions(actions)
 			case actTransformBorderLabel:
 				if t.border != nil {
 					label := t.executeCommand(a.a, false, true, true, true)
