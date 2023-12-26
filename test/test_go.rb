@@ -745,7 +745,7 @@ class TestGoFZF < TestBase
     writelines(tempname, ['/bar/baz', '/foo/bar/baz'])
     assert_equal [
       '/foo/bar/baz',
-      '/bar/baz',
+      '/bar/baz'
     ], `#{FZF} -fbaz --tiebreak=end < #{tempname}`.lines(chomp: true)
   end
 
