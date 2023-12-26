@@ -1221,6 +1221,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-track\fR
     \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
     \fBtrack\fR                        (track the current item; automatically disabled if focus changes)
+    \fBtransform(...)\fR               (transform states using the output of an external command)
     \fBtransform-border-label(...)\fR  (transform border label using an external command)
     \fBtransform-header(...)\fR        (transform header using an external command)
     \fBtransform-preview-label(...)\fR (transform preview label using an external command)
@@ -1332,6 +1333,28 @@ against an empty list while the command is running.
 e.g.
      \fB# You can still filter and select entries from the initial list for 3 seconds
      seq 100 | fzf --bind 'load:reload-sync(sleep 3; seq 1000)+unbind(load)'\fR
+
+.SS TRANSFORM ACTIONS
+
+Actions with \fBtransform-\fR prefix are used to transform the states of fzf
+using the output of an external command. The output of these commands are
+expected to be a single line of text.
+
+e.g.
+    \fBfzf --bind 'focus:transform-header:file --brief {}'\fR
+
+\fBtransform(...)\fR action runs an external command that should print a series
+of actions to be performed. The output should be in the same format as the
+payload of HTTP POST request to the \fB--listen\fR server.
+
+e.g.
+    \fB# Disallow selecting an empty line
+    echo -e "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
+      fzf --height '~100%' --reverse --header 'Select one' \\
+          --bind 'enter:transform:[[ -n {} ]] &&
+                    echo accept ||
+                    echo "change-header:Invalid selection"'
+    \fR
 
 .SS PREVIEW BINDING
 

@@ -7,12 +7,12 @@ CHANGELOG
   ```sh
   # Disallow selecting an empty line
   echo -e "1. Hello\n2. Goodbye\n\n3. Exit" |
-    fzf --reverse --header 'Select one' \
+    fzf --height '~100%' --reverse --header 'Select one' \
         --bind 'enter:transform:[[ -n {} ]] && echo accept || echo "change-header:Invalid selection"'
 
   # Move cursor past the empty line
   echo -e "1. Hello\n2. Goodbye\n\n3. Exit" |
-    fzf --reverse --header 'Select one' \
+    fzf --height '~100%' --reverse --header 'Select one' \
         --bind 'enter:transform:[[ -n {} ]] && echo accept || echo "change-header:Invalid selection"' \
         --bind 'focus:transform:[[ -n {} ]] && exit; [[ {fzf:action} =~ up$ ]] && echo up || echo down'
   ```
