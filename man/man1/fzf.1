@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Nov 2023" "fzf 0.44.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Dec 2023" "fzf 0.45.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -192,9 +192,21 @@ Label characters for \fBjump\fR and \fBjump-accept\fR
 .TP
 .BI "--height=" "[~]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
-the full screen. When prefixed with \fB~\fR, fzf will automatically determine
-the height in the range according to the input size. Note that adaptive height
-is not compatible with top/bottom margin and padding given in percent size.
+the full screen.
+
+If a negative value is specified, the height is calculated as the terminal
+height minus the given value.
+
+  fzf --height=-1
+
+When prefixed with \fB~\fR, fzf will automatically determine the height in the
+range according to the input size. Note that adaptive height is not compatible
+with top/bottom margin and padding given in percent size. It is also not
+compatible with a negative height value.
+
+  # Will not take up 100% of the screen
+  seq 5 | fzf --height=~100%
+
 .TP
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).
@@ -562,10 +574,6 @@ e.g.
 When using a field index expression, leading and trailing whitespace is stripped
 from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
 
-Also, \fB{q}\fR is replaced to the current query string, and \fB{n}\fR is
-replaced to zero-based ordinal index of the line. Use \fB{+n}\fR if you want
-all index numbers when multiple lines are selected.
-
 A placeholder expression with \fBf\fR flag is replaced to the path of
 a temporary file that holds the evaluated list. This is useful when you
 multi-select a large number of items and the length of the evaluated string may
@@ -576,6 +584,15 @@ e.g.
      # This won't work properly without 'f' flag due to ARG_MAX limit.
      seq 100000 | fzf --multi --bind ctrl-a:select-all \\
                       --preview "awk '{sum+=\\$1} END {print sum}' {+f}"\fR
+
+Also,
+
+* \fB{q}\fR (or \fB{fzf:query}\fR) is replaced to the current query string
+.br
+* \fB{n}\fR is replaced to the zero-based ordinal index of the current item.
+  Use \fB{+n}\fR if you want all index numbers when multiple lines are selected.
+.br
+* \fB{fzf:action}\fR is replaced to to the name of the last action performed
 
 Note that you can escape a placeholder pattern by prepending a backslash.
 
@@ -1120,6 +1137,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBabort\fR                        \fIctrl-c  ctrl-g  ctrl-q  esc\fR
     \fBaccept\fR                       \fIenter   double-click\fR
     \fBaccept-non-empty\fR             (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
+    \fBaccept-or-print-query\fR        (same as \fBaccept\fR except that it prints the query when there's no match)
     \fBbackward-char\fR                \fIctrl-b  left\fR
     \fBbackward-delete-char\fR         \fIctrl-h  bspace\fR
     \fBbackward-delete-char/eof\fR     (same as \fBbackward-delete-char\fR except aborts fzf if query is empty)
@@ -1203,6 +1221,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle-track\fR
     \fBtoggle+up\fR                    \fIbtab    (shift-tab)\fR
     \fBtrack\fR                        (track the current item; automatically disabled if focus changes)
+    \fBtransform(...)\fR               (transform states using the output of an external command)
     \fBtransform-border-label(...)\fR  (transform border label using an external command)
     \fBtransform-header(...)\fR        (transform header using an external command)
     \fBtransform-preview-label(...)\fR (transform preview label using an external command)
@@ -1314,6 +1333,28 @@ against an empty list while the command is running.
 e.g.
      \fB# You can still filter and select entries from the initial list for 3 seconds
      seq 100 | fzf --bind 'load:reload-sync(sleep 3; seq 1000)+unbind(load)'\fR
+
+.SS TRANSFORM ACTIONS
+
+Actions with \fBtransform-\fR prefix are used to transform the states of fzf
+using the output of an external command. The output of these commands are
+expected to be a single line of text.
+
+e.g.
+    \fBfzf --bind 'focus:transform-header:file --brief {}'\fR
+
+\fBtransform(...)\fR action runs an external command that should print a series
+of actions to be performed. The output should be in the same format as the
+payload of HTTP POST request to the \fB--listen\fR server.
+
+e.g.
+    \fB# Disallow selecting an empty line
+    echo -e "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
+      fzf --height '~100%' --reverse --header 'Select one' \\
+          --bind 'enter:transform:[[ -n {} ]] &&
+                    echo accept ||
+                    echo "change-header:Invalid selection"'
+    \fR
 
 .SS PREVIEW BINDING
 

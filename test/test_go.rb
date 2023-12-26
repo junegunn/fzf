@@ -741,6 +741,12 @@ class TestGoFZF < TestBase
       'xxoxxxxxxx',
       'xoxxxxxxxx'
     ], `#{FZF} -fo --tiebreak=end,length,begin < #{tempname}`.lines(chomp: true)
+
+    writelines(tempname, ['/bar/baz', '/foo/bar/baz'])
+    assert_equal [
+      '/foo/bar/baz',
+      '/bar/baz'
+    ], `#{FZF} -fbaz --tiebreak=end < #{tempname}`.lines(chomp: true)
   end
 
   def test_tiebreak_length_with_nth
@@ -1776,6 +1782,35 @@ class TestGoFZF < TestBase
     assert_equal %w[foo], readonce.lines(chomp: true)
   end
 
+  def test_accept_or_print_query_without_match
+    tmux.send_keys %(seq 1000 | #{fzf('--bind enter:accept-or-print-query')}), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys 99_999
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Enter
+    assert_equal %w[99999], readonce.lines(chomp: true)
+  end
+
+  def test_accept_or_print_query_with_match
+    tmux.send_keys %(seq 1000 | #{fzf('--bind enter:accept-or-print-query')}), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys '^99$'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    assert_equal %w[99], readonce.lines(chomp: true)
+  end
+
+  def test_accept_or_print_query_with_multi_selection
+    tmux.send_keys %(seq 1000 | #{fzf('--bind enter:accept-or-print-query --multi')}), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| assert_equal 3, lines.select_count }
+    tmux.send_keys 99_999
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Enter
+    assert_equal %w[1 2 3], readonce.lines(chomp: true)
+  end
+
   def test_preview_update_on_select
     tmux.send_keys %(seq 10 | fzf -m --preview 'echo {+}' --bind a:toggle-all),
                    :Enter
@@ -1985,6 +2020,13 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal '> rab', lines[-1] }
     tmux.send_keys 'C-u'
     tmux.until { |lines| assert_equal '> RAB', lines[-1] }
+  end
+
+  def test_transform
+    tmux.send_keys %{#{FZF} --bind 'focus:transform:echo "change-prompt({fzf:action})"'}, :Enter
+    tmux.until { |lines| assert_equal 'start', lines[-1] }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_equal 'up', lines[-1] }
   end
 
   def test_clear_selection

@@ -52,11 +52,12 @@ var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
 var passThroughRegex *regexp.Regexp
+var actionTypeRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
 
 func init() {
-	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{\+?f?nf?})`)
+	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
@@ -285,6 +286,7 @@ type Terminal struct {
 	tui                tui.Renderer
 	executing          *util.AtomicBool
 	termSize           tui.TermSize
+	lastAction         actionType
 }
 
 type selectedItem struct {
@@ -332,20 +334,24 @@ type action struct {
 	a string
 }
 
+//go:generate stringer -type=actionType
 type actionType int
 
 const (
 	actIgnore actionType = iota
+	actStart
+	actClick
 	actInvalid
-	actRune
+	actChar
 	actMouse
 	actBeginningOfLine
 	actAbort
 	actAccept
 	actAcceptNonEmpty
+	actAcceptOrPrintQuery
 	actBackwardChar
 	actBackwardDeleteChar
-	actBackwardDeleteCharEOF
+	actBackwardDeleteCharEof
 	actBackwardWord
 	actCancel
 	actChangeBorderLabel
@@ -358,7 +364,7 @@ const (
 	actClearSelection
 	actClose
 	actDeleteChar
-	actDeleteCharEOF
+	actDeleteCharEof
 	actEndOfLine
 	actForwardChar
 	actForwardWord
@@ -399,6 +405,7 @@ const (
 	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
+	actTransform
 	actTransformBorderLabel
 	actTransformHeader
 	actTransformPreviewLabel
@@ -440,13 +447,15 @@ const (
 
 func processExecution(action actionType) bool {
 	switch action {
-	case actTransformBorderLabel,
+	case actTransform,
+		actTransformBorderLabel,
 		actTransformHeader,
 		actTransformPreviewLabel,
 		actTransformPrompt,
 		actTransformQuery,
 		actPreview,
 		actChangePreview,
+		actRefreshPreview,
 		actExecute,
 		actExecuteSilent,
 		actExecuteMulti,
@@ -462,7 +471,7 @@ type placeholderFlags struct {
 	plus          bool
 	preserveSpace bool
 	number        bool
-	query         bool
+	forceUpdate   bool
 	file          bool
 }
 
@@ -513,7 +522,7 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlG, actAbort)
 	add(tui.CtrlQ, actAbort)
 	add(tui.ESC, actAbort)
-	add(tui.CtrlD, actDeleteCharEOF)
+	add(tui.CtrlD, actDeleteCharEof)
 	add(tui.CtrlE, actEndOfLine)
 	add(tui.CtrlF, actForwardChar)
 	add(tui.CtrlH, actBackwardDeleteChar)
@@ -555,7 +564,7 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.SDown, actPreviewDown)
 
 	add(tui.Mouse, actMouse)
-	add(tui.LeftClick, actIgnore)
+	add(tui.LeftClick, actClick)
 	add(tui.RightClick, actToggle)
 	add(tui.SLeftClick, actToggle)
 	add(tui.SRightClick, actToggle)
@@ -593,10 +602,17 @@ func makeSpinner(unicode bool) []string {
 }
 
 func evaluateHeight(opts *Options, termHeight int) int {
+	size := opts.Height.size
 	if opts.Height.percent {
-		return util.Max(int(opts.Height.size*float64(termHeight)/100.0), opts.MinHeight)
+		if opts.Height.inverse {
+			size = 100 - size
+		}
+		return util.Max(int(size*float64(termHeight)/100.0), opts.MinHeight)
 	}
-	return int(opts.Height.size)
+	if opts.Height.inverse {
+		size = float64(termHeight) - size
+	}
+	return int(size)
 }
 
 // NewTerminal returns new Terminal object
@@ -732,7 +748,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		eventChan:          make(chan tui.Event, 3), // load / zero|one | GetChar
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
-		executing:          util.NewAtomicBool(false)}
+		executing:          util.NewAtomicBool(false),
+		lastAction:         actStart}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -818,7 +835,7 @@ func (t *Terminal) extraLines() int {
 	return extra
 }
 
-func (t *Terminal) MaxFitAndPad(opts *Options) (int, int) {
+func (t *Terminal) MaxFitAndPad() (int, int) {
 	_, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
 	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
 	fit := screenHeight - padHeight - t.extraLines()
@@ -2336,6 +2353,12 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		return true, match[1:], flags
 	}
 
+	if strings.HasPrefix(match, "{fzf:") {
+		// Both {fzf:query} and {fzf:action} are not determined by the current item
+		flags.forceUpdate = true
+		return false, match, flags
+	}
+
 	skipChars := 1
 	for _, char := range match[1:] {
 		switch char {
@@ -2352,7 +2375,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			flags.file = true
 			skipChars++
 		case 'q':
-			flags.query = true
+			flags.forceUpdate = true
 			// query flag is not skipped
 		default:
 			break
@@ -2364,14 +2387,14 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (slot bool, plus bool, query bool) {
+func hasPreviewFlags(template string) (slot bool, plus bool, forceUpdate bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		_, _, flags := parsePlaceholder(match)
 		if flags.plus {
 			plus = true
 		}
-		if flags.query {
-			query = true
+		if flags.forceUpdate {
+			forceUpdate = true
 		}
 		slot = true
 	}
@@ -2400,7 +2423,7 @@ func cleanTemporaryFiles() {
 
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) string {
 	return replacePlaceholder(
-		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list)
+		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list, t.lastAction)
 }
 
 func (t *Terminal) evaluateScrollOffset() int {
@@ -2438,7 +2461,7 @@ func (t *Terminal) evaluateScrollOffset() int {
 	return util.Max(0, base)
 }
 
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
+func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item, lastAction actionType) string {
 	current := allItems[:1]
 	selected := allItems[1:]
 	if current[0] == nil {
@@ -2459,7 +2482,16 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 		switch {
 		case escaped:
 			return match
-		case match == "{q}":
+		case match == "{fzf:action}":
+			name := ""
+			for i, r := range lastAction.String()[3:] {
+				if i > 0 && r >= 'A' && r <= 'Z' {
+					name += "-"
+				}
+				name += string(r)
+			}
+			return strings.ToLower(name)
+		case match == "{q}" || match == "{fzf:query}":
 			return quoteEntry(query)
 		case match == "{}":
 			replace = func(item *Item) string {
@@ -2610,8 +2642,8 @@ func (t *Terminal) currentItem() *Item {
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	slot, plus, query := hasPreviewFlags(template)
-	if !(!slot || query || (forcePlus || plus) && len(t.selected) > 0) {
+	slot, plus, forceUpdate := hasPreviewFlags(template)
+	if !(!slot || forceUpdate || (forcePlus || plus) && len(t.selected) > 0) {
 		return current != nil, []*Item{current, current}
 	}
 
@@ -3199,7 +3231,7 @@ func (t *Terminal) Loop() {
 		}
 		doAction = func(a *action) bool {
 			switch a.t {
-			case actIgnore:
+			case actIgnore, actStart, actClick:
 			case actResponse:
 				t.serverOutputChan <- t.dumpStatus(parseGetParams(a.a))
 			case actBecome:
@@ -3346,6 +3378,10 @@ func (t *Terminal) Loop() {
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
 					req(reqRedrawPreviewLabel)
 				}
+			case actTransform:
+				body := t.executeCommand(a.a, false, true, true, false)
+				actions := parseSingleActionList(strings.Trim(body, "\r\n"), func(message string) {})
+				return doActions(actions)
 			case actTransformBorderLabel:
 				if t.border != nil {
 					label := t.executeCommand(a.a, false, true, true, true)
@@ -3376,7 +3412,7 @@ func (t *Terminal) Loop() {
 				req(reqQuit)
 			case actDeleteChar:
 				t.delChar()
-			case actDeleteCharEOF:
+			case actDeleteCharEof:
 				if !t.delChar() && t.cx == 0 {
 					req(reqQuit)
 				}
@@ -3390,7 +3426,7 @@ func (t *Terminal) Loop() {
 					t.input = []rune{}
 					t.cx = 0
 				}
-			case actBackwardDeleteCharEOF:
+			case actBackwardDeleteCharEof:
 				if len(t.input) == 0 {
 					req(reqQuit)
 				} else if t.cx > 0 {
@@ -3496,6 +3532,12 @@ func (t *Terminal) Loop() {
 			case actAcceptNonEmpty:
 				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
 					req(reqClose)
+				}
+			case actAcceptOrPrintQuery:
+				if len(t.selected) > 0 || t.merger.Length() > 0 {
+					req(reqClose)
+				} else {
+					req(reqPrintQuery)
 				}
 			case actClearScreen:
 				req(reqFullRedraw)
@@ -3603,7 +3645,7 @@ func (t *Terminal) Loop() {
 					t.yanked = copySlice(t.input[t.cx:])
 					t.input = t.input[:t.cx]
 				}
-			case actRune:
+			case actChar:
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++
@@ -3800,8 +3842,8 @@ func (t *Terminal) Loop() {
 					// We run the command even when there's no match
 					// 1. If the template doesn't have any slots
 					// 2. If the template has {q}
-					slot, _, query := hasPreviewFlags(a.a)
-					valid = !slot || query
+					slot, _, forceUpdate := hasPreviewFlags(a.a)
+					valid = !slot || forceUpdate
 				}
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
@@ -3881,6 +3923,10 @@ func (t *Terminal) Loop() {
 					}
 				}
 			}
+
+			if !processExecution(a.t) {
+				t.lastAction = a.t
+			}
 			return true
 		}
 
@@ -3894,7 +3940,7 @@ func (t *Terminal) Loop() {
 				actions = t.keymap[event.Comparable()]
 			}
 			if len(actions) == 0 && event.Type == tui.Rune {
-				doAction(&action{t: actRune})
+				doAction(&action{t: actChar})
 			} else if !doActions(actions) {
 				continue
 			}
@@ -3925,8 +3971,8 @@ func (t *Terminal) Loop() {
 		}
 
 		if queryChanged && t.canPreview() && len(t.previewOpts.command) > 0 {
-			_, _, q := hasPreviewFlags(t.previewOpts.command)
-			if q {
+			_, _, forceUpdate := hasPreviewFlags(t.previewOpts.command)
+			if forceUpdate {
 				t.version++
 			}
 		}

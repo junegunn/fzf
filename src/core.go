@@ -200,7 +200,7 @@ func Run(opts *Options, version string, revision string) {
 	padHeight := 0
 	heightUnknown := opts.Height.auto
 	if heightUnknown {
-		maxFit, padHeight = terminal.MaxFitAndPad(opts)
+		maxFit, padHeight = terminal.MaxFitAndPad()
 	}
 	deferred := opts.Select1 || opts.Exit0
 	go terminal.Loop()

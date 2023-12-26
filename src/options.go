@@ -57,6 +57,8 @@ const usage = `usage: fzf [options]
   Layout
     --height=[~]HEIGHT[%]  Display fzf window below the cursor with the given
                            height instead of using fullscreen.
+                           A negative value is calcalated as the terminal height
+                           minus the given value.
                            If prefixed with '~', fzf will determine the height
                            according to the input size.
     --min-height=HEIGHT    Minimum height when --height is given in percent
@@ -157,6 +159,7 @@ type heightSpec struct {
 	size    float64
 	percent bool
 	auto    bool
+	inverse bool
 }
 
 type sizeSpec struct {
@@ -976,7 +979,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|transform|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1070,6 +1073,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actAccept)
 		case "accept-non-empty":
 			appendAction(actAcceptNonEmpty)
+		case "accept-or-print-query":
+			appendAction(actAcceptOrPrintQuery)
 		case "print-query":
 			appendAction(actPrintQuery)
 		case "refresh-preview":
@@ -1081,7 +1086,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 		case "backward-delete-char":
 			appendAction(actBackwardDeleteChar)
 		case "backward-delete-char/eof":
-			appendAction(actBackwardDeleteCharEOF)
+			appendAction(actBackwardDeleteCharEof)
 		case "backward-word":
 			appendAction(actBackwardWord)
 		case "clear-screen":
@@ -1089,7 +1094,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 		case "delete-char":
 			appendAction(actDeleteChar)
 		case "delete-char/eof":
-			appendAction(actDeleteCharEOF)
+			appendAction(actDeleteCharEof)
 		case "deselect":
 			appendAction(actDeselect)
 		case "end-of-line":
@@ -1208,7 +1213,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actDisableSearch)
 		case "put":
 			if putAllowed {
-				appendAction(actRune)
+				appendAction(actChar)
 			} else {
 				exit("unable to put non-printable character")
 			}
@@ -1328,6 +1333,8 @@ func isExecuteAction(str string) actionType {
 		return actExecuteMulti
 	case "put":
 		return actPut
+	case "transform":
+		return actTransform
 	case "transform-border-label":
 		return actTransformBorderLabel
 	case "transform-preview-label":
@@ -1382,6 +1389,13 @@ func parseHeight(str string) heightSpec {
 	heightSpec := heightSpec{}
 	if strings.HasPrefix(str, "~") {
 		heightSpec.auto = true
+		str = str[1:]
+	}
+	if strings.HasPrefix(str, "-") {
+		if heightSpec.auto {
+			errorExit("negative(-) height is not compatible with adaptive(~) height")
+		}
+		heightSpec.inverse = true
 		str = str[1:]
 	}
 
