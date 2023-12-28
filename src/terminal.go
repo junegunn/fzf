@@ -57,7 +57,7 @@ var actionTypeRegex *regexp.Regexp
 const clearCode string = "\x1b[2J"
 
 func init() {
-	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action)}|{\+?f?nf?})`)
+	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
@@ -183,6 +183,7 @@ type Terminal struct {
 	separator          labelPrinter
 	separatorLen       int
 	spinner            []string
+	promptString       string
 	prompt             func()
 	promptLen          int
 	borderLabel        labelPrinter
@@ -670,6 +671,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		infoSep:            opts.InfoSep,
 		separator:          nil,
 		spinner:            makeSpinner(opts.Unicode),
+		promptString:       opts.Prompt,
 		queryLen:           [2]int{0, 0},
 		layout:             opts.Layout,
 		fullscreen:         fullscreen,
@@ -2354,7 +2356,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	}
 
 	if strings.HasPrefix(match, "{fzf:") {
-		// Both {fzf:query} and {fzf:action} are not determined by the current item
+		// {fzf:*} are not determined by the current item
 		flags.forceUpdate = true
 		return false, match, flags
 	}
@@ -2421,9 +2423,30 @@ func cleanTemporaryFiles() {
 	activeTempFiles = []string{}
 }
 
+type replacePlaceholderParams struct {
+	template   string
+	stripAnsi  bool
+	delimiter  Delimiter
+	printsep   string
+	forcePlus  bool
+	query      string
+	allItems   []*Item
+	lastAction actionType
+	prompt     string
+}
+
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) string {
-	return replacePlaceholder(
-		template, t.ansi, t.delimiter, t.printsep, forcePlus, input, list, t.lastAction)
+	return replacePlaceholder(replacePlaceholderParams{
+		template:   template,
+		stripAnsi:  t.ansi,
+		delimiter:  t.delimiter,
+		printsep:   t.printsep,
+		forcePlus:  forcePlus,
+		query:      input,
+		allItems:   list,
+		lastAction: t.lastAction,
+		prompt:     t.promptString,
+	})
 }
 
 func (t *Terminal) evaluateScrollOffset() int {
@@ -2461,9 +2484,9 @@ func (t *Terminal) evaluateScrollOffset() int {
 	return util.Max(0, base)
 }
 
-func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item, lastAction actionType) string {
-	current := allItems[:1]
-	selected := allItems[1:]
+func replacePlaceholder(params replacePlaceholderParams) string {
+	current := params.allItems[:1]
+	selected := params.allItems[1:]
 	if current[0] == nil {
 		current = []*Item{}
 	}
@@ -2472,7 +2495,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 	}
 
 	// replace placeholders one by one
-	return placeholder.ReplaceAllStringFunc(template, func(match string) string {
+	return placeholder.ReplaceAllStringFunc(params.template, func(match string) string {
 		escaped, match, flags := parsePlaceholder(match)
 
 		// this function implements the effects a placeholder has on items
@@ -2482,17 +2505,8 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 		switch {
 		case escaped:
 			return match
-		case match == "{fzf:action}":
-			name := ""
-			for i, r := range lastAction.String()[3:] {
-				if i > 0 && r >= 'A' && r <= 'Z' {
-					name += "-"
-				}
-				name += string(r)
-			}
-			return strings.ToLower(name)
 		case match == "{q}" || match == "{fzf:query}":
-			return quoteEntry(query)
+			return quoteEntry(params.query)
 		case match == "{}":
 			replace = func(item *Item) string {
 				switch {
@@ -2503,11 +2517,22 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 					}
 					return strconv.Itoa(n)
 				case flags.file:
-					return item.AsString(stripAnsi)
+					return item.AsString(params.stripAnsi)
 				default:
-					return quoteEntry(item.AsString(stripAnsi))
+					return quoteEntry(item.AsString(params.stripAnsi))
 				}
 			}
+		case match == "{fzf:action}":
+			name := ""
+			for i, r := range params.lastAction.String()[3:] {
+				if i > 0 && r >= 'A' && r <= 'Z' {
+					name += "-"
+				}
+				name += string(r)
+			}
+			return strings.ToLower(name)
+		case match == "{fzf:prompt}":
+			return quoteEntry(params.prompt)
 		default:
 			// token type and also failover (below)
 			rangeExpressions := strings.Split(match[1:len(match)-1], ",")
@@ -2522,15 +2547,15 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 			}
 
 			replace = func(item *Item) string {
-				tokens := Tokenize(item.AsString(stripAnsi), delimiter)
+				tokens := Tokenize(item.AsString(params.stripAnsi), params.delimiter)
 				trans := Transform(tokens, ranges)
 				str := joinTokens(trans)
 
 				// trim the last delimiter
-				if delimiter.str != nil {
-					str = strings.TrimSuffix(str, *delimiter.str)
-				} else if delimiter.regex != nil {
-					delims := delimiter.regex.FindAllStringIndex(str, -1)
+				if params.delimiter.str != nil {
+					str = strings.TrimSuffix(str, *params.delimiter.str)
+				} else if params.delimiter.regex != nil {
+					delims := params.delimiter.regex.FindAllStringIndex(str, -1)
 					// make sure the delimiter is at the very end of the string
 					if len(delims) > 0 && delims[len(delims)-1][1] == len(str) {
 						str = str[:delims[len(delims)-1][0]]
@@ -2550,7 +2575,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 		// apply 'replace' function over proper set of items and return result
 
 		items := current
-		if flags.plus || forcePlus {
+		if flags.plus || params.forcePlus {
 			items = selected
 		}
 		replacements := make([]string, len(items))
@@ -2560,7 +2585,7 @@ func replacePlaceholder(template string, stripAnsi bool, delimiter Delimiter, pr
 		}
 
 		if flags.file {
-			return writeTemporaryFile(replacements, printsep)
+			return writeTemporaryFile(replacements, params.printsep)
 		}
 		return strings.Join(replacements, " ")
 	})
@@ -3302,6 +3327,7 @@ func (t *Terminal) Loop() {
 				}
 			case actTransformPrompt:
 				prompt := t.executeCommand(a.a, false, true, true, true)
+				t.promptString = prompt
 				t.prompt, t.promptLen = t.parsePrompt(prompt)
 				req(reqPrompt)
 			case actTransformQuery:
@@ -3395,6 +3421,7 @@ func (t *Terminal) Loop() {
 					req(reqRedrawPreviewLabel)
 				}
 			case actChangePrompt:
+				t.promptString = a.a
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
 			case actPreview:

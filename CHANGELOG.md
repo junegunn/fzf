@@ -17,8 +17,9 @@ CHANGELOG
         --bind 'focus:transform:[[ -n {} ]] && exit; [[ {fzf:action} =~ up$ ]] && echo up || echo down'
   ```
 - Added placeholder expressions
-    - `{fzf:action}` - the name of the last action performed
-    - `{fzf:query}` - synonym for `{q}`
+    - `{fzf:action}` - The name of the last action performed
+    - `{fzf:prompt}` - Prompt string (including ANSI color codes)
+    - `{fzf:query}` - Synonym for `{q}`
 - Added support for negative height
   ```sh
   # Terminal height minus 1, so you can still see the command line
