@@ -288,6 +288,7 @@ type Terminal struct {
 	executing          *util.AtomicBool
 	termSize           tui.TermSize
 	lastAction         actionType
+	lastFocus          int32
 }
 
 type selectedItem struct {
@@ -751,7 +752,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false),
-		lastAction:         actStart}
+		lastAction:         actStart,
+		lastFocus:          minItem.Index()}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
 	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
@@ -2762,6 +2764,13 @@ func (t *Terminal) pwindowSize() tui.TermSize {
 	return size
 }
 
+func (t *Terminal) currentIndex() int32 {
+	if currentItem := t.currentItem(); currentItem != nil {
+		return currentItem.Index()
+	}
+	return minItem.Index()
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -3046,17 +3055,14 @@ func (t *Terminal) Loop() {
 						t.printInfo()
 					case reqList:
 						t.printList()
-						var currentIndex int32 = minItem.Index()
-						currentItem := t.currentItem()
-						if currentItem != nil {
-							currentIndex = currentItem.Index()
-						}
+						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
 						if focusChanged && t.track == trackCurrent {
 							t.track = trackDisabled
 							t.printInfo()
 						}
-						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged {
+						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged && currentIndex != t.lastFocus {
+							t.lastFocus = focusedIndex
 							t.serverInputChan <- onFocus
 						}
 						if focusChanged || version != t.version {
@@ -3246,10 +3252,19 @@ func (t *Terminal) Loop() {
 		}
 
 		var doAction func(*action) bool
-		doActions := func(actions []*action) bool {
+		var doActions func(actions []*action) bool
+		doActions = func(actions []*action) bool {
+			currentIndex := t.currentIndex()
 			for _, action := range actions {
 				if !doAction(action) {
 					return false
+				}
+			}
+
+			if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs {
+				if newIndex := t.currentIndex(); newIndex != currentIndex {
+					t.lastFocus = newIndex
+					return doActions(onFocus)
 				}
 			}
 			return true
