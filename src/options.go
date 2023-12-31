@@ -1141,6 +1141,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrack)
 		case "toggle-header":
 			appendAction(actToggleHeader)
+		case "show-header":
+			appendAction(actShowHeader)
+		case "hide-header":
+			appendAction(actHideHeader)
 		case "track":
 			appendAction(actTrack)
 		case "select":

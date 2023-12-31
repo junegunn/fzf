@@ -36,6 +36,7 @@ CHANGELOG
     ```sh
     export FZF_CTRL_R_OPTS='--bind "enter:become:if [[ -n {} ]]; then echo {}; else echo {q}; fi"'
     ```
+- Added `show-header` and `hide-header` actions
 - Bug fixes
 
 0.44.1

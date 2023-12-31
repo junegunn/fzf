@@ -445,6 +445,8 @@ const (
 	actRebind
 	actBecome
 	actResponse
+	actShowHeader
+	actHideHeader
 )
 
 func processExecution(action actionType) bool {
@@ -3715,6 +3717,12 @@ func (t *Terminal) Loop() {
 					t.track = trackEnabled
 				}
 				req(reqInfo)
+			case actShowHeader:
+				t.headerVisible = true
+				req(reqList, reqInfo, reqPrompt, reqHeader)
+			case actHideHeader:
+				t.headerVisible = false
+				req(reqList, reqInfo, reqPrompt, reqHeader)
 			case actToggleHeader:
 				t.headerVisible = !t.headerVisible
 				req(reqList, reqInfo, reqPrompt, reqHeader)
