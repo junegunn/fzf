@@ -1,8 +1,8 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2023/05/26*
-* *Requires fzf 0.41.0 or above*
+* *Last update: 2023/12/29*
+* *Requires fzf 0.45.0 or above*
 
 ---
 
@@ -16,6 +16,7 @@ Advanced fzf examples
 * [Dynamic reloading of the list](#dynamic-reloading-of-the-list)
     * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
     * [Toggling between data sources](#toggling-between-data-sources)
+    * [Toggling with a single key binding](#toggling-with-a-single-key-binding)
 * [Ripgrep integration](#ripgrep-integration)
     * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
     * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
@@ -207,6 +208,30 @@ find * | fzf --prompt 'All> ' \
 ![image](https://user-images.githubusercontent.com/700826/113465073-4af6d000-946c-11eb-858f-2372c0955f67.png)
 
 ![image](https://user-images.githubusercontent.com/700826/113465072-46321c00-946c-11eb-9b6f-cda3951df579.png)
+
+### Toggling with a single key binding
+
+The above example uses two different key bindings to toggle between two modes,
+but can we just use a single key binding?
+
+To make a key binding behave differently each time it is pressed, we need:
+
+1. a way to store the current state. i.e. "which mode are we in?"
+2. and a way to dynamically perform different actions depending on the state.
+
+The following example shows how to 1. store the current mode in the prompt
+string, 2. and use this information (`{fzf:prompt}`) to determine which
+actions to perform using the `transform` action.
+
+```sh
+fd --type file |
+  fzf --prompt 'Files> ' \
+      --header 'CTRL-T: Switch between Files/Directories' \
+      --bind 'ctrl-t:transform:[[ ! {fzf:prompt} =~ Files ]] &&
+              echo "change-prompt(Files> )+reload(fd --type file)" ||
+              echo "change-prompt(Directories> )+reload(fd --type directory)"' \
+      --preview '[[ {fzf:prompt} =~ Files ]] && bat --color=always {} || tree -C {}'
+```
 
 Ripgrep integration
 -------------------
