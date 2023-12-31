@@ -587,10 +587,14 @@ func trimQuery(query string) []rune {
 	return []rune(strings.Replace(query, "\t", " ", -1))
 }
 
-func hasPreviewAction(opts *Options) bool {
+func mayTriggerPreview(opts *Options) bool {
+	if opts.ListenAddr != nil {
+		return true
+	}
 	for _, actions := range opts.Keymap {
 		for _, action := range actions {
-			if action.t == actPreview || action.t == actChangePreview {
+			switch action.t {
+			case actPreview, actChangePreview, actTransform:
 				return true
 			}
 		}
@@ -629,8 +633,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		delay = initialDelay
 	}
 	var previewBox *util.EventBox
-	// We need to start previewer if HTTP server is enabled even when --preview option is not specified
-	if len(opts.Preview.command) > 0 || hasPreviewAction(opts) || opts.ListenAddr != nil {
+	// We need to start the previewer even when --preview option is not specified
+	// * if HTTP server is enabled
+	// * if 'preview' or 'change-preview' action is bound to a key
+	// * if 'transform' action is bound to a key
+	if len(opts.Preview.command) > 0 || mayTriggerPreview(opts) {
 		previewBox = util.NewEventBox()
 	}
 	var renderer tui.Renderer
