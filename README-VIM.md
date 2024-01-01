@@ -489,4 +489,4 @@ autocmd  FileType fzf set laststatus=0 noshowmode noruler
 
 The MIT License (MIT)
 
-Copyright (c) 2013-2023 Junegunn Choi
+Copyright (c) 2013-2024 Junegunn Choi

@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.44.1
+version=0.45.0
 auto_completion=
 key_bindings=
 update_config=2
