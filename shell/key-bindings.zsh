@@ -103,8 +103,10 @@ fzf-history-widget() {
   local ret=$?
   if [ -n "$selected" ]; then
     num=$selected[1]
-    if [ -n "$num" ]; then
+    if [[ "$num" =~ ^-?[0-9]+$ ]]; then
       zle vi-fetch-history -n $num
+    else # selected is a custom query, not from history
+      LBUFFER="${selected[@]}"
     fi
   fi
   zle reset-prompt
