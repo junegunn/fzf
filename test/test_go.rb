@@ -2721,6 +2721,16 @@ class TestGoFZF < TestBase
     tmux.until { |lines| refute_includes(lines[-1], '[[1]]') }
   end
 
+  def test_result_event
+    tmux.send_keys '(echo 0; seq 10) | fzf --bind "result:pos(2)"', :Enter
+    tmux.until { |lines| assert_equal 11, lines.item_count }
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys '9'
+    tmux.until { |lines| assert_includes lines, '> 9' }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_includes lines, '> 1' }
+  end
+
   def test_labels_center
     tmux.send_keys 'echo x | fzf --border --border-label foobar --preview : --preview-label barfoo --bind "space:change-border-label(foobarfoo)+change-preview-label(barfoobar),enter:transform-border-label(echo foo{}foo)+transform-preview-label(echo bar{}bar)"', :Enter
     tmux.until do
