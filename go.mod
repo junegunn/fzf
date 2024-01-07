@@ -11,6 +11,8 @@ require (
 	golang.org/x/term v0.15.0
 )
 
+replace github.com/mattn/go-runewidth => github.com/junegunn/go-runewidth v0.0.0-20240107035126-7bd7c14af5de
+
 require (
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
