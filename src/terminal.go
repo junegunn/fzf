@@ -251,6 +251,7 @@ type Terminal struct {
 	borderWidth        int
 	count              int
 	progress           int
+	hasFocusActions    bool
 	hasLoadActions     bool
 	triggerLoad        bool
 	reading            bool
@@ -730,6 +731,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
+		hasFocusActions:    false,
 		hasLoadActions:     false,
 		triggerLoad:        false,
 		reading:            true,
@@ -757,7 +759,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:           make(chan int),
 		serverInputChan:    make(chan []*action, 10),
 		serverOutputChan:   make(chan string),
-		eventChan:          make(chan tui.Event, 3), // load / zero|one | GetChar
+		eventChan:          make(chan tui.Event, 4), // (load + zero|one) | (focus) | (GetChar)
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false),
@@ -801,6 +803,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 	}
 
+	_, t.hasFocusActions = t.keymap[tui.Focus.AsEvent()]
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenAddr != nil {
@@ -3070,9 +3073,9 @@ func (t *Terminal) Loop() {
 							t.track = trackDisabled
 							t.printInfo()
 						}
-						if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && focusChanged && currentIndex != t.lastFocus {
-							t.lastFocus = focusedIndex
-							t.serverInputChan <- onFocus
+						if t.hasFocusActions && focusChanged && currentIndex != t.lastFocus {
+							t.lastFocus = currentIndex
+							t.eventChan <- tui.Focus.AsEvent()
 						}
 						if focusChanged || version != t.version {
 							version = t.version
@@ -3186,7 +3189,7 @@ func (t *Terminal) Loop() {
 			}
 			select {
 			case event = <-t.eventChan:
-				needBarrier = !event.Is(tui.Load, tui.One, tui.Zero)
+				needBarrier = !event.Is(tui.Load, tui.Focus, tui.One, tui.Zero)
 			case serverActions := <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
 				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
