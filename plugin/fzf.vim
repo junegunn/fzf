@@ -358,7 +358,9 @@ endfunction
 function! s:defaults()
   let rules = copy(get(g:, 'fzf_colors', {}))
   let colors = join(map(items(filter(map(rules, 'call("s:get_color", v:val)'), '!empty(v:val)')), 'join(v:val, ":")'), ',')
-  return empty(colors) ? '' : fzf#shellescape('--color='.colors)
+  return !empty(colors) ? fzf#shellescape('--color=' . &bg . ',' . colors) 
+        \ : &bg == 'light' ? '--color=light'
+        \ : ''
 endfunction
 
 function! s:validate_layout(layout)
