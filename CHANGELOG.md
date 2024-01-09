@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.46.0 (WIP)
+------
+- Added `result` event that is triggered when the filtering for the current query is complete and the result list is ready.
+- Bug fixes
+
 0.45.0
 ------
 - Added `transform` action to conditionally perform a series of actions

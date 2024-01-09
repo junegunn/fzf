@@ -1075,6 +1075,15 @@ e.g.
      \fB# Change the prompt to "loaded" when the input stream is complete
      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '\fR
 .RE
+\fIresult\fR
+.RS
+Triggered when the filtering for the current query is complete and the result list is ready.
+
+e.g.
+     \fB# Put the cursor on the second item when the query string is empty
+     # * Note that you can't use 'change' event in this case because the second position may not be available
+     fzf --sync --bind 'result:transform:[[ -z {fzf:query} ]] && echo "pos(2)"'\fR
+.RE
 \fIchange\fR
 .RS
 Triggered whenever the query string is changed

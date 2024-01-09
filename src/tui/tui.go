@@ -105,6 +105,7 @@ const (
 	Focus
 	One
 	Zero
+	Result
 
 	AltBS
 
