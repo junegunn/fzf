@@ -12,7 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/junegunn/go-runewidth"
 	"github.com/mattn/go-shellwords"
 )
 

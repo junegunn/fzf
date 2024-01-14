@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/junegunn/go-runewidth"
 	"github.com/rivo/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
