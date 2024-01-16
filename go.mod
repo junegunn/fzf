@@ -2,7 +2,7 @@ module github.com/junegunn/fzf
 
 require (
 	github.com/gdamore/tcell/v2 v2.5.4
-	github.com/junegunn/go-runewidth v0.0.0-20240114080738-1b95d8d53ad8
+	github.com/junegunn/go-runewidth v0.0.15-0.20240116150947-31c2dd15ab48
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/rivo/uniseg v0.4.4

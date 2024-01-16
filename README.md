@@ -741,7 +741,7 @@ Kitty, you can make fzf display an image in the preview window.
 ```sh
 fzf --preview='
   if file --mime-type {} | grep -qF image/; then
-    kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \$d
+    kitty icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \$d
   else
     bat --color=always {}
   fi

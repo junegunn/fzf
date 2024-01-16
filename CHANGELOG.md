@@ -124,7 +124,7 @@ CHANGELOG
       # --transfer-mode=memory is the fastest option but if you want fzf to be able
       # to redraw the image on terminal resize or on 'change-preview-window',
       # you need to use --transfer-mode=stream.
-      kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \$d
+      kitty icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \$d
     else
       bat --color=always {}
     fi
