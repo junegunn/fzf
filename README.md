@@ -734,18 +734,16 @@ history | fzf
 
 ### Previewing an image
 
-Since 0.43.0, fzf has experimental support for [Kitty graphics
-protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/), so if you use
-Kitty, you can make fzf display an image in the preview window.
+fzf can display images in the preview window using one of the following protocols:
+
+* [Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+* [iTerm2 inline images protocol](https://iterm2.com/documentation-images.html)
+* [Sixel](https://en.wikipedia.org/wiki/Sixel)
+
+See [bin/fzf-preview.sh](bin/fzf-preview.sh) script for more information.
 
 ```sh
-fzf --preview='
-  if file --mime-type {} | grep -qF image/; then
-    kitty icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0 {} | sed \$d
-  else
-    bat --color=always {}
-  fi
-'
+fzf --preview 'fzf-preview.sh {}'
 ```
 
 Tips
