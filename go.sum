@@ -2,8 +2,8 @@ github.com/gdamore/encoding v1.0.0 h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdk
 github.com/gdamore/encoding v1.0.0/go.mod h1:alR0ol34c49FCSBLjhosxzcPHQbf2trDkoo5dl+VrEg=
 github.com/gdamore/tcell/v2 v2.5.4 h1:TGU4tSjD3sCL788vFNeJnTdzpNKIw1H5dgLnJRQVv/k=
 github.com/gdamore/tcell/v2 v2.5.4/go.mod h1:dZgRy5v4iMobMEcWNYBtREnDZAT9DYmfqIkrgEMxLyw=
-github.com/junegunn/go-runewidth v0.0.15-0.20240116150947-31c2dd15ab48 h1:546WmTZE4BUDJXhKlsaqhgdAPt+yWp82cNkzJxsvVDQ=
-github.com/junegunn/go-runewidth v0.0.15-0.20240116150947-31c2dd15ab48/go.mod h1:Mq6NazeZhIIQPMFoInCi35AktcN/MuW2elHsDK5N52w=
+github.com/junegunn/go-runewidth v0.0.15-0.20240119074001-7d2ea235ec54 h1:eBbXiL4VPihi5C8DhESYtax8HYfgCDUkzVYigADhkzU=
+github.com/junegunn/go-runewidth v0.0.15-0.20240119074001-7d2ea235ec54/go.mod h1:Mq6NazeZhIIQPMFoInCi35AktcN/MuW2elHsDK5N52w=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
 github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/mattn/go-isatty v0.0.17 h1:BTarxUcIeDqL27Mc+vyvdWYSL28zpIhv3RoTdsLMPng=
