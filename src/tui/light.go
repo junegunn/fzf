@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/junegunn/go-runewidth"
 	"github.com/rivo/uniseg"
 
 	"golang.org/x/term"

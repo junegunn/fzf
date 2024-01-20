@@ -1,8 +1,8 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2023/12/29*
-* *Requires fzf 0.45.0 or above*
+* *Last update: 2024/01/20*
+* *Requires fzf 0.46.0 or above*
 
 ---
 
@@ -22,6 +22,7 @@ Advanced fzf examples
     * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
     * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
     * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
+    * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
     * [Files listed in `git status`](#files-listed-in-git-status)
@@ -466,6 +467,41 @@ INITIAL_QUERY="${*:-}"
 
 [0.30.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0300
 [0.36.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0360
+
+### Switching between Ripgrep mode and fzf mode using a single key binding
+
+In contrast to the previous version, we use just one hotkey to toggle between
+ripgrep and fzf mode. This is achieved by using the `$FZF_PROMPT` as a state
+within the `transform` action, a feature introduced in [fzf 0.45.0][0.45.0]. A
+more detailed explanation of this feature can be found in a previous section -
+[Toggling with a single keybinding](#toggling-with-a-single-key-binding).
+
+[0.45.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0450
+
+When using the `transform` action, the placeholder (`\{q}`) should be escaped to
+prevent immediate evaluation.
+
+```sh
+#!/usr/bin/env bash
+
+# Switch between Ripgrep mode and fzf filtering mode (CTRL-T)
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+: | fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ ripgrep ]] &&
+      echo "rebind(change)+change-prompt(1. ripgrep> )+disable-search+transform-query:echo \{q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r" ||
+      echo "unbind(change)+change-prompt(2. fzf> )+enable-search+transform-query:echo \{q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f"' \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header 'CTRL-T: Switch between ripgrep/fzf' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
 
 Log tailing
 -----------

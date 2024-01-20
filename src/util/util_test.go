@@ -164,6 +164,18 @@ func TestRunesWidth(t *testing.T) {
 			t.Errorf("Expected overflow index: %d, actual: %d", args[2], overflowIdx)
 		}
 	}
+	for _, input := range []struct {
+		s string
+		w int
+	}{
+		{"▶", 1},
+		{"▶️", 2},
+	} {
+		width, _ := RunesWidth([]rune(input.s), 0, 0, 100)
+		if width != input.w {
+			t.Errorf("Expected width of %s: %d, actual: %d", input.s, input.w, width)
+		}
+	}
 }
 
 func TestTruncate(t *testing.T) {

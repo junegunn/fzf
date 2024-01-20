@@ -53,7 +53,7 @@ if [[ $KITTY_WINDOW_ID ]]; then
   # 2. The last line of the output is the ANSI reset code without newline.
   #    This confuses fzf and makes it render scroll offset indicator.
   #    So we remove the last line and append the reset code to its previous line.
-  kitty icat --clear --transfer-mode=memory --stdin=no --place="$dim@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
+  kitty icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place="$dim@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
 
 # 2. Use chafa with Sixel output
 elif command -v chafa > /dev/null; then

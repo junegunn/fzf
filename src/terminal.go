@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/junegunn/go-runewidth"
 	"github.com/rivo/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
@@ -291,6 +291,8 @@ type Terminal struct {
 	termSize           tui.TermSize
 	lastAction         actionType
 	lastFocus          int32
+	areaLines          int
+	areaColumns        int
 }
 
 type selectedItem struct {
@@ -450,6 +452,17 @@ const (
 	actShowHeader
 	actHideHeader
 )
+
+func (a actionType) Name() string {
+	name := ""
+	for i, r := range a.String()[3:] {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			name += "-"
+		}
+		name += string(r)
+	}
+	return strings.ToLower(name)
+}
 
 func processExecution(action actionType) bool {
 	switch action {
@@ -825,6 +838,14 @@ func (t *Terminal) environ() []string {
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
 	}
+	env = append(env, "FZF_QUERY="+string(t.input))
+	env = append(env, "FZF_ACTION="+t.lastAction.Name())
+	env = append(env, "FZF_PROMPT="+string(t.promptString))
+	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
+	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
+	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
+	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
+	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	return env
 }
 
@@ -1290,6 +1311,9 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 	}
 	width -= paddingInt[1] + paddingInt[3]
 	height -= paddingInt[0] + paddingInt[2]
+
+	t.areaLines = height
+	t.areaColumns = width
 
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
@@ -2543,14 +2567,7 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 				}
 			}
 		case match == "{fzf:action}":
-			name := ""
-			for i, r := range params.lastAction.String()[3:] {
-				if i > 0 && r >= 'A' && r <= 'Z' {
-					name += "-"
-				}
-				name += string(r)
-			}
-			return strings.ToLower(name)
+			return params.lastAction.Name()
 		case match == "{fzf:prompt}":
 			return quoteEntry(params.prompt)
 		default:

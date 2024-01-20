@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/junegunn/go-runewidth"
 	"github.com/mattn/go-isatty"
-	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 )
 

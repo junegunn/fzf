@@ -10,7 +10,7 @@ import (
 	"github.com/gdamore/tcell/v2/encoding"
 	"github.com/junegunn/fzf/src/util"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/junegunn/go-runewidth"
 	"github.com/rivo/uniseg"
 )
 
