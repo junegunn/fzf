@@ -17,8 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/junegunn/go-runewidth"
-	"github.com/rivo/uniseg"
+	"github.com/junegunn/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
@@ -798,7 +797,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
 	if t.unicode {
-		t.borderWidth = runewidth.RuneWidth('│')
+		t.borderWidth = uniseg.StringWidth("│")
 	}
 	if opts.Scrollbar == nil {
 		if t.unicode && t.borderWidth == 1 {

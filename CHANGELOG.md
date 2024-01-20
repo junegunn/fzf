@@ -31,6 +31,8 @@ CHANGELOG
     ' --preview 'seq {} 10000' --preview-window up
     ```
   - And we're phasing out `{fzf:prompt}` and `{fzf:action}`
+- Changed [mattn/go-runewidth](https://github.com/mattn/go-runewidth) dependency to [rivo/uniseg](https://github.com/rivo/uniseg) for accurate results
+    - Set `--ambidouble` if your terminal displays characters with East Asian Width Class Ambiguous (e.g. box-drawing characters for borders) as 2 columns
 - Bug fixes
 
 0.45.0

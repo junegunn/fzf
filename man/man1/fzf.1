@@ -260,9 +260,8 @@ Draw border around the finder
 .br
 
 If you use a terminal emulator where each box-drawing character takes
-2 columns, try setting \fBRUNEWIDTH_EASTASIAN\fR environment variable to
-\fB0\fR or \fB1\fR. If the border is still not properly rendered, set
-\fB--no-unicode\fR.
+2 columns, try setting \fB--ambidouble\fR. If the border is still not properly
+rendered, set \fB--no-unicode\fR.
 
 .TP
 .BI "--border-label" [=LABEL]
@@ -312,6 +311,11 @@ the label. Label is printed on the top border line by default, add
 .B "--no-unicode"
 Use ASCII characters instead of Unicode drawing characters to draw borders,
 the spinner and the horizontal separator.
+
+.TP
+.B "--ambidouble"
+Set this option if your terminal displays characters with East Asian Width
+Class Ambiguous (e.g. box-drawing characters for borders) as 2 columns.
 
 .TP
 .BI "--margin=" MARGIN

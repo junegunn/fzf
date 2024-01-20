@@ -11,8 +11,8 @@ import (
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
+	"github.com/junegunn/uniseg"
 
-	"github.com/junegunn/go-runewidth"
 	"github.com/mattn/go-shellwords"
 )
 
@@ -337,6 +337,7 @@ type Options struct {
 	BorderLabel  labelOpts
 	PreviewLabel labelOpts
 	Unicode      bool
+	Ambidouble   bool
 	Tabstop      int
 	ListenAddr   *listenAddress
 	Unsafe       bool
@@ -406,6 +407,7 @@ func defaultOptions() *Options {
 		Margin:       defaultMargin(),
 		Padding:      defaultMargin(),
 		Unicode:      true,
+		Ambidouble:   os.Getenv("RUNEWIDTH_EASTASIAN") == "1",
 		Tabstop:      8,
 		BorderLabel:  labelOpts{},
 		PreviewLabel: labelOpts{},
@@ -1593,8 +1595,6 @@ func parseOptions(opts *Options, allArgs []string) {
 		}
 	}
 	validateJumpLabels := false
-	validatePointer := false
-	validateMarker := false
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
@@ -1774,10 +1774,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Prompt = nextString(allArgs, &i, "prompt string required")
 		case "--pointer":
 			opts.Pointer = firstLine(nextString(allArgs, &i, "pointer sign string required"))
-			validatePointer = true
 		case "--marker":
 			opts.Marker = firstLine(nextString(allArgs, &i, "selected sign string required"))
-			validateMarker = true
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync":
@@ -1845,6 +1843,10 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Unicode = false
 		case "--unicode":
 			opts.Unicode = true
+		case "--ambidouble":
+			opts.Ambidouble = true
+		case "--no-ambidouble":
+			opts.Ambidouble = false
 		case "--margin":
 			opts.Margin = parseMargin(
 				"margin",
@@ -1903,10 +1905,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
 				opts.Pointer = firstLine(value)
-				validatePointer = true
 			} else if match, value := optString(arg, "--marker="); match {
 				opts.Marker = firstLine(value)
-				validateMarker = true
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				opts.Nth = splitNth(value)
 			} else if match, value := optString(arg, "--with-nth="); match {
@@ -2013,31 +2013,31 @@ func parseOptions(opts *Options, allArgs []string) {
 			}
 		}
 	}
-
-	if validatePointer {
-		if err := validateSign(opts.Pointer, "pointer"); err != nil {
-			errorExit(err.Error())
-		}
-	}
-
-	if validateMarker {
-		if err := validateSign(opts.Marker, "marker"); err != nil {
-			errorExit(err.Error())
-		}
-	}
 }
 
 func validateSign(sign string, signOptName string) error {
 	if sign == "" {
 		return fmt.Errorf("%v cannot be empty", signOptName)
 	}
-	if runewidth.StringWidth(sign) > 2 {
+	if uniseg.StringWidth(sign) > 2 {
 		return fmt.Errorf("%v display width should be up to 2", signOptName)
 	}
 	return nil
 }
 
 func postProcessOptions(opts *Options) {
+	if opts.Ambidouble {
+		uniseg.EastAsianAmbiguousWidth = 2
+	}
+
+	if err := validateSign(opts.Pointer, "pointer"); err != nil {
+		errorExit(err.Error())
+	}
+
+	if err := validateSign(opts.Marker, "marker"); err != nil {
+		errorExit(err.Error())
+	}
+
 	if !opts.Version && !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		errorExit("--height option is currently not supported on this platform")
 	}
@@ -2048,7 +2048,7 @@ func postProcessOptions(opts *Options) {
 			errorExit("--scrollbar should be given one or two characters")
 		}
 		for _, r := range runes {
-			if runewidth.RuneWidth(r) != 1 {
+			if uniseg.StringWidth(string(r)) != 1 {
 				errorExit("scrollbar display width should be 1")
 			}
 		}

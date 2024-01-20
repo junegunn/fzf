@@ -10,8 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/junegunn/go-runewidth"
-	"github.com/rivo/uniseg"
+	"github.com/junegunn/uniseg"
 
 	"golang.org/x/term"
 )
@@ -804,7 +803,7 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.top)
+	hw := runeWidth(w.border.top)
 	if top {
 		w.Move(0, 0)
 		w.CPrint(color, repeat(w.border.top, w.width/hw))
@@ -842,13 +841,13 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	hw := runewidth.RuneWidth(w.border.top)
-	tcw := runewidth.RuneWidth(w.border.topLeft) + runewidth.RuneWidth(w.border.topRight)
-	bcw := runewidth.RuneWidth(w.border.bottomLeft) + runewidth.RuneWidth(w.border.bottomRight)
+	hw := runeWidth(w.border.top)
+	tcw := runeWidth(w.border.topLeft) + runeWidth(w.border.topRight)
+	bcw := runeWidth(w.border.bottomLeft) + runeWidth(w.border.bottomRight)
 	rem := (w.width - tcw) % hw
 	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.top, (w.width-tcw)/hw)+repeat(' ', rem)+string(w.border.topRight))
 	if !onlyHorizontal {
-		vw := runewidth.RuneWidth(w.border.left)
+		vw := runeWidth(w.border.left)
 		for y := 1; y < w.height-1; y++ {
 			w.Move(y, 0)
 			w.CPrint(color, string(w.border.left))
@@ -1020,7 +1019,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 		} else if rs[0] == '\r' {
 			w++
 		} else {
-			w = runewidth.StringWidth(str)
+			w = uniseg.StringWidth(str)
 		}
 		width += w
 

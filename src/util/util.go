@@ -6,14 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/junegunn/go-runewidth"
+	"github.com/junegunn/uniseg"
 	"github.com/mattn/go-isatty"
-	"github.com/rivo/uniseg"
 )
 
 // StringWidth returns string width where each CR/LF character takes 1 column
 func StringWidth(s string) int {
-	return runewidth.StringWidth(s) + strings.Count(s, "\n") + strings.Count(s, "\r")
+	return uniseg.StringWidth(s) + strings.Count(s, "\n") + strings.Count(s, "\r")
 }
 
 // RunesWidth returns runes width
@@ -165,7 +164,7 @@ func RepeatToFill(str string, length int, limit int) string {
 	output := strings.Repeat(str, times)
 	if rest > 0 {
 		for _, r := range str {
-			rest -= runewidth.RuneWidth(r)
+			rest -= uniseg.StringWidth(string(r))
 			if rest < 0 {
 				break
 			}

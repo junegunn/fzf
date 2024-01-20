@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/junegunn/uniseg"
 )
 
 // Types of user action
@@ -811,4 +813,8 @@ func initPalette(theme *ColorTheme) {
 	ColPreviewBorder = pair(theme.PreviewBorder, theme.PreviewBg)
 	ColPreviewScrollbar = pair(theme.PreviewScrollbar, theme.PreviewBg)
 	ColPreviewSpinner = pair(theme.Spinner, theme.PreviewBg)
+}
+
+func runeWidth(r rune) int {
+	return uniseg.StringWidth(string(r))
 }
