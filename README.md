@@ -73,6 +73,7 @@ Table of Contents
 * [Tips](#tips)
     * [Respecting `.gitignore`](#respecting-gitignore)
     * [Fish shell](#fish-shell)
+    * [fzf Theme Playground](#fzf-theme-playground)
 * [Related projects](#related-projects)
 * [License](#license)
 
@@ -797,6 +798,12 @@ valid directory. Example:
 ```sh
 set -g FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
 ```
+
+### fzf Theme Playground
+
+[fzf Theme Playground](https://vitormv.github.io/fzf-themes/) created by
+[Vitor Mello](https://github.com/vitormv) is a webpage where you can
+interactively create fzf themes.
 
 Related projects
 ----------------
