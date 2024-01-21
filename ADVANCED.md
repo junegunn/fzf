@@ -222,17 +222,17 @@ To make a key binding behave differently each time it is pressed, we need:
 2. and a way to dynamically perform different actions depending on the state.
 
 The following example shows how to 1. store the current mode in the prompt
-string, 2. and use this information (`{fzf:prompt}`) to determine which
+string, 2. and use this information (`$FZF_PROMPT`) to determine which
 actions to perform using the `transform` action.
 
 ```sh
 fd --type file |
   fzf --prompt 'Files> ' \
       --header 'CTRL-T: Switch between Files/Directories' \
-      --bind 'ctrl-t:transform:[[ ! {fzf:prompt} =~ Files ]] &&
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
               echo "change-prompt(Files> )+reload(fd --type file)" ||
               echo "change-prompt(Directories> )+reload(fd --type directory)"' \
-      --preview '[[ {fzf:prompt} =~ Files ]] && bat --color=always {} || tree -C {}'
+      --preview '[[ $FZF_PROMPT =~ Files ]] && bat --color=always {} || tree -C {}'
 ```
 
 Ripgrep integration
