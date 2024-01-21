@@ -1110,6 +1110,13 @@ e.g.
      \fB# Change the prompt to "loaded" when the input stream is complete
      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '\fR
 .RE
+\fIresize\fR
+.RS
+Triggered when the terminal size is changed.
+
+e.g.
+     \fBfzf --bind 'resize:transform-header:echo Resized: ${FZF_COLUMNS}x${FZF_LINES}'\fR
+.RE
 \fIresult\fR
 .RS
 Triggered when the filtering for the current query is complete and the result list is ready.

@@ -253,6 +253,7 @@ type Terminal struct {
 	hasResultActions   bool
 	hasFocusActions    bool
 	hasLoadActions     bool
+	hasResizeActions   bool
 	triggerLoad        bool
 	reading            bool
 	running            bool
@@ -533,7 +534,6 @@ func defaultKeymap() map[tui.Event][]*action {
 	}
 
 	add(tui.Invalid, actInvalid)
-	add(tui.Resize, actClearScreen)
 	add(tui.CtrlA, actBeginningOfLine)
 	add(tui.CtrlB, actBackwardChar)
 	add(tui.CtrlC, actAbort)
@@ -773,7 +773,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		killChan:           make(chan int),
 		serverInputChan:    make(chan []*action, 10),
 		serverOutputChan:   make(chan string),
-		eventChan:          make(chan tui.Event, 5), // (load + result + zero|one) | (focus) | (GetChar)
+		eventChan:          make(chan tui.Event, 6), // (load + result + zero|one) | (focus) | (resize) | (GetChar)
 		tui:                renderer,
 		initFunc:           func() { renderer.Init() },
 		executing:          util.NewAtomicBool(false),
@@ -817,6 +817,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 	}
 
+	_, t.hasResizeActions = t.keymap[tui.Resize.AsEvent()]
 	_, t.hasResultActions = t.keymap[tui.Result.AsEvent()]
 	_, t.hasFocusActions = t.keymap[tui.Focus.AsEvent()]
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
@@ -3129,6 +3130,9 @@ func (t *Terminal) Loop() {
 						if wasHidden && t.hasPreviewWindow() {
 							refreshPreview(t.previewOpts.command)
 						}
+						if req == reqResize && t.hasResizeActions {
+							t.eventChan <- tui.Resize.AsEvent()
+						}
 					case reqClose:
 						exit(func() int {
 							if t.output() {
@@ -3211,7 +3215,7 @@ func (t *Terminal) Loop() {
 			}
 			select {
 			case event = <-t.eventChan:
-				needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero)
+				needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero, tui.Resize)
 			case serverActions := <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
 				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {

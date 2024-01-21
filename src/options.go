@@ -654,6 +654,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.Focus)
 		case "result":
 			add(tui.Result)
+		case "resize":
+			add(tui.Resize)
 		case "one":
 			add(tui.One)
 		case "zero":
