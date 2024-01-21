@@ -831,11 +831,13 @@ e.g.
      \fB# Start HTTP server on port 6266
      fzf --listen 6266
 
-     # Get program state in JSON format (experimental)
-     curl localhost:6266
-
      # Send action to the server
      curl -XPOST localhost:6266 -d 'reload(seq 100)+change-prompt(hundred> )'
+
+     # Get program state in JSON format (experimental)
+     # * Make sure NOT to access this endpoint from execute/transform actions
+     #   as it will result in a timeout
+     curl localhost:6266
 
      # Start HTTP server on port 6266 with remote connections allowed
      # * Listening on non-localhost address requires using an API key
