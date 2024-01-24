@@ -202,6 +202,10 @@ func (r *FullscreenRenderer) NeedScrollbarRedraw() bool {
 	return true
 }
 
+func (r *FullscreenRenderer) ShouldEmitResizeEvent() bool {
+	return true
+}
+
 func (r *FullscreenRenderer) Refresh() {
 	// noop
 }

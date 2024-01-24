@@ -694,6 +694,10 @@ func (r *LightRenderer) NeedScrollbarRedraw() bool {
 	return false
 }
 
+func (r *LightRenderer) ShouldEmitResizeEvent() bool {
+	return false
+}
+
 func (r *LightRenderer) RefreshWindows(windows []Window) {
 	r.flush()
 }

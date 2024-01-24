@@ -817,7 +817,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		}
 	}
 
-	_, t.hasResizeActions = t.keymap[tui.Resize.AsEvent()]
+	var resizeActions []*action
+	resizeActions, t.hasResizeActions = t.keymap[tui.Resize.AsEvent()]
+	if t.tui.ShouldEmitResizeEvent() {
+		t.keymap[tui.Resize.AsEvent()] = append(toActions(actClearScreen), resizeActions...)
+	}
 	_, t.hasResultActions = t.keymap[tui.Result.AsEvent()]
 	_, t.hasFocusActions = t.keymap[tui.Focus.AsEvent()]
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
@@ -2852,14 +2856,16 @@ func (t *Terminal) Loop() {
 			}
 		}()
 
-		resizeChan := make(chan os.Signal, 1)
-		notifyOnResize(resizeChan) // Non-portable
-		go func() {
-			for {
-				<-resizeChan
-				t.reqBox.Set(reqResize, nil)
-			}
-		}()
+		if !t.tui.ShouldEmitResizeEvent() {
+			resizeChan := make(chan os.Signal, 1)
+			notifyOnResize(resizeChan) // Non-portable
+			go func() {
+				for {
+					<-resizeChan
+					t.reqBox.Set(reqResize, nil)
+				}
+			}()
+		}
 
 		t.mutex.Lock()
 		t.initFunc()
@@ -3215,7 +3221,11 @@ func (t *Terminal) Loop() {
 			}
 			select {
 			case event = <-t.eventChan:
-				needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero, tui.Resize)
+				if t.tui.ShouldEmitResizeEvent() {
+					needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero)
+				} else {
+					needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero, tui.Resize)
+				}
 			case serverActions := <-t.serverInputChan:
 				event = tui.Invalid.AsEvent()
 				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
