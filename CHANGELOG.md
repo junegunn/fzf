@@ -1,9 +1,11 @@
 CHANGELOG
 =========
 
-0.46.0 (WIP)
+0.46.0
 ------
-- Added `result` event that is triggered when the filtering for the current query is complete and the result list is ready.
+- Added two new events
+    - `result` - triggered when the filtering for the current query is complete and the result list is ready
+    - `resize` - triggered when the terminal size is changed
 - fzf now exports the following environment variables to the child processes
   | Variable           | Description                                                 |
   | ---                | ---                                                         |
@@ -17,8 +19,8 @@ CHANGELOG
   | `FZF_ACTION`       | The name of the last action performed                       |
   - This allows you to write sophisticated transformations like so
     ```sh
-    # Dynamically resize preview window
-    seq 10000 | fzf --bind 'result:transform:
+    # Script to dynamically resize the preview window
+    transformer='
       # 1 line for info, another for prompt, and 2 more lines for preview window border
       lines=$(( FZF_LINES - FZF_MATCH_COUNT - 4 ))
       if [[ $FZF_MATCH_COUNT -eq 0 ]]; then
@@ -28,9 +30,15 @@ CHANGELOG
       elif [[ $FZF_PREVIEW_LINES -ne 3 ]]; then
         echo "change-preview-window:3"
       fi
-    ' --preview 'seq {} 10000' --preview-window up
+    '
+    seq 10000 | fzf --preview 'seq {} 10000' --preview-window up \
+                    --bind "result:transform:$transformer" \
+                    --bind "resize:transform:$transformer"
     ```
   - And we're phasing out `{fzf:prompt}` and `{fzf:action}`
+- Changed [mattn/go-runewidth](https://github.com/mattn/go-runewidth) dependency to [rivo/uniseg](https://github.com/rivo/uniseg) for accurate results
+    - Set `--ambidouble` if your terminal displays ambiguous width characters (e.g. box-drawing characters for borders) as 2 columns
+    - `RUNEWIDTH_EASTASIAN=1` is still respected for backward compatibility, but it's recommended that you use this new option instead
 - Bug fixes
 
 0.45.0

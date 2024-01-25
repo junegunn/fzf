@@ -34,8 +34,8 @@ make release
 Third-party libraries used
 --------------------------
 
-- [mattn/go-runewidth](https://github.com/mattn/go-runewidth)
-    - Licensed under [MIT](http://mattn.mit-license.org)
+- [rivo/uniseg](https://github.com/rivo/uniseg)
+    - Licensed under [MIT](https://raw.githubusercontent.com/rivo/uniseg/master/LICENSE.txt)
 - [mattn/go-shellwords](https://github.com/mattn/go-shellwords)
     - Licensed under [MIT](http://mattn.mit-license.org)
 - [mattn/go-isatty](https://github.com/mattn/go-isatty)

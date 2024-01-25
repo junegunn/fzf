@@ -30,7 +30,9 @@ const (
 	httpOk           = "HTTP/1.1 200 OK" + crlf
 	httpBadRequest   = "HTTP/1.1 400 Bad Request" + crlf
 	httpUnauthorized = "HTTP/1.1 401 Unauthorized" + crlf
+	httpUnavailable  = "HTTP/1.1 503 Service Unavailable" + crlf
 	httpReadTimeout  = 10 * time.Second
+	jsonContentType  = "Content-Type: application/json" + crlf
 	maxContentLength = 1024 * 1024
 )
 
@@ -141,7 +143,7 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		return answer(httpBadRequest, message)
 	}
 	good := func(message string) string {
-		return answer(httpOk+"Content-Type: application/json"+crlf, message)
+		return answer(httpOk+jsonContentType, message)
 	}
 	conn.SetReadDeadline(time.Now().Add(httpReadTimeout))
 	scanner := bufio.NewScanner(conn)
@@ -165,8 +167,16 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 			getMatch := getRegex.FindStringSubmatch(text)
 			if len(getMatch) > 0 {
 				server.actionChannel <- []*action{{t: actResponse, a: getMatch[1]}}
-				response := <-server.responseChannel
-				return good(response)
+				select {
+				case response := <-server.responseChannel:
+					return good(response)
+				case <-time.After(2 * time.Second):
+					go func() {
+						// Drain the channel
+						<-server.responseChannel
+					}()
+					return answer(httpUnavailable+jsonContentType, `{"error":"timeout"}`)
+				}
 			} else if !strings.HasPrefix(text, "POST / HTTP") {
 				return bad("invalid request method")
 			}

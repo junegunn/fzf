@@ -10,8 +10,7 @@ import (
 	"github.com/gdamore/tcell/v2/encoding"
 	"github.com/junegunn/fzf/src/util"
 
-	"github.com/junegunn/go-runewidth"
-	"github.com/rivo/uniseg"
+	"github.com/junegunn/uniseg"
 )
 
 func HasFullscreenRenderer() bool {
@@ -200,6 +199,10 @@ func (r *FullscreenRenderer) Clear() {
 }
 
 func (r *FullscreenRenderer) NeedScrollbarRedraw() bool {
+	return true
+}
+
+func (r *FullscreenRenderer) ShouldEmitResizeEvent() bool {
 	return true
 }
 
@@ -738,7 +741,7 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		style = w.normal.style()
 	}
 
-	hw := runewidth.RuneWidth(w.borderStyle.top)
+	hw := runeWidth(w.borderStyle.top)
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderTop:
 		max := right - 2*hw
@@ -773,7 +776,7 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 		}
 		switch shape {
 		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderRight:
-			vw := runewidth.RuneWidth(w.borderStyle.right)
+			vw := runeWidth(w.borderStyle.right)
 			for y := top; y < bot; y++ {
 				_screen.SetContent(right-vw, y, w.borderStyle.right, nil, style)
 			}
@@ -782,8 +785,8 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	switch shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
-		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
+		_screen.SetContent(right-runeWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
 		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
-		_screen.SetContent(right-runewidth.RuneWidth(w.borderStyle.bottomRight), bot-1, w.borderStyle.bottomRight, nil, style)
+		_screen.SetContent(right-runeWidth(w.borderStyle.bottomRight), bot-1, w.borderStyle.bottomRight, nil, style)
 	}
 }

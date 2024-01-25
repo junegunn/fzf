@@ -120,7 +120,7 @@ func TestColorOffset(t *testing.T) {
 	//   ++++++++        ++++++++++
 	// --++++++++--    --++++++++++---
 
-	offsets := []Offset{{5, 15}, {25, 35}}
+	offsets := []Offset{{5, 15}, {10, 12}, {25, 35}}
 	item := Result{
 		item: &Item{
 			colors: &[]ansiOffset{

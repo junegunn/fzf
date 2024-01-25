@@ -138,7 +138,9 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 		for i := off[0]; i < off[1]; i++ {
 			// Negative of 1-based index of itemColors
 			// - The extra -1 means highlighted
-			cols[i] = cols[i]*-1 - 1
+			if cols[i] >= 0 {
+				cols[i] = cols[i]*-1 - 1
+			}
 		}
 	}
 

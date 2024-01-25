@@ -29,6 +29,7 @@ Advanced fzf examples
     * [Branches](#branches)
     * [Commit hashes](#commit-hashes)
 * [Color themes](#color-themes)
+    * [fzf Theme Playground](#fzf-theme-playground)
     * [Generating fzf color theme from Vim color schemes](#generating-fzf-color-theme-from-vim-color-schemes)
 
 <!-- vim-markdown-toc -->
@@ -221,17 +222,17 @@ To make a key binding behave differently each time it is pressed, we need:
 2. and a way to dynamically perform different actions depending on the state.
 
 The following example shows how to 1. store the current mode in the prompt
-string, 2. and use this information (`{fzf:prompt}`) to determine which
+string, 2. and use this information (`$FZF_PROMPT`) to determine which
 actions to perform using the `transform` action.
 
 ```sh
 fd --type file |
   fzf --prompt 'Files> ' \
       --header 'CTRL-T: Switch between Files/Directories' \
-      --bind 'ctrl-t:transform:[[ ! {fzf:prompt} =~ Files ]] &&
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
               echo "change-prompt(Files> )+reload(fd --type file)" ||
               echo "change-prompt(Directories> )+reload(fd --type directory)"' \
-      --preview '[[ {fzf:prompt} =~ Files ]] && bat --color=always {} || tree -C {}'
+      --preview '[[ $FZF_PROMPT =~ Files ]] && bat --color=always {} || tree -C {}'
 ```
 
 Ripgrep integration
@@ -631,6 +632,12 @@ export FZF_DEFAULT_OPTS='--color=bg+:#293739,bg:#1B1D1E,border:#808080,spinner:#
 ```
 
 ![molokai](https://user-images.githubusercontent.com/700826/113475085-8619f300-94ae-11eb-85e4-2766fc3246bf.png)
+
+### fzf Theme Playground
+
+[fzf Theme Playground](https://vitormv.github.io/fzf-themes/) created by
+[Vitor Mello](https://github.com/vitormv) is a webpage where you can
+interactively create fzf themes.
 
 ### Generating fzf color theme from Vim color schemes
 
