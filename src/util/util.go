@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/junegunn/uniseg"
 	"github.com/mattn/go-isatty"
+	"github.com/rivo/uniseg"
 )
 
 // StringWidth returns string width where each CR/LF character takes 1 column

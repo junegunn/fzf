@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/junegunn/uniseg"
+	"github.com/rivo/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
