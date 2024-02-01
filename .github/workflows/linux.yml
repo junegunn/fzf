@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  LANG: C.UTF-8
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,7 +45,7 @@ jobs:
       run: make test
 
     - name: Integration test
-      run: make install && ./install --all && LC_ALL=C tmux new-session -d && ruby test/test_go.rb --verbose
+      run: make install && ./install --all && tmux new-session -d && ruby test/test_go.rb --verbose
 
     - name: Integration test (tcell)
       run: TAGS=tcell make clean install && ruby test/test_go.rb --verbose

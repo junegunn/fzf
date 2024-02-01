@@ -3,10 +3,11 @@ CHANGELOG
 
 0.46.1
 ------
+- Bug fixes and improvements
 - Fixed Windows binaries
 - Downgraded Go version to 1.20 to support older versions of Windows
     - https://tip.golang.org/doc/go1.21#windows
-- Updated [rivo/uniseg](https://github.com/rivo/uniseg) dependency to v0.4.5
+- Updated [rivo/uniseg](https://github.com/rivo/uniseg) dependency to v0.4.6
 
 0.46.0
 ------

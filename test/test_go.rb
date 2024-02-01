@@ -967,6 +967,7 @@ class TestGoFZF < TestBase
     opts = %[--bind "alt-a:execute(echo /{}/ >> #{output})+change-header(alt-a),alt-b:execute[echo /{}{}/ >> #{output}]+change-header(alt-b),C:execute(echo /{}{}{}/ >> #{output})+change-header(C)"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar])
     tmux.send_keys "cat #{tempname} | #{fzf(opts)}", :Enter
+    tmux.until { |lines| assert_equal 3, lines.item_count }
 
     ready = ->(s) { tmux.until { |lines| assert_includes lines[-3], s } }
     tmux.send_keys :Escape, :a
@@ -2184,14 +2185,15 @@ class TestGoFZF < TestBase
     file = Tempfile.new('fzf-follow')
     file.sync = true
 
-    tmux.send_keys %(seq 100 | #{FZF} --preview 'tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~3'), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --preview 'echo start; tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~4'), :Enter
     tmux.until { |lines| lines.item_count == 100 }
 
     # Write to the temporary file, and check if the preview window is showing
     # the last line of the file
+    tmux.until { |lines| assert_includes lines[1], 'start' }
     3.times { file.puts _1 } # header lines
     1000.times { file.puts _1 }
-    tmux.until { |lines| assert_includes lines[1], '/1003' }
+    tmux.until { |lines| assert_includes lines[1], '/1004' }
     tmux.until { |lines| assert_includes lines[-2], '999' }
 
     # Scroll the preview window and fzf should stop following the file content
@@ -2199,7 +2201,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[-2], '998' }
     file.puts 'foo', 'bar'
     tmux.until do |lines|
-      assert_includes lines[1], '/1005'
+      assert_includes lines[1], '/1006'
       assert_includes lines[-2], '998'
     end
 
@@ -2212,7 +2214,7 @@ class TestGoFZF < TestBase
     end
     file.puts 'baz'
     tmux.until do |lines|
-      assert_includes lines[1], '/1006'
+      assert_includes lines[1], '/1007'
       assert_includes lines[-2], 'baz'
     end
 
@@ -2221,7 +2223,7 @@ class TestGoFZF < TestBase
     wait { assert_includes lines[-2], 'bar' }
     file.puts 'aaa'
     tmux.until do |lines|
-      assert_includes lines[1], '/1007'
+      assert_includes lines[1], '/1008'
       assert_includes lines[-2], 'bar'
     end
 
@@ -2230,7 +2232,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines[-2], 'aaa' }
     file.puts 'bbb'
     tmux.until do |lines|
-      assert_includes lines[1], '/1008'
+      assert_includes lines[1], '/1009'
       assert_includes lines[-2], 'bbb'
     end
 
@@ -2238,7 +2240,7 @@ class TestGoFZF < TestBase
     tmux.send_keys :Space
     file.puts 'ccc', 'ddd'
     tmux.until do |lines|
-      assert_includes lines[1], '/1010'
+      assert_includes lines[1], '/1011'
       assert_includes lines[-2], 'bbb'
     end
   rescue StandardError
@@ -3080,6 +3082,11 @@ class TestGoFZF < TestBase
   end
 
   def test_delete_with_modifiers
+    if ENV['GITHUB_ACTION']
+      # Expected: "[3]"
+      # Actual: "[]3;5~"
+      skip('CTRL-DELETE is not properly handled in GitHub Actions environment')
+    end
     tmux.send_keys "seq 100 | #{FZF} --bind 'ctrl-delete:up+up,shift-delete:down,focus:transform-prompt:echo [{}]'", :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
     tmux.send_keys 'C-Delete'
