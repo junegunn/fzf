@@ -3490,7 +3490,9 @@ func (t *Terminal) Loop() {
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
 			case actPreview:
-				updatePreviewWindow(true)
+				if !t.hasPreviewWindow() {
+					updatePreviewWindow(true)
+				}
 				refreshPreview(a.a)
 			case actRefreshPreview:
 				refreshPreview(t.previewOpts.command)
