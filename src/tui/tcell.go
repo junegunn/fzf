@@ -143,6 +143,7 @@ func (a Attr) Merge(b Attr) Attr {
 var (
 	_screen          tcell.Screen
 	_prevMouseButton tcell.ButtonMask
+	_initialResize   bool = true
 )
 
 func (r *FullscreenRenderer) initScreen() {
@@ -220,6 +221,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
+		// Ignore the first resize event
+		// https://github.com/gdamore/tcell/blob/v2.7.0/TUTORIAL.md?plain=1#L18
+		if _initialResize {
+			_initialResize = false
+			return Event{Invalid, 0, nil}
+		}
 		return Event{Resize, 0, nil}
 
 	// process mouse events:

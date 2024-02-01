@@ -964,26 +964,39 @@ class TestGoFZF < TestBase
 
   def test_execute
     output = '/tmp/fzf-test-execute'
-    opts = %[--bind "alt-a:execute(echo /{}/ >> #{output}),alt-b:execute[echo /{}{}/ >> #{output}],C:execute:echo /{}{}{}/ >> #{output}"]
+    opts = %[--bind "alt-a:execute(echo /{}/ >> #{output})+change-header(alt-a),alt-b:execute[echo /{}{}/ >> #{output}]+change-header(alt-b),C:execute(echo /{}{}{}/ >> #{output})+change-header(C)"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar])
     tmux.send_keys "cat #{tempname} | #{fzf(opts)}", :Enter
-    tmux.until { |lines| assert_equal '  3/3', lines[-2] }
+
+    ready = ->(s) { tmux.until { |lines| assert_includes lines[-3], s } }
     tmux.send_keys :Escape, :a
-    tmux.send_keys :Escape, :a
+    ready.call('alt-a')
+    tmux.send_keys :Escape, :b
+    ready.call('alt-b')
+
     tmux.send_keys :Up
+    tmux.send_keys :Escape, :a
+    ready.call('alt-a')
     tmux.send_keys :Escape, :b
-    tmux.send_keys :Escape, :b
+    ready.call('alt-b')
+
     tmux.send_keys :Up
     tmux.send_keys :C
+    ready.call('C')
+
     tmux.send_keys 'barfoo'
     tmux.until { |lines| assert_equal '  0/3', lines[-2] }
+
     tmux.send_keys :Escape, :a
+    ready.call('alt-a')
     tmux.send_keys :Escape, :b
+    ready.call('alt-b')
+
     wait do
       assert_path_exists output
       assert_equal %w[
-        /foo'bar/ /foo'bar/
-        /foo"barfoo"bar/ /foo"barfoo"bar/
+        /foo'bar/ /foo'barfoo'bar/
+        /foo"bar/ /foo"barfoo"bar/
         /foo$barfoo$barfoo$bar/
       ], File.readlines(output, chomp: true)
     end
@@ -993,17 +1006,28 @@ class TestGoFZF < TestBase
 
   def test_execute_multi
     output = '/tmp/fzf-test-execute-multi'
-    opts = %[--multi --bind "alt-a:execute-multi(echo {}/{+} >> #{output})"]
+    opts = %[--multi --bind "alt-a:execute-multi(echo {}/{+} >> #{output})+change-header(alt-a),alt-b:change-header(alt-b)"]
     writelines(tempname, %w[foo'bar foo"bar foo$bar foobar])
     tmux.send_keys "cat #{tempname} | #{fzf(opts)}", :Enter
+    ready = ->(s) { tmux.until { |lines| assert_includes lines[-3], s } }
+
     tmux.until { |lines| assert_equal '  4/4 (0)', lines[-2] }
     tmux.send_keys :Escape, :a
+    ready.call('alt-a')
+    tmux.send_keys :Escape, :b
+    ready.call('alt-b')
+
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_equal '  4/4 (3)', lines[-2] }
     tmux.send_keys :Escape, :a
+    ready.call('alt-a')
+    tmux.send_keys :Escape, :b
+    ready.call('alt-b')
+
     tmux.send_keys :Tab, :Tab
     tmux.until { |lines| assert_equal '  4/4 (3)', lines[-2] }
     tmux.send_keys :Escape, :a
+    ready.call('alt-a')
     wait do
       assert_path_exists output
       assert_equal [
@@ -1221,7 +1245,7 @@ class TestGoFZF < TestBase
   end
 
   def test_toggle_header
-    tmux.send_keys "seq 4 | #{FZF} --header-lines 2 --header foo --bind space:toggle-header --header-first --height 10 --border", :Enter
+    tmux.send_keys "seq 4 | #{FZF} --header-lines 2 --header foo --bind space:toggle-header --header-first --height 10 --border rounded", :Enter
     before = <<~OUTPUT
       ╭───────
       │
@@ -2616,7 +2640,7 @@ class TestGoFZF < TestBase
   end
 
   def test_height_range_fit
-    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border', :Enter
+    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border rounded', :Enter
     expected = <<~OUTPUT
       ╭──────────
       │   3
@@ -2629,7 +2653,7 @@ class TestGoFZF < TestBase
   end
 
   def test_height_range_fit_preview_above
-    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border --preview "seq {}" --preview-window up,60%', :Enter
+    tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border rounded --preview-window border-rounded --preview "seq {}" --preview-window up,60%', :Enter
     expected = <<~OUTPUT
       ╭──────────
       │ ╭────────
@@ -2685,7 +2709,7 @@ class TestGoFZF < TestBase
   end
 
   def test_height_range_overflow
-    tmux.send_keys 'seq 100 | fzf --height ~5 --info=inline --border', :Enter
+    tmux.send_keys 'seq 100 | fzf --height ~5 --info=inline --border rounded', :Enter
     expected = <<~OUTPUT
       ╭──────────────
       │   2
@@ -2750,7 +2774,7 @@ class TestGoFZF < TestBase
   end
 
   def test_labels_left
-    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos 2 --preview : --preview-label barfoo --preview-label-pos 2', :Enter
+    tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos 2 --preview : --preview-label barfoo --preview-label-pos 2', :Enter
     tmux.until do
       assert_includes(_1[0], '╭foobar─')
       assert_includes(_1[1], '╭barfoo─')
@@ -2758,7 +2782,7 @@ class TestGoFZF < TestBase
   end
 
   def test_labels_right
-    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos -2 --preview : --preview-label barfoo --preview-label-pos -2', :Enter
+    tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos -2 --preview : --preview-label barfoo --preview-label-pos -2', :Enter
     tmux.until do
       assert_includes(_1[0], '─foobar╮')
       assert_includes(_1[1], '─barfoo╮')
@@ -2766,7 +2790,7 @@ class TestGoFZF < TestBase
   end
 
   def test_labels_bottom
-    tmux.send_keys ': | fzf --border --border-label foobar --border-label-pos 2:bottom --preview : --preview-label barfoo --preview-label-pos -2:bottom', :Enter
+    tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos 2:bottom --preview : --preview-label barfoo --preview-label-pos -2:bottom', :Enter
     tmux.until do
       assert_includes(_1[-1], '╰foobar─')
       assert_includes(_1[-2], '─barfoo╯')
@@ -2895,7 +2919,7 @@ class TestGoFZF < TestBase
   end
 
   def test_no_extra_newline_issue_3209
-    tmux.send_keys(%(seq 100 | #{FZF} --height 10 --preview-window up,wrap --preview 'printf "─%.0s" $(seq 1 "$((FZF_PREVIEW_COLUMNS - 5))"); printf $"\\e[7m%s\\e[0m" title; echo; echo something'), :Enter)
+    tmux.send_keys(%(seq 100 | #{FZF} --height 10 --preview-window up,wrap,border-rounded --preview 'printf "─%.0s" $(seq 1 "$((FZF_PREVIEW_COLUMNS - 5))"); printf $"\\e[7m%s\\e[0m" title; echo; echo something'), :Enter)
     expected = <<~OUTPUT
       ╭──────────
       │ ─────────
