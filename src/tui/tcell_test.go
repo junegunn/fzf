@@ -182,6 +182,7 @@ func TestGetCharEventKey(t *testing.T) {
 	r.Init()
 
 	// run and evaluate the tests
+	initialResizeAsInvalid := true
 	for _, test := range tests {
 		// generate key event
 		giveEvent := tcell.NewEventKey(test.giveKey.Type, test.giveKey.Char, test.giveKey.Mods)
@@ -191,8 +192,9 @@ func TestGetCharEventKey(t *testing.T) {
 		// process the event in fzf and evaluate the test
 		gotEvent := r.GetChar()
 		// skip Resize events, those are sometimes put in the buffer outside of this test
-		for gotEvent.Type == Resize {
-			t.Logf("Resize swallowed")
+		if initialResizeAsInvalid && gotEvent.Type == Invalid {
+			t.Logf("Resize as Invalid swallowed")
+			initialResizeAsInvalid = false
 			gotEvent = r.GetChar()
 		}
 		t.Logf("wantEvent = %T{Type: %v, Char: %q (%[3]v)}\n", test.wantKey, test.wantKey.Type, test.wantKey.Char)

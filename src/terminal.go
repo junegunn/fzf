@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/junegunn/uniseg"
+	"github.com/rivo/uniseg"
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
@@ -293,6 +293,7 @@ type Terminal struct {
 	lastFocus          int32
 	areaLines          int
 	areaColumns        int
+	forcePreview       bool
 }
 
 type selectedItem struct {
@@ -1254,6 +1255,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 }
 
 func (t *Terminal) resizeWindows(forcePreview bool) {
+	t.forcePreview = forcePreview
 	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
 	width := screenWidth - marginInt[1] - marginInt[3]
 	height := screenHeight - marginInt[0] - marginInt[2]
@@ -2316,7 +2318,7 @@ func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
 }
 
 func (t *Terminal) printAll() {
-	t.resizeWindows(false)
+	t.resizeWindows(t.forcePreview)
 	t.printList()
 	t.printPrompt()
 	t.printInfo()
@@ -3488,7 +3490,9 @@ func (t *Terminal) Loop() {
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
 				req(reqPrompt)
 			case actPreview:
-				updatePreviewWindow(true)
+				if !t.hasPreviewWindow() {
+					updatePreviewWindow(true)
+				}
 				refreshPreview(a.a)
 			case actRefreshPreview:
 				refreshPreview(t.previewOpts.command)

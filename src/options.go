@@ -11,9 +11,9 @@ import (
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
-	"github.com/junegunn/uniseg"
 
 	"github.com/mattn/go-shellwords"
+	"github.com/rivo/uniseg"
 )
 
 const usage = `usage: fzf [options]

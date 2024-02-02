@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/junegunn/uniseg"
+	"github.com/rivo/uniseg"
 )
 
 // Types of user action
