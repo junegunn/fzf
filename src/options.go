@@ -126,8 +126,8 @@ const usage = `usage: fzf [options]
 
   Environment variables
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
-    FZF_DEFAULT_OPTS       Default options
-                           (e.g. '--layout=reverse --inline-info')
+    FZF_DEFAULT_OPTS       Default options (e.g. '--layout=reverse --info=inline')
+    FZF_DEFAULT_OPTS_FILE  Location of the file to read default options from
     FZF_API_KEY            X-API-Key header for HTTP server (--listen)
 
 `
@@ -421,8 +421,10 @@ func help(code int) {
 	os.Exit(code)
 }
 
+var errorContext = ""
+
 func errorExit(msg string) {
-	os.Stderr.WriteString(msg + "\n")
+	os.Stderr.WriteString(errorContext + msg + "\n")
 	os.Exit(exitError)
 }
 
@@ -2167,13 +2169,36 @@ func ParseOptions() *Options {
 		}
 	}
 
-	// Options from Env var
-	words, _ := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
+	// 1. Options from $FZF_DEFAULT_OPTS_FILE
+	if path := os.Getenv("FZF_DEFAULT_OPTS_FILE"); path != "" {
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			errorContext = "$FZF_DEFAULT_OPTS_FILE: "
+			errorExit(err.Error())
+		}
+
+		words, parseErr := shellwords.Parse(string(bytes))
+		if parseErr != nil {
+			errorContext = path + ": "
+			errorExit(parseErr.Error())
+		}
+		if len(words) > 0 {
+			parseOptions(opts, words)
+		}
+	}
+
+	// 2. Options from $FZF_DEFAULT_OPTS string
+	words, parseErr := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
+	errorContext = "$FZF_DEFAULT_OPTS: "
+	if parseErr != nil {
+		errorExit(parseErr.Error())
+	}
 	if len(words) > 0 {
 		parseOptions(opts, words)
 	}
 
-	// Options from command-line arguments
+	// 3. Options from command-line arguments
+	errorContext = ""
 	parseOptions(opts, os.Args[1:])
 
 	postProcessOptions(opts)

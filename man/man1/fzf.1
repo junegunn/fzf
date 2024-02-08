@@ -865,7 +865,14 @@ with \fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise with \fBsh -c\fR, so in
 this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
-Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
+Default options.
+.br
+e.g. \fBexport FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"\fR
+.TP
+.B FZF_DEFAULT_OPTS_FILE
+The location of the file that contains the default options.
+.br
+e.g. \fBexport FZF_DEFAULT_OPTS_FILE=~/.fzfrc\fR
 .TP
 .B FZF_API_KEY
 Can be used to require an API key when using \fB--listen\fR option. If not set,
