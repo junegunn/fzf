@@ -4,7 +4,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.7.0
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mattn/go-shellwords v1.0.12
-	github.com/rivo/uniseg v0.4.6
+	github.com/rivo/uniseg v0.4.7
 	github.com/saracen/walker v0.1.3
 	golang.org/x/sys v0.17.0
 	golang.org/x/term v0.16.0
