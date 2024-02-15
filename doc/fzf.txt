@@ -1,4 +1,4 @@
-fzf.txt	fzf	Last change: January 1 2024
+fzf.txt	fzf	Last change: February 15 2024
 FZF - TABLE OF CONTENTS                                            *fzf* *fzf-toc*
 ==============================================================================
 
@@ -264,17 +264,18 @@ entry.
     call fzf#run({'sink': 'e'})
 <
 We haven't specified the `source`, so this is equivalent to starting fzf on
-command line without standard input pipe; fzf will use find command (or
-`$FZF_DEFAULT_COMMAND` if defined) to list the files under the current
-directory. When you select one, it will open it with the sink, `:e` command.
-If you want to open it in a new tab, you can pass `:tabedit` command instead
-as the sink.
+command line without standard input pipe; fzf will traverse the file system
+under the current directory to get the list of files. (If
+`$FZF_DEFAULT_COMMAND` is set, fzf will use the output of the command
+instead.) When you select one, it will open it with the sink, `:e` command. If
+you want to open it in a new tab, you can pass `:tabedit` command instead as
+the sink.
 >
     call fzf#run({'sink': 'tabedit'})
 <
-Instead of using the default find command, you can use any shell command as
-the source. The following example will list the files managed by git. It's
-equivalent to running `git ls-files | fzf` on shell.
+You can use any shell command as the source to generate the list. The
+following example will list the files managed by git. It's equivalent to
+running `git ls-files | fzf` on shell.
 >
     call fzf#run({'source': 'git ls-files', 'sink': 'e'})
 <
@@ -417,24 +418,12 @@ TIPS                                                                  *fzf-tips*
 < fzf inside terminal buffer >________________________________________________~
                                                     *fzf-inside-terminal-buffer*
 
-The latest versions of Vim and Neovim include builtin terminal emulator
-(`:terminal`) and fzf will start in a terminal buffer in the following cases:
-
- - On Neovim
- - On GVim
- - On Terminal Vim with a non-default layout
-   - `call fzf#run({'left': '30%'})` or `let g:fzf_layout = {'left': '30%'}`
 
 On the latest versions of Vim and Neovim, fzf will start in a terminal buffer.
 If you find the default ANSI colors to be different, consider configuring the
 colors using `g:terminal_ansi_colors` in regular Vim or `g:terminal_color_x`
 in Neovim.
 
-                   *g:terminal_color_15* *g:terminal_color_14* *g:terminal_color_13*
-*g:terminal_color_12* *g:terminal_color_11* *g:terminal_color_10* *g:terminal_color_9*
-   *g:terminal_color_8* *g:terminal_color_7* *g:terminal_color_6* *g:terminal_color_5*
-   *g:terminal_color_4* *g:terminal_color_3* *g:terminal_color_2* *g:terminal_color_1*
-                                                            *g:terminal_color_0*
 >
     " Terminal colors for seoul256 color scheme
     if has('nvim')

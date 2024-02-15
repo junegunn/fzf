@@ -230,9 +230,9 @@ selected item to STDOUT.
 find * -type f | fzf > selected
 ```
 
-Without STDIN pipe, fzf will use find command to fetch the list of
-files excluding hidden ones. (You can override the default command with
-`FZF_DEFAULT_COMMAND`)
+Without STDIN pipe, fzf will traverse the file system under the current
+directory to get the list of files, skipping hidden directories. (You can
+override the default behavior with `FZF_DEFAULT_COMMAND`)
 
 ```sh
 vim $(fzf)
@@ -488,8 +488,7 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='--border --info=inline'
 
-# Use fd (https://github.com/sharkdp/fd) instead of the default find
-# command for listing path candidates.
+# Use fd (https://github.com/sharkdp/fd) for listing path candidates.
 # - The first argument to the function ($1) is the base path to start traversal
 # - See the source code (completion.{bash,zsh}) for the details.
 _fzf_compgen_path() {
@@ -774,9 +773,8 @@ Tips
 
 You can use [fd](https://github.com/sharkdp/fd),
 [ripgrep](https://github.com/BurntSushi/ripgrep), or [the silver
-searcher](https://github.com/ggreer/the_silver_searcher) instead of the
-default find command to traverse the file system while respecting
-`.gitignore`.
+searcher](https://github.com/ggreer/the_silver_searcher) to traverse the file
+system while respecting `.gitignore`.
 
 ```sh
 # Feed the output of fd into fzf

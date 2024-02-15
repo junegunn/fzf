@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+0.47.0
+------
+- Replaced ["the default find command"][find] with a built-in directory traversal to simplify the code and to achieve better performance and consistent behavior across platforms.
+  This doesn't affect you if you have `$FZF_DEFAULT_COMMAND` set.
+    - Breaking changes:
+        - Unlike [the previous "find" command][find], the new traversal code will list hidden files, but hidden directories will still be ignored
+        - No filtering of `devtmpfs` or `proc` types
+        - Traversal is parallelized, so the order of the entries will be different each time
+    - You would wonder why fzf implements directory traversal anyway when it's a filter program following the Unix philosophy.
+      But fzf has had [the traversal code for years][walker] to tackle the performance problem on Windows. And I decided to use the same approach on different platforms as well for the benefits listed above.
+
+[find]: https://github.com/junegunn/fzf/blob/0.46.1/src/constants.go#L60-L64
+[walker]: https://github.com/junegunn/fzf/pull/1847
+
 0.46.1
 ------
 - Bug fixes and improvements
