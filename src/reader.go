@@ -88,7 +88,7 @@ func (r *Reader) terminate() {
 func (r *Reader) restart(command string) {
 	r.event = int32(EvtReady)
 	r.startEventPoller()
-	success := r.readFromCommand(nil, command)
+	success := r.readFromCommand(command)
 	r.fin(success)
 }
 
@@ -101,7 +101,7 @@ func (r *Reader) ReadSource() {
 		if len(cmd) == 0 {
 			success = r.readFiles()
 		} else {
-			success = r.readFromCommand(nil, cmd)
+			success = r.readFromCommand(cmd)
 		}
 	} else {
 		success = r.readFromStdin()
@@ -171,15 +171,11 @@ func (r *Reader) readFiles() bool {
 	return fastwalk.Walk(&conf, ".", fn) == nil
 }
 
-func (r *Reader) readFromCommand(shell *string, command string) bool {
+func (r *Reader) readFromCommand(command string) bool {
 	r.mutex.Lock()
 	r.killed = false
 	r.command = &command
-	if shell != nil {
-		r.exec = util.ExecCommandWith(*shell, command, true)
-	} else {
-		r.exec = util.ExecCommand(command, true)
-	}
+	r.exec = util.ExecCommand(command, true)
 	out, err := r.exec.StdoutPipe()
 	if err != nil {
 		r.mutex.Unlock()
