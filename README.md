@@ -2,7 +2,7 @@
 <sup>Special thanks to:</sup>
 <br>
 <br>
-<a href="https://warp.dev/?utm_source=github&utm_medium=referral&utm_camapign=fzf_20240209">
+<a href="https://warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf_20240209">
   <div>
     <img src="https://raw.githubusercontent.com/junegunn/i/master/warp.png" width="300" alt="Warp">
   </div>
