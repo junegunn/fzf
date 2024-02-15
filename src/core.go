@@ -213,6 +213,7 @@ func Run(opts *Options, version string, revision string) {
 	reading := true
 	ticks := 0
 	var nextCommand *string
+	var nextEnviron []string
 	eventBox.Watch(EvtReadNew)
 	total := 0
 	query := []rune{}
@@ -232,13 +233,13 @@ func Run(opts *Options, version string, revision string) {
 	useSnapshot := false
 	var snapshot []*Chunk
 	var count int
-	restart := func(command string) {
+	restart := func(command string, environ []string) {
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
 		inputRevision++
 		header = make([]string, 0, opts.HeaderLines)
-		go reader.restart(command)
+		go reader.restart(command, environ)
 	}
 	for {
 		delay := true
@@ -266,8 +267,9 @@ func Run(opts *Options, version string, revision string) {
 					os.Exit(value.(int))
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
-						restart(*nextCommand)
+						restart(*nextCommand, nextEnviron)
 						nextCommand = nil
+						nextEnviron = nil
 						break
 					} else {
 						reading = reading && evt == EvtReadNew
@@ -292,11 +294,13 @@ func Run(opts *Options, version string, revision string) {
 
 				case EvtSearchNew:
 					var command *string
+					var environ []string
 					var changed bool
 					switch val := value.(type) {
 					case searchRequest:
 						sort = val.sort
 						command = val.command
+						environ = val.environ
 						changed = val.changed
 						if command != nil {
 							useSnapshot = val.sync
@@ -306,8 +310,9 @@ func Run(opts *Options, version string, revision string) {
 						if reading {
 							reader.terminate()
 							nextCommand = command
+							nextEnviron = environ
 						} else {
-							restart(*command)
+							restart(*command, environ)
 						}
 					}
 					if !changed {
