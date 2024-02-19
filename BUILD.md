@@ -42,6 +42,8 @@ Third-party libraries used
     - Licensed under [MIT](http://mattn.mit-license.org)
 - [tcell](https://github.com/gdamore/tcell)
     - Licensed under [Apache License 2.0](https://github.com/gdamore/tcell/blob/master/LICENSE)
+- [fastwalk](https://github.com/charlievieth/fastwalk)
+    - Licensed under [MIT](https://raw.githubusercontent.com/charlievieth/fastwalk/master/LICENSE)
 
 License
 -------
