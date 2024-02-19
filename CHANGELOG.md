@@ -11,9 +11,11 @@ CHANGELOG
         - Traversal is parallelized, so the order of the entries will be different each time
     - You would wonder why fzf implements directory traversal anyway when it's a filter program following the Unix philosophy.
       But fzf has had [the traversal code for years][walker] to tackle the performance problem on Windows. And I decided to use the same approach on different platforms as well for the benefits listed above.
+    - Built-in traversal is now done using the excellent [charlievieth/fastwalk][fastwalk] library, which easily outperforms its competitors and supports safely following symlinks.
 
 [find]: https://github.com/junegunn/fzf/blob/0.46.1/src/constants.go#L60-L64
 [walker]: https://github.com/junegunn/fzf/pull/1847
+[fastwalk]: https://github.com/charlievieth/fastwalk
 
 0.46.1
 ------
