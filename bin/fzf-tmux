@@ -95,9 +95,9 @@ while [[ $# -gt 0 ]]; do
       elif [[ "$size" =~ %$ ]]; then
         size=${size:0:((${#size}-1))}
         if [[ -n "$swap" ]]; then
-          opt="$opt -p $(( 100 - size ))"
+          opt="$opt -l $(( 100 - size ))%"
         else
-          opt="$opt -p $size"
+          opt="$opt -l $size%"
         fi
       else
         if [[ -n "$swap" ]]; then
