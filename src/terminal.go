@@ -499,6 +499,7 @@ type searchRequest struct {
 	sort    bool
 	sync    bool
 	command *string
+	environ []string
 	changed bool
 }
 
@@ -4081,10 +4082,15 @@ func (t *Terminal) Loop() {
 			req(reqPrompt)
 		}
 
+		reload := changed || newCommand != nil
+		var reloadRequest *searchRequest
+		if reload {
+			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, command: newCommand, environ: t.environ(), changed: changed}
+		}
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
-		if changed || newCommand != nil {
-			t.eventBox.Set(EvtSearchNew, searchRequest{sort: t.sort, sync: reloadSync, command: newCommand, changed: changed})
+		if reload {
+			t.eventBox.Set(EvtSearchNew, *reloadRequest)
 		}
 		for _, event := range events {
 			t.reqBox.Set(event, nil)

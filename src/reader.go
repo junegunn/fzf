@@ -85,10 +85,10 @@ func (r *Reader) terminate() {
 	r.mutex.Unlock()
 }
 
-func (r *Reader) restart(command string) {
+func (r *Reader) restart(command string, environ []string) {
 	r.event = int32(EvtReady)
 	r.startEventPoller()
-	success := r.readFromCommand(command)
+	success := r.readFromCommand(command, environ)
 	r.fin(success)
 }
 
@@ -101,7 +101,8 @@ func (r *Reader) ReadSource() {
 		if len(cmd) == 0 {
 			success = r.readFiles()
 		} else {
-			success = r.readFromCommand(cmd)
+			// We can't export FZF_* environment variables to the default command
+			success = r.readFromCommand(cmd, nil)
 		}
 	} else {
 		success = r.readFromStdin()
@@ -171,11 +172,14 @@ func (r *Reader) readFiles() bool {
 	return fastwalk.Walk(&conf, ".", fn) == nil
 }
 
-func (r *Reader) readFromCommand(command string) bool {
+func (r *Reader) readFromCommand(command string, environ []string) bool {
 	r.mutex.Lock()
 	r.killed = false
 	r.command = &command
 	r.exec = util.ExecCommand(command, true)
+	if environ != nil {
+		r.exec.Env = environ
+	}
 	out, err := r.exec.StdoutPipe()
 	if err != nil {
 		r.mutex.Unlock()
