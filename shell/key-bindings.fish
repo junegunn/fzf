@@ -24,11 +24,15 @@ function fzf_key_bindings
     set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
+    set -l macos_exclude ''
+    if [ (uname -s) = "Darwin" ]
+      set macos_exclude "-o -xattrname 'com.apple.containermanager.uuid'"
+    end
 
     # "-path \$dir'*/.*'" matches hidden files/folders inside $dir but not
     # $dir itself, even if hidden.
     test -n "$FZF_CTRL_T_COMMAND"; or set -l FZF_CTRL_T_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
+    command find -L \$dir -mindepth 1 \\( -path \$dir'*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \$macos_exclude \\) -prune \
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 's@^\./@@'"
@@ -80,9 +84,13 @@ function fzf_key_bindings
     set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
+    set -l macos_exclude ''
+    if [ (uname -s) = "Darwin" ]
+      set macos_exclude "-o -xattrname 'com.apple.containermanager.uuid'"
+    end
 
     test -n "$FZF_ALT_C_COMMAND"; or set -l FZF_ALT_C_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
+    command find -L \$dir -mindepth 1 \\( -path \$dir'*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \$macos_exclude \\) -prune \
     -o -type d -print 2> /dev/null | sed 's@^\./@@'"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
