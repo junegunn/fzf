@@ -18,7 +18,7 @@
 # ------------
 __fzf_select__() {
   local cmd opts macos_exclude
-  if [[ "$(uname -s)" == "Darwin" ]]; then
+  if command find /dev/null -xattrname 'com.apple.containermanager.uuid' 2> /dev/null; then
     macos_exclude="-o -xattrname 'com.apple.containermanager.uuid'"
   fi
   cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' $macos_exclude \\) -prune \
@@ -46,7 +46,7 @@ fzf-file-widget() {
 
 __fzf_cd__() {
   local cmd opts dir macos_exclude
-  if [[ "$(uname -s)" == "Darwin" ]]; then
+  if command find /dev/null -xattrname 'com.apple.containermanager.uuid' 2> /dev/null; then
     macos_exclude="-o -xattrname 'com.apple.containermanager.uuid'"
   fi
   cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' $macos_exclude \\) -prune \

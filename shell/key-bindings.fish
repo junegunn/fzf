@@ -25,7 +25,7 @@ function fzf_key_bindings
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
     set -l macos_exclude ''
-    if [ (uname -s) = "Darwin" ]
+    if command find /dev/null -xattrname 'com.apple.containermanager.uuid' 2> /dev/null
       set macos_exclude "-o -xattrname 'com.apple.containermanager.uuid'"
     end
 
@@ -85,7 +85,7 @@ function fzf_key_bindings
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
     set -l macos_exclude ''
-    if [ (uname -s) = "Darwin" ]
+    if command find /dev/null -xattrname 'com.apple.containermanager.uuid' 2> /dev/null
       set macos_exclude "-o -xattrname 'com.apple.containermanager.uuid'"
     end
 
