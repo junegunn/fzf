@@ -123,7 +123,7 @@ to install fzf.
 brew install fzf
 
 # To install useful key bindings and fuzzy completion:
-$(brew --prefix)/opt/fzf/install
+"$(brew --prefix)/opt/fzf/install"
 ```
 
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
@@ -235,7 +235,7 @@ directory to get the list of files, skipping hidden directories. (You can
 override the default behavior with `FZF_DEFAULT_COMMAND`)
 
 ```sh
-vim $(fzf)
+vim "$(fzf)"
 ```
 
 > *:bulb: A more robust solution would be to use `xargs` but we've presented
@@ -269,14 +269,14 @@ fzf by default starts in fullscreen mode, but you can make it start below the
 cursor with `--height` option.
 
 ```sh
-vim $(fzf --height 40%)
+vim "$(fzf --height 40%)"
 ```
 
 Also, check out `--reverse` and `--layout` options if you prefer
 "top-down" layout instead of the default "bottom-up" layout.
 
 ```sh
-vim $(fzf --height 40% --reverse)
+vim "$(fzf --height 40% --reverse)"
 ```
 
 You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
