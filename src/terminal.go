@@ -67,7 +67,7 @@ func init() {
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
 	// * https://en.wikipedia.org/wiki/Sixel
 	// * https://iterm2.com/documentation-images.html
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?\a`)
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?(\a|\x1b\\)`)
 }
 
 type jumpMode int
