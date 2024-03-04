@@ -829,7 +829,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenAddr != nil {
-		err, port := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
+		port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
 		if err != nil {
 			errorExit(err.Error())
 		}

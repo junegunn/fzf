@@ -1866,7 +1866,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			addr := defaultListenAddr
 			if given {
 				var err error
-				err, addr = parseListenAddress(str)
+				addr, err = parseListenAddress(str)
 				if err != nil {
 					errorExit(err.Error())
 				}
@@ -1964,14 +1964,14 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
 			} else if match, value := optString(arg, "--listen="); match {
-				err, addr := parseListenAddress(value)
+				addr, err := parseListenAddress(value)
 				if err != nil {
 					errorExit(err.Error())
 				}
 				opts.ListenAddr = &addr
 				opts.Unsafe = false
 			} else if match, value := optString(arg, "--listen-unsafe="); match {
-				err, addr := parseListenAddress(value)
+				addr, err := parseListenAddress(value)
 				if err != nil {
 					errorExit(err.Error())
 				}

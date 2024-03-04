@@ -53,47 +53,47 @@ func (addr listenAddress) IsLocal() bool {
 
 var defaultListenAddr = listenAddress{"localhost", 0}
 
-func parseListenAddress(address string) (error, listenAddress) {
+func parseListenAddress(address string) (listenAddress, error) {
 	parts := strings.SplitN(address, ":", 3)
 	if len(parts) == 1 {
 		parts = []string{"localhost", parts[0]}
 	}
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid listen address: %s", address), defaultListenAddr
+		return defaultListenAddr, fmt.Errorf("invalid listen address: %s", address)
 	}
 	portStr := parts[len(parts)-1]
 	port, err := strconv.Atoi(portStr)
 	if err != nil || port < 0 || port > 65535 {
-		return fmt.Errorf("invalid listen port: %s", portStr), defaultListenAddr
+		return defaultListenAddr, fmt.Errorf("invalid listen port: %s", portStr)
 	}
 	if len(parts[0]) == 0 {
 		parts[0] = "localhost"
 	}
-	return nil, listenAddress{parts[0], port}
+	return listenAddress{parts[0], port}, nil
 }
 
-func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (error, int) {
+func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (int, error) {
 	host := address.host
 	port := address.port
 	apiKey := os.Getenv("FZF_API_KEY")
 	if !address.IsLocal() && len(apiKey) == 0 {
-		return fmt.Errorf("FZF_API_KEY is required to allow remote access"), port
+		return port, fmt.Errorf("FZF_API_KEY is required to allow remote access")
 	}
 	addrStr := fmt.Sprintf("%s:%d", host, port)
 	listener, err := net.Listen("tcp", addrStr)
 	if err != nil {
-		return fmt.Errorf("failed to listen on %s", addrStr), port
+		return port, fmt.Errorf("failed to listen on %s", addrStr)
 	}
 	if port == 0 {
 		addr := listener.Addr().String()
 		parts := strings.Split(addr, ":")
 		if len(parts) < 2 {
-			return fmt.Errorf("cannot extract port: %s", addr), port
+			return port, fmt.Errorf("cannot extract port: %s", addr)
 		}
 		var err error
 		port, err = strconv.Atoi(parts[len(parts)-1])
 		if err != nil {
-			return err, port
+			return port, err
 		}
 	}
 
@@ -119,7 +119,7 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 		listener.Close()
 	}()
 
-	return nil, port
+	return port, nil
 }
 
 // Here we are writing a simplistic HTTP server without using net/http
