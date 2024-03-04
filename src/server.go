@@ -236,17 +236,15 @@ func parseGetParams(query string) getParams {
 	for _, pair := range strings.Split(query, "&") {
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) == 2 {
+			val, err := strconv.Atoi(parts[1])
+			if err != nil {
+				continue
+			}
 			switch parts[0] {
 			case "limit":
-				val, err := strconv.Atoi(parts[1])
-				if err == nil {
-					params.limit = val
-				}
+				params.limit = val
 			case "offset":
-				val, err := strconv.Atoi(parts[1])
-				if err == nil {
-					params.offset = val
-				}
+				params.offset = val
 			}
 		}
 	}
