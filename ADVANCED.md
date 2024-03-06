@@ -552,7 +552,7 @@ pods() {
     - Press enter key on a pod to `kubectl exec` into it
     - Press CTRL-O to open the log in your editor
 - Press CTRL-R to reload the pod list
-- Press CTRL-/ repeatedly to to rotate through a different sets of preview
+- Press CTRL-/ repeatedly to rotate through a different sets of preview
   window options
     1. `80%,border-bottom`
     1. `hidden`
