@@ -3161,7 +3161,7 @@ func (t *Terminal) Loop() {
 						}
 						t.previewer.lines = result.lines
 						t.previewer.spinner = result.spinner
-						if t.previewer.following.Enabled() {
+						if t.hasPreviewWindow() && t.previewer.following.Enabled() {
 							t.previewer.offset = util.Max(t.previewer.offset, len(t.previewer.lines)-(t.pwindow.Height()-t.previewOpts.headerLines))
 						} else if result.offset >= 0 {
 							t.previewer.offset = util.Constrain(result.offset, t.previewOpts.headerLines, len(t.previewer.lines)-1)
