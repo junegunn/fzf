@@ -3382,6 +3382,9 @@ func (t *Terminal) Loop() {
 						// Discard the preview content so that it won't accidentally appear
 						// when preview window is re-enabled and previewDelay is triggered
 						t.previewer.lines = nil
+
+						// Also kill the preview process if it's still running
+						t.cancelPreview()
 					}
 				}
 			case actTogglePreviewWrap:
@@ -3988,11 +3991,18 @@ func (t *Terminal) Loop() {
 
 				// Full redraw
 				if !currentPreviewOpts.sameLayout(t.previewOpts) {
-					wasHidden := t.pwindow == nil
+					// Preview command can be running in the background if the size of
+					// the preview window is 0 but not 'hidden'
+					wasHidden := currentPreviewOpts.hidden
 					updatePreviewWindow(false)
 					if wasHidden && t.hasPreviewWindow() {
+						// Restart
 						refreshPreview(t.previewOpts.command)
+					} else if t.previewOpts.hidden {
+						// Cancel
+						t.cancelPreview()
 					} else {
+						// Refresh
 						req(reqPreviewRefresh)
 					}
 				} else if !currentPreviewOpts.sameContentLayout(t.previewOpts) {
