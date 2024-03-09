@@ -544,7 +544,7 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		height:      height,
 		normal:      normal,
 		borderStyle: borderStyle}
-	w.drawBorder(false)
+	w.Erase()
 	return w
 }
 
@@ -561,8 +561,8 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 }
 
 func (w *TcellWindow) Erase() {
-	w.drawBorder(false)
 	fill(w.left-1, w.top, w.width+1, w.height-1, w.normal, ' ')
+	w.drawBorder(false)
 }
 
 func (w *TcellWindow) EraseMaybe() bool {
