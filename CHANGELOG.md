@@ -18,6 +18,7 @@ CHANGELOG
         1. Options read from `$FZF_DEFAULT_OPTS_FILE`
         1. Options from `$FZF_DEFAULT_OPTS`
         1. Options from command-line arguments
+- Bug fixes and improvements
 
 [find]: https://github.com/junegunn/fzf/blob/0.46.1/src/constants.go#L60-L64
 [walker]: https://github.com/junegunn/fzf/pull/1847
