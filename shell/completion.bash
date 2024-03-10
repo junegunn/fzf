@@ -299,6 +299,12 @@ _fzf_handle_dynamic_completion() {
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
       __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
+
+      # Update orig_complete by _fzf_orig_completion entry
+      [[ $orig_complete =~ ' -F '(_fzf_[^ ]+)' ' ]] &&
+        __fzf_orig_completion_instantiate "$cmd" "${BASH_REMATCH[1]}" &&
+        orig_complete=$REPLY
+
       if [[ "${__fzf_nospace_commands-}" = *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
       else
