@@ -63,6 +63,31 @@ __fzf_orig_completion() {
   done
 }
 
+# @param $1 cmd - Command name for which the original completion is searched
+# @var[out] REPLY - Original function name is returned
+__fzf_orig_completion_get_orig_func() {
+  local cmd orig_var orig
+  cmd=$1
+  orig_var="_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}"
+  orig="${!orig_var-}"
+  REPLY="${orig##*#}"
+  [[ $REPLY ]] && type "$REPLY" &> /dev/null
+}
+
+# @param $1 cmd - Command name for which the original completion is searched
+# @param $2 func - Fzf's completion function to replace the original function
+# @var[out] REPLY - Completion setting is returned as a string to "eval"
+__fzf_orig_completion_instantiate() {
+  local cmd func orig_var orig
+  cmd=$1
+  func=$2
+  orig_var="_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}"
+  orig="${!orig_var-}"
+  orig="${orig%#*}"
+  [[ $orig == *' %s '* ]] || return 1
+  printf -v REPLY "$orig" "$func"
+}
+
 _fzf_opts_completion() {
   local cur prev opts
   COMPREPLY=()
@@ -261,15 +286,12 @@ _fzf_opts_completion() {
 }
 
 _fzf_handle_dynamic_completion() {
-  local cmd orig_var orig ret orig_cmd orig_complete
+  local cmd ret REPLY orig_cmd orig_complete
   cmd="$1"
   shift
   orig_cmd="$1"
-  orig_var="_fzf_orig_completion_$cmd"
-  orig="${!orig_var-}"
-  orig="${orig##*#}"
-  if [[ -n "$orig" ]] && type "$orig" > /dev/null 2>&1; then
-    $orig "$@"
+  if __fzf_orig_completion_get_orig_func "$cmd"; then
+    "$REPLY" "$@"
   elif [[ -n "${_fzf_completion_loader-}" ]]; then
     orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
     _completion_loader "$@"
@@ -293,7 +315,6 @@ __fzf_generic_path_completion() {
   if [[ $cmd == \\* ]]; then
     cmd="${cmd:1}"
   fi
-  cmd="${cmd//[^A-Za-z0-9_=]/_}"
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
@@ -359,7 +380,6 @@ _fzf_complete() {
   post="$(caller 0 | command awk '{print $2}')_post"
   type -t "$post" > /dev/null 2>&1 || post='command cat'
 
-  cmd="${COMP_WORDS[0]//[^A-Za-z0-9_=]/_}"
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
@@ -488,15 +508,12 @@ if type _completion_loader > /dev/null 2>&1; then
 fi
 
 __fzf_defc() {
-  local cmd func opts orig_var orig def
+  local cmd func opts REPLY
   cmd="$1"
   func="$2"
   opts="$3"
-  orig_var="_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}"
-  orig="${!orig_var-}"
-  if [[ -n "$orig" ]]; then
-    printf -v def "$orig" "$func"
-    eval "$def"
+  if __fzf_orig_completion_instantiate "$cmd" "$func"; then
+    eval "$REPLY"
   else
     complete -F "$func" $opts "$cmd"
   fi
