@@ -39,7 +39,7 @@ fi
 
 {
 
-# CTRL-T - Paste the selected file path(s) into the command line
+# CTRL-T - Paste the selected file path(s) into the command line using the last part of the buffer as fzf query
 __fsel() {
   local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
     -o -type f -print \
@@ -47,7 +47,9 @@ __fsel() {
     -o -type l -print 2> /dev/null | cut -b3-"}"
   setopt localoptions pipefail no_aliases 2> /dev/null
   local item
-  eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-}" $(__fzfcmd) -m "$@" | while read item; do
+  local -a words=(${(z)LBUFFER})
+  local query=${words[-1]}
+  eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-}" $(__fzfcmd) -m --query="${query}" | while read item; do
     echo -n "${(q)item} "
   done
   local ret=$?
