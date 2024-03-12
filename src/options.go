@@ -124,9 +124,10 @@ const usage = `usage: fzf [options]
                            (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit
 
-  Shell extension
-    --bash                 Print script to set up Bash shell extension
-    --zsh                  Print script to set up Zsh shell extension
+  Shell integration
+    --bash                 Print script to set up Bash shell integration
+    --zsh                  Print script to set up Zsh shell integration
+    --fish                 Print script to set up Fish shell integration
 
   Environment variables
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
@@ -282,6 +283,7 @@ func firstLine(s string) string {
 type Options struct {
 	Bash         bool
 	Zsh          bool
+	Fish         bool
 	Fuzzy        bool
 	FuzzyAlgo    algo.Algo
 	Scheme       string
@@ -359,6 +361,7 @@ func defaultOptions() *Options {
 	return &Options{
 		Bash:         false,
 		Zsh:          false,
+		Fish:         false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
 		Scheme:       "default",
@@ -1612,13 +1615,18 @@ func parseOptions(opts *Options, allArgs []string) {
 		switch arg {
 		case "--bash":
 			opts.Bash = true
-			if opts.Zsh {
-				errorExit("cannot specify both --bash and --zsh")
+			if opts.Zsh || opts.Fish {
+				errorExit("cannot specify --bash with --zsh or --fish")
 			}
 		case "--zsh":
 			opts.Zsh = true
-			if opts.Bash {
-				errorExit("cannot specify both --bash and --zsh")
+			if opts.Bash || opts.Fish {
+				errorExit("cannot specify --zsh with --bash or --fish")
+			}
+		case "--fish":
+			opts.Fish = true
+			if opts.Bash || opts.Zsh {
+				errorExit("cannot specify --fish with --bash or --zsh")
 			}
 		case "-h", "--help":
 			help(exitOk)

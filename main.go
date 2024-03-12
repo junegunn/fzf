@@ -23,6 +23,9 @@ var zshKeyBindings []byte
 //go:embed shell/completion.zsh
 var zshCompletion []byte
 
+//go:embed shell/key-bindings.fish
+var fishKeyBindings []byte
+
 func main() {
 	protector.Protect()
 	options := fzf.ParseOptions()
@@ -34,6 +37,11 @@ func main() {
 	if options.Zsh {
 		fmt.Println(string(zshKeyBindings))
 		fmt.Println(string(zshCompletion))
+		return
+	}
+	if options.Fish {
+		fmt.Println(string(fishKeyBindings))
+		fmt.Println("fzf_key_bindings")
 		return
 	}
 	fzf.Run(options, version, revision)

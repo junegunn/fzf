@@ -104,7 +104,7 @@ fzf project consists of the following components:
 
 - `fzf` executable
 - `fzf-tmux` script for launching fzf in a tmux pane
-- Shell extensions
+- Shell integration
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
     - Fuzzy auto-completion (bash, zsh)
 - Vim/Neovim plugin
@@ -121,10 +121,23 @@ to install fzf.
 
 ```sh
 brew install fzf
-
-# To install useful key bindings and fuzzy completion:
-$(brew --prefix)/opt/fzf/install
 ```
+
+This only installs the binary. To set up shell integration, add the following
+line to your shell configuration file.
+
+* bash
+  ```sh
+  source <(fzf --bash)
+  ```
+* zsh
+  ```sh
+  source <(zsh --zsh)
+  ```
+* fish
+  ```fish
+  fzf --fish | source
+  ```
 
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
@@ -319,7 +332,7 @@ or `py`.
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
-    - > :warning: This variable is not used by shell extensions due to the
+    - > :warning: This variable is not used by shell integration due to the
       > slight difference in requirements.
       >
       > (e.g. `CTRL-T` runs `$FZF_CTRL_T_COMMAND` instead, `vim **<tab>` runs

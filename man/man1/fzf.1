@@ -857,19 +857,24 @@ Display version information and exit
 .TP
 Note that most options have the opposite versions with \fB--no-\fR prefix.
 
-.SS Shell extension
+.SS Shell integration
 .TP
 .B "--bash"
-Print script to set up Bash shell extension
+Print script to set up Bash shell integration
 
 e.g. \fBsource <(fzf --bash)\fR
 
 .TP
 .B "--zsh"
-Print script to set up Zsh shell extension
+Print script to set up Zsh shell integration
 
 e.g. \fBsource <(fzf --zsh)\fR
 
+.TP
+.B "--fish"
+Print script to set up Fish shell integration
+
+e.g. \fBfzf --fish | source\fR
 
 .SH ENVIRONMENT VARIABLES
 .TP
