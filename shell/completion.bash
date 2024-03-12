@@ -387,6 +387,7 @@ _fzf_complete() {
   type -t "$post" > /dev/null 2>&1 || post='command cat'
 
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  cmd="${COMP_WORDS[0]}"
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
