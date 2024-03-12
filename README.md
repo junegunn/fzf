@@ -124,7 +124,8 @@ to install fzf.
 brew install fzf
 ```
 
-To set up shell integration, see [the instructions below](#setting-up-shell-integration).
+> :bulb: To set up shell integration (key bindings and fuzzy completion),
+> see [the instructions below](#setting-up-shell-integration).
 
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
@@ -161,7 +162,8 @@ The install script will add lines to your shell configuration file to modify
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
-To set up shell integration, see [the instructions below](#setting-up-shell-integration).
+> :bulb: To set up shell integration (key bindings and fuzzy completion),
+> see [the instructions below](#setting-up-shell-integration).
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
 
