@@ -124,6 +124,10 @@ const usage = `usage: fzf [options]
                            (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit
 
+  Shell extension
+    --bash                 Print script to set up Bash shell extension
+    --zsh                  Print script to set up Zsh shell extension
+
   Environment variables
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
     FZF_DEFAULT_OPTS       Default options (e.g. '--layout=reverse --info=inline')
@@ -276,6 +280,8 @@ func firstLine(s string) string {
 
 // Options stores the values of command-line options
 type Options struct {
+	Bash         bool
+	Zsh          bool
 	Fuzzy        bool
 	FuzzyAlgo    algo.Algo
 	Scheme       string
@@ -351,6 +357,8 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
+		Bash:         false,
+		Zsh:          false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
 		Scheme:       "default",
@@ -1602,6 +1610,16 @@ func parseOptions(opts *Options, allArgs []string) {
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
+		case "--bash":
+			opts.Bash = true
+			if opts.Zsh {
+				errorExit("cannot specify both --bash and --zsh")
+			}
+		case "--zsh":
+			opts.Zsh = true
+			if opts.Bash {
+				errorExit("cannot specify both --bash and --zsh")
+			}
 		case "-h", "--help":
 			help(exitOk)
 		case "-x", "--extended":

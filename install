@@ -262,6 +262,12 @@ if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
   PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
 fi
 
+EOF
+
+  if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
+    echo "source <(fzf --$shell)" >> "$src"
+  else
+    cat >> "$src" << EOF
 # Auto-completion
 # ---------------
 $fzf_completion
@@ -270,6 +276,7 @@ $fzf_completion
 # ------------
 $fzf_key_bindings
 EOF
+  fi
   echo "OK"
 done
 
