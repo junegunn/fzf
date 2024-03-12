@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+0.48.0
+------
+- Shell integration scripts are now embedded in the fzf binary. This simplifies the distribution, and the users are less likely to have problems caused by using incompatible scripts and binaries.
+    - bash
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      source <(fzf --bash)
+      ```
+    - zsh
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      source <(fzf --zsh)
+      ```
+    - fish
+      ```fish
+      # Set up fzf key bindings
+      fzf --fish | source
+      ```
+
 0.47.0
 ------
 - Replaced ["the default find command"][find] with a built-in directory traversal to simplify the code and to achieve better performance and consistent behavior across platforms.
