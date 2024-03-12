@@ -56,6 +56,7 @@ Table of Contents
     * [Using git](#using-git)
     * [Using Linux package managers](#using-linux-package-managers)
     * [Windows](#windows)
+    * [Setting up shell integration](#setting-up-shell-integration)
     * [As Vim plugin](#as-vim-plugin)
 * [Upgrading fzf](#upgrading-fzf)
 * [Building fzf](#building-fzf)
@@ -123,21 +124,7 @@ to install fzf.
 brew install fzf
 ```
 
-This only installs the binary. To set up shell integration, add the following
-line to your shell configuration file.
-
-* bash
-  ```sh
-  source <(fzf --bash)
-  ```
-* zsh
-  ```sh
-  source <(zsh --zsh)
-  ```
-* fish
-  ```fish
-  fzf --fish | source
-  ```
+To set up shell integration, see [the instructions below](#setting-up-shell-integration).
 
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
@@ -152,6 +139,9 @@ Alternatively, you can "git clone" this repository to any directory and run
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
+
+The install script will add lines to your shell configuration file to modify
+`$PATH` and set up shell integration.
 
 ### Using Linux package managers
 
@@ -171,10 +161,7 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
-> :warning: **Key bindings (CTRL-T / CTRL-R / ALT-C) and fuzzy auto-completion
-> may not be enabled by default.**
->
-> Refer to the package documentation for more information. (e.g. `apt show fzf`)
+To set up shell integration, see [the instructions below](#setting-up-shell-integration).
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
 
@@ -199,6 +186,27 @@ Known issues and limitations on Windows can be found on [the wiki
 page][windows-wiki].
 
 [windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
+
+### Setting up shell integration
+
+Add the following line to your shell configuration file.
+
+* bash
+  ```sh
+  source <(fzf --bash)
+  ```
+* zsh
+  ```sh
+  source <(fzf --zsh)
+  ```
+* fish
+  ```fish
+  fzf --fish | source
+  ```
+
+> :warning: `--bash`, `--zsh`, and `--fish` options are only available in
+> fzf 0.48.0 or above. If you have an older version of fzf, refer to the
+> package documentation for more information. (e.g. `apt show fzf`)
 
 ### As Vim plugin
 
