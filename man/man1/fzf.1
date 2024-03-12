@@ -620,7 +620,7 @@ The following example uses https://github.com/junegunn/fzf/blob/master/bin/fzf-p
 script to render an image using either of the protocols inside the preview window.
 
 e.g.
-      \fBfzf --preview='fzf-preview.sh {}'
+      \fBfzf --preview='fzf-preview.sh {}'\fR
 
 .RE
 
@@ -854,8 +854,34 @@ e.g.
 .B "--version"
 Display version information and exit
 
+.SS Directory traversal
 .TP
-Note that most options have the opposite versions with \fB--no-\fR prefix.
+.B "--walker=[file][,dir][,follow][,hidden]"
+Determines the behavior of the built-in directory walker that is used when
+\fB$FZF_DEFAULT_COMMAND\fR is not set. The default value is \fBfile,follow,hidden\fR.
+
+* \fBfile\fR: Include files in the search result
+.br
+* \fBdir\fR: Include directories in the search result
+.br
+* \fBhidden\fR: Include and follow hidden directories
+.br
+* \fBfollow\fR: Follow symbolic links
+.br
+
+.TP
+.B "--walker-root=DIR"
+The root directory from which to start the built-in directory walker.
+The default value is the current working directory.
+
+.TP
+.B "--walker-skip=DIRS"
+Comma-separated list of directory names to skip during the directory walk.
+The default value is \fB.git,node_modules\fR.
+
+.SS Note
+.TP
+Most options have the opposite versions with \fB--no-\fR prefix.
 
 .SH ENVIRONMENT VARIABLES
 .TP
