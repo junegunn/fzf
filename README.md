@@ -231,12 +231,15 @@ find * -type f | fzf > selected
 ```
 
 Without STDIN pipe, fzf will traverse the file system under the current
-directory to get the list of files, skipping hidden directories. (You can
-override the default behavior with `FZF_DEFAULT_COMMAND`)
+directory to get the list of files.
 
 ```sh
 vim $(fzf)
 ```
+
+> You can override the default behavior
+> * Either by setting `$FZF_DEFAULT_COMMAND` to a command that generates the desired list
+> * Or by setting `--walker`, `--walker-root`, and `--walker-skip` options in `$FZF_DEFAULT_OPTS`
 
 > *:bulb: A more robust solution would be to use `xargs` but we've presented
 > the above as it's easier to grasp*
@@ -388,11 +391,14 @@ The install script will setup the following key bindings for bash, zsh, and
 fish.
 
 - `CTRL-T` - Paste the selected files and directories onto the command-line
-    - Set `FZF_CTRL_T_COMMAND` to override the default command
+    - The list is generated using `--walker file,dir,follow,hidden` option
+        - You can override the behavior by setting `FZF_CTRL_T_COMMAND` to a custom command that generates the desired list
+        - Or you can set `--walker*` options in `FZF_CTRL_T_OPTS`
     - Set `FZF_CTRL_T_OPTS` to pass additional options to fzf
       ```sh
       # Preview file content using bat (https://github.com/sharkdp/bat)
       export FZF_CTRL_T_OPTS="
+        --walker-skip .git,node_modules,target
         --preview 'bat -n --color=always {}'
         --bind 'ctrl-/:change-preview-window(down|hidden|)'"
       ```
@@ -411,11 +417,15 @@ fish.
         --header 'Press CTRL-Y to copy command into clipboard'"
       ```
 - `ALT-C` - cd into the selected directory
+    - The list is generated using `--walker dir,follow,hidden` option
     - Set `FZF_ALT_C_COMMAND` to override the default command
+        - Or you can set `--walker-*` options in `FZF_ALT_C_OPTS`
     - Set `FZF_ALT_C_OPTS` to pass additional options to fzf
       ```sh
       # Print tree structure in the preview window
-      export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
+      export FZF_ALT_C_OPTS="
+        --walker-skip .git,node_modules,target
+        --preview 'tree -C {}'"
       ```
 
 If you're on a tmux session, you can start fzf in a tmux split-pane or in
@@ -787,7 +797,7 @@ fd --type f --strip-cwd-prefix | fzf
 # Setting fd as the default source for fzf
 export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix'
 
-# Now fzf (w/o pipe) will use fd instead of find
+# Now fzf (w/o pipe) will use the fd command to generate the list
 fzf
 
 # To apply the command to CTRL-T as well
