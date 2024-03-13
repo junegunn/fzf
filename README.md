@@ -196,12 +196,12 @@ Add the following line to your shell configuration file.
 * bash
   ```sh
   # Set up fzf key bindings and fuzzy completion
-  source <(fzf --bash)
+  eval "$(fzf --bash)"
   ```
 * zsh
   ```sh
   # Set up fzf key bindings and fuzzy completion
-  source <(fzf --zsh)
+  eval "$(fzf --zsh)"
   ```
 * fish
   ```fish
