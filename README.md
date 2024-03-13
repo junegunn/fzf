@@ -784,22 +784,21 @@ See the man page (`man fzf`) for the full list of options.
 
 More advanced examples can be found [here](https://github.com/junegunn/fzf/blob/master/ADVANCED.md).
 
-----
-
-Since fzf is a general-purpose text filter rather than a file finder, **it is
-not a good idea to add `--preview` option to your `$FZF_DEFAULT_OPTS`**.
-
-```sh
-# *********************
-# ** DO NOT DO THIS! **
-# *********************
-export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always --line-range :500 {}"'
-
-# bat doesn't work with any input other than the list of files
-ps -ef | fzf
-seq 100 | fzf
-history | fzf
-```
+> [!WARNING]
+> Since fzf is a general-purpose text filter rather than a file finder, **it is
+> not a good idea to add `--preview` option to your `$FZF_DEFAULT_OPTS`**.
+>
+> ```sh
+> # *********************
+> # ** DO NOT DO THIS! **
+> # *********************
+> export FZF_DEFAULT_OPTS='--preview "bat --style=numbers --color=always --line-range :500 {}"'
+>
+> # bat doesn't work with any input other than the list of files
+> ps -ef | fzf
+> seq 100 | fzf
+> history | fzf
+> ```
 
 ### Previewing an image
 
