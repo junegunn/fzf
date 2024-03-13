@@ -107,7 +107,7 @@ fzf project consists of the following components:
 - `fzf-tmux` script for launching fzf in a tmux pane
 - Shell integration
     - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
-    - Fuzzy auto-completion (bash, zsh)
+    - Fuzzy completion (bash, zsh)
 - Vim/Neovim plugin
 
 You can [download fzf executable][bin] alone if you don't need the extra
