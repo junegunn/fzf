@@ -124,6 +124,12 @@ const usage = `usage: fzf [options]
                            (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit
 
+  Directory traversal      (Only used when $FZF_DEFAULT_COMMAND is not set)
+    --walker=OPTS          [file][,dir][,follow][,hidden] (default: file,follow,hidden)
+    --walker-root=DIR      Root directory from which to start walker (default: .)
+    --walker-skip=DIRS     Comma-separated list of directory names to skip
+                           (default: .git,node_modules)
+
   Shell integration
     --bash                 Print script to set up Bash shell integration
     --zsh                  Print script to set up Zsh shell integration
@@ -279,6 +285,13 @@ func firstLine(s string) string {
 	return strings.SplitN(s, "\n", 2)[0]
 }
 
+type walkerOpts struct {
+	file   bool
+	dir    bool
+	hidden bool
+	follow bool
+}
+
 // Options stores the values of command-line options
 type Options struct {
 	Bash         bool
@@ -350,7 +363,20 @@ type Options struct {
 	ListenAddr   *listenAddress
 	Unsafe       bool
 	ClearOnExit  bool
+	WalkerOpts   walkerOpts
+	WalkerRoot   string
+	WalkerSkip   []string
 	Version      bool
+}
+
+func filterNonEmpty(input []string) []string {
+	output := make([]string, 0, len(input))
+	for _, str := range input {
+		if len(str) > 0 {
+			output = append(output, str)
+		}
+	}
+	return output
 }
 
 func defaultPreviewOpts(command string) previewOpts {
@@ -424,6 +450,9 @@ func defaultOptions() *Options {
 		PreviewLabel: labelOpts{},
 		Unsafe:       false,
 		ClearOnExit:  true,
+		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
+		WalkerRoot:   ".",
+		WalkerSkip:   []string{".git", "node_modules"},
 		Version:      false}
 }
 
@@ -975,6 +1004,30 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) *tui.ColorTheme {
 		}
 	}
 	return theme
+}
+
+func parseWalkerOpts(str string) walkerOpts {
+	opts := walkerOpts{}
+	for _, str := range strings.Split(strings.ToLower(str), ",") {
+		switch str {
+		case "file":
+			opts.file = true
+		case "dir":
+			opts.dir = true
+		case "hidden":
+			opts.hidden = true
+		case "follow":
+			opts.follow = true
+		case "":
+			// Ignored
+		default:
+			errorExit("invalid walker option: " + str)
+		}
+	}
+	if !opts.file && !opts.dir {
+		errorExit("at least one of 'file' or 'dir' should be specified")
+	}
+	return opts
 }
 
 var (
@@ -1906,6 +1959,12 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = true
 		case "--no-clear":
 			opts.ClearOnExit = false
+		case "--walker":
+			opts.WalkerOpts = parseWalkerOpts(nextString(allArgs, &i, "walker options required [file][,dir][,follow][,hidden]"))
+		case "--walker-root":
+			opts.WalkerRoot = nextString(allArgs, &i, "directory required")
+		case "--walker-skip":
+			opts.WalkerSkip = filterNonEmpty(strings.Split(nextString(allArgs, &i, "directory names to ignore required"), ","))
 		case "--version":
 			opts.Version = true
 		case "--":
@@ -2003,6 +2062,12 @@ func parseOptions(opts *Options, allArgs []string) {
 				}
 				opts.ListenAddr = &addr
 				opts.Unsafe = true
+			} else if match, value := optString(arg, "--walker="); match {
+				opts.WalkerOpts = parseWalkerOpts(value)
+			} else if match, value := optString(arg, "--walker-root="); match {
+				opts.WalkerRoot = value
+			} else if match, value := optString(arg, "--walker-skip="); match {
+				opts.WalkerSkip = filterNonEmpty(strings.Split(value, ","))
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				opts.HscrollOff = atoi(value)
 			} else if match, value := optString(arg, "--scroll-off="); match {

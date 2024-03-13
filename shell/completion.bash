@@ -13,22 +13,19 @@
 
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
-if ! declare -F _fzf_compgen_path > /dev/null; then
-  _fzf_compgen_path() {
-    echo "$1"
-    command find -L "$1" \
-      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
-      -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
-  }
-fi
-
-if ! declare -F _fzf_compgen_dir > /dev/null; then
-  _fzf_compgen_dir() {
-    command find -L "$1" \
-      -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
-      -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
-  }
-fi
+#
+#   _fzf_compgen_path() {
+#     echo "$1"
+#     command find -L "$1" \
+#       -name .git -prune -o -name .hg -prune -o -name .svn -prune -o \( -type d -o -type f -o -type l \) \
+#       -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
+#   }
+#
+#   _fzf_compgen_dir() {
+#     command find -L "$1" \
+#       -name .git -prune -o -name .hg -prune -o -name .svn -prune -o -type d \
+#       -a -not -path "$1" -print 2> /dev/null | command sed 's@^\./@@'
+#   }
 
 ###########################################################
 
@@ -336,9 +333,18 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [[ -z "$dir" ]] && dir='.'
         [[ "$dir" != "/" ]] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
-          printf "%q " "${item%$3}$3"
-        done)
+        matches=$(
+          unset FZF_DEFAULT_COMMAND
+          export FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $2"
+          if declare -F "$1" > /dev/null; then
+            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover"
+          else
+            [[ $1 =~ dir ]] && walker=dir,follow || walker=file,dir,follow,hidden
+            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir"
+          fi | while read -r item; do
+            printf "%q " "${item%$3}$3"
+          done
+        )
         matches=${matches% }
         [[ -z "$3" ]] && [[ "${__fzf_nospace_commands-}" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
         if [[ -n "$matches" ]]; then
@@ -387,6 +393,7 @@ _fzf_complete() {
   type -t "$post" > /dev/null 2>&1 || post='command cat'
 
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
+  cmd="${COMP_WORDS[0]}"
   cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     cur=${cur:0:${#cur}-${#trigger}}

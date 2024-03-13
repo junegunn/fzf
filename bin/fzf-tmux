@@ -196,8 +196,9 @@ if [[ "$opt" =~ "-E" ]]; then
     exit 2
   fi
 fi
-[[ -n "$FZF_DEFAULT_OPTS"    ]] && envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
-[[ -n "$FZF_DEFAULT_COMMAND" ]] && envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
+envs="$envs FZF_DEFAULT_COMMAND=$(printf %q "$FZF_DEFAULT_COMMAND")"
+envs="$envs FZF_DEFAULT_OPTS=$(printf %q "$FZF_DEFAULT_OPTS")"
+envs="$envs FZF_DEFAULT_OPTS_FILE=$(printf %q "$FZF_DEFAULT_OPTS_FILE")"
 [[ -n "$RUNEWIDTH_EASTASIAN" ]] && envs="$envs RUNEWIDTH_EASTASIAN=$(printf %q "$RUNEWIDTH_EASTASIAN")"
 [[ -n "$BAT_THEME" ]] && envs="$envs BAT_THEME=$(printf %q "$BAT_THEME")"
 echo "$envs;" > "$argsf"
