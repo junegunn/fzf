@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"strings"
 
 	fzf "github.com/junegunn/fzf/src"
 	"github.com/junegunn/fzf/src/protector"
@@ -26,26 +27,27 @@ var zshCompletion []byte
 //go:embed shell/key-bindings.fish
 var fishKeyBindings []byte
 
+func printScript(label string, content []byte) {
+	fmt.Println("### " + label + " ###")
+	fmt.Println(strings.TrimSpace(string(content)))
+	fmt.Println("### end: " + label + " ###")
+}
+
 func main() {
 	protector.Protect()
 	options := fzf.ParseOptions()
 	if options.Bash {
-		fmt.Println("### key-bindings.bash ###")
-		fmt.Println(string(bashKeyBindings))
-		fmt.Println("### completion.bash ###")
-		fmt.Println(string(bashCompletion))
+		printScript("key-bindings.bash", bashKeyBindings)
+		printScript("completion.bash", bashCompletion)
 		return
 	}
 	if options.Zsh {
-		fmt.Println("### key-bindings.zsh ###")
-		fmt.Println(string(zshKeyBindings))
-		fmt.Println("### completion.zsh ###")
-		fmt.Println(string(zshCompletion))
+		printScript("key-bindings.zsh", zshKeyBindings)
+		printScript("completion.zsh", zshCompletion)
 		return
 	}
 	if options.Fish {
-		fmt.Println("### key-bindings.fish ###")
-		fmt.Println(string(fishKeyBindings))
+		printScript("key-bindings.fish", fishKeyBindings)
 		fmt.Println("fzf_key_bindings")
 		return
 	}
