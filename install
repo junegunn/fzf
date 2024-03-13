@@ -288,18 +288,6 @@ if [[ "$shells" =~ fish ]]; then
   or set --universal fish_user_paths \$fish_user_paths "$fzf_base"/bin
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
-
-  mkdir -p "${fish_dir}/functions"
-  fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
-  if [ $key_bindings -ne 0 ]; then
-    echo -n "Symlink $fish_binding ... "
-    ln -sf "$fzf_base/shell/key-bindings.fish" \
-           "$fish_binding" && echo "OK" || echo "Failed"
-  else
-    echo -n "Removing $fish_binding ... "
-    rm -f "$fish_binding"
-    echo "OK"
-  fi
 fi
 
 append_line() {
@@ -362,12 +350,23 @@ done
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
   bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
+    mkdir -p "${fish_dir}/functions"
     create_file "$bind_file" \
       'function fish_user_key_bindings' \
-      '  fzf_key_bindings' \
+      '  fzf --fish | source' \
       'end'
   else
-    append_line $update_config "fzf_key_bindings" "$bind_file"
+    echo "Check $bind_file:"
+    lno=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -n $lno ]]; then
+      echo "  ** Found 'fzf_key_bindings' in line #$lno"
+      echo "  ** You have to replace the line to 'fzf --fish | source'"
+      echo
+    else
+      echo "  - Clear"
+      echo
+      append_line $update_config "fzf --fish | source" "$bind_file"
+    fi
   fi
 fi
 
