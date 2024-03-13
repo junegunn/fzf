@@ -124,6 +124,7 @@ to install fzf.
 brew install fzf
 ```
 
+> [!IMPORTANT]
 > :bulb: To set up shell integration (key bindings and fuzzy completion),
 > see [the instructions below](#setting-up-shell-integration).
 
@@ -162,6 +163,7 @@ The install script will add lines to your shell configuration file to modify
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
+> [!IMPORTANT]
 > :bulb: To set up shell integration (key bindings and fuzzy completion),
 > see [the instructions below](#setting-up-shell-integration).
 
