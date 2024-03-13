@@ -30,16 +30,21 @@ func main() {
 	protector.Protect()
 	options := fzf.ParseOptions()
 	if options.Bash {
+		fmt.Println("### key-bindings.bash ###")
 		fmt.Println(string(bashKeyBindings))
+		fmt.Println("### completion.bash ###")
 		fmt.Println(string(bashCompletion))
 		return
 	}
 	if options.Zsh {
+		fmt.Println("### key-bindings.zsh ###")
 		fmt.Println(string(zshKeyBindings))
+		fmt.Println("### completion.zsh ###")
 		fmt.Println(string(zshCompletion))
 		return
 	}
 	if options.Fish {
+		fmt.Println("### key-bindings.fish ###")
 		fmt.Println(string(fishKeyBindings))
 		fmt.Println("fzf_key_bindings")
 		return
