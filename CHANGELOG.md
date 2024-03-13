@@ -44,7 +44,7 @@ CHANGELOG
         export FZF_DEFAULT_COMMAND='seq 100'
         fzf --walker=dir
         ```
-- Shell integration scripts (key bindings and fuzzy completion) have been updated to use the built-in walker with these new options and they are now much faster out of the box.
+- Shell integration scripts have been updated to use the built-in walker with these new options and they are now much faster out of the box.
 
 0.47.0
 ------
