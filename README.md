@@ -125,7 +125,7 @@ brew install fzf
 ```
 
 > [!IMPORTANT]
-> :bulb: To set up shell integration (key bindings and fuzzy completion),
+> To set up shell integration (key bindings and fuzzy completion),
 > see [the instructions below](#setting-up-shell-integration).
 
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
@@ -164,7 +164,7 @@ The install script will add lines to your shell configuration file to modify
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
 
 > [!IMPORTANT]
-> :bulb: To set up shell integration (key bindings and fuzzy completion),
+> To set up shell integration (key bindings and fuzzy completion),
 > see [the instructions below](#setting-up-shell-integration).
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
@@ -211,7 +211,8 @@ Add the following line to your shell configuration file.
   fzf --fish | source
   ```
 
-> :warning: `--bash`, `--zsh`, and `--fish` options are only available in
+> [!NOTE]
+> `--bash`, `--zsh`, and `--fish` options are only available in
 > fzf 0.48.0 or above. If you have an older version of fzf, refer to the
 > package documentation for more information. (e.g. `apt show fzf`)
 
@@ -265,18 +266,20 @@ directory to get the list of files.
 vim $(fzf)
 ```
 
+> [!NOTE]
 > You can override the default behavior
 > * Either by setting `$FZF_DEFAULT_COMMAND` to a command that generates the desired list
 > * Or by setting `--walker`, `--walker-root`, and `--walker-skip` options in `$FZF_DEFAULT_OPTS`
 
-> *:bulb: A more robust solution would be to use `xargs` but we've presented
-> the above as it's easier to grasp*
+> [!WARNING]
+> A more robust solution would be to use `xargs` but we've presented
+> the above as it's easier to grasp
 > ```sh
 > fzf --print0 | xargs -0 -o vim
 > ```
 
->
-> *:bulb: fzf also has the ability to turn itself into a different process.*
+> [!TIP]
+> fzf also has the ability to turn itself into a different process.
 >
 > ```sh
 > fzf --bind 'enter:become(vim {})'
@@ -350,13 +353,6 @@ or `py`.
 - `FZF_DEFAULT_COMMAND`
     - Default command to use when input is tty
     - e.g. `export FZF_DEFAULT_COMMAND='fd --type f'`
-    - > :warning: This variable is not used by shell integration due to the
-      > slight difference in requirements.
-      >
-      > (e.g. `CTRL-T` runs `$FZF_CTRL_T_COMMAND` instead, `vim **<tab>` runs
-      > `_fzf_compgen_path()`, and `cd **<tab>` runs `_fzf_compgen_dir()`)
-      >
-      > The available options are described later in this document.
 - `FZF_DEFAULT_OPTS`
     - Default options
     - e.g. `export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"`
@@ -364,6 +360,17 @@ or `py`.
     - If you prefer to manage default options in a file, set this variable to
       point to the location of the file
     - e.g. `export FZF_DEFAULT_OPTS_FILE=~/.fzfrc`
+
+> [!WARNING]
+> `FZF_DEFAULT_COMMAND` is not used by shell integration due to the
+> slight difference in requirements.
+>
+> * `CTRL-T` runs `$FZF_CTRL_T_COMMAND` to get a list of files and directories
+> * `ALT-C` runs `$FZF_ALT_C_COMMAND` to get a list of directories
+> * `vim ~/**<tab>` runs `fzf_compgen_path()` with the prefix (`~/`) as the first argument
+> * `cd foo**<tab>` runs `fzf_compgen_dir()` with the prefix (`foo`) as the first argument
+>
+> The available options are described later in this document.
 
 ### Options
 
