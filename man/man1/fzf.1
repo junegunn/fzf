@@ -33,6 +33,10 @@ fzf [options]
 fzf is a general-purpose command-line fuzzy finder.
 
 .SH OPTIONS
+.SS Note
+.TP
+Most long options have the opposite version with \fB--no-\fR prefix.
+
 .SS Search mode
 .TP
 .B "-x, --extended"
@@ -879,9 +883,24 @@ The default value is the current working directory.
 Comma-separated list of directory names to skip during the directory walk.
 The default value is \fB.git,node_modules\fR.
 
-.SS Note
+.SS Shell integration
 .TP
-Most options have the opposite versions with \fB--no-\fR prefix.
+.B "--bash"
+Print script to set up Bash shell integration
+
+e.g. \fBeval "$(fzf --bash)"\fR
+
+.TP
+.B "--zsh"
+Print script to set up Zsh shell integration
+
+e.g. \fBeval "$(fzf --zsh)"\fR
+
+.TP
+.B "--fish"
+Print script to set up Fish shell integration
+
+e.g. \fBfzf --fish | source\fR
 
 .SH ENVIRONMENT VARIABLES
 .TP

@@ -3,6 +3,22 @@ CHANGELOG
 
 0.48.0
 ------
+- Shell integration scripts are now embedded in the fzf binary. This simplifies the distribution, and the users are less likely to have problems caused by using incompatible scripts and binaries.
+    - bash
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      eval "$(fzf --bash)"
+      ```
+    - zsh
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      eval "$(fzf --zsh)"
+      ```
+    - fish
+      ```fish
+      # Set up fzf key bindings
+      fzf --fish | source
+      ```
 - Added options for customizing the behavior of the built-in walker
     | Option               | Description                                       | Default              |
     | ---                  | ---                                               | ---                  |
@@ -28,7 +44,7 @@ CHANGELOG
         export FZF_DEFAULT_COMMAND='seq 100'
         fzf --walker=dir
         ```
-- The shell extensions (key bindings and fuzzy completion) have been updated to use the built-in walker with these new options and they are now much faster out of the box.
+- Shell integration scripts have been updated to use the built-in walker with these new options and they are now much faster out of the box.
 
 0.47.0
 ------

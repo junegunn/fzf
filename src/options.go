@@ -130,6 +130,11 @@ const usage = `usage: fzf [options]
     --walker-skip=DIRS     Comma-separated list of directory names to skip
                            (default: .git,node_modules)
 
+  Shell integration
+    --bash                 Print script to set up Bash shell integration
+    --zsh                  Print script to set up Zsh shell integration
+    --fish                 Print script to set up Fish shell integration
+
   Environment variables
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
     FZF_DEFAULT_OPTS       Default options (e.g. '--layout=reverse --info=inline')
@@ -289,6 +294,9 @@ type walkerOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
+	Bash         bool
+	Zsh          bool
+	Fish         bool
 	Fuzzy        bool
 	FuzzyAlgo    algo.Algo
 	Scheme       string
@@ -377,6 +385,9 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
+		Bash:         false,
+		Zsh:          false,
+		Fish:         false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
 		Scheme:       "default",
@@ -1655,6 +1666,21 @@ func parseOptions(opts *Options, allArgs []string) {
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
+		case "--bash":
+			opts.Bash = true
+			if opts.Zsh || opts.Fish {
+				errorExit("cannot specify --bash with --zsh or --fish")
+			}
+		case "--zsh":
+			opts.Zsh = true
+			if opts.Bash || opts.Fish {
+				errorExit("cannot specify --zsh with --bash or --fish")
+			}
+		case "--fish":
+			opts.Fish = true
+			if opts.Bash || opts.Zsh {
+				errorExit("cannot specify --fish with --bash or --zsh")
+			}
 		case "-h", "--help":
 			help(exitOk)
 		case "-x", "--extended":

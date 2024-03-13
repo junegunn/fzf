@@ -94,6 +94,7 @@ done
 bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
 if [ -f "$bind_file" ]; then
   remove_line "$bind_file" "fzf_key_bindings"
+  remove_line "$bind_file" "fzf --fish | source"
 fi
 
 if [ -d "${fish_dir}/functions" ]; then
