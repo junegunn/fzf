@@ -55,6 +55,9 @@ var actionTypeRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
 
+// Number of maximum focus events to process synchronously
+const maxFocusEvents = 10000
+
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
@@ -3305,18 +3308,22 @@ func (t *Terminal) Loop() {
 		var doAction func(*action) bool
 		var doActions func(actions []*action) bool
 		doActions = func(actions []*action) bool {
-			currentIndex := t.currentIndex()
-			for _, action := range actions {
-				if !doAction(action) {
-					return false
+			for iter := 0; iter <= maxFocusEvents; iter++ {
+				currentIndex := t.currentIndex()
+				for _, action := range actions {
+					if !doAction(action) {
+						return false
+					}
 				}
-			}
 
-			if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs {
-				if newIndex := t.currentIndex(); newIndex != currentIndex {
-					t.lastFocus = newIndex
-					return doActions(onFocus)
+				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents {
+					if newIndex := t.currentIndex(); newIndex != currentIndex {
+						t.lastFocus = newIndex
+						actions = onFocus
+						continue
+					}
 				}
+				break
 			}
 			return true
 		}
