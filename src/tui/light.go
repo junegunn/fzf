@@ -808,13 +808,25 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
+	pad := repeat(' ', w.width/hw)
+
+	w.Move(0, 0)
 	if top {
-		w.Move(0, 0)
 		w.CPrint(color, repeat(w.border.top, w.width/hw))
+	} else {
+		w.CPrint(color, pad)
 	}
+
+	for y := 1; y < w.height-1; y++ {
+		w.Move(y, 0)
+		w.CPrint(color, pad)
+	}
+
+	w.Move(w.height-1, 0)
 	if bottom {
-		w.Move(w.height-1, 0)
 		w.CPrint(color, repeat(w.border.bottom, w.width/hw))
+	} else {
+		w.CPrint(color, pad)
 	}
 }
 

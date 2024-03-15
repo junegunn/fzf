@@ -1,21 +1,74 @@
 CHANGELOG
 =========
 
+0.48.0
+------
+- Shell integration scripts are now embedded in the fzf binary. This simplifies the distribution, and the users are less likely to have problems caused by using incompatible scripts and binaries.
+    - bash
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      eval "$(fzf --bash)"
+      ```
+    - zsh
+      ```sh
+      # Set up fzf key bindings and fuzzy completion
+      eval "$(fzf --zsh)"
+      ```
+    - fish
+      ```fish
+      # Set up fzf key bindings
+      fzf --fish | source
+      ```
+- Added options for customizing the behavior of the built-in walker
+    | Option               | Description                                       | Default              |
+    | ---                  | ---                                               | ---                  |
+    | `--walker=OPTS`      | Walker options (`[file][,dir][,follow][,hidden]`) | `file,follow,hidden` |
+    | `--walker-root=DIR`  | Root directory from which to start walker         | `.`                  |
+    | `--walker-skip=DIRS` | Comma-separated list of directory names to skip   | `.git,node_modules`  |
+    - Examples
+        ```sh
+        # Built-in walker is only used by standalone fzf when $FZF_DEFAULT_COMMAND is not set
+        unset FZF_DEFAULT_COMMAND
+
+        fzf # default: --walker=file,follow,hidden --walker-root=. --walker-skip=.git,node_modules
+        fzf --walker=file,dir,hidden,follow --walker-skip=.git,node_modules,target
+
+        # Walker options in $FZF_DEFAULT_OPTS
+        export FZF_DEFAULT_OPTS="--walker=file,dir,hidden,follow --walker-skip=.git,node_modules,target"
+        fzf
+
+        # Reading from STDIN; --walker is ignored
+        seq 100 | fzf --walker=dir
+
+        # Reading from $FZF_DEFAULT_COMMAND; --walker is ignored
+        export FZF_DEFAULT_COMMAND='seq 100'
+        fzf --walker=dir
+        ```
+- Shell integration scripts have been updated to use the built-in walker with these new options and they are now much faster out of the box.
+
 0.47.0
 ------
-- Replaced ["the default find command"][find] with a built-in directory traversal to simplify the code and to achieve better performance and consistent behavior across platforms.
+- Replaced ["the default find command"][find] with a built-in directory walker to simplify the code and to achieve better performance and consistent behavior across platforms.
   This doesn't affect you if you have `$FZF_DEFAULT_COMMAND` set.
     - Breaking changes:
         - Unlike [the previous "find" command][find], the new traversal code will list hidden files, but hidden directories will still be ignored
         - No filtering of `devtmpfs` or `proc` types
         - Traversal is parallelized, so the order of the entries will be different each time
-    - You would wonder why fzf implements directory traversal anyway when it's a filter program following the Unix philosophy.
-      But fzf has had [the traversal code for years][walker] to tackle the performance problem on Windows. And I decided to use the same approach on different platforms as well for the benefits listed above.
-    - Built-in traversal is now done using the excellent [charlievieth/fastwalk][fastwalk] library, which easily outperforms its competitors and supports safely following symlinks.
+    - You may wonder why fzf implements directory walker anyway when it's a filter program following the [Unix philosophy][unix].
+      But fzf has had [the walker code for years][walker] to tackle the performance problem on Windows. And I decided to use the same approach on different platforms as well for the benefits listed above.
+    - Built-in walker is using the excellent [charlievieth/fastwalk][fastwalk] library, which easily outperforms its competitors and supports safely following symlinks.
+- Added `$FZF_DEFAULT_OPTS_FILE` to allow managing default options in a file
+    - See [#3618](https://github.com/junegunn/fzf/pull/3618)
+    - Option precedence from lower to higher
+        1. Options read from `$FZF_DEFAULT_OPTS_FILE`
+        1. Options from `$FZF_DEFAULT_OPTS`
+        1. Options from command-line arguments
+- Bug fixes and improvements
 
 [find]: https://github.com/junegunn/fzf/blob/0.46.1/src/constants.go#L60-L64
 [walker]: https://github.com/junegunn/fzf/pull/1847
 [fastwalk]: https://github.com/charlievieth/fastwalk
+[unix]: https://en.wikipedia.org/wiki/Unix_philosophy
 
 0.46.1
 ------

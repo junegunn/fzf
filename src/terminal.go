@@ -55,6 +55,9 @@ var actionTypeRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
 
+// Number of maximum focus events to process synchronously
+const maxFocusEvents = 10000
+
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
@@ -67,7 +70,7 @@ func init() {
 	// * https://sw.kovidgoyal.net/kitty/graphics-protocol
 	// * https://en.wikipedia.org/wiki/Sixel
 	// * https://iterm2.com/documentation-images.html
-	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?\a`)
+	passThroughRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b.*?[^\x1b]\x1b\\|\x1b(_G|P[0-9;]*q).*?\x1b\\\r?|\x1b]1337;.*?(\a|\x1b\\)`)
 }
 
 type jumpMode int
@@ -829,7 +832,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenAddr != nil {
-		err, port := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
+		port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
 		if err != nil {
 			errorExit(err.Error())
 		}
@@ -3161,7 +3164,7 @@ func (t *Terminal) Loop() {
 						}
 						t.previewer.lines = result.lines
 						t.previewer.spinner = result.spinner
-						if t.previewer.following.Enabled() {
+						if t.hasPreviewWindow() && t.previewer.following.Enabled() {
 							t.previewer.offset = util.Max(t.previewer.offset, len(t.previewer.lines)-(t.pwindow.Height()-t.previewOpts.headerLines))
 						} else if result.offset >= 0 {
 							t.previewer.offset = util.Constrain(result.offset, t.previewOpts.headerLines, len(t.previewer.lines)-1)
@@ -3305,18 +3308,22 @@ func (t *Terminal) Loop() {
 		var doAction func(*action) bool
 		var doActions func(actions []*action) bool
 		doActions = func(actions []*action) bool {
-			currentIndex := t.currentIndex()
-			for _, action := range actions {
-				if !doAction(action) {
-					return false
+			for iter := 0; iter <= maxFocusEvents; iter++ {
+				currentIndex := t.currentIndex()
+				for _, action := range actions {
+					if !doAction(action) {
+						return false
+					}
 				}
-			}
 
-			if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs {
-				if newIndex := t.currentIndex(); newIndex != currentIndex {
-					t.lastFocus = newIndex
-					return doActions(onFocus)
+				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents {
+					if newIndex := t.currentIndex(); newIndex != currentIndex {
+						t.lastFocus = newIndex
+						actions = onFocus
+						continue
+					}
 				}
+				break
 			}
 			return true
 		}
@@ -3382,6 +3389,9 @@ func (t *Terminal) Loop() {
 						// Discard the preview content so that it won't accidentally appear
 						// when preview window is re-enabled and previewDelay is triggered
 						t.previewer.lines = nil
+
+						// Also kill the preview process if it's still running
+						t.cancelPreview()
 					}
 				}
 			case actTogglePreviewWrap:
@@ -3988,11 +3998,18 @@ func (t *Terminal) Loop() {
 
 				// Full redraw
 				if !currentPreviewOpts.sameLayout(t.previewOpts) {
-					wasHidden := t.pwindow == nil
+					// Preview command can be running in the background if the size of
+					// the preview window is 0 but not 'hidden'
+					wasHidden := currentPreviewOpts.hidden
 					updatePreviewWindow(false)
 					if wasHidden && t.hasPreviewWindow() {
+						// Restart
 						refreshPreview(t.previewOpts.command)
+					} else if t.previewOpts.hidden {
+						// Cancel
+						t.cancelPreview()
 					} else {
+						// Refresh
 						req(reqPreviewRefresh)
 					}
 				} else if !currentPreviewOpts.sameContentLayout(t.previewOpts) {

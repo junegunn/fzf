@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Feb 2024" "fzf 0.46.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Mar 2024" "fzf 0.48.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -33,6 +33,10 @@ fzf [options]
 fzf is a general-purpose command-line fuzzy finder.
 
 .SH OPTIONS
+.SS Note
+.TP
+Most long options have the opposite version with \fB--no-\fR prefix.
+
 .SS Search mode
 .TP
 .B "-x, --extended"
@@ -620,7 +624,7 @@ The following example uses https://github.com/junegunn/fzf/blob/master/bin/fzf-p
 script to render an image using either of the protocols inside the preview window.
 
 e.g.
-      \fBfzf --preview='fzf-preview.sh {}'
+      \fBfzf --preview='fzf-preview.sh {}'\fR
 
 .RE
 
@@ -854,8 +858,49 @@ e.g.
 .B "--version"
 Display version information and exit
 
+.SS Directory traversal
 .TP
-Note that most options have the opposite versions with \fB--no-\fR prefix.
+.B "--walker=[file][,dir][,follow][,hidden]"
+Determines the behavior of the built-in directory walker that is used when
+\fB$FZF_DEFAULT_COMMAND\fR is not set. The default value is \fBfile,follow,hidden\fR.
+
+* \fBfile\fR: Include files in the search result
+.br
+* \fBdir\fR: Include directories in the search result
+.br
+* \fBhidden\fR: Include and follow hidden directories
+.br
+* \fBfollow\fR: Follow symbolic links
+.br
+
+.TP
+.B "--walker-root=DIR"
+The root directory from which to start the built-in directory walker.
+The default value is the current working directory.
+
+.TP
+.B "--walker-skip=DIRS"
+Comma-separated list of directory names to skip during the directory walk.
+The default value is \fB.git,node_modules\fR.
+
+.SS Shell integration
+.TP
+.B "--bash"
+Print script to set up Bash shell integration
+
+e.g. \fBeval "$(fzf --bash)"\fR
+
+.TP
+.B "--zsh"
+Print script to set up Zsh shell integration
+
+e.g. \fBeval "$(fzf --zsh)"\fR
+
+.TP
+.B "--fish"
+Print script to set up Fish shell integration
+
+e.g. \fBfzf --fish | source\fR
 
 .SH ENVIRONMENT VARIABLES
 .TP
@@ -865,7 +910,14 @@ with \fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise with \fBsh -c\fR, so in
 this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
-Default options. e.g. \fBexport FZF_DEFAULT_OPTS="--extended --cycle"\fR
+Default options.
+.br
+e.g. \fBexport FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"\fR
+.TP
+.B FZF_DEFAULT_OPTS_FILE
+The location of the file that contains the default options.
+.br
+e.g. \fBexport FZF_DEFAULT_OPTS_FILE=~/.fzfrc\fR
 .TP
 .B FZF_API_KEY
 Can be used to require an API key when using \fB--listen\fR option. If not set,
