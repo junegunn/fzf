@@ -10,7 +10,7 @@
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
 [[ -o interactive ]] || return 0
-
+[[ "${FZF_COMPLETION_TRIGGER-x}" != "" ]] || return 0
 
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
