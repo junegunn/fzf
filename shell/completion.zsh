@@ -11,6 +11,7 @@
 
 [[ -o interactive ]] || return 0
 
+
 # Both branches of the following `if` do the same thing -- define
 # __fzf_completion_options such that `eval $__fzf_completion_options` sets
 # all options to the same values they currently have. We'll do just that at
