@@ -67,7 +67,7 @@ class Shell
     end
 
     def fish
-      UNSETS.map { |v| v + '= ' }.join + ' FZF_DEFAULT_OPTS=--no-scrollbar fish'
+      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=--no-scrollbar fish"
     end
   end
 end
