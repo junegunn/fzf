@@ -18,7 +18,6 @@ UNSETS = %w[
   FZF_ALT_C_COMMAND
   FZF_ALT_C_OPTS FZF_CTRL_R_OPTS
   FZF_API_KEY
-  fish_history
 ].freeze
 DEFAULT_TIMEOUT = 10
 
@@ -67,7 +66,7 @@ class Shell
     end
 
     def fish
-      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=--no-scrollbar fish"
+      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=--no-scrollbar fish_history= fish"
     end
   end
 end
