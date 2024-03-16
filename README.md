@@ -763,7 +763,7 @@ fzf --preview 'cat {}'
 Preview window supports ANSI colors, so you can use any program that
 syntax-highlights the content of a file, such as
 [Bat](https://github.com/sharkdp/bat) or
-[Highlight](http://www.andre-simon.de/doku/highlight/en/highlight.php):
+[Highlight](https://gitlab.com/saalen/highlight):
 
 ```bash
 fzf --preview 'bat --color=always {}' --preview-window '~3'
