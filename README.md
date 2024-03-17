@@ -216,6 +216,22 @@ Add the following line to your shell configuration file.
 > fzf 0.48.0 or above. If you have an older version of fzf, refer to the
 > package documentation for more information. (e.g. `apt show fzf`)
 
+> [!TIP]
+> You can disable CTRL-T or ALT-C binding by setting `FZF_CTRL_T_COMMAND` or
+> `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
+> For example, to disable ALT-C binding:
+> ```sh
+> # bash
+> FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+>
+> # zsh
+> FZF_ALT_C_COMMAND= eval "$(fzf --zsh)"
+>
+> # fish
+> fzf --fish | FZF_ALT_C_COMMAND= source
+> ```
+> Setting the variables after sourcing the script will have no effect.
+
 ### As Vim plugin
 
 If you use
