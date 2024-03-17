@@ -437,6 +437,8 @@ fish.
         --preview 'bat -n --color=always {}'
         --bind 'ctrl-/:change-preview-window(down|hidden|)'"
       ```
+    - Can be disabled by setting `FZF_CTRL_T_COMMAND` to an empty string when
+      sourcing the script
 - `CTRL-R` - Paste the selected command from history onto the command-line
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
@@ -462,6 +464,8 @@ fish.
         --walker-skip .git,node_modules,target
         --preview 'tree -C {}'"
       ```
+    - Can be disabled by setting `FZF_ALT_C_COMMAND` to an empty string when
+      sourcing the script
 
 If you're on a tmux session, you can start fzf in a tmux split-pane or in
 a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `export FZF_TMUX_OPTS='-p80%,60%'`).
