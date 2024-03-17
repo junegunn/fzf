@@ -1060,11 +1060,11 @@ func (t *Terminal) UpdateProgress(progress float32) {
 // UpdateList updates Merger to display the list
 func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Lock()
-	var prevIndex int32 = -1
+	prevIndex := minItem.Index()
 	reset := t.revision != merger.Revision()
 	if !reset && t.track != trackDisabled {
 		if t.merger.Length() > 0 {
-			prevIndex = t.merger.Get(t.cy).item.Index()
+			prevIndex = t.currentIndex()
 		} else if merger.Length() > 0 {
 			prevIndex = merger.First().item.Index()
 		}
@@ -4121,7 +4121,7 @@ func (t *Terminal) constrain() {
 	// count of lines can be displayed
 	height := t.maxItems()
 
-	t.cy = util.Constrain(t.cy, 0, count-1)
+	t.cy = util.Constrain(t.cy, 0, util.Max(0, count-1))
 
 	minOffset := util.Max(t.cy-height+1, 0)
 	maxOffset := util.Max(util.Min(count-height, t.cy), 0)
