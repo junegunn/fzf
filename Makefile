@@ -4,7 +4,7 @@ GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
-SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
+SOURCES        := $(wildcard *.go src/*.go src/*/*.go shell/*sh) $(MAKEFILE)
 
 ifdef FZF_VERSION
 VERSION        := $(FZF_VERSION)
