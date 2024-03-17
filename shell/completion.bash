@@ -291,7 +291,7 @@ _fzf_handle_dynamic_completion() {
     "$REPLY" "$@"
   elif [[ -n "${_fzf_completion_loader-}" ]]; then
     orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
-    _completion_loader "$@"
+    $_fzf_completion_loader "$@"
     ret=$?
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
@@ -516,8 +516,16 @@ a_cmds="
 # Preserve existing completion
 __fzf_orig_completion < <(complete -p $d_cmds $a_cmds ssh 2> /dev/null)
 
-if type _completion_loader > /dev/null 2>&1; then
-  _fzf_completion_loader=1
+if type _comp_load > /dev/null 2>&1; then
+  # _comp_load was added in bash-completion 2.12 to replace _completion_loader.
+  # We use it without -D option so that it does not use _comp_complete_minimal as the fallback.
+  _fzf_completion_loader=_comp_load
+elif type __load_completion > /dev/null 2>&1; then
+  # In bash-completion 2.11, _completion_loader internally calls __load_completion
+  # and if it returns a non-zero status, it sets the default 'minimal' completion.
+  _fzf_completion_loader=__load_completion
+elif type _completion_loader > /dev/null 2>&1; then
+  _fzf_completion_loader=_completion_loader
 fi
 
 __fzf_defc() {
