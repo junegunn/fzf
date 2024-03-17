@@ -220,9 +220,11 @@ Add the following line to your shell configuration file.
 > You can disable CTRL-T or ALT-C binding by setting `FZF_CTRL_T_COMMAND` or
 > `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
 > For example, to disable ALT-C binding:
+>
 > * bash: `FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
 > * zsh: `FZF_ALT_C_COMMAND= eval "$(fzf --zsh)"`
 > * fish: `fzf --fish | FZF_ALT_C_COMMAND= source`
+>
 > Setting the variables after sourcing the script will have no effect.
 
 ### As Vim plugin
