@@ -1,6 +1,6 @@
 ---
 name: Issue Template
-description: Report a problem or bug related to FZF to help us improve
+description: Report a problem or bug related to fzf to help us improve
 
 body:
   - type: markdown
@@ -18,8 +18,8 @@ body:
 
   - type: input
     attributes:
-      label: fzf version
-      placeholder: e.g. 0.48.1
+      label: Output of `fzf --version`
+      placeholder: e.g. 0.48.1 (d579e33)
     validations:
       required: true
 
