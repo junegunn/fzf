@@ -3772,6 +3772,8 @@ func (t *Terminal) Loop() {
 				req(reqPrompt)
 			case actToggleTrack:
 				switch t.track {
+				case trackCurrent:
+					fallthrough
 				case trackEnabled:
 					t.track = trackDisabled
 				case trackDisabled:
