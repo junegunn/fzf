@@ -1,0 +1,47 @@
+---
+name: Issue Template
+description: Report a problem or bug related to fzf to help us improve
+
+body:
+  - type: markdown
+    attributes:
+      value: ISSUES NOT FOLLOWING THIS TEMPLATE WILL BE CLOSED AND DELETED
+
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I have read through the manual page (`man fzf`)
+          required: true
+        - label: I have searched through the existing issues
+          required: true
+
+  - type: input
+    attributes:
+      label: Output of `fzf --version`
+      placeholder: e.g. 0.48.1 (d579e33)
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: OS
+      options:
+        - label: Linux
+        - label: macOS
+        - label: Windows
+        - label: Etc.
+
+  - type: checkboxes
+    attributes:
+      label: Shell
+      options:
+        - label: bash
+        - label: zsh
+        - label: fish
+
+  - type: textarea
+    attributes:
+      label: Problem / Steps to reproduce
+    validations:
+      required: true

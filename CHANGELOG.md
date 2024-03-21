@@ -1,6 +1,22 @@
 CHANGELOG
 =========
 
+0.48.1
+------
+- CTRL-T and ALT-C bindings can be disabled by setting `FZF_CTRL_T_COMMAND` and `FZF_ALT_C_COMMAND` to empty strings respectively when sourcing the script
+    ```sh
+    # bash
+    FZF_CTRL_T_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+
+    # zsh
+    FZF_CTRL_T_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --zsh)"
+
+    # fish
+    fzf --fish | FZF_CTRL_T_COMMAND= FZF_ALT_C_COMMAND= source
+    ```
+    - Setting the variables after sourcing the script will have no effect
+- Bug fixes
+
 0.48.0
 ------
 - Shell integration scripts are now embedded in the fzf binary. This simplifies the distribution, and the users are less likely to have problems caused by using incompatible scripts and binaries.
