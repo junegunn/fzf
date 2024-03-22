@@ -72,6 +72,7 @@ func Run(opts *Options, version string, revision string) {
 			}
 			item.text, item.colors = ansiProcessor(data)
 			item.text.Index = itemIndex
+			item.origText = &data
 			itemIndex++
 			return true
 		})
