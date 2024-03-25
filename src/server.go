@@ -32,6 +32,7 @@ const (
 	httpUnauthorized = "HTTP/1.1 401 Unauthorized" + crlf
 	httpUnavailable  = "HTTP/1.1 503 Service Unavailable" + crlf
 	httpReadTimeout  = 10 * time.Second
+	channelTimeout   = 2 * time.Second
 	jsonContentType  = "Content-Type: application/json" + crlf
 	maxContentLength = 1024 * 1024
 )
@@ -170,7 +171,7 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 				select {
 				case response := <-server.responseChannel:
 					return good(response)
-				case <-time.After(2 * time.Second):
+				case <-time.After(channelTimeout):
 					go func() {
 						// Drain the channel
 						<-server.responseChannel
@@ -227,7 +228,11 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		return bad("no action specified")
 	}
 
-	server.actionChannel <- actions
+	select {
+	case server.actionChannel <- actions:
+	case <-time.After(channelTimeout):
+		return httpUnavailable + crlf
+	}
 	return httpOk + crlf
 }
 
