@@ -850,6 +850,7 @@ func (t *Terminal) environ() []string {
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_PROMPT="+string(t.promptString))
+	env = append(env, "FZF_PREVIEW_LABEL="+t.previewLabelOpts.label)
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
@@ -3476,6 +3477,7 @@ func (t *Terminal) Loop() {
 					req(reqRedrawBorderLabel)
 				}
 			case actChangePreviewLabel:
+				t.previewLabelOpts.label = a.a
 				if t.pborder != nil {
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
 					req(reqRedrawPreviewLabel)
@@ -3491,8 +3493,9 @@ func (t *Terminal) Loop() {
 					req(reqRedrawBorderLabel)
 				}
 			case actTransformPreviewLabel:
+				label := t.executeCommand(a.a, false, true, true, true)
+				t.previewLabelOpts.label = label
 				if t.pborder != nil {
-					label := t.executeCommand(a.a, false, true, true, true)
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
 					req(reqRedrawPreviewLabel)
 				}
