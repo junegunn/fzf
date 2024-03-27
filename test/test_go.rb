@@ -2538,7 +2538,7 @@ class TestGoFZF < TestBase
     tmux.send_keys '9'
     tmux.until { |lines| assert_equal 99, lines.match_count }
 
-    # TODO: How do we verify if an intermedite empty list is not shown?
+    # TODO: How do we verify if an intermediate empty list is not shown?
   end
 
   def test_scroll_off
