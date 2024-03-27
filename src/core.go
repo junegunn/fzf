@@ -245,11 +245,8 @@ func Run(opts *Options, version string, revision string) {
 		delay := true
 		ticks++
 		input := func() []rune {
-			reloaded := snapshotRevision != inputRevision
 			paused, input := terminal.Input()
-			if reloaded && paused {
-				query = []rune{}
-			} else if !paused {
+			if !paused {
 				query = input
 			}
 			return query
@@ -278,6 +275,9 @@ func Run(opts *Options, version string, revision string) {
 						useSnapshot = false
 					}
 					if !useSnapshot {
+						if snapshotRevision != inputRevision {
+							query = []rune{}
+						}
 						snapshot, count = chunkList.Snapshot()
 						snapshotRevision = inputRevision
 					}
@@ -319,10 +319,13 @@ func Run(opts *Options, version string, revision string) {
 						break
 					}
 					if !useSnapshot {
-						newSnapshot, _ := chunkList.Snapshot()
+						newSnapshot, newCount := chunkList.Snapshot()
 						// We want to avoid showing empty list when reload is triggered
 						// and the query string is changed at the same time i.e. command != nil && changed
-						if command == nil || len(newSnapshot) > 0 {
+						if command == nil || newCount > 0 {
+							if snapshotRevision != inputRevision {
+								query = []rune{}
+							}
 							snapshot = newSnapshot
 							snapshotRevision = inputRevision
 						}

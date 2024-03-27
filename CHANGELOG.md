@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.48.2
+------
+- Bug fixes
+
 0.48.1
 ------
 - CTRL-T and ALT-C bindings can be disabled by setting `FZF_CTRL_T_COMMAND` and `FZF_ALT_C_COMMAND` to empty strings respectively when sourcing the script

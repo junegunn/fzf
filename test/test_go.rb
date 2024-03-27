@@ -2463,6 +2463,84 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 10, lines.match_count }
   end
 
+  def test_reload_disabled_case1
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case2
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload-sync(sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case3
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(sleep 2; seq 1000)+backward-delete-char'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case4
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload-sync(sleep 2; seq 1000)+backward-delete-char'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case5
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(echo xx; sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 1, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1001, lines.match_count }
+  end
+
+  def test_reload_disabled_case6
+    tmux.send_keys "seq 1000 | #{FZF} --disabled --bind 'change:reload:sleep 0.5; seq {q}'", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys '9'
+    tmux.until { |lines| assert_equal 9, lines.match_count }
+    tmux.send_keys '9'
+    tmux.until { |lines| assert_equal 99, lines.match_count }
+
+    # TODO: How do we verify if an intermedite empty list is not shown?
+  end
+
   def test_scroll_off
     tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
     tmux.until { |lines| assert_equal 1000, lines.item_count }
