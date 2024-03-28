@@ -3080,7 +3080,7 @@ class TestGoFZF < TestBase
     end
     tmux.send_keys :t
     tmux.until do |lines|
-      assert_includes lines[-2], '+T'
+      assert_includes lines[-2], '+t'
     end
     tmux.send_keys :BSpace
     tmux.until do |lines|
@@ -3092,7 +3092,7 @@ class TestGoFZF < TestBase
     tmux.send_keys '4'
     tmux.until do |lines|
       assert_equal 28, lines.match_count
-      refute_includes lines[-2], '+T'
+      refute_includes lines[-2], '+t'
     end
     tmux.send_keys :BSpace
     tmux.until do |lines|
@@ -3101,11 +3101,11 @@ class TestGoFZF < TestBase
     end
     tmux.send_keys :t
     tmux.until do |lines|
-      assert_includes lines[-2], '+T'
+      assert_includes lines[-2], '+t'
     end
     tmux.send_keys :Up
     tmux.until do |lines|
-      refute_includes lines[-2], '+T'
+      refute_includes lines[-2], '+t'
     end
   end
 
