@@ -2877,6 +2877,27 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_labels_variables
+    tmux.send_keys ': | fzf --border --border-label foobar --preview "echo \$FZF_BORDER_LABEL // \$FZF_PREVIEW_LABEL" --preview-label barfoo --bind "space:change-border-label(barbaz)+change-preview-label(bazbar)+refresh-preview,enter:transform-border-label(echo 123)+transform-preview-label(echo 456)+refresh-preview"', :Enter
+    tmux.until do
+      assert_includes(_1[0], '─foobar─')
+      assert_includes(_1[1], '─barfoo─')
+      assert_includes(_1[2], ' foobar // barfoo ')
+    end
+    tmux.send_keys :Space
+    tmux.until do
+      assert_includes(_1[0], '─barbaz─')
+      assert_includes(_1[1], '─bazbar─')
+      assert_includes(_1[2], ' barbaz // bazbar ')
+    end
+    tmux.send_keys :Enter
+    tmux.until do
+      assert_includes(_1[0], '─123─')
+      assert_includes(_1[1], '─456─')
+      assert_includes(_1[2], ' 123 // 456 ')
+    end
+  end
+
   def test_info_separator_unicode
     tmux.send_keys 'seq 100 | fzf -q55', :Enter
     tmux.until { assert_includes(_1[-2], '  1/100 ─') }
