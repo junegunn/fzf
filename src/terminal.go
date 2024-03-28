@@ -3490,7 +3490,7 @@ func (t *Terminal) Loop() {
 				return doActions(actions)
 			case actTransformBorderLabel:
 				label := t.executeCommand(a.a, false, true, true, true)
-				t.borderLabelOpts.label = a.a
+				t.borderLabelOpts.label = label
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
