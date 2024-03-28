@@ -394,8 +394,10 @@ const (
 	actToggleIn
 	actToggleOut
 	actToggleTrack
+	actToggleTrackCurrent
 	actToggleHeader
-	actTrack
+	actTrackCurrent
+	actUntrackCurrent
 	actDown
 	actUp
 	actPageUp
@@ -1647,8 +1649,11 @@ func (t *Terminal) printInfo() {
 			output += " -S"
 		}
 	}
-	if t.track != trackDisabled {
+	switch t.track {
+	case trackEnabled:
 		output += " +T"
+	case trackCurrent:
+		output += " +t"
 	}
 	if t.multi > 0 {
 		if t.multi == maxMulti {
@@ -3784,6 +3789,14 @@ func (t *Terminal) Loop() {
 					t.track = trackEnabled
 				}
 				req(reqInfo)
+			case actToggleTrackCurrent:
+				switch t.track {
+				case trackCurrent:
+					t.track = trackDisabled
+				case trackDisabled:
+					t.track = trackCurrent
+				}
+				req(reqInfo)
 			case actShowHeader:
 				t.headerVisible = true
 				req(reqList, reqInfo, reqPrompt, reqHeader)
@@ -3793,9 +3806,14 @@ func (t *Terminal) Loop() {
 			case actToggleHeader:
 				t.headerVisible = !t.headerVisible
 				req(reqList, reqInfo, reqPrompt, reqHeader)
-			case actTrack:
+			case actTrackCurrent:
 				if t.track == trackDisabled {
 					t.track = trackCurrent
+				}
+				req(reqInfo)
+			case actUntrackCurrent:
+				if t.track == trackCurrent {
+					t.track = trackDisabled
 				}
 				req(reqInfo)
 			case actEnableSearch:

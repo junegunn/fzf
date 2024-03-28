@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
-0.48.2
+0.49.0
 ------
+- Renamed `track` action to `track-current` to highlight the difference between the global tracking state set by `--track` and a one-off tracking action
+    - `track` is still available as an alias
+- Added `untrack-current` and `toggle-track-current` actions
+    - `*-current` actions are no-op when the global tracking state is set
 - Bug fixes
 
 0.48.1
