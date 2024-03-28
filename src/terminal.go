@@ -851,6 +851,7 @@ func (t *Terminal) environ() []string {
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_PROMPT="+string(t.promptString))
 	env = append(env, "FZF_PREVIEW_LABEL="+t.previewLabelOpts.label)
+	env = append(env, "FZF_BORDER_LABEL="+t.borderLabelOpts.label)
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
@@ -3472,6 +3473,7 @@ func (t *Terminal) Loop() {
 					req(reqHeader)
 				}
 			case actChangeBorderLabel:
+				t.borderLabelOpts.label = a.a
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
@@ -3487,8 +3489,9 @@ func (t *Terminal) Loop() {
 				actions := parseSingleActionList(strings.Trim(body, "\r\n"), func(message string) {})
 				return doActions(actions)
 			case actTransformBorderLabel:
+				label := t.executeCommand(a.a, false, true, true, true)
+				t.borderLabelOpts.label = a.a
 				if t.border != nil {
-					label := t.executeCommand(a.a, false, true, true, true)
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
