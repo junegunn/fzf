@@ -3,6 +3,18 @@ CHANGELOG
 
 0.49.0
 ------
+- Added two environment variables exported to the child processes
+    - `FZF_PREVIEW_LABEL`
+    - `FZF_BORDER_LABEL`
+    ```sh
+    # Use the current value of $$FZF_PREVIEW_LABEL to determine which actions to perform
+    git log --date=short --format="%C(green)%C(bold)%cd %C(auto)%h%d %s (%an)" --graph --color=always |
+      fzf --ansi --reverse \
+        --header 'Press CTRL-P to toggle preview' \
+        --bind='ctrl-p:transform:[[ $FZF_PREVIEW_LABEL =~ diff ]] \
+          && echo "change-preview(grep -o \"[a-f0-9]\{7,\}\" <<< \{} | xargs git show --color=always)+change-preview-label([[ show ]])" \
+          || echo "change-preview(grep -o \"[a-f0-9]\{7,\}\" <<< \{} | xargs git diff --color=always)+change-preview-label([[ diff ]])"'
+    ```
 - Renamed `track` action to `track-current` to highlight the difference between the global tracking state set by `--track` and a one-off tracking action
     - `track` is still available as an alias
 - Added `untrack-current` and `toggle-track-current` actions
