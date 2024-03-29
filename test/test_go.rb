@@ -2463,6 +2463,84 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 10, lines.match_count }
   end
 
+  def test_reload_disabled_case1
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case2
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload-sync(sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case3
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(sleep 2; seq 1000)+backward-delete-char'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case4
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload-sync(sleep 2; seq 1000)+backward-delete-char'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+  end
+
+  def test_reload_disabled_case5
+    tmux.send_keys "seq 100 | #{FZF} --query 99 --bind 'space:disable-search+reload(echo xx; sleep 2; seq 1000)'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 1, lines.item_count
+      assert_equal 1, lines.match_count
+    end
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 1001, lines.match_count }
+  end
+
+  def test_reload_disabled_case6
+    tmux.send_keys "seq 1000 | #{FZF} --disabled --bind 'change:reload:sleep 0.5; seq {q}'", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys '9'
+    tmux.until { |lines| assert_equal 9, lines.match_count }
+    tmux.send_keys '9'
+    tmux.until { |lines| assert_equal 99, lines.match_count }
+
+    # TODO: How do we verify if an intermediate empty list is not shown?
+  end
+
   def test_scroll_off
     tmux.send_keys "seq 1000 | #{FZF} --scroll-off=3 --bind l:last", :Enter
     tmux.until { |lines| assert_equal 1000, lines.item_count }
@@ -2799,6 +2877,27 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_labels_variables
+    tmux.send_keys ': | fzf --border --border-label foobar --preview "echo \$FZF_BORDER_LABEL // \$FZF_PREVIEW_LABEL" --preview-label barfoo --bind "space:change-border-label(barbaz)+change-preview-label(bazbar)+refresh-preview,enter:transform-border-label(echo 123)+transform-preview-label(echo 456)+refresh-preview"', :Enter
+    tmux.until do
+      assert_includes(_1[0], '─foobar─')
+      assert_includes(_1[1], '─barfoo─')
+      assert_includes(_1[2], ' foobar // barfoo ')
+    end
+    tmux.send_keys :Space
+    tmux.until do
+      assert_includes(_1[0], '─barbaz─')
+      assert_includes(_1[1], '─bazbar─')
+      assert_includes(_1[2], ' barbaz // bazbar ')
+    end
+    tmux.send_keys :Enter
+    tmux.until do
+      assert_includes(_1[0], '─123─')
+      assert_includes(_1[1], '─456─')
+      assert_includes(_1[2], ' 123 // 456 ')
+    end
+  end
+
   def test_info_separator_unicode
     tmux.send_keys 'seq 100 | fzf -q55', :Enter
     tmux.until { assert_includes(_1[-2], '  1/100 ─') }
@@ -3002,7 +3101,7 @@ class TestGoFZF < TestBase
     end
     tmux.send_keys :t
     tmux.until do |lines|
-      assert_includes lines[-2], '+T'
+      assert_includes lines[-2], '+t'
     end
     tmux.send_keys :BSpace
     tmux.until do |lines|
@@ -3014,7 +3113,7 @@ class TestGoFZF < TestBase
     tmux.send_keys '4'
     tmux.until do |lines|
       assert_equal 28, lines.match_count
-      refute_includes lines[-2], '+T'
+      refute_includes lines[-2], '+t'
     end
     tmux.send_keys :BSpace
     tmux.until do |lines|
@@ -3023,11 +3122,11 @@ class TestGoFZF < TestBase
     end
     tmux.send_keys :t
     tmux.until do |lines|
-      assert_includes lines[-2], '+T'
+      assert_includes lines[-2], '+t'
     end
     tmux.send_keys :Up
     tmux.until do |lines|
-      refute_includes lines[-2], '+T'
+      refute_includes lines[-2], '+t'
     end
   end
 
@@ -3307,7 +3406,10 @@ module CompletionTest
     tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'foobar$'
-    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert lines.any_include?('> /tmp/fzf test/foobar')
+    end
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'cat /tmp/fzf\ test/foobar', lines[-1] }
 

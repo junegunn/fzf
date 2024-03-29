@@ -308,6 +308,7 @@ _fzf_handle_dynamic_completion() {
         eval "$orig_complete"
       fi
     fi
+    [[ $ret -eq 0 ]] && return 124
     return $ret
   fi
 }
