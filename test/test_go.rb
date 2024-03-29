@@ -3406,7 +3406,10 @@ module CompletionTest
     tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'foobar$'
-    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert lines.any_include?('> /tmp/fzf test/foobar')
+    end
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'cat /tmp/fzf\ test/foobar', lines[-1] }
 
