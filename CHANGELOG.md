@@ -3,6 +3,7 @@ CHANGELOG
 
 0.49.0
 ------
+- Ingestion performance improved by around 20%
 - Added two environment variables exported to the child processes
     - `FZF_PREVIEW_LABEL`
     - `FZF_BORDER_LABEL`
