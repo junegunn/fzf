@@ -23,6 +23,10 @@ func ustring(data []byte) string {
 	return unsafe.String(unsafe.SliceData(data), len(data))
 }
 
+func sbytes(data string) []byte {
+	return unsafe.Slice(unsafe.StringData(data), len(data))
+}
+
 // Run starts fzf
 func Run(opts *Options, version string, revision string) {
 	sort := opts.Sort > 0
@@ -52,14 +56,14 @@ func Run(opts *Options, version string, revision string) {
 				prevLineAnsiState = lineAnsiState
 				trimmed, offsets, newState := extractColor(ustring(data), lineAnsiState, nil)
 				lineAnsiState = newState
-				return util.ToChars([]byte(trimmed)), offsets
+				return util.ToChars(sbytes(trimmed)), offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				trimmed, _, _ := extractColor(ustring(data), nil, nil)
-				return util.ToChars([]byte(trimmed)), nil
+				return util.ToChars(sbytes(trimmed)), nil
 			}
 		}
 	}
@@ -106,7 +110,7 @@ func Run(opts *Options, version string, revision string) {
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
-			item.text, item.colors = ansiProcessor([]byte(transformed))
+			item.text, item.colors = ansiProcessor(sbytes(transformed))
 			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
