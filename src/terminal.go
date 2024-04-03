@@ -181,7 +181,7 @@ type Status struct {
 type Terminal struct {
 	initDelay          time.Duration
 	infoStyle          infoStyle
-	infoSep            string
+	infoPrefix         string
 	separator          labelPrinter
 	separatorLen       int
 	spinner            []string
@@ -677,7 +677,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
 				effectiveMinHeight += 1 + borderLines(opts.Preview.border)
 			}
-			if opts.InfoStyle.noExtraLine() {
+			if noSeparatorLine(opts.InfoStyle, opts.Separator == nil || uniseg.StringWidth(*opts.Separator) > 0) {
 				effectiveMinHeight--
 			}
 			effectiveMinHeight += borderLines(opts.BorderShape)
@@ -699,7 +699,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 	t := Terminal{
 		initDelay:          delay,
 		infoStyle:          opts.InfoStyle,
-		infoSep:            opts.InfoSep,
+		infoPrefix:         opts.InfoPrefix,
 		separator:          nil,
 		spinner:            makeSpinner(opts.Unicode),
 		promptString:       opts.Prompt,
@@ -882,7 +882,7 @@ func (t *Terminal) visibleHeaderLines() int {
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
 	extra := t.visibleHeaderLines() + 1
-	if !t.noInfoLine() {
+	if !t.noSeparatorLine() {
 		extra++
 	}
 	return extra
@@ -988,8 +988,18 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	return output, promptLen
 }
 
-func (t *Terminal) noInfoLine() bool {
-	return t.infoStyle.noExtraLine()
+func noSeparatorLine(style infoStyle, separator bool) bool {
+	switch style {
+	case infoInline:
+		return true
+	case infoHidden, infoInlineRight:
+		return !separator
+	}
+	return false
+}
+
+func (t *Terminal) noSeparatorLine() bool {
+	return noSeparatorLine(t.infoStyle, t.separatorLen > 0)
 }
 
 func getScrollbar(total int, height int, offset int) (int, int) {
@@ -1241,7 +1251,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
-	if t.noInfoLine() {
+	if t.noSeparatorLine() {
 		minAreaHeight -= 1
 	}
 	if t.needPreviewWindow() {
@@ -1522,7 +1532,7 @@ func (t *Terminal) move(y int, x int, clear bool) {
 		y = h - y - 1
 	case layoutReverseList:
 		n := 2 + t.visibleHeaderLines()
-		if t.noInfoLine() {
+		if t.noSeparatorLine() {
 			n--
 		}
 		if y < n {
@@ -1562,7 +1572,7 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 func (t *Terminal) promptLine() int {
 	if t.headerFirst {
 		max := t.window.Height() - 1
-		if !t.noInfoLine() {
+		if !t.noSeparatorLine() {
 			max--
 		}
 		return util.Min(t.visibleHeaderLines(), max)
@@ -1607,20 +1617,8 @@ func (t *Terminal) printInfo() {
 			t.window.Print(" ") // Clear spinner
 		}
 	}
-	switch t.infoStyle {
-	case infoDefault:
-		t.move(line+1, 0, t.separatorLen == 0)
-		printSpinner()
-		t.move(line+1, 2, false)
-		pos = 2
-	case infoRight:
-		t.move(line+1, 0, false)
-	case infoInlineRight:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-		t.move(line, pos, true)
-	case infoInline:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-		str := t.infoSep
+	printInfoPrefix := func() {
+		str := t.infoPrefix
 		maxWidth := t.window.Width() - pos
 		width := util.StringWidth(str)
 		if width > maxWidth {
@@ -1635,7 +1633,34 @@ func (t *Terminal) printInfo() {
 			t.window.CPrint(tui.ColPrompt, str)
 		}
 		pos += width
+	}
+	printSeparator := func(fillLength int, pad bool) {
+		// --------_
+		if t.separatorLen > 0 {
+			t.separator(t.window, fillLength)
+			t.window.Print(" ")
+		} else if pad {
+			t.window.Print(strings.Repeat(" ", fillLength+1))
+		}
+	}
+	switch t.infoStyle {
+	case infoDefault:
+		t.move(line+1, 0, t.separatorLen == 0)
+		printSpinner()
+		t.move(line+1, 2, false)
+		pos = 2
+	case infoRight:
+		t.move(line+1, 0, false)
+	case infoInlineRight:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+	case infoInline:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		printInfoPrefix()
 	case infoHidden:
+		if t.separatorLen > 0 {
+			t.move(line+1, 0, false)
+			printSeparator(t.window.Width()-1, false)
+		}
 		return
 	}
 
@@ -1669,15 +1694,6 @@ func (t *Terminal) printInfo() {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
 
-	printSeparator := func(fillLength int, pad bool) {
-		// --------_
-		if t.separatorLen > 0 {
-			t.separator(t.window, fillLength)
-			t.window.Print(" ")
-		} else if pad {
-			t.window.Print(strings.Repeat(" ", fillLength+1))
-		}
-	}
 	if t.infoStyle == infoRight {
 		maxWidth := t.window.Width()
 		if t.reading {
@@ -1700,19 +1716,35 @@ func (t *Terminal) printInfo() {
 	}
 
 	if t.infoStyle == infoInlineRight {
-		pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
-		if pos >= t.window.Width() {
-			return
+		if len(t.infoPrefix) == 0 {
+			pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+			if pos < t.window.Width() {
+				t.move(line, pos, false)
+				printSpinner()
+				pos++
+			}
+			if pos < t.window.Width()-1 {
+				t.window.Print(" ")
+				pos++
+			}
+		} else {
+			pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-util.StringWidth(t.infoPrefix)-1)
+			printInfoPrefix()
 		}
-		t.move(line, pos, false)
-		printSpinner()
-		t.window.Print(" ")
-		pos += 2
 	}
 
 	maxWidth := t.window.Width() - pos
 	output = t.trimMessage(output, maxWidth)
 	t.window.CPrint(tui.ColInfo, output)
+
+	if t.infoStyle == infoInlineRight {
+		if t.separatorLen > 0 {
+			t.move(line+1, 0, false)
+			printSeparator(t.window.Width()-1, false)
+		}
+		return
+	}
+
 	fillLength := maxWidth - len(output) - 2
 	if fillLength > 0 {
 		t.window.CPrint(tui.ColSeparator, " ")
@@ -1727,7 +1759,7 @@ func (t *Terminal) printHeader() {
 	max := t.window.Height()
 	if t.headerFirst {
 		max--
-		if !t.noInfoLine() {
+		if !t.noSeparatorLine() {
 			max--
 		}
 	}
@@ -1744,7 +1776,7 @@ func (t *Terminal) printHeader() {
 		}
 		if !t.headerFirst {
 			line++
-			if !t.noInfoLine() {
+			if !t.noSeparatorLine() {
 				line++
 			}
 		}
@@ -1776,7 +1808,7 @@ func (t *Terminal) printList() {
 			i = maxy - 1 - j
 		}
 		line := i + 2 + t.visibleHeaderLines()
-		if t.noInfoLine() {
+		if t.noSeparatorLine() {
 			line--
 		}
 		if i < count {
@@ -3102,7 +3134,7 @@ func (t *Terminal) Loop() {
 					switch req {
 					case reqPrompt:
 						t.printPrompt()
-						if t.noInfoLine() {
+						if t.infoStyle == infoInline || t.infoStyle == infoInlineRight {
 							t.printInfo()
 						}
 					case reqInfo:
@@ -3904,7 +3936,7 @@ func (t *Terminal) Loop() {
 				mx -= t.window.Left()
 				my -= t.window.Top()
 				min := 2 + t.visibleHeaderLines()
-				if t.noInfoLine() {
+				if t.noSeparatorLine() {
 					min--
 				}
 				h := t.window.Height()
@@ -4196,7 +4228,7 @@ func (t *Terminal) vset(o int) bool {
 
 func (t *Terminal) maxItems() int {
 	max := t.window.Height() - 2 - t.visibleHeaderLines()
-	if t.noInfoLine() {
+	if t.noSeparatorLine() {
 		max++
 	}
 	return util.Max(max, 0)

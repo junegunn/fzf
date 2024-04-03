@@ -1719,7 +1719,7 @@ class TestGoFZF < TestBase
   end
 
   def test_info_hidden
-    tmux.send_keys 'seq 10 | fzf --info=hidden', :Enter
+    tmux.send_keys 'seq 10 | fzf --info=hidden --no-separator', :Enter
     tmux.until { |lines| assert_equal '> 1', lines[-2] }
   end
 

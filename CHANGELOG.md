@@ -3,10 +3,14 @@ CHANGELOG
 
 0.49.0
 ------
-- Performance improvements
-    - Ingestion performance improved by 40%
-    - `--ansi` performance improved by 50%
-    - `--with-nth` performance improved by 30%
+- Ingestion performance improved by around 40% (more or less depending on options)
+- `--info=hidden` and `--info=inline-right` will no longer hide the horizontal separator by default. This gives you more flexibility in customizing the layout.
+    ```sh
+    fzf --border --info=inline-right
+    fzf --border --info=inline-right --no-separator
+    fzf --border --info=hidden
+    fzf --border --info=hidden --no-separator
+    ```
 - Added two environment variables exported to the child processes
     - `FZF_PREVIEW_LABEL`
     - `FZF_BORDER_LABEL`
@@ -22,7 +26,7 @@ CHANGELOG
     - `track` is still available as an alias
 - Added `untrack-current` and `toggle-track-current` actions
     - `*-current` actions are no-op when the global tracking state is set
-- Bug fixes
+- Bug fixes and minor improvements
 
 0.48.1
 ------

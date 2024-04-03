@@ -372,20 +372,21 @@ e.g.
 
 .TP
 .BI "--info=" "STYLE"
-Determines the display style of finder info (match counters).
+Determines the display style of the finder info. (e.g. match counter, loading indicator, etc.)
 
+.BR default "              On the left end of the horizontal separator"
 .br
-.BR default "          Display on the next line to the prompt"
+.BR right "                On the right end of the horizontal separator"
 .br
-.BR right "            Display on the right end of the next line to the prompt"
+.BR hidden "               Do not display finder info"
 .br
-.BR inline "           Display on the same line with the default separator ' < '"
+.BR inline "               After the prompt with the default prefix ' < '"
 .br
-.BR inline:SEPARATOR " Display on the same line with a non-default separator"
+.BR inline:PREFIX "        After the prompt with a non-default prefix"
 .br
-.BR inline-right "     Display on the right end of the same line
+.BR inline-right "         On the right end of the prompt line"
 .br
-.BR hidden "           Do not display finder info"
+.BR inline-right:PREFIX "  On the right end of the prompt line with a custom prefix"
 .br
 
 .TP
