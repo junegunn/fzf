@@ -548,7 +548,7 @@ done
 
 # Directory
 for cmd in $d_cmds; do
-  __fzf_defc "$cmd" _fzf_dir_completion "-o bashdefault -o dirnames"
+  __fzf_defc "$cmd" _fzf_dir_completion "-o bashdefault -o nospace -o dirnames"
 done
 
 # ssh
