@@ -7,8 +7,10 @@ CHANGELOG
 - `--info=hidden` and `--info=inline-right` will no longer hide the horizontal separator by default. This gives you more flexibility in customizing the layout.
     ```sh
     fzf --border --info=inline-right
+    fzf --border --info=inline-right --separator ═
     fzf --border --info=inline-right --no-separator
     fzf --border --info=hidden
+    fzf --border --info=hidden --separator ━
     fzf --border --info=hidden --no-separator
     ```
 - Added two environment variables exported to the child processes
