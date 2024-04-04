@@ -574,6 +574,8 @@ func defaultKeymap() map[tui.Event][]*action {
 	addEvent(tui.AltKey('d'), actKillWord)
 	add(tui.AltBS, actBackwardKillWord)
 
+	addEvent(tui.CtrlAltKey('h'), actBackwardKillWord)
+
 	add(tui.Up, actUp)
 	add(tui.Down, actDown)
 	add(tui.Left, actBackwardChar)
