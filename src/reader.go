@@ -127,8 +127,10 @@ func (r *Reader) feed(src io.Reader) {
 	*/
 
 	delim := byte('\n')
+	trimCR := util.IsWindows()
 	if r.delimNil {
 		delim = '\000'
+		trimCR = false
 	}
 
 	slab := make([]byte, readerSlabSize)
@@ -157,7 +159,7 @@ func (r *Reader) feed(src io.Reader) {
 				// Found the delimiter
 				slice := buf[:i+1]
 				buf = buf[i+1:]
-				if util.IsWindows() && len(slice) >= 2 && slice[len(slice)-2] == byte('\r') {
+				if trimCR && len(slice) >= 2 && slice[len(slice)-2] == byte('\r') {
 					slice = slice[:len(slice)-2]
 				} else {
 					slice = slice[:len(slice)-1]
