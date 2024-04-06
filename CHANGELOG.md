@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.50.0
+------
+- Eliminated any flickering of the screen and simplified the code using [synchronized update mode](https://gist.github.com/christianparpart/d8a62cc1ab659194337d73e399004036)
+    - TODO: Not all terminals support this mode. We can detect if the current terminal supports this. But it means we can't simplify the code using the mode.
+
 0.49.0
 ------
 - Ingestion performance improved by around 40% (more or less depending on options)

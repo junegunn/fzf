@@ -565,11 +565,6 @@ func (w *TcellWindow) Erase() {
 	w.drawBorder(false)
 }
 
-func (w *TcellWindow) EraseMaybe() bool {
-	w.Erase()
-	return true
-}
-
 func (w *TcellWindow) Enclose(y int, x int) bool {
 	return x >= w.left && x < (w.left+w.width) &&
 		y >= w.top && y < (w.top+w.height)

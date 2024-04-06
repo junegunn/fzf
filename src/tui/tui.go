@@ -530,7 +530,6 @@ type Window interface {
 	Fill(text string) FillReturn
 	CFill(fg Color, bg Color, attr Attr, text string) FillReturn
 	Erase()
-	EraseMaybe() bool
 }
 
 type FullscreenRenderer struct {

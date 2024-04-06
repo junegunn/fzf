@@ -71,7 +71,7 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		fmt.Fprint(os.Stderr, "\x1b[?25l"+r.queued.String()+"\x1b[?25h")
+		fmt.Fprint(os.Stderr, "\x1b[?2026h"+r.queued.String()+"\x1b[?2026l")
 		r.queued.Reset()
 	}
 }
@@ -1127,8 +1127,4 @@ func (w *LightWindow) Erase() {
 	w.Move(0, 0)
 	w.FinishFill()
 	w.Move(0, 0)
-}
-
-func (w *LightWindow) EraseMaybe() bool {
-	return false
 }

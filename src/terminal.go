@@ -130,7 +130,6 @@ type previewed struct {
 	offset    int
 	filled    bool
 	image     bool
-	wipe      bool
 	wireframe bool
 }
 
@@ -145,8 +144,6 @@ type itemLine struct {
 	selected bool
 	label    string
 	queryLen int
-	width    int
-	bar      bool
 	result   Result
 }
 
@@ -768,7 +765,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
 		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}},
-		previewed:          previewed{0, 0, 0, false, false, false, false},
+		previewed:          previewed{0, 0, 0, false, false, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
 		mutex:              sync.Mutex{},
@@ -1836,12 +1833,11 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 
 	// Avoid unnecessary redraw
 	newLine := itemLine{offset: line, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, bar: bar}
+		result: result, queryLen: len(t.input)}
 	prevLine := t.prevLines[i]
 	forceRedraw := prevLine.offset != newLine.offset
 	printBar := func() {
-		if len(t.scrollbar) > 0 && (bar != prevLine.bar || forceRedraw) {
-			t.prevLines[i].bar = bar
+		if len(t.scrollbar) > 0 {
 			t.move(line, t.window.Width()-1, true)
 			if bar {
 				t.window.CPrint(tui.ColScrollbar, t.scrollbar)
@@ -1859,7 +1855,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		return
 	}
 
-	t.move(line, 0, forceRedraw)
+	t.move(line, 0, true)
 	if current {
 		if len(label) == 0 {
 			t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
@@ -1871,7 +1867,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		} else {
 			t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
 		}
-		newLine.width = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true)
+		t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true)
 	} else {
 		if len(label) == 0 {
 			t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
@@ -1883,11 +1879,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		} else {
 			t.window.Print(t.markerEmpty)
 		}
-		newLine.width = t.printHighlighted(result, tui.ColNormal, tui.ColMatch, false, true)
-	}
-	fillSpaces := prevLine.width - newLine.width
-	if fillSpaces > 0 {
-		t.window.Print(strings.Repeat(" ", fillSpaces))
+		t.printHighlighted(result, tui.ColNormal, tui.ColMatch, false, true)
 	}
 	printBar()
 	t.prevLines[i] = newLine
@@ -1931,7 +1923,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool) {
 	item := result.item
 
 	// Overflow
@@ -2009,11 +2001,9 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 			}
 		}
-		displayWidth = t.displayWidthWithLimit(text, 0, displayWidth)
 	}
 
 	t.printColoredString(t.window, text, offsets, colBase)
-	return displayWidth
 }
 
 func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []colorOffset, colBase tui.ColorPair) {
@@ -2072,21 +2062,11 @@ func (t *Terminal) renderPreviewSpinner() {
 }
 
 func (t *Terminal) renderPreviewArea(unchanged bool) {
-	if t.previewed.wipe && t.previewed.version != t.previewer.version {
-		t.previewed.wipe = false
-		t.pwindow.Erase()
-	} else if unchanged {
+	if unchanged {
 		t.pwindow.MoveAndClear(0, 0) // Clear scroll offset display
 	} else {
 		t.previewed.filled = false
-		// We don't erase the window here to avoid flickering during scroll.
-		// However, tcell renderer uses double-buffering technique and there's no
-		// flickering. So we just erase the window and make the rest of the code
-		// simpler.
-		if !t.pwindow.EraseMaybe() {
-			t.pwindow.DrawBorder()
-			t.pwindow.Move(0, 0)
-		}
+		t.pwindow.Erase()
 	}
 
 	height := t.pwindow.Height()
@@ -2173,7 +2153,6 @@ Loop:
 				isItermImage := strings.HasPrefix(passThrough, "\x1b]1337;")
 				isImage := isSixel || isItermImage
 				if isImage {
-					t.previewed.wipe = true
 					// NOTE: We don't have a good way to get the height of an iTerm image,
 					// so we assume that it requires the full height of the preview
 					// window.
