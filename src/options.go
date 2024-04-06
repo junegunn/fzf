@@ -2378,8 +2378,7 @@ func ParseOptions() *Options {
 	parseOptions(opts, os.Args[1:])
 
 	if err := opts.initProfiling(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error: failed to start pprof profiles:", err)
-		util.Exit(exitError)
+		errorExit("failed to start pprof profiles: " + err.Error())
 	}
 
 	postProcessOptions(opts)
