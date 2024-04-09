@@ -9,7 +9,7 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
-[[ -o interactive ]] || return 0
+if [[ -o interactive ]]; then
 
 
 # Both branches of the following `if` do the same thing -- define
@@ -351,3 +351,5 @@ bindkey '^I' fzf-completion
   eval $__fzf_completion_options
   'unset' '__fzf_completion_options'
 }
+
+fi

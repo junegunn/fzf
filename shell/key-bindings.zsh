@@ -11,7 +11,7 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-[[ -o interactive ]] || return 0
+if [[ -o interactive ]]; then
 
 
 # Key bindings
@@ -119,3 +119,5 @@ bindkey -M viins '^R' fzf-history-widget
   eval $__fzf_key_bindings_options
   'unset' '__fzf_key_bindings_options'
 }
+
+fi

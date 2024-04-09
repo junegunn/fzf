@@ -11,7 +11,7 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-[[ $- =~ i ]] || return 0
+if [[ $- =~ i ]]; then
 
 
 # Key bindings
@@ -131,4 +131,6 @@ if [[ "${FZF_ALT_C_COMMAND-x}" != "" ]]; then
   bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
+fi
+
 fi
