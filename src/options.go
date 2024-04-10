@@ -131,6 +131,8 @@ const usage = `usage: fzf [options]
                            (default: .git,node_modules)
 
   Shell integration
+    --no-completion        Do not print the shell integration for completion
+    --no-key-bindings      Do not print the shell integration for key bindings
     --bash                 Print script to set up Bash shell integration
     --zsh                  Print script to set up Zsh shell integration
     --fish                 Print script to set up Fish shell integration
@@ -290,6 +292,8 @@ type walkerOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
+	Completion   bool
+	KeyBindings  bool
 	Bash         bool
 	Zsh          bool
 	Fish         bool
@@ -381,6 +385,8 @@ func defaultPreviewOpts(command string) previewOpts {
 
 func defaultOptions() *Options {
 	return &Options{
+		Completion:   true,
+		KeyBindings:  true,
 		Bash:         false,
 		Zsh:          false,
 		Fish:         false,
@@ -1677,6 +1683,16 @@ func parseOptions(opts *Options, allArgs []string) {
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
+		case "--no-completion":
+			opts.Completion = false
+			if !opts.KeyBindings {
+				errorExit("cannot specify --no-completion and --no-key-bindings")
+			}
+		case "--no-key-bindings":
+			opts.KeyBindings = false
+			if !opts.Completion {
+				errorExit("cannot specify --no-completion and --no-key-bindings")
+			}
 		case "--bash":
 			opts.Bash = true
 			if opts.Zsh || opts.Fish {

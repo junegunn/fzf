@@ -37,18 +37,28 @@ func main() {
 	protector.Protect()
 	options := fzf.ParseOptions()
 	if options.Bash {
-		printScript("key-bindings.bash", bashKeyBindings)
-		printScript("completion.bash", bashCompletion)
+		if options.KeyBindings {
+			printScript("key-bindings.bash", bashKeyBindings)
+		}
+		if options.Completion {
+			printScript("completion.bash", bashCompletion)
+		}
 		return
 	}
 	if options.Zsh {
-		printScript("key-bindings.zsh", zshKeyBindings)
-		printScript("completion.zsh", zshCompletion)
+		if options.KeyBindings {
+			printScript("key-bindings.zsh", zshKeyBindings)
+		}
+		if options.Completion {
+			printScript("completion.zsh", zshCompletion)
+		}
 		return
 	}
 	if options.Fish {
-		printScript("key-bindings.fish", fishKeyBindings)
-		fmt.Println("fzf_key_bindings")
+		if options.KeyBindings {
+			printScript("key-bindings.fish", fishKeyBindings)
+			fmt.Println("fzf_key_bindings")
+		}
 		return
 	}
 	fzf.Run(options, version, revision)
