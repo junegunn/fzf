@@ -1160,6 +1160,7 @@ e.g.
      \fB# Move cursor to the last item and select all items
      seq 1000 | fzf --multi --sync --bind start:last+select-all\fR
 .RE
+
 \fIload\fR
 .RS
 Triggered when the input stream is complete and the initial processing of the
@@ -1169,6 +1170,7 @@ e.g.
      \fB# Change the prompt to "loaded" when the input stream is complete
      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '\fR
 .RE
+
 \fIresize\fR
 .RS
 Triggered when the terminal size is changed.
@@ -1176,6 +1178,7 @@ Triggered when the terminal size is changed.
 e.g.
      \fBfzf --bind 'resize:transform-header:echo Resized: ${FZF_COLUMNS}x${FZF_LINES}'\fR
 .RE
+
 \fIresult\fR
 .RS
 Triggered when the filtering for the current query is complete and the result list is ready.
@@ -1209,6 +1212,7 @@ e.g.
      # Beware not to introduce an infinite loop
      seq 10 | fzf --bind 'focus:up' --cycle\fR
 .RE
+
 \fIone\fR
 .RS
 Triggered when there's only one match. \fBone:accept\fR binding is comparable
@@ -1220,6 +1224,7 @@ e.g.
      \fB# Automatically select the only match
      seq 10 | fzf --bind one:accept\fR
 .RE
+
 \fIzero\fR
 .RS
 Triggered when there's no match. \fBzero:abort\fR binding is comparable to
@@ -1239,6 +1244,22 @@ backward.
 
 e.g.
      \fBfzf --bind backward-eof:abort\fR
+.RE
+
+\fIjump\fR
+.RS
+Triggered when successfully jumped to the target item in \fB--jump\fR mode.
+
+e.g.
+     \fBfzf --bind space:jump,jump:accept\fR
+.RE
+
+\fIjump-cancel\fR
+.RS
+Triggered when \fB--jump\fR mode is cancelled.
+
+e.g.
+     \fBfzf --bind space:jump,jump:accept,jump-cancel:abort\fR
 .RE
 
 .SS AVAILABLE ACTIONS:

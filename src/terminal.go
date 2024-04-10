@@ -4108,6 +4108,9 @@ func (t *Terminal) Loop() {
 			// Break out of jump mode if any action is submitted to the server
 			if t.jumping != jumpDisabled {
 				t.jumping = jumpDisabled
+				if acts, prs := t.keymap[tui.JumpCancel.AsEvent()]; prs && !doActions(acts) {
+					continue
+				}
 				req(reqList)
 			}
 			if len(actions) == 0 {
@@ -4121,19 +4124,17 @@ func (t *Terminal) Loop() {
 			t.truncateQuery()
 			queryChanged = string(previousInput) != string(t.input)
 			changed = changed || queryChanged
-			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs {
-				if !doActions(onChanges) {
-					continue
-				}
+			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs && !doActions(onChanges) {
+				continue
 			}
-			if onEOFs, prs := t.keymap[tui.BackwardEOF.AsEvent()]; beof && prs {
-				if !doActions(onEOFs) {
-					continue
-				}
+			if onEOFs, prs := t.keymap[tui.BackwardEOF.AsEvent()]; beof && prs && !doActions(onEOFs) {
+				continue
 			}
 		} else {
+			jumpEvent := tui.JumpCancel
 			if event.Type == tui.Rune {
 				if idx := strings.IndexRune(t.jumpLabels, event.Char); idx >= 0 && idx < t.maxItems() && idx < t.merger.Length() {
+					jumpEvent = tui.Jump
 					t.cy = idx + t.offset
 					if t.jumping == jumpAcceptEnabled {
 						req(reqClose)
@@ -4141,6 +4142,9 @@ func (t *Terminal) Loop() {
 				}
 			}
 			t.jumping = jumpDisabled
+			if acts, prs := t.keymap[jumpEvent.AsEvent()]; prs && !doActions(acts) {
+				continue
+			}
 			req(reqList)
 		}
 

@@ -108,6 +108,8 @@ const (
 	One
 	Zero
 	Result
+	Jump
+	JumpCancel
 
 	AltBS
 
