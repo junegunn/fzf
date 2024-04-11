@@ -1,7 +1,7 @@
 package fzf
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -111,32 +111,84 @@ func (r *Reader) ReadSource(root string, opts walkerOpts, ignores []string) {
 }
 
 func (r *Reader) feed(src io.Reader) {
+	/*
+		readerSlabSize, ae := strconv.Atoi(os.Getenv("SLAB_KB"))
+		if ae != nil {
+			readerSlabSize = 128 * 1024
+		} else {
+			readerSlabSize *= 1024
+		}
+		readerBufferSize, be := strconv.Atoi(os.Getenv("BUF_KB"))
+		if be != nil {
+			readerBufferSize = 64 * 1024
+		} else {
+			readerBufferSize *= 1024
+		}
+	*/
+
 	delim := byte('\n')
+	trimCR := util.IsWindows()
 	if r.delimNil {
 		delim = '\000'
+		trimCR = false
 	}
-	reader := bufio.NewReaderSize(src, readerBufferSize)
+
+	slab := make([]byte, readerSlabSize)
+	leftover := []byte{}
+	var err error
 	for {
-		// ReadBytes returns err != nil if and only if the returned data does not
-		// end in delim.
-		bytea, err := reader.ReadBytes(delim)
-		byteaLen := len(bytea)
-		if byteaLen > 0 {
-			if err == nil {
-				// get rid of carriage return if under Windows:
-				if util.IsWindows() && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
-					bytea = bytea[:byteaLen-2]
-				} else {
-					bytea = bytea[:byteaLen-1]
-				}
-			}
-			if r.pusher(bytea) {
-				atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		n := 0
+		scope := slab[:util.Min(len(slab), readerBufferSize)]
+		for i := 0; i < 100; i++ {
+			n, err = src.Read(scope)
+			if n > 0 || err != nil {
+				break
 			}
 		}
-		if err != nil {
+
+		// We're not making any progress after 100 tries. Stop.
+		if n == 0 && err == nil {
 			break
 		}
+
+		buf := slab[:n]
+		slab = slab[n:]
+
+		for len(buf) > 0 {
+			if i := bytes.IndexByte(buf, delim); i >= 0 {
+				// Found the delimiter
+				slice := buf[:i+1]
+				buf = buf[i+1:]
+				if trimCR && len(slice) >= 2 && slice[len(slice)-2] == byte('\r') {
+					slice = slice[:len(slice)-2]
+				} else {
+					slice = slice[:len(slice)-1]
+				}
+				if len(leftover) > 0 {
+					slice = append(leftover, slice...)
+					leftover = []byte{}
+				}
+				if (err == nil || len(slice) > 0) && r.pusher(slice) {
+					atomic.StoreInt32(&r.event, int32(EvtReadNew))
+				}
+			} else {
+				// Could not find the delimiter in the buffer
+				leftover = append(leftover, buf...)
+				break
+			}
+		}
+
+		if err == io.EOF {
+			leftover = append(leftover, buf...)
+			break
+		}
+
+		if len(slab) == 0 {
+			slab = make([]byte, readerSlabSize)
+		}
+	}
+	if len(leftover) > 0 && r.pusher(leftover) {
+		atomic.StoreInt32(&r.event, int32(EvtReadNew))
 	}
 }
 

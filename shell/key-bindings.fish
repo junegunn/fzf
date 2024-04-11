@@ -21,7 +21,7 @@ function fzf_key_bindings
   # Store current token in $dir as root for the 'find' command
   function fzf-file-widget -d "List files and folders"
     set -l commandline (__fzf_parse_commandline)
-    set -l dir $commandline[1]
+    set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
@@ -70,7 +70,7 @@ function fzf_key_bindings
 
   function fzf-cd-widget -d "Change directory"
     set -l commandline (__fzf_parse_commandline)
-    set -l dir $commandline[1]
+    set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 

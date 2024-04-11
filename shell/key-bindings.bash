@@ -11,7 +11,7 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-[[ $- =~ i ]] || return 0
+if [[ $- =~ i ]]; then
 
 
 # Key bindings
@@ -41,7 +41,7 @@ __fzf_cd__() {
   opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore --reverse --walker=dir,follow,hidden --scheme=path ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-} +m"
   dir=$(
     FZF_DEFAULT_COMMAND=${FZF_ALT_C_COMMAND:-} FZF_DEFAULT_OPTS="$opts" $(__fzfcmd)
-  ) && printf 'builtin cd -- %q' "$dir"
+  ) && printf 'builtin cd -- %q' "$(builtin unset CDPATH && builtin cd -- "$dir" && builtin pwd)"
 }
 
 if command -v perl > /dev/null; then
@@ -131,4 +131,6 @@ if [[ "${FZF_ALT_C_COMMAND-x}" != "" ]]; then
   bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
+fi
+
 fi

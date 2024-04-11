@@ -163,7 +163,7 @@ func (chars *Chars) ToString() string {
 	if runes := chars.optionalRunes(); runes != nil {
 		return string(runes)
 	}
-	return string(chars.slice)
+	return unsafe.String(unsafe.SliceData(chars.slice), len(chars.slice))
 }
 
 func (chars *Chars) ToRunes() []rune {

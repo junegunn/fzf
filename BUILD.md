@@ -6,7 +6,7 @@ Build instructions
 
 ### Prerequisites
 
-- Go 1.18 or above
+- Go 1.20 or above
 
 ### Using Makefile
 

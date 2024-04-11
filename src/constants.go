@@ -14,6 +14,7 @@ const (
 
 	// Reader
 	readerBufferSize       = 64 * 1024
+	readerSlabSize         = 128 * 1024
 	readerPollIntervalMin  = 10 * time.Millisecond
 	readerPollIntervalStep = 5 * time.Millisecond
 	readerPollIntervalMax  = 50 * time.Millisecond

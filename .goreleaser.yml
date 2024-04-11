@@ -20,10 +20,6 @@ builds:
         cat > /tmp/fzf-gon-amd64.hcl << EOF
         source = ["./dist/fzf-macos_darwin_amd64_v1/fzf"]
         bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
         sign {
           application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
         }
@@ -48,10 +44,6 @@ builds:
         cat > /tmp/fzf-gon-arm64.hcl << EOF
         source = ["./dist/fzf-macos-arm_darwin_arm64/fzf"]
         bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
         sign {
           application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
         }

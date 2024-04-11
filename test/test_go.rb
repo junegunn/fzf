@@ -1468,6 +1468,19 @@ class TestGoFZF < TestBase
     assert_equal '3', readonce.chomp
   end
 
+  def test_jump_events
+    tmux.send_keys "seq 1000 | #{fzf("--multi --jump-labels 12345 --bind 'ctrl-j:jump,jump:preview(echo jumped to {}),jump-cancel:preview(echo jump cancelled at {})'")}", :Enter
+    tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| assert_includes lines[-7], '5 5' }
+    tmux.send_keys '3'
+    tmux.until { |lines| assert(lines.any? { _1.include?('jumped to 3') }) }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| assert_includes lines[-7], '5 5' }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| assert(lines.any? { _1.include?('jump cancelled at 3') }) }
+  end
+
   def test_pointer
     tmux.send_keys "seq 10 | #{fzf("--pointer '>>'")}", :Enter
     # Assert that specified pointer is displayed
@@ -1719,7 +1732,7 @@ class TestGoFZF < TestBase
   end
 
   def test_info_hidden
-    tmux.send_keys 'seq 10 | fzf --info=hidden', :Enter
+    tmux.send_keys 'seq 10 | fzf --info=hidden --no-separator', :Enter
     tmux.until { |lines| assert_equal '> 1', lines[-2] }
   end
 

@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Mar 2024" "fzf 0.48.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Apr 2024" "fzf 0.49.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -372,20 +372,21 @@ e.g.
 
 .TP
 .BI "--info=" "STYLE"
-Determines the display style of finder info (match counters).
+Determines the display style of the finder info. (e.g. match counter, loading indicator, etc.)
 
+.BR default "              On the left end of the horizontal separator"
 .br
-.BR default "          Display on the next line to the prompt"
+.BR right "                On the right end of the horizontal separator"
 .br
-.BR right "            Display on the right end of the next line to the prompt"
+.BR hidden "               Do not display finder info"
 .br
-.BR inline "           Display on the same line with the default separator ' < '"
+.BR inline "               After the prompt with the default prefix ' < '"
 .br
-.BR inline:SEPARATOR " Display on the same line with a non-default separator"
+.BR inline:PREFIX "        After the prompt with a non-default prefix"
 .br
-.BR inline-right "     Display on the right end of the same line
+.BR inline-right "         On the right end of the prompt line"
 .br
-.BR hidden "           Do not display finder info"
+.BR inline-right:PREFIX "  On the right end of the prompt line with a custom prefix"
 .br
 
 .TP
@@ -1159,6 +1160,7 @@ e.g.
      \fB# Move cursor to the last item and select all items
      seq 1000 | fzf --multi --sync --bind start:last+select-all\fR
 .RE
+
 \fIload\fR
 .RS
 Triggered when the input stream is complete and the initial processing of the
@@ -1168,6 +1170,7 @@ e.g.
      \fB# Change the prompt to "loaded" when the input stream is complete
      (seq 10; sleep 1; seq 11 20) | fzf --prompt 'Loading> ' --bind 'load:change-prompt:Loaded> '\fR
 .RE
+
 \fIresize\fR
 .RS
 Triggered when the terminal size is changed.
@@ -1175,6 +1178,7 @@ Triggered when the terminal size is changed.
 e.g.
      \fBfzf --bind 'resize:transform-header:echo Resized: ${FZF_COLUMNS}x${FZF_LINES}'\fR
 .RE
+
 \fIresult\fR
 .RS
 Triggered when the filtering for the current query is complete and the result list is ready.
@@ -1208,6 +1212,7 @@ e.g.
      # Beware not to introduce an infinite loop
      seq 10 | fzf --bind 'focus:up' --cycle\fR
 .RE
+
 \fIone\fR
 .RS
 Triggered when there's only one match. \fBone:accept\fR binding is comparable
@@ -1219,6 +1224,7 @@ e.g.
      \fB# Automatically select the only match
      seq 10 | fzf --bind one:accept\fR
 .RE
+
 \fIzero\fR
 .RS
 Triggered when there's no match. \fBzero:abort\fR binding is comparable to
@@ -1238,6 +1244,22 @@ backward.
 
 e.g.
      \fBfzf --bind backward-eof:abort\fR
+.RE
+
+\fIjump\fR
+.RS
+Triggered when successfully jumped to the target item in \fB--jump\fR mode.
+
+e.g.
+     \fBfzf --bind space:jump,jump:accept\fR
+.RE
+
+\fIjump-cancel\fR
+.RS
+Triggered when \fB--jump\fR mode is cancelled.
+
+e.g.
+     \fBfzf --bind space:jump,jump:accept,jump-cancel:abort\fR
 .RE
 
 .SS AVAILABLE ACTIONS:

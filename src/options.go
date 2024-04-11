@@ -75,7 +75,7 @@ const usage = `usage: fzf [options]
     --margin=MARGIN        Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING      Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE           Finder info style
-                           [default|right|hidden|inline[:SEPARATOR]|inline-right]
+                           [default|right|hidden|inline[-right][:PREFIX]]
     --separator=STR        String to form horizontal separator on info line
     --no-separator         Hide info line separator
     --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
@@ -143,7 +143,7 @@ const usage = `usage: fzf [options]
 
 `
 
-const defaultInfoSep = " < "
+const defaultInfoPrefix = " < "
 
 // Case denotes case-sensitivity of search
 type Case int
@@ -216,10 +216,6 @@ const (
 	infoInlineRight
 	infoHidden
 )
-
-func (s infoStyle) noExtraLine() bool {
-	return s == infoInline || s == infoInlineRight || s == infoHidden
-}
 
 type labelOpts struct {
 	label  string
@@ -327,7 +323,7 @@ type Options struct {
 	ScrollOff    int
 	FileWord     bool
 	InfoStyle    infoStyle
-	InfoSep      string
+	InfoPrefix   string
 	Separator    *string
 	JumpLabels   string
 	Prompt       string
@@ -702,6 +698,10 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.One)
 		case "zero":
 			add(tui.Zero)
+		case "jump":
+			add(tui.Jump)
+		case "jump-cancel":
+			add(tui.JumpCancel)
 		case "alt-enter", "alt-return":
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":
@@ -1506,17 +1506,24 @@ func parseInfoStyle(str string) (infoStyle, string) {
 	case "right":
 		return infoRight, ""
 	case "inline":
-		return infoInline, defaultInfoSep
+		return infoInline, defaultInfoPrefix
 	case "inline-right":
 		return infoInlineRight, ""
 	case "hidden":
 		return infoHidden, ""
 	default:
-		prefix := "inline:"
-		if strings.HasPrefix(str, prefix) {
-			return infoInline, strings.ReplaceAll(str[len(prefix):], "\n", " ")
+		type infoSpec struct {
+			name  string
+			style infoStyle
 		}
-		errorExit("invalid info style (expected: default|right|hidden|inline[:SEPARATOR]|inline-right)")
+		for _, spec := range []infoSpec{
+			{"inline", infoInline},
+			{"inline-right", infoInlineRight}} {
+			if strings.HasPrefix(str, spec.name+":") {
+				return spec.style, strings.ReplaceAll(str[len(spec.name)+1:], "\n", " ")
+			}
+		}
+		errorExit("invalid info style (expected: default|right|hidden|inline[-right][:PREFIX])")
 	}
 	return infoDefault, ""
 }
@@ -1807,13 +1814,13 @@ func parseOptions(opts *Options, allArgs []string) {
 		case "--no-filepath-word":
 			opts.FileWord = false
 		case "--info":
-			opts.InfoStyle, opts.InfoSep = parseInfoStyle(
+			opts.InfoStyle, opts.InfoPrefix = parseInfoStyle(
 				nextString(allArgs, &i, "info style required"))
 		case "--no-info":
 			opts.InfoStyle = infoHidden
 		case "--inline-info":
 			opts.InfoStyle = infoInline
-			opts.InfoSep = defaultInfoSep
+			opts.InfoPrefix = defaultInfoPrefix
 		case "--no-inline-info":
 			opts.InfoStyle = infoDefault
 		case "--separator":
@@ -2015,7 +2022,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			} else if match, value := optString(arg, "--layout="); match {
 				opts.Layout = parseLayout(value)
 			} else if match, value := optString(arg, "--info="); match {
-				opts.InfoStyle, opts.InfoSep = parseInfoStyle(value)
+				opts.InfoStyle, opts.InfoPrefix = parseInfoStyle(value)
 			} else if match, value := optString(arg, "--separator="); match {
 				opts.Separator = &value
 			} else if match, value := optString(arg, "--scrollbar="); match {

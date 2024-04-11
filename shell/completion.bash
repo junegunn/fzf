@@ -9,7 +9,7 @@
 # - $FZF_COMPLETION_TRIGGER (default: '**')
 # - $FZF_COMPLETION_OPTS    (default: empty)
 
-[[ $- =~ i ]] || return 0
+if [[ $- =~ i ]]; then
 
 
 # To use custom commands instead of find, override _fzf_compgen_{path,dir}
@@ -548,7 +548,7 @@ done
 
 # Directory
 for cmd in $d_cmds; do
-  __fzf_defc "$cmd" _fzf_dir_completion "-o nospace -o dirnames"
+  __fzf_defc "$cmd" _fzf_dir_completion "-o bashdefault -o nospace -o dirnames"
 done
 
 # ssh
@@ -581,3 +581,5 @@ _fzf_setup_completion 'var'   export unset printenv
 _fzf_setup_completion 'alias' unalias
 _fzf_setup_completion 'host'  telnet
 _fzf_setup_completion 'proc'  kill
+
+fi
