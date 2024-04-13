@@ -2259,9 +2259,7 @@ func postProcessOptions(opts *Options) {
 		theme.Spinner = boldify(theme.Spinner)
 	}
 
-	if opts.Scheme != "default" {
-		processScheme(opts)
-	}
+	processScheme(opts)
 }
 
 func expectsArbitraryString(opt string) bool {

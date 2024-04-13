@@ -153,6 +153,9 @@ var (
 	bonusBoundaryDelimiter int16 = bonusBoundary + 1
 
 	initialCharClass charClass = charWhite
+
+	// A minor optimization that can give 15%+ performance boost
+	asciiCharClasses [unicode.MaxASCII + 1]charClass
 )
 
 type charClass int
@@ -187,6 +190,22 @@ func Init(scheme string) bool {
 	default:
 		return false
 	}
+	for i := 0; i <= unicode.MaxASCII; i++ {
+		char := rune(i)
+		c := charNonWord
+		if char >= 'a' && char <= 'z' {
+			c = charLower
+		} else if char >= 'A' && char <= 'Z' {
+			c = charUpper
+		} else if char >= '0' && char <= '9' {
+			c = charNumber
+		} else if strings.ContainsRune(whiteChars, char) {
+			c = charWhite
+		} else if strings.ContainsRune(delimiterChars, char) {
+			c = charDelimiter
+		}
+		asciiCharClasses[i] = c
+	}
 	return true
 }
 
@@ -214,21 +233,6 @@ func alloc32(offset int, slab *util.Slab, size int) (int, []int32) {
 	return offset, make([]int32, size)
 }
 
-func charClassOfAscii(char rune) charClass {
-	if char >= 'a' && char <= 'z' {
-		return charLower
-	} else if char >= 'A' && char <= 'Z' {
-		return charUpper
-	} else if char >= '0' && char <= '9' {
-		return charNumber
-	} else if strings.ContainsRune(whiteChars, char) {
-		return charWhite
-	} else if strings.ContainsRune(delimiterChars, char) {
-		return charDelimiter
-	}
-	return charNonWord
-}
-
 func charClassOfNonAscii(char rune) charClass {
 	if unicode.IsLower(char) {
 		return charLower
@@ -248,7 +252,7 @@ func charClassOfNonAscii(char rune) charClass {
 
 func charClassOf(char rune) charClass {
 	if char <= unicode.MaxASCII {
-		return charClassOfAscii(char)
+		return asciiCharClasses[char]
 	}
 	return charClassOfNonAscii(char)
 }
@@ -447,9 +451,10 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	for off, char := range Tsub {
 		var class charClass
 		if char <= unicode.MaxASCII {
-			class = charClassOfAscii(char)
+			class = asciiCharClasses[char]
 			if !caseSensitive && class == charUpper {
 				char += 32
+				Tsub[off] = char
 			}
 		} else {
 			class = charClassOfNonAscii(char)
@@ -459,9 +464,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			if normalize {
 				char = normalizeRune(char)
 			}
+			Tsub[off] = char
 		}
 
-		Tsub[off] = char
 		bonus := bonusFor(prevClass, class)
 		Bsub[off] = bonus
 		prevClass = class
