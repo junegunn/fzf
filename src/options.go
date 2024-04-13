@@ -363,6 +363,10 @@ type Options struct {
 	WalkerRoot   string
 	WalkerSkip   []string
 	Version      bool
+	CPUProfile   string
+	MEMProfile   string
+	BlockProfile string
+	MutexProfile string
 }
 
 func filterNonEmpty(input []string) []string {
@@ -454,14 +458,14 @@ func defaultOptions() *Options {
 
 func help(code int) {
 	os.Stdout.WriteString(usage)
-	os.Exit(code)
+	util.Exit(code)
 }
 
 var errorContext = ""
 
 func errorExit(msg string) {
 	os.Stderr.WriteString(errorContext + msg + "\n")
-	os.Exit(exitError)
+	util.Exit(exitError)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1978,6 +1982,14 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.WalkerSkip = filterNonEmpty(strings.Split(nextString(allArgs, &i, "directory names to ignore required"), ","))
 		case "--version":
 			opts.Version = true
+		case "--profile-cpu":
+			opts.CPUProfile = nextString(allArgs, &i, "file path required: cpu")
+		case "--profile-mem":
+			opts.MEMProfile = nextString(allArgs, &i, "file path required: mem")
+		case "--profile-block":
+			opts.BlockProfile = nextString(allArgs, &i, "file path required: block")
+		case "--profile-mutex":
+			opts.MutexProfile = nextString(allArgs, &i, "file path required: mutex")
 		case "--":
 			// Ignored
 		default:
@@ -2303,6 +2315,11 @@ func ParseOptions() *Options {
 	errorContext = ""
 	parseOptions(opts, os.Args[1:])
 
+	if err := opts.initProfiling(); err != nil {
+		errorExit("failed to start pprof profiles: " + err.Error())
+	}
+
 	postProcessOptions(opts)
+
 	return opts
 }
