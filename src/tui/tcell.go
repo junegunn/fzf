@@ -320,16 +320,16 @@ func (r *FullscreenRenderer) GetChar() Event {
 			switch ev.Rune() {
 			case 0:
 				if ctrl {
-					return Event{BSpace, 0, nil}
+					return Event{Backspace, 0, nil}
 				}
 			case rune(tcell.KeyCtrlH):
 				switch {
 				case ctrl:
 					return keyfn('h')
 				case alt:
-					return Event{AltBS, 0, nil}
+					return Event{AltBackspace, 0, nil}
 				case none, shift:
-					return Event{BSpace, 0, nil}
+					return Event{Backspace, 0, nil}
 				}
 			}
 		case tcell.KeyCtrlI:
@@ -382,17 +382,17 @@ func (r *FullscreenRenderer) GetChar() Event {
 		// section 3: (Alt)+Backspace2
 		case tcell.KeyBackspace2:
 			if alt {
-				return Event{AltBS, 0, nil}
+				return Event{AltBackspace, 0, nil}
 			}
-			return Event{BSpace, 0, nil}
+			return Event{Backspace, 0, nil}
 
 		// section 4: (Alt+Shift)+Key(Up|Down|Left|Right)
 		case tcell.KeyUp:
 			if altShift {
-				return Event{AltSUp, 0, nil}
+				return Event{AltShiftUp, 0, nil}
 			}
 			if shift {
-				return Event{SUp, 0, nil}
+				return Event{ShiftUp, 0, nil}
 			}
 			if alt {
 				return Event{AltUp, 0, nil}
@@ -400,10 +400,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{Up, 0, nil}
 		case tcell.KeyDown:
 			if altShift {
-				return Event{AltSDown, 0, nil}
+				return Event{AltShiftDown, 0, nil}
 			}
 			if shift {
-				return Event{SDown, 0, nil}
+				return Event{ShiftDown, 0, nil}
 			}
 			if alt {
 				return Event{AltDown, 0, nil}
@@ -411,10 +411,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{Down, 0, nil}
 		case tcell.KeyLeft:
 			if altShift {
-				return Event{AltSLeft, 0, nil}
+				return Event{AltShiftLeft, 0, nil}
 			}
 			if shift {
-				return Event{SLeft, 0, nil}
+				return Event{ShiftLeft, 0, nil}
 			}
 			if alt {
 				return Event{AltLeft, 0, nil}
@@ -422,10 +422,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 			return Event{Left, 0, nil}
 		case tcell.KeyRight:
 			if altShift {
-				return Event{AltSRight, 0, nil}
+				return Event{AltShiftRight, 0, nil}
 			}
 			if shift {
-				return Event{SRight, 0, nil}
+				return Event{ShiftRight, 0, nil}
 			}
 			if alt {
 				return Event{AltRight, 0, nil}
@@ -442,17 +442,17 @@ func (r *FullscreenRenderer) GetChar() Event {
 				return Event{CtrlDelete, 0, nil}
 			}
 			if shift {
-				return Event{SDelete, 0, nil}
+				return Event{ShiftDelete, 0, nil}
 			}
-			return Event{Del, 0, nil}
+			return Event{Delete, 0, nil}
 		case tcell.KeyEnd:
 			return Event{End, 0, nil}
 		case tcell.KeyPgUp:
-			return Event{PgUp, 0, nil}
+			return Event{PageUp, 0, nil}
 		case tcell.KeyPgDn:
-			return Event{PgDn, 0, nil}
+			return Event{PageDown, 0, nil}
 		case tcell.KeyBacktab:
-			return Event{BTab, 0, nil}
+			return Event{ShiftTab, 0, nil}
 		case tcell.KeyF1:
 			return Event{F1, 0, nil}
 		case tcell.KeyF2:
@@ -498,7 +498,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 		// section 7: Esc
 		case tcell.KeyEsc:
-			return Event{ESC, 0, nil}
+			return Event{Esc, 0, nil}
 		}
 	}
 
