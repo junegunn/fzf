@@ -156,6 +156,9 @@ var (
 
 	// A minor optimization that can give 15%+ performance boost
 	asciiCharClasses [unicode.MaxASCII + 1]charClass
+
+	// A minor optimization that can give yet another 5% performance boost
+	bonusMatrix [charNumber + 1][charNumber + 1]int16
 )
 
 type charClass int
@@ -205,6 +208,11 @@ func Init(scheme string) bool {
 			c = charDelimiter
 		}
 		asciiCharClasses[i] = c
+	}
+	for i := 0; i <= int(charNumber); i++ {
+		for j := 0; j <= int(charNumber); j++ {
+			bonusMatrix[i][j] = bonusFor(charClass(i), charClass(j))
+		}
 	}
 	return true
 }
@@ -291,7 +299,7 @@ func bonusAt(input *util.Chars, idx int) int16 {
 	if idx == 0 {
 		return bonusBoundaryWhite
 	}
-	return bonusFor(charClassOf(input.Get(idx-1)), charClassOf(input.Get(idx)))
+	return bonusMatrix[charClassOf(input.Get(idx-1))][charClassOf(input.Get(idx))]
 }
 
 func normalizeRune(r rune) rune {
@@ -467,7 +475,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			Tsub[off] = char
 		}
 
-		bonus := bonusFor(prevClass, class)
+		bonus := bonusMatrix[prevClass][class]
 		Bsub[off] = bonus
 		prevClass = class
 
@@ -650,7 +658,7 @@ func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, patter
 				*pos = append(*pos, idx)
 			}
 			score += scoreMatch
-			bonus := bonusFor(prevClass, class)
+			bonus := bonusMatrix[prevClass][class]
 			if consecutive == 0 {
 				firstBonus = bonus
 			} else {
