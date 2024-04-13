@@ -30,7 +30,7 @@ func loadPackages(t *testing.T) []*build.Package {
 		}
 		name := d.Name()
 		if d.IsDir() {
-			if name == "" || name[0] == '.' || name[0] == '_' || name == "vendor" {
+			if name == "" || name[0] == '.' || name[0] == '_' || name == "vendor" || name == "tmp" {
 				return filepath.SkipDir
 			}
 			return nil
