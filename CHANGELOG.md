@@ -3,6 +3,45 @@ CHANGELOG
 
 0.50.0
 ------
+- Search performance optimization. You can observe 50%+ improvement in some scenarios.
+  ```sh
+  $ time wc < $DATA
+   5520118 26862362 897487793
+
+  real    0m1.320s
+  user    0m1.236s
+  sys     0m0.075s
+
+  $ time fzf --sync --bind load:abort < $DATA
+
+  real    0m0.479s
+  user    0m0.427s
+  sys     0m0.176s
+
+  $ hyperfine -w 1 -L bin fzf-0.49.0,fzf-7ce6452,fzf-a5447b8,fzf '{bin} --filter "///" < $DATA | head -30'
+
+  Benchmark 1: fzf-0.49.0 --filter "///" < $DATA | head -30
+    Time (mean ± σ):      2.002 s ±  0.024 s    [User: 14.447 s, System: 0.300 s]
+    Range (min … max):    1.964 s …  2.042 s    10 runs
+
+  Benchmark 2: fzf-7ce6452 --filter "///" < $DATA | head -30
+    Time (mean ± σ):      1.627 s ±  0.019 s    [User: 10.828 s, System: 0.271 s]
+    Range (min … max):    1.596 s …  1.651 s    10 runs
+
+  Benchmark 3: fzf-a5447b8 --filter "///" < $DATA | head -30
+    Time (mean ± σ):      1.524 s ±  0.025 s    [User: 9.818 s, System: 0.269 s]
+    Range (min … max):    1.478 s …  1.569 s    10 runs
+
+  Benchmark 4: fzf --filter "///" < $DATA | head -30
+    Time (mean ± σ):      1.318 s ±  0.025 s    [User: 8.005 s, System: 0.262 s]
+    Range (min … max):    1.282 s …  1.366 s    10 runs
+
+  Summary
+    fzf --filter "///" < $DATA | head -30 ran
+      1.16 ± 0.03 times faster than fzf-a5447b8 --filter "///" < $DATA | head -30
+      1.23 ± 0.03 times faster than fzf-7ce6452 --filter "///" < $DATA | head -30
+      1.52 ± 0.03 times faster than fzf-0.49.0 --filter "///" < $DATA | head -30
+  ```
 - Added `jump` and `jump-cancel` events that are triggered when leaving `jump` mode
   ```sh
   # Default behavior

@@ -352,30 +352,45 @@ func isAscii(runes []rune) bool {
 	return true
 }
 
-func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) int {
+func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
 	// Can't determine
 	if !input.IsBytes() {
-		return 0
+		return 0, input.Length()
 	}
 
 	// Not possible
 	if !isAscii(pattern) {
-		return -1
+		return -1, -1
 	}
 
-	firstIdx, idx := 0, 0
+	firstIdx, idx, lastIdx := 0, 0, 0
+	var b byte
 	for pidx := 0; pidx < len(pattern); pidx++ {
-		idx = trySkip(input, caseSensitive, byte(pattern[pidx]), idx)
+		b = byte(pattern[pidx])
+		idx = trySkip(input, caseSensitive, b, idx)
 		if idx < 0 {
-			return -1
+			return -1, -1
 		}
 		if pidx == 0 && idx > 0 {
 			// Step back to find the right bonus point
 			firstIdx = idx - 1
 		}
+		lastIdx = idx
 		idx++
 	}
-	return firstIdx
+
+	// Find the last appearance of the last character of the pattern to limit the search scope
+	bu := b
+	if !caseSensitive && b >= 'a' && b <= 'z' {
+		bu = b - 32
+	}
+	scope := input.Bytes()[lastIdx:]
+	for offset := len(scope) - 1; offset > 0; offset-- {
+		if scope[offset] == b || scope[offset] == bu {
+			return firstIdx, lastIdx + offset + 1
+		}
+	}
+	return firstIdx, lastIdx + 1
 }
 
 func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []int16) {
@@ -424,6 +439,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 		return Result{0, 0, 0}, posArray(withPos, M)
 	}
 	N := input.Length()
+	if M > N {
+		return Result{-1, -1, 0}, nil
+	}
 
 	// Since O(nm) algorithm can be prohibitively expensive for large input,
 	// we fall back to the greedy algorithm.
@@ -432,10 +450,12 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	}
 
 	// Phase 1. Optimized search for ASCII string
-	idx := asciiFuzzyIndex(input, pattern, caseSensitive)
-	if idx < 0 {
+	minIdx, maxIdx := asciiFuzzyIndex(input, pattern, caseSensitive)
+	if minIdx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
+	// fmt.Println(N, maxIdx, idx, maxIdx-idx, input.ToString())
+	N = maxIdx - minIdx
 
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
 	offset16 := 0
@@ -448,21 +468,19 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	offset32, F := alloc32(offset32, slab, M)
 	// Rune array
 	_, T := alloc32(offset32, slab, N)
-	input.CopyRunes(T)
+	input.CopyRunes(T, minIdx)
 
 	// Phase 2. Calculate bonus for each point
 	maxScore, maxScorePos := int16(0), 0
 	pidx, lastIdx := 0, 0
 	pchar0, pchar, prevH0, prevClass, inGap := pattern[0], pattern[0], int16(0), initialCharClass, false
-	Tsub := T[idx:]
-	H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], B[idx:][:len(Tsub)]
-	for off, char := range Tsub {
+	for off, char := range T {
 		var class charClass
 		if char <= unicode.MaxASCII {
 			class = asciiCharClasses[char]
 			if !caseSensitive && class == charUpper {
 				char += 32
-				Tsub[off] = char
+				T[off] = char
 			}
 		} else {
 			class = charClassOfNonAscii(char)
@@ -472,28 +490,28 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			if normalize {
 				char = normalizeRune(char)
 			}
-			Tsub[off] = char
+			T[off] = char
 		}
 
 		bonus := bonusMatrix[prevClass][class]
-		Bsub[off] = bonus
+		B[off] = bonus
 		prevClass = class
 
 		if char == pchar {
 			if pidx < M {
-				F[pidx] = int32(idx + off)
+				F[pidx] = int32(off)
 				pidx++
 				pchar = pattern[util.Min(pidx, M-1)]
 			}
-			lastIdx = idx + off
+			lastIdx = off
 		}
 
 		if char == pchar0 {
 			score := scoreMatch + bonus*bonusFirstCharMultiplier
-			H0sub[off] = score
-			C0sub[off] = 1
+			H0[off] = score
+			C0[off] = 1
 			if M == 1 && (forward && score > maxScore || !forward && score >= maxScore) {
-				maxScore, maxScorePos = score, idx+off
+				maxScore, maxScorePos = score, off
 				if forward && bonus >= bonusBoundary {
 					break
 				}
@@ -501,24 +519,24 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			inGap = false
 		} else {
 			if inGap {
-				H0sub[off] = util.Max16(prevH0+scoreGapExtension, 0)
+				H0[off] = util.Max16(prevH0+scoreGapExtension, 0)
 			} else {
-				H0sub[off] = util.Max16(prevH0+scoreGapStart, 0)
+				H0[off] = util.Max16(prevH0+scoreGapStart, 0)
 			}
-			C0sub[off] = 0
+			C0[off] = 0
 			inGap = true
 		}
-		prevH0 = H0sub[off]
+		prevH0 = H0[off]
 	}
 	if pidx != M {
 		return Result{-1, -1, 0}, nil
 	}
 	if M == 1 {
-		result := Result{maxScorePos, maxScorePos + 1, int(maxScore)}
+		result := Result{minIdx + maxScorePos, minIdx + maxScorePos + 1, int(maxScore)}
 		if !withPos {
 			return result, nil
 		}
-		pos := []int{maxScorePos}
+		pos := []int{minIdx + maxScorePos}
 		return result, &pos
 	}
 
@@ -615,7 +633,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			}
 
 			if s > s1 && (s > s2 || s == s2 && preferMatch) {
-				*pos = append(*pos, j)
+				*pos = append(*pos, j+minIdx)
 				if i == 0 {
 					break
 				}
@@ -628,7 +646,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Start offset we return here is only relevant when begin tiebreak is used.
 	// However finding the accurate offset requires backtracking, and we don't
 	// want to pay extra cost for the option that has lost its importance.
-	return Result{j, maxScorePos + 1, int(maxScore)}, pos
+	return Result{minIdx + j, minIdx + maxScorePos + 1, int(maxScore)}, pos
 }
 
 // Implement the same sorting criteria as V2
@@ -696,7 +714,8 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 	if len(pattern) == 0 {
 		return Result{0, 0, 0}, nil
 	}
-	if asciiFuzzyIndex(text, pattern, caseSensitive) < 0 {
+	idx, _ := asciiFuzzyIndex(text, pattern, caseSensitive)
+	if idx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
 
@@ -790,7 +809,8 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text *uti
 		return Result{-1, -1, 0}, nil
 	}
 
-	if asciiFuzzyIndex(text, pattern, caseSensitive) < 0 {
+	idx, _ := asciiFuzzyIndex(text, pattern, caseSensitive)
+	if idx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
 
