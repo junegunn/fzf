@@ -6,10 +6,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/junegunn/fzf/src/util"
 	"github.com/rivo/uniseg"
 )
 
 // Types of user action
+//
+//go:generate stringer -type=EventType
 type EventType int
 
 const (
@@ -41,7 +44,7 @@ const (
 	CtrlX
 	CtrlY
 	CtrlZ
-	ESC
+	Esc
 	CtrlSpace
 	CtrlDelete
 
@@ -51,27 +54,12 @@ const (
 	CtrlCaret
 	CtrlSlash
 
-	Invalid
-	Resize
-	Mouse
-	DoubleClick
-	LeftClick
-	RightClick
-	SLeftClick
-	SRightClick
-	ScrollUp
-	ScrollDown
-	SScrollUp
-	SScrollDown
-	PreviewScrollUp
-	PreviewScrollDown
+	ShiftTab
+	Backspace
 
-	BTab
-	BSpace
-
-	Del
-	PgUp
-	PgDn
+	Delete
+	PageUp
+	PageDown
 
 	Up
 	Down
@@ -81,11 +69,11 @@ const (
 	End
 	Insert
 
-	SUp
-	SDown
-	SLeft
-	SRight
-	SDelete
+	ShiftUp
+	ShiftDown
+	ShiftLeft
+	ShiftRight
+	ShiftDelete
 
 	F1
 	F2
@@ -100,6 +88,38 @@ const (
 	F11
 	F12
 
+	AltBackspace
+
+	AltUp
+	AltDown
+	AltLeft
+	AltRight
+
+	AltShiftUp
+	AltShiftDown
+	AltShiftLeft
+	AltShiftRight
+
+	Alt
+	CtrlAlt
+
+	Invalid
+
+	Mouse
+	DoubleClick
+	LeftClick
+	RightClick
+	SLeftClick
+	SRightClick
+	ScrollUp
+	ScrollDown
+	SScrollUp
+	SScrollDown
+	PreviewScrollUp
+	PreviewScrollDown
+
+	// Events
+	Resize
 	Change
 	BackwardEOF
 	Start
@@ -110,21 +130,6 @@ const (
 	Result
 	Jump
 	JumpCancel
-
-	AltBS
-
-	AltUp
-	AltDown
-	AltLeft
-	AltRight
-
-	AltSUp
-	AltSDown
-	AltSLeft
-	AltSRight
-
-	Alt
-	CtrlAlt
 )
 
 func (t EventType) AsEvent() Event {
@@ -142,6 +147,31 @@ func (t EventType) Byte() byte {
 func (e Event) Comparable() Event {
 	// Ignore MouseEvent pointer
 	return Event{e.Type, e.Char, nil}
+}
+
+func (e Event) KeyName() string {
+	if e.Type >= Invalid {
+		return ""
+	}
+
+	switch e.Type {
+	case Rune:
+		return string(e.Char)
+	case Alt:
+		return "alt-" + string(e.Char)
+	case CtrlAlt:
+		return "ctrl-alt-" + string(e.Char)
+	case CtrlBackSlash:
+		return "ctrl-\\"
+	case CtrlRightBracket:
+		return "ctrl-]"
+	case CtrlCaret:
+		return "ctrl-^"
+	case CtrlSlash:
+		return "ctrl-/"
+	}
+
+	return util.ToKebabCase(e.Type.String())
 }
 
 func Key(r rune) Event {

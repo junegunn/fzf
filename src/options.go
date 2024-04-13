@@ -52,7 +52,7 @@ const usage = `usage: fzf [options]
     --hscroll-off=COLS     Number of screen columns to keep to the right of the
                            highlighted substring (default: 10)
     --filepath-word        Make word-wise movements respect path separators
-    --jump-labels=CHARS    Label characters for jump and jump-accept
+    --jump-labels=CHARS    Label characters for jump mode
 
   Layout
     --height=[~]HEIGHT[%]  Display fzf window below the cursor with the given
@@ -666,8 +666,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.CtrlM)
 		case "space":
 			chords[tui.Key(' ')] = key
-		case "bspace", "bs":
-			add(tui.BSpace)
+		case "backspace", "bspace", "bs":
+			add(tui.Backspace)
 		case "ctrl-space":
 			add(tui.CtrlSpace)
 		case "ctrl-delete":
@@ -706,8 +706,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":
 			chords[tui.AltKey(' ')] = key
-		case "alt-bs", "alt-bspace":
-			add(tui.AltBS)
+		case "alt-bs", "alt-bspace", "alt-backspace":
+			add(tui.AltBackspace)
 		case "alt-up":
 			add(tui.AltUp)
 		case "alt-down":
@@ -719,11 +719,11 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 		case "tab":
 			add(tui.Tab)
 		case "btab", "shift-tab":
-			add(tui.BTab)
+			add(tui.ShiftTab)
 		case "esc":
-			add(tui.ESC)
-		case "del":
-			add(tui.Del)
+			add(tui.Esc)
+		case "delete", "del":
+			add(tui.Delete)
 		case "home":
 			add(tui.Home)
 		case "end":
@@ -731,27 +731,27 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 		case "insert":
 			add(tui.Insert)
 		case "pgup", "page-up":
-			add(tui.PgUp)
+			add(tui.PageUp)
 		case "pgdn", "page-down":
-			add(tui.PgDn)
+			add(tui.PageDown)
 		case "alt-shift-up", "shift-alt-up":
-			add(tui.AltSUp)
+			add(tui.AltShiftUp)
 		case "alt-shift-down", "shift-alt-down":
-			add(tui.AltSDown)
+			add(tui.AltShiftDown)
 		case "alt-shift-left", "shift-alt-left":
-			add(tui.AltSLeft)
+			add(tui.AltShiftLeft)
 		case "alt-shift-right", "shift-alt-right":
-			add(tui.AltSRight)
+			add(tui.AltShiftRight)
 		case "shift-up":
-			add(tui.SUp)
+			add(tui.ShiftUp)
 		case "shift-down":
-			add(tui.SDown)
+			add(tui.ShiftDown)
 		case "shift-left":
-			add(tui.SLeft)
+			add(tui.ShiftLeft)
 		case "shift-right":
-			add(tui.SRight)
+			add(tui.ShiftRight)
 		case "shift-delete":
-			add(tui.SDelete)
+			add(tui.ShiftDelete)
 		case "left-click":
 			add(tui.LeftClick)
 		case "right-click":

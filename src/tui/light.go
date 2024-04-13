@@ -245,7 +245,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 	}
 
 	retries := 0
-	if c == ESC.Int() || nonblock {
+	if c == Esc.Int() || nonblock {
 		retries = r.escDelay / escPollInterval
 	}
 	buffer = append(buffer, byte(c))
@@ -260,7 +260,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 				continue
 			}
 			break
-		} else if c == ESC.Int() && pc != c {
+		} else if c == Esc.Int() && pc != c {
 			retries = r.escDelay / escPollInterval
 		} else {
 			retries = 0
@@ -300,7 +300,7 @@ func (r *LightRenderer) GetChar() Event {
 	case CtrlQ.Byte():
 		return Event{CtrlQ, 0, nil}
 	case 127:
-		return Event{BSpace, 0, nil}
+		return Event{Backspace, 0, nil}
 	case 0:
 		return Event{CtrlSpace, 0, nil}
 	case 28:
@@ -311,7 +311,7 @@ func (r *LightRenderer) GetChar() Event {
 		return Event{CtrlCaret, 0, nil}
 	case 31:
 		return Event{CtrlSlash, 0, nil}
-	case ESC.Byte():
+	case Esc.Byte():
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
@@ -327,7 +327,7 @@ func (r *LightRenderer) GetChar() Event {
 	}
 	char, rsz := utf8.DecodeRune(r.buffer)
 	if char == utf8.RuneError {
-		return Event{ESC, 0, nil}
+		return Event{Esc, 0, nil}
 	}
 	sz = rsz
 	return Event{Rune, char, nil}
@@ -335,7 +335,7 @@ func (r *LightRenderer) GetChar() Event {
 
 func (r *LightRenderer) escSequence(sz *int) Event {
 	if len(r.buffer) < 2 {
-		return Event{ESC, 0, nil}
+		return Event{Esc, 0, nil}
 	}
 
 	loc := offsetRegexpBegin.FindIndex(r.buffer)
@@ -349,15 +349,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 		return CtrlAltKey(rune(r.buffer[1] + 'a' - 1))
 	}
 	alt := false
-	if len(r.buffer) > 2 && r.buffer[1] == ESC.Byte() {
+	if len(r.buffer) > 2 && r.buffer[1] == Esc.Byte() {
 		r.buffer = r.buffer[1:]
 		alt = true
 	}
 	switch r.buffer[1] {
-	case ESC.Byte():
-		return Event{ESC, 0, nil}
+	case Esc.Byte():
+		return Event{Esc, 0, nil}
 	case 127:
-		return Event{AltBS, 0, nil}
+		return Event{AltBackspace, 0, nil}
 	case '[', 'O':
 		if len(r.buffer) < 3 {
 			return Event{Invalid, 0, nil}
@@ -386,7 +386,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			}
 			return Event{Up, 0, nil}
 		case 'Z':
-			return Event{BTab, 0, nil}
+			return Event{ShiftTab, 0, nil}
 		case 'H':
 			return Event{Home, 0, nil}
 		case 'F':
@@ -434,7 +434,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				return Event{Invalid, 0, nil} // INS
 			case '3':
 				if r.buffer[3] == '~' {
-					return Event{Del, 0, nil}
+					return Event{Delete, 0, nil}
 				}
 				if len(r.buffer) == 6 && r.buffer[5] == '~' {
 					*sz = 6
@@ -442,16 +442,16 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					case '5':
 						return Event{CtrlDelete, 0, nil}
 					case '2':
-						return Event{SDelete, 0, nil}
+						return Event{ShiftDelete, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
 			case '4':
 				return Event{End, 0, nil}
 			case '5':
-				return Event{PgUp, 0, nil}
+				return Event{PageUp, 0, nil}
 			case '6':
-				return Event{PgDn, 0, nil}
+				return Event{PageDown, 0, nil}
 			case '7':
 				return Event{Home, 0, nil}
 			case '8':
@@ -489,16 +489,29 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case '1', '2', '3', '5':
+					case '1', '2', '3', '4', '5':
+						//                   Kitty      iTerm2     WezTerm
+						// SHIFT-ARROW       "\e[1;2D"
+						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
+						// CTRL-SHIFT-ARROW  "\e[1;6D"             N/A
+						// CMD-SHIFT-ARROW   "\e[1;10D" N/A        N/A ("\e[1;2D")
 						alt := r.buffer[4] == '3'
-						altShift := r.buffer[4] == '1' && r.buffer[5] == '0'
 						char := r.buffer[5]
-						if altShift {
+						altShift := false
+						if r.buffer[4] == '1' && r.buffer[5] == '0' {
+							altShift = true
 							if len(r.buffer) < 7 {
 								return Event{Invalid, 0, nil}
 							}
 							*sz = 7
 							char = r.buffer[6]
+						} else if r.buffer[4] == '4' {
+							altShift = true
+							if len(r.buffer) < 6 {
+								return Event{Invalid, 0, nil}
+							}
+							*sz = 6
+							char = r.buffer[5]
 						}
 						switch char {
 						case 'A':
@@ -506,33 +519,33 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{AltUp, 0, nil}
 							}
 							if altShift {
-								return Event{AltSUp, 0, nil}
+								return Event{AltShiftUp, 0, nil}
 							}
-							return Event{SUp, 0, nil}
+							return Event{ShiftUp, 0, nil}
 						case 'B':
 							if alt {
 								return Event{AltDown, 0, nil}
 							}
 							if altShift {
-								return Event{AltSDown, 0, nil}
+								return Event{AltShiftDown, 0, nil}
 							}
-							return Event{SDown, 0, nil}
+							return Event{ShiftDown, 0, nil}
 						case 'C':
 							if alt {
 								return Event{AltRight, 0, nil}
 							}
 							if altShift {
-								return Event{AltSRight, 0, nil}
+								return Event{AltShiftRight, 0, nil}
 							}
-							return Event{SRight, 0, nil}
+							return Event{ShiftRight, 0, nil}
 						case 'D':
 							if alt {
 								return Event{AltLeft, 0, nil}
 							}
 							if altShift {
-								return Event{AltSLeft, 0, nil}
+								return Event{AltShiftLeft, 0, nil}
 							}
-							return Event{SLeft, 0, nil}
+							return Event{ShiftLeft, 0, nil}
 						}
 					} // r.buffer[4]
 				} // r.buffer[3]

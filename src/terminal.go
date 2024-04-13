@@ -293,6 +293,7 @@ type Terminal struct {
 	executing          *util.AtomicBool
 	termSize           tui.TermSize
 	lastAction         actionType
+	lastKey            string
 	lastFocus          int32
 	areaLines          int
 	areaColumns        int
@@ -408,7 +409,7 @@ const (
 	actOffsetUp
 	actOffsetDown
 	actJump
-	actJumpAccept
+	actJumpAccept // XXX Deprecated in favor of jump:accept binding
 	actPrintQuery
 	actRefreshPreview
 	actReplaceQuery
@@ -460,14 +461,7 @@ const (
 )
 
 func (a actionType) Name() string {
-	name := ""
-	for i, r := range a.String()[3:] {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			name += "-"
-		}
-		name += string(r)
-	}
-	return strings.ToLower(name)
+	return util.ToKebabCase(a.String()[3:])
 }
 
 func processExecution(action actionType) bool {
@@ -546,14 +540,14 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlC, actAbort)
 	add(tui.CtrlG, actAbort)
 	add(tui.CtrlQ, actAbort)
-	add(tui.ESC, actAbort)
+	add(tui.Esc, actAbort)
 	add(tui.CtrlD, actDeleteCharEof)
 	add(tui.CtrlE, actEndOfLine)
 	add(tui.CtrlF, actForwardChar)
 	add(tui.CtrlH, actBackwardDeleteChar)
-	add(tui.BSpace, actBackwardDeleteChar)
+	add(tui.Backspace, actBackwardDeleteChar)
 	add(tui.Tab, actToggleDown)
-	add(tui.BTab, actToggleUp)
+	add(tui.ShiftTab, actToggleUp)
 	add(tui.CtrlJ, actDown)
 	add(tui.CtrlK, actUp)
 	add(tui.CtrlL, actClearScreen)
@@ -568,11 +562,11 @@ func defaultKeymap() map[tui.Event][]*action {
 	}
 
 	addEvent(tui.AltKey('b'), actBackwardWord)
-	add(tui.SLeft, actBackwardWord)
+	add(tui.ShiftLeft, actBackwardWord)
 	addEvent(tui.AltKey('f'), actForwardWord)
-	add(tui.SRight, actForwardWord)
+	add(tui.ShiftRight, actForwardWord)
 	addEvent(tui.AltKey('d'), actKillWord)
-	add(tui.AltBS, actBackwardKillWord)
+	add(tui.AltBackspace, actBackwardKillWord)
 
 	add(tui.Up, actUp)
 	add(tui.Down, actDown)
@@ -581,12 +575,12 @@ func defaultKeymap() map[tui.Event][]*action {
 
 	add(tui.Home, actBeginningOfLine)
 	add(tui.End, actEndOfLine)
-	add(tui.Del, actDeleteChar)
-	add(tui.PgUp, actPageUp)
-	add(tui.PgDn, actPageDown)
+	add(tui.Delete, actDeleteChar)
+	add(tui.PageUp, actPageUp)
+	add(tui.PageDown, actPageDown)
 
-	add(tui.SUp, actPreviewUp)
-	add(tui.SDown, actPreviewDown)
+	add(tui.ShiftUp, actPreviewUp)
+	add(tui.ShiftDown, actPreviewDown)
 
 	add(tui.Mouse, actMouse)
 	add(tui.LeftClick, actClick)
@@ -851,6 +845,7 @@ func (t *Terminal) environ() []string {
 	}
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
+	env = append(env, "FZF_KEY="+t.lastKey)
 	env = append(env, "FZF_PROMPT="+string(t.promptString))
 	env = append(env, "FZF_PREVIEW_LABEL="+t.previewLabelOpts.label)
 	env = append(env, "FZF_BORDER_LABEL="+t.borderLabelOpts.label)
@@ -3290,6 +3285,7 @@ func (t *Terminal) Loop() {
 		t.mutex.Lock()
 		previousInput := t.input
 		previousCx := t.cx
+		t.lastKey = event.KeyName()
 		events := []util.EventType{}
 		req := func(evts ...util.EventType) {
 			for _, event := range evts {
