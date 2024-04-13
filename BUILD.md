@@ -37,7 +37,8 @@ make release
 >
 > ```sh
 > TAGS=pprof make clean install
-> fzf --profile-cpu /tmp/cpu.pprof
+> fzf --profile-cpu /tmp/cpu.pprof --profile-mem /tmp/mem.pprof \
+>     --profile-block /tmp/block.pprof --profile-mutex /tmp/mutex.pprof
 > ```
 
 Third-party libraries used

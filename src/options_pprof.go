@@ -47,7 +47,7 @@ func (o *Options) initProfiling() error {
 		}
 		util.AtExit(func() {
 			runtime.GC()
-			util.AtExit(func() { stopProfile("allocs", f) })
+			stopProfile("allocs", f)
 		})
 	}
 
