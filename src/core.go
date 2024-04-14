@@ -3,6 +3,7 @@ package fzf
 
 import (
 	"fmt"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -164,14 +165,17 @@ func Run(opts *Options, version string, revision string) {
 		found := false
 		if streamingFilter {
 			slab := util.MakeSlab(slab16Size, slab32Size)
+			mutex := sync.Mutex{}
 			reader := NewReader(
 				func(runes []byte) bool {
 					item := Item{}
 					if chunkList.trans(&item, runes) {
+						mutex.Lock()
 						if result, _, _ := pattern.MatchItem(&item, false, slab); result != nil {
 							opts.Printer(item.text.ToString())
 							found = true
 						}
+						mutex.Unlock()
 					}
 					return false
 				}, eventBox, opts.ReadZero, false)
