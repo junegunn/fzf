@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// ExecCommand executes the given command with $SHELL $FZF_SHELL_FLAG 
+// ExecCommand executes the given command with $SHELL $FZF_SHELL_FLAG
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")
 	if len(shell) == 0 {
