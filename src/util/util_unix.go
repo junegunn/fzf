@@ -10,18 +10,22 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// ExecCommand executes the given command with $SHELL
+// ExecCommand executes the given command with $SHELL $FZF_SHELL_FLAG 
 func ExecCommand(command string, setpgid bool) *exec.Cmd {
 	shell := os.Getenv("SHELL")
 	if len(shell) == 0 {
 		shell = "sh"
 	}
-	return ExecCommandWith(shell, command, setpgid)
+	shellFlag := os.Getenv("FZF_SHELL_FLAG")
+	if len(shellFlag) == 0 {
+		shellFlag = "-c"
+	}
+	return ExecCommandWith(shell, shellFlag, command, setpgid)
 }
 
-// ExecCommandWith executes the given command with the specified shell
-func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
-	cmd := exec.Command(shell, "-c", command)
+// ExecCommandWith executes the given command with the specified shell and flag
+func ExecCommandWith(shell string, shellFlag string, command string, setpgid bool) *exec.Cmd {
+	cmd := exec.Command(shell, shellFlag, command)
 	if setpgid {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	}

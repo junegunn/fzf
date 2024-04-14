@@ -3375,6 +3375,10 @@ func (t *Terminal) Loop() {
 					if len(shell) == 0 {
 						shell = "sh"
 					}
+					shellFlag := os.Getenv("FZF_SHELL_FLAG")
+					if len(shellFlag) == 0 {
+						shellFlag = "-c"
+					}
 					shellPath, err := exec.LookPath(shell)
 					if err == nil {
 						t.tui.Close()
@@ -3390,7 +3394,7 @@ func (t *Terminal) Loop() {
 						*/
 						tui.TtyIn()
 						util.SetStdin(tui.TtyIn())
-						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
+						syscall.Exec(shellPath, []string{shell, shellFlag, command}, os.Environ())
 					}
 				}
 			case actExecute, actExecuteSilent:

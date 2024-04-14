@@ -907,8 +907,18 @@ e.g. \fBfzf --fish | source\fR
 .TP
 .B FZF_DEFAULT_COMMAND
 Default command to use when input is tty. On *nix systems, fzf runs the command
-with \fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise with \fBsh -c\fR, so in
-this case make sure that the command is POSIX-compliant.
+with \fB$SHELL $FZF_SHELL_FLAG\fR if \fBSHELL\fR and \fBFZF_SHELL_FLAGS\fR are set, otherwise with \fBsh -c\fR.
+
+.TP
+.B FZF_SHELL_FLAG
+Custom flag to pass to the shell when executing commands. If not set, fzf defaults to \fB-c\fR.
+.br
+e.g.
+    \fBSHELL=$(which bun) FZF_SHELL_FLAG="--print" \\
+      fzf --listen \\
+        --bind 'start:reload:(await Bun.$`ls`.text()).trim()' \\
+        --preview 'await fetch(`http://127.0.0.1:${process.env.FZF_PORT}`)'\fR
+
 .TP
 .B FZF_DEFAULT_OPTS
 Default options.
