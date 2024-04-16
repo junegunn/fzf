@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2024" "fzf 0.49.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Apr 2024" "fzf 0.50.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -191,7 +191,7 @@ actions are affected:
 \fBkill-word\fR
 .TP
 .BI "--jump-labels=" "CHARS"
-Label characters for \fBjump\fR and \fBjump-accept\fR
+Label characters for \fBjump\fR mode.
 .SS Layout
 .TP
 .BI "--height=" "[~]HEIGHT[%]"
@@ -982,6 +982,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_ACTION "          The name of the last action performed"
 .br
+.BR FZF_KEY "             The name of the last key pressed"
+.br
 .BR FZF_PORT "            Port number when --listen option is used"
 .br
 
@@ -1052,21 +1054,21 @@ e.g.
 .br
 \fIctrl-]\fR
 .br
-\fIctrl-^\fR      (\fIctrl-6\fR)
+\fIctrl-^\fR         (\fIctrl-6\fR)
 .br
-\fIctrl-/\fR      (\fIctrl-_\fR)
+\fIctrl-/\fR         (\fIctrl-_\fR)
 .br
 \fIctrl-alt-[a-z]\fR
 .br
-\fIalt-[*]\fR     (Any case-sensitive single character is allowed)
+\fIalt-[*]\fR        (Any case-sensitive single character is allowed)
 .br
 \fIf[1-12]\fR
 .br
-\fIenter\fR       (\fIreturn\fR \fIctrl-m\fR)
+\fIenter\fR          (\fIreturn\fR \fIctrl-m\fR)
 .br
 \fIspace\fR
 .br
-\fIbspace\fR      (\fIbs\fR)
+\fIbackspace\fR      (\fIbspace\fR \fIbs\fR)
 .br
 \fIalt-up\fR
 .br
@@ -1080,15 +1082,15 @@ e.g.
 .br
 \fIalt-space\fR
 .br
-\fIalt-bspace\fR  (\fIalt-bs\fR)
+\fIalt-backspace\fR  (\fIalt-bspace\fR \fIalt-bs\fR)
 .br
 \fItab\fR
 .br
-\fIbtab\fR        (\fIshift-tab\fR)
+\fIshift-tab\fR      (\fIbtab\fR)
 .br
 \fIesc\fR
 .br
-\fIdel\fR
+\fIdelete\fR         (\fIdel\fR)
 .br
 \fIup\fR
 .br
@@ -1104,9 +1106,9 @@ e.g.
 .br
 \fIinsert\fR
 .br
-\fIpgup\fR        (\fIpage-up\fR)
+\fIpage-up\fR        (\fIpgup\fR)
 .br
-\fIpgdn\fR        (\fIpage-down\fR)
+\fIpage-down\fR      (\fIpgdn\fR)
 .br
 \fIshift-up\fR
 .br
@@ -1248,7 +1250,7 @@ e.g.
 
 \fIjump\fR
 .RS
-Triggered when successfully jumped to the target item in \fB--jump\fR mode.
+Triggered when successfully jumped to the target item in \fBjump\fR mode.
 
 e.g.
      \fBfzf --bind space:jump,jump:accept\fR
@@ -1256,7 +1258,7 @@ e.g.
 
 \fIjump-cancel\fR
 .RS
-Triggered when \fB--jump\fR mode is cancelled.
+Triggered when \fBjump\fR mode is cancelled.
 
 e.g.
      \fBfzf --bind space:jump,jump:accept,jump-cancel:abort\fR
@@ -1304,7 +1306,6 @@ A key or an event can be bound to one or more of the following actions.
     \fBforward-word\fR                 \fIalt-f   shift-right\fR
     \fBignore\fR
     \fBjump\fR                         (EasyMotion-like 2-keystroke movement)
-    \fBjump-accept\fR                  (jump and accept)
     \fBkill-line\fR
     \fBkill-word\fR                    \fIalt-d\fR
     \fBlast\fR                         (move to the last match; same as \fBpos(-1)\fR)

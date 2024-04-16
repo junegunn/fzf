@@ -3,7 +3,7 @@ package fzf
 
 import (
 	"fmt"
-	"os"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -29,6 +29,8 @@ func sbytes(data string) []byte {
 
 // Run starts fzf
 func Run(opts *Options, version string, revision string) {
+	defer util.RunAtExitFuncs()
+
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
@@ -38,7 +40,7 @@ func Run(opts *Options, version string, revision string) {
 		} else {
 			fmt.Println(version)
 		}
-		os.Exit(exitOk)
+		util.Exit(exitOk)
 	}
 
 	// Event channel
@@ -163,14 +165,17 @@ func Run(opts *Options, version string, revision string) {
 		found := false
 		if streamingFilter {
 			slab := util.MakeSlab(slab16Size, slab32Size)
+			mutex := sync.Mutex{}
 			reader := NewReader(
 				func(runes []byte) bool {
 					item := Item{}
 					if chunkList.trans(&item, runes) {
+						mutex.Lock()
 						if result, _, _ := pattern.MatchItem(&item, false, slab); result != nil {
 							opts.Printer(item.text.ToString())
 							found = true
 						}
+						mutex.Unlock()
 					}
 					return false
 				}, eventBox, opts.ReadZero, false)
@@ -189,9 +194,9 @@ func Run(opts *Options, version string, revision string) {
 			}
 		}
 		if found {
-			os.Exit(exitOk)
+			util.Exit(exitOk)
 		}
-		os.Exit(exitNoMatch)
+		util.Exit(exitNoMatch)
 	}
 
 	// Synchronous search
@@ -270,7 +275,7 @@ func Run(opts *Options, version string, revision string) {
 					if reading {
 						reader.terminate()
 					}
-					os.Exit(value.(int))
+					util.Exit(value.(int))
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand, nextEnviron)
@@ -372,9 +377,9 @@ func Run(opts *Options, version string, revision string) {
 										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
 									}
 									if count > 0 {
-										os.Exit(exitOk)
+										util.Exit(exitOk)
 									}
-									os.Exit(exitNoMatch)
+									util.Exit(exitNoMatch)
 								}
 								determine(val.final)
 							}

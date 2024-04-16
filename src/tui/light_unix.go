@@ -58,7 +58,7 @@ func openTtyIn() *os.File {
 			}
 		}
 		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
-		os.Exit(2)
+		util.Exit(2)
 	}
 	return in
 }

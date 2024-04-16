@@ -176,3 +176,15 @@ func RepeatToFill(str string, length int, limit int) string {
 	}
 	return output
 }
+
+// ToKebabCase converts the given CamelCase string to kebab-case
+func ToKebabCase(s string) string {
+	name := ""
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			name += "-"
+		}
+		name += string(r)
+	}
+	return strings.ToLower(name)
+}

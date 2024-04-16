@@ -9,6 +9,10 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
+func init() {
+	Init("default")
+}
+
 func assertMatch(t *testing.T, fun Algo, caseSensitive, forward bool, input, pattern string, sidx int, eidx int, score int) {
 	assertMatch2(t, fun, caseSensitive, false, forward, input, pattern, sidx, eidx, score)
 }

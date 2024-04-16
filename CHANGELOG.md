@@ -1,6 +1,43 @@
 CHANGELOG
 =========
 
+0.50.0
+------
+- Search performance optimization. You can observe 50%+ improvement in some scenarios.
+  ```
+  $ rg --line-number --no-heading --smart-case . > $DATA
+
+  $ wc < $DATA
+   5520118 26862362 897487793
+
+  $ hyperfine -w 1 -L bin fzf-0.49.0,fzf-7ce6452,fzf-a5447b8,fzf '{bin} --filter "///" < $DATA | head -30'
+  Summary
+    fzf --filter "///" < $DATA | head -30 ran
+      1.16 ± 0.03 times faster than fzf-a5447b8 --filter "///" < $DATA | head -30
+      1.23 ± 0.03 times faster than fzf-7ce6452 --filter "///" < $DATA | head -30
+      1.52 ± 0.03 times faster than fzf-0.49.0 --filter "///" < $DATA | head -30
+  ```
+- Added `jump` and `jump-cancel` events that are triggered when leaving `jump` mode
+  ```sh
+  # Default behavior
+  fzf --bind space:jump
+
+  # Same as jump-accept action
+  fzf --bind space:jump,jump:accept
+
+  # Accept on jump, abort on cancel
+  fzf --bind space:jump,jump:accept,jump-cancel:abort
+
+  # Change header on jump-cancel
+  fzf --bind 'space:change-header(Type jump label)+jump,jump-cancel:change-header:Jump cancelled'
+  ```
+- Added a new environment variable `$FZF_KEY` exported to the child processes. It's the name of the last key pressed.
+  ```sh
+  fzf --bind 'space:jump,jump:accept,jump-cancel:transform:[[ $FZF_KEY =~ ctrl-c ]] && echo abort'
+  ```
+- fzf can be built with profiling options. See [BUILD.md](BUILD.md) for more information.
+- Bug fixes
+
 0.49.0
 ------
 - Ingestion performance improved by around 40% (more or less depending on options)

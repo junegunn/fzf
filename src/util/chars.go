@@ -178,12 +178,12 @@ func (chars *Chars) ToRunes() []rune {
 	return runes
 }
 
-func (chars *Chars) CopyRunes(dest []rune) {
+func (chars *Chars) CopyRunes(dest []rune, from int) {
 	if runes := chars.optionalRunes(); runes != nil {
-		copy(dest, runes)
+		copy(dest, runes[from:])
 		return
 	}
-	for idx, b := range chars.slice[:len(dest)] {
+	for idx, b := range chars.slice[from:][:len(dest)] {
 		dest[idx] = rune(b)
 	}
 }

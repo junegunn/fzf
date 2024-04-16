@@ -173,6 +173,12 @@ func (r *Reader) feed(src io.Reader) {
 				}
 			} else {
 				// Could not find the delimiter in the buffer
+				//   NOTE: We can further optimize this by keeping track of the cursor
+				//   position in the slab so that a straddling item that doesn't go
+				//   beyond the boundary of a slab doesn't need to be copied to
+				//   another buffer. However, the performance gain is negligible in
+				//   practice (< 0.1%) and is not
+				//   worth the added complexity.
 				leftover = append(leftover, buf...)
 				break
 			}
