@@ -11,8 +11,6 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-if [[ -o interactive ]]; then
-
 
 # Key bindings
 # ------------
@@ -38,6 +36,7 @@ fi
 'builtin' 'emulate' 'zsh' && 'builtin' 'setopt' 'no_aliases'
 
 {
+if [[ -o interactive ]]; then
 
 # CTRL-T - Paste the selected file path(s) into the command line
 __fsel() {
@@ -114,10 +113,9 @@ zle     -N            fzf-history-widget
 bindkey -M emacs '^R' fzf-history-widget
 bindkey -M vicmd '^R' fzf-history-widget
 bindkey -M viins '^R' fzf-history-widget
+fi
 
 } always {
   eval $__fzf_key_bindings_options
   'unset' '__fzf_key_bindings_options'
 }
-
-fi
