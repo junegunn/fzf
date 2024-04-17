@@ -70,7 +70,6 @@ fi
 # sidestep this issue entirely.
 'builtin' 'emulate' 'zsh' && 'builtin' 'setopt' 'no_aliases'
 
-
 # This brace is the start of try-always block. The `always` part is like
 # `finally` in lesser languages. We use it to *always* restore user options.
 {
