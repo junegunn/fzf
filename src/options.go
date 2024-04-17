@@ -57,7 +57,7 @@ const usage = `usage: fzf [options]
   Layout
     --height=[~]HEIGHT[%]  Display fzf window below the cursor with the given
                            height instead of using fullscreen.
-                           A negative value is calcalated as the terminal height
+                           A negative value is calculated as the terminal height
                            minus the given value.
                            If prefixed with '~', fzf will determine the height
                            according to the input size.
