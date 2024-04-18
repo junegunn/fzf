@@ -18,6 +18,15 @@ status is-interactive; or exit 0
 # ------------
 function fzf_key_bindings
 
+  function __fzf_defaults
+    # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+    # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
+    echo "--height $FZF_TMUX_HEIGHT --bind=ctrl-z:ignore" $argv[1]
+    command cat "$FZF_DEFAULT_OPTS_FILE" 2> /dev/null
+    echo $FZF_DEFAULT_OPTS $argv[2]
+  end
+
   # Store current token in $dir as root for the 'find' command
   function fzf-file-widget -d "List files and folders"
     set -l commandline (__fzf_parse_commandline)
@@ -27,8 +36,9 @@ function fzf_key_bindings
 
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse --walker=file,dir,follow,hidden --walker-root='$dir' --scheme=path --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS"
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_CTRL_T_OPTS")
       set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
+      set -e FZF_DEFAULT_OPTS_FILE
       eval (__fzfcmd)' -m --query "'$fzf_query'"' | while read -l r; set result $result $r; end
     end
     if [ -z "$result" ]
@@ -49,7 +59,8 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS --scheme=history --bind=ctrl-r:toggle-sort,ctrl-z:ignore $FZF_CTRL_R_OPTS +m"
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m")
+      set -e FZF_DEFAULT_OPTS_FILE
 
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
@@ -76,7 +87,8 @@ function fzf_key_bindings
 
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse --walker=dir,follow,hidden --walker-root='$dir' --scheme=path --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS"
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_ALT_C_OPTS")
+      set -e FZF_DEFAULT_OPTS_FILE
       set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
       eval (__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
