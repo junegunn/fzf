@@ -122,6 +122,7 @@ to install fzf.
 
 ```sh
 brew install fzf
+  # To build fzf from the latest source: brew install --HEAD fzf
 ```
 
 > [!IMPORTANT]
