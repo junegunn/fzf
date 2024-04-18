@@ -38,7 +38,7 @@ function fzf_key_bindings
     begin
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_CTRL_T_OPTS")
       set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
-      set -e FZF_DEFAULT_OPTS_FILE
+      set -lx FZF_DEFAULT_OPTS_FILE ''
       eval (__fzfcmd)' -m --query "'$fzf_query'"' | while read -l r; set result $result $r; end
     end
     if [ -z "$result" ]
@@ -60,7 +60,7 @@ function fzf_key_bindings
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m")
-      set -e FZF_DEFAULT_OPTS_FILE
+      set -lx FZF_DEFAULT_OPTS_FILE ''
 
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
@@ -88,7 +88,7 @@ function fzf_key_bindings
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_ALT_C_OPTS")
-      set -e FZF_DEFAULT_OPTS_FILE
+      set -lx FZF_DEFAULT_OPTS_FILE ''
       set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
       eval (__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
