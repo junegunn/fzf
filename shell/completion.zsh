@@ -94,6 +94,14 @@ if [[ -o interactive ]]; then
 
 ###########################################################
 
+__fzf_defaults() {
+  # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+  # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+  echo "--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore $1"
+  command cat "${FZF_DEFAULT_OPTS_FILE-}" 2> /dev/null
+  echo "${FZF_DEFAULT_OPTS-} $2"
+}
+
 __fzf_comprun() {
   if [[ "$(type _fzf_comprun 2>&1)" =~ function ]]; then
     _fzf_comprun "$@"
@@ -147,8 +155,8 @@ __fzf_generic_path_completion() {
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       matches=$(
-        unset FZF_DEFAULT_COMMAND
-        export FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-}"
+        export FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-}")
+        unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
         if declare -f "$compgen" > /dev/null; then
           eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover"
         else
@@ -218,7 +226,10 @@ _fzf_complete() {
   type $post > /dev/null 2>&1 || post=cat
 
   _fzf_feed_fifo "$fifo"
-  matches=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_COMPLETION_OPTS-} $str_arg" __fzf_comprun "$cmd" "${args[@]}" -q "${(Q)prefix}" < "$fifo" | $post | tr '\n' ' ')
+  matches=$(
+    FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
+    FZF_DEFAULT_OPTS_FILE='' \
+      __fzf_comprun "$cmd" "${args[@]}" -q "${(Q)prefix}" < "$fifo" | $post | tr '\n' ' ')
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi

@@ -38,11 +38,21 @@ fi
 {
 if [[ -o interactive ]]; then
 
+__fzf_defaults() {
+  # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+  # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+  echo "--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore $1"
+  command cat "${FZF_DEFAULT_OPTS_FILE-}" 2> /dev/null
+  echo "${FZF_DEFAULT_OPTS-} $2"
+}
+
 # CTRL-T - Paste the selected file path(s) into the command line
-__fsel() {
+__fzf_select() {
   setopt localoptions pipefail no_aliases 2> /dev/null
   local item
-  FZF_DEFAULT_COMMAND=${FZF_CTRL_T_COMMAND:-} FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --walker=file,dir,follow,hidden --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_CTRL_T_OPTS-}" $(__fzfcmd) -m "$@" < /dev/tty | while read item; do
+  FZF_DEFAULT_COMMAND=${FZF_CTRL_T_COMMAND:-} \
+  FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path" "${FZF_CTRL_T_OPTS-} -m") \
+  FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) "$@" < /dev/tty | while read item; do
     echo -n "${(q)item} "
   done
   local ret=$?
@@ -56,7 +66,7 @@ __fzfcmd() {
 }
 
 fzf-file-widget() {
-  LBUFFER="${LBUFFER}$(__fsel)"
+  LBUFFER="${LBUFFER}$(__fzf_select)"
   local ret=$?
   zle reset-prompt
   return $ret
@@ -71,7 +81,10 @@ fi
 # ALT-C - cd into the selected directory
 fzf-cd-widget() {
   setopt localoptions pipefail no_aliases 2> /dev/null
-  local dir="$(FZF_DEFAULT_COMMAND=${FZF_ALT_C_COMMAND:-} FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --walker=dir,follow,hidden --scheme=path --bind=ctrl-z:ignore ${FZF_DEFAULT_OPTS-} ${FZF_ALT_C_OPTS-}" $(__fzfcmd) +m < /dev/tty)"
+  local dir="$(
+    FZF_DEFAULT_COMMAND=${FZF_ALT_C_COMMAND:-} \
+    FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path" "${FZF_ALT_C_OPTS-} +m") \
+    FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) < /dev/tty)"
   if [[ -z "$dir" ]]; then
     zle redisplay
     return 0
@@ -96,7 +109,8 @@ fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
   selected="$(fc -rl 1 | awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} ${FZF_DEFAULT_OPTS-} -n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,ctrl-z:ignore ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m" $(__fzfcmd))"
+    FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m") \
+    FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   local ret=$?
   if [ -n "$selected" ]; then
     num=$(awk '{print $1}' <<< "$selected")
