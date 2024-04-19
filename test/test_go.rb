@@ -3457,7 +3457,11 @@ module CompletionTest
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :Tab, :Tab # Tab does not work here
     tmux.send_keys 55
-    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 55'
+      assert_includes lines, '> /tmp/fzf-test/d55'
+    end
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'cd /tmp/fzf-test/d55/', lines[-1] }
     tmux.send_keys :xx
