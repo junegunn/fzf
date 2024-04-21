@@ -1329,10 +1329,6 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
 				switch t {
-				case actBecome:
-					if util.IsWindows() {
-						exit("become action is not supported on Windows")
-					}
 				case actUnbind, actRebind:
 					parseKeyChordsImpl(actionArg, spec[0:offset]+" target required", exit)
 				case actChangePreviewWindow:

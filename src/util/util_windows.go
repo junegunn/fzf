@@ -64,6 +64,21 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 	return cmd
 }
 
+func (x *Executor) Become(stdin *os.File, environ []string, command string) {
+	cmd := x.ExecCommand(command, false)
+	cmd.Stdin = stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = environ
+	err := cmd.Run()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			Exit(exitError.ExitCode())
+		}
+	}
+	Exit(0)
+}
+
 func (x *Executor) QuoteEntry(entry string) string {
 	if strings.Contains(x.shell, "cmd") {
 		// backslash escaping is done here for applications

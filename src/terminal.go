@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"os/signal"
 	"regexp"
 	"sort"
@@ -3376,27 +3375,21 @@ func (t *Terminal) Loop() {
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
 					command := t.replacePlaceholder(a.a, false, string(t.input), list)
-					shell := os.Getenv("SHELL")
-					if len(shell) == 0 {
-						shell = "sh"
+					t.tui.Close()
+					if t.history != nil {
+						t.history.append(string(t.input))
 					}
-					shellPath, err := exec.LookPath(shell)
-					if err == nil {
-						t.tui.Close()
-						if t.history != nil {
-							t.history.append(string(t.input))
-						}
-						/*
-							FIXME: It is not at all clear why this is required.
-							The following command will report 'not a tty', unless we open
-							/dev/tty *twice* after closing the standard input for 'reload'
-							in Reader.terminate().
-								: | fzf --bind 'start:reload:ls' --bind 'enter:become:tty'
-						*/
-						tui.TtyIn()
-						util.SetStdin(tui.TtyIn())
-						syscall.Exec(shellPath, []string{shell, "-c", command}, os.Environ())
-					}
+
+					/*
+					 FIXME: It is not at all clear why this is required.
+					 The following command will report 'not a tty', unless we open
+					 /dev/tty *twice* after closing the standard input for 'reload'
+					 in Reader.terminate().
+
+					   while : | fzf --bind 'start:reload:ls' --bind 'load:become:tty'; do echo; done
+					*/
+					tui.TtyIn()
+					t.executor.Become(tui.TtyIn(), t.environ(), command)
 				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)

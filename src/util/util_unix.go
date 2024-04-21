@@ -56,6 +56,16 @@ func (x *Executor) QuoteEntry(entry string) string {
 	return "'" + x.escaper.Replace(entry) + "'"
 }
 
+func (x *Executor) Become(stdin *os.File, environ []string, command string) {
+	SetStdin(stdin)
+	shellPath, err := exec.LookPath(x.shell)
+	if err == nil {
+		shellPath = x.shell
+	}
+	args := append([]string{shellPath}, append(x.args, command)...)
+	syscall.Exec(shellPath, args, environ)
+}
+
 // KillCommand kills the process for the given command
 func KillCommand(cmd *exec.Cmd) error {
 	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
