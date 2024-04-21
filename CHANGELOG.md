@@ -5,7 +5,7 @@ CHANGELOG
 ------
 - Added `--with-shell` option to start child processes with a custom shell command and flags
   ```sh
-  fzf --with-shell 'ruby -e' --preview 'puts {}.upcase.reverse'
+  gem list | fzf --with-shell 'ruby -e' --preview 'pp Gem::Specification.find_by_name({1})'
   ```
 - Added `change-multi` action for dynamically changing `--multi` option
     - `change-multi` - enable multi-select mode with no limit
