@@ -13,7 +13,7 @@ func TestReadFromCommand(t *testing.T) {
 	exec := util.NewExecutor("")
 	reader := NewReader(
 		func(s []byte) bool { strs = append(strs, string(s)); return true },
-		exec, eb, false, true)
+		eb, exec, false, true)
 
 	reader.startEventPoller()
 

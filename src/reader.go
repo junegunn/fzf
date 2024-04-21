@@ -31,7 +31,7 @@ type Reader struct {
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, executor *util.Executor, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util.Executor, delimNil bool, wait bool) *Reader {
 	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
 }
 

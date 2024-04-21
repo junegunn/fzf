@@ -130,7 +130,7 @@ func Run(opts *Options, version string, revision string) {
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
-		}, executor, eventBox, opts.ReadZero, opts.Filter == nil)
+		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 		go reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 	}
 
@@ -181,7 +181,7 @@ func Run(opts *Options, version string, revision string) {
 						mutex.Unlock()
 					}
 					return false
-				}, executor, eventBox, opts.ReadZero, false)
+				}, eventBox, executor, opts.ReadZero, false)
 			reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
