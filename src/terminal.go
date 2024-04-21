@@ -245,6 +245,7 @@ type Terminal struct {
 	listenUnsafe       bool
 	borderShape        tui.BorderShape
 	cleanExit          bool
+	executor           *util.Executor
 	paused             bool
 	border             tui.Window
 	window             tui.Window
@@ -640,7 +641,7 @@ func evaluateHeight(opts *Options, termHeight int) int {
 }
 
 // NewTerminal returns new Terminal object
-func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
+func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor) *Terminal {
 	input := trimQuery(opts.Query)
 	var delay time.Duration
 	if opts.Tac {
@@ -736,6 +737,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		previewLabel:       nil,
 		previewLabelOpts:   opts.PreviewLabel,
 		cleanExit:          opts.ClearOnExit,
+		executor:           executor,
 		paused:             opts.Phony,
 		cycle:              opts.Cycle,
 		headerVisible:      true,
@@ -2522,6 +2524,7 @@ type replacePlaceholderParams struct {
 	allItems   []*Item
 	lastAction actionType
 	prompt     string
+	executor   *util.Executor
 }
 
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) string {
@@ -2535,6 +2538,7 @@ func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input str
 		allItems:   list,
 		lastAction: t.lastAction,
 		prompt:     t.promptString,
+		executor:   t.executor,
 	})
 }
 
@@ -2595,7 +2599,7 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 		case escaped:
 			return match
 		case match == "{q}" || match == "{fzf:query}":
-			return quoteEntry(params.query)
+			return params.executor.QuoteEntry(params.query)
 		case match == "{}":
 			replace = func(item *Item) string {
 				switch {
@@ -2608,13 +2612,13 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 				case flags.file:
 					return item.AsString(params.stripAnsi)
 				default:
-					return quoteEntry(item.AsString(params.stripAnsi))
+					return params.executor.QuoteEntry(item.AsString(params.stripAnsi))
 				}
 			}
 		case match == "{fzf:action}":
 			return params.lastAction.Name()
 		case match == "{fzf:prompt}":
-			return quoteEntry(params.prompt)
+			return params.executor.QuoteEntry(params.prompt)
 		default:
 			// token type and also failover (below)
 			rangeExpressions := strings.Split(match[1:len(match)-1], ",")
@@ -2648,7 +2652,7 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 					str = strings.TrimSpace(str)
 				}
 				if !flags.file {
-					str = quoteEntry(str)
+					str = params.executor.QuoteEntry(str)
 				}
 				return str
 			}
@@ -2688,7 +2692,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		return line
 	}
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
-	cmd := util.ExecCommand(command, false)
+	cmd := t.executor.ExecCommand(command, false)
 	cmd.Env = t.environ()
 	t.executing.Set(true)
 	if !background {
@@ -2965,7 +2969,7 @@ func (t *Terminal) Loop() {
 				if items[0] != nil {
 					_, query := t.Input()
 					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
-					cmd := util.ExecCommand(command, true)
+					cmd := t.executor.ExecCommand(command, true)
 					env := t.environ()
 					if pwindowSize.Lines > 0 {
 						lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)

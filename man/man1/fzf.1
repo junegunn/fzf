@@ -818,6 +818,14 @@ the finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
+.B "--with-shell=STR"
+Shell command prefix to start child processes with. The default value is
+\fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise \fBsh -c\fR on *nix systems.
+
+.RS
+e.g. \fBfzf --with-shell 'ruby -e' --preview 'puts {}.upcase.reverse'\fR
+.RE
+.TP
 .B "--listen[=[ADDR:]PORT]" "--listen-unsafe[=[ADDR:]PORT]"
 Start HTTP server and listen on the given address. It allows external processes
 to send actions to perform via POST method.
