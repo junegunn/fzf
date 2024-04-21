@@ -7,12 +7,14 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"syscall"
 )
 
 type Executor struct {
-	shell string
-	args  []string
+	shell     string
+	args      []string
+	shellPath atomic.Value
 }
 
 func NewExecutor(withShell string) *Executor {
@@ -22,12 +24,6 @@ func NewExecutor(withShell string) *Executor {
 		shell = args[0]
 	} else if len(shell) == 0 {
 		shell = "cmd"
-	}
-	if strings.Contains(shell, "/") {
-		out, err := exec.Command("cygpath", "-w", shell).Output()
-		if err == nil {
-			shell = strings.Trim(string(out), "\n")
-		}
 	}
 
 	if len(args) > 0 {
@@ -39,7 +35,7 @@ func NewExecutor(withShell string) *Executor {
 	} else {
 		args = []string{"-c"}
 	}
-	return &Executor{shell, args}
+	return &Executor{shell: shell, args: args}
 }
 
 // ExecCommand executes the given command with $SHELL
@@ -48,7 +44,19 @@ func NewExecutor(withShell string) *Executor {
 // NOTE: For "powershell", we should ideally set output encoding to UTF8,
 // but it is left as is now because no adverse effect has been observed.
 func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
-	cmd := exec.Command(x.shell, append(x.args, command)...)
+	shell := x.shell
+	if cached := x.shellPath.Load(); cached != nil {
+		shell = cached.(string)
+	} else {
+		if strings.Contains(shell, "/") {
+			out, err := exec.Command("cygpath", "-w", shell).Output()
+			if err == nil {
+				shell = strings.Trim(string(out), "\n")
+			}
+		}
+		x.shellPath.Store(shell)
+	}
+	cmd := exec.Command(shell, append(x.args, command)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    false,
 		CreationFlags: 0,
