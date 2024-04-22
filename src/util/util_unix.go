@@ -59,8 +59,8 @@ func (x *Executor) QuoteEntry(entry string) string {
 func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	SetStdin(stdin)
 	shellPath, err := exec.LookPath(x.shell)
-	if err == nil {
-		shellPath = x.shell
+	if err != nil {
+		Exit(127)
 	}
 	args := append([]string{shellPath}, append(x.args, command)...)
 	syscall.Exec(shellPath, args, environ)
