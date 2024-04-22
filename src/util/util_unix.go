@@ -3,6 +3,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -57,12 +58,13 @@ func (x *Executor) QuoteEntry(entry string) string {
 }
 
 func (x *Executor) Become(stdin *os.File, environ []string, command string) {
-	SetStdin(stdin)
 	shellPath, err := exec.LookPath(x.shell)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "fzf (become): %s\n", err.Error())
 		Exit(127)
 	}
 	args := append([]string{shellPath}, append(x.args, command)...)
+	SetStdin(stdin)
 	syscall.Exec(shellPath, args, environ)
 }
 
