@@ -78,7 +78,7 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 	port := address.port
 	apiKey := os.Getenv("FZF_API_KEY")
 	if !address.IsLocal() && len(apiKey) == 0 {
-		return port, fmt.Errorf("FZF_API_KEY is required to allow remote access")
+		return port, errors.New("FZF_API_KEY is required to allow remote access")
 	}
 	addrStr := fmt.Sprintf("%s:%d", host, port)
 	listener, err := net.Listen("tcp", addrStr)
