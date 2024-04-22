@@ -3,6 +3,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -70,7 +71,12 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = environ
-	err := cmd.Run()
+	err := cmd.Start()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fzf (become): %s\n", err.Error())
+		Exit(127)
+	}
+	err = cmd.Wait()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			Exit(exitError.ExitCode())
