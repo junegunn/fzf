@@ -1067,7 +1067,7 @@ func (t *Terminal) UpdateProgress(progress float32) {
 }
 
 // UpdateList updates Merger to display the list
-func (t *Terminal) UpdateList(merger *Merger) {
+func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 	t.mutex.Lock()
 	prevIndex := minItem.Index()
 	reset := t.revision != merger.Revision()
@@ -1118,7 +1118,7 @@ func (t *Terminal) UpdateList(merger *Merger) {
 				t.eventChan <- one
 			}
 		}
-		if t.hasResultActions {
+		if triggerResultEvent && t.hasResultActions {
 			t.eventChan <- tui.Result.AsEvent()
 		}
 	}

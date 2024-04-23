@@ -7,7 +7,7 @@ fail() {
   exit 2
 }
 
-fzf="$(command -v fzf 2> /dev/null)" || fzf="$(dirname "$0")/fzf"
+fzf="$(command which fzf)" || fzf="$(dirname "$0")/fzf"
 [[ -x "$fzf" ]] || fail 'fzf executable not found'
 
 args=()

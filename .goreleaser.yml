@@ -12,6 +12,8 @@ builds:
       - darwin
     goarch:
       - amd64
+    flags:
+      - -trimpath
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
     hooks:
@@ -36,6 +38,8 @@ builds:
       - darwin
     goarch:
       - arm64
+    flags:
+      - -trimpath
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
     hooks:
@@ -71,6 +75,8 @@ builds:
       - 5
       - 6
       - 7
+    flags:
+      - -trimpath
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
     ignore:

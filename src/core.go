@@ -298,8 +298,7 @@ func Run(opts *Options, version string, revision string) {
 					total = count
 					terminal.UpdateCount(total, !reading, value.(*string))
 					if opts.Sync {
-						opts.Sync = false
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac, snapshotRevision))
+						terminal.UpdateList(PassMerger(&snapshot, opts.Tac, snapshotRevision), false)
 					}
 					if heightUnknown && !deferred {
 						determine(!reading)
@@ -384,7 +383,7 @@ func Run(opts *Options, version string, revision string) {
 								determine(val.final)
 							}
 						}
-						terminal.UpdateList(val)
+						terminal.UpdateList(val, true)
 					}
 				}
 			}
