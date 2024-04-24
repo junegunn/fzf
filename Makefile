@@ -174,12 +174,12 @@ bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
 docker:
-	docker build -t fzf-arch .
-	docker run -it fzf-arch tmux
+	docker build -t fzf-ubuntu .
+	docker run -it fzf-ubuntu tmux
 
 docker-test:
-	docker build -t fzf-arch .
-	docker run -it fzf-arch
+	docker build -t fzf-ubuntu .
+	docker run -it fzf-ubuntu
 
 update:
 	$(GO) get -u
