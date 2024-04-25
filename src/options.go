@@ -1876,9 +1876,7 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.Marker = firstLine(nextString(allArgs, &i, "selected sign string required"))
 		case "--sync":
 			opts.Sync = true
-		case "--no-sync":
-			opts.Sync = false
-		case "--async":
+		case "--no-sync", "--async":
 			opts.Sync = false
 		case "--no-history":
 			opts.History = nil
