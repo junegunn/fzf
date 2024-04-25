@@ -147,7 +147,7 @@ func (r *Reader) feed(src io.Reader) {
 		}
 
 		// We're not making any progress after 100 tries. Stop.
-		if n == 0 && err == nil {
+		if n == 0 {
 			break
 		}
 

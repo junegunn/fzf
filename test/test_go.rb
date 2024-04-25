@@ -1955,6 +1955,11 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 10, lines.item_count }
   end
 
+  def test_reload_should_terminate_stadard_input_stream
+    tmux.send_keys %(ruby -e "STDOUT.sync = true; loop { puts 1; sleep 0.1 }" | fzf --bind 'start:reload(seq 100)'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+  end
+
   def test_clear_list_when_header_lines_changed_due_to_reload
     tmux.send_keys %(seq 10 | #{FZF} --header 0 --header-lines 3 --bind 'space:reload(seq 1)'), :Enter
     tmux.until { |lines| assert_includes lines, '  9' }
