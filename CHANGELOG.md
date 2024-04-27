@@ -3,6 +3,10 @@ CHANGELOG
 
 0.51.0
 ------
+- Added `--with-shell` option to start child processes with a custom shell command and flags
+  ```sh
+  fzf --with-shell 'ruby -e' --preview 'puts {}.upcase.reverse'
+  ```
 - Added `change-multi` action for dynamically changing `--multi` option
     - `change-multi` - enable multi-select mode with no limit
     - `change-multi(NUM)` - enable multi-select mode with a limit

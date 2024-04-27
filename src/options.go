@@ -120,7 +120,7 @@ const usage = `usage: fzf [options]
     --read0                Read input delimited by ASCII NUL characters
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
-    --with-shell=STR       Shell command prefix to start child processes with
+    --with-shell=STR       Shell command and flags to start child processes with
     --listen[=[ADDR:]PORT] Start HTTP server to receive actions (POST /)
                            (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit

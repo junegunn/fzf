@@ -819,8 +819,10 @@ e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
 .B "--with-shell=STR"
-Shell command prefix to start child processes with. The default value is
-\fB$SHELL -c\fR if \fBSHELL\fR is set, otherwise \fBsh -c\fR on *nix systems.
+Shell command and flags to start child processes with. On *nix Systems, the
+default value is \fB$SHELL -c\fR if \fB$SHELL\fR is set, otherwise \fBsh -c\fR.
+On Windows, the default value is \fBcmd /v:on/s/c\fR when \fB$SHELL\fR is not
+set.
 
 .RS
 e.g. \fBfzf --with-shell 'ruby -e' --preview 'puts {}.upcase.reverse'\fR
