@@ -18,6 +18,7 @@ import (
 // Reader reads from command or standard input
 type Reader struct {
 	pusher   func([]byte) bool
+	executor *util.Executor
 	eventBox *util.EventBox
 	delimNil bool
 	event    int32
@@ -30,8 +31,8 @@ type Reader struct {
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util.Executor, delimNil bool, wait bool) *Reader {
+	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -242,7 +243,7 @@ func (r *Reader) readFromCommand(command string, environ []string) bool {
 	r.mutex.Lock()
 	r.killed = false
 	r.command = &command
-	r.exec = util.ExecCommand(command, true)
+	r.exec = r.executor.ExecCommand(command, true)
 	if environ != nil {
 		r.exec.Env = environ
 	}

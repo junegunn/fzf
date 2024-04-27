@@ -425,6 +425,25 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_multi_action
+    tmux.send_keys "seq 10 | #{FZF} --bind 'a:change-multi,b:change-multi(3),c:change-multi(xxx),d:change-multi(0)'", :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 ') }
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (0)') }
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (0/3)') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (1/3)') }
+    tmux.send_keys 'c'
+    tmux.send_keys :BTab
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (2/3)') }
+    tmux.send_keys 'd'
+    tmux.until do |lines|
+      assert lines[-2]&.start_with?('  10/10 ') && !lines[-2]&.include?('(')
+    end
+  end
+
   def test_with_nth
     [true, false].each do |multi|
       tmux.send_keys "(echo '  1st 2nd 3rd/';
@@ -1955,7 +1974,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 10, lines.item_count }
   end
 
-  def test_reload_should_terminate_stadard_input_stream
+  def test_reload_should_terminate_standard_input_stream
     tmux.send_keys %(ruby -e "STDOUT.sync = true; loop { puts 1; sleep 0.1 }" | fzf --bind 'start:reload(seq 100)'), :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
   end
@@ -3230,6 +3249,17 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_includes lines, '> 1' }
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> 2' }
+  end
+
+  def test_fzf_pos
+    tmux.send_keys "seq 100 | #{FZF} --preview 'echo $FZF_POS / $FZF_MATCH_COUNT'", :Enter
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('1 / 100') }) }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('2 / 100') }) }
+    tmux.send_keys '99'
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('1 / 1') }) }
+    tmux.send_keys '99'
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('0 / 0') }) }
   end
 end
 

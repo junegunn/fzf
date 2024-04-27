@@ -818,6 +818,16 @@ the finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
+.B "--with-shell=STR"
+Shell command and flags to start child processes with. On *nix Systems, the
+default value is \fB$SHELL -c\fR if \fB$SHELL\fR is set, otherwise \fBsh -c\fR.
+On Windows, the default value is \fBcmd /v:on/s/c\fR when \fB$SHELL\fR is not
+set.
+
+.RS
+e.g. \fBgem list | fzf --with-shell 'ruby -e' --preview 'pp Gem::Specification.find_by_name({1})'\fR
+.RE
+.TP
 .B "--listen[=[ADDR:]PORT]" "--listen-unsafe[=[ADDR:]PORT]"
 Start HTTP server and listen on the given address. It allows external processes
 to send actions to perform via POST method.
@@ -932,6 +942,8 @@ you need to protect against DNS rebinding and privilege escalation attacks.
 .br
 .BR 2 "      Error"
 .br
+.BR 127 "    Invalid shell command for \fBbecome\fR action"
+.br
 .BR 130 "    Interrupted with \fBCTRL-C\fR or \fBESC\fR"
 
 .SH FIELD INDEX EXPRESSION
@@ -971,6 +983,8 @@ fzf exports the following environment variables to its child processes.
 .BR FZF_MATCH_COUNT "     Number of matched items"
 .br
 .BR FZF_SELECT_COUNT "    Number of selected items"
+.br
+.BR FZF_POS "             Vertical position of the cursor in the list starting from 1"
 .br
 .BR FZF_QUERY "           Current query string"
 .br
@@ -1282,6 +1296,8 @@ A key or an event can be bound to one or more of the following actions.
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange-border-label(...)\fR     (change \fB--border-label\fR to the given string)
     \fBchange-header(...)\fR           (change header to the given string; doesn't affect \fB--header-lines\fR)
+    \fBchange-multi\fR                 (enable multi-select mode with no limit)
+    \fBchange-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
     \fBchange-preview(...)\fR          (change \fB--preview\fR option)
     \fBchange-preview-label(...)\fR    (change \fB--preview-label\fR to the given string)
     \fBchange-preview-window(...)\fR   (change \fB--preview-window\fR option; rotate through the multiple option sets separated by '|')
@@ -1438,8 +1454,6 @@ current fzf process with the specified command using \fBexecve(2)\fR system
 call.
 
     \fBfzf --bind "enter:become(vim {})"\fR
-
-\fBbecome(...)\fR is not supported on Windows.
 
 .SS RELOAD INPUT
 

@@ -23,6 +23,7 @@ func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter
 		allItems:   allItems,
 		lastAction: actBackwardDeleteCharEof,
 		prompt:     "prompt",
+		executor:   util.NewExecutor(""),
 	})
 }
 
@@ -244,6 +245,7 @@ func TestQuoteEntry(t *testing.T) {
 	unixStyle := quotes{``, `'`, `'\''`, `"`, `\`}
 	windowsStyle := quotes{`^`, `^"`, `'`, `\^"`, `\\`}
 	var effectiveStyle quotes
+	exec := util.NewExecutor("")
 
 	if util.IsWindows() {
 		effectiveStyle = windowsStyle
@@ -278,7 +280,7 @@ func TestQuoteEntry(t *testing.T) {
 	}
 
 	for input, expected := range tests {
-		escaped := quoteEntry(input)
+		escaped := exec.QuoteEntry(input)
 		expected = templateToString(expected, effectiveStyle)
 		if escaped != expected {
 			t.Errorf("Input: %s, expected: %s, actual %s", input, expected, escaped)
