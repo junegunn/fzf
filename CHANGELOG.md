@@ -3,6 +3,13 @@ CHANGELOG
 
 0.51.0
 ------
+- Added a new environment variable `$FZF_POS` exported to the child processes. It's the vertical position of the cursor in the list starting from 1.
+  ```sh
+  # Toggle selection to the top or to the bottom
+  seq 30 | fzf --multi --bind 'load:pos(10)' \
+    --bind 'shift-up:transform:for _ in $(seq $FZF_POS $FZF_MATCH_COUNT); do echo -n +toggle-up; done' \
+    --bind 'shift-down:transform:for _ in $(seq 1 $FZF_POS); do echo -n +toggle-down; done'
+  ```
 - Added `--with-shell` option to start child processes with a custom shell command and flags
   ```sh
   gem list | fzf --with-shell 'ruby -e' \

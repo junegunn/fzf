@@ -3250,6 +3250,17 @@ class TestGoFZF < TestBase
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> 2' }
   end
+
+  def test_fzf_pos
+    tmux.send_keys "seq 100 | #{FZF} --preview 'echo $FZF_POS / $FZF_MATCH_COUNT'", :Enter
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('1 / 100') }) }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('2 / 100') }) }
+    tmux.send_keys '99'
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('1 / 1') }) }
+    tmux.send_keys '99'
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('0 / 0') }) }
+  end
 end
 
 module TestShell
