@@ -100,128 +100,77 @@ _fzf_opts_completion() {
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="
     -h --help
-    -x --extended
     -e --exact
-    --extended-exact
     +x --no-extended
-    +e --no-exact
     -q --query
     -f --filter
     --literal
-    --no-literal
-    --algo
     --scheme
     --expect
-    --no-expect
-    --enabled --no-phony
-    --disabled --phony
+    --disabled
     --tiebreak
     --bind
     --color
-    --toggle-sort
     -d --delimiter
     -n --nth
     --with-nth
-    -s --sort
     +s --no-sort
     --track
-    --no-track
     --tac
-    --no-tac
     -i
     +i
     -m --multi
-    +m --no-multi
     --ansi
-    --no-ansi
     --no-mouse
     +c --no-color
-    +2 --no-256
-    --black
-    --no-black
-    --bold
     --no-bold
     --layout
     --reverse
-    --no-reverse
     --cycle
-    --no-cycle
     --keep-right
-    --no-keep-right
-    --hscroll
     --no-hscroll
     --hscroll-off
     --scroll-off
     --filepath-word
-    --no-filepath-word
     --info
-    --no-info
-    --inline-info
-    --no-inline-info
     --separator
     --no-separator
-    --scrollbar
     --no-scrollbar
     --jump-labels
     -1 --select-1
-    +1 --no-select-1
     -0 --exit-0
-    +0 --no-exit-0
     --read0
-    --no-read0
     --print0
-    --no-print0
     --print-query
-    --no-print-query
     --prompt
     --pointer
     --marker
     --sync
-    --no-sync
-    --async
-    --no-history
     --history
     --history-size
-    --no-header
-    --no-header-lines
     --header
     --header-lines
     --header-first
-    --no-header-first
     --ellipsis
     --preview
-    --no-preview
     --preview-window
     --height
     --min-height
-    --no-height
-    --no-margin
-    --no-padding
-    --no-border
     --border
-    --no-border-label
     --border-label
     --border-label-pos
-    --no-preview-label
     --preview-label
     --preview-label-pos
     --no-unicode
-    --unicode
     --margin
     --padding
     --tabstop
     --listen
-    --no-listen
-    --clear
     --no-clear
     --version
     --"
 
   case "${prev}" in
-  --algo)
-    COMPREPLY=( $(compgen -W "v1 v2" -- "$cur") )
-    return 0
-    ;;
   --scheme)
     COMPREPLY=( $(compgen -W "default path history" -- "$cur") )
     return 0
@@ -524,9 +473,10 @@ a_cmds="
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
   svn tar unzip zip"
+v_cmds="export unset printenv"
 
 # Preserve existing completion
-__fzf_orig_completion < <(complete -p $d_cmds $a_cmds ssh 2> /dev/null)
+__fzf_orig_completion < <(complete -p $d_cmds $a_cmds $v_cmds unalias kill ssh 2> /dev/null)
 
 if type _comp_load > /dev/null 2>&1; then
   # _comp_load was added in bash-completion 2.12 to replace _completion_loader.
@@ -562,10 +512,21 @@ for cmd in $d_cmds; do
   __fzf_defc "$cmd" _fzf_dir_completion "-o bashdefault -o nospace -o dirnames"
 done
 
+# Variables
+for cmd in $v_cmds; do
+  __fzf_defc "$cmd" _fzf_var_completion "-o default -o nospace -v"
+done
+
+# Aliases
+__fzf_defc unalias _fzf_alias_completion "-a"
+
+# Processes
+__fzf_defc kill _fzf_proc_completion "-o default -o bashdefault"
+
 # ssh
 __fzf_defc ssh _fzf_complete_ssh "-o default -o bashdefault"
 
-unset cmd d_cmds a_cmds
+unset cmd d_cmds a_cmds v_cmds
 
 _fzf_setup_completion() {
   local kind fn cmd
@@ -586,11 +547,5 @@ _fzf_setup_completion() {
     esac
   done
 }
-
-# Environment variables / Aliases / Hosts / Process
-_fzf_setup_completion 'var'   export unset printenv
-_fzf_setup_completion 'alias' unalias
-_fzf_setup_completion 'host'  telnet
-_fzf_setup_completion 'proc'  kill
 
 fi
