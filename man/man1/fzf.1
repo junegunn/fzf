@@ -818,6 +818,16 @@ the finder only after the input stream is complete.
 e.g. \fBfzf --multi | fzf --sync\fR
 .RE
 .TP
+.B "--with-shell=STR"
+Shell command and flags to start child processes with. On *nix Systems, the
+default value is \fB$SHELL -c\fR if \fB$SHELL\fR is set, otherwise \fBsh -c\fR.
+On Windows, the default value is \fBcmd /v:on/s/c\fR when \fB$SHELL\fR is not
+set.
+
+.RS
+e.g. \fBgem list | fzf --with-shell 'ruby -e' --preview 'pp Gem::Specification.find_by_name({1})'\fR
+.RE
+.TP
 .B "--listen[=[ADDR:]PORT]" "--listen-unsafe[=[ADDR:]PORT]"
 Start HTTP server and listen on the given address. It allows external processes
 to send actions to perform via POST method.
@@ -931,6 +941,8 @@ you need to protect against DNS rebinding and privilege escalation attacks.
 .BR 1 "      No match"
 .br
 .BR 2 "      Error"
+.br
+.BR 127 "    Invalid shell command for \fBbecome\fR action"
 .br
 .BR 130 "    Interrupted with \fBCTRL-C\fR or \fBESC\fR"
 
@@ -1440,8 +1452,6 @@ current fzf process with the specified command using \fBexecve(2)\fR system
 call.
 
     \fBfzf --bind "enter:become(vim {})"\fR
-
-\fBbecome(...)\fR is not supported on Windows.
 
 .SS RELOAD INPUT
 

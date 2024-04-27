@@ -1974,7 +1974,7 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert_equal 10, lines.item_count }
   end
 
-  def test_reload_should_terminate_stadard_input_stream
+  def test_reload_should_terminate_standard_input_stream
     tmux.send_keys %(ruby -e "STDOUT.sync = true; loop { puts 1; sleep 0.1 }" | fzf --bind 'start:reload(seq 100)'), :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
   end

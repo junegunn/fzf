@@ -120,6 +120,7 @@ const usage = `usage: fzf [options]
     --read0                Read input delimited by ASCII NUL characters
     --print0               Print output delimited by ASCII NUL characters
     --sync                 Synchronous search for multi-staged filtering
+    --with-shell=STR       Shell command and flags to start child processes with
     --listen[=[ADDR:]PORT] Start HTTP server to receive actions (POST /)
                            (To allow remote process execution, use --listen-unsafe)
     --version              Display version information and exit
@@ -356,6 +357,7 @@ type Options struct {
 	Unicode      bool
 	Ambidouble   bool
 	Tabstop      int
+	WithShell    string
 	ListenAddr   *listenAddress
 	Unsafe       bool
 	ClearOnExit  bool
@@ -1327,10 +1329,6 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
 				switch t {
-				case actBecome:
-					if util.IsWindows() {
-						exit("become action is not supported on Windows")
-					}
 				case actUnbind, actRebind:
 					parseKeyChordsImpl(actionArg, spec[0:offset]+" target required", exit)
 				case actChangePreviewWindow:
@@ -1957,6 +1955,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				nextString(allArgs, &i, "padding required (TRBL / TB,RL / T,RL,B / T,R,B,L)"))
 		case "--tabstop":
 			opts.Tabstop = nextInt(allArgs, &i, "tab stop required")
+		case "--with-shell":
+			opts.WithShell = nextString(allArgs, &i, "shell command and flags required")
 		case "--listen", "--listen-unsafe":
 			given, str := optionalNextString(allArgs, &i)
 			addr := defaultListenAddr
@@ -2073,6 +2073,8 @@ func parseOptions(opts *Options, allArgs []string) {
 				opts.Padding = parseMargin("padding", value)
 			} else if match, value := optString(arg, "--tabstop="); match {
 				opts.Tabstop = atoi(value)
+			} else if match, value := optString(arg, "--with-shell="); match {
+				opts.WithShell = value
 			} else if match, value := optString(arg, "--listen="); match {
 				addr, err := parseListenAddress(value)
 				if err != nil {

@@ -3,10 +3,23 @@ CHANGELOG
 
 0.51.0
 ------
+- Added `--with-shell` option to start child processes with a custom shell command and flags
+  ```sh
+  gem list | fzf --with-shell 'ruby -e' \
+    --preview 'pp Gem::Specification.find_by_name({1})' \
+    --bind 'ctrl-o:execute-silent:
+        spec = Gem::Specification.find_by_name({1})
+        [spec.homepage, *spec.metadata.filter { _1.end_with?("uri") }.values].uniq.each do
+          system "open", _1
+        end
+    '
+  ```
 - Added `change-multi` action for dynamically changing `--multi` option
     - `change-multi` - enable multi-select mode with no limit
     - `change-multi(NUM)` - enable multi-select mode with a limit
     - `change-multi(0)` - disable multi-select mode
+- `become` action is now supported on Windows
+    - Unlike in *nix, this does not use `execve(2)`. Instead it spawns a new process and waits for it to finish, so the exact behavior may differ.
 - Bug fixes and improvements
 
 0.50.0

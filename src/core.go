@@ -121,13 +121,16 @@ func Run(opts *Options, version string, revision string) {
 		})
 	}
 
+	// Process executor
+	executor := util.NewExecutor(opts.WithShell)
+
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	var reader *Reader
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
-		}, eventBox, opts.ReadZero, opts.Filter == nil)
+		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 		go reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 	}
 
@@ -178,7 +181,7 @@ func Run(opts *Options, version string, revision string) {
 						mutex.Unlock()
 					}
 					return false
-				}, eventBox, opts.ReadZero, false)
+				}, eventBox, executor, opts.ReadZero, false)
 			reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
@@ -209,7 +212,7 @@ func Run(opts *Options, version string, revision string) {
 	go matcher.Loop()
 
 	// Terminal I/O
-	terminal := NewTerminal(opts, eventBox)
+	terminal := NewTerminal(opts, eventBox, executor)
 	maxFit := 0 // Maximum number of items that can fit on screen
 	padHeight := 0
 	heightUnknown := opts.Height.auto
