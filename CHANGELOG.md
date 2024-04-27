@@ -7,8 +7,8 @@ CHANGELOG
   ```sh
   # Toggle selection to the top or to the bottom
   seq 30 | fzf --multi --bind 'load:pos(10)' \
-    --bind 'shift-up:transform:for _ in $(seq $FZF_POS $FZF_MATCH_COUNT); do echo -n +toggle-up; done' \
-    --bind 'shift-down:transform:for _ in $(seq 1 $FZF_POS); do echo -n +toggle-down; done'
+    --bind 'shift-up:transform:for _ in $(seq $FZF_POS $FZF_MATCH_COUNT); do echo -n +toggle+up; done' \
+    --bind 'shift-down:transform:for _ in $(seq 1 $FZF_POS); do echo -n +toggle+down; done'
   ```
 - Added `--with-shell` option to start child processes with a custom shell command and flags
   ```sh
