@@ -463,8 +463,11 @@ complete -o default -F _fzf_opts_completion fzf
 # fzf-tmux specific options (like `-w WIDTH`) are left as a future patch.
 complete -o default -F _fzf_opts_completion fzf-tmux
 
-d_cmds="${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}"
-a_cmds="
+d_cmds="${FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir}"
+
+# NOTE: $FZF_COMPLETION_PATH_COMMANDS and $FZF_COMPLETION_VAR_COMMANDS are
+# undocumented and subject to change in the future.
+a_cmds="${FZF_COMPLETION_PATH_COMMANDS-"
   awk bat cat diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg hx java
   javac ld less more mvim nvim patch perl python ruby
@@ -472,8 +475,8 @@ a_cmds="
   basename bunzip2 bzip2 chmod chown curl cp dirname du
   find git grep gunzip gzip hg jar
   ln ls mv open rm rsync scp
-  svn tar unzip zip"
-v_cmds="export unset printenv"
+  svn tar unzip zip"}"
+v_cmds="${FZF_COMPLETION_VAR_COMMANDS-export unset printenv}"
 
 # Preserve existing completion
 __fzf_orig_completion < <(complete -p $d_cmds $a_cmds $v_cmds unalias kill ssh 2> /dev/null)
