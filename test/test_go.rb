@@ -425,6 +425,25 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_multi_action
+    tmux.send_keys "seq 10 | #{FZF} --bind 'a:change-multi,b:change-multi(3),c:change-multi(xxx),d:change-multi(0)'", :Enter
+    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 ') }
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (0)') }
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (0/3)') }
+    tmux.send_keys :BTab
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (1/3)') }
+    tmux.send_keys 'c'
+    tmux.send_keys :BTab
+    tmux.until { |lines| assert lines[-2]&.start_with?('  10/10 (2/3)') }
+    tmux.send_keys 'd'
+    tmux.until do |lines|
+      assert lines[-2]&.start_with?('  10/10 ') && !lines[-2]&.include?('(')
+    end
+  end
+
   def test_with_nth
     [true, false].each do |multi|
       tmux.send_keys "(echo '  1st 2nd 3rd/';

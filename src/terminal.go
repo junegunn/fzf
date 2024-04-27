@@ -367,6 +367,7 @@ const (
 	actCancel
 	actChangeBorderLabel
 	actChangeHeader
+	actChangeMulti
 	actChangePreviewLabel
 	actChangePrompt
 	actChangeQuery
@@ -3489,6 +3490,19 @@ func (t *Terminal) Loop() {
 				}
 			case actPrintQuery:
 				req(reqPrintQuery)
+			case actChangeMulti:
+				multi := t.multi
+				if a.a == "" {
+					multi = maxMulti
+				} else if n, e := strconv.Atoi(a.a); e == nil && n >= 0 {
+					multi = n
+				}
+				if t.multi > 0 && multi != t.multi {
+					t.selected = make(map[int32]selectedItem)
+					t.version++
+				}
+				t.multi = multi
+				req(reqList, reqInfo)
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)

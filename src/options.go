@@ -1055,7 +1055,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|transform|change-preview-window|change-preview|(?:re|un)bind|pos|put)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|transform|change-(?:preview-window|preview|multi)|(?:re|un)bind|pos|put)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1306,6 +1306,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			if t == actIgnore {
 				if specIndex == 0 && specLower == "" {
 					actions = append(prevActions, actions...)
+				} else if specLower == "change-multi" {
+					appendAction(actChangeMulti)
 				} else {
 					exit("unknown action: " + spec)
 				}
@@ -1407,6 +1409,8 @@ func isExecuteAction(str string) actionType {
 		return actChangePrompt
 	case "change-query":
 		return actChangeQuery
+	case "change-multi":
+		return actChangeMulti
 	case "pos":
 		return actPosition
 	case "execute":

@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.51.0
+------
+- Added `change-multi` action for dynamically changing `--multi` option
+    - `change-multi` - enable multi-select mode with no limit
+    - `change-multi(NUM)` - enable multi-select mode with a limit
+    - `change-multi(0)` - disable multi-select mode
+- Bug fixes and improvements
+
 0.50.0
 ------
 - Search performance optimization. You can observe 50%+ improvement in some scenarios.
