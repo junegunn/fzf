@@ -26,6 +26,7 @@ type Executor struct {
 	shellType shellType
 	args      []string
 	shellPath atomic.Value
+	r         *regexp.Regexp
 }
 
 func NewExecutor(withShell string) *Executor {
@@ -37,6 +38,7 @@ func NewExecutor(withShell string) *Executor {
 		shell = "cmd"
 	}
 
+	var r *regexp.Regexp
 	shellType := shellTypeUnknown
 	basename := filepath.Base(shell)
 	if len(args) > 0 {
@@ -44,13 +46,14 @@ func NewExecutor(withShell string) *Executor {
 	} else if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
 		args = []string{"/v:on/s/c"}
+		r = regexp.MustCompile(`[&|<>()@^%!]`)
 	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
 	} else {
 		args = []string{"-c"}
 	}
-	return &Executor{shell: shell, shellType: shellType, args: args}
+	return &Executor{shell: shell, shellType: shellType, args: args, r: r}
 }
 
 // ExecCommand executes the given command with $SHELL
@@ -112,13 +115,21 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 func (x *Executor) QuoteEntry(entry string) string {
 	switch x.shellType {
 	case shellTypeCmd:
-		// backslash escaping is done here for applications
-		// (see ripgrep test case in terminal_test.go#TestWindowsCommands)
-		escaped := strings.Replace(entry, `\`, `\\`, -1)
-		escaped = `"` + strings.Replace(escaped, `"`, `\"`, -1) + `"`
-		// caret is the escape character for cmd shell
-		r, _ := regexp.Compile(`[&|<>()@^%!"]`)
-		return r.ReplaceAllStringFunc(escaped, func(match string) string {
+		/* Manually tested with the following commands:
+		   fzf --preview "echo {}"
+		   fzf --preview "type {}"
+		   echo .git\refs\| fzf --preview "dir {}"
+		   echo .git\refs\\| fzf --preview "dir {}"
+		   echo .git\refs\\\| fzf --preview "dir {}"
+		   reg query HKCU | fzf --reverse --bind "enter:reload(reg query {})"
+		   fzf --disabled --preview "echo {q}" --query "&|<>()@^^%!"
+		   fd -H --no-ignore -td -d 4 | fzf --preview "dir {}"
+		   fd -H --no-ignore -td -d 4 | fzf --preview "eza {}" --preview-window up
+		   fd -H --no-ignore -td -d 4 | fzf --preview "eza --color=always --tree --level=3 --icons=always {}"
+		   fd -H --no-ignore -td -d 4 | fzf --preview ".\eza.exe --color=always --tree --level=3 --icons=always {}" --with-shell "powershell -NoProfile -Command"
+		*/
+		escaped := syscall.EscapeArg(entry)
+		return x.r.ReplaceAllStringFunc(escaped, func(match string) string {
 			return "^" + match
 		})
 	case shellTypePowerShell:
