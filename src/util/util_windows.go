@@ -57,10 +57,20 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		}
 		x.shellPath.Store(shell)
 	}
-	cmd := exec.Command(shell, append(x.args, command)...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		HideWindow:    false,
-		CreationFlags: 0,
+	var cmd *exec.Cmd
+	if strings.Contains(shell, "cmd") {
+		cmd = exec.Command(shell)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:    false,
+			CmdLine:       fmt.Sprintf(`%s "%s"`, strings.Join(x.args, " "), command),
+			CreationFlags: 0,
+		}
+	} else {
+		cmd = exec.Command(shell, append(x.args, command)...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:    false,
+			CreationFlags: 0,
+		}
 	}
 	return cmd
 }
