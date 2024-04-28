@@ -6,14 +6,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync/atomic"
 	"syscall"
 )
 
+type shellType int
+
+const (
+	shellTypeUnknown shellType = iota
+	shellTypeCmd
+	shellTypePowerShell
+)
+
 type Executor struct {
 	shell     string
+	shellType shellType
 	args      []string
 	shellPath atomic.Value
 }
@@ -27,16 +37,20 @@ func NewExecutor(withShell string) *Executor {
 		shell = "cmd"
 	}
 
+	shellType := shellTypeUnknown
+	basename := filepath.Base(shell)
 	if len(args) > 0 {
 		args = args[1:]
-	} else if strings.Contains(shell, "cmd") {
+	} else if strings.HasPrefix(basename, "cmd") {
+		shellType = shellTypeCmd
 		args = []string{"/v:on/s/c"}
-	} else if strings.Contains(shell, "pwsh") || strings.Contains(shell, "powershell") {
+	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
+		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
 	} else {
 		args = []string{"-c"}
 	}
-	return &Executor{shell: shell, args: args}
+	return &Executor{shell: shell, shellType: shellType, args: args}
 }
 
 // ExecCommand executes the given command with $SHELL
@@ -58,7 +72,7 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		x.shellPath.Store(shell)
 	}
 	var cmd *exec.Cmd
-	if strings.Contains(shell, "cmd") {
+	if x.shellType == shellTypeCmd {
 		cmd = exec.Command(shell)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
@@ -96,7 +110,8 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 }
 
 func (x *Executor) QuoteEntry(entry string) string {
-	if strings.Contains(x.shell, "cmd") {
+	switch x.shellType {
+	case shellTypeCmd:
 		// backslash escaping is done here for applications
 		// (see ripgrep test case in terminal_test.go#TestWindowsCommands)
 		escaped := strings.Replace(entry, `\`, `\\`, -1)
@@ -106,10 +121,10 @@ func (x *Executor) QuoteEntry(entry string) string {
 		return r.ReplaceAllStringFunc(escaped, func(match string) string {
 			return "^" + match
 		})
-	} else if strings.Contains(x.shell, "pwsh") || strings.Contains(x.shell, "powershell") {
+	case shellTypePowerShell:
 		escaped := strings.Replace(entry, `"`, `\"`, -1)
 		return "'" + strings.Replace(escaped, "'", "''", -1) + "'"
-	} else {
+	default:
 		return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
 	}
 }
