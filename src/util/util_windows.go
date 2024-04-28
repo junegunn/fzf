@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -26,7 +25,6 @@ type Executor struct {
 	shellType shellType
 	args      []string
 	shellPath atomic.Value
-	r         *regexp.Regexp
 }
 
 func NewExecutor(withShell string) *Executor {
@@ -38,7 +36,6 @@ func NewExecutor(withShell string) *Executor {
 		shell = "cmd"
 	}
 
-	var r *regexp.Regexp
 	shellType := shellTypeUnknown
 	basename := filepath.Base(shell)
 	if len(args) > 0 {
@@ -46,14 +43,13 @@ func NewExecutor(withShell string) *Executor {
 	} else if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
 		args = []string{"/v:on/s/c"}
-		r = regexp.MustCompile(`[&|<>()@^%!]`)
 	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
 	} else {
 		args = []string{"-c"}
 	}
-	return &Executor{shell: shell, shellType: shellType, args: args, r: r}
+	return &Executor{shell: shell, shellType: shellType, args: args}
 }
 
 // ExecCommand executes the given command with $SHELL
@@ -112,6 +108,34 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	Exit(0)
 }
 
+func escapeArg(s string) string {
+	b := make([]byte, 0, len(s)+2)
+	b = append(b, '"')
+	slashes := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		default:
+			slashes = 0
+		case '\\':
+			slashes++
+		case '&', '|', '<', '>', '(', ')', '@', '^', '%', '!':
+			b = append(b, '^')
+		case '"':
+			for ; slashes > 0; slashes-- {
+				b = append(b, '\\')
+			}
+			b = append(b, '\\')
+		}
+		b = append(b, c)
+	}
+	for ; slashes > 0; slashes-- {
+		b = append(b, '\\')
+	}
+	b = append(b, '"')
+	return string(b)
+}
+
 func (x *Executor) QuoteEntry(entry string) string {
 	switch x.shellType {
 	case shellTypeCmd:
@@ -122,16 +146,13 @@ func (x *Executor) QuoteEntry(entry string) string {
 		   echo .git\refs\\| fzf --preview "dir {}"
 		   echo .git\refs\\\| fzf --preview "dir {}"
 		   reg query HKCU | fzf --reverse --bind "enter:reload(reg query {})"
-		   fzf --disabled --preview "echo {q}" --query "&|<>()@^^%!"
+		   fzf --disabled --preview "echo {q} {n} {}" --query "&|<>()@^%!"
 		   fd -H --no-ignore -td -d 4 | fzf --preview "dir {}"
 		   fd -H --no-ignore -td -d 4 | fzf --preview "eza {}" --preview-window up
 		   fd -H --no-ignore -td -d 4 | fzf --preview "eza --color=always --tree --level=3 --icons=always {}"
 		   fd -H --no-ignore -td -d 4 | fzf --preview ".\eza.exe --color=always --tree --level=3 --icons=always {}" --with-shell "powershell -NoProfile -Command"
 		*/
-		escaped := syscall.EscapeArg(entry)
-		return x.r.ReplaceAllStringFunc(escaped, func(match string) string {
-			return "^" + match
-		})
+		return escapeArg(entry)
 	case shellTypePowerShell:
 		escaped := strings.Replace(entry, `"`, `\"`, -1)
 		return "'" + strings.Replace(escaped, "'", "''", -1) + "'"
