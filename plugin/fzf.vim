@@ -83,18 +83,19 @@ else
   endfunction
 endif
 
-function! s:shellesc_cmd(arg)
+function! s:shellesc_win(arg)
   let escaped = substitute(a:arg, '[&|<>()@^]', '^&', 'g')
   let escaped = substitute(escaped, '%', '%%', 'g')
   let escaped = substitute(escaped, '"', '\\^&', 'g')
   let escaped = substitute(escaped, '\(\\\+\)\(\\^\)', '\1\1\2', 'g')
-  return '^"'.substitute(escaped, '\(\\\+\)$', '\1\1', '').'^"'
+  let quote_str = &shell =~ 'powershell\|pwsh' ? '"' : '^"'
+  return quote_str.substitute(escaped, '\(\\\+\)$', '\1\1', '').quote_str
 endfunction
 
 function! fzf#shellescape(arg, ...)
   let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
   if shell =~# 'cmd.exe$'
-    return s:shellesc_cmd(a:arg)
+    return s:shellesc_win(a:arg)
   endif
   try
     let [shell, &shell] = [&shell, shell]
