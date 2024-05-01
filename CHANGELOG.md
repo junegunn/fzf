@@ -25,9 +25,10 @@ CHANGELOG
     - `change-multi` - enable multi-select mode with no limit
     - `change-multi(NUM)` - enable multi-select mode with a limit
     - `change-multi(0)` - disable multi-select mode
-- `become` action is now supported on Windows
-    - Unlike in *nix, this does not use `execve(2)`. Instead it spawns a new process and waits for it to finish, so the exact behavior may differ.
-- Fixed argument escaping for Windows cmd.exe
+- Windows improvements
+    - `become` action is now supported on Windows
+        - Unlike in *nix, this does not use `execve(2)`. Instead it spawns a new process and waits for it to finish, so the exact behavior may differ.
+    - Fixed argument escaping for Windows cmd.exe. No redundant escaping of backslashes.
 - Bug fixes and improvements
 
 0.50.0
