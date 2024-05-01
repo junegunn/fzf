@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -10,6 +11,7 @@ import (
 	"go/types"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,6 +19,20 @@ import (
 )
 
 func loadPackages(t *testing.T) []*build.Package {
+	// If GOROOT is not set, use `go env GOROOT` to determine it since it
+	// performs more work than just runtime.GOROOT(). For context, running
+	// the tests with the "-trimpath" flag causes GOROOT to not be set.
+	ctxt := &build.Default
+	if ctxt.GOROOT == "" {
+		cmd := exec.Command("go", "env", "GOROOT")
+		out, err := cmd.CombinedOutput()
+		out = bytes.TrimSpace(out)
+		if err != nil {
+			t.Fatalf("error running command: %q: %v\n%s", cmd.Args, err, out)
+		}
+		ctxt.GOROOT = string(out)
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +54,7 @@ func loadPackages(t *testing.T) []*build.Package {
 		if d.Type().IsRegular() && filepath.Ext(name) == ".go" && !strings.HasSuffix(name, "_test.go") {
 			dir := filepath.Dir(path)
 			if !seen[dir] {
-				pkg, err := build.ImportDir(dir, build.ImportComment)
+				pkg, err := ctxt.ImportDir(dir, build.ImportComment)
 				if err != nil {
 					return fmt.Errorf("%s: %s", dir, err)
 				}
