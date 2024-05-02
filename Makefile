@@ -1,6 +1,6 @@
 SHELL          := bash
 GO             ?= go
-GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
+GOOS           ?= $(shell $(GO) version | sed -E 's|^(.* )?([a-zA-Z0-9\-_]+)/[a-zA-Z0-9\-_]+( .*)?$$|\2|')
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
