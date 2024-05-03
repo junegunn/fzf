@@ -1715,9 +1715,11 @@ func (t *Terminal) printInfo() {
 
 	if t.infoStyle == infoInlineRight {
 		if len(t.infoPrefix) == 0 {
-			pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+			t.move(line, pos, false)
+			newPos := util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+			t.window.Print(strings.Repeat(" ", newPos-pos))
+			pos = newPos
 			if pos < t.window.Width() {
-				t.move(line, pos, false)
 				printSpinner()
 				pos++
 			}

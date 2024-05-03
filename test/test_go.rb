@@ -2970,6 +2970,13 @@ class TestGoFZF < TestBase
     tmux.until { assert_match(%r{[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, _1[-1]) }
   end
 
+  def test_info_inline_right_clearance
+    tmux.send_keys "seq 100000 | #{FZF} --info inline-right", :Enter
+    tmux.until { assert_match(%r{100000/100000}, _1[-1]) }
+    tmux.send_keys 'x'
+    tmux.until { assert_match(%r{     0/100000}, _1[-1]) }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }
