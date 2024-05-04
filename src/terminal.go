@@ -298,6 +298,8 @@ type Terminal struct {
 	areaLines          int
 	areaColumns        int
 	forcePreview       bool
+	headerClickLine    int
+	headerClickColumn  int
 }
 
 type selectedItem struct {
@@ -857,6 +859,8 @@ func (t *Terminal) environ() []string {
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
+	env = append(env, fmt.Sprintf("FZF_HEADERCLICK_LINE=%d", t.headerClickLine))
+	env = append(env, fmt.Sprintf("FZF_HEADERCLICK_COLUMN=%d", t.headerClickColumn))
 	return env
 }
 
@@ -3991,10 +3995,10 @@ func (t *Terminal) Loop() {
 				}
 
 				if me.Down {
-					mx = util.Constrain(mx-t.promptLen, 0, len(t.input))
-					if my == t.promptLine() && mx >= 0 {
+					mx_cons := util.Constrain(mx-t.promptLen, 0, len(t.input))
+					if my == t.promptLine() && mx_cons >= 0 {
 						// Prompt
-						t.cx = mx + t.xoffset
+						t.cx = mx_cons + t.xoffset
 					} else if my >= min {
 						t.vset(t.offset + my - min)
 						req(reqList)
@@ -4009,6 +4013,35 @@ func (t *Terminal) Loop() {
 							}
 						}
 						return doActions(actionsFor(evt))
+					} else {
+						// Header
+						lineOffset := 0
+						numLines := t.visibleHeaderLines()
+						if !t.headerFirst {
+                            // offset for info line
+							if t.noSeparatorLine() {
+								lineOffset = 1
+							} else {
+								lineOffset = 2
+							}
+						} else {
+                            // adjust for too-small window
+                            numItems := t.areaLines - numLines
+							if !t.noSeparatorLine() {
+								numItems -= 1
+							}
+							if numItems < 0 {
+								numLines += numItems
+							}
+						}
+						my = util.Constrain(my-lineOffset, -1, numLines)
+						mx -= 2 // offset gutter
+						if my >= 0 && my < numLines && mx >= 0 {
+							t.headerClickLine = my
+							t.headerClickColumn = mx
+							evt := tui.HeaderClick
+							return doActions(actionsFor(evt))
+						}
 					}
 				}
 			case actReload, actReloadSync:
