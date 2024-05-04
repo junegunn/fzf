@@ -73,28 +73,28 @@ func parseListenAddress(address string) (listenAddress, error) {
 	return listenAddress{parts[0], port}, nil
 }
 
-func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (int, error) {
+func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (net.Listener, int, error) {
 	host := address.host
 	port := address.port
 	apiKey := os.Getenv("FZF_API_KEY")
 	if !address.IsLocal() && len(apiKey) == 0 {
-		return port, errors.New("FZF_API_KEY is required to allow remote access")
+		return nil, port, errors.New("FZF_API_KEY is required to allow remote access")
 	}
 	addrStr := fmt.Sprintf("%s:%d", host, port)
 	listener, err := net.Listen("tcp", addrStr)
 	if err != nil {
-		return port, fmt.Errorf("failed to listen on %s", addrStr)
+		return nil, port, fmt.Errorf("failed to listen on %s", addrStr)
 	}
 	if port == 0 {
 		addr := listener.Addr().String()
 		parts := strings.Split(addr, ":")
 		if len(parts) < 2 {
-			return port, fmt.Errorf("cannot extract port: %s", addr)
+			return nil, port, fmt.Errorf("cannot extract port: %s", addr)
 		}
 		var err error
 		port, err = strconv.Atoi(parts[len(parts)-1])
 		if err != nil {
-			return port, err
+			return nil, port, err
 		}
 	}
 
@@ -109,7 +109,7 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 			conn, err := listener.Accept()
 			if err != nil {
 				if errors.Is(err, net.ErrClosed) {
-					break
+					return
 				} else {
 					continue
 				}
@@ -117,10 +117,9 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 			conn.Write([]byte(server.handleHttpRequest(conn)))
 			conn.Close()
 		}
-		listener.Close()
 	}()
 
-	return port, nil
+	return listener, port, nil
 }
 
 // Here we are writing a simplistic HTTP server without using net/http
@@ -217,12 +216,9 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	}
 	body = body[:contentLength]
 
-	errorMessage := ""
-	actions := parseSingleActionList(strings.Trim(string(body), "\r\n"), func(message string) {
-		errorMessage = message
-	})
-	if len(errorMessage) > 0 {
-		return bad(errorMessage)
+	actions, err := parseSingleActionList(strings.Trim(string(body), "\r\n"))
+	if err != nil {
+		return bad(err.Error())
 	}
 	if len(actions) == 0 {
 		return bad("no action specified")

@@ -143,6 +143,7 @@ func TestOSExitNotAllowed(t *testing.T) {
 		t.Skip("skipping: short test")
 	}
 	allowed := map[string]int{
+		"main.go":            1, // os.Exit allowed 1 time in "main.go"
 		"src/util/atexit.go": 1, // os.Exit allowed 1 time in "atexit.go"
 	}
 	var errOsExit bool

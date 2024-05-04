@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/gdamore/tcell/v2/encoding"
 	"github.com/junegunn/fzf/src/util"
 
 	"github.com/rivo/uniseg"
@@ -146,13 +145,13 @@ var (
 	_initialResize   bool = true
 )
 
-func (r *FullscreenRenderer) initScreen() {
+func (r *FullscreenRenderer) initScreen() error {
 	s, e := tcell.NewScreen()
 	if e != nil {
-		errorExit(e.Error())
+		return e
 	}
 	if e = s.Init(); e != nil {
-		errorExit(e.Error())
+		return e
 	}
 	if r.mouse {
 		s.EnableMouse()
@@ -160,16 +159,21 @@ func (r *FullscreenRenderer) initScreen() {
 		s.DisableMouse()
 	}
 	_screen = s
+
+	return nil
 }
 
-func (r *FullscreenRenderer) Init() {
+func (r *FullscreenRenderer) Init() error {
 	if os.Getenv("TERM") == "cygwin" {
 		os.Setenv("TERM", "")
 	}
-	encoding.Register()
 
-	r.initScreen()
+	if err := r.initScreen(); err != nil {
+		return err
+	}
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
+
+	return nil
 }
 
 func (r *FullscreenRenderer) Top() int {

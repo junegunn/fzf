@@ -28,7 +28,7 @@ func sbytes(data string) []byte {
 }
 
 // Run starts fzf
-func Run(opts *Options, version string, revision string) {
+func Run(opts *Options, version string, revision string) (int, error) {
 	defer util.RunAtExitFuncs()
 
 	sort := opts.Sort > 0
@@ -40,7 +40,7 @@ func Run(opts *Options, version string, revision string) {
 		} else {
 			fmt.Println(version)
 		}
-		util.Exit(exitOk)
+		return ExitOk, nil
 	}
 
 	// Event channel
@@ -197,9 +197,9 @@ func Run(opts *Options, version string, revision string) {
 			}
 		}
 		if found {
-			util.Exit(exitOk)
+			return ExitOk, nil
 		}
-		util.Exit(exitNoMatch)
+		return ExitNoMatch, nil
 	}
 
 	// Synchronous search
@@ -210,9 +210,13 @@ func Run(opts *Options, version string, revision string) {
 
 	// Go interactive
 	go matcher.Loop()
+	defer matcher.Stop()
 
 	// Terminal I/O
-	terminal := NewTerminal(opts, eventBox, executor)
+	terminal, err := NewTerminal(opts, eventBox, executor)
+	if err != nil {
+		return ExitError, err
+	}
 	maxFit := 0 // Maximum number of items that can fit on screen
 	padHeight := 0
 	heightUnknown := opts.Height.auto
@@ -258,7 +262,10 @@ func Run(opts *Options, version string, revision string) {
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command, environ)
 	}
-	for {
+
+	exitCode := ExitOk
+	running := true
+	for running {
 		delay := true
 		ticks++
 		input := func() []rune {
@@ -278,7 +285,9 @@ func Run(opts *Options, version string, revision string) {
 					if reading {
 						reader.terminate()
 					}
-					util.Exit(value.(int))
+					exitCode = value.(int)
+					running = false
+					return
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand, nextEnviron)
@@ -378,10 +387,11 @@ func Run(opts *Options, version string, revision string) {
 									for i := 0; i < count; i++ {
 										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
 									}
-									if count > 0 {
-										util.Exit(exitOk)
+									if count == 0 {
+										exitCode = ExitNoMatch
 									}
-									util.Exit(exitNoMatch)
+									running = false
+									return
 								}
 								determine(val.final)
 							}
@@ -399,4 +409,5 @@ func Run(opts *Options, version string, revision string) {
 			time.Sleep(dur)
 		}
 	}
+	return exitCode, nil
 }

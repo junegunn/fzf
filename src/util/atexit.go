@@ -25,6 +25,7 @@ func RunAtExitFuncs() {
 	for i := len(fns) - 1; i >= 0; i-- {
 		fns[i]()
 	}
+	atExitFuncs = nil
 }
 
 // Exit executes any functions registered with AtExit() then exits the program

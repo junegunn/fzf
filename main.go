@@ -3,10 +3,12 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 
 	fzf "github.com/junegunn/fzf/src"
 	"github.com/junegunn/fzf/src/protector"
+	"github.com/junegunn/fzf/src/util"
 )
 
 var version string = "0.51"
@@ -33,9 +35,19 @@ func printScript(label string, content []byte) {
 	fmt.Println("### end: " + label + " ###")
 }
 
+func errorExit(msg string) {
+	os.Stderr.WriteString(msg + "\n")
+	os.Exit(fzf.ExitError)
+}
+
 func main() {
 	protector.Protect()
-	options := fzf.ParseOptions()
+
+	options, err := fzf.ParseOptions(true, os.Args[1:])
+	if err != nil {
+		errorExit(err.Error())
+		return
+	}
 	if options.Bash {
 		printScript("key-bindings.bash", bashKeyBindings)
 		printScript("completion.bash", bashCompletion)
@@ -51,5 +63,9 @@ func main() {
 		fmt.Println("fzf_key_bindings")
 		return
 	}
-	fzf.Run(options, version, revision)
+	code, err := fzf.Run(options, version, revision)
+	if err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+	}
+	util.Exit(code)
 }

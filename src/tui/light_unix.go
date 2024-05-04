@@ -3,7 +3,7 @@
 package tui
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,19 +48,18 @@ func (r *LightRenderer) closePlatform() {
 	// NOOP
 }
 
-func openTtyIn() *os.File {
+func openTtyIn() (*os.File, error) {
 	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
 	if err != nil {
 		tty := ttyname()
 		if len(tty) > 0 {
 			if in, err := os.OpenFile(tty, syscall.O_RDONLY, 0); err == nil {
-				return in
+				return in, nil
 			}
 		}
-		fmt.Fprintln(os.Stderr, "Failed to open "+consoleDevice)
-		util.Exit(2)
+		return nil, errors.New("Failed to open " + consoleDevice)
 	}
-	return in
+	return in, nil
 }
 
 func (r *LightRenderer) setupTerminal() {
@@ -86,9 +85,14 @@ func (r *LightRenderer) updateTerminalSize() {
 func (r *LightRenderer) findOffset() (row int, col int) {
 	r.csi("6n")
 	r.flush()
+	var err error
 	bytes := []byte{}
 	for tries := 0; tries < offsetPollTries; tries++ {
-		bytes = r.getBytesInternal(bytes, tries > 0)
+		bytes, err = r.getBytesInternal(bytes, tries > 0)
+		if err != nil {
+			return -1, -1
+		}
+
 		offsets := offsetRegexp.FindSubmatch(bytes)
 		if len(offsets) > 3 {
 			// Add anything we skipped over to the input buffer

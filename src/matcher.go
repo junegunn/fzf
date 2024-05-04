@@ -35,6 +35,7 @@ type Matcher struct {
 const (
 	reqRetry util.EventType = iota
 	reqReset
+	reqStop
 )
 
 // NewMatcher returns a new Matcher
@@ -60,8 +61,13 @@ func (m *Matcher) Loop() {
 	for {
 		var request MatchRequest
 
+		stop := false
 		m.reqBox.Wait(func(events *util.Events) {
-			for _, val := range *events {
+			for t, val := range *events {
+				if t == reqStop {
+					stop = true
+					return
+				}
 				switch val := val.(type) {
 				case MatchRequest:
 					request = val
@@ -71,6 +77,9 @@ func (m *Matcher) Loop() {
 			}
 			events.Clear()
 		})
+		if stop {
+			break
+		}
 
 		if request.sort != m.sort || request.revision != m.revision {
 			m.sort = request.sort
@@ -235,4 +244,8 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 		event = reqRetry
 	}
 	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort && pattern.sortable, revision})
+}
+
+func (m *Matcher) Stop() {
+	m.reqBox.Set(reqStop, MatchRequest{})
 }
