@@ -4018,15 +4018,15 @@ func (t *Terminal) Loop() {
 						lineOffset := 0
 						numLines := t.visibleHeaderLines()
 						if !t.headerFirst {
-                            // offset for info line
+							// offset for info line
 							if t.noSeparatorLine() {
 								lineOffset = 1
 							} else {
 								lineOffset = 2
 							}
 						} else {
-                            // adjust for too-small window
-                            numItems := t.areaLines - numLines
+							// adjust for too-small window
+							numItems := t.areaLines - numLines
 							if !t.noSeparatorLine() {
 								numItems -= 1
 							}
