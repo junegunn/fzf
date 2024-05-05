@@ -4037,8 +4037,8 @@ func (t *Terminal) Loop() {
 						my = util.Constrain(my-lineOffset, -1, numLines)
 						mx -= 2 // offset gutter
 						if my >= 0 && my < numLines && mx >= 0 {
-							t.clickHeaderLine = my
-							t.clickHeaderColumn = mx
+							t.clickHeaderLine = my + 1
+							t.clickHeaderColumn = mx + 1
 							evt := tui.ClickHeader
 							return doActions(actionsFor(evt))
 						}
