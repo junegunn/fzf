@@ -298,8 +298,8 @@ type Terminal struct {
 	areaLines          int
 	areaColumns        int
 	forcePreview       bool
-	headerClickLine    int
-	headerClickColumn  int
+	clickHeaderLine    int
+	clickHeaderColumn  int
 }
 
 type selectedItem struct {
@@ -859,8 +859,8 @@ func (t *Terminal) environ() []string {
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
-	env = append(env, fmt.Sprintf("FZF_HEADERCLICK_LINE=%d", t.headerClickLine))
-	env = append(env, fmt.Sprintf("FZF_HEADERCLICK_COLUMN=%d", t.headerClickColumn))
+	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
+	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
 	return env
 }
 
@@ -4037,9 +4037,9 @@ func (t *Terminal) Loop() {
 						my = util.Constrain(my-lineOffset, -1, numLines)
 						mx -= 2 // offset gutter
 						if my >= 0 && my < numLines && mx >= 0 {
-							t.headerClickLine = my
-							t.headerClickColumn = mx
-							evt := tui.HeaderClick
+							t.clickHeaderLine = my
+							t.clickHeaderColumn = mx
+							evt := tui.ClickHeader
 							return doActions(actionsFor(evt))
 						}
 					}

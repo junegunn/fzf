@@ -1278,12 +1278,12 @@ e.g.
      \fBfzf --bind space:jump,jump:accept,jump-cancel:abort\fR
 .RE
 
-\fIheader-click\fR
+\fIclick-header\fR
 .RS
-Triggered when a mouse click occurs within the header. Sets \fBFZF_HEADERCLICK_LINE\fR and \fBFZF_HEADERCLICK_COLUMN\fR environment variables.
+Triggered when a mouse click occurs within the header. Sets \fBFZF_CLICK_HEADER_LINE\fR and \fBFZF_CLICK_HEADER_COLUMN\fR environment variables.
 
 e.g.
-     \fBprintf "head1\\nhead2" | fzf --header-lines=2 --bind header-click:transform-prompt:"printf \\${FZF_HEADERCLICK_LINE}x\\${FZF_HEADERCLICK_COLUMN}"\fR
+     \fBprintf "head1\\nhead2" | fzf --header-lines=2 --bind click-header:transform-prompt:"printf \\${FZF_CLICK_HEADER_LINE}x\\${FZF_CLICK_HEADER_COLUMN}"\fR
 
 .RE
 
