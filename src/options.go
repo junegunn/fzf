@@ -708,6 +708,8 @@ func parseKeyChordsImpl(str string, message string, exit func(string)) map[tui.E
 			add(tui.Jump)
 		case "jump-cancel":
 			add(tui.JumpCancel)
+		case "click-header":
+			add(tui.ClickHeader)
 		case "alt-enter", "alt-return":
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":

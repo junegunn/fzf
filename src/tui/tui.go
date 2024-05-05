@@ -130,6 +130,7 @@ const (
 	Result
 	Jump
 	JumpCancel
+	ClickHeader
 )
 
 func (t EventType) AsEvent() Event {
