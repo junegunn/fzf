@@ -1494,10 +1494,6 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 	// Print border label
 	t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, false)
 	t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border, false)
-
-	for i := 0; i < t.window.Height(); i++ {
-		t.window.MoveAndClear(i, 0)
-	}
 }
 
 func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts labelOpts, length int, borderShape tui.BorderShape, redrawBorder bool) {
