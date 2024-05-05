@@ -70,6 +70,10 @@ var (
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
+	clearCaches()
+}
+
+func clearCaches() {
 	clearPatternCache()
 	clearChunkCache()
 }

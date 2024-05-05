@@ -29,6 +29,7 @@ func sbytes(data string) []byte {
 
 // Run starts fzf
 func Run(opts *Options, version string, revision string) (int, error) {
+	defer clearCaches()
 	defer util.RunAtExitFuncs()
 
 	sort := opts.Sort > 0
