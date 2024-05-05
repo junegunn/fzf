@@ -1452,6 +1452,14 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					// Add a 1-column margin between the preview window and the main window
 					t.window = t.tui.NewWindow(
 						marginInt[0], marginInt[3]+pwidth+1, width-pwidth-1, height, false, noBorder)
+
+					// Clear characters on the margin
+					//   fzf --bind 'space:preview(seq 100)' --preview-window left,1
+					for y := 0; y < height; y++ {
+						t.window.Move(y, -1)
+						t.window.Print(" ")
+					}
+
 					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 				} else {
 					t.window = t.tui.NewWindow(
