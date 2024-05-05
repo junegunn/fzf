@@ -821,44 +821,32 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
-	pad := repeat(' ', w.width/hw)
-
-	w.Move(0, 0)
 	if top {
+		w.Move(0, 0)
 		w.CPrint(color, repeat(w.border.top, w.width/hw))
-	} else {
-		w.CPrint(color, pad)
 	}
 
-	for y := 1; y < w.height-1; y++ {
-		w.Move(y, 0)
-		w.CPrint(color, pad)
-	}
-
-	w.Move(w.height-1, 0)
 	if bottom {
+		w.Move(w.height-1, 0)
 		w.CPrint(color, repeat(w.border.bottom, w.width/hw))
-	} else {
-		w.CPrint(color, pad)
 	}
 }
 
 func (w *LightWindow) drawBorderVertical(left, right bool) {
-	width := w.width - 2
-	if !left || !right {
-		width++
-	}
+	vw := runeWidth(w.border.left)
 	color := ColBorder
 	if w.preview {
 		color = ColPreviewBorder
 	}
 	for y := 0; y < w.height; y++ {
-		w.Move(y, 0)
 		if left {
+			w.Move(y, 0)
 			w.CPrint(color, string(w.border.left))
+			w.CPrint(color, " ") // Margin
 		}
-		w.CPrint(color, repeat(' ', width))
 		if right {
+			w.Move(y, w.width-vw-1)
+			w.CPrint(color, " ") // Margin
 			w.CPrint(color, string(w.border.right))
 		}
 	}
@@ -880,7 +868,10 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 		for y := 1; y < w.height-1; y++ {
 			w.Move(y, 0)
 			w.CPrint(color, string(w.border.left))
-			w.CPrint(color, repeat(' ', w.width-vw*2))
+			w.CPrint(color, " ") // Margin
+
+			w.Move(y, w.width-vw-1)
+			w.CPrint(color, " ") // Margin
 			w.CPrint(color, string(w.border.right))
 		}
 	}

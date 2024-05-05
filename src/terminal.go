@@ -1288,7 +1288,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 		t.pborder.Close()
 		t.pborder = nil
 	}
-	if t.pwindow != nil {
+	hadPreviewWindow := t.hasPreviewWindow()
+	if hadPreviewWindow {
 		t.pwindow.Close()
 		t.pwindow = nil
 	}
@@ -1387,6 +1388,9 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				pwidth = util.Max(0, pwidth)
 				pheight = util.Max(0, pheight)
 				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, true, noBorder)
+				if !hadPreviewWindow {
+					t.pwindow.Erase()
+				}
 			}
 			verticalPad := 2
 			minPreviewHeight := 3
@@ -1649,7 +1653,7 @@ func (t *Terminal) printInfo() {
 	case infoDefault:
 		t.move(line+1, 0, t.separatorLen == 0)
 		printSpinner()
-		t.move(line+1, 2, false)
+		t.window.Print(" ") // Margin
 		pos = 2
 	case infoRight:
 		t.move(line+1, 0, false)
@@ -1714,6 +1718,7 @@ func (t *Terminal) printInfo() {
 			printSeparator(fillLength, true)
 		}
 		t.window.CPrint(tui.ColInfo, output)
+		t.window.Print(" ") // Margin
 		return
 	}
 
@@ -2922,6 +2927,7 @@ func (t *Terminal) Loop() {
 		t.initFunc()
 		t.termSize = t.tui.Size()
 		t.resizeWindows(false)
+		t.window.Erase()
 		t.printPrompt()
 		t.printInfo()
 		t.printHeader()
