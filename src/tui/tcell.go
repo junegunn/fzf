@@ -561,7 +561,11 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 }
 
 func (w *TcellWindow) Erase() {
-	fill(w.left-1, w.top, w.width+1, w.height-1, w.normal, ' ')
+	if w.borderStyle.shape.HasLeft() {
+		fill(w.left-1, w.top, w.width, w.height-1, w.normal, ' ')
+	} else {
+		fill(w.left, w.top, w.width-1, w.height-1, w.normal, ' ')
+	}
 	w.drawBorder(false)
 }
 

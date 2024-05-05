@@ -368,6 +368,14 @@ const (
 	BorderRight
 )
 
+func (s BorderShape) HasLeft() bool {
+	switch s {
+	case BorderNone, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
+		return false
+	}
+	return true
+}
+
 func (s BorderShape) HasRight() bool {
 	switch s {
 	case BorderNone, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
