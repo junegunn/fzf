@@ -34,9 +34,11 @@ func printScript(label string, content []byte) {
 	fmt.Println("### end: " + label + " ###")
 }
 
-func errorExit(msg string) {
-	os.Stderr.WriteString(msg + "\n")
-	os.Exit(fzf.ExitError)
+func exit(code int, err error) {
+	if err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+	}
+	os.Exit(code)
 }
 
 func main() {
@@ -44,7 +46,7 @@ func main() {
 
 	options, err := fzf.ParseOptions(true, os.Args[1:])
 	if err != nil {
-		errorExit(err.Error())
+		exit(fzf.ExitError, err)
 		return
 	}
 	if options.Bash {
@@ -76,8 +78,5 @@ func main() {
 	}
 
 	code, err := fzf.Run(options)
-	if err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-	}
-	os.Exit(code)
+	exit(code, err)
 }
