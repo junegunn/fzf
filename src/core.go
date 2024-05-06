@@ -37,7 +37,6 @@ func Run(opts *Options) (int, error) {
 		return ExitError, err
 	}
 
-	defer clearCaches()
 	defer util.RunAtExitFuncs()
 
 	// Output channel given
@@ -154,14 +153,16 @@ func Run(opts *Options) (int, error) {
 			forward = true
 		}
 	}
+	cache := NewChunkCache()
+	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
-		return BuildPattern(
+		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
 			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
 	}
 	inputRevision := 0
 	snapshotRevision := 0
-	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox, inputRevision)
+	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
 	if opts.Filter != nil {

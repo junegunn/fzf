@@ -16,6 +16,12 @@ func NewChunkCache() *ChunkCache {
 	return &ChunkCache{sync.Mutex{}, make(map[*Chunk]*queryCache)}
 }
 
+func (cc *ChunkCache) Clear() {
+	cc.mutex.Lock()
+	cc.cache = make(map[*Chunk]*queryCache)
+	cc.mutex.Unlock()
+}
+
 // Add adds the list to the cache
 func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
 	if len(key) == 0 || !chunk.IsFull() || len(list) > queryCacheMax {

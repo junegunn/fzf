@@ -63,34 +63,14 @@ type Pattern struct {
 	cache         *ChunkCache
 }
 
-var (
-	_patternCache map[string]*Pattern
-	_splitRegex   *regexp.Regexp
-	_cache        *ChunkCache
-)
+var _splitRegex *regexp.Regexp
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
-	clearCaches()
-}
-
-func clearCaches() {
-	clearPatternCache()
-	clearChunkCache()
-}
-
-func clearPatternCache() {
-	// We can uniquely identify the pattern for a given string since
-	// search mode and caseMode do not change while the program is running
-	_patternCache = make(map[string]*Pattern)
-}
-
-func clearChunkCache() {
-	_cache = NewChunkCache()
 }
 
 // BuildPattern builds Pattern object from the given arguments
-func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
+func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
 	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 
 	var asString string
@@ -103,7 +83,9 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		asString = string(runes)
 	}
 
-	cached, found := _patternCache[asString]
+	// We can uniquely identify the pattern for a given string since
+	// search mode and caseMode do not change while the program is running
+	cached, found := patternCache[asString]
 	if found {
 		return cached
 	}
@@ -158,7 +140,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
-		cache:         _cache,
+		cache:         cache,
 		procFun:       make(map[termType]algo.Algo)}
 
 	ptr.cacheKey = ptr.buildCacheKey()
@@ -168,7 +150,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	ptr.procFun[termPrefix] = algo.PrefixMatch
 	ptr.procFun[termSuffix] = algo.SuffixMatch
 
-	_patternCache[asString] = ptr
+	patternCache[asString] = ptr
 	return ptr
 }
 

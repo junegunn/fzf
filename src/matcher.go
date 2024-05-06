@@ -21,6 +21,7 @@ type MatchRequest struct {
 
 // Matcher is responsible for performing search
 type Matcher struct {
+	cache          *ChunkCache
 	patternBuilder func([]rune) *Pattern
 	sort           bool
 	tac            bool
@@ -38,10 +39,11 @@ const (
 )
 
 // NewMatcher returns a new Matcher
-func NewMatcher(patternBuilder func([]rune) *Pattern,
+func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox, revision int) *Matcher {
 	partitions := util.Min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
 	return &Matcher{
+		cache:          cache,
 		patternBuilder: patternBuilder,
 		sort:           sort,
 		tac:            tac,
@@ -84,7 +86,7 @@ func (m *Matcher) Loop() {
 			m.sort = request.sort
 			m.revision = request.revision
 			m.mergerCache = make(map[string]*Merger)
-			clearChunkCache()
+			m.cache.Clear()
 		}
 
 		// Restart search
