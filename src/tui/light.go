@@ -330,8 +330,7 @@ func (r *LightRenderer) GetChar() Event {
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
-			r.buffer, err = r.getBytes()
-			if err != nil {
+			if r.buffer, err = r.getBytes(); err != nil {
 				return Event{Fatal, 0, nil}
 			}
 			ev = r.escSequence(&sz)
