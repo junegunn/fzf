@@ -28,7 +28,6 @@ const (
 )
 
 const consoleDevice string = "/dev/tty"
-const fatalError string = "Failed to read " + consoleDevice
 
 var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
 var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
