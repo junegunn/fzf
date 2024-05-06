@@ -31,6 +31,13 @@ func Run(opts *Options) (int, error) {
 	defer clearCaches()
 	defer util.RunAtExitFuncs()
 
+	// Output channel given
+	if opts.Output != nil {
+		opts.Printer = func(str string) {
+			opts.Output <- str
+		}
+	}
+
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
@@ -122,7 +129,7 @@ func Run(opts *Options) (int, error) {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
-		go reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 	}
 
 	// Matcher
@@ -173,7 +180,7 @@ func Run(opts *Options) (int, error) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)

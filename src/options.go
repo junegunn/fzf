@@ -293,6 +293,8 @@ type walkerOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
+	Input        chan string
+	Output       chan string
 	Bash         bool
 	Zsh          bool
 	Fish         bool

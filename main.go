@@ -81,4 +81,29 @@ func main() {
 		os.Stderr.WriteString(err.Error() + "\n")
 	}
 	util.Exit(code)
+
+	/*
+		// Example of using fzf in a Go program
+		inputChan := make(chan string)
+		outputChan := make(chan string)
+		go func() {
+			for _, s := range []string{"a", "b", "c"} {
+				inputChan <- s
+			}
+			close(inputChan)
+		}()
+		go func() {
+			for s := range outputChan {
+				fmt.Println("Got: " + s)
+			}
+		}()
+		options, err := fzf.ParseOptions(true, []string{"--multi", "--reverse", "--border"})
+		options.Input = inputChan
+		options.Output = outputChan
+		code, err := fzf.Run(options)
+		if err != nil {
+			os.Stderr.WriteString(err.Error() + "\n")
+		}
+		util.Exit(code)
+	*/
 }
