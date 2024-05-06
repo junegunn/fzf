@@ -4088,6 +4088,7 @@ func (t *Terminal) Loop() {
 
 				// Reset preview options and apply the additional options
 				t.previewOpts = t.initialPreviewOpts
+				t.previewOpts.command = currentPreviewOpts.command
 
 				// Split window options
 				tokens := strings.Split(a.a, "|")
