@@ -3000,6 +3000,7 @@ func (t *Terminal) Loop() error {
 	if t.hasPreviewer() {
 		go func() {
 			var version int64
+			stop := false
 			for {
 				var items []*Item
 				var commandTemplate string
@@ -3009,6 +3010,9 @@ func (t *Terminal) Loop() error {
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
 						switch req {
+						case reqQuit:
+							stop = true
+							return
 						case reqPreviewEnqueue:
 							request := value.(previewRequest)
 							commandTemplate = request.template
@@ -3020,6 +3024,9 @@ func (t *Terminal) Loop() error {
 					}
 					events.Clear()
 				})
+				if stop {
+					return
+				}
 				version++
 				// We don't display preview window if no match
 				if items[0] != nil {
@@ -3174,6 +3181,9 @@ func (t *Terminal) Loop() error {
 		running := true
 		code := ExitError
 		exit := func(getCode func() int) {
+			if t.hasPreviewer() {
+				t.previewBox.Set(reqQuit, nil)
+			}
 			if t.listener != nil {
 				t.listener.Close()
 			}
