@@ -59,12 +59,9 @@ if s:is_win
     return iconv(a:str, &encoding, 'cp'.s:codepage)
   endfunction
   function! s:wrap_cmds(cmds)
-    return map([
-      \ '@echo off',
-      \ 'setlocal enabledelayedexpansion']
+    return map(['@echo off']
     \ + (has('gui_running') ? ['set TERM= > nul'] : [])
-    \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds])
-    \ + ['endlocal'],
+    \ + (type(a:cmds) == type([]) ? a:cmds : [a:cmds]),
     \ '<SID>enc_to_cp(v:val."\r")')
   endfunction
 else
@@ -83,8 +80,6 @@ else
   endfunction
 endif
 
-let s:cmd_control_chars = ['&', '|', '<', '>', '(', ')', '@', '^', '!']
-
 function! s:shellesc_cmd(arg)
   let e = '"'
   let slashes = 0
@@ -94,10 +89,6 @@ function! s:shellesc_cmd(arg)
     elseif c ==# '"'
       let e .= repeat('\', slashes + 1)
       let slashes = 0
-    elseif c ==# '%'
-      let e .= '%'
-    elseif index(s:cmd_control_chars, c) >= 0
-      let e .= '^'
     else
       let slashes = 0
     endif

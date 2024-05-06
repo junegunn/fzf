@@ -42,7 +42,7 @@ func NewExecutor(withShell string) *Executor {
 		args = args[1:]
 	} else if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
-		args = []string{"/v:on/s/c"}
+		args = []string{"/s/c"}
 	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
@@ -119,8 +119,6 @@ func escapeArg(s string) string {
 			slashes = 0
 		case '\\':
 			slashes++
-		case '&', '|', '<', '>', '(', ')', '@', '^', '%', '!':
-			b = append(b, '^')
 		case '"':
 			for ; slashes > 0; slashes-- {
 				b = append(b, '\\')
