@@ -517,6 +517,7 @@ type previewRequest struct {
 	pwindowSize  tui.TermSize
 	scrollOffset int
 	list         []*Item
+	env          []string
 }
 
 type previewResult struct {
@@ -3003,6 +3004,7 @@ func (t *Terminal) Loop() error {
 				var commandTemplate string
 				var pwindow tui.Window
 				var pwindowSize tui.TermSize
+				var env []string
 				initialOffset := 0
 				t.previewBox.Wait(func(events *util.Events) {
 					for req, value := range *events {
@@ -3017,6 +3019,7 @@ func (t *Terminal) Loop() error {
 							items = request.list
 							pwindow = request.pwindow
 							pwindowSize = request.pwindowSize
+							env = request.env
 						}
 					}
 					events.Clear()
@@ -3030,7 +3033,6 @@ func (t *Terminal) Loop() error {
 					_, query := t.Input()
 					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
 					cmd := t.executor.ExecCommand(command, true)
-					env := t.environ()
 					if pwindowSize.Lines > 0 {
 						lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)
 						columns := fmt.Sprintf("COLUMNS=%d", pwindowSize.Columns)
@@ -3168,7 +3170,7 @@ func (t *Terminal) Loop() error {
 		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list, t.environ()})
 		}
 	}
 
@@ -3497,7 +3499,7 @@ func (t *Terminal) Loop() error {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.previewOpts.command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list})
+								previewRequest{t.previewOpts.command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list, t.environ()})
 						}
 					} else {
 						// Discard the preview content so that it won't accidentally appear
