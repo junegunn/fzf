@@ -2739,15 +2739,16 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
-			cmd.Start()
-			if firstLineOnly {
-				line, _ = reader.ReadString('\n')
-				line = strings.TrimRight(line, "\r\n")
-			} else {
-				bytes, _ := io.ReadAll(reader)
-				line = string(bytes)
+			if err := cmd.Start(); err != nil {
+				if firstLineOnly {
+					line, _ = reader.ReadString('\n')
+					line = strings.TrimRight(line, "\r\n")
+				} else {
+					bytes, _ := io.ReadAll(reader)
+					line = string(bytes)
+				}
+				cmd.Wait()
 			}
-			cmd.Wait()
 		} else {
 			cmd.Run()
 		}
@@ -2963,6 +2964,7 @@ func (t *Terminal) Loop() error {
 		t.mutex.Lock()
 		if err := t.initFunc(); err != nil {
 			t.mutex.Unlock()
+			cancel()
 			return err
 		}
 		t.termSize = t.tui.Size()

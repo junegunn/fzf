@@ -1089,7 +1089,7 @@ Loop:
 			break
 		}
 		cs := string(action[0])
-		ce := ")"
+		var ce string
 		switch action[0] {
 		case ':':
 			masked += strings.Repeat(" ", len(action))
@@ -2317,7 +2317,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "--scrollbar="); match {
 				opts.Scrollbar = &value
 			} else if match, value := optString(arg, "--toggle-sort="); match {
-				parseToggleSort(opts.Keymap, value)
+				if err := parseToggleSort(opts.Keymap, value); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--expect="); match {
 				chords, err := parseKeyChords(value, "key names required")
 				if err != nil {
@@ -2339,7 +2341,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--history="); match {
-				setHistory(value)
+				if err := setHistory(value); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--history-size="); match {
 				n, err := atoi(value)
 				if err != nil {
@@ -2359,7 +2363,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "--preview="); match {
 				opts.Preview.command = value
 			} else if match, value := optString(arg, "--preview-window="); match {
-				parsePreviewWindow(&opts.Preview, value)
+				if err := parsePreviewWindow(&opts.Preview, value); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--margin="); match {
 				if opts.Margin, err = parseMargin("margin", value); err != nil {
 					return err

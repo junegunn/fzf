@@ -292,7 +292,7 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 
 func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 	var remaining string
-	i := -1
+	var i int
 	if delimiter == 0 {
 		// Faster than strings.IndexAny(";:")
 		i = strings.IndexByte(s, ';')
