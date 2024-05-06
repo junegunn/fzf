@@ -2283,30 +2283,25 @@ func parseOptions(opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "--marker="); match {
 				opts.Marker = firstLine(value)
 			} else if match, value := optString(arg, "-n", "--nth="); match {
-				opts.Nth, err = splitNth(value)
-				if err != nil {
+				if opts.Nth, err = splitNth(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--with-nth="); match {
-				opts.WithNth, err = splitNth(value)
-				if err != nil {
+				if opts.WithNth, err = splitNth(value); err != nil {
 					return err
 				}
 			} else if match, _ := optString(arg, "-s", "--sort="); match {
 				opts.Sort = 1 // Don't care
 			} else if match, value := optString(arg, "-m", "--multi="); match {
-				opts.Multi, err = atoi(value)
-				if err != nil {
+				if opts.Multi, err = atoi(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--height="); match {
-				opts.Height, err = parseHeight(value)
-				if err != nil {
+				if opts.Height, err = parseHeight(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--min-height="); match {
-				opts.MinHeight, err = atoi(value)
-				if err != nil {
+				if opts.MinHeight, err = atoi(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--layout="); match {
@@ -2314,8 +2309,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--info="); match {
-				opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(value)
-				if err != nil {
+				if opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--separator="); match {
