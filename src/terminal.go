@@ -53,7 +53,6 @@ var offsetTrimCharsRegex *regexp.Regexp
 var activeTempFiles []string
 var activeTempFilesMutex sync.Mutex
 var passThroughRegex *regexp.Regexp
-var actionTypeRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
 
@@ -2117,12 +2116,11 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	}
 
 	height := t.pwindow.Height()
-	header := []string{}
 	body := t.previewer.lines
 	headerLines := t.previewOpts.headerLines
 	// Do not enable preview header lines if it's value is too large
 	if headerLines > 0 && headerLines < util.Min(len(body), height) {
-		header = t.previewer.lines[0:headerLines]
+		header := t.previewer.lines[0:headerLines]
 		body = t.previewer.lines[headerLines:]
 		// Always redraw header
 		t.renderPreviewText(height, header, 0, false)
@@ -2499,8 +2497,6 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		case 'q':
 			flags.forceUpdate = true
 			// query flag is not skipped
-		default:
-			break
 		}
 	}
 
@@ -3430,8 +3426,7 @@ func (t *Terminal) Loop() error {
 		}
 
 		var doAction func(*action) bool
-		var doActions func(actions []*action) bool
-		doActions = func(actions []*action) bool {
+		doActions := func(actions []*action) bool {
 			for iter := 0; iter <= maxFocusEvents; iter++ {
 				currentIndex := t.currentIndex()
 				for _, action := range actions {

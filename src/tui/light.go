@@ -251,7 +251,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		return nil, errors.New("Failed to read " + consoleDevice)
+		return nil, errors.New("failed to read " + consoleDevice)
 	}
 
 	retries := 0
@@ -282,7 +282,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 		// so terminate fzf immediately.
 		if len(buffer) > maxInputBuffer {
 			r.Close()
-			return nil, fmt.Errorf("Input buffer overflow (%d): %v", len(buffer), buffer)
+			return nil, fmt.Errorf("input buffer overflow (%d): %v", len(buffer), buffer)
 		}
 	}
 

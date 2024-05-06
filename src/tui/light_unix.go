@@ -57,7 +57,7 @@ func openTtyIn() (*os.File, error) {
 				return in, nil
 			}
 		}
-		return nil, errors.New("Failed to open " + consoleDevice)
+		return nil, errors.New("failed to open " + consoleDevice)
 	}
 	return in, nil
 }
