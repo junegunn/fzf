@@ -12,8 +12,8 @@ type ChunkCache struct {
 }
 
 // NewChunkCache returns a new ChunkCache
-func NewChunkCache() ChunkCache {
-	return ChunkCache{sync.Mutex{}, make(map[*Chunk]*queryCache)}
+func NewChunkCache() *ChunkCache {
+	return &ChunkCache{sync.Mutex{}, make(map[*Chunk]*queryCache)}
 }
 
 // Add adds the list to the cache

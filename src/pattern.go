@@ -60,12 +60,13 @@ type Pattern struct {
 	delimiter     Delimiter
 	nth           []Range
 	procFun       map[termType]algo.Algo
+	cache         *ChunkCache
 }
 
 var (
 	_patternCache map[string]*Pattern
 	_splitRegex   *regexp.Regexp
-	_cache        ChunkCache
+	_cache        *ChunkCache
 )
 
 func init() {
@@ -157,6 +158,7 @@ func BuildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 		cacheable:     cacheable,
 		nth:           nth,
 		delimiter:     delimiter,
+		cache:         _cache,
 		procFun:       make(map[termType]algo.Algo)}
 
 	ptr.cacheKey = ptr.buildCacheKey()
@@ -286,18 +288,18 @@ func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []Result {
 	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
 	if p.cacheable {
-		if cached := _cache.Lookup(chunk, cacheKey); cached != nil {
+		if cached := p.cache.Lookup(chunk, cacheKey); cached != nil {
 			return cached
 		}
 	}
 
 	// Prefix/suffix cache
-	space := _cache.Search(chunk, cacheKey)
+	space := p.cache.Search(chunk, cacheKey)
 
 	matches := p.matchChunk(chunk, space, slab)
 
 	if p.cacheable {
-		_cache.Add(chunk, cacheKey, matches)
+		p.cache.Add(chunk, cacheKey, matches)
 	}
 	return matches
 }
