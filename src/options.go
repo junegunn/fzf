@@ -92,6 +92,7 @@ const Usage = `usage: fzf [options]
     --ansi                 Enable processing of ANSI color codes
     --tabstop=SPACES       Number of spaces for a tab character (default: 8)
     --color=COLSPEC        Base scheme (dark|light|16|bw) and/or custom colors
+    --cursor-line          Highlight the whole current line
     --no-bold              Do not use bold text
 
   History
@@ -322,6 +323,7 @@ type Options struct {
 	MinHeight    int
 	Layout       layoutType
 	Cycle        bool
+	CursorLine   bool
 	KeepRight    bool
 	Hscroll      bool
 	HscrollOff   int
@@ -1948,6 +1950,10 @@ func parseOptions(opts *Options, allArgs []string) error {
 			opts.Layout = layoutDefault
 		case "--cycle":
 			opts.Cycle = true
+		case "--cursor-line":
+			opts.CursorLine = true
+		case "--no-cursor-line":
+			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
 		case "--keep-right":

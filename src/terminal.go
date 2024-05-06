@@ -229,6 +229,7 @@ type Terminal struct {
 	printQuery         bool
 	history            *History
 	cycle              bool
+	cursorLine         bool
 	headerVisible      bool
 	headerFirst        bool
 	headerLines        int
@@ -754,6 +755,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		executor:           executor,
 		paused:             opts.Phony,
 		cycle:              opts.Cycle,
+		cursorLine:         opts.CursorLine,
 		headerVisible:      true,
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
@@ -1912,9 +1914,18 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		}
 		newLine.width = t.printHighlighted(result, tui.ColNormal, tui.ColMatch, false, true)
 	}
-	fillSpaces := prevLine.width - newLine.width
-	if fillSpaces > 0 {
-		t.window.Print(strings.Repeat(" ", fillSpaces))
+	if current && t.cursorLine {
+		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
+		fillSpaces := maxWidth - newLine.width
+		newLine.width = maxWidth
+		if fillSpaces > 0 {
+			t.window.CPrint(tui.ColCurrent, strings.Repeat(" ", fillSpaces))
+		}
+	} else {
+		fillSpaces := prevLine.width - newLine.width
+		if fillSpaces > 0 {
+			t.window.Print(strings.Repeat(" ", fillSpaces))
+		}
 	}
 	printBar()
 	t.prevLines[i] = newLine
