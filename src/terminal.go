@@ -4023,10 +4023,10 @@ func (t *Terminal) Loop() {
 							}
 						}
 						return doActions(actionsFor(evt))
-					} else {
+					} else if t.headerVisible {
 						// Header
-						lineOffset := 0
 						numLines := t.visibleHeaderLines()
+						lineOffset := 0
 						if !t.headerFirst {
 							// offset for info line
 							if t.noSeparatorLine() {
@@ -4034,20 +4034,15 @@ func (t *Terminal) Loop() {
 							} else {
 								lineOffset = 2
 							}
-						} else {
-							// adjust for too-small window
-							numItems := t.areaLines - numLines
-							if !t.noSeparatorLine() {
-								numItems -= 1
-							}
-							if numItems < 0 {
-								numLines += numItems
-							}
 						}
-						my = util.Constrain(my-lineOffset, -1, numLines)
+						my -= lineOffset
 						mx -= 2 // offset gutter
 						if my >= 0 && my < numLines && mx >= 0 {
-							t.clickHeaderLine = my + 1
+							if t.layout == layoutReverse {
+								t.clickHeaderLine = my + 1
+							} else {
+								t.clickHeaderLine = numLines - my
+							}
 							t.clickHeaderColumn = mx + 1
 							return doActions(actionsFor(tui.ClickHeader))
 						}
