@@ -3,7 +3,7 @@
 
 package algo
 
-var normalized map[rune]rune = map[rune]rune{
+var normalized = map[rune]rune{
 	0x00E1: 'a', //  WITH ACUTE, LATIN SMALL LETTER
 	0x0103: 'a', //  WITH BREVE, LATIN SMALL LETTER
 	0x01CE: 'a', //  WITH CARON, LATIN SMALL LETTER

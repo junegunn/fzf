@@ -350,7 +350,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	state256 := 0
 	ptr := &state.fg
 
-	var delimiter byte = 0
+	var delimiter byte
 	count := 0
 	for len(ansiCode) != 0 {
 		var num int

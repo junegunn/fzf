@@ -110,9 +110,8 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 			if err != nil {
 				if errors.Is(err, net.ErrClosed) {
 					return
-				} else {
-					continue
 				}
+				continue
 			}
 			conn.Write([]byte(server.handleHttpRequest(conn)))
 			conn.Close()

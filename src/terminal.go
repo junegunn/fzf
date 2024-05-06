@@ -2244,9 +2244,8 @@ Loop:
 						t.pwindow.Move(height-1, maxWidth-1)
 						t.previewed.filled = true
 						break Loop
-					} else {
-						t.pwindow.MoveAndClear(y+requiredLines, 0)
 					}
+					t.pwindow.MoveAndClear(y+requiredLines, 0)
 				}
 			}
 
@@ -3173,7 +3172,7 @@ func (t *Terminal) Loop() error {
 	}
 
 	go func() {
-		var focusedIndex int32 = minItem.Index()
+		var focusedIndex = minItem.Index()
 		var version int64 = -1
 		running := true
 		code := ExitError
@@ -4072,10 +4071,10 @@ func (t *Terminal) Loop() error {
 				}
 
 				if me.Down {
-					mx_cons := util.Constrain(mx-t.promptLen, 0, len(t.input))
-					if my == t.promptLine() && mx_cons >= 0 {
+					mxCons := util.Constrain(mx-t.promptLen, 0, len(t.input))
+					if my == t.promptLine() && mxCons >= 0 {
 						// Prompt
-						t.cx = mx_cons + t.xoffset
+						t.cx = mxCons + t.xoffset
 					} else if my >= min {
 						t.vset(t.offset + my - min)
 						req(reqList)
