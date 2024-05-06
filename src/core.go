@@ -26,6 +26,11 @@ func sbytes(data string) []byte {
 	return unsafe.Slice(unsafe.StringData(data), len(data))
 }
 
+type quitSignal struct {
+	code int
+	err  error
+}
+
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if err := postProcessOptions(opts); err != nil {
@@ -287,7 +292,9 @@ func Run(opts *Options) (int, error) {
 					if reading {
 						reader.terminate()
 					}
-					exitCode = value.(int)
+					quitSignal := value.(quitSignal)
+					exitCode = quitSignal.code
+					err = quitSignal.err
 					stop = true
 					return
 				case EvtReadNew, EvtReadFin:
@@ -414,5 +421,5 @@ func Run(opts *Options) (int, error) {
 			time.Sleep(dur)
 		}
 	}
-	return exitCode, nil
+	return exitCode, err
 }

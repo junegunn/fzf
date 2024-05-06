@@ -2963,6 +2963,7 @@ func (t *Terminal) Loop() error {
 		if err := t.initFunc(); err != nil {
 			t.mutex.Unlock()
 			cancel()
+			t.eventBox.Set(EvtQuit, quitSignal{ExitError, err})
 			return err
 		}
 		t.termSize = t.tui.Size()
@@ -3299,7 +3300,7 @@ func (t *Terminal) Loop() error {
 			})
 		}
 
-		t.eventBox.Set(EvtQuit, code)
+		t.eventBox.Set(EvtQuit, quitSignal{code, nil})
 		t.running.Set(false)
 		t.killPreview()
 		cancel()

@@ -35,7 +35,6 @@ type Matcher struct {
 const (
 	reqRetry util.EventType = iota
 	reqReset
-	reqStop
 )
 
 // NewMatcher returns a new Matcher
@@ -64,7 +63,7 @@ func (m *Matcher) Loop() {
 		stop := false
 		m.reqBox.Wait(func(events *util.Events) {
 			for t, val := range *events {
-				if t == reqStop {
+				if t == reqQuit {
 					stop = true
 					return
 				}
@@ -247,5 +246,5 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 }
 
 func (m *Matcher) Stop() {
-	m.reqBox.Set(reqStop, MatchRequest{})
+	m.reqBox.Set(reqQuit, nil)
 }
