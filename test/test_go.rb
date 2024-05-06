@@ -557,7 +557,7 @@ class TestGoFZF < TestBase
 
   def test_expect
     test = lambda do |key, feed, expected = key|
-      tmux.send_keys "seq 1 100 | #{fzf(:expect, key)}", :Enter
+      tmux.send_keys "seq 1 100 | #{fzf(:expect, key, :prompt, "[#{key}]")}", :Enter
       tmux.until { |lines| assert_equal '  100/100', lines[-2] }
       tmux.send_keys '55'
       tmux.until { |lines| assert_equal '  1/100', lines[-2] }
