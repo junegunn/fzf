@@ -63,7 +63,20 @@ func main() {
 		fmt.Println("fzf_key_bindings")
 		return
 	}
-	code, err := fzf.Run(options, version, revision)
+	if options.Help {
+		fmt.Print(fzf.Usage)
+		return
+	}
+	if options.Version {
+		if len(revision) > 0 {
+			fmt.Printf("%s (%s)\n", version, revision)
+		} else {
+			fmt.Println(version)
+		}
+		return
+	}
+
+	code, err := fzf.Run(options)
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
 	}

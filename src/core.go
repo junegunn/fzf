@@ -2,7 +2,6 @@
 package fzf
 
 import (
-	"fmt"
 	"sync"
 	"time"
 	"unsafe"
@@ -28,21 +27,12 @@ func sbytes(data string) []byte {
 }
 
 // Run starts fzf
-func Run(opts *Options, version string, revision string) (int, error) {
+func Run(opts *Options) (int, error) {
 	defer clearCaches()
 	defer util.RunAtExitFuncs()
 
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
-
-	if opts.Version {
-		if len(revision) > 0 {
-			fmt.Printf("%s (%s)\n", version, revision)
-		} else {
-			fmt.Println(version)
-		}
-		return ExitOk, nil
-	}
 
 	// Event channel
 	eventBox := util.NewEventBox()

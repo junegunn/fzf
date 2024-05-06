@@ -11,13 +11,12 @@ import (
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
-	"github.com/junegunn/fzf/src/util"
 
 	"github.com/mattn/go-shellwords"
 	"github.com/rivo/uniseg"
 )
 
-const usage = `usage: fzf [options]
+const Usage = `usage: fzf [options]
 
   Search
     -x, --extended         Extended-search mode
@@ -368,6 +367,7 @@ type Options struct {
 	WalkerRoot   string
 	WalkerSkip   []string
 	Version      bool
+	Help         bool
 	CPUProfile   string
 	MEMProfile   string
 	BlockProfile string
@@ -458,12 +458,8 @@ func defaultOptions() *Options {
 		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
 		WalkerRoot:   ".",
 		WalkerSkip:   []string{".git", "node_modules"},
+		Help:         false,
 		Version:      false}
-}
-
-func help(code int) {
-	os.Stdout.WriteString(usage)
-	util.Exit(code)
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1749,26 +1745,29 @@ func parseOptions(opts *Options, allArgs []string) error {
 		return nil
 	}
 	validateJumpLabels := false
+	clearExitingOpts := func() {
+		// Last-one-wins strategy
+		opts.Bash = false
+		opts.Zsh = false
+		opts.Fish = false
+		opts.Help = false
+		opts.Version = false
+	}
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
 		case "--bash":
+			clearExitingOpts()
 			opts.Bash = true
-			if opts.Zsh || opts.Fish {
-				return errors.New("cannot specify --bash with --zsh or --fish")
-			}
 		case "--zsh":
+			clearExitingOpts()
 			opts.Zsh = true
-			if opts.Bash || opts.Fish {
-				return errors.New("cannot specify --zsh with --bash or --fish")
-			}
 		case "--fish":
+			clearExitingOpts()
 			opts.Fish = true
-			if opts.Bash || opts.Zsh {
-				return errors.New("cannot specify --fish with --bash or --zsh")
-			}
 		case "-h", "--help":
-			help(ExitOk)
+			clearExitingOpts()
+			opts.Help = true
 		case "-x", "--extended":
 			opts.Extended = true
 		case "-e", "--exact":
@@ -2225,6 +2224,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
 		case "--version":
+			clearExitingOpts()
 			opts.Version = true
 		case "--profile-cpu":
 			if opts.CPUProfile, err = nextString(allArgs, &i, "file path required: cpu"); err != nil {
@@ -2575,25 +2575,9 @@ func postProcessOptions(opts *Options) error {
 	return processScheme(opts)
 }
 
-func expectsArbitraryString(opt string) bool {
-	switch opt {
-	case "-q", "--query", "-f", "--filter", "--header", "--prompt",
-		"--border-label", "--preview-label", "--separator", "--ellipsis": // Seriously?
-		return true
-	}
-	return false
-}
-
 // ParseOptions parses command-line options
 func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	opts := defaultOptions()
-
-	for idx, arg := range args {
-		if arg == "--version" && (idx == 0 || idx > 0 && !expectsArbitraryString(args[idx-1])) {
-			opts.Version = true
-			return opts, nil
-		}
-	}
 
 	if useDefaults {
 		// 1. Options from $FZF_DEFAULT_OPTS_FILE
