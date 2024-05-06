@@ -28,6 +28,10 @@ func sbytes(data string) []byte {
 
 // Run starts fzf
 func Run(opts *Options) (int, error) {
+	if err := postProcessOptions(opts); err != nil {
+		return ExitError, err
+	}
+
 	defer clearCaches()
 	defer util.RunAtExitFuncs()
 

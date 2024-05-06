@@ -2458,6 +2458,8 @@ func validateSign(sign string, signOptName string) error {
 	return nil
 }
 
+// This function can have side-effects and alter some global states.
+// So we run it on fzf.Run and not on ParseOptions.
 func postProcessOptions(opts *Options) error {
 	if opts.Ambidouble {
 		uniseg.EastAsianAmbiguousWidth = 2
@@ -2471,7 +2473,7 @@ func postProcessOptions(opts *Options) error {
 		return err
 	}
 
-	if !opts.Version && !tui.IsLightRendererSupported() && opts.Height.size > 0 {
+	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		return errors.New("--height option is currently not supported on this platform")
 	}
 
@@ -2621,7 +2623,5 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		return nil, errors.New("failed to start pprof profiles: " + err.Error())
 	}
 
-	err := postProcessOptions(opts)
-
-	return opts, err
+	return opts, nil
 }
