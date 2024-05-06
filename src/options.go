@@ -844,13 +844,19 @@ func parseTiebreak(str string) ([]criterion, error) {
 			}
 			criteria = append(criteria, byChunk)
 		case "length":
-			check(&hasLength, "length")
+			if err := check(&hasLength, "length"); err != nil {
+				return nil, err
+			}
 			criteria = append(criteria, byLength)
 		case "begin":
-			check(&hasBegin, "begin")
+			if err := check(&hasBegin, "begin"); err != nil {
+				return nil, err
+			}
 			criteria = append(criteria, byBegin)
 		case "end":
-			check(&hasEnd, "end")
+			if err := check(&hasEnd, "end"); err != nil {
+				return nil, err
+			}
 			criteria = append(criteria, byEnd)
 		default:
 			return nil, errors.New("invalid sort criterion: " + str)
