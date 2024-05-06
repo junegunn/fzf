@@ -266,8 +266,8 @@ func Run(opts *Options) (int, error) {
 	}
 
 	exitCode := ExitOk
-	running := true
-	for running {
+	stop := false
+	for {
 		delay := true
 		ticks++
 		input := func() []rune {
@@ -288,7 +288,7 @@ func Run(opts *Options) (int, error) {
 						reader.terminate()
 					}
 					exitCode = value.(int)
-					running = false
+					stop = true
 					return
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
@@ -392,7 +392,7 @@ func Run(opts *Options) (int, error) {
 									if count == 0 {
 										exitCode = ExitNoMatch
 									}
-									running = false
+									stop = true
 									return
 								}
 								determine(val.final)
@@ -404,6 +404,9 @@ func Run(opts *Options) (int, error) {
 			}
 			events.Clear()
 		})
+		if stop {
+			break
+		}
 		if delay && reading {
 			dur := util.DurWithin(
 				time.Duration(ticks)*coordinatorDelayStep,

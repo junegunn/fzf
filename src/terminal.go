@@ -3025,7 +3025,7 @@ func (t *Terminal) Loop() error {
 					events.Clear()
 				})
 				if stop {
-					return
+					break
 				}
 				version++
 				// We don't display preview window if no match
