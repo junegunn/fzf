@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -104,6 +102,7 @@ const (
 	CtrlAlt
 
 	Invalid
+	Fatal
 
 	Mouse
 	DoubleClick
@@ -525,7 +524,7 @@ type TermSize struct {
 }
 
 type Renderer interface {
-	Init()
+	Init() error
 	Resize(maxHeightFunc func(int) int)
 	Pause(clear bool)
 	Resume(clear bool, sigcont bool)
@@ -683,11 +682,6 @@ func NoColorTheme() *ColorTheme {
 		Separator:        ColorAttr{colDefault, AttrUndefined},
 		Scrollbar:        ColorAttr{colDefault, AttrUndefined},
 	}
-}
-
-func errorExit(message string) {
-	fmt.Fprintln(os.Stderr, message)
-	util.Exit(2)
 }
 
 func init() {

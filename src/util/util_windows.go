@@ -97,15 +97,15 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	err := cmd.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fzf (become): %s\n", err.Error())
-		Exit(127)
+		os.Exit(127)
 	}
 	err = cmd.Wait()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			Exit(exitError.ExitCode())
+			os.Exit(exitError.ExitCode())
 		}
 	}
-	Exit(0)
+	os.Exit(0)
 }
 
 func escapeArg(s string) string {

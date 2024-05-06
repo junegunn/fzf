@@ -21,6 +21,7 @@ type MatchRequest struct {
 
 // Matcher is responsible for performing search
 type Matcher struct {
+	cache          *ChunkCache
 	patternBuilder func([]rune) *Pattern
 	sort           bool
 	tac            bool
@@ -38,10 +39,11 @@ const (
 )
 
 // NewMatcher returns a new Matcher
-func NewMatcher(patternBuilder func([]rune) *Pattern,
+func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox, revision int) *Matcher {
 	partitions := util.Min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
 	return &Matcher{
+		cache:          cache,
 		patternBuilder: patternBuilder,
 		sort:           sort,
 		tac:            tac,
@@ -60,8 +62,13 @@ func (m *Matcher) Loop() {
 	for {
 		var request MatchRequest
 
+		stop := false
 		m.reqBox.Wait(func(events *util.Events) {
-			for _, val := range *events {
+			for t, val := range *events {
+				if t == reqQuit {
+					stop = true
+					return
+				}
 				switch val := val.(type) {
 				case MatchRequest:
 					request = val
@@ -71,12 +78,15 @@ func (m *Matcher) Loop() {
 			}
 			events.Clear()
 		})
+		if stop {
+			break
+		}
 
 		if request.sort != m.sort || request.revision != m.revision {
 			m.sort = request.sort
 			m.revision = request.revision
 			m.mergerCache = make(map[string]*Merger)
-			clearChunkCache()
+			m.cache.Clear()
 		}
 
 		// Restart search
@@ -235,4 +245,8 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 		event = reqRetry
 	}
 	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort && pattern.sortable, revision})
+}
+
+func (m *Matcher) Stop() {
+	m.reqBox.Set(reqQuit, nil)
 }

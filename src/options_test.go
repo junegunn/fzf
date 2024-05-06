@@ -80,7 +80,7 @@ func TestDelimiterRegexRegexCaret(t *testing.T) {
 
 func TestSplitNth(t *testing.T) {
 	{
-		ranges := splitNth("..")
+		ranges, _ := splitNth("..")
 		if len(ranges) != 1 ||
 			ranges[0].begin != rangeEllipsis ||
 			ranges[0].end != rangeEllipsis {
@@ -88,7 +88,7 @@ func TestSplitNth(t *testing.T) {
 		}
 	}
 	{
-		ranges := splitNth("..3,1..,2..3,4..-1,-3..-2,..,2,-2,2..-2,1..-1")
+		ranges, _ := splitNth("..3,1..,2..3,4..-1,-3..-2,..,2,-2,2..-2,1..-1")
 		if len(ranges) != 10 ||
 			ranges[0].begin != rangeEllipsis || ranges[0].end != 3 ||
 			ranges[1].begin != rangeEllipsis || ranges[1].end != rangeEllipsis ||
@@ -137,7 +137,7 @@ func TestIrrelevantNth(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	pairs := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g,ctrl-alt-a,ALT-enter,alt-SPACE", "")
+	pairs, _ := parseKeyChords("ctrl-z,alt-z,f2,@,Alt-a,!,ctrl-G,J,g,ctrl-alt-a,ALT-enter,alt-SPACE", "")
 	checkEvent := func(e tui.Event, s string) {
 		if pairs[e] != s {
 			t.Errorf("%s != %s", pairs[e], s)
@@ -163,7 +163,7 @@ func TestParseKeys(t *testing.T) {
 	checkEvent(tui.AltKey(' '), "alt-SPACE")
 
 	// Synonyms
-	pairs = parseKeyChords("enter,Return,space,tab,btab,esc,up,down,left,right", "")
+	pairs, _ = parseKeyChords("enter,Return,space,tab,btab,esc,up,down,left,right", "")
 	if len(pairs) != 9 {
 		t.Error(9)
 	}
@@ -177,7 +177,7 @@ func TestParseKeys(t *testing.T) {
 	check(tui.Left, "left")
 	check(tui.Right, "right")
 
-	pairs = parseKeyChords("Tab,Ctrl-I,PgUp,page-up,pgdn,Page-Down,Home,End,Alt-BS,Alt-BSpace,shift-left,shift-right,btab,shift-tab,return,Enter,bspace", "")
+	pairs, _ = parseKeyChords("Tab,Ctrl-I,PgUp,page-up,pgdn,Page-Down,Home,End,Alt-BS,Alt-BSpace,shift-left,shift-right,btab,shift-tab,return,Enter,bspace", "")
 	if len(pairs) != 11 {
 		t.Error(11)
 	}
@@ -206,40 +206,40 @@ func TestParseKeysWithComma(t *testing.T) {
 		}
 	}
 
-	pairs := parseKeyChords(",", "")
+	pairs, _ := parseKeyChords(",", "")
 	checkN(len(pairs), 1)
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords(",,a,b", "")
+	pairs, _ = parseKeyChords(",,a,b", "")
 	checkN(len(pairs), 3)
 	check(pairs, tui.Key('a'), "a")
 	check(pairs, tui.Key('b'), "b")
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords("a,b,,", "")
+	pairs, _ = parseKeyChords("a,b,,", "")
 	checkN(len(pairs), 3)
 	check(pairs, tui.Key('a'), "a")
 	check(pairs, tui.Key('b'), "b")
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords("a,,,b", "")
+	pairs, _ = parseKeyChords("a,,,b", "")
 	checkN(len(pairs), 3)
 	check(pairs, tui.Key('a'), "a")
 	check(pairs, tui.Key('b'), "b")
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords("a,,,b,c", "")
+	pairs, _ = parseKeyChords("a,,,b,c", "")
 	checkN(len(pairs), 4)
 	check(pairs, tui.Key('a'), "a")
 	check(pairs, tui.Key('b'), "b")
 	check(pairs, tui.Key('c'), "c")
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords(",,,", "")
+	pairs, _ = parseKeyChords(",,,", "")
 	checkN(len(pairs), 1)
 	check(pairs, tui.Key(','), ",")
 
-	pairs = parseKeyChords(",ALT-,,", "")
+	pairs, _ = parseKeyChords(",ALT-,,", "")
 	checkN(len(pairs), 1)
 	check(pairs, tui.AltKey(','), "ALT-,")
 }
@@ -262,17 +262,13 @@ func TestBind(t *testing.T) {
 		}
 	}
 	check(tui.CtrlA.AsEvent(), "", actBeginningOfLine)
-	errorString := ""
-	errorFn := func(e string) {
-		errorString = e
-	}
 	parseKeymap(keymap,
 		"ctrl-a:kill-line,ctrl-b:toggle-sort+up+down,c:page-up,alt-z:page-down,"+
 			"f1:execute(ls {+})+abort+execute(echo \n{+})+select-all,f2:execute/echo {}, {}, {}/,f3:execute[echo '({})'],f4:execute;less {};,"+
 			"alt-a:execute-Multi@echo (,),[,],/,:,;,%,{}@,alt-b:execute;echo (,),[,],/,:,@,%,{};,"+
 			"x:Execute(foo+bar),X:execute/bar+baz/"+
 			",f1:+first,f1:+top"+
-			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up", errorFn)
+			",,:abort,::accept,+:execute:++\nfoobar,Y:execute(baz)+up")
 	check(tui.CtrlA.AsEvent(), "", actKillLine)
 	check(tui.CtrlB.AsEvent(), "", actToggleSort, actUp, actDown)
 	check(tui.Key('c'), "", actPageUp)
@@ -290,20 +286,17 @@ func TestBind(t *testing.T) {
 	check(tui.Key('+'), "++\nfoobar,Y:execute(baz)+up", actExecute)
 
 	for idx, char := range []rune{'~', '!', '@', '#', '$', '%', '^', '&', '*', '|', ';', '/'} {
-		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char), errorFn)
+		parseKeymap(keymap, fmt.Sprintf("%d:execute%cfoobar%c", idx%10, char, char))
 		check(tui.Key([]rune(fmt.Sprintf("%d", idx%10))[0]), "foobar", actExecute)
 	}
 
-	parseKeymap(keymap, "f1:abort", errorFn)
+	parseKeymap(keymap, "f1:abort")
 	check(tui.F1.AsEvent(), "", actAbort)
-	if len(errorString) > 0 {
-		t.Errorf("error parsing keymap: %s", errorString)
-	}
 }
 
 func TestColorSpec(t *testing.T) {
 	theme := tui.Dark256
-	dark := parseTheme(theme, "dark")
+	dark, _ := parseTheme(theme, "dark")
 	if *dark != *theme {
 		t.Errorf("colors should be equivalent")
 	}
@@ -311,7 +304,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("point should not be equivalent")
 	}
 
-	light := parseTheme(theme, "dark,light")
+	light, _ := parseTheme(theme, "dark,light")
 	if *light == *theme {
 		t.Errorf("should not be equivalent")
 	}
@@ -322,7 +315,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("point should not be equivalent")
 	}
 
-	customized := parseTheme(theme, "fg:231,bg:232")
+	customized, _ := parseTheme(theme, "fg:231,bg:232")
 	if customized.Fg.Color != 231 || customized.Bg.Color != 232 {
 		t.Errorf("color not customized")
 	}
@@ -335,7 +328,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("colors should now be equivalent: %v, %v", tui.Dark256, customized)
 	}
 
-	customized = parseTheme(theme, "fg:231,dark,bg:232")
+	customized, _ = parseTheme(theme, "fg:231,dark,bg:232")
 	if customized.Fg != tui.Dark256.Fg || customized.Bg == tui.Dark256.Bg {
 		t.Errorf("color not customized")
 	}
@@ -475,7 +468,7 @@ func TestValidateSign(t *testing.T) {
 }
 
 func TestParseSingleActionList(t *testing.T) {
-	actions := parseSingleActionList("Execute@foo+bar,baz@+up+up+reload:down+down", func(string) {})
+	actions, _ := parseSingleActionList("Execute@foo+bar,baz@+up+up+reload:down+down")
 	if len(actions) != 4 {
 		t.Errorf("Invalid number of actions parsed:%d", len(actions))
 	}
@@ -491,11 +484,8 @@ func TestParseSingleActionList(t *testing.T) {
 }
 
 func TestParseSingleActionListError(t *testing.T) {
-	err := ""
-	parseSingleActionList("change-query(foobar)baz", func(e string) {
-		err = e
-	})
-	if len(err) == 0 {
+	_, err := parseSingleActionList("change-query(foobar)baz")
+	if err == nil {
 		t.Errorf("Failed to detect error")
 	}
 }

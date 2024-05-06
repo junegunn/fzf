@@ -2,6 +2,7 @@ package tui
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/junegunn/fzf/src/util"
 	"github.com/rivo/uniseg"
 
 	"golang.org/x/term"
@@ -27,8 +29,8 @@ const (
 
 const consoleDevice string = "/dev/tty"
 
-var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
-var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
+var offsetRegexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
+var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
@@ -78,6 +80,7 @@ func (r *LightRenderer) flush() {
 
 // Light renderer
 type LightRenderer struct {
+	closed        *util.AtomicBool
 	theme         *ColorTheme
 	mouse         bool
 	forceBlack    bool
@@ -123,19 +126,24 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) Renderer {
+func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
+	in, err := openTtyIn()
+	if err != nil {
+		return nil, err
+	}
 	r := LightRenderer{
+		closed:        util.NewAtomicBool(false),
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		clearOnExit:   clearOnExit,
-		ttyin:         openTtyIn(),
+		ttyin:         in,
 		yoffset:       0,
 		tabstop:       tabstop,
 		fullscreen:    fullscreen,
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
-	return &r
+	return &r, nil
 }
 
 func repeat(r rune, times int) string {
@@ -153,11 +161,11 @@ func atoi(s string, defaultValue int) int {
 	return value
 }
 
-func (r *LightRenderer) Init() {
+func (r *LightRenderer) Init() error {
 	r.escDelay = atoi(os.Getenv("ESCDELAY"), defaultEscDelay)
 
 	if err := r.initPlatform(); err != nil {
-		errorExit(err.Error())
+		return err
 	}
 	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
@@ -195,6 +203,7 @@ func (r *LightRenderer) Init() {
 	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
+	return nil
 }
 
 func (r *LightRenderer) Resize(maxHeightFunc func(int) int) {
@@ -233,15 +242,16 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) getBytes() []byte {
-	return r.getBytesInternal(r.buffer, false)
+func (r *LightRenderer) getBytes() ([]byte, error) {
+	bytes, err := r.getBytesInternal(r.buffer, false)
+	return bytes, err
 }
 
-func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
+func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, error) {
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		errorExit("Failed to read " + consoleDevice)
+		return nil, errors.New("failed to read " + consoleDevice)
 	}
 
 	retries := 0
@@ -272,19 +282,23 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 		// so terminate fzf immediately.
 		if len(buffer) > maxInputBuffer {
 			r.Close()
-			panic(fmt.Sprintf("Input buffer overflow (%d): %v", len(buffer), buffer))
+			return nil, fmt.Errorf("input buffer overflow (%d): %v", len(buffer), buffer)
 		}
 	}
 
-	return buffer
+	return buffer, nil
 }
 
 func (r *LightRenderer) GetChar() Event {
+	var err error
 	if len(r.buffer) == 0 {
-		r.buffer = r.getBytes()
+		r.buffer, err = r.getBytes()
+		if err != nil {
+			return Event{Fatal, 0, nil}
+		}
 	}
 	if len(r.buffer) == 0 {
-		panic("Empty buffer")
+		return Event{Fatal, 0, nil}
 	}
 
 	sz := 1
@@ -315,7 +329,9 @@ func (r *LightRenderer) GetChar() Event {
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
-			r.buffer = r.getBytes()
+			if r.buffer, err = r.getBytes(); err != nil {
+				return Event{Fatal, 0, nil}
+			}
 			ev = r.escSequence(&sz)
 		}
 		return ev
@@ -738,6 +754,7 @@ func (r *LightRenderer) Close() {
 	r.flush()
 	r.closePlatform()
 	r.restoreTerminal()
+	r.closed.Set(true)
 }
 
 func (r *LightRenderer) Top() int {
