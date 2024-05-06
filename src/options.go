@@ -1776,6 +1776,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 		case "-h", "--help":
 			clearExitingOpts()
 			opts.Help = true
+		case "--version":
+			clearExitingOpts()
+			opts.Version = true
 		case "-x", "--extended":
 			opts.Extended = true
 		case "-e", "--exact":
@@ -2226,9 +2229,6 @@ func parseOptions(opts *Options, allArgs []string) error {
 				return err
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
-		case "--version":
-			clearExitingOpts()
-			opts.Version = true
 		case "--profile-cpu":
 			if opts.CPUProfile, err = nextString(allArgs, &i, "file path required: cpu"); err != nil {
 				return err
