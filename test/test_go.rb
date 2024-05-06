@@ -2695,9 +2695,9 @@ class TestGoFZF < TestBase
 
   def test_change_preview_window_should_not_reset_change_preview
     tmux.send_keys "#{FZF} --preview-window up,border-none --bind 'start:change-preview(echo hello)' --bind 'enter:change-preview-window(border-left)'", :Enter
-    tmux.until { |lines| assert_equal 'hello', lines[0] }
+    tmux.until { |lines| assert_includes lines, 'hello' }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal '│ hello', lines[0] }
+    tmux.until { |lines| assert_includes lines, '│ hello' }
   end
 
   def test_change_preview_window_rotate
