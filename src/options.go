@@ -2078,12 +2078,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 			opts.Header = strLines(str)
 		case "--header-lines":
-			str, err := nextString(allArgs, &i, "number of header lines required")
-			if err != nil {
-				return err
-			}
-			opts.HeaderLines, err = atoi(str)
-			if err != nil {
+			if opts.HeaderLines, err = nextInt(allArgs, &i, "number of header lines required"); err != nil {
 				return err
 			}
 		case "--header-first":
