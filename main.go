@@ -8,7 +8,6 @@ import (
 
 	fzf "github.com/junegunn/fzf/src"
 	"github.com/junegunn/fzf/src/protector"
-	"github.com/junegunn/fzf/src/util"
 )
 
 var version string = "0.51"
@@ -80,5 +79,5 @@ func main() {
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
 	}
-	util.Exit(code)
+	os.Exit(code)
 }
