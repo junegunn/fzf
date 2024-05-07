@@ -115,7 +115,7 @@ link_fzf_in_path() {
 try_curl() {
   command -v curl > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar -xzf -
+    curl -fL $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
@@ -125,7 +125,7 @@ try_curl() {
 try_wget() {
   command -v wget > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    wget -O - $1 | tar -xzf -
+    wget -O - $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
