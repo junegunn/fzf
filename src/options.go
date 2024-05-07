@@ -986,12 +986,18 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.Current)
 			case "current-bg", "bg+":
 				mergeAttr(&theme.DarkBg)
+			case "selected-fg":
+				mergeAttr(&theme.SelectedFg)
+			case "selected-bg":
+				mergeAttr(&theme.SelectedBg)
 			case "gutter":
 				mergeAttr(&theme.Gutter)
 			case "hl":
 				mergeAttr(&theme.Match)
 			case "current-hl", "hl+":
 				mergeAttr(&theme.CurrentMatch)
+			case "selected-hl":
+				mergeAttr(&theme.SelectedMatch)
 			case "border":
 				mergeAttr(&theme.Border)
 			case "preview-border":
@@ -1015,7 +1021,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 			case "pointer":
 				mergeAttr(&theme.Cursor)
 			case "marker":
-				mergeAttr(&theme.Selected)
+				mergeAttr(&theme.Marker)
 			case "header":
 				mergeAttr(&theme.Header)
 			default:

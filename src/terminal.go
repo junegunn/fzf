@@ -1902,7 +1902,7 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 			t.window.CPrint(tui.ColCurrentCursor, label)
 		}
 		if selected {
-			t.window.CPrint(tui.ColCurrentSelected, t.marker)
+			t.window.CPrint(tui.ColCurrentMarker, t.marker)
 		} else {
 			t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
 		}
@@ -1914,18 +1914,30 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 			t.window.CPrint(tui.ColCursor, label)
 		}
 		if selected {
-			t.window.CPrint(tui.ColSelected, t.marker)
+			t.window.CPrint(tui.ColMarker, t.marker)
 		} else {
 			t.window.Print(t.markerEmpty)
 		}
-		newLine.width = t.printHighlighted(result, tui.ColNormal, tui.ColMatch, false, true)
+		var base, match tui.ColorPair
+		if selected {
+			base = tui.ColSelected
+			match = tui.ColSelectedMatch
+		} else {
+			base = tui.ColNormal
+			match = tui.ColMatch
+		}
+		newLine.width = t.printHighlighted(result, base, match, false, true)
 	}
-	if current && t.highlightLine {
+	if (current || selected) && t.highlightLine {
+		color := tui.ColSelected
+		if current {
+			color = tui.ColCurrent
+		}
 		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 		fillSpaces := maxWidth - newLine.width
 		newLine.width = maxWidth
 		if fillSpaces > 0 {
-			t.window.CPrint(tui.ColCurrent, strings.Repeat(" ", fillSpaces))
+			t.window.CPrint(color, strings.Repeat(" ", fillSpaces))
 		}
 	} else {
 		fillSpaces := prevLine.width - newLine.width
