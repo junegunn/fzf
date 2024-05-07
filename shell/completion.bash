@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.bash
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_OPTS          (default: empty)
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                 (default: 0)
+# - $FZF_TMUX_OPTS            (default: empty)
+# - $FZF_COMPLETION_TRIGGER   (default: '**')
+# - $FZF_COMPLETION_OPTS      (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS  (default: empty)
 
 if [[ $- =~ i ]]; then
 
@@ -297,8 +299,14 @@ __fzf_generic_path_completion() {
           if declare -F "$1" > /dev/null; then
             eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover"
           else
-            [[ $1 =~ dir ]] && walker=dir,follow || walker=file,dir,follow,hidden
-            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir"
+            if [[ $1 =~ dir ]]; then
+              walker=dir,follow
+              rest=${FZF_COMPLETION_DIR_OPTS-}
+            else
+              walker=file,dir,follow,hidden
+              rest=${FZF_COMPLETION_PATH_OPTS-}
+            fi
+            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" $rest
           fi | while read -r item; do
             printf "%q " "${item%$3}$3"
           done
