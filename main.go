@@ -36,7 +36,7 @@ func printScript(label string, content []byte) {
 
 func exit(code int, err error) {
 	if err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
+		fmt.Fprintln(os.Stderr, err.Error())
 	}
 	os.Exit(code)
 }
