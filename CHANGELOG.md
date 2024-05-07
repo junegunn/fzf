@@ -6,7 +6,7 @@ CHANGELOG
 - Added `--highlight-line` to highlight the whole current line (à la `set cursorline` of Vim)
 - Added color names for selected lines: `selected-fg`, `selected-bg`, and `selected-hl`
   ```sh
-  fzf --border --multi --info inline-right --layout reverse --marker ▏ --pointer ▌  \
+  fzf --border --multi --info inline-right --layout reverse --marker ▏ --pointer ▌ --prompt '▌ '  \
       --highlight-line --color gutter:-1,selected-bg:238,selected-fg:146,current-fg:189
   ```
 - Added `click-header` event that is triggered when the header section is clicked. When the event is triggered, `$FZF_CLICK_HEADER_COLUMN` and `$FZF_CLICK_HEADER_LINE` are set.
@@ -27,6 +27,7 @@ CHANGELOG
 - Fixed Windows argument escaping
 - Bug fixes and improvements
 - The code was heavily refactored to allow using fzf as a library in Go programs. The API is still experimental and subject to change.
+    - https://gist.github.com/junegunn/193990b65be48a38aac6ac49d5669170
 
 0.51.0
 ------
