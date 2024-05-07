@@ -92,7 +92,7 @@ const Usage = `usage: fzf [options]
     --ansi                 Enable processing of ANSI color codes
     --tabstop=SPACES       Number of spaces for a tab character (default: 8)
     --color=COLSPEC        Base scheme (dark|light|16|bw) and/or custom colors
-    --cursor-line          Highlight the whole current line
+    --highlight-line       Highlight the whole current line
     --no-bold              Do not use bold text
 
   History
@@ -1950,9 +1950,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 			opts.Layout = layoutDefault
 		case "--cycle":
 			opts.Cycle = true
-		case "--cursor-line":
+		case "--highlight-line":
 			opts.CursorLine = true
-		case "--no-cursor-line":
+		case "--no-highlight-line":
 			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
