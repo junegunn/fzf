@@ -312,7 +312,7 @@ func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 		// Inlined version of strconv.Atoi() that only handles positive
 		// integers and does not allocate on error.
 		code := 0
-		for _, ch := range sbytes(s) {
+		for _, ch := range stringBytes(s) {
 			ch -= '0'
 			if ch > 9 {
 				return -1, delimiter, remaining

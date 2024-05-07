@@ -50,8 +50,6 @@ var placeholder *regexp.Regexp
 var whiteSuffix *regexp.Regexp
 var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
-var activeTempFiles []string
-var activeTempFilesMutex sync.Mutex
 var passThroughRegex *regexp.Regexp
 
 const clearCode string = "\x1b[2J"
@@ -64,8 +62,6 @@ func init() {
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
-	activeTempFiles = []string{}
-	activeTempFilesMutex = sync.Mutex{}
 
 	// Parts of the preview output that should be passed through to the terminal
 	// * https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
@@ -113,6 +109,16 @@ func (s *resumableState) Set(flag bool) {
 	} else {
 		*s = pausedState
 	}
+}
+
+type commandSpec struct {
+	command   string
+	tempFiles []string
+}
+
+type quitSignal struct {
+	code int
+	err  error
 }
 
 type previewer struct {
@@ -507,7 +513,7 @@ type placeholderFlags struct {
 type searchRequest struct {
 	sort    bool
 	sync    bool
-	command *string
+	command *commandSpec
 	environ []string
 	changed bool
 }
@@ -2530,32 +2536,6 @@ func hasPreviewFlags(template string) (slot bool, plus bool, forceUpdate bool) {
 	return
 }
 
-func writeTemporaryFile(data []string, printSep string) string {
-	f, err := os.CreateTemp("", "fzf-preview-*")
-	if err != nil {
-		// Unable to create temporary file
-		// FIXME: Should we terminate the program?
-		return ""
-	}
-	defer f.Close()
-
-	f.WriteString(strings.Join(data, printSep))
-	f.WriteString(printSep)
-	activeTempFilesMutex.Lock()
-	activeTempFiles = append(activeTempFiles, f.Name())
-	activeTempFilesMutex.Unlock()
-	return f.Name()
-}
-
-func cleanTemporaryFiles() {
-	activeTempFilesMutex.Lock()
-	for _, filename := range activeTempFiles {
-		os.Remove(filename)
-	}
-	activeTempFiles = []string{}
-	activeTempFilesMutex.Unlock()
-}
-
 type replacePlaceholderParams struct {
 	template   string
 	stripAnsi  bool
@@ -2569,7 +2549,7 @@ type replacePlaceholderParams struct {
 	executor   *util.Executor
 }
 
-func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) string {
+func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) (string, []string) {
 	return replacePlaceholder(replacePlaceholderParams{
 		template:   template,
 		stripAnsi:  t.ansi,
@@ -2590,8 +2570,9 @@ func (t *Terminal) evaluateScrollOffset() int {
 	}
 
 	// We only need the current item to calculate the scroll offset
-	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(
-		t.replacePlaceholder(t.previewOpts.scroll, false, "", []*Item{t.currentItem(), nil}), "")
+	replaced, tempFiles := t.replacePlaceholder(t.previewOpts.scroll, false, "", []*Item{t.currentItem(), nil})
+	removeFiles(tempFiles)
+	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(replaced, "")
 
 	atoi := func(s string) int {
 		n, e := strconv.Atoi(s)
@@ -2619,7 +2600,8 @@ func (t *Terminal) evaluateScrollOffset() int {
 	return util.Max(0, base)
 }
 
-func replacePlaceholder(params replacePlaceholderParams) string {
+func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
+	tempFiles := []string{}
 	current := params.allItems[:1]
 	selected := params.allItems[1:]
 	if current[0] == nil {
@@ -2630,7 +2612,7 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 	}
 
 	// replace placeholders one by one
-	return placeholder.ReplaceAllStringFunc(params.template, func(match string) string {
+	replaced := placeholder.ReplaceAllStringFunc(params.template, func(match string) string {
 		escaped, match, flags := parsePlaceholder(match)
 
 		// this function implements the effects a placeholder has on items
@@ -2713,10 +2695,14 @@ func replacePlaceholder(params replacePlaceholderParams) string {
 		}
 
 		if flags.file {
-			return writeTemporaryFile(replacements, params.printsep)
+			file := writeTemporaryFile(replacements, params.printsep)
+			tempFiles = append(tempFiles, file)
+			return file
 		}
 		return strings.Join(replacements, " ")
 	})
+
+	return replaced, tempFiles
 }
 
 func (t *Terminal) redraw() {
@@ -2733,7 +2719,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid && !capture {
 		return line
 	}
-	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
+	command, tempFiles := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := t.executor.ExecCommand(command, false)
 	cmd.Env = t.environ()
 	t.executing.Set(true)
@@ -2764,7 +2750,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		}
 	}
 	t.executing.Set(false)
-	cleanTemporaryFiles()
+	removeFiles(tempFiles)
 	return line
 }
 
@@ -3042,7 +3028,7 @@ func (t *Terminal) Loop() error {
 				// We don't display preview window if no match
 				if items[0] != nil {
 					_, query := t.Input()
-					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
+					command, tempFiles := t.replacePlaceholder(commandTemplate, false, string(query), items)
 					cmd := t.executor.ExecCommand(command, true)
 					if pwindowSize.Lines > 0 {
 						lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)
@@ -3164,12 +3150,11 @@ func (t *Terminal) Loop() error {
 						finishChan <- true // Tell Goroutine 3 to stop
 						<-reapChan         // Goroutine 2 and 3 finished
 						<-reapChan
+						removeFiles(tempFiles)
 					} else {
 						// Failed to start the command. Report the error immediately.
 						t.reqBox.Set(reqPreviewDisplay, previewResult{version, []string{err.Error()}, 0, ""})
 					}
-
-					cleanTemporaryFiles()
 				} else {
 					t.reqBox.Set(reqPreviewDisplay, previewResult{version, nil, 0, ""})
 				}
@@ -3343,7 +3328,7 @@ func (t *Terminal) Loop() error {
 	pbarDragging := false
 	wasDown := false
 	for looping {
-		var newCommand *string
+		var newCommand *commandSpec
 		var reloadSync bool
 		changed := false
 		beof := false
@@ -3468,7 +3453,8 @@ func (t *Terminal) Loop() error {
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
-					command := t.replacePlaceholder(a.a, false, string(t.input), list)
+					// We do not remove temp files in this case
+					command, _ := t.replacePlaceholder(a.a, false, string(t.input), list)
 					t.tui.Close()
 					if t.history != nil {
 						t.history.append(string(t.input))
@@ -4140,8 +4126,8 @@ func (t *Terminal) Loop() error {
 					valid = !slot || forceUpdate
 				}
 				if valid {
-					command := t.replacePlaceholder(a.a, false, string(t.input), list)
-					newCommand = &command
+					command, tempFiles := t.replacePlaceholder(a.a, false, string(t.input), list)
+					newCommand = &commandSpec{command, tempFiles}
 					reloadSync = a.t == actReloadSync
 					t.reading = true
 				}

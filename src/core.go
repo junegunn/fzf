@@ -4,7 +4,6 @@ package fzf
 import (
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -17,19 +16,6 @@ Matcher  -> EvtSearchProgress -> Terminal (update info)
 Matcher  -> EvtSearchFin      -> Terminal (update list)
 Matcher  -> EvtHeader         -> Terminal (update header)
 */
-
-func ustring(data []byte) string {
-	return unsafe.String(unsafe.SliceData(data), len(data))
-}
-
-func sbytes(data string) []byte {
-	return unsafe.Slice(unsafe.StringData(data), len(data))
-}
-
-type quitSignal struct {
-	code int
-	err  error
-}
 
 // Run starts fzf
 func Run(opts *Options) (int, error) {
@@ -62,16 +48,16 @@ func Run(opts *Options) (int, error) {
 		if opts.Theme.Colored {
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				prevLineAnsiState = lineAnsiState
-				trimmed, offsets, newState := extractColor(ustring(data), lineAnsiState, nil)
+				trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
 				lineAnsiState = newState
-				return util.ToChars(sbytes(trimmed)), offsets
+				return util.ToChars(stringBytes(trimmed)), offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				trimmed, _, _ := extractColor(ustring(data), nil, nil)
-				return util.ToChars(sbytes(trimmed)), nil
+				trimmed, _, _ := extractColor(byteString(data), nil, nil)
+				return util.ToChars(stringBytes(trimmed)), nil
 			}
 		}
 	}
@@ -83,7 +69,7 @@ func Run(opts *Options) (int, error) {
 	if len(opts.WithNth) == 0 {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
-				header = append(header, ustring(data))
+				header = append(header, byteString(data))
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
@@ -94,7 +80,7 @@ func Run(opts *Options) (int, error) {
 		})
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
-			tokens := Tokenize(ustring(data), opts.Delimiter)
+			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
@@ -118,7 +104,7 @@ func Run(opts *Options) (int, error) {
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
-			item.text, item.colors = ansiProcessor(sbytes(transformed))
+			item.text, item.colors = ansiProcessor(stringBytes(transformed))
 			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
@@ -241,7 +227,7 @@ func Run(opts *Options) (int, error) {
 	// Event coordination
 	reading := true
 	ticks := 0
-	var nextCommand *string
+	var nextCommand *commandSpec
 	var nextEnviron []string
 	eventBox.Watch(EvtReadNew)
 	total := 0
@@ -262,7 +248,7 @@ func Run(opts *Options) (int, error) {
 	useSnapshot := false
 	var snapshot []*Chunk
 	var count int
-	restart := func(command string, environ []string) {
+	restart := func(command commandSpec, environ []string) {
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
@@ -328,7 +314,7 @@ func Run(opts *Options) (int, error) {
 					matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
 
 				case EvtSearchNew:
-					var command *string
+					var command *commandSpec
 					var environ []string
 					var changed bool
 					switch val := value.(type) {

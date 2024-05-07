@@ -86,11 +86,12 @@ func (r *Reader) terminate() {
 	r.mutex.Unlock()
 }
 
-func (r *Reader) restart(command string, environ []string) {
+func (r *Reader) restart(command commandSpec, environ []string) {
 	r.event = int32(EvtReady)
 	r.startEventPoller()
-	success := r.readFromCommand(command, environ)
+	success := r.readFromCommand(command.command, environ)
 	r.fin(success)
+	removeFiles(command.tempFiles)
 }
 
 func (r *Reader) readChannel(inputChan chan string) bool {
