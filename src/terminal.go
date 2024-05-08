@@ -869,6 +869,11 @@ func (t *Terminal) environ() []string {
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
 	}
+	if t.merger.Length() > 0 {
+		env = append(env, "FZF_SELECTION="+t.merger.Get(util.Min(t.merger.Length(), t.cy)).item.AsString(true))
+	} else {
+		env = append(env, "FZF_SELECTION=")
+	}
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_KEY="+t.lastKey)
