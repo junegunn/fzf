@@ -22,8 +22,8 @@ const Usage = `usage: fzf [options]
     -x, --extended         Extended-search mode
                            (enabled by default; +x or --no-extended to disable)
     -e, --exact            Enable Exact-match
-    -i                     Case-insensitive match (default: smart-case match)
-    +i                     Case-sensitive match
+    -i, --ignore-case      Case-insensitive match (default: smart-case match)
+    +i, --no-ignore-case   Case-sensitive match
     --scheme=SCHEME        Scoring scheme [default|path|history]
     --literal              Do not normalize latin script letters before matching
     -n, --nth=N[,..]       Comma-separated list of field index expressions
@@ -1914,9 +1914,9 @@ func parseOptions(opts *Options, allArgs []string) error {
 			opts.Tac = true
 		case "--no-tac":
 			opts.Tac = false
-		case "-i":
+		case "-i", "--ignore-case":
 			opts.Case = CaseIgnore
-		case "+i":
+		case "+i", "--no-ignore-case":
 			opts.Case = CaseRespect
 		case "-m", "--multi":
 			if opts.Multi, err = optionalNumeric(allArgs, &i, maxMulti); err != nil {

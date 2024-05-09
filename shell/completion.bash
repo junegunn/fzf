@@ -119,8 +119,8 @@ _fzf_opts_completion() {
     +s --no-sort
     --track
     --tac
-    -i
-    +i
+    -i --ignore-case
+    +i --no-ignore-case
     -m --multi
     --ansi
     --no-mouse
