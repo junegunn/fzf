@@ -63,6 +63,8 @@ const Usage = `usage: fzf [options]
                            according to the input size.
     --min-height=HEIGHT    Minimum height when --height is given in percent
                            (default: 10)
+    --tmux=OPTS            Start fzf in a tmux popup (requires tmux 3.3+)
+                           [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
     --layout=LAYOUT        Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]       Draw border around the finder
                            [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
@@ -180,6 +182,13 @@ type sizeSpec struct {
 	percent bool
 }
 
+func (s sizeSpec) String() string {
+	if s.percent {
+		return fmt.Sprintf("%d%%", int(s.size))
+	}
+	return fmt.Sprintf("%d", int(s.size))
+}
+
 func defaultMargin() [4]sizeSpec {
 	return [4]sizeSpec{}
 }
@@ -199,7 +208,14 @@ const (
 	posDown
 	posLeft
 	posRight
+	posCenter
 )
+
+type tmuxOptions struct {
+	width    sizeSpec
+	height   sizeSpec
+	position windowPosition
+}
 
 type layoutType int
 
@@ -246,6 +262,74 @@ func (o *previewOpts) Visible() bool {
 
 func (o *previewOpts) Toggle() {
 	o.hidden = !o.hidden
+}
+
+func parseTmuxOptions(arg string) (*tmuxOptions, error) {
+	var err error
+	opts := tmuxOptions{}
+	tokens := splitRegexp.Split(arg, -1)
+	if len(tokens) == 0 || len(tokens) > 3 {
+		return nil, errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
+	}
+
+	// Defaults to 'center'
+	switch tokens[0] {
+	case "top", "up":
+		opts.position = posUp
+		opts.width = sizeSpec{100, true}
+	case "bottom", "down":
+		opts.position = posDown
+		opts.width = sizeSpec{100, true}
+	case "left":
+		opts.position = posLeft
+		opts.height = sizeSpec{100, true}
+	case "right":
+		opts.position = posRight
+		opts.height = sizeSpec{100, true}
+	case "center":
+		opts.position = posCenter
+		opts.width = sizeSpec{50, true}
+		opts.height = sizeSpec{50, true}
+	default:
+		opts.position = posCenter
+		opts.width = sizeSpec{50, true}
+		opts.height = sizeSpec{50, true}
+		tokens = append([]string{"center"}, tokens...)
+	}
+
+	// One size given
+	var size1 sizeSpec
+	if len(tokens) > 1 {
+		if size1, err = parseSize(tokens[1], 100, "size"); err != nil {
+			return nil, err
+		}
+	}
+
+	// Two sizes given
+	var size2 sizeSpec
+	if len(tokens) == 3 {
+		if size2, err = parseSize(tokens[2], 100, "size"); err != nil {
+			return nil, err
+		}
+		opts.width = size1
+		opts.height = size2
+	} else if len(tokens) == 2 {
+		switch tokens[0] {
+		case "top", "up":
+			opts.height = size1
+		case "bottom", "down":
+			opts.height = size1
+		case "left":
+			opts.width = size1
+		case "right":
+			opts.width = size1
+		case "center":
+			opts.width = size1
+			opts.height = size1
+		}
+	}
+
+	return &opts, nil
 }
 
 func parseLabelPosition(opts *labelOpts, arg string) error {
@@ -296,6 +380,7 @@ type walkerOpts struct {
 type Options struct {
 	Input        chan string
 	Output       chan string
+	Tmux         *tmuxOptions
 	Bash         bool
 	Zsh          bool
 	Fish         bool
@@ -1787,6 +1872,16 @@ func parseOptions(opts *Options, allArgs []string) error {
 		case "--version":
 			clearExitingOpts()
 			opts.Version = true
+		case "--tmux":
+			str, err := nextString(allArgs, &i, "tmux options required")
+			if err != nil {
+				return err
+			}
+			if opts.Tmux, err = parseTmuxOptions(str); err != nil {
+				return err
+			}
+		case "--no-tmux":
+			opts.Tmux = nil
 		case "-x", "--extended":
 			opts.Extended = true
 		case "-e", "--exact":
@@ -2264,6 +2359,10 @@ func parseOptions(opts *Options, allArgs []string) error {
 				if opts.FuzzyAlgo, err = parseAlgo(value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--tmux="); match {
+				if opts.Tmux, err = parseTmuxOptions(value); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--scheme="); match {
 				opts.Scheme = strings.ToLower(value)
 			} else if match, value := optString(arg, "-q", "--query="); match {
@@ -2476,6 +2575,10 @@ func validateSign(sign string, signOptName string) error {
 func postProcessOptions(opts *Options) error {
 	if opts.Ambidouble {
 		uniseg.EastAsianAmbiguousWidth = 2
+	}
+
+	if opts.BorderShape == tui.BorderUndefined {
+		opts.BorderShape = tui.BorderNone
 	}
 
 	if err := validateSign(opts.Pointer, "pointer"); err != nil {

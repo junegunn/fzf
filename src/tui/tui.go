@@ -356,7 +356,8 @@ type MouseEvent struct {
 type BorderShape int
 
 const (
-	BorderNone BorderShape = iota
+	BorderUndefined BorderShape = iota
+	BorderNone
 	BorderRounded
 	BorderSharp
 	BorderBold

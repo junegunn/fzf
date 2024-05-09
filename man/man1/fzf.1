@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "May 2024" "fzf 0.52.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "May 2024" "fzf 0.53.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -215,6 +215,24 @@ compatible with a negative height value.
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).
 Ignored when \fB--height\fR is not specified.
+.TP
+.BI "--tmux=" "[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]"
+Start fzf in a tmux popup. Requires tmux 3.3 or later. This option is ignored
+if you are not running fzf inside tmux.
+
+e.g.
+  \fB# Popup in the center with 80% width height
+  fzf --tmux 80%
+
+  # Popup on the left with 40% width and 100% height
+  fzf --tmux right,40%
+
+  # Popup on the bottom with 100% width and 30% height
+  fzf --tmux bottom,30%
+
+  # Popup on the top with 80% width and 40% height
+  fzf --tmux top,80%,40%\fR
+
 .TP
 .BI "--layout=" "LAYOUT"
 Choose the layout (default: default)

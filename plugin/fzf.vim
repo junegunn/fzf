@@ -537,10 +537,10 @@ try
     let use_term = 0
   endif
   if use_term
-    let optstr .= ' --no-height'
+    let optstr .= ' --no-height --no-tmux'
   elseif use_height
     let height = s:calc_size(&lines, dict.down, dict)
-    let optstr .= ' --height='.height
+    let optstr .= ' --no-tmux --height='.height
   endif
   " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
   let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
