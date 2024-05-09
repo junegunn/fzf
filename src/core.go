@@ -2,6 +2,7 @@
 package fzf
 
 import (
+	"os"
 	"sync"
 	"time"
 
@@ -19,6 +20,10 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 
 // Run starts fzf
 func Run(opts *Options) (int, error) {
+	if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 {
+		return runTmux(os.Args[1:], opts)
+	}
+
 	if err := postProcessOptions(opts); err != nil {
 		return ExitError, err
 	}

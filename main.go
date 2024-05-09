@@ -35,7 +35,7 @@ func printScript(label string, content []byte) {
 }
 
 func exit(code int, err error) {
-	if err != nil {
+	if code == fzf.ExitError {
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
 	os.Exit(code)
