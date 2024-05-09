@@ -32,10 +32,9 @@ Pros
 
 - Portable, no dependencies
 - Blazingly fast
-- The most comprehensive feature set
-- Flexible layout
+- Extremely versatile
 - Batteries included
-    - Vim/Neovim plugin, key bindings, and fuzzy auto-completion
+    - bash/zsh/fish integration, tmux integration, Vim/Neovim plugin
 
 Sponsors ❤️
 -----------
@@ -53,22 +52,24 @@ Table of Contents
 
 * [Installation](#installation)
     * [Using Homebrew](#using-homebrew)
+    * [Linux packages](#linux-packages)
+    * [Windows packages](#windows-packages)
     * [Using git](#using-git)
-    * [Using Linux package managers](#using-linux-package-managers)
-    * [Windows](#windows)
+    * [Binary releases](#binary-releases)
     * [Setting up shell integration](#setting-up-shell-integration)
-    * [As Vim plugin](#as-vim-plugin)
+    * [Vim/Neovim plugin](#vimneovim-plugin)
 * [Upgrading fzf](#upgrading-fzf)
 * [Building fzf](#building-fzf)
 * [Usage](#usage)
     * [Using the finder](#using-the-finder)
-    * [Layout](#layout)
+    * [Display modes](#display-modes)
+        * [`--height` mode](#--height-mode)
+        * [`--tmux` mode](#--tmux-mode)
     * [Search syntax](#search-syntax)
     * [Environment variables](#environment-variables)
     * [Options](#options)
     * [Demo](#demo)
 * [Examples](#examples)
-* [`fzf-tmux` script](#fzf-tmux-script)
 * [Key bindings for command-line](#key-bindings-for-command-line)
 * [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
     * [Files and directories](#files-and-directories)
@@ -101,28 +102,12 @@ Table of Contents
 Installation
 ------------
 
-fzf project consists of the following components:
-
-- `fzf` executable
-- `fzf-tmux` script for launching fzf in a tmux pane
-- Shell integration
-    - Key bindings (`CTRL-T`, `CTRL-R`, and `ALT-C`) (bash, zsh, fish)
-    - Fuzzy completion (bash, zsh)
-- Vim/Neovim plugin
-
-You can [download fzf executable][bin] alone if you don't need the extra
-stuff.
-
-[bin]: https://github.com/junegunn/fzf/releases
-
 ### Using Homebrew
 
-You can use [Homebrew](https://brew.sh/) (on macOS or Linux)
-to install fzf.
+You can use [Homebrew](https://brew.sh/) (on macOS or Linux) to install fzf.
 
 ```sh
 brew install fzf
-  # To build fzf from the latest source: brew install --HEAD fzf
 ```
 
 > [!IMPORTANT]
@@ -133,20 +118,7 @@ fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
 [portfile]: https://github.com/macports/macports-ports/blob/master/sysutils/fzf/Portfile
 
-### Using git
-
-Alternatively, you can "git clone" this repository to any directory and run
-[install](https://github.com/junegunn/fzf/blob/master/install) script.
-
-```sh
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install
-```
-
-The install script will add lines to your shell configuration file to modify
-`$PATH` and set up shell integration.
-
-### Using Linux package managers
+### Linux packages
 
 | Package Manager | Linux Distribution      | Command                            |
 | --------------- | ----------------------- | ---------------------------------- |
@@ -170,10 +142,10 @@ The install script will add lines to your shell configuration file to modify
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fzf.svg)](https://repology.org/project/fzf/versions)
 
-### Windows
+### Windows packages
 
-Pre-built binaries for Windows can be downloaded [here][bin]. fzf is also
-available via [Chocolatey][choco], [Scoop][scoop], [Winget][winget], and [MSYS2][msys2]:
+On Windows, fzf is available via [Chocolatey][choco], [Scoop][scoop],
+[Winget][winget], and [MSYS2][msys2]:
 
 | Package manager | Command                               |
 | --------------- | ------------------------------------- |
@@ -187,10 +159,24 @@ available via [Chocolatey][choco], [Scoop][scoop], [Winget][winget], and [MSYS2]
 [winget]: https://github.com/microsoft/winget-pkgs/tree/master/manifests/j/junegunn/fzf
 [msys2]: https://packages.msys2.org/base/mingw-w64-fzf
 
-Known issues and limitations on Windows can be found on [the wiki
-page][windows-wiki].
+### Using git
 
-[windows-wiki]: https://github.com/junegunn/fzf/wiki/Windows
+Alternatively, you can "git clone" this repository to any directory and run
+[install](https://github.com/junegunn/fzf/blob/master/install) script.
+
+```sh
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+```
+
+The install script will add lines to your shell configuration file to modify
+`$PATH` and set up shell integration.
+
+### Binary releases
+
+You can download the official fzf binaries from the releases page.
+
+* https://github.com/junegunn/fzf/releases
 
 ### Setting up shell integration
 
@@ -231,20 +217,26 @@ Add the following line to your shell configuration file.
 >
 > Setting the variables after sourcing the script will have no effect.
 
-### As Vim plugin
+### Vim/Neovim plugin
 
-If you use
-[vim-plug](https://github.com/junegunn/vim-plug), add this line to your Vim
-configuration file:
+If you use [vim-plug](https://github.com/junegunn/vim-plug), add this to
+your Vim configuration file:
 
 ```vim
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
 ```
 
-`fzf#install()` makes sure that you have the latest binary, but it's optional,
-so you can omit it if you use a plugin manager that doesn't support hooks.
+* `junegunn/fzf` provides the basic library functions
+    * `fzf#install()` makes sure that you have the latest binary
+* `junegunn/fzf.vim` is [a separate project](https://github.com/junegunn/fzf.vim)
+  that provides a variety of useful commands
 
-For more installation options, see [README-VIM.md](README-VIM.md).
+To learn more about the Vim integration, see [README-VIM.md](README-VIM.md).
+
+> [!TIP]
+> If you use Neovim and prefer Lua-based plugins, check out
+> [fzf-lua](https://github.com/ibhagwan/fzf-lua).
 
 Upgrading fzf
 -------------
@@ -312,28 +304,70 @@ vim $(fzf)
 - Mouse: scroll, click, double-click; shift-click and shift-scroll on
   multi-select mode
 
-### Layout
+### Display modes
 
-fzf by default starts in fullscreen mode, but you can make it start below the
-cursor with `--height` option.
+fzf by default runs in fullscreen mode, but there are other display modes.
 
-```sh
-vim $(fzf --height 40%)
-```
+#### `--height` mode
 
-Also, check out `--reverse` and `--layout` options if you prefer
-"top-down" layout instead of the default "bottom-up" layout.
+With `--height HEIGHT[%]`, fzf will start below the cursor with the given height.
 
 ```sh
-vim $(fzf --height 40% --reverse)
+fzf --height 40%
 ```
 
-You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
-default. For example,
+`reverse` layout and `--border` goes well with this option.
 
 ```sh
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+fzf --height 40% --layout reverse --border
 ```
+
+By prepending `~` to the height, you're setting the maximum height.
+
+```sh
+# Will take as few lines as possible to display the list
+seq 3 | fzf --height ~100%
+seq 3000 | fzf --height ~100%
+```
+
+Height value can be a negative number.
+
+```sh
+# Screen height - 3
+fzf --height -3
+```
+
+#### `--tmux` mode
+
+With `--tmux` option, fzf will start in a tmux popup.
+
+```sh
+# --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+
+fzf --tmux center         # Center, 50% width and height
+fzf --tmux 80%            # Center, 80% width and height
+fzf --tmux 100%,50%       # Center, 100% width and 50% height
+fzf --tmux left,40%       # Left, 40% width
+fzf --tmux left,40%,90%   # Left, 40% width, 90% height
+fzf --tmux top,40%        # Top, 40% height
+fzf --tmux bottom,80%,40% # Bottom, 80% height, 40% height
+```
+
+`--tmux` is silently ignored when you're not on tmux.
+
+> [!NOTE]
+> If you're stuck with an old version of tmux that doesn't support popup,
+> or if you want to open fzf in a regular tmux pane, check out
+> [fzf-tmux](bin/fzf-tmux) script.
+
+> [!TIP]
+> You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
+> default. For example,
+>
+> ```sh
+> # Open in tmux popup if on tmux, otherwise use --height mode
+> export FZF_DEFAULT_OPTS='--tmux bottom,40% --height 40% --layout reverse --border'
+> ```
 
 ### Search syntax
 
@@ -406,34 +440,6 @@ Examples
       and are not thoroughly tested*
 * [Advanced fzf examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
 
-`fzf-tmux` script
------------------
-
-[fzf-tmux](bin/fzf-tmux) is a bash script that opens fzf in a tmux pane.
-
-```sh
-# usage: fzf-tmux [LAYOUT OPTIONS] [--] [FZF OPTIONS]
-
-# See available options
-fzf-tmux --help
-
-# select git branches in horizontal split below (15 lines)
-git branch | fzf-tmux -d 15
-
-# select multiple words in vertical split on the left (20% of screen width)
-cat /usr/share/dict/words | fzf-tmux -l 20% --multi --reverse
-```
-
-It will still work even when you're not on tmux, silently ignoring `-[pudlr]`
-options, so you can invariably use `fzf-tmux` in your scripts.
-
-Alternatively, you can use `--height HEIGHT[%]` option not to start fzf in
-fullscreen mode.
-
-```sh
-fzf --height 40%
-```
-
 Key bindings for command-line
 -----------------------------
 
@@ -482,9 +488,9 @@ fish.
     - Can be disabled by setting `FZF_ALT_C_COMMAND` to an empty string when
       sourcing the script
 
-If you're on a tmux session, you can start fzf in a tmux split-pane or in
-a tmux popup window by setting `FZF_TMUX_OPTS` (e.g. `export FZF_TMUX_OPTS='-p80%,60%'`).
-See `fzf-tmux --help` for available options.
+Display modes for these bindings can be separately configured via
+`FZF_{CTRL_T,CTRL_R,ALT_C}_OPTS` or globally via `FZF_DEFAULT_OPTS`.
+(e.g. `FZF_CTRL_R_OPTS='--tmux bottom,60% --height 60%'`)
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
