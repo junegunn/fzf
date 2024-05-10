@@ -573,19 +573,21 @@ function! s:fzf_tmux(dict)
   if empty(size)
     for o in ['up', 'down', 'left', 'right']
       if s:present(a:dict, o)
-        let spec = a:dict[o]
-        if (o == 'up' || o == 'down') && spec[0] == '~'
-          let size = '-'.o[0].s:calc_size(&lines, spec, a:dict)
-        else
-          " Legacy boolean option
-          let size = '-'.o[0].(spec == 1 ? '' : substitute(spec, '^\~', '', ''))
-        endif
+        let size = o . ',' . a:dict[o]
         break
       endif
     endfor
   endif
-  return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+
+  " Legacy fzf-tmux options
+  if size =~ '-'
+    return printf('LINES=%d COLUMNS=%d %s %s %s --',
+          \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+  end
+
+  " Using native --tmux option
+  let in = (has_key(a:dict, 'source') ? '' : ' < /dev/tty')
+  return printf('%s --tmux %s%s', fzf#shellescape(fzf#exec()), size, in)
 endfunction
 
 function! s:splittable(dict)
