@@ -381,6 +381,7 @@ type Options struct {
 	Input        chan string
 	Output       chan string
 	Tmux         *tmuxOptions
+	TmuxScript   string
 	Bash         bool
 	Zsh          bool
 	Fish         bool
@@ -1882,6 +1883,10 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
+		case "--tmux-script":
+			if opts.TmuxScript, err = nextString(allArgs, &i, ""); err != nil {
+				return err
+			}
 		case "-x", "--extended":
 			opts.Extended = true
 		case "-e", "--exact":

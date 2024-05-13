@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -45,6 +46,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 		// %q formatting escapes $'foo\nbar' to "foo\nbar"
 		argStr += " " + escapeSingleQuote(arg)
 	}
+	argStr += ` --tmux-script "$0"`
 
 	// Build command
 	var command string
@@ -141,7 +143,26 @@ func runTmux(args []string, opts *Options) (int, error) {
 	cmd := exec.Command("tmux", tmuxArgs...)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return exitError.ExitCode(), err
+			code := exitError.ExitCode()
+			if code == ExitBecome {
+				data, err := os.ReadFile(temp)
+				if err != nil {
+					return ExitError, err
+				}
+				elems := strings.Split(string(data), "\x00")
+				if len(elems) < 1 {
+					return ExitError, errors.New("invalid become command")
+				}
+				command := elems[0]
+				env := []string{}
+				if len(elems) > 1 {
+					env = elems[1:]
+				}
+				os.Remove(temp)
+				executor := util.NewExecutor(opts.WithShell)
+				executor.Become(tui.TtyIn(), env, command)
+			}
+			return code, err
 		}
 	}
 
