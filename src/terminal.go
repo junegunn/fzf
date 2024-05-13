@@ -312,6 +312,7 @@ type Terminal struct {
 	forcePreview       bool
 	clickHeaderLine    int
 	clickHeaderColumn  int
+	tmuxScript         string
 }
 
 type selectedItem struct {
@@ -351,6 +352,7 @@ const (
 	reqPreviewDisplay
 	reqPreviewRefresh
 	reqPreviewDelayed
+	reqBecome
 	reqQuit
 	reqFatal
 )
@@ -782,6 +784,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		jumpLabels:         opts.JumpLabels,
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
+		tmuxScript:         opts.TmuxScript,
 		merger:             EmptyMerger(0),
 		selected:           make(map[int32]selectedItem),
 		reqBox:             util.NewEventBox(),
@@ -3299,6 +3302,9 @@ func (t *Terminal) Loop() error {
 							return ExitOk
 						})
 						return
+					case reqBecome:
+						exit(func() int { return ExitBecome })
+						return
 					case reqQuit:
 						exit(func() int { return ExitInterrupt })
 						return
@@ -3473,7 +3479,14 @@ func (t *Terminal) Loop() error {
 					if t.history != nil {
 						t.history.append(string(t.input))
 					}
-					t.executor.Become(t.ttyin, t.environ(), command)
+
+					if len(t.tmuxScript) > 0 {
+						data := strings.Join(append([]string{command}, t.environ()...), "\x00")
+						os.WriteFile(t.tmuxScript, []byte(data), 0600)
+						req(reqBecome)
+					} else {
+						t.executor.Become(t.ttyin, t.environ(), command)
+					}
 				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)
