@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.52.1
+------
+- Fixed a critical bug in the Windows version
+    - Windows users are strongly encouraged to upgrade to this version
+
 0.52.0
 ------
 - Added `--highlight-line` to highlight the whole current line (à la `set cursorline` of Vim)

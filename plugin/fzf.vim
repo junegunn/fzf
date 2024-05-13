@@ -95,7 +95,7 @@ function! s:shellesc_cmd(arg)
     let e .= c
   endfor
   let e .= repeat('\', slashes) .'"'
-  return e
+  return substitute(substitute(e, '[&|<>()^!"]', '^&', 'g'), '%', '%%', 'g')
 endfunction
 
 function! fzf#shellescape(arg, ...)
