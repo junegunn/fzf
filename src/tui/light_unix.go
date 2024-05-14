@@ -47,7 +47,8 @@ func (r *LightRenderer) initPlatform() error {
 }
 
 func (r *LightRenderer) closePlatform() {
-	// NOOP
+	r.ttyin.Close()
+	r.ttyout.Close()
 }
 
 func openTty(mode int) (*os.File, error) {
