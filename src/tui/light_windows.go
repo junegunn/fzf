@@ -96,6 +96,11 @@ func openTtyIn() (*os.File, error) {
 	return nil, nil
 }
 
+func openTtyOut() (*os.File, error) {
+	// not used
+	return nil, nil
+}
+
 func (r *LightRenderer) setupTerminal() error {
 	if err := windows.SetConsoleMode(windows.Handle(r.outHandle), consoleFlagsOutput); err != nil {
 		return err

@@ -14,6 +14,8 @@ import (
 	"golang.org/x/term"
 )
 
+var tty string
+
 func IsLightRendererSupported() bool {
 	return true
 }
@@ -48,18 +50,28 @@ func (r *LightRenderer) closePlatform() {
 	// NOOP
 }
 
-func openTtyIn() (*os.File, error) {
-	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
+func openTty(mode int) (*os.File, error) {
+	in, err := os.OpenFile(consoleDevice, mode, 0)
 	if err != nil {
-		tty := ttyname()
+		if len(tty) == 0 {
+			tty = ttyname()
+		}
 		if len(tty) > 0 {
-			if in, err := os.OpenFile(tty, syscall.O_RDONLY, 0); err == nil {
+			if in, err := os.OpenFile(tty, mode, 0); err == nil {
 				return in, nil
 			}
 		}
 		return nil, errors.New("failed to open " + consoleDevice)
 	}
 	return in, nil
+}
+
+func openTtyIn() (*os.File, error) {
+	return openTty(syscall.O_RDONLY)
+}
+
+func openTtyOut() (*os.File, error) {
+	return openTty(syscall.O_WRONLY)
 }
 
 func (r *LightRenderer) setupTerminal() {
