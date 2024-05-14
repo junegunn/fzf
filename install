@@ -265,7 +265,7 @@ fi
 EOF
 
   if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
-    echo "eval \"\$(fzf --$shell)\"" >> "$src"
+    echo "source <(fzf --zsh)" >> "$src"
   else
     cat >> "$src" << EOF
 # Auto-completion

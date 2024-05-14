@@ -204,7 +204,7 @@ Add the following line to your shell configuration file.
 * zsh
   ```sh
   # Set up fzf key bindings and fuzzy completion
-  eval "$(fzf --zsh)"
+  source <(fzf --zsh)
   ```
 * fish
   ```fish
@@ -226,7 +226,7 @@ Add the following line to your shell configuration file.
 > For example, to disable ALT-C binding:
 >
 > * bash: `FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
-> * zsh: `FZF_ALT_C_COMMAND= eval "$(fzf --zsh)"`
+> * zsh: `FZF_ALT_C_COMMAND= source <(fzf --zsh)`
 > * fish: `fzf --fish | FZF_ALT_C_COMMAND= source`
 >
 > Setting the variables after sourcing the script will have no effect.
