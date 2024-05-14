@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/junegunn/fzf/src/util"
@@ -18,6 +19,7 @@ var (
 	tty    string
 	ttyin  *os.File
 	ttyout *os.File
+	mutex  sync.Mutex
 )
 
 func IsLightRendererSupported() bool {
@@ -71,6 +73,9 @@ func openTty(mode int) (*os.File, error) {
 }
 
 func openTtyIn() (*os.File, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	if ttyin != nil {
 		return ttyin, nil
 	}
@@ -82,6 +87,9 @@ func openTtyIn() (*os.File, error) {
 }
 
 func openTtyOut() (*os.File, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	if ttyout != nil {
 		return ttyout, nil
 	}

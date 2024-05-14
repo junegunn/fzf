@@ -3471,16 +3471,6 @@ func (t *Terminal) Loop() error {
 					if t.history != nil {
 						t.history.append(string(t.input))
 					}
-
-					/*
-					 FIXME: It is not at all clear why this is required.
-					 The following command will report 'not a tty', unless we open
-					 /dev/tty *twice* after closing the standard input for 'reload'
-					 in Reader.terminate().
-
-					   while : | fzf --bind 'start:reload:ls' --bind 'load:become:tty'; do echo; done
-					*/
-					tui.TtyIn()
 					t.executor.Become(tui.TtyIn(), t.environ(), command)
 				}
 			case actExecute, actExecuteSilent:

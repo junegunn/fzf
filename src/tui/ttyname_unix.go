@@ -36,15 +36,8 @@ func ttyname() string {
 
 // TtyIn returns terminal device to be used as STDIN, falls back to os.Stdin
 func TtyIn() *os.File {
-	in, err := os.OpenFile(consoleDevice, syscall.O_RDONLY, 0)
-	if err != nil {
-		tty := ttyname()
-		if len(tty) > 0 {
-			if in, err := os.OpenFile(tty, syscall.O_RDONLY, 0); err == nil {
-				return in
-			}
-		}
-		return os.Stdin
+	if in, err := openTtyIn(); err == nil {
+		return in
 	}
-	return in
+	return os.Stdin
 }
