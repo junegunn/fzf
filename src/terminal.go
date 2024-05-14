@@ -301,6 +301,7 @@ type Terminal struct {
 	slab               *util.Slab
 	theme              *tui.ColorTheme
 	tui                tui.Renderer
+	ttyin              *os.File
 	executing          *util.AtomicBool
 	termSize           tui.TermSize
 	lastAction         actionType
@@ -801,6 +802,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		serverOutputChan:   make(chan string),
 		eventChan:          make(chan tui.Event, 6), // (load + result + zero|one) | (focus) | (resize) | (GetChar)
 		tui:                renderer,
+		ttyin:              tui.TtyIn(),
 		initFunc:           func() error { return renderer.Init() },
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
@@ -2736,7 +2738,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	cmd.Env = t.environ()
 	t.executing.Set(true)
 	if !background {
-		cmd.Stdin = tui.TtyIn()
+		cmd.Stdin = t.ttyin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		t.tui.Pause(true)
@@ -3471,7 +3473,7 @@ func (t *Terminal) Loop() error {
 					if t.history != nil {
 						t.history.append(string(t.input))
 					}
-					t.executor.Become(tui.TtyIn(), t.environ(), command)
+					t.executor.Become(t.ttyin, t.environ(), command)
 				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)
