@@ -342,8 +342,8 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 		state := interpretCode(code, prevState)
 		if expected != state.ToString() {
 			t.Errorf("expected: %s, actual: %s",
-				strings.Replace(expected, "\x1b[", "\\x1b[", -1),
-				strings.Replace(state.ToString(), "\x1b[", "\\x1b[", -1))
+				strings.ReplaceAll(expected, "\x1b[", "\\x1b["),
+				strings.ReplaceAll(state.ToString(), "\x1b[", "\\x1b["))
 		}
 	}
 	assert("\x1b[m", nil, "")

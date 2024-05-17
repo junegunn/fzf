@@ -554,7 +554,7 @@ func splitNth(str string) ([]Range, error) {
 
 func delimiterRegexp(str string) Delimiter {
 	// Special handling of \t
-	str = strings.Replace(str, "\\t", "\t", -1)
+	str = strings.ReplaceAll(str, "\\t", "\t")
 
 	// 1. Pattern does not contain any special character
 	if regexp.QuoteMeta(str) == str {
@@ -1132,9 +1132,9 @@ Loop:
 		masked += strings.Repeat(" ", loc[1])
 		action = action[loc[1]:]
 	}
-	masked = strings.Replace(masked, "::", string([]rune{escapedColon, ':'}), -1)
-	masked = strings.Replace(masked, ",:", string([]rune{escapedComma, ':'}), -1)
-	masked = strings.Replace(masked, "+:", string([]rune{escapedPlus, ':'}), -1)
+	masked = strings.ReplaceAll(masked, "::", string([]rune{escapedColon, ':'}))
+	masked = strings.ReplaceAll(masked, ",:", string([]rune{escapedComma, ':'}))
+	masked = strings.ReplaceAll(masked, "+:", string([]rune{escapedPlus, ':'}))
 	return masked
 }
 
