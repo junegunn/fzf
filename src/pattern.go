@@ -155,14 +155,14 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 }
 
 func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet {
-	str = strings.Replace(str, "\\ ", "\t", -1)
+	str = strings.ReplaceAll(str, "\\ ", "\t")
 	tokens := _splitRegex.Split(str, -1)
 	sets := []termSet{}
 	set := termSet{}
 	switchSet := false
 	afterBar := false
 	for _, token := range tokens {
-		typ, inv, text := termFuzzy, false, strings.Replace(token, "\t", " ", -1)
+		typ, inv, text := termFuzzy, false, strings.ReplaceAll(token, "\t", " ")
 		lowerText := strings.ToLower(text)
 		caseSensitive := caseMode == CaseRespect ||
 			caseMode == CaseSmart && text != lowerText

@@ -618,7 +618,7 @@ func defaultKeymap() map[tui.Event][]*action {
 }
 
 func trimQuery(query string) []rune {
-	return []rune(strings.Replace(query, "\t", " ", -1))
+	return []rune(strings.ReplaceAll(query, "\t", " "))
 }
 
 func mayTriggerPreview(opts *Options) bool {

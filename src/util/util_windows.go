@@ -157,10 +157,10 @@ func (x *Executor) QuoteEntry(entry string) string {
 		*/
 		return escapeArg(entry)
 	case shellTypePowerShell:
-		escaped := strings.Replace(entry, `"`, `\"`, -1)
-		return "'" + strings.Replace(escaped, "'", "''", -1) + "'"
+		escaped := strings.ReplaceAll(entry, `"`, `\"`)
+		return "'" + strings.ReplaceAll(escaped, "'", "''") + "'"
 	default:
-		return "'" + strings.Replace(entry, "'", "'\\''", -1) + "'"
+		return "'" + strings.ReplaceAll(entry, "'", "'\\''") + "'"
 	}
 }
 
