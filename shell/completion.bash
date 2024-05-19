@@ -42,6 +42,37 @@ __fzf_defaults() {
   echo "${FZF_DEFAULT_OPTS-} $2"
 }
 
+# make fzf work in Git Bash standard Mintty terminal by leveraging supplied winpty
+if [ "$TERM_PROGRAM" = "mintty" ]; then fzf() {
+  OLD_SHELL_OPTS=$(set +o)
+  set -eo pipefail
+  # Generate a unique temporary directory based on the script name and user ID
+  prefix="$(basename "${BASH_SOURCE:-$0}")-${UID:-$(id -u)}"
+  tmpdir=$(mktemp -dp "${TMPDIR:-/tmp}" "${prefix}.XXXXX")
+  trap "rm -rf -- '${tmpdir}'; eval \"$OLD_SHELL_OPTS\"" EXIT
+
+  # Prepare arguments for fzf command
+  args=
+  [[ $# -ge 1 ]] && args=$(printf ' %q' "$@")
+
+  # Check if standard input is a terminal
+  if [[ -t 0 ]]; then
+    # If it is, run fzf directly using winpty and output to a temporary file
+    winpty </dev/tty >/dev/tty -- bash -c \
+      "command fzf${args} >'${tmpdir}/output'"
+    cat "${tmpdir}/output" 
+  else
+    # If standard input is not a terminal, read from standard input to a
+    # temporary file
+    cat - >"${tmpdir}/input"
+    # Then run fzf using winpty with input redirection
+    winpty </dev/tty >/dev/tty -- bash -c \
+      "command fzf${args} <'${tmpdir}/input' >'${tmpdir}/output'"
+    cat "${tmpdir}/output" 
+  fi
+  }
+fi
+
 __fzf_comprun() {
   if [[ "$(type -t _fzf_comprun 2>&1)" = function ]]; then
     _fzf_comprun "$@"
