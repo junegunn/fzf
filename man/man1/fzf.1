@@ -162,6 +162,9 @@ the details.
 .B "--cycle"
 Enable cyclic scroll
 .TP
+.B "--no-multi-line"
+Disable multi-line display of items when using \fB--read0\fR
+.TP
 .B "--keep-right"
 Keep the right end of the line visible when it's too long. Effective only when
 the query string is empty.
@@ -204,12 +207,18 @@ height minus the given value.
   fzf --height=-1
 
 When prefixed with \fB~\fR, fzf will automatically determine the height in the
-range according to the input size. Note that adaptive height is not compatible
-with top/bottom margin and padding given in percent size. It is also not
-compatible with a negative height value.
+range according to the input size.
 
   # Will not take up 100% of the screen
   seq 5 | fzf --height=~100%
+
+Adaptive height has the following limitations:
+.br
+* Cannot be used with top/bottom margin and padding given in percent size
+.br
+* Negative value is not allowed
+.br
+* It will not find the right size when there are multi-line items
 
 .TP
 .BI "--min-height=" "HEIGHT"

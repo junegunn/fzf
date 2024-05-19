@@ -45,6 +45,7 @@ const Usage = `usage: fzf [options]
     --no-mouse             Disable mouse
     --bind=KEYBINDS        Custom key bindings. Refer to the man page.
     --cycle                Enable cyclic scroll
+    --no-multi-line        Disable multi-line display of items when using --read0
     --keep-right           Keep the right end of the line visible on overflow
     --scroll-off=LINES     Number of screen lines to keep above or below when
                            scrolling to the top or to the bottom (default: 0)
@@ -409,6 +410,7 @@ type Options struct {
 	MinHeight    int
 	Layout       layoutType
 	Cycle        bool
+	MultiLine    bool
 	CursorLine   bool
 	KeepRight    bool
 	Hscroll      bool
@@ -506,6 +508,7 @@ func defaultOptions() *Options {
 		MinHeight:    10,
 		Layout:       layoutDefault,
 		Cycle:        false,
+		MultiLine:    true,
 		KeepRight:    false,
 		Hscroll:      true,
 		HscrollOff:   10,
@@ -2062,6 +2065,10 @@ func parseOptions(opts *Options, allArgs []string) error {
 			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
+		case "--multi-line":
+			opts.MultiLine = true
+		case "--no-multi-line":
+			opts.MultiLine = false
 		case "--keep-right":
 			opts.KeepRight = true
 		case "--no-keep-right":

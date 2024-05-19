@@ -148,22 +148,31 @@ type eachLine struct {
 }
 
 type itemLine struct {
-	offset   int
-	current  bool
-	selected bool
-	label    string
-	queryLen int
-	width    int
-	bar      bool
-	result   Result
+	firstLine int
+	cy        int
+	current   bool
+	selected  bool
+	label     string
+	queryLen  int
+	width     int
+	hasBar    bool
+	result    Result
+	empty     bool
+	other     bool
+}
+
+func (t *Terminal) markEmptyLine(line int) {
+	t.prevLines[line] = itemLine{firstLine: line, empty: true}
+}
+
+func (t *Terminal) markOtherLine(line int) {
+	t.prevLines[line] = itemLine{firstLine: line, other: true}
 }
 
 type fitpad struct {
 	fit int
 	pad int
 }
-
-var emptyLine = itemLine{}
 
 type labelPrinter func(tui.Window, int)
 
@@ -224,6 +233,7 @@ type Terminal struct {
 	yanked             []rune
 	input              []rune
 	multi              int
+	multiLine          bool
 	sort               bool
 	toggleSort         bool
 	track              trackOption
@@ -739,6 +749,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		yanked:             []rune{},
 		input:              input,
 		multi:              opts.Multi,
+		multiLine:          opts.ReadZero && opts.MultiLine,
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
 		track:              opts.Track,
@@ -1009,8 +1020,9 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 		}
 	}
 	output := func() {
+		line := t.promptLine()
 		t.printHighlighted(
-			Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false)
+			Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, nil, nil)
 	}
 	_, promptLen := t.processTabs([]rune(trimmed), 0)
 
@@ -1031,22 +1043,45 @@ func (t *Terminal) noSeparatorLine() bool {
 	return noSeparatorLine(t.infoStyle, t.separatorLen > 0)
 }
 
-func getScrollbar(total int, height int, offset int) (int, int) {
-	if total == 0 || total <= height {
+func getScrollbar(perLine int, total int, height int, offset int) (int, int) {
+	if total == 0 || total*perLine <= height {
 		return 0, 0
 	}
-	barLength := util.Max(1, height*height/total)
+	barLength := util.Max(1, height*height/(total*perLine))
 	var barStart int
 	if total == height {
 		barStart = 0
 	} else {
-		barStart = (height - barLength) * offset / (total - height)
+		barStart = util.Min(height-barLength, (height*perLine-barLength)*offset/(total*perLine-height))
 	}
 	return barLength, barStart
 }
 
+// Estimate the average number of lines per item. Instead of going through all
+// items, we only check a few items around the current cursor position.
+func (t *Terminal) avgNumLines() int {
+	if !t.multiLine {
+		return 1
+	}
+
+	maxItems := t.maxItems()
+	numLines := 0
+	count := 0
+	total := t.merger.Length()
+	offset := util.Max(0, util.Min(t.offset, total-maxItems-1))
+	for idx := 0; idx < maxItems && idx+offset < total; idx++ {
+		item := t.merger.Get(idx + offset)
+		numLines += item.item.text.NumLines(maxItems)
+		count++
+	}
+	if count == 0 {
+		return 1
+	}
+	return numLines / count
+}
+
 func (t *Terminal) getScrollbar() (int, int) {
-	return getScrollbar(t.merger.Length(), t.maxItems(), t.offset)
+	return getScrollbar(t.avgNumLines(), t.merger.Length(), t.maxItems(), t.offset)
 }
 
 // Input returns current query string
@@ -1622,7 +1657,6 @@ func (t *Terminal) placeCursor() {
 }
 
 func (t *Terminal) printPrompt() {
-	t.move(t.promptLine(), 0, true)
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
@@ -1645,6 +1679,10 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
+	move := func(y int, x int, clear bool) {
+		t.move(y, x, clear)
+		t.markOtherLine(y)
+	}
 	printSpinner := func() {
 		if t.reading {
 			duration := int64(spinnerDuration)
@@ -1663,7 +1701,7 @@ func (t *Terminal) printInfo() {
 			str = string(trimmed)
 			width = maxWidth
 		}
-		t.move(line, pos, t.separatorLen == 0)
+		move(line, pos, t.separatorLen == 0)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, str)
 		} else {
@@ -1672,7 +1710,6 @@ func (t *Terminal) printInfo() {
 		pos += width
 	}
 	printSeparator := func(fillLength int, pad bool) {
-		// --------_
 		if t.separatorLen > 0 {
 			t.separator(t.window, fillLength)
 			t.window.Print(" ")
@@ -1682,12 +1719,12 @@ func (t *Terminal) printInfo() {
 	}
 	switch t.infoStyle {
 	case infoDefault:
-		t.move(line+1, 0, t.separatorLen == 0)
+		move(line+1, 0, t.separatorLen == 0)
 		printSpinner()
 		t.window.Print(" ") // Margin
 		pos = 2
 	case infoRight:
-		t.move(line+1, 0, false)
+		move(line+1, 0, false)
 	case infoInlineRight:
 		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
 	case infoInline:
@@ -1695,7 +1732,7 @@ func (t *Terminal) printInfo() {
 		printInfoPrefix()
 	case infoHidden:
 		if t.separatorLen > 0 {
-			t.move(line+1, 0, false)
+			move(line+1, 0, false)
 			printSeparator(t.window.Width()-1, false)
 		}
 		return
@@ -1755,7 +1792,7 @@ func (t *Terminal) printInfo() {
 
 	if t.infoStyle == infoInlineRight {
 		if len(t.infoPrefix) == 0 {
-			t.move(line, pos, false)
+			move(line, pos, false)
 			newPos := util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
 			t.window.Print(strings.Repeat(" ", newPos-pos))
 			pos = newPos
@@ -1779,7 +1816,7 @@ func (t *Terminal) printInfo() {
 
 	if t.infoStyle == infoInlineRight {
 		if t.separatorLen > 0 {
-			t.move(line+1, 0, false)
+			move(line+1, 0, false)
 			printSeparator(t.window.Width()-1, false)
 		}
 		return
@@ -1829,10 +1866,9 @@ func (t *Terminal) printHeader() {
 			text:   util.ToChars([]byte(trimmed)),
 			colors: colors}
 
-		t.move(line, 0, true)
-		t.window.Print("  ")
 		t.printHighlighted(Result{item: item},
-			tui.ColHeader, tui.ColHeader, false, false)
+			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
+			func(int) { t.window.Print("  ") }, nil)
 	}
 }
 
@@ -1840,53 +1876,66 @@ func (t *Terminal) printList() {
 	t.constrain()
 	barLength, barStart := t.getScrollbar()
 
-	maxy := t.maxItems()
+	maxy := t.maxItems() - 1
 	count := t.merger.Length() - t.offset
-	for j := 0; j < maxy; j++ {
-		i := j
-		if t.layout == layoutDefault {
-			i = maxy - 1 - j
-		}
-		line := i + 2 + t.visibleHeaderLines()
-		if t.noSeparatorLine() {
-			line--
-		}
-		if i < count {
-			t.printItem(t.merger.Get(i+t.offset), line, i, i == t.cy-t.offset, i >= barStart && i < barStart+barLength)
-		} else if t.prevLines[i] != emptyLine || t.prevLines[i].offset != line {
-			t.prevLines[i] = emptyLine
+
+	// Start line
+	startLine := 2 + t.visibleHeaderLines()
+	if t.noSeparatorLine() {
+		startLine--
+	}
+	maxy += startLine
+
+	barRange := [2]int{startLine + barStart, startLine + barStart + barLength}
+	for line, itemCount := startLine, 0; line <= maxy; line, itemCount = line+1, itemCount+1 {
+		if itemCount < count {
+			item := t.merger.Get(itemCount + t.offset)
+			line = t.printItem(item, line, maxy, itemCount, itemCount == t.cy-t.offset, barRange)
+		} else if !t.prevLines[line].empty {
 			t.move(line, 0, true)
+			t.markEmptyLine(line)
+			// If the screen is not filled with the list in non-multi-line mode,
+			// scrollbar is not visible at all. But in multi-line mode, we may need
+			// to redraw the scrollbar character at the end.
+			if t.multiLine {
+				t.prevLines[line].hasBar = t.printBar(line, true, barRange)
+			}
 		}
 	}
 }
 
-func (t *Terminal) printItem(result Result, line int, i int, current bool, bar bool) {
+func (t *Terminal) printBar(lineNum int, forceRedraw bool, barRange [2]int) bool {
+	hasBar := lineNum >= barRange[0] && lineNum < barRange[1]
+	if len(t.scrollbar) > 0 && (hasBar != t.prevLines[lineNum].hasBar || forceRedraw) {
+		t.move(lineNum, t.window.Width()-1, true)
+		if hasBar {
+			t.window.CPrint(tui.ColScrollbar, t.scrollbar)
+		}
+	}
+	return hasBar
+}
+
+func (t *Terminal) printItem(result Result, line int, maxLine int, index int, current bool, barRange [2]int) int {
 	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := ""
 	if t.jumping != jumpDisabled {
-		if i < len(t.jumpLabels) {
+		if index < len(t.jumpLabels) {
 			// Striped
-			current = i%2 == 0
-			label = t.jumpLabels[i:i+1] + strings.Repeat(" ", t.pointerLen-1)
+			current = index%2 == 0
+			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", t.pointerLen-1)
 		}
 	} else if current {
 		label = t.pointer
 	}
 
 	// Avoid unnecessary redraw
-	newLine := itemLine{offset: line, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, bar: bar}
-	prevLine := t.prevLines[i]
-	forceRedraw := prevLine.offset != newLine.offset
-	printBar := func() {
-		if len(t.scrollbar) > 0 && (bar != prevLine.bar || forceRedraw) {
-			t.prevLines[i].bar = bar
-			t.move(line, t.window.Width()-1, true)
-			if bar {
-				t.window.CPrint(tui.ColScrollbar, t.scrollbar)
-			}
-		}
+	newLine := itemLine{firstLine: line, cy: index + t.offset, current: current, selected: selected, label: label,
+		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1]}
+	prevLine := t.prevLines[line]
+	forceRedraw := prevLine.other || prevLine.firstLine != newLine.firstLine
+	printBar := func(lineNum int, forceRedraw bool) bool {
+		return t.printBar(lineNum, forceRedraw, barRange)
 	}
 
 	if !forceRedraw &&
@@ -1895,33 +1944,64 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 		prevLine.label == newLine.label &&
 		prevLine.queryLen == newLine.queryLen &&
 		prevLine.result == newLine.result {
-		printBar()
-		return
+		t.prevLines[line].hasBar = printBar(line, false)
+		if !t.multiLine {
+			return line
+		}
+		return line + item.text.NumLines(maxLine-line+1) - 1
 	}
 
-	t.move(line, 0, forceRedraw)
+	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
+	postTask := func(lineNum int, width int) {
+		if (current || selected) && t.highlightLine {
+			color := tui.ColSelected
+			if current {
+				color = tui.ColCurrent
+			}
+			fillSpaces := maxWidth - width
+			if fillSpaces > 0 {
+				t.window.CPrint(color, strings.Repeat(" ", fillSpaces))
+			}
+			newLine.width = maxWidth
+		} else {
+			fillSpaces := t.prevLines[lineNum].width - width
+			if fillSpaces > 0 {
+				t.window.Print(strings.Repeat(" ", fillSpaces))
+			}
+			newLine.width = width
+		}
+		// When width is 0, line is completely cleared. We need to redraw scrollbar
+		newLine.hasBar = printBar(lineNum, forceRedraw || width == 0)
+		t.prevLines[lineNum] = newLine
+	}
+
+	var finalLineNum int
 	if current {
-		if len(label) == 0 {
-			t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
-		} else {
-			t.window.CPrint(tui.ColCurrentCursor, label)
+		preTask := func(lineOffset int) {
+			if len(label) == 0 {
+				t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
+			} else {
+				t.window.CPrint(tui.ColCurrentCursor, label)
+			}
+			if selected {
+				t.window.CPrint(tui.ColCurrentMarker, t.marker)
+			} else {
+				t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
+			}
 		}
-		if selected {
-			t.window.CPrint(tui.ColCurrentMarker, t.marker)
-		} else {
-			t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
-		}
-		newLine.width = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true)
+		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, line, maxLine, forceRedraw, preTask, postTask)
 	} else {
-		if len(label) == 0 {
-			t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
-		} else {
-			t.window.CPrint(tui.ColCursor, label)
-		}
-		if selected {
-			t.window.CPrint(tui.ColMarker, t.marker)
-		} else {
-			t.window.Print(t.markerEmpty)
+		preTask := func(lineOffset int) {
+			if len(label) == 0 {
+				t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+			} else {
+				t.window.CPrint(tui.ColCursor, label)
+			}
+			if selected {
+				t.window.CPrint(tui.ColMarker, t.marker)
+			} else {
+				t.window.Print(t.markerEmpty)
+			}
 		}
 		var base, match tui.ColorPair
 		if selected {
@@ -1931,27 +2011,9 @@ func (t *Terminal) printItem(result Result, line int, i int, current bool, bar b
 			base = tui.ColNormal
 			match = tui.ColMatch
 		}
-		newLine.width = t.printHighlighted(result, base, match, false, true)
+		finalLineNum = t.printHighlighted(result, base, match, false, true, line, maxLine, forceRedraw, preTask, postTask)
 	}
-	if (current || selected) && t.highlightLine {
-		color := tui.ColSelected
-		if current {
-			color = tui.ColCurrent
-		}
-		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
-		fillSpaces := maxWidth - newLine.width
-		newLine.width = maxWidth
-		if fillSpaces > 0 {
-			t.window.CPrint(color, strings.Repeat(" ", fillSpaces))
-		}
-	} else {
-		fillSpaces := prevLine.width - newLine.width
-		if fillSpaces > 0 {
-			t.window.Print(strings.Repeat(" ", fillSpaces))
-		}
-	}
-	printBar()
-	t.prevLines[i] = newLine
+	return finalLineNum
 }
 
 func (t *Terminal) trimRight(runes []rune, width int) ([]rune, bool) {
@@ -1992,12 +2054,9 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(int), postTask func(int, int)) int {
+	var displayWidth int
 	item := result.item
-
-	// Overflow
-	text := make([]rune, item.text.Length())
-	copy(text, item.text.ToRunes())
 	matchOffsets := []Offset{}
 	var pos *[]int
 	if match && t.merger.pattern != nil {
@@ -2012,69 +2071,138 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		sort.Sort(ByOrder(charOffsets))
 	}
-	var maxe int
-	for _, offset := range charOffsets {
-		maxe = util.Max(maxe, int(offset[1]))
-	}
+	allOffsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
 
-	offsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
-	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
-	ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
-	maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(text))
-	displayWidth := t.displayWidthWithLimit(text, 0, maxWidth)
-	if displayWidth > maxWidth {
-		transformOffsets := func(diff int32, rightTrim bool) {
-			for idx, offset := range offsets {
-				b, e := offset.offset[0], offset.offset[1]
-				el := int32(len(ellipsis))
-				b += el - diff
-				e += el - diff
-				b = util.Max32(b, el)
-				if rightTrim {
-					e = util.Min32(e, int32(maxWidth-ellipsisWidth))
+	from := 0
+	text := make([]rune, item.text.Length())
+	copy(text, item.text.ToRunes())
+
+	finalLineNum := lineNum
+	numItemLines := 1
+	cutoff := 0
+	if t.multiLine && t.layout == layoutDefault {
+		maxLines := maxLineNum - lineNum + 1
+		numItemLines = item.text.NumLines(maxLines)
+		// Cut off the upper lines in the 'default' layout
+		if !current && maxLines == numItemLines {
+			cutoff = item.text.NumLines(math.MaxInt32) - maxLines
+		}
+	}
+	for lineOffset := 0; from <= len(text) && (lineNum <= maxLineNum || maxLineNum == 0); lineOffset++ {
+		finalLineNum = lineNum
+
+		line := text[from:]
+		if t.multiLine {
+			for idx, r := range text[from:] {
+				if r == '\n' {
+					line = line[:idx]
+					break
 				}
-				offsets[idx].offset[0] = b
-				offsets[idx].offset[1] = util.Max32(b, e)
 			}
 		}
-		if t.hscroll {
-			if t.keepRight && pos == nil {
-				trimmed, diff := t.trimLeft(text, maxWidth-ellipsisWidth)
-				transformOffsets(diff, false)
-				text = append(ellipsis, trimmed...)
-			} else if !t.overflow(text[:maxe], maxWidth-ellipsisWidth) {
-				// Stri..
-				text, _ = t.trimRight(text, maxWidth-ellipsisWidth)
-				text = append(text, ellipsis...)
+
+		offsets := []colorOffset{}
+		for _, offset := range allOffsets {
+			if offset.offset[0] >= int32(from) && offset.offset[1] <= int32(from+len(line)) {
+				offset.offset[0] -= int32(from)
+				offset.offset[1] -= int32(from)
+				offsets = append(offsets, offset)
 			} else {
-				// Stri..
-				rightTrim := false
-				if t.overflow(text[maxe:], ellipsisWidth) {
-					text = append(text[:maxe], ellipsis...)
-					rightTrim = true
-				}
-				// ..ri..
-				var diff int32
-				text, diff = t.trimLeft(text, maxWidth-ellipsisWidth)
-
-				// Transform offsets
-				transformOffsets(diff, rightTrim)
-				text = append(ellipsis, text...)
-			}
-		} else {
-			text, _ = t.trimRight(text, maxWidth-ellipsisWidth)
-			text = append(text, ellipsis...)
-
-			for idx, offset := range offsets {
-				offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
-				offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
+				allOffsets = allOffsets[len(offsets):]
+				break
 			}
 		}
-		displayWidth = t.displayWidthWithLimit(text, 0, displayWidth)
+
+		from += len(line) + 1
+
+		if cutoff > 0 {
+			cutoff--
+			lineOffset--
+			continue
+		}
+
+		var maxe int
+		for _, offset := range offsets {
+			if offset.match {
+				maxe = util.Max(maxe, int(offset.offset[1]))
+			}
+		}
+
+		actualLineNum := lineNum
+		if t.layout == layoutDefault {
+			actualLineNum = (lineNum - lineOffset) + (numItemLines - lineOffset) - 1
+		}
+		t.move(actualLineNum, 0, forceRedraw)
+
+		if preTask != nil {
+			preTask(lineOffset)
+		}
+
+		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
+		ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
+		maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(line))
+		displayWidth = t.displayWidthWithLimit(line, 0, maxWidth)
+		if displayWidth > maxWidth {
+			transformOffsets := func(diff int32, rightTrim bool) {
+				for idx, offset := range offsets {
+					b, e := offset.offset[0], offset.offset[1]
+					el := int32(len(ellipsis))
+					b += el - diff
+					e += el - diff
+					b = util.Max32(b, el)
+					if rightTrim {
+						e = util.Min32(e, int32(maxWidth-ellipsisWidth))
+					}
+					offsets[idx].offset[0] = b
+					offsets[idx].offset[1] = util.Max32(b, e)
+				}
+			}
+			if t.hscroll {
+				if t.keepRight && pos == nil {
+					trimmed, diff := t.trimLeft(line, maxWidth-ellipsisWidth)
+					transformOffsets(diff, false)
+					line = append(ellipsis, trimmed...)
+				} else if !t.overflow(line[:maxe], maxWidth-ellipsisWidth) {
+					// Stri..
+					line, _ = t.trimRight(line, maxWidth-ellipsisWidth)
+					line = append(line, ellipsis...)
+				} else {
+					// Stri..
+					rightTrim := false
+					if t.overflow(line[maxe:], ellipsisWidth) {
+						line = append(line[:maxe], ellipsis...)
+						rightTrim = true
+					}
+					// ..ri..
+					var diff int32
+					line, diff = t.trimLeft(line, maxWidth-ellipsisWidth)
+
+					// Transform offsets
+					transformOffsets(diff, rightTrim)
+					line = append(ellipsis, line...)
+				}
+			} else {
+				line, _ = t.trimRight(line, maxWidth-ellipsisWidth)
+				line = append(line, ellipsis...)
+
+				for idx, offset := range offsets {
+					offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
+					offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
+				}
+			}
+			displayWidth = t.displayWidthWithLimit(line, 0, displayWidth)
+		}
+
+		t.printColoredString(t.window, line, offsets, colBase)
+		if postTask != nil {
+			postTask(actualLineNum, displayWidth)
+		} else {
+			t.markOtherLine(actualLineNum)
+		}
+		lineNum += 1
 	}
 
-	t.printColoredString(t.window, text, offsets, colBase)
-	return displayWidth
+	return finalLineNum
 }
 
 func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []colorOffset, colBase tui.ColorPair) {
@@ -2172,7 +2300,7 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	}
 
 	effectiveHeight := height - headerLines
-	barLength, barStart := getScrollbar(len(body), effectiveHeight, util.Min(len(body)-effectiveHeight, t.previewer.offset-headerLines))
+	barLength, barStart := getScrollbar(1, len(body), effectiveHeight, util.Min(len(body)-effectiveHeight, t.previewer.offset-headerLines))
 	t.renderPreviewScrollbar(headerLines, barLength, barStart)
 }
 
@@ -4022,7 +4150,7 @@ func (t *Terminal) Loop() error {
 				if pbarDragging {
 					effectiveHeight := t.pwindow.Height() - headerLines
 					numLines := len(t.previewer.lines) - headerLines
-					barLength, _ := getScrollbar(numLines, effectiveHeight, util.Min(numLines-effectiveHeight, t.previewer.offset-headerLines))
+					barLength, _ := getScrollbar(1, numLines, effectiveHeight, util.Min(numLines-effectiveHeight, t.previewer.offset-headerLines))
 					if barLength > 0 {
 						y := my - t.pwindow.Top() - headerLines - barLength/2
 						y = util.Constrain(y, 0, effectiveHeight-barLength)
@@ -4068,7 +4196,8 @@ func (t *Terminal) Loop() error {
 							total := t.merger.Length()
 							prevOffset := t.offset
 							// barStart = (maxItems - barLength) * t.offset / (total - maxItems)
-							t.offset = int(math.Ceil(float64(newBarStart) * float64(total-maxItems) / float64(maxItems-barLength)))
+							perLine := t.avgNumLines()
+							t.offset = int(math.Ceil(float64(newBarStart) * float64(total*perLine-maxItems) / float64(maxItems*perLine-barLength)))
 							t.cy = t.offset + t.cy - prevOffset
 							req(reqList)
 						}
@@ -4076,11 +4205,18 @@ func (t *Terminal) Loop() error {
 					break
 				}
 
+				// There can be empty lines after the list in multi-line mode
+				prevLine := t.prevLines[my]
+				if prevLine.empty {
+					break
+				}
+
 				// Double-click on an item
+				cy := prevLine.cy
 				if me.Double && mx < t.window.Width()-1 {
 					// Double-click
 					if my >= min {
-						if t.vset(t.offset+my-min) && t.cy < t.merger.Length() {
+						if t.vset(cy) && t.cy < t.merger.Length() {
 							return doActions(actionsFor(tui.DoubleClick))
 						}
 					}
@@ -4093,7 +4229,7 @@ func (t *Terminal) Loop() error {
 						// Prompt
 						t.cx = mxCons + t.xoffset
 					} else if my >= min {
-						t.vset(t.offset + my - min)
+						t.vset(cy)
 						req(reqList)
 						evt := tui.RightClick
 						if me.Mod {
@@ -4312,26 +4448,66 @@ func (t *Terminal) Loop() error {
 func (t *Terminal) constrain() {
 	// count of items to display allowed by filtering
 	count := t.merger.Length()
-	// count of lines can be displayed
-	height := t.maxItems()
+	maxItems := t.maxItems()
 
-	t.cy = util.Constrain(t.cy, 0, util.Max(0, count-1))
+	// May need to try again after adjusting the offset
+	for tries := 0; tries < maxItems; tries++ {
+		height := maxItems
+		// How many items can be fit on screen including the current item?
+		if t.multiLine && t.merger.Length() > 0 {
+			actualHeight := 0
+			linesSum := 0
 
-	minOffset := util.Max(t.cy-height+1, 0)
-	maxOffset := util.Max(util.Min(count-height, t.cy), 0)
-	t.offset = util.Constrain(t.offset, minOffset, maxOffset)
-	if t.scrollOff == 0 {
-		return
-	}
+			add := func(i int) bool {
+				lines := t.merger.Get(i).item.text.NumLines(height - linesSum)
+				linesSum += lines
+				if linesSum >= height {
+					if actualHeight == 0 {
+						actualHeight = 1
+					}
+					return false
+				}
+				actualHeight++
+				return true
+			}
 
-	scrollOff := util.Min(height/2, t.scrollOff)
-	for {
-		prevOffset := t.offset
-		if t.cy-t.offset < scrollOff {
-			t.offset = util.Max(minOffset, t.offset-1)
+			for i := t.offset; i < t.merger.Length(); i++ {
+				if !add(i) {
+					break
+				}
+			}
+
+			// We can possibly fit more items "before" the offset on screen
+			if linesSum < height {
+				for i := t.offset - 1; i >= 0; i-- {
+					if !add(i) {
+						break
+					}
+				}
+			}
+
+			height = actualHeight
 		}
-		if t.cy-t.offset >= height-scrollOff {
-			t.offset = util.Min(maxOffset, t.offset+1)
+
+		t.cy = util.Constrain(t.cy, 0, util.Max(0, count-1))
+		minOffset := util.Max(t.cy-height+1, 0)
+		maxOffset := util.Max(util.Min(count-height, t.cy), 0)
+		prevOffset := t.offset
+		t.offset = util.Constrain(t.offset, minOffset, maxOffset)
+		if t.scrollOff > 0 {
+			scrollOff := util.Min(height/2, t.scrollOff)
+			for {
+				prevOffset := t.offset
+				if t.cy-t.offset < scrollOff {
+					t.offset = util.Max(minOffset, t.offset-1)
+				}
+				if t.cy-t.offset >= height-scrollOff {
+					t.offset = util.Min(maxOffset, t.offset+1)
+				}
+				if t.offset == prevOffset {
+					break
+				}
+			}
 		}
 		if t.offset == prevOffset {
 			break

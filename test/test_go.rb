@@ -2128,7 +2128,7 @@ class TestGoFZF < TestBase
   end
 
   def test_keep_right
-    tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right", :Enter
+    tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right --no-multi-line", :Enter
     tmux.until { |lines| assert lines.any_include?('9999␊10000') }
   end
 
@@ -3398,7 +3398,7 @@ module TestShell
 
   def test_ctrl_r_multiline
     # NOTE: Current bash implementation shows an extra new line if there's
-    # only enty in the history
+    # only entry in the history
     tmux.send_keys ':', :Enter
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
     tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
