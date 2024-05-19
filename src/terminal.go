@@ -811,8 +811,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		lastAction:         actStart,
 		lastFocus:          minItem.Index()}
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
-	t.pointer, t.pointerLen = t.processTabs([]rune(opts.Pointer), 0)
-	t.marker, t.markerLen = t.processTabs([]rune(opts.Marker), 0)
+	t.pointer, t.pointerLen = t.processTabs([]rune(*opts.Pointer), 0)
+	t.marker, t.markerLen = t.processTabs([]rune(*opts.Marker), 0)
 	// Pre-calculated empty pointer and marker signs
 	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)

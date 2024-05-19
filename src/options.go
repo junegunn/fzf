@@ -83,8 +83,8 @@ const Usage = `usage: fzf [options]
     --scrollbar[=C1[C2]]   Scrollbar character(s) (each for main and preview window)
     --no-scrollbar         Hide scrollbar
     --prompt=STR           Input prompt (default: '> ')
-    --pointer=STR          Pointer to the current line (default: '>')
-    --marker=STR           Multi-select marker (default: '>')
+    --pointer=STR          Pointer to the current line (default: '▌' or '>')
+    --marker=STR           Multi-select marker (default: '▏' or '>')
     --header=STR           String to print as header
     --header-lines=N       The first N lines of the input are treated as header
     --header-first         Print header before the prompt line
@@ -420,8 +420,8 @@ type Options struct {
 	Separator    *string
 	JumpLabels   string
 	Prompt       string
-	Pointer      string
-	Marker       string
+	Pointer      *string
+	Marker       *string
 	Query        string
 	Select1      bool
 	Exit0        bool
@@ -515,8 +515,8 @@ func defaultOptions() *Options {
 		Separator:    nil,
 		JumpLabels:   defaultJumpLabels,
 		Prompt:       "> ",
-		Pointer:      ">",
-		Marker:       ">",
+		Pointer:      nil,
+		Marker:       nil,
 		Query:        "",
 		Select1:      false,
 		Exit0:        false,
@@ -2153,13 +2153,15 @@ func parseOptions(opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			opts.Pointer = firstLine(str)
+			str = firstLine(str)
+			opts.Pointer = &str
 		case "--marker":
 			str, err := nextString(allArgs, &i, "selected sign string required")
 			if err != nil {
 				return err
 			}
-			opts.Marker = firstLine(str)
+			str = firstLine(str)
+			opts.Marker = &str
 		case "--sync":
 			opts.Sync = true
 		case "--no-sync", "--async":
@@ -2395,9 +2397,11 @@ func parseOptions(opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
-				opts.Pointer = firstLine(value)
+				str := firstLine(value)
+				opts.Pointer = &str
 			} else if match, value := optString(arg, "--marker="); match {
-				opts.Marker = firstLine(value)
+				str := firstLine(value)
+				opts.Marker = &str
 			} else if match, value := optString(arg, "-n", "--nth="); match {
 				if opts.Nth, err = splitNth(value); err != nil {
 					return err
@@ -2586,11 +2590,27 @@ func postProcessOptions(opts *Options) error {
 		opts.BorderShape = tui.BorderNone
 	}
 
-	if err := validateSign(opts.Pointer, "pointer"); err != nil {
+	if opts.Pointer == nil {
+		defaultPointer := "▌"
+		if !opts.Unicode {
+			defaultPointer = ">"
+		}
+		opts.Pointer = &defaultPointer
+	}
+
+	if opts.Marker == nil {
+		defaultMarker := "▏"
+		if !opts.Unicode {
+			defaultMarker = ">"
+		}
+		opts.Marker = &defaultMarker
+	}
+
+	if err := validateSign(*opts.Pointer, "pointer"); err != nil {
 		return err
 	}
 
-	if err := validateSign(opts.Marker, "marker"); err != nil {
+	if err := validateSign(*opts.Marker, "marker"); err != nil {
 		return err
 	}
 

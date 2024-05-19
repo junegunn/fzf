@@ -24,7 +24,7 @@ DEFAULT_TIMEOUT = 10
 FILE = File.expand_path(__FILE__)
 BASE = File.expand_path('..', __dir__)
 Dir.chdir(BASE)
-FZF = "FZF_DEFAULT_OPTS=--no-scrollbar FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
+FZF = "FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer \\> --marker \\>\" FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
 def wait
   since = Time.now
@@ -66,7 +66,7 @@ class Shell
     end
 
     def fish
-      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=--no-scrollbar fish_history= fish"
+      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer '>' --marker '>'\" fish_history= fish"
     end
   end
 end
@@ -3397,12 +3397,16 @@ module TestShell
   end
 
   def test_ctrl_r_multiline
+    # NOTE: Current bash implementation shows an extra new line if there's
+    # only enty in the history
+    tmux.send_keys ':', :Enter
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
     tmux.until { |lines| assert_equal %w[foo bar], lines[-2..] }
     tmux.prepare
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 'foo bar'
+    tmux.until { |lines| assert lines[-4]&.match?(/"foo/) } unless shell == :zsh
     tmux.until { |lines| assert lines[-3]&.match?(/bar"␊?/) }
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines[-1]&.match?(/bar"␊?/) }
@@ -3742,7 +3746,7 @@ unset <%= UNSETS.join(' ') %>
 unset $(env | sed -n /^_fzf_orig/s/=.*//p)
 unset $(declare -F | sed -n "/_fzf/s/.*-f //p")
 
-export FZF_DEFAULT_OPTS=--no-scrollbar
+export FZF_DEFAULT_OPTS="--no-scrollbar --pointer '>' --marker '>'"
 
 # Setup fzf
 # ---------
