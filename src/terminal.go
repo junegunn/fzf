@@ -2840,7 +2840,7 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 		}
 
 		if flags.file {
-			file := writeTemporaryFile(replacements, params.printsep)
+			file := WriteTemporaryFile(replacements, params.printsep)
 			tempFiles = append(tempFiles, file)
 			return file
 		}

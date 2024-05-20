@@ -6,7 +6,7 @@ import (
 	"unsafe"
 )
 
-func writeTemporaryFile(data []string, printSep string) string {
+func WriteTemporaryFile(data []string, printSep string) string {
 	f, err := os.CreateTemp("", "fzf-temp-*")
 	if err != nil {
 		// Unable to create temporary file

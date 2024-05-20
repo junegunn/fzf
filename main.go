@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	fzf "github.com/junegunn/fzf/src"
@@ -27,6 +28,9 @@ var zshCompletion []byte
 
 //go:embed shell/key-bindings.fish
 var fishKeyBindings []byte
+
+//go:embed man/man1/fzf.1
+var manPage []byte
 
 func printScript(label string, content []byte) {
 	fmt.Println("### " + label + " ###")
@@ -73,6 +77,20 @@ func main() {
 			fmt.Printf("%s (%s)\n", version, revision)
 		} else {
 			fmt.Println(version)
+		}
+		return
+	}
+	if options.Man {
+		file := fzf.WriteTemporaryFile([]string{string(manPage)}, "\n")
+		if len(file) == 0 {
+			fmt.Print(string(manPage))
+			return
+		}
+		defer os.Remove(file)
+		cmd := exec.Command("man", file)
+		cmd.Stdout = os.Stdout
+		if err := cmd.Run(); err != nil {
+			fmt.Print(string(manPage))
 		}
 		return
 	}

@@ -98,7 +98,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 			exports[idx] = fmt.Sprintf("export %s=%s", pair[0], escapeSingleQuote(pair[1]))
 		}
 	}
-	temp := writeTemporaryFile(append(exports, command), "\n")
+	temp := WriteTemporaryFile(append(exports, command), "\n")
 	defer os.Remove(temp)
 
 	cmd := cmdBuilder(temp)

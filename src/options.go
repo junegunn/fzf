@@ -127,7 +127,6 @@ const Usage = `usage: fzf [options]
     --with-shell=STR       Shell command and flags to start child processes with
     --listen[=[ADDR:]PORT] Start HTTP server to receive actions (POST /)
                            (To allow remote process execution, use --listen-unsafe)
-    --version              Display version information and exit
 
   Directory traversal      (Only used when $FZF_DEFAULT_COMMAND is not set)
     --walker=OPTS          [file][,dir][,follow][,hidden] (default: file,follow,hidden)
@@ -139,6 +138,11 @@ const Usage = `usage: fzf [options]
     --bash                 Print script to set up Bash shell integration
     --zsh                  Print script to set up Zsh shell integration
     --fish                 Print script to set up Fish shell integration
+
+  Help
+    --version              Display version information and exit
+    --help                 Show this message
+    --man                  Show man page
 
   Environment variables
     FZF_DEFAULT_COMMAND    Default command to use when input is tty
@@ -387,6 +391,7 @@ type Options struct {
 	Bash         bool
 	Zsh          bool
 	Fish         bool
+	Man          bool
 	Fuzzy        bool
 	FuzzyAlgo    algo.Algo
 	Scheme       string
@@ -493,6 +498,7 @@ func defaultOptions() *Options {
 		Bash:         false,
 		Zsh:          false,
 		Fish:         false,
+		Man:          false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
 		Scheme:       "default",
@@ -1865,10 +1871,14 @@ func parseOptions(opts *Options, allArgs []string) error {
 		opts.Fish = false
 		opts.Help = false
 		opts.Version = false
+		opts.Man = false
 	}
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
 		switch arg {
+		case "--man":
+			clearExitingOpts()
+			opts.Man = true
 		case "--bash":
 			clearExitingOpts()
 			opts.Bash = true
