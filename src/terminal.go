@@ -322,7 +322,7 @@ type Terminal struct {
 	forcePreview       bool
 	clickHeaderLine    int
 	clickHeaderColumn  int
-	tmuxScript         string
+	proxyScript        string
 }
 
 type selectedItem struct {
@@ -795,7 +795,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		jumpLabels:         opts.JumpLabels,
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
-		tmuxScript:         opts.TmuxScript,
+		proxyScript:        opts.ProxyScript,
 		merger:             EmptyMerger(0),
 		selected:           make(map[int32]selectedItem),
 		reqBox:             util.NewEventBox(),
@@ -3608,9 +3608,9 @@ func (t *Terminal) Loop() error {
 						t.history.append(string(t.input))
 					}
 
-					if len(t.tmuxScript) > 0 {
+					if len(t.proxyScript) > 0 {
 						data := strings.Join(append([]string{command}, t.environ()...), "\x00")
-						os.WriteFile(t.tmuxScript, []byte(data), 0600)
+						os.WriteFile(t.proxyScript+becomeSuffix, []byte(data), 0600)
 						req(reqBecome)
 					} else {
 						t.executor.Become(t.ttyin, t.environ(), command)

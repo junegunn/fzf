@@ -381,8 +381,9 @@ type walkerOpts struct {
 type Options struct {
 	Input        chan string
 	Output       chan string
+	NoWinpty     bool
 	Tmux         *tmuxOptions
-	TmuxScript   string
+	ProxyScript  string
 	Bash         bool
 	Zsh          bool
 	Fish         bool
@@ -1883,6 +1884,8 @@ func parseOptions(opts *Options, allArgs []string) error {
 		case "--version":
 			clearExitingOpts()
 			opts.Version = true
+		case "--no-winpty":
+			opts.NoWinpty = true
 		case "--tmux":
 			str, err := nextString(allArgs, &i, "tmux options required")
 			if err != nil {
@@ -1893,8 +1896,8 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
-		case "--tmux-script":
-			if opts.TmuxScript, err = nextString(allArgs, &i, ""); err != nil {
+		case "--proxy-script":
+			if opts.ProxyScript, err = nextString(allArgs, &i, ""); err != nil {
 				return err
 			}
 		case "-x", "--extended":

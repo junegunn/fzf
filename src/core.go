@@ -21,7 +21,11 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 {
-		return runTmux(os.Args[1:], opts)
+		return runTmux(os.Args, opts)
+	}
+
+	if os.Getenv("TERM_PROGRAM") == "mintty" && !opts.NoWinpty {
+		return runWinpty(os.Args, opts)
 	}
 
 	if err := postProcessOptions(opts); err != nil {

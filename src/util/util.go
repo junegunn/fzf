@@ -139,7 +139,8 @@ func DurWithin(
 
 // IsTty returns true if stdin is a terminal
 func IsTty() bool {
-	return isatty.IsTerminal(os.Stdin.Fd())
+	fd := os.Stdin.Fd()
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
 // ToTty returns true if stdout is a terminal
