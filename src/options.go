@@ -481,6 +481,13 @@ func defaultPreviewOpts(command string) previewOpts {
 }
 
 func defaultOptions() *Options {
+	var theme *tui.ColorTheme
+	if os.Getenv("NO_COLOR") != "" {
+		theme = tui.NoColorTheme()
+	} else {
+		theme = tui.EmptyTheme()
+	}
+
 	return &Options{
 		Bash:         false,
 		Zsh:          false,
@@ -502,7 +509,7 @@ func defaultOptions() *Options {
 		Multi:        0,
 		Ansi:         false,
 		Mouse:        true,
-		Theme:        tui.EmptyTheme(),
+		Theme:        theme,
 		Black:        false,
 		Bold:         true,
 		MinHeight:    10,
