@@ -1,6 +1,32 @@
 CHANGELOG
 =========
 
+0.53.0
+------
+- fzf can now display multi-line items
+  ```sh
+  rg -p bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
+    fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
+  ```
+    - To disable multi-line display, use `--no-multi-line`
+- The default `--pointer` and `--marker` have been changed from `>` to Unicode bar characters as they look better with multi-line items
+- Native `--tmux` integration to replace fzf-tmux script
+  ```sh
+  # --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+  # Center, 90% width and 70% height
+  fzf --tmux 100%,70% --border horizontal --padding 1,2
+
+  # Left, 30% width
+  fzf --tmux left,30%
+
+  # Bottom, 50% height
+  fzf --tmux bottom,50%
+  ```
+    - To simplify the implementation, it only uses popups. You need tmux 3.3 or later.
+- fzf now works on Git bash (mintty) out of the box via winpty integration
+- man page is now embedded in the binary; `fzf --man` to see it
+- [`NO_COLOR`](https://no-color.org/) environment variable is now respected. If the variable is set, fzf defaults to `--no-color` unless otherwise specified.
+
 0.52.1
 ------
 - Fixed a critical bug in the Windows version
