@@ -16,7 +16,15 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-const Usage = `usage: fzf [options]
+const Usage = `fzf is an interactive filter program for any kind of list.
+
+It implements a "fuzzy" matching algorithm, so you can quickly type in patterns
+with omitted characters and still get the results you want.
+
+Project URL: https://github.com/junegunn/fzf
+Author: Junegunn Choi <junegunn.c@gmail.com>
+
+Usage: fzf [options]
 
   Search
     -x, --extended         Extended-search mode
