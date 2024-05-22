@@ -242,6 +242,7 @@ type Terminal struct {
 	keymap             map[tui.Event][]*action
 	keymapOrg          map[tui.Event][]*action
 	pressed            string
+	printQueue         []string
 	printQuery         bool
 	history            *History
 	cycle              bool
@@ -439,7 +440,7 @@ const (
 	actOffsetDown
 	actJump
 	actJumpAccept // XXX Deprecated in favor of jump:accept binding
-	actPrintQuery
+	actPrintQuery // XXX Deprecated (not very useful, just use --print-query)
 	actRefreshPreview
 	actReplaceQuery
 	actToggleSort
@@ -466,6 +467,7 @@ const (
 	actPreviewHalfPageDown
 	actPrevHistory
 	actPrevSelected
+	actPrint
 	actPut
 	actNextHistory
 	actNextSelected
@@ -1202,6 +1204,9 @@ func (t *Terminal) output() bool {
 	}
 	if len(t.expect) > 0 {
 		t.printer(t.pressed)
+	}
+	for _, s := range t.printQueue {
+		t.printer(s)
 	}
 	found := len(t.selected) > 0
 	if !found {
@@ -3946,6 +3951,8 @@ func (t *Terminal) Loop() error {
 				suffix := copySlice(t.input[t.cx:])
 				t.input = append(append(t.input[:t.cx], str...), suffix...)
 				t.cx += len(str)
+			case actPrint:
+				t.printQueue = append(t.printQueue, a.a)
 			case actUnixLineDiscard:
 				beof = len(t.input) == 0
 				if t.cx > 0 {

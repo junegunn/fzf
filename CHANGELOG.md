@@ -25,6 +25,11 @@ CHANGELOG
     - To simplify the implementation, it only uses popups. You need tmux 3.3 or later.
 - fzf now works on Git bash (mintty) out of the box via winpty integration
 - man page is now embedded in the binary; `fzf --man` to see it
+- Added `print(...)` action to queue arbitrary string to be printed on exit
+  ```sh
+  fzf --bind 'space:print(space pressed)+accept'
+  ```
+    - This is similar to `--expect` but it allows you to queue multiple arbitrary strings
 - [`NO_COLOR`](https://no-color.org/) environment variable is now respected. If the variable is set, fzf defaults to `--no-color` unless otherwise specified.
 
 0.52.1
