@@ -3559,14 +3559,6 @@ func (t *Terminal) Loop() error {
 		scrollPreviewBy := func(amount int) {
 			scrollPreviewTo(t.previewer.offset + amount)
 		}
-		for key, ret := range t.expect {
-			if keyMatch(key, event) {
-				t.pressed = ret
-				t.reqBox.Set(reqClose, nil)
-				t.mutex.Unlock()
-				return nil
-			}
-		}
 
 		actionsFor := func(eventType tui.EventType) []*action {
 			return t.keymap[eventType.AsEvent()]
@@ -4371,6 +4363,18 @@ func (t *Terminal) Loop() error {
 				t.lastAction = a.t
 			}
 			return true
+		}
+
+		for key, ret := range t.expect {
+			if keyMatch(key, event) {
+				t.pressed = ret
+				if actions, found := t.keymap[key]; found {
+					doActions(actions)
+				}
+				t.reqBox.Set(reqClose, nil)
+				t.mutex.Unlock()
+				return nil
+			}
 		}
 
 		if t.jumping == jumpDisabled || len(actions) > 0 {

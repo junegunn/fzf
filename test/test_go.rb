@@ -580,6 +580,13 @@ class TestGoFZF < TestBase
     test.call('@', '@')
   end
 
+  def test_expect_with_bound_actions
+    tmux.send_keys "seq 1 100 | #{fzf('--query 1 --print-query --expect z --bind z:up+up')}", :Enter
+    tmux.until { |lines| assert_equal 20, lines.match_count }
+    tmux.send_keys('z')
+    assert_equal %w[1 z 11], readonce.lines(chomp: true)
+  end
+
   def test_expect_print_query
     tmux.send_keys "seq 1 100 | #{fzf('--expect=alt-z', :print_query)}", :Enter
     tmux.until { |lines| assert_equal '  100/100', lines[-2] }
