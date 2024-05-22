@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -102,6 +103,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 	defer os.Remove(temp)
 
 	cmd := cmdBuilder(temp)
+	signal.Ignore(os.Interrupt)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			code := exitError.ExitCode()
