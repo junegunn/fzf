@@ -103,7 +103,14 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 	defer os.Remove(temp)
 
 	cmd := cmdBuilder(temp)
-	signal.Ignore(os.Interrupt)
+	intChan := make(chan os.Signal, 1)
+	defer close(intChan)
+	go func() {
+		if sig, valid := <-intChan; valid {
+			cmd.Process.Signal(sig)
+		}
+	}()
+	signal.Notify(intChan, os.Interrupt)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			code := exitError.ExitCode()
