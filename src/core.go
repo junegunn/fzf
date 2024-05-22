@@ -3,6 +3,7 @@ package fzf
 
 import (
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -25,7 +26,9 @@ func Run(opts *Options) (int, error) {
 	}
 
 	if os.Getenv("TERM_PROGRAM") == "mintty" && !opts.NoWinpty {
-		return runWinpty(os.Args, opts)
+		if _, err := exec.LookPath("winpty"); err == nil {
+			return runWinpty(os.Args, opts)
+		}
 	}
 
 	if err := postProcessOptions(opts); err != nil {
