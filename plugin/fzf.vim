@@ -490,6 +490,8 @@ function! s:extract_option(opts, name)
   return opt
 endfunction
 
+let s:need_cmd_window = has('win32unix') && $TERM_PROGRAM ==# 'mintty' && s:compare_versions($TERM_PROGRAM_VERSION, '3.4.5') < 0 && !executable('winpty')
+
 function! fzf#run(...) abort
 try
   let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
@@ -532,8 +534,8 @@ try
         \ executable('tput') && filereadable('/dev/tty')
   let has_vim8_term = has('terminal') && has('patch-8.0.995')
   let has_nvim_term = has('nvim-0.2.1') || has('nvim') && !s:is_win
-  let use_term = has_nvim_term || has_vim8_term 
-    \ && !(has('win32unix') && $TERM_PROGRAM ==# 'mintty' && !executable('winpty'))
+  let use_term = has_nvim_term || has_vim8_term
+    \ && !s:need_cmd_window
     \ && (has('gui_running') || s:is_win || s:present(dict, 'down', 'up', 'left', 'right', 'window'))
   let use_tmux = (has_key(dict, 'tmux') || (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:splittable(dict)) && s:tmux_enabled()
   if prefer_tmux && use_tmux
@@ -714,7 +716,7 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
-  elseif has('win32unix') && $TERM_PROGRAM ==# 'mintty' && !executable('winpty')
+  elseif s:need_cmd_window
     let shellscript = s:fzf_tempname()
     call s:writefile([command], shellscript)
     let command = 'start //WAIT sh -c '.shellscript
