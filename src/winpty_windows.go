@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -27,7 +28,7 @@ func needWinpty(opts *Options) bool {
 
 		 We're not going to worry too much about restoring the original value.
 		*/
-		if os.Getenv("MSYS") == "enable_pcon" {
+		if strings.Contains(os.Getenv("MSYS"), "enable_pcon") {
 			opts.Height = heightSpec{}
 			return false
 		}
@@ -37,10 +38,10 @@ func needWinpty(opts *Options) bool {
 		//   os.Setenv("MSYS", "enable_pcon")
 		return true
 	}
-	if _, err := exec.LookPath("winpty"); err != nil {
+	if opts.NoWinpty {
 		return false
 	}
-	if opts.NoWinpty {
+	if _, err := exec.LookPath("winpty"); err != nil {
 		return false
 	}
 	return true
