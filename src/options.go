@@ -2637,7 +2637,7 @@ func postProcessOptions(opts *Options) error {
 
 	if opts.Marker == nil {
 		// "▏" looks better, but not all terminals render it correctly
-		defaultMarker := "│"
+		defaultMarker := "┃"
 		if !opts.Unicode {
 			defaultMarker = ">"
 		}
