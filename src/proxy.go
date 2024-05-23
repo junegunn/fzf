@@ -60,7 +60,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 
 	var command string
 	commandPrefix += ` --proxy-script "$0"`
-	if opts.Input == nil && util.IsTty() {
+	if opts.Input == nil && util.IsTty(os.Stdin) {
 		command = fmt.Sprintf(`%s > %q`, commandPrefix, output)
 	} else {
 		input, err := fifo("proxy-input")
@@ -131,7 +131,11 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 					env = elems[1:]
 				}
 				executor := util.NewExecutor(opts.WithShell)
-				executor.Become(tui.TtyIn(), env, command)
+				ttyin, err := tui.TtyIn()
+				if err != nil {
+					return ExitError, err
+				}
+				executor.Become(ttyin, env, command)
 			}
 			return code, err
 		}

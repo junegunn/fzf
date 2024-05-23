@@ -51,6 +51,7 @@ var whiteSuffix *regexp.Regexp
 var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
 var passThroughRegex *regexp.Regexp
+var ttyin *os.File
 
 const clearCode string = "\x1b[2J"
 
@@ -691,11 +692,19 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	var renderer tui.Renderer
 	fullscreen := !opts.Height.auto && (opts.Height.size == 0 || opts.Height.percent && opts.Height.size == 100)
 	var err error
+	// Reuse ttyin if available to avoid having multiple file descriptors open
+	// when you run fzf multiple times in your Go program. Closing it is known to
+	// cause problems with 'become' action and invalid terminal state after exit.
+	if ttyin == nil {
+		if ttyin, err = tui.TtyIn(); err != nil {
+			return nil, err
+		}
+	}
 	if fullscreen {
 		if tui.HasFullscreenRenderer() {
 			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 		} else {
-			renderer, err = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
+			renderer, err = tui.NewLightRenderer(ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
 				true, func(h int) int { return h })
 		}
 	} else {
@@ -711,7 +720,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			effectiveMinHeight += borderLines(opts.BorderShape)
 			return util.Min(termHeight, util.Max(evaluateHeight(opts, termHeight), effectiveMinHeight))
 		}
-		renderer, err = tui.NewLightRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
+		renderer, err = tui.NewLightRenderer(ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
 	}
 	if err != nil {
 		return nil, err
@@ -818,7 +827,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		serverOutputChan:   make(chan string),
 		eventChan:          make(chan tui.Event, 6), // (load + result + zero|one) | (focus) | (resize) | (GetChar)
 		tui:                renderer,
-		ttyin:              tui.TtyIn(),
+		ttyin:              ttyin,
 		initFunc:           func() error { return renderer.Init() },
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
@@ -2874,9 +2883,30 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	cmd.Env = t.environ()
 	t.executing.Set(true)
 	if !background {
-		cmd.Stdin = t.ttyin
+		// Open a separate handle for tty input
+		if in, _ := tui.TtyIn(); in != nil {
+			cmd.Stdin = in
+			if in != os.Stdin {
+				defer in.Close()
+			}
+		}
+
 		cmd.Stdout = os.Stdout
+		if !util.IsTty(os.Stdout) {
+			if out, _ := tui.TtyOut(); out != nil {
+				cmd.Stdout = out
+				defer out.Close()
+			}
+		}
+
 		cmd.Stderr = os.Stderr
+		if !util.IsTty(os.Stderr) {
+			if out, _ := tui.TtyOut(); out != nil {
+				cmd.Stderr = out
+				defer out.Close()
+			}
+		}
+
 		t.tui.Pause(true)
 		cmd.Run()
 		t.tui.Resume(true, false)

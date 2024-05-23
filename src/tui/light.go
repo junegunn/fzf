@@ -127,11 +127,7 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
-	in, err := openTtyIn()
-	if err != nil {
-		return nil, err
-	}
+func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
 	out, err := openTtyOut()
 	if err != nil {
 		out = os.Stderr
@@ -142,7 +138,7 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		clearOnExit:   clearOnExit,
-		ttyin:         in,
+		ttyin:         ttyin,
 		ttyout:        out,
 		yoffset:       0,
 		tabstop:       tabstop,

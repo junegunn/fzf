@@ -138,15 +138,10 @@ func DurWithin(
 	return val
 }
 
-// IsTty returns true if stdin is a terminal
-func IsTty() bool {
-	fd := os.Stdin.Fd()
+// IsTty returns true if the file is a terminal
+func IsTty(file *os.File) bool {
+	fd := file.Fd()
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-// ToTty returns true if stdout is a terminal
-func ToTty() bool {
-	return isatty.IsTerminal(os.Stdout.Fd())
 }
 
 // Once returns a function that returns the specified boolean value only once

@@ -113,7 +113,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 	var success bool
 	if inputChan != nil {
 		success = r.readChannel(inputChan)
-	} else if util.IsTty() {
+	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			success = r.readFiles(root, opts, ignores)
