@@ -3,7 +3,6 @@ package fzf
 
 import (
 	"os"
-	"os/exec"
 	"sync"
 	"time"
 
@@ -25,10 +24,8 @@ func Run(opts *Options) (int, error) {
 		return runTmux(os.Args, opts)
 	}
 
-	if os.Getenv("TERM_PROGRAM") == "mintty" && !opts.NoWinpty {
-		if _, err := exec.LookPath("winpty"); err == nil {
-			return runWinpty(os.Args, opts)
-		}
+	if needWinpty(opts) {
+		return runWinpty(os.Args, opts)
 	}
 
 	if err := postProcessOptions(opts); err != nil {

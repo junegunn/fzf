@@ -3,6 +3,7 @@ package util
 import (
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,4 +189,35 @@ func ToKebabCase(s string) string {
 		name += string(r)
 	}
 	return strings.ToLower(name)
+}
+
+// CompareVersions compares two version strings
+func CompareVersions(v1, v2 string) int {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+
+	atoi := func(s string) int {
+		n, e := strconv.Atoi(s)
+		if e != nil {
+			return 0
+		}
+		return n
+	}
+
+	for i := 0; i < Max(len(parts1), len(parts2)); i++ {
+		var p1, p2 int
+		if i < len(parts1) {
+			p1 = atoi(parts1[i])
+		}
+		if i < len(parts2) {
+			p2 = atoi(parts2[i])
+		}
+
+		if p1 > p2 {
+			return 1
+		} else if p1 < p2 {
+			return -1
+		}
+	}
+	return 0
 }
