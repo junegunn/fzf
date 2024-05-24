@@ -30,6 +30,7 @@ CHANGELOG
   fzf --bind 'space:print(space pressed)+accept'
   ```
     - This is similar to `--expect` but it allows you to queue multiple arbitrary strings
+- Changed the default `--scroll-off` to 3, as we think it's a better default
 - [`NO_COLOR`](https://no-color.org/) environment variable is now respected. If the variable is set, fzf defaults to `--no-color` unless otherwise specified.
 
 0.52.1

@@ -534,7 +534,7 @@ func defaultOptions() *Options {
 		KeepRight:    false,
 		Hscroll:      true,
 		HscrollOff:   10,
-		ScrollOff:    0,
+		ScrollOff:    3,
 		FileWord:     false,
 		InfoStyle:    infoDefault,
 		Separator:    nil,
