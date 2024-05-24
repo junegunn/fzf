@@ -4489,26 +4489,26 @@ func (t *Terminal) Loop() error {
 func (t *Terminal) constrain() {
 	// count of items to display allowed by filtering
 	count := t.merger.Length()
-	maxItems := t.maxItems()
+	maxLines := t.maxItems()
 
 	// May need to try again after adjusting the offset
-	for tries := 0; tries < maxItems; tries++ {
-		height := maxItems
+	for tries := 0; tries < maxLines; tries++ {
+		numItems := maxLines
 		// How many items can be fit on screen including the current item?
 		if t.multiLine && t.merger.Length() > 0 {
-			actualHeight := 0
+			numItemsFound := 0
 			linesSum := 0
 
 			add := func(i int) bool {
-				lines := t.merger.Get(i).item.text.NumLines(height - linesSum)
+				lines := t.merger.Get(i).item.text.NumLines(numItems - linesSum)
 				linesSum += lines
-				if linesSum >= height {
-					if actualHeight == 0 {
-						actualHeight = 1
+				if linesSum >= numItems {
+					if numItemsFound == 0 {
+						numItemsFound = 1
 					}
 					return false
 				}
-				actualHeight++
+				numItemsFound++
 				return true
 			}
 
@@ -4519,7 +4519,7 @@ func (t *Terminal) constrain() {
 			}
 
 			// We can possibly fit more items "before" the offset on screen
-			if linesSum < height {
+			if linesSum < numItems {
 				for i := t.offset - 1; i >= 0; i-- {
 					if !add(i) {
 						break
@@ -4527,27 +4527,50 @@ func (t *Terminal) constrain() {
 				}
 			}
 
-			height = actualHeight
+			numItems = numItemsFound
 		}
 
 		t.cy = util.Constrain(t.cy, 0, util.Max(0, count-1))
-		minOffset := util.Max(t.cy-height+1, 0)
-		maxOffset := util.Max(util.Min(count-height, t.cy), 0)
+		minOffset := util.Max(t.cy-numItems+1, 0)
+		maxOffset := util.Max(util.Min(count-numItems, t.cy), 0)
 		prevOffset := t.offset
 		t.offset = util.Constrain(t.offset, minOffset, maxOffset)
 		if t.scrollOff > 0 {
-			scrollOff := util.Min(height/2, t.scrollOff)
-			for {
-				prevOffset := t.offset
-				if t.cy-t.offset < scrollOff {
-					t.offset = util.Max(minOffset, t.offset-1)
+			scrollOff := util.Min(maxLines/2, t.scrollOff)
+			newOffset := t.offset
+			// 2-phase adjustment to avoid infinite loop of alternating between moving up and down
+			for phase := 0; phase < 2; phase++ {
+				for {
+					prevOffset := newOffset
+					numItems := t.merger.Length()
+					itemLines := 1
+					if t.multiLine && t.cy < numItems {
+						itemLines = t.merger.Get(t.cy).item.text.NumLines(maxLines)
+					}
+					linesBefore := t.cy - newOffset
+					if t.multiLine {
+						linesBefore = 0
+						for i := newOffset; i < t.cy && i < numItems; i++ {
+							linesBefore += t.merger.Get(i).item.text.NumLines(maxLines - linesBefore - itemLines)
+						}
+					}
+					linesAfter := maxLines - (linesBefore + itemLines)
+
+					// Stuck in the middle, nothing to do
+					if linesBefore < scrollOff && linesAfter < scrollOff {
+						break
+					}
+
+					if phase == 0 && linesBefore < scrollOff {
+						newOffset = util.Max(minOffset, newOffset-1)
+					} else if phase == 1 && linesAfter < scrollOff {
+						newOffset = util.Min(maxOffset, newOffset+1)
+					}
+					if newOffset == prevOffset {
+						break
+					}
 				}
-				if t.cy-t.offset >= height-scrollOff {
-					t.offset = util.Min(maxOffset, t.offset+1)
-				}
-				if t.offset == prevOffset {
-					break
-				}
+				t.offset = newOffset
 			}
 		}
 		if t.offset == prevOffset {
