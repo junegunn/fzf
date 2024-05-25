@@ -2616,6 +2616,51 @@ func validateSign(sign string, signOptName string) error {
 	return nil
 }
 
+func validateOptions(opts *Options) error {
+	if opts.Pointer != nil {
+		if err := validateSign(*opts.Pointer, "pointer"); err != nil {
+			return err
+		}
+	}
+
+	if opts.Marker != nil {
+		if err := validateSign(*opts.Marker, "marker"); err != nil {
+			return err
+		}
+	}
+
+	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
+		return errors.New("--height option is currently not supported on this platform")
+	}
+
+	if opts.Scrollbar != nil {
+		runes := []rune(*opts.Scrollbar)
+		if len(runes) > 2 {
+			return errors.New("--scrollbar should be given one or two characters")
+		}
+		for _, r := range runes {
+			if uniseg.StringWidth(string(r)) != 1 {
+				return errors.New("scrollbar display width should be 1")
+			}
+		}
+	}
+
+	if opts.Height.auto {
+		for _, s := range []sizeSpec{opts.Margin[0], opts.Margin[2]} {
+			if s.percent {
+				return errors.New("adaptive height is not compatible with top/bottom percent margin")
+			}
+		}
+		for _, s := range []sizeSpec{opts.Padding[0], opts.Padding[2]} {
+			if s.percent {
+				return errors.New("adaptive height is not compatible with top/bottom percent padding")
+			}
+		}
+	}
+
+	return nil
+}
+
 // This function can have side-effects and alter some global states.
 // So we run it on fzf.Run and not on ParseOptions.
 func postProcessOptions(opts *Options) error {
@@ -2642,30 +2687,6 @@ func postProcessOptions(opts *Options) error {
 			defaultMarker = ">"
 		}
 		opts.Marker = &defaultMarker
-	}
-
-	if err := validateSign(*opts.Pointer, "pointer"); err != nil {
-		return err
-	}
-
-	if err := validateSign(*opts.Marker, "marker"); err != nil {
-		return err
-	}
-
-	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
-		return errors.New("--height option is currently not supported on this platform")
-	}
-
-	if opts.Scrollbar != nil {
-		runes := []rune(*opts.Scrollbar)
-		if len(runes) > 2 {
-			return errors.New("--scrollbar should be given one or two characters")
-		}
-		for _, r := range runes {
-			if uniseg.StringWidth(string(r)) != 1 {
-				return errors.New("scrollbar display width should be 1")
-			}
-		}
 	}
 
 	// Default actions for CTRL-N / CTRL-P when --history is set
@@ -2714,19 +2735,6 @@ func postProcessOptions(opts *Options) error {
 		opts.Keymap[tui.DoubleClick.AsEvent()] = opts.Keymap[tui.CtrlM.AsEvent()]
 	}
 
-	if opts.Height.auto {
-		for _, s := range []sizeSpec{opts.Margin[0], opts.Margin[2]} {
-			if s.percent {
-				return errors.New("adaptive height is not compatible with top/bottom percent margin")
-			}
-		}
-		for _, s := range []sizeSpec{opts.Padding[0], opts.Padding[2]} {
-			if s.percent {
-				return errors.New("adaptive height is not compatible with top/bottom percent padding")
-			}
-		}
-	}
-
 	// If we're not using extended search mode, --nth option becomes irrelevant
 	// if it contains the whole range
 	if !opts.Extended || len(opts.Nth) == 1 {
@@ -2753,6 +2761,10 @@ func postProcessOptions(opts *Options) error {
 		theme.Input = boldify(theme.Input)
 		theme.Cursor = boldify(theme.Cursor)
 		theme.Spinner = boldify(theme.Spinner)
+	}
+
+	if err := opts.initProfiling(); err != nil {
+		return errors.New("failed to start pprof profiles: " + err.Error())
 	}
 
 	return processScheme(opts)
@@ -2798,8 +2810,9 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		return nil, err
 	}
 
-	if err := opts.initProfiling(); err != nil {
-		return nil, errors.New("failed to start pprof profiles: " + err.Error())
+	// 4. Final validation of merged options
+	if err := validateOptions(opts); err != nil {
+		return nil, err
 	}
 
 	return opts, nil
