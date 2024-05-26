@@ -10,6 +10,12 @@ CHANGELOG
   ```
     - To disable multi-line display, use `--no-multi-line`
 - The default `--pointer` and `--marker` have been changed from `>` to Unicode bar characters as they look better with multi-line items
+- Added `--marker-multi-line` to customize the select marker for multi-line entries with the default set to `╻┃╹`
+  ```
+  ╻First line
+  ┃...
+  ╹Last line
+  ```
 - Native `--tmux` integration to replace fzf-tmux script
   ```sh
   # --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]

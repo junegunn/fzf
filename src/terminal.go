@@ -177,6 +177,15 @@ type fitpad struct {
 
 type labelPrinter func(tui.Window, int)
 
+type markerClass int
+
+const (
+	markerSingle markerClass = iota
+	markerTop
+	markerMiddle
+	markerBottom
+)
+
 type StatusItem struct {
 	Index int    `json:"index"`
 	Text  string `json:"text"`
@@ -218,6 +227,7 @@ type Terminal struct {
 	marker             string
 	markerLen          int
 	markerEmpty        string
+	markerMultiLine    [3]string
 	queryLen           [2]int
 	layout             layoutType
 	fullscreen         bool
@@ -755,6 +765,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		pointerLen:         uniseg.StringWidth(*opts.Pointer),
 		marker:             *opts.Marker,
 		markerLen:          uniseg.StringWidth(*opts.Marker),
+		markerMultiLine:    opts.MarkerMulti,
 		wordRubout:         wordRubout,
 		wordNext:           wordNext,
 		cx:                 len(input),
@@ -1084,7 +1095,8 @@ func (t *Terminal) avgNumLines() int {
 	offset := util.Max(0, util.Min(t.offset, total-maxItems-1))
 	for idx := 0; idx < maxItems && idx+offset < total; idx++ {
 		item := t.merger.Get(idx + offset)
-		numLines += item.item.text.NumLines(maxItems)
+		lines, _ := item.item.text.NumLines(maxItems)
+		numLines += lines
 		count++
 	}
 	if count == 0 {
@@ -1884,7 +1896,7 @@ func (t *Terminal) printHeader() {
 
 		t.printHighlighted(Result{item: item},
 			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
-			func(int) { t.window.Print("  ") }, nil)
+			func(markerClass) { t.window.Print("  ") }, nil)
 	}
 }
 
@@ -1964,7 +1976,8 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		if !t.multiLine {
 			return line
 		}
-		return line + item.text.NumLines(maxLine-line+1) - 1
+		lines, _ := item.text.NumLines(maxLine - line + 1)
+		return line + lines - 1
 	}
 
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
@@ -1992,29 +2005,41 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 
 	var finalLineNum int
+	markerFor := func(markerClass markerClass) string {
+		marker := t.marker
+		switch markerClass {
+		case markerTop:
+			marker = t.markerMultiLine[0]
+		case markerMiddle:
+			marker = t.markerMultiLine[1]
+		case markerBottom:
+			marker = t.markerMultiLine[2]
+		}
+		return marker
+	}
 	if current {
-		preTask := func(lineOffset int) {
+		preTask := func(marker markerClass) {
 			if len(label) == 0 {
 				t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
 			} else {
 				t.window.CPrint(tui.ColCurrentCursor, label)
 			}
 			if selected {
-				t.window.CPrint(tui.ColCurrentMarker, t.marker)
+				t.window.CPrint(tui.ColCurrentMarker, markerFor(marker))
 			} else {
 				t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
 			}
 		}
 		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, line, maxLine, forceRedraw, preTask, postTask)
 	} else {
-		preTask := func(lineOffset int) {
+		preTask := func(marker markerClass) {
 			if len(label) == 0 {
 				t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
 			} else {
 				t.window.CPrint(tui.ColCursor, label)
 			}
 			if selected {
-				t.window.CPrint(tui.ColMarker, t.marker)
+				t.window.CPrint(tui.ColMarker, markerFor(marker))
 			} else {
 				t.window.Print(t.markerEmpty)
 			}
@@ -2070,7 +2095,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(int), postTask func(int, int)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass), postTask func(int, int)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -2096,12 +2121,16 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	finalLineNum := lineNum
 	numItemLines := 1
 	cutoff := 0
-	if t.multiLine && t.layout == layoutDefault {
+	overflow := false
+	topCutoff := false
+	if t.multiLine {
 		maxLines := maxLineNum - lineNum + 1
-		numItemLines = item.text.NumLines(maxLines)
+		numItemLines, overflow = item.text.NumLines(maxLines)
 		// Cut off the upper lines in the 'default' layout
-		if !current && maxLines == numItemLines {
-			cutoff = item.text.NumLines(math.MaxInt32) - maxLines
+		if t.layout == layoutDefault && !current && maxLines == numItemLines && overflow {
+			actualLines, _ := item.text.NumLines(math.MaxInt32)
+			cutoff = actualLines - maxLines
+			topCutoff = true
 		}
 	}
 	for lineOffset := 0; from <= len(text) && (lineNum <= maxLineNum || maxLineNum == 0); lineOffset++ {
@@ -2151,7 +2180,34 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		t.move(actualLineNum, 0, forceRedraw)
 
 		if preTask != nil {
-			preTask(lineOffset)
+			var marker markerClass
+			if numItemLines == 1 {
+				if !overflow {
+					marker = markerSingle
+				} else if topCutoff {
+					marker = markerBottom
+				} else {
+					marker = markerTop
+				}
+			} else {
+				if lineOffset == 0 { // First line
+					if topCutoff {
+						marker = markerMiddle
+					} else {
+						marker = markerTop
+					}
+				} else if lineOffset == numItemLines-1 { // Last line
+					if topCutoff || !overflow {
+						marker = markerBottom
+					} else {
+						marker = markerMiddle
+					}
+				} else {
+					marker = markerMiddle
+				}
+			}
+
+			preTask(marker)
 		}
 
 		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
@@ -4502,7 +4558,7 @@ func (t *Terminal) constrain() {
 			linesSum := 0
 
 			add := func(i int) bool {
-				lines := t.merger.Get(i).item.text.NumLines(numItems - linesSum)
+				lines, _ := t.merger.Get(i).item.text.NumLines(numItems - linesSum)
 				linesSum += lines
 				if linesSum >= numItems {
 					if numItemsFound == 0 {
@@ -4547,13 +4603,14 @@ func (t *Terminal) constrain() {
 					numItems := t.merger.Length()
 					itemLines := 1
 					if t.multiLine && t.cy < numItems {
-						itemLines = t.merger.Get(t.cy).item.text.NumLines(maxLines)
+						itemLines, _ = t.merger.Get(t.cy).item.text.NumLines(maxLines)
 					}
 					linesBefore := t.cy - newOffset
 					if t.multiLine {
 						linesBefore = 0
 						for i := newOffset; i < t.cy && i < numItems; i++ {
-							linesBefore += t.merger.Get(i).item.text.NumLines(maxLines - linesBefore - itemLines)
+							lines, _ := t.merger.Get(i).item.text.NumLines(maxLines - linesBefore - itemLines)
+							linesBefore += lines
 						}
 					}
 					linesAfter := maxLines - (linesBefore + itemLines)

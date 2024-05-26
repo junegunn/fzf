@@ -75,18 +75,18 @@ func (chars *Chars) Bytes() []byte {
 	return chars.slice
 }
 
-func (chars *Chars) NumLines(atMost int) int {
+func (chars *Chars) NumLines(atMost int) (int, bool) {
 	lines := 1
 	if runes := chars.optionalRunes(); runes != nil {
 		for _, r := range runes {
 			if r == '\n' {
 				lines++
 			}
-			if lines >= atMost {
-				return atMost
+			if lines > atMost {
+				return atMost, true
 			}
 		}
-		return lines
+		return lines, false
 	}
 
 	for idx := 0; idx < len(chars.slice); idx++ {
@@ -97,11 +97,11 @@ func (chars *Chars) NumLines(atMost int) int {
 
 		idx += found
 		lines++
-		if lines >= atMost {
-			return atMost
+		if lines > atMost {
+			return atMost, true
 		}
 	}
-	return lines
+	return lines, false
 }
 
 func (chars *Chars) optionalRunes() []rune {
