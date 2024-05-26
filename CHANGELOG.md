@@ -5,7 +5,13 @@ CHANGELOG
 ------
 - fzf can now display multi-line items
   ```sh
-  rg -p bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
+  # All bash functions, highlighted
+  declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
+    bat --plain --language bash --color always |
+    fzf --read0 --ansi --reverse --multi --highlight-line
+
+  # Ripgrep multi-line output
+  rg --pretty bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
     fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
   ```
     - To disable multi-line display, use `--no-multi-line`
