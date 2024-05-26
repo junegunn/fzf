@@ -93,7 +93,7 @@ Usage: fzf [options]
     --no-scrollbar         Hide scrollbar
     --prompt=STR           Input prompt (default: '> ')
     --pointer=STR          Pointer to the current line (default: '▌' or '>')
-    --marker=STR           Multi-select marker (default: '▏' or '>')
+    --marker=STR           Multi-select marker (default: '┃' or '>')
     --header=STR           String to print as header
     --header-lines=N       The first N lines of the input are treated as header
     --header-first         Print header before the prompt line
