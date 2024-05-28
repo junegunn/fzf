@@ -71,8 +71,9 @@ Usage: fzf [options]
                             according to the input size.
     --min-height=HEIGHT     Minimum height when --height is given in percent
                             (default: 10)
-    --tmux=OPTS             Start fzf in a tmux popup (requires tmux 3.3+)
+    --tmux[=OPTS]           Start fzf in a tmux popup (requires tmux 3.3+)
                             [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+                            (default: center,50%)
     --layout=LAYOUT         Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]        Draw border around the finder
                             [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
@@ -278,9 +279,16 @@ func (o *previewOpts) Toggle() {
 	o.hidden = !o.hidden
 }
 
+func defaultTmuxOptions() *tmuxOptions {
+	return &tmuxOptions{
+		position: posCenter,
+		width:    sizeSpec{50, true},
+		height:   sizeSpec{50, true}}
+}
+
 func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 	var err error
-	opts := tmuxOptions{}
+	opts := defaultTmuxOptions()
 	tokens := splitRegexp.Split(arg, -1)
 	if len(tokens) == 0 || len(tokens) > 3 {
 		return nil, errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
@@ -301,13 +309,7 @@ func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 		opts.position = posRight
 		opts.height = sizeSpec{100, true}
 	case "center":
-		opts.position = posCenter
-		opts.width = sizeSpec{50, true}
-		opts.height = sizeSpec{50, true}
 	default:
-		opts.position = posCenter
-		opts.width = sizeSpec{50, true}
-		opts.height = sizeSpec{50, true}
 		tokens = append([]string{"center"}, tokens...)
 	}
 
@@ -343,7 +345,7 @@ func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 		}
 	}
 
-	return &opts, nil
+	return opts, nil
 }
 
 func parseLabelPosition(opts *labelOpts, arg string) error {
@@ -1941,12 +1943,13 @@ func parseOptions(opts *Options, allArgs []string) error {
 		case "--no-winpty":
 			opts.NoWinpty = true
 		case "--tmux":
-			str, err := nextString(allArgs, &i, "tmux options required")
-			if err != nil {
-				return err
-			}
-			if opts.Tmux, err = parseTmuxOptions(str); err != nil {
-				return err
+			given, str := optionalNextString(allArgs, &i)
+			if given {
+				if opts.Tmux, err = parseTmuxOptions(str); err != nil {
+					return err
+				}
+			} else {
+				opts.Tmux = defaultTmuxOptions()
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
