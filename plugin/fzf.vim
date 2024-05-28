@@ -330,7 +330,7 @@ function! s:common_sink(action, lines) abort
       if has('win32unix') && item !~ '/'
         let item = substitute(item, '\', '/', 'g')
       end
-      if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
+      if item[0] != '~' && item !~ (s:is_win ? '^\([A-Z]:\)\?\' : '^/')
         let sep = s:is_win ? '\' : '/'
         let item = join([cwd, item], cwd[len(cwd)-1] == sep ? '' : sep)
       endif
