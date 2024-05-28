@@ -59,8 +59,8 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 	}()
 
 	var command string
-	commandPrefix += ` --proxy-script "$0"`
-	if opts.Input == nil && util.IsTty(os.Stdin) {
+	commandPrefix += ` --no-force-tty-in --proxy-script "$0"`
+	if opts.Input == nil && (opts.ForceTtyIn || util.IsTty(os.Stdin)) {
 		command = fmt.Sprintf(`%s > %q`, commandPrefix, output)
 	} else {
 		input, err := fifo("proxy-input")

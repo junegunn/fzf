@@ -396,6 +396,7 @@ type Options struct {
 	Output       chan string
 	NoWinpty     bool
 	Tmux         *tmuxOptions
+	ForceTtyIn   bool
 	ProxyScript  string
 	Bash         bool
 	Zsh          bool
@@ -1949,6 +1950,12 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
+		case "--force-tty-in":
+			// NOTE: We need this because `system('fzf --tmux < /dev/tty')` doesn't
+			// work on Neovim. Same as '-' option of fzf-tmux.
+			opts.ForceTtyIn = true
+		case "--no-force-tty-in":
+			opts.ForceTtyIn = false
 		case "--proxy-script":
 			if opts.ProxyScript, err = nextString(allArgs, &i, ""); err != nil {
 				return err

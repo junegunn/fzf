@@ -592,7 +592,7 @@ function! s:fzf_tmux(dict)
   end
 
   " Using native --tmux option
-  let in = (has_key(a:dict, 'source') ? '' : ' < /dev/tty')
+  let in = (has_key(a:dict, 'source') ? '' : ' --force-tty-in')
   return printf('%s --tmux %s%s', fzf#shellescape(fzf#exec()), size, in)
 endfunction
 
