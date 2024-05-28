@@ -327,7 +327,7 @@ function! s:common_sink(action, lines) abort
     " the execution (e.g. `set autochdir` or `autocmd BufEnter * lcd ...`)
     let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
     for item in a:lines
-      if item[0] != '~' && item !~ (s:is_win ? '^[A-Z]:\' : '^/')
+      if item[0] != '~' && item !~ (s:is_win ? '^\([A-Z]:\)\?\' : '^/')
         let sep = s:is_win ? '\' : '/'
         let item = join([cwd, item], cwd[len(cwd)-1] == sep ? '' : sep)
       endif
