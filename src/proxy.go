@@ -103,6 +103,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 	defer os.Remove(temp)
 
 	cmd := cmdBuilder(temp)
+	cmd.Stderr = os.Stderr
 	intChan := make(chan os.Signal, 1)
 	defer close(intChan)
 	go func() {
