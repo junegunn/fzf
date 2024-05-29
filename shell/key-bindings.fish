@@ -69,8 +69,13 @@ function fzf_key_bindings
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-        history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
-        and commandline -- $result
+        if type -q perl
+          history -z --reverse | perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | sed 's/^[0-9]*\t//' | read -lz result
+          and commandline -- $result
+        else
+          history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
+          and commandline -- $result
+        end
       else
         history | eval (__fzfcmd) -q '(commandline)' | read -l result
         and commandline -- $result
