@@ -57,7 +57,12 @@ if [[ $KITTY_WINDOW_ID ]]; then
 
 # 2. Use chafa with Sixel output
 elif command -v chafa > /dev/null; then
-  chafa -f sixel -s "$dim" "$file"
+  # Alacritty doesn't support sixels
+  if [[ $ALACRITTY_WINDOW_ID ]]; then
+    chafa --colors 256 -s "$dim" "$file"
+  else
+    chafa -f sixel -s "$dim" "$file"
+  fi  
   # Add a new line character so that fzf can display multiple images in the preview window
   echo
 
