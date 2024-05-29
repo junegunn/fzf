@@ -59,7 +59,7 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort $FZF_CTRL_R_OPTS +m")
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
       set -lx FZF_DEFAULT_OPTS_FILE ''
 
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
