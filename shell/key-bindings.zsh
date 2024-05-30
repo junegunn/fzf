@@ -122,10 +122,10 @@ fzf-history-widget() {
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   fi
   local ret=$?
-  if (( ${#selected} ));then
+  if [ -n "$selected" ]; then
     num=$(awk '/^[[:blank:]]*[1-9][0-9]*\*?[[:blank:]]+/ {print $1}' <<< "$selected")
     if (( ${#num} )); then
-      zle vi-fetch-history -n $num
+      zle vi-fetch-history -n ${num%\*}
     else # selected is a custom query, not from history
       LBUFFER="$selected"
     fi
