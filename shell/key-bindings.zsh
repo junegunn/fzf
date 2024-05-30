@@ -108,10 +108,9 @@ fi
 fzf-history-widget() {
   local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
-  # ensure the associative history array that maps event numbers to the full
-  # history lines is loaded and perl is installed
+  # Ensure the associative history array, which maps event numbers to the full
+  # history lines, is loaded, and that Perl is installed for multi-line output.
   if zmodload -F zsh/parameter p:history 2>/dev/null && (( ${#commands[perl]} )); then
-    # Multiline mode
     selected="$(printf '%1$s\t%2$s\000' "${(vk)history[@]}" |
       perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\s+(.*)/, $1)}++) { s/\n/\n\t/gm; print; }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
@@ -125,7 +124,9 @@ fzf-history-widget() {
   if [ -n "$selected" ]; then
     num=$(awk '/^[[:blank:]]*[1-9][0-9]*\*?[[:blank:]]+/ {print $1}' <<< "$selected")
     if (( ${#num} )); then
-      zle vi-fetch-history -n ${num%\*}
+      # zsh utilizes the 'atoi' function to convert a string into an integer
+      # https://github.com/junegunn/fzf/issues/3591#issuecomment-1902090700
+      zle vi-fetch-history -n $num
     else # selected is a custom query, not from history
       LBUFFER="$selected"
     fi
