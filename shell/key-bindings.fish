@@ -70,7 +70,7 @@ function fzf_key_bindings
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
         if type -q perl
-          history -z --reverse | perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | sed 's/^[0-9]*\t//' | read -lz result
+          history -z --reverse | perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | perl -pe 's/^\d*\t//' | read -lz result
           and commandline -- $result
         else
           history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
