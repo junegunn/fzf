@@ -106,7 +106,7 @@ fi
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
-  local selected num ret
+  local selected num
   setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
   # ensure the associative history array that maps event numbers to the full
   # history lines is loaded and perl is installed
@@ -116,15 +116,14 @@ fzf-history-widget() {
       perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\s+(.*)/, $1)}++) { s/\n/\n\t/gm; print; }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
-    ret=$?
   else
     selected="$(fc -rl 1 | awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m") \
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
-    ret=$?
   fi
+  local ret=$?
   if (( ${#selected} ));then
-    num=$(awk '/^[[:blank:]]*[0-9]++\*?[[:blank:]]+/ {print $1}' <<< "$selected")
+    num=$(awk '/^[[:blank:]]*[1-9][0-9]*\*?[[:blank:]]+/ {print $1}' <<< "$selected")
     if (( ${#num} )); then
       zle vi-fetch-history -n $num
     else # selected is a custom query, not from history
