@@ -292,7 +292,7 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 
 func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 	var remaining string
-	i := -1
+	var i int
 	if delimiter == 0 {
 		// Faster than strings.IndexAny(";:")
 		i = strings.IndexByte(s, ';')
@@ -312,7 +312,7 @@ func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 		// Inlined version of strconv.Atoi() that only handles positive
 		// integers and does not allocate on error.
 		code := 0
-		for _, ch := range sbytes(s) {
+		for _, ch := range stringBytes(s) {
 			ch -= '0'
 			if ch > 9 {
 				return -1, delimiter, remaining
@@ -350,7 +350,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	state256 := 0
 	ptr := &state.fg
 
-	var delimiter byte = 0
+	var delimiter byte
 	count := 0
 	for len(ansiCode) != 0 {
 		var num int

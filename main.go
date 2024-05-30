@@ -3,14 +3,15 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"strings"
 
 	fzf "github.com/junegunn/fzf/src"
 	"github.com/junegunn/fzf/src/protector"
 )
 
-var version string = "0.50"
-var revision string = "devel"
+var version = "0.52"
+var revision = "devel"
 
 //go:embed shell/key-bindings.bash
 var bashKeyBindings []byte
@@ -33,9 +34,21 @@ func printScript(label string, content []byte) {
 	fmt.Println("### end: " + label + " ###")
 }
 
+func exit(code int, err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+	}
+	os.Exit(code)
+}
+
 func main() {
 	protector.Protect()
-	options := fzf.ParseOptions()
+
+	options, err := fzf.ParseOptions(true, os.Args[1:])
+	if err != nil {
+		exit(fzf.ExitError, err)
+		return
+	}
 	if options.Bash {
 		printScript("key-bindings.bash", bashKeyBindings)
 		printScript("completion.bash", bashCompletion)
@@ -51,5 +64,19 @@ func main() {
 		fmt.Println("fzf_key_bindings")
 		return
 	}
-	fzf.Run(options, version, revision)
+	if options.Help {
+		fmt.Print(fzf.Usage)
+		return
+	}
+	if options.Version {
+		if len(revision) > 0 {
+			fmt.Printf("%s (%s)\n", version, revision)
+		} else {
+			fmt.Println(version)
+		}
+		return
+	}
+
+	code, err := fzf.Run(options)
+	exit(code, err)
 }

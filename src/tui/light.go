@@ -2,6 +2,7 @@ package tui
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/junegunn/fzf/src/util"
 	"github.com/rivo/uniseg"
 
 	"golang.org/x/term"
@@ -27,8 +29,8 @@ const (
 
 const consoleDevice string = "/dev/tty"
 
-var offsetRegexp *regexp.Regexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
-var offsetRegexpBegin *regexp.Regexp = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
+var offsetRegexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
+var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
@@ -71,13 +73,14 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		fmt.Fprint(os.Stderr, "\x1b[?7l\x1b[?25l"+r.queued.String()+"\x1b[?25h\x1b[?7h")
+		fmt.Fprint(r.ttyout, "\x1b[?7l\x1b[?25l"+r.queued.String()+"\x1b[?25h\x1b[?7h")
 		r.queued.Reset()
 	}
 }
 
 // Light renderer
 type LightRenderer struct {
+	closed        *util.AtomicBool
 	theme         *ColorTheme
 	mouse         bool
 	forceBlack    bool
@@ -85,6 +88,7 @@ type LightRenderer struct {
 	prevDownTime  time.Time
 	clicks        [][2]int
 	ttyin         *os.File
+	ttyout        *os.File
 	buffer        []byte
 	origState     *term.State
 	width         int
@@ -123,19 +127,29 @@ type LightWindow struct {
 	bg       Color
 }
 
-func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) Renderer {
+func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
+	in, err := openTtyIn()
+	if err != nil {
+		return nil, err
+	}
+	out, err := openTtyOut()
+	if err != nil {
+		out = os.Stderr
+	}
 	r := LightRenderer{
+		closed:        util.NewAtomicBool(false),
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		clearOnExit:   clearOnExit,
-		ttyin:         openTtyIn(),
+		ttyin:         in,
+		ttyout:        out,
 		yoffset:       0,
 		tabstop:       tabstop,
 		fullscreen:    fullscreen,
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
-	return &r
+	return &r, nil
 }
 
 func repeat(r rune, times int) string {
@@ -153,11 +167,11 @@ func atoi(s string, defaultValue int) int {
 	return value
 }
 
-func (r *LightRenderer) Init() {
+func (r *LightRenderer) Init() error {
 	r.escDelay = atoi(os.Getenv("ESCDELAY"), defaultEscDelay)
 
 	if err := r.initPlatform(); err != nil {
-		errorExit(err.Error())
+		return err
 	}
 	r.updateTerminalSize()
 	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
@@ -195,6 +209,7 @@ func (r *LightRenderer) Init() {
 	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
 	}
+	return nil
 }
 
 func (r *LightRenderer) Resize(maxHeightFunc func(int) int) {
@@ -233,15 +248,16 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) getBytes() []byte {
-	return r.getBytesInternal(r.buffer, false)
+func (r *LightRenderer) getBytes() ([]byte, error) {
+	bytes, err := r.getBytesInternal(r.buffer, false)
+	return bytes, err
 }
 
-func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
+func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, error) {
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		errorExit("Failed to read " + consoleDevice)
+		return nil, errors.New("failed to read " + consoleDevice)
 	}
 
 	retries := 0
@@ -272,19 +288,23 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 		// so terminate fzf immediately.
 		if len(buffer) > maxInputBuffer {
 			r.Close()
-			panic(fmt.Sprintf("Input buffer overflow (%d): %v", len(buffer), buffer))
+			return nil, fmt.Errorf("input buffer overflow (%d): %v", len(buffer), buffer)
 		}
 	}
 
-	return buffer
+	return buffer, nil
 }
 
 func (r *LightRenderer) GetChar() Event {
+	var err error
 	if len(r.buffer) == 0 {
-		r.buffer = r.getBytes()
+		r.buffer, err = r.getBytes()
+		if err != nil {
+			return Event{Fatal, 0, nil}
+		}
 	}
 	if len(r.buffer) == 0 {
-		panic("Empty buffer")
+		return Event{Fatal, 0, nil}
 	}
 
 	sz := 1
@@ -315,7 +335,9 @@ func (r *LightRenderer) GetChar() Event {
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
-			r.buffer = r.getBytes()
+			if r.buffer, err = r.getBytes(); err != nil {
+				return Event{Fatal, 0, nil}
+			}
 			ev = r.escSequence(&sz)
 		}
 		return ev
@@ -738,6 +760,7 @@ func (r *LightRenderer) Close() {
 	r.flush()
 	r.closePlatform()
 	r.restoreTerminal()
+	r.closed.Set(true)
 }
 
 func (r *LightRenderer) Top() int {
@@ -821,44 +844,32 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
-	pad := repeat(' ', w.width/hw)
-
-	w.Move(0, 0)
 	if top {
+		w.Move(0, 0)
 		w.CPrint(color, repeat(w.border.top, w.width/hw))
-	} else {
-		w.CPrint(color, pad)
 	}
 
-	for y := 1; y < w.height-1; y++ {
-		w.Move(y, 0)
-		w.CPrint(color, pad)
-	}
-
-	w.Move(w.height-1, 0)
 	if bottom {
+		w.Move(w.height-1, 0)
 		w.CPrint(color, repeat(w.border.bottom, w.width/hw))
-	} else {
-		w.CPrint(color, pad)
 	}
 }
 
 func (w *LightWindow) drawBorderVertical(left, right bool) {
-	width := w.width - 2
-	if !left || !right {
-		width++
-	}
+	vw := runeWidth(w.border.left)
 	color := ColBorder
 	if w.preview {
 		color = ColPreviewBorder
 	}
 	for y := 0; y < w.height; y++ {
-		w.Move(y, 0)
 		if left {
+			w.Move(y, 0)
 			w.CPrint(color, string(w.border.left))
+			w.CPrint(color, " ") // Margin
 		}
-		w.CPrint(color, repeat(' ', width))
 		if right {
+			w.Move(y, w.width-vw-1)
+			w.CPrint(color, " ") // Margin
 			w.CPrint(color, string(w.border.right))
 		}
 	}
@@ -880,7 +891,10 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 		for y := 1; y < w.height-1; y++ {
 			w.Move(y, 0)
 			w.CPrint(color, string(w.border.left))
-			w.CPrint(color, repeat(' ', w.width-vw*2))
+			w.CPrint(color, " ") // Margin
+
+			w.Move(y, w.width-vw-1)
+			w.CPrint(color, " ") // Margin
 			w.CPrint(color, string(w.border.right))
 		}
 	}
@@ -1011,7 +1025,7 @@ func (w *LightWindow) Print(text string) {
 }
 
 func cleanse(str string) string {
-	return strings.Replace(str, "\x1b", "", -1)
+	return strings.ReplaceAll(str, "\x1b", "")
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, text string) {

@@ -1,6 +1,6 @@
 SHELL          := bash
 GO             ?= go
-GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
+GOOS           ?= $(shell $(GO) env GOOS)
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
@@ -79,7 +79,6 @@ all: target/$(BINARY)
 test: $(SOURCES)
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
-				github.com/junegunn/fzf \
 				github.com/junegunn/fzf/src \
 				github.com/junegunn/fzf/src/algo \
 				github.com/junegunn/fzf/src/tui \

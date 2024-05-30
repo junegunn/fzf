@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2024" "fzf 0.50.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "May 2024" "fzf 0.52.1" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -46,10 +46,10 @@ it with \fB+x\fR or \fB--no-extended\fR.
 .B "-e, --exact"
 Enable exact-match
 .TP
-.B "-i"
+.B "-i, --ignore-case"
 Case-insensitive match (default: smart-case match)
 .TP
-.B "+i"
+.B "+i, --no-ignore-case"
 Case-sensitive match
 .TP
 .B "--literal"
@@ -464,14 +464,17 @@ color mappings.
 
 .B COLOR NAMES:
     \fBfg                  \fRText
+      \fBselected-fg       \fRSelected line text
       \fBpreview-fg        \fRPreview window text
     \fBbg                  \fRBackground
+      \fBselected-bg       \fRSelected line background
       \fBpreview-bg        \fRPreview window background
     \fBhl                  \fRHighlighted substrings
-    \fBfg+                 \fRText (current line)
-    \fBbg+                 \fRBackground (current line)
+      \fBselected-hl       \fRHighlighted substrings in the selected line
+    \fBcurrent-fg (fg+)    \fRText (current line)
+    \fBcurrent-bg (bg+)    \fRBackground (current line)
       \fBgutter            \fRGutter on the left
-    \fBhl+                 \fRHighlighted substrings (current line)
+    \fBcurrent-hl (hl+)    \fRHighlighted substrings (current line)
     \fBquery               \fRQuery string
       \fBdisabled          \fRQuery string when search is disabled (\fB--disabled\fR)
     \fBinfo                \fRInfo line (match counters)
@@ -533,6 +536,9 @@ color mappings.
          --color='hl:#719872,fg:#D9D9D9,header:#719872,fg+:#D9D9D9' \\
          --color='pointer:#E12672,marker:#E17899,prompt:#98BEDE,hl+:#98BC99'\fR
 .RE
+.TP
+.B "--highlight-line"
+Highlight the whole current line
 .TP
 .B "--no-bold"
 Do not use bold text
@@ -821,7 +827,7 @@ e.g. \fBfzf --multi | fzf --sync\fR
 .B "--with-shell=STR"
 Shell command and flags to start child processes with. On *nix Systems, the
 default value is \fB$SHELL -c\fR if \fB$SHELL\fR is set, otherwise \fBsh -c\fR.
-On Windows, the default value is \fBcmd /v:on/s/c\fR when \fB$SHELL\fR is not
+On Windows, the default value is \fBcmd /s/c\fR when \fB$SHELL\fR is not
 set.
 
 .RS
@@ -905,7 +911,7 @@ e.g. \fBeval "$(fzf --bash)"\fR
 .B "--zsh"
 Print script to set up Zsh shell integration
 
-e.g. \fBeval "$(fzf --zsh)"\fR
+e.g. \fBsource <(fzf --zsh)\fR
 
 .TP
 .B "--fish"
@@ -1276,6 +1282,15 @@ Triggered when \fBjump\fR mode is cancelled.
 
 e.g.
      \fBfzf --bind space:jump,jump:accept,jump-cancel:abort\fR
+.RE
+
+\fIclick-header\fR
+.RS
+Triggered when a mouse click occurs within the header. Sets \fBFZF_CLICK_HEADER_LINE\fR and \fBFZF_CLICK_HEADER_COLUMN\fR environment variables starting from 1.
+
+e.g.
+     \fBprintf "head1\\nhead2" | fzf --header-lines=2 --bind 'click-header:transform-prompt:printf ${FZF_CLICK_HEADER_LINE}x${FZF_CLICK_HEADER_COLUMN}'\fR
+
 .RE
 
 .SS AVAILABLE ACTIONS:

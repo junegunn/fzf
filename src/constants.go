@@ -67,9 +67,9 @@ const (
 )
 
 const (
-	exitCancel    = -1
-	exitOk        = 0
-	exitNoMatch   = 1
-	exitError     = 2
-	exitInterrupt = 130
+	ExitCancel    = -1
+	ExitOk        = 0
+	ExitNoMatch   = 1
+	ExitError     = 2
+	ExitInterrupt = 130
 )

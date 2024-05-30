@@ -86,18 +86,34 @@ func (r *Reader) terminate() {
 	r.mutex.Unlock()
 }
 
-func (r *Reader) restart(command string, environ []string) {
+func (r *Reader) restart(command commandSpec, environ []string) {
 	r.event = int32(EvtReady)
 	r.startEventPoller()
-	success := r.readFromCommand(command, environ)
+	success := r.readFromCommand(command.command, environ)
 	r.fin(success)
+	removeFiles(command.tempFiles)
+}
+
+func (r *Reader) readChannel(inputChan chan string) bool {
+	for {
+		item, more := <-inputChan
+		if !more {
+			break
+		}
+		if r.pusher([]byte(item)) {
+			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		}
+	}
+	return true
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(root string, opts walkerOpts, ignores []string) {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string) {
 	r.startEventPoller()
 	var success bool
-	if util.IsTty() {
+	if inputChan != nil {
+		success = r.readChannel(inputChan)
+	} else if util.IsTty() {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			success = r.readFiles(root, opts, ignores)

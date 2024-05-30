@@ -152,7 +152,7 @@ var (
 	// Extra bonus for word boundary after slash, colon, semi-colon, and comma
 	bonusBoundaryDelimiter int16 = bonusBoundary + 1
 
-	initialCharClass charClass = charWhite
+	initialCharClass = charWhite
 
 	// A minor optimization that can give 15%+ performance boost
 	asciiCharClasses [unicode.MaxASCII + 1]charClass

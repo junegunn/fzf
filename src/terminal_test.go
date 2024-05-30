@@ -13,7 +13,7 @@ import (
 )
 
 func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
-	return replacePlaceholder(replacePlaceholderParams{
+	replaced, _ := replacePlaceholder(replacePlaceholderParams{
 		template:   template,
 		stripAnsi:  stripAnsi,
 		delimiter:  delimiter,
@@ -25,6 +25,7 @@ func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter
 		prompt:     "prompt",
 		executor:   util.NewExecutor(""),
 	})
+	return replaced
 }
 
 func TestReplacePlaceholder(t *testing.T) {
@@ -319,9 +320,9 @@ func TestUnixCommands(t *testing.T) {
 
 // purpose of this test is to demonstrate some shortcomings of fzf's templating system on Windows
 func TestWindowsCommands(t *testing.T) {
-	if !util.IsWindows() {
-		t.SkipNow()
-	}
+	// XXX Deprecated
+	t.SkipNow()
+
 	tests := []testCase{
 		// reference: give{template, query, items}, want{output OR match}
 

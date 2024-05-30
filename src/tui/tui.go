@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -104,6 +102,7 @@ const (
 	CtrlAlt
 
 	Invalid
+	Fatal
 
 	Mouse
 	DoubleClick
@@ -130,6 +129,7 @@ const (
 	Result
 	Jump
 	JumpCancel
+	ClickHeader
 )
 
 func (t EventType) AsEvent() Event {
@@ -303,6 +303,9 @@ type ColorTheme struct {
 	Disabled         ColorAttr
 	Fg               ColorAttr
 	Bg               ColorAttr
+	SelectedFg       ColorAttr
+	SelectedBg       ColorAttr
+	SelectedMatch    ColorAttr
 	PreviewFg        ColorAttr
 	PreviewBg        ColorAttr
 	DarkBg           ColorAttr
@@ -314,7 +317,7 @@ type ColorTheme struct {
 	Spinner          ColorAttr
 	Info             ColorAttr
 	Cursor           ColorAttr
-	Selected         ColorAttr
+	Marker           ColorAttr
 	Header           ColorAttr
 	Separator        ColorAttr
 	Scrollbar        ColorAttr
@@ -367,6 +370,14 @@ const (
 	BorderLeft
 	BorderRight
 )
+
+func (s BorderShape) HasLeft() bool {
+	switch s {
+	case BorderNone, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
+		return false
+	}
+	return true
+}
 
 func (s BorderShape) HasRight() bool {
 	switch s {
@@ -516,7 +527,7 @@ type TermSize struct {
 }
 
 type Renderer interface {
-	Init()
+	Init() error
 	Resize(maxHeightFunc func(int) int)
 	Pause(clear bool)
 	Resume(clear bool, sigcont bool)
@@ -595,12 +606,14 @@ var (
 	ColMatch                ColorPair
 	ColCursor               ColorPair
 	ColCursorEmpty          ColorPair
+	ColMarker               ColorPair
 	ColSelected             ColorPair
+	ColSelectedMatch        ColorPair
 	ColCurrent              ColorPair
 	ColCurrentMatch         ColorPair
 	ColCurrentCursor        ColorPair
 	ColCurrentCursorEmpty   ColorPair
-	ColCurrentSelected      ColorPair
+	ColCurrentMarker        ColorPair
 	ColCurrentSelectedEmpty ColorPair
 	ColSpinner              ColorPair
 	ColInfo                 ColorPair
@@ -622,6 +635,9 @@ func EmptyTheme() *ColorTheme {
 		Input:            ColorAttr{colUndefined, AttrUndefined},
 		Fg:               ColorAttr{colUndefined, AttrUndefined},
 		Bg:               ColorAttr{colUndefined, AttrUndefined},
+		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
+		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
+		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
 		DarkBg:           ColorAttr{colUndefined, AttrUndefined},
 		Prompt:           ColorAttr{colUndefined, AttrUndefined},
 		Match:            ColorAttr{colUndefined, AttrUndefined},
@@ -630,7 +646,7 @@ func EmptyTheme() *ColorTheme {
 		Spinner:          ColorAttr{colUndefined, AttrUndefined},
 		Info:             ColorAttr{colUndefined, AttrUndefined},
 		Cursor:           ColorAttr{colUndefined, AttrUndefined},
-		Selected:         ColorAttr{colUndefined, AttrUndefined},
+		Marker:           ColorAttr{colUndefined, AttrUndefined},
 		Header:           ColorAttr{colUndefined, AttrUndefined},
 		Border:           ColorAttr{colUndefined, AttrUndefined},
 		BorderLabel:      ColorAttr{colUndefined, AttrUndefined},
@@ -652,6 +668,9 @@ func NoColorTheme() *ColorTheme {
 		Input:            ColorAttr{colDefault, AttrUndefined},
 		Fg:               ColorAttr{colDefault, AttrUndefined},
 		Bg:               ColorAttr{colDefault, AttrUndefined},
+		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
 		DarkBg:           ColorAttr{colDefault, AttrUndefined},
 		Prompt:           ColorAttr{colDefault, AttrUndefined},
 		Match:            ColorAttr{colDefault, Underline},
@@ -660,7 +679,7 @@ func NoColorTheme() *ColorTheme {
 		Spinner:          ColorAttr{colDefault, AttrUndefined},
 		Info:             ColorAttr{colDefault, AttrUndefined},
 		Cursor:           ColorAttr{colDefault, AttrUndefined},
-		Selected:         ColorAttr{colDefault, AttrUndefined},
+		Marker:           ColorAttr{colDefault, AttrUndefined},
 		Header:           ColorAttr{colDefault, AttrUndefined},
 		Border:           ColorAttr{colDefault, AttrUndefined},
 		BorderLabel:      ColorAttr{colDefault, AttrUndefined},
@@ -676,17 +695,15 @@ func NoColorTheme() *ColorTheme {
 	}
 }
 
-func errorExit(message string) {
-	fmt.Fprintln(os.Stderr, message)
-	util.Exit(2)
-}
-
 func init() {
 	Default16 = &ColorTheme{
 		Colored:          true,
 		Input:            ColorAttr{colDefault, AttrUndefined},
 		Fg:               ColorAttr{colDefault, AttrUndefined},
 		Bg:               ColorAttr{colDefault, AttrUndefined},
+		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
 		DarkBg:           ColorAttr{colBlack, AttrUndefined},
 		Prompt:           ColorAttr{colBlue, AttrUndefined},
 		Match:            ColorAttr{colGreen, AttrUndefined},
@@ -695,7 +712,7 @@ func init() {
 		Spinner:          ColorAttr{colGreen, AttrUndefined},
 		Info:             ColorAttr{colWhite, AttrUndefined},
 		Cursor:           ColorAttr{colRed, AttrUndefined},
-		Selected:         ColorAttr{colMagenta, AttrUndefined},
+		Marker:           ColorAttr{colMagenta, AttrUndefined},
 		Header:           ColorAttr{colCyan, AttrUndefined},
 		Border:           ColorAttr{colBlack, AttrUndefined},
 		BorderLabel:      ColorAttr{colWhite, AttrUndefined},
@@ -714,6 +731,9 @@ func init() {
 		Input:            ColorAttr{colDefault, AttrUndefined},
 		Fg:               ColorAttr{colDefault, AttrUndefined},
 		Bg:               ColorAttr{colDefault, AttrUndefined},
+		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
 		DarkBg:           ColorAttr{236, AttrUndefined},
 		Prompt:           ColorAttr{110, AttrUndefined},
 		Match:            ColorAttr{108, AttrUndefined},
@@ -722,7 +742,7 @@ func init() {
 		Spinner:          ColorAttr{148, AttrUndefined},
 		Info:             ColorAttr{144, AttrUndefined},
 		Cursor:           ColorAttr{161, AttrUndefined},
-		Selected:         ColorAttr{168, AttrUndefined},
+		Marker:           ColorAttr{168, AttrUndefined},
 		Header:           ColorAttr{109, AttrUndefined},
 		Border:           ColorAttr{59, AttrUndefined},
 		BorderLabel:      ColorAttr{145, AttrUndefined},
@@ -741,6 +761,9 @@ func init() {
 		Input:            ColorAttr{colDefault, AttrUndefined},
 		Fg:               ColorAttr{colDefault, AttrUndefined},
 		Bg:               ColorAttr{colDefault, AttrUndefined},
+		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
+		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
 		DarkBg:           ColorAttr{251, AttrUndefined},
 		Prompt:           ColorAttr{25, AttrUndefined},
 		Match:            ColorAttr{66, AttrUndefined},
@@ -749,7 +772,7 @@ func init() {
 		Spinner:          ColorAttr{65, AttrUndefined},
 		Info:             ColorAttr{101, AttrUndefined},
 		Cursor:           ColorAttr{161, AttrUndefined},
-		Selected:         ColorAttr{168, AttrUndefined},
+		Marker:           ColorAttr{168, AttrUndefined},
 		Header:           ColorAttr{31, AttrUndefined},
 		Border:           ColorAttr{145, AttrUndefined},
 		BorderLabel:      ColorAttr{59, AttrUndefined},
@@ -791,12 +814,15 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Spinner = o(baseTheme.Spinner, theme.Spinner)
 	theme.Info = o(baseTheme.Info, theme.Info)
 	theme.Cursor = o(baseTheme.Cursor, theme.Cursor)
-	theme.Selected = o(baseTheme.Selected, theme.Selected)
+	theme.Marker = o(baseTheme.Marker, theme.Marker)
 	theme.Header = o(baseTheme.Header, theme.Header)
 	theme.Border = o(baseTheme.Border, theme.Border)
 	theme.BorderLabel = o(baseTheme.BorderLabel, theme.BorderLabel)
 
 	// These colors are not defined in the base themes
+	theme.SelectedFg = o(theme.Fg, theme.SelectedFg)
+	theme.SelectedBg = o(theme.Bg, theme.SelectedBg)
+	theme.SelectedMatch = o(theme.CurrentMatch, theme.SelectedMatch)
 	theme.Disabled = o(theme.Input, theme.Disabled)
 	theme.Gutter = o(theme.DarkBg, theme.Gutter)
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
@@ -822,17 +848,23 @@ func initPalette(theme *ColorTheme) {
 
 	ColPrompt = pair(theme.Prompt, theme.Bg)
 	ColNormal = pair(theme.Fg, theme.Bg)
+	ColSelected = pair(theme.SelectedFg, theme.SelectedBg)
 	ColInput = pair(theme.Input, theme.Bg)
 	ColDisabled = pair(theme.Disabled, theme.Bg)
 	ColMatch = pair(theme.Match, theme.Bg)
+	ColSelectedMatch = pair(theme.SelectedMatch, theme.SelectedBg)
 	ColCursor = pair(theme.Cursor, theme.Gutter)
 	ColCursorEmpty = pair(blank, theme.Gutter)
-	ColSelected = pair(theme.Selected, theme.Gutter)
+	if theme.SelectedBg.Color != theme.Bg.Color {
+		ColMarker = pair(theme.Marker, theme.SelectedBg)
+	} else {
+		ColMarker = pair(theme.Marker, theme.Gutter)
+	}
 	ColCurrent = pair(theme.Current, theme.DarkBg)
 	ColCurrentMatch = pair(theme.CurrentMatch, theme.DarkBg)
 	ColCurrentCursor = pair(theme.Cursor, theme.DarkBg)
 	ColCurrentCursorEmpty = pair(blank, theme.DarkBg)
-	ColCurrentSelected = pair(theme.Selected, theme.DarkBg)
+	ColCurrentMarker = pair(theme.Marker, theme.DarkBg)
 	ColCurrentSelectedEmpty = pair(blank, theme.DarkBg)
 	ColSpinner = pair(theme.Spinner, theme.Bg)
 	ColInfo = pair(theme.Info, theme.Bg)

@@ -91,7 +91,7 @@ func withPrefixLengths(tokens []string, begin int) []Token {
 
 	prefixLength := begin
 	for idx := range tokens {
-		chars := util.ToChars(sbytes(tokens[idx]))
+		chars := util.ToChars(stringBytes(tokens[idx]))
 		ret[idx] = Token{&chars, int32(prefixLength)}
 		prefixLength += chars.Length()
 	}
@@ -187,7 +187,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				chars := util.ToChars(sbytes(joinTokens(tokens)))
+				chars := util.ToChars(stringBytes(joinTokens(tokens)))
 				parts = append(parts, &chars)
 			} else {
 				if idx < 0 {

@@ -61,7 +61,7 @@ func (x *Executor) Become(stdin *os.File, environ []string, command string) {
 	shellPath, err := exec.LookPath(x.shell)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fzf (become): %s\n", err.Error())
-		Exit(127)
+		os.Exit(127)
 	}
 	args := append([]string{shellPath}, append(x.args, command)...)
 	SetStdin(stdin)

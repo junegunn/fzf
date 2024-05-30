@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.50.0
+version=0.52.1
 auto_completion=
 key_bindings=
 update_config=2
@@ -115,7 +115,7 @@ link_fzf_in_path() {
 try_curl() {
   command -v curl > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar -xzf -
+    curl -fL $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
@@ -125,7 +125,7 @@ try_curl() {
 try_wget() {
   command -v wget > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    wget -O - $1 | tar -xzf -
+    wget -O - $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
@@ -265,7 +265,11 @@ fi
 EOF
 
   if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
-    echo "eval \"\$(fzf --$shell)\"" >> "$src"
+    if [[ "$shell" = zsh ]]; then
+      echo "source <(fzf --$shell)" >> "$src"
+    else
+      echo "eval \"\$(fzf --$shell)\"" >> "$src"
+    fi
   else
     cat >> "$src" << EOF
 # Auto-completion

@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.zsh
 #
-# - $FZF_TMUX               (default: 0)
-# - $FZF_TMUX_OPTS          (default: '-d 40%')
-# - $FZF_COMPLETION_TRIGGER (default: '**')
-# - $FZF_COMPLETION_OPTS    (default: empty)
+# - $FZF_TMUX                 (default: 0)
+# - $FZF_TMUX_OPTS            (default: empty)
+# - $FZF_COMPLETION_TRIGGER   (default: '**')
+# - $FZF_COMPLETION_OPTS      (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS  (default: empty)
 
 
 # Both branches of the following `if` do the same thing -- define
@@ -166,8 +168,14 @@ __fzf_generic_path_completion() {
         if declare -f "$compgen" > /dev/null; then
           eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover"
         else
-          [[ $compgen =~ dir ]] && walker=dir,follow || walker=file,dir,follow,hidden
-          __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" --walker "$walker" --walker-root="$dir" < /dev/tty
+          if [[ $compgen =~ dir ]]; then
+            walker=dir,follow
+            rest=${FZF_COMPLETION_DIR_OPTS-}
+          else
+            walker=file,dir,follow,hidden
+            rest=${FZF_COMPLETION_PATH_OPTS-}
+          fi
+          __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" --walker "$walker" --walker-root="$dir" ${(Q)${(Z+n+)rest}} < /dev/tty
         fi | while read item; do
           item="${item%$suffix}$suffix"
           echo -n "${(q)item} "

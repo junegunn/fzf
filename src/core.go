@@ -2,10 +2,8 @@
 package fzf
 
 import (
-	"fmt"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -19,29 +17,23 @@ Matcher  -> EvtSearchFin      -> Terminal (update list)
 Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
-func ustring(data []byte) string {
-	return unsafe.String(unsafe.SliceData(data), len(data))
-}
-
-func sbytes(data string) []byte {
-	return unsafe.Slice(unsafe.StringData(data), len(data))
-}
-
 // Run starts fzf
-func Run(opts *Options, version string, revision string) {
+func Run(opts *Options) (int, error) {
+	if err := postProcessOptions(opts); err != nil {
+		return ExitError, err
+	}
+
 	defer util.RunAtExitFuncs()
+
+	// Output channel given
+	if opts.Output != nil {
+		opts.Printer = func(str string) {
+			opts.Output <- str
+		}
+	}
 
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
-
-	if opts.Version {
-		if len(revision) > 0 {
-			fmt.Printf("%s (%s)\n", version, revision)
-		} else {
-			fmt.Println(version)
-		}
-		util.Exit(exitOk)
-	}
 
 	// Event channel
 	eventBox := util.NewEventBox()
@@ -56,16 +48,16 @@ func Run(opts *Options, version string, revision string) {
 		if opts.Theme.Colored {
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				prevLineAnsiState = lineAnsiState
-				trimmed, offsets, newState := extractColor(ustring(data), lineAnsiState, nil)
+				trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
 				lineAnsiState = newState
-				return util.ToChars(sbytes(trimmed)), offsets
+				return util.ToChars(stringBytes(trimmed)), offsets
 			}
 		} else {
 			// When color is disabled but ansi option is given,
 			// we simply strip out ANSI codes from the input
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				trimmed, _, _ := extractColor(ustring(data), nil, nil)
-				return util.ToChars(sbytes(trimmed)), nil
+				trimmed, _, _ := extractColor(byteString(data), nil, nil)
+				return util.ToChars(stringBytes(trimmed)), nil
 			}
 		}
 	}
@@ -77,7 +69,7 @@ func Run(opts *Options, version string, revision string) {
 	if len(opts.WithNth) == 0 {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
-				header = append(header, ustring(data))
+				header = append(header, byteString(data))
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
@@ -88,7 +80,7 @@ func Run(opts *Options, version string, revision string) {
 		})
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
-			tokens := Tokenize(ustring(data), opts.Delimiter)
+			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
@@ -112,7 +104,7 @@ func Run(opts *Options, version string, revision string) {
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
-			item.text, item.colors = ansiProcessor(sbytes(transformed))
+			item.text, item.colors = ansiProcessor(stringBytes(transformed))
 			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
@@ -131,7 +123,7 @@ func Run(opts *Options, version string, revision string) {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
-		go reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 	}
 
 	// Matcher
@@ -147,14 +139,16 @@ func Run(opts *Options, version string, revision string) {
 			forward = true
 		}
 	}
+	cache := NewChunkCache()
+	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
-		return BuildPattern(
+		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
 			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
 	}
 	inputRevision := 0
 	snapshotRevision := 0
-	matcher := NewMatcher(patternBuilder, sort, opts.Tac, eventBox, inputRevision)
+	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
 	if opts.Filter != nil {
@@ -182,7 +176,7 @@ func Run(opts *Options, version string, revision string) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
@@ -197,9 +191,9 @@ func Run(opts *Options, version string, revision string) {
 			}
 		}
 		if found {
-			util.Exit(exitOk)
+			return ExitOk, nil
 		}
-		util.Exit(exitNoMatch)
+		return ExitNoMatch, nil
 	}
 
 	// Synchronous search
@@ -210,9 +204,13 @@ func Run(opts *Options, version string, revision string) {
 
 	// Go interactive
 	go matcher.Loop()
+	defer matcher.Stop()
 
 	// Terminal I/O
-	terminal := NewTerminal(opts, eventBox, executor)
+	terminal, err := NewTerminal(opts, eventBox, executor)
+	if err != nil {
+		return ExitError, err
+	}
 	maxFit := 0 // Maximum number of items that can fit on screen
 	padHeight := 0
 	heightUnknown := opts.Height.auto
@@ -229,7 +227,7 @@ func Run(opts *Options, version string, revision string) {
 	// Event coordination
 	reading := true
 	ticks := 0
-	var nextCommand *string
+	var nextCommand *commandSpec
 	var nextEnviron []string
 	eventBox.Watch(EvtReadNew)
 	total := 0
@@ -250,7 +248,7 @@ func Run(opts *Options, version string, revision string) {
 	useSnapshot := false
 	var snapshot []*Chunk
 	var count int
-	restart := func(command string, environ []string) {
+	restart := func(command commandSpec, environ []string) {
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
@@ -258,6 +256,9 @@ func Run(opts *Options, version string, revision string) {
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command, environ)
 	}
+
+	exitCode := ExitOk
+	stop := false
 	for {
 		delay := true
 		ticks++
@@ -278,7 +279,11 @@ func Run(opts *Options, version string, revision string) {
 					if reading {
 						reader.terminate()
 					}
-					util.Exit(value.(int))
+					quitSignal := value.(quitSignal)
+					exitCode = quitSignal.code
+					err = quitSignal.err
+					stop = true
+					return
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand, nextEnviron)
@@ -309,7 +314,7 @@ func Run(opts *Options, version string, revision string) {
 					matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
 
 				case EvtSearchNew:
-					var command *string
+					var command *commandSpec
 					var environ []string
 					var changed bool
 					switch val := value.(type) {
@@ -378,10 +383,11 @@ func Run(opts *Options, version string, revision string) {
 									for i := 0; i < count; i++ {
 										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
 									}
-									if count > 0 {
-										util.Exit(exitOk)
+									if count == 0 {
+										exitCode = ExitNoMatch
 									}
-									util.Exit(exitNoMatch)
+									stop = true
+									return
 								}
 								determine(val.final)
 							}
@@ -392,6 +398,9 @@ func Run(opts *Options, version string, revision string) {
 			}
 			events.Clear()
 		})
+		if stop {
+			break
+		}
 		if delay && reading {
 			dur := util.DurWithin(
 				time.Duration(ticks)*coordinatorDelayStep,
@@ -399,4 +408,5 @@ func Run(opts *Options, version string, revision string) {
 			time.Sleep(dur)
 		}
 	}
+	return exitCode, err
 }

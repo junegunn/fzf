@@ -1,6 +1,39 @@
 CHANGELOG
 =========
 
+0.52.1
+------
+- Fixed a critical bug in the Windows version
+    - Windows users are strongly encouraged to upgrade to this version
+
+0.52.0
+------
+- Added `--highlight-line` to highlight the whole current line (à la `set cursorline` of Vim)
+- Added color names for selected lines: `selected-fg`, `selected-bg`, and `selected-hl`
+  ```sh
+  fzf --border --multi --info inline-right --layout reverse --marker ▏ --pointer ▌ --prompt '▌ '  \
+      --highlight-line --color gutter:-1,selected-bg:238,selected-fg:146,current-fg:189
+  ```
+- Added `click-header` event that is triggered when the header section is clicked. When the event is triggered, `$FZF_CLICK_HEADER_COLUMN` and `$FZF_CLICK_HEADER_LINE` are set.
+  ```sh
+  fd --type f |
+    fzf --header $'[Files] [Directories]' --header-first \
+        --bind 'click-header:transform:
+          (( FZF_CLICK_HEADER_COLUMN <= 7 )) && echo "reload(fd --type f)"
+          (( FZF_CLICK_HEADER_COLUMN >= 9 )) && echo "reload(fd --type d)"
+        '
+  ```
+- Add `$FZF_COMPLETION_{DIR,PATH}_OPTS` for separately customizing the behavior of fuzzy completion
+  ```sh
+  # Set --walker options without 'follow' not to follow symbolic links
+  FZF_COMPLETION_PATH_OPTS="--walker=file,dir,hidden"
+  FZF_COMPLETION_DIR_OPTS="--walker=dir,hidden"
+  ```
+- Fixed Windows argument escaping
+- Bug fixes and improvements
+- The code was heavily refactored to allow using fzf as a library in Go programs. The API is still experimental and subject to change.
+    - https://gist.github.com/junegunn/193990b65be48a38aac6ac49d5669170
+
 0.51.0
 ------
 - Added a new environment variable `$FZF_POS` exported to the child processes. It's the vertical position of the cursor in the list starting from 1.
@@ -25,8 +58,10 @@ CHANGELOG
     - `change-multi` - enable multi-select mode with no limit
     - `change-multi(NUM)` - enable multi-select mode with a limit
     - `change-multi(0)` - disable multi-select mode
-- `become` action is now supported on Windows
-    - Unlike in *nix, this does not use `execve(2)`. Instead it spawns a new process and waits for it to finish, so the exact behavior may differ.
+- Windows improvements
+    - `become` action is now supported on Windows
+        - Unlike in *nix, this does not use `execve(2)`. Instead it spawns a new process and waits for it to finish, so the exact behavior may differ.
+    - Fixed argument escaping for Windows cmd.exe. No redundant escaping of backslashes.
 - Bug fixes and improvements
 
 0.50.0

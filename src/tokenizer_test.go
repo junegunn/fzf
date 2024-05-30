@@ -71,14 +71,14 @@ func TestTransform(t *testing.T) {
 	{
 		tokens := Tokenize(input, Delimiter{})
 		{
-			ranges := splitNth("1,2,3")
+			ranges, _ := splitNth("1,2,3")
 			tx := Transform(tokens, ranges)
 			if joinTokens(tx) != "abc:  def:  ghi:  " {
 				t.Errorf("%s", tx)
 			}
 		}
 		{
-			ranges := splitNth("1..2,3,2..,1")
+			ranges, _ := splitNth("1..2,3,2..,1")
 			tx := Transform(tokens, ranges)
 			if string(joinTokens(tx)) != "abc:  def:  ghi:  def:  ghi:  jklabc:  " ||
 				len(tx) != 4 ||
@@ -93,7 +93,7 @@ func TestTransform(t *testing.T) {
 	{
 		tokens := Tokenize(input, delimiterRegexp(":"))
 		{
-			ranges := splitNth("1..2,3,2..,1")
+			ranges, _ := splitNth("1..2,3,2..,1")
 			tx := Transform(tokens, ranges)
 			if joinTokens(tx) != "  abc:  def:  ghi:  def:  ghi:  jkl  abc:" ||
 				len(tx) != 4 ||
@@ -108,5 +108,6 @@ func TestTransform(t *testing.T) {
 }
 
 func TestTransformIndexOutOfBounds(t *testing.T) {
-	Transform([]Token{}, splitNth("1"))
+	s, _ := splitNth("1")
+	Transform([]Token{}, s)
 }

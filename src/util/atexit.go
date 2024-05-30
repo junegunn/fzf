@@ -1,7 +1,6 @@
 package util
 
 import (
-	"os"
 	"sync"
 )
 
@@ -25,14 +24,5 @@ func RunAtExitFuncs() {
 	for i := len(fns) - 1; i >= 0; i-- {
 		fns[i]()
 	}
-}
-
-// Exit executes any functions registered with AtExit() then exits the program
-// with os.Exit(code).
-//
-// NOTE: It must be used instead of os.Exit() since calling os.Exit() terminates
-// the program before any of the AtExit functions can run.
-func Exit(code int) {
-	defer os.Exit(code)
-	RunAtExitFuncs()
+	atExitFuncs = nil
 }
