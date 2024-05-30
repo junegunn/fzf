@@ -59,9 +59,6 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
-      set -lx FZF_DEFAULT_OPTS_FILE ''
-
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
 
@@ -69,10 +66,14 @@ function fzf_key_bindings
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-        if type -q perl
-          history -z --reverse | perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | perl -pe 's/^\d*\t//' | read -lz result
+        if type -P perl > /dev/null 2>&1
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS_FILE ''
+          history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
           and commandline -- $result
         else
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS_FILE ''
           history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
           and commandline -- $result
         end
