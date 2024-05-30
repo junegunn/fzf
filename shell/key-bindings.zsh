@@ -122,10 +122,7 @@ fzf-history-widget() {
   fi
   local ret=$?
   if [ -n "$selected" ]; then
-    num=$(awk '/^[[:blank:]]*[1-9][0-9]*\*?[[:blank:]]+/ {print $1}' <<< "$selected")
-    if (( ${#num} )); then
-      # zsh utilizes the 'atoi' function to convert a string into an integer
-      # https://github.com/junegunn/fzf/issues/3591#issuecomment-1902090700
+    if num=$(command awk '{print $1; exit}' <<< "$selected" | command grep -o '^[1-9][0-9]*'); then
       zle vi-fetch-history -n $num
     else # selected is a custom query, not from history
       LBUFFER="$selected"
