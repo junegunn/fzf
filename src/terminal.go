@@ -4550,6 +4550,7 @@ func (t *Terminal) constrain() {
 	maxLines := t.maxItems()
 
 	// May need to try again after adjusting the offset
+	t.offset = util.Max(0, t.offset) // Prevent -1
 	for tries := 0; tries < maxLines; tries++ {
 		numItems := maxLines
 		// How many items can be fit on screen including the current item?
