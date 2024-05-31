@@ -3,39 +3,46 @@ CHANGELOG
 
 0.53.0
 ------
-- fzf can now display multi-line items
-  ```sh
-  # All bash functions, highlighted
-  declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
-    bat --plain --language bash --color always |
-    fzf --read0 --ansi --reverse --multi --highlight-line
+- Multi-line display
+    - fzf can now display multi-line items
+      ```sh
+      # All bash functions, highlighted
+      declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
+        bat --plain --language bash --color always |
+        fzf --read0 --ansi --reverse --multi --highlight-line
 
-  # Ripgrep multi-line output
-  rg --pretty bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
-    fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
-  ```
-    - To disable multi-line display, use `--no-multi-line`
-- The default `--pointer` and `--marker` have been changed from `>` to Unicode bar characters as they look better with multi-line items
-- Added `--marker-multi-line` to customize the select marker for multi-line entries with the default set to `╻┃╹`
-  ```
-  ╻First line
-  ┃...
-  ╹Last line
-  ```
-- Native `--tmux` integration to replace fzf-tmux script
-  ```sh
-  # --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
-  # Center, 90% width and 70% height
-  fzf --tmux 100%,70% --border horizontal --padding 1,2
+      # Ripgrep multi-line output
+      rg --pretty bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
+        fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
+      ```
+        - To disable multi-line display, use `--no-multi-line`
+    - CTRL-R bindings of bash, zsh, and fish have been updated to leverage multi-line display
+    - The default `--pointer` and `--marker` have been changed from `>` to Unicode bar characters as they look better with multi-line items
+    - Added `--marker-multi-line` to customize the select marker for multi-line entries with the default set to `╻┃╹`
+      ```
+      ╻First line
+      ┃...
+      ╹Last line
+      ```
+- Native tmux integration
+    - Added `--tmux` option to replace fzf-tmux script and simplify distribution
+      ```sh
+      # --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+      # Center, 100% width and 70% height
+      fzf --tmux 100%,70% --border horizontal --padding 1,2
 
-  # Left, 30% width
-  fzf --tmux left,30%
+      # Left, 30% width
+      fzf --tmux left,30%
 
-  # Bottom, 50% height
-  fzf --tmux bottom,50%
-  ```
-    - To simplify the implementation, it only uses popups. You need tmux 3.3 or later.
-- fzf now works on Git bash (mintty) out of the box via winpty integration
+      # Bottom, 50% height
+      fzf --tmux bottom,50%
+      ```
+        - To keep the implementation simple, it only uses popups. You need tmux 3.3 or later.
+    - To use `--tmux` in Vim plugin:
+      ```vim
+      let g:fzf_layout = { 'tmux': '100%,70%' }
+      ```
+- (Windows) fzf now works on Git bash (mintty) out of the box via winpty integration
 - man page is now embedded in the binary; `fzf --man` to see it
 - Changed the default `--scroll-off` to 3, as we think it's a better default
 - Process started by `execute` action now directly writes to and reads from `/dev/tty`. Manual `/dev/tty` redirection for interactive programs is no longer required.
