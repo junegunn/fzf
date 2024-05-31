@@ -290,8 +290,9 @@ func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions()
 	tokens := splitRegexp.Split(arg, -1)
+	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
 	if len(tokens) == 0 || len(tokens) > 3 {
-		return nil, errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
+		return nil, errorToReturn
 	}
 
 	// Defaults to 'center'
@@ -317,7 +318,7 @@ func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 	var size1 sizeSpec
 	if len(tokens) > 1 {
 		if size1, err = parseSize(tokens[1], 100, "size"); err != nil {
-			return nil, err
+			return nil, errorToReturn
 		}
 	}
 
@@ -325,7 +326,7 @@ func parseTmuxOptions(arg string) (*tmuxOptions, error) {
 	var size2 sizeSpec
 	if len(tokens) == 3 {
 		if size2, err = parseSize(tokens[2], 100, "size"); err != nil {
-			return nil, err
+			return nil, errorToReturn
 		}
 		opts.width = size1
 		opts.height = size2
