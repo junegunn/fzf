@@ -122,7 +122,7 @@ fzf-history-widget() {
   fi
   local ret=$?
   if [ -n "$selected" ]; then
-    if num=$(command awk '{print $1; exit}' <<< "$selected" | command grep -o '^[1-9][0-9]*'); then
+    if num=$(awk '{print $1; exit}' <<< "$selected" | grep -o '^[1-9][0-9]*'); then
       zle vi-fetch-history -n $num
     else # selected is a custom query, not from history
       LBUFFER="$selected"
