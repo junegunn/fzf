@@ -594,7 +594,7 @@ class TestGoFZF < TestBase
     tmux.send_keys "seq 1 100 | #{fzf('--query 1 --print-query --expect z --bind z:up+up')}", :Enter
     tmux.until { |lines| assert_equal 20, lines.match_count }
     tmux.send_keys('z')
-    assert_equal %w[1 z 11], fzf_output_lines
+    assert_equal %w[1 z 1], fzf_output_lines
   end
 
   def test_expect_print_query

@@ -3608,6 +3608,14 @@ func (t *Terminal) Loop() error {
 		}
 
 		t.mutex.Lock()
+		for key, ret := range t.expect {
+			if keyMatch(key, event) {
+				t.pressed = ret
+				t.reqBox.Set(reqClose, nil)
+				t.mutex.Unlock()
+				return nil
+			}
+		}
 		previousInput := t.input
 		previousCx := t.cx
 		t.lastKey = event.KeyName()
@@ -4458,18 +4466,6 @@ func (t *Terminal) Loop() error {
 				t.lastAction = a.t
 			}
 			return true
-		}
-
-		for key, ret := range t.expect {
-			if keyMatch(key, event) {
-				t.pressed = ret
-				if actions, found := t.keymap[key]; found {
-					doActions(actions)
-				}
-				t.reqBox.Set(reqClose, nil)
-				t.mutex.Unlock()
-				return nil
-			}
 		}
 
 		if t.jumping == jumpDisabled || len(actions) > 0 {

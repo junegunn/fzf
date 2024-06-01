@@ -828,6 +828,14 @@ list.
 e.g.
      \fBfzf --expect=ctrl-v,ctrl-t,alt-s --expect=f1,f2,~,@\fR
 .RE
+
+This option is not compatible with \fB--bind\fR on the same key and will take
+precedence over it. To combine the two, use \fBprint\fR action.
+
+.RS
+e.g.
+     \fBfzf --multi --bind 'enter:print()+accept,ctrl-y:select-all+print(ctrl-y)+accept'\fR
+.RE
 .TP
 .B "--read0"
 Read input delimited by ASCII NUL characters instead of newline characters
