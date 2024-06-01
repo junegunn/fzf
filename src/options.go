@@ -2685,10 +2685,6 @@ func validateOptions(opts *Options) error {
 		}
 	}
 
-	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
-		return errors.New("--height option is currently not supported on this platform")
-	}
-
 	if opts.Scrollbar != nil {
 		runes := []rune(*opts.Scrollbar)
 		if len(runes) > 2 {
@@ -2839,6 +2835,11 @@ func postProcessOptions(opts *Options) error {
 		theme.Input = boldify(theme.Input)
 		theme.Cursor = boldify(theme.Cursor)
 		theme.Spinner = boldify(theme.Spinner)
+	}
+
+	// If --height option is not supported on the platform, just ignore it
+	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
+		opts.Height = heightSpec{}
 	}
 
 	if err := opts.initProfiling(); err != nil {

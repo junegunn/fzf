@@ -24,12 +24,11 @@ func needWinpty(opts *Options) bool {
 		 See: https://github.com/junegunn/fzf/issues/3809
 
 		 "MSYS=enable_pcon" allows fzf to run properly on mintty 3.4.5 or later,
-		 however `--height` option still doesn't work, so let's just disable it.
+		 however `--height` option still doesn't work, and it's going to be ignored.
 
 		 We're not going to worry too much about restoring the original value.
 		*/
 		if strings.Contains(os.Getenv("MSYS"), "enable_pcon") {
-			opts.Height = heightSpec{}
 			return false
 		}
 
