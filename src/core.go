@@ -20,7 +20,7 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 
 // Run starts fzf
 func Run(opts *Options) (int, error) {
-	if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 {
+	if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
 		return runTmux(os.Args, opts)
 	}
 

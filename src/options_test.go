@@ -106,10 +106,11 @@ func TestSplitNth(t *testing.T) {
 }
 
 func TestIrrelevantNth(t *testing.T) {
+	index := 0
 	{
 		opts := defaultOptions()
 		words := []string{"--nth", "..", "-x"}
-		parseOptions(opts, words)
+		parseOptions(&index, opts, words)
 		postProcessOptions(opts)
 		if len(opts.Nth) != 0 {
 			t.Errorf("nth should be empty: %v", opts.Nth)
@@ -118,7 +119,7 @@ func TestIrrelevantNth(t *testing.T) {
 	for _, words := range [][]string{{"--nth", "..,3", "+x"}, {"--nth", "3,1..", "+x"}, {"--nth", "..-1,1", "+x"}} {
 		{
 			opts := defaultOptions()
-			parseOptions(opts, words)
+			parseOptions(&index, opts, words)
 			postProcessOptions(opts)
 			if len(opts.Nth) != 0 {
 				t.Errorf("nth should be empty: %v", opts.Nth)
@@ -127,7 +128,7 @@ func TestIrrelevantNth(t *testing.T) {
 		{
 			opts := defaultOptions()
 			words = append(words, "-x")
-			parseOptions(opts, words)
+			parseOptions(&index, opts, words)
 			postProcessOptions(opts)
 			if len(opts.Nth) != 2 {
 				t.Errorf("nth should not be empty: %v", opts.Nth)
@@ -335,10 +336,11 @@ func TestColorSpec(t *testing.T) {
 }
 
 func TestDefaultCtrlNP(t *testing.T) {
+	index := 0
 	check := func(words []string, et tui.EventType, expected actionType) {
 		e := et.AsEvent()
 		opts := defaultOptions()
-		parseOptions(opts, words)
+		parseOptions(&index, opts, words)
 		postProcessOptions(opts)
 		if opts.Keymap[e][0].t != expected {
 			t.Error()
@@ -364,8 +366,9 @@ func TestDefaultCtrlNP(t *testing.T) {
 }
 
 func optsFor(words ...string) *Options {
+	index := 0
 	opts := defaultOptions()
-	parseOptions(opts, words)
+	parseOptions(&index, opts, words)
 	postProcessOptions(opts)
 	return opts
 }

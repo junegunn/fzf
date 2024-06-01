@@ -190,6 +190,7 @@ type heightSpec struct {
 	percent bool
 	auto    bool
 	inverse bool
+	index   int
 }
 
 type sizeSpec struct {
@@ -230,6 +231,7 @@ type tmuxOptions struct {
 	width    sizeSpec
 	height   sizeSpec
 	position windowPosition
+	index    int
 }
 
 type layoutType int
@@ -279,16 +281,17 @@ func (o *previewOpts) Toggle() {
 	o.hidden = !o.hidden
 }
 
-func defaultTmuxOptions() *tmuxOptions {
+func defaultTmuxOptions(index int) *tmuxOptions {
 	return &tmuxOptions{
 		position: posCenter,
 		width:    sizeSpec{50, true},
-		height:   sizeSpec{50, true}}
+		height:   sizeSpec{50, true},
+		index:    index}
 }
 
-func parseTmuxOptions(arg string) (*tmuxOptions, error) {
+func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
-	opts := defaultTmuxOptions()
+	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
 	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
 	if len(tokens) == 0 || len(tokens) > 3 {
@@ -1635,8 +1638,8 @@ func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
 	return sizeSpec{val, percent}, nil
 }
 
-func parseHeight(str string) (heightSpec, error) {
-	heightSpec := heightSpec{}
+func parseHeight(str string, index int) (heightSpec, error) {
+	heightSpec := heightSpec{index: index}
 	if strings.HasPrefix(str, "~") {
 		heightSpec.auto = true
 		str = str[1:]
@@ -1884,7 +1887,7 @@ func parseMarkerMultiLine(str string) ([3]string, error) {
 	return result, nil
 }
 
-func parseOptions(opts *Options, allArgs []string) error {
+func parseOptions(index *int, opts *Options, allArgs []string) error {
 	var err error
 	var historyMax int
 	if opts.History == nil {
@@ -1920,8 +1923,10 @@ func parseOptions(opts *Options, allArgs []string) error {
 		opts.Version = false
 		opts.Man = false
 	}
+	startIndex := *index
 	for i := 0; i < len(allArgs); i++ {
 		arg := allArgs[i]
+		index := i + startIndex
 		switch arg {
 		case "--man":
 			clearExitingOpts()
@@ -1946,11 +1951,11 @@ func parseOptions(opts *Options, allArgs []string) error {
 		case "--tmux":
 			given, str := optionalNextString(allArgs, &i)
 			if given {
-				if opts.Tmux, err = parseTmuxOptions(str); err != nil {
+				if opts.Tmux, err = parseTmuxOptions(str, index); err != nil {
 					return err
 				}
 			} else {
-				opts.Tmux = defaultTmuxOptions()
+				opts.Tmux = defaultTmuxOptions(index)
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
@@ -2314,7 +2319,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			if opts.Height, err = parseHeight(str); err != nil {
+			if opts.Height, err = parseHeight(str, index); err != nil {
 				return err
 			}
 		case "--min-height":
@@ -2456,7 +2461,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--tmux="); match {
-				if opts.Tmux, err = parseTmuxOptions(value); err != nil {
+				if opts.Tmux, err = parseTmuxOptions(value, index); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--scheme="); match {
@@ -2510,7 +2515,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--height="); match {
-				if opts.Height, err = parseHeight(value); err != nil {
+				if opts.Height, err = parseHeight(value, index); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--min-height="); match {
@@ -2631,6 +2636,7 @@ func parseOptions(opts *Options, allArgs []string) error {
 			}
 		}
 	}
+	*index += len(allArgs)
 
 	if opts.HeaderLines < 0 {
 		return errors.New("header lines must be a non-negative integer")
@@ -2852,6 +2858,7 @@ func postProcessOptions(opts *Options) error {
 // ParseOptions parses command-line options
 func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	opts := defaultOptions()
+	index := 0
 
 	if useDefaults {
 		// 1. Options from $FZF_DEFAULT_OPTS_FILE
@@ -2866,7 +2873,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 				return nil, errors.New(path + ": " + parseErr.Error())
 			}
 			if len(words) > 0 {
-				if err := parseOptions(opts, words); err != nil {
+				if err := parseOptions(&index, opts, words); err != nil {
 					return nil, errors.New(path + ": " + err.Error())
 				}
 			}
@@ -2878,14 +2885,14 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 			return nil, errors.New("$FZF_DEFAULT_OPTS: " + parseErr.Error())
 		}
 		if len(words) > 0 {
-			if err := parseOptions(opts, words); err != nil {
+			if err := parseOptions(&index, opts, words); err != nil {
 				return nil, errors.New("$FZF_DEFAULT_OPTS: " + err.Error())
 			}
 		}
 	}
 
 	// 3. Options from command-line arguments
-	if err := parseOptions(opts, args); err != nil {
+	if err := parseOptions(&index, opts, args); err != nil {
 		return nil, err
 	}
 
