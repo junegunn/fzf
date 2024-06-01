@@ -69,16 +69,16 @@ function fzf_key_bindings
         if type -P perl > /dev/null 2>&1
           set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
           set -lx FZF_DEFAULT_OPTS_FILE ''
-          history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
+          builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
           and commandline -- $result
         else
           set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
           set -lx FZF_DEFAULT_OPTS_FILE ''
-          history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
+          builtin history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
           and commandline -- $result
         end
       else
-        history | eval (__fzfcmd) -q '(commandline)' | read -l result
+        builtin history | eval (__fzfcmd) -q '(commandline)' | read -l result
         and commandline -- $result
       end
     end
@@ -99,7 +99,7 @@ function fzf_key_bindings
       eval (__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
       if [ -n "$result" ]
-        cd -- $result
+        builtin cd -- $result
 
         # Remove last token from commandline.
         commandline -t ""
