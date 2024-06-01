@@ -88,6 +88,7 @@ func main() {
 		}
 		defer os.Remove(file)
 		cmd := exec.Command("man", file)
+		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
 			fmt.Print(string(manPage))
