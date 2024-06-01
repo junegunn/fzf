@@ -23,10 +23,7 @@ func needWinpty(opts *Options) bool {
 		/*
 		 See: https://github.com/junegunn/fzf/issues/3809
 
-		 "MSYS=enable_pcon" allows fzf to run properly on mintty 3.4.5 or later,
-		 however `--height` option still doesn't work, and it's going to be ignored.
-
-		 We're not going to worry too much about restoring the original value.
+		 "MSYS=enable_pcon" allows fzf to run properly on mintty 3.4.5 or later.
 		*/
 		if strings.Contains(os.Getenv("MSYS"), "enable_pcon") {
 			return false
@@ -56,7 +53,7 @@ func runWinpty(args []string, opts *Options) (int, error) {
 	for _, arg := range args[1:] {
 		argStr += " " + escapeSingleQuote(arg)
 	}
-	argStr += ` --no-winpty --no-height`
+	argStr += ` --no-winpty`
 
 	if isMintty345() {
 		return runProxy(argStr, func(temp string) *exec.Cmd {
