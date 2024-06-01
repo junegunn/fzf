@@ -444,8 +444,8 @@ Examples
 Key bindings for command-line
 -----------------------------
 
-The install script will setup the following key bindings for bash, zsh, and
-fish.
+By [setting up shell integration](#setting-up-shell-integration), you can use
+the following key bindings in bash, zsh, and fish.
 
 - `CTRL-T` - Paste the selected files and directories onto the command-line
     - The list is generated using `--walker file,dir,follow,hidden` option
@@ -491,7 +491,7 @@ fish.
 
 Display modes for these bindings can be separately configured via
 `FZF_{CTRL_T,CTRL_R,ALT_C}_OPTS` or globally via `FZF_DEFAULT_OPTS`.
-(e.g. `FZF_CTRL_R_OPTS='--tmux bottom,60% --height 60%'`)
+(e.g. `FZF_CTRL_R_OPTS='--tmux bottom,60% --height 60% --border top'`)
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
