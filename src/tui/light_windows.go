@@ -97,8 +97,7 @@ func openTtyIn() (*os.File, error) {
 }
 
 func openTtyOut() (*os.File, error) {
-	// not used
-	return nil, nil
+	return os.Stderr, nil
 }
 
 func (r *LightRenderer) setupTerminal() error {
