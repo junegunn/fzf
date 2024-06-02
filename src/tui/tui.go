@@ -823,7 +823,7 @@ func initTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	// These colors are not defined in the base themes
 	theme.SelectedFg = o(theme.Fg, theme.SelectedFg)
 	theme.SelectedBg = o(theme.Bg, theme.SelectedBg)
-	theme.SelectedMatch = o(theme.CurrentMatch, theme.SelectedMatch)
+	theme.SelectedMatch = o(theme.Match, theme.SelectedMatch)
 	theme.Disabled = o(theme.Input, theme.Disabled)
 	theme.Gutter = o(theme.DarkBg, theme.Gutter)
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
