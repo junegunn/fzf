@@ -50,11 +50,15 @@ CHANGELOG
   # Vim will work fine without /dev/tty redirection
   ls | fzf --bind 'space:execute:vim {}' > selected
   ```
-- Added `print(...)` action to queue arbitrary string to be printed on exit
+- Added `print(...)` action to queue an arbitrary string to be printed on exit. This was mainly added to work around the limitation of `--expect` where it's not compatible with `--bind` on the same key and it would ignore other actions bound to it.
   ```sh
-  fzf --bind 'space:print(space pressed)+accept'
+  # This doesn't work as expected because --expect is not compatible with --bind
+  fzf --multi --expect ctrl-y --bind 'ctrl-y:select-all'
+
+  # This is something you can do instead
+  fzf --multi --bind 'enter:print()+accept,ctrl-y:select-all+print(ctrl-y)+accept'
   ```
-    - This is similar to `--expect` but it allows you to queue multiple arbitrary strings
+    - We also considered making them compatible, but realized that some users may have been relying on the current behavior.
 - [`NO_COLOR`](https://no-color.org/) environment variable is now respected. If the variable is set, fzf defaults to `--no-color` unless otherwise specified.
 
 0.52.1
