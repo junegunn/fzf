@@ -245,6 +245,7 @@ type Terminal struct {
 	scrollbar          string
 	previewScrollbar   string
 	ansi               bool
+	keepAnsi           bool
 	tabstop            int
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
@@ -770,6 +771,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		header0:            opts.Header,
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
+		keepAnsi:           opts.KeepAnsi,
 		tabstop:            opts.Tabstop,
 		hasResultActions:   false,
 		hasFocusActions:    false,
@@ -1165,16 +1167,17 @@ func (t *Terminal) output() bool {
 	if len(t.expect) > 0 {
 		t.printer(t.pressed)
 	}
+	stripAnsi := t.ansi && (!t.keepAnsi)
 	found := len(t.selected) > 0
 	if !found {
 		current := t.currentItem()
 		if current != nil {
-			t.printer(current.AsString(t.ansi))
+			t.printer(current.AsString(stripAnsi))
 			found = true
 		}
 	} else {
 		for _, sel := range t.sortSelected() {
-			t.printer(sel.item.AsString(t.ansi))
+			t.printer(sel.item.AsString(stripAnsi))
 		}
 	}
 	return found

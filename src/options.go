@@ -315,6 +315,7 @@ type Options struct {
 	Criteria     []criterion
 	Multi        int
 	Ansi         bool
+	KeepAnsi     bool
 	Mouse        bool
 	Theme        *tui.ColorTheme
 	Black        bool
@@ -1926,6 +1927,8 @@ func parseOptions(opts *Options, allArgs []string) error {
 			opts.Multi = 0
 		case "--ansi":
 			opts.Ansi = true
+		case "--keep-ansi":
+			opts.KeepAnsi = true
 		case "--no-ansi":
 			opts.Ansi = false
 		case "--no-mouse":
