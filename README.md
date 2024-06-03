@@ -163,6 +163,7 @@ The install script will add lines to your shell configuration file to modify
 | Spack           |                         | `spack install fzf`                |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
+| MPS             | Milis Linux             | `sudo mps kur fzf`                 |
 
 > [!IMPORTANT]
 > To set up shell integration (key bindings and fuzzy completion),
