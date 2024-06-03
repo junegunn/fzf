@@ -101,75 +101,83 @@ _fzf_opts_completion() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="
-    -h --help
-    -e --exact
-    +x --no-extended
-    -q --query
-    -f --filter
-    --literal
-    --scheme
-    --expect
-    --disabled
-    --tiebreak
-    --bind
-    --color
-    -d --delimiter
-    -n --nth
-    --with-nth
-    +s --no-sort
-    --track
-    --tac
-    -i --ignore-case
-    +i --no-ignore-case
-    -m --multi
-    --ansi
-    --no-mouse
     +c --no-color
-    --no-bold
-    --layout
-    --reverse
-    --cycle
-    --keep-right
-    --no-hscroll
-    --hscroll-off
-    --scroll-off
-    --filepath-word
-    --info
-    --separator
-    --no-separator
-    --no-scrollbar
-    --jump-labels
-    -1 --select-1
-    -0 --exit-0
-    --read0
-    --print0
-    --print-query
-    --prompt
-    --pointer
-    --marker
-    --sync
-    --history
-    --history-size
-    --header
-    --header-lines
-    --header-first
-    --ellipsis
-    --preview
-    --preview-window
-    --height
-    --min-height
+    +i --no-ignore-case
+    +s --no-sort
+    +x --no-extended
+    --ansi
+    --bash
+    --bind
     --border
     --border-label
     --border-label-pos
+    --color
+    --cycle
+    --disabled
+    --ellipsis
+    --expect
+    --filepath-word
+    --fish
+    --header
+    --header-first
+    --header-lines
+    --height
+    --highlight-line
+    --history
+    --history-size
+    --hscroll-off
+    --info
+    --jump-labels
+    --keep-right
+    --layout
+    --listen
+    --listen-unsafe
+    --literal
+    --man
+    --margin
+    --marker
+    --min-height
+    --no-bold
+    --no-clear
+    --no-hscroll
+    --no-mouse
+    --no-scrollbar
+    --no-separator
+    --no-unicode
+    --padding
+    --pointer
+    --preview
     --preview-label
     --preview-label-pos
-    --no-unicode
-    --margin
-    --padding
+    --preview-window
+    --print-query
+    --print0
+    --prompt
+    --read0
+    --reverse
+    --scheme
+    --scroll-off
+    --separator
+    --sync
     --tabstop
-    --listen
-    --no-clear
+    --tac
+    --tiebreak
+    --tmux
+    --track
     --version
+    --with-nth
+    --with-shell
+    --zsh
+    -0 --exit-0
+    -1 --select-1
+    -d --delimiter
+    -e --exact
+    -f --filter
+    -h --help
+    -i --ignore-case
+    -m --multi
+    -n --nth
+    -q --query
     --"
 
   case "${prev}" in
