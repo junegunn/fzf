@@ -160,6 +160,7 @@ type itemLine struct {
 	result    Result
 	empty     bool
 	other     bool
+	minIndex  int32
 }
 
 func (t *Terminal) markEmptyLine(line int) {
@@ -301,7 +302,7 @@ type Terminal struct {
 	merger             *Merger
 	selected           map[int32]selectedItem
 	version            int64
-	revision           int
+	revision           revision
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
@@ -822,7 +823,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
 		proxyScript:        opts.ProxyScript,
-		merger:             EmptyMerger(0),
+		merger:             EmptyMerger(revision{}),
 		selected:           make(map[int32]selectedItem),
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
@@ -1164,8 +1165,8 @@ func (t *Terminal) UpdateProgress(progress float32) {
 func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 	t.mutex.Lock()
 	prevIndex := minItem.Index()
-	reset := t.revision != merger.Revision()
-	if !reset && t.track != trackDisabled {
+	newRevision := merger.Revision()
+	if t.revision.compatible(newRevision) && t.track != trackDisabled {
 		if t.merger.Length() > 0 {
 			prevIndex = t.currentIndex()
 		} else if merger.Length() > 0 {
@@ -1174,9 +1175,19 @@ func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 	}
 	t.progress = 100
 	t.merger = merger
-	if reset {
-		t.selected = make(map[int32]selectedItem)
-		t.revision = merger.Revision()
+	if !t.revision.equals(newRevision) {
+		if !t.revision.compatible(newRevision) { // Reloaded: clear selection
+			t.selected = make(map[int32]selectedItem)
+		} else { // Trimmed by --tail: filter selection by index
+			filtered := make(map[int32]selectedItem)
+			for k, v := range t.selected {
+				if k >= merger.minIndex {
+					filtered[k] = v
+				}
+			}
+			t.selected = filtered
+		}
+		t.revision = newRevision
 		t.version++
 	}
 	if t.triggerLoad {
@@ -1959,9 +1970,9 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 
 	// Avoid unnecessary redraw
 	newLine := itemLine{firstLine: line, cy: index + t.offset, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1]}
+		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1], minIndex: t.merger.minIndex}
 	prevLine := t.prevLines[line]
-	forceRedraw := prevLine.other || prevLine.firstLine != newLine.firstLine
+	forceRedraw := prevLine.other || prevLine.firstLine != newLine.firstLine || prevLine.minIndex != t.merger.minIndex
 	printBar := func(lineNum int, forceRedraw bool) bool {
 		return t.printBar(lineNum, forceRedraw, barRange)
 	}

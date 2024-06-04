@@ -99,6 +99,16 @@ interface rather than a "fuzzy finder". You can later enable the search using
 .B "+s, --no-sort"
 Do not sort the result
 .TP
+.B "--tail=NUM"
+Maximum number of items to keep in memory. This is useful when you want to
+browse an endless stream of data (e.g. log stream) with fzf while limiting
+memory usage.
+.RS
+e.g.
+     \fB# Interactive filtering of a log stream
+     tail -f *.log | fzf --tail 100000 --tac --no-sort --exact\fR
+.RE
+.TP
 .B "--track"
 Make fzf track the current selection when the result list is updated.
 This can be useful when browsing logs using fzf with sorting disabled. It is

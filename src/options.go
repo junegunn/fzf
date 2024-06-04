@@ -41,6 +41,7 @@ Usage: fzf [options]
                             field index expressions
     -d, --delimiter=STR     Field delimiter regex (default: AWK-style)
     +s, --no-sort           Do not sort the result
+    --tail=NUM              Maximum number of items to keep in memory
     --track                 Track the current selection when the result is updated
     --tac                   Reverse the order of the input
     --disabled              Do not perform search
@@ -421,6 +422,7 @@ type Options struct {
 	Sort         int
 	Track        trackOption
 	Tac          bool
+	Tail         int
 	Criteria     []criterion
 	Multi        int
 	Ansi         bool
@@ -2096,6 +2098,15 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Tac = true
 		case "--no-tac":
 			opts.Tac = false
+		case "--tail":
+			if opts.Tail, err = nextInt(allArgs, &i, "number of items to keep required"); err != nil {
+				return err
+			}
+			if opts.Tail <= 0 {
+				return errors.New("number of items to keep must be a positive integer")
+			}
+		case "--no-tail":
+			opts.Tail = 0
 		case "-i", "--ignore-case":
 			opts.Case = CaseIgnore
 		case "+i", "--no-ignore-case":
@@ -2631,6 +2642,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "--jump-labels="); match {
 				opts.JumpLabels = value
 				validateJumpLabels = true
+			} else if match, value := optString(arg, "--tail="); match {
+				if opts.Tail, err = atoi(value); err != nil {
+					return err
+				}
+				if opts.Tail <= 0 {
+					return errors.New("number of items to keep must be a positive integer")
+				}
 			} else {
 				return errors.New("unknown option: " + arg)
 			}
