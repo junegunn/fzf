@@ -61,14 +61,32 @@ Do not normalize latin script letters for matching.
 .BI "--scheme=" SCHEME
 Choose scoring scheme tailored for different types of input.
 
-.br
-.BR default "  Generic scoring scheme designed to work well with any type of input"
-.br
-.BR path "     Scoring scheme well suited for file paths
-.br
-.BR history "  Scoring scheme well suited for command history or any input where chronological ordering is important
-         Sets \fB--tiebreak=index\fR as well.
-.br
+.RS
+.B default
+.RS
+Generic scoring scheme designed to work well with any type of input.
+.RE
+.RE
+
+.RS
+.B path
+.RS
+Additional bonus point is only given to the characters after path separator.
+You might want to choose this scheme over \fBdefault\fR if you have many files
+with spaces in their paths.
+.RE
+.RE
+
+.RS
+.B history
+.RS
+Scoring scheme well suited for command history or any input where chronological
+ordering is important. No additional bonus points are given so that we give
+more weight to the chronological ordering. This also sets
+\fB--tiebreak=index\fR.
+.RE
+.RE
+
 .TP
 .BI "--algo=" TYPE
 Fuzzy matching algorithm (default: v2)
