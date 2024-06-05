@@ -1176,12 +1176,22 @@ func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 	t.progress = 100
 	t.merger = merger
 	if !t.revision.equals(newRevision) {
-		if !t.revision.compatible(newRevision) { // Reloaded: clear selection
+		if !t.revision.compatible(newRevision) {
+			// Reloaded: clear selection
 			t.selected = make(map[int32]selectedItem)
-		} else { // Trimmed by --tail: filter selection by index
+		} else {
+			// Trimmed by --tail: filter selection by index
 			filtered := make(map[int32]selectedItem)
+			minIndex := merger.minIndex
+			maxIndex := minIndex + int32(merger.Length())
 			for k, v := range t.selected {
-				if k >= merger.minIndex {
+				var included bool
+				if maxIndex > minIndex {
+					included = k >= minIndex && k < maxIndex
+				} else { // int32 overflow [==>   <==]
+					included = k >= minIndex || k < maxIndex
+				}
+				if included {
 					filtered[k] = v
 				}
 			}
@@ -2856,11 +2866,18 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 			replace = func(item *Item) string {
 				switch {
 				case flags.number:
-					n := int(item.text.Index)
-					if n < 0 {
-						return ""
+					n := item.text.Index
+					if n == minItem.Index() {
+						// NOTE: Item index should normally be positive, but if there's no
+						// match, it will be set to math.MinInt32, and we don't want to
+						// show that value. However, int32 can overflow, especially when
+						// `--tail` is used with an endless input stream, and the index of
+						// an item actually can be math.MinInt32. In that case, you're
+						// getting an incorrect value, but we're going to ignore that for
+						// now.
+						return "''"
 					}
-					return strconv.Itoa(n)
+					return strconv.Itoa(int(n))
 				case flags.file:
 					return item.AsString(params.stripAnsi)
 				default:
