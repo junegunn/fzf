@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2024/06/03*
+* *Last update: 2024/06/06*
 * *Requires fzf 0.53.0 or later*
 
 ---
@@ -534,8 +534,8 @@ pods() {
     --bind 'start:reload:$command' \
     --bind 'ctrl-r:reload:$command' \
     --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
-    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
-    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
     --preview-window up:follow \
     --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
 }
