@@ -2762,7 +2762,10 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 
 func hasPreviewFlags(template string) (slot bool, plus bool, forceUpdate bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
-		_, _, flags := parsePlaceholder(match)
+		escaped, _, flags := parsePlaceholder(match)
+		if escaped {
+			continue
+		}
 		if flags.plus {
 			plus = true
 		}
