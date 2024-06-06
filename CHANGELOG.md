@@ -4,6 +4,7 @@ CHANGELOG
 0.53.0
 ------
 - Multi-line display
+    - See [Processing multi-line items](https://junegunn.github.io/fzf/tips/processing-multi-line-items/)
     - fzf can now display multi-line items
       ```sh
       # All bash functions, highlighted
@@ -42,14 +43,16 @@ CHANGELOG
       ```vim
       let g:fzf_layout = { 'tmux': '100%,70%' }
       ```
+- Added support for endless input streams
+    - See [Browsing log stream with fzf](https://junegunn.github.io/fzf/tips/browsing-log-streams/)
+    - Added `--tail=NUM` option to limit the number of items to keep in memory. This is useful when you want to browse an endless stream of data (e.g. log stream) with fzf while limiting memory usage.
+      ```sh
+      # Interactive filtering of a log stream
+      tail -f *.log | fzf --tail 100000 --tac --no-sort --exact
+      ```
 - Better Windows Support
     - fzf now works on Git bash (mintty) out of the box via winpty integration
     - Many fixes and improvements for Windows
-- Added `--tail=NUM` option to limit the number of items to keep in memory. This is useful when you want to browse an endless stream of data (e.g. log stream) with fzf while limiting memory usage.
-  ```sh
-  # Interactive filtering of a log stream
-  tail -f *.log | fzf --tail 100000 --tac --no-sort --exact
-  ```
 - man page is now embedded in the binary; `fzf --man` to see it
 - Changed the default `--scroll-off` to 3, as we think it's a better default
 - Process started by `execute` action now directly writes to and reads from `/dev/tty`. Manual `/dev/tty` redirection for interactive programs is no longer required.
