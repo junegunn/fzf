@@ -367,7 +367,7 @@ fzf --tmux bottom,80%,40% # Bottom, 80% height, 40% height
 >
 > ```sh
 > # Open in tmux popup if on tmux, otherwise use --height mode
-> export FZF_DEFAULT_OPTS='--tmux bottom,40% --height 40% --layout reverse --border'
+> export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
 > ```
 
 ### Search syntax
