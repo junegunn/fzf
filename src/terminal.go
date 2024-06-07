@@ -1982,7 +1982,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	newLine := itemLine{firstLine: line, cy: index + t.offset, current: current, selected: selected, label: label,
 		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1], minIndex: t.merger.minIndex}
 	prevLine := t.prevLines[line]
-	forceRedraw := prevLine.other || prevLine.firstLine != newLine.firstLine || prevLine.minIndex != t.merger.minIndex
+	forceRedraw := prevLine.other || prevLine.firstLine != newLine.firstLine
 	printBar := func(lineNum int, forceRedraw bool) bool {
 		return t.printBar(lineNum, forceRedraw, barRange)
 	}
