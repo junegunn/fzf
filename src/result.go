@@ -81,7 +81,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 				if criterion == byBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
-					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()+1))
+					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/(int(item.TrimLength())+1))
 				}
 			}
 		}
