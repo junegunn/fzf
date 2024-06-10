@@ -32,10 +32,6 @@ func (r *revision) bumpMinor() {
 	r.minor++
 }
 
-func (r revision) equals(other revision) bool {
-	return r.major == other.major && r.minor == other.minor
-}
-
 func (r revision) compatible(other revision) bool {
 	return r.major == other.major
 }
@@ -94,11 +90,12 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Chunk list
+	cache := NewChunkCache()
 	var chunkList *ChunkList
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
 	if len(opts.WithNth) == 0 {
-		chunkList = NewChunkList(func(item *Item, data []byte) bool {
+		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, byteString(data))
 				eventBox.Set(EvtHeader, header)
@@ -110,7 +107,7 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
-		chunkList = NewChunkList(func(item *Item, data []byte) bool {
+		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
@@ -170,7 +167,6 @@ func Run(opts *Options) (int, error) {
 			forward = true
 		}
 	}
-	cache := NewChunkCache()
 	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(cache, patternCache,

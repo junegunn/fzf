@@ -22,6 +22,14 @@ func (cc *ChunkCache) Clear() {
 	cc.mutex.Unlock()
 }
 
+func (cc *ChunkCache) retire(chunk ...*Chunk) {
+	cc.mutex.Lock()
+	for _, c := range chunk {
+		delete(cc.cache, c)
+	}
+	cc.mutex.Unlock()
+}
+
 // Add adds the list to the cache
 func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
 	if len(key) == 0 || !chunk.IsFull() || len(list) > queryCacheMax {

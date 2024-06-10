@@ -16,14 +16,16 @@ type ChunkList struct {
 	chunks []*Chunk
 	mutex  sync.Mutex
 	trans  ItemBuilder
+	cache  *ChunkCache
 }
 
 // NewChunkList returns a new ChunkList
-func NewChunkList(trans ItemBuilder) *ChunkList {
+func NewChunkList(cache *ChunkCache, trans ItemBuilder) *ChunkList {
 	return &ChunkList{
 		chunks: []*Chunk{},
 		mutex:  sync.Mutex{},
-		trans:  trans}
+		trans:  trans,
+		cache:  cache}
 }
 
 func (c *Chunk) push(trans ItemBuilder, data []byte) bool {
@@ -92,7 +94,9 @@ func (cl *ChunkList) Snapshot(tail int) ([]*Chunk, int, bool) {
 
 		// Copy the chunks to keep
 		ret := make([]*Chunk, numChunks)
-		copy(ret, cl.chunks[len(cl.chunks)-numChunks:])
+		minIndex := len(cl.chunks) - numChunks
+		cl.cache.retire(cl.chunks[:minIndex]...)
+		copy(ret, cl.chunks[minIndex:])
 
 		for left, i := tail, len(ret)-1; i >= 0; i-- {
 			chunk := ret[i]
@@ -104,6 +108,7 @@ func (cl *ChunkList) Snapshot(tail int) ([]*Chunk, int, bool) {
 					newChunk.items[i] = chunk.items[oldCount-left+i]
 				}
 				ret[i] = &newChunk
+				cl.cache.retire(chunk)
 				break
 			}
 			left -= chunk.count

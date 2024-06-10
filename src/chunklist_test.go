@@ -11,7 +11,7 @@ func TestChunkList(t *testing.T) {
 	// FIXME global
 	sortCriteria = []criterion{byScore, byLength}
 
-	cl := NewChunkList(func(item *Item, s []byte) bool {
+	cl := NewChunkList(NewChunkCache(), func(item *Item, s []byte) bool {
 		item.text = util.ToChars(s)
 		return true
 	})
@@ -80,7 +80,7 @@ func TestChunkList(t *testing.T) {
 }
 
 func TestChunkListTail(t *testing.T) {
-	cl := NewChunkList(func(item *Item, s []byte) bool {
+	cl := NewChunkList(NewChunkCache(), func(item *Item, s []byte) bool {
 		item.text = util.ToChars(s)
 		return true
 	})

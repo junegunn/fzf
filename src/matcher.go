@@ -87,7 +87,9 @@ func (m *Matcher) Loop() {
 			m.sort = request.sort
 			m.revision = request.revision
 			m.mergerCache = make(map[string]*Merger)
-			m.cache.Clear()
+			if !request.revision.compatible(m.revision) {
+				m.cache.Clear()
+			}
 			cacheCleared = true
 		}
 
@@ -193,7 +195,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 			for _, matches := range allMatches {
 				sliceMatches = append(sliceMatches, matches...)
 			}
-			if m.sort {
+			if m.sort && request.pattern.sortable {
 				if m.tac {
 					sort.Sort(ByRelevanceTac(sliceMatches))
 				} else {
@@ -234,7 +236,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-	return NewMerger(pattern, partialResults, m.sort, m.tac, request.revision, minIndex), false
+	return NewMerger(pattern, partialResults, m.sort && request.pattern.sortable, m.tac, request.revision, minIndex), false
 }
 
 // Reset is called to interrupt/signal the ongoing search
@@ -247,7 +249,7 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 	} else {
 		event = reqRetry
 	}
-	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort && pattern.sortable, revision})
+	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort, revision})
 }
 
 func (m *Matcher) Stop() {

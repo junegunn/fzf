@@ -1174,7 +1174,7 @@ func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 	}
 	t.progress = 100
 	t.merger = merger
-	if !t.revision.equals(newRevision) {
+	if t.revision != newRevision {
 		if !t.revision.compatible(newRevision) {
 			// Reloaded: clear selection
 			t.selected = make(map[int32]selectedItem)

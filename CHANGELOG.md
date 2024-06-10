@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.53.1
+------
+- Bug fixes and minor improvements
+
 0.53.0
 ------
 - Multi-line display
