@@ -38,12 +38,14 @@ func (r revision) compatible(other revision) bool {
 
 // Run starts fzf
 func Run(opts *Options) (int, error) {
-	if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
-		return runTmux(os.Args, opts)
-	}
+	if opts.Filter == nil {
+		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
+			return runTmux(os.Args, opts)
+		}
 
-	if needWinpty(opts) {
-		return runWinpty(os.Args, opts)
+		if needWinpty(opts) {
+			return runWinpty(os.Args, opts)
+		}
 	}
 
 	if err := postProcessOptions(opts); err != nil {
