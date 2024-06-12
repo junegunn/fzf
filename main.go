@@ -4,13 +4,14 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	fzf "github.com/junegunn/fzf/src"
 	"github.com/junegunn/fzf/src/protector"
 )
 
-var version = "0.52"
+var version = "0.53"
 var revision = "devel"
 
 //go:embed shell/key-bindings.bash
@@ -28,6 +29,9 @@ var zshCompletion []byte
 //go:embed shell/key-bindings.fish
 var fishKeyBindings []byte
 
+//go:embed man/man1/fzf.1
+var manPage []byte
+
 func printScript(label string, content []byte) {
 	fmt.Println("### " + label + " ###")
 	fmt.Println(strings.TrimSpace(string(content)))
@@ -35,7 +39,7 @@ func printScript(label string, content []byte) {
 }
 
 func exit(code int, err error) {
-	if err != nil {
+	if code == fzf.ExitError {
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
 	os.Exit(code)
@@ -73,6 +77,21 @@ func main() {
 			fmt.Printf("%s (%s)\n", version, revision)
 		} else {
 			fmt.Println(version)
+		}
+		return
+	}
+	if options.Man {
+		file := fzf.WriteTemporaryFile([]string{string(manPage)}, "\n")
+		if len(file) == 0 {
+			fmt.Print(string(manPage))
+			return
+		}
+		defer os.Remove(file)
+		cmd := exec.Command("man", file)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		if err := cmd.Run(); err != nil {
+			fmt.Print(string(manPage))
 		}
 		return
 	}

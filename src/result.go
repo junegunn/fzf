@@ -15,6 +15,7 @@ type Offset [2]int32
 type colorOffset struct {
 	offset [2]int32
 	color  tui.ColorPair
+	match  bool
 }
 
 type Result struct {
@@ -80,7 +81,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 				if criterion == byBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
-					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()+1))
+					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/(int(item.TrimLength())+1))
 				}
 			}
 		}
@@ -109,7 +110,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
 		for _, off := range matchOffsets {
-			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch})
+			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch, match: true})
 		}
 		return offsets
 	}
@@ -193,12 +194,13 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 					}
 				}
 				colors = append(colors, colorOffset{
-					offset: [2]int32{int32(start), int32(idx)}, color: color})
+					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true})
 			} else {
 				ansi := itemColors[curr-1]
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  ansiToColorPair(ansi, colBase)})
+					color:  ansiToColorPair(ansi, colBase),
+					match:  false})
 			}
 		}
 	}

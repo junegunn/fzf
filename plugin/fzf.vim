@@ -327,6 +327,9 @@ function! s:common_sink(action, lines) abort
     " the execution (e.g. `set autochdir` or `autocmd BufEnter * lcd ...`)
     let cwd = exists('w:fzf_pushd') ? w:fzf_pushd.dir : expand('%:p:h')
     for item in a:lines
+      if has('win32unix') && item !~ '/'
+        let item = substitute(item, '\', '/', 'g')
+      end
       if item[0] != '~' && item !~ (s:is_win ? '^\([A-Z]:\)\?\' : '^/')
         let sep = s:is_win ? '\' : '/'
         let item = join([cwd, item], cwd[len(cwd)-1] == sep ? '' : sep)
@@ -487,6 +490,8 @@ function! s:extract_option(opts, name)
   return opt
 endfunction
 
+let s:need_cmd_window = has('win32unix') && $TERM_PROGRAM ==# 'mintty' && s:compare_versions($TERM_PROGRAM_VERSION, '3.4.5') < 0 && !executable('winpty')
+
 function! fzf#run(...) abort
 try
   let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
@@ -529,18 +534,19 @@ try
         \ executable('tput') && filereadable('/dev/tty')
   let has_vim8_term = has('terminal') && has('patch-8.0.995')
   let has_nvim_term = has('nvim-0.2.1') || has('nvim') && !s:is_win
-  let use_term = has_nvim_term ||
-    \ has_vim8_term && !has('win32unix') && (has('gui_running') || s:is_win || s:present(dict, 'down', 'up', 'left', 'right', 'window'))
+  let use_term = has_nvim_term || has_vim8_term
+    \ && !s:need_cmd_window
+    \ && (has('gui_running') || s:is_win || s:present(dict, 'down', 'up', 'left', 'right', 'window'))
   let use_tmux = (has_key(dict, 'tmux') || (!use_height && !use_term || prefer_tmux) && !has('win32unix') && s:splittable(dict)) && s:tmux_enabled()
   if prefer_tmux && use_tmux
     let use_height = 0
     let use_term = 0
   endif
   if use_term
-    let optstr .= ' --no-height'
+    let optstr .= ' --no-height --no-tmux'
   elseif use_height
     let height = s:calc_size(&lines, dict.down, dict)
-    let optstr .= ' --height='.height
+    let optstr .= ' --no-tmux --height='.height
   endif
   " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
   let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
@@ -573,19 +579,21 @@ function! s:fzf_tmux(dict)
   if empty(size)
     for o in ['up', 'down', 'left', 'right']
       if s:present(a:dict, o)
-        let spec = a:dict[o]
-        if (o == 'up' || o == 'down') && spec[0] == '~'
-          let size = '-'.o[0].s:calc_size(&lines, spec, a:dict)
-        else
-          " Legacy boolean option
-          let size = '-'.o[0].(spec == 1 ? '' : substitute(spec, '^\~', '', ''))
-        endif
+        let size = o . ',' . a:dict[o]
         break
       endif
     endfor
   endif
-  return printf('LINES=%d COLUMNS=%d %s %s %s --',
-    \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+
+  " Legacy fzf-tmux options
+  if size =~ '-'
+    return printf('LINES=%d COLUMNS=%d %s %s %s --',
+          \ &lines, &columns, fzf#shellescape(s:fzf_tmux), size, (has_key(a:dict, 'source') ? '' : '-'))
+  end
+
+  " Using native --tmux option
+  let in = (has_key(a:dict, 'source') ? '' : ' --force-tty-in')
+  return printf('%s --tmux %s%s', fzf#shellescape(fzf#exec()), size, in)
 endfunction
 
 function! s:splittable(dict)
@@ -708,10 +716,10 @@ function! s:execute(dict, command, use_height, temps) abort
       call jobstart(cmd, fzf)
       return []
     endif
-  elseif has('win32unix') && $TERM !=# 'cygwin'
+  elseif s:need_cmd_window
     let shellscript = s:fzf_tempname()
     call s:writefile([command], shellscript)
-    let command = 'cmd.exe //C '.fzf#shellescape('set "TERM=" & start /WAIT sh -c '.shellscript)
+    let command = 'start //WAIT sh -c '.shellscript
     let a:temps.shellscript = shellscript
   endif
   if a:use_height

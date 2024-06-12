@@ -97,8 +97,7 @@ func openTtyIn() (*os.File, error) {
 }
 
 func openTtyOut() (*os.File, error) {
-	// not used
-	return nil, nil
+	return os.Stderr, nil
 }
 
 func (r *LightRenderer) setupTerminal() error {
@@ -140,7 +139,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(r.outHandle), &bufferInfo); err != nil {
 		return -1, -1
 	}
-	return int(bufferInfo.CursorPosition.X), int(bufferInfo.CursorPosition.Y)
+	return int(bufferInfo.CursorPosition.Y), int(bufferInfo.CursorPosition.X)
 }
 
 func (r *LightRenderer) getch(nonblock bool) (int, bool) {

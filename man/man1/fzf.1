@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "May 2024" "fzf 0.52.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2024" "fzf 0.53.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -30,7 +30,10 @@ fzf - a command-line fuzzy finder
 fzf [options]
 
 .SH DESCRIPTION
-fzf is a general-purpose command-line fuzzy finder.
+fzf is an interactive filter program for any kind of list.
+
+It implements a "fuzzy" matching algorithm, so you can quickly type in patterns
+with omitted characters and still get the results you want.
 
 .SH OPTIONS
 .SS Note
@@ -58,14 +61,32 @@ Do not normalize latin script letters for matching.
 .BI "--scheme=" SCHEME
 Choose scoring scheme tailored for different types of input.
 
-.br
-.BR default "  Generic scoring scheme designed to work well with any type of input"
-.br
-.BR path "     Scoring scheme well suited for file paths
-.br
-.BR history "  Scoring scheme well suited for command history or any input where chronological ordering is important
-         Sets \fB--tiebreak=index\fR as well.
-.br
+.RS
+.B default
+.RS
+Generic scoring scheme designed to work well with any type of input.
+.RE
+.RE
+
+.RS
+.B path
+.RS
+Additional bonus point is only given to the characters after path separator.
+You might want to choose this scheme over \fBdefault\fR if you have many files
+with spaces in their paths.
+.RE
+.RE
+
+.RS
+.B history
+.RS
+Scoring scheme well suited for command history or any input where chronological
+ordering is important. No additional bonus points are given so that we give
+more weight to the chronological ordering. This also sets
+\fB--tiebreak=index\fR.
+.RE
+.RE
+
 .TP
 .BI "--algo=" TYPE
 Fuzzy matching algorithm (default: v2)
@@ -85,7 +106,8 @@ See \fBFIELD INDEX EXPRESSION\fR for the details.
 Transform the presentation of each line using field index expressions
 .TP
 .BI "-d, --delimiter=" "STR"
-Field delimiter regex for \fB--nth\fR and \fB--with-nth\fR (default: AWK-style)
+Field delimiter regex for \fB--nth\fR, \fB--with-nth\fR, and field index
+expressions (default: AWK-style)
 .TP
 .BI "--disabled"
 Do not perform search. With this option, fzf becomes a simple selector
@@ -95,6 +117,16 @@ interface rather than a "fuzzy finder". You can later enable the search using
 .TP
 .B "+s, --no-sort"
 Do not sort the result
+.TP
+.B "--tail=NUM"
+Maximum number of items to keep in memory. This is useful when you want to
+browse an endless stream of data (e.g. log stream) with fzf while limiting
+memory usage.
+.RS
+e.g.
+     \fB# Interactive filtering of a log stream
+     tail -f *.log | fzf --tail 100000 --tac --no-sort --exact\fR
+.RE
 .TP
 .B "--track"
 Make fzf track the current selection when the result list is updated.
@@ -162,13 +194,16 @@ the details.
 .B "--cycle"
 Enable cyclic scroll
 .TP
+.B "--no-multi-line"
+Disable multi-line display of items when using \fB--read0\fR
+.TP
 .B "--keep-right"
 Keep the right end of the line visible when it's too long. Effective only when
 the query string is empty.
 .TP
 .BI "--scroll-off=" "LINES"
 Number of screen lines to keep above or below when scrolling to the top or to
-the bottom (default: 0).
+the bottom (default: 3).
 .TP
 .B "--no-hscroll"
 Disable horizontal scroll
@@ -204,17 +239,41 @@ height minus the given value.
   fzf --height=-1
 
 When prefixed with \fB~\fR, fzf will automatically determine the height in the
-range according to the input size. Note that adaptive height is not compatible
-with top/bottom margin and padding given in percent size. It is also not
-compatible with a negative height value.
+range according to the input size.
 
   # Will not take up 100% of the screen
   seq 5 | fzf --height=~100%
+
+Adaptive height has the following limitations:
+.br
+* Cannot be used with top/bottom margin and padding given in percent size
+.br
+* Negative value is not allowed
+.br
+* It will not find the right size when there are multi-line items
 
 .TP
 .BI "--min-height=" "HEIGHT"
 Minimum height when \fB--height\fR is given in percent (default: 10).
 Ignored when \fB--height\fR is not specified.
+.TP
+.BI "--tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]]"
+Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
+later. This option is ignored if you are not running fzf inside tmux.
+
+e.g.
+  \fB# Popup in the center with 70% width and height
+  fzf --tmux 70%
+
+  # Popup on the left with 40% width and 100% height
+  fzf --tmux right,40%
+
+  # Popup on the bottom with 100% width and 30% height
+  fzf --tmux bottom,30%
+
+  # Popup on the top with 80% width and 40% height
+  fzf --tmux top,80%,40%\fR
+
 .TP
 .BI "--layout=" "LAYOUT"
 Choose the layout (default: default)
@@ -420,10 +479,14 @@ Do not display scrollbar. A synonym for \fB--scrollbar=''\fB
 Input prompt (default: '> ')
 .TP
 .BI "--pointer=" "STR"
-Pointer to the current line (default: '>')
+Pointer to the current line (default: '▌' or '>' depending on \fB--no-unicode\fR)
 .TP
 .BI "--marker=" "STR"
-Multi-select marker (default: '>')
+Multi-select marker (default: '┃' or '>' depending on \fB--no-unicode\fR)
+.TP
+.BI "--marker-multi-line=" "STR"
+Multi-select marker for multi-line entries. 3 elements for top, middle, and bottom.
+(default: '╻┃╹' or '.|'' depending on \fB--no-unicode\fR)
 .TP
 .BI "--header=" "STR"
 The given string will be printed as the sticky header. The lines are displayed
@@ -455,7 +518,7 @@ color mappings.
 
 .RS
 .B BASE SCHEME:
-    (default: dark on 256-color terminal, otherwise 16)
+    (default: \fBdark\fR on 256-color terminal, otherwise \fB16\fR; If \fBNO_COLOR\fR is set, \fBbw\fR)
 
     \fBdark    \fRColor scheme for dark 256-color terminal
     \fBlight   \fRColor scheme for light 256-color terminal
@@ -794,6 +857,14 @@ list.
 e.g.
      \fBfzf --expect=ctrl-v,ctrl-t,alt-s --expect=f1,f2,~,@\fR
 .RE
+
+This option is not compatible with \fB--bind\fR on the same key and will take
+precedence over it. To combine the two, use \fBprint\fR action.
+
+.RS
+e.g.
+     \fBfzf --multi --bind 'enter:print()+accept,ctrl-y:select-all+print(ctrl-y)+accept'\fR
+.RE
 .TP
 .B "--read0"
 Read input delimited by ASCII NUL characters instead of newline characters
@@ -871,9 +942,16 @@ e.g.
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf --listen --bind 'start:execute-silent:echo $FZF_PORT > /tmp/fzf-port'
      \fR
+.SS Help
 .TP
 .B "--version"
 Display version information and exit
+.TP
+.B "--help"
+Show help message
+.TP
+.B "--man"
+Show man page
 
 .SS Directory traversal
 .TP
@@ -947,6 +1025,8 @@ you need to protect against DNS rebinding and privilege escalation attacks.
 .BR 1 "      No match"
 .br
 .BR 2 "      Error"
+.br
+.BR 126 "    Permission denied error from \fBbecome\fR action"
 .br
 .BR 127 "    Invalid shell command for \fBbecome\fR action"
 .br
@@ -1362,7 +1442,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBpreview-half-page-up\fR
     \fBpreview-bottom\fR
     \fBpreview-top\fR
-    \fBprint-query\fR                  (print query and exit)
+    \fBprint(...)\fR                   (add string to the output queue and print on exit)
     \fBput\fR                          (put the character to the prompt)
     \fBput(...)\fR                     (put the given string to the prompt)
     \fBrefresh-preview\fR

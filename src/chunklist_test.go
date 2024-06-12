@@ -11,13 +11,13 @@ func TestChunkList(t *testing.T) {
 	// FIXME global
 	sortCriteria = []criterion{byScore, byLength}
 
-	cl := NewChunkList(func(item *Item, s []byte) bool {
+	cl := NewChunkList(NewChunkCache(), func(item *Item, s []byte) bool {
 		item.text = util.ToChars(s)
 		return true
 	})
 
 	// Snapshot
-	snapshot, count := cl.Snapshot()
+	snapshot, count, _ := cl.Snapshot(0)
 	if len(snapshot) > 0 || count > 0 {
 		t.Error("Snapshot should be empty now")
 	}
@@ -32,7 +32,7 @@ func TestChunkList(t *testing.T) {
 	}
 
 	// But the new snapshot should contain the added items
-	snapshot, count = cl.Snapshot()
+	snapshot, count, _ = cl.Snapshot(0)
 	if len(snapshot) != 1 && count != 2 {
 		t.Error("Snapshot should not be empty now")
 	}
@@ -61,7 +61,7 @@ func TestChunkList(t *testing.T) {
 	}
 
 	// New snapshot
-	snapshot, count = cl.Snapshot()
+	snapshot, count, _ = cl.Snapshot(0)
 	if len(snapshot) != 3 || !snapshot[0].IsFull() ||
 		!snapshot[1].IsFull() || snapshot[2].IsFull() || count != chunkSize*2+2 {
 		t.Error("Expected two full chunks and one more chunk")
@@ -77,4 +77,40 @@ func TestChunkList(t *testing.T) {
 	if lastChunkCount != 2 {
 		t.Error("Unexpected number of items:", lastChunkCount)
 	}
+}
+
+func TestChunkListTail(t *testing.T) {
+	cl := NewChunkList(NewChunkCache(), func(item *Item, s []byte) bool {
+		item.text = util.ToChars(s)
+		return true
+	})
+	total := chunkSize*2 + chunkSize/2
+	for i := 0; i < total; i++ {
+		cl.Push([]byte(fmt.Sprintf("item %d", i)))
+	}
+
+	snapshot, count, changed := cl.Snapshot(0)
+	assertCount := func(expected int, shouldChange bool) {
+		if count != expected || CountItems(snapshot) != expected {
+			t.Errorf("Unexpected count: %d (expected: %d)", count, expected)
+		}
+		if changed != shouldChange {
+			t.Error("Unexpected change status")
+		}
+	}
+	assertCount(total, false)
+
+	tail := chunkSize + chunkSize/2
+	snapshot, count, changed = cl.Snapshot(tail)
+	assertCount(tail, true)
+
+	snapshot, count, changed = cl.Snapshot(tail)
+	assertCount(tail, false)
+
+	snapshot, count, changed = cl.Snapshot(0)
+	assertCount(tail, false)
+
+	tail = chunkSize / 2
+	snapshot, count, changed = cl.Snapshot(tail)
+	assertCount(tail, true)
 }

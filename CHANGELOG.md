@@ -1,6 +1,80 @@
 CHANGELOG
 =========
 
+0.53.1
+------
+- Bug fixes and minor improvements
+
+0.53.0
+------
+- Multi-line display
+    - See [Processing multi-line items](https://junegunn.github.io/fzf/tips/processing-multi-line-items/)
+    - fzf can now display multi-line items
+      ```sh
+      # All bash functions, highlighted
+      declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
+        bat --plain --language bash --color always |
+        fzf --read0 --ansi --reverse --multi --highlight-line
+
+      # Ripgrep multi-line output
+      rg --pretty bash | perl -0777 -pe 's/\n\n/\n\0/gm' |
+        fzf --read0 --ansi --multi --highlight-line --reverse --tmux 70%
+      ```
+        - To disable multi-line display, use `--no-multi-line`
+    - CTRL-R bindings of bash, zsh, and fish have been updated to leverage multi-line display
+    - The default `--pointer` and `--marker` have been changed from `>` to Unicode bar characters as they look better with multi-line items
+    - Added `--marker-multi-line` to customize the select marker for multi-line entries with the default set to `╻┃╹`
+      ```
+      ╻First line
+      ┃...
+      ╹Last line
+      ```
+- Native tmux integration
+    - Added `--tmux` option to replace fzf-tmux script and simplify distribution
+      ```sh
+      # --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+      # Center, 100% width and 70% height
+      fzf --tmux 100%,70% --border horizontal --padding 1,2
+
+      # Left, 30% width
+      fzf --tmux left,30%
+
+      # Bottom, 50% height
+      fzf --tmux bottom,50%
+      ```
+        - To keep the implementation simple, it only uses popups. You need tmux 3.3 or later.
+    - To use `--tmux` in Vim plugin:
+      ```vim
+      let g:fzf_layout = { 'tmux': '100%,70%' }
+      ```
+- Added support for endless input streams
+    - See [Browsing log stream with fzf](https://junegunn.github.io/fzf/tips/browsing-log-streams/)
+    - Added `--tail=NUM` option to limit the number of items to keep in memory. This is useful when you want to browse an endless stream of data (e.g. log stream) with fzf while limiting memory usage.
+      ```sh
+      # Interactive filtering of a log stream
+      tail -f *.log | fzf --tail 100000 --tac --no-sort --exact
+      ```
+- Better Windows Support
+    - fzf now works on Git bash (mintty) out of the box via winpty integration
+    - Many fixes and improvements for Windows
+- man page is now embedded in the binary; `fzf --man` to see it
+- Changed the default `--scroll-off` to 3, as we think it's a better default
+- Process started by `execute` action now directly writes to and reads from `/dev/tty`. Manual `/dev/tty` redirection for interactive programs is no longer required.
+  ```sh
+  # Vim will work fine without /dev/tty redirection
+  ls | fzf --bind 'space:execute:vim {}' > selected
+  ```
+- Added `print(...)` action to queue an arbitrary string to be printed on exit. This was mainly added to work around the limitation of `--expect` where it's not compatible with `--bind` on the same key and it would ignore other actions bound to it.
+  ```sh
+  # This doesn't work as expected because --expect is not compatible with --bind
+  fzf --multi --expect ctrl-y --bind 'ctrl-y:select-all'
+
+  # This is something you can do instead
+  fzf --multi --bind 'enter:print()+accept,ctrl-y:select-all+print(ctrl-y)+accept'
+  ```
+    - We also considered making them compatible, but realized that some users may have been relying on the current behavior.
+- [`NO_COLOR`](https://no-color.org/) environment variable is now respected. If the variable is set, fzf defaults to `--no-color` unless otherwise specified.
+
 0.52.1
 ------
 - Fixed a critical bug in the Windows version

@@ -2,6 +2,7 @@
 package fzf
 
 import (
+	"os"
 	"sync"
 	"time"
 
@@ -17,8 +18,36 @@ Matcher  -> EvtSearchFin      -> Terminal (update list)
 Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
+type revision struct {
+	major int
+	minor int
+}
+
+func (r *revision) bumpMajor() {
+	r.major++
+	r.minor = 0
+}
+
+func (r *revision) bumpMinor() {
+	r.minor++
+}
+
+func (r revision) compatible(other revision) bool {
+	return r.major == other.major
+}
+
 // Run starts fzf
 func Run(opts *Options) (int, error) {
+	if opts.Filter == nil {
+		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
+			return runTmux(os.Args, opts)
+		}
+
+		if needWinpty(opts) {
+			return runWinpty(os.Args, opts)
+		}
+	}
+
 	if err := postProcessOptions(opts); err != nil {
 		return ExitError, err
 	}
@@ -63,11 +92,12 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Chunk list
+	cache := NewChunkCache()
 	var chunkList *ChunkList
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
 	if len(opts.WithNth) == 0 {
-		chunkList = NewChunkList(func(item *Item, data []byte) bool {
+		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, byteString(data))
 				eventBox.Set(EvtHeader, header)
@@ -79,7 +109,7 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
-		chunkList = NewChunkList(func(item *Item, data []byte) bool {
+		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
@@ -139,15 +169,14 @@ func Run(opts *Options) (int, error) {
 			forward = true
 		}
 	}
-	cache := NewChunkCache()
 	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
 			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
 	}
-	inputRevision := 0
-	snapshotRevision := 0
+	inputRevision := revision{}
+	snapshotRevision := revision{}
 	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
@@ -181,7 +210,8 @@ func Run(opts *Options) (int, error) {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
 
-			snapshot, _ := chunkList.Snapshot()
+			// NOTE: Streaming filter is inherently not compatible with --tail
+			snapshot, _, _ := chunkList.Snapshot(opts.Tail)
 			merger, _ := matcher.scan(MatchRequest{
 				chunks:  snapshot,
 				pattern: pattern})
@@ -252,7 +282,7 @@ func Run(opts *Options) (int, error) {
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
-		inputRevision++
+		inputRevision.bumpMajor()
 		header = make([]string, 0, opts.HeaderLines)
 		go reader.restart(command, environ)
 	}
@@ -297,10 +327,14 @@ func Run(opts *Options) (int, error) {
 						useSnapshot = false
 					}
 					if !useSnapshot {
-						if snapshotRevision != inputRevision {
+						if !snapshotRevision.compatible(inputRevision) {
 							query = []rune{}
 						}
-						snapshot, count = chunkList.Snapshot()
+						var changed bool
+						snapshot, count, changed = chunkList.Snapshot(opts.Tail)
+						if changed {
+							inputRevision.bumpMinor()
+						}
 						snapshotRevision = inputRevision
 					}
 					total = count
@@ -340,7 +374,10 @@ func Run(opts *Options) (int, error) {
 						break
 					}
 					if !useSnapshot {
-						newSnapshot, newCount := chunkList.Snapshot()
+						newSnapshot, newCount, changed := chunkList.Snapshot(opts.Tail)
+						if changed {
+							inputRevision.bumpMinor()
+						}
 						// We want to avoid showing empty list when reload is triggered
 						// and the query string is changed at the same time i.e. command != nil && changed
 						if command == nil || newCount > 0 {
