@@ -62,6 +62,11 @@ function fzf_key_bindings
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
 
+      # merge history from other sessions before searching
+      if test -z "$fish_private_mode"
+        builtin history merge
+      end
+
       # history's -z flag is needed for multi-line support.
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
