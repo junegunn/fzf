@@ -1,18 +1,17 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2024/01/20*
-* *Requires fzf 0.46.0 or above*
+* *Last update: 2024/06/06*
+* *Requires fzf 0.53.0 or later*
 
 ---
 
 <!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
-* [Screen Layout](#screen-layout)
+* [Display modes](#display-modes)
     * [`--height`](#--height)
-    * [`fzf-tmux`](#fzf-tmux)
-        * [Popup window support](#popup-window-support)
+    * [`--tmux`](#--tmux)
 * [Dynamic reloading of the list](#dynamic-reloading-of-the-list)
     * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
     * [Toggling between data sources](#toggling-between-data-sources)
@@ -63,7 +62,7 @@ learn its wide variety of features.
 This document will guide you through some examples that will familiarize you
 with the advanced features of fzf.
 
-Screen Layout
+Display modes
 -------------
 
 ### `--height`
@@ -104,56 +103,55 @@ Define `$FZF_DEFAULT_OPTS` like so:
 export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --info=inline --border --margin=1 --padding=1"
 ```
 
-### `fzf-tmux`
+### `--tmux`
 
-Before fzf had `--height` option, we would open fzf in a tmux split pane not
-to take up the whole screen. This is done using `fzf-tmux` script.
+(Requires tmux 3.3 or later)
 
-```sh
-# Open fzf on a tmux split pane below the current pane.
-# Takes the same set of options.
-fzf-tmux --layout=reverse
-```
-
-![image](https://user-images.githubusercontent.com/700826/113379973-f1cc6500-93b5-11eb-8860-c9bc4498aadf.png)
-
-The limitation of `fzf-tmux` is that it only works when you're on tmux unlike
-`--height` option. But the advantage of it is that it's more flexible.
-(See `man fzf-tmux` for available options.)
+If you're using tmux, you can open fzf in a tmux popup using `--tmux` option.
 
 ```sh
-# On the right (50%)
-fzf-tmux -r
-
-# On the left (30%)
-fzf-tmux -l30%
-
-# Above the cursor
-fzf-tmux -u30%
+# Open fzf in a tmux popup at the center of the screen with 70% width and height
+fzf --tmux 70%
 ```
 
-![image](https://user-images.githubusercontent.com/700826/113379983-fa24a000-93b5-11eb-93eb-8a3d39b2f163.png)
+![image](https://github.com/junegunn/fzf/assets/700826/9c365405-c700-49b2-8985-60d822ed4cff)
 
-![image](https://user-images.githubusercontent.com/700826/113380001-0577cb80-93b6-11eb-95d0-2ba453866882.png)
-
-![image](https://user-images.githubusercontent.com/700826/113380040-1d4f4f80-93b6-11eb-9bef-737fb120aafe.png)
-
-#### Popup window support
-
-But here's the really cool part; tmux 3.2 added support for popup windows. So
-you can open fzf in a popup window, which is quite useful if you frequently
-use split panes.
+`--tmux` option is silently ignored if you're not on tmux. So if you're trying
+to avoid opening fzf in fullscreen, try specifying both `--height` and `--tmux`.
 
 ```sh
-# Open tmux in a tmux popup window (default size: 50% of the screen)
-fzf-tmux -p
-
-# 80% width, 60% height
-fzf-tmux -p 80%,60%
+# --tmux is specified later so it takes precedence over --height when on tmux.
+# If you're not on tmux, --tmux is ignored and --height is used instead.
+fzf  --height 70% --tmux 70%
 ```
 
-![image](https://user-images.githubusercontent.com/700826/113380106-4a9bfd80-93b6-11eb-8cee-aeb1c4ce1a1f.png)
+You can also specify the position, width, and height of the popup window in
+the following format:
 
+* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]`
+
+```sh
+# 100% width and 60% height
+fzf --tmux 100%,60% --border horizontal
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/f80d3514-d69f-42f2-a8de-a392a562bfcf)
+
+```sh
+# On the right (50% width)
+fzf --tmux right
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/4033ade4-7efa-421b-a3fb-a430d197098a)
+
+```sh
+# On the left (40% width and 70% height)
+fzf --tmux left,40%,70%
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/efe43881-2bf0-49ea-ab2e-1377f778cd52)
+
+> [!TIP]
 > You might also want to check out my tmux plugins which support this popup
 > window layout.
 >
@@ -536,8 +534,8 @@ pods() {
     --bind 'start:reload:$command' \
     --bind 'ctrl-r:reload:$command' \
     --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
-    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
-    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
     --preview-window up:follow \
     --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
 }

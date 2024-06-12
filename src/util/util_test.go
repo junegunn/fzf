@@ -203,3 +203,34 @@ func TestStringWidth(t *testing.T) {
 		t.Errorf("Expected: %d, Actual: %d", 1, w)
 	}
 }
+
+func TestCompareVersions(t *testing.T) {
+	assert := func(a, b string, expected int) {
+		if result := CompareVersions(a, b); result != expected {
+			t.Errorf("Expected: %d, Actual: %d", expected, result)
+		}
+	}
+
+	assert("2", "1", 1)
+	assert("2", "2", 0)
+	assert("2", "10", -1)
+
+	assert("2.1", "2.2", -1)
+	assert("2.1", "2.1.1", -1)
+
+	assert("1.2.3", "1.2.2", 1)
+	assert("1.2.3", "1.2.3", 0)
+	assert("1.2.3", "1.2.3.0", 0)
+	assert("1.2.3", "1.2.4", -1)
+
+	// Different number of parts
+	assert("1.0.0", "1", 0)
+	assert("1.0.0", "1.0", 0)
+	assert("1.0.0", "1.0.0", 0)
+	assert("1.0", "1.0.0", 0)
+	assert("1", "1.0.0", 0)
+	assert("1.0.0", "1.0.0.1", -1)
+	assert("1.0.0.1.0", "1.0.0.1", 0)
+
+	assert("", "3.4.5", -1)
+}

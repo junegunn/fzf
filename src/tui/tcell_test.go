@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"os"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -20,7 +21,7 @@ func assert(t *testing.T, context string, got interface{}, want interface{}) boo
 
 // Test the handling of the tcell keyboard events.
 func TestGetCharEventKey(t *testing.T) {
-	if util.ToTty() {
+	if util.IsTty(os.Stdout) {
 		// This test is skipped when output goes to terminal, because it causes
 		// some glitches:
 		// - output lines may not start at the beginning of a row which makes

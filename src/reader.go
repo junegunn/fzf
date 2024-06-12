@@ -25,6 +25,7 @@ type Reader struct {
 	finChan  chan bool
 	mutex    sync.Mutex
 	exec     *exec.Cmd
+	execOut  io.ReadCloser
 	command  *string
 	killed   bool
 	wait     bool
@@ -32,7 +33,7 @@ type Reader struct {
 
 // NewReader returns new Reader object
 func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util.Executor, delimNil bool, wait bool) *Reader {
-	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
+	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, nil, false, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -79,6 +80,7 @@ func (r *Reader) terminate() {
 	r.mutex.Lock()
 	r.killed = true
 	if r.exec != nil && r.exec.Process != nil {
+		r.execOut.Close()
 		util.KillCommand(r.exec)
 	} else {
 		os.Stdin.Close()
@@ -113,7 +115,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 	var success bool
 	if inputChan != nil {
 		success = r.readChannel(inputChan)
-	} else if util.IsTty() {
+	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			success = r.readFiles(root, opts, ignores)
@@ -263,16 +265,23 @@ func (r *Reader) readFromCommand(command string, environ []string) bool {
 	if environ != nil {
 		r.exec.Env = environ
 	}
-	out, err := r.exec.StdoutPipe()
+
+	var err error
+	r.execOut, err = r.exec.StdoutPipe()
 	if err != nil {
+		r.exec = nil
 		r.mutex.Unlock()
 		return false
 	}
+
 	err = r.exec.Start()
-	r.mutex.Unlock()
 	if err != nil {
+		r.exec = nil
+		r.mutex.Unlock()
 		return false
 	}
-	r.feed(out)
+
+	r.mutex.Unlock()
+	r.feed(r.execOut)
 	return r.exec.Wait() == nil
 }

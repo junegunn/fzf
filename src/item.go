@@ -1,6 +1,8 @@
 package fzf
 
 import (
+	"math"
+
 	"github.com/junegunn/fzf/src/util"
 )
 
@@ -17,7 +19,7 @@ func (item *Item) Index() int32 {
 	return item.text.Index
 }
 
-var minItem = Item{text: util.Chars{Index: -1}}
+var minItem = Item{text: util.Chars{Index: math.MinInt32}}
 
 func (item *Item) TrimLength() uint16 {
 	return item.text.TrimLength()

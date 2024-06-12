@@ -311,7 +311,7 @@ The following table summarizes the available options.
   `options`                   | string/list   | Options to fzf
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | (Layout) Window position and size (e.g.  `20` ,  `50%` )
-  `tmux`                      | string        | (Layout) fzf-tmux options (e.g.  `-p90%,60%` )
+  `tmux`                      | string        | (Layout) `--tmux` options (e.g.  `90%,70%` )
   `window`  (Vim 8 / Neovim)  | string        | (Layout) Command to open fzf window (e.g.  `vertical aboveleft 30new` )
   `window`  (Vim 8 / Neovim)  | dict          | (Layout) Popup window settings (e.g.  `{'width': 0.9, 'height': 0.6}` )
  ---------------------------+---------------+----------------------------------------------------------------------
@@ -469,11 +469,12 @@ in Neovim.
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 <
 Alternatively, you can make fzf open in a tmux popup window (requires tmux 3.2
-or above) by putting fzf-tmux options in `tmux` key.
+or above) by putting `--tmux` options in `tmux` key.
 >
-    " See `man fzf-tmux` for available options
+    " See `--tmux` option in `man fzf` for available options
+    " [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
     if exists('$TMUX')
-      let g:fzf_layout = { 'tmux': '-p90%,60%' }
+      let g:fzf_layout = { 'tmux': '90%,70%' }
     else
       let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
     endif

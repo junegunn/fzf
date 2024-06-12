@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"unicode"
 	"unicode/utf8"
@@ -72,6 +73,35 @@ func (chars *Chars) IsBytes() bool {
 
 func (chars *Chars) Bytes() []byte {
 	return chars.slice
+}
+
+func (chars *Chars) NumLines(atMost int) (int, bool) {
+	lines := 1
+	if runes := chars.optionalRunes(); runes != nil {
+		for _, r := range runes {
+			if r == '\n' {
+				lines++
+			}
+			if lines > atMost {
+				return atMost, true
+			}
+		}
+		return lines, false
+	}
+
+	for idx := 0; idx < len(chars.slice); idx++ {
+		found := bytes.IndexByte(chars.slice[idx:], '\n')
+		if found < 0 {
+			break
+		}
+
+		idx += found
+		lines++
+		if lines > atMost {
+			return atMost, true
+		}
+	}
+	return lines, false
 }
 
 func (chars *Chars) optionalRunes() []rune {
