@@ -66,7 +66,7 @@ class Shell
     end
 
     def fish
-      "unset #{UNSETS.join(' ')}; FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer '>' --marker '>'\" fish_history= fish"
+      "unset #{UNSETS.join(' ')}; rm -f ~/.local/share/fish/fzf_test_history; FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer '>' --marker '>'\" fish_history=fzf_test fish"
     end
   end
 end
