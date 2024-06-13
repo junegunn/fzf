@@ -157,7 +157,9 @@ __fzf_generic_path_completion() {
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       matches=$(
-        export FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-}")
+        # Declare and assign separately for older zsh versions.
+        export FZF_DEFAULT_OPTS
+        FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-}")
         unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
         if declare -f "$compgen" > /dev/null; then
           eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover"
@@ -264,13 +266,14 @@ _fzf_complete_telnet() {
 # The first and the only argument is the LBUFFER without the current word that contains the trigger.
 # The current word without the trigger is in the $prefix variable passed from the caller.
 _fzf_complete_ssh() {
-  local tokens=(${(z)1})
+  local -a tokens
+  tokens=(${(z)1})
   case ${tokens[-1]} in
     -i|-F|-E)
       _fzf_path_completion "$prefix" "$1"
       ;;
     *)
-      local user=
+      local user
       [[ $prefix =~ @ ]] && user="${prefix%%@*}@"
       _fzf_complete +m -- "$@" < <(__fzf_list_hosts | awk -v user="$user" '{print user $0}')
       ;;
