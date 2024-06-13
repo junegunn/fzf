@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -222,6 +223,16 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
+func isSymlinkToDir(path string, de os.DirEntry) bool {
+	if de.Type()&fs.ModeSymlink == 0 {
+		return false
+	}
+	if s, err := os.Stat(path); err == nil {
+		return s.IsDir()
+	}
+	return false
+}
+
 func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
 	conf := fastwalk.Config{Follow: opts.follow}
@@ -232,7 +243,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		path = filepath.Clean(path)
 		if path != "." {
 			isDir := de.IsDir()
-			if isDir {
+			if isDir || opts.follow && isSymlinkToDir(path, de) {
 				base := filepath.Base(path)
 				if !opts.hidden && base[0] == '.' {
 					return filepath.SkipDir
