@@ -318,7 +318,6 @@ type Terminal struct {
 	startChan          chan fitpad
 	killChan           chan bool
 	serverInputChan    chan []*action
-	serverOutputChan   chan string
 	eventChan          chan tui.Event
 	slab               *util.Slab
 	theme              *tui.ColorTheme
@@ -497,7 +496,6 @@ const (
 	actUnbind
 	actRebind
 	actBecome
-	actResponse
 	actShowHeader
 	actHideHeader
 )
@@ -839,7 +837,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
-		serverOutputChan:   make(chan string),
 		eventChan:          make(chan tui.Event, 6), // (load + result + zero|one) | (focus) | (resize) | (GetChar)
 		tui:                renderer,
 		ttyin:              ttyin,
@@ -893,7 +890,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenAddr != nil {
-		listener, port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
+		listener, port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.dumpStatus)
 		if err != nil {
 			return nil, err
 		}
@@ -2996,11 +2993,14 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		}
 
 		t.tui.Pause(true)
+		t.mutex.Unlock()
 		cmd.Run()
+		t.mutex.Lock()
 		t.tui.Resume(true, false)
 		t.redraw()
 		t.refresh()
 	} else {
+		t.mutex.Unlock()
 		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -3016,6 +3016,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		} else {
 			cmd.Run()
 		}
+		t.mutex.Lock()
 	}
 	t.executing.Set(false)
 	removeFiles(tempFiles)
@@ -3719,8 +3720,6 @@ func (t *Terminal) Loop() error {
 		doAction = func(a *action) bool {
 			switch a.t {
 			case actIgnore, actStart, actClick:
-			case actResponse:
-				t.serverOutputChan <- t.dumpStatus(parseGetParams(a.a))
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
@@ -4708,7 +4707,29 @@ func (t *Terminal) dumpItem(i *Item) StatusItem {
 	}
 }
 
+func (t *Terminal) tryLock(timeout time.Duration) bool {
+	sleepDuration := 10 * time.Millisecond
+
+	for {
+		if t.mutex.TryLock() {
+			return true
+		}
+
+		timeout -= sleepDuration
+		if timeout <= 0 {
+			break
+		}
+		time.Sleep(sleepDuration)
+	}
+	return false
+}
+
 func (t *Terminal) dumpStatus(params getParams) string {
+	if !t.tryLock(channelTimeout) {
+		return ""
+	}
+	defer t.mutex.Unlock()
+
 	selectedItems := t.sortSelected()
 	selected := make([]StatusItem, util.Max(0, util.Min(params.limit, len(selectedItems)-params.offset)))
 	for i := range selected {
