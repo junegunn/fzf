@@ -339,9 +339,6 @@ func Run(opts *Options) (int, error) {
 					}
 					total = count
 					terminal.UpdateCount(total, !reading, value.(*string))
-					if opts.Sync {
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac, snapshotRevision), false)
-					}
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
@@ -429,7 +426,7 @@ func Run(opts *Options) (int, error) {
 								determine(val.final)
 							}
 						}
-						terminal.UpdateList(val, true)
+						terminal.UpdateList(val)
 					}
 				}
 			}

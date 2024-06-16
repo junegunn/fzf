@@ -3,16 +3,20 @@ CHANGELOG
 
 0.53.1
 ------
-- Bug fixes and minor improvements
-    - Better cache management and improved rendering for `--tail`
-    - Fixed crash when using `--tiebreak=end` with very long items
-    - Fixed mouse support on Windows
-    - zsh 5.0 compatibility (thanks to @LangLangBart)
-    - Fixed `--walker-skip` to also skip symlinks to directories
-    - GET endpoint is now available from `execute` and `transform` actions (it used to timeout due to lock conflict)
+- Better cache management and improved rendering for `--tail`
+- Improved `--sync` behavior
+    - When `--sync` is provided, fzf will not render the interface until the initial filtering and associated actions (bound to any of `start`, `load`, or `result`) are complete.
       ```sh
-      fzf --listen --bind 'focus:transform-header:curl -s localhost:$FZF_PORT?limit=0 | jq .'
+      (sleep 1; seq 1000000; sleep 1) | fzf --sync --query 5 --listen --bind start:up,load:up,result:up
       ```
+- GET endpoint is now available from `execute` and `transform` actions (it used to timeout due to lock conflict)
+  ```sh
+  fzf --listen --bind 'focus:transform-header:curl -s localhost:$FZF_PORT?limit=0 | jq .'
+  ```
+- Fixed crash when using `--tiebreak=end` with very long items
+- Fixed mouse support on Windows
+- zsh 5.0 compatibility (thanks to @LangLangBart)
+- Fixed `--walker-skip` to also skip symlinks to directories
 
 0.53.0
 ------

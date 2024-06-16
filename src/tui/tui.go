@@ -334,15 +334,6 @@ type Event struct {
 	MouseEvent *MouseEvent
 }
 
-func (e Event) Is(types ...EventType) bool {
-	for _, t := range types {
-		if e.Type == t {
-			return true
-		}
-	}
-	return false
-}
-
 type MouseEvent struct {
 	Y      int
 	X      int
