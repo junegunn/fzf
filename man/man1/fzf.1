@@ -889,10 +889,17 @@ e.g.
 .TP
 .B "--sync"
 Synchronous search for multi-staged filtering. If specified, fzf will launch
-the finder only after the input stream is complete.
+the finder only after the input stream is complete and the initial filtering
+and the associated actions (bound to any of \fBstart\fR, \fBload\fR,
+\fBresult\fR, or \fBfocus\fR) are complete.
 
 .RS
-e.g. \fBfzf --multi | fzf --sync\fR
+e.g. \fB# Avoid rendering both fzf instances at the same time
+     fzf --multi | fzf --sync
+
+     # fzf will not render intermediate states
+     (sleep 1; seq 1000000; sleep 1) |
+       fzf --sync --query 5 --listen --bind start:up,load:up,result:up,focus:change-header:Ready\fR
 .RE
 .TP
 .B "--with-shell=STR"

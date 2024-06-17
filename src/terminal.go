@@ -915,7 +915,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 }
 
 func (t *Terminal) deferActivation() bool {
-	return t.initDelay == 0 && (t.hasStartActions || t.hasLoadActions || t.hasResultActions)
+	return t.initDelay == 0 && (t.hasStartActions || t.hasLoadActions || t.hasResultActions || t.hasFocusActions)
 }
 
 func (t *Terminal) environ() []string {
@@ -1237,6 +1237,7 @@ func (t *Terminal) UpdateList(merger *Merger) {
 			t.cy = count - util.Min(count, t.maxItems()) + pos
 		}
 	}
+	needActivation := false
 	if !t.reading {
 		switch t.merger.Length() {
 		case 0:
@@ -1244,6 +1245,8 @@ func (t *Terminal) UpdateList(merger *Merger) {
 			if _, prs := t.keymap[zero]; prs {
 				t.eventChan <- zero
 			}
+			// --sync, only 'focus' is bound, but no items to focus
+			needActivation = t.suppress && !t.hasResultActions && !t.hasLoadActions && t.hasFocusActions
 		case 1:
 			one := tui.One.AsEvent()
 			if _, prs := t.keymap[one]; prs {
@@ -1257,6 +1260,9 @@ func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	t.reqBox.Set(reqList, nil)
+	if needActivation {
+		t.reqBox.Set(reqActivate, nil)
+	}
 }
 
 func (t *Terminal) output() bool {
