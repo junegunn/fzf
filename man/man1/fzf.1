@@ -665,7 +665,7 @@ e.g.
 
 Also,
 
-* \fB{q}\fR (or \fB{fzf:query}\fR) is replaced to the current query string
+* \fB{q}\fR is replaced to the current query string
 .br
 * \fB{n}\fR is replaced to the zero-based ordinal index of the current item.
   Use \fB{+n}\fR if you want all index numbers when multiple lines are selected.
@@ -1295,7 +1295,7 @@ Triggered when the filtering for the current query is complete and the result li
 e.g.
      \fB# Put the cursor on the second item when the query string is empty
      # * Note that you can't use 'change' event in this case because the second position may not be available
-     fzf --sync --bind 'result:transform:[[ -z {fzf:query} ]] && echo "pos(2)"'\fR
+     fzf --sync --bind 'result:transform:[[ -z {q} ]] && echo "pos(2)"'\fR
 .RE
 \fIchange\fR
 .RS
