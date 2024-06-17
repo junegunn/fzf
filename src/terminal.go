@@ -1253,9 +1253,9 @@ func (t *Terminal) UpdateList(merger *Merger) {
 				t.eventChan <- one
 			}
 		}
-		if t.hasResultActions {
-			t.eventChan <- tui.Result.AsEvent()
-		}
+	}
+	if t.hasResultActions {
+		t.eventChan <- tui.Result.AsEvent()
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)

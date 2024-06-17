@@ -19,6 +19,7 @@ CHANGELOG
 - Fixed mouse support on Windows
 - zsh 5.0 compatibility (thanks to @LangLangBart)
 - Fixed `--walker-skip` to also skip symlinks to directories
+- Fixed `result` event not fired when input stream is not complete
 
 0.53.0
 ------
