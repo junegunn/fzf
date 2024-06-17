@@ -451,6 +451,7 @@ const (
 	actHalfPageDown
 	actOffsetUp
 	actOffsetDown
+	actOffsetMiddle
 	actJump
 	actJumpAccept // XXX Deprecated in favor of jump:accept binding
 	actPrintQuery // XXX Deprecated (not very useful, just use --print-query)
@@ -4199,6 +4200,11 @@ func (t *Terminal) Loop() error {
 					t.vmove(diff, false)
 				}
 				req(reqList)
+			case actOffsetMiddle:
+				soff := t.scrollOff
+				t.scrollOff = t.window.Height()
+				t.constrain()
+				t.scrollOff = soff
 			case actJump:
 				t.jumping = jumpEnabled
 				req(reqJump)

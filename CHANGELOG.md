@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.53.1
+0.54.0
 ------
 - Better cache management and improved rendering for `--tail`
 - Improved `--sync` behavior
@@ -15,8 +15,9 @@ CHANGELOG
   ```sh
   fzf --listen --sync --bind 'focus:transform-header:curl -s localhost:$FZF_PORT?limit=0 | jq .'
   ```
-- Fixed crash when using `--tiebreak=end` with very long items
+- Added `offset-middle` action to place the current item is in the middle of the screen
 - Fixed mouse support on Windows
+- Fixed crash when using `--tiebreak=end` with very long items
 - zsh 5.0 compatibility (thanks to @LangLangBart)
 - Fixed `--walker-skip` to also skip symlinks to directories
 - Fixed `result` event not fired when input stream is not complete

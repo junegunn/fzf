@@ -1419,6 +1419,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actOffsetUp)
 		case "offset-down":
 			appendAction(actOffsetDown)
+		case "offset-middle":
+			appendAction(actOffsetMiddle)
 		case "preview-top":
 			appendAction(actPreviewTop)
 		case "preview-bottom":
