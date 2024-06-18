@@ -157,7 +157,6 @@ __fzf_generic_path_completion() {
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
       matches=$(
-        # Declare and assign separately for older zsh versions.
         export FZF_DEFAULT_OPTS
         FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-}")
         unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
