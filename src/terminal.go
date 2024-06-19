@@ -771,7 +771,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		pointerLen:         uniseg.StringWidth(*opts.Pointer),
 		marker:             *opts.Marker,
 		markerLen:          uniseg.StringWidth(*opts.Marker),
-		markerMultiLine:    opts.MarkerMulti,
+		markerMultiLine:    *opts.MarkerMulti,
 		wordRubout:         wordRubout,
 		wordNext:           wordNext,
 		cx:                 len(input),

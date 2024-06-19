@@ -10,6 +10,15 @@ CHANGELOG
   ```
     - `$FZF_INFO` is set to the original info text
     - ANSI color codes are supported
+- Pointer and marker signs can be set to empty strings
+  ```sh
+  # Minimal style
+  fzf --pointer '' --marker '' --info hidden
+
+  # When --read0 is specified, there can be multi-line entries,
+  # so you need to set --marker-multi-line to an empty string
+  find . -print0 | fzf --read0 --pointer '' --marker-multi-line '' --info hidden
+  ```
 - Better cache management and improved rendering for `--tail`
 - Improved `--sync` behavior
     - When `--sync` is provided, fzf will not render the interface until the initial filtering and the associated actions (bound to any of `start`, `load`, `result`, or `focus`) are complete.

@@ -3340,6 +3340,22 @@ class TestGoFZF < TestBase
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
+
+  def test_fzf_multi_line_no_pointer_and_marker
+    tmux.send_keys %[(echo -en '0\\0'; echo -en '1\\n2\\0'; seq 1000) | fzf --read0 --multi --bind load:select-all --border rounded --reverse --pointer '' --marker '' --marker-multi-line ''], :Enter
+    block = <<~BLOCK
+      ╭───────────
+      │ >
+      │   3/3 (3)
+      │ 0
+      │ 1
+      │ 2
+      │ 1
+      │ 2
+      │ 3
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end
 
 module TestShell
