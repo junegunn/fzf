@@ -454,7 +454,6 @@ func TestValidateSign(t *testing.T) {
 		{"> ", true},
 		{"아", true},
 		{"😀", true},
-		{"", false},
 		{">>>", false},
 	}
 
