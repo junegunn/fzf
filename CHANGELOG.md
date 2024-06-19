@@ -3,7 +3,7 @@ CHANGELOG
 
 0.54.0
 ------
-- Added `--info-command` option for customizing info text
+- Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
   fzf --info-command='echo -e "\x1b[33;1m$FZF_POS\x1b[m/$FZF_INFO 💛"'
