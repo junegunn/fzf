@@ -207,6 +207,7 @@ type Status struct {
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
+	infoCommand        string
 	infoStyle          infoStyle
 	infoPrefix         string
 	separator          labelPrinter
@@ -753,6 +754,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 
 	t := Terminal{
 		initDelay:          delay,
+		infoCommand:        opts.InfoCommand,
 		infoStyle:          opts.InfoStyle,
 		infoPrefix:         opts.InfoPrefix,
 		separator:          nil,
@@ -1840,6 +1842,12 @@ func (t *Terminal) printInfo() {
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
+	var outputPrinter labelPrinter
+	var outputLen int
+	if t.infoCommand != "" {
+		output = t.executeCommand(t.infoCommand, false, true, true, true, output)
+		outputPrinter, outputLen = t.ansiLabelPrinter(output, &tui.ColInfo, false)
+	}
 
 	if t.infoStyle == infoRight {
 		maxWidth := t.window.Width()
@@ -1847,8 +1855,13 @@ func (t *Terminal) printInfo() {
 			// Need space for spinner and a margin column
 			maxWidth -= 2
 		}
-		output = t.trimMessage(output, maxWidth)
-		fillLength := t.window.Width() - len(output) - 2
+		var fillLength int
+		if outputPrinter == nil {
+			output = t.trimMessage(output, maxWidth)
+			fillLength = t.window.Width() - len(output) - 2
+		} else {
+			fillLength = t.window.Width() - outputLen - 2
+		}
 		if t.reading {
 			if fillLength >= 2 {
 				printSeparator(fillLength-2, true)
@@ -1858,15 +1871,22 @@ func (t *Terminal) printInfo() {
 		} else if fillLength >= 0 {
 			printSeparator(fillLength, true)
 		}
-		t.window.CPrint(tui.ColInfo, output)
+		if outputPrinter == nil {
+			t.window.CPrint(tui.ColInfo, output)
+		} else {
+			outputPrinter(t.window, maxWidth)
+		}
 		t.window.Print(" ") // Margin
 		return
 	}
 
 	if t.infoStyle == infoInlineRight {
+		if outputPrinter == nil {
+			outputLen = util.StringWidth(output)
+		}
 		if len(t.infoPrefix) == 0 {
 			move(line, pos, false)
-			newPos := util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+			newPos := util.Max(pos, t.window.Width()-outputLen-3)
 			t.window.Print(strings.Repeat(" ", newPos-pos))
 			pos = newPos
 			if pos < t.window.Width() {
@@ -1878,14 +1898,18 @@ func (t *Terminal) printInfo() {
 				pos++
 			}
 		} else {
-			pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-util.StringWidth(t.infoPrefix)-1)
+			pos = util.Max(pos, t.window.Width()-outputLen-util.StringWidth(t.infoPrefix)-1)
 			printInfoPrefix()
 		}
 	}
 
 	maxWidth := t.window.Width() - pos
-	output = t.trimMessage(output, maxWidth)
-	t.window.CPrint(tui.ColInfo, output)
+	if outputPrinter == nil {
+		output = t.trimMessage(output, maxWidth)
+		t.window.CPrint(tui.ColInfo, output)
+	} else {
+		outputPrinter(t.window, maxWidth)
+	}
 
 	if t.infoStyle == infoInlineRight {
 		if t.separatorLen > 0 {
@@ -1895,7 +1919,7 @@ func (t *Terminal) printInfo() {
 		return
 	}
 
-	fillLength := maxWidth - len(output) - 2
+	fillLength := maxWidth - outputLen - 2
 	if fillLength > 0 {
 		t.window.CPrint(tui.ColSeparator, " ")
 		printSeparator(fillLength, false)
@@ -2983,7 +3007,7 @@ func (t *Terminal) fullRedraw() {
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool) string {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool, info string) string {
 	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
 	// 'capture' is used for transform-* and we don't want to
@@ -2994,6 +3018,9 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	command, tempFiles := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := t.executor.ExecCommand(command, false)
 	cmd.Env = t.environ()
+	if len(info) > 0 {
+		cmd.Env = append(cmd.Env, "FZF_INFO="+info)
+	}
 	t.executing.Set(true)
 	if !background {
 		// Open a separate handle for tty input
@@ -3021,17 +3048,20 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		}
 
 		t.mutex.Unlock()
-		t.uiMutex.Lock()
+		if len(info) == 0 {
+			t.uiMutex.Lock()
+		}
 		t.tui.Pause(true)
 		cmd.Run()
 		t.tui.Resume(true, false)
 		t.mutex.Lock()
 		t.fullRedraw()
 		t.flush()
-		t.uiMutex.Unlock()
 	} else {
 		t.mutex.Unlock()
-		t.uiMutex.Lock()
+		if len(info) == 0 {
+			t.uiMutex.Lock()
+		}
 		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -3048,6 +3078,8 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 			cmd.Run()
 		}
 		t.mutex.Lock()
+	}
+	if len(info) == 0 {
 		t.uiMutex.Unlock()
 	}
 	t.executing.Set(false)
@@ -3528,13 +3560,20 @@ func (t *Terminal) Loop() error {
 						t.printList()
 						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
+						printInfo := false
 						if focusChanged && t.track == trackCurrent {
 							t.track = trackDisabled
-							t.printInfo()
+							printInfo = true
 						}
-						if t.hasFocusActions && focusChanged && currentIndex != t.lastFocus {
+						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
 							t.lastFocus = currentIndex
 							t.eventChan <- tui.Focus.AsEvent()
+							if t.infoCommand != "" {
+								printInfo = true
+							}
+						}
+						if printInfo {
+							t.printInfo()
 						}
 						if focusChanged || version != t.version {
 							version = t.version
@@ -3809,9 +3848,9 @@ func (t *Terminal) Loop() error {
 					}
 				}
 			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)
+				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, "")
 			case actExecuteMulti:
-				t.executeCommand(a.a, true, false, false, false)
+				t.executeCommand(a.a, true, false, false, false, "")
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -3852,12 +3891,12 @@ func (t *Terminal) Loop() error {
 					req(reqPreviewRefresh)
 				}
 			case actTransformPrompt:
-				prompt := t.executeCommand(a.a, false, true, true, true)
+				prompt := t.executeCommand(a.a, false, true, true, true, "")
 				t.promptString = prompt
 				t.prompt, t.promptLen = t.parsePrompt(prompt)
 				req(reqPrompt)
 			case actTransformQuery:
-				query := t.executeCommand(a.a, false, true, true, true)
+				query := t.executeCommand(a.a, false, true, true, true, "")
 				t.input = []rune(query)
 				t.cx = len(t.input)
 			case actToggleSort:
@@ -3921,7 +3960,7 @@ func (t *Terminal) Loop() error {
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
 			case actTransformHeader:
-				header := t.executeCommand(a.a, false, true, true, false)
+				header := t.executeCommand(a.a, false, true, true, false, "")
 				if t.changeHeader(header) {
 					req(reqFullRedraw)
 				} else {
@@ -3946,19 +3985,19 @@ func (t *Terminal) Loop() error {
 					req(reqRedrawPreviewLabel)
 				}
 			case actTransform:
-				body := t.executeCommand(a.a, false, true, true, false)
+				body := t.executeCommand(a.a, false, true, true, false, "")
 				if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
 					return doActions(actions)
 				}
 			case actTransformBorderLabel:
-				label := t.executeCommand(a.a, false, true, true, true)
+				label := t.executeCommand(a.a, false, true, true, true, "")
 				t.borderLabelOpts.label = label
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
 			case actTransformPreviewLabel:
-				label := t.executeCommand(a.a, false, true, true, true)
+				label := t.executeCommand(a.a, false, true, true, true, "")
 				t.previewLabelOpts.label = label
 				if t.pborder != nil {
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)

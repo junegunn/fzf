@@ -453,6 +453,16 @@ Determines the display style of the finder info. (e.g. match counter, loading in
 .br
 
 .TP
+.BI "--info-command=" "COMMAND"
+Command to generate the finder info. The command runs synchronously and block
+the UI until completion, so make sure that it's fast. ANSI color codes are
+supported. \fB$FZF_INFO\f$ variable is set to the original info text.
+
+e.g.
+     \fB# Prepend the current cursor position in yellow
+     fzf --info-command='echo -e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
+
+.TP
 .B "--no-info"
 A synonym for \fB--info=hidden\fB
 

@@ -2978,6 +2978,28 @@ class TestGoFZF < TestBase
     tmux.until { assert_match(%r{     0/100000}, _1[-1]) }
   end
 
+  def test_info_command
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"'), :Enter)
+    tmux.until { assert_match(%r{^  --1/10000/10000-- xx}, _1[-2]) }
+    tmux.send_keys :Up
+    tmux.until { assert_match(%r{^  --2/10000/10000-- xx}, _1[-2]) }
+  end
+
+  def test_info_command_inline
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline:xx), :Enter)
+    tmux.until { assert_match(%r{^>  xx--1/10000/10000-- xx}, _1[-1]) }
+  end
+
+  def test_info_command_right
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info right), :Enter)
+    tmux.until { assert_match(%r{xx --1/10000/10000-- *$}, _1[-2]) }
+  end
+
+  def test_info_command_inline_right
+    tmux.send_keys(%(seq 10000 | #{FZF} --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline-right), :Enter)
+    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, _1[-1]) }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }

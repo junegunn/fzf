@@ -3,6 +3,13 @@ CHANGELOG
 
 0.54.0
 ------
+- Added `--info-command` option for customizing info text
+  ```sh
+  # Prepend the current cursor position in yellow
+  fzf --info-command='echo -e "\x1b[33;1m$FZF_POS\x1b[m/$FZF_INFO 💛"'
+  ```
+    - `$FZF_INFO` is set to the original info text
+    - ANSI color codes are supported
 - Better cache management and improved rendering for `--tail`
 - Improved `--sync` behavior
     - When `--sync` is provided, fzf will not render the interface until the initial filtering and the associated actions (bound to any of `start`, `load`, `result`, or `focus`) are complete.

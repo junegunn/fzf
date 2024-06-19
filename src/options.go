@@ -88,6 +88,7 @@ Usage: fzf [options]
     --padding=PADDING       Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE            Finder info style
                             [default|right|hidden|inline[-right][:PREFIX]]
+    --info-command=COMMAND  Command to generate info line
     --separator=STR         String to form horizontal separator on info line
     --no-separator          Hide info line separator
     --scrollbar[=C1[C2]]    Scrollbar character(s) (each for main and preview window)
@@ -443,6 +444,7 @@ type Options struct {
 	FileWord     bool
 	InfoStyle    infoStyle
 	InfoPrefix   string
+	InfoCommand  string
 	Separator    *string
 	JumpLabels   string
 	Prompt       string
@@ -2189,6 +2191,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(str); err != nil {
 				return err
 			}
+		case "--info-command":
+			if opts.InfoCommand, err = nextString(allArgs, &i, "info command required"); err != nil {
+				return err
+			}
+		case "--no-info-command":
+			opts.InfoCommand = ""
 		case "--no-info":
 			opts.InfoStyle = infoHidden
 		case "--inline-info":
@@ -2543,6 +2551,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--info-command="); match {
+				opts.InfoCommand = value
 			} else if match, value := optString(arg, "--separator="); match {
 				opts.Separator = &value
 			} else if match, value := optString(arg, "--scrollbar="); match {
