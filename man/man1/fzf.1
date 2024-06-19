@@ -100,7 +100,11 @@ Fuzzy matching algorithm (default: v2)
 .TP
 .BI "-n, --nth=" "N[,..]"
 Comma-separated list of field index expressions for limiting search scope.
-See \fBFIELD INDEX EXPRESSION\fR for the details.
+See \fBFIELD INDEX EXPRESSION\fR for the details. When you use this option with
+\fB--with-nth\fR, the field index expressions are calculated against the
+transformed lines (unlike in \fB--preview\fR where fields are extracted from
+the original lines) because fzf doesn't allow searching against the hidden
+fields.
 .TP
 .BI "--with-nth=" "N[,..]"
 Transform the presentation of each line using field index expressions
