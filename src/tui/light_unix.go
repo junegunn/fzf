@@ -33,15 +33,9 @@ func (r *LightRenderer) fd() int {
 	return int(r.ttyin.Fd())
 }
 
-func (r *LightRenderer) initPlatform() error {
-	fd := r.fd()
-	origState, err := term.GetState(fd)
-	if err != nil {
-		return err
-	}
-	r.origState = origState
-	term.MakeRaw(fd)
-	return nil
+func (r *LightRenderer) initPlatform() (err error) {
+	r.origState, err = term.MakeRaw(r.fd())
+	return err
 }
 
 func (r *LightRenderer) closePlatform() {
