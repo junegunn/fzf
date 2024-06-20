@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -57,6 +58,10 @@ const clearCode string = "\x1b[2J"
 
 // Number of maximum focus events to process synchronously
 const maxFocusEvents = 10000
+
+// execute-silent and transform* actions will block user input for this duration.
+// After this duration, users can press CTRL-C to terminate the command.
+const blockDuration = 1 * time.Second
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
@@ -1792,20 +1797,8 @@ func (t *Terminal) printInfo() {
 			t.window.Print(strings.Repeat(" ", fillLength+1))
 		}
 	}
-	switch t.infoStyle {
-	case infoDefault:
-		move(line+1, 0, t.separatorLen == 0)
-		printSpinner()
-		t.window.Print(" ") // Margin
-		pos = 2
-	case infoRight:
-		move(line+1, 0, false)
-	case infoInlineRight:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-	case infoInline:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-		printInfoPrefix()
-	case infoHidden:
+
+	if t.infoStyle == infoHidden {
 		if t.separatorLen > 0 {
 			move(line+1, 0, false)
 			printSeparator(t.window.Width()-1, false)
@@ -1847,6 +1840,21 @@ func (t *Terminal) printInfo() {
 	if t.infoCommand != "" {
 		output = t.executeCommand(t.infoCommand, false, true, true, true, output)
 		outputPrinter, outputLen = t.ansiLabelPrinter(output, &tui.ColInfo, false)
+	}
+
+	switch t.infoStyle {
+	case infoDefault:
+		move(line+1, 0, t.separatorLen == 0)
+		printSpinner()
+		t.window.Print(" ") // Margin
+		pos = 2
+	case infoRight:
+		move(line+1, 0, false)
+	case infoInlineRight:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+	case infoInline:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		printInfoPrefix()
 	}
 
 	if t.infoStyle == infoRight {
@@ -3055,6 +3063,7 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		cmd.Run()
 		t.tui.Resume(true, false)
 		t.mutex.Lock()
+		// NOTE: Using t.reqBox.Set(reqFullRedraw...) instead can cause a deadlock
 		t.fullRedraw()
 		t.flush()
 	} else {
@@ -3062,6 +3071,18 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		if len(info) == 0 {
 			t.uiMutex.Lock()
 		}
+		paused := atomic.Int32{}
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(blockDuration):
+				if paused.CompareAndSwap(0, 1) {
+					t.tui.Pause(false)
+				}
+			}
+		}()
 		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -3077,7 +3098,20 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		} else {
 			cmd.Run()
 		}
+		cancel()
+		if paused.CompareAndSwap(1, 2) {
+			t.tui.Resume(false, false)
+		}
 		t.mutex.Lock()
+
+		// Redraw prompt in case the user has typed something after blockDuration
+		if paused.Load() > 0 {
+			// NOTE: Using t.reqBox.Set(reqXXX...) instead can cause a deadlock
+			t.printPrompt()
+			if t.infoStyle == infoInline || t.infoStyle == infoInlineRight {
+				t.printInfo()
+			}
+		}
 	}
 	if len(info) == 0 {
 		t.uiMutex.Unlock()
@@ -3300,11 +3334,11 @@ func (t *Terminal) Loop() error {
 		t.termSize = t.tui.Size()
 		t.resizeWindows(false)
 		t.window.Erase()
-		t.printPrompt()
-		t.printInfo()
-		t.printHeader()
-		t.flush()
 		t.mutex.Unlock()
+
+		t.reqBox.Set(reqPrompt, nil)
+		t.reqBox.Set(reqInfo, nil)
+		t.reqBox.Set(reqHeader, nil)
 		if t.initDelay > 0 {
 			go func() {
 				timer := time.NewTimer(t.initDelay)
@@ -3530,6 +3564,14 @@ func (t *Terminal) Loop() error {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
 
+				// Sort events.
+				// e.g. Make sure that reqPrompt is processed before reqInfo
+				keys := make([]int, 0, len(*events))
+				for key := range *events {
+					keys = append(keys, int(key))
+				}
+				sort.Ints(keys)
+
 				// t.uiMutex must be locked first to avoid deadlock. Execute actions
 				// will 1. unlock t.mutex to allow GET endpoint and 2. lock t.uiMutex
 				// to block rendering during the execution.
@@ -3547,33 +3589,36 @@ func (t *Terminal) Loop() error {
 				//  U t.uiMutex                 |
 				t.uiMutex.Lock()
 				t.mutex.Lock()
-				for req, value := range *events {
+				printInfo := util.RunOnce(t.printInfo)
+				for _, key := range keys {
+					req := util.EventType(key)
+					value := (*events)[req]
 					switch req {
 					case reqPrompt:
 						t.printPrompt()
 						if t.infoStyle == infoInline || t.infoStyle == infoInlineRight {
-							t.printInfo()
+							printInfo()
 						}
 					case reqInfo:
-						t.printInfo()
+						printInfo()
 					case reqList:
 						t.printList()
 						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
-						printInfo := false
+						info := false
 						if focusChanged && t.track == trackCurrent {
 							t.track = trackDisabled
-							printInfo = true
+							info = true
 						}
 						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
 							t.lastFocus = currentIndex
 							t.eventChan <- tui.Focus.AsEvent()
 							if t.infoCommand != "" {
-								printInfo = true
+								info = true
 							}
 						}
-						if printInfo {
-							t.printInfo()
+						if info {
+							printInfo()
 						}
 						if focusChanged || version != t.version {
 							version = t.version
