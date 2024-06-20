@@ -111,8 +111,8 @@ fzf-history-widget() {
   # Ensure the associative history array, which maps event numbers to the full
   # history lines, is loaded, and that Perl is installed for multi-line output.
   if zmodload -F zsh/parameter p:history 2>/dev/null && (( ${#commands[perl]} )); then
-    selected="$(printf '%1$s\t%2$s\000' "${(vk)history[@]}" |
-      perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\s+(.*)/, $1)}++) { s/\n/\n\t/gm; print; }' |
+    selected="$(printf '%s\t%s\000' "${(@kv)history}" |
+      perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\t(.*)/s, $1)}++) { s/\n/\n\t/g; print; }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   else
