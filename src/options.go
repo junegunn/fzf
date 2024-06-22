@@ -53,6 +53,7 @@ Usage: fzf [options]
     --no-mouse              Disable mouse
     --bind=KEYBINDS         Custom key bindings. Refer to the man page.
     --cycle                 Enable cyclic scroll
+    --wrap                  Enable line wrap
     --no-multi-line         Disable multi-line display of items when using --read0
     --keep-right            Keep the right end of the line visible on overflow
     --scroll-off=LINES      Number of screen lines to keep above or below when
@@ -435,6 +436,7 @@ type Options struct {
 	MinHeight    int
 	Layout       layoutType
 	Cycle        bool
+	Wrap         bool
 	MultiLine    bool
 	CursorLine   bool
 	KeepRight    bool
@@ -543,6 +545,7 @@ func defaultOptions() *Options {
 		MinHeight:    10,
 		Layout:       layoutDefault,
 		Cycle:        false,
+		Wrap:         false,
 		MultiLine:    true,
 		KeepRight:    false,
 		Hscroll:      true,
@@ -1366,6 +1369,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrackCurrent)
 		case "toggle-header":
 			appendAction(actToggleHeader)
+		case "toggle-wrap":
+			appendAction(actToggleWrap)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
@@ -2163,6 +2168,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
+		case "--wrap":
+			opts.Wrap = true
+		case "--no-wrap":
+			opts.Wrap = false
 		case "--multi-line":
 			opts.MultiLine = true
 		case "--no-multi-line":

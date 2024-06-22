@@ -1,6 +1,9 @@
 package util
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestToCharsAscii(t *testing.T) {
 	chars := ToChars([]byte("foobar"))
@@ -43,4 +46,29 @@ func TestTrimLength(t *testing.T) {
 	check("h   o", 5)
 	check("  h   o  ", 5)
 	check("         ", 0)
+}
+
+func TestCharsLines(t *testing.T) {
+	chars := ToChars([]byte("abc\n한글\ndef"))
+	for _, ml := range []bool{true, false} {
+		// No wrap
+		lines, overflow := chars.Lines(ml, 1, 0, 8)
+		fmt.Println(lines, overflow)
+		lines, overflow = chars.Lines(ml, 2, 0, 8)
+		fmt.Println(lines, overflow)
+		lines, overflow = chars.Lines(ml, 3, 0, 8)
+		fmt.Println(lines, overflow)
+
+		// Wrap
+		lines, overflow = chars.Lines(ml, 4, 2, 8)
+		fmt.Println(lines, overflow)
+		lines, overflow = chars.Lines(ml, 100, 1, 8)
+		fmt.Println(lines, overflow)
+
+		chars = ToChars([]byte("abc\n한글\ndef\n\n\n"))
+		lines, overflow = chars.Lines(ml, 100, 100, 8)
+		fmt.Println(lines, overflow)
+		numLines, overflow := chars.NumLines(8)
+		fmt.Println(numLines, overflow)
+	}
 }

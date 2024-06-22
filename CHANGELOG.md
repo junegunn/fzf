@@ -3,6 +3,9 @@ CHANGELOG
 
 0.54.0
 ------
+- Added `--wrap` option to enable line wrap and added `toggle-wrap` action
+  ```sh
+  history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap'
 - Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
