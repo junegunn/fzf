@@ -227,7 +227,7 @@ func (chars *Chars) Prepend(prefix string) {
 	}
 }
 
-func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, tabstop int) ([][]rune, bool) {
+func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWidth int, tabstop int) ([][]rune, bool) {
 	text := make([]rune, chars.Length())
 	copy(text, chars.ToRunes())
 
@@ -274,7 +274,11 @@ func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, tabstop in
 		}
 
 		for {
-			_, overflowIdx := RunesWidth(line, 0, tabstop, wrapCols)
+			cols := wrapCols
+			if len(wrapped) > 0 {
+				cols -= wrapSignWidth
+			}
+			_, overflowIdx := RunesWidth(line, 0, tabstop, cols)
 			if overflowIdx >= 0 {
 				// Might be a wide character
 				if overflowIdx == 0 {

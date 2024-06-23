@@ -218,6 +218,7 @@ type Terminal struct {
 	infoPrefix         string
 	wrap               bool
 	wrapSign           string
+	wrapSignWidth      int
 	separator          labelPrinter
 	separatorLen       int
 	spinner            []string
@@ -886,6 +887,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	} else {
 		t.wrapSign = "> "
 	}
+	t.wrapSign, t.wrapSignWidth = t.processTabs([]rune(t.wrapSign), 0)
 	if opts.Scrollbar == nil {
 		if t.unicode && t.borderWidth == 1 {
 			t.scrollbar = "│"
@@ -1115,7 +1117,7 @@ func (t *Terminal) wrapCols() int {
 	if !t.wrap {
 		return 0 // No wrap
 	}
-	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+1)-2, 1)
+	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+1), 1)
 }
 
 func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
@@ -1125,7 +1127,7 @@ func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
 	if !t.wrap && t.multiLine {
 		return item.text.NumLines(atMost)
 	}
-	lines, overflow := item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.tabstop)
+	lines, overflow := item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
 	return len(lines), overflow
 }
 
@@ -1135,7 +1137,7 @@ func (t *Terminal) itemLines(item *Item, atMost int) ([][]rune, bool) {
 		copy(text, item.text.ToRunes())
 		return [][]rune{text}, false
 	}
-	return item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.tabstop)
+	return item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
 }
 
 // Estimate the average number of lines per item. Instead of going through all
@@ -2119,7 +2121,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			fillSpaces := maxWidth - width
 			if wrapped {
-				fillSpaces -= 2
+				fillSpaces -= t.wrapSignWidth
 			}
 			if fillSpaces > 0 {
 				t.window.CPrint(color, strings.Repeat(" ", fillSpaces))
@@ -2127,12 +2129,15 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			newLine.width = maxWidth
 		} else {
 			fillSpaces := t.prevLines[lineNum].width - width
+			if wrapped {
+				fillSpaces -= t.wrapSignWidth
+			}
 			if fillSpaces > 0 {
 				t.window.Print(strings.Repeat(" ", fillSpaces))
 			}
 			newLine.width = width
 			if wrapped {
-				newLine.width += 2
+				newLine.width += t.wrapSignWidth
 			}
 		}
 		// When width is 0, line is completely cleared. We need to redraw scrollbar
@@ -2355,7 +2360,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 		wasWrapped := false
 		if wrapped {
-			maxWidth -= 2
+			maxWidth -= t.wrapSignWidth
 			t.window.CPrint(colBase.WithAttr(tui.Dim), t.wrapSign)
 			wrapped = false
 			wasWrapped = true
@@ -2367,10 +2372,10 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			wrapped = true
 		}
 
-		ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
-		maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(line))
 		displayWidth = t.displayWidthWithLimit(line, 0, maxWidth)
-		if displayWidth > maxWidth {
+		if !t.wrap && displayWidth > maxWidth {
+			ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
+			maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(line))
 			transformOffsets := func(diff int32, rightTrim bool) {
 				for idx, offset := range offsets {
 					b, e := offset.offset[0], offset.offset[1]
