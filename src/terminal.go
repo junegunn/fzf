@@ -1881,7 +1881,7 @@ func (t *Terminal) printInfo() {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
 	var outputPrinter labelPrinter
-	var outputLen int
+	outputLen := len(output)
 	if t.infoCommand != "" {
 		output = t.executeCommand(t.infoCommand, false, true, true, true, output)
 		outputPrinter, outputLen = t.ansiLabelPrinter(output, &tui.ColInfo, false)
@@ -1931,16 +1931,13 @@ func (t *Terminal) printInfo() {
 		if outputPrinter == nil {
 			t.window.CPrint(tui.ColInfo, output)
 		} else {
-			outputPrinter(t.window, maxWidth)
+			outputPrinter(t.window, maxWidth-1)
 		}
 		t.window.Print(" ") // Margin
 		return
 	}
 
 	if t.infoStyle == infoInlineRight {
-		if outputPrinter == nil {
-			outputLen = util.StringWidth(output)
-		}
 		if len(t.infoPrefix) == 0 {
 			move(line, pos, false)
 			newPos := util.Max(pos, t.window.Width()-outputLen-3)
