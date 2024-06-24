@@ -2945,3 +2945,18 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 
 	return opts, nil
 }
+
+func (opts *Options) reloadOnStart() bool {
+	// Not compatible with --filter
+	if opts.Filter != nil {
+		return false
+	}
+	if actions, prs := opts.Keymap[tui.Start.AsEvent()]; prs {
+		for _, action := range actions {
+			if action.t == actReload || action.t == actReloadSync {
+				return true
+			}
+		}
+	}
+	return false
+}

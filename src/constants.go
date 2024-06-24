@@ -58,6 +58,7 @@ const (
 const (
 	EvtReadNew util.EventType = iota
 	EvtReadFin
+	EvtReadNone
 	EvtSearchNew
 	EvtSearchProgress
 	EvtSearchFin

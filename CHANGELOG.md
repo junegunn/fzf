@@ -32,6 +32,15 @@ CHANGELOG
   fzf --listen --sync --bind 'focus:transform-header:curl -s localhost:$FZF_PORT?limit=0 | jq .'
   ```
 - Added `offset-middle` action to place the current item is in the middle of the screen
+- fzf will not start the initial reader when `reload` or `reload-sync` is bound to `start` event. `fzf < /dev/null` or `: | fzf` are no longer required and extraneous `load` event will not fire due to the empty list.
+  ```sh
+  # Now this will work as expected. Previously, this would print an invalid header line.
+  # `fzf < /dev/null` or `: | fzf` would fix the problem, but then an extraneous 
+  # `load` event would fire and the header would be prematurely updated.
+  fzf --header 'Loading ...' --header-lines 1 \
+      --bind 'start:reload:sleep 1; ps -ef' \
+      --bind 'load:change-header:Loaded!'
+  ```
 - Fixed mouse support on Windows
 - Fixed crash when using `--tiebreak=end` with very long items
 - zsh 5.0 compatibility (thanks to @LangLangBart)
