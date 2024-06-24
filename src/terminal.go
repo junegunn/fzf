@@ -1077,8 +1077,11 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	}
 	output := func() {
 		line := t.promptLine()
+		wrap := t.wrap
+		t.wrap = false
 		t.printHighlighted(
 			Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, nil, nil)
+		t.wrap = wrap
 	}
 	_, promptLen := t.processTabs([]rune(trimmed), 0)
 
