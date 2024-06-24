@@ -3,9 +3,16 @@ CHANGELOG
 
 0.54.0
 ------
-- Added `--wrap` option to enable line wrap and added `toggle-wrap` action
+- Implemented line wrap of long items
+    - `--wrap` option enables line wrap
+    - `--wrap-sign` customizes the sign for wrapped lines (default: `↳ `)
+    - `toggle-wrap` action toggles line wrap
   ```sh
   history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap'
+
+  # You can press CTRL-/ to toggle line wrap in CTRL-R binding
+  export FZF_CTRL_R_OPTS=$'--bind ctrl-/:toggle-wrap --wrap-sign "\t↳ "'
+  ```
 - Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
