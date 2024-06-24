@@ -26,12 +26,12 @@ BASE = File.expand_path('..', __dir__)
 Dir.chdir(BASE)
 FZF = "FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer \\> --marker \\>\" FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
-def wait
+def wait(timeout = DEFAULT_TIMEOUT)
   since = Time.now
   begin
     yield or raise Minitest::Assertion, 'Assertion failure'
   rescue Minitest::Assertion
-    raise if Time.now - since > DEFAULT_TIMEOUT
+    raise if Time.now - since > timeout
 
     sleep(0.05)
     retry
@@ -103,10 +103,10 @@ class Tmux
     go(%W[capture-pane -p -J -t #{win}]).map(&:rstrip).reverse.drop_while(&:empty?).reverse
   end
 
-  def until(refresh = false)
+  def until(refresh = false, timeout: DEFAULT_TIMEOUT)
     lines = nil
     begin
-      wait do
+      wait(timeout) do
         lines = capture
         class << lines
           def counts
@@ -3355,6 +3355,14 @@ class TestGoFZF < TestBase
       │ 3
     BLOCK
     tmux.until { assert_block(block, _1) }
+  end
+
+  def test_start_on_reload
+    tmux.send_keys %(echo foo | #{FZF} --header Loading --header-lines 1 --bind 'start:reload:sleep 2; echo bar' --bind 'load:change-header:Loaded'), :Enter
+    tmux.until(timeout: 1) { |lines| assert_includes lines[-3], 'Loading' }
+    tmux.until(timeout: 1) { |lines| refute_includes lines[-4], 'foo' }
+    tmux.until { |lines| assert_includes lines[-3], 'Loaded' }
+    tmux.until { |lines| assert_includes lines[-4], 'bar' }
   end
 end
 
