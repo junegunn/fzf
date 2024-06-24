@@ -3358,7 +3358,7 @@ class TestGoFZF < TestBase
   end
 
   def test_start_on_reload
-    tmux.send_keys %[echo foo | #{FZF} --header Loading --header-lines 1 --bind 'start:reload:sleep 2; echo bar' --bind 'load:change-header:Loaded'], :Enter
+    tmux.send_keys %(echo foo | #{FZF} --header Loading --header-lines 1 --bind 'start:reload:sleep 2; echo bar' --bind 'load:change-header:Loaded'), :Enter
     tmux.until(timeout: 1) { |lines| assert_includes lines[-3], 'Loading' }
     tmux.until(timeout: 1) { |lines| refute_includes lines[-4], 'foo' }
     tmux.until { |lines| assert_includes lines[-3], 'Loaded' }
