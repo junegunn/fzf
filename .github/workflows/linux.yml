@@ -46,6 +46,3 @@ jobs:
 
     - name: Integration test
       run: make install && ./install --all && tmux new-session -d && ruby test/test_go.rb --verbose
-
-    - name: Integration test (tcell)
-      run: TAGS=tcell make clean install && ruby test/test_go.rb --verbose

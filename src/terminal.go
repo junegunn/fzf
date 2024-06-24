@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -57,6 +58,10 @@ const clearCode string = "\x1b[2J"
 
 // Number of maximum focus events to process synchronously
 const maxFocusEvents = 10000
+
+// execute-silent and transform* actions will block user input for this duration.
+// After this duration, users can press CTRL-C to terminate the command.
+const blockDuration = 1 * time.Second
 
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
@@ -207,6 +212,7 @@ type Status struct {
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
+	infoCommand        string
 	infoStyle          infoStyle
 	infoPrefix         string
 	separator          labelPrinter
@@ -286,6 +292,7 @@ type Terminal struct {
 	borderWidth        int
 	count              int
 	progress           int
+	hasStartActions    bool
 	hasResultActions   bool
 	hasFocusActions    bool
 	hasLoadActions     bool
@@ -311,6 +318,7 @@ type Terminal struct {
 	previewBox         *util.EventBox
 	eventBox           *util.EventBox
 	mutex              sync.Mutex
+	uiMutex            sync.Mutex
 	initFunc           func() error
 	prevLines          []itemLine
 	suppress           bool
@@ -318,7 +326,7 @@ type Terminal struct {
 	startChan          chan fitpad
 	killChan           chan bool
 	serverInputChan    chan []*action
-	serverOutputChan   chan string
+	keyChan            chan tui.Event
 	eventChan          chan tui.Event
 	slab               *util.Slab
 	theme              *tui.ColorTheme
@@ -362,7 +370,7 @@ const (
 	reqHeader
 	reqList
 	reqJump
-	reqRefresh
+	reqActivate
 	reqReinit
 	reqFullRedraw
 	reqResize
@@ -449,6 +457,7 @@ const (
 	actHalfPageDown
 	actOffsetUp
 	actOffsetDown
+	actOffsetMiddle
 	actJump
 	actJumpAccept // XXX Deprecated in favor of jump:accept binding
 	actPrintQuery // XXX Deprecated (not very useful, just use --print-query)
@@ -497,7 +506,6 @@ const (
 	actUnbind
 	actRebind
 	actBecome
-	actResponse
 	actShowHeader
 	actHideHeader
 )
@@ -686,7 +694,9 @@ func evaluateHeight(opts *Options, termHeight int) int {
 func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor) (*Terminal, error) {
 	input := trimQuery(opts.Query)
 	var delay time.Duration
-	if opts.Tac {
+	if opts.Sync {
+		delay = 0
+	} else if opts.Tac {
 		delay = initialDelayTac
 	} else {
 		delay = initialDelay
@@ -749,6 +759,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 
 	t := Terminal{
 		initDelay:          delay,
+		infoCommand:        opts.InfoCommand,
 		infoStyle:          opts.InfoStyle,
 		infoPrefix:         opts.InfoPrefix,
 		separator:          nil,
@@ -765,7 +776,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		pointerLen:         uniseg.StringWidth(*opts.Pointer),
 		marker:             *opts.Marker,
 		markerLen:          uniseg.StringWidth(*opts.Marker),
-		markerMultiLine:    opts.MarkerMulti,
+		markerMultiLine:    *opts.MarkerMulti,
 		wordRubout:         wordRubout,
 		wordNext:           wordNext,
 		cx:                 len(input),
@@ -810,6 +821,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
+		hasStartActions:    false,
 		hasResultActions:   false,
 		hasFocusActions:    false,
 		hasLoadActions:     false,
@@ -832,6 +844,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		previewBox:         previewBox,
 		eventBox:           eventBox,
 		mutex:              sync.Mutex{},
+		uiMutex:            sync.Mutex{},
 		suppress:           true,
 		sigstop:            false,
 		slab:               util.MakeSlab(slab16Size, slab32Size),
@@ -839,8 +852,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
-		serverOutputChan:   make(chan string),
-		eventChan:          make(chan tui.Event, 6), // (load + result + zero|one) | (focus) | (resize) | (GetChar)
+		keyChan:            make(chan tui.Event),
+		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
 		tui:                renderer,
 		ttyin:              ttyin,
 		initFunc:           func() error { return renderer.Init() },
@@ -888,12 +901,13 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if t.tui.ShouldEmitResizeEvent() {
 		t.keymap[tui.Resize.AsEvent()] = append(toActions(actClearScreen), resizeActions...)
 	}
+	_, t.hasStartActions = t.keymap[tui.Start.AsEvent()]
 	_, t.hasResultActions = t.keymap[tui.Result.AsEvent()]
 	_, t.hasFocusActions = t.keymap[tui.Focus.AsEvent()]
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
 	if t.listenAddr != nil {
-		listener, port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.serverOutputChan)
+		listener, port, err := startHttpServer(*t.listenAddr, t.serverInputChan, t.dumpStatus)
 		if err != nil {
 			return nil, err
 		}
@@ -901,7 +915,15 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		t.listenPort = &port
 	}
 
+	if t.hasStartActions {
+		t.eventChan <- tui.Start.AsEvent()
+	}
+
 	return &t, nil
+}
+
+func (t *Terminal) deferActivation() bool {
+	return t.initDelay == 0 && (t.hasStartActions || t.hasLoadActions || t.hasResultActions || t.hasFocusActions)
 }
 
 func (t *Terminal) environ() []string {
@@ -1125,10 +1147,14 @@ func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 	}
 	t.reading = !final
 	t.failed = failedCommand
+	suppressed := t.suppress
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
-	if final {
-		t.reqBox.Set(reqRefresh, nil)
+
+	// We want to defer activating the interface when --sync is used and any of
+	// start, load, or result events are bound
+	if suppressed && final && !t.deferActivation() {
+		t.reqBox.Set(reqActivate, nil)
 	}
 }
 
@@ -1161,7 +1187,7 @@ func (t *Terminal) UpdateProgress(progress float32) {
 }
 
 // UpdateList updates Merger to display the list
-func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
+func (t *Terminal) UpdateList(merger *Merger) {
 	t.mutex.Lock()
 	prevIndex := minItem.Index()
 	newRevision := merger.Revision()
@@ -1219,6 +1245,7 @@ func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 			t.cy = count - util.Min(count, t.maxItems()) + pos
 		}
 	}
+	needActivation := false
 	if !t.reading {
 		switch t.merger.Length() {
 		case 0:
@@ -1226,19 +1253,24 @@ func (t *Terminal) UpdateList(merger *Merger, triggerResultEvent bool) {
 			if _, prs := t.keymap[zero]; prs {
 				t.eventChan <- zero
 			}
+			// --sync, only 'focus' is bound, but no items to focus
+			needActivation = t.suppress && !t.hasResultActions && !t.hasLoadActions && t.hasFocusActions
 		case 1:
 			one := tui.One.AsEvent()
 			if _, prs := t.keymap[one]; prs {
 				t.eventChan <- one
 			}
 		}
-		if triggerResultEvent && t.hasResultActions {
-			t.eventChan <- tui.Result.AsEvent()
-		}
+	}
+	if t.hasResultActions {
+		t.eventChan <- tui.Result.AsEvent()
 	}
 	t.mutex.Unlock()
 	t.reqBox.Set(reqInfo, nil)
 	t.reqBox.Set(reqList, nil)
+	if needActivation {
+		t.reqBox.Set(reqActivate, nil)
+	}
 }
 
 func (t *Terminal) output() bool {
@@ -1692,6 +1724,9 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 func (t *Terminal) promptLine() int {
 	if t.headerFirst {
 		max := t.window.Height() - 1
+		if max <= 0 { // Extremely short terminal
+			return 0
+		}
 		if !t.noSeparatorLine() {
 			max--
 		}
@@ -1727,9 +1762,14 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 func (t *Terminal) printInfo() {
 	pos := 0
 	line := t.promptLine()
-	move := func(y int, x int, clear bool) {
+	maxHeight := t.window.Height()
+	move := func(y int, x int, clear bool) bool {
+		if y < 0 || y >= maxHeight {
+			return false
+		}
 		t.move(y, x, clear)
 		t.markOtherLine(y)
+		return true
 	}
 	printSpinner := func() {
 		if t.reading {
@@ -1765,22 +1805,12 @@ func (t *Terminal) printInfo() {
 			t.window.Print(strings.Repeat(" ", fillLength+1))
 		}
 	}
-	switch t.infoStyle {
-	case infoDefault:
-		move(line+1, 0, t.separatorLen == 0)
-		printSpinner()
-		t.window.Print(" ") // Margin
-		pos = 2
-	case infoRight:
-		move(line+1, 0, false)
-	case infoInlineRight:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-	case infoInline:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
-		printInfoPrefix()
-	case infoHidden:
+
+	if t.infoStyle == infoHidden {
 		if t.separatorLen > 0 {
-			move(line+1, 0, false)
+			if !move(line+1, 0, false) {
+				return
+			}
 			printSeparator(t.window.Width()-1, false)
 		}
 		return
@@ -1815,6 +1845,31 @@ func (t *Terminal) printInfo() {
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
 	}
+	var outputPrinter labelPrinter
+	outputLen := len(output)
+	if t.infoCommand != "" {
+		output = t.executeCommand(t.infoCommand, false, true, true, true, output)
+		outputPrinter, outputLen = t.ansiLabelPrinter(output, &tui.ColInfo, false)
+	}
+
+	switch t.infoStyle {
+	case infoDefault:
+		if !move(line+1, 0, t.separatorLen == 0) {
+			return
+		}
+		printSpinner()
+		t.window.Print(" ") // Margin
+		pos = 2
+	case infoRight:
+		if !move(line+1, 0, false) {
+			return
+		}
+	case infoInlineRight:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+	case infoInline:
+		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		printInfoPrefix()
+	}
 
 	if t.infoStyle == infoRight {
 		maxWidth := t.window.Width()
@@ -1822,8 +1877,13 @@ func (t *Terminal) printInfo() {
 			// Need space for spinner and a margin column
 			maxWidth -= 2
 		}
-		output = t.trimMessage(output, maxWidth)
-		fillLength := t.window.Width() - len(output) - 2
+		var fillLength int
+		if outputPrinter == nil {
+			output = t.trimMessage(output, maxWidth)
+			fillLength = t.window.Width() - len(output) - 2
+		} else {
+			fillLength = t.window.Width() - outputLen - 2
+		}
 		if t.reading {
 			if fillLength >= 2 {
 				printSeparator(fillLength-2, true)
@@ -1833,7 +1893,11 @@ func (t *Terminal) printInfo() {
 		} else if fillLength >= 0 {
 			printSeparator(fillLength, true)
 		}
-		t.window.CPrint(tui.ColInfo, output)
+		if outputPrinter == nil {
+			t.window.CPrint(tui.ColInfo, output)
+		} else {
+			outputPrinter(t.window, maxWidth-1)
+		}
 		t.window.Print(" ") // Margin
 		return
 	}
@@ -1841,7 +1905,7 @@ func (t *Terminal) printInfo() {
 	if t.infoStyle == infoInlineRight {
 		if len(t.infoPrefix) == 0 {
 			move(line, pos, false)
-			newPos := util.Max(pos, t.window.Width()-util.StringWidth(output)-3)
+			newPos := util.Max(pos, t.window.Width()-outputLen-3)
 			t.window.Print(strings.Repeat(" ", newPos-pos))
 			pos = newPos
 			if pos < t.window.Width() {
@@ -1853,24 +1917,30 @@ func (t *Terminal) printInfo() {
 				pos++
 			}
 		} else {
-			pos = util.Max(pos, t.window.Width()-util.StringWidth(output)-util.StringWidth(t.infoPrefix)-1)
+			pos = util.Max(pos, t.window.Width()-outputLen-util.StringWidth(t.infoPrefix)-1)
 			printInfoPrefix()
 		}
 	}
 
 	maxWidth := t.window.Width() - pos
-	output = t.trimMessage(output, maxWidth)
-	t.window.CPrint(tui.ColInfo, output)
+	if outputPrinter == nil {
+		output = t.trimMessage(output, maxWidth)
+		t.window.CPrint(tui.ColInfo, output)
+	} else {
+		outputPrinter(t.window, maxWidth)
+	}
 
 	if t.infoStyle == infoInlineRight {
 		if t.separatorLen > 0 {
-			move(line+1, 0, false)
+			if !move(line+1, 0, false) {
+				return
+			}
 			printSeparator(t.window.Width()-1, false)
 		}
 		return
 	}
 
-	fillLength := maxWidth - len(output) - 2
+	fillLength := maxWidth - outputLen - 2
 	if fillLength > 0 {
 		t.window.CPrint(tui.ColSeparator, " ")
 		printSeparator(fillLength, false)
@@ -2648,7 +2718,7 @@ func (t *Terminal) printAll() {
 	t.printPreview()
 }
 
-func (t *Terminal) refresh() {
+func (t *Terminal) flush() {
 	t.placeCursor()
 	if !t.suppress {
 		windows := make([]tui.Window, 0, 4)
@@ -2952,13 +3022,13 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 	return replaced, tempFiles
 }
 
-func (t *Terminal) redraw() {
+func (t *Terminal) fullRedraw() {
 	t.tui.Clear()
 	t.tui.Refresh()
 	t.printAll()
 }
 
-func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool) string {
+func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool, info string) string {
 	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
 	// 'capture' is used for transform-* and we don't want to
@@ -2969,6 +3039,9 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	command, tempFiles := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := t.executor.ExecCommand(command, false)
 	cmd.Env = t.environ()
+	if len(info) > 0 {
+		cmd.Env = append(cmd.Env, "FZF_INFO="+info)
+	}
 	t.executing.Set(true)
 	if !background {
 		// Open a separate handle for tty input
@@ -2995,12 +3068,34 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 			}
 		}
 
+		t.mutex.Unlock()
+		if len(info) == 0 {
+			t.uiMutex.Lock()
+		}
 		t.tui.Pause(true)
 		cmd.Run()
 		t.tui.Resume(true, false)
-		t.redraw()
-		t.refresh()
+		t.mutex.Lock()
+		// NOTE: Using t.reqBox.Set(reqFullRedraw...) instead can cause a deadlock
+		t.fullRedraw()
+		t.flush()
 	} else {
+		t.mutex.Unlock()
+		if len(info) == 0 {
+			t.uiMutex.Lock()
+		}
+		paused := atomic.Int32{}
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(blockDuration):
+				if paused.CompareAndSwap(0, 1) {
+					t.tui.Pause(false)
+				}
+			}
+		}()
 		if capture {
 			out, _ := cmd.StdoutPipe()
 			reader := bufio.NewReader(out)
@@ -3016,6 +3111,23 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 		} else {
 			cmd.Run()
 		}
+		cancel()
+		if paused.CompareAndSwap(1, 2) {
+			t.tui.Resume(false, false)
+		}
+		t.mutex.Lock()
+
+		// Redraw prompt in case the user has typed something after blockDuration
+		if paused.Load() > 0 {
+			// NOTE: Using t.reqBox.Set(reqXXX...) instead can cause a deadlock
+			t.printPrompt()
+			if t.infoStyle == infoInline || t.infoStyle == infoInlineRight {
+				t.printInfo()
+			}
+		}
+	}
+	if len(info) == 0 {
+		t.uiMutex.Unlock()
 	}
 	t.executing.Set(false)
 	removeFiles(tempFiles)
@@ -3235,16 +3347,18 @@ func (t *Terminal) Loop() error {
 		t.termSize = t.tui.Size()
 		t.resizeWindows(false)
 		t.window.Erase()
-		t.printPrompt()
-		t.printInfo()
-		t.printHeader()
-		t.refresh()
 		t.mutex.Unlock()
-		go func() {
-			timer := time.NewTimer(t.initDelay)
-			<-timer.C
-			t.reqBox.Set(reqRefresh, nil)
-		}()
+
+		t.reqBox.Set(reqPrompt, nil)
+		t.reqBox.Set(reqInfo, nil)
+		t.reqBox.Set(reqHeader, nil)
+		if t.initDelay > 0 {
+			go func() {
+				timer := time.NewTimer(t.initDelay)
+				<-timer.C
+				t.reqBox.Set(reqActivate, nil)
+			}()
+		}
 
 		// Keep the spinner spinning
 		go func() {
@@ -3438,7 +3552,7 @@ func (t *Terminal) Loop() error {
 		}
 	}
 
-	go func() {
+	go func() { // Render loop
 		var focusedIndex = minItem.Index()
 		var version int64 = -1
 		running := true
@@ -3462,27 +3576,62 @@ func (t *Terminal) Loop() error {
 		for running {
 			t.reqBox.Wait(func(events *util.Events) {
 				defer events.Clear()
+
+				// Sort events.
+				// e.g. Make sure that reqPrompt is processed before reqInfo
+				keys := make([]int, 0, len(*events))
+				for key := range *events {
+					keys = append(keys, int(key))
+				}
+				sort.Ints(keys)
+
+				// t.uiMutex must be locked first to avoid deadlock. Execute actions
+				// will 1. unlock t.mutex to allow GET endpoint and 2. lock t.uiMutex
+				// to block rendering during the execution.
+				//
+				// T1           T2 (good)       |  T1            T2 (bad)
+				//               L t.uiMutex    |
+				//  L t.mutex                   |   L t.mutex
+				//  U t.mutex                   |   U t.mutex
+				//               L t.mutex      |                 L t.mutex
+				//               U t.mutex      |   L t.uiMutex
+				//               U t.uiMutex    |                 L t.uiMutex!!
+				//  L t.uiMutex                 |
+				//                              |   L t.mutex!!
+				//  L t.mutex                   |   U t.uiMutex
+				//  U t.uiMutex                 |
+				t.uiMutex.Lock()
 				t.mutex.Lock()
-				for req, value := range *events {
+				printInfo := util.RunOnce(t.printInfo)
+				for _, key := range keys {
+					req := util.EventType(key)
+					value := (*events)[req]
 					switch req {
 					case reqPrompt:
 						t.printPrompt()
 						if t.infoStyle == infoInline || t.infoStyle == infoInlineRight {
-							t.printInfo()
+							printInfo()
 						}
 					case reqInfo:
-						t.printInfo()
+						printInfo()
 					case reqList:
 						t.printList()
 						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
+						info := false
 						if focusChanged && t.track == trackCurrent {
 							t.track = trackDisabled
-							t.printInfo()
+							info = true
 						}
-						if t.hasFocusActions && focusChanged && currentIndex != t.lastFocus {
+						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
 							t.lastFocus = currentIndex
 							t.eventChan <- tui.Focus.AsEvent()
+							if t.infoCommand != "" {
+								info = true
+							}
+						}
+						if info {
+							printInfo()
 						}
 						if focusChanged || version != t.version {
 							version = t.version
@@ -3496,7 +3645,7 @@ func (t *Terminal) Loop() error {
 						t.printList()
 					case reqHeader:
 						t.printHeader()
-					case reqRefresh:
+					case reqActivate:
 						t.suppress = false
 					case reqRedrawBorderLabel:
 						t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, true)
@@ -3504,13 +3653,13 @@ func (t *Terminal) Loop() error {
 						t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.previewOpts.border, true)
 					case reqReinit:
 						t.tui.Resume(t.fullscreen, t.sigstop)
-						t.redraw()
+						t.fullRedraw()
 					case reqResize, reqFullRedraw:
 						if req == reqResize {
 							t.termSize = t.tui.Size()
 						}
 						wasHidden := t.pwindow == nil
-						t.redraw()
+						t.fullRedraw()
 						if wasHidden && t.hasPreviewWindow() {
 							refreshPreview(t.previewOpts.command)
 						}
@@ -3564,8 +3713,9 @@ func (t *Terminal) Loop() error {
 						return
 					}
 				}
-				t.refresh()
+				t.flush()
 				t.mutex.Unlock()
+				t.uiMutex.Unlock()
 			})
 		}
 
@@ -3576,9 +3726,6 @@ func (t *Terminal) Loop() error {
 	}()
 
 	looping := true
-	_, startEvent := t.keymap[tui.Start.AsEvent()]
-
-	needBarrier := true
 	barrier := make(chan bool)
 	go func() {
 		for {
@@ -3590,7 +3737,7 @@ func (t *Terminal) Loop() error {
 			select {
 			case <-ctx.Done():
 				return
-			case t.eventChan <- t.tui.GetChar():
+			case t.keyChan <- t.tui.GetChar():
 			}
 		}
 	}()
@@ -3598,42 +3745,63 @@ func (t *Terminal) Loop() error {
 	barDragging := false
 	pbarDragging := false
 	wasDown := false
-	for looping {
+	needBarrier := true
+
+	// If an action is bound to 'start', we're going to process it before reading
+	// user input.
+	if !t.hasStartActions {
+		barrier <- true
+		needBarrier = false
+	}
+	for loopIndex := int64(0); looping; loopIndex++ {
 		var newCommand *commandSpec
 		var reloadSync bool
 		changed := false
 		beof := false
 		queryChanged := false
 
+		// Special handling of --sync. Activate the interface on the second tick.
+		if loopIndex == 1 && t.deferActivation() {
+			t.reqBox.Set(reqActivate, nil)
+		}
+
+		if loopIndex > 0 && needBarrier {
+			barrier <- true
+			needBarrier = false
+		}
+
 		var event tui.Event
 		actions := []*action{}
-		if startEvent {
-			event = tui.Start.AsEvent()
-			startEvent = false
-		} else {
-			if needBarrier {
-				barrier <- true
-			}
-			select {
-			case event = <-t.eventChan:
-				if t.tui.ShouldEmitResizeEvent() {
-					needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero)
-				} else {
-					needBarrier = !event.Is(tui.Load, tui.Result, tui.Focus, tui.One, tui.Zero, tui.Resize)
+		select {
+		case event = <-t.keyChan:
+			needBarrier = true
+		case event = <-t.eventChan:
+			// Drain channel to process all queued events at once without rendering
+			// the intermediate states
+		Drain:
+			for {
+				if eventActions, prs := t.keymap[event]; prs {
+					actions = append(actions, eventActions...)
 				}
-			case serverActions := <-t.serverInputChan:
-				event = tui.Invalid.AsEvent()
-				if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
-					actions = serverActions
-				} else {
-					for _, action := range serverActions {
-						if !processExecution(action.t) {
-							actions = append(actions, action)
-						}
+				for {
+					select {
+					case event = <-t.eventChan:
+						continue Drain
+					default:
+						break Drain
 					}
 				}
-
-				needBarrier = false
+			}
+		case serverActions := <-t.serverInputChan:
+			event = tui.Invalid.AsEvent()
+			if t.listenAddr == nil || t.listenAddr.IsLocal() || t.listenUnsafe {
+				actions = serverActions
+			} else {
+				for _, action := range serverActions {
+					if !processExecution(action.t) {
+						actions = append(actions, action)
+					}
+				}
 			}
 		}
 
@@ -3641,8 +3809,8 @@ func (t *Terminal) Loop() error {
 		for key, ret := range t.expect {
 			if keyMatch(key, event) {
 				t.pressed = ret
-				t.reqBox.Set(reqClose, nil)
 				t.mutex.Unlock()
+				t.reqBox.Set(reqClose, nil)
 				return nil
 			}
 		}
@@ -3719,8 +3887,6 @@ func (t *Terminal) Loop() error {
 		doAction = func(a *action) bool {
 			switch a.t {
 			case actIgnore, actStart, actClick:
-			case actResponse:
-				t.serverOutputChan <- t.dumpStatus(parseGetParams(a.a))
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
@@ -3740,9 +3906,9 @@ func (t *Terminal) Loop() error {
 					}
 				}
 			case actExecute, actExecuteSilent:
-				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false)
+				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, "")
 			case actExecuteMulti:
-				t.executeCommand(a.a, true, false, false, false)
+				t.executeCommand(a.a, true, false, false, false, "")
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
@@ -3783,12 +3949,12 @@ func (t *Terminal) Loop() error {
 					req(reqPreviewRefresh)
 				}
 			case actTransformPrompt:
-				prompt := t.executeCommand(a.a, false, true, true, true)
+				prompt := t.executeCommand(a.a, false, true, true, true, "")
 				t.promptString = prompt
 				t.prompt, t.promptLen = t.parsePrompt(prompt)
 				req(reqPrompt)
 			case actTransformQuery:
-				query := t.executeCommand(a.a, false, true, true, true)
+				query := t.executeCommand(a.a, false, true, true, true, "")
 				t.input = []rune(query)
 				t.cx = len(t.input)
 			case actToggleSort:
@@ -3852,7 +4018,7 @@ func (t *Terminal) Loop() error {
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
 			case actTransformHeader:
-				header := t.executeCommand(a.a, false, true, true, false)
+				header := t.executeCommand(a.a, false, true, true, false, "")
 				if t.changeHeader(header) {
 					req(reqFullRedraw)
 				} else {
@@ -3877,19 +4043,19 @@ func (t *Terminal) Loop() error {
 					req(reqRedrawPreviewLabel)
 				}
 			case actTransform:
-				body := t.executeCommand(a.a, false, true, true, false)
+				body := t.executeCommand(a.a, false, true, true, false, "")
 				if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
 					return doActions(actions)
 				}
 			case actTransformBorderLabel:
-				label := t.executeCommand(a.a, false, true, true, true)
+				label := t.executeCommand(a.a, false, true, true, true, "")
 				t.borderLabelOpts.label = label
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
 			case actTransformPreviewLabel:
-				label := t.executeCommand(a.a, false, true, true, true)
+				label := t.executeCommand(a.a, false, true, true, true, "")
 				t.previewLabelOpts.label = label
 				if t.pborder != nil {
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
@@ -4131,6 +4297,11 @@ func (t *Terminal) Loop() error {
 					t.vmove(diff, false)
 				}
 				req(reqList)
+			case actOffsetMiddle:
+				soff := t.scrollOff
+				t.scrollOff = t.window.Height()
+				t.constrain()
+				t.scrollOff = soff
 			case actJump:
 				t.jumping = jumpEnabled
 				req(reqJump)
@@ -4708,7 +4879,29 @@ func (t *Terminal) dumpItem(i *Item) StatusItem {
 	}
 }
 
+func (t *Terminal) tryLock(timeout time.Duration) bool {
+	sleepDuration := 10 * time.Millisecond
+
+	for {
+		if t.mutex.TryLock() {
+			return true
+		}
+
+		timeout -= sleepDuration
+		if timeout <= 0 {
+			break
+		}
+		time.Sleep(sleepDuration)
+	}
+	return false
+}
+
 func (t *Terminal) dumpStatus(params getParams) string {
+	if !t.tryLock(channelTimeout) {
+		return ""
+	}
+	defer t.mutex.Unlock()
+
 	selectedItems := t.sortSelected()
 	selected := make([]StatusItem, util.Max(0, util.Min(params.limit, len(selectedItems)-params.offset)))
 	for i := range selected {

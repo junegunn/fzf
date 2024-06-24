@@ -147,13 +147,20 @@ func Run(opts *Options) (int, error) {
 	executor := util.NewExecutor(opts.WithShell)
 
 	// Reader
+	reloadOnStart := opts.reloadOnStart()
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	var reader *Reader
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
-		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+
+		if reloadOnStart {
+			// reload or reload-sync action is bound to 'start' event, no need to start the reader
+			eventBox.Set(EvtReadNone, nil)
+		} else {
+			go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+		}
 	}
 
 	// Matcher
@@ -227,7 +234,8 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Synchronous search
-	if opts.Sync {
+	sync := opts.Sync && !reloadOnStart
+	if sync {
 		eventBox.Unwatch(EvtReadNew)
 		eventBox.WaitFor(EvtReadFin)
 	}
@@ -247,7 +255,7 @@ func Run(opts *Options) (int, error) {
 	if heightUnknown {
 		maxFit, padHeight = terminal.MaxFitAndPad()
 	}
-	deferred := opts.Select1 || opts.Exit0
+	deferred := opts.Select1 || opts.Exit0 || sync
 	go terminal.Loop()
 	if !deferred && !heightUnknown {
 		// Start right away
@@ -314,6 +322,9 @@ func Run(opts *Options) (int, error) {
 					err = quitSignal.err
 					stop = true
 					return
+				case EvtReadNone:
+					reading = false
+					terminal.UpdateCount(0, false, nil)
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand, nextEnviron)
@@ -339,9 +350,6 @@ func Run(opts *Options) (int, error) {
 					}
 					total = count
 					terminal.UpdateCount(total, !reading, value.(*string))
-					if opts.Sync {
-						terminal.UpdateList(PassMerger(&snapshot, opts.Tac, snapshotRevision), false)
-					}
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
@@ -429,7 +437,7 @@ func Run(opts *Options) (int, error) {
 								determine(val.final)
 							}
 						}
-						terminal.UpdateList(val, true)
+						terminal.UpdateList(val)
 					}
 				}
 			}

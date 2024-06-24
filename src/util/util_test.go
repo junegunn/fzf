@@ -137,13 +137,19 @@ func TestOnce(t *testing.T) {
 	if o() {
 		t.Error("Expected: false")
 	}
-	if o() {
-		t.Error("Expected: false")
+	if !o() {
+		t.Error("Expected: true")
+	}
+	if !o() {
+		t.Error("Expected: true")
 	}
 
 	o = Once(true)
 	if !o() {
 		t.Error("Expected: true")
+	}
+	if o() {
+		t.Error("Expected: false")
 	}
 	if o() {
 		t.Error("Expected: false")

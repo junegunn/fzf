@@ -38,9 +38,9 @@ const (
 )
 
 type httpServer struct {
-	apiKey          []byte
-	actionChannel   chan []*action
-	responseChannel chan string
+	apiKey        []byte
+	actionChannel chan []*action
+	getHandler    func(getParams) string
 }
 
 type listenAddress struct {
@@ -73,7 +73,7 @@ func parseListenAddress(address string) (listenAddress, error) {
 	return listenAddress{parts[0], port}, nil
 }
 
-func startHttpServer(address listenAddress, actionChannel chan []*action, responseChannel chan string) (net.Listener, int, error) {
+func startHttpServer(address listenAddress, actionChannel chan []*action, getHandler func(getParams) string) (net.Listener, int, error) {
 	host := address.host
 	port := address.port
 	apiKey := os.Getenv("FZF_API_KEY")
@@ -99,9 +99,9 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, respon
 	}
 
 	server := httpServer{
-		apiKey:          []byte(apiKey),
-		actionChannel:   actionChannel,
-		responseChannel: responseChannel,
+		apiKey:        []byte(apiKey),
+		actionChannel: actionChannel,
+		getHandler:    getHandler,
 	}
 
 	go func() {
@@ -165,17 +165,11 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 		case 0:
 			getMatch := getRegex.FindStringSubmatch(text)
 			if len(getMatch) > 0 {
-				server.actionChannel <- []*action{{t: actResponse, a: getMatch[1]}}
-				select {
-				case response := <-server.responseChannel:
+				response := server.getHandler(parseGetParams(getMatch[1]))
+				if len(response) > 0 {
 					return good(response)
-				case <-time.After(channelTimeout):
-					go func() {
-						// Drain the channel
-						<-server.responseChannel
-					}()
-					return answer(httpUnavailable+jsonContentType, `{"error":"timeout"}`)
 				}
+				return answer(httpUnavailable+jsonContentType, `{"error":"timeout"}`)
 			} else if !strings.HasPrefix(text, "POST / HTTP") {
 				return bad("invalid request method")
 			}

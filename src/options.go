@@ -88,6 +88,7 @@ Usage: fzf [options]
     --padding=PADDING       Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE            Finder info style
                             [default|right|hidden|inline[-right][:PREFIX]]
+    --info-command=COMMAND  Command to generate info line
     --separator=STR         String to form horizontal separator on info line
     --no-separator          Hide info line separator
     --scrollbar[=C1[C2]]    Scrollbar character(s) (each for main and preview window)
@@ -443,12 +444,13 @@ type Options struct {
 	FileWord     bool
 	InfoStyle    infoStyle
 	InfoPrefix   string
+	InfoCommand  string
 	Separator    *string
 	JumpLabels   string
 	Prompt       string
 	Pointer      *string
 	Marker       *string
-	MarkerMulti  [3]string
+	MarkerMulti  *[3]string
 	Query        string
 	Select1      bool
 	Exit0        bool
@@ -553,6 +555,7 @@ func defaultOptions() *Options {
 		Prompt:       "> ",
 		Pointer:      nil,
 		Marker:       nil,
+		MarkerMulti:  nil,
 		Query:        "",
 		Select1:      false,
 		Exit0:        false,
@@ -1419,6 +1422,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actOffsetUp)
 		case "offset-down":
 			appendAction(actOffsetDown)
+		case "offset-middle":
+			appendAction(actOffsetMiddle)
 		case "preview-top":
 			appendAction(actPreviewTop)
 		case "preview-bottom":
@@ -1858,7 +1863,10 @@ func parseMargin(opt string, margin string) ([4]sizeSpec, error) {
 	return [4]sizeSpec{}, errors.New("invalid " + opt + ": " + margin)
 }
 
-func parseMarkerMultiLine(str string) ([3]string, error) {
+func parseMarkerMultiLine(str string) (*[3]string, error) {
+	if str == "" {
+		return &[3]string{}, nil
+	}
 	gr := uniseg.NewGraphemes(str)
 	parts := []string{}
 	totalWidth := 0
@@ -1870,7 +1878,7 @@ func parseMarkerMultiLine(str string) ([3]string, error) {
 
 	result := [3]string{}
 	if totalWidth != 3 && totalWidth != 6 {
-		return result, fmt.Errorf("invalid total marker width: %d (expected: 3 or 6)", totalWidth)
+		return &result, fmt.Errorf("invalid total marker width: %d (expected: 0, 3 or 6)", totalWidth)
 	}
 
 	expected := totalWidth / 3
@@ -1886,7 +1894,7 @@ func parseMarkerMultiLine(str string) ([3]string, error) {
 			break
 		}
 	}
-	return result, nil
+	return &result, nil
 }
 
 func parseOptions(index *int, opts *Options, allArgs []string) error {
@@ -2187,6 +2195,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(str); err != nil {
 				return err
 			}
+		case "--info-command":
+			if opts.InfoCommand, err = nextString(allArgs, &i, "info command required"); err != nil {
+				return err
+			}
+		case "--no-info-command":
+			opts.InfoCommand = ""
 		case "--no-info":
 			opts.InfoStyle = infoHidden
 		case "--inline-info":
@@ -2541,6 +2555,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if opts.InfoStyle, opts.InfoPrefix, err = parseInfoStyle(value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--info-command="); match {
+				opts.InfoCommand = value
 			} else if match, value := optString(arg, "--separator="); match {
 				opts.Separator = &value
 			} else if match, value := optString(arg, "--scrollbar="); match {
@@ -2687,9 +2703,6 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 }
 
 func validateSign(sign string, signOptName string) error {
-	if sign == "" {
-		return fmt.Errorf("%v cannot be empty", signOptName)
-	}
 	if uniseg.StringWidth(sign) > 2 {
 		return fmt.Errorf("%v display width should be up to 2", signOptName)
 	}
@@ -2756,34 +2769,45 @@ func postProcessOptions(opts *Options) error {
 		opts.Pointer = &defaultPointer
 	}
 
+	multiLine := opts.MultiLine && opts.ReadZero
 	markerLen := 1
 	if opts.Marker == nil {
-		// "▎" looks better, but not all terminals render it correctly
-		defaultMarker := "┃"
-		if !opts.Unicode {
-			defaultMarker = ">"
+		if multiLine && opts.MarkerMulti != nil && opts.MarkerMulti[0] == "" {
+			empty := ""
+			opts.Marker = &empty
+			markerLen = 0
+		} else {
+			// "▎" looks better, but not all terminals render it correctly
+			defaultMarker := "┃"
+			if !opts.Unicode {
+				defaultMarker = ">"
+			}
+			opts.Marker = &defaultMarker
 		}
-		opts.Marker = &defaultMarker
 	} else {
 		markerLen = uniseg.StringWidth(*opts.Marker)
 	}
 
 	markerMultiLen := 1
-	if len(opts.MarkerMulti[0]) == 0 {
-		if opts.Unicode {
-			opts.MarkerMulti = [3]string{"╻", "┃", "╹"}
+	if opts.MarkerMulti == nil {
+		if !multiLine && *opts.Marker == "" {
+			opts.MarkerMulti = &[3]string{}
+			markerMultiLen = 0
+		} else if opts.Unicode {
+			opts.MarkerMulti = &[3]string{"╻", "┃", "╹"}
 		} else {
-			opts.MarkerMulti = [3]string{".", "|", "'"}
+			opts.MarkerMulti = &[3]string{".", "|", "'"}
 		}
 	} else {
 		markerMultiLen = uniseg.StringWidth(opts.MarkerMulti[0])
 	}
-	if markerMultiLen > markerLen {
-		padded := *opts.Marker + " "
+	diff := markerMultiLen - markerLen
+	if diff > 0 {
+		padded := *opts.Marker + strings.Repeat(" ", diff)
 		opts.Marker = &padded
-	} else if markerMultiLen < markerLen {
+	} else if diff < 0 {
 		for idx := range opts.MarkerMulti {
-			opts.MarkerMulti[idx] += " "
+			opts.MarkerMulti[idx] += strings.Repeat(" ", -diff)
 		}
 	}
 
@@ -2920,4 +2944,19 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	}
 
 	return opts, nil
+}
+
+func (opts *Options) reloadOnStart() bool {
+	// Not compatible with --filter
+	if opts.Filter != nil {
+		return false
+	}
+	if actions, prs := opts.Keymap[tui.Start.AsEvent()]; prs {
+		for _, action := range actions {
+			if action.t == actReload || action.t == actReloadSync {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -26,12 +26,12 @@ BASE = File.expand_path('..', __dir__)
 Dir.chdir(BASE)
 FZF = "FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer \\> --marker \\>\" FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf"
 
-def wait
+def wait(timeout = DEFAULT_TIMEOUT)
   since = Time.now
   begin
     yield or raise Minitest::Assertion, 'Assertion failure'
   rescue Minitest::Assertion
-    raise if Time.now - since > DEFAULT_TIMEOUT
+    raise if Time.now - since > timeout
 
     sleep(0.05)
     retry
@@ -103,10 +103,10 @@ class Tmux
     go(%W[capture-pane -p -J -t #{win}]).map(&:rstrip).reverse.drop_while(&:empty?).reverse
   end
 
-  def until(refresh = false)
+  def until(refresh = false, timeout: DEFAULT_TIMEOUT)
     lines = nil
     begin
-      wait do
+      wait(timeout) do
         lines = capture
         class << lines
           def counts
@@ -2978,6 +2978,28 @@ class TestGoFZF < TestBase
     tmux.until { assert_match(%r{     0/100000}, _1[-1]) }
   end
 
+  def test_info_command
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"'), :Enter)
+    tmux.until { assert_match(%r{^  --1/10000/10000-- xx}, _1[-2]) }
+    tmux.send_keys :Up
+    tmux.until { assert_match(%r{^  --2/10000/10000-- xx}, _1[-2]) }
+  end
+
+  def test_info_command_inline
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline:xx), :Enter)
+    tmux.until { assert_match(%r{^>  xx--1/10000/10000-- xx}, _1[-1]) }
+  end
+
+  def test_info_command_right
+    tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info right), :Enter)
+    tmux.until { assert_match(%r{xx --1/10000/10000-- *$}, _1[-2]) }
+  end
+
+  def test_info_command_inline_right
+    tmux.send_keys(%(seq 10000 | #{FZF} --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline-right), :Enter)
+    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, _1[-1]) }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }
@@ -3317,6 +3339,30 @@ class TestGoFZF < TestBase
       │  ┃3
     BLOCK
     tmux.until { assert_block(block, _1) }
+  end
+
+  def test_fzf_multi_line_no_pointer_and_marker
+    tmux.send_keys %[(echo -en '0\\0'; echo -en '1\\n2\\0'; seq 1000) | fzf --read0 --multi --bind load:select-all --border rounded --reverse --pointer '' --marker '' --marker-multi-line ''], :Enter
+    block = <<~BLOCK
+      ╭───────────
+      │ >
+      │   3/3 (3)
+      │ 0
+      │ 1
+      │ 2
+      │ 1
+      │ 2
+      │ 3
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
+
+  def test_start_on_reload
+    tmux.send_keys %(echo foo | #{FZF} --header Loading --header-lines 1 --bind 'start:reload:sleep 2; echo bar' --bind 'load:change-header:Loaded'), :Enter
+    tmux.until(timeout: 1) { |lines| assert_includes lines[-3], 'Loading' }
+    tmux.until(timeout: 1) { |lines| refute_includes lines[-4], 'foo' }
+    tmux.until { |lines| assert_includes lines[-3], 'Loaded' }
+    tmux.until { |lines| assert_includes lines[-4], 'bar' }
   end
 end
 

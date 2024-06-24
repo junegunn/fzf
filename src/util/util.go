@@ -144,12 +144,22 @@ func IsTty(file *os.File) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+// RunOnce runs the given function only once
+func RunOnce(f func()) func() {
+	once := Once(true)
+	return func() {
+		if once() {
+			f()
+		}
+	}
+}
+
 // Once returns a function that returns the specified boolean value only once
 func Once(nextResponse bool) func() bool {
 	state := nextResponse
 	return func() bool {
 		prevState := state
-		state = false
+		state = !nextResponse
 		return prevState
 	}
 }
