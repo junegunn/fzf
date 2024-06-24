@@ -793,7 +793,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		multi:              opts.Multi,
 		multiLine:          opts.ReadZero && opts.MultiLine,
 		wrap:               opts.Wrap,
-		wrapSign:           "↳ ",
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
 		track:              opts.Track,
@@ -883,9 +882,13 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
 	if t.unicode {
+		t.wrapSign = "↳ "
 		t.borderWidth = uniseg.StringWidth("│")
 	} else {
 		t.wrapSign = "> "
+	}
+	if opts.WrapSign != nil {
+		t.wrapSign = *opts.WrapSign
 	}
 	t.wrapSign, t.wrapSignWidth = t.processTabs([]rune(t.wrapSign), 0)
 	if opts.Scrollbar == nil {

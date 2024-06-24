@@ -53,7 +53,7 @@ Usage: fzf [options]
     --no-mouse              Disable mouse
     --bind=KEYBINDS         Custom key bindings. Refer to the man page.
     --cycle                 Enable cyclic scroll
-    --wrap                  Enable line wrap
+    --wrap[=INDICATOR]      Enable line wrap
     --no-multi-line         Disable multi-line display of items when using --read0
     --keep-right            Keep the right end of the line visible on overflow
     --scroll-off=LINES      Number of screen lines to keep above or below when
@@ -437,6 +437,7 @@ type Options struct {
 	Layout       layoutType
 	Cycle        bool
 	Wrap         bool
+	WrapSign     *string
 	MultiLine    bool
 	CursorLine   bool
 	KeepRight    bool
@@ -2170,8 +2171,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Cycle = false
 		case "--wrap":
 			opts.Wrap = true
+			if given, wrapSign := optionalNextString(allArgs, &i); given {
+				opts.WrapSign = &wrapSign
+			} else {
+				opts.WrapSign = nil
+			}
 		case "--no-wrap":
 			opts.Wrap = false
+			opts.WrapSign = nil
 		case "--multi-line":
 			opts.MultiLine = true
 		case "--no-multi-line":
@@ -2522,6 +2529,9 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if err := parseLabelPosition(&opts.PreviewLabel, value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--wrap="); match {
+				opts.Wrap = true
+				opts.WrapSign = &value
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
