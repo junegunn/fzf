@@ -1202,7 +1202,10 @@ func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 }
 
 func (t *Terminal) changeHeader(header string) bool {
-	lines := strings.Split(strings.TrimSuffix(header, "\n"), "\n")
+	var lines []string
+	if len(header) > 0 {
+		lines = strings.Split(strings.TrimSuffix(header, "\n"), "\n")
+	}
 	needFullRedraw := len(t.header0) != len(lines)
 	t.header0 = lines
 	return needFullRedraw
@@ -4094,16 +4097,13 @@ func (t *Terminal) Loop() error {
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
-			case actTransformHeader:
-				header := t.executeCommand(a.a, false, true, true, false, "")
-				if t.changeHeader(header) {
-					req(reqFullRedraw)
-				} else {
-					req(reqHeader)
+			case actChangeHeader, actTransformHeader:
+				header := a.a
+				if a.t == actTransformHeader {
+					header = t.executeCommand(a.a, false, true, true, false, "")
 				}
-			case actChangeHeader:
-				if t.changeHeader(a.a) {
-					req(reqFullRedraw)
+				if t.changeHeader(header) {
+					req(reqHeader, reqList, reqPrompt, reqInfo)
 				} else {
 					req(reqHeader)
 				}
