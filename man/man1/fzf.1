@@ -198,6 +198,13 @@ the details.
 .B "\-\-cycle"
 Enable cyclic scroll
 .TP
+.B "\-\-wrap"
+Enable line wrap
+.TP
+.BI "\-\-wrap\-sign" "=INDICATOR"
+Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
+\fB\-\-no\-unicode\fR.
+.TP
 .B "\-\-no\-multi\-line"
 Disable multi-line display of items when using \fB\-\-read0\fR
 .TP
@@ -1490,6 +1497,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\-sort\fR
     \fBtoggle\-track\fR                 (toggle global tracking option (\fB\-\-track\fR))
     \fBtoggle\-track\-current\fR         (toggle tracking of the current item)
+    \fBtoggle\-wrap\fR
     \fBtoggle+up\fR                    \fIbtab    (shift\-tab)\fR
     \fBtrack\-current\fR                (track the current item; automatically disabled if focus changes)
     \fBtransform(...)\fR               (transform states using the output of an external command)

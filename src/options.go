@@ -53,6 +53,8 @@ Usage: fzf [options]
     --no-mouse              Disable mouse
     --bind=KEYBINDS         Custom key bindings. Refer to the man page.
     --cycle                 Enable cyclic scroll
+    --wrap                  Enable line wrap
+    --wrap-sign=STR         Indicator for wrapped lines
     --no-multi-line         Disable multi-line display of items when using --read0
     --keep-right            Keep the right end of the line visible on overflow
     --scroll-off=LINES      Number of screen lines to keep above or below when
@@ -435,6 +437,8 @@ type Options struct {
 	MinHeight    int
 	Layout       layoutType
 	Cycle        bool
+	Wrap         bool
+	WrapSign     *string
 	MultiLine    bool
 	CursorLine   bool
 	KeepRight    bool
@@ -543,6 +547,7 @@ func defaultOptions() *Options {
 		MinHeight:    10,
 		Layout:       layoutDefault,
 		Cycle:        false,
+		Wrap:         false,
 		MultiLine:    true,
 		KeepRight:    false,
 		Hscroll:      true,
@@ -1366,6 +1371,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrackCurrent)
 		case "toggle-header":
 			appendAction(actToggleHeader)
+		case "toggle-wrap":
+			appendAction(actToggleWrap)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
@@ -2163,6 +2170,16 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
+		case "--wrap":
+			opts.Wrap = true
+		case "--no-wrap":
+			opts.Wrap = false
+		case "--wrap-sign":
+			str, err := nextString(allArgs, &i, "wrap sign required")
+			if err != nil {
+				return err
+			}
+			opts.WrapSign = &str
 		case "--multi-line":
 			opts.MultiLine = true
 		case "--no-multi-line":
@@ -2513,6 +2530,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if err := parseLabelPosition(&opts.PreviewLabel, value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--wrap-sign="); match {
+				opts.WrapSign = &value
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {

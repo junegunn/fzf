@@ -226,3 +226,85 @@ func (chars *Chars) Prepend(prefix string) {
 		chars.slice = append([]byte(prefix), chars.slice...)
 	}
 }
+
+func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWidth int, tabstop int) ([][]rune, bool) {
+	text := make([]rune, chars.Length())
+	copy(text, chars.ToRunes())
+
+	lines := [][]rune{}
+	overflow := false
+	if !multiLine {
+		lines = append(lines, text)
+	} else {
+		from := 0
+		for off := 0; off < len(text); off++ {
+			if text[off] == '\n' {
+				lines = append(lines, text[from:off+1]) // Include '\n'
+				from = off + 1
+				if len(lines) >= maxLines {
+					break
+				}
+			}
+		}
+
+		var lastLine []rune
+		if from < len(text) {
+			lastLine = text[from:]
+		}
+
+		overflow = false
+		if len(lines) >= maxLines {
+			overflow = true
+		} else {
+			lines = append(lines, lastLine)
+		}
+	}
+
+	// If wrapping is disabled, we're done
+	if wrapCols == 0 {
+		return lines, overflow
+	}
+
+	wrapped := [][]rune{}
+	for _, line := range lines {
+		// Remove trailing '\n' and remember if it was there
+		newline := len(line) > 0 && line[len(line)-1] == '\n'
+		if newline {
+			line = line[:len(line)-1]
+		}
+
+		for {
+			cols := wrapCols
+			if len(wrapped) > 0 {
+				cols -= wrapSignWidth
+			}
+			_, overflowIdx := RunesWidth(line, 0, tabstop, cols)
+			if overflowIdx >= 0 {
+				// Might be a wide character
+				if overflowIdx == 0 {
+					overflowIdx = 1
+				}
+				if len(wrapped) >= maxLines {
+					return wrapped, true
+				}
+				wrapped = append(wrapped, line[:overflowIdx])
+				line = line[overflowIdx:]
+				continue
+			}
+
+			// Restore trailing '\n'
+			if newline {
+				line = append(line, '\n')
+			}
+
+			if len(wrapped) >= maxLines {
+				return wrapped, true
+			}
+
+			wrapped = append(wrapped, line)
+			break
+		}
+	}
+
+	return wrapped, false
+}
