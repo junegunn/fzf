@@ -23,11 +23,7 @@ CHANGELOG
 - Pointer and marker signs can be set to empty strings
   ```sh
   # Minimal style
-  fzf --pointer '' --marker '' --info hidden
-
-  # When --read0 is specified, there can be multi-line entries,
-  # so you need to set --marker-multi-line to an empty string
-  find . -print0 | fzf --read0 --pointer '' --marker-multi-line '' --info hidden
+  fzf --pointer '' --marker '' --prompt '' --info hidden
   ```
 - Better cache management and improved rendering for `--tail`
 - Improved `--sync` behavior

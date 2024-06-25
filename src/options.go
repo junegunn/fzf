@@ -2788,10 +2788,9 @@ func postProcessOptions(opts *Options) error {
 		opts.Pointer = &defaultPointer
 	}
 
-	multiLine := opts.MultiLine && opts.ReadZero
 	markerLen := 1
 	if opts.Marker == nil {
-		if multiLine && opts.MarkerMulti != nil && opts.MarkerMulti[0] == "" {
+		if opts.MarkerMulti != nil && opts.MarkerMulti[0] == "" {
 			empty := ""
 			opts.Marker = &empty
 			markerLen = 0
@@ -2809,7 +2808,7 @@ func postProcessOptions(opts *Options) error {
 
 	markerMultiLen := 1
 	if opts.MarkerMulti == nil {
-		if !multiLine && *opts.Marker == "" {
+		if *opts.Marker == "" {
 			opts.MarkerMulti = &[3]string{}
 			markerMultiLen = 0
 		} else if opts.Unicode {
