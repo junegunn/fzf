@@ -198,11 +198,11 @@ _fzf_dir_completion() {
     "" "/" ""
 }
 
-_fzf_feed_fifo() (
+_fzf_feed_fifo() {
   command rm -f "$1"
   mkfifo "$1"
-  cat <&0 > "$1" &
-)
+  cat <&0 > "$1" &|
+}
 
 _fzf_complete() {
   setopt localoptions ksh_arrays
