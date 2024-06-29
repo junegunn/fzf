@@ -111,7 +111,7 @@ func (r *Reader) readChannel(inputChan chan string) bool {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string) {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, sep byte) {
 	r.startEventPoller()
 	var success bool
 	if inputChan != nil {
@@ -119,7 +119,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			success = r.readFiles(root, opts, ignores)
+			success = r.readFiles(root, opts, ignores, sep)
 		} else {
 			// We can't export FZF_* environment variables to the default command
 			success = r.readFromCommand(cmd, nil)
@@ -233,9 +233,10 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 	return false
 }
 
-func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
+func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep byte) bool {
 	r.killed = false
 	conf := fastwalk.Config{Follow: opts.follow}
+	replaceSep := sep != os.PathSeparator
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -254,7 +255,15 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 					}
 				}
 			}
-			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher([]byte(path)) {
+			bytes := stringBytes(path)
+			if replaceSep {
+				for i, b := range bytes {
+					if b == os.PathSeparator {
+						bytes[i] = sep
+					}
+				}
+			}
+			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(bytes) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}

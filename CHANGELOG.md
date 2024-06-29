@@ -47,6 +47,8 @@ CHANGELOG
       --bind 'start:reload:sleep 1; ps -ef' \
       --bind 'load:change-header:Loaded!'
   ```
+- Added `--walker-path-sep=CHAR` option to change the default path separator used by the built-in walker
+    - Needed when running a Windows binary on WSL or zsh on Windows where forward slashes are expected
 - Fixed mouse support on Windows
 - Fixed crash when using `--tiebreak=end` with very long items
 - zsh 5.0 compatibility (thanks to @LangLangBart)
