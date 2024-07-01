@@ -794,6 +794,9 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 		w.fg = r.theme.Fg.Color
 		w.bg = r.theme.Bg.Color
 	}
+	if !w.bg.IsDefault() && w.border.shape != BorderNone {
+		w.Erase()
+	}
 	w.drawBorder(false)
 	return w
 }
