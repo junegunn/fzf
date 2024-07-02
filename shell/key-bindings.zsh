@@ -106,8 +106,8 @@ fi
 
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
-  local selected num
-  setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases noglob 2> /dev/null
+  local selected
+  setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases noglob nobash_rematch 2> /dev/null
   # Ensure the associative history array, which maps event numbers to the full
   # history lines, is loaded, and that Perl is installed for multi-line output.
   if zmodload -F zsh/parameter p:history 2>/dev/null && (( ${#commands[perl]} )); then
@@ -122,8 +122,8 @@ fzf-history-widget() {
   fi
   local ret=$?
   if [ -n "$selected" ]; then
-    if num=$(awk '{print $1; exit}' <<< "$selected" | grep -o '^[1-9][0-9]*'); then
-      zle vi-fetch-history -n $num
+    if [[ $(awk '{print $1; exit}' <<< "$selected") =~ ^[1-9][0-9]* ]]; then
+      zle vi-fetch-history -n $MATCH
     else # selected is a custom query, not from history
       LBUFFER="$selected"
     fi
