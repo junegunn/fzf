@@ -53,6 +53,8 @@ Usage: fzf [options]
     --no-mouse              Disable mouse
     --bind=KEYBINDS         Custom key bindings. Refer to the man page.
     --cycle                 Enable cyclic scroll
+    --wrap                  Enable line wrap
+    --wrap-sign=STR         Indicator for wrapped lines
     --no-multi-line         Disable multi-line display of items when using --read0
     --keep-right            Keep the right end of the line visible on overflow
     --scroll-off=LINES      Number of screen lines to keep above or below when
@@ -145,6 +147,7 @@ Usage: fzf [options]
     --walker-root=DIR       Root directory from which to start walker (default: .)
     --walker-skip=DIRS      Comma-separated list of directory names to skip
                             (default: .git,node_modules)
+    --walker-path-sep=CHAR  Path separator to use (default: / on Unix, \ on Windows)
 
   Shell integration
     --bash                  Print script to set up Bash shell integration
@@ -435,6 +438,8 @@ type Options struct {
 	MinHeight    int
 	Layout       layoutType
 	Cycle        bool
+	Wrap         bool
+	WrapSign     *string
 	MultiLine    bool
 	CursorLine   bool
 	KeepRight    bool
@@ -485,6 +490,7 @@ type Options struct {
 	WalkerOpts   walkerOpts
 	WalkerRoot   string
 	WalkerSkip   []string
+	WalkerSep    byte
 	Version      bool
 	Help         bool
 	CPUProfile   string
@@ -543,6 +549,7 @@ func defaultOptions() *Options {
 		MinHeight:    10,
 		Layout:       layoutDefault,
 		Cycle:        false,
+		Wrap:         false,
 		MultiLine:    true,
 		KeepRight:    false,
 		Hscroll:      true,
@@ -587,6 +594,7 @@ func defaultOptions() *Options {
 		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
 		WalkerRoot:   ".",
 		WalkerSkip:   []string{".git", "node_modules"},
+		WalkerSep:    os.PathSeparator,
 		Help:         false,
 		Version:      false}
 }
@@ -1366,6 +1374,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrackCurrent)
 		case "toggle-header":
 			appendAction(actToggleHeader)
+		case "toggle-wrap":
+			appendAction(actToggleWrap)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
@@ -1897,6 +1907,14 @@ func parseMarkerMultiLine(str string) (*[3]string, error) {
 	return &result, nil
 }
 
+func parsePathSep(str string) (byte, error) {
+	bytes := []byte(str)
+	if len(bytes) != 1 {
+		return os.PathSeparator, errors.New("invalid path separator (expected: single-byte character)")
+	}
+	return bytes[0], nil
+}
+
 func parseOptions(index *int, opts *Options, allArgs []string) error {
 	var err error
 	var historyMax int
@@ -2163,6 +2181,16 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.CursorLine = false
 		case "--no-cycle":
 			opts.Cycle = false
+		case "--wrap":
+			opts.Wrap = true
+		case "--no-wrap":
+			opts.Wrap = false
+		case "--wrap-sign":
+			str, err := nextString(allArgs, &i, "wrap sign required")
+			if err != nil {
+				return err
+			}
+			opts.WrapSign = &str
 		case "--multi-line":
 			opts.MultiLine = true
 		case "--no-multi-line":
@@ -2462,6 +2490,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
+		case "--walker-path-sep":
+			str, err := nextString(allArgs, &i, "path separator required")
+			if err != nil {
+				return err
+			}
+			if opts.WalkerSep, err = parsePathSep(str); err != nil {
+				return err
+			}
 		case "--profile-cpu":
 			if opts.CPUProfile, err = nextString(allArgs, &i, "file path required: cpu"); err != nil {
 				return err
@@ -2513,6 +2549,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if err := parseLabelPosition(&opts.PreviewLabel, value); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--wrap-sign="); match {
+				opts.WrapSign = &value
 			} else if match, value := optString(arg, "--prompt="); match {
 				opts.Prompt = value
 			} else if match, value := optString(arg, "--pointer="); match {
@@ -2647,6 +2685,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				opts.WalkerRoot = value
 			} else if match, value := optString(arg, "--walker-skip="); match {
 				opts.WalkerSkip = filterNonEmpty(strings.Split(value, ","))
+			} else if match, value := optString(arg, "--walker-path-sep="); match {
+				if opts.WalkerSep, err = parsePathSep(value); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				if opts.HscrollOff, err = atoi(value); err != nil {
 					return err
@@ -2769,10 +2811,9 @@ func postProcessOptions(opts *Options) error {
 		opts.Pointer = &defaultPointer
 	}
 
-	multiLine := opts.MultiLine && opts.ReadZero
 	markerLen := 1
 	if opts.Marker == nil {
-		if multiLine && opts.MarkerMulti != nil && opts.MarkerMulti[0] == "" {
+		if opts.MarkerMulti != nil && opts.MarkerMulti[0] == "" {
 			empty := ""
 			opts.Marker = &empty
 			markerLen = 0
@@ -2790,7 +2831,7 @@ func postProcessOptions(opts *Options) error {
 
 	markerMultiLen := 1
 	if opts.MarkerMulti == nil {
-		if !multiLine && *opts.Marker == "" {
+		if *opts.Marker == "" {
 			opts.MarkerMulti = &[3]string{}
 			markerMultiLen = 0
 		} else if opts.Unicode {

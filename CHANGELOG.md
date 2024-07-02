@@ -3,6 +3,16 @@ CHANGELOG
 
 0.54.0
 ------
+- Implemented line wrap of long items
+    - `--wrap` option enables line wrap
+    - `--wrap-sign` customizes the sign for wrapped lines (default: `↳ `)
+    - `toggle-wrap` action toggles line wrap
+  ```sh
+  history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap'
+
+  # You can press CTRL-/ to toggle line wrap in CTRL-R binding
+  export FZF_CTRL_R_OPTS=$'--bind ctrl-/:toggle-wrap --wrap-sign "\t↳ "'
+  ```
 - Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
@@ -13,11 +23,7 @@ CHANGELOG
 - Pointer and marker signs can be set to empty strings
   ```sh
   # Minimal style
-  fzf --pointer '' --marker '' --info hidden
-
-  # When --read0 is specified, there can be multi-line entries,
-  # so you need to set --marker-multi-line to an empty string
-  find . -print0 | fzf --read0 --pointer '' --marker-multi-line '' --info hidden
+  fzf --pointer '' --marker '' --prompt '' --info hidden
   ```
 - Better cache management and improved rendering for `--tail`
 - Improved `--sync` behavior
@@ -41,6 +47,8 @@ CHANGELOG
       --bind 'start:reload:sleep 1; ps -ef' \
       --bind 'load:change-header:Loaded!'
   ```
+- Added `--walker-path-sep=CHAR` option to change the default path separator used by the built-in walker
+    - Needed when running a Windows binary on WSL or zsh on Windows where forward slashes are expected
 - Fixed mouse support on Windows
 - Fixed crash when using `--tiebreak=end` with very long items
 - zsh 5.0 compatibility (thanks to @LangLangBart)
