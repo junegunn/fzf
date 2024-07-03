@@ -235,8 +235,11 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 
 func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep byte) bool {
 	r.killed = false
-	conf := fastwalk.Config{Follow: opts.follow}
-	replaceSep := sep != os.PathSeparator
+	conf := fastwalk.Config{
+		Follow: opts.follow,
+		// Use forward slashes when running a Windows binary under WSL.
+		ToSlash: fastwalk.DefaultToSlash(),
+	}
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -255,15 +258,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep b
 					}
 				}
 			}
-			bytes := stringBytes(path)
-			if replaceSep {
-				for i, b := range bytes {
-					if b == os.PathSeparator {
-						bytes[i] = sep
-					}
-				}
-			}
-			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(bytes) {
+			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher([]byte(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
