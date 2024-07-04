@@ -52,8 +52,8 @@ __fzf_select() {
   local item
   FZF_DEFAULT_COMMAND=${FZF_CTRL_T_COMMAND:-} \
   FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path" "${FZF_CTRL_T_OPTS-} -m") \
-  FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) "$@" < /dev/tty | while read item; do
-    echo -n "${(q)item} "
+  FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) "$@" < /dev/tty | while read -r item; do
+    echo -n -E "${(q)item} "
   done
   local ret=$?
   echo
