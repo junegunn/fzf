@@ -233,6 +233,20 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 	return false
 }
 
+func trimPath(path string) string {
+	if len(path) == 0 {
+		return "."
+	}
+
+	bytes := stringBytes(path)
+
+	for len(bytes) > 1 && bytes[0] == '.' && (bytes[1] == '/' || bytes[1] == '\\') {
+		bytes = bytes[2:]
+	}
+
+	return byteString(bytes)
+}
+
 func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
 	conf := fastwalk.Config{
@@ -244,7 +258,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		if err != nil {
 			return nil
 		}
-		path = filepath.Clean(path)
+		path = trimPath(path)
 		if path != "." {
 			isDir := de.IsDir()
 			if isDir || opts.follow && isSymlinkToDir(path, de) {
