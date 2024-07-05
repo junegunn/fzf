@@ -237,7 +237,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 	r.killed = false
 	conf := fastwalk.Config{
 		Follow: opts.follow,
-		// Use forward slashes when running a Windows binary under WSL.
+		// Use forward slashes when running a Windows binary under WSL or MSYS
 		ToSlash: fastwalk.DefaultToSlash(),
 	}
 	fn := func(path string, de os.DirEntry, err error) error {
