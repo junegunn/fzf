@@ -258,7 +258,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep b
 					}
 				}
 			}
-			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher([]byte(path)) {
+			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(stringBytes(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
