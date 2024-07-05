@@ -111,7 +111,7 @@ func (r *Reader) readChannel(inputChan chan string) bool {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, sep byte) {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string) {
 	r.startEventPoller()
 	var success bool
 	if inputChan != nil {
@@ -119,7 +119,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			success = r.readFiles(root, opts, ignores, sep)
+			success = r.readFiles(root, opts, ignores)
 		} else {
 			// We can't export FZF_* environment variables to the default command
 			success = r.readFromCommand(cmd, nil)
@@ -233,7 +233,7 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 	return false
 }
 
-func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep byte) bool {
+func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
 	conf := fastwalk.Config{
 		Follow: opts.follow,

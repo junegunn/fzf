@@ -171,9 +171,9 @@ __fzf_generic_path_completion() {
             rest=${FZF_COMPLETION_PATH_OPTS-}
           fi
           __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" --walker "$walker" --walker-root="$dir" ${(Q)${(Z+n+)rest}} < /dev/tty
-        fi | while read item; do
+        fi | while read -r item; do
           item="${item%$suffix}$suffix"
-          echo -n "${(q)item} "
+          echo -n -E "${(q)item} "
         done
       )
       matches=${matches% }

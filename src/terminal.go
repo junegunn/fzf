@@ -4301,9 +4301,11 @@ func (t *Terminal) Loop() error {
 				}
 			case actFirst:
 				t.vset(0)
+				t.constrain()
 				req(reqList)
 			case actLast:
 				t.vset(t.merger.Length() - 1)
+				t.constrain()
 				req(reqList)
 			case actPosition:
 				if n, e := strconv.Atoi(a.a); e == nil {
@@ -4313,6 +4315,7 @@ func (t *Terminal) Loop() error {
 						n += t.merger.Length()
 					}
 					t.vset(n)
+					t.constrain()
 					req(reqList)
 				}
 			case actPut:
