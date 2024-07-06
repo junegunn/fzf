@@ -464,13 +464,11 @@ the following key bindings in bash, zsh, and fish.
 - `CTRL-R` - Paste the selected command from history onto the command-line
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
+    - Press `CTRL-/` or `ALT-/` to toggle line wrapping
     - Set `FZF_CTRL_R_OPTS` to pass additional options to fzf
       ```sh
-      # CTRL-/ to toggle small preview window to see the full command
       # CTRL-Y to copy the command into clipboard using pbcopy
       export FZF_CTRL_R_OPTS="
-        --preview 'echo {}' --preview-window up:3:hidden:wrap
-        --bind 'ctrl-/:toggle-preview'
         --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
         --color header:italic
         --header 'Press CTRL-Y to copy command into clipboard'"

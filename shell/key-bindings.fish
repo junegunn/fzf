@@ -72,12 +72,12 @@ function fzf_key_bindings
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
         if type -P perl > /dev/null 2>&1
-          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
           set -lx FZF_DEFAULT_OPTS_FILE ''
           builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
           and commandline -- $result
         else
-          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
           set -lx FZF_DEFAULT_OPTS_FILE ''
           builtin history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
           and commandline -- $result
