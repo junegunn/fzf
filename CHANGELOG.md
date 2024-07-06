@@ -7,12 +7,14 @@ CHANGELOG
     - `--wrap` option enables line wrap
     - `--wrap-sign` customizes the sign for wrapped lines (default: `↳ `)
     - `toggle-wrap` action toggles line wrap
-  ```sh
-  history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap'
-
-  # You can press CTRL-/ to toggle line wrap in CTRL-R binding
-  export FZF_CTRL_R_OPTS=$'--bind ctrl-/:toggle-wrap --wrap-sign "\t↳ "'
-  ```
+      ```sh
+      history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap' --wrap-sign $'\t↳ '
+      ```
+    - fzf by default binds `CTRL-/` and `ALT-/` to `toggle-wrap`
+- Updated shell integration scripts to leverage line wrap
+    - CTRL-R binding includes `--wrap-sign $'\t↳ '` to indent wrapped lines
+    - `kill **` completion uses `--wrap` to show the whole line by default
+      instead of showing it in the preview window
 - Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
