@@ -167,6 +167,7 @@ _fzf_opts_completion() {
     --version
     --with-nth
     --with-shell
+    --wrap
     --zsh
     -0 --exit-0
     -1 --select-1
@@ -407,7 +408,7 @@ _fzf_complete_kill() {
 }
 
 _fzf_proc_completion() {
-  _fzf_complete -m --header-lines=1 --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
+  _fzf_complete -m --header-lines=1 --no-preview --wrap -- "$@" < <(
     command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
       command ps -eo user,pid,ppid,time,args # For BusyBox
   )
