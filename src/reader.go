@@ -234,14 +234,14 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 }
 
 func trimPath(path string) string {
-	if len(path) == 0 {
-		return "."
-	}
-
 	bytes := stringBytes(path)
 
 	for len(bytes) > 1 && bytes[0] == '.' && (bytes[1] == '/' || bytes[1] == '\\') {
 		bytes = bytes[2:]
+	}
+
+	if len(bytes) == 0 {
+		return "."
 	}
 
 	return byteString(bytes)
