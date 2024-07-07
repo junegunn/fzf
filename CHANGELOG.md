@@ -3,6 +3,8 @@ CHANGELOG
 
 0.54.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_
+
 - Implemented line wrap of long items
     - `--wrap` option enables line wrap
     - `--wrap-sign` customizes the sign for wrapped lines (default: `↳ `)
@@ -54,9 +56,12 @@ CHANGELOG
 - zsh 5.0 compatibility (thanks to @LangLangBart)
 - Fixed `--walker-skip` to also skip symlinks to directories
 - Fixed `result` event not fired when input stream is not complete
+- New tags will have `v` prefix so that they are available on https://proxy.golang.org/
 
 0.53.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.53.0/_
+
 - Multi-line display
     - See [Processing multi-line items](https://junegunn.github.io/fzf/tips/processing-multi-line-items/)
     - fzf can now display multi-line items

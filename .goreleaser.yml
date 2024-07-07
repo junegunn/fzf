@@ -109,12 +109,12 @@ release:
     owner: junegunn
     name: fzf
   prerelease: auto
-  name_template: '{{ .Tag }}'
+  name_template: '{{ .Version }}'
   extra_files:
     - glob: ./dist/fzf-*darwin*.zip
 
 snapshot:
-  name_template: "{{ .Tag }}-devel"
+  name_template: "{{ .Version }}-devel"
 
 changelog:
   sort: asc

@@ -11,7 +11,7 @@ import (
 	"github.com/junegunn/fzf/src/protector"
 )
 
-var version = "0.53"
+var version = "0.54"
 var revision = "devel"
 
 //go:embed shell/key-bindings.bash
