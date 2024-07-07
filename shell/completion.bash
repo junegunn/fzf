@@ -485,7 +485,7 @@ d_cmds="${FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir}"
 # NOTE: $FZF_COMPLETION_PATH_COMMANDS and $FZF_COMPLETION_VAR_COMMANDS are
 # undocumented and subject to change in the future.
 a_cmds="${FZF_COMPLETION_PATH_COMMANDS-"
-  awk bat cat diff diff3
+  awk bat cat code diff diff3
   emacs emacsclient ex file ftp g++ gcc gvim head hg hx java
   javac ld less more mvim nvim patch perl python ruby
   sed sftp sort source tail tee uniq vi view vim wc xdg-open
