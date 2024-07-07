@@ -9,12 +9,12 @@ SOURCES        := $(wildcard *.go src/*.go src/*/*.go shell/*sh man/man1/*.1) $(
 ifdef FZF_VERSION
 VERSION        := $(FZF_VERSION)
 else
-VERSION        := $(shell git describe --abbrev=0 2> /dev/null)
+VERSION        := $(shell git describe --abbrev=0 2> /dev/null | sed "s/^v//")
 endif
 ifeq ($(VERSION),)
 $(error Not on git repository; cannot determine $$FZF_VERSION)
 endif
-VERSION_TRIM   := $(shell sed "s/-.*//" <<< $(VERSION))
+VERSION_TRIM   := $(shell sed "s/^v//; s/-.*//" <<< $(VERSION))
 VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
 
 ifdef FZF_REVISION
