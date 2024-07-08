@@ -233,14 +233,32 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 	return false
 }
 
+func trimPath(path string) string {
+	bytes := stringBytes(path)
+
+	for len(bytes) > 1 && bytes[0] == '.' && (bytes[1] == '/' || bytes[1] == '\\') {
+		bytes = bytes[2:]
+	}
+
+	if len(bytes) == 0 {
+		return "."
+	}
+
+	return byteString(bytes)
+}
+
 func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
-	conf := fastwalk.Config{Follow: opts.follow}
+	conf := fastwalk.Config{
+		Follow: opts.follow,
+		// Use forward slashes when running a Windows binary under WSL or MSYS
+		ToSlash: fastwalk.DefaultToSlash(),
+	}
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
-		path = filepath.Clean(path)
+		path = trimPath(path)
 		if path != "." {
 			isDir := de.IsDir()
 			if isDir || opts.follow && isSymlinkToDir(path, de) {
