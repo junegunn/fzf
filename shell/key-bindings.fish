@@ -104,7 +104,11 @@ function fzf_key_bindings
       eval (__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
       if [ -n "$result" ]
-        builtin cd -- $result
+        if string match --quiet -- '-*' $result
+            cd ./$result
+        else
+            cd $result
+        end
 
         # Remove last token from commandline.
         commandline -t ""
