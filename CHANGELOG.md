@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.54.1
+------
+- Updated [fastwalk](https://github.com/charlievieth/fastwalk) dependency for built-in directory walker
+    - [fastwalk: add optional sorting and improve documentation](https://github.com/charlievieth/fastwalk/pull/27)
+    - [fastwalk: only check if MSYSTEM is set during MSYS/MSYS2](https://github.com/charlievieth/fastwalk/pull/28)
+    - Thanks to @charlievieth
+- Reverted ALT-C binding of fish to use `cd` instead of `builtin cd`
+    - `builtin cd` was introduced to work around a bug of `cd` coming from `zoxide init --cmd cd fish` where it cannot handle `--` argument.
+    - However, the default `cd` of fish is actually a wrapper function for supporting `cd -`, so we want to use it instead.
+    - See [#3928](https://github.com/junegunn/fzf/pull/3928) for more information and consider helping zoxide fix the bug.
+
 0.54.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_
