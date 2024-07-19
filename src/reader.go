@@ -111,7 +111,7 @@ func (r *Reader) readChannel(inputChan chan string) bool {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, sep byte) {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string) {
 	r.startEventPoller()
 	var success bool
 	if inputChan != nil {
@@ -119,7 +119,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			success = r.readFiles(root, opts, ignores, sep)
+			success = r.readFiles(root, opts, ignores)
 		} else {
 			// We can't export FZF_* environment variables to the default command
 			success = r.readFromCommand(cmd, nil)
@@ -233,15 +233,33 @@ func isSymlinkToDir(path string, de os.DirEntry) bool {
 	return false
 }
 
-func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep byte) bool {
+func trimPath(path string) string {
+	bytes := stringBytes(path)
+
+	for len(bytes) > 1 && bytes[0] == '.' && (bytes[1] == '/' || bytes[1] == '\\') {
+		bytes = bytes[2:]
+	}
+
+	if len(bytes) == 0 {
+		return "."
+	}
+
+	return byteString(bytes)
+}
+
+func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
-	conf := fastwalk.Config{Follow: opts.follow}
-	replaceSep := sep != os.PathSeparator
+	conf := fastwalk.Config{
+		Follow: opts.follow,
+		// Use forward slashes when running a Windows binary under WSL or MSYS
+		ToSlash: fastwalk.DefaultToSlash(),
+		Sort:    fastwalk.SortFilesFirst,
+	}
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
-		path = filepath.Clean(path)
+		path = trimPath(path)
 		if path != "." {
 			isDir := de.IsDir()
 			if isDir || opts.follow && isSymlinkToDir(path, de) {
@@ -255,15 +273,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string, sep b
 					}
 				}
 			}
-			bytes := stringBytes(path)
-			if replaceSep {
-				for i, b := range bytes {
-					if b == os.PathSeparator {
-						bytes[i] = sep
-					}
-				}
-			}
-			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(bytes) {
+			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(stringBytes(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}

@@ -159,7 +159,7 @@ func Run(opts *Options) (int, error) {
 			// reload or reload-sync action is bound to 'start' event, no need to start the reader
 			eventBox.Set(EvtReadNone, nil)
 		} else {
-			go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, opts.WalkerSep)
+			go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		}
 	}
 
@@ -212,7 +212,7 @@ func Run(opts *Options) (int, error) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, opts.WalkerSep)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)

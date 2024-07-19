@@ -147,7 +147,6 @@ Usage: fzf [options]
     --walker-root=DIR       Root directory from which to start walker (default: .)
     --walker-skip=DIRS      Comma-separated list of directory names to skip
                             (default: .git,node_modules)
-    --walker-path-sep=CHAR  Path separator to use (default: / on Unix, \ on Windows)
 
   Shell integration
     --bash                  Print script to set up Bash shell integration
@@ -490,7 +489,6 @@ type Options struct {
 	WalkerOpts   walkerOpts
 	WalkerRoot   string
 	WalkerSkip   []string
-	WalkerSep    byte
 	Version      bool
 	Help         bool
 	CPUProfile   string
@@ -594,7 +592,6 @@ func defaultOptions() *Options {
 		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
 		WalkerRoot:   ".",
 		WalkerSkip:   []string{".git", "node_modules"},
-		WalkerSep:    os.PathSeparator,
 		Help:         false,
 		Version:      false}
 }
@@ -1907,14 +1904,6 @@ func parseMarkerMultiLine(str string) (*[3]string, error) {
 	return &result, nil
 }
 
-func parsePathSep(str string) (byte, error) {
-	bytes := []byte(str)
-	if len(bytes) != 1 {
-		return os.PathSeparator, errors.New("invalid path separator (expected: single-byte character)")
-	}
-	return bytes[0], nil
-}
-
 func parseOptions(index *int, opts *Options, allArgs []string) error {
 	var err error
 	var historyMax int
@@ -2490,14 +2479,6 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
-		case "--walker-path-sep":
-			str, err := nextString(allArgs, &i, "path separator required")
-			if err != nil {
-				return err
-			}
-			if opts.WalkerSep, err = parsePathSep(str); err != nil {
-				return err
-			}
 		case "--profile-cpu":
 			if opts.CPUProfile, err = nextString(allArgs, &i, "file path required: cpu"); err != nil {
 				return err
@@ -2685,10 +2666,6 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				opts.WalkerRoot = value
 			} else if match, value := optString(arg, "--walker-skip="); match {
 				opts.WalkerSkip = filterNonEmpty(strings.Split(value, ","))
-			} else if match, value := optString(arg, "--walker-path-sep="); match {
-				if opts.WalkerSep, err = parsePathSep(value); err != nil {
-					return err
-				}
 			} else if match, value := optString(arg, "--hscroll-off="); match {
 				if opts.HscrollOff, err = atoi(value); err != nil {
 					return err

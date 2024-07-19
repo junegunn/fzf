@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.53.0
+version=0.54.1
 auto_completion=
 key_bindings=
 update_config=2
@@ -146,7 +146,7 @@ download() {
   fi
 
   local url
-  url=https://github.com/junegunn/fzf/releases/download/$version/${1}
+  url=https://github.com/junegunn/fzf/releases/download/v$version/${1}
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     set +o pipefail

@@ -1,4 +1,4 @@
-$version="0.53.0"
+$version="0.54.1"
 
 $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -40,7 +40,7 @@ function download {
     return
   }
   cd "$fzf_base\bin"
-  $url="https://github.com/junegunn/fzf/releases/download/$version/$file"
+  $url="https://github.com/junegunn/fzf/releases/download/v$version/$file"
   $temp=$env:TMP + "\fzf.zip"
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   if ($PSVersionTable.PSVersion.Major -ge 3) {

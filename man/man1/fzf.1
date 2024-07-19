@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jun 2024" "fzf 0.54.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jul 2024" "fzf 0.54.1" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -1008,11 +1008,6 @@ The default value is the current working directory.
 Comma-separated list of directory names to skip during the directory walk.
 The default value is \fB.git,node_modules\fR.
 
-.TP
-.B "\-\-walker\-path\-sep=CHAR"
-Path separator to be used by the built-in directory walker (default: '/' on
-Unix, '\\' on Windows)
-
 .SS Shell integration
 .TP
 .B "\-\-bash"
@@ -1502,7 +1497,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\-sort\fR
     \fBtoggle\-track\fR                 (toggle global tracking option (\fB\-\-track\fR))
     \fBtoggle\-track\-current\fR         (toggle tracking of the current item)
-    \fBtoggle\-wrap\fR
+    \fBtoggle\-wrap\fR                  \fIctrl\-/\fR  \fIalt\-/\fR
     \fBtoggle+up\fR                    \fIbtab    (shift\-tab)\fR
     \fBtrack\-current\fR                (track the current item; automatically disabled if focus changes)
     \fBtransform(...)\fR               (transform states using the output of an external command)

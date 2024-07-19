@@ -1,18 +1,33 @@
 CHANGELOG
 =========
 
+0.54.1
+------
+- Updated [fastwalk](https://github.com/charlievieth/fastwalk) dependency for built-in directory walker
+    - [fastwalk: add optional sorting and improve documentation](https://github.com/charlievieth/fastwalk/pull/27)
+    - [fastwalk: only check if MSYSTEM is set during MSYS/MSYS2](https://github.com/charlievieth/fastwalk/pull/28)
+    - Thanks to @charlievieth
+- Reverted ALT-C binding of fish to use `cd` instead of `builtin cd`
+    - `builtin cd` was introduced to work around a bug of `cd` coming from `zoxide init --cmd cd fish` where it cannot handle `--` argument.
+    - However, the default `cd` of fish is actually a wrapper function for supporting `cd -`, so we want to use it instead.
+    - See [#3928](https://github.com/junegunn/fzf/pull/3928) for more information and consider helping zoxide fix the bug.
+
 0.54.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_
+
 - Implemented line wrap of long items
     - `--wrap` option enables line wrap
     - `--wrap-sign` customizes the sign for wrapped lines (default: `↳ `)
     - `toggle-wrap` action toggles line wrap
-  ```sh
-  history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap'
-
-  # You can press CTRL-/ to toggle line wrap in CTRL-R binding
-  export FZF_CTRL_R_OPTS=$'--bind ctrl-/:toggle-wrap --wrap-sign "\t↳ "'
-  ```
+      ```sh
+      history | fzf --tac --wrap --bind 'ctrl-/:toggle-wrap' --wrap-sign $'\t↳ '
+      ```
+    - fzf by default binds `CTRL-/` and `ALT-/` to `toggle-wrap`
+- Updated shell integration scripts to leverage line wrap
+    - CTRL-R binding includes `--wrap-sign $'\t↳ '` to indent wrapped lines
+    - `kill **` completion uses `--wrap` to show the whole line by default
+      instead of showing it in the preview window
 - Added `--info-command` option for customizing the info line
   ```sh
   # Prepend the current cursor position in yellow
@@ -47,16 +62,17 @@ CHANGELOG
       --bind 'start:reload:sleep 1; ps -ef' \
       --bind 'load:change-header:Loaded!'
   ```
-- Added `--walker-path-sep=CHAR` option to change the default path separator used by the built-in walker
-    - Needed when running a Windows binary on WSL or zsh on Windows where forward slashes are expected
 - Fixed mouse support on Windows
 - Fixed crash when using `--tiebreak=end` with very long items
 - zsh 5.0 compatibility (thanks to @LangLangBart)
 - Fixed `--walker-skip` to also skip symlinks to directories
 - Fixed `result` event not fired when input stream is not complete
+- New tags will have `v` prefix so that they are available on https://proxy.golang.org/
 
 0.53.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.53.0/_
+
 - Multi-line display
     - See [Processing multi-line items](https://junegunn.github.io/fzf/tips/processing-multi-line-items/)
     - fzf can now display multi-line items

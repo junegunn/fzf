@@ -177,9 +177,9 @@ __fzf_generic_path_completion() {
             rest=${FZF_COMPLETION_PATH_OPTS-}
           fi
           __fzf_comprun "$cmd" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" --walker "$walker" --walker-root="$dir" ${(Q)${(Z+n+)rest}} < /dev/tty
-        fi | while read item; do
+        fi | while read -r item; do
           item="${item%$suffix}$suffix"
-          echo -n "${(q)item} "
+          echo -n -E "${(q)item} "
         done
       )
       matches=${matches% }
@@ -304,7 +304,7 @@ _fzf_complete_unalias() {
 }
 
 _fzf_complete_kill() {
-  _fzf_complete -m --header-lines=1 --preview 'echo {}' --preview-window down:3:wrap --min-height 15 -- "$@" < <(
+  _fzf_complete -m --header-lines=1 --no-preview --wrap -- "$@" < <(
     command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
       command ps -eo user,pid,ppid,time,args # For BusyBox
   )
