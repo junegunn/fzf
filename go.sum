@@ -1,5 +1,5 @@
-github.com/charlievieth/fastwalk v1.0.7-0.20240703190418-87029d931815 h1:4PRbYm9OMgH0bcdZZqMXA/AoOvpGy4l0H6g9Au/kgGA=
-github.com/charlievieth/fastwalk v1.0.7-0.20240703190418-87029d931815/go.mod h1:rV19+IF9Y2TYQNy4MqEk5M/spNHjKsA0i71yrsv2p4E=
+github.com/charlievieth/fastwalk v1.0.8 h1:uaoH6cAKSk73aK7aKXqs0+bL+J3Txzd3NGH8tRXgHko=
+github.com/charlievieth/fastwalk v1.0.8/go.mod h1:yGy1zbxog41ZVMcKA/i8ojXLFsuayX5VvwhQVoj9PBI=
 github.com/gdamore/encoding v1.0.0 h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdko=
 github.com/gdamore/encoding v1.0.0/go.mod h1:alR0ol34c49FCSBLjhosxzcPHQbf2trDkoo5dl+VrEg=
 github.com/gdamore/tcell/v2 v2.7.4 h1:sg6/UnTM9jGpZU+oFYAsDahfchWAFW8Xx2yFinNSAYU=
