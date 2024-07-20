@@ -2275,6 +2275,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 
 	finalLineNum := lineNum
 	topCutoff := false
+	skipLines := 0
 	wrapped := false
 	if t.multiLine || t.wrap {
 		// Cut off the upper lines in the 'default' layout
@@ -2287,7 +2288,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				wrapped = true
 			}
 
-			lines = lines[len(lines)-maxLines:]
+			skipLines = len(lines) - maxLines
 			topCutoff = true
 		}
 	}
@@ -2323,6 +2324,10 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			}
 		}
 		from += len(line)
+		if lineOffset < skipLines {
+			continue
+		}
+		actualLineOffset := lineOffset - skipLines
 
 		var maxe int
 		for _, offset := range offsets {
@@ -2333,7 +2338,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 
 		actualLineNum := lineNum
 		if t.layout == layoutDefault {
-			actualLineNum = (lineNum - lineOffset) + (numItemLines - lineOffset) - 1
+			actualLineNum = (lineNum - actualLineOffset) + (numItemLines - actualLineOffset) - 1
 		}
 		t.move(actualLineNum, 0, forceRedraw)
 
@@ -2348,13 +2353,13 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 					marker = markerTop
 				}
 			} else {
-				if lineOffset == 0 { // First line
+				if actualLineOffset == 0 { // First line
 					if topCutoff {
 						marker = markerMiddle
 					} else {
 						marker = markerTop
 					}
-				} else if lineOffset == numItemLines-1 { // Last line
+				} else if actualLineOffset == numItemLines-1 { // Last line
 					if topCutoff || !overflow {
 						marker = markerBottom
 					} else {
