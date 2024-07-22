@@ -71,7 +71,7 @@ if command -v ruby > /dev/null; then
 
         h = {}
         i = 0
-        File.read("/tmp/fzf-bash-history").scan(/^#([0-9]+)$\n(.*?)\n(?=^#[0-9]+$|\z)/m) do |t, c|
+        File.read("/tmp/fzf-bash-history").encode!("UTF-8", "UTF-8", :invalid => :replace).scan(/^#([0-9]+)$\n(.*?)\n(?=^#[0-9]+$|\z)/m) do |t, c|
           next if c.empty?
           h.delete(c)
           h[c] = [i += 1, t]
