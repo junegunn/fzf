@@ -37,6 +37,11 @@ Pros
 - Batteries included
     - bash/zsh/fish integration, tmux integration, Vim/Neovim plugin
 
+Cons
+----
+
+- Suddenly way too much free time...
+
 Sponsors ❤️
 -----------
 
