@@ -149,9 +149,9 @@ func Run(opts *Options) (int, error) {
 	// Terminal I/O
 	var terminal *Terminal
 	var initialEnv []string
+	var err error
 	initialReload := opts.extractReloadOnStart()
 	if opts.Filter == nil {
-		var err error
 		terminal, err = NewTerminal(opts, eventBox, executor)
 		if err != nil {
 			return ExitError, err
