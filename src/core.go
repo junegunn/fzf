@@ -148,18 +148,20 @@ func Run(opts *Options) (int, error) {
 
 	// Terminal I/O
 	var terminal *Terminal
-	var err error
 	var initialEnv []string
 	initialReload := opts.extractReloadOnStart()
 	if opts.Filter == nil {
+		var err error
 		terminal, err = NewTerminal(opts, eventBox, executor)
 		if err != nil {
 			return ExitError, err
 		}
-		initialEnv = terminal.environ()
-		var temps []string
-		initialReload, temps = terminal.replacePlaceholderInInitialCommand(initialReload)
-		defer removeFiles(temps)
+		if len(initialReload) > 0 {
+			var temps []string
+			initialReload, temps = terminal.replacePlaceholderInInitialCommand(initialReload)
+			initialEnv = terminal.environ()
+			defer removeFiles(temps)
+		}
 	}
 
 	// Reader
