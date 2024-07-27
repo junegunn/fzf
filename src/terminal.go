@@ -2946,6 +2946,10 @@ type replacePlaceholderParams struct {
 	executor   *util.Executor
 }
 
+func (t *Terminal) replacePlaceholderInInitialCommand(template string) (string, []string) {
+	return t.replacePlaceholder(template, false, string(t.input), []*Item{nil, nil})
+}
+
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) (string, []string) {
 	return replacePlaceholder(replacePlaceholderParams{
 		template:   template,

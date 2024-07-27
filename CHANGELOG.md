@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.54.3
+------
+- Fixed incompatibility of adaptive height and 'start:reload'
+- Environment variables are now available to `$FZF_DEFAULT_COMMAND`
+  ```sh
+  FZF_DEFAULT_COMMAND='echo $FZF_QUERY' fzf --query foo
+  ```
+
 0.54.2
 ------
 - Fixed incorrect syntax highlighting of truncated multi-line entries
