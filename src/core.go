@@ -148,8 +148,8 @@ func Run(opts *Options) (int, error) {
 
 	// Terminal I/O
 	var terminal *Terminal
-	var initialEnv []string
 	var err error
+	var initialEnv []string
 	initialReload := opts.extractReloadOnStart()
 	if opts.Filter == nil {
 		terminal, err = NewTerminal(opts, eventBox, executor)

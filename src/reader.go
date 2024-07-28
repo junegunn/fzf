@@ -123,7 +123,6 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 		if len(cmd) == 0 {
 			success = r.readFiles(root, opts, ignores)
 		} else {
-			// We can't export FZF_* environment variables to the default command
 			success = r.readFromCommand(cmd, initEnv)
 		}
 	} else {
