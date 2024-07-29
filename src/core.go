@@ -146,8 +146,25 @@ func Run(opts *Options) (int, error) {
 	// Process executor
 	executor := util.NewExecutor(opts.WithShell)
 
+	// Terminal I/O
+	var terminal *Terminal
+	var err error
+	var initialEnv []string
+	initialReload := opts.extractReloadOnStart()
+	if opts.Filter == nil {
+		terminal, err = NewTerminal(opts, eventBox, executor)
+		if err != nil {
+			return ExitError, err
+		}
+		if len(initialReload) > 0 {
+			var temps []string
+			initialReload, temps = terminal.replacePlaceholderInInitialCommand(initialReload)
+			initialEnv = terminal.environ()
+			defer removeFiles(temps)
+		}
+	}
+
 	// Reader
-	reloadOnStart := opts.reloadOnStart()
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
 	var reader *Reader
 	if !streamingFilter {
@@ -155,12 +172,7 @@ func Run(opts *Options) (int, error) {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 
-		if reloadOnStart {
-			// reload or reload-sync action is bound to 'start' event, no need to start the reader
-			eventBox.Set(EvtReadNone, nil)
-		} else {
-			go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
-		}
+		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
 	}
 
 	// Matcher
@@ -212,7 +224,7 @@ func Run(opts *Options) (int, error) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
@@ -234,8 +246,7 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Synchronous search
-	sync := opts.Sync && !reloadOnStart
-	if sync {
+	if opts.Sync {
 		eventBox.Unwatch(EvtReadNew)
 		eventBox.WaitFor(EvtReadFin)
 	}
@@ -244,18 +255,14 @@ func Run(opts *Options) (int, error) {
 	go matcher.Loop()
 	defer matcher.Stop()
 
-	// Terminal I/O
-	terminal, err := NewTerminal(opts, eventBox, executor)
-	if err != nil {
-		return ExitError, err
-	}
+	// Handling adaptive height
 	maxFit := 0 // Maximum number of items that can fit on screen
 	padHeight := 0
 	heightUnknown := opts.Height.auto
 	if heightUnknown {
 		maxFit, padHeight = terminal.MaxFitAndPad()
 	}
-	deferred := opts.Select1 || opts.Exit0 || sync
+	deferred := opts.Select1 || opts.Exit0 || opts.Sync
 	go terminal.Loop()
 	if !deferred && !heightUnknown {
 		// Start right away
@@ -322,9 +329,6 @@ func Run(opts *Options) (int, error) {
 					err = quitSignal.err
 					stop = true
 					return
-				case EvtReadNone:
-					reading = false
-					terminal.UpdateCount(0, false, nil)
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand, nextEnviron)

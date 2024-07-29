@@ -1,6 +1,24 @@
 CHANGELOG
 =========
 
+0.54.3
+------
+- Fixed incompatibility of adaptive height and 'start:reload'
+- Environment variables are now available to `$FZF_DEFAULT_COMMAND`
+  ```sh
+  FZF_DEFAULT_COMMAND='echo $FZF_QUERY' fzf --query foo
+  ```
+
+0.54.2
+------
+- Fixed incorrect syntax highlighting of truncated multi-line entries
+- Updated GoReleaser to 2.1.0 to simplify notarization of macOS binaries
+    - macOS archives will be in `tar.gz` format instead of `zip` format since we no longer notarize the zip files but binaries
+- (Windows) Reverted a mintty fix in 0.54.0
+    - As a result, mouse may not work on mintty in fullscreen mode. However, fzf will correctly read non-ASCII input in fullscreen mode (`--no-height`).
+    - fzf unfortunately cannot read non-ASCII input when not in fullscreen mode on Windows. So if you need to input non-ASCII characters, add `--no-height` to your `$FZF_DEFAULT_OPTS`.
+    - Any help in fixing this issue will be appreciated (#3799, #3847).
+
 0.54.1
 ------
 - Updated [fastwalk](https://github.com/charlievieth/fastwalk) dependency for built-in directory walker
