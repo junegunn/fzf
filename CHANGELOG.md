@@ -3,7 +3,11 @@ CHANGELOG
 
 0.54.3
 ------
-- Fixed incompatibility of adaptive height and 'start:reload'
+- Fixed incompatibility of adaptive height specification and 'start:reload'
+  ```sh
+  # A regression in 0.54.0 would cause this to fail
+  fzf --height '~100%' --bind 'start:reload:seq 10'
+  ```
 - Environment variables are now available to `$FZF_DEFAULT_COMMAND`
   ```sh
   FZF_DEFAULT_COMMAND='echo $FZF_QUERY' fzf --query foo
