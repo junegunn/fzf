@@ -38,7 +38,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	case posUp:
 		tmuxArgs = append(tmuxArgs, "-xC", "-y0")
 	case posDown:
-		tmuxArgs = append(tmuxArgs, "-xC", "-yS")
+		tmuxArgs = append(tmuxArgs, "-xC", "-y9999")
 	case posLeft:
 		tmuxArgs = append(tmuxArgs, "-x0", "-yC")
 	case posRight:
