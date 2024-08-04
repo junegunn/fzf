@@ -410,7 +410,8 @@ _fzf_complete_kill() {
 _fzf_proc_completion() {
   _fzf_complete -m --header-lines=1 --no-preview --wrap -- "$@" < <(
     command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
-      command ps -eo user,pid,ppid,time,args # For BusyBox
+      command ps -eo user,pid,ppid,time,args 2> /dev/null || # For BusyBox
+      command ps --everyone --full --windows # For cygwin
   )
 }
 
