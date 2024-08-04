@@ -4850,11 +4850,18 @@ func (t *Terminal) constrain() {
 			linesSum := 0
 
 			add := func(i int) bool {
-				lines, _ := t.numItemLines(t.merger.Get(i).item, numItems-linesSum)
+				lines, overflow := t.numItemLines(t.merger.Get(i).item, numItems-linesSum)
 				linesSum += lines
 				if linesSum >= numItems {
-					if numItemsFound == 0 {
-						numItemsFound = 1
+					/*
+						# Should show all 3 items
+						printf "file1\0file2\0file3\0" | fzf --height=5 --read0 --bind load:last --reverse
+
+						# Should not truncate the last item
+						printf "file\n1\0file\n2\0file\n3\0" | fzf --height=5 --read0 --bind load:last --reverse
+					*/
+					if numItemsFound == 0 || !overflow {
+						numItemsFound++
 					}
 					return false
 				}
