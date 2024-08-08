@@ -569,4 +569,21 @@ _fzf_setup_completion() {
   done
 }
 
+__fzf_default_completion() {
+  __fzf_generic_path_completion _fzf_compgen_path "-m" "" "$@"
+
+  # Dynamic completion loader has updated the completion for the command
+  if [[ $? -eq 124 ]]; then
+    # We trigger _fzf_setup_completion so that fuzzy completion for the command
+    # still works. However, loader can update the completion for multiple
+    # commands at once, and fuzzy completion will no longer work for those
+    # other commands. e.g. pytest -> py.test, pytest-2, pytest-3, etc
+    _fzf_setup_completion path "$1"
+    return 124
+  fi
+}
+
+# -D option is not available on bash 3
+complete -D -F __fzf_default_completion -o default -o bashdefault 2> /dev/null
+
 fi
