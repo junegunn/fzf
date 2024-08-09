@@ -2928,7 +2928,16 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 				return nil, errors.New("$FZF_DEFAULT_OPTS_FILE: " + err.Error())
 			}
 
-			words, parseErr := shellwords.Parse(string(bytes))
+			// Remove comments and blank lines
+			var sanitized strings.Builder
+			lines := strings.Split(string(bytes), "\n")
+			for _, line := range lines {
+				if !strings.HasPrefix(line, "#") && strings.TrimSpace(line) != "" {
+					sanitized.WriteString(line + "\n")
+				}
+			}
+
+			words, parseErr := shellwords.Parse(sanitized.String())
 			if parseErr != nil {
 				return nil, errors.New(path + ": " + parseErr.Error())
 			}
