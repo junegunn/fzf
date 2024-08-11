@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.54.4
+------
+- [bash] Fuzzy path completion is enabled for all commands
+    - 1. If the default completion is not already set
+    - 2. And if the current bash supports `complete -D` option
+    - However, fuzzy completion for some commands can be "dynamically" disabled by the dynamic completion loader
+    - See the comment in `__fzf_default_completion` function for more information
+- Fixed `--tmux bottom` when the status line is not at the bottom
+- Fixed extra scroll offset in multi-line mode (`--read0` or `--wrap`)
+- Added fallback `ps` command for `kill` completion on Cygwin
+
 0.54.3
 ------
 - Fixed incompatibility of adaptive height specification and 'start:reload'
