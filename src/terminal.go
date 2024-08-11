@@ -382,6 +382,7 @@ const (
 	reqRedrawPreviewLabel
 	reqClose
 	reqPrintQuery
+	reqPreviewReady
 	reqPreviewEnqueue
 	reqPreviewDisplay
 	reqPreviewRefresh
@@ -3469,6 +3470,7 @@ func (t *Terminal) Loop() error {
 		go func() {
 			var version int64
 			stop := false
+			t.previewBox.WaitFor(reqPreviewReady)
 			for {
 				var items []*Item
 				var commandTemplate string
@@ -3496,6 +3498,9 @@ func (t *Terminal) Loop() error {
 				})
 				if stop {
 					break
+				}
+				if items == nil {
+					continue
 				}
 				version++
 				// We don't display preview window if no match
@@ -3738,6 +3743,9 @@ func (t *Terminal) Loop() error {
 						t.printHeader()
 					case reqActivate:
 						t.suppress = false
+						if t.hasPreviewer() {
+							t.previewBox.Set(reqPreviewReady, nil)
+						}
 					case reqRedrawBorderLabel:
 						t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, true)
 					case reqRedrawPreviewLabel:
