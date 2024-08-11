@@ -289,7 +289,7 @@ __fzf_generic_path_completion() {
   fi
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
-  cur="${COMP_WORDS[COMP_CWORD]}"
+  [[ $COMP_CWORD -ge 0 ]] && cur="${COMP_WORDS[COMP_CWORD]}"
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     base=${cur:0:${#cur}-${#trigger}}
     eval "base=$base" 2> /dev/null || return
