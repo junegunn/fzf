@@ -1068,7 +1068,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	//             // unless the part has a non-default ANSI state
 	loc := whiteSuffix.FindStringIndex(trimmed)
 	if loc != nil {
-		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{-1, -1, tui.AttrClear, -1}}
+		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{-1, -1, tui.AttrClear, -1, nil}}
 		if item.colors != nil {
 			lastColor := (*item.colors)[len(*item.colors)-1]
 			if lastColor.offset[1] < int32(loc[1]) {
@@ -2668,11 +2668,20 @@ Loop:
 
 			var fillRet tui.FillReturn
 			prefixWidth := 0
+			var url *url
 			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
 				trimmed := []rune(str)
 				isTrimmed := false
 				if !t.previewOpts.wrap {
 					trimmed, isTrimmed = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+				}
+				if url == nil && ansi != nil && ansi.url != nil {
+					url = ansi.url
+					t.pwindow.LinkBegin(url.uri, url.params)
+				}
+				if url != nil && (ansi == nil || ansi.url == nil) {
+					url = nil
+					t.pwindow.LinkEnd()
 				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				if width > prefixWidth {
@@ -2687,6 +2696,9 @@ Loop:
 				return !isTrimmed &&
 					(fillRet == tui.FillContinue || t.previewOpts.wrap && fillRet == tui.FillNextLine)
 			})
+			if url != nil {
+				t.pwindow.LinkEnd()
+			}
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
 				continue

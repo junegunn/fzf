@@ -1118,6 +1118,14 @@ func (w *LightWindow) setBg() string {
 	return "\x1b[m"
 }
 
+func (w *LightWindow) LinkBegin(uri string, params string) {
+	w.renderer.queued.WriteString("\x1b]8;" + params + ";" + uri + "\x1b\\")
+}
+
+func (w *LightWindow) LinkEnd() {
+	w.renderer.queued.WriteString("\x1b]8;;\x1b\\")
+}
+
 func (w *LightWindow) Fill(text string) FillReturn {
 	w.Move(w.posy, w.posx)
 	code := w.setBg()
