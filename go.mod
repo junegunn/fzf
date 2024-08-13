@@ -3,8 +3,8 @@ module github.com/junegunn/fzf
 require (
 	github.com/charlievieth/fastwalk v1.0.8
 	github.com/gdamore/tcell/v2 v2.7.4
+	github.com/junegunn/go-shellwords v0.0.0-20240813092932-a62c48c52e97
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mattn/go-shellwords v1.0.12
 	github.com/rivo/uniseg v0.4.7
 	golang.org/x/sys v0.22.0
 	golang.org/x/term v0.22.0
