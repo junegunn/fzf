@@ -355,7 +355,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		if prevState != nil && strings.HasSuffix(ansiCode, "0K") {
 			state.lbg = prevState.bg
-		} else if ansiCode == "\x1b]8;;\x1b" { // End of a hyperlink
+		} else if ansiCode == "\x1b]8;;\x1b\\" { // End of a hyperlink
 			state.url = nil
 		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && strings.HasSuffix(ansiCode, "\x1b\\") {
 			if paramsEnd := strings.IndexRune(ansiCode[4:], ';'); paramsEnd >= 0 {
