@@ -1030,13 +1030,13 @@ func cleanse(str string) string {
 func (w *LightWindow) CPrint(pair ColorPair, text string) {
 	_, code := w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
 	w.stderrInternal(cleanse(text), false, code)
-	w.csi("m")
+	w.csi("0m")
 }
 
 func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
 	hasColors, code := w.csiColor(fg, bg, attr)
 	if hasColors {
-		defer w.csi("m")
+		defer w.csi("0m")
 	}
 	w.stderrInternal(cleanse(text), false, code)
 }
@@ -1141,7 +1141,7 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 		bg = w.bg
 	}
 	if hasColors, resetCode := w.csiColor(fg, bg, attr); hasColors {
-		defer w.csi("m")
+		defer w.csi("0m")
 		return w.fill(text, resetCode)
 	}
 	return w.fill(text, w.setBg())

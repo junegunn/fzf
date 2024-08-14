@@ -2460,15 +2460,24 @@ func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []
 	var substr string
 	var prefixWidth int
 	maxOffset := int32(len(text))
+	var url *url
 	for _, offset := range offsets {
 		b := util.Constrain32(offset.offset[0], index, maxOffset)
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
+		if url != nil && offset.url == nil {
+			url = nil
+			window.LinkEnd()
+		}
 
 		substr, prefixWidth = t.processTabs(text[index:b], prefixWidth)
 		window.CPrint(colBase, substr)
 
 		if b < e {
 			substr, prefixWidth = t.processTabs(text[b:e], prefixWidth)
+			if url == nil && offset.url != nil {
+				url = offset.url
+				window.LinkBegin(url.uri, url.params)
+			}
 			window.CPrint(offset.color, substr)
 		}
 
@@ -2476,6 +2485,9 @@ func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []
 		if index >= maxOffset {
 			break
 		}
+	}
+	if url != nil {
+		window.LinkEnd()
 	}
 	if index < maxOffset {
 		substr, _ = t.processTabs(text[index:], prefixWidth)

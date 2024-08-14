@@ -16,6 +16,7 @@ type colorOffset struct {
 	offset [2]int32
 	color  tui.ColorPair
 	match  bool
+	url    *url
 }
 
 type Result struct {
@@ -177,8 +178,11 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 		if curr != 0 && idx > start {
 			if curr < 0 {
 				color := colMatch
+				var url *url
 				if curr < -1 && theme.Colored {
-					origColor := ansiToColorPair(itemColors[-curr-2], colMatch)
+					ansi := itemColors[-curr-2]
+					url = ansi.color.url
+					origColor := ansiToColorPair(ansi, colMatch)
 					// hl or hl+ only sets the foreground color, so colMatch is the
 					// combination of either [hl and bg] or [hl+ and bg+].
 					//
@@ -194,13 +198,14 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 					}
 				}
 				colors = append(colors, colorOffset{
-					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true})
+					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true, url: url})
 			} else {
 				ansi := itemColors[curr-1]
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
 					color:  ansiToColorPair(ansi, colBase),
-					match:  false})
+					match:  false,
+					url:    ansi.color.url})
 			}
 		}
 	}
