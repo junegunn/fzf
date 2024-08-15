@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 # The purpose of this script is to demonstrate how to preview a file or an
 # image in the preview window of fzf.
@@ -8,16 +8,16 @@
 # - https://github.com/hpjansson/chafa
 # - https://iterm2.com/utilities/imgcat
 
-if [[ $# -ne 1 ]]; then
+if [ $# -ne 1 ]; then
   >&2 echo "usage: $0 FILENAME"
   exit 1
 fi
 
-file=${1/#\~\//$HOME/}
+file=$(echo $file | sed "s/^~/$HOME/")
 type=$(file --dereference --mime -- "$file")
 
-if [[ ! $type =~ image/ ]]; then
-  if [[ $type =~ =binary ]]; then
+if expr $type : ".*image/" >/dev/null; then
+  if expr $type : ".*=binary" >/dev/null; then
     file "$1"
     exit
   fi
@@ -37,16 +37,16 @@ if [[ ! $type =~ image/ ]]; then
 fi
 
 dim=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}
-if [[ $dim = x ]]; then
+if [ $dim = x ]; then
   dim=$(stty size < /dev/tty | awk '{print $2 "x" $1}')
-elif ! [[ $KITTY_WINDOW_ID ]] && (( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES == $(stty size < /dev/tty | awk '{print $1}') )); then
+elif ! [ $KITTY_WINDOW_ID ] && : $(( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES = $(stty size < /dev/tty | awk '{print $1}') )); then
   # Avoid scrolling issue when the Sixel image touches the bottom of the screen
   # * https://github.com/junegunn/fzf/issues/2544
   dim=${FZF_PREVIEW_COLUMNS}x$((FZF_PREVIEW_LINES - 1))
 fi
 
 # 1. Use kitty icat on kitty terminal
-if [[ $KITTY_WINDOW_ID ]]; then
+if [ $KITTY_WINDOW_ID ]; then
   # 1. 'memory' is the fastest option but if you want the image to be scrollable,
   #    you have to use 'stream'.
   #
