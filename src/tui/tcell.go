@@ -4,6 +4,7 @@ package tui
 
 import (
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -49,6 +50,8 @@ type TcellWindow struct {
 	lastY       int
 	moveCursor  bool
 	borderStyle BorderStyle
+	uri         *string
+	params      *string
 }
 
 func (w *TcellWindow) Top() int {
@@ -601,6 +604,16 @@ func (w *TcellWindow) Print(text string) {
 	w.printString(text, w.normal)
 }
 
+func (w *TcellWindow) withUrl(style tcell.Style) tcell.Style {
+	if w.uri != nil {
+		style = style.Url(*w.uri)
+		if md := regexp.MustCompile(`id=([^:]+)`).FindStringSubmatch(*w.params); len(md) > 1 {
+			style = style.UrlId(md[1])
+		}
+	}
+	return style
+}
+
 func (w *TcellWindow) printString(text string, pair ColorPair) {
 	lx := 0
 	a := pair.Attr()
@@ -615,6 +628,7 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 			Blink(a&Attr(tcell.AttrBlink) != 0).
 			Dim(a&Attr(tcell.AttrDim) != 0)
 	}
+	style = w.withUrl(style)
 
 	gr := uniseg.NewGraphemes(text)
 	for gr.Next() {
@@ -665,6 +679,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Underline(a&Attr(tcell.AttrUnderline) != 0).
 		StrikeThrough(a&Attr(tcell.AttrStrikeThrough) != 0).
 		Italic(a&Attr(tcell.AttrItalic) != 0)
+	style = w.withUrl(style)
 
 	gr := uniseg.NewGraphemes(text)
 Loop:
@@ -714,6 +729,16 @@ Loop:
 
 func (w *TcellWindow) Fill(str string) FillReturn {
 	return w.fillString(str, w.normal)
+}
+
+func (w *TcellWindow) LinkBegin(uri string, params string) {
+	w.uri = &uri
+	w.params = &params
+}
+
+func (w *TcellWindow) LinkEnd() {
+	w.uri = nil
+	w.params = nil
 }
 
 func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {

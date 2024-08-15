@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -13,22 +14,28 @@ type ansiOffset struct {
 	color  ansiState
 }
 
+type url struct {
+	uri    string
+	params string
+}
+
 type ansiState struct {
 	fg   tui.Color
 	bg   tui.Color
 	attr tui.Attr
 	lbg  tui.Color
+	url  *url
 }
 
 func (s *ansiState) colored() bool {
-	return s.fg != -1 || s.bg != -1 || s.attr > 0 || s.lbg >= 0
+	return s.fg != -1 || s.bg != -1 || s.attr > 0 || s.lbg >= 0 || s.url != nil
 }
 
 func (s *ansiState) equals(t *ansiState) bool {
 	if t == nil {
 		return !s.colored()
 	}
-	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr && s.lbg == t.lbg
+	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr && s.lbg == t.lbg && s.url == t.url
 }
 
 func (s *ansiState) ToString() string {
@@ -60,7 +67,11 @@ func (s *ansiState) ToString() string {
 	}
 	ret += toAnsiString(s.fg, 30) + toAnsiString(s.bg, 40)
 
-	return "\x1b[" + strings.TrimSuffix(ret, ";") + "m"
+	ret = "\x1b[" + strings.TrimSuffix(ret, ";") + "m"
+	if s.url != nil {
+		ret = fmt.Sprintf("\x1b]8;%s;%s\x1b\\%s\x1b]8;;\x1b", s.url.params, s.url.uri, ret)
+	}
+	return ret
 }
 
 func toAnsiString(color tui.Color, offset int) string {
@@ -98,10 +109,19 @@ func matchOperatingSystemCommand(s string) int {
 		if s[i] == '\x07' {
 			return i + 1
 		}
+		// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
+		//                   ------
 		if s[i] == '\x1b' && i < len(s)-1 && s[i+1] == '\\' {
 			return i + 2
 		}
 	}
+
+	// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
+	//                              ------------
+	if i < len(s) && s[:i+1] == "\x1b]8;;\x1b" {
+		return i + 1
+	}
+
 	return -1
 }
 
@@ -328,13 +348,21 @@ func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	var state ansiState
 	if prevState == nil {
-		state = ansiState{-1, -1, 0, -1}
+		state = ansiState{-1, -1, 0, -1, nil}
 	} else {
-		state = ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg}
+		state = ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg, prevState.url}
 	}
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		if prevState != nil && strings.HasSuffix(ansiCode, "0K") {
 			state.lbg = prevState.bg
+		} else if ansiCode == "\x1b]8;;\x1b\\" { // End of a hyperlink
+			state.url = nil
+		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && strings.HasSuffix(ansiCode, "\x1b\\") {
+			if paramsEnd := strings.IndexRune(ansiCode[4:], ';'); paramsEnd >= 0 {
+				params := ansiCode[4 : 4+paramsEnd]
+				uri := ansiCode[5+paramsEnd : len(ansiCode)-2]
+				state.url = &url{uri: uri, params: params}
+			}
 		}
 		return state
 	}
