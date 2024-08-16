@@ -195,13 +195,9 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 			text = text[:len(text)-1]
 		}
 
-		if fuzzy && len(text) > 2 && strings.HasPrefix(text, "'") && strings.HasSuffix(text, "'") ||
-			!fuzzy && !strings.HasPrefix(text, "'") && strings.HasSuffix(text, "'") {
+		if len(text) > 2 && strings.HasPrefix(text, "'") && strings.HasSuffix(text, "'") {
 			typ = termExactBoundary
-			if fuzzy {
-				text = text[1:]
-			}
-			text = text[:len(text)-1]
+			text = text[1 : len(text)-1]
 		} else if strings.HasPrefix(text, "'") {
 			// Flip exactness
 			if fuzzy && !inv {
