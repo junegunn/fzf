@@ -3366,6 +3366,14 @@ class TestGoFZF < TestBase
     tmux.send_keys :Space
     tmux.until { |lines| assert_includes lines[-3], 'bar' }
   end
+
+  def test_boundary_match
+    # Underscore boundaries should be ranked lower
+    assert_equal(
+      %w[[x] -x- -x_ _x- _x_],
+      `printf -- 'xxx\n-xx\nxx-\n_x_\n_x-\n-x_\n[x]\n-x-\n' | #{FZF} -f"'x'"`.lines(chomp: true)
+    )
+  end
 end
 
 module TestShell

@@ -847,6 +847,9 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 			}
 			if boundaryCheck {
 				ok = bonus >= bonusBoundary
+				if ok && pidx_ == 0 {
+					ok = index_ == 0 || charClassOf(text.Get(index_-1)) <= charDelimiter
+				}
 				if ok && pidx_ == len(pattern)-1 {
 					ok = index_ == lenRunes-1 || charClassOf(text.Get(index_+1)) <= charDelimiter
 				}
@@ -878,7 +881,23 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 			sidx = lenRunes - (bestPos + 1)
 			eidx = lenRunes - (bestPos - lenPattern + 1)
 		}
-		score, _ := calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false)
+		var score int
+		if boundaryCheck {
+			// Underscore boundaries should be ranked lower than the other types of boundaries
+			score = int(bonus)
+			deduct := int(bonus-bonusBoundary) + 1
+			if sidx > 0 && text.Get(sidx-1) == '_' {
+				score -= deduct + 1
+				deduct = 1
+			}
+			if eidx < lenRunes && text.Get(eidx) == '_' {
+				score -= deduct
+			}
+			// Add base score so that this can compete with other match types e.g. 'foo' | bar
+			score += scoreMatch*lenPattern + int(bonusBoundaryWhite)*(lenPattern+1)
+		} else {
+			score, _ = calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false)
+		}
 		return Result{sidx, eidx, score}, nil
 	}
 	return Result{-1, -1, 0}, nil
