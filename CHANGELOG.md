@@ -3,6 +3,13 @@ CHANGELOG
 
 0.55.0
 ------
+- Added `exact-boundary-match` type to the search syntax. When a search term is single-quoted, fzf will search for the exact occurrences of the string with both ends at word boundaries.
+  ```sh
+  fzf --query "'here'" << EOF
+  come here
+  not there
+  EOF
+  ```
 - [bash] Fuzzy path completion is enabled for all commands
     - 1. If the default completion is not already set
     - 2. And if the current bash supports `complete -D` option
