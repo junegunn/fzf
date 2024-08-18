@@ -2722,10 +2722,14 @@ Loop:
 				break
 			}
 			if lbg >= 0 {
-				t.pwindow.CFill(-1, lbg, tui.AttrRegular,
+				fillRet = t.pwindow.CFill(-1, lbg, tui.AttrRegular,
 					strings.Repeat(" ", t.pwindow.Width()-t.pwindow.X())+"\n")
 			} else {
-				t.pwindow.Fill("\n")
+				fillRet = t.pwindow.Fill("\n")
+			}
+			if fillRet == tui.FillSuspend {
+				t.previewed.filled = true
+				break
 			}
 		}
 		lineNo++
