@@ -1,6 +1,67 @@
 CHANGELOG
 =========
 
+0.55.0
+------
+- [bash] Fuzzy path completion is enabled for all commands
+    - 1. If the default completion is not already set
+    - 2. And if the current bash supports `complete -D` option
+    - However, fuzzy completion for some commands can be "dynamically" disabled by the dynamic completion loader
+    - See the comment in `__fzf_default_completion` function for more information
+- Comments are now allowed in `$FZF_DEFAULT_OPTS` and `$FZF_DEFAULT_OPTS_FILE`
+  ```sh
+  export FZF_DEFAULT_OPTS='
+    # Layout options
+    --layout=reverse
+    --info=inline-right   # Show info on the right side of the prompt line
+    # ...
+  '
+  ```
+- Hyperlinks (OSC 8) are now supported in the preview window and in the main window
+  ```sh
+  printf '<< \e]8;;http://github.com/junegunn/fzf\e\\Link to \e[32mfz\e[0mf\e]8;;\e\\ >>' | fzf --ansi
+
+  fzf --preview "printf '<< \e]8;;http://github.com/junegunn/fzf\e\\Link to \e[32mfz\e[0mf\e]8;;\e\\ >>'"
+  ```
+- [vim] A spec can have `exit` callback that is called with the exit status of fzf
+    - This can be used to clean up temporary resources or restore the original state when fzf is closed without a selection
+- Fixed `--tmux bottom` when the status line is not at the bottom
+- Fixed extra scroll offset in multi-line mode (`--read0` or `--wrap`)
+- Added fallback `ps` command for `kill` completion on Cygwin
+
+0.54.3
+------
+- Fixed incompatibility of adaptive height specification and 'start:reload'
+  ```sh
+  # A regression in 0.54.0 would cause this to fail
+  fzf --height '~100%' --bind 'start:reload:seq 10'
+  ```
+- Environment variables are now available to `$FZF_DEFAULT_COMMAND`
+  ```sh
+  FZF_DEFAULT_COMMAND='echo $FZF_QUERY' fzf --query foo
+  ```
+
+0.54.2
+------
+- Fixed incorrect syntax highlighting of truncated multi-line entries
+- Updated GoReleaser to 2.1.0 to simplify notarization of macOS binaries
+    - macOS archives will be in `tar.gz` format instead of `zip` format since we no longer notarize the zip files but binaries
+- (Windows) Reverted a mintty fix in 0.54.0
+    - As a result, mouse may not work on mintty in fullscreen mode. However, fzf will correctly read non-ASCII input in fullscreen mode (`--no-height`).
+    - fzf unfortunately cannot read non-ASCII input when not in fullscreen mode on Windows. So if you need to input non-ASCII characters, add `--no-height` to your `$FZF_DEFAULT_OPTS`.
+    - Any help in fixing this issue will be appreciated (#3799, #3847).
+
+0.54.1
+------
+- Updated [fastwalk](https://github.com/charlievieth/fastwalk) dependency for built-in directory walker
+    - [fastwalk: add optional sorting and improve documentation](https://github.com/charlievieth/fastwalk/pull/27)
+    - [fastwalk: only check if MSYSTEM is set during MSYS/MSYS2](https://github.com/charlievieth/fastwalk/pull/28)
+    - Thanks to @charlievieth
+- Reverted ALT-C binding of fish to use `cd` instead of `builtin cd`
+    - `builtin cd` was introduced to work around a bug of `cd` coming from `zoxide init --cmd cd fish` where it cannot handle `--` argument.
+    - However, the default `cd` of fish is actually a wrapper function for supporting `cd -`, so we want to use it instead.
+    - See [#3928](https://github.com/junegunn/fzf/pull/3928) for more information and consider helping zoxide fix the bug.
+
 0.54.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_

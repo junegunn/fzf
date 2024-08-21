@@ -111,18 +111,19 @@ func (r *Reader) readChannel(inputChan chan string) bool {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string) {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, initCmd string, initEnv []string) {
 	r.startEventPoller()
 	var success bool
 	if inputChan != nil {
 		success = r.readChannel(inputChan)
+	} else if len(initCmd) > 0 {
+		success = r.readFromCommand(initCmd, initEnv)
 	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			success = r.readFiles(root, opts, ignores)
 		} else {
-			// We can't export FZF_* environment variables to the default command
-			success = r.readFromCommand(cmd, nil)
+			success = r.readFromCommand(cmd, initEnv)
 		}
 	} else {
 		success = r.readFromStdin()
@@ -253,6 +254,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		Follow: opts.follow,
 		// Use forward slashes when running a Windows binary under WSL or MSYS
 		ToSlash: fastwalk.DefaultToSlash(),
+		Sort:    fastwalk.SortFilesFirst,
 	}
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {

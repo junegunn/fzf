@@ -289,8 +289,9 @@ The following table summarizes the available options.
 | `source`                   | string        | External command to generate input to fzf (e.g. `find .`)             |
 | `source`                   | list          | Vim list as input to fzf                                              |
 | `sink`                     | string        | Vim command to handle the selected item (e.g. `e`, `tabe`)            |
-| `sink`                     | funcref       | Reference to function to process each selected item                   |
+| `sink`                     | funcref       | Function to be called with each selected item                         |
 | `sinklist` (or `sink*`)    | funcref       | Similar to `sink`, but takes the list of output lines at once         |
+| `exit`                     | funcref       | Function to be called with the exit status of fzf (e.g. 0, 1, 2, 130) |
 | `options`                  | string/list   | Options to fzf                                                        |
 | `dir`                      | string        | Working directory                                                     |
 | `up`/`down`/`left`/`right` | number/string | (Layout) Window position and size (e.g. `20`, `50%`)                  |

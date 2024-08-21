@@ -12,7 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 
-	"github.com/mattn/go-shellwords"
+	"github.com/junegunn/go-shellwords"
 	"github.com/rivo/uniseg"
 )
 
@@ -2915,6 +2915,12 @@ func postProcessOptions(opts *Options) error {
 	return processScheme(opts)
 }
 
+func parseShellWords(str string) ([]string, error) {
+	parser := shellwords.NewParser()
+	parser.ParseComment = true
+	return parser.Parse(str)
+}
+
 // ParseOptions parses command-line options
 func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	opts := defaultOptions()
@@ -2928,7 +2934,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 				return nil, errors.New("$FZF_DEFAULT_OPTS_FILE: " + err.Error())
 			}
 
-			words, parseErr := shellwords.Parse(string(bytes))
+			words, parseErr := parseShellWords(string(bytes))
 			if parseErr != nil {
 				return nil, errors.New(path + ": " + parseErr.Error())
 			}
@@ -2940,7 +2946,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		}
 
 		// 2. Options from $FZF_DEFAULT_OPTS string
-		words, parseErr := shellwords.Parse(os.Getenv("FZF_DEFAULT_OPTS"))
+		words, parseErr := parseShellWords(os.Getenv("FZF_DEFAULT_OPTS"))
 		if parseErr != nil {
 			return nil, errors.New("$FZF_DEFAULT_OPTS: " + parseErr.Error())
 		}
@@ -2964,17 +2970,18 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	return opts, nil
 }
 
-func (opts *Options) reloadOnStart() bool {
-	// Not compatible with --filter
-	if opts.Filter != nil {
-		return false
-	}
+func (opts *Options) extractReloadOnStart() string {
+	cmd := ""
 	if actions, prs := opts.Keymap[tui.Start.AsEvent()]; prs {
+		filtered := []*action{}
 		for _, action := range actions {
 			if action.t == actReload || action.t == actReloadSync {
-				return true
+				cmd = action.a
+			} else {
+				filtered = append(filtered, action)
 			}
 		}
+		opts.Keymap[tui.Start.AsEvent()] = filtered
 	}
-	return false
+	return cmd
 }

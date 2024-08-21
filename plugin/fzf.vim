@@ -665,21 +665,17 @@ else
   let s:launcher = function('s:xterm_launcher')
 endif
 
-function! s:exit_handler(code, command, ...)
-  if a:code == 130
-    return 0
-  elseif has('nvim') && a:code == 129
-    " When deleting the terminal buffer while fzf is still running,
-    " Nvim sends SIGHUP.
-    return 0
-  elseif a:code > 1
+function! s:exit_handler(dict, code, command, ...)
+  if has_key(a:dict, 'exit')
+    call a:dict.exit(a:code)
+  endif
+  if a:code == 2
     call s:error('Error running ' . a:command)
     if !empty(a:000)
       sleep
     endif
-    return 0
   endif
-  return 1
+  return a:code
 endfunction
 
 function! s:execute(dict, command, use_height, temps) abort
@@ -731,7 +727,7 @@ function! s:execute(dict, command, use_height, temps) abort
   let exit_status = v:shell_error
   redraw!
   let lines = s:collect(a:temps)
-  return s:exit_handler(exit_status, command) ? lines : []
+  return s:exit_handler(a:dict, exit_status, command) == 0 ? lines : []
 endfunction
 
 function! s:execute_tmux(dict, command, temps) abort
@@ -746,7 +742,7 @@ function! s:execute_tmux(dict, command, temps) abort
   let exit_status = v:shell_error
   redraw!
   let lines = s:collect(a:temps)
-  return s:exit_handler(exit_status, command) ? lines : []
+  return s:exit_handler(a:dict, exit_status, command) == 0 ? lines : []
 endfunction
 
 function! s:calc_size(max, val, dict)
@@ -912,7 +908,7 @@ function! s:execute_term(dict, command, temps) abort
     endif
 
     let lines = s:collect(self.temps)
-    if !s:exit_handler(a:code, self.command, 1)
+    if s:exit_handler(self.dict, a:code, self.command, 1) != 0
       return
     endif
 
