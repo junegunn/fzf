@@ -496,31 +496,30 @@ __fzf_default_completion() {
   fi
 }
 
-if complete | command grep -q __fzf_default_completion; then
-  : # Default completion already set up. Do nothing.
-elif ! complete | command grep -- '-D$' | command grep -qv _comp_complete_load &&
-       complete -D -F __fzf_default_completion -o default -o bashdefault 2> /dev/null; then
-  a_cmds=""
-else
-  # We can't set up default completion,
-  # 1. if it's already set up by another script
-  # 2. or if the current version of bash doesn't support -D option
-  #
-  # NOTE: $FZF_COMPLETION_PATH_COMMANDS and $FZF_COMPLETION_VAR_COMMANDS are
-  # undocumented and subject to change in the future.
-  a_cmds="${FZF_COMPLETION_PATH_COMMANDS-"
-    awk bat cat code diff diff3
-    emacs emacsclient ex file ftp g++ gcc gvim head hg hx java
-    javac ld less more mvim nvim patch perl python ruby
-    sed sftp sort source tail tee uniq vi view vim wc xdg-open
-    basename bunzip2 bzip2 chmod chown curl cp dirname du
-    find git grep gunzip gzip hg jar
-    ln ls mv open rm rsync scp
-    svn tar unzip zip"}"
-fi
+# Set fuzzy path completion as the default completion for all commands.
+# We can't set up default completion,
+# 1. if it's already set up by another script
+# 2. or if the current version of bash doesn't support -D option
+complete | command grep -q __fzf_default_completion ||
+  complete | command grep -- '-D$' | command grep -qv _comp_complete_load ||
+  complete -D -F __fzf_default_completion -o default -o bashdefault 2> /dev/null
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir}"
 
+# NOTE: $FZF_COMPLETION_PATH_COMMANDS and $FZF_COMPLETION_VAR_COMMANDS are
+# undocumented and subject to change in the future.
+#
+# NOTE: Although we have default completion, we still need to set up completion
+# for each command in case they already have completion set up by another script.
+a_cmds="${FZF_COMPLETION_PATH_COMMANDS-"
+  awk bat cat code diff diff3
+  emacs emacsclient ex file ftp g++ gcc gvim head hg hx java
+  javac ld less more mvim nvim patch perl python ruby
+  sed sftp sort source tail tee uniq vi view vim wc xdg-open
+  basename bunzip2 bzip2 chmod chown curl cp dirname du
+  find git grep gunzip gzip hg jar
+  ln ls mv open rm rsync scp
+  svn tar unzip zip"}"
 v_cmds="${FZF_COMPLETION_VAR_COMMANDS-export unset printenv}"
 
 # Preserve existing completion
