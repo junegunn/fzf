@@ -727,7 +727,7 @@ function! s:execute(dict, command, use_height, temps) abort
   let exit_status = v:shell_error
   redraw!
   let lines = s:collect(a:temps)
-  return s:exit_handler(a:dict, exit_status, command) == 0 ? lines : []
+  return s:exit_handler(a:dict, exit_status, command) < 2 ? lines : []
 endfunction
 
 function! s:execute_tmux(dict, command, temps) abort
@@ -742,7 +742,7 @@ function! s:execute_tmux(dict, command, temps) abort
   let exit_status = v:shell_error
   redraw!
   let lines = s:collect(a:temps)
-  return s:exit_handler(a:dict, exit_status, command) == 0 ? lines : []
+  return s:exit_handler(a:dict, exit_status, command) < 2 ? lines : []
 endfunction
 
 function! s:calc_size(max, val, dict)
@@ -908,7 +908,7 @@ function! s:execute_term(dict, command, temps) abort
     endif
 
     let lines = s:collect(self.temps)
-    if s:exit_handler(self.dict, a:code, self.command, 1) != 0
+    if s:exit_handler(self.dict, a:code, self.command, 1) >= 2
       return
     endif
 
