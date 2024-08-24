@@ -19,6 +19,9 @@ term=""
 [[ -n "$LINES" ]] && lines=$LINES || lines=$(tput lines) || lines=$(tmux display-message -p "#{pane_height}")
 [[ -n "$COLUMNS" ]] && columns=$COLUMNS || columns=$(tput cols) || columns=$(tmux display-message -p "#{pane_width}")
 
+tmux_version=$(tmux -V | sed 's/[^0-9.]//g')
+tmux_32=$(awk '{print ($1 >= 3.2)}' <<< "$tmux_version" 2> /dev/null || bc -l <<< "$tmux_version >= 3.2")
+
 help() {
   >&2 echo 'usage: fzf-tmux [LAYOUT OPTIONS] [--] [FZF OPTIONS]
 
@@ -94,10 +97,18 @@ while [[ $# -gt 0 ]]; do
         opt="$opt ${arg:0:2}$size"
       elif [[ "$size" =~ %$ ]]; then
         size=${size:0:((${#size}-1))}
-        if [[ -n "$swap" ]]; then
-          opt="$opt -l $(( 100 - size ))%"
+        if [[ $tmux_32 = 1 ]]; then
+          if [[ -n "$swap" ]]; then
+            opt="$opt -l $(( 100 - size ))%"
+          else
+            opt="$opt -l $size%"
+          fi
         else
-          opt="$opt -l $size%"
+          if [[ -n "$swap" ]]; then
+            opt="$opt -p $(( 100 - size ))"
+          else
+            opt="$opt -p $size"
+          fi
         fi
       else
         if [[ -n "$swap" ]]; then
@@ -187,12 +198,11 @@ trap 'cleanup' EXIT
 
 envs="export TERM=$TERM "
 if [[ "$opt" =~ "-E" ]]; then
-  tmux_version=$(tmux -V | sed 's/[^0-9.]//g')
-  if [[ $(awk '{print ($1 > 3.2)}' <<< "$tmux_version" 2> /dev/null || bc -l <<< "$tmux_version > 3.2") = 1 ]]; then
+  if [[ $tmux_version = 3.2 ]]; then
+    FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
+  elif [[ $tmux_32 = 1 ]]; then
     FZF_DEFAULT_OPTS="--border $FZF_DEFAULT_OPTS"
     opt="-B $opt"
-  elif [[ $tmux_version = 3.2 ]]; then
-    FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
   else
     echo "fzf-tmux: tmux 3.2 or above is required for popup mode" >&2
     exit 2
