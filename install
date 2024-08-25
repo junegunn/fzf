@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.35.1
+version=0.54.3
 auto_completion=
 key_bindings=
 update_config=2
@@ -115,7 +115,7 @@ link_fzf_in_path() {
 try_curl() {
   command -v curl > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar -xzf -
+    curl -fL $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
@@ -125,7 +125,7 @@ try_curl() {
 try_wget() {
   command -v wget > /dev/null &&
   if [[ $1 =~ tar.gz$ ]]; then
-    wget -O - $1 | tar -xzf -
+    wget -O - $1 | tar --no-same-owner -xzf -
   else
     local temp=${TMPDIR:-/tmp}/fzf.zip
     wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
@@ -146,7 +146,7 @@ download() {
   fi
 
   local url
-  url=https://github.com/junegunn/fzf/releases/download/$version/${1}
+  url=https://github.com/junegunn/fzf/releases/download/v$version/${1}
   set -o pipefail
   if ! (try_curl $url || try_wget $url); then
     set +o pipefail
@@ -168,8 +168,8 @@ archi=$(uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ arm64)      download fzf-$version-darwin_arm64.zip     ;;
-  Darwin\ x86_64)     download fzf-$version-darwin_amd64.zip     ;;
+  Darwin\ arm64)      download fzf-$version-darwin_arm64.tar.gz  ;;
+  Darwin\ x86_64)     download fzf-$version-darwin_amd64.tar.gz  ;;
   Linux\ armv5*)      download fzf-$version-linux_armv5.tar.gz   ;;
   Linux\ armv6*)      download fzf-$version-linux_armv6.tar.gz   ;;
   Linux\ armv7*)      download fzf-$version-linux_armv7.tar.gz   ;;
@@ -178,6 +178,7 @@ case "$archi" in
   Linux\ loongarch64) download fzf-$version-linux_loong64.tar.gz ;;
   Linux\ ppc64le)     download fzf-$version-linux_ppc64le.tar.gz ;;
   Linux\ *64)         download fzf-$version-linux_amd64.tar.gz   ;;
+  Linux\ s390x)       download fzf-$version-linux_s390x.tar.gz   ;;
   FreeBSD\ *64)       download fzf-$version-freebsd_amd64.tar.gz ;;
   OpenBSD\ *64)       download fzf-$version-openbsd_amd64.tar.gz ;;
   CYGWIN*\ *64)       download fzf-$version-windows_amd64.zip    ;;
@@ -195,12 +196,12 @@ if [ -n "$binary_error" ]; then
     echo "  - $binary_error !!!"
   fi
   if command -v go > /dev/null; then
-    echo -n "Building binary (go get -u github.com/junegunn/fzf) ... "
+    echo -n "Building binary (go install github.com/junegunn/fzf) ... "
     if [ -z "${GOPATH-}" ]; then
       export GOPATH="${TMPDIR:-/tmp}/fzf-gopath"
       mkdir -p "$GOPATH"
     fi
-    if go get -ldflags "-s -w -X main.version=$version -X main.revision=go-get" github.com/junegunn/fzf; then
+    if go install -ldflags "-s -w -X main.version=$version -X main.revision=go-install" github.com/junegunn/fzf; then
       echo "OK"
       cp "$GOPATH/bin/fzf" "$fzf_base/bin/"
     else
@@ -244,7 +245,7 @@ for shell in $shells; do
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
-  fzf_completion="[[ \$- == *i* ]] && source \"$fzf_base/shell/completion.${shell}\" 2> /dev/null"
+  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
@@ -261,6 +262,16 @@ if [[ ! "\$PATH" == *$fzf_base_esc/bin* ]]; then
   PATH="\${PATH:+\${PATH}:}$fzf_base/bin"
 fi
 
+EOF
+
+  if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
+    if [[ "$shell" = zsh ]]; then
+      echo "source <(fzf --$shell)" >> "$src"
+    else
+      echo "eval \"\$(fzf --$shell)\"" >> "$src"
+    fi
+  else
+    cat >> "$src" << EOF
 # Auto-completion
 # ---------------
 $fzf_completion
@@ -269,6 +280,7 @@ $fzf_completion
 # ------------
 $fzf_key_bindings
 EOF
+  fi
   echo "OK"
 done
 
@@ -280,18 +292,6 @@ if [[ "$shells" =~ fish ]]; then
   or set --universal fish_user_paths \$fish_user_paths "$fzf_base"/bin
 EOF
   [ $? -eq 0 ] && echo "OK" || echo "Failed"
-
-  mkdir -p "${fish_dir}/functions"
-  fish_binding="${fish_dir}/functions/fzf_key_bindings.fish"
-  if [ $key_bindings -ne 0 ]; then
-    echo -n "Symlink $fish_binding ... "
-    ln -sf "$fzf_base/shell/key-bindings.fish" \
-           "$fish_binding" && echo "OK" || echo "Failed"
-  else
-    echo -n "Removing $fish_binding ... "
-    rm -f "$fish_binding"
-    echo "OK"
-  fi
 fi
 
 append_line() {
@@ -354,12 +354,23 @@ done
 if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
   bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
+    mkdir -p "${fish_dir}/functions"
     create_file "$bind_file" \
       'function fish_user_key_bindings' \
-      '  fzf_key_bindings' \
+      '  fzf --fish | source' \
       'end'
   else
-    append_line $update_config "fzf_key_bindings" "$bind_file"
+    echo "Check $bind_file:"
+    lno=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -n $lno ]]; then
+      echo "  ** Found 'fzf_key_bindings' in line #$lno"
+      echo "  ** You have to replace the line to 'fzf --fish | source'"
+      echo
+    else
+      echo "  - Clear"
+      echo
+      append_line $update_config "fzf --fish | source" "$bind_file"
+    fi
   fi
 fi
 

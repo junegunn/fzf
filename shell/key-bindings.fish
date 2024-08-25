@@ -11,29 +11,35 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
+status is-interactive; or exit 0
+
+
 # Key bindings
 # ------------
 function fzf_key_bindings
 
+  function __fzf_defaults
+    # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+    # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
+    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
+    echo "--height $FZF_TMUX_HEIGHT --bind=ctrl-z:ignore" $argv[1]
+    command cat "$FZF_DEFAULT_OPTS_FILE" 2> /dev/null
+    echo $FZF_DEFAULT_OPTS $argv[2]
+  end
+
   # Store current token in $dir as root for the 'find' command
   function fzf-file-widget -d "List files and folders"
     set -l commandline (__fzf_parse_commandline)
-    set -l dir $commandline[1]
+    set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
-    # "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
-    # $dir itself, even if hidden.
-    test -n "$FZF_CTRL_T_COMMAND"; or set -l FZF_CTRL_T_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
-    -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed 's@^\./@@'"
-
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS"
-      eval "$FZF_CTRL_T_COMMAND | "(__fzfcmd)' -m --query "'$fzf_query'"' | while read -l r; set result $result $r; end
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_CTRL_T_OPTS")
+      set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
+      set -lx FZF_DEFAULT_OPTS_FILE ''
+      eval (__fzfcmd)' -m --query "'$fzf_query'"' | while read -l r; set result $result $r; end
     end
     if [ -z "$result" ]
       commandline -f repaint
@@ -53,19 +59,31 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT $FZF_DEFAULT_OPTS --scheme=history --bind=ctrl-r:toggle-sort,ctrl-z:ignore $FZF_CTRL_R_OPTS +m"
-
       set -l FISH_MAJOR (echo $version | cut -f1 -d.)
       set -l FISH_MINOR (echo $version | cut -f2 -d.)
+
+      # merge history from other sessions before searching
+      if test -z "$fish_private_mode"
+        builtin history merge
+      end
 
       # history's -z flag is needed for multi-line support.
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-        history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
-        and commandline -- $result
+        if type -P perl > /dev/null 2>&1
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS_FILE ''
+          builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
+          and commandline -- $result
+        else
+          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
+          set -lx FZF_DEFAULT_OPTS_FILE ''
+          builtin history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
+          and commandline -- $result
+        end
       else
-        history | eval (__fzfcmd) -q '(commandline)' | read -l result
+        builtin history | eval (__fzfcmd) -q '(commandline)' | read -l result
         and commandline -- $result
       end
     end
@@ -74,17 +92,16 @@ function fzf_key_bindings
 
   function fzf-cd-widget -d "Change directory"
     set -l commandline (__fzf_parse_commandline)
-    set -l dir $commandline[1]
+    set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
-    test -n "$FZF_ALT_C_COMMAND"; or set -l FZF_ALT_C_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
-    -o -type d -print 2> /dev/null | sed 's@^\./@@'"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -lx FZF_DEFAULT_OPTS "--height $FZF_TMUX_HEIGHT --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS"
-      eval "$FZF_ALT_C_COMMAND | "(__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path --walker-root='$dir'" "$FZF_ALT_C_OPTS")
+      set -lx FZF_DEFAULT_OPTS_FILE ''
+      set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
+      eval (__fzfcmd)' +m --query "'$fzf_query'"' | read -l result
 
       if [ -n "$result" ]
         cd -- $result
@@ -110,14 +127,22 @@ function fzf_key_bindings
     end
   end
 
-  bind \ct fzf-file-widget
   bind \cr fzf-history-widget
-  bind \ec fzf-cd-widget
+  if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
+    bind \ct fzf-file-widget
+  end
+  if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
+    bind \ec fzf-cd-widget
+  end
 
   if bind -M insert > /dev/null 2>&1
-    bind -M insert \ct fzf-file-widget
     bind -M insert \cr fzf-history-widget
-    bind -M insert \ec fzf-cd-widget
+    if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
+      bind -M insert \ct fzf-file-widget
+    end
+    if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
+      bind -M insert \ec fzf-cd-widget
+    end
   end
 
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'

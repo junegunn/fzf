@@ -152,7 +152,13 @@ var (
 	// Extra bonus for word boundary after slash, colon, semi-colon, and comma
 	bonusBoundaryDelimiter int16 = bonusBoundary + 1
 
-	initialCharClass charClass = charWhite
+	initialCharClass = charWhite
+
+	// A minor optimization that can give 15%+ performance boost
+	asciiCharClasses [unicode.MaxASCII + 1]charClass
+
+	// A minor optimization that can give yet another 5% performance boost
+	bonusMatrix [charNumber + 1][charNumber + 1]int16
 )
 
 type charClass int
@@ -187,6 +193,27 @@ func Init(scheme string) bool {
 	default:
 		return false
 	}
+	for i := 0; i <= unicode.MaxASCII; i++ {
+		char := rune(i)
+		c := charNonWord
+		if char >= 'a' && char <= 'z' {
+			c = charLower
+		} else if char >= 'A' && char <= 'Z' {
+			c = charUpper
+		} else if char >= '0' && char <= '9' {
+			c = charNumber
+		} else if strings.ContainsRune(whiteChars, char) {
+			c = charWhite
+		} else if strings.ContainsRune(delimiterChars, char) {
+			c = charDelimiter
+		}
+		asciiCharClasses[i] = c
+	}
+	for i := 0; i <= int(charNumber); i++ {
+		for j := 0; j <= int(charNumber); j++ {
+			bonusMatrix[i][j] = bonusFor(charClass(i), charClass(j))
+		}
+	}
 	return true
 }
 
@@ -214,21 +241,6 @@ func alloc32(offset int, slab *util.Slab, size int) (int, []int32) {
 	return offset, make([]int32, size)
 }
 
-func charClassOfAscii(char rune) charClass {
-	if char >= 'a' && char <= 'z' {
-		return charLower
-	} else if char >= 'A' && char <= 'Z' {
-		return charUpper
-	} else if char >= '0' && char <= '9' {
-		return charNumber
-	} else if strings.IndexRune(whiteChars, char) >= 0 {
-		return charWhite
-	} else if strings.IndexRune(delimiterChars, char) >= 0 {
-		return charDelimiter
-	}
-	return charNonWord
-}
-
 func charClassOfNonAscii(char rune) charClass {
 	if unicode.IsLower(char) {
 		return charLower
@@ -240,7 +252,7 @@ func charClassOfNonAscii(char rune) charClass {
 		return charLetter
 	} else if unicode.IsSpace(char) {
 		return charWhite
-	} else if strings.IndexRune(delimiterChars, char) >= 0 {
+	} else if strings.ContainsRune(delimiterChars, char) {
 		return charDelimiter
 	}
 	return charNonWord
@@ -248,31 +260,36 @@ func charClassOfNonAscii(char rune) charClass {
 
 func charClassOf(char rune) charClass {
 	if char <= unicode.MaxASCII {
-		return charClassOfAscii(char)
+		return asciiCharClasses[char]
 	}
 	return charClassOfNonAscii(char)
 }
 
 func bonusFor(prevClass charClass, class charClass) int16 {
 	if class > charNonWord {
-		if prevClass == charWhite {
+		switch prevClass {
+		case charWhite:
 			// Word boundary after whitespace
 			return bonusBoundaryWhite
-		} else if prevClass == charDelimiter {
+		case charDelimiter:
 			// Word boundary after a delimiter character
 			return bonusBoundaryDelimiter
-		} else if prevClass == charNonWord {
+		case charNonWord:
 			// Word boundary
 			return bonusBoundary
 		}
 	}
+
 	if prevClass == charLower && class == charUpper ||
 		prevClass != charNumber && class == charNumber {
 		// camelCase letter123
 		return bonusCamel123
-	} else if class == charNonWord {
+	}
+
+	switch class {
+	case charNonWord, charDelimiter:
 		return bonusNonWord
-	} else if class == charWhite {
+	case charWhite:
 		return bonusBoundaryWhite
 	}
 	return 0
@@ -282,7 +299,7 @@ func bonusAt(input *util.Chars, idx int) int16 {
 	if idx == 0 {
 		return bonusBoundaryWhite
 	}
-	return bonusFor(charClassOf(input.Get(idx-1)), charClassOf(input.Get(idx)))
+	return bonusMatrix[charClassOf(input.Get(idx-1))][charClassOf(input.Get(idx))]
 }
 
 func normalizeRune(r rune) rune {
@@ -335,30 +352,45 @@ func isAscii(runes []rune) bool {
 	return true
 }
 
-func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) int {
+func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
 	// Can't determine
 	if !input.IsBytes() {
-		return 0
+		return 0, input.Length()
 	}
 
 	// Not possible
 	if !isAscii(pattern) {
-		return -1
+		return -1, -1
 	}
 
-	firstIdx, idx := 0, 0
+	firstIdx, idx, lastIdx := 0, 0, 0
+	var b byte
 	for pidx := 0; pidx < len(pattern); pidx++ {
-		idx = trySkip(input, caseSensitive, byte(pattern[pidx]), idx)
+		b = byte(pattern[pidx])
+		idx = trySkip(input, caseSensitive, b, idx)
 		if idx < 0 {
-			return -1
+			return -1, -1
 		}
 		if pidx == 0 && idx > 0 {
 			// Step back to find the right bonus point
 			firstIdx = idx - 1
 		}
+		lastIdx = idx
 		idx++
 	}
-	return firstIdx
+
+	// Find the last appearance of the last character of the pattern to limit the search scope
+	bu := b
+	if !caseSensitive && b >= 'a' && b <= 'z' {
+		bu = b - 32
+	}
+	scope := input.Bytes()[lastIdx:]
+	for offset := len(scope) - 1; offset > 0; offset-- {
+		if scope[offset] == b || scope[offset] == bu {
+			return firstIdx, lastIdx + offset + 1
+		}
+	}
+	return firstIdx, lastIdx + 1
 }
 
 func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []int16) {
@@ -407,6 +439,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 		return Result{0, 0, 0}, posArray(withPos, M)
 	}
 	N := input.Length()
+	if M > N {
+		return Result{-1, -1, 0}, nil
+	}
 
 	// Since O(nm) algorithm can be prohibitively expensive for large input,
 	// we fall back to the greedy algorithm.
@@ -415,10 +450,12 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	}
 
 	// Phase 1. Optimized search for ASCII string
-	idx := asciiFuzzyIndex(input, pattern, caseSensitive)
-	if idx < 0 {
+	minIdx, maxIdx := asciiFuzzyIndex(input, pattern, caseSensitive)
+	if minIdx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
+	// fmt.Println(N, maxIdx, idx, maxIdx-idx, input.ToString())
+	N = maxIdx - minIdx
 
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
 	offset16 := 0
@@ -431,20 +468,19 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	offset32, F := alloc32(offset32, slab, M)
 	// Rune array
 	_, T := alloc32(offset32, slab, N)
-	input.CopyRunes(T)
+	input.CopyRunes(T, minIdx)
 
 	// Phase 2. Calculate bonus for each point
 	maxScore, maxScorePos := int16(0), 0
 	pidx, lastIdx := 0, 0
 	pchar0, pchar, prevH0, prevClass, inGap := pattern[0], pattern[0], int16(0), initialCharClass, false
-	Tsub := T[idx:]
-	H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], B[idx:][:len(Tsub)]
-	for off, char := range Tsub {
+	for off, char := range T {
 		var class charClass
 		if char <= unicode.MaxASCII {
-			class = charClassOfAscii(char)
+			class = asciiCharClasses[char]
 			if !caseSensitive && class == charUpper {
 				char += 32
+				T[off] = char
 			}
 		} else {
 			class = charClassOfNonAscii(char)
@@ -454,28 +490,28 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			if normalize {
 				char = normalizeRune(char)
 			}
+			T[off] = char
 		}
 
-		Tsub[off] = char
-		bonus := bonusFor(prevClass, class)
-		Bsub[off] = bonus
+		bonus := bonusMatrix[prevClass][class]
+		B[off] = bonus
 		prevClass = class
 
 		if char == pchar {
 			if pidx < M {
-				F[pidx] = int32(idx + off)
+				F[pidx] = int32(off)
 				pidx++
 				pchar = pattern[util.Min(pidx, M-1)]
 			}
-			lastIdx = idx + off
+			lastIdx = off
 		}
 
 		if char == pchar0 {
 			score := scoreMatch + bonus*bonusFirstCharMultiplier
-			H0sub[off] = score
-			C0sub[off] = 1
+			H0[off] = score
+			C0[off] = 1
 			if M == 1 && (forward && score > maxScore || !forward && score >= maxScore) {
-				maxScore, maxScorePos = score, idx+off
+				maxScore, maxScorePos = score, off
 				if forward && bonus >= bonusBoundary {
 					break
 				}
@@ -483,24 +519,24 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			inGap = false
 		} else {
 			if inGap {
-				H0sub[off] = util.Max16(prevH0+scoreGapExtension, 0)
+				H0[off] = util.Max16(prevH0+scoreGapExtension, 0)
 			} else {
-				H0sub[off] = util.Max16(prevH0+scoreGapStart, 0)
+				H0[off] = util.Max16(prevH0+scoreGapStart, 0)
 			}
-			C0sub[off] = 0
+			C0[off] = 0
 			inGap = true
 		}
-		prevH0 = H0sub[off]
+		prevH0 = H0[off]
 	}
 	if pidx != M {
 		return Result{-1, -1, 0}, nil
 	}
 	if M == 1 {
-		result := Result{maxScorePos, maxScorePos + 1, int(maxScore)}
+		result := Result{minIdx + maxScorePos, minIdx + maxScorePos + 1, int(maxScore)}
 		if !withPos {
 			return result, nil
 		}
-		pos := []int{maxScorePos}
+		pos := []int{minIdx + maxScorePos}
 		return result, &pos
 	}
 
@@ -597,7 +633,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			}
 
 			if s > s1 && (s > s2 || s == s2 && preferMatch) {
-				*pos = append(*pos, j)
+				*pos = append(*pos, j+minIdx)
 				if i == 0 {
 					break
 				}
@@ -610,7 +646,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// Start offset we return here is only relevant when begin tiebreak is used.
 	// However finding the accurate offset requires backtracking, and we don't
 	// want to pay extra cost for the option that has lost its importance.
-	return Result{j, maxScorePos + 1, int(maxScore)}, pos
+	return Result{minIdx + j, minIdx + maxScorePos + 1, int(maxScore)}, pos
 }
 
 // Implement the same sorting criteria as V2
@@ -640,7 +676,7 @@ func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, patter
 				*pos = append(*pos, idx)
 			}
 			score += scoreMatch
-			bonus := bonusFor(prevClass, class)
+			bonus := bonusMatrix[prevClass][class]
 			if consecutive == 0 {
 				firstBonus = bonus
 			} else {
@@ -678,7 +714,8 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 	if len(pattern) == 0 {
 		return Result{0, 0, 0}, nil
 	}
-	if asciiFuzzyIndex(text, pattern, caseSensitive) < 0 {
+	idx, _ := asciiFuzzyIndex(text, pattern, caseSensitive)
+	if idx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
 
@@ -772,7 +809,8 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text *uti
 		return Result{-1, -1, 0}, nil
 	}
 
-	if asciiFuzzyIndex(text, pattern, caseSensitive) < 0 {
+	idx, _ := asciiFuzzyIndex(text, pattern, caseSensitive)
+	if idx < 0 {
 		return Result{-1, -1, 0}, nil
 	}
 

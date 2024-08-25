@@ -11,29 +11,32 @@ on:
 permissions:
   contents: read
 
+env:
+  LANG: C.UTF-8
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.19
+        go-version: "1.20"
 
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.0.0
+        ruby-version: 3.1.0
 
     - name: Install packages
       run: sudo apt-get install --yes zsh fish tmux
 
     - name: Install Ruby gems
-      run: sudo gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1
+      run: sudo gem install --no-document minitest:5.17.0 rubocop:1.43.0 rubocop-minitest:0.25.1 rubocop-performance:1.15.2
 
     - name: Rubocop
       run: rubocop --require rubocop-minitest --require rubocop-performance
@@ -42,4 +45,4 @@ jobs:
       run: make test
 
     - name: Integration test
-      run: make install && ./install --all && LC_ALL=C tmux new-session -d && ruby test/test_go.rb --verbose
+      run: make install && ./install --all && tmux new-session -d && ruby test/test_go.rb --verbose

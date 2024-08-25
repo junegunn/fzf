@@ -1,9 +1,10 @@
 package fzf
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,27 +12,29 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/charlievieth/fastwalk"
 	"github.com/junegunn/fzf/src/util"
-	"github.com/saracen/walker"
 )
 
 // Reader reads from command or standard input
 type Reader struct {
 	pusher   func([]byte) bool
+	executor *util.Executor
 	eventBox *util.EventBox
 	delimNil bool
 	event    int32
 	finChan  chan bool
 	mutex    sync.Mutex
 	exec     *exec.Cmd
+	execOut  io.ReadCloser
 	command  *string
 	killed   bool
 	wait     bool
 }
 
 // NewReader returns new Reader object
-func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, delimNil bool, wait bool) *Reader {
-	return &Reader{pusher, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, false, wait}
+func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util.Executor, delimNil bool, wait bool) *Reader {
+	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, nil, false, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -76,39 +79,51 @@ func (r *Reader) fin(success bool) {
 
 func (r *Reader) terminate() {
 	r.mutex.Lock()
-	defer func() { r.mutex.Unlock() }()
-
 	r.killed = true
 	if r.exec != nil && r.exec.Process != nil {
+		r.execOut.Close()
 		util.KillCommand(r.exec)
-	} else if defaultCommand != "" {
+	} else {
 		os.Stdin.Close()
 	}
+	r.mutex.Unlock()
 }
 
-func (r *Reader) restart(command string) {
+func (r *Reader) restart(command commandSpec, environ []string) {
 	r.event = int32(EvtReady)
 	r.startEventPoller()
-	success := r.readFromCommand(nil, command)
+	success := r.readFromCommand(command.command, environ)
 	r.fin(success)
+	removeFiles(command.tempFiles)
+}
+
+func (r *Reader) readChannel(inputChan chan string) bool {
+	for {
+		item, more := <-inputChan
+		if !more {
+			break
+		}
+		if r.pusher([]byte(item)) {
+			atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		}
+	}
+	return true
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource() {
+func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, initCmd string, initEnv []string) {
 	r.startEventPoller()
 	var success bool
-	if util.IsTty() {
-		// The default command for *nix requires bash
-		shell := "bash"
+	if inputChan != nil {
+		success = r.readChannel(inputChan)
+	} else if len(initCmd) > 0 {
+		success = r.readFromCommand(initCmd, initEnv)
+	} else if util.IsTty(os.Stdin) {
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
-			if defaultCommand != "" {
-				success = r.readFromCommand(&shell, defaultCommand)
-			} else {
-				success = r.readFiles()
-			}
+			success = r.readFiles(root, opts, ignores)
 		} else {
-			success = r.readFromCommand(nil, cmd)
+			success = r.readFromCommand(cmd, initEnv)
 		}
 	} else {
 		success = r.readFromStdin()
@@ -117,32 +132,90 @@ func (r *Reader) ReadSource() {
 }
 
 func (r *Reader) feed(src io.Reader) {
+	/*
+		readerSlabSize, ae := strconv.Atoi(os.Getenv("SLAB_KB"))
+		if ae != nil {
+			readerSlabSize = 128 * 1024
+		} else {
+			readerSlabSize *= 1024
+		}
+		readerBufferSize, be := strconv.Atoi(os.Getenv("BUF_KB"))
+		if be != nil {
+			readerBufferSize = 64 * 1024
+		} else {
+			readerBufferSize *= 1024
+		}
+	*/
+
 	delim := byte('\n')
+	trimCR := util.IsWindows()
 	if r.delimNil {
 		delim = '\000'
+		trimCR = false
 	}
-	reader := bufio.NewReaderSize(src, readerBufferSize)
+
+	slab := make([]byte, readerSlabSize)
+	leftover := []byte{}
+	var err error
 	for {
-		// ReadBytes returns err != nil if and only if the returned data does not
-		// end in delim.
-		bytea, err := reader.ReadBytes(delim)
-		byteaLen := len(bytea)
-		if byteaLen > 0 {
-			if err == nil {
-				// get rid of carriage return if under Windows:
-				if util.IsWindows() && byteaLen >= 2 && bytea[byteaLen-2] == byte('\r') {
-					bytea = bytea[:byteaLen-2]
-				} else {
-					bytea = bytea[:byteaLen-1]
-				}
-			}
-			if r.pusher(bytea) {
-				atomic.StoreInt32(&r.event, int32(EvtReadNew))
+		n := 0
+		scope := slab[:util.Min(len(slab), readerBufferSize)]
+		for i := 0; i < 100; i++ {
+			n, err = src.Read(scope)
+			if n > 0 || err != nil {
+				break
 			}
 		}
-		if err != nil {
+
+		// We're not making any progress after 100 tries. Stop.
+		if n == 0 {
 			break
 		}
+
+		buf := slab[:n]
+		slab = slab[n:]
+
+		for len(buf) > 0 {
+			if i := bytes.IndexByte(buf, delim); i >= 0 {
+				// Found the delimiter
+				slice := buf[:i+1]
+				buf = buf[i+1:]
+				if trimCR && len(slice) >= 2 && slice[len(slice)-2] == byte('\r') {
+					slice = slice[:len(slice)-2]
+				} else {
+					slice = slice[:len(slice)-1]
+				}
+				if len(leftover) > 0 {
+					slice = append(leftover, slice...)
+					leftover = []byte{}
+				}
+				if (err == nil || len(slice) > 0) && r.pusher(slice) {
+					atomic.StoreInt32(&r.event, int32(EvtReadNew))
+				}
+			} else {
+				// Could not find the delimiter in the buffer
+				//   NOTE: We can further optimize this by keeping track of the cursor
+				//   position in the slab so that a straddling item that doesn't go
+				//   beyond the boundary of a slab doesn't need to be copied to
+				//   another buffer. However, the performance gain is negligible in
+				//   practice (< 0.1%) and is not
+				//   worth the added complexity.
+				leftover = append(leftover, buf...)
+				break
+			}
+		}
+
+		if err == io.EOF {
+			leftover = append(leftover, buf...)
+			break
+		}
+
+		if len(slab) == 0 {
+			slab = make([]byte, readerSlabSize)
+		}
+	}
+	if len(leftover) > 0 && r.pusher(leftover) {
+		atomic.StoreInt32(&r.event, int32(EvtReadNew))
 	}
 }
 
@@ -151,16 +224,57 @@ func (r *Reader) readFromStdin() bool {
 	return true
 }
 
-func (r *Reader) readFiles() bool {
+func isSymlinkToDir(path string, de os.DirEntry) bool {
+	if de.Type()&fs.ModeSymlink == 0 {
+		return false
+	}
+	if s, err := os.Stat(path); err == nil {
+		return s.IsDir()
+	}
+	return false
+}
+
+func trimPath(path string) string {
+	bytes := stringBytes(path)
+
+	for len(bytes) > 1 && bytes[0] == '.' && (bytes[1] == '/' || bytes[1] == '\\') {
+		bytes = bytes[2:]
+	}
+
+	if len(bytes) == 0 {
+		return "."
+	}
+
+	return byteString(bytes)
+}
+
+func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
 	r.killed = false
-	fn := func(path string, mode os.FileInfo) error {
-		path = filepath.Clean(path)
+	conf := fastwalk.Config{
+		Follow: opts.follow,
+		// Use forward slashes when running a Windows binary under WSL or MSYS
+		ToSlash: fastwalk.DefaultToSlash(),
+		Sort:    fastwalk.SortFilesFirst,
+	}
+	fn := func(path string, de os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		path = trimPath(path)
 		if path != "." {
-			isDir := mode.Mode().IsDir()
-			if isDir && filepath.Base(path)[0] == '.' {
-				return filepath.SkipDir
+			isDir := de.IsDir()
+			if isDir || opts.follow && isSymlinkToDir(path, de) {
+				base := filepath.Base(path)
+				if !opts.hidden && base[0] == '.' {
+					return filepath.SkipDir
+				}
+				for _, ignore := range ignores {
+					if ignore == base {
+						return filepath.SkipDir
+					}
+				}
 			}
-			if !isDir && r.pusher([]byte(path)) {
+			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(stringBytes(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
 			}
 		}
@@ -171,31 +285,34 @@ func (r *Reader) readFiles() bool {
 		}
 		return nil
 	}
-	cb := walker.WithErrorCallback(func(pathname string, err error) error {
-		return nil
-	})
-	return walker.Walk(".", fn, cb) == nil
+	return fastwalk.Walk(&conf, root, fn) == nil
 }
 
-func (r *Reader) readFromCommand(shell *string, command string) bool {
+func (r *Reader) readFromCommand(command string, environ []string) bool {
 	r.mutex.Lock()
 	r.killed = false
 	r.command = &command
-	if shell != nil {
-		r.exec = util.ExecCommandWith(*shell, command, true)
-	} else {
-		r.exec = util.ExecCommand(command, true)
+	r.exec = r.executor.ExecCommand(command, true)
+	if environ != nil {
+		r.exec.Env = environ
 	}
-	out, err := r.exec.StdoutPipe()
+
+	var err error
+	r.execOut, err = r.exec.StdoutPipe()
 	if err != nil {
+		r.exec = nil
 		r.mutex.Unlock()
 		return false
 	}
+
 	err = r.exec.Start()
-	r.mutex.Unlock()
 	if err != nil {
+		r.exec = nil
+		r.mutex.Unlock()
 		return false
 	}
-	r.feed(out)
+
+	r.mutex.Unlock()
+	r.feed(r.execOut)
 	return r.exec.Wait() == nil
 }

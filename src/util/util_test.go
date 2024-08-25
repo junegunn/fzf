@@ -70,7 +70,7 @@ func TestMin32(t *testing.T) {
 	}
 }
 
-func TestContrain(t *testing.T) {
+func TestConstrain(t *testing.T) {
 	if Constrain(-3, -1, 3) != -1 {
 		t.Error("Expected", -1)
 	}
@@ -83,7 +83,7 @@ func TestContrain(t *testing.T) {
 	}
 }
 
-func TestContrain32(t *testing.T) {
+func TestConstrain32(t *testing.T) {
 	if Constrain32(-3, -1, 3) != -1 {
 		t.Error("Expected", -1)
 	}
@@ -115,7 +115,7 @@ func TestAsUint16(t *testing.T) {
 	if AsUint16(math.MinInt16) != 0 {
 		t.Error("Expected", 0)
 	}
-	if AsUint16(math.MaxUint32) != math.MaxUint16 {
+	if AsUint16(math.MaxUint16+1) != math.MaxUint16 {
 		t.Error("Expected", math.MaxUint16)
 	}
 }
@@ -137,13 +137,19 @@ func TestOnce(t *testing.T) {
 	if o() {
 		t.Error("Expected: false")
 	}
-	if o() {
-		t.Error("Expected: false")
+	if !o() {
+		t.Error("Expected: true")
+	}
+	if !o() {
+		t.Error("Expected: true")
 	}
 
 	o = Once(true)
 	if !o() {
 		t.Error("Expected: true")
+	}
+	if o() {
+		t.Error("Expected: false")
 	}
 	if o() {
 		t.Error("Expected: false")
@@ -162,6 +168,18 @@ func TestRunesWidth(t *testing.T) {
 		}
 		if overflowIdx != args[2] {
 			t.Errorf("Expected overflow index: %d, actual: %d", args[2], overflowIdx)
+		}
+	}
+	for _, input := range []struct {
+		s string
+		w int
+	}{
+		{"▶", 1},
+		{"▶️", 2},
+	} {
+		width, _ := RunesWidth([]rune(input.s), 0, 0, 100)
+		if width != input.w {
+			t.Errorf("Expected width of %s: %d, actual: %d", input.s, input.w, width)
 		}
 	}
 }
@@ -183,4 +201,42 @@ func TestRepeatToFill(t *testing.T) {
 	if RepeatToFill("abcde", 10, 42) != strings.Repeat("abcde", 4)+"abcde"[:2] {
 		t.Error("Expected:", strings.Repeat("abcde", 4)+"abcde"[:2])
 	}
+}
+
+func TestStringWidth(t *testing.T) {
+	w := StringWidth("─")
+	if w != 1 {
+		t.Errorf("Expected: %d, Actual: %d", 1, w)
+	}
+}
+
+func TestCompareVersions(t *testing.T) {
+	assert := func(a, b string, expected int) {
+		if result := CompareVersions(a, b); result != expected {
+			t.Errorf("Expected: %d, Actual: %d", expected, result)
+		}
+	}
+
+	assert("2", "1", 1)
+	assert("2", "2", 0)
+	assert("2", "10", -1)
+
+	assert("2.1", "2.2", -1)
+	assert("2.1", "2.1.1", -1)
+
+	assert("1.2.3", "1.2.2", 1)
+	assert("1.2.3", "1.2.3", 0)
+	assert("1.2.3", "1.2.3.0", 0)
+	assert("1.2.3", "1.2.4", -1)
+
+	// Different number of parts
+	assert("1.0.0", "1", 0)
+	assert("1.0.0", "1.0", 0)
+	assert("1.0.0", "1.0.0", 0)
+	assert("1.0", "1.0.0", 0)
+	assert("1", "1.0.0", 0)
+	assert("1.0.0", "1.0.0.1", -1)
+	assert("1.0.0.1.0", "1.0.0.1", 0)
+
+	assert("", "3.4.5", -1)
 }

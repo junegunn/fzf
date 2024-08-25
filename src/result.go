@@ -15,6 +15,8 @@ type Offset [2]int32
 type colorOffset struct {
 	offset [2]int32
 	color  tui.ColorPair
+	match  bool
+	url    *url
 }
 
 type Result struct {
@@ -80,7 +82,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 				if criterion == byBegin {
 					val = util.AsUint16(minEnd - whitePrefixLen)
 				} else {
-					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/int(item.TrimLength()))
+					val = util.AsUint16(math.MaxUint16 - math.MaxUint16*(maxEnd-whitePrefixLen)/(int(item.TrimLength())+1))
 				}
 			}
 		}
@@ -109,7 +111,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 	if len(itemColors) == 0 {
 		var offsets []colorOffset
 		for _, off := range matchOffsets {
-			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch})
+			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch, match: true})
 		}
 		return offsets
 	}
@@ -138,7 +140,9 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 		for i := off[0]; i < off[1]; i++ {
 			// Negative of 1-based index of itemColors
 			// - The extra -1 means highlighted
-			cols[i] = cols[i]*-1 - 1
+			if cols[i] >= 0 {
+				cols[i] = cols[i]*-1 - 1
+			}
 		}
 	}
 
@@ -174,8 +178,11 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 		if curr != 0 && idx > start {
 			if curr < 0 {
 				color := colMatch
+				var url *url
 				if curr < -1 && theme.Colored {
-					origColor := ansiToColorPair(itemColors[-curr-2], colMatch)
+					ansi := itemColors[-curr-2]
+					url = ansi.color.url
+					origColor := ansiToColorPair(ansi, colMatch)
 					// hl or hl+ only sets the foreground color, so colMatch is the
 					// combination of either [hl and bg] or [hl+ and bg+].
 					//
@@ -191,12 +198,14 @@ func (result *Result) colorOffsets(matchOffsets []Offset, theme *tui.ColorTheme,
 					}
 				}
 				colors = append(colors, colorOffset{
-					offset: [2]int32{int32(start), int32(idx)}, color: color})
+					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true, url: url})
 			} else {
 				ansi := itemColors[curr-1]
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  ansiToColorPair(ansi, colBase)})
+					color:  ansiToColorPair(ansi, colBase),
+					match:  false,
+					url:    ansi.color.url})
 			}
 		}
 	}

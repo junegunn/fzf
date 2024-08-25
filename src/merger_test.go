@@ -23,10 +23,11 @@ func randResult() Result {
 }
 
 func TestEmptyMerger(t *testing.T) {
-	assert(t, EmptyMerger.Length() == 0, "Not empty")
-	assert(t, EmptyMerger.count == 0, "Invalid count")
-	assert(t, len(EmptyMerger.lists) == 0, "Invalid lists")
-	assert(t, len(EmptyMerger.merged) == 0, "Invalid merged list")
+	r := revision{}
+	assert(t, EmptyMerger(r).Length() == 0, "Not empty")
+	assert(t, EmptyMerger(r).count == 0, "Invalid count")
+	assert(t, len(EmptyMerger(r).lists) == 0, "Invalid lists")
+	assert(t, len(EmptyMerger(r).merged) == 0, "Invalid merged list")
 }
 
 func buildLists(partiallySorted bool) ([][]Result, []Result) {
@@ -57,7 +58,7 @@ func TestMergerUnsorted(t *testing.T) {
 	cnt := len(items)
 
 	// Not sorted: same order
-	mg := NewMerger(nil, lists, false, false)
+	mg := NewMerger(nil, lists, false, false, revision{}, 0)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	for i := 0; i < cnt; i++ {
 		assert(t, items[i] == mg.Get(i), "Invalid Get")
@@ -69,7 +70,7 @@ func TestMergerSorted(t *testing.T) {
 	cnt := len(items)
 
 	// Sorted sorted order
-	mg := NewMerger(nil, lists, true, false)
+	mg := NewMerger(nil, lists, true, false, revision{}, 0)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	sort.Sort(ByRelevance(items))
 	for i := 0; i < cnt; i++ {
@@ -79,7 +80,7 @@ func TestMergerSorted(t *testing.T) {
 	}
 
 	// Inverse order
-	mg2 := NewMerger(nil, lists, true, false)
+	mg2 := NewMerger(nil, lists, true, false, revision{}, 0)
 	for i := cnt - 1; i >= 0; i-- {
 		if items[i] != mg2.Get(i) {
 			t.Error("Not sorted", items[i], mg2.Get(i))

@@ -2,7 +2,6 @@ package fzf
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -26,12 +25,12 @@ func NewHistory(path string, maxSize int) (*History, error) {
 	}
 
 	// Read history file
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		// If it doesn't exist, check if we can create a file with the name
 		if os.IsNotExist(err) {
 			data = []byte{}
-			if err := ioutil.WriteFile(path, data, 0600); err != nil {
+			if err := os.WriteFile(path, data, 0600); err != nil {
 				return nil, fmtError(err)
 			}
 		} else {
@@ -62,11 +61,11 @@ func (h *History) append(line string) error {
 		lines = lines[len(lines)-h.maxSize:]
 	}
 	h.lines = append(lines, "")
-	return ioutil.WriteFile(h.path, []byte(strings.Join(h.lines, "\n")), 0600)
+	return os.WriteFile(h.path, []byte(strings.Join(h.lines, "\n")), 0600)
 }
 
 func (h *History) override(str string) {
-	// You can update the history but they're not written to the file
+	// You can update the history, but they're not written to the file
 	if h.cursor == len(h.lines)-1 {
 		h.lines[h.cursor] = str
 	} else if h.cursor < len(h.lines)-1 {

@@ -6,7 +6,7 @@ Build instructions
 
 ### Prerequisites
 
-- Go 1.17 or above
+- Go 1.20 or above
 
 ### Using Makefile
 
@@ -24,24 +24,36 @@ make build
 make release
 ```
 
-> :warning: Makefile uses git commands to determine the version and the
-> revision information for `fzf --version`. So if you're building fzf from an
+> [!WARNING]
+> Makefile uses git commands to determine the version and the revision
+> information for `fzf --version`. So if you're building fzf from an
 > environment where its git information is not available, you have to manually
 > set `$FZF_VERSION` and `$FZF_REVISION`.
 >
 > e.g. `FZF_VERSION=0.24.0 FZF_REVISION=tarball make`
 
+> [!TIP]
+> To build fzf with profiling options enabled, set `TAGS=pprof`
+>
+> ```sh
+> TAGS=pprof make clean install
+> fzf --profile-cpu /tmp/cpu.pprof --profile-mem /tmp/mem.pprof \
+>     --profile-block /tmp/block.pprof --profile-mutex /tmp/mutex.pprof
+> ```
+
 Third-party libraries used
 --------------------------
 
-- [mattn/go-runewidth](https://github.com/mattn/go-runewidth)
-    - Licensed under [MIT](http://mattn.mit-license.org)
+- [rivo/uniseg](https://github.com/rivo/uniseg)
+    - Licensed under [MIT](https://raw.githubusercontent.com/rivo/uniseg/master/LICENSE.txt)
 - [mattn/go-shellwords](https://github.com/mattn/go-shellwords)
     - Licensed under [MIT](http://mattn.mit-license.org)
 - [mattn/go-isatty](https://github.com/mattn/go-isatty)
     - Licensed under [MIT](http://mattn.mit-license.org)
 - [tcell](https://github.com/gdamore/tcell)
     - Licensed under [Apache License 2.0](https://github.com/gdamore/tcell/blob/master/LICENSE)
+- [fastwalk](https://github.com/charlievieth/fastwalk)
+    - Licensed under [MIT](https://raw.githubusercontent.com/charlievieth/fastwalk/master/LICENSE)
 
 License
 -------

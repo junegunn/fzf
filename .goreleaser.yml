@@ -1,4 +1,5 @@
 ---
+version: 2
 project_name: fzf
 
 before:
@@ -6,64 +7,9 @@ before:
     - go mod download
 
 builds:
-  - id: fzf-macos
-    binary: fzf
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    ldflags:
-      - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
-    hooks:
-      post: |
-        sh -c '
-        cat > /tmp/fzf-gon-amd64.hcl << EOF
-        source = ["./dist/fzf-macos_darwin_amd64_v1/fzf"]
-        bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
-        }
-        zip {
-          output_path = "./dist/fzf-{{ .Version }}-darwin_amd64.zip"
-        }
-        EOF
-        gon /tmp/fzf-gon-amd64.hcl
-        '
-
-  - id: fzf-macos-arm
-    binary: fzf
-    goos:
-      - darwin
-    goarch:
-      - arm64
-    ldflags:
-      - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
-    hooks:
-      post: |
-        sh -c '
-        cat > /tmp/fzf-gon-arm64.hcl << EOF
-        source = ["./dist/fzf-macos-arm_darwin_arm64/fzf"]
-        bundle_id = "kr.junegunn.fzf"
-        apple_id {
-          username = "junegunn.c@gmail.com"
-          password = "@env:AC_PASSWORD"
-        }
-        sign {
-          application_identity = "Developer ID Application: Junegunn Choi (Y254DRW44Z)"
-        }
-        zip {
-          output_path = "./dist/fzf-{{ .Version }}-darwin_arm64.zip"
-        }
-        EOF
-        gon /tmp/fzf-gon-arm64.hcl
-        '
-
   - id: fzf
     goos:
+      - darwin
       - linux
       - windows
       - freebsd
@@ -74,10 +20,13 @@ builds:
       - arm64
       - loong64
       - ppc64le
+      - s390x
     goarm:
       - 5
       - 6
       - 7
+    flags:
+      - -trimpath
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.revision={{ .ShortCommit }}"
     ignore:
@@ -90,6 +39,42 @@ builds:
       - goos: openbsd
         goarch: arm64
 
+# .goreleaser.yaml
+notarize:
+  macos:
+    - # Whether this configuration is enabled or not.
+      #
+      # Default: false.
+      # Templates: allowed.
+      enabled: "{{ not .IsSnapshot }}"
+
+      # Before notarizing, we need to sign the binary.
+      # This blocks defines the configuration for doing so.
+      sign:
+        # The .p12 certificate file path or its base64'd contents.
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+
+        # The password to be used to open the certificate.
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+
+      # Then, we notarize the binaries.
+      notarize:
+        # The issuer ID.
+        # Its the UUID you see when creating the App Store Connect key.
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+
+        # Key ID.
+        # You can see it in the list of App Store Connect Keys.
+        # It will also be in the ApiKey filename.
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+
+        # The .p8 key file path or its base64'd contents.
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
+
+        # Whether to wait for the notarization to finish.
+        # Not recommended, as it could take a really long time.
+        wait: true
+
 archives:
   - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     builds:
@@ -101,21 +86,15 @@ archives:
     files:
       - non-existent*
 
-checksum:
-  extra_files:
-    - glob: ./dist/fzf-*darwin*.zip
-
 release:
   github:
     owner: junegunn
     name: fzf
   prerelease: auto
-  name_template: '{{ .Tag }}'
-  extra_files:
-    - glob: ./dist/fzf-*darwin*.zip
+  name_template: '{{ .Version }}'
 
 snapshot:
-  name_template: "{{ .Tag }}-devel"
+  name_template: "{{ .Version }}-devel"
 
 changelog:
   sort: asc

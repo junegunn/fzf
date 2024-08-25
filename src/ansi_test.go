@@ -342,12 +342,15 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 		state := interpretCode(code, prevState)
 		if expected != state.ToString() {
 			t.Errorf("expected: %s, actual: %s",
-				strings.Replace(expected, "\x1b[", "\\x1b[", -1),
-				strings.Replace(state.ToString(), "\x1b[", "\\x1b[", -1))
+				strings.ReplaceAll(expected, "\x1b[", "\\x1b["),
+				strings.ReplaceAll(state.ToString(), "\x1b[", "\\x1b["))
 		}
 	}
 	assert("\x1b[m", nil, "")
 	assert("\x1b[m", &ansiState{attr: tui.Blink, lbg: -1}, "")
+	assert("\x1b[0m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
+	assert("\x1b[;m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
+	assert("\x1b[;;m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
 
 	assert("\x1b[31m", nil, "\x1b[31;49m")
 	assert("\x1b[41m", nil, "\x1b[39;41m")

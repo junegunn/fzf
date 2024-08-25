@@ -3,6 +3,7 @@
 package tui
 
 import (
+	"os"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -20,7 +21,7 @@ func assert(t *testing.T, context string, got interface{}, want interface{}) boo
 
 // Test the handling of the tcell keyboard events.
 func TestGetCharEventKey(t *testing.T) {
-	if util.ToTty() {
+	if util.IsTty(os.Stdout) {
 		// This test is skipped when output goes to terminal, because it causes
 		// some glitches:
 		// - output lines may not start at the beginning of a row which makes
@@ -102,22 +103,22 @@ func TestGetCharEventKey(t *testing.T) {
 		// KeyBackspace2 is alias for KeyDEL = 0x7F (ASCII) (allegedly unused by Windows)
 		// KeyDelete = 0x2E (VK_DELETE constant in Windows)
 		// KeyBackspace is alias for KeyBS = 0x08 (ASCII) (implicit alias with KeyCtrlH)
-		{giveKey{tcell.KeyBackspace2, 0, tcell.ModNone}, wantKey{BSpace, 0, nil}}, // fabricated
-		{giveKey{tcell.KeyBackspace2, 0, tcell.ModAlt}, wantKey{AltBS, 0, nil}},   // fabricated
-		{giveKey{tcell.KeyDEL, 0, tcell.ModNone}, wantKey{BSpace, 0, nil}},        // fabricated, unhandled
-		{giveKey{tcell.KeyDelete, 0, tcell.ModNone}, wantKey{Del, 0, nil}},
-		{giveKey{tcell.KeyDelete, 0, tcell.ModAlt}, wantKey{Del, 0, nil}},
+		{giveKey{tcell.KeyBackspace2, 0, tcell.ModNone}, wantKey{Backspace, 0, nil}},   // fabricated
+		{giveKey{tcell.KeyBackspace2, 0, tcell.ModAlt}, wantKey{AltBackspace, 0, nil}}, // fabricated
+		{giveKey{tcell.KeyDEL, 0, tcell.ModNone}, wantKey{Backspace, 0, nil}},          // fabricated, unhandled
+		{giveKey{tcell.KeyDelete, 0, tcell.ModNone}, wantKey{Delete, 0, nil}},
+		{giveKey{tcell.KeyDelete, 0, tcell.ModAlt}, wantKey{Delete, 0, nil}},
 		{giveKey{tcell.KeyBackspace, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                  // fabricated, unhandled
 		{giveKey{tcell.KeyBS, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                         // fabricated, unhandled
 		{giveKey{tcell.KeyCtrlH, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                      // fabricated, unhandled
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModNone}, wantKey{BSpace, 0, nil}},                                    // actual "Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModAlt}, wantKey{AltBS, 0, nil}},                                      // actual "Alt+Backspace" keystroke
-		{giveKey{tcell.KeyDEL, rune(tcell.KeyDEL), tcell.ModCtrl}, wantKey{BSpace, 0, nil}},                                        // actual "Ctrl+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift}, wantKey{BSpace, 0, nil}},                                   // actual "Shift+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt}, wantKey{BSpace, 0, nil}},                                        // actual "Ctrl+Alt+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModShift}, wantKey{BSpace, 0, nil}},                                      // actual "Ctrl+Shift+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift | tcell.ModAlt}, wantKey{AltBS, 0, nil}},                     // actual "Shift+Alt+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{BSpace, 0, nil}},                       // actual "Ctrl+Shift+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModNone}, wantKey{Backspace, 0, nil}},                                 // actual "Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},                               // actual "Alt+Backspace" keystroke
+		{giveKey{tcell.KeyDEL, rune(tcell.KeyDEL), tcell.ModCtrl}, wantKey{Backspace, 0, nil}},                                     // actual "Ctrl+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift}, wantKey{Backspace, 0, nil}},                                // actual "Shift+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt}, wantKey{Backspace, 0, nil}},                                     // actual "Ctrl+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModShift}, wantKey{Backspace, 0, nil}},                                   // actual "Ctrl+Shift+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift | tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},              // actual "Shift+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{Backspace, 0, nil}},                    // actual "Ctrl+Shift+Alt+Backspace" keystroke
 		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl}, wantKey{CtrlH, 0, nil}},                                     // actual "Ctrl+H" keystroke
 		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAlt, 'h', nil}},                  // fabricated "Ctrl+Alt+H" keystroke
 		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModShift}, wantKey{CtrlH, 0, nil}},                    // actual "Ctrl+Shift+H" keystroke
@@ -126,8 +127,8 @@ func TestGetCharEventKey(t *testing.T) {
 		// section 4: (Alt+Shift)+Key(Up|Down|Left|Right)
 		{giveKey{tcell.KeyUp, 0, tcell.ModNone}, wantKey{Up, 0, nil}},
 		{giveKey{tcell.KeyDown, 0, tcell.ModAlt}, wantKey{AltDown, 0, nil}},
-		{giveKey{tcell.KeyLeft, 0, tcell.ModShift}, wantKey{SLeft, 0, nil}},
-		{giveKey{tcell.KeyRight, 0, tcell.ModShift | tcell.ModAlt}, wantKey{AltSRight, 0, nil}},
+		{giveKey{tcell.KeyLeft, 0, tcell.ModShift}, wantKey{ShiftLeft, 0, nil}},
+		{giveKey{tcell.KeyRight, 0, tcell.ModShift | tcell.ModAlt}, wantKey{AltShiftRight, 0, nil}},
 		{giveKey{tcell.KeyUpLeft, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},    // fabricated, unhandled
 		{giveKey{tcell.KeyUpRight, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},   // fabricated, unhandled
 		{giveKey{tcell.KeyDownLeft, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},  // fabricated, unhandled
@@ -161,11 +162,11 @@ func TestGetCharEventKey(t *testing.T) {
 
 		// section 7: Esc
 		// KeyEsc and KeyEscape are aliases for KeyESC
-		{giveKey{tcell.KeyEsc, rune(tcell.KeyEsc), tcell.ModNone}, wantKey{ESC, 0, nil}},               // fabricated
-		{giveKey{tcell.KeyESC, rune(tcell.KeyESC), tcell.ModNone}, wantKey{ESC, 0, nil}},               // unhandled
-		{giveKey{tcell.KeyEscape, rune(tcell.KeyEscape), tcell.ModNone}, wantKey{ESC, 0, nil}},         // fabricated, unhandled
-		{giveKey{tcell.KeyESC, rune(tcell.KeyESC), tcell.ModCtrl}, wantKey{ESC, 0, nil}},               // actual Ctrl+[ keystroke
-		{giveKey{tcell.KeyCtrlLeftSq, rune(tcell.KeyCtrlLeftSq), tcell.ModCtrl}, wantKey{ESC, 0, nil}}, // fabricated, unhandled
+		{giveKey{tcell.KeyEsc, rune(tcell.KeyEsc), tcell.ModNone}, wantKey{Esc, 0, nil}},               // fabricated
+		{giveKey{tcell.KeyESC, rune(tcell.KeyESC), tcell.ModNone}, wantKey{Esc, 0, nil}},               // unhandled
+		{giveKey{tcell.KeyEscape, rune(tcell.KeyEscape), tcell.ModNone}, wantKey{Esc, 0, nil}},         // fabricated, unhandled
+		{giveKey{tcell.KeyESC, rune(tcell.KeyESC), tcell.ModCtrl}, wantKey{Esc, 0, nil}},               // actual Ctrl+[ keystroke
+		{giveKey{tcell.KeyCtrlLeftSq, rune(tcell.KeyCtrlLeftSq), tcell.ModCtrl}, wantKey{Esc, 0, nil}}, // fabricated, unhandled
 
 		// section 8: Invalid
 		{giveKey{tcell.KeyRune, 'a', tcell.ModMeta}, wantKey{Rune, 'a', nil}}, // fabricated
@@ -182,6 +183,7 @@ func TestGetCharEventKey(t *testing.T) {
 	r.Init()
 
 	// run and evaluate the tests
+	initialResizeAsInvalid := true
 	for _, test := range tests {
 		// generate key event
 		giveEvent := tcell.NewEventKey(test.giveKey.Type, test.giveKey.Char, test.giveKey.Mods)
@@ -191,8 +193,9 @@ func TestGetCharEventKey(t *testing.T) {
 		// process the event in fzf and evaluate the test
 		gotEvent := r.GetChar()
 		// skip Resize events, those are sometimes put in the buffer outside of this test
-		for gotEvent.Type == Resize {
-			t.Logf("Resize swallowed")
+		if initialResizeAsInvalid && gotEvent.Type == Invalid {
+			t.Logf("Resize as Invalid swallowed")
+			initialResizeAsInvalid = false
 			gotEvent = r.GetChar()
 		}
 		t.Logf("wantEvent = %T{Type: %v, Char: %q (%[3]v)}\n", test.wantKey, test.wantKey.Type, test.wantKey.Char)
@@ -257,7 +260,7 @@ Quick reference
 37					LeftClick
 38					RightClick
 39					BTab
-40					BSpace
+40					Backspace
 41					Del
 42					PgUp
 43					PgDn
@@ -270,7 +273,7 @@ Quick reference
 50					Insert
 51					SUp
 52					SDown
-53					SLeft
+53					ShiftLeft
 54					SRight
 55					F1
 56					F2
@@ -286,15 +289,15 @@ Quick reference
 66					F12
 67					Change
 68					BackwardEOF
-69					AltBS
+69					AltBackspace
 70					AltUp
 71					AltDown
 72					AltLeft
 73					AltRight
 74					AltSUp
 75					AltSDown
-76					AltSLeft
-77					AltSRight
+76					AltShiftLeft
+77					AltShiftRight
 78					Alt
 79					CtrlAlt
 ..

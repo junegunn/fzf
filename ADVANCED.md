@@ -1,30 +1,35 @@
 Advanced fzf examples
 ======================
 
-*(Last update: 2022/08/25)*
+* *Last update: 2024/06/24*
+* *Requires fzf 0.54.0 or later*
+
+---
 
 <!-- vim-markdown-toc GFM -->
 
 * [Introduction](#introduction)
-* [Screen Layout](#screen-layout)
-  * [`--height`](#--height)
-  * [`fzf-tmux`](#fzf-tmux)
-    * [Popup window support](#popup-window-support)
+* [Display modes](#display-modes)
+    * [`--height`](#--height)
+    * [`--tmux`](#--tmux)
 * [Dynamic reloading of the list](#dynamic-reloading-of-the-list)
-  * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
-  * [Toggling between data sources](#toggling-between-data-sources)
+    * [Updating the list of processes by pressing CTRL-R](#updating-the-list-of-processes-by-pressing-ctrl-r)
+    * [Toggling between data sources](#toggling-between-data-sources)
+    * [Toggling with a single key binding](#toggling-with-a-single-key-binding)
 * [Ripgrep integration](#ripgrep-integration)
-  * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
-  * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
-  * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
-  * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
+    * [Using fzf as the secondary filter](#using-fzf-as-the-secondary-filter)
+    * [Using fzf as interactive Ripgrep launcher](#using-fzf-as-interactive-ripgrep-launcher)
+    * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
+    * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
+    * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
-  * [Files listed in `git status`](#files-listed-in-git-status)
-  * [Branches](#branches)
-  * [Commit hashes](#commit-hashes)
+    * [Files listed in `git status`](#files-listed-in-git-status)
+    * [Branches](#branches)
+    * [Commit hashes](#commit-hashes)
 * [Color themes](#color-themes)
-  * [Generating fzf color theme from Vim color schemes](#generating-fzf-color-theme-from-vim-color-schemes)
+    * [fzf Theme Playground](#fzf-theme-playground)
+    * [Generating fzf color theme from Vim color schemes](#generating-fzf-color-theme-from-vim-color-schemes)
 
 <!-- vim-markdown-toc -->
 
@@ -57,7 +62,7 @@ learn its wide variety of features.
 This document will guide you through some examples that will familiarize you
 with the advanced features of fzf.
 
-Screen Layout
+Display modes
 -------------
 
 ### `--height`
@@ -98,56 +103,55 @@ Define `$FZF_DEFAULT_OPTS` like so:
 export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --info=inline --border --margin=1 --padding=1"
 ```
 
-### `fzf-tmux`
+### `--tmux`
 
-Before fzf had `--height` option, we would open fzf in a tmux split pane not
-to take up the whole screen. This is done using `fzf-tmux` script.
+(Requires tmux 3.3 or later)
 
-```sh
-# Open fzf on a tmux split pane below the current pane.
-# Takes the same set of options.
-fzf-tmux --layout=reverse
-```
-
-![image](https://user-images.githubusercontent.com/700826/113379973-f1cc6500-93b5-11eb-8860-c9bc4498aadf.png)
-
-The limitation of `fzf-tmux` is that it only works when you're on tmux unlike
-`--height` option. But the advantage of it is that it's more flexible.
-(See `man fzf-tmux` for available options.)
+If you're using tmux, you can open fzf in a tmux popup using `--tmux` option.
 
 ```sh
-# On the right (50%)
-fzf-tmux -r
-
-# On the left (30%)
-fzf-tmux -l30%
-
-# Above the cursor
-fzf-tmux -u30%
+# Open fzf in a tmux popup at the center of the screen with 70% width and height
+fzf --tmux 70%
 ```
 
-![image](https://user-images.githubusercontent.com/700826/113379983-fa24a000-93b5-11eb-93eb-8a3d39b2f163.png)
+![image](https://github.com/junegunn/fzf/assets/700826/9c365405-c700-49b2-8985-60d822ed4cff)
 
-![image](https://user-images.githubusercontent.com/700826/113380001-0577cb80-93b6-11eb-95d0-2ba453866882.png)
-
-![image](https://user-images.githubusercontent.com/700826/113380040-1d4f4f80-93b6-11eb-9bef-737fb120aafe.png)
-
-#### Popup window support
-
-But here's the really cool part; tmux 3.2 added support for popup windows. So
-you can open fzf in a popup window, which is quite useful if you frequently
-use split panes.
+`--tmux` option is silently ignored if you're not on tmux. So if you're trying
+to avoid opening fzf in fullscreen, try specifying both `--height` and `--tmux`.
 
 ```sh
-# Open tmux in a tmux popup window (default size: 50% of the screen)
-fzf-tmux -p
-
-# 80% width, 60% height
-fzf-tmux -p 80%,60%
+# --tmux is specified later so it takes precedence over --height when on tmux.
+# If you're not on tmux, --tmux is ignored and --height is used instead.
+fzf  --height 70% --tmux 70%
 ```
 
-![image](https://user-images.githubusercontent.com/700826/113380106-4a9bfd80-93b6-11eb-8cee-aeb1c4ce1a1f.png)
+You can also specify the position, width, and height of the popup window in
+the following format:
 
+* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]`
+
+```sh
+# 100% width and 60% height
+fzf --tmux 100%,60% --border horizontal
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/f80d3514-d69f-42f2-a8de-a392a562bfcf)
+
+```sh
+# On the right (50% width)
+fzf --tmux right
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/4033ade4-7efa-421b-a3fb-a430d197098a)
+
+```sh
+# On the left (40% width and 70% height)
+fzf --tmux left,40%,70%
+```
+
+![image](https://github.com/junegunn/fzf/assets/700826/efe43881-2bf0-49ea-ab2e-1377f778cd52)
+
+> [!TIP]
 > You might also want to check out my tmux plugins which support this popup
 > window layout.
 >
@@ -205,6 +209,30 @@ find * | fzf --prompt 'All> ' \
 
 ![image](https://user-images.githubusercontent.com/700826/113465072-46321c00-946c-11eb-9b6f-cda3951df579.png)
 
+### Toggling with a single key binding
+
+The above example uses two different key bindings to toggle between two modes,
+but can we just use a single key binding?
+
+To make a key binding behave differently each time it is pressed, we need:
+
+1. a way to store the current state. i.e. "which mode are we in?"
+2. and a way to dynamically perform different actions depending on the state.
+
+The following example shows how to 1. store the current mode in the prompt
+string, 2. and use this information (`$FZF_PROMPT`) to determine which
+actions to perform using the `transform` action.
+
+```sh
+fd --type file |
+  fzf --prompt 'Files> ' \
+      --header 'CTRL-T: Switch between Files/Directories' \
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
+              echo "change-prompt(Files> )+reload(fd --type file)" ||
+              echo "change-prompt(Directories> )+reload(fd --type directory)"' \
+      --preview '[[ $FZF_PROMPT =~ Files ]] && bat --color=always {} || tree -C {}'
+```
+
 Ripgrep integration
 -------------------
 
@@ -236,15 +264,13 @@ file called `rfv`.
 # 1. Search for text in files using Ripgrep
 # 2. Interactively narrow down the list using fzf
 # 3. Open the file in Vim
-IFS=: read -ra selected < <(
-  rg --color=always --line-number --no-heading --smart-case "${*:-}" |
-    fzf --ansi \
-        --color "hl:-1:underline,hl+:-1:underline:reverse" \
-        --delimiter : \
-        --preview 'bat --color=always {1} --highlight-line {2}' \
-        --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+rg --color=always --line-number --no-heading --smart-case "${*:-}" |
+  fzf --ansi \
+      --color "hl:-1:underline,hl+:-1:underline:reverse" \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+      --bind 'enter:become(vim {1} +{2})'
 ```
 
 And run it with an initial query string.
@@ -307,8 +333,12 @@ I know it's a lot to digest, let's try to break down the code.
       position in the window
     - `~3` makes the top three lines fixed header so that they are always
       visible regardless of the scroll offset
-- Once we selected a line, we open the file with `vim` (`vim
-  "${selected[0]}"`) and move the cursor to the line (`+${selected[1]}`).
+- Instead of using shell script to process the final output of fzf, we use
+  `become(...)` action which was added in [fzf 0.38.0][0.38.0] to turn fzf
+  into a new process that opens the file with `vim` (`vim {1}`) and move the
+  cursor to the line (`+{2}`).
+
+[0.38.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0380
 
 ### Using fzf as interactive Ripgrep launcher
 
@@ -331,25 +361,20 @@ projects, and it will free up memory as you narrow down the results.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --delimiter : \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 ![image](https://user-images.githubusercontent.com/700826/113684212-f9ff0a00-96ff-11eb-8737-7bb571d320cc.png)
 
-- Instead of starting fzf in `rg ... | fzf` form, we start fzf without an
-  explicit input, but with a custom `FZF_DEFAULT_COMMAND` variable. This way
-  fzf can kill the initial Ripgrep process it starts with the initial query.
-  Otherwise, the initial Ripgrep process will keep consuming system resources
-  even after `reload` is triggered.
+- Instead of starting fzf in the usual `rg ... | fzf` form, we make it start
+  the initial Ripgrep process immediately via `start:reload` binding for the
+  consistency of the code.
 - Filtering is no longer a responsibility of fzf; hence `--disabled`
 - `{q}` in the reload command evaluates to the query string on fzf prompt.
 - `sleep 0.1` in the reload command is for "debouncing". This small delay will
@@ -357,8 +382,6 @@ IFS=: read -ra selected < <(
   a query.
 
 ### Switching to fzf-only search mode
-
-*(Requires fzf 0.27.1 or above)*
 
 In the previous example, we lost fuzzy matching capability as we completely
 delegated search functionality to Ripgrep. But we can dynamically switch to
@@ -375,19 +398,16 @@ fzf-only search mode by *"unbinding"* `reload` action from `change` event.
 # 3. Open the file in Vim
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --color "hl:-1:underline,hl+:-1:underline:reverse" \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
-      --prompt '1. ripgrep> ' \
-      --delimiter : \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 * Phase 1. Filtering with Ripgrep
@@ -408,10 +428,8 @@ IFS=: read -ra selected < <(
 
 ### Switching between Ripgrep mode and fzf mode
 
-*(Requires fzf 0.30.0 or above)*
-
-fzf 0.30.0 added `rebind` action so we can "rebind" the bindings that were
-previously "unbound" via `unbind`.
+[fzf 0.30.0][0.30.0] added `rebind` action so we can "rebind" the bindings
+that were previously "unbound" via `unbind`.
 
 This is an improved version of the previous example that allows us to switch
 between Ripgrep launcher mode and fzf-only filtering mode via CTRL-R and
@@ -421,23 +439,65 @@ CTRL-F.
 #!/usr/bin/env bash
 
 # Switch between Ripgrep launcher mode (CTRL-R) and fzf filtering mode (CTRL-F)
+rm -f /tmp/rg-fzf-{r,f}
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
-IFS=: read -ra selected < <(
-  FZF_DEFAULT_COMMAND="$RG_PREFIX $(printf %q "$INITIAL_QUERY")" \
-  fzf --ansi \
-      --color "hl:-1:underline,hl+:-1:underline:reverse" \
-      --disabled --query "$INITIAL_QUERY" \
-      --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-      --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+clear-query+rebind(ctrl-r)" \
-      --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)" \
-      --prompt '1. Ripgrep> ' \
-      --delimiter : \
-      --header '╱ CTRL-R (Ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
-      --preview 'bat --color=always {1} --highlight-line {2}' \
-      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
-)
-[ -n "${selected[0]}" ] && vim "${selected[0]}" "+${selected[1]}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload($RG_PREFIX {q})+unbind(ctrl-r)" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+- To restore the query string when switching between modes, we store the
+  current query in `/tmp/rg-fzf-{r,f}` files and restore the query using
+  `transform-query` action which was added in [fzf 0.36.0][0.36.0].
+- Also note that we unbind `ctrl-r` binding on `start` event which is
+  triggered once when fzf starts.
+
+[0.30.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0300
+[0.36.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0360
+
+### Switching between Ripgrep mode and fzf mode using a single key binding
+
+In contrast to the previous version, we use just one hotkey to toggle between
+ripgrep and fzf mode. This is achieved by using the `$FZF_PROMPT` as a state
+within the `transform` action, a feature introduced in [fzf 0.45.0][0.45.0]. A
+more detailed explanation of this feature can be found in a previous section -
+[Toggling with a single keybinding](#toggling-with-a-single-key-binding).
+
+[0.45.0]: https://github.com/junegunn/fzf/blob/master/CHANGELOG.md#0450
+
+When using the `transform` action, the placeholder (`\{q}`) should be escaped to
+prevent immediate evaluation.
+
+```sh
+#!/usr/bin/env bash
+
+# Switch between Ripgrep mode and fzf filtering mode (CTRL-T)
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ ripgrep ]] &&
+      echo "rebind(change)+change-prompt(1. ripgrep> )+disable-search+transform-query:echo \{q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r" ||
+      echo "unbind(change)+change-prompt(2. fzf> )+enable-search+transform-query:echo \{q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f"' \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header 'CTRL-T: Switch between ripgrep/fzf' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
 ```
 
 Log tailing
@@ -465,16 +525,17 @@ Kubernetes pods.
 
 ```bash
 pods() {
-  FZF_DEFAULT_COMMAND="kubectl get pods --all-namespaces" \
-    fzf --info=inline --layout=reverse --header-lines=1 \
-        --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
-        --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
-        --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
-        --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash > /dev/tty' \
-        --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2}) > /dev/tty' \
-        --bind 'ctrl-r:reload:$FZF_DEFAULT_COMMAND' \
-        --preview-window up:follow \
-        --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+  command='kubectl get pods --all-namespaces' fzf \
+    --info=inline --layout=reverse --header-lines=1 \
+    --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+    --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
+    --bind 'start:reload:$command' \
+    --bind 'ctrl-r:reload:$command' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
+    --preview-window up:follow \
+    --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
 }
 ```
 
@@ -487,7 +548,7 @@ pods() {
     - Press enter key on a pod to `kubectl exec` into it
     - Press CTRL-O to open the log in your editor
 - Press CTRL-R to reload the pod list
-- Press CTRL-/ repeatedly to to rotate through a different sets of preview
+- Press CTRL-/ repeatedly to rotate through a different sets of preview
   window options
     1. `80%,border-bottom`
     1. `hidden`
@@ -567,6 +628,12 @@ export FZF_DEFAULT_OPTS='--color=bg+:#293739,bg:#1B1D1E,border:#808080,spinner:#
 ```
 
 ![molokai](https://user-images.githubusercontent.com/700826/113475085-8619f300-94ae-11eb-85e4-2766fc3246bf.png)
+
+### fzf Theme Playground
+
+[fzf Theme Playground](https://vitormv.github.io/fzf-themes/) created by
+[Vitor Mello](https://github.com/vitormv) is a webpage where you can
+interactively create fzf themes.
 
 ### Generating fzf color theme from Vim color schemes
 

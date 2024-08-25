@@ -28,3 +28,5 @@ Style/WordArray:
   MinSize: 1
 Minitest/AssertEqual:
   Enabled: false
+Naming/VariableNumber:
+  Enabled: false

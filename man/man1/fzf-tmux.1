@@ -1,7 +1,7 @@
 .ig
 The MIT License (MIT)
 
-Copyright (c) 2013-2021 Junegunn Choi
+Copyright (c) 2013-2024 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,48 +21,48 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf-tmux 1 "Nov 2022" "fzf 0.35.1" "fzf-tmux - open fzf in tmux split pane"
+.TH fzf\-tmux 1 "Jul 2024" "fzf 0.54.3" "fzf\-tmux - open fzf in tmux split pane"
 
 .SH NAME
-fzf-tmux - open fzf in tmux split pane
+fzf\-tmux - open fzf in tmux split pane
 
 .SH SYNOPSIS
-.B fzf-tmux [\fILAYOUT OPTIONS\fR] [--] [\fIFZF OPTIONS\fR]
+.B fzf\-tmux [\fILAYOUT OPTIONS\fR] [\-\-] [\fIFZF OPTIONS\fR]
 
 .SH DESCRIPTION
-fzf-tmux is a wrapper script for fzf that opens fzf in a tmux split pane or in
+fzf\-tmux is a wrapper script for fzf that opens fzf in a tmux split pane or in
 a tmux popup window. It is designed to work just like fzf except that it does
-not take up the whole screen. You can safely use fzf-tmux instead of fzf in
+not take up the whole screen. You can safely use fzf\-tmux instead of fzf in
 your scripts as the extra options will be silently ignored if you're not on
 tmux.
 
 .SH LAYOUT OPTIONS
 
-(default layout: \fB-d 50%\fR)
+(default layout: \fB\-d 50%\fR)
 
 .SS Popup window
 (requires tmux 3.2 or above)
 .TP
-.B "-p [WIDTH[%][,HEIGHT[%]]]"
+.B "\-p [WIDTH[%][,HEIGHT[%]]]"
 .TP
-.B "-w WIDTH[%]"
+.B "\-w WIDTH[%]"
 .TP
-.B "-h WIDTH[%]"
+.B "\-h WIDTH[%]"
 .TP
-.B "-x COL"
+.B "\-x COL"
 .TP
-.B "-y ROW"
+.B "\-y ROW"
 
 .SS Split pane
 .TP
-.B "-u [height[%]]"
+.B "\-u [height[%]]"
 Split above (up)
 .TP
-.B "-d [height[%]]"
+.B "\-d [height[%]]"
 Split below (down)
 .TP
-.B "-l [width[%]]"
+.B "\-l [width[%]]"
 Split left
 .TP
-.B "-r [width[%]]"
+.B "\-r [width[%]]"
 Split right

@@ -1,34 +1,35 @@
 SHELL          := bash
 GO             ?= go
-GOOS           ?= $(word 1, $(subst /, " ", $(word 4, $(shell go version))))
+GOOS           ?= $(shell $(GO) env GOOS)
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
-SOURCES        := $(wildcard *.go src/*.go src/*/*.go) $(MAKEFILE)
+SOURCES        := $(wildcard *.go src/*.go src/*/*.go shell/*sh man/man1/*.1) $(MAKEFILE)
 
 ifdef FZF_VERSION
 VERSION        := $(FZF_VERSION)
 else
-VERSION        := $(shell git describe --abbrev=0 2> /dev/null)
+VERSION        := $(shell git describe --abbrev=0 2> /dev/null | sed "s/^v//")
 endif
 ifeq ($(VERSION),)
 $(error Not on git repository; cannot determine $$FZF_VERSION)
 endif
-VERSION_TRIM   := $(shell sed "s/-.*//" <<< $(VERSION))
+VERSION_TRIM   := $(shell sed "s/^v//; s/-.*//" <<< $(VERSION))
 VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
 
 ifdef FZF_REVISION
 REVISION       := $(FZF_REVISION)
 else
-REVISION       := $(shell git log -n 1 --pretty=format:%h -- $(SOURCES) 2> /dev/null)
+REVISION       := $(shell git log -n 1 --pretty=format:%h --abbrev=8 -- $(SOURCES) 2> /dev/null)
 endif
 ifeq ($(REVISION),)
 $(error Not on git repository; cannot determine $$FZF_REVISION)
 endif
-BUILD_FLAGS    := -a -ldflags "-s -w -X main.version=$(VERSION) -X main.revision=$(REVISION)" -tags "$(TAGS)"
+BUILD_FLAGS    := -a -ldflags "-s -w -X main.version=$(VERSION) -X main.revision=$(REVISION)" -tags "$(TAGS)" -trimpath
 
 BINARY32       := fzf-$(GOOS)_386
 BINARY64       := fzf-$(GOOS)_amd64
+BINARYS390     := fzf-$(GOOS)_s390x
 BINARYARM5     := fzf-$(GOOS)_arm5
 BINARYARM6     := fzf-$(GOOS)_arm6
 BINARYARM7     := fzf-$(GOOS)_arm7
@@ -43,6 +44,8 @@ ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),amd64)
 	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),s390x)
+	BINARY := $(BINARYS390)
 else ifeq ($(UNAME_M),i686)
 	BINARY := $(BINARY32)
 else ifeq ($(UNAME_M),i386)
@@ -54,7 +57,9 @@ else ifeq ($(UNAME_M),armv6l)
 else ifeq ($(UNAME_M),armv7l)
 	BINARY := $(BINARYARM7)
 else ifeq ($(UNAME_M),armv8l)
-	BINARY := $(BINARYARM8)
+	# armv8l is always 32-bit and should implement the armv7 ISA, so
+	# just use the same filename as for armv7.
+	BINARY := $(BINARYARM7)
 else ifeq ($(UNAME_M),arm64)
 	BINARY := $(BINARYARM8)
 else ifeq ($(UNAME_M),aarch64)
@@ -84,10 +89,17 @@ bench:
 
 install: bin/fzf
 
+generate:
+	PATH=$(PATH):$(GOPATH)/bin $(GO) generate ./...
+
 build:
-	goreleaser --rm-dist --snapshot
+	goreleaser build --clean --snapshot --skip=post-hooks
 
 release:
+	# Make sure that the tests pass and the build works
+	TAGS=tcell make test
+	make test build clean
+
 ifndef GITHUB_TOKEN
 	$(error GITHUB_TOKEN is not defined)
 endif
@@ -114,7 +126,7 @@ endif
 	git push origin temp --follow-tags --force
 
 	# Make a GitHub release
-	goreleaser --rm-dist --release-notes tmp/release-note
+	goreleaser --clean --release-notes tmp/release-note
 
 	# Push to master
 	git checkout master
@@ -132,6 +144,8 @@ target/$(BINARY32): $(SOURCES)
 target/$(BINARY64): $(SOURCES)
 	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
 
+target/$(BINARYS390): $(SOURCES)
+	GOARCH=s390x $(GO) build $(BUILD_FLAGS) -o $@
 # https://github.com/golang/go/wiki/GoArm
 target/$(BINARYARM5): $(SOURCES)
 	GOARCH=arm GOARM=5 $(GO) build $(BUILD_FLAGS) -o $@
@@ -159,15 +173,15 @@ bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
 docker:
-	docker build -t fzf-arch .
-	docker run -it fzf-arch tmux
+	docker build -t fzf-ubuntu .
+	docker run -it fzf-ubuntu tmux
 
 docker-test:
-	docker build -t fzf-arch .
-	docker run -it fzf-arch
+	docker build -t fzf-ubuntu .
+	docker run -it fzf-ubuntu
 
 update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all build release test bench install clean docker docker-test update
+.PHONY: all generate build release test bench install clean docker docker-test update
