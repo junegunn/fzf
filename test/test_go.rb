@@ -1443,7 +1443,7 @@ class TestGoFZF < TestBase
     [0, 3, 6].each do |off|
       tmux.prepare
       tmux.send_keys "#{FZF} --hscroll-off=#{off} -q 0 < #{tempname}", :Enter
-      tmux.until { |lines| assert lines[-3]&.end_with?((0..off).to_a.join + '..') }
+      tmux.until { |lines| assert lines[-3]&.end_with?((0..off).to_a.join + '··') }
       tmux.send_keys '9'
       tmux.until { |lines| assert lines[-3]&.end_with?('789') }
       tmux.send_keys :Enter
