@@ -23,6 +23,7 @@ CHANGELOG
 
   fzf --preview "printf '<< \e]8;;http://github.com/junegunn/fzf\e\\Link to \e[32mfz\e[0mf\e]8;;\e\\ >>'"
   ```
+- The default `--ellipsis` is now `··` instead of `..`.
 - [vim] A spec can have `exit` callback that is called with the exit status of fzf
     - This can be used to clean up temporary resources or restore the original state when fzf is closed without a selection
 - Fixed `--tmux bottom` when the status line is not at the bottom

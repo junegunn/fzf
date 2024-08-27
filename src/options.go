@@ -103,7 +103,7 @@ Usage: fzf [options]
     --header=STR            String to print as header
     --header-lines=N        The first N lines of the input are treated as header
     --header-first          Print header before the prompt line
-    --ellipsis=STR          Ellipsis to show when line is truncated (default: '..')
+    --ellipsis=STR          Ellipsis to show when line is truncated (default: '··')
 
   Display
     --ansi                  Enable processing of ANSI color codes
@@ -472,7 +472,7 @@ type Options struct {
 	Header       []string
 	HeaderLines  int
 	HeaderFirst  bool
-	Ellipsis     string
+	Ellipsis     *string
 	Scrollbar    *string
 	Margin       [4]sizeSpec
 	Padding      [4]sizeSpec
@@ -578,7 +578,7 @@ func defaultOptions() *Options {
 		Header:       make([]string, 0),
 		HeaderLines:  0,
 		HeaderFirst:  false,
-		Ellipsis:     "..",
+		Ellipsis:     nil,
 		Scrollbar:    nil,
 		Margin:       defaultMargin(),
 		Padding:      defaultMargin(),
@@ -2339,9 +2339,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-header-first":
 			opts.HeaderFirst = false
 		case "--ellipsis":
-			if opts.Ellipsis, err = nextString(allArgs, &i, "ellipsis string required"); err != nil {
+			str, err := nextString(allArgs, &i, "ellipsis string required")
+			if err != nil {
 				return err
 			}
+			str = firstLine(str)
+			opts.Ellipsis = &str
 		case "--preview":
 			if opts.Preview.command, err = nextString(allArgs, &i, "preview command required"); err != nil {
 				return err
@@ -2623,7 +2626,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--ellipsis="); match {
-				opts.Ellipsis = value
+				str := firstLine(value)
+				opts.Ellipsis = &str
 			} else if match, value := optString(arg, "--preview="); match {
 				opts.Preview.command = value
 			} else if match, value := optString(arg, "--preview-window="); match {

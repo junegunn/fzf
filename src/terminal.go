@@ -827,7 +827,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		headerLines:        opts.HeaderLines,
 		header:             []string{},
 		header0:            opts.Header,
-		ellipsis:           opts.Ellipsis,
 		ansi:               opts.Ansi,
 		tabstop:            opts.Tabstop,
 		hasStartActions:    false,
@@ -884,6 +883,15 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
+
+	if opts.Ellipsis != nil {
+		t.ellipsis = *opts.Ellipsis
+	} else if t.unicode {
+		t.ellipsis = "··"
+	} else {
+		t.ellipsis = ".."
+	}
+
 	if t.unicode {
 		t.wrapSign = "↳ "
 		t.borderWidth = uniseg.StringWidth("│")
