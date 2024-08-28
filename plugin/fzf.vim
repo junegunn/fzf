@@ -226,7 +226,10 @@ function! fzf#exec(...)
     let s:exec = binaries[-1]
   endif
 
-  let min_version = a:0 ? a:1 : s:min_version
+  let min_version = s:min_version
+  if a:0 && s:compare_versions(a:1, min_version) > 0
+    let min_version = a:1
+  endif
   if !has_key(s:checked, min_version)
     let fzf_version = s:get_version(s:exec)
     if empty(fzf_version)
