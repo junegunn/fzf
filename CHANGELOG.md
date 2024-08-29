@@ -3,6 +3,8 @@ CHANGELOG
 
 0.55.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.55.0/_
+
 - Added `exact-boundary-match` type to the search syntax. When a search term is single-quoted, fzf will search for the exact occurrences of the string with both ends at word boundaries.
   ```sh
   fzf --query "'here'" << EOF
