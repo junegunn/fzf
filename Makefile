@@ -77,7 +77,6 @@ endif
 all: target/$(BINARY)
 
 test: $(SOURCES)
-	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" \
 				github.com/junegunn/fzf/src \
 				github.com/junegunn/fzf/src/algo \
@@ -86,6 +85,10 @@ test: $(SOURCES)
 
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
+
+lint: $(SOURCES) test/test_go.rb
+	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
+	rubocop --require rubocop-minitest --require rubocop-performance
 
 install: bin/fzf
 
@@ -184,4 +187,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all generate build release test bench install clean docker docker-test update
+.PHONY: all generate build release test bench lint install clean docker docker-test update

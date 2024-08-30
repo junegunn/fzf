@@ -6,7 +6,7 @@ Lint/ShadowingOuterLocalVariable:
   Enabled: false
 Style/MethodCallWithArgsParentheses:
   Enabled: true
-  IgnoredMethods:
+  AllowedMethods:
     - assert
     - exit
     - paste
@@ -15,7 +15,7 @@ Style/MethodCallWithArgsParentheses:
     - refute
     - require
     - send_keys
-  IgnoredPatterns:
+  AllowedPatterns:
     - ^assert_
     - ^refute_
 Style/NumericPredicate:

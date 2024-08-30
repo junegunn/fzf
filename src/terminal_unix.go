@@ -20,9 +20,5 @@ func notifyStop(p *os.Process) {
 	if err == nil {
 		pid = pgid * -1
 	}
-	unix.Kill(pid, syscall.SIGSTOP)
-}
-
-func notifyOnCont(resizeChan chan<- os.Signal) {
-	signal.Notify(resizeChan, syscall.SIGCONT)
+	unix.Kill(pid, syscall.SIGTSTP)
 }

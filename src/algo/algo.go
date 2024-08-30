@@ -798,6 +798,14 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 // The solution is much cheaper since there is only one possible alignment of
 // the pattern.
 func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
+	return exactMatchNaive(caseSensitive, normalize, forward, false, text, pattern, withPos, slab)
+}
+
+func ExactMatchBoundary(caseSensitive bool, normalize bool, forward bool, text *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
+	return exactMatchNaive(caseSensitive, normalize, forward, true, text, pattern, withPos, slab)
+}
+
+func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryCheck bool, text *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	if len(pattern) == 0 {
 		return Result{0, 0, 0}, nil
 	}
@@ -832,10 +840,22 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text *uti
 		}
 		pidx_ := indexAt(pidx, lenPattern, forward)
 		pchar := pattern[pidx_]
-		if pchar == char {
+		ok := pchar == char
+		if ok {
 			if pidx_ == 0 {
 				bonus = bonusAt(text, index_)
 			}
+			if boundaryCheck {
+				ok = bonus >= bonusBoundary
+				if ok && pidx_ == 0 {
+					ok = index_ == 0 || charClassOf(text.Get(index_-1)) <= charDelimiter
+				}
+				if ok && pidx_ == len(pattern)-1 {
+					ok = index_ == lenRunes-1 || charClassOf(text.Get(index_+1)) <= charDelimiter
+				}
+			}
+		}
+		if ok {
 			pidx++
 			if pidx == lenPattern {
 				if bonus > bestBonus {
@@ -861,7 +881,23 @@ func ExactMatchNaive(caseSensitive bool, normalize bool, forward bool, text *uti
 			sidx = lenRunes - (bestPos + 1)
 			eidx = lenRunes - (bestPos - lenPattern + 1)
 		}
-		score, _ := calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false)
+		var score int
+		if boundaryCheck {
+			// Underscore boundaries should be ranked lower than the other types of boundaries
+			score = int(bonus)
+			deduct := int(bonus-bonusBoundary) + 1
+			if sidx > 0 && text.Get(sidx-1) == '_' {
+				score -= deduct + 1
+				deduct = 1
+			}
+			if eidx < lenRunes && text.Get(eidx) == '_' {
+				score -= deduct
+			}
+			// Add base score so that this can compete with other match types e.g. 'foo' | bar
+			score += scoreMatch*lenPattern + int(bonusBoundaryWhite)*(lenPattern+1)
+		} else {
+			score, _ = calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false)
+		}
 		return Result{sidx, eidx, score}, nil
 	}
 	return Result{-1, -1, 0}, nil
