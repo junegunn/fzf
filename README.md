@@ -28,14 +28,13 @@ history, processes, hostnames, bookmarks, git commits, etc. It implements
 a "fuzzy" matching algorithm, so you can quickly type in patterns with omitted
 characters and still get the results you want.
 
-Pros
-----
+Highlights
+----------
 
-- Portable, no dependencies
-- Blazingly fast
-- Extremely versatile
-- Batteries included
-    - bash/zsh/fish integration, tmux integration, Vim/Neovim plugin
+- 📦 **Portable** — Distributed as a single binary for easy installation
+- ⚡ **Blazingly fast** — Highly optimized code instantly processes millions of items
+- 🛠️ **Extremely versatile** — Fully customizable via an event-action binding mechanism
+- 🔋 **Batteries included** — Includes integration with bash, zsh, fish, Vim, and Neovim
 
 Sponsors ❤️
 -----------
