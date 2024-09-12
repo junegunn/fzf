@@ -398,6 +398,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 			if altShift {
 				return Event{AltShiftUp, 0, nil}
 			}
+			if ctrl {
+				return Event{CtrlUp, 0, nil}
+			}
 			if shift {
 				return Event{ShiftUp, 0, nil}
 			}
@@ -408,6 +411,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyDown:
 			if altShift {
 				return Event{AltShiftDown, 0, nil}
+			}
+			if ctrl {
+				return Event{CtrlDown, 0, nil}
 			}
 			if shift {
 				return Event{ShiftDown, 0, nil}
@@ -420,6 +426,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 			if altShift {
 				return Event{AltShiftLeft, 0, nil}
 			}
+			if ctrl {
+				return Event{CtrlLeft, 0, nil}
+			}
 			if shift {
 				return Event{ShiftLeft, 0, nil}
 			}
@@ -430,6 +439,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyRight:
 			if altShift {
 				return Event{AltShiftRight, 0, nil}
+			}
+			if ctrl {
+				return Event{CtrlRight, 0, nil}
 			}
 			if shift {
 				return Event{ShiftRight, 0, nil}
@@ -445,6 +457,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyHome:
 			if altShift {
 				return Event{AltShiftHome, 0, nil}
+			}
+			if ctrl {
+				return Event{CtrlHome, 0, nil}
 			}
 			if shift {
 				return Event{ShiftHome, 0, nil}
@@ -471,6 +486,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 			if altShift {
 				return Event{AltShiftEnd, 0, nil}
 			}
+			if ctrl {
+				return Event{CtrlEnd, 0, nil}
+			}
 			if shift {
 				return Event{ShiftEnd, 0, nil}
 			}
@@ -482,6 +500,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 			if altShift {
 				return Event{AltShiftPageUp, 0, nil}
 			}
+			if ctrl {
+				return Event{CtrlPageUp, 0, nil}
+			}
 			if shift {
 				return Event{ShiftPageUp, 0, nil}
 			}
@@ -492,6 +513,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyPgDn:
 			if altShift {
 				return Event{AltShiftPageDown, 0, nil}
+			}
+			if ctrl {
+				return Event{CtrlPageDown, 0, nil}
 			}
 			if shift {
 				return Event{ShiftPageDown, 0, nil}

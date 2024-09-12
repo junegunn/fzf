@@ -489,6 +489,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{AltPageUp, 0, nil}
 					case '4':
 						return Event{AltShiftPageUp, 0, nil}
+					case '5':
+						return Event{CtrlPageUp, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -508,6 +510,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{AltPageDown, 0, nil}
 					case '4':
 						return Event{AltShiftPageDown, 0, nil}
+					case '5':
+						return Event{CtrlPageDown, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -554,10 +558,12 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
 						// CTRL-SHIFT-ARROW  "\e[1;6D"             N/A
 						// CMD-SHIFT-ARROW   "\e[1;10D" N/A        N/A ("\e[1;2D")
+						ctrl := r.buffer[4] == '5' || r.buffer[4] == '6' || r.buffer[4] == '7' || r.buffer[4] == '8'
 						alt := r.buffer[4] == '3' || r.buffer[4] == '4' || r.buffer[4] == '7' || r.buffer[4] == '8'
 						shift := r.buffer[4] == '2' || r.buffer[4] == '4' || r.buffer[4] == '6' || r.buffer[4] == '8'
 						char := r.buffer[5]
 						if r.buffer[4] == '1' && r.buffer[5] == '0' {
+							ctrl = false
 							shift = true
 							alt = true // treat META as ALT here
 							if len(r.buffer) < 7 {
@@ -572,6 +578,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if altShift {
 								return Event{AltShiftUp, 0, nil}
 							}
+							if ctrl {
+								return Event{CtrlUp, 0, nil}
+							}
 							if alt {
 								return Event{AltUp, 0, nil}
 							}
@@ -581,6 +590,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						case 'B':
 							if altShift {
 								return Event{AltShiftDown, 0, nil}
+							}
+							if ctrl {
+								return Event{CtrlDown, 0, nil}
 							}
 							if alt {
 								return Event{AltDown, 0, nil}
@@ -592,6 +604,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if altShift {
 								return Event{AltShiftRight, 0, nil}
 							}
+							if ctrl {
+								return Event{CtrlRight, 0, nil}
+							}
 							if shift {
 								return Event{ShiftRight, 0, nil}
 							}
@@ -601,6 +616,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						case 'D':
 							if altShift {
 								return Event{AltShiftLeft, 0, nil}
+							}
+							if ctrl {
+								return Event{CtrlLeft, 0, nil}
 							}
 							if alt {
 								return Event{AltLeft, 0, nil}
@@ -612,6 +630,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if altShift {
 								return Event{AltShiftHome, 0, nil}
 							}
+							if ctrl {
+								return Event{CtrlHome, 0, nil}
+							}
 							if alt {
 								return Event{AltHome, 0, nil}
 							}
@@ -621,6 +642,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						case 'F':
 							if altShift {
 								return Event{AltShiftEnd, 0, nil}
+							}
+							if ctrl {
+								return Event{CtrlEnd, 0, nil}
 							}
 							if alt {
 								return Event{AltEnd, 0, nil}

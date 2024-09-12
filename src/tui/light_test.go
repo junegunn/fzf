@@ -195,7 +195,15 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[5;4~", "alt-shift-page-up")
 	assertEscSequence("\x1b[6;4~", "alt-shift-page-down")
 
+	assertEscSequence("\x1b[1;5A", "ctrl-up")
+	assertEscSequence("\x1b[1;5B", "ctrl-down")
+	assertEscSequence("\x1b[1;5C", "ctrl-right")
+	assertEscSequence("\x1b[1;5D", "ctrl-left")
+	assertEscSequence("\x1b[1;5H", "ctrl-home")
+	assertEscSequence("\x1b[1;5F", "ctrl-end")
 	assertEscSequence("\x1b[3;5~", "ctrl-delete")
+	assertEscSequence("\x1b[5;5~", "ctrl-page-up")
+	assertEscSequence("\x1b[6;5~", "ctrl-page-down")
 
 	// mac
 	assertEscSequence("\x1b[1;10A", "alt-shift-up")

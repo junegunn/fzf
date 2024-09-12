@@ -807,8 +807,6 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.Backspace)
 		case "ctrl-space":
 			add(tui.CtrlSpace)
-		case "ctrl-delete":
-			add(tui.CtrlDelete)
 		case "ctrl-^", "ctrl-6":
 			add(tui.CtrlCaret)
 		case "ctrl-/", "ctrl-_":
@@ -901,6 +899,24 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.AltShiftPageUp)
 		case "alt-shift-page-down", "shift-alt-page-down":
 			add(tui.AltShiftPageDown)
+		case "ctrl-up":
+			add(tui.CtrlUp)
+		case "ctrl-down":
+			add(tui.CtrlDown)
+		case "ctrl-right":
+			add(tui.CtrlRight)
+		case "ctrl-left":
+			add(tui.CtrlLeft)
+		case "ctrl-home":
+			add(tui.CtrlHome)
+		case "ctrl-end":
+			add(tui.CtrlEnd)
+		case "ctrl-delete":
+			add(tui.CtrlDelete)
+		case "ctrl-page-up":
+			add(tui.CtrlPageUp)
+		case "ctrl-page-down":
+			add(tui.CtrlPageDown)
 		case "shift-up":
 			add(tui.ShiftUp)
 		case "shift-down":

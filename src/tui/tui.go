@@ -44,7 +44,6 @@ const (
 	CtrlZ
 	Esc
 	CtrlSpace
-	CtrlDelete
 
 	// https://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control-slash-to-the-terminal
 	CtrlBackSlash
@@ -111,6 +110,17 @@ const (
 	AltShiftEnd
 	AltShiftPageUp
 	AltShiftPageDown
+
+	CtrlUp
+	CtrlDown
+	CtrlLeft
+	CtrlRight
+	CtrlHome
+	CtrlEnd
+	CtrlBackspace
+	CtrlDelete
+	CtrlPageUp
+	CtrlPageDown
 
 	Alt
 	CtrlAlt
