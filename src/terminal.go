@@ -247,6 +247,8 @@ type Terminal struct {
 	scrollOff          int
 	wordRubout         string
 	wordNext           string
+	subWordRubout      string
+	subWordNext        string
 	cx                 int
 	cy                 int
 	offset             int
@@ -416,6 +418,7 @@ const (
 	actBackwardDeleteChar
 	actBackwardDeleteCharEof
 	actBackwardWord
+	actBackwardSubWord
 	actCancel
 	actChangeBorderLabel
 	actChangeHeader
@@ -433,12 +436,15 @@ const (
 	actFatal
 	actForwardChar
 	actForwardWord
+	actForwardSubWord
 	actKillLine
 	actKillWord
+	actKillSubWord
 	actUnixLineDiscard
 	actUnixWordRubout
 	actYank
 	actBackwardKillWord
+	actBackwardKillSubWord
 	actSelectAll
 	actDeselectAll
 	actToggle
@@ -755,6 +761,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	}
 	wordRubout := "[^\\pL\\pN][\\pL\\pN]"
 	wordNext := "[\\pL\\pN][^\\pL\\pN]|(.$)"
+	subWordRubout := "[a-z][A-Z]|[^\\pL\\pN][\\pL\\pN]"
+	subWordNext := "[a-z][A-Z]|[\\pL\\pN][^\\pL\\pN]|(.$)"
 	if opts.FileWord {
 		sep := regexp.QuoteMeta(string(os.PathSeparator))
 		wordRubout = fmt.Sprintf("%s[^%s]", sep, sep)
@@ -787,6 +795,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		markerMultiLine:    *opts.MarkerMulti,
 		wordRubout:         wordRubout,
 		wordNext:           wordNext,
+		subWordRubout:      subWordRubout,
+		subWordNext:        subWordNext,
 		cx:                 len(input),
 		cy:                 0,
 		offset:             0,
@@ -4383,6 +4393,11 @@ func (t *Terminal) Loop() error {
 				if t.cx > 0 {
 					t.rubout(t.wordRubout)
 				}
+			case actBackwardKillSubWord:
+				beof = len(t.input) == 0
+				if t.cx > 0 {
+					t.rubout(t.subWordRubout)
+				}
 			case actYank:
 				suffix := copySlice(t.input[t.cx:])
 				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
@@ -4433,9 +4448,20 @@ func (t *Terminal) Loop() error {
 				t.cx = findLastMatch(t.wordRubout, string(t.input[:t.cx])) + 1
 			case actForwardWord:
 				t.cx += findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
+			case actBackwardSubWord:
+				t.cx = findLastMatch(t.subWordRubout, string(t.input[:t.cx])) + 1
+			case actForwardSubWord:
+				t.cx += findFirstMatch(t.subWordNext, string(t.input[t.cx:])) + 1
 			case actKillWord:
 				ncx := t.cx +
 					findFirstMatch(t.wordNext, string(t.input[t.cx:])) + 1
+				if ncx > t.cx {
+					t.yanked = copySlice(t.input[t.cx:ncx])
+					t.input = append(t.input[:t.cx], t.input[ncx:]...)
+				}
+			case actKillSubWord:
+				ncx := t.cx +
+					findFirstMatch(t.subWordNext, string(t.input[t.cx:])) + 1
 				if ncx > t.cx {
 					t.yanked = copySlice(t.input[t.cx:ncx])
 					t.input = append(t.input[:t.cx], t.input[ncx:]...)
