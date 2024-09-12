@@ -855,6 +855,16 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.AltLeft)
 		case "alt-right":
 			add(tui.AltRight)
+		case "alt-home":
+			add(tui.AltHome)
+		case "alt-end":
+			add(tui.AltEnd)
+		case "alt-delete":
+			add(tui.AltDelete)
+		case "alt-page-up":
+			add(tui.AltPageUp)
+		case "alt-page-down":
+			add(tui.AltPageDown)
 		case "tab":
 			add(tui.Tab)
 		case "btab", "shift-tab":
@@ -881,6 +891,16 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.AltShiftLeft)
 		case "alt-shift-right", "shift-alt-right":
 			add(tui.AltShiftRight)
+		case "alt-shift-home", "shift-alt-home":
+			add(tui.AltShiftHome)
+		case "alt-shift-end", "shift-alt-end":
+			add(tui.AltShiftEnd)
+		case "alt-shift-delete", "shift-alt-delete":
+			add(tui.AltShiftDelete)
+		case "alt-shift-page-up", "shift-alt-page-up":
+			add(tui.AltShiftPageUp)
+		case "alt-shift-page-down", "shift-alt-page-down":
+			add(tui.AltShiftPageDown)
 		case "shift-up":
 			add(tui.ShiftUp)
 		case "shift-down":
@@ -889,8 +909,16 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.ShiftLeft)
 		case "shift-right":
 			add(tui.ShiftRight)
+		case "shift-home":
+			add(tui.ShiftHome)
+		case "shift-end":
+			add(tui.ShiftEnd)
 		case "shift-delete":
 			add(tui.ShiftDelete)
+		case "shift-page-up":
+			add(tui.ShiftPageUp)
+		case "shift-page-down":
+			add(tui.ShiftPageDown)
 		case "left-click":
 			add(tui.LeftClick)
 		case "right-click":

@@ -443,20 +443,62 @@ func (r *FullscreenRenderer) GetChar() Event {
 		case tcell.KeyInsert:
 			return Event{Insert, 0, nil}
 		case tcell.KeyHome:
+			if altShift {
+				return Event{AltShiftHome, 0, nil}
+			}
+			if shift {
+				return Event{ShiftHome, 0, nil}
+			}
+			if alt {
+				return Event{AltHome, 0, nil}
+			}
 			return Event{Home, 0, nil}
 		case tcell.KeyDelete:
+			if altShift {
+				return Event{AltShiftDelete, 0, nil}
+			}
 			if ctrl {
 				return Event{CtrlDelete, 0, nil}
+			}
+			if alt {
+				return Event{AltDelete, 0, nil}
 			}
 			if shift {
 				return Event{ShiftDelete, 0, nil}
 			}
 			return Event{Delete, 0, nil}
 		case tcell.KeyEnd:
+			if altShift {
+				return Event{AltShiftEnd, 0, nil}
+			}
+			if shift {
+				return Event{ShiftEnd, 0, nil}
+			}
+			if alt {
+				return Event{AltEnd, 0, nil}
+			}
 			return Event{End, 0, nil}
 		case tcell.KeyPgUp:
+			if altShift {
+				return Event{AltShiftPageUp, 0, nil}
+			}
+			if shift {
+				return Event{ShiftPageUp, 0, nil}
+			}
+			if alt {
+				return Event{AltPageUp, 0, nil}
+			}
 			return Event{PageUp, 0, nil}
 		case tcell.KeyPgDn:
+			if altShift {
+				return Event{AltShiftPageDown, 0, nil}
+			}
+			if shift {
+				return Event{ShiftPageDown, 0, nil}
+			}
+			if alt {
+				return Event{AltPageDown, 0, nil}
+			}
 			return Event{PageDown, 0, nil}
 		case tcell.KeyBacktab:
 			return Event{ShiftTab, 0, nil}

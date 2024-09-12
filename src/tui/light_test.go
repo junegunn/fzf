@@ -53,6 +53,8 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;3", "!Invalid")
 	assertEscSequence("\x1b[1;10", "!Invalid")
 	assertEscSequence("\x1b[220~", "!Invalid")
+	assertEscSequence("\x1b[5;30~", "!Invalid")
+	assertEscSequence("\x1b[6;30~", "!Invalid")
 
 	// general
 	for r := 'a'; r < 'z'; r++ {
@@ -161,7 +163,11 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;2B", "shift-down")
 	assertEscSequence("\x1b[1;2C", "shift-right")
 	assertEscSequence("\x1b[1;2D", "shift-left")
+	assertEscSequence("\x1b[1;2H", "shift-home")
+	assertEscSequence("\x1b[1;2F", "shift-end")
 	assertEscSequence("\x1b[3;2~", "shift-delete")
+	assertEscSequence("\x1b[5;2~", "shift-page-up")
+	assertEscSequence("\x1b[6;2~", "shift-page-down")
 
 	assertEscSequence("\x1b\x1b", "esc")
 	assertEscSequence("\x1b\x1b[A", "alt-up")
@@ -173,11 +179,21 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;3B", "alt-down")
 	assertEscSequence("\x1b[1;3C", "alt-right")
 	assertEscSequence("\x1b[1;3D", "alt-left")
+	assertEscSequence("\x1b[1;3H", "alt-home")
+	assertEscSequence("\x1b[1;3F", "alt-end")
+	assertEscSequence("\x1b[3;3~", "alt-delete")
+	assertEscSequence("\x1b[5;3~", "alt-page-up")
+	assertEscSequence("\x1b[6;3~", "alt-page-down")
 
 	assertEscSequence("\x1b[1;4A", "alt-shift-up")
 	assertEscSequence("\x1b[1;4B", "alt-shift-down")
 	assertEscSequence("\x1b[1;4C", "alt-shift-right")
 	assertEscSequence("\x1b[1;4D", "alt-shift-left")
+	assertEscSequence("\x1b[1;4H", "alt-shift-home")
+	assertEscSequence("\x1b[1;4F", "alt-shift-end")
+	assertEscSequence("\x1b[3;4~", "alt-shift-delete")
+	assertEscSequence("\x1b[5;4~", "alt-shift-page-up")
+	assertEscSequence("\x1b[6;4~", "alt-shift-page-down")
 
 	assertEscSequence("\x1b[3;5~", "ctrl-delete")
 
@@ -186,6 +202,11 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;10B", "alt-shift-down")
 	assertEscSequence("\x1b[1;10C", "alt-shift-right")
 	assertEscSequence("\x1b[1;10D", "alt-shift-left")
+	assertEscSequence("\x1b[1;10H", "alt-shift-home")
+	assertEscSequence("\x1b[1;10F", "alt-shift-end")
+	assertEscSequence("\x1b[3;10~", "alt-shift-delete")
+	assertEscSequence("\x1b[5;10~", "alt-shift-page-up")
+	assertEscSequence("\x1b[6;10~", "alt-shift-page-down")
 
 	// tmux & emacs
 	assertEscSequence("\x1bOA", "up")

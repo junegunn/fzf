@@ -72,6 +72,10 @@ const (
 	ShiftLeft
 	ShiftRight
 	ShiftDelete
+	ShiftHome
+	ShiftEnd
+	ShiftPageUp
+	ShiftPageDown
 
 	F1
 	F2
@@ -92,11 +96,21 @@ const (
 	AltDown
 	AltLeft
 	AltRight
+	AltDelete
+	AltHome
+	AltEnd
+	AltPageUp
+	AltPageDown
 
 	AltShiftUp
 	AltShiftDown
 	AltShiftLeft
 	AltShiftRight
+	AltShiftDelete
+	AltShiftHome
+	AltShiftEnd
+	AltShiftPageUp
+	AltShiftPageDown
 
 	Alt
 	CtrlAlt

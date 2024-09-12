@@ -454,22 +454,63 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				if r.buffer[3] == '~' {
 					return Event{Delete, 0, nil}
 				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
+					return Event{AltShiftDelete, 0, nil}
+				}
 				if len(r.buffer) == 6 && r.buffer[5] == '~' {
 					*sz = 6
 					switch r.buffer[4] {
-					case '5':
-						return Event{CtrlDelete, 0, nil}
 					case '2':
 						return Event{ShiftDelete, 0, nil}
+					case '3':
+						return Event{AltDelete, 0, nil}
+					case '4':
+						return Event{AltShiftDelete, 0, nil}
+					case '5':
+						return Event{CtrlDelete, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
 			case '4':
 				return Event{End, 0, nil}
 			case '5':
-				return Event{PageUp, 0, nil}
+				if r.buffer[3] == '~' {
+					return Event{PageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
+					return Event{AltShiftPageUp, 0, nil}
+				}
+				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+					*sz = 6
+					switch r.buffer[4] {
+					case '2':
+						return Event{ShiftPageUp, 0, nil}
+					case '3':
+						return Event{AltPageUp, 0, nil}
+					case '4':
+						return Event{AltShiftPageUp, 0, nil}
+					}
+				}
+				return Event{Invalid, 0, nil}
 			case '6':
-				return Event{PageDown, 0, nil}
+				if r.buffer[3] == '~' {
+					return Event{PageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
+					return Event{AltShiftPageDown, 0, nil}
+				}
+				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+					*sz = 6
+					switch r.buffer[4] {
+					case '2':
+						return Event{ShiftPageDown, 0, nil}
+					case '3':
+						return Event{AltPageDown, 0, nil}
+					case '4':
+						return Event{AltShiftPageDown, 0, nil}
+					}
+				}
+				return Event{Invalid, 0, nil}
 			case '7':
 				return Event{Home, 0, nil}
 			case '8':
@@ -507,63 +548,86 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case '1', '2', '3', '4', '5':
+					case '1', '2', '3', '4', '5', '6', '7', '8':
 						//                   Kitty      iTerm2     WezTerm
 						// SHIFT-ARROW       "\e[1;2D"
 						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
 						// CTRL-SHIFT-ARROW  "\e[1;6D"             N/A
 						// CMD-SHIFT-ARROW   "\e[1;10D" N/A        N/A ("\e[1;2D")
-						alt := r.buffer[4] == '3'
+						alt := r.buffer[4] == '3' || r.buffer[4] == '4' || r.buffer[4] == '7' || r.buffer[4] == '8'
+						shift := r.buffer[4] == '2' || r.buffer[4] == '4' || r.buffer[4] == '6' || r.buffer[4] == '8'
 						char := r.buffer[5]
-						altShift := false
 						if r.buffer[4] == '1' && r.buffer[5] == '0' {
-							altShift = true
+							shift = true
+							alt = true // treat META as ALT here
 							if len(r.buffer) < 7 {
 								return Event{Invalid, 0, nil}
 							}
 							*sz = 7
 							char = r.buffer[6]
-						} else if r.buffer[4] == '4' {
-							altShift = true
-							if len(r.buffer) < 6 {
-								return Event{Invalid, 0, nil}
-							}
-							*sz = 6
-							char = r.buffer[5]
 						}
+						altShift := alt && shift
 						switch char {
 						case 'A':
-							if alt {
-								return Event{AltUp, 0, nil}
-							}
 							if altShift {
 								return Event{AltShiftUp, 0, nil}
 							}
-							return Event{ShiftUp, 0, nil}
-						case 'B':
 							if alt {
-								return Event{AltDown, 0, nil}
+								return Event{AltUp, 0, nil}
 							}
+							if shift {
+								return Event{ShiftUp, 0, nil}
+							}
+						case 'B':
 							if altShift {
 								return Event{AltShiftDown, 0, nil}
 							}
-							return Event{ShiftDown, 0, nil}
-						case 'C':
 							if alt {
-								return Event{AltRight, 0, nil}
+								return Event{AltDown, 0, nil}
 							}
+							if shift {
+								return Event{ShiftDown, 0, nil}
+							}
+						case 'C':
 							if altShift {
 								return Event{AltShiftRight, 0, nil}
 							}
-							return Event{ShiftRight, 0, nil}
-						case 'D':
-							if alt {
-								return Event{AltLeft, 0, nil}
+							if shift {
+								return Event{ShiftRight, 0, nil}
 							}
+							if alt {
+								return Event{AltRight, 0, nil}
+							}
+						case 'D':
 							if altShift {
 								return Event{AltShiftLeft, 0, nil}
 							}
-							return Event{ShiftLeft, 0, nil}
+							if alt {
+								return Event{AltLeft, 0, nil}
+							}
+							if shift {
+								return Event{ShiftLeft, 0, nil}
+							}
+						case 'H':
+							if altShift {
+								return Event{AltShiftHome, 0, nil}
+							}
+							if alt {
+								return Event{AltHome, 0, nil}
+							}
+							if shift {
+								return Event{ShiftHome, 0, nil}
+							}
+						case 'F':
+							if altShift {
+								return Event{AltShiftEnd, 0, nil}
+							}
+							if alt {
+								return Event{AltEnd, 0, nil}
+							}
+							if shift {
+								return Event{ShiftEnd, 0, nil}
+							}
 						}
 					} // r.buffer[4]
 				} // r.buffer[3]
