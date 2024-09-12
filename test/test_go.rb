@@ -3378,6 +3378,15 @@ class TestGoFZF < TestBase
       assert_equal expected, result
     end
   end
+
+  def test_preview_window_noinfo
+    # │ 1        ││
+    tmux.send_keys %(#{FZF} --preview 'seq 1000' --preview-window top,noinfo --scrollbar), :Enter
+    tmux.until do |lines|
+      assert lines[1]&.start_with?('│ 1')
+      assert lines[1]&.end_with?('  ││')
+    end
+  end
 end
 
 module TestShell
