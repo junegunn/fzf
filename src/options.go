@@ -845,6 +845,10 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			chords[tui.AltKey(' ')] = key
 		case "alt-bs", "alt-bspace", "alt-backspace":
 			add(tui.AltBackspace)
+		case "ctrl-bs", "ctrl-bspace", "ctrl-backspace":
+			add(tui.CtrlBackspace)
+		case "ctrl-alt-bs", "ctrl-alt-bspace", "ctrl-alt-backspace":
+			add(tui.CtrlAltBackspace)
 		case "alt-up":
 			add(tui.AltUp)
 		case "alt-down":
@@ -917,6 +921,60 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.CtrlPageUp)
 		case "ctrl-page-down":
 			add(tui.CtrlPageDown)
+		case "ctrl-alt-up", "alt-ctrl-up":
+			add(tui.CtrlAltUp)
+		case "ctrl-alt-down", "alt-ctrl-down":
+			add(tui.CtrlAltDown)
+		case "ctrl-alt-right", "alt-ctrl-right":
+			add(tui.CtrlAltRight)
+		case "ctrl-alt-left", "alt-ctrl-left":
+			add(tui.CtrlAltLeft)
+		case "ctrl-alt-home", "alt-ctrl-home":
+			add(tui.CtrlAltHome)
+		case "ctrl-alt-end", "alt-ctrl-end":
+			add(tui.CtrlAltEnd)
+		case "ctrl-alt-delete", "alt-ctrl-delete":
+			add(tui.CtrlAltDelete)
+		case "ctrl-alt-page-up", "alt-ctrl-page-up":
+			add(tui.CtrlAltPageUp)
+		case "ctrl-alt-page-down", "alt-ctrl-page-down":
+			add(tui.CtrlAltPageDown)
+		case "ctrl-shift-up", "shift-ctrl-up":
+			add(tui.CtrlShiftUp)
+		case "ctrl-shift-down", "shift-ctrl-down":
+			add(tui.CtrlShiftDown)
+		case "ctrl-shift-right", "shift-ctrl-right":
+			add(tui.CtrlShiftRight)
+		case "ctrl-shift-left", "shift-ctrl-left":
+			add(tui.CtrlShiftLeft)
+		case "ctrl-shift-home", "shift-ctrl-home":
+			add(tui.CtrlShiftHome)
+		case "ctrl-shift-end", "shift-ctrl-end":
+			add(tui.CtrlShiftEnd)
+		case "ctrl-shift-delete", "shift-ctrl-delete":
+			add(tui.CtrlShiftDelete)
+		case "ctrl-shift-page-up", "shift-ctrl-page-up":
+			add(tui.CtrlShiftPageUp)
+		case "ctrl-shift-page-down", "shift-ctrl-page-down":
+			add(tui.CtrlShiftPageDown)
+		case "ctrl-alt-shift-up":
+			add(tui.CtrlAltShiftUp)
+		case "ctrl-alt-shift-down":
+			add(tui.CtrlAltShiftDown)
+		case "ctrl-alt-shift-right":
+			add(tui.CtrlAltShiftRight)
+		case "ctrl-alt-shift-left":
+			add(tui.CtrlAltShiftLeft)
+		case "ctrl-alt-shift-home":
+			add(tui.CtrlAltShiftHome)
+		case "ctrl-alt-shift-end":
+			add(tui.CtrlAltShiftEnd)
+		case "ctrl-alt-shift-delete":
+			add(tui.CtrlAltShiftDelete)
+		case "ctrl-alt-shift-page-up":
+			add(tui.CtrlAltShiftPageUp)
+		case "ctrl-alt-shift-page-down":
+			add(tui.CtrlAltShiftPageDown)
 		case "shift-up":
 			add(tui.ShiftUp)
 		case "shift-down":

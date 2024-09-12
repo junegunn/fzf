@@ -125,6 +125,37 @@ const (
 	Alt
 	CtrlAlt
 
+	CtrlAltUp
+	CtrlAltDown
+	CtrlAltLeft
+	CtrlAltRight
+	CtrlAltHome
+	CtrlAltEnd
+	CtrlAltBackspace
+	CtrlAltDelete
+	CtrlAltPageUp
+	CtrlAltPageDown
+
+	CtrlShiftUp
+	CtrlShiftDown
+	CtrlShiftLeft
+	CtrlShiftRight
+	CtrlShiftHome
+	CtrlShiftEnd
+	CtrlShiftDelete
+	CtrlShiftPageUp
+	CtrlShiftPageDown
+
+	CtrlAltShiftUp
+	CtrlAltShiftDown
+	CtrlAltShiftLeft
+	CtrlAltShiftRight
+	CtrlAltShiftHome
+	CtrlAltShiftEnd
+	CtrlAltShiftDelete
+	CtrlAltShiftPageUp
+	CtrlAltShiftPageDown
+
 	Invalid
 	Fatal
 

@@ -468,6 +468,12 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{AltShiftDelete, 0, nil}
 					case '5':
 						return Event{CtrlDelete, 0, nil}
+					case '6':
+						return Event{CtrlShiftDelete, 0, nil}
+					case '7':
+						return Event{CtrlAltDelete, 0, nil}
+					case '8':
+						return Event{CtrlAltShiftDelete, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -491,6 +497,12 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{AltShiftPageUp, 0, nil}
 					case '5':
 						return Event{CtrlPageUp, 0, nil}
+					case '6':
+						return Event{CtrlShiftPageUp, 0, nil}
+					case '7':
+						return Event{CtrlAltPageUp, 0, nil}
+					case '8':
+						return Event{CtrlAltShiftPageUp, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -512,6 +524,12 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{AltShiftPageDown, 0, nil}
 					case '5':
 						return Event{CtrlPageDown, 0, nil}
+					case '6':
+						return Event{CtrlShiftPageDown, 0, nil}
+					case '7':
+						return Event{CtrlAltPageDown, 0, nil}
+					case '8':
+						return Event{CtrlAltShiftPageDown, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -572,9 +590,21 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							*sz = 7
 							char = r.buffer[6]
 						}
+						ctrlShift := ctrl && shift
+						ctrlAlt := ctrl && alt
 						altShift := alt && shift
+						ctrlAltShift := ctrl && alt && shift
 						switch char {
 						case 'A':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftUp, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltUp, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftUp, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftUp, 0, nil}
 							}
@@ -588,6 +618,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{ShiftUp, 0, nil}
 							}
 						case 'B':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftDown, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltDown, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftDown, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftDown, 0, nil}
 							}
@@ -601,6 +640,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{ShiftDown, 0, nil}
 							}
 						case 'C':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftRight, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltRight, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftRight, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftRight, 0, nil}
 							}
@@ -614,6 +662,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{AltRight, 0, nil}
 							}
 						case 'D':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftLeft, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltLeft, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftLeft, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftLeft, 0, nil}
 							}
@@ -627,6 +684,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{ShiftLeft, 0, nil}
 							}
 						case 'H':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftHome, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltHome, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftHome, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftHome, 0, nil}
 							}
@@ -640,6 +706,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 								return Event{ShiftHome, 0, nil}
 							}
 						case 'F':
+							if ctrlAltShift {
+								return Event{CtrlAltShiftEnd, 0, nil}
+							}
+							if ctrlAlt {
+								return Event{CtrlAltEnd, 0, nil}
+							}
+							if ctrlShift {
+								return Event{CtrlShiftEnd, 0, nil}
+							}
 							if altShift {
 								return Event{AltShiftEnd, 0, nil}
 							}
