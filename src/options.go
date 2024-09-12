@@ -387,7 +387,7 @@ func (a previewOpts) sameLayout(b previewOpts) bool {
 }
 
 func (a previewOpts) sameContentLayout(b previewOpts) bool {
-	return a.wrap == b.wrap && a.headerLines == b.headerLines
+	return a.wrap == b.wrap && a.headerLines == b.headerLines && a.info == b.info
 }
 
 func firstLine(s string) string {

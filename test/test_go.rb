@@ -3381,10 +3381,15 @@ class TestGoFZF < TestBase
 
   def test_preview_window_noinfo
     # │ 1        ││
-    tmux.send_keys %(#{FZF} --preview 'seq 1000' --preview-window top,noinfo --scrollbar), :Enter
+    tmux.send_keys %(#{FZF} --preview 'seq 1000' --preview-window top,noinfo --scrollbar --bind space:change-preview-window:info), :Enter
     tmux.until do |lines|
       assert lines[1]&.start_with?('│ 1')
       assert lines[1]&.end_with?('  ││')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines[1]&.start_with?('│ 1')
+      assert lines[1]&.end_with?('1000││')
     end
   end
 end
