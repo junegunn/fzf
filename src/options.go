@@ -120,8 +120,8 @@ Usage: fzf [options]
     --preview=COMMAND       Command to preview highlighted line ({})
     --preview-window=OPT    Preview window layout (default: right:50%)
                             [up|down|left|right][,SIZE[%]]
-                            [,[no]wrap][,[no]cycle][,[no]follow][,[no]hidden]
-                            [,border-BORDER_OPT]
+                            [,[no]wrap][,[no]cycle][,[no]follow][,[no]info]
+                            [,[no]hidden][,border-BORDER_OPT]
                             [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                             [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
     --preview-label=LABEL
@@ -271,6 +271,7 @@ type previewOpts struct {
 	wrap        bool
 	cycle       bool
 	follow      bool
+	info        bool
 	border      tui.BorderShape
 	headerLines int
 	threshold   int
@@ -386,7 +387,7 @@ func (a previewOpts) sameLayout(b previewOpts) bool {
 }
 
 func (a previewOpts) sameContentLayout(b previewOpts) bool {
-	return a.wrap == b.wrap && a.headerLines == b.headerLines
+	return a.wrap == b.wrap && a.headerLines == b.headerLines && a.info == b.info
 }
 
 func firstLine(s string) string {
@@ -508,7 +509,7 @@ func filterNonEmpty(input []string) []string {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, tui.DefaultBorderShape, 0, 0, nil}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, true, tui.DefaultBorderShape, 0, 0, nil}
 }
 
 func defaultOptions() *Options {
@@ -1797,6 +1798,10 @@ func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 			opts.follow = true
 		case "nofollow":
 			opts.follow = false
+		case "info":
+			opts.info = true
+		case "noinfo":
+			opts.info = false
 		default:
 			if headerRegex.MatchString(token) {
 				if opts.headerLines, err = atoi(token[1:]); err != nil {
