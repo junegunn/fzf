@@ -2507,7 +2507,7 @@ func (t *Terminal) renderPreviewSpinner() {
 	spin := t.previewer.spinner
 	if len(spin) > 0 || t.previewer.scrollable {
 		maxWidth := t.pwindow.Width()
-		if !t.previewer.scrollable {
+		if !t.previewer.scrollable || !t.previewOpts.info {
 			if maxWidth > 0 {
 				t.pwindow.Move(0, maxWidth-1)
 				t.pwindow.CPrint(tui.ColPreviewSpinner, spin)
