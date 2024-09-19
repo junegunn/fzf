@@ -211,6 +211,8 @@ _fzf_opts_completion() {
       nowrap
       cycle
       nocycle
+      refresh
+      norefresh
       up top
       down bottom
       left

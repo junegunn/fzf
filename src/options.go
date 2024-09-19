@@ -120,8 +120,8 @@ Usage: fzf [options]
     --preview=COMMAND       Command to preview highlighted line ({})
     --preview-window=OPT    Preview window layout (default: right:50%)
                             [up|down|left|right][,SIZE[%]]
-                            [,[no]wrap][,[no]cycle][,[no]follow][,[no]info]
-                            [,[no]hidden][,border-BORDER_OPT]
+                            [,[no]wrap][,[no]cycle][,[no]follow][,[no]refresh]
+                            [,[no]info][,[no]hidden][,border-BORDER_OPT]
                             [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                             [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
     --preview-label=LABEL
@@ -271,6 +271,7 @@ type previewOpts struct {
 	wrap        bool
 	cycle       bool
 	follow      bool
+	refresh     bool
 	info        bool
 	border      tui.BorderShape
 	headerLines int
@@ -509,7 +510,7 @@ func filterNonEmpty(input []string) []string {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, true, tui.DefaultBorderShape, 0, 0, nil}
+	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, false, true, tui.DefaultBorderShape, 0, 0, nil}
 }
 
 func defaultOptions() *Options {
@@ -1790,6 +1791,10 @@ func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 			opts.follow = true
 		case "nofollow":
 			opts.follow = false
+		case "refresh":
+			opts.refresh = true
+		case "norefresh":
+			opts.refresh = false
 		case "info":
 			opts.info = true
 		case "noinfo":

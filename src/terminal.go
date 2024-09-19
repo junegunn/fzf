@@ -3781,7 +3781,7 @@ func (t *Terminal) Loop() error {
 						}
 						wasHidden := t.pwindow == nil
 						t.fullRedraw()
-						if wasHidden && t.hasPreviewWindow() {
+						if (wasHidden || t.previewOpts.refresh) && t.hasPreviewWindow() {
 							refreshPreview(t.previewOpts.command)
 						}
 						if req == reqResize && t.hasResizeActions {
