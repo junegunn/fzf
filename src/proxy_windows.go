@@ -13,12 +13,16 @@ import (
 
 var shPath atomic.Value
 
-func sh() (string, error) {
+func sh(bash bool) (string, error) {
 	if cached := shPath.Load(); cached != nil {
 		return cached.(string), nil
 	}
 
-	cmd := exec.Command("cygpath", "-w", "/usr/bin/sh")
+	name := "sh"
+	if bash {
+		name = "bash"
+	}
+	cmd := exec.Command("cygpath", "-w", "/usr/bin/"+name)
 	bytes, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -31,7 +35,7 @@ func sh() (string, error) {
 
 func mkfifo(path string, mode uint32) (string, error) {
 	m := strconv.FormatUint(uint64(mode), 8)
-	sh, err := sh()
+	sh, err := sh(false)
 	if err != nil {
 		return path, err
 	}
@@ -43,7 +47,7 @@ func mkfifo(path string, mode uint32) (string, error) {
 }
 
 func withOutputPipe(output string, task func(io.ReadCloser)) error {
-	sh, err := sh()
+	sh, err := sh(false)
 	if err != nil {
 		return err
 	}
@@ -62,7 +66,7 @@ func withOutputPipe(output string, task func(io.ReadCloser)) error {
 }
 
 func withInputPipe(input string, task func(io.WriteCloser)) error {
-	sh, err := sh()
+	sh, err := sh(false)
 	if err != nil {
 		return err
 	}

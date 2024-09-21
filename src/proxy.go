@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func fifo(name string) (string, error) {
 	return output, nil
 }
 
-func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts *Options, withExports bool) (int, error) {
+func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) (*exec.Cmd, error), opts *Options, withExports bool) (int, error) {
 	output, err := fifo("proxy-output")
 	if err != nil {
 		return ExitError, err
@@ -92,17 +93,28 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string) *exec.Cmd, opts
 	// To ensure that the options are processed by a POSIX-compliant shell,
 	// we need to write the command to a temporary file and execute it with sh.
 	var exports []string
+	needBash := false
 	if withExports {
-		exports = os.Environ()
-		for idx, pairStr := range exports {
+		validIdentifier := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+		for _, pairStr := range os.Environ() {
 			pair := strings.SplitN(pairStr, "=", 2)
-			exports[idx] = fmt.Sprintf("export %s=%s", pair[0], escapeSingleQuote(pair[1]))
+			if validIdentifier.MatchString(pair[0]) {
+				exports = append(exports, fmt.Sprintf("export %s=%s", pair[0], escapeSingleQuote(pair[1])))
+			} else if strings.HasPrefix(pair[0], "BASH_FUNC_") && strings.HasSuffix(pair[0], "%%") {
+				name := pair[0][10 : len(pair[0])-2]
+				exports = append(exports, name+pair[1])
+				exports = append(exports, "export -f "+name)
+				needBash = true
+			}
 		}
 	}
 	temp := WriteTemporaryFile(append(exports, command), "\n")
 	defer os.Remove(temp)
 
-	cmd := cmdBuilder(temp)
+	cmd, err := cmdBuilder(temp, needBash)
+	if err != nil {
+		return ExitError, err
+	}
 	cmd.Stderr = os.Stderr
 	intChan := make(chan os.Signal, 1)
 	defer close(intChan)

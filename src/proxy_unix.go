@@ -9,7 +9,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func sh() (string, error) {
+func sh(bash bool) (string, error) {
+	if bash {
+		return "bash", nil
+	}
 	return "sh", nil
 }
 
