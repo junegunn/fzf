@@ -264,6 +264,7 @@ _fzf_handle_dynamic_completion() {
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
       __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
+      __fzf_orig_completion_get_orig_func "$cmd" || ret=1
 
       # Update orig_complete by _fzf_orig_completion entry
       [[ $orig_complete =~ ' -F '(_fzf_[^ ]+)' ' ]] &&
