@@ -135,6 +135,7 @@ fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 | Spack           |                         | `spack install fzf`                |
 | XBPS            | Void Linux              | `sudo xbps-install -S fzf`         |
 | Zypper          | openSUSE                | `sudo zypper install fzf`          |
+| Flox            |                         | `flox install fzf`                 |
 
 > [!IMPORTANT]
 > To set up shell integration (key bindings and fuzzy completion),
