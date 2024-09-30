@@ -283,7 +283,7 @@ _fzf_handle_dynamic_completion() {
 }
 
 __fzf_generic_path_completion() {
-  local cur base dir leftover matches trigger cmd
+  local cur base dir leftover matches trigger cmd rest
   cmd="${COMP_WORDS[0]}"
   if [[ $cmd == \\* ]]; then
     cmd="${cmd:1}"
@@ -294,6 +294,16 @@ __fzf_generic_path_completion() {
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     base=${cur:0:${#cur}-${#trigger}}
     eval "base=$base" 2> /dev/null || return
+
+    # Try to leverage existing completion
+    rest=("${@:4}")
+    unset 'rest[${#rest[@]}-2]'
+    COMP_LINE=${COMP_LINE:0:${#COMP_LINE}-${#trigger}}
+    COMP_POINT=$((COMP_POINT-${#trigger}))
+    COMP_WORDS[$COMP_CWORD]=$base
+    _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
+    [[ $? -ne 0 ]] &&
+      _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
 
     dir=
     [[ $base = *"/"* ]] && dir="$base"
@@ -306,7 +316,11 @@ __fzf_generic_path_completion() {
         matches=$(
           export FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-} $2")
           unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
-          if declare -F "$1" > /dev/null; then
+          if [[ ${#COMPREPLY[@]} -gt 0 ]]; then
+            for h in "${COMPREPLY[@]}"; do
+              echo "$h"
+            done | command sort -u | __fzf_comprun "$4" -q "$leftover"
+          elif declare -F "$1" > /dev/null; then
             eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover"
           else
             if [[ $1 =~ dir ]]; then
@@ -374,7 +388,20 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
+    # Try to leverage existing completion
+    COMP_LINE=${COMP_LINE:0:${#COMP_LINE}-${#trigger}}
+    COMP_POINT=$((COMP_POINT-${#trigger}))
+    unset 'rest[${#rest[@]}-2]'
+    _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
+    [[ $? -ne 0 ]] &&
+      _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
+
     selected=$(
+      (if [[ ${#COMPREPLY[@]} -gt 0 ]]; then
+        for h in "${COMPREPLY[@]}"; do
+          echo "$h"
+        done
+      fi; cat) | command sort -u |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
       FZF_DEFAULT_OPTS_FILE='' \
         __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | command tr '\n' ' ')
