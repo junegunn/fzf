@@ -365,7 +365,7 @@ _fzf_complete() {
 
   local cur selected trigger cmd post
   post="$(caller 0 | command awk '{print $2}')_post"
-  type -t "$post" > /dev/null 2>&1 || post='command cat'
+  type -t "$post" > /dev/null 2>&1 || post="command cat"
 
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cmd="${COMP_WORDS[0]}"
@@ -376,7 +376,7 @@ _fzf_complete() {
     selected=$(
       FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
       FZF_DEFAULT_OPTS_FILE='' \
-        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | command tr '\n' ' ')
+        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | eval "$post" | command tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
