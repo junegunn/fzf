@@ -3394,7 +3394,7 @@ class TestGoFZF < TestBase
   end
 
   def test_gap
-    tmux.send_keys %[seq 100 | #{FZF} --gap --border --reverse], :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --gap --border --reverse), :Enter
     block = <<~BLOCK
       ╭─────────────────
       │ >
@@ -3411,7 +3411,7 @@ class TestGoFZF < TestBase
   end
 
   def test_gap_2
-    tmux.send_keys %[seq 100 | #{FZF} --gap=2 --border --reverse], :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --border --reverse), :Enter
     block = <<~BLOCK
       ╭─────────────────
       │ >
