@@ -55,6 +55,7 @@ Table of Contents
     * [Linux packages](#linux-packages)
     * [Windows packages](#windows-packages)
     * [Using git](#using-git)
+    * [Using x-cmd](#using-x-cmd)
     * [Binary releases](#binary-releases)
     * [Setting up shell integration](#setting-up-shell-integration)
     * [Vim/Neovim plugin](#vimneovim-plugin)
@@ -171,6 +172,14 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 The install script will add lines to your shell configuration file to modify
 `$PATH` and set up shell integration.
+
+### Using x-cmd
+
+[x-cmd](https://www.x-cmd.com/) is a **toolbox for Posix Shell**, offering a lightweight package manager built using shell and awk.
+
+```sh
+x env use fzf
+```
 
 ### Binary releases
 
