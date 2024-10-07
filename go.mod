@@ -6,7 +6,7 @@ require (
 	github.com/junegunn/go-shellwords v0.0.0-20240813092932-a62c48c52e97
 	github.com/mattn/go-isatty v0.0.20
 	github.com/rivo/uniseg v0.4.7
-	golang.org/x/sys v0.25.0
+	golang.org/x/sys v0.26.0
 	golang.org/x/term v0.24.0
 )
 
