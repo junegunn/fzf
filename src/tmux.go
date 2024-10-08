@@ -49,9 +49,12 @@ func runTmux(args []string, opts *Options) (int, error) {
 	tmuxArgs = append(tmuxArgs, "-w"+opts.Tmux.width.String())
 	tmuxArgs = append(tmuxArgs, "-h"+opts.Tmux.height.String())
 
-	return runProxy(argStr, func(temp string) *exec.Cmd {
-		sh, _ := sh()
+	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
+		sh, err := sh(needBash)
+		if err != nil {
+			return nil, err
+		}
 		tmuxArgs = append(tmuxArgs, sh, temp)
-		return exec.Command("tmux", tmuxArgs...)
+		return exec.Command("tmux", tmuxArgs...), nil
 	}, opts, true)
 }

@@ -56,6 +56,7 @@ Usage: fzf [options]
     --wrap                  Enable line wrap
     --wrap-sign=STR         Indicator for wrapped lines
     --no-multi-line         Disable multi-line display of items when using --read0
+    --gap[=N]               Render empty lines between each item
     --keep-right            Keep the right end of the line visible on overflow
     --scroll-off=LINES      Number of screen lines to keep above or below when
                             scrolling to the top or to the bottom (default: 0)
@@ -473,6 +474,7 @@ type Options struct {
 	Header       []string
 	HeaderLines  int
 	HeaderFirst  bool
+	Gap          int
 	Ellipsis     *string
 	Scrollbar    *string
 	Margin       [4]sizeSpec
@@ -579,6 +581,7 @@ func defaultOptions() *Options {
 		Header:       make([]string, 0),
 		HeaderLines:  0,
 		HeaderFirst:  false,
+		Gap:          0,
 		Ellipsis:     nil,
 		Scrollbar:    nil,
 		Margin:       defaultMargin(),
@@ -2343,6 +2346,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.HeaderFirst = true
 		case "--no-header-first":
 			opts.HeaderFirst = false
+		case "--gap":
+			if opts.Gap, err = optionalNumeric(allArgs, &i, 1); err != nil {
+				return err
+			}
+		case "--no-gap":
+			opts.Gap = 0
 		case "--ellipsis":
 			str, err := nextString(allArgs, &i, "ellipsis string required")
 			if err != nil {
@@ -2628,6 +2637,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				opts.Header = strLines(value)
 			} else if match, value := optString(arg, "--header-lines="); match {
 				if opts.HeaderLines, err = atoi(value); err != nil {
+					return err
+				}
+			} else if match, value := optString(arg, "--gap="); match {
+				if opts.Gap, err = atoi(value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--ellipsis="); match {

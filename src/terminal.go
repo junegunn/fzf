@@ -245,6 +245,7 @@ type Terminal struct {
 	hscroll            bool
 	hscrollOff         int
 	scrollOff          int
+	gap                int
 	wordRubout         string
 	wordNext           string
 	cx                 int
@@ -825,6 +826,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		headerVisible:      true,
 		headerFirst:        opts.HeaderFirst,
 		headerLines:        opts.HeaderLines,
+		gap:                opts.Gap,
 		header:             []string{},
 		header0:            opts.Header,
 		ansi:               opts.Ansi,
@@ -1136,15 +1138,23 @@ func (t *Terminal) wrapCols() int {
 	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+1), 1)
 }
 
+// Number of lines the item takes including the gap
 func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
+	var numLines int
 	if !t.wrap && !t.multiLine {
-		return 1, false
+		numLines = 1 + t.gap
+		return numLines, numLines > atMost
 	}
+	var overflow bool
 	if !t.wrap && t.multiLine {
-		return item.text.NumLines(atMost)
+		numLines, overflow = item.text.NumLines(atMost)
+	} else {
+		var lines [][]rune
+		lines, overflow = item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
+		numLines = len(lines)
 	}
-	lines, overflow := item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
-	return len(lines), overflow
+	numLines += t.gap
+	return numLines, overflow || numLines > atMost
 }
 
 func (t *Terminal) itemLines(item *Item, atMost int) ([][]rune, bool) {
@@ -2050,6 +2060,21 @@ func (t *Terminal) printHeader() {
 	t.wrap = wrap
 }
 
+func (t *Terminal) canSpanMultiLines() bool {
+	return t.multiLine || t.wrap || t.gap > 0
+}
+
+func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
+	t.move(line, 0, true)
+	t.markEmptyLine(line)
+	// If the screen is not filled with the list in non-multi-line mode,
+	// scrollbar is not visible at all. But in multi-line mode, we may need
+	// to redraw the scrollbar character at the end.
+	if t.canSpanMultiLines() {
+		t.prevLines[line].hasBar = t.printBar(line, true, barRange)
+	}
+}
+
 func (t *Terminal) printList() {
 	t.constrain()
 	barLength, barStart := t.getScrollbar()
@@ -2070,14 +2095,7 @@ func (t *Terminal) printList() {
 			item := t.merger.Get(itemCount + t.offset)
 			line = t.printItem(item, line, maxy, itemCount, itemCount == t.cy-t.offset, barRange)
 		} else if !t.prevLines[line].empty {
-			t.move(line, 0, true)
-			t.markEmptyLine(line)
-			// If the screen is not filled with the list in non-multi-line mode,
-			// scrollbar is not visible at all. But in multi-line mode, we may need
-			// to redraw the scrollbar character at the end.
-			if t.multiLine || t.wrap {
-				t.prevLines[line].hasBar = t.printBar(line, true, barRange)
-			}
+			t.renderEmptyLine(line, barRange)
 		}
 	}
 }
@@ -2125,9 +2143,6 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		prevLine.queryLen == newLine.queryLen &&
 		prevLine.result == newLine.result {
 		t.prevLines[line].hasBar = printBar(line, false)
-		if !t.multiLine && !t.wrap {
-			return line
-		}
 		return line + numLines - 1
 	}
 
@@ -2214,6 +2229,10 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		}
 		finalLineNum = t.printHighlighted(result, base, match, false, true, line, maxLine, forceRedraw, preTask, postTask)
 	}
+	for i := 0; i < t.gap && finalLineNum < maxLine; i++ {
+		finalLineNum++
+		t.renderEmptyLine(finalLineNum, barRange)
+	}
 	return finalLineNum
 }
 
@@ -2275,7 +2294,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	allOffsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
 
 	maxLines := 1
-	if t.multiLine || t.wrap {
+	if t.canSpanMultiLines() {
 		maxLines = maxLineNum - lineNum + 1
 	}
 	lines, overflow := t.itemLines(item, maxLines)
@@ -2285,7 +2304,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	topCutoff := false
 	skipLines := 0
 	wrapped := false
-	if t.multiLine || t.wrap {
+	if t.canSpanMultiLines() {
 		// Cut off the upper lines in the 'default' layout
 		if t.layout == layoutDefault && !current && maxLines == numItemLines && overflow {
 			lines, _ = t.itemLines(item, math.MaxInt)
@@ -4875,7 +4894,7 @@ func (t *Terminal) constrain() {
 	for tries := 0; tries < maxLines; tries++ {
 		numItems := maxLines
 		// How many items can be fit on screen including the current item?
-		if (t.multiLine || t.wrap) && t.merger.Length() > 0 {
+		if t.canSpanMultiLines() && t.merger.Length() > 0 {
 			numItemsFound := 0
 			linesSum := 0
 
@@ -4930,12 +4949,12 @@ func (t *Terminal) constrain() {
 				for {
 					prevOffset := newOffset
 					numItems := t.merger.Length()
-					itemLines := 1
-					if (t.multiLine || t.wrap) && t.cy < numItems {
+					itemLines := 1 + t.gap
+					if t.canSpanMultiLines() && t.cy < numItems {
 						itemLines, _ = t.numItemLines(t.merger.Get(t.cy).item, maxLines)
 					}
 					linesBefore := t.cy - newOffset
-					if t.multiLine || t.wrap {
+					if t.canSpanMultiLines() {
 						linesBefore = 0
 						for i := newOffset; i < t.cy && i < numItems; i++ {
 							lines, _ := t.numItemLines(t.merger.Get(i).item, maxLines-linesBefore-itemLines)

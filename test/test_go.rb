@@ -3392,6 +3392,40 @@ class TestGoFZF < TestBase
       assert lines[1]&.end_with?('1000││')
     end
   end
+
+  def test_gap
+    tmux.send_keys %(seq 100 | #{FZF} --gap --border --reverse), :Enter
+    block = <<~BLOCK
+      ╭─────────────────
+      │ >
+      │   100/100 ──────
+      │ > 1
+      │
+      │   2
+      │
+      │   3
+      │
+      │   4
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
+
+  def test_gap_2
+    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --border --reverse), :Enter
+    block = <<~BLOCK
+      ╭─────────────────
+      │ >
+      │   100/100 ──────
+      │ > 1
+      │
+      │
+      │   2
+      │
+      │
+      │   3
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end
 
 module TestShell
