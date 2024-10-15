@@ -377,7 +377,7 @@ _fzf_complete() {
     selected=$(
       FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
       FZF_DEFAULT_OPTS_FILE='' \
-        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | command tr '\n' ' ')
+        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | eval "$post" | command tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
