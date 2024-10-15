@@ -102,7 +102,7 @@ func (m *Matcher) Loop() {
 		if !cacheCleared {
 			if count == prevCount {
 				// Look up mergerCache
-				if cached, found := m.mergerCache[patternString]; found {
+				if cached, found := m.mergerCache[patternString]; found && cached.final == request.final {
 					merger = cached
 				}
 			} else {
