@@ -15,6 +15,7 @@ CHANGELOG
       ```sh
       fzf --gap --color gutter:-1
       ```
+- Bug fixes
 
 0.55.0
 ------
