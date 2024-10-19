@@ -2721,11 +2721,15 @@ Loop:
 					url = nil
 					t.pwindow.LinkEnd()
 				}
+				if ansi != nil {
+					lbg = ansi.lbg
+				} else {
+					lbg = -1
+				}
 				str, width := t.processTabs(trimmed, prefixWidth)
 				if width > prefixWidth {
 					prefixWidth = width
 					if t.theme.Colored && ansi != nil && ansi.colored() {
-						lbg = ansi.lbg
 						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 					} else {
 						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
@@ -2747,7 +2751,7 @@ Loop:
 			if unchanged && lineNo == 0 {
 				break
 			}
-			if lbg >= 0 {
+			if t.theme.Colored && lbg >= 0 {
 				fillRet = t.pwindow.CFill(-1, lbg, tui.AttrRegular,
 					strings.Repeat(" ", t.pwindow.Width()-t.pwindow.X())+"\n")
 			} else {
