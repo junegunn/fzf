@@ -18,3 +18,5 @@ require (
 )
 
 go 1.20
+
+replace github.com/gdamore/tcell/v2 => github.com/masmu/tcell/v2 v2.0.0-20240930104616-573bc14c91fd
