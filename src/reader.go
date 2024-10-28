@@ -265,7 +265,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 			isDir := de.IsDir()
 			if isDir || opts.follow && isSymlinkToDir(path, de) {
 				base := filepath.Base(path)
-				if !opts.hidden && base[0] == '.' {
+				if !opts.hidden && base[0] == '.' && base != ".." {
 					return filepath.SkipDir
 				}
 				for _, ignore := range ignores {

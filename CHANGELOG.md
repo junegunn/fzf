@@ -13,9 +13,11 @@ CHANGELOG
       ```
     - Or just to make the list easier to read. For single-line items, you probably want to set `--color gutter:-1` as well to hide the gutter.
       ```sh
-      fzf --gap --color gutter:-1
+      fzf --info inline-right --gap --color gutter:-1
       ```
+- Added `noinfo` option to `--preview-window` to hide the scroll indicator in the preview window
 - Bug fixes
+    - Thanks to @LangLangBart, @akinomyoga, and @charlievieth for fixing the bugs
 
 0.55.0
 ------
