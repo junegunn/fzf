@@ -18,23 +18,27 @@ import (
 
 // Reader reads from command or standard input
 type Reader struct {
-	pusher   func([]byte) bool
-	executor *util.Executor
-	eventBox *util.EventBox
-	delimNil bool
-	event    int32
-	finChan  chan bool
-	mutex    sync.Mutex
-	exec     *exec.Cmd
-	execOut  io.ReadCloser
-	command  *string
-	killed   bool
-	wait     bool
+	pusher     func([]byte) bool
+	executor   *util.Executor
+	eventBox   *util.EventBox
+	delimNil   bool
+	event      int32
+	finChan    chan bool
+	mutex      *sync.Mutex
+	exec       *exec.Cmd
+	execOut    io.ReadCloser
+	command    *string
+	killed     bool
+	started    bool
+	startedCon *sync.Cond
+	wait       bool
 }
 
 // NewReader returns new Reader object
 func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util.Executor, delimNil bool, wait bool) *Reader {
-	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), sync.Mutex{}, nil, nil, nil, false, wait}
+	mutex := sync.Mutex{}
+	startedCon := sync.NewCond(&mutex)
+	return &Reader{pusher, executor, eventBox, delimNil, int32(EvtReady), make(chan bool, 1), &mutex, nil, nil, nil, false, false, startedCon, wait}
 }
 
 func (r *Reader) startEventPoller() {
@@ -79,6 +83,13 @@ func (r *Reader) fin(success bool) {
 
 func (r *Reader) terminate() {
 	r.mutex.Lock()
+	if !r.started {
+		r.startedCon.Wait()
+	}
+	if r.killed {
+		r.mutex.Unlock()
+		return
+	}
 	r.killed = true
 	if r.exec != nil && r.exec.Process != nil {
 		r.execOut.Close()
@@ -86,6 +97,20 @@ func (r *Reader) terminate() {
 	} else {
 		os.Stdin.Close()
 	}
+	r.mutex.Unlock()
+}
+
+func (r *Reader) signalReaderStarted() {
+	r.mutex.Lock()
+	r.started = true
+	r.startedCon.Broadcast()
+	r.mutex.Unlock()
+}
+
+func (r *Reader) reset() {
+	r.mutex.Lock()
+	r.killed = false
+	r.started = false
 	r.mutex.Unlock()
 }
 
@@ -98,6 +123,7 @@ func (r *Reader) restart(command commandSpec, environ []string) {
 }
 
 func (r *Reader) readChannel(inputChan chan string) bool {
+	r.signalReaderStarted()
 	for {
 		item, more := <-inputChan
 		if !more {
@@ -220,6 +246,7 @@ func (r *Reader) feed(src io.Reader) {
 }
 
 func (r *Reader) readFromStdin() bool {
+	r.signalReaderStarted()
 	r.feed(os.Stdin)
 	return true
 }
@@ -249,7 +276,7 @@ func trimPath(path string) string {
 }
 
 func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
-	r.killed = false
+	r.signalReaderStarted()
 	conf := fastwalk.Config{
 		Follow: opts.follow,
 		// Use forward slashes when running a Windows binary under WSL or MSYS
@@ -290,7 +317,8 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 
 func (r *Reader) readFromCommand(command string, environ []string) bool {
 	r.mutex.Lock()
-	r.killed = false
+	r.started = true
+	r.startedCon.Broadcast()
 	r.command = &command
 	r.exec = r.executor.ExecCommand(command, true)
 	if environ != nil {
