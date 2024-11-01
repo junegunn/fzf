@@ -66,7 +66,13 @@ __fzfcmd() {
 }
 
 fzf-file-widget() {
-  LBUFFER="${LBUFFER}$(__fzf_select)"
+  local last_word=""
+  # make sure we have a word to the left of the cursor
+  if [[ ${LBUFFER[-1]} != " " ]]; then
+    last_word="${${(Az)LBUFFER}[-1]}"
+  fi
+
+  LBUFFER="${LBUFFER}$(FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS-} --query=${(qqq)last_word}" __fzf_select)"
   local ret=$?
   zle reset-prompt
   return $ret
