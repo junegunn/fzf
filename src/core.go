@@ -299,7 +299,7 @@ func Run(opts *Options) (int, error) {
 		itemIndex = 0
 		inputRevision.bumpMajor()
 		header = make([]string, 0, opts.HeaderLines)
-		go reader.restart(command, environ)
+		reader.restart(command, environ)
 	}
 
 	exitCode := ExitOk

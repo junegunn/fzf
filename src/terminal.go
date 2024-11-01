@@ -4410,17 +4410,32 @@ func (t *Terminal) Loop() error {
 				suffix := copySlice(t.input[t.cx:])
 				t.input = append(append(t.input[:t.cx], t.yanked...), suffix...)
 				t.cx += len(t.yanked)
-			case actPageUp:
-				t.vmove(t.maxItems()-1, false)
-				req(reqList)
-			case actPageDown:
-				t.vmove(-(t.maxItems() - 1), false)
-				req(reqList)
-			case actHalfPageUp:
-				t.vmove(t.maxItems()/2, false)
-				req(reqList)
-			case actHalfPageDown:
-				t.vmove(-(t.maxItems() / 2), false)
+			case actPageUp, actPageDown, actHalfPageUp, actHalfPageDown:
+				maxItems := t.maxItems()
+				linesToMove := maxItems - 1
+				if a.t == actHalfPageUp || a.t == actHalfPageDown {
+					linesToMove = maxItems / 2
+				}
+
+				direction := -1
+				if a.t == actPageUp || a.t == actHalfPageUp {
+					direction = 1
+				}
+
+				for linesToMove > 0 {
+					currentItem := t.currentItem()
+					if currentItem == nil {
+						break
+					}
+
+					itemLines, _ := t.numItemLines(currentItem, maxItems)
+					linesToMove -= itemLines
+					cy := t.cy
+					t.vmove(direction, false)
+					if cy == t.cy {
+						break
+					}
+				}
 				req(reqList)
 			case actOffsetUp, actOffsetDown:
 				diff := 1
