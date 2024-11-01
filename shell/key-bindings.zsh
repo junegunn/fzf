@@ -114,11 +114,11 @@ fzf-history-widget() {
   if zmodload -F zsh/parameter p:{commands,history,options} 2>/dev/null && (( ${#commands[perl]} )); then
     # Import commands from other shells if SHARE_HISTORY is enabled, as the
     # 'history' array only updates after executing a non-empty command.
-    [[ "${options[sharehistory]}" == "on" ]] && fc -RI
-    selected="$(printf '%s\t%s\000' "${(kv)history[@]}" |
-      perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\t(.*)/s, $1)}++) { s/\n/\n\t/g; print; }' |
-      FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
-      FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
+    selected="$([[ "${options[sharehistory]}" == "on" ]] && fc -RI
+      printf '%s\t%s\000' "${(kv)history[@]}" |
+        perl -0 -ne 'if (!$seen{(/^\s*[0-9]+\**\t(.*)/s, $1)}++) { s/\n/\n\t/g; print; }' |
+        FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
+        FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   else
     selected="$(fc -rl 1 | awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m") \
