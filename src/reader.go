@@ -24,6 +24,7 @@ type Reader struct {
 	event    int32
 	finChan  chan bool
 	mutex    sync.Mutex
+	killed   bool
 	termFunc func()
 	command  *string
 	wait     bool
@@ -39,6 +40,7 @@ func NewReader(pusher func([]byte) bool, eventBox *util.EventBox, executor *util
 		int32(EvtReady),
 		make(chan bool, 1),
 		sync.Mutex{},
+		false,
 		func() { os.Stdin.Close() },
 		nil,
 		wait}
@@ -68,10 +70,6 @@ func (r *Reader) startEventPoller() {
 	}()
 }
 
-func (r *Reader) wasKilled() bool {
-	return r.termFunc == nil
-}
-
 func (r *Reader) fin(success bool) {
 	atomic.StoreInt32(&r.event, int32(EvtReadFin))
 	if r.wait {
@@ -80,7 +78,7 @@ func (r *Reader) fin(success bool) {
 
 	r.mutex.Lock()
 	ret := r.command
-	if success || r.wasKilled() {
+	if success || r.killed {
 		ret = nil
 	}
 	r.mutex.Unlock()
@@ -90,6 +88,7 @@ func (r *Reader) fin(success bool) {
 
 func (r *Reader) terminate() {
 	r.mutex.Lock()
+	r.killed = true
 	if r.termFunc != nil {
 		r.termFunc()
 		r.termFunc = nil
@@ -297,7 +296,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		}
 		r.mutex.Lock()
 		defer r.mutex.Unlock()
-		if r.wasKilled() {
+		if r.killed {
 			return context.Canceled
 		}
 		return nil
@@ -308,6 +307,7 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 func (r *Reader) readFromCommand(command string, environ []string, signalReady func()) bool {
 	r.mutex.Lock()
 
+	r.killed = false
 	r.termFunc = nil
 	r.command = &command
 	exec := r.executor.ExecCommand(command, true)
@@ -316,6 +316,7 @@ func (r *Reader) readFromCommand(command string, environ []string, signalReady f
 	}
 	execOut, err := exec.StdoutPipe()
 	if err != nil || exec.Start() != nil {
+		signalReady()
 		r.mutex.Unlock()
 		return false
 	}
