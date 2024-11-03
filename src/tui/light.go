@@ -1097,7 +1097,7 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 			}
 		}
 	}
-	if w.posx+1 >= w.Width() {
+	if w.posx >= w.Width() {
 		if w.posy+1 >= w.height {
 			return FillSuspend
 		}
