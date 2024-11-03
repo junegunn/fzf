@@ -172,7 +172,9 @@ func Run(opts *Options) (int, error) {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 
-		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
+		readyChan := make(chan bool)
+		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, readyChan)
+		<-readyChan
 	}
 
 	// Matcher
@@ -224,7 +226,7 @@ func Run(opts *Options) (int, error) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, nil)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
@@ -299,7 +301,9 @@ func Run(opts *Options) (int, error) {
 		itemIndex = 0
 		inputRevision.bumpMajor()
 		header = make([]string, 0, opts.HeaderLines)
-		reader.restart(command, environ)
+		readyChan := make(chan bool)
+		go reader.restart(command, environ, readyChan)
+		<-readyChan
 	}
 
 	exitCode := ExitOk
