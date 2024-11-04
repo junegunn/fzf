@@ -956,6 +956,12 @@ func (t *Terminal) environ() []string {
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
 	}
+	var global_pos string
+	if t.currentIndex() >= 0 {
+		global_pos = strconv.Itoa(int(t.currentIndex() + 1))
+	} else {
+		global_pos = ""
+	}
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_KEY="+t.lastKey)
@@ -968,6 +974,7 @@ func (t *Terminal) environ() []string {
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
+	env = append(env, fmt.Sprintf("FZF_GLOBAL_POS=%s", global_pos))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
 	return env
