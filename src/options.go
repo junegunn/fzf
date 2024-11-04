@@ -1726,7 +1726,7 @@ func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 	var err error
 	tokenRegex := regexp.MustCompile(`[:,]*(<([1-9][0-9]*)\(([^)<]+)\)|[^,:]+)`)
 	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
-	offsetRegex := regexp.MustCompile(`^(\+{-?[0-9]+})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
+	offsetRegex := regexp.MustCompile(`^(\+{(-?[0-9]+|n)})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
 	headerRegex := regexp.MustCompile("^~(0|[1-9][0-9]*)$")
 	tokens := tokenRegex.FindAllStringSubmatch(input, -1)
 	var alternative string
