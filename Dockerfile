@@ -8,5 +8,5 @@ RUN echo '. ~/.bashrc' >> ~/.bash_profile
 RUN rm -f /etc/bash.bashrc
 COPY . /fzf
 RUN cd /fzf && make install && ./install --all
-ENV LANG C.UTF-8
-CMD tmux new 'set -o pipefail; ruby /fzf/test/test_go.rb | tee out && touch ok' && cat out && [ -e ok ]
+ENV LANG=C.UTF-8
+CMD ["bash", "-ic", "tmux new 'set -o pipefail; ruby /fzf/test/test_go.rb | tee out && touch ok' && cat out && [ -e ok ]"]

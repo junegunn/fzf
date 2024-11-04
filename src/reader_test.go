@@ -23,8 +23,12 @@ func TestReadFromCommand(t *testing.T) {
 	}
 
 	// Normal command
-	reader.fin(reader.readFromCommand(`echo abc&&echo def`, nil))
-	if len(strs) != 2 || strs[0] != "abc" || strs[1] != "def" {
+	counter := 0
+	ready := func() {
+		counter++
+	}
+	reader.fin(reader.readFromCommand(`echo abc&&echo def`, nil, ready))
+	if len(strs) != 2 || strs[0] != "abc" || strs[1] != "def" || counter != 1 {
 		t.Errorf("%s", strs)
 	}
 
@@ -48,9 +52,9 @@ func TestReadFromCommand(t *testing.T) {
 	reader.startEventPoller()
 
 	// Failing command
-	reader.fin(reader.readFromCommand(`no-such-command`, nil))
+	reader.fin(reader.readFromCommand(`no-such-command`, nil, ready))
 	strs = []string{}
-	if len(strs) > 0 {
+	if len(strs) > 0 || counter != 2 {
 		t.Errorf("%s", strs)
 	}
 
