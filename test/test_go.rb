@@ -3292,6 +3292,17 @@ class TestGoFZF < TestBase
     tmux.until { |lines| assert(lines.any? { |line| line.include?('0 / 0') }) }
   end
 
+  def test_fzf_global_pos
+    tmux.send_keys "seq 100 | #{FZF} --query '9$' --preview 'echo Global:${FZF_GLOBAL_POS}:'", :Enter
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('Global:9:') }) }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('Global:19:') }) }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('Global:29:') }) }
+    tmux.send_keys :BSpace, :BSpace, "invalid"
+    tmux.until { |lines| assert(lines.any? { |line| line.include?('Global::') }) }
+  end
+
   def test_fzf_multi_line
     tmux.send_keys %[(echo -en '0\\0'; echo -en '1\\n2\\0'; seq 1000) | fzf --read0 --multi --bind load:select-all --border rounded], :Enter
     block = <<~BLOCK
