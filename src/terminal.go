@@ -1004,6 +1004,17 @@ func borderLines(shape tui.BorderShape) int {
 	return 0
 }
 
+func borderColumns(shape tui.BorderShape, borderWidth int) int {
+	columns := 0
+	if shape.HasLeft() {
+		columns += 1 + borderWidth
+	}
+	if shape.HasRight() {
+		columns += 1 + borderWidth
+	}
+	return columns
+}
+
 func (t *Terminal) visibleHeaderLines() int {
 	if !t.headerVisible {
 		return 0
@@ -3953,6 +3964,7 @@ func (t *Terminal) Loop() error {
 	previewDraggingPos := -1
 	barDragging := false
 	pbarDragging := false
+	pborderDragging := false
 	wasDown := false
 	needBarrier := true
 
@@ -4676,6 +4688,7 @@ func (t *Terminal) Loop() error {
 				if !me.Down {
 					barDragging = false
 					pbarDragging = false
+					pborderDragging = false
 					previewDraggingPos = -1
 				}
 
@@ -4727,6 +4740,69 @@ func (t *Terminal) Loop() error {
 						t.previewer.following.Set(t.previewer.offset >= numLines-effectiveHeight)
 						req(reqPreviewRefresh)
 					}
+					break
+				}
+
+				// Preview border dragging (resizing)
+				pborderDragging = me.Down && (pborderDragging || clicked && t.hasPreviewWindow() && t.pborder.Enclose(my, mx))
+				if pborderDragging {
+					previewWidth := t.pwindow.Width() + borderColumns(t.previewOpts.border, t.borderWidth)
+					previewHeight := t.pwindow.Height() + borderLines(t.previewOpts.border)
+					minPreviewWidth := 1 + borderColumns(t.previewOpts.border, t.borderWidth)
+					minPreviewHeight := 1 + borderLines(t.previewOpts.border)
+
+					if len(t.scrollbar) > 0 && t.previewOpts.position == posLeft && !t.previewOpts.border.HasRight() {
+						// Need a column to show scrollbar
+						minPreviewWidth++
+					}
+
+					// Decrement, so the cursor drags the last column/row of the
+					// preview window (i.e. in most cases the border) and not
+					// the one after.
+					minPreviewWidth--
+					minPreviewHeight--
+
+					previewLeft := t.pwindow.Left()
+					previewTop := t.pwindow.Top()
+					// Unlike window, pwindow does not include it's border, so
+					// Left and Top have to be adjusted.
+					if t.previewOpts.border.HasLeft() {
+						previewLeft -= 1 + t.borderWidth
+					}
+					if t.previewOpts.border.HasTop() {
+						previewTop -= 1
+					}
+
+					var newSize int
+					switch t.previewOpts.position {
+					case posUp:
+						top := previewTop + minPreviewHeight
+						// +1 since index to size
+						newSize = my - top + 1
+					case posRight:
+						right := previewLeft + previewWidth - minPreviewWidth
+						newSize = right - mx
+					case posDown:
+						bottom := previewTop + previewHeight - minPreviewHeight
+						newSize = bottom - my
+					case posLeft:
+						left := previewLeft + minPreviewWidth
+						// +1 since index to size
+						newSize = mx - left + 1
+					}
+					// TODO: should this allow a size of zero?
+					if newSize < 1 {
+						newSize = 1
+					}
+
+					// don't update if the size did not change (e.g. off-axis movement)
+					if !t.previewOpts.size.percent && t.previewOpts.size.size == float64(newSize) {
+						break
+					}
+
+					t.previewOpts.size = sizeSpec{float64(newSize), false}
+					updatePreviewWindow(false)
+					req(reqPreviewRefresh)
 					break
 				}
 
