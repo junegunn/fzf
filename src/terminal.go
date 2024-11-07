@@ -4422,6 +4422,7 @@ func (t *Terminal) Loop() error {
 					direction = 1
 				}
 
+				moved := false
 				for linesToMove > 0 {
 					currentItem := t.currentItem()
 					if currentItem == nil {
@@ -4430,11 +4431,15 @@ func (t *Terminal) Loop() error {
 
 					itemLines, _ := t.numItemLines(currentItem, maxItems)
 					linesToMove -= itemLines
+					if moved && linesToMove < 0 {
+						break
+					}
 					cy := t.cy
 					t.vmove(direction, false)
 					if cy == t.cy {
 						break
 					}
+					moved = true
 				}
 				req(reqList)
 			case actOffsetUp, actOffsetDown:
