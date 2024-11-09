@@ -307,6 +307,11 @@ fzf-completion() {
   local tokens prefix trigger tail matches lbuf d_cmds
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
+  # TODO: To successfully complete 'test_dir_completion', add an explanation!
+  # It has to do with the presence of 'zle -C …' 
+  if ! zmodload -Fe zsh/{complete,compctl}; then
+    zmodload -i zsh/{complete,compctl}
+  fi
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
   tokens=(${(z)LBUFFER})
