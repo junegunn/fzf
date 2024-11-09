@@ -4468,13 +4468,16 @@ func (t *Terminal) Loop() error {
 					}
 				}
 
-				for ; linesToMove > 0; linesToMove-- {
-					cy := t.cy
+				for i := 0; i < linesToMove; i++ {
+					cy, offset := t.cy, t.offset
 					t.vset(cy + direction)
 					t.constrain()
-					if cy == t.cy ||
-						direction > 0 && t.offset >= maxOffset ||
-						direction < 0 && t.offset <= minOffset {
+					if cy == t.cy {
+						break
+					}
+					if i > 0 && (direction > 0 && t.offset > maxOffset ||
+						direction < 0 && t.offset < minOffset) {
+						t.cy, t.offset = cy, offset
 						break
 					}
 				}
