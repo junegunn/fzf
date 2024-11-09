@@ -308,8 +308,10 @@ fzf-completion() {
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # Check if at least one completion system (old or new) is active
-  if ! zmodload -e zsh/compctl || ! (( $+functions[compdef] )); then
-    zmodload -i zsh/compctl
+  if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( $+functions[compdef] )); then
+    if ! zmodload -e zsh/compctl; then
+      zmodload -i zsh/compctl
+    fi
   fi
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
