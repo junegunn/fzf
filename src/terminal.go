@@ -995,13 +995,14 @@ func (t *Terminal) environ() []string {
 }
 
 func borderLines(shape tui.BorderShape) int {
-	switch shape {
-	case tui.BorderHorizontal, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
-		return 2
-	case tui.BorderTop, tui.BorderBottom:
-		return 1
+	lines := 0
+	if shape.HasTop() {
+		lines++
 	}
-	return 0
+	if shape.HasBottom() {
+		lines++
+	}
+	return lines
 }
 
 func borderColumns(shape tui.BorderShape, borderWidth int) int {
@@ -1541,36 +1542,24 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 	t.previewed.version = 0
 
 	bw := t.borderWidth
-	switch t.borderShape {
-	case tui.BorderHorizontal:
-		t.border = t.tui.NewWindow(
-			marginInt[0]-1, marginInt[3], width, height+2,
-			false, tui.MakeBorderStyle(tui.BorderHorizontal, t.unicode))
-	case tui.BorderVertical:
-		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3]-(1+bw), width+(1+bw)*2, height,
-			false, tui.MakeBorderStyle(tui.BorderVertical, t.unicode))
-	case tui.BorderTop:
-		t.border = t.tui.NewWindow(
-			marginInt[0]-1, marginInt[3], width, height+1,
-			false, tui.MakeBorderStyle(tui.BorderTop, t.unicode))
-	case tui.BorderBottom:
-		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3], width, height+1,
-			false, tui.MakeBorderStyle(tui.BorderBottom, t.unicode))
-	case tui.BorderLeft:
-		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3]-(1+bw), width+(1+bw), height,
-			false, tui.MakeBorderStyle(tui.BorderLeft, t.unicode))
-	case tui.BorderRight:
-		t.border = t.tui.NewWindow(
-			marginInt[0], marginInt[3], width+(1+bw), height,
-			false, tui.MakeBorderStyle(tui.BorderRight, t.unicode))
-	case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
-		t.border = t.tui.NewWindow(
-			marginInt[0]-1, marginInt[3]-(1+bw), width+(1+bw)*2, height+2,
-			false, tui.MakeBorderStyle(t.borderShape, t.unicode))
+	offsets := [4]int{}  // TRWH
+	if t.borderShape.HasTop() {
+		offsets[0] -= 1
+		offsets[3] += 1
 	}
+	if t.borderShape.HasRight() {
+		offsets[2] += 1 + bw
+	}
+	if t.borderShape.HasBottom() {
+		offsets[3] += 1
+	}
+	if t.borderShape.HasLeft() {
+		offsets[1] -= 1 + bw
+		offsets[2] += 1 + bw
+	}
+	t.border = t.tui.NewWindow(
+		marginInt[0]+offsets[0], marginInt[3]+offsets[1], width+offsets[2], height+offsets[3],
+		false, tui.MakeBorderStyle(t.borderShape, t.unicode))
 
 	// Add padding to margin
 	for idx, val := range paddingInt {
@@ -1602,28 +1591,13 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					previewBorder = tui.MakeBorderStyle(previewOpts.border, t.unicode)
 				}
 				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
-				switch previewOpts.border {
-				case tui.BorderSharp, tui.BorderRounded, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
-					pwidth -= (1 + bw) * 2
-					pheight -= 2
+				pwidth -= borderColumns(previewOpts.border, bw)
+				pheight -= borderLines(previewOpts.border)
+				if t.previewOpts.border.HasLeft() {
 					x += 1 + bw
+				}
+				if t.previewOpts.border.HasTop() {
 					y += 1
-				case tui.BorderLeft:
-					pwidth -= 1 + bw
-					x += 1 + bw
-				case tui.BorderRight:
-					pwidth -= 1 + bw
-				case tui.BorderTop:
-					pheight -= 1
-					y += 1
-				case tui.BorderBottom:
-					pheight -= 1
-				case tui.BorderHorizontal:
-					pheight -= 2
-					y += 1
-				case tui.BorderVertical:
-					pwidth -= (1 + bw) * 2
-					x += 1 + bw
 				}
 				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
 					// Need a column to show scrollbar
@@ -1636,16 +1610,8 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					t.pwindow.Erase()
 				}
 			}
-			verticalPad := 2
-			minPreviewHeight := 3
-			switch previewOpts.border {
-			case tui.BorderNone, tui.BorderVertical, tui.BorderLeft, tui.BorderRight:
-				verticalPad = 0
-				minPreviewHeight = 1
-			case tui.BorderTop, tui.BorderBottom:
-				verticalPad = 1
-				minPreviewHeight = 2
-			}
+			verticalPad := 0 + borderLines(previewOpts.border)
+			minPreviewHeight := 1 + borderLines(previewOpts.border)
 			switch previewOpts.position {
 			case posUp, posDown:
 				minWindowHeight := minHeight
