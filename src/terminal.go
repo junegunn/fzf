@@ -1648,7 +1648,11 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 			}
 			switch previewOpts.position {
 			case posUp, posDown:
-				pheight := calculateSize(height, previewOpts.size, minHeight, minPreviewHeight, verticalPad)
+				minWindowHeight := minHeight
+				if t.noSeparatorLine() {
+					minWindowHeight--
+				}
+				pheight := calculateSize(height, previewOpts.size, minWindowHeight, minPreviewHeight, verticalPad)
 				if hasThreshold && pheight < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
