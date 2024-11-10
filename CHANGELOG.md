@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+0.56.1
+------
+- Bug fixes and improvements
+    - Fixed a race condition which would cause fzf to present stale results after `reload` (#4070)
+    - `page-up` and `page-down` actions now work correctly with multi-line items (#4069)
+    - `{n}` is allowed in `SCROLL` expression in `--preview-window` (#4079)
+    - [zsh] Fixed regression in history loading with shared option (#4071)
+    - [zsh] Better command extraction in zsh completion (#4082)
+- Thanks to @LangLangBart, @jaydee-coder, @alex-huff, and @vejkse for the contributions
+
 0.56.0
 ------
 - Added `--gap[=N]` option to display empty lines between items.
