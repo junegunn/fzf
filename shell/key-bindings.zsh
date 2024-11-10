@@ -111,7 +111,7 @@ fzf-history-widget() {
   # Ensure the module is loaded if not already, and the required features, such
   # as the associative 'history' array, which maps event numbers to full history
   # lines, are set. Also, make sure Perl is installed for multi-line output.
-  if zmodload -F zsh/parameter p:{commands,history} 2>/dev/null && (( ${#commands[perl]} )); then
+  if zmodload -F zsh/parameter p:{commands,history} 2>/dev/null && (( $+commands[perl] )); then
     # Import commands from other shells if SHARE_HISTORY is enabled, as the
     # 'history' array only updates after executing a non-empty command.
     selected="$(
