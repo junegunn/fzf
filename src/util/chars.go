@@ -306,5 +306,5 @@ func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWi
 		}
 	}
 
-	return wrapped, false
+	return wrapped, overflow
 }
