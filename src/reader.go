@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"bytes"
+	"strings"
 	"context"
 	"io"
 	"io/fs"
@@ -301,7 +302,12 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		}
 		return nil
 	}
-	return fastwalk.Walk(&conf, root, fn) == nil
+	roots := strings.Split(root, ",")
+	noerr := true
+	for _, root := range roots {
+	  noerr = noerr && (fastwalk.Walk(&conf, root, fn) == nil)
+	}
+	return noerr
 }
 
 func (r *Reader) readFromCommand(command string, environ []string, signalReady func()) bool {
