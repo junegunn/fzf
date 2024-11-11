@@ -308,7 +308,7 @@ fzf-completion() {
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # Check if at least one completion system (old or new) is active
-  if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( $+functions[compdef] )); then
+  if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( ${+functions[compdef]} )); then
     if ! zmodload -e zsh/compctl; then
       zmodload -i zsh/compctl
     fi
