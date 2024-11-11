@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.56.2
+------
+- Bug fixes
+    - Fixed abnormal scrolling behavior when `--wrap` is set (#4083)
+    - [zsh] Fixed warning message when `ksh_arrays` is set (#4084)
+
 0.56.1
 ------
 - Bug fixes and improvements
