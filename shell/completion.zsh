@@ -338,16 +338,13 @@ fzf-completion() {
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
+    # Move the cursor before the trigger to maintain word array elements when
+    # trigger characters like ';' or '`' reset the array.
+    cursor_pos=$CURSOR
+    CURSOR=$((cursor_pos - ${#trigger} - 1))
     # Make the 'cmd_word' global
-    if [[ $trigger =~ '[&;[`|]' ]]; then
-      # Move cursor before trigger to get word array elements of the command.
-      cursor_pos=$CURSOR
-      CURSOR=$((cursor_pos - ${#trigger} - 1))
-      zle __fzf_extract_command || :
-      CURSOR=$cursor_pos
-    else
-      zle __fzf_extract_command || :
-    fi
+    zle __fzf_extract_command || :
+    CURSOR=$cursor_pos
     [[ -z "$cmd_word" ]] && return
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
