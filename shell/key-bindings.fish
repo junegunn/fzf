@@ -23,7 +23,7 @@ function fzf_key_bindings
     # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     echo "--height $FZF_TMUX_HEIGHT --bind=ctrl-z:ignore" $argv[1]
-    command cat "$FZF_DEFAULT_OPTS_FILE" 2> /dev/null
+    test -r "$FZF_DEFAULT_OPTS_FILE"; and string collect -N -- <$FZF_DEFAULT_OPTS_FILE
     echo $FZF_DEFAULT_OPTS $argv[2]
   end
 
@@ -59,8 +59,8 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -l FISH_MAJOR (echo $version | cut -f1 -d.)
-      set -l FISH_MINOR (echo $version | cut -f2 -d.)
+      set -l FISH_MAJOR (string split '.' -- $version)[1]
+      set -l FISH_MINOR (string split '.' -- $version)[2]
 
       # merge history from other sessions before searching
       if test -z "$fish_private_mode"
@@ -74,7 +74,7 @@ function fzf_key_bindings
         if type -P perl > /dev/null 2>&1
           set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
           set -lx FZF_DEFAULT_OPTS_FILE ''
-          builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | command perl -pe 's/^\d*\t//' | read -lz result
+          builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | string replace -r '^\d*\t' '' | read -lz result
           and commandline -- $result
         else
           set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
