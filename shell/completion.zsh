@@ -126,7 +126,7 @@ __fzf_extract_command() {
   # Control completion with the "compstate" parameter, insert and list nothing
   compstate[insert]=
   compstate[list]=
-  cmd_word="${words[1]}"
+  cmd_word="${(Q)words[1]}"
 }
 
 __fzf_generic_path_completion() {
@@ -338,8 +338,8 @@ fzf-completion() {
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
-    # Move the cursor before the trigger to maintain word array elements when
-    # trigger characters like ';' or '`' reset the array.
+    # Move the cursor before the trigger to preserve word array elements when
+    # characters like ';' or '`' would otherwise reset the 'words' array.
     cursor_pos=$CURSOR
     CURSOR=$((cursor_pos - ${#trigger} - 1))
     # Make the 'cmd_word' global
