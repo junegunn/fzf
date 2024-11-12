@@ -1679,7 +1679,13 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 				}
 			case posLeft, posRight:
-				pwidth := calculateSize(width, previewOpts.size, minWidth, 5, 4)
+				pad := borderColumns(previewOpts.border, t.borderWidth)
+				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
+					// Need a column to show scrollbar
+					pad += 1
+				}
+				minPreviewWidth := 1 + pad
+				pwidth := calculateSize(width, previewOpts.size, minWidth, minPreviewWidth, pad)
 				if hasThreshold && pwidth < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -1718,9 +1724,6 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 						marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
 					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
 					x := marginInt[3] + width - pwidth
-					if !previewOpts.border.HasRight() && t.borderShape.HasRight() {
-						pwidth++
-					}
 					createPreviewWindow(marginInt[0], x, pwidth, height)
 				}
 			}
