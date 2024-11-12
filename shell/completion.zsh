@@ -304,7 +304,7 @@ _fzf_complete_kill_post() {
 
 fzf-completion() {
   trap 'unset cmd_word' EXIT
-  local tokens prefix trigger tail matches lbuf d_cmds
+  local tokens prefix trigger tail matches lbuf d_cmds cursor_pos
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # Check if at least one completion system (old or new) is active
@@ -339,11 +339,13 @@ fzf-completion() {
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
     # Make the 'cmd_word' global
-    if [[ $FZF_COMPLETION_TRIGGER = '`' && ${LBUFFER[-1]} = '`' ]];then
-      # Escape trailing backtick to work around zsh word parsing issue
-      LBUFFER="${LBUFFER%\`}"'\`'
+
+    if [[ "$trigger" =~ '[&;[`|]' ]]; then
+      # Move cursor before trigger to get word array elements of the command.
+      cursor_pos=$CURSOR
+      CURSOR=$((cursor_pos - ${#trigger} -1 ))
       zle __fzf_extract_command || :
-      LBUFFER=$lbuf
+      CURSOR=$cursor_pos
     else
       zle __fzf_extract_command || :
     fi
@@ -358,7 +360,7 @@ fzf-completion() {
     fi
     [ -n "${tokens[-1]}" ] && lbuf=${lbuf:0:-${#tokens[-1]}}
 
-    if eval "type _fzf_complete_${cmd_word} > /dev/null"; then
+    if eval "noglob type _fzf_complete_${cmd_word} >/dev/null"; then
       prefix="$prefix" eval _fzf_complete_${cmd_word} ${(q)lbuf}
       zle reset-prompt
     elif [ ${d_cmds[(i)$cmd_word]} -le ${#d_cmds} ]; then
