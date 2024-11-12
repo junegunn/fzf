@@ -339,20 +339,16 @@ fzf-completion() {
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
     # Make the 'cmd_word' global
-
-    if [[ "$trigger" =~ '[&;[`|]' ]]; then
+    if [[ $trigger =~ '[&;[`|]' ]]; then
       # Move cursor before trigger to get word array elements of the command.
       cursor_pos=$CURSOR
-      CURSOR=$((cursor_pos - ${#trigger} -1 ))
+      CURSOR=$((cursor_pos - ${#trigger} - 1))
       zle __fzf_extract_command || :
       CURSOR=$cursor_pos
     else
       zle __fzf_extract_command || :
     fi
-    if [[ -z "$cmd_word" ]];then
-      zle -M "No command found to complete. Please report this at https://github.com/junegunn/fzf"
-      return
-    fi
+    [[ -z "$cmd_word" ]] && return
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'>('* ]] || [[ $prefix = *':='* ]] || [[ $prefix = *'`'* ]]; then
