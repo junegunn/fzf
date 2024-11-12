@@ -345,7 +345,6 @@ fzf-completion() {
     # Make the 'cmd_word' global
     zle __fzf_extract_command || :
     CURSOR=$cursor_pos
-    [[ -z "$cmd_word" ]] && return
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'>('* ]] || [[ $prefix = *':='* ]] || [[ $prefix = *'`'* ]]; then
