@@ -123,7 +123,7 @@ __fzf_comprun() {
 # Extract the name of the command. e.g. ls; foo=1 ssh **<tab>
 __fzf_extract_command() {
   setopt localoptions noksh_arrays
-  # Control completion with the "compstate" parameter, insert and list noting
+  # Control completion with the "compstate" parameter, insert and list nothing
   compstate[insert]=
   compstate[list]=
   cmd_word="${words[1]}"
@@ -339,8 +339,18 @@ fzf-completion() {
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
     # Make the 'cmd_word' global
-    zle __fzf_extract_command || :
-    [[ -z "$cmd_word" ]] && return
+    if [[ $FZF_COMPLETION_TRIGGER = '`' && ${LBUFFER[-1]} = '`' ]];then
+      # Escape trailing backtick to work around zsh word parsing issue
+      LBUFFER="${LBUFFER%\`}"'\`'
+      zle __fzf_extract_command || :
+      LBUFFER=$lbuf
+    else
+      zle __fzf_extract_command || :
+    fi
+    if [[ -z "$cmd_word" ]];then
+      zle -M "No command found to complete. Please report this at https://github.com/junegunn/fzf"
+      return
+    fi
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'>('* ]] || [[ $prefix = *':='* ]] || [[ $prefix = *'`'* ]]; then
