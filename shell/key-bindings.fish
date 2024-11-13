@@ -71,15 +71,17 @@ function fzf_key_bindings
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
       if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
-        if type -P perl > /dev/null 2>&1
-          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
-          set -lx FZF_DEFAULT_OPTS_FILE ''
+        set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
+        set -lx FZF_DEFAULT_OPTS_FILE ''
+        if type -q perl
           builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | string replace -r '^\d*\t' '' | read -lz result
           and commandline -- $result
         else
-          set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
-          set -lx FZF_DEFAULT_OPTS_FILE ''
-          builtin history -z | eval (__fzfcmd) --read0 --print0 -q '(commandline)' | read -lz result
+          set -l line 0
+          for i in (builtin history -z --reverse | string split0)
+            set line (math $line + 1)
+            string escape -n -- $line\t$i
+          end | string join0 | string replace -a '\n' '\n\t' | string unescape -n | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | string replace -r '^\d*\t' '' | read -lz result
           and commandline -- $result
         end
       else
