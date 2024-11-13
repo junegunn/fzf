@@ -41,7 +41,7 @@ function fzf_key_bindings
       set -lx FZF_DEFAULT_OPTS_FILE ''
       eval (__fzfcmd) -m --query=$fzf_query | while read -l r; set -a result $r; end
     end
-    if [ -z "$result" ]
+    if test -z "$result"
       commandline -f repaint
       return
     else
@@ -50,7 +50,7 @@ function fzf_key_bindings
     end
     for i in $result
       commandline -it -- $prefix
-      commandline -it -- (string escape $i)
+      commandline -it -- (string escape -- $i)
       commandline -it -- ' '
     end
     commandline -f repaint
@@ -63,14 +63,12 @@ function fzf_key_bindings
       set -l FISH_MINOR (string split '.' -- $version)[2]
 
       # merge history from other sessions before searching
-      if test -z "$fish_private_mode"
-        builtin history merge
-      end
+      test -z "$fish_private_mode"; and builtin history merge
 
       # history's -z flag is needed for multi-line support.
       # history's -z flag was added in fish 2.4.0, so don't use it for versions
       # before 2.4.0.
-      if [ "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \) ];
+      if test "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \)
         set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
         set -lx FZF_DEFAULT_OPTS_FILE ''
         if type -q perl
@@ -105,7 +103,7 @@ function fzf_key_bindings
       set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
       eval (__fzfcmd) +m --query=$fzf_query | read -l result
 
-      if [ -n "$result" ]
+      if test -n "$result"
         cd -- $result
 
         # Remove last token from commandline.
@@ -120,9 +118,9 @@ function fzf_key_bindings
   function __fzfcmd
     test -n "$FZF_TMUX"; or set FZF_TMUX 0
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    if [ -n "$FZF_TMUX_OPTS" ]
+    if test -n "$FZF_TMUX_OPTS"
       echo "fzf-tmux $FZF_TMUX_OPTS -- "
-    else if [ $FZF_TMUX -eq 1 ]
+    else if test "$FZF_TMUX" = "1"
       echo "fzf-tmux -d$FZF_TMUX_HEIGHT -- "
     else
       echo "fzf"
@@ -137,7 +135,7 @@ function fzf_key_bindings
     bind \ec fzf-cd-widget
   end
 
-  if bind -M insert > /dev/null 2>&1
+  if bind -M insert &> /dev/null
     bind -M insert \cr fzf-history-widget
     if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
       bind -M insert \ct fzf-file-widget
@@ -166,7 +164,7 @@ function fzf_key_bindings
     # Combine multiple consecutive slashes into one
     set commandline (string replace -r -a '/+' '/' -- $commandline)
 
-    if [ -z $commandline ]
+    if test -z "$commandline"
       # Default to current directory with no --query
       set dir '.'
       set fzf_query ''
@@ -197,7 +195,7 @@ function fzf_key_bindings
     set dir (string replace -r '(?<!^)/$' '' -- $dir)
 
     # Iteratively check if dir exists and strip tail end of path
-    while [ ! -d "$dir" ]
+    while test ! -d "$dir"
       # If path is absolute, this can keep going until ends up at /
       # If path is relative, this can keep going until entire input is consumed, dirname returns "."
       set dir (dirname -- "$dir")
