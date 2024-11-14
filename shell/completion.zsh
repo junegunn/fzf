@@ -123,10 +123,10 @@ __fzf_comprun() {
 # Extract the name of the command. e.g. ls; foo=1 ssh **<tab>
 __fzf_extract_command() {
   setopt localoptions noksh_arrays
-  # Control completion with the "compstate" parameter, insert and list noting
+  # Control completion with the "compstate" parameter, insert and list nothing
   compstate[insert]=
   compstate[list]=
-  cmd_word="${words[1]}"
+  cmd_word="${(Q)words[1]}"
 }
 
 __fzf_generic_path_completion() {
@@ -303,8 +303,9 @@ _fzf_complete_kill_post() {
 }
 
 fzf-completion() {
+  typeset -g cmd_word
   trap 'unset cmd_word' EXIT
-  local tokens prefix trigger tail matches lbuf d_cmds
+  local tokens prefix trigger tail matches lbuf d_cmds cursor_pos
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
   # Check if at least one completion system (old or new) is active
@@ -323,7 +324,7 @@ fzf-completion() {
 
   # Explicitly allow for empty trigger.
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
-  [ -z "$trigger" -a ${LBUFFER[-1]} = ' ' ] && tokens+=("")
+  [[ -z $trigger && ${LBUFFER[-1]} == ' ' ]] && tokens+=("")
 
   # When the trigger starts with ';', it becomes a separate token
   if [[ ${LBUFFER} = *"${tokens[-2]-}${tokens[-1]}" ]]; then
@@ -338,9 +339,16 @@ fzf-completion() {
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
-    # Make the 'cmd_word' global
-    zle __fzf_extract_command || :
-    [[ -z "$cmd_word" ]] && return
+    cursor_pos=$CURSOR
+    {
+      # Move the cursor before the trigger to preserve word array elements when
+      # trigger chars like ';' or '`' would otherwise reset the 'words' array.
+      CURSOR=$((cursor_pos - ${#trigger} - 1))
+      # Assign the extracted command to the global variable 'cmd_word'
+      zle __fzf_extract_command
+    } always {
+      CURSOR=$cursor_pos
+    }
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
     if [[ $prefix = *'$('* ]] || [[ $prefix = *'<('* ]] || [[ $prefix = *'>('* ]] || [[ $prefix = *':='* ]] || [[ $prefix = *'`'* ]]; then
@@ -348,7 +356,7 @@ fzf-completion() {
     fi
     [ -n "${tokens[-1]}" ] && lbuf=${lbuf:0:-${#tokens[-1]}}
 
-    if eval "type _fzf_complete_${cmd_word} > /dev/null"; then
+    if eval "noglob type _fzf_complete_${cmd_word} >/dev/null"; then
       prefix="$prefix" eval _fzf_complete_${cmd_word} ${(q)lbuf}
       zle reset-prompt
     elif [ ${d_cmds[(i)$cmd_word]} -le ${#d_cmds} ]; then
