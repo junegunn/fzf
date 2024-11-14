@@ -303,6 +303,7 @@ _fzf_complete_kill_post() {
 }
 
 fzf-completion() {
+  typeset -g cmd_word
   trap 'unset cmd_word' EXIT
   local tokens prefix trigger tail matches lbuf d_cmds cursor_pos
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
@@ -343,7 +344,7 @@ fzf-completion() {
       # Move the cursor before the trigger to preserve word array elements when
       # trigger chars like ';' or '`' would otherwise reset the 'words' array.
       CURSOR=$((cursor_pos - ${#trigger} - 1))
-      # Make the 'cmd_word' global
+      # Assign the extracted command to the global variable 'cmd_word'
       zle __fzf_extract_command
     } always {
       CURSOR=$cursor_pos
