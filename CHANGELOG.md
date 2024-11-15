@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.56.3
+------
+- Bug fixes in zsh scripts
+    - fix(zsh): handle backtick trigger edge case (#4090)
+    - revert(zsh): remove 'fc -RI' call in the history widget (#4093)
+    - Thanks to @LangLangBart for the contributions
+
 0.56.2
 ------
 - Bug fixes
