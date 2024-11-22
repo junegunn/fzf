@@ -145,7 +145,7 @@ Usage: fzf [options]
 
   Directory traversal       (Only used when $FZF_DEFAULT_COMMAND is not set)
     --walker=OPTS           [file][,dir][,follow][,hidden] (default: file,follow,hidden)
-    --walker-root=DIR       Root directory from which to start walker (default: .)
+    --walker-root=DIRS      Comma-separated list of directories to walk (default: .)
     --walker-skip=DIRS      Comma-separated list of directory names to skip
                             (default: .git,node_modules)
 
