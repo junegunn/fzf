@@ -561,8 +561,6 @@ type searchRequest struct {
 
 type previewRequest struct {
 	template     string
-	pwindow      tui.Window
-	pwindowSize  tui.TermSize
 	scrollOffset int
 	list         []*Item
 	env          []string
@@ -970,6 +968,20 @@ func (t *Terminal) environ() []string {
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
+
+	// Add preview environment variables if preview is enabled
+	pwindowSize := t.pwindowSize()
+	if pwindowSize.Lines > 0 {
+		lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)
+		columns := fmt.Sprintf("COLUMNS=%d", pwindowSize.Columns)
+		env = append(env, lines)
+		env = append(env, "FZF_PREVIEW_"+lines)
+		env = append(env, columns)
+		env = append(env, "FZF_PREVIEW_"+columns)
+		env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+t.pwindow.Top()))
+		env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", t.pwindow.Left()))
+	}
+
 	return env
 }
 
@@ -3519,8 +3531,6 @@ func (t *Terminal) Loop() error {
 			for {
 				var items []*Item
 				var commandTemplate string
-				var pwindow tui.Window
-				var pwindowSize tui.TermSize
 				var env []string
 				initialOffset := 0
 				t.previewBox.Wait(func(events *util.Events) {
@@ -3534,8 +3544,6 @@ func (t *Terminal) Loop() error {
 							commandTemplate = request.template
 							initialOffset = request.scrollOffset
 							items = request.list
-							pwindow = request.pwindow
-							pwindowSize = request.pwindowSize
 							env = request.env
 						}
 					}
@@ -3553,16 +3561,6 @@ func (t *Terminal) Loop() error {
 					_, query := t.Input()
 					command, tempFiles := t.replacePlaceholder(commandTemplate, false, string(query), items)
 					cmd := t.executor.ExecCommand(command, true)
-					if pwindowSize.Lines > 0 {
-						lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)
-						columns := fmt.Sprintf("COLUMNS=%d", pwindowSize.Columns)
-						env = append(env, lines)
-						env = append(env, "FZF_PREVIEW_"+lines)
-						env = append(env, columns)
-						env = append(env, "FZF_PREVIEW_"+columns)
-						env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+pwindow.Top()))
-						env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", pwindow.Left()))
-					}
 					cmd.Env = env
 
 					out, _ := cmd.StdoutPipe()
@@ -3689,7 +3687,7 @@ func (t *Terminal) Loop() error {
 		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list, t.environ()})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.evaluateScrollOffset(), list, t.environ()})
 		}
 	}
 
@@ -4074,7 +4072,7 @@ func (t *Terminal) Loop() error {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.previewOpts.command, t.pwindow, t.pwindowSize(), t.evaluateScrollOffset(), list, t.environ()})
+								previewRequest{t.previewOpts.command, t.evaluateScrollOffset(), list, t.environ()})
 						}
 					} else {
 						// Discard the preview content so that it won't accidentally appear
