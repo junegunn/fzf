@@ -626,11 +626,16 @@ func optionalNextString(args []string, i *int) (bool, string) {
 	return false, ""
 }
 
+func isDir(path string) bool {
+	stat, err := os.Stat(path)
+	return err == nil && stat.IsDir()
+}
+
 func nextDirs(args []string, i *int) ([]string, error) {
 	dirs := []string{}
 	for *i < len(args)-1 {
 		arg := args[*i+1]
-		if stat, err := os.Stat(arg); err == nil && stat.IsDir() {
+		if isDir(arg) {
 			dirs = append(dirs, arg)
 			*i++
 		} else {
@@ -2702,6 +2707,9 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--walker-root="); match {
+				if !isDir(value) {
+					return errors.New("not a directory: " + value)
+				}
 				dirs, _ := nextDirs(allArgs, &i)
 				opts.WalkerRoot = append([]string{value}, dirs...)
 			} else if match, value := optString(arg, "--walker-skip="); match {
