@@ -145,7 +145,7 @@ Usage: fzf [options]
 
   Directory traversal       (Only used when $FZF_DEFAULT_COMMAND is not set)
     --walker=OPTS           [file][,dir][,follow][,hidden] (default: file,follow,hidden)
-    --walker-root=DIR       Root directory from which to start walker (default: .)
+    --walker-root=DIR [...] List of directories to walk (default: .)
     --walker-skip=DIRS      Comma-separated list of directory names to skip
                             (default: .git,node_modules)
 
@@ -490,7 +490,7 @@ type Options struct {
 	Unsafe       bool
 	ClearOnExit  bool
 	WalkerOpts   walkerOpts
-	WalkerRoot   string
+	WalkerRoot   []string
 	WalkerSkip   []string
 	Version      bool
 	Help         bool
@@ -594,7 +594,7 @@ func defaultOptions() *Options {
 		Unsafe:       false,
 		ClearOnExit:  true,
 		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
-		WalkerRoot:   ".",
+		WalkerRoot:   []string{"."},
 		WalkerSkip:   []string{".git", "node_modules"},
 		Help:         false,
 		Version:      false}
@@ -624,6 +624,28 @@ func optionalNextString(args []string, i *int) (bool, string) {
 		return true, args[*i]
 	}
 	return false, ""
+}
+
+func isDir(path string) bool {
+	stat, err := os.Stat(path)
+	return err == nil && stat.IsDir()
+}
+
+func nextDirs(args []string, i *int) ([]string, error) {
+	dirs := []string{}
+	for *i < len(args)-1 {
+		arg := args[*i+1]
+		if isDir(arg) {
+			dirs = append(dirs, arg)
+			*i++
+		} else {
+			break
+		}
+	}
+	if len(dirs) == 0 {
+		return nil, errors.New("no directory specified")
+	}
+	return dirs, nil
 }
 
 func atoi(str string) (int, error) {
@@ -2487,7 +2509,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 		case "--walker-root":
-			if opts.WalkerRoot, err = nextString(allArgs, &i, "directory required"); err != nil {
+			if opts.WalkerRoot, err = nextDirs(allArgs, &i); err != nil {
 				return err
 			}
 		case "--walker-skip":
@@ -2685,7 +2707,11 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--walker-root="); match {
-				opts.WalkerRoot = value
+				if !isDir(value) {
+					return errors.New("not a directory: " + value)
+				}
+				dirs, _ := nextDirs(allArgs, &i)
+				opts.WalkerRoot = append([]string{value}, dirs...)
 			} else if match, value := optString(arg, "--walker-skip="); match {
 				opts.WalkerSkip = filterNonEmpty(strings.Split(value, ","))
 			} else if match, value := optString(arg, "--hscroll-off="); match {

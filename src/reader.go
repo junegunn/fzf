@@ -120,7 +120,7 @@ func (r *Reader) readChannel(inputChan chan string) bool {
 }
 
 // ReadSource reads data from the default command or from standard input
-func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts, ignores []string, initCmd string, initEnv []string, readyChan chan bool) {
+func (r *Reader) ReadSource(inputChan chan string, roots []string, opts walkerOpts, ignores []string, initCmd string, initEnv []string, readyChan chan bool) {
 	r.startEventPoller()
 	var success bool
 	signalReady := func() {
@@ -137,7 +137,7 @@ func (r *Reader) ReadSource(inputChan chan string, root string, opts walkerOpts,
 		cmd := os.Getenv("FZF_DEFAULT_COMMAND")
 		if len(cmd) == 0 {
 			signalReady()
-			success = r.readFiles(root, opts, ignores)
+			success = r.readFiles(roots, opts, ignores)
 		} else {
 			success = r.readFromCommand(cmd, initEnv, signalReady)
 		}
@@ -265,7 +265,7 @@ func trimPath(path string) string {
 	return byteString(bytes)
 }
 
-func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool {
+func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bool {
 	conf := fastwalk.Config{
 		Follow: opts.follow,
 		// Use forward slashes when running a Windows binary under WSL or MSYS
@@ -301,7 +301,11 @@ func (r *Reader) readFiles(root string, opts walkerOpts, ignores []string) bool 
 		}
 		return nil
 	}
-	return fastwalk.Walk(&conf, root, fn) == nil
+	noerr := true
+	for _, root := range roots {
+		noerr = noerr && (fastwalk.Walk(&conf, root, fn) == nil)
+	}
+	return noerr
 }
 
 func (r *Reader) readFromCommand(command string, environ []string, signalReady func()) bool {
