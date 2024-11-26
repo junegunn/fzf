@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -272,6 +273,26 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		ToSlash: fastwalk.DefaultToSlash(),
 		Sort:    fastwalk.SortFilesFirst,
 	}
+	ignoresBase := []string{}
+	ignoresFull := []string{}
+	ignoresSuffix := []string{}
+	sep := string(os.PathSeparator)
+	for _, ignore := range ignores {
+		if strings.ContainsRune(ignore, os.PathSeparator) {
+			if strings.HasPrefix(ignore, sep) {
+				ignoresSuffix = append(ignoresSuffix, ignore)
+			} else {
+				// 'foo/bar' should match match
+				// * 'foo/bar'
+				// * 'baz/foo/bar'
+				// * but NOT 'bazfoo/bar'
+				ignoresFull = append(ignoresFull, ignore)
+				ignoresSuffix = append(ignoresSuffix, sep+ignore)
+			}
+		} else {
+			ignoresBase = append(ignoresBase, ignore)
+		}
+	}
 	fn := func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -284,8 +305,18 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 				if !opts.hidden && base[0] == '.' && base != ".." {
 					return filepath.SkipDir
 				}
-				for _, ignore := range ignores {
+				for _, ignore := range ignoresBase {
 					if ignore == base {
+						return filepath.SkipDir
+					}
+				}
+				for _, ignore := range ignoresFull {
+					if ignore == path {
+						return filepath.SkipDir
+					}
+				}
+				for _, ignore := range ignoresSuffix {
+					if strings.HasSuffix(path, ignore) {
 						return filepath.SkipDir
 					}
 				}
