@@ -507,6 +507,34 @@ func TestParsePlaceholder(t *testing.T) {
 	}
 }
 
+func TestExtractPassthroughs(t *testing.T) {
+	for _, middle := range []string{
+		"\x1bPtmux;\x1b\x1bbar\x1b\\",
+		"\x1bPtmux;\x1b\x1bbar\x1bbar\x1b\\",
+		"\x1b]1337;bar\x1b\\",
+		"\x1b]1337;bar\x1bbar\x1b\\",
+		"\x1b]1337;bar\a",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1b\\",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1b\\\r",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1bbar\x1b\\\r",
+		"\x1b_Gm=1;AAAAAAAAA=\x1b\\",
+		"\x1b_Gm=1;AAAAAAAAA=\x1b\\\r",
+		"\x1b_Gm=1;\x1bAAAAAAAAA=\x1b\\\r",
+	} {
+		line := "foo" + middle + "baz"
+		loc := findPassThrough(line)
+		if loc == nil || line[0:loc[0]] != "foo" || line[loc[1]:] != "baz" {
+			t.Error("failed to find passthrough")
+		}
+		garbage := "\x1bPtmux;\x1b]1337;\x1b_Ga=\x1b]1337;bar\x1b."
+		line = strings.Repeat("foo"+middle+middle+"baz", 3) + garbage
+		passthroughs, result := extractPassThroughs(line)
+		if result != "foobazfoobazfoobaz"+garbage || len(passthroughs) != 6 {
+			t.Error("failed to extract passthroughs")
+		}
+	}
+}
+
 /* utilities section */
 
 // Item represents one line in fzf UI. Usually it is relative path to files and folders.
