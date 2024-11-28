@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.57.0
+------
+- Built-in walker improvements
+    - `--walker-root` can take multiple directory arguments. e.g. `--walker-root include src lib`
+    - `--walker-skip` can handle multi-component patterns. e.g. `--walker-skip target/build`
+- `FZF_PREVIEW_*` environment variables are exported to all child processes (#4098)
+- Bug fixes in fish scripts
+
 0.56.3
 ------
 - Bug fixes in zsh scripts

@@ -76,7 +76,8 @@ Table of Contents
     * [Process IDs](#process-ids)
     * [Host names](#host-names)
     * [Environment variables / Aliases](#environment-variables--aliases)
-    * [Settings](#settings)
+    * [Customizing fzf options for completion](#customizing-fzf-options-for-completion)
+    * [Customizing completion source for paths and directories](#customizing-completion-source-for-paths-and-directories)
     * [Supported commands](#supported-commands)
     * [Custom fuzzy completion](#custom-fuzzy-completion)
 * [Vim plugin](#vim-plugin)
@@ -552,7 +553,7 @@ export **<TAB>
 unalias **<TAB>
 ```
 
-### Settings
+### Customizing fzf options for completion
 
 ```sh
 # Use ~~ as the trigger sequence instead of the default **
@@ -561,21 +562,15 @@ export FZF_COMPLETION_TRIGGER='~~'
 # Options to fzf command
 export FZF_COMPLETION_OPTS='--border --info=inline'
 
-# Use fd (https://github.com/sharkdp/fd) for listing path candidates.
-# - The first argument to the function ($1) is the base path to start traversal
-# - See the source code (completion.{bash,zsh}) for the details.
-_fzf_compgen_path() {
-  fd --hidden --follow --exclude ".git" . "$1"
-}
+# Options for path completion (e.g. vim **<TAB>)
+export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
 
-# Use fd to generate the list for directory completion
-_fzf_compgen_dir() {
-  fd --type d --hidden --follow --exclude ".git" . "$1"
-}
+# Options for directory completion (e.g. cd **<TAB>)
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 
 # Advanced customization of fzf options via _fzf_comprun function
 # - The first argument to the function is the name of the command.
-# - You should make sure to pass the rest of the arguments to fzf.
+# - You should make sure to pass the rest of the arguments ($@) to fzf.
 _fzf_comprun() {
   local command=$1
   shift
@@ -586,6 +581,22 @@ _fzf_comprun() {
     ssh)          fzf --preview 'dig {}'                   "$@" ;;
     *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
   esac
+}
+```
+
+### Customizing completion source for paths and directories
+
+```sh
+# Use fd (https://github.com/sharkdp/fd) for listing path candidates.
+# - The first argument to the function ($1) is the base path to start traversal
+# - See the source code (completion.{bash,zsh}) for the details.
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude ".git" . "$1"
+}
+
+# Use fd to generate the list for directory completion
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude ".git" . "$1"
 }
 ```
 
