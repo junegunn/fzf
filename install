@@ -303,6 +303,10 @@ append_line() {
   file="$3"
   pat="${4:-}"
   lno=""
+  all_commented=1
+  commented_lines=()
+  non_commented_lines=()
+  asked_update=1
 
   echo "Update $file:"
   echo "  - $line"
@@ -313,17 +317,45 @@ append_line() {
       lno=$(\grep -nF "$pat" "$file" | sed 's/:.*//' | tr '\n' ' ')
     fi
   fi
+
   if [ -n "$lno" ]; then
-    echo "    - Already exists: line #$lno"
-  else
-    if [ $update -eq 1 ]; then
+    for line_num in $lno; do
+      matched_line=$(sed -n "${line_num}p" "$file")
+      if [[ "$matched_line" =~ ^[[:space:]]*# ]]; then
+        commented_lines+=("$line_num: $matched_line")
+      else
+        non_commented_lines+=("$line_num: $matched_line")
+        all_commented=0
+      fi
+    done
+
+    if [ -n "$lno" ] && [ "$all_commented" -eq 1 ] && [ "$update" -eq 1 ]; then
+      echo "    - The line already exists but is commented:"
+      for commented_line in "${commented_lines[@]}"; do
+        echo "      $commented_line"
+      done
+      set +e
+      ask  "    - Continue modifying $file? This will append rather than overwrite the line."
+      asked_update=$?
+      set -e
+    fi
+  fi
+
+  if [ -z "$lno" ] || [ "$all_commented" -eq 1 ]; then
+    if [ "$update" -eq 1 ] && [ "$asked_update" -eq 1 ]; then
       [ -f "$file" ] && echo >> "$file"
       echo "$line" >> "$file"
       echo "    + Added"
     else
       echo "    ~ Skipped"
     fi
+  else
+    echo "    - Already exists:"
+    for non_commented_line in "${non_commented_lines[@]}"; do
+      echo "      $non_commented_line"
+    done
   fi
+
   echo
   set +e
 }
