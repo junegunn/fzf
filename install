@@ -295,65 +295,42 @@ EOF
 fi
 
 append_line() {
-  set -e
-
-  local update line file pat lno
+  local update line file pat lines
   update="$1"
   line="$2"
   file="$3"
   pat="${4:-}"
-  lno=""
-  all_commented=1
-  commented_lines=()
-  non_commented_lines=()
-  asked_update=1
+  lines=""
 
   echo "Update $file:"
   echo "  - $line"
   if [ -f "$file" ]; then
     if [ $# -lt 4 ]; then
-      lno=$(\grep -nF "$line" "$file" | sed 's/:.*//' | tr '\n' ' ')
+      lines=$(\grep -nF "$line" "$file")
     else
-      lno=$(\grep -nF "$pat" "$file" | sed 's/:.*//' | tr '\n' ' ')
+      lines=$(\grep -nF "$pat" "$file")
     fi
   fi
 
-  if [ -n "$lno" ]; then
-    for line_num in $lno; do
-      matched_line=$(sed -n "${line_num}p" "$file")
-      if [[ "$matched_line" =~ ^[[:space:]]*# ]]; then
-        commented_lines+=("$line_num: $matched_line")
-      else
-        non_commented_lines+=("$line_num: $matched_line")
-        all_commented=0
-      fi
-    done
+  if [ -n "$lines" ]; then
+    echo "    - Already exists:"
+    sed 's/^/        Line /' <<< "$lines"
 
-    if [ -n "$lno" ] && [ "$all_commented" -eq 1 ] && [ "$update" -eq 1 ]; then
-      echo "    - The line already exists but is commented:"
-      for commented_line in "${commented_lines[@]}"; do
-        echo "      $commented_line"
-      done
-      set +e
-      ask  "    - Continue modifying $file? This will append rather than overwrite the line."
-      asked_update=$?
-      set -e
+    update=0
+    if ! grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines" ; then
+      echo "    - But they all seem to be commented"
+      ask  "    - Continue modifying $file?"
+      update=$?
     fi
   fi
 
-  if [ -z "$lno" ] || [ "$all_commented" -eq 1 ]; then
-    if [ "$update" -eq 1 ] && [ "$asked_update" -eq 1 ]; then
+  set -e
+  if [ "$update" -eq 1 ]; then
       [ -f "$file" ] && echo >> "$file"
       echo "$line" >> "$file"
       echo "    + Added"
     else
       echo "    ~ Skipped"
-    fi
-  else
-    echo "    - Already exists:"
-    for non_commented_line in "${non_commented_lines[@]}"; do
-      echo "      $non_commented_line"
-    done
   fi
 
   echo
