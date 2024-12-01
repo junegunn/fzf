@@ -295,35 +295,44 @@ EOF
 fi
 
 append_line() {
-  set -e
-
-  local update line file pat lno
+  local update line file pat lines
   update="$1"
   line="$2"
   file="$3"
   pat="${4:-}"
-  lno=""
+  lines=""
 
   echo "Update $file:"
   echo "  - $line"
   if [ -f "$file" ]; then
     if [ $# -lt 4 ]; then
-      lno=$(\grep -nF "$line" "$file" | sed 's/:.*//' | tr '\n' ' ')
+      lines=$(\grep -nF "$line" "$file")
     else
-      lno=$(\grep -nF "$pat" "$file" | sed 's/:.*//' | tr '\n' ' ')
+      lines=$(\grep -nF "$pat" "$file")
     fi
   fi
-  if [ -n "$lno" ]; then
-    echo "    - Already exists: line #$lno"
+
+  if [ -n "$lines" ]; then
+    echo "    - Already exists:"
+    sed 's/^/        Line /' <<< "$lines"
+
+    update=0
+    if ! grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines" ; then
+      echo "    - But they all seem to be commented"
+      ask  "    - Continue modifying $file?"
+      update=$?
+    fi
+  fi
+
+  set -e
+  if [ "$update" -eq 1 ]; then
+    [ -f "$file" ] && echo >> "$file"
+    echo "$line" >> "$file"
+    echo "    + Added"
   else
-    if [ $update -eq 1 ]; then
-      [ -f "$file" ] && echo >> "$file"
-      echo "$line" >> "$file"
-      echo "    + Added"
-    else
-      echo "    ~ Skipped"
-    fi
+    echo "    ~ Skipped"
   fi
+
   echo
   set +e
 }
