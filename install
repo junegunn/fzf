@@ -317,7 +317,7 @@ append_line() {
     sed 's/^/        Line /' <<< "$lines"
 
     update=0
-    if ! grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines" ; then
+    if ! \grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines" ; then
       echo "    - But they all seem to be commented"
       ask  "    - Continue modifying $file?"
       update=$?
