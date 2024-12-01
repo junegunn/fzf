@@ -326,11 +326,11 @@ append_line() {
 
   set -e
   if [ "$update" -eq 1 ]; then
-      [ -f "$file" ] && echo >> "$file"
-      echo "$line" >> "$file"
-      echo "    + Added"
-    else
-      echo "    ~ Skipped"
+    [ -f "$file" ] && echo >> "$file"
+    echo "$line" >> "$file"
+    echo "    + Added"
+  else
+    echo "    ~ Skipped"
   fi
 
   echo
