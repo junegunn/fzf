@@ -73,9 +73,13 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		fmt.Fprint(r.ttyout, "\x1b[?7l\x1b[?25l"+r.queued.String()+"\x1b[?25h\x1b[?7h")
+		r.flushRaw("\x1b[?7l\x1b[?25l" + r.queued.String() + "\x1b[?25h\x1b[?7h")
 		r.queued.Reset()
 	}
+}
+
+func (r *LightRenderer) flushRaw(sequence string) {
+	fmt.Fprint(r.ttyout, sequence)
 }
 
 // Light renderer
@@ -655,11 +659,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 }
 
 func (r *LightRenderer) smcup() {
-	r.csi("?1049h")
+	r.flush()
+	r.flushRaw("\x1b[?1049h")
 }
 
 func (r *LightRenderer) rmcup() {
-	r.csi("?1049l")
+	r.flush()
+	r.flushRaw("\x1b[?1049l")
 }
 
 func (r *LightRenderer) Pause(clear bool) {
