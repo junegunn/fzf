@@ -3737,6 +3737,23 @@ module CompletionTest
     tmux.until { |lines| assert_equal 'unset FZFFOOBAR', lines[-1] }
   end
 
+  def test_completion_in_command_sequence
+    tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
+    tmux.prepare
+
+    triggers = ['**', '~~', '++', 'ff', '/']
+    # TODO: Find a way to test semicolon (';') and backtick ('`')
+    triggers.concat(['&', '[']) if instance_of?(TestZsh)
+
+    triggers.each do |trigger|
+      set_var('FZF_COMPLETION_TRIGGER', trigger)
+      tmux.send_keys "echo foo; QUX=THUD unset FZFFOOBR#{trigger}", :Tab
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until { |lines| assert_equal 'echo foo; QUX=THUD unset FZFFOOBAR', lines[-1] }
+    end
+  end
+
   def test_file_completion_unicode
     FileUtils.mkdir_p('/tmp/fzf-test')
     tmux.paste "cd /tmp/fzf-test; echo test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'"

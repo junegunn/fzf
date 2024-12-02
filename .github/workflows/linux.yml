@@ -3,7 +3,7 @@ name: Test fzf on Linux
 
 on:
   push:
-    branches: [ master, devel ]
+    branches: [ master, devel, zsh_completion]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
