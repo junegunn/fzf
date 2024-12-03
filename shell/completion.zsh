@@ -122,7 +122,6 @@ __fzf_comprun() {
 
 # Extract the name of the command. e.g. ls; foo=1 ssh **<tab>
 __fzf_extract_command() {
-  setopt localoptions noksh_arrays
   # Control completion with the "compstate" parameter, insert and list nothing
   compstate[insert]=
   compstate[list]=
@@ -303,17 +302,9 @@ _fzf_complete_kill_post() {
 }
 
 fzf-completion() {
-  typeset -g cmd_word
-  trap 'unset cmd_word' EXIT
-  local tokens prefix trigger tail matches lbuf d_cmds cursor_pos
+  local tokens prefix trigger tail matches lbuf d_cmds cursor_pos cmd_word
   setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
 
-  # Check if at least one completion system (old or new) is active
-  if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( ${+functions[compdef]} )); then
-    if ! zmodload -e zsh/compctl; then
-      zmodload -i zsh/compctl
-    fi
-  fi
   # http://zsh.sourceforge.net/FAQ/zshfaq03.html
   # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Parameter-Expansion-Flags
   tokens=(${(z)LBUFFER})
@@ -339,15 +330,25 @@ fzf-completion() {
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
-    cursor_pos=$CURSOR
     {
+      cursor_pos=$CURSOR
       # Move the cursor before the trigger to preserve word array elements when
       # trigger chars like ';' or '`' would otherwise reset the 'words' array.
       CURSOR=$((cursor_pos - ${#trigger} - 1))
-      # Assign the extracted command to the global variable 'cmd_word'
+      # Check if at least one completion system (old or new) is active.
+      # If at least one user-defined completion widget is detected, nothing will
+      # be completed if neither the old nor the new completion system is enabled.
+      # In such cases, the 'zsh/compctl' module is loaded as a fallback.
+      if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( ${+functions[compdef]} )); then
+        zmodload -F zsh/compctl 2>/dev/null
+      fi
+      # Create a completion widget to access the 'words' array (man zshcompwid)
+      zle -C __fzf_extract_command .complete-word __fzf_extract_command
       zle __fzf_extract_command
     } always {
       CURSOR=$cursor_pos
+      # Delete the completion widget
+      zle -D __fzf_extract_command  2>/dev/null
     }
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
@@ -376,8 +377,6 @@ fzf-completion() {
   unset binding
 }
 
-# Completion widget to gain access to the 'words' array (man zshcompwid)
-zle     -C   __fzf_extract_command .complete-word __fzf_extract_command
 # Normal widget
 zle     -N   fzf-completion
 bindkey '^I' fzf-completion
