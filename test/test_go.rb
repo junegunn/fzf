@@ -3742,12 +3742,13 @@ module CompletionTest
     tmux.prepare
 
     triggers = ['**', '~~', '++', 'ff', '/']
-    # TODO: Find a way to test semicolon (';') and backtick ('`')
-    triggers.concat(['&', '[']) if instance_of?(TestZsh)
+    triggers.concat(['&', '[', ';', '`']) if instance_of?(TestZsh)
 
     triggers.each do |trigger|
       set_var('FZF_COMPLETION_TRIGGER', trigger)
-      tmux.send_keys "echo foo; QUX=THUD unset FZFFOOBR#{trigger}", :Tab
+      # Escape trailing semicolon (';') and backtick ('`')
+      command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}".sub(/(;|`)$/, '\\\\\1')
+      tmux.send_keys command, :Tab
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
       tmux.until { |lines| assert_equal 'echo foo; QUX=THUD unset FZFFOOBAR', lines[-1] }
