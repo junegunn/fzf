@@ -3746,9 +3746,8 @@ module CompletionTest
 
     triggers.each do |trigger|
       set_var('FZF_COMPLETION_TRIGGER', trigger)
-      # Escape trailing semicolon (';') and backtick ('`')
-      command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}".sub(/(;|`)$/, '\\\\\1')
-      tmux.send_keys command, :Tab
+      command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}"
+      tmux.send_keys command.sub(/(;|`)$/, '\\\\\1'), :Tab
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
       tmux.until { |lines| assert_equal 'echo foo; QUX=THUD unset FZFFOOBAR', lines[-1] }
