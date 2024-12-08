@@ -387,6 +387,14 @@ func (s BorderShape) HasTop() bool {
 	return true
 }
 
+func (s BorderShape) HasBottom() bool {
+	switch s {
+	case BorderNone, BorderLeft, BorderRight, BorderTop, BorderVertical: // No bottom
+		return false
+	}
+	return true
+}
+
 type BorderStyle struct {
 	shape       BorderShape
 	top         rune
