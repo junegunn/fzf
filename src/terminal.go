@@ -1593,10 +1593,10 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 				t.pborder = t.tui.NewWindow(y, x, w, h, true, previewBorder)
 				pwidth -= borderColumns(previewOpts.border, bw)
 				pheight -= borderLines(previewOpts.border)
-				if t.previewOpts.border.HasLeft() {
+				if previewOpts.border.HasLeft() {
 					x += 1 + bw
 				}
-				if t.previewOpts.border.HasTop() {
+				if previewOpts.border.HasTop() {
 					y += 1
 				}
 				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
