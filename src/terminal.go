@@ -1417,7 +1417,7 @@ const (
 	minHeight = 3
 )
 
-func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) int {
+func calculateSize(base int, size sizeSpec, occupied int, minSize int) int {
 	max := base - occupied
 	if max < minSize {
 		max = minSize
@@ -1425,7 +1425,22 @@ func calculateSize(base int, size sizeSpec, occupied int, minSize int, pad int) 
 	if size.percent {
 		return util.Constrain(int(float64(base)*0.01*size.size), minSize, max)
 	}
-	return util.Constrain(int(size.size)+pad, minSize, max)
+	return util.Constrain(int(size.size)+minSize-1, minSize, max)
+}
+
+func (t *Terminal) minPreviewSize(opts *previewOpts) (int, int) {
+	minPreviewWidth := 1 + borderColumns(opts.border, t.borderWidth)
+	minPreviewHeight := 1 + borderLines(opts.border)
+
+	switch opts.position {
+	case posLeft, posRight:
+		if len(t.scrollbar) > 0 && !opts.border.HasRight() {
+			// Need a column to show scrollbar
+			minPreviewWidth++
+		}
+	}
+
+	return minPreviewWidth, minPreviewHeight
 }
 
 func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
@@ -1499,8 +1514,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 		minAreaHeight -= 1
 	}
 	if t.needPreviewWindow() {
-		minPreviewHeight := 1 + borderLines(t.activePreviewOpts.border)
-		minPreviewWidth := 5
+		minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
 		switch t.activePreviewOpts.position {
 		case posUp, posDown:
 			minAreaHeight += minPreviewHeight
@@ -1611,15 +1625,14 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					t.pwindow.Erase()
 				}
 			}
-			verticalPad := 0 + borderLines(previewOpts.border)
-			minPreviewHeight := 1 + borderLines(previewOpts.border)
+			minPreviewWidth, minPreviewHeight := t.minPreviewSize(previewOpts)
 			switch previewOpts.position {
 			case posUp, posDown:
 				minWindowHeight := minHeight
 				if t.noSeparatorLine() {
 					minWindowHeight--
 				}
-				pheight := calculateSize(height, previewOpts.size, minWindowHeight, minPreviewHeight, verticalPad)
+				pheight := calculateSize(height, previewOpts.size, minWindowHeight, minPreviewHeight)
 				if hasThreshold && pheight < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -1646,13 +1659,7 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 					createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 				}
 			case posLeft, posRight:
-				pad := borderColumns(previewOpts.border, t.borderWidth)
-				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
-					// Need a column to show scrollbar
-					pad += 1
-				}
-				minPreviewWidth := 1 + pad
-				pwidth := calculateSize(width, previewOpts.size, minWidth, minPreviewWidth, pad)
+				pwidth := calculateSize(width, previewOpts.size, minWidth, minPreviewWidth)
 				if hasThreshold && pwidth < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -4722,13 +4729,7 @@ func (t *Terminal) Loop() error {
 				if pborderDragging {
 					previewWidth := t.pwindow.Width() + borderColumns(t.activePreviewOpts.border, t.borderWidth)
 					previewHeight := t.pwindow.Height() + borderLines(t.activePreviewOpts.border)
-					minPreviewWidth := 1 + borderColumns(t.activePreviewOpts.border, t.borderWidth)
-					minPreviewHeight := 1 + borderLines(t.activePreviewOpts.border)
-
-					if len(t.scrollbar) > 0 && t.activePreviewOpts.position == posLeft && !t.activePreviewOpts.border.HasRight() {
-						// Need a column to show scrollbar
-						minPreviewWidth++
-					}
+					minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
 
 					// Decrement, so the cursor drags the last column/row of the
 					// preview window (i.e. in most cases the border) and not
