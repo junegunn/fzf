@@ -410,6 +410,18 @@ type BorderStyle struct {
 type BorderCharacter int
 
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
+	if shape == BorderNone {
+		return BorderStyle{
+			shape:       BorderRounded,
+			top:         ' ',
+			bottom:      ' ',
+			left:        ' ',
+			right:       ' ',
+			topLeft:     ' ',
+			topRight:    ' ',
+			bottomLeft:  ' ',
+			bottomRight: ' '}
+	}
 	if !unicode {
 		return BorderStyle{
 			shape:       shape,
@@ -504,19 +516,6 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 		bottomLeft:  '╰',
 		bottomRight: '╯',
 	}
-}
-
-func MakeTransparentBorder() BorderStyle {
-	return BorderStyle{
-		shape:       BorderRounded,
-		top:         ' ',
-		bottom:      ' ',
-		left:        ' ',
-		right:       ' ',
-		topLeft:     ' ',
-		topRight:    ' ',
-		bottomLeft:  ' ',
-		bottomRight: ' '}
 }
 
 type TermSize struct {
