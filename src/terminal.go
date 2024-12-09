@@ -1695,6 +1695,9 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 						marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
 					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
 					x := marginInt[3] + width - pwidth
+					if !previewOpts.border.HasRight() && t.borderShape.HasRight() {
+						pwidth++
+					}
 					createPreviewWindow(marginInt[0], x, pwidth, height)
 				}
 			}
