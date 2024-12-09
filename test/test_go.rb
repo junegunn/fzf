@@ -3081,6 +3081,13 @@ class TestGoFZF < TestBase
     end
   end
 
+  def test_preview_window_width_exception
+    tmux.send_keys "seq 10 | #{FZF} --scrollbar --preview-window border-left --border --preview 'seq 1000'", :Enter
+    tmux.until do |lines|
+      assert lines[1]&.end_with?(' 1/1000││')
+    end
+  end
+
   def test_become
     tmux.send_keys "seq 100 | #{FZF} --bind 'enter:become:seq {} | #{FZF}'", :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
