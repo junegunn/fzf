@@ -4722,7 +4722,18 @@ func (t *Terminal) Loop() error {
 				}
 
 				// Preview border dragging (resizing)
-				pborderDragging = me.Down && (pborderDragging || clicked && t.hasPreviewWindow() && t.pborder.Enclose(my, mx))
+				if !pborderDragging && clicked && t.hasPreviewWindow() && t.pborder.Enclose(my, mx) {
+					switch t.activePreviewOpts.position {
+					case posUp:
+						pborderDragging = my == t.pborder.Top()+t.pborder.Height()-1
+					case posDown:
+						pborderDragging = my == t.pborder.Top()
+					case posLeft:
+						pborderDragging = mx == t.pborder.Left()+t.pborder.Width()-1
+					case posRight:
+						pborderDragging = mx == t.pborder.Left()
+					}
+				}
 				if pborderDragging {
 					previewWidth := t.pwindow.Width() + borderColumns(t.activePreviewOpts.border, t.borderWidth)
 					previewHeight := t.pwindow.Height() + borderLines(t.activePreviewOpts.border)
