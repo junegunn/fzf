@@ -4736,8 +4736,7 @@ func (t *Terminal) Loop() error {
 
 					previewLeft := t.pwindow.Left()
 					previewTop := t.pwindow.Top()
-					// Unlike window, pwindow does not include it's border, so
-					// Left and Top have to be adjusted.
+					// pwindow does not include it's border, so Left and Top have to be adjusted.
 					if t.activePreviewOpts.border.HasLeft() {
 						previewLeft -= 1 + t.borderWidth
 					}
@@ -4762,7 +4761,6 @@ func (t *Terminal) Loop() error {
 						// +1 since index to size
 						newSize = mx - left + 1
 					}
-					// TODO: should this allow a size of zero?
 					if newSize < 1 {
 						newSize = 1
 					}
