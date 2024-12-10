@@ -1692,13 +1692,13 @@ func (t *Terminal) resizeWindows(forcePreview bool) {
 
 					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 				} else {
+					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
+					if !previewOpts.border.HasRight() && t.borderShape.HasRight() {
+						width++
+					}
 					t.window = t.tui.NewWindow(
 						marginInt[0], marginInt[3], width-pwidth, height, false, noBorder)
-					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
 					x := marginInt[3] + width - pwidth
-					if !previewOpts.border.HasRight() && t.borderShape.HasRight() {
-						pwidth++
-					}
 					createPreviewWindow(marginInt[0], x, pwidth, height)
 				}
 			}
@@ -4740,49 +4740,28 @@ func (t *Terminal) Loop() error {
 						pborderDragging = mx == t.pborder.Left()
 					}
 				}
+
 				if pborderDragging {
-					previewWidth := t.pwindow.Width() + borderColumns(t.activePreviewOpts.border, t.borderWidth)
-					previewHeight := t.pwindow.Height() + borderLines(t.activePreviewOpts.border)
-					minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
-
-					// Decrement, so the cursor drags the last column/row of the
-					// preview window (i.e. in most cases the border) and not
-					// the one after.
-					minPreviewWidth--
-					minPreviewHeight--
-
-					previewLeft := t.pwindow.Left()
-					previewTop := t.pwindow.Top()
-					// pwindow does not include it's border, so Left and Top have to be adjusted.
-					if t.activePreviewOpts.border.HasLeft() {
-						previewLeft -= 1 + t.borderWidth
-					}
-					if t.activePreviewOpts.border.HasTop() {
-						previewTop -= 1
-					}
-
 					var newSize int
 					switch t.activePreviewOpts.position {
-					case posUp:
-						top := previewTop + minPreviewHeight
-						// +1 since index to size
-						newSize = my - top + 1
-					case posRight:
-						right := previewLeft + previewWidth - minPreviewWidth
-						newSize = right - mx
-					case posDown:
-						bottom := previewTop + previewHeight - minPreviewHeight
-						newSize = bottom - my
 					case posLeft:
-						left := previewLeft + minPreviewWidth
-						// +1 since index to size
-						newSize = mx - left + 1
+						diff := t.pborder.Width() - t.pwindow.Width()
+						newSize = mx - t.pborder.Left() - diff + 1
+					case posUp:
+						diff := t.pborder.Height() - t.pwindow.Height()
+						newSize = my - t.pborder.Top() - diff + 1
+					case posDown:
+						offset := my - t.pborder.Top()
+						newSize = t.pwindow.Height() - offset
+					case posRight:
+						offset := mx - t.pborder.Left()
+						newSize = t.pwindow.Width() - offset
 					}
 					if newSize < 1 {
 						newSize = 1
 					}
 
-					// don't update if the size did not change (e.g. off-axis movement)
+					// Don't update if the size did not change (e.g. off-axis movement)
 					if !t.activePreviewOpts.size.percent && t.activePreviewOpts.size.size == float64(newSize) {
 						break
 					}
