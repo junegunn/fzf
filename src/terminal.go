@@ -4743,26 +4743,30 @@ func (t *Terminal) Loop() error {
 
 				if pborderDragging {
 					var newSize int
+					var prevSize int
 					switch t.activePreviewOpts.position {
 					case posLeft:
-						diff := t.pborder.Width() - t.pwindow.Width()
+						prevSize = t.pwindow.Width()
+						diff := t.pborder.Width() - prevSize
 						newSize = mx - t.pborder.Left() - diff + 1
 					case posUp:
-						diff := t.pborder.Height() - t.pwindow.Height()
+						prevSize = t.pwindow.Height()
+						diff := t.pborder.Height() - prevSize
 						newSize = my - t.pborder.Top() - diff + 1
 					case posDown:
+						prevSize = t.pwindow.Height()
 						offset := my - t.pborder.Top()
-						newSize = t.pwindow.Height() - offset
+						newSize = prevSize - offset
 					case posRight:
+						prevSize = t.pwindow.Width()
 						offset := mx - t.pborder.Left()
-						newSize = t.pwindow.Width() - offset
+						newSize = prevSize - offset
 					}
 					if newSize < 1 {
 						newSize = 1
 					}
 
-					// Don't update if the size did not change (e.g. off-axis movement)
-					if !t.activePreviewOpts.size.percent && t.activePreviewOpts.size.size == float64(newSize) {
+					if prevSize == newSize {
 						break
 					}
 
