@@ -145,6 +145,7 @@ type previewer struct {
 	following  resumableState
 	spinner    string
 	bar        []bool
+	xw         [2]int
 }
 
 type previewed struct {
@@ -857,7 +858,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
 		activePreviewOpts:  &opts.Preview,
-		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}},
+		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}, [2]int{0, 0}},
 		previewed:          previewed{0, 0, 0, false, false, false, false},
 		previewBox:         previewBox,
 		eventBox:           eventBox,
@@ -2842,10 +2843,12 @@ Loop:
 func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int) {
 	height := t.pwindow.Height()
 	w := t.pborder.Width()
+	xw := [2]int{t.pwindow.Left(), t.pwindow.Width()}
 	redraw := false
-	if len(t.previewer.bar) != height {
+	if len(t.previewer.bar) != height || t.previewer.xw != xw {
 		redraw = true
 		t.previewer.bar = make([]bool, height)
+		t.previewer.xw = xw
 	}
 	xshift := -1 - t.borderWidth
 	if !t.activePreviewOpts.border.HasRight() {
