@@ -381,14 +381,46 @@ func (a previewOpts) aboveOrBelow() bool {
 	return a.size.size > 0 && (a.position == posUp || a.position == posDown)
 }
 
-func (a previewOpts) sameLayout(b previewOpts) bool {
-	return a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden && a.threshold == b.threshold &&
-		(a.alternative != nil && b.alternative != nil && a.alternative.sameLayout(*b.alternative) ||
-			a.alternative == nil && b.alternative == nil)
-}
+type previewOptsCompare int
 
-func (a previewOpts) sameContentLayout(b previewOpts) bool {
-	return a.wrap == b.wrap && a.headerLines == b.headerLines && a.info == b.info
+const (
+	previewOptsSame previewOptsCompare = iota
+	previewOptsDifferentContentLayout
+	previewOptsDifferentLayout
+)
+
+func (o *previewOpts) compare(active *previewOpts, b *previewOpts) previewOptsCompare {
+	a := o
+
+	sameThreshold := o.position == b.position && o.threshold == b.threshold
+	// Alternative layout is being used
+	if o.alternative == active {
+		a = active
+
+		// If the other also has an alternative layout,
+		if b.alternative != nil {
+			// and if the same condition is the same, compare alt vs. alt.
+			if sameThreshold {
+				b = b.alternative
+			} else {
+				// If not, we pessimistically decide that the layouts may not be the same
+				return previewOptsDifferentLayout
+			}
+		}
+	} else if b.alternative != nil && !sameThreshold {
+		// We may choose the other's alternative layout, so let's be conservative.
+		return previewOptsDifferentLayout
+	}
+
+	if !(a.size == b.size && a.position == b.position && a.border == b.border && a.hidden == b.hidden) {
+		return previewOptsDifferentLayout
+	}
+
+	if a.wrap == b.wrap && a.headerLines == b.headerLines && a.info == b.info && a.scroll == b.scroll {
+		return previewOptsSame
+	}
+
+	return previewOptsDifferentContentLayout
 }
 
 func firstLine(s string) string {
