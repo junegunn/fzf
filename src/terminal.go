@@ -2161,7 +2161,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
-	postTask := func(lineNum int, width int, wrapped bool) {
+	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool) {
 		if (current || selected) && t.highlightLine {
 			color := tui.ColSelected
 			if current {
@@ -2176,7 +2176,12 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			newLine.width = maxWidth
 		} else {
-			fillSpaces := t.prevLines[lineNum].width - width
+			var fillSpaces int
+			if forceRedraw {
+				fillSpaces = maxWidth - width
+			} else {
+				fillSpaces = t.prevLines[lineNum].width - width
+			}
 			if wrapped {
 				fillSpaces -= t.wrapSignWidth
 			}
@@ -2288,7 +2293,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass), postTask func(int, int, bool)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass), postTask func(int, int, bool, bool)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -2381,7 +2386,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		if t.layout == layoutDefault {
 			actualLineNum = (lineNum - actualLineOffset) + (numItemLines - actualLineOffset) - 1
 		}
-		t.move(actualLineNum, 0, forceRedraw)
+		t.move(actualLineNum, 0, forceRedraw && postTask == nil)
 
 		if preTask != nil {
 			var marker markerClass
@@ -2485,7 +2490,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 
 		t.printColoredString(t.window, line, offsets, colBase)
 		if postTask != nil {
-			postTask(actualLineNum, displayWidth, wasWrapped)
+			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw)
 		} else {
 			t.markOtherLine(actualLineNum)
 		}
