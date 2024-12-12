@@ -3,6 +3,7 @@ CHANGELOG
 
 0.57.0
 ------
+- You can now resize the preview window by dragging the border
 - Built-in walker improvements
     - `--walker-root` can take multiple directory arguments. e.g. `--walker-root include src lib`
     - `--walker-skip` can handle multi-component patterns. e.g. `--walker-skip target/build`
