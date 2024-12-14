@@ -935,9 +935,6 @@ func (w *LightWindow) Height() int {
 func (w *LightWindow) Refresh() {
 }
 
-func (w *LightWindow) Close() {
-}
-
 func (w *LightWindow) X() int {
 	return w.posx
 }

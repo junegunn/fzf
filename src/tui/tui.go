@@ -559,7 +559,6 @@ type Window interface {
 	DrawHBorder()
 	Refresh()
 	FinishFill()
-	Close()
 
 	X() int
 	Y() int

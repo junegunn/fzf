@@ -1539,20 +1539,16 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	t.prevLines = make([]itemLine, screenHeight)
 	if t.border != nil && redrawBorder {
-		t.border.Close()
 		t.border = nil
 	}
 	if t.window != nil {
-		t.window.Close()
 		t.window = nil
 	}
 	if t.pborder != nil {
-		t.pborder.Close()
 		t.pborder = nil
 	}
 	hadPreviewWindow := t.hasPreviewWindow()
 	if hadPreviewWindow {
-		t.pwindow.Close()
 		t.pwindow = nil
 	}
 	// Reset preview version so that full redraw occurs

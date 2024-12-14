@@ -555,10 +555,6 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 	return w
 }
 
-func (w *TcellWindow) Close() {
-	// TODO
-}
-
 func fill(x, y, w, h int, n ColorPair, r rune) {
 	for ly := 0; ly <= h; ly++ {
 		for lx := 0; lx <= w; lx++ {
