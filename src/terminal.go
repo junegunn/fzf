@@ -2113,9 +2113,9 @@ func (t *Terminal) printList() {
 
 func (t *Terminal) printBar(lineNum int, forceRedraw bool, barRange [2]int) bool {
 	hasBar := lineNum >= barRange[0] && lineNum < barRange[1]
-	if len(t.scrollbar) > 0 && (hasBar != t.prevLines[lineNum].hasBar || forceRedraw) {
+	if hasBar != t.prevLines[lineNum].hasBar || forceRedraw {
 		t.move(lineNum, t.window.Width()-1, true)
-		if hasBar {
+		if len(t.scrollbar) > 0 && hasBar {
 			t.window.CPrint(tui.ColScrollbar, t.scrollbar)
 		}
 	}
