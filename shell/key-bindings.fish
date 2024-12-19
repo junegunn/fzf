@@ -172,7 +172,7 @@ function fzf_key_bindings
       # BUG: on combined expressions, if a left argument is a single `!`, the
       # builtin test command of fish will treat it as the ! operator. To
       # overcome this, have the variable parts on the right.
-      if test "." = "$dir" -a "." != (string sub -l 1 -- $commandline)
+      if test "." = "$dir" -a "./" != (string sub -l 2 -- $commandline)
         # if $dir is "." but commandline is not a relative path, this means no file path found
         set fzf_query $commandline
       else
