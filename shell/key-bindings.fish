@@ -57,8 +57,8 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -l FISH_MAJOR (string split -f 1 -- '.' $version)
-      set -l FISH_MINOR (string split -f 2 -- '.' $version)
+      set -l FISH_MAJOR (string split -- '.' $version)[1]
+      set -l FISH_MINOR (string split -- '.' $version)[2]
 
       # merge history from other sessions before searching
       test -z "$fish_private_mode"; and builtin history merge
