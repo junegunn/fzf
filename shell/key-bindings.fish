@@ -150,6 +150,9 @@ function fzf_key_bindings
     set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
     set commandline (string replace -- "$prefix" '' $commandline)
 
+    # Enable home directory expansion of leading ~/
+    set commandline (string replace -r -- '^~/' '\$HOME/' $commandline)
+
     # escape special characters, except for the $ sign of valid variable names,
     # so that after eval, the original string is returned, but with the
     # variable names replaced by their values.
