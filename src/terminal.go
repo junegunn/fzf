@@ -464,6 +464,7 @@ const (
 	actToggleHeader
 	actToggleWrap
 	actToggleMultiLine
+	actToggleHscroll
 	actTrackCurrent
 	actUntrackCurrent
 	actDown
@@ -4642,6 +4643,11 @@ func (t *Terminal) Loop() error {
 				req(reqList, reqHeader)
 			case actToggleMultiLine:
 				t.multiLine = !t.multiLine
+				req(reqList)
+			case actToggleHscroll:
+				// Force re-rendering of the list
+				t.prevLines = make([]itemLine, len(t.prevLines))
+				t.hscroll = !t.hscroll
 				req(reqList)
 			case actTrackCurrent:
 				if t.track == trackDisabled {
