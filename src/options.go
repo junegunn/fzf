@@ -1431,6 +1431,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleHeader)
 		case "toggle-wrap":
 			appendAction(actToggleWrap)
+		case "toggle-multi-line":
+			appendAction(actToggleMultiLine)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":

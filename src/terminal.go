@@ -463,6 +463,7 @@ const (
 	actToggleTrackCurrent
 	actToggleHeader
 	actToggleWrap
+	actToggleMultiLine
 	actTrackCurrent
 	actUntrackCurrent
 	actDown
@@ -4639,6 +4640,9 @@ func (t *Terminal) Loop() error {
 			case actToggleWrap:
 				t.wrap = !t.wrap
 				req(reqList, reqHeader)
+			case actToggleMultiLine:
+				t.multiLine = !t.multiLine
+				req(reqList)
 			case actTrackCurrent:
 				if t.track == trackDisabled {
 					t.track = trackCurrent

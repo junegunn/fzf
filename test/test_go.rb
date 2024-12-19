@@ -2133,7 +2133,11 @@ class TestGoFZF < TestBase
   end
 
   def test_keep_right
-    tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right --no-multi-line", :Enter
+    tmux.send_keys "seq 10000 | #{FZF} --read0 --keep-right --no-multi-line --bind space:toggle-multi-line", :Enter
+    tmux.until { |lines| assert lines.any_include?('9999␊10000') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('> 1') }
+    tmux.send_keys :Space
     tmux.until { |lines| assert lines.any_include?('9999␊10000') }
   end
 
