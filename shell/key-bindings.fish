@@ -57,8 +57,8 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -l FISH_MAJOR (string split '.' -- $version)[1]
-      set -l FISH_MINOR (string split '.' -- $version)[2]
+      set -l FISH_MAJOR (string split -f 1 -- '.' $version)
+      set -l FISH_MINOR (string split -f 2 -- '.' $version)
 
       # merge history from other sessions before searching
       test -z "$fish_private_mode"; and builtin history merge
@@ -157,13 +157,13 @@ function fzf_key_bindings
     # so that after eval, the original string is returned, but with the
     # variable names replaced by their values.
     set commandline (string escape -n -- $commandline)
-    set commandline (string replace -r -a '\x5c\$(?=[\w])' '\$' -- $commandline)
+    set commandline (string replace -r -a -- '\x5c\$(?=[\w])' '\$' $commandline)
 
     # eval is used to do shell expansion on paths
     eval set commandline $commandline
 
     # Combine multiple consecutive slashes into one
-    set commandline (string replace -r -a '/+' '/' -- $commandline)
+    set commandline (string replace -r -a -- '/+' '/' $commandline)
 
     if test -z "$commandline"
       # Default to current directory with no --query
@@ -180,7 +180,7 @@ function fzf_key_bindings
         set fzf_query $commandline
       else
         # Also remove trailing slash after dir, to "split" input properly
-        set fzf_query (string replace -r "^$dir/?" '' -- $commandline)
+        set fzf_query (string replace -r -- "^$dir/?" '' $commandline)
       end
     end
 
@@ -193,7 +193,7 @@ function fzf_key_bindings
     set dir $argv
 
     # Strip trailing slash, unless $dir is root dir (/)
-    set dir (string replace -r '(?<!^)/$' '' -- $dir)
+    set dir (string replace -r -- '(?<!^)/$' '' $dir)
 
     # Iteratively check if dir exists and strip tail end of path
     while test ! -d "$dir"
