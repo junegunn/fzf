@@ -1,4 +1,3 @@
-SHELL          := bash
 GO             ?= go
 GOOS           ?= $(shell $(GO) env GOOS)
 
@@ -14,7 +13,7 @@ endif
 ifeq ($(VERSION),)
 $(error Not on git repository; cannot determine $$FZF_VERSION)
 endif
-VERSION_TRIM   := $(shell sed "s/^v//; s/-.*//" <<< $(VERSION))
+VERSION_TRIM   := $(shell echo $(VERSION) | sed "s/^v//; s/-.*//")
 VERSION_REGEX  := $(subst .,\.,$(VERSION_TRIM))
 
 ifdef FZF_REVISION
