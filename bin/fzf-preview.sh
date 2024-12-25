@@ -14,7 +14,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 file=${1/#\~\//$HOME/}
-type=$(file --dereference --mime -- "$file")
+type=$(file --brief --dereference --mime -- "$file")
 
 if [[ ! $type =~ image/ ]]; then
   if [[ $type =~ =binary ]]; then
