@@ -1539,7 +1539,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	width := screenWidth - marginInt[1] - marginInt[3]
 	height := screenHeight - marginInt[0] - marginInt[2]
 
-	t.prevLines = make([]itemLine, screenHeight)
+	t.prevLines = make([]itemLine, util.Max(1, screenHeight))
 	if t.border != nil && redrawBorder {
 		t.border = nil
 	}

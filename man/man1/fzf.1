@@ -271,22 +271,23 @@ Adaptive height has the following limitations:
 Minimum height when \fB\-\-height\fR is given in percent (default: 10).
 Ignored when \fB\-\-height\fR is not specified.
 .TP
-.BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]]"
-Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
-later. This option is ignored if you are not running fzf inside tmux.
+.BI "\-\-popup" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]]"
+Start fzf in a tmux popup or in a zellij floating pane (default
+\fBcenter,50%\fR). Requires tmux 3.3+ or zellij. This option is ignored if you
+are not running fzf inside tmux or zellij.
 
 e.g.
   \fB# Popup in the center with 70% width and height
-  fzf \-\-tmux 70%
+  fzf \-\-popup 70%
 
   # Popup on the left with 40% width and 100% height
-  fzf \-\-tmux right,40%
+  fzf \-\-popup right,40%
 
   # Popup on the bottom with 100% width and 30% height
-  fzf \-\-tmux bottom,30%
+  fzf \-\-popup bottom,30%
 
   # Popup on the top with 80% width and 40% height
-  fzf \-\-tmux top,80%,40%\fR
+  fzf \-\-popup top,80%,40%\fR
 
 .TP
 .BI "\-\-layout=" "LAYOUT"

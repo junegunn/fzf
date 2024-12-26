@@ -39,8 +39,13 @@ func (r revision) compatible(other revision) bool {
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if opts.Filter == nil {
-		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
-			return runTmux(os.Args, opts)
+		if opts.Tmux != nil && opts.Tmux.index >= opts.Height.index {
+			if len(os.Getenv("TMUX")) > 0 {
+				return runTmux(os.Args, opts)
+			}
+			if len(os.Getenv("ZELLIJ")) > 0 {
+				return runZellij(os.Args, opts)
+			}
 		}
 
 		if needWinpty(opts) {
