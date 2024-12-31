@@ -75,7 +75,7 @@ Usage: fzf [options]
                             according to the input size.
     --min-height=HEIGHT     Minimum height when --height is given in percent
                             (default: 10)
-    --tmux[=OPTS]           Start fzf in a tmux popup (requires tmux 3.3+)
+    --popup[=OPTS]          Start fzf in a popup (requires tmux 3.3+ or zellij)
                             [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                             (default: center,50%)
     --layout=LAYOUT         Choose layout: [default|reverse|reverse-list]
@@ -307,7 +307,7 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
+	errorToReturn := errors.New("invalid popup option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
 	if len(tokens) == 0 || len(tokens) > 3 {
 		return nil, errorToReturn
 	}
@@ -2053,7 +2053,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Version = true
 		case "--no-winpty":
 			opts.NoWinpty = true
-		case "--tmux":
+		case "--tmux", "--popup":
 			given, str := optionalNextString(allArgs, &i)
 			if given {
 				if opts.Tmux, err = parseTmuxOptions(str, index); err != nil {
@@ -2062,7 +2062,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			} else {
 				opts.Tmux = defaultTmuxOptions(index)
 			}
-		case "--no-tmux":
+		case "--no-tmux", "--no-popup":
 			opts.Tmux = nil
 		case "--force-tty-in":
 			// NOTE: We need this because `system('fzf --tmux < /dev/tty')` doesn't
@@ -2619,6 +2619,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		default:
 			if match, value := optString(arg, "--algo="); match {
 				if opts.FuzzyAlgo, err = parseAlgo(value); err != nil {
+					return err
+				}
+			} else if match, value := optString(arg, "--popup="); match {
+				if opts.Tmux, err = parseTmuxOptions(value, index); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--tmux="); match {

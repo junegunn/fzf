@@ -18,7 +18,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	for _, arg := range args {
 		argStr += " " + escapeSingleQuote(arg)
 	}
-	argStr += ` --no-tmux --no-height`
+	argStr += ` --no-popup --no-height`
 
 	// Get current directory
 	dir, err := os.Getwd()
