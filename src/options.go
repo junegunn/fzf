@@ -2637,6 +2637,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if opts.BorderShape, err = parseBorder(value, false); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--list-border="); match {
+				if opts.ListBorderShape, err = parseBorder(value, false); err != nil {
+					return err
+				}
 			} else if match, value := optString(arg, "--list-label="); match {
 				opts.ListLabel.label = value
 			} else if match, value := optString(arg, "--list-label-pos="); match {
