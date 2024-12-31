@@ -552,33 +552,37 @@ color mappings.
     \fBbw      \fRNo colors (equivalent to \fB\-\-no\-color\fR)
 
 .B COLOR NAMES:
-    \fBfg                  \fRText
-      \fBselected\-fg       \fRSelected line text
-      \fBpreview\-fg        \fRPreview window text
-    \fBbg                  \fRBackground
-      \fBselected\-bg       \fRSelected line background
-      \fBpreview\-bg        \fRPreview window background
-    \fBhl                  \fRHighlighted substrings
-      \fBselected\-hl       \fRHighlighted substrings in the selected line
-    \fBcurrent\-fg (fg+)    \fRText (current line)
-    \fBcurrent\-bg (bg+)    \fRBackground (current line)
-      \fBgutter            \fRGutter on the left
-    \fBcurrent\-hl (hl+)    \fRHighlighted substrings (current line)
-    \fBquery               \fRQuery string
-      \fBdisabled          \fRQuery string when search is disabled (\fB\-\-disabled\fR)
-    \fBinfo                \fRInfo line (match counters)
-    \fBborder              \fRBorder around the window (\fB\-\-border\fR and \fB\-\-preview\fR)
-      \fBscrollbar         \fRScrollbar
-      \fBpreview\-border    \fRBorder around the preview window (\fB\-\-preview\fR)
-      \fBpreview\-scrollbar \fRScrollbar
-      \fBseparator         \fRHorizontal separator on info line
-    \fBlabel               \fRBorder label (\fB\-\-border\-label\fR and \fB\-\-preview\-label\fR)
-      \fBpreview\-label     \fRBorder label of the preview window (\fB\-\-preview\-label\fR)
-    \fBprompt              \fRPrompt
-    \fBpointer             \fRPointer to the current line
-    \fBmarker              \fRMulti\-select marker
-    \fBspinner             \fRStreaming input indicator
-    \fBheader              \fRHeader
+    \fBfg                    \fRText
+      \fBlist\-fg             \fRText in the list section
+        \fBselected\-fg       \fRSelected line text
+      \fBpreview\-fg          \fRPreview window text
+    \fBbg                    \fRBackground
+      \fBlist\-bg             \fRBackground in the list section
+        \fBselected\-bg       \fRSelected line background
+      \fBpreview\-bg          \fRPreview window background
+    \fBhl                    \fRHighlighted substrings
+      \fBselected\-hl         \fRHighlighted substrings in the selected line
+    \fBcurrent\-fg (fg+)      \fRText (current line)
+    \fBcurrent\-bg (bg+)      \fRBackground (current line)
+      \fBgutter              \fRGutter on the left
+    \fBcurrent\-hl (hl+)      \fRHighlighted substrings (current line)
+    \fBquery                 \fRQuery string
+      \fBdisabled            \fRQuery string when search is disabled (\fB\-\-disabled\fR)
+    \fBinfo                  \fRInfo line (match counters)
+    \fBborder                \fRBorder around the window (\fB\-\-border\fR and \fB\-\-preview\fR)
+      \fBlist\-border         \fRBorder around the list section (\fB\-\-list\-border\fR)
+        \fBscrollbar         \fRScrollbar
+        \fBseparator         \fRHorizontal separator on info line
+      \fBpreview\-border      \fRBorder around the preview window (\fB\-\-preview\fR)
+        \fBpreview\-scrollbar \fRScrollbar
+    \fBlabel                 \fRBorder label (\fB\-\-border\-label\fR, \fB\-\-list\-label\fR, and \fB\-\-preview\-label\fR)
+      \fBlist\-label          \fRBorder label of the list section (\fB\-\-list\-label\fR)
+      \fBpreview\-label       \fRBorder label of the preview window (\fB\-\-preview\-label\fR)
+    \fBprompt                \fRPrompt
+    \fBpointer               \fRPointer to the current line
+    \fBmarker                \fRMulti\-select marker
+    \fBspinner               \fRStreaming input indicator
+    \fBheader                \fRHeader
 
 .B ANSI COLORS:
     \fB\-1         \fRDefault terminal foreground/background color
@@ -1440,6 +1444,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
     \fBchange\-header(...)\fR           (change header to the given string; doesn't affect \fB\-\-header\-lines\fR)
+    \fBchange\-list\-label(...)\fR       (change \fB\-\-list\-label\fR to the given string)
     \fBchange\-multi\fR                 (enable multi-select mode with no limit)
     \fBchange\-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
     \fBchange\-preview(...)\fR          (change \fB\-\-preview\fR option)
@@ -1524,6 +1529,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform(...)\fR               (transform states using the output of an external command)
     \fBtransform\-border\-label(...)\fR  (transform border label using an external command)
     \fBtransform\-header(...)\fR        (transform header using an external command)
+    \fBtransform\-list\-label(...)\fR    (transform list label using an external command)
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform\-query(...)\fR         (transform query string using an external command)

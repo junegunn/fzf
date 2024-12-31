@@ -87,6 +87,14 @@ Usage: fzf [options]
                             [POSITIVE_INTEGER: columns from left|
                              NEGATIVE_INTEGER: columns from right][:bottom]
                             (default: 0 or center)
+    --list-border[=STYLE]   Draw border around the list section
+                            [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
+                             top|bottom|left|right|none] (default: none)
+    --list-label=LABEL      Label to print on the list border
+    --list-label-pos=COL    Position of the list label
+                            [POSITIVE_INTEGER: columns from left|
+                             NEGATIVE_INTEGER: columns from right][:bottom]
+                            (default: 0 or center)
     --margin=MARGIN         Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING       Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --info=STYLE            Finder info style
@@ -436,100 +444,102 @@ type walkerOpts struct {
 
 // Options stores the values of command-line options
 type Options struct {
-	Input        chan string
-	Output       chan string
-	NoWinpty     bool
-	Tmux         *tmuxOptions
-	ForceTtyIn   bool
-	ProxyScript  string
-	Bash         bool
-	Zsh          bool
-	Fish         bool
-	Man          bool
-	Fuzzy        bool
-	FuzzyAlgo    algo.Algo
-	Scheme       string
-	Extended     bool
-	Phony        bool
-	Case         Case
-	Normalize    bool
-	Nth          []Range
-	WithNth      []Range
-	Delimiter    Delimiter
-	Sort         int
-	Track        trackOption
-	Tac          bool
-	Tail         int
-	Criteria     []criterion
-	Multi        int
-	Ansi         bool
-	Mouse        bool
-	Theme        *tui.ColorTheme
-	Black        bool
-	Bold         bool
-	Height       heightSpec
-	MinHeight    int
-	Layout       layoutType
-	Cycle        bool
-	Wrap         bool
-	WrapSign     *string
-	MultiLine    bool
-	CursorLine   bool
-	KeepRight    bool
-	Hscroll      bool
-	HscrollOff   int
-	ScrollOff    int
-	FileWord     bool
-	InfoStyle    infoStyle
-	InfoPrefix   string
-	InfoCommand  string
-	Separator    *string
-	JumpLabels   string
-	Prompt       string
-	Pointer      *string
-	Marker       *string
-	MarkerMulti  *[3]string
-	Query        string
-	Select1      bool
-	Exit0        bool
-	Filter       *string
-	ToggleSort   bool
-	Expect       map[tui.Event]string
-	Keymap       map[tui.Event][]*action
-	Preview      previewOpts
-	PrintQuery   bool
-	ReadZero     bool
-	Printer      func(string)
-	PrintSep     string
-	Sync         bool
-	History      *History
-	Header       []string
-	HeaderLines  int
-	HeaderFirst  bool
-	Gap          int
-	Ellipsis     *string
-	Scrollbar    *string
-	Margin       [4]sizeSpec
-	Padding      [4]sizeSpec
-	BorderShape  tui.BorderShape
-	BorderLabel  labelOpts
-	PreviewLabel labelOpts
-	Unicode      bool
-	Ambidouble   bool
-	Tabstop      int
-	WithShell    string
-	ListenAddr   *listenAddress
-	Unsafe       bool
-	ClearOnExit  bool
-	WalkerOpts   walkerOpts
-	WalkerRoot   []string
-	WalkerSkip   []string
-	Version      bool
-	Help         bool
-	CPUProfile   string
-	MEMProfile   string
-	BlockProfile string
-	MutexProfile string
+	Input           chan string
+	Output          chan string
+	NoWinpty        bool
+	Tmux            *tmuxOptions
+	ForceTtyIn      bool
+	ProxyScript     string
+	Bash            bool
+	Zsh             bool
+	Fish            bool
+	Man             bool
+	Fuzzy           bool
+	FuzzyAlgo       algo.Algo
+	Scheme          string
+	Extended        bool
+	Phony           bool
+	Case            Case
+	Normalize       bool
+	Nth             []Range
+	WithNth         []Range
+	Delimiter       Delimiter
+	Sort            int
+	Track           trackOption
+	Tac             bool
+	Tail            int
+	Criteria        []criterion
+	Multi           int
+	Ansi            bool
+	Mouse           bool
+	Theme           *tui.ColorTheme
+	Black           bool
+	Bold            bool
+	Height          heightSpec
+	MinHeight       int
+	Layout          layoutType
+	Cycle           bool
+	Wrap            bool
+	WrapSign        *string
+	MultiLine       bool
+	CursorLine      bool
+	KeepRight       bool
+	Hscroll         bool
+	HscrollOff      int
+	ScrollOff       int
+	FileWord        bool
+	InfoStyle       infoStyle
+	InfoPrefix      string
+	InfoCommand     string
+	Separator       *string
+	JumpLabels      string
+	Prompt          string
+	Pointer         *string
+	Marker          *string
+	MarkerMulti     *[3]string
+	Query           string
+	Select1         bool
+	Exit0           bool
+	Filter          *string
+	ToggleSort      bool
+	Expect          map[tui.Event]string
+	Keymap          map[tui.Event][]*action
+	Preview         previewOpts
+	PrintQuery      bool
+	ReadZero        bool
+	Printer         func(string)
+	PrintSep        string
+	Sync            bool
+	History         *History
+	Header          []string
+	HeaderLines     int
+	HeaderFirst     bool
+	Gap             int
+	Ellipsis        *string
+	Scrollbar       *string
+	Margin          [4]sizeSpec
+	Padding         [4]sizeSpec
+	BorderShape     tui.BorderShape
+	ListBorderShape tui.BorderShape
+	BorderLabel     labelOpts
+	ListLabel       labelOpts
+	PreviewLabel    labelOpts
+	Unicode         bool
+	Ambidouble      bool
+	Tabstop         int
+	WithShell       string
+	ListenAddr      *listenAddress
+	Unsafe          bool
+	ClearOnExit     bool
+	WalkerOpts      walkerOpts
+	WalkerRoot      []string
+	WalkerSkip      []string
+	Version         bool
+	Help            bool
+	CPUProfile      string
+	MEMProfile      string
+	BlockProfile    string
+	MutexProfile    string
 }
 
 func filterNonEmpty(input []string) []string {
@@ -1166,6 +1176,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.Fg)
 			case "bg":
 				mergeAttr(&theme.Bg)
+			case "list-fg":
+				mergeAttr(&theme.ListFg)
+			case "list-bg":
+				mergeAttr(&theme.ListBg)
 			case "preview-fg":
 				mergeAttr(&theme.PreviewFg)
 			case "preview-bg":
@@ -1198,6 +1212,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.PreviewScrollbar)
 			case "label":
 				mergeAttr(&theme.BorderLabel)
+			case "list-label":
+				mergeAttr(&theme.ListLabel)
+			case "list-border":
+				mergeAttr(&theme.ListBorder)
 			case "preview-label":
 				mergeAttr(&theme.PreviewLabel)
 			case "prompt":
@@ -1265,7 +1283,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|preview-label)|transform|change-(?:preview-window|preview|multi)|(?:re|un)bind|pos|put|print)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:header|query|prompt|border-label|list-label|preview-label)|transform|change-(?:preview-window|preview|multi)|(?:re|un)bind|pos|put|print)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1621,6 +1639,8 @@ func isExecuteAction(str string) actionType {
 		return actRebind
 	case "preview":
 		return actPreview
+	case "change-list-label":
+		return actChangeListLabel
 	case "change-border-label":
 		return actChangeBorderLabel
 	case "change-header":
@@ -1651,6 +1671,8 @@ func isExecuteAction(str string) actionType {
 		return actPut
 	case "transform":
 		return actTransform
+	case "transform-list-label":
+		return actTransformListLabel
 	case "transform-border-label":
 		return actTransformBorderLabel
 	case "transform-preview-label":
@@ -2456,6 +2478,28 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.BorderShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
+		case "--list-border":
+			hasArg, arg := optionalNextString(allArgs, &i)
+			if opts.ListBorderShape, err = parseBorder(arg, !hasArg); err != nil {
+				return err
+			}
+		case "--no-list-border":
+			opts.ListBorderShape = tui.BorderNone
+		case "--no-list-label":
+			opts.ListLabel.label = ""
+		case "--list-label":
+			opts.ListLabel.label, err = nextString(allArgs, &i, "label required")
+			if err != nil {
+				return err
+			}
+		case "--list-label-pos":
+			pos, err := nextString(allArgs, &i, "label position required (positive or negative integer or 'center')")
+			if err != nil {
+				return err
+			}
+			if err := parseLabelPosition(&opts.ListLabel, pos); err != nil {
+				return err
+			}
 		case "--no-border-label":
 			opts.BorderLabel.label = ""
 		case "--border-label":
@@ -2591,6 +2635,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--border="); match {
 				if opts.BorderShape, err = parseBorder(value, false); err != nil {
+					return err
+				}
+			} else if match, value := optString(arg, "--list-label="); match {
+				opts.ListLabel.label = value
+			} else if match, value := optString(arg, "--list-label-pos="); match {
+				if err := parseLabelPosition(&opts.ListLabel, value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--border-label="); match {
@@ -2862,6 +2912,10 @@ func postProcessOptions(opts *Options) error {
 
 	if opts.BorderShape == tui.BorderUndefined {
 		opts.BorderShape = tui.BorderNone
+	}
+
+	if opts.ListBorderShape == tui.BorderUndefined {
+		opts.ListBorderShape = tui.BorderNone
 	}
 
 	if opts.Pointer == nil {

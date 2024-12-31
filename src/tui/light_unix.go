@@ -18,7 +18,7 @@ func IsLightRendererSupported() bool {
 	return true
 }
 
-func (r *LightRenderer) defaultTheme() *ColorTheme {
+func (r *LightRenderer) DefaultTheme() *ColorTheme {
 	if strings.Contains(os.Getenv("TERM"), "256") {
 		return Dark256
 	}

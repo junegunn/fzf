@@ -116,19 +116,19 @@ type LightRenderer struct {
 }
 
 type LightWindow struct {
-	renderer *LightRenderer
-	colored  bool
-	preview  bool
-	border   BorderStyle
-	top      int
-	left     int
-	width    int
-	height   int
-	posx     int
-	posy     int
-	tabstop  int
-	fg       Color
-	bg       Color
+	renderer   *LightRenderer
+	colored    bool
+	windowType WindowType
+	border     BorderStyle
+	top        int
+	left       int
+	width      int
+	height     int
+	posx       int
+	posy       int
+	tabstop    int
+	fg         Color
+	bg         Color
 }
 
 func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
@@ -174,7 +174,6 @@ func (r *LightRenderer) Init() error {
 		return err
 	}
 	r.updateTerminalSize()
-	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
 	if r.fullscreen {
 		r.smcup()
@@ -780,27 +779,32 @@ func (r *LightRenderer) MaxY() int {
 	return r.height
 }
 
-func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
+func (r *LightRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
 	w := &LightWindow{
-		renderer: r,
-		colored:  r.theme.Colored,
-		preview:  preview,
-		border:   borderStyle,
-		top:      top,
-		left:     left,
-		width:    width,
-		height:   height,
-		tabstop:  r.tabstop,
-		fg:       colDefault,
-		bg:       colDefault}
-	if preview {
-		w.fg = r.theme.PreviewFg.Color
-		w.bg = r.theme.PreviewBg.Color
-	} else {
+		renderer:   r,
+		colored:    r.theme.Colored,
+		windowType: windowType,
+		border:     borderStyle,
+		top:        top,
+		left:       left,
+		width:      width,
+		height:     height,
+		tabstop:    r.tabstop,
+		fg:         colDefault,
+		bg:         colDefault}
+	switch windowType {
+	case WindowBase:
 		w.fg = r.theme.Fg.Color
 		w.bg = r.theme.Bg.Color
+	case WindowList:
+		w.fg = r.theme.ListFg.Color
+		w.bg = r.theme.ListBg.Color
+	case WindowPreview:
+		w.fg = r.theme.PreviewFg.Color
+		w.bg = r.theme.PreviewBg.Color
 	}
-	if !w.bg.IsDefault() && w.border.shape != BorderNone {
+	if erase && !w.bg.IsDefault() && w.border.shape != BorderNone {
+		// fzf --color bg:blue --border --padding 1,2
 		w.Erase()
 	}
 	w.drawBorder(false)
@@ -845,7 +849,10 @@ func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 
 func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
@@ -863,7 +870,10 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 func (w *LightWindow) drawBorderVertical(left, right bool) {
 	vw := runeWidth(w.border.left)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	for y := 0; y < w.height; y++ {
@@ -883,7 +893,10 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	w.Move(0, 0)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)

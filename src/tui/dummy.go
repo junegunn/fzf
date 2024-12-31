@@ -30,6 +30,7 @@ const (
 )
 
 func (r *FullscreenRenderer) Init() error                        { return nil }
+func (r *FullscreenRenderer) DefaultTheme() *ColorTheme          { return nil }
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
 func (r *FullscreenRenderer) Pause(bool)                         {}
 func (r *FullscreenRenderer) Resume(bool, bool)                  {}
@@ -48,6 +49,6 @@ func (r *FullscreenRenderer) MaxY() int      { return 0 }
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {}
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
 	return nil
 }

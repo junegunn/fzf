@@ -39,7 +39,7 @@ func IsLightRendererSupported() bool {
 	return canSetVt100
 }
 
-func (r *LightRenderer) defaultTheme() *ColorTheme {
+func (r *LightRenderer) DefaultTheme() *ColorTheme {
 	// the getenv check is borrowed from here: https://github.com/gdamore/tcell/commit/0c473b86d82f68226a142e96cc5a34c5a29b3690#diff-b008fcd5e6934bf31bc3d33bf49f47d8R178:
 	if !IsLightRendererSupported() || os.Getenv("ConEmuPID") != "" || os.Getenv("TCELL_TRUECOLOR") == "disable" {
 		return Default16
