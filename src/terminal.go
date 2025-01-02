@@ -1918,6 +1918,10 @@ func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts label
 		return
 	}
 
+	if window.Height() == 0 {
+		return
+	}
+
 	switch borderShape {
 	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
 		if redrawBorder {
@@ -2055,7 +2059,7 @@ func (t *Terminal) printInfo() {
 }
 
 func (t *Terminal) printInfoImpl() {
-	if t.window.Width() <= 1 {
+	if t.window.Width() <= 1 || t.window.Height() == 0 {
 		return
 	}
 	pos := 0
