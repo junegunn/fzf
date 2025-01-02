@@ -313,6 +313,9 @@ type ColorTheme struct {
 	DarkBg           ColorAttr
 	Gutter           ColorAttr
 	Prompt           ColorAttr
+	InputBg          ColorAttr
+	InputBorder      ColorAttr
+	InputLabel       ColorAttr
 	Match            ColorAttr
 	Current          ColorAttr
 	CurrentMatch     ColorAttr
@@ -539,6 +542,7 @@ const (
 	WindowBase WindowType = iota
 	WindowList
 	WindowPreview
+	WindowInput
 )
 
 type Renderer interface {
@@ -646,6 +650,8 @@ var (
 	ColPreviewSpinner       ColorPair
 	ColListBorder           ColorPair
 	ColListLabel            ColorPair
+	ColInputBorder          ColorPair
+	ColInputLabel           ColorPair
 )
 
 func EmptyTheme() *ColorTheme {
@@ -682,6 +688,9 @@ func EmptyTheme() *ColorTheme {
 		PreviewLabel:     ColorAttr{colUndefined, AttrUndefined},
 		Separator:        ColorAttr{colUndefined, AttrUndefined},
 		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
+		InputBg:          ColorAttr{colUndefined, AttrUndefined},
+		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
+		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -719,6 +728,9 @@ func NoColorTheme() *ColorTheme {
 		ListBorder:       ColorAttr{colDefault, AttrUndefined},
 		Separator:        ColorAttr{colDefault, AttrUndefined},
 		Scrollbar:        ColorAttr{colDefault, AttrUndefined},
+		InputBg:          ColorAttr{colDefault, AttrUndefined},
+		InputBorder:      ColorAttr{colDefault, AttrUndefined},
+		InputLabel:       ColorAttr{colDefault, AttrUndefined},
 	}
 }
 
@@ -756,6 +768,9 @@ func init() {
 		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
 		Separator:        ColorAttr{colUndefined, AttrUndefined},
 		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
+		InputBg:          ColorAttr{colUndefined, AttrUndefined},
+		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
+		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
 	}
 	Dark256 = &ColorTheme{
 		Colored:          true,
@@ -790,6 +805,9 @@ func init() {
 		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
 		Separator:        ColorAttr{colUndefined, AttrUndefined},
 		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
+		InputBg:          ColorAttr{colUndefined, AttrUndefined},
+		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
+		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
 	}
 	Light256 = &ColorTheme{
 		Colored:          true,
@@ -824,6 +842,9 @@ func init() {
 		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
 		Separator:        ColorAttr{colUndefined, AttrUndefined},
 		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
+		InputBg:          ColorAttr{colUndefined, AttrUndefined},
+		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
+		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -875,6 +896,9 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Separator = o(theme.ListBorder, theme.Separator)
 	theme.Scrollbar = o(theme.ListBorder, theme.Scrollbar)
 	theme.PreviewScrollbar = o(theme.PreviewBorder, theme.PreviewScrollbar)
+	theme.InputBg = o(theme.Bg, o(theme.ListBg, theme.InputBg))
+	theme.InputBorder = o(theme.Border, theme.InputBorder)
+	theme.InputLabel = o(theme.BorderLabel, theme.InputLabel)
 
 	initPalette(theme)
 }
@@ -889,10 +913,10 @@ func initPalette(theme *ColorTheme) {
 	blank := theme.ListFg
 	blank.Attr = AttrRegular
 
-	ColPrompt = pair(theme.Prompt, theme.ListBg)
+	ColPrompt = pair(theme.Prompt, theme.InputBg)
 	ColNormal = pair(theme.ListFg, theme.ListBg)
 	ColSelected = pair(theme.SelectedFg, theme.SelectedBg)
-	ColInput = pair(theme.Input, theme.ListBg)
+	ColInput = pair(theme.Input, theme.InputBg)
 	ColDisabled = pair(theme.Disabled, theme.ListBg)
 	ColMatch = pair(theme.Match, theme.ListBg)
 	ColSelectedMatch = pair(theme.SelectedMatch, theme.SelectedBg)
@@ -909,10 +933,10 @@ func initPalette(theme *ColorTheme) {
 	ColCurrentCursorEmpty = pair(blank, theme.DarkBg)
 	ColCurrentMarker = pair(theme.Marker, theme.DarkBg)
 	ColCurrentSelectedEmpty = pair(blank, theme.DarkBg)
-	ColSpinner = pair(theme.Spinner, theme.ListBg)
-	ColInfo = pair(theme.Info, theme.ListBg)
+	ColSpinner = pair(theme.Spinner, theme.InputBg)
+	ColInfo = pair(theme.Info, theme.InputBg)
 	ColHeader = pair(theme.Header, theme.ListBg)
-	ColSeparator = pair(theme.Separator, theme.ListBg)
+	ColSeparator = pair(theme.Separator, theme.InputBg)
 	ColScrollbar = pair(theme.Scrollbar, theme.ListBg)
 	ColBorder = pair(theme.Border, theme.Bg)
 	ColBorderLabel = pair(theme.BorderLabel, theme.Bg)
@@ -923,6 +947,8 @@ func initPalette(theme *ColorTheme) {
 	ColPreviewSpinner = pair(theme.Spinner, theme.PreviewBg)
 	ColListLabel = pair(theme.ListLabel, theme.ListBg)
 	ColListBorder = pair(theme.ListBorder, theme.ListBg)
+	ColInputBorder = pair(theme.InputBorder, theme.InputBg)
+	ColInputLabel = pair(theme.InputLabel, theme.InputBg)
 }
 
 func runeWidth(r rune) int {

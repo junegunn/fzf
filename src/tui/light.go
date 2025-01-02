@@ -780,6 +780,8 @@ func (r *LightRenderer) MaxY() int {
 }
 
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
+	width = util.Max(0, width)
+	height = util.Max(0, height)
 	w := &LightWindow{
 		renderer:   r,
 		colored:    r.theme.Colored,
@@ -799,6 +801,9 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, wind
 	case WindowList:
 		w.fg = r.theme.ListFg.Color
 		w.bg = r.theme.ListBg.Color
+	case WindowInput:
+		w.fg = r.theme.Input.Color
+		w.bg = r.theme.InputBg.Color
 	case WindowPreview:
 		w.fg = r.theme.PreviewFg.Color
 		w.bg = r.theme.PreviewBg.Color
@@ -820,6 +825,9 @@ func (w *LightWindow) DrawHBorder() {
 }
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
+	if w.height == 0 {
+		return
+	}
 	switch w.border.shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
@@ -852,6 +860,8 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	switch w.windowType {
 	case WindowList:
 		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -873,6 +883,8 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 	switch w.windowType {
 	case WindowList:
 		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -896,6 +908,8 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	switch w.windowType {
 	case WindowList:
 		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}

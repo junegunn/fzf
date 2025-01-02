@@ -551,10 +551,14 @@ func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
 }
 
 func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
+	width = util.Max(0, width)
+	height = util.Max(0, height)
 	normal := ColBorder
 	switch windowType {
 	case WindowList:
 		normal = ColListBorder
+	case WindowInput:
+		normal = ColInputBorder
 	case WindowPreview:
 		normal = ColPreviewBorder
 	}
@@ -768,6 +772,9 @@ func (w *TcellWindow) DrawHBorder() {
 }
 
 func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
+	if w.height == 0 {
+		return
+	}
 	shape := w.borderStyle.shape
 	if shape == BorderNone {
 		return
@@ -785,6 +792,8 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 			style = ColBorder.style()
 		case WindowList:
 			style = ColListBorder.style()
+		case WindowInput:
+			style = ColInputBorder.style()
 		case WindowPreview:
 			style = ColPreviewBorder.style()
 		}

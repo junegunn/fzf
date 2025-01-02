@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Dec 2024" "fzf 0.57.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2025" "fzf 0.58.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -557,16 +557,17 @@ color mappings.
         \fBselected\-fg       \fRSelected line text
       \fBpreview\-fg          \fRPreview window text
     \fBbg                    \fRBackground
-      \fBlist\-bg             \fRBackground in the list section
+      \fBlist\-bg             \fRList section background
         \fBselected\-bg       \fRSelected line background
       \fBpreview\-bg          \fRPreview window background
+      \fBinput\-bg            \fRInput section background
     \fBhl                    \fRHighlighted substrings
       \fBselected\-hl         \fRHighlighted substrings in the selected line
     \fBcurrent\-fg (fg+)      \fRText (current line)
     \fBcurrent\-bg (bg+)      \fRBackground (current line)
       \fBgutter              \fRGutter on the left
     \fBcurrent\-hl (hl+)      \fRHighlighted substrings (current line)
-    \fBquery                 \fRQuery string
+    \fBquery (input\-fg)      \fRQuery string
       \fBdisabled            \fRQuery string when search is disabled (\fB\-\-disabled\fR)
     \fBinfo                  \fRInfo line (match counters)
     \fBborder                \fRBorder around the window (\fB\-\-border\fR and \fB\-\-preview\fR)
@@ -575,9 +576,11 @@ color mappings.
         \fBseparator         \fRHorizontal separator on info line
       \fBpreview\-border      \fRBorder around the preview window (\fB\-\-preview\fR)
         \fBpreview\-scrollbar \fRScrollbar
-    \fBlabel                 \fRBorder label (\fB\-\-border\-label\fR, \fB\-\-list\-label\fR, and \fB\-\-preview\-label\fR)
+      \fBinput\-border        \fRBorder around the input section (\fB\-\-input\-border\fR)
+    \fBlabel                 \fRBorder label (\fB\-\-border\-label\fR, \fB\-\-list\-label\fR, \fB\-\-input\-label\fR, and \fB\-\-preview\-label\fR)
       \fBlist\-label          \fRBorder label of the list section (\fB\-\-list\-label\fR)
       \fBpreview\-label       \fRBorder label of the preview window (\fB\-\-preview\-label\fR)
+      \fBinput\-label         \fRBorder label of the input section (\fB\-\-input\-label\fR)
     \fBprompt                \fRPrompt
     \fBpointer               \fRPointer to the current line
     \fBmarker                \fRMulti\-select marker
@@ -727,6 +730,10 @@ e.g.
       \fBfzf \-\-preview='fzf\-preview.sh {}'\fR
 
 .RE
+
+.TP
+.BI "\-\-preview\-border" [=STYLE]
+Short for \fB\-\-preview\-window=border\-STYLE\fR
 
 .TP
 .BI "\-\-preview\-label" [=LABEL]
@@ -1444,6 +1451,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
     \fBchange\-header(...)\fR           (change header to the given string; doesn't affect \fB\-\-header\-lines\fR)
+    \fBchange\-input\-label(...)\fR      (change \fB\-\-input\-label\fR to the given string)
     \fBchange\-list\-label(...)\fR       (change \fB\-\-list\-label\fR to the given string)
     \fBchange\-multi\fR                 (enable multi-select mode with no limit)
     \fBchange\-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
@@ -1529,6 +1537,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform(...)\fR               (transform states using the output of an external command)
     \fBtransform\-border\-label(...)\fR  (transform border label using an external command)
     \fBtransform\-header(...)\fR        (transform header using an external command)
+    \fBtransform\-input\-label(...)\fR   (transform input label using an external command)
     \fBtransform\-list\-label(...)\fR    (transform list label using an external command)
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
