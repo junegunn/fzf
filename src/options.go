@@ -78,6 +78,7 @@ Usage: fzf [options]
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              (default: center,50%)
+    --tmux-title=STR         Add given title to tmux popup (requires tmux 3.3+)
     --layout=LAYOUT          Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]         Draw border around the finder
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
@@ -457,6 +458,7 @@ type Options struct {
 	Output           chan string
 	NoWinpty         bool
 	Tmux             *tmuxOptions
+	TmuxTitle        string
 	ForceTtyIn       bool
 	ProxyScript      string
 	Bash             bool
@@ -2674,6 +2676,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				if opts.Tmux, err = parseTmuxOptions(value, index); err != nil {
 					return err
 				}
+			} else if match, value := optString(arg, "--tmux-title="); match {
+				opts.TmuxTitle = value
 			} else if match, value := optString(arg, "--scheme="); match {
 				opts.Scheme = strings.ToLower(value)
 			} else if match, value := optString(arg, "-q", "--query="); match {

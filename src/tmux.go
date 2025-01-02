@@ -33,7 +33,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// M        Both    The mouse position
 	// W        Both    The window position on the status line
 	// S        -y      The line above or below the status line
-	tmuxArgs := []string{"display-popup", "-E", "-B", "-d", dir}
+	tmuxArgs := []string{"display-popup", "-E", "-d", dir}
 	switch opts.Tmux.position {
 	case posUp:
 		tmuxArgs = append(tmuxArgs, "-xC", "-y0")
@@ -48,6 +48,12 @@ func runTmux(args []string, opts *Options) (int, error) {
 	}
 	tmuxArgs = append(tmuxArgs, "-w"+opts.Tmux.width.String())
 	tmuxArgs = append(tmuxArgs, "-h"+opts.Tmux.height.String())
+
+	if opts.TmuxTitle != "" {
+		tmuxArgs = append(tmuxArgs, "-T"+opts.TmuxTitle)
+	} else {
+		tmuxArgs = append(tmuxArgs, "-B")
+	}
 
 	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
 		sh, err := sh(needBash)
