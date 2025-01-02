@@ -3450,7 +3450,6 @@ class TestGoFZF < TestBase
     tmux.until { assert_block(block, _1) }
   end
 
-
   def test_list_border_and_label
     tmux.send_keys %(seq 100 | #{FZF} --border rounded --list-border double --list-label list --list-label-pos 2:bottom --header-lines 3 --query 1 --padding 1,2), :Enter
     block = <<~BLOCK
