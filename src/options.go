@@ -89,9 +89,17 @@ Usage: fzf [options]
                              (default: 0 or center)
     --list-border[=STYLE]    Draw border around the list section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|none] (default: none)
+                              top|bottom|left|right|none] (default: rounded)
     --list-label=LABEL       Label to print on the list border
     --list-label-pos=COL     Position of the list label
+                             [POSITIVE_INTEGER: columns from left|
+                              NEGATIVE_INTEGER: columns from right][:bottom]
+                             (default: 0 or center)
+    --input-border[=STYLE]   Draw border around the input section
+                             [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
+                              top|bottom|left|right|none] (default: rounded)
+    --input-label=LABEL      Label to print on the input border
+    --input-label-pos=COL    Position of the input label
                              [POSITIVE_INTEGER: columns from left|
                               NEGATIVE_INTEGER: columns from right][:bottom]
                              (default: 0 or center)
