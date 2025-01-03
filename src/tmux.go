@@ -11,7 +11,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// Prepare arguments
 	fzf := args[0]
 	args = append([]string{"--bind=ctrl-z:ignore"}, args[1:]...)
-	if opts.BorderShape == tui.BorderUndefined {
+	if opts.BorderShape == tui.BorderUndefined && !opts.Tmux.border {
 		args = append(args, "--border")
 	}
 	argStr := escapeSingleQuote(fzf)
@@ -33,7 +33,10 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// M        Both    The mouse position
 	// W        Both    The window position on the status line
 	// S        -y      The line above or below the status line
-	tmuxArgs := []string{"display-popup", "-E", "-B", "-d", dir}
+	tmuxArgs := []string{"display-popup", "-E", "-d", dir}
+	if !opts.Tmux.border {
+		tmuxArgs = append(tmuxArgs, "-B")
+	}
 	switch opts.Tmux.position {
 	case posUp:
 		tmuxArgs = append(tmuxArgs, "-xC", "-y0")

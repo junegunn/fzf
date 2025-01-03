@@ -343,7 +343,7 @@ fzf --height -3
 With `--tmux` option, fzf will start in a tmux popup.
 
 ```sh
-# --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+# --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]]
 
 fzf --tmux center         # Center, 50% width and height
 fzf --tmux 80%            # Center, 80% width and height

@@ -254,6 +254,7 @@ type tmuxOptions struct {
 	height   sizeSpec
 	position windowPosition
 	index    int
+	border   bool
 }
 
 type layoutType int
@@ -316,8 +317,8 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
-	if len(tokens) == 0 || len(tokens) > 3 {
+	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
+	if len(tokens) == 0 || len(tokens) > 4 {
 		return nil, errorToReturn
 	}
 
@@ -338,6 +339,14 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	case "center":
 	default:
 		tokens = append([]string{"center"}, tokens...)
+	}
+
+	for i, token := range tokens {
+		if token == "border-native" {
+			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
+			opts.border = true
+			break
+		}
 	}
 
 	// One size given

@@ -128,7 +128,7 @@ fzf  --height 70% --tmux 70%
 You can also specify the position, width, and height of the popup window in
 the following format:
 
-* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]`
+* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]]`
 
 ```sh
 # 100% width and 60% height
