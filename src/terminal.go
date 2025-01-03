@@ -3181,17 +3181,28 @@ func (t *Terminal) printAll() {
 func (t *Terminal) flush() {
 	t.placeCursor()
 	if !t.suppress {
-		windows := make([]tui.Window, 0, 4)
-		if t.borderShape.Visible() {
+		windows := make([]tui.Window, 0, 7)
+		if t.border != nil {
 			windows = append(windows, t.border)
 		}
-		if t.hasPreviewWindow() {
-			if t.pborder != nil {
-				windows = append(windows, t.pborder)
-			}
+		if t.pborder != nil {
+			windows = append(windows, t.pborder)
+		}
+		if t.pwindow != nil {
 			windows = append(windows, t.pwindow)
 		}
-		windows = append(windows, t.window)
+		if t.wborder != nil {
+			windows = append(windows, t.wborder)
+		}
+		if t.window != nil {
+			windows = append(windows, t.window)
+		}
+		if t.inputBorder != nil {
+			windows = append(windows, t.inputBorder)
+		}
+		if t.inputWindow != nil {
+			windows = append(windows, t.inputWindow)
+		}
 		t.tui.RefreshWindows(windows)
 	}
 }
