@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -254,6 +255,7 @@ type tmuxOptions struct {
 	height   sizeSpec
 	position windowPosition
 	index    int
+	border   bool
 }
 
 type layoutType int
@@ -309,15 +311,16 @@ func defaultTmuxOptions(index int) *tmuxOptions {
 		position: posCenter,
 		width:    sizeSpec{50, true},
 		height:   sizeSpec{50, true},
-		index:    index}
+		index:    index,
+	}
 }
 
 func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
-	if len(tokens) == 0 || len(tokens) > 3 {
+	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
+	if len(tokens) == 0 || len(tokens) > 4 {
 		return nil, errorToReturn
 	}
 
@@ -338,6 +341,15 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	case "center":
 	default:
 		tokens = append([]string{"center"}, tokens...)
+	}
+
+	if i := slices.Index(tokens, "border-native"); i >= 0 {
+		// The border option, if present, is the last one
+		if i != len(tokens)-1 {
+			return nil, errorToReturn
+		}
+		tokens = slices.Delete(tokens, i, i+1)
+		opts.border = true
 	}
 
 	// One size given
@@ -650,7 +662,8 @@ func defaultOptions() *Options {
 		WalkerRoot:   []string{"."},
 		WalkerSkip:   []string{".git", "node_modules"},
 		Help:         false,
-		Version:      false}
+		Version:      false,
+	}
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1725,7 +1738,7 @@ func strLines(str string) []string {
 }
 
 func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
-	var spec = sizeSpec{}
+	spec := sizeSpec{}
 	var val float64
 	var err error
 	percent := strings.HasSuffix(str, "%")
@@ -1811,7 +1824,8 @@ func parseInfoStyle(str string) (infoStyle, string, error) {
 	}
 	for _, spec := range []infoSpec{
 		{"inline", infoInline},
-		{"inline-right", infoInlineRight}} {
+		{"inline-right", infoInlineRight},
+	} {
 		if strings.HasPrefix(str, spec.name+":") {
 			return spec.style, strings.ReplaceAll(str[len(spec.name)+1:], "\n", " "), nil
 		}
