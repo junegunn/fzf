@@ -11,7 +11,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// Prepare arguments
 	fzf := args[0]
 	args = append([]string{"--bind=ctrl-z:ignore"}, args[1:]...)
-	if opts.BorderShape == tui.BorderUndefined {
+	if opts.BorderShape == tui.BorderUndefined && !opts.Tmux.border {
 		args = append(args, "--border")
 	}
 	argStr := escapeSingleQuote(fzf)

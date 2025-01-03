@@ -310,8 +310,7 @@ func defaultTmuxOptions(index int) *tmuxOptions {
 		position: posCenter,
 		width:    sizeSpec{50, true},
 		height:   sizeSpec{50, true},
-		index:    index,
-	}
+		index:    index}
 }
 
 func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
@@ -660,8 +659,7 @@ func defaultOptions() *Options {
 		WalkerRoot:   []string{"."},
 		WalkerSkip:   []string{".git", "node_modules"},
 		Help:         false,
-		Version:      false,
-	}
+		Version:      false}
 }
 
 func optString(arg string, prefixes ...string) (bool, string) {
@@ -1736,7 +1734,7 @@ func strLines(str string) []string {
 }
 
 func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
-	spec := sizeSpec{}
+	var spec = sizeSpec{}
 	var val float64
 	var err error
 	percent := strings.HasSuffix(str, "%")
@@ -1822,8 +1820,7 @@ func parseInfoStyle(str string) (infoStyle, string, error) {
 	}
 	for _, spec := range []infoSpec{
 		{"inline", infoInline},
-		{"inline-right", infoInlineRight},
-	} {
+		{"inline-right", infoInlineRight}} {
 		if strings.HasPrefix(str, spec.name+":") {
 			return spec.style, strings.ReplaceAll(str[len(spec.name)+1:], "\n", " "), nil
 		}
