@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -343,13 +342,12 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 		tokens = append([]string{"center"}, tokens...)
 	}
 
-	if i := slices.Index(tokens, "border-native"); i >= 0 {
-		// The border option, if present, is the last one
-		if i != len(tokens)-1 {
-			return nil, errorToReturn
+	for i, token := range tokens {
+		if token == "border-native" {
+			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
+			opts.border = true
+			break
 		}
-		tokens = slices.Delete(tokens, i, i+1)
-		opts.border = true
 	}
 
 	// One size given
