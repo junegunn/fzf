@@ -1067,6 +1067,12 @@ func (t *Terminal) visibleHeaderLines() int {
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
 	extra := t.visibleHeaderLines() + 1
+	if t.inputBorderShape.Visible() {
+		extra += borderLines(t.inputBorderShape)
+	}
+	if t.listBorderShape.Visible() {
+		extra += borderLines(t.listBorderShape)
+	}
 	if !t.noSeparatorLine() {
 		extra++
 	}
