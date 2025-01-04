@@ -77,7 +77,7 @@ Usage: fzf [options]
                              (default: 10)
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
-                             (default: center,50%)
+                             [,border-native] (default: center,50%)
     --layout=LAYOUT          Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]         Draw border around the finder
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
@@ -254,6 +254,7 @@ type tmuxOptions struct {
 	height   sizeSpec
 	position windowPosition
 	index    int
+	border   bool
 }
 
 type layoutType int
@@ -316,9 +317,17 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]])")
-	if len(tokens) == 0 || len(tokens) > 3 {
+	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
+	if len(tokens) == 0 || len(tokens) > 4 {
 		return nil, errorToReturn
+	}
+
+	for i, token := range tokens {
+		if token == "border-native" {
+			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
+			opts.border = true
+			break
+		}
 	}
 
 	// Defaults to 'center'
