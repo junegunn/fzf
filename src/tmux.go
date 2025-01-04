@@ -9,13 +9,16 @@ import (
 
 func runTmux(args []string, opts *Options) (int, error) {
 	// Prepare arguments
-	fzf := args[0]
-	args = append([]string{"--bind=ctrl-z:ignore"}, args[1:]...)
-	if opts.BorderShape == tui.BorderUndefined && !opts.Tmux.border {
+	fzf, rest := args[0], args[1:]
+	args = []string{"--bind=ctrl-z:ignore"}
+	if !opts.Tmux.border && opts.BorderShape == tui.BorderUndefined {
 		args = append(args, "--border")
 	}
+	if opts.Tmux.border && opts.Margin == defaultMargin() {
+		args = append(args, "--margin=0,1")
+	}
 	argStr := escapeSingleQuote(fzf)
-	for _, arg := range args {
+	for _, arg := range append(args, rest...) {
 		argStr += " " + escapeSingleQuote(arg)
 	}
 	argStr += ` --no-tmux --no-height`
