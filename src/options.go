@@ -322,6 +322,14 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 		return nil, errorToReturn
 	}
 
+	for i, token := range tokens {
+		if token == "border-native" {
+			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
+			opts.border = true
+			break
+		}
+	}
+
 	// Defaults to 'center'
 	switch tokens[0] {
 	case "top", "up":
@@ -339,14 +347,6 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	case "center":
 	default:
 		tokens = append([]string{"center"}, tokens...)
-	}
-
-	for i, token := range tokens {
-		if token == "border-native" {
-			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
-			opts.border = true
-			break
-		}
 	}
 
 	// One size given
