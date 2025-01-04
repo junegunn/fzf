@@ -2299,7 +2299,7 @@ func (t *Terminal) printHeader() {
 
 		t.printHighlighted(Result{item: item},
 			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
-			func(markerClass) { t.window.Print("  ") }, nil)
+			func(markerClass) { t.window.Print(strings.Repeat(" ", t.pointerLen+t.markerLen)) }, nil)
 	}
 	t.wrap = wrap
 }
