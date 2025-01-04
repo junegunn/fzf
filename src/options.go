@@ -77,7 +77,7 @@ Usage: fzf [options]
                              (default: 10)
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
-                             (default: center,50%)
+                             [,border-native] (default: center,50%)
     --layout=LAYOUT          Choose layout: [default|reverse|reverse-list]
     --border[=STYLE]         Draw border around the finder
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
