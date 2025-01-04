@@ -331,7 +331,12 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	}
 
 	// Defaults to 'center'
-	switch tokens[0] {
+	first := "center"
+	if len(tokens) > 0 {
+		first = tokens[0]
+	}
+
+	switch first {
 	case "top", "up":
 		opts.position = posUp
 		opts.width = sizeSpec{100, true}

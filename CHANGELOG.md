@@ -29,7 +29,11 @@ CHANGELOG
     - Actions
         - `change-input-label`
         - `transform-input-label`
-- Added `--preview-border[=STYLE]` as short for `--preview-window=border-[STYLE]`
+- Added `--preview-border[=STYLE]` as short for `--preview-window=border[-STYLE]`
+- You can specify `border-native` to `--tmux` so that native tmux border is used instead of `--border`. This can be useful if you start a different program from inside the popup.
+  ```sh
+  fzf --tmux border-native --bind 'enter:execute:less {}'
+  ```
 - Added `toggle-multi-line` action
 - Added `toggle-hscroll` action
 
