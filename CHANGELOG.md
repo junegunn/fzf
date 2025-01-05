@@ -16,7 +16,7 @@ CHANGELOG
     - Actions
         - `change-list-label`
         - `transform-list-label`
-- Border and label for the input section (prompt and info)
+- Border and label for the input section (prompt line and info line)
     - Options
         - `--input-border[=STYLE]`
         - `--input-label=LABEL`
@@ -29,6 +29,19 @@ CHANGELOG
     - Actions
         - `change-input-label`
         - `transform-input-label`
+- Border and label for the header section
+    - Options
+        - `--header-border[=STYLE]`
+        - `--header-label=LABEL`
+        - `--header-label-pos=COL[:bottom]`
+    - Colors
+        - `header-fg` (`header`)
+        - `header-bg`
+        - `header-border`
+        - `header-label`
+    - Actions
+        - `change-header-label`
+        - `transform-header-label`
 - Added `--preview-border[=STYLE]` as short for `--preview-window=border[-STYLE]`
 - You can specify `border-native` to `--tmux` so that native tmux border is used instead of `--border`. This can be useful if you start a different program from inside the popup.
   ```sh

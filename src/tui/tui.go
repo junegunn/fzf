@@ -324,6 +324,9 @@ type ColorTheme struct {
 	Cursor           ColorAttr
 	Marker           ColorAttr
 	Header           ColorAttr
+	HeaderBg         ColorAttr
+	HeaderBorder     ColorAttr
+	HeaderLabel      ColorAttr
 	Separator        ColorAttr
 	Scrollbar        ColorAttr
 	Border           ColorAttr
@@ -543,6 +546,7 @@ const (
 	WindowList
 	WindowPreview
 	WindowInput
+	WindowHeader
 )
 
 type Renderer interface {
@@ -583,6 +587,8 @@ type Window interface {
 
 	X() int
 	Y() int
+	EncloseX(x int) bool
+	EncloseY(y int) bool
 	Enclose(y int, x int) bool
 
 	Move(y int, x int)
@@ -639,6 +645,8 @@ var (
 	ColSpinner              ColorPair
 	ColInfo                 ColorPair
 	ColHeader               ColorPair
+	ColHeaderBorder         ColorPair
+	ColHeaderLabel          ColorPair
 	ColSeparator            ColorPair
 	ColScrollbar            ColorPair
 	ColBorder               ColorPair
@@ -691,6 +699,9 @@ func EmptyTheme() *ColorTheme {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
+		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
+		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -731,6 +742,9 @@ func NoColorTheme() *ColorTheme {
 		InputBg:          ColorAttr{colDefault, AttrUndefined},
 		InputBorder:      ColorAttr{colDefault, AttrUndefined},
 		InputLabel:       ColorAttr{colDefault, AttrUndefined},
+		HeaderBg:         ColorAttr{colDefault, AttrUndefined},
+		HeaderBorder:     ColorAttr{colDefault, AttrUndefined},
+		HeaderLabel:      ColorAttr{colDefault, AttrUndefined},
 	}
 }
 
@@ -845,10 +859,13 @@ func init() {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
+		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
+		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
-func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
+func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInputWindow bool, hasHeaderWindow bool) {
 	if forceBlack {
 		theme.Bg = ColorAttr{colBlack, AttrUndefined}
 	}
@@ -896,9 +913,22 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool) {
 	theme.Separator = o(theme.ListBorder, theme.Separator)
 	theme.Scrollbar = o(theme.ListBorder, theme.Scrollbar)
 	theme.PreviewScrollbar = o(theme.PreviewBorder, theme.PreviewScrollbar)
-	theme.InputBg = o(theme.Bg, o(theme.ListBg, theme.InputBg))
+	if hasInputWindow {
+		theme.InputBg = o(theme.Bg, theme.InputBg)
+	} else {
+		// We shouldn't use input-bg if there's no separate input window
+		// e.g. fzf --color 'list-bg:green,input-bg:red' --no-input-border
+		theme.InputBg = o(theme.Bg, theme.ListBg)
+	}
 	theme.InputBorder = o(theme.Border, theme.InputBorder)
 	theme.InputLabel = o(theme.BorderLabel, theme.InputLabel)
+	if hasHeaderWindow {
+		theme.HeaderBg = o(theme.Bg, theme.HeaderBg)
+	} else {
+		theme.HeaderBg = o(theme.Bg, theme.ListBg)
+	}
+	theme.HeaderBorder = o(theme.Border, theme.HeaderBorder)
+	theme.HeaderLabel = o(theme.BorderLabel, theme.HeaderLabel)
 
 	initPalette(theme)
 }
@@ -935,7 +965,6 @@ func initPalette(theme *ColorTheme) {
 	ColCurrentSelectedEmpty = pair(blank, theme.DarkBg)
 	ColSpinner = pair(theme.Spinner, theme.InputBg)
 	ColInfo = pair(theme.Info, theme.InputBg)
-	ColHeader = pair(theme.Header, theme.ListBg)
 	ColSeparator = pair(theme.Separator, theme.InputBg)
 	ColScrollbar = pair(theme.Scrollbar, theme.ListBg)
 	ColBorder = pair(theme.Border, theme.Bg)
@@ -949,6 +978,9 @@ func initPalette(theme *ColorTheme) {
 	ColListBorder = pair(theme.ListBorder, theme.ListBg)
 	ColInputBorder = pair(theme.InputBorder, theme.InputBg)
 	ColInputLabel = pair(theme.InputLabel, theme.InputBg)
+	ColHeader = pair(theme.Header, theme.HeaderBg)
+	ColHeaderBorder = pair(theme.HeaderBorder, theme.HeaderBg)
+	ColHeaderLabel = pair(theme.HeaderLabel, theme.HeaderBg)
 }
 
 func runeWidth(r rune) int {

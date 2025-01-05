@@ -557,6 +557,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 	switch windowType {
 	case WindowList:
 		normal = ColListBorder
+	case WindowHeader:
+		normal = ColHeaderBorder
 	case WindowInput:
 		normal = ColInputBorder
 	case WindowPreview:
@@ -593,9 +595,16 @@ func (w *TcellWindow) EraseMaybe() bool {
 	return true
 }
 
+func (w *TcellWindow) EncloseX(x int) bool {
+	return x >= w.left && x < (w.left+w.width)
+}
+
+func (w *TcellWindow) EncloseY(y int) bool {
+	return y >= w.top && y < (w.top+w.height)
+}
+
 func (w *TcellWindow) Enclose(y int, x int) bool {
-	return x >= w.left && x < (w.left+w.width) &&
-		y >= w.top && y < (w.top+w.height)
+	return w.EncloseX(x) && w.EncloseY(y)
 }
 
 func (w *TcellWindow) Move(y int, x int) {
@@ -792,6 +801,8 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 			style = ColBorder.style()
 		case WindowList:
 			style = ColListBorder.style()
+		case WindowHeader:
+			style = ColHeaderBorder.style()
 		case WindowInput:
 			style = ColInputBorder.style()
 		case WindowPreview:

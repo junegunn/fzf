@@ -804,6 +804,9 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, wind
 	case WindowInput:
 		w.fg = r.theme.Input.Color
 		w.bg = r.theme.InputBg.Color
+	case WindowHeader:
+		w.fg = r.theme.Header.Color
+		w.bg = r.theme.HeaderBg.Color
 	case WindowPreview:
 		w.fg = r.theme.PreviewFg.Color
 		w.bg = r.theme.PreviewBg.Color
@@ -862,6 +865,8 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 		color = ColListBorder
 	case WindowInput:
 		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -885,6 +890,8 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 		color = ColListBorder
 	case WindowInput:
 		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -910,6 +917,8 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 		color = ColListBorder
 	case WindowInput:
 		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -970,9 +979,16 @@ func (w *LightWindow) Y() int {
 	return w.posy
 }
 
+func (w *LightWindow) EncloseX(x int) bool {
+	return x >= w.left && x < (w.left+w.width)
+}
+
+func (w *LightWindow) EncloseY(y int) bool {
+	return y >= w.top && y < (w.top+w.height)
+}
+
 func (w *LightWindow) Enclose(y int, x int) bool {
-	return x >= w.left && x < (w.left+w.width) &&
-		y >= w.top && y < (w.top+w.height)
+	return w.EncloseX(x) && w.EncloseY(y)
 }
 
 func (w *LightWindow) Move(y int, x int) {
