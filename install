@@ -83,7 +83,7 @@ ask() {
 check_binary() {
   echo -n "  - Checking fzf executable ... "
   local output
-  output=$("$fzf_base"/bin/fzf --version 2>&1)
+  output=$(FZF_DEFAULT_OPTS= "$fzf_base"/bin/fzf --version 2>&1)
   if [ $? -ne 0 ]; then
     echo "Error: $output"
     binary_error="Invalid binary"
