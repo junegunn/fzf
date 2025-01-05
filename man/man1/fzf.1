@@ -775,7 +775,10 @@ e.g.
 
 .TP
 .BI "\-\-preview\-border" [=STYLE]
-Short for \fB\-\-preview\-window=border\-STYLE\fR
+Short for \fB\-\-preview\-window=border\-STYLE\fR. In addition to the other
+styles, \fBline\fR style is also supported for preview border, which draws
+a single separator line between the preview window and the rest of the
+interface.
 
 .TP
 .BI "\-\-preview\-label" [=LABEL]
@@ -812,7 +815,7 @@ default value 0 (or \fBcenter\fR) will put the label at the center of the
 border line.
 
 .TP
-.BI "\-\-preview\-window=" "[POSITION][,SIZE[%]][,border\-BORDER_OPT][,[no]wrap][,[no]follow][,[no]cycle][,[no]info][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
+.BI "\-\-preview\-window=" "[POSITION][,SIZE[%]][,border\-STYLE][,[no]wrap][,[no]follow][,[no]cycle][,[no]info][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
 
 .RS
 .B POSITION: (default: right)
@@ -854,6 +857,10 @@ the options for \fB\-\-border\fR with \fBborder\-\fR prefix.
 e.g. \fBborder\-rounded\fR (border with rounded edges, default),
 \fBborder\-sharp\fR (border with sharp edges), \fBborder\-left\fR,
 \fBborder\-none\fR, etc.
+
+* In addition to the other border styles, \fBborder\-line\fR style is also
+supported, which draws a single separator line between the preview window and
+the rest of the interface.
 
 * \fB[:+SCROLL[OFFSETS][/DENOM]]\fR determines the initial scroll offset of the
 preview window.

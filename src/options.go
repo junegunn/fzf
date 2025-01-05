@@ -146,10 +146,12 @@ Usage: fzf [options]
     --preview-window=OPT     Preview window layout (default: right:50%)
                              [up|down|left|right][,SIZE[%]]
                              [,[no]wrap][,[no]cycle][,[no]follow][,[no]info]
-                             [,[no]hidden][,border-BORDER_OPT]
+                             [,[no]hidden][,border-STYLE]
                              [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                              [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
     --preview-border[=STYLE] Short for --preview-window=border-STYLE
+                             [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
+                              top|bottom|left|right|line|none] (default: rounded)
     --preview-label=LABEL
     --preview-label-pos=N    Same as --border-label and --border-label-pos,
                              but for preview window
@@ -311,6 +313,10 @@ func (o *previewOpts) Visible() bool {
 
 func (o *previewOpts) Toggle() {
 	o.hidden = !o.hidden
+}
+
+func (o *previewOpts) HasBorderRight() bool {
+	return o.border.HasRight() || o.border == tui.BorderLine && o.position == posLeft
 }
 
 func defaultTmuxOptions(index int) *tmuxOptions {
@@ -832,8 +838,13 @@ func processScheme(opts *Options) error {
 	return nil
 }
 
-func parseBorder(str string, optional bool) (tui.BorderShape, error) {
+func parseBorder(str string, optional bool, allowLine bool) (tui.BorderShape, error) {
 	switch str {
+	case "line":
+		if !allowLine {
+			return tui.BorderNone, errors.New("'line' is only allowed for preview border")
+		}
+		return tui.BorderLine, nil
 	case "rounded":
 		return tui.BorderRounded, nil
 	case "sharp":
@@ -1900,6 +1911,8 @@ func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 			opts.position = posRight
 		case "rounded", "border", "border-rounded":
 			opts.border = tui.BorderRounded
+		case "border-line":
+			opts.border = tui.BorderLine
 		case "sharp", "border-sharp":
 			opts.border = tui.BorderSharp
 		case "border-bold":
@@ -2501,7 +2514,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-preview":
 			opts.Preview.command = ""
 		case "--preview-window":
-			str, err := nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-BORDER_OPT][,wrap][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]")
+			str, err := nextString(allArgs, &i, "preview window layout required: [up|down|left|right][,SIZE[%]][,border-STYLE][,wrap][,cycle][,hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default]")
 			if err != nil {
 				return err
 			}
@@ -2512,7 +2525,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Preview.border = tui.BorderNone
 		case "--preview-border":
 			hasArg, arg := optionalNextString(allArgs, &i)
-			if opts.Preview.border, err = parseBorder(arg, !hasArg); err != nil {
+			if opts.Preview.border, err = parseBorder(arg, !hasArg, true); err != nil {
 				return err
 			}
 		case "--height":
@@ -2537,12 +2550,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.BorderShape = tui.BorderNone
 		case "--border":
 			hasArg, arg := optionalNextString(allArgs, &i)
-			if opts.BorderShape, err = parseBorder(arg, !hasArg); err != nil {
+			if opts.BorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
 				return err
 			}
 		case "--list-border":
 			hasArg, arg := optionalNextString(allArgs, &i)
-			if opts.ListBorderShape, err = parseBorder(arg, !hasArg); err != nil {
+			if opts.ListBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
 				return err
 			}
 		case "--no-list-border":
@@ -2566,7 +2579,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.HeaderBorderShape = tui.BorderNone
 		case "--header-border":
 			hasArg, arg := optionalNextString(allArgs, &i)
-			if opts.HeaderBorderShape, err = parseBorder(arg, !hasArg); err != nil {
+			if opts.HeaderBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
 				return err
 			}
 		case "--no-header-label":
@@ -2587,7 +2600,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.InputBorderShape = tui.BorderNone
 		case "--input-border":
 			hasArg, arg := optionalNextString(allArgs, &i)
-			if opts.InputBorderShape, err = parseBorder(arg, !hasArg); err != nil {
+			if opts.InputBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
 				return err
 			}
 		case "--no-input-label":
@@ -2738,15 +2751,15 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			} else if match, value := optString(arg, "-d", "--delimiter="); match {
 				opts.Delimiter = delimiterRegexp(value)
 			} else if match, value := optString(arg, "--border="); match {
-				if opts.BorderShape, err = parseBorder(value, false); err != nil {
+				if opts.BorderShape, err = parseBorder(value, false, false); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--preview-border="); match {
-				if opts.Preview.border, err = parseBorder(value, false); err != nil {
+				if opts.Preview.border, err = parseBorder(value, false, true); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--list-border="); match {
-				if opts.ListBorderShape, err = parseBorder(value, false); err != nil {
+				if opts.ListBorderShape, err = parseBorder(value, false, false); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--list-label="); match {
@@ -2756,7 +2769,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 					return err
 				}
 			} else if match, value := optString(arg, "--input-border="); match {
-				if opts.InputBorderShape, err = parseBorder(value, false); err != nil {
+				if opts.InputBorderShape, err = parseBorder(value, false, false); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--input-label="); match {

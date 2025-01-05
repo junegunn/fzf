@@ -1513,7 +1513,7 @@ func (t *Terminal) minPreviewSize(opts *previewOpts) (int, int) {
 
 	switch opts.position {
 	case posLeft, posRight:
-		if len(t.scrollbar) > 0 && !opts.border.HasRight() {
+		if len(t.scrollbar) > 0 && !opts.HasBorderRight() {
 			// Need a column to show scrollbar
 			minPreviewWidth++
 		}
@@ -1757,17 +1757,30 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
 				pheight := h
-				previewBorder := tui.MakeBorderStyle(previewOpts.border, t.unicode)
+				shape := previewOpts.border
+				if shape == tui.BorderLine {
+					switch previewOpts.position {
+					case posUp:
+						shape = tui.BorderBottom
+					case posDown:
+						shape = tui.BorderTop
+					case posLeft:
+						shape = tui.BorderRight
+					case posRight:
+						shape = tui.BorderLeft
+					}
+				}
+				previewBorder := tui.MakeBorderStyle(shape, t.unicode)
 				t.pborder = t.tui.NewWindow(y, x, w, h, tui.WindowPreview, previewBorder, false)
-				pwidth -= borderColumns(previewOpts.border, bw)
-				pheight -= borderLines(previewOpts.border)
-				if previewOpts.border.HasLeft() {
+				pwidth -= borderColumns(shape, bw)
+				pheight -= borderLines(shape)
+				if shape.HasLeft() {
 					x += 1 + bw
 				}
-				if previewOpts.border.HasTop() {
+				if shape.HasTop() {
 					y += 1
 				}
-				if len(t.scrollbar) > 0 && !previewOpts.border.HasRight() {
+				if len(t.scrollbar) > 0 && !shape.HasRight() {
 					// Need a column to show scrollbar
 					pwidth -= 1
 				}
@@ -1799,6 +1812,14 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 				}
 				if previewOpts.hidden {
 					return
+				}
+				// If none of the inner borders has the right side, but the outer border does, increase the width by 1 column
+				stickToRight = t.borderShape.HasRight() &&
+					!previewOpts.HasBorderRight() && !t.listBorderShape.HasRight() && !t.inputBorderShape.HasRight() &&
+					(!t.headerVisible || !t.headerBorderShape.HasRight() || t.visibleHeaderLines() == 0)
+				if stickToRight {
+					innerWidth++
+					width++
 				}
 
 				maxPreviewLines := availableLines
@@ -1870,7 +1891,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 				} else {
 					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
-					stickToRight = !previewOpts.border.HasRight() && t.borderShape.HasRight()
+					stickToRight = !previewOpts.HasBorderRight() && t.borderShape.HasRight()
 					if stickToRight {
 						innerWidth++
 						width++
@@ -3187,7 +3208,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 		t.previewer.xw = xw
 	}
 	xshift := -1 - t.borderWidth
-	if !t.activePreviewOpts.border.HasRight() {
+	if !t.activePreviewOpts.HasBorderRight() {
 		xshift = -1
 	}
 	yshift := 1
