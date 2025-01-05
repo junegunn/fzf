@@ -3,7 +3,16 @@ CHANGELOG
 
 0.58.0
 ------
-- Border and label for the list section
+
+This version introduces three new border types, `--list-border`, `--input-border`, and `--header-border`, offering much greater flexibility for customizing the user interface.
+
+Also, fzf now offers three "style presets" for easier customization, which can be activated using the `--style=[default|minimal|full]` option.
+
+- Style presets (#4160)
+    - `--style=full`
+    - `--style=default`
+    - `--style=minimal`
+- Border and label for the list section (#4148)
     - Options
         - `--list-border[=STYLE]`
         - `--list-label=LABEL`
@@ -16,7 +25,7 @@ CHANGELOG
     - Actions
         - `change-list-label`
         - `transform-list-label`
-- Border and label for the input section (prompt line and info line)
+- Border and label for the input section (prompt line and info line) (#4154)
     - Options
         - `--input-border[=STYLE]`
         - `--input-label=LABEL`
@@ -29,7 +38,7 @@ CHANGELOG
     - Actions
         - `change-input-label`
         - `transform-input-label`
-- Border and label for the header section
+- Border and label for the header section (#4159)
     - Options
         - `--header-border[=STYLE]`
         - `--header-label=LABEL`

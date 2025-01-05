@@ -67,6 +67,7 @@ Usage: fzf [options]
     --jump-labels=CHARS      Label characters for jump mode
 
   Layout
+    --style=PRESET           Apply a style preset [default|minimal|full]
     --height=[~]HEIGHT[%]    Display fzf window below the cursor with the given
                              height instead of using fullscreen.
                              A negative value is calculated as the terminal height
@@ -2646,6 +2647,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err := parseLabelPosition(&opts.PreviewLabel, pos); err != nil {
 				return err
 			}
+		case "--style":
+			preset, err := nextString(allArgs, &i, "preset name required: [default|minimal|full]")
+			if err != nil {
+				return err
+			}
+			if err := applyPreset(opts, preset); err != nil {
+				return err
+			}
 		case "--no-unicode":
 			opts.Unicode = false
 		case "--unicode":
@@ -2740,6 +2749,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				}
 			} else if match, value := optString(arg, "--tmux="); match {
 				if opts.Tmux, err = parseTmuxOptions(value, index); err != nil {
+					return err
+				}
+			} else if match, value := optString(arg, "--style="); match {
+				if err := applyPreset(opts, value); err != nil {
 					return err
 				}
 			} else if match, value := optString(arg, "--scheme="); match {
@@ -2988,6 +3001,48 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		}
 	}
 	return err
+}
+
+func applyPreset(opts *Options, preset string) error {
+	switch strings.ToLower(preset) {
+	case "default":
+		opts.ListBorderShape = tui.BorderUndefined
+		opts.InputBorderShape = tui.BorderUndefined
+		opts.HeaderBorderShape = tui.BorderUndefined
+		opts.Preview.border = tui.DefaultBorderShape
+		opts.Preview.info = true
+		opts.InfoStyle = infoDefault
+		opts.Theme.Gutter = tui.NewColorAttr()
+		opts.Separator = nil
+		opts.Scrollbar = nil
+		opts.CursorLine = false
+	case "minimal":
+		opts.ListBorderShape = tui.BorderUndefined
+		opts.InputBorderShape = tui.BorderUndefined
+		opts.HeaderBorderShape = tui.BorderUndefined
+		opts.Preview.border = tui.BorderLine
+		opts.Preview.info = false
+		opts.InfoStyle = infoDefault
+		opts.Theme.Gutter = tui.ColorAttr{Color: -1, Attr: 0}
+		empty := ""
+		opts.Separator = &empty
+		opts.Scrollbar = &empty
+		opts.CursorLine = false
+	case "full":
+		opts.ListBorderShape = tui.DefaultBorderShape
+		opts.InputBorderShape = tui.DefaultBorderShape
+		opts.HeaderBorderShape = tui.DefaultBorderShape
+		opts.Preview.border = tui.DefaultBorderShape
+		opts.Preview.info = true
+		opts.InfoStyle = infoInlineRight
+		opts.Theme.Gutter = tui.NewColorAttr()
+		opts.Separator = nil
+		opts.Scrollbar = nil
+		opts.CursorLine = true
+	default:
+		return errors.New("unsupported style preset: " + preset)
+	}
+	return nil
 }
 
 func validateSign(sign string, signOptName string) error {
