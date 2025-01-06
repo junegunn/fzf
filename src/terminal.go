@@ -2386,7 +2386,11 @@ func (t *Terminal) printHeaderImpl() {
 	}
 	// Wrapping is not supported for header
 	wrap := t.wrap
-	indent := strings.Repeat(" ", t.pointerLen+t.markerLen)
+	indentSize := t.pointerLen + t.markerLen
+	if t.headerBorderShape.HasLeft() && !t.listBorderShape.HasLeft() {
+		indentSize = util.Max(0, indentSize-(1+t.borderWidth))
+	}
+	indent := strings.Repeat(" ", indentSize)
 	t.wrap = false
 	for idx, lineStr := range append(append([]string{}, t.header0...), t.header...) {
 		line := idx
