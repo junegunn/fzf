@@ -55,13 +55,13 @@ Usage: fzf [options]
     --ansi                   Enable processing of ANSI color codes
     --sync                   Synchronous search for multi-staged filtering
 
-  STYLE
+  GLOBAL STYLE
     --style=PRESET           Apply a style preset [default|minimal|full]
     --color=COLSPEC          Base scheme (dark|light|16|bw) and/or custom colors
     --no-color               Disable colors
     --no-bold                Do not use bold text
 
-  LAYOUT
+  DISPLAY MODE
     --height=[~]HEIGHT[%]    Display fzf window below the cursor with the given
                              height instead of using fullscreen.
                              A negative value is calculated as the terminal height
@@ -73,6 +73,8 @@ Usage: fzf [options]
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              [,border-native] (default: center,50%)
+
+  LAYOUT
     --layout=LAYOUT          Choose layout: [default|reverse|reverse-list]
     --margin=MARGIN          Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --padding=PADDING        Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
