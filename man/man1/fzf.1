@@ -36,15 +36,15 @@ It implements a "fuzzy" matching algorithm, so you can quickly type in patterns
 with omitted characters and still get the results you want.
 
 .SH OPTIONS
-.SS Note
+.SS NOTE
 .TP
 Most long options have the opposite version with \fB\-\-no\-\fR prefix.
 
-.SS Search mode
+.SS SEARCH
 .TP
 .B "\-x, \-\-extended"
-Extended-search mode. Since 0.10.9, this is enabled by default. You can disable
-it with \fB+x\fR or \fB\-\-no\-extended\fR.
+Extended-search mode. Enabled by default. You can disable it with \fB+x\fR or
+\fB\-\-no\-extended\fR.
 .TP
 .B "\-e, \-\-exact"
 Enable exact-match
@@ -54,6 +54,9 @@ Case-insensitive match (default: smart-case match)
 .TP
 .B "+i, \-\-no\-ignore\-case"
 Case-sensitive match
+.TP
+.B "\-\-smart\-case"
+Smart-case match (default)
 .TP
 .B "\-\-literal"
 Do not normalize latin script letters for matching.
@@ -109,49 +112,28 @@ fields.
 .BI "\-\-with\-nth=" "N[,..]"
 Transform the presentation of each line using field index expressions
 .TP
+.B "+s, \-\-no\-sort"
+Do not sort the result
+.TP
 .BI "\-d, \-\-delimiter=" "STR"
 Field delimiter regex for \fB\-\-nth\fR, \fB\-\-with\-nth\fR, and field index
 expressions (default: AWK-style)
-.TP
-.BI "\-\-disabled"
-Do not perform search. With this option, fzf becomes a simple selector
-interface rather than a "fuzzy finder". You can later enable the search using
-\fBenable\-search\fR or \fBtoggle\-search\fR action.
-.SS Search result
-.TP
-.B "+s, \-\-no\-sort"
-Do not sort the result
 .TP
 .B "\-\-tail=NUM"
 Maximum number of items to keep in memory. This is useful when you want to
 browse an endless stream of data (e.g. log stream) with fzf while limiting
 memory usage.
+
 .RS
 e.g.
      \fB# Interactive filtering of a log stream
      tail \-f *.log | fzf \-\-tail 100000 \-\-tac \-\-no\-sort \-\-exact\fR
 .RE
 .TP
-.B "\-\-track"
-Make fzf track the current selection when the result list is updated.
-This can be useful when browsing logs using fzf with sorting disabled. It is
-not recommended to use this option with \fB\-\-tac\fR as the resulting behavior
-can be confusing. Also, consider using \fBtrack\fR action instead of this
-option.
-
-.RS
-e.g.
-     \fBgit log \-\-oneline \-\-graph \-\-color=always | nl |
-         fzf \-\-ansi \-\-track \-\-no\-sort \-\-layout=reverse\-list\fR
-.RE
-.TP
-.B "\-\-tac"
-Reverse the order of the input
-
-.RS
-e.g.
-     \fBhistory | fzf \-\-tac \-\-no\-sort\fR
-.RE
+.BI "\-\-disabled"
+Do not perform search. With this option, fzf becomes a simple selector
+interface rather than a "fuzzy finder". You can later enable the search using
+\fBenable\-search\fR or \fBtoggle\-search\fR action.
 .TP
 .BI "\-\-tiebreak=" "CRI[,..]"
 Comma-separated list of sort criteria to apply when the scores are tied.
@@ -179,403 +161,35 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 - Default is \fBlength\fR (or equivalently \fBlength\fR,index)
 .br
 - If \fBend\fR is found in the list, fzf will scan each line backwards
-.SS Interface
+.SS INPUT/OUTPUT
 .TP
-.B "\-m, \-\-multi"
-Enable multi-select with tab/shift\-tab. It optionally takes an integer argument
-which denotes the maximum number of items that can be selected.
+.B "\-\-read0"
+Read input delimited by ASCII NUL characters instead of newline characters
 .TP
-.B "+m, \-\-no\-multi"
-Disable multi-select
-.TP
-.B "\-\-no\-mouse"
-Disable mouse
-.TP
-.BI "\-\-bind=" "KEYBINDS"
-Comma-separated list of custom key bindings. See \fBKEY/EVENT BINDINGS\fR for
-the details.
-.TP
-.B "\-\-cycle"
-Enable cyclic scroll
-.TP
-.B "\-\-wrap"
-Enable line wrap
-.TP
-.BI "\-\-wrap\-sign" "=INDICATOR"
-Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
-\fB\-\-no\-unicode\fR.
-.TP
-.B "\-\-no\-multi\-line"
-Disable multi-line display of items when using \fB\-\-read0\fR
-.TP
-.BI "\-\-gap" "[=N]"
-Render empty lines between each item
-.TP
-.B "\-\-keep\-right"
-Keep the right end of the line visible when it's too long. Effective only when
-the query string is empty.
-.TP
-.BI "\-\-scroll\-off=" "LINES"
-Number of screen lines to keep above or below when scrolling to the top or to
-the bottom (default: 3).
-.TP
-.B "\-\-no\-hscroll"
-Disable horizontal scroll
-.TP
-.BI "\-\-hscroll\-off=" "COLS"
-Number of screen columns to keep to the right of the highlighted substring
-(default: 10). Setting it to a large value will cause the text to be positioned
-on the center of the screen.
-.TP
-.B "\-\-filepath\-word"
-Make word-wise movements and actions respect path separators. The following
-actions are affected:
-
-\fBbackward\-kill\-word\fR
-.br
-\fBbackward\-word\fR
-.br
-\fBforward\-word\fR
-.br
-\fBkill\-word\fR
-.TP
-.BI "\-\-jump\-labels=" "CHARS"
-Label characters for \fBjump\fR mode.
-.SS Layout
-.TP
-.BI "\-\-height=" "[~]HEIGHT[%]"
-Display fzf window below the cursor with the given height instead of using
-the full screen.
-
-If a negative value is specified, the height is calculated as the terminal
-height minus the given value.
-
-  fzf \-\-height=\-1
-
-When prefixed with \fB~\fR, fzf will automatically determine the height in the
-range according to the input size.
-
-  # Will not take up 100% of the screen
-  seq 5 | fzf \-\-height=~100%
-
-Adaptive height has the following limitations:
-.br
-* Cannot be used with top/bottom margin and padding given in percent size
-.br
-* Negative value is not allowed
-.br
-* It will not find the right size when there are multi-line items
-
-.TP
-.BI "\-\-min\-height=" "HEIGHT"
-Minimum height when \fB\-\-height\fR is given in percent (default: 10).
-Ignored when \fB\-\-height\fR is not specified.
-.TP
-.BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
-Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
-later. This option is ignored if you are not running fzf inside tmux.
-
-e.g.
-  \fB# Popup in the center with 70% width and height
-  fzf \-\-tmux 70%
-
-  # Popup on the left with 40% width and 100% height
-  fzf \-\-tmux right,40%
-
-  # Popup on the bottom with 100% width and 30% height
-  fzf \-\-tmux bottom,30%
-
-  # Popup on the top with 80% width and 40% height
-  fzf \-\-tmux top,80%,40%
-
-  # Popup with a native tmux border in the center with 80% width and height
-  fzf \-\-tmux center,80%,border\-native\fR
-
-.TP
-.BI "\-\-layout=" "LAYOUT"
-Choose the layout (default: default)
-
-.br
-.BR default  "       Display from the bottom of the screen"
-.br
-.BR reverse  "       Display from the top of the screen"
-.br
-.BR reverse\-list "  Display from the top of the screen, prompt at the bottom"
-.br
-
-.TP
-.B "\-\-reverse"
-A synonym for \fB\-\-layout=reverse\fB
-
-.TP
-.BI "\-\-border" [=STYLE]
-Draw border around the finder
-
-.br
-.BR rounded "       Border with rounded corners (default)"
-.br
-.BR sharp "         Border with sharp corners"
-.br
-.BR bold "          Border with bold lines"
-.br
-.BR double "        Border with double lines"
-.br
-.BR block "         Border using block elements; suitable when using different background colors"
-.br
-.BR thinblock "     Border using legacy computing symbols; may not be displayed on some terminals"
-.br
-.BR horizontal "    Horizontal lines above and below the finder"
-.br
-.BR vertical "      Vertical lines on each side of the finder"
-.br
-.BR top " (up)"
-.br
-.BR bottom " (down)"
-.br
-.BR left
-.br
-.BR right
-.br
-.BR none
-.br
-
-If you use a terminal emulator where each box-drawing character takes
-2 columns, try setting \fB\-\-ambidouble\fR. If the border is still not properly
-rendered, set \fB\-\-no\-unicode\fR.
-
-.TP
-.BI "\-\-border\-label" [=LABEL]
-Label to print on the horizontal border line. Should be used with one of the
-following \fB\-\-border\fR options.
-
-.br
-.B * rounded
-.br
-.B * sharp
-.br
-.B * bold
-.br
-.B * double
-.br
-.B * horizontal
-.br
-.BR "* top" " (up)"
-.br
-.BR "* bottom" " (down)"
-.br
-
-.br
-e.g.
-  \fB# ANSI color codes are supported
-  # (with https://github.com/busyloop/lolcat)
-  label=$(curl \-s http://metaphorpsum.com/sentences/1 | lolcat \-f)
-
-  # Border label at the center
-  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-color=label:italic:black
-
-  # Left-aligned (positive integer)
-  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-border\-label\-pos=3 \-\-color=label:italic:black
-
-  # Right-aligned (negative integer) on the bottom line (:bottom)
-  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-border\-label\-pos=\-3:bottom \-\-color=label:italic:black\fR
-
-.TP
-.BI "\-\-border\-label\-pos" [=N[:top|bottom]]
-Position of the border label on the border line. Specify a positive integer as
-the column position from the left. Specify a negative integer to right-align
-the label. Label is printed on the top border line by default, add
-\fB:bottom\fR to put it on the border line on the bottom. The default value
-\fB0 (or \fBcenter\fR) will put the label at the center of the border line.
-
-.TP
-.BI "\-\-list\-border" [=STYLE]
-Draw border around the list section
-
-.TP
-.BI "\-\-list\-label" [=LABEL]
-Label to print on the list border
-
-.TP
-.BI "\-\-list\-label\-pos" [=N[:top|bottom]]
-Position of the list label
-
-.TP
-.BI "\-\-input\-border" [=STYLE]
-Draw border around the input section
-
-.TP
-.BI "\-\-input\-label" [=LABEL]
-Label to print on the input border
-
-.TP
-.BI "\-\-input\-label\-pos" [=N[:top|bottom]]
-Position of the input label
-
-.TP
-.BI "\-\-header\-border" [=STYLE]
-Draw border around the header section
-
-.TP
-.BI "\-\-header\-label" [=LABEL]
-Label to print on the header border
-
-.TP
-.BI "\-\-header\-label\-pos" [=N[:top|bottom]]
-Position of the header label
-
-.TP
-.B "\-\-no\-unicode"
-Use ASCII characters instead of Unicode drawing characters to draw borders,
-the spinner and the horizontal separator.
-
-.TP
-.B "\-\-ambidouble"
-Set this option if your terminal displays ambiguous width characters (e.g.
-box-drawing characters for borders) as 2 columns.
-
-.TP
-.BI "\-\-margin=" MARGIN
-Comma-separated expression for margins around the finder.
-.br
-
-.br
-.RS
-.BR TRBL "     Same margin for top, right, bottom, and left"
-.br
-.BR TB,RL "    Vertical, horizontal margin"
-.br
-.BR T,RL,B "   Top, horizontal, bottom margin"
-.br
-.BR T,R,B,L "  Top, right, bottom, left margin"
-.br
-
-.br
-Each part can be given in absolute number or in percentage relative to the
-terminal size with \fB%\fR suffix.
-.br
-
-.br
-e.g.
-     \fBfzf \-\-margin 10%
-     fzf \-\-margin 1,5%\fR
-.RE
-.TP
-.BI "\-\-padding=" PADDING
-Comma-separated expression for padding inside the border. Padding is
-distinguishable from margin only when \fB\-\-border\fR option is used.
-.br
-
-.br
-e.g.
-     \fBfzf \-\-margin 5% \-\-padding 5% \-\-border \-\-preview 'cat {}' \\
-         \-\-color bg:#222222,preview\-bg:#333333\fR
-
-.br
-.RS
-.BR TRBL "     Same padding for top, right, bottom, and left"
-.br
-.BR TB,RL "    Vertical, horizontal padding"
-.br
-.BR T,RL,B "   Top, horizontal, bottom padding"
-.br
-.BR T,R,B,L "  Top, right, bottom, left padding"
-.br
-.RE
-
-.TP
-.BI "\-\-info=" "STYLE"
-Determines the display style of the finder info. (e.g. match counter, loading indicator, etc.)
-
-.BR default  "              On the left end of the horizontal separator"
-.br
-.BR right  "                On the right end of the horizontal separator"
-.br
-.BR hidden  "               Do not display finder info"
-.br
-.BR inline  "               After the prompt with the default prefix ' < '"
-.br
-.BR inline:PREFIX  "        After the prompt with a non-default prefix"
-.br
-.BR inline\-right "         On the right end of the prompt line"
-.br
-.BR inline\-right:PREFIX "  On the right end of the prompt line with a custom prefix"
-.br
-
-.TP
-.BI "\-\-info\-command=" "COMMAND"
-Command to generate the finder info line. The command runs synchronously and
-blocks the UI until completion, so make sure that it's fast. ANSI color codes
-are supported. \fB$FZF_INFO\fR variable is set to the original info text.
-For additional environment variables available to the command, see the section
-ENVIRONMENT VARIABLES EXPORTED TO CHILD PROCESSES.
-
-e.g.
-     \fB# Prepend the current cursor position in yellow
-     fzf \-\-info\-command='echo \-e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
-
-.TP
-.B "\-\-no\-info"
-A synonym for \fB\-\-info=hidden\fB
-
-.TP
-.BI "\-\-separator=" "STR"
-The given string will be repeated to form the horizontal separator on the info
-line (default: '─' or '\-' depending on \fB\-\-no\-unicode\fR).
-
-ANSI color codes are supported.
-
-.TP
-.B "\-\-no\-separator"
-Do not display horizontal separator on the info line. A synonym for
-\fB\-\-separator=''\fB
-
-.TP
-.BI "\-\-scrollbar=" "CHAR1[CHAR2]"
-Use the given character to render scrollbar. (default: '│' or ':' depending on
-\fB\-\-no\-unicode\fR). The optional \fBCHAR2\fR is used to render scrollbar of
-the preview window.
-
-.TP
-.B "\-\-no\-scrollbar"
-Do not display scrollbar. A synonym for \fB\-\-scrollbar=''\fB
-
-.TP
-.BI "\-\-prompt=" "STR"
-Input prompt (default: '> ')
-.TP
-.BI "\-\-pointer=" "STR"
-Pointer to the current line (default: '▌' or '>' depending on \fB\-\-no\-unicode\fR)
-.TP
-.BI "\-\-marker=" "STR"
-Multi-select marker (default: '┃' or '>' depending on \fB\-\-no\-unicode\fR)
-.TP
-.BI "\-\-marker\-multi\-line=" "STR"
-Multi-select marker for multi-line entries. 3 elements for top, middle, and bottom.
-(default: '╻┃╹' or '.|'' depending on \fB\-\-no\-unicode\fR)
-.TP
-.BI "\-\-header=" "STR"
-The given string will be printed as the sticky header. The lines are displayed
-in the given order from top to bottom regardless of \fB\-\-layout\fR option, and
-are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even when
-\fB\-\-ansi\fR is not set.
-.TP
-.BI "\-\-header\-lines=" "N"
-The first N lines of the input are treated as the sticky header. When
-\fB\-\-with\-nth\fR is set, the lines are transformed just like the other
-lines that follow.
-.TP
-.B "\-\-header\-first"
-Print header before the prompt line
-.TP
-.BI "\-\-ellipsis=" "STR"
-Ellipsis to show when line is truncated (default: '··')
-.SS Display
+.B "\-\-print0"
+Print output delimited by ASCII NUL characters instead of newline characters
 .TP
 .B "\-\-ansi"
 Enable processing of ANSI color codes
 .TP
-.BI "\-\-tabstop=" SPACES
-Number of spaces for a tab character (default: 8)
+.B "\-\-sync"
+Synchronous search for multi-staged filtering. If specified, fzf will launch
+the finder only after the input stream is complete and the initial filtering
+and the associated actions (bound to any of \fBstart\fR, \fBload\fR,
+\fBresult\fR, or \fBfocus\fR) are complete.
+
+.RS
+e.g. \fB# Avoid rendering both fzf instances at the same time
+     fzf \-\-multi | fzf \-\-sync
+
+     # fzf will not render intermediate states
+     (sleep 1; seq 1000000; sleep 1) |
+       fzf \-\-sync \-\-query 5 \-\-listen \-\-bind start:up,load:up,result:up,focus:change\-header:Ready\fR
+.RE
+.SS STYLE
+.TP
+.BI "\-\-style=" "PRESET"
+Apply a style preset [default|minimal|full]
 .TP
 .BI "\-\-color=" "[BASE_SCHEME][,COLOR_NAME[:ANSI_COLOR][:ANSI_ATTRIBUTES]]..."
 Color configuration. The name of the base color scheme is followed by custom
@@ -675,25 +289,391 @@ color mappings.
          \-\-color='pointer:#E12672,marker:#E17899,prompt:#98BEDE,hl+:#98BC99'\fR
 .RE
 .TP
-.B "\-\-highlight\-line"
-Highlight the whole current line
+.B "\-\-no\-color"
+Disable colors
 .TP
 .B "\-\-no\-bold"
 Do not use bold text
 .TP
 .B "\-\-black"
 Use black background
-.SS History
+.SS LAYOUT
 .TP
-.BI "\-\-history=" "HISTORY_FILE"
-Load search history from the specified file and update the file on completion.
-When enabled, \fBCTRL\-N\fR and \fBCTRL\-P\fR are automatically remapped to
-\fBnext\-history\fR and \fBprev\-history\fR.
+.BI "\-\-height=" "[~]HEIGHT[%]"
+Display fzf window below the cursor with the given height instead of using
+the full screen.
+
+If a negative value is specified, the height is calculated as the terminal
+height minus the given value.
+
+  fzf \-\-height=\-1
+
+When prefixed with \fB~\fR, fzf will automatically determine the height in the
+range according to the input size.
+
+  # Will not take up 100% of the screen
+  seq 5 | fzf \-\-height=~100%
+
+Adaptive height has the following limitations:
+.br
+* Cannot be used with top/bottom margin and padding given in percent size
+.br
+* Negative value is not allowed
+.br
+* It will not find the right size when there are multi-line items
+
 .TP
-.BI "\-\-history\-size=" "N"
-Maximum number of entries in the history file (default: 1000). The file is
-automatically truncated when the number of the lines exceeds the value.
-.SS Preview
+.BI "\-\-min\-height=" "HEIGHT"
+Minimum height when \fB\-\-height\fR is given in percent (default: 10).
+Ignored when \fB\-\-height\fR is not specified.
+.TP
+.BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
+Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
+later. This option is ignored if you are not running fzf inside tmux.
+
+e.g.
+  \fB# Popup in the center with 70% width and height
+  fzf \-\-tmux 70%
+
+  # Popup on the left with 40% width and 100% height
+  fzf \-\-tmux right,40%
+
+  # Popup on the bottom with 100% width and 30% height
+  fzf \-\-tmux bottom,30%
+
+  # Popup on the top with 80% width and 40% height
+  fzf \-\-tmux top,80%,40%
+
+  # Popup with a native tmux border in the center with 80% width and height
+  fzf \-\-tmux center,80%,border\-native\fR
+
+.TP
+.BI "\-\-layout=" "LAYOUT"
+Choose the layout (default: default)
+
+.br
+.BR default  "       Display from the bottom of the screen"
+.br
+.BR reverse  "       Display from the top of the screen"
+.br
+.BR reverse\-list "  Display from the top of the screen, prompt at the bottom"
+.br
+
+.TP
+.B "\-\-reverse"
+A synonym for \fB\-\-layout=reverse\fB
+
+.TP
+.BI "\-\-margin=" MARGIN
+Comma-separated expression for margins around the finder.
+.br
+
+.br
+.RS
+.BR TRBL "     Same margin for top, right, bottom, and left"
+.br
+.BR TB,RL "    Vertical, horizontal margin"
+.br
+.BR T,RL,B "   Top, horizontal, bottom margin"
+.br
+.BR T,R,B,L "  Top, right, bottom, left margin"
+.br
+
+.br
+Each part can be given in absolute number or in percentage relative to the
+terminal size with \fB%\fR suffix.
+.br
+
+.br
+e.g.
+     \fBfzf \-\-margin 10%
+     fzf \-\-margin 1,5%\fR
+.RE
+.TP
+.BI "\-\-padding=" PADDING
+Comma-separated expression for padding inside the border. Padding is
+distinguishable from margin only when \fB\-\-border\fR option is used.
+.br
+
+.br
+e.g.
+     \fBfzf \-\-margin 5% \-\-padding 5% \-\-border \-\-preview 'cat {}' \\
+         \-\-color bg:#222222,preview\-bg:#333333\fR
+
+.br
+.RS
+.BR TRBL "     Same padding for top, right, bottom, and left"
+.br
+.BR TB,RL "    Vertical, horizontal padding"
+.br
+.BR T,RL,B "   Top, horizontal, bottom padding"
+.br
+.BR T,R,B,L "  Top, right, bottom, left padding"
+.br
+.RE
+
+.TP
+.BI "\-\-border" [=STYLE]
+Draw border around the finder
+
+.br
+.BR rounded "       Border with rounded corners (default)"
+.br
+.BR sharp "         Border with sharp corners"
+.br
+.BR bold "          Border with bold lines"
+.br
+.BR double "        Border with double lines"
+.br
+.BR block "         Border using block elements; suitable when using different background colors"
+.br
+.BR thinblock "     Border using legacy computing symbols; may not be displayed on some terminals"
+.br
+.BR horizontal "    Horizontal lines above and below the finder"
+.br
+.BR vertical "      Vertical lines on each side of the finder"
+.br
+.BR top " (up)"
+.br
+.BR bottom " (down)"
+.br
+.BR left
+.br
+.BR right
+.br
+.BR none
+.br
+
+If you use a terminal emulator where each box-drawing character takes
+2 columns, try setting \fB\-\-ambidouble\fR. If the border is still not properly
+rendered, set \fB\-\-no\-unicode\fR.
+
+.TP
+.BI "\-\-border\-label" [=LABEL]
+Label to print on the horizontal border line. Should be used with one of the
+following \fB\-\-border\fR options.
+
+.br
+.B * rounded
+.br
+.B * sharp
+.br
+.B * bold
+.br
+.B * double
+.br
+.B * horizontal
+.br
+.BR "* top" " (up)"
+.br
+.BR "* bottom" " (down)"
+.br
+
+.br
+e.g.
+  \fB# ANSI color codes are supported
+  # (with https://github.com/busyloop/lolcat)
+  label=$(curl \-s http://metaphorpsum.com/sentences/1 | lolcat \-f)
+
+  # Border label at the center
+  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-color=label:italic:black
+
+  # Left-aligned (positive integer)
+  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-border\-label\-pos=3 \-\-color=label:italic:black
+
+  # Right-aligned (negative integer) on the bottom line (:bottom)
+  fzf \-\-height=10 \-\-border \-\-border\-label="╢ $label ╟" \-\-border\-label\-pos=\-3:bottom \-\-color=label:italic:black\fR
+
+.TP
+.BI "\-\-border\-label\-pos" [=N[:top|bottom]]
+Position of the border label on the border line. Specify a positive integer as
+the column position from the left. Specify a negative integer to right-align
+the label. Label is printed on the top border line by default, add
+\fB:bottom\fR to put it on the border line on the bottom. The default value
+\fB0 (or \fBcenter\fR) will put the label at the center of the border line.
+
+.SS LIST SECTION
+.TP
+.B "\-m, \-\-multi"
+Enable multi-select with tab/shift\-tab. It optionally takes an integer argument
+which denotes the maximum number of items that can be selected.
+.TP
+.B "+m, \-\-no\-multi"
+Disable multi-select
+.TP
+.B "\-\-highlight\-line"
+Highlight the whole current line
+.TP
+.B "\-\-cycle"
+Enable cyclic scroll
+.TP
+.B "\-\-wrap"
+Enable line wrap
+.TP
+.BI "\-\-wrap\-sign" "=INDICATOR"
+Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
+\fB\-\-no\-unicode\fR.
+.TP
+.B "\-\-no\-multi\-line"
+Disable multi-line display of items when using \fB\-\-read0\fR
+.TP
+.B "\-\-track"
+Make fzf track the current selection when the result list is updated.
+This can be useful when browsing logs using fzf with sorting disabled. It is
+not recommended to use this option with \fB\-\-tac\fR as the resulting behavior
+can be confusing. Also, consider using \fBtrack\fR action instead of this
+option.
+
+.RS
+e.g.
+     \fBgit log \-\-oneline \-\-graph \-\-color=always | nl |
+         fzf \-\-ansi \-\-track \-\-no\-sort \-\-layout=reverse\-list\fR
+.RE
+.TP
+.B "\-\-tac"
+Reverse the order of the input
+
+.RS
+e.g.
+     \fBhistory | fzf \-\-tac \-\-no\-sort\fR
+.RE
+.TP
+.BI "\-\-gap" "[=N]"
+Render empty lines between each item
+.TP
+.B "\-\-keep\-right"
+Keep the right end of the line visible when it's too long. Effective only when
+the query string is empty.
+.TP
+.BI "\-\-scroll\-off=" "LINES"
+Number of screen lines to keep above or below when scrolling to the top or to
+the bottom (default: 3).
+.TP
+.B "\-\-no\-hscroll"
+Disable horizontal scroll
+.TP
+.BI "\-\-hscroll\-off=" "COLS"
+Number of screen columns to keep to the right of the highlighted substring
+(default: 10). Setting it to a large value will cause the text to be positioned
+on the center of the screen.
+.TP
+.BI "\-\-jump\-labels=" "CHARS"
+Label characters for \fBjump\fR mode.
+.TP
+.BI "\-\-pointer=" "STR"
+Pointer to the current line (default: '▌' or '>' depending on \fB\-\-no\-unicode\fR)
+.TP
+.BI "\-\-marker=" "STR"
+Multi-select marker (default: '┃' or '>' depending on \fB\-\-no\-unicode\fR)
+.TP
+.BI "\-\-marker\-multi\-line=" "STR"
+Multi-select marker for multi-line entries. 3 elements for top, middle, and bottom.
+(default: '╻┃╹' or '.|'' depending on \fB\-\-no\-unicode\fR)
+.TP
+.BI "\-\-ellipsis=" "STR"
+Ellipsis to show when line is truncated (default: '··')
+.TP
+.BI "\-\-tabstop=" SPACES
+Number of spaces for a tab character (default: 8)
+.TP
+.BI "\-\-scrollbar=" "CHAR1[CHAR2]"
+Use the given character to render scrollbar. (default: '│' or ':' depending on
+\fB\-\-no\-unicode\fR). The optional \fBCHAR2\fR is used to render scrollbar of
+the preview window.
+
+.TP
+.B "\-\-no\-scrollbar"
+Do not display scrollbar. A synonym for \fB\-\-scrollbar=''\fB
+
+.TP
+.BI "\-\-list\-border" [=STYLE]
+Draw border around the list section
+
+.TP
+.BI "\-\-list\-label" [=LABEL]
+Label to print on the list border
+
+.TP
+.BI "\-\-list\-label\-pos" [=N[:top|bottom]]
+Position of the list label
+
+.SS INPUT SECTION
+
+.TP
+.BI "\-\-prompt=" "STR"
+Input prompt (default: '> ')
+.TP
+.BI "\-\-info=" "STYLE"
+Determines the display style of the finder info. (e.g. match counter, loading indicator, etc.)
+
+.BR default  "              On the left end of the horizontal separator"
+.br
+.BR right  "                On the right end of the horizontal separator"
+.br
+.BR hidden  "               Do not display finder info"
+.br
+.BR inline  "               After the prompt with the default prefix ' < '"
+.br
+.BR inline:PREFIX  "        After the prompt with a non-default prefix"
+.br
+.BR inline\-right "         On the right end of the prompt line"
+.br
+.BR inline\-right:PREFIX "  On the right end of the prompt line with a custom prefix"
+.br
+
+.TP
+.BI "\-\-info\-command=" "COMMAND"
+Command to generate the finder info line. The command runs synchronously and
+blocks the UI until completion, so make sure that it's fast. ANSI color codes
+are supported. \fB$FZF_INFO\fR variable is set to the original info text.
+For additional environment variables available to the command, see the section
+ENVIRONMENT VARIABLES EXPORTED TO CHILD PROCESSES.
+
+e.g.
+     \fB# Prepend the current cursor position in yellow
+     fzf \-\-info\-command='echo \-e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
+
+.TP
+.B "\-\-no\-info"
+A synonym for \fB\-\-info=hidden\fB
+
+.TP
+.BI "\-\-separator=" "STR"
+The given string will be repeated to form the horizontal separator on the info
+line (default: '─' or '\-' depending on \fB\-\-no\-unicode\fR).
+
+ANSI color codes are supported.
+
+.TP
+.B "\-\-no\-separator"
+Do not display horizontal separator on the info line. A synonym for
+\fB\-\-separator=''\fB
+
+.TP
+.B "\-\-filepath\-word"
+Make word-wise movements and actions respect path separators. The following
+actions are affected:
+
+\fBbackward\-kill\-word\fR
+.br
+\fBbackward\-word\fR
+.br
+\fBforward\-word\fR
+.br
+\fBkill\-word\fR
+.TP
+.BI "\-\-input\-border" [=STYLE]
+Draw border around the input section
+
+.TP
+.BI "\-\-input\-label" [=LABEL]
+Label to print on the input border
+
+.TP
+.BI "\-\-input\-label\-pos" [=N[:top|bottom]]
+Position of the input label
+
+.SS PREVIEW WINDOW
 .TP
 .BI "\-\-preview=" "COMMAND"
 Execute the given command for the current line and display the result on the
@@ -913,7 +893,35 @@ e.g.
       \fBfzf \-\-preview 'cat {}' \-\-preview\-window 'right,border\-left,<30(up,30%,border\-bottom)'\fR
 .RE
 
-.SS Scripting
+.SS HEADER
+
+.TP
+.BI "\-\-header=" "STR"
+The given string will be printed as the sticky header. The lines are displayed
+in the given order from top to bottom regardless of \fB\-\-layout\fR option, and
+are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even when
+\fB\-\-ansi\fR is not set.
+.TP
+.BI "\-\-header\-lines=" "N"
+The first N lines of the input are treated as the sticky header. When
+\fB\-\-with\-nth\fR is set, the lines are transformed just like the other
+lines that follow.
+.TP
+.B "\-\-header\-first"
+Print header before the prompt line
+.TP
+.BI "\-\-header\-border" [=STYLE]
+Draw border around the header section
+
+.TP
+.BI "\-\-header\-label" [=LABEL]
+Label to print on the header border
+
+.TP
+.BI "\-\-header\-label\-pos" [=N[:top|bottom]]
+Position of the header label
+
+.SS SCRIPTING
 .TP
 .BI "\-q, \-\-query=" "STR"
 Start the finder with the given query
@@ -942,24 +950,15 @@ with the default enter key. If \fB\-\-expect\fR option is specified multiple
 times, fzf will expect the union of the keys. \fB\-\-no\-expect\fR will clear the
 list.
 
-.RS
 e.g.
      \fBfzf \-\-expect=ctrl\-v,ctrl\-t,alt\-s \-\-expect=f1,f2,~,@\fR
-.RE
 
 This option is not compatible with \fB\-\-bind\fR on the same key and will take
 precedence over it. To combine the two, use \fBprint\fR action.
 
-.RS
 e.g.
-     \fBfzf \-\-multi \-\-bind 'enter:print()+accept,ctrl\-y:select\-all+print(ctrl\-y)+accept'\fR
-.RE
-.TP
-.B "\-\-read0"
-Read input delimited by ASCII NUL characters instead of newline characters
-.TP
-.B "\-\-print0"
-Print output delimited by ASCII NUL characters instead of newline characters
+     \fBfzf \-\-multi \\
+         \-\-bind 'enter:print()+accept,ctrl\-y:select\-all+print(ctrl\-y)+accept'\fR
 .TP
 .B "\-\-no\-clear"
 Do not clear finder interface on exit. If fzf was started in full screen mode,
@@ -975,21 +974,13 @@ e.g.
        exit 1
      ) && seq "$foo" 100 | fzf
 
+.SS KEY/EVENT BINDING
 .TP
-.B "\-\-sync"
-Synchronous search for multi-staged filtering. If specified, fzf will launch
-the finder only after the input stream is complete and the initial filtering
-and the associated actions (bound to any of \fBstart\fR, \fBload\fR,
-\fBresult\fR, or \fBfocus\fR) are complete.
+.BI "\-\-bind=" "BINDINGS"
+Comma-separated list of custom key/event bindings. See \fBKEY/EVENT BINDINGS\fR
+for the details.
 
-.RS
-e.g. \fB# Avoid rendering both fzf instances at the same time
-     fzf \-\-multi | fzf \-\-sync
-
-     # fzf will not render intermediate states
-     (sleep 1; seq 1000000; sleep 1) |
-       fzf \-\-sync \-\-query 5 \-\-listen \-\-bind start:up,load:up,result:up,focus:change\-header:Ready\fR
-.RE
+.SS ADVANCED
 .TP
 .B "\-\-with\-shell=STR"
 Shell command and flags to start child processes with. On *nix Systems, the
@@ -997,9 +988,6 @@ default value is \fB$SHELL \-c\fR if \fB$SHELL\fR is set, otherwise \fBsh \-c\fR
 On Windows, the default value is \fBcmd /s/c\fR when \fB$SHELL\fR is not
 set.
 
-.RS
-e.g. \fBgem list | fzf \-\-with\-shell 'ruby \-e' \-\-preview 'pp Gem::Specification.find_by_name({1})'\fR
-.RE
 .TP
 .B "\-\-listen[=[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
 Start HTTP server and listen on the given address. It allows external processes
@@ -1038,18 +1026,8 @@ e.g.
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf \-\-listen \-\-bind 'start:execute\-silent:echo $FZF_PORT > /tmp/fzf\-port'
      \fR
-.SS Help
-.TP
-.B "\-\-version"
-Display version information and exit
-.TP
-.B "\-\-help"
-Show help message
-.TP
-.B "\-\-man"
-Show man page
 
-.SS Directory traversal
+.SS DIRECTORY TRAVERSAL
 .TP
 .B "\-\-walker=[file][,dir][,follow][,hidden]"
 Determines the behavior of the built-in directory walker that is used when
@@ -1074,7 +1052,22 @@ The default value is the current working directory.
 Comma-separated list of directory names to skip during the directory walk.
 The default value is \fB.git,node_modules\fR.
 
-.SS Shell integration
+.SS HISTORY
+.TP
+.BI "\-\-history=" "HISTORY_FILE"
+Load search history from the specified file and update the file on completion.
+When enabled, \fBCTRL\-N\fR and \fBCTRL\-P\fR are automatically remapped to
+\fBnext\-history\fR and \fBprev\-history\fR.
+.TP
+.BI "\-\-history\-size=" "N"
+Maximum number of entries in the history file (default: 1000). The file is
+automatically truncated when the number of the lines exceeds the value.
+
+.RS
+e.g. \fBgem list | fzf \-\-with\-shell 'ruby \-e' \-\-preview 'pp Gem::Specification.find_by_name({1})'\fR
+.RE
+
+.SS SHELL INTEGRATION
 .TP
 .B "\-\-bash"
 Print script to set up Bash shell integration
@@ -1092,6 +1085,31 @@ e.g. \fBsource <(fzf \-\-zsh)\fR
 Print script to set up Fish shell integration
 
 e.g. \fBfzf \-\-fish | source\fR
+
+.SS OTHERS
+.TP
+.B "\-\-no\-mouse"
+Disable mouse
+.TP
+.B "\-\-no\-unicode"
+Use ASCII characters instead of Unicode drawing characters to draw borders,
+the spinner and the horizontal separator.
+
+.TP
+.B "\-\-ambidouble"
+Set this option if your terminal displays ambiguous width characters (e.g.
+box-drawing characters for borders) as 2 columns.
+
+.SS HELP
+.TP
+.B "\-\-version"
+Display version information and exit
+.TP
+.B "\-\-help"
+Show help message
+.TP
+.B "\-\-man"
+Show man page
 
 .SH ENVIRONMENT VARIABLES
 .TP
