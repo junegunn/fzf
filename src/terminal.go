@@ -1093,6 +1093,9 @@ func (t *Terminal) extraLines() int {
 	if t.listBorderShape.Visible() {
 		extra += borderLines(t.listBorderShape)
 	}
+	if t.headerBorderShape.Visible() {
+		extra += borderLines(t.headerBorderShape)
+	}
 	if !t.noSeparatorLine() {
 		extra++
 	}

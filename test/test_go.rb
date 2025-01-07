@@ -3702,6 +3702,22 @@ class TestGoFZF < TestBase
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
+
+  def test_style_full_adaptive_height
+    tmux.send_keys %(seq 1| #{FZF} --style=full --height=~100% --header-lines=1 --info=default), :Enter
+    block = <<~BLOCK
+      ╭────────
+      ╰────────
+      ╭────────
+      │   1
+      ╰────────
+      ╭────────
+      │   0/0
+      │ >
+      ╰────────
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end
 
 module TestShell
