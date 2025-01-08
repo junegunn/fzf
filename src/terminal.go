@@ -1012,6 +1012,14 @@ func (t *Terminal) deferActivation() bool {
 }
 
 func (t *Terminal) environ() []string {
+	return t.environImpl(false)
+}
+
+func (t *Terminal) environForPreview() []string {
+	return t.environImpl(true)
+}
+
+func (t *Terminal) environImpl(forPreview bool) []string {
 	env := os.Environ()
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
@@ -1037,9 +1045,11 @@ func (t *Terminal) environ() []string {
 	if pwindowSize.Lines > 0 {
 		lines := fmt.Sprintf("LINES=%d", pwindowSize.Lines)
 		columns := fmt.Sprintf("COLUMNS=%d", pwindowSize.Columns)
-		env = append(env, lines)
+		if forPreview {
+			env = append(env, lines)
+			env = append(env, columns)
+		}
 		env = append(env, "FZF_PREVIEW_"+lines)
-		env = append(env, columns)
 		env = append(env, "FZF_PREVIEW_"+columns)
 		env = append(env, fmt.Sprintf("FZF_PREVIEW_TOP=%d", t.tui.Top()+t.pwindow.Top()))
 		env = append(env, fmt.Sprintf("FZF_PREVIEW_LEFT=%d", t.pwindow.Left()))
@@ -4132,7 +4142,7 @@ func (t *Terminal) Loop() error {
 		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false)
 			t.cancelPreview()
-			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.evaluateScrollOffset(), list, t.environ()})
+			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.evaluateScrollOffset(), list, t.environForPreview()})
 		}
 	}
 
@@ -4524,7 +4534,7 @@ func (t *Terminal) Loop() error {
 						if valid {
 							t.cancelPreview()
 							t.previewBox.Set(reqPreviewEnqueue,
-								previewRequest{t.previewOpts.command, t.evaluateScrollOffset(), list, t.environ()})
+								previewRequest{t.previewOpts.command, t.evaluateScrollOffset(), list, t.environForPreview()})
 						}
 					} else {
 						// Discard the preview content so that it won't accidentally appear
