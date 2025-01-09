@@ -133,14 +133,12 @@ function fzf_key_bindings
     bind \ec fzf-cd-widget
   end
 
-  if bind -M insert &> /dev/null
-    bind -M insert \cr fzf-history-widget
-    if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
-      bind -M insert \ct fzf-file-widget
-    end
-    if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
-      bind -M insert \ec fzf-cd-widget
-    end
+  bind -M insert \cr fzf-history-widget
+  if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
+    bind -M insert \ct fzf-file-widget
+  end
+  if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
+    bind -M insert \ec fzf-cd-widget
   end
 
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
