@@ -335,6 +335,20 @@ func TestExtractColor(t *testing.T) {
 		assert((*offsets)[0], 0, 6, 2, -1, true)
 		assert((*offsets)[1], 6, 11, 200, 100, false)
 	})
+
+	state = nil
+	src = "\x1b[1mhello \x1b[22;1;38:2:180:190:254mworld"
+	check(func(offsets *[]ansiOffset, state *ansiState) {
+		if len(*offsets) != 2 {
+			t.Fail()
+		}
+		var color tui.Color = (1 << 24) + (180 << 16) + (190 << 8) + 254
+		if state.fg != color || state.attr != 1 {
+			t.Fail()
+		}
+		assert((*offsets)[0], 0, 6, -1, -1, true)
+		assert((*offsets)[1], 6, 11, color, -1, true)
+	})
 }
 
 func TestAnsiCodeStringConversion(t *testing.T) {
