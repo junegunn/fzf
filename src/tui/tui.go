@@ -897,6 +897,10 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.Border = o(baseTheme.Border, theme.Border)
 	theme.BorderLabel = o(baseTheme.BorderLabel, theme.BorderLabel)
 
+	undefined := NewColorAttr()
+	scrollbarDefined := theme.Scrollbar != undefined
+	previewBorderDefined := theme.PreviewBorder != undefined
+
 	// These colors are not defined in the base themes
 	theme.ListFg = o(theme.Fg, theme.ListFg)
 	theme.ListBg = o(theme.Bg, theme.ListBg)
@@ -913,7 +917,17 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.ListBorder = o(theme.Border, theme.ListBorder)
 	theme.Separator = o(theme.ListBorder, theme.Separator)
 	theme.Scrollbar = o(theme.ListBorder, theme.Scrollbar)
-	theme.PreviewScrollbar = o(theme.PreviewBorder, theme.PreviewScrollbar)
+	/*
+		--color list-border:green
+		--color scrollbar:red
+		--color scrollbar:red,list-border:green
+		--color scrollbar:red,preview-border:green
+	*/
+	if scrollbarDefined && !previewBorderDefined {
+		theme.PreviewScrollbar = o(theme.Scrollbar, theme.PreviewScrollbar)
+	} else {
+		theme.PreviewScrollbar = o(theme.PreviewBorder, theme.PreviewScrollbar)
+	}
 	if hasInputWindow {
 		theme.InputBg = o(theme.Bg, theme.InputBg)
 	} else {
