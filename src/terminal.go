@@ -3231,7 +3231,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 		xshift = -1
 	}
 	yshift := 1
-	if !t.activePreviewOpts.border.HasTop() {
+	if !t.activePreviewOpts.HasBorderTop() {
 		yshift = 0
 	}
 	for i := yoff; i < height; i++ {

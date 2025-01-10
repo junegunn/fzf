@@ -336,6 +336,10 @@ func (o *previewOpts) HasBorderRight() bool {
 	return o.border.HasRight() || o.border == tui.BorderLine && o.position == posLeft
 }
 
+func (o *previewOpts) HasBorderTop() bool {
+	return o.border.HasTop() || o.border == tui.BorderLine && o.position == posDown
+}
+
 func defaultTmuxOptions(index int) *tmuxOptions {
 	return &tmuxOptions{
 		position: posCenter,
