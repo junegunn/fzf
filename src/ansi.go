@@ -310,20 +310,15 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	return trimmed, nil, state
 }
 
-func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
+func parseAnsiCode(s string) (int, string) {
 	var remaining string
 	var i int
-	if delimiter == 0 {
-		// Faster than strings.IndexAny(";:")
-		i = strings.IndexByte(s, ';')
-		if i < 0 {
-			i = strings.IndexByte(s, ':')
-		}
-	} else {
-		i = strings.IndexByte(s, delimiter)
+	// Faster than strings.IndexAny(";:")
+	i = strings.IndexByte(s, ';')
+	if i < 0 {
+		i = strings.IndexByte(s, ':')
 	}
 	if i >= 0 {
-		delimiter = s[i]
 		remaining = s[i+1:]
 		s = s[:i]
 	}
@@ -335,14 +330,14 @@ func parseAnsiCode(s string, delimiter byte) (int, byte, string) {
 		for _, ch := range stringBytes(s) {
 			ch -= '0'
 			if ch > 9 {
-				return -1, delimiter, remaining
+				return -1, remaining
 			}
 			code = code*10 + int(ch)
 		}
-		return code, delimiter, remaining
+		return code, remaining
 	}
 
-	return -1, delimiter, remaining
+	return -1, remaining
 }
 
 func interpretCode(ansiCode string, prevState *ansiState) ansiState {
@@ -378,11 +373,10 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	state256 := 0
 	ptr := &state.fg
 
-	var delimiter byte
 	count := 0
 	for len(ansiCode) != 0 {
 		var num int
-		if num, delimiter, ansiCode = parseAnsiCode(ansiCode, delimiter); num != -1 {
+		if num, ansiCode = parseAnsiCode(ansiCode); num != -1 {
 			count++
 			switch state256 {
 			case 0:

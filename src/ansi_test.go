@@ -381,7 +381,7 @@ func TestParseAnsiCode(t *testing.T) {
 		{"-2", "", -1},
 	}
 	for _, x := range tests {
-		n, _, s := parseAnsiCode(x.In, 0)
+		n, s := parseAnsiCode(x.In)
 		if n != x.N || s != x.Exp {
 			t.Fatalf("%q: got: (%d %q) want: (%d %q)", x.In, n, s, x.N, x.Exp)
 		}
