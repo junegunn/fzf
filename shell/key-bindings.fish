@@ -76,8 +76,8 @@ function fzf_key_bindings
           set -l line 0
           for i in (builtin history -z --reverse | string split0)
             set line (math $line + 1)
-            string escape -n -- $line\t$i
-          end | string join0 | string replace -a '\n' '\n\t' | string unescape -n | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | string replace -r '^\d*\t' '' | read -lz result
+            string escape -n -- $line\t(string replace -a -- \n \n\t $i | string collect)
+          end | string join0 | string unescape -n | eval (__fzfcmd) --tac --read0 --print0 -q '(commandline)' | string replace -r '^\d*\t' '' | read -lz result
           and commandline -- $result
         end
       else
