@@ -332,12 +332,21 @@ func (o *previewOpts) Toggle() {
 	o.hidden = !o.hidden
 }
 
-func (o *previewOpts) HasBorderRight() bool {
-	return o.border.HasRight() || o.border == tui.BorderLine && o.position == posLeft
-}
-
-func (o *previewOpts) HasBorderTop() bool {
-	return o.border.HasTop() || o.border == tui.BorderLine && o.position == posDown
+func (o *previewOpts) Border() tui.BorderShape {
+	shape := o.border
+	if shape == tui.BorderLine {
+		switch o.position {
+		case posUp:
+			shape = tui.BorderBottom
+		case posDown:
+			shape = tui.BorderTop
+		case posLeft:
+			shape = tui.BorderRight
+		case posRight:
+			shape = tui.BorderLeft
+		}
+	}
+	return shape
 }
 
 func defaultTmuxOptions(index int) *tmuxOptions {
