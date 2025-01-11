@@ -1756,11 +1756,14 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	t.areaLines = height
 	t.areaColumns = width
 
+	// If none of the inner borders has the right side, but the outer border does, increase the list width by 1 column
+	listStickToRight := t.borderShape.HasRight() && !t.listBorderShape.HasRight() && !t.inputBorderShape.HasRight() &&
+		(!t.headerVisible || !t.headerBorderShape.HasRight() || t.visibleHeaderLines() == 0)
+
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	if forcePreview || t.needPreviewWindow() {
 		var resizePreviewWindows func(previewOpts *previewOpts)
-		stickToRight := false
 		resizePreviewWindows = func(previewOpts *previewOpts) {
 			t.activePreviewOpts = previewOpts
 			if previewOpts.size.size == 0 {
@@ -1826,11 +1829,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 				if previewOpts.hidden {
 					return
 				}
-				// If none of the inner borders has the right side, but the outer border does, increase the width by 1 column
-				stickToRight = t.borderShape.HasRight() &&
-					!previewOpts.HasBorderRight() && !t.listBorderShape.HasRight() && !t.inputBorderShape.HasRight() &&
-					(!t.headerVisible || !t.headerBorderShape.HasRight() || t.visibleHeaderLines() == 0)
-				if stickToRight {
+
+				listStickToRight = listStickToRight && !previewOpts.HasBorderRight()
+				if listStickToRight {
 					innerWidth++
 					width++
 				}
@@ -1903,9 +1904,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					innerBorderFn(marginInt[0], marginInt[3]+pwidth, width-pwidth, height)
 					createPreviewWindow(marginInt[0], marginInt[3], pwidth, height)
 				} else {
-					// NOTE: fzf --preview 'cat {}' --preview-window border-left --border
-					stickToRight = !previewOpts.HasBorderRight() && t.borderShape.HasRight()
-					if stickToRight {
+					// NOTE: Relaxed condition for the following cases
+					//  fzf --preview 'seq 500' --preview-window border-left --border
+					//  fzf --preview 'seq 500' --preview-window border-left --border --list-border
+					//  fzf --preview 'seq 500' --preview-window border-left --border --input-border
+					listStickToRight = t.borderShape.HasRight() && !previewOpts.HasBorderRight()
+					if listStickToRight {
 						innerWidth++
 						width++
 					}
@@ -1919,7 +1923,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		}
 		resizePreviewWindows(&t.previewOpts)
 
-		if t.borderShape.HasRight() && !stickToRight {
+		if t.borderShape.HasRight() && !listStickToRight {
 			// Need to clear the extra margin between the borders
 			// fzf --preview 'seq 1000' --preview-window border-left --bind space:change-preview-window:border-rounded --border vertical
 			// fzf --preview 'seq 1000' --preview-window up,hidden --bind space:toggle-preview --border vertical
@@ -1942,7 +1946,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	// Without preview window
 	if t.window == nil {
-		if t.borderShape.HasRight() && !hasListBorder {
+		if listStickToRight {
 			// Put scrollbar closer to the right border for consistent look
 			innerWidth++
 			width++
