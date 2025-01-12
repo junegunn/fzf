@@ -59,6 +59,10 @@ Also, fzf now offers three "style presets" for easier customization, which can b
   ```
 - Added `toggle-multi-line` action
 - Added `toggle-hscroll` action
+- A single-character delimiter is now treated as a plain string delimiter rather than a regular expression delimiter, even if it's a regular expression meta-character.
+    - This means you can just write `--delimiter '|'` instead of escaping it as `--delimiter '\|'`
+- Bug fixes
+- Bug fixes in fish scripts (thanks to @bitraid)
 
 0.57.0
 ------

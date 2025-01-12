@@ -755,18 +755,23 @@ func delimiterRegexp(str string) Delimiter {
 	// Special handling of \t
 	str = strings.ReplaceAll(str, "\\t", "\t")
 
-	// 1. Pattern does not contain any special character
+	// 1. Pattern is a single character
+	if len([]rune(str)) == 1 {
+		return Delimiter{str: &str}
+	}
+
+	// 2. Pattern does not contain any special character
 	if regexp.QuoteMeta(str) == str {
 		return Delimiter{str: &str}
 	}
 
 	rx, e := regexp.Compile(str)
-	// 2. Pattern is not a valid regular expression
+	// 3. Pattern is not a valid regular expression
 	if e != nil {
 		return Delimiter{str: &str}
 	}
 
-	// 3. Pattern as regular expression. Slow.
+	// 4. Pattern as regular expression. Slow.
 	return Delimiter{regex: rx}
 }
 

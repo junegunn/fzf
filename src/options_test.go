@@ -9,9 +9,13 @@ import (
 )
 
 func TestDelimiterRegex(t *testing.T) {
-	// Valid regex
+	// Valid regex, but a single character -> string
 	delim := delimiterRegexp(".")
-	if delim.regex == nil || delim.str != nil {
+	if delim.regex != nil || *delim.str != "." {
+		t.Error(delim)
+	}
+	delim = delimiterRegexp("|")
+	if delim.regex != nil || *delim.str != "|" {
 		t.Error(delim)
 	}
 	// Broken regex -> string
