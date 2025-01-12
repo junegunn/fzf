@@ -2391,9 +2391,19 @@ func (t *Terminal) printHeaderImpl() {
 	}
 	// Wrapping is not supported for header
 	wrap := t.wrap
+
+	// Align header with the list
+	//   fzf --header-lines 3 --style full --no-list-border
+	//   fzf --header-lines 3 --style full --no-header-border
+	//   fzf --header-lines 3 --style full --no-header-border --no-input-border
 	indentSize := t.pointerLen + t.markerLen
-	if t.headerBorderShape.HasLeft() && !t.listBorderShape.HasLeft() {
-		indentSize = util.Max(0, indentSize-(1+t.borderWidth))
+	if t.headerWindow != nil {
+		if t.listBorderShape.HasLeft() {
+			indentSize += 1 + t.borderWidth
+		}
+		if t.headerBorderShape.HasLeft() {
+			indentSize -= 1 + t.borderWidth
+		}
 	}
 	indent := strings.Repeat(" ", indentSize)
 	t.wrap = false
