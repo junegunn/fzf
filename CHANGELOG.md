@@ -6,7 +6,15 @@ CHANGELOG
 
 This version introduces three new border types, `--list-border`, `--input-border`, and `--header-border`, offering much greater flexibility for customizing the user interface.
 
-Also, fzf now offers three "style presets" for easier customization, which can be activated using the `--style=[default|minimal|full]` option.
+<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-4-borders.png" />
+
+Also, fzf now offers "style presets" for quick customization, which can be activated using the `--style` option.
+
+| Preset    | Screenshot                                                                             |
+| :---      | :---                                                                                   |
+| `default` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-default.png"/> |
+| `full`    | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-full.png"/>    |
+| `minimal` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-minimal.png"/> |
 
 - Style presets (#4160)
     - `--style=full`
