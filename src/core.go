@@ -190,11 +190,13 @@ func Run(opts *Options) (int, error) {
 			forward = true
 		}
 	}
+
+	nth := opts.Nth
 	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
+			opts.Filter == nil, nth, opts.Delimiter, runes)
 	}
 	inputRevision := revision{}
 	snapshotRevision := revision{}
@@ -373,6 +375,12 @@ func Run(opts *Options) (int, error) {
 						command = val.command
 						environ = val.environ
 						changed = val.changed
+						if val.nth != nil {
+							// Change nth and clear caches
+							nth = *val.nth
+							patternCache = make(map[string]*Pattern)
+							inputRevision.bumpMajor()
+						}
 						if command != nil {
 							useSnapshot = val.sync
 						}

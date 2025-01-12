@@ -3718,6 +3718,29 @@ class TestGoFZF < TestBase
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
+
+  def test_change_nth
+    input = [
+      'foo bar bar bar bar',
+      'foo foo bar bar bar',
+      'foo foo foo bar bar',
+      'foo foo foo foo bar'
+    ]
+    writelines(input)
+    tmux.send_keys %(#{FZF} -qfoo -n1 --bind 'space:change-nth:2|3|4|5|' < #{tempname}), :Enter
+
+    tmux.until { |lines| assert_equal 4, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 3, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 4, lines.match_count }
+  end
 end
 
 module TestShell

@@ -67,6 +67,11 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
   ```
 - Added `toggle-multi-line` action
 - Added `toggle-hscroll` action
+- Added `change-nth` action for dynamically changing the value of the `--nth` option
+  ```sh
+  # Start with --nth 1, then 2, then 3, then back to the default, 1
+  echo 'foo foobar foobarbaz' | fzf --bind 'space:change-nth(2|3|)' --nth 1 -q foo
+  ```
 - A single-character delimiter is now treated as a plain string delimiter rather than a regular expression delimiter, even if it's a regular expression meta-character.
     - This means you can just write `--delimiter '|'` instead of escaping it as `--delimiter '\|'`
 - Bug fixes

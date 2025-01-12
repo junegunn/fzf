@@ -496,7 +496,7 @@ the label. Label is printed on the top border line by default, add
 
 .SS LIST SECTION
 .TP
-.B "\-m, \-\-multi"
+.BI "\-m, \-\-multi" "[=MAX]"
 Enable multi-select with tab/shift\-tab. It optionally takes an integer argument
 which denotes the maximum number of items that can be selected.
 .TP
@@ -1525,6 +1525,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBchange\-list\-label(...)\fR       (change \fB\-\-list\-label\fR to the given string)
     \fBchange\-multi\fR                 (enable multi-select mode with no limit)
     \fBchange\-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
+    \fBchange\-nth(...)\fR              (change \fB\-\-nth\fR option; rotate through the multiple options separated by '|')
     \fBchange\-preview(...)\fR          (change \fB\-\-preview\fR option)
     \fBchange\-preview\-label(...)\fR    (change \fB\-\-preview\-label\fR to the given string)
     \fBchange\-preview\-window(...)\fR   (change \fB\-\-preview\-window\fR option; rotate through the multiple option sets separated by '|')
