@@ -3721,10 +3721,12 @@ class TestGoFZF < TestBase
 
   def test_change_nth
     input = [
+      *[''] * 1000,
       'foo bar bar bar bar',
       'foo foo bar bar bar',
       'foo foo foo bar bar',
-      'foo foo foo foo bar'
+      'foo foo foo foo bar',
+      *[''] * 1000
     ]
     writelines(input)
     tmux.send_keys %(#{FZF} -qfoo -n1 --bind 'space:change-nth:2|3|4|5|' < #{tempname}), :Enter

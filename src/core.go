@@ -379,7 +379,8 @@ func Run(opts *Options) (int, error) {
 							// Change nth and clear caches
 							nth = *val.nth
 							patternCache = make(map[string]*Pattern)
-							inputRevision.bumpMajor()
+							cache.Clear()
+							inputRevision.bumpMinor()
 						}
 						if command != nil {
 							useSnapshot = val.sync

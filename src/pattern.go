@@ -393,12 +393,24 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 
 func (p *Pattern) transformInput(item *Item) []Token {
 	if item.transformed != nil {
-		return *item.transformed
+		transformed := *item.transformed
+		if len(transformed.nth) == len(p.nth) {
+			same := true
+			for idx, rangeItem := range transformed.nth {
+				if rangeItem != p.nth[idx] {
+					same = false
+					break
+				}
+			}
+			if same {
+				return transformed.tokens
+			}
+		}
 	}
 
 	tokens := Tokenize(item.text.ToString(), p.delimiter)
 	ret := Transform(tokens, p.nth)
-	item.transformed = &ret
+	item.transformed = &transformed{p.nth, ret}
 	return ret
 }
 

@@ -1626,6 +1626,10 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 	return screenWidth, screenHeight, marginInt, paddingInt
 }
 
+func (t *Terminal) forceRerenderList() {
+	t.prevLines = make([]itemLine, len(t.prevLines))
+}
+
 func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	t.forcePreview = forcePreview
 	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
@@ -4639,6 +4643,7 @@ func (t *Terminal) Loop() error {
 				if len(tokens) > 1 {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
 				}
+				t.forceRerenderList()
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
@@ -5101,7 +5106,7 @@ func (t *Terminal) Loop() error {
 				req(reqList)
 			case actToggleHscroll:
 				// Force re-rendering of the list
-				t.prevLines = make([]itemLine, len(t.prevLines))
+				t.forceRerenderList()
 				t.hscroll = !t.hscroll
 				req(reqList)
 			case actTrackCurrent:
