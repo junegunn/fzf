@@ -8,9 +8,9 @@ import (
 
 type transformed struct {
 	// Because nth can be changed dynamically by change-nth action, we need to
-	// keep the nth value at the time of transformation.
-	nth    []Range
-	tokens []Token
+	// keep the revision number at the time of transformation.
+	revision int
+	tokens   []Token
 }
 
 // Item represents each input line. 56 bytes.

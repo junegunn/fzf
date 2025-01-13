@@ -68,7 +68,7 @@ func buildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 	return BuildPattern(NewChunkCache(), make(map[string]*Pattern),
 		fuzzy, fuzzyAlgo, extended, caseMode, normalize, forward,
-		withPos, cacheable, nth, delimiter, runes)
+		withPos, cacheable, nth, delimiter, 0, runes)
 }
 
 func TestExact(t *testing.T) {
@@ -135,7 +135,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 		chunk.items[0] = Item{
 			text:        util.ToChars([]byte("junegunn")),
 			origText:    &origBytes,
-			transformed: &transformed{pattern.nth, trans}}
+			transformed: &transformed{pattern.revision, trans}}
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk, nil, slab) // No cache
 		if !(matches[0].item.text.ToString() == "junegunn" &&

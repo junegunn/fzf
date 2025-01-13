@@ -192,11 +192,12 @@ func Run(opts *Options) (int, error) {
 	}
 
 	nth := opts.Nth
+	nthRevision := 0
 	patternCache := make(map[string]*Pattern)
 	patternBuilder := func(runes []rune) *Pattern {
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, nth, opts.Delimiter, runes)
+			opts.Filter == nil, nth, opts.Delimiter, nthRevision, runes)
 	}
 	inputRevision := revision{}
 	snapshotRevision := revision{}
@@ -378,6 +379,7 @@ func Run(opts *Options) (int, error) {
 						if val.nth != nil {
 							// Change nth and clear caches
 							nth = *val.nth
+							nthRevision++
 							patternCache = make(map[string]*Pattern)
 							cache.Clear()
 							inputRevision.bumpMinor()
