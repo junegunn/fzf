@@ -267,6 +267,8 @@ type Terminal struct {
 	hscrollOff         int
 	scrollOff          int
 	gap                int
+	gapLine            labelPrinter
+	gapLineLen         int
 	wordRubout         string
 	wordNext           string
 	cx                 int
@@ -947,6 +949,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			bar = "-"
 		}
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
+	}
+
+	// Gap line
+	if t.gap > 0 && len(*opts.GapLine) > 0 {
+		t.gapLine, t.gapLineLen = t.ansiLabelPrinter(*opts.GapLine, &tui.ColListBorder, true)
 	}
 
 	if opts.Ellipsis != nil {
@@ -2446,15 +2453,36 @@ func (t *Terminal) canSpanMultiLines() bool {
 	return t.multiLine || t.wrap || t.gap > 0
 }
 
-func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
-	t.move(line, 0, true)
-	t.markEmptyLine(line)
+func (t *Terminal) renderBar(line int, barRange [2]int) {
 	// If the screen is not filled with the list in non-multi-line mode,
 	// scrollbar is not visible at all. But in multi-line mode, we may need
 	// to redraw the scrollbar character at the end.
 	if t.canSpanMultiLines() {
 		t.prevLines[line].hasBar = t.printBar(line, true, barRange)
 	}
+}
+
+func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
+	t.move(line, 0, true)
+	t.markEmptyLine(line)
+	t.renderBar(line, barRange)
+}
+
+func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
+	t.move(line, 0, false)
+	t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+	t.window.Print(t.markerEmpty)
+	x := t.pointerLen + t.markerLen
+
+	width := t.window.Width() - x - 1
+	if drawLine && t.gapLine != nil {
+		t.gapLine(t.window, width)
+	} else {
+		t.move(line, x, true)
+	}
+	t.markOtherLine(line)
+	t.renderBar(line, barRange)
+	t.prevLines[line].width = width
 }
 
 func (t *Terminal) printList() {
@@ -2629,7 +2657,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 	for i := 0; i < t.gap && finalLineNum < maxLine; i++ {
 		finalLineNum++
-		t.renderEmptyLine(finalLineNum, barRange)
+		t.renderGapLine(finalLineNum, barRange, i == t.gap-1)
 	}
 	return finalLineNum
 }

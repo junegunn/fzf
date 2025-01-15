@@ -582,6 +582,7 @@ type Options struct {
 	HeaderLines       int
 	HeaderFirst       bool
 	Gap               int
+	GapLine           *string
 	Ellipsis          *string
 	Scrollbar         *string
 	Margin            [4]sizeSpec
@@ -2567,6 +2568,15 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 		case "--no-gap":
 			opts.Gap = 0
+		case "--gap-line":
+			if given, bar := optionalNextString(); given {
+				opts.GapLine = &bar
+			} else {
+				opts.GapLine = nil
+			}
+		case "--no-gap-line":
+			empty := ""
+			opts.GapLine = &empty
 		case "--ellipsis":
 			str, err := nextString("ellipsis string required")
 			if err != nil {
@@ -2985,6 +2995,14 @@ func postProcessOptions(opts *Options) error {
 			defaultPointer = ">"
 		}
 		opts.Pointer = &defaultPointer
+	}
+
+	if opts.GapLine == nil {
+		defaultGapLine := "┈"
+		if !opts.Unicode {
+			defaultGapLine = "-"
+		}
+		opts.GapLine = &defaultGapLine
 	}
 
 	markerLen := 1

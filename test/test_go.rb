@@ -3423,28 +3423,28 @@ class TestGoFZF < TestBase
       │ >
       │   100/100 ──────
       │ > 1
-      │
+      │   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈
       │   2
-      │
+      │   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈
       │   3
-      │
+      │   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈
       │   4
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
 
   def test_gap_2
-    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --border --reverse), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --gap-line xyz --border --reverse), :Enter
     block = <<~BLOCK
       ╭─────────────────
       │ >
       │   100/100 ──────
       │ > 1
       │
-      │
+      │   xyzxyzxyzxyzxy
       │   2
       │
-      │
+      │   xyzxyzxyzxyzxy
       │   3
     BLOCK
     tmux.until { assert_block(block, _1) }

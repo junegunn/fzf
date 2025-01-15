@@ -61,6 +61,16 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
         - `transform-header-label`
 - Added `--preview-border[=STYLE]` as short for `--preview-window=border[-STYLE]`
 - Added new preview border style `line` which draws a single separator line between the preview window and the rest of the interface
+- fzf will now render a dashed line (`┈┈`) in each `--gap` for better visual separation.
+  ```sh
+  # All bash/zsh functions, highlighted
+  declare -f |
+    perl -0 -pe 's/^}\n/}\0/gm' |
+    bat --plain --language bash --color always |
+    fzf --read0 --ansi --layout reverse --multi --highlight-line \
+        --gap
+  ```
+    * You can customize the line using `--gap-line[=STR]`.
 - You can specify `border-native` to `--tmux` so that native tmux border is used instead of `--border`. This can be useful if you start a different program from inside the popup.
   ```sh
   fzf --tmux border-native --bind 'enter:execute:less {}'
