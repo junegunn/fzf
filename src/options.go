@@ -97,6 +97,8 @@ Usage: fzf [options]
     --track                  Track the current selection when the result is updated
     --tac                    Reverse the order of the input
     --gap[=N]                Render empty lines between each item
+    --gap-line[=STR]         Draw horizontal line on each gap using the string
+                             (default: '┈' or '-')
     --keep-right             Keep the right end of the line visible on overflow
     --scroll-off=LINES       Number of screen lines to keep above or below when
                              scrolling to the top or to the bottom (default: 0)
@@ -127,7 +129,8 @@ Usage: fzf [options]
     --info=STYLE             Finder info style
                              [default|right|hidden|inline[-right][:PREFIX]]
     --info-command=COMMAND   Command to generate info line
-    --separator=STR          String to form horizontal separator on info line
+    --separator=STR          Draw horizontal separator on info line using the string
+                             (default: '─' or '-')
     --no-separator           Hide info line separator
     --filepath-word          Make word-wise movements respect path separators
     --input-border[=STYLE]   Draw border around the input section
