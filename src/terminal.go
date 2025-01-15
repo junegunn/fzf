@@ -2722,7 +2722,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		sort.Sort(ByOrder(charOffsets))
 	}
 	var nthOffsets []Offset
-	if len(t.nth) > 0 && postTask != nil {
+	if len(t.nthCurrent) > 0 && t.nthAttr > 0 && postTask != nil {
 		var tokens []Token
 		if item.transformed != nil {
 			tokens = item.transformed.tokens
