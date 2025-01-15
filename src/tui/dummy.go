@@ -11,6 +11,10 @@ func HasFullscreenRenderer() bool {
 var DefaultBorderShape = BorderRounded
 
 func (a Attr) Merge(b Attr) Attr {
+	if b == AttrRegular {
+		return b
+	}
+
 	return a | b
 }
 

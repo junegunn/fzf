@@ -301,7 +301,9 @@ type Terminal struct {
 	scrollbar          string
 	previewScrollbar   string
 	ansi               bool
+	nthAttr            tui.Attr
 	nth                []Range
+	nthCurrent         []Range
 	tabstop            int
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
@@ -885,7 +887,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		header:             []string{},
 		header0:            opts.Header,
 		ansi:               opts.Ansi,
+		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
+		nthCurrent:         opts.Nth,
 		tabstop:            opts.Tabstop,
 		hasStartActions:    false,
 		hasResultActions:   false,
@@ -1171,7 +1175,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, t.theme, *color, *color, false)
+			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, false)
 		}
 		for limit > 0 {
 			if length > limit {
@@ -2717,7 +2721,22 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		sort.Sort(ByOrder(charOffsets))
 	}
-	allOffsets := result.colorOffsets(charOffsets, t.theme, colBase, colMatch, current)
+	var nthOffsets []Offset
+	if len(t.nth) > 0 && postTask != nil {
+		var tokens []Token
+		if item.transformed != nil {
+			tokens = item.transformed.tokens
+		} else {
+			tokens = Transform(Tokenize(item.text.ToString(), t.delimiter), t.nthCurrent)
+		}
+		for _, token := range tokens {
+			start := token.prefixLength
+			end := start + int32(token.text.Length())
+			nthOffsets = append(nthOffsets, Offset{int32(start), int32(end)})
+		}
+		sort.Sort(ByOrder(nthOffsets))
+	}
+	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, current)
 
 	maxLines := 1
 	if t.canSpanMultiLines() {
@@ -4667,6 +4686,7 @@ func (t *Terminal) Loop() error {
 					// The default
 					newNth = &t.nth
 				}
+				t.nthCurrent = *newNth
 				// Cycle
 				if len(tokens) > 1 {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")

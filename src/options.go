@@ -1207,6 +1207,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.SelectedFg)
 			case "selected-bg":
 				mergeAttr(&theme.SelectedBg)
+			case "nth":
+				mergeAttr(&theme.Nth)
 			case "gutter":
 				mergeAttr(&theme.Gutter)
 			case "hl":
@@ -2964,6 +2966,10 @@ func validateOptions(opts *Options) error {
 				return errors.New("adaptive height is not compatible with top/bottom percent padding")
 			}
 		}
+	}
+
+	if opts.Theme.Nth.IsColorDefined() {
+		return errors.New("only ANSI attributes are allowed for 'nth' (regular, bold, underline, reverse, dim, italic, strikethrough)")
 	}
 
 	return nil

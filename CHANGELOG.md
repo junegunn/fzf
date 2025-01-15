@@ -82,6 +82,21 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
   # Start with --nth 1, then 2, then 3, then back to the default, 1
   echo 'foo foobar foobarbaz' | fzf --bind 'space:change-nth(2|3|)' --nth 1 -q foo
   ```
+- `--nth` parts of each line can now be rendered in a different text style
+  ```sh
+  # nth in a different style
+  ls -al | fzf --nth -1 --color nth:italic
+  ls -al | fzf --nth -1 --color nth:reverse
+  ls -al | fzf --nth -1 --color nth:reverse:bold
+
+  # Dim the other parts
+  ls -al | fzf --nth -1 --color nth:regular,fg:dim,current-fg:dim
+
+  # With 'change-nth'
+  ps -ef | fzf --reverse --header-lines 1 --header-border bottom --input-border \
+               --color nth:regular,fg:dim,current-fg:dim \
+               --nth 8.. --bind 'ctrl-n:change-nth(..|1|2|3|4|5|6|7|)'
+  ```
 - A single-character delimiter is now treated as a plain string delimiter rather than a regular expression delimiter, even if it's a regular expression meta-character.
     - This means you can just write `--delimiter '|'` instead of escaping it as `--delimiter '\|'`
 - Bug fixes

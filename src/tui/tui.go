@@ -205,6 +205,10 @@ type ColorAttr struct {
 	Attr  Attr
 }
 
+func (a ColorAttr) IsColorDefined() bool {
+	return a.Color != colUndefined
+}
+
 func NewColorAttr() ColorAttr {
 	return ColorAttr{Color: colUndefined, Attr: AttrUndefined}
 }
@@ -305,6 +309,7 @@ type ColorTheme struct {
 	Bg               ColorAttr
 	ListFg           ColorAttr
 	ListBg           ColorAttr
+	Nth              ColorAttr
 	SelectedFg       ColorAttr
 	SelectedBg       ColorAttr
 	SelectedMatch    ColorAttr
@@ -703,6 +708,7 @@ func EmptyTheme() *ColorTheme {
 		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
 		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
 		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
+		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -746,6 +752,7 @@ func NoColorTheme() *ColorTheme {
 		HeaderBg:         ColorAttr{colDefault, AttrUndefined},
 		HeaderBorder:     ColorAttr{colDefault, AttrUndefined},
 		HeaderLabel:      ColorAttr{colDefault, AttrUndefined},
+		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
@@ -786,6 +793,7 @@ func init() {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 	Dark256 = &ColorTheme{
 		Colored:          true,
@@ -823,6 +831,7 @@ func init() {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 	Light256 = &ColorTheme{
 		Colored:          true,
@@ -863,6 +872,7 @@ func init() {
 		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
 		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
 		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
+		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
 
