@@ -73,7 +73,7 @@ func ParseRange(str *string) (Range, bool) {
 		}
 		begin, err1 := strconv.Atoi(ns[0])
 		end, err2 := strconv.Atoi(ns[1])
-		if err1 != nil || err2 != nil || begin == 0 || end == 0 {
+		if err1 != nil || err2 != nil || begin == 0 || end == 0 || begin < 0 && end > 0 {
 			return Range{}, false
 		}
 		return newRange(begin, end), true
