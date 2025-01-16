@@ -2724,8 +2724,27 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		sort.Sort(ByOrder(charOffsets))
 	}
+
+	wholeCovered := len(t.nthCurrent) == 0
+	for _, nth := range t.nthCurrent {
+		// Do we still want to apply a different style when the current nth
+		// covers the whole string? Probably not. And we can simplify the logic.
+		if nth.IsFull() {
+			wholeCovered = true
+			break
+		}
+	}
+	// But if 'nth' is set to 'regular', it's a sign that you're applying
+	// a different style to the rest of the string. e.g. 'nth:regular,fg:dim'
+	// In this case, we still need to apply and clear the style.
+	// We do the same when postTask is nil, which means we're printing header lines.
+	if t.nthAttr == tui.AttrRegular && wholeCovered || postTask == nil {
+		if t.nthAttr == tui.AttrRegular {
+			colBase = colBase.WithAttr(t.nthAttr)
+		}
+	}
 	var nthOffsets []Offset
-	if len(t.nthCurrent) > 0 && t.nthAttr > 0 && postTask != nil {
+	if !wholeCovered && t.nthAttr > 0 && postTask != nil {
 		var tokens []Token
 		if item.transformed != nil {
 			tokens = item.transformed.tokens
