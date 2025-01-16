@@ -18,6 +18,32 @@ type Range struct {
 	end   int
 }
 
+func RangesToString(ranges []Range) string {
+	strs := []string{}
+	for _, r := range ranges {
+		s := ""
+		if r.begin == rangeEllipsis && r.end == rangeEllipsis {
+			s = ".."
+		} else if r.begin == r.end {
+			s = strconv.Itoa(r.begin)
+		} else {
+			if r.begin != rangeEllipsis {
+				s += strconv.Itoa(r.begin)
+			}
+
+			if r.begin != -1 {
+				s += ".."
+				if r.end != rangeEllipsis {
+					s += strconv.Itoa(r.end)
+				}
+			}
+		}
+		strs = append(strs, s)
+	}
+
+	return strings.Join(strs, ",")
+}
+
 // Token contains the tokenized part of the strings and its prefix length
 type Token struct {
 	text         *util.Chars
@@ -41,7 +67,7 @@ func (d Delimiter) String() string {
 }
 
 func newRange(begin int, end int) Range {
-	if begin == 1 {
+	if begin == 1 && end != 1 {
 		begin = rangeEllipsis
 	}
 	if end == -1 {

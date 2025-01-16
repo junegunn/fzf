@@ -1046,6 +1046,9 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_PREVIEW_LABEL="+t.previewLabelOpts.label)
 	env = append(env, "FZF_BORDER_LABEL="+t.borderLabelOpts.label)
 	env = append(env, "FZF_LIST_LABEL="+t.listLabelOpts.label)
+	if len(t.nthCurrent) > 0 {
+		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
+	}
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))

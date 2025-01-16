@@ -92,10 +92,11 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
   # Dim the other parts
   ls -al | fzf --nth -1 --color nth:regular,fg:dim,current-fg:dim
 
-  # With 'change-nth'
+  # With 'change-nth'. The current nth option is exported as $FZF_NTH.
   ps -ef | fzf --reverse --header-lines 1 --header-border bottom --input-border \
-               --color nth:regular,fg:dim,current-fg:dim \
-               --nth 8.. --bind 'ctrl-n:change-nth(..|1|2|3|4|5|6|7|)'
+             --color nth:regular,fg:dim,current-fg:dim \
+             --nth 8.. --bind 'ctrl-n:change-nth(1|2|3|4|5|6|7|)' \
+             --bind 'result:transform-prompt:echo "${FZF_NTH}> "'
   ```
 - A single-character delimiter is now treated as a plain string delimiter rather than a regular expression delimiter, even if it's a regular expression meta-character.
     - This means you can just write `--delimiter '|'` instead of escaping it as `--delimiter '\|'`
