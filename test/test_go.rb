@@ -3719,6 +3719,24 @@ class TestGoFZF < TestBase
     tmux.until { assert_block(block, _1) }
   end
 
+  def test_style_full_adaptive_height_double
+    tmux.send_keys %(seq 1| #{FZF} --style=full:double --border --height=~100% --header-lines=1 --info=default), :Enter
+    block = <<~BLOCK
+      ╔══════════
+      ║ ╔════════
+      ║ ╚════════
+      ║ ╔════════
+      ║ ║   1
+      ║ ╚════════
+      ║ ╔════════
+      ║ ║   0/0
+      ║ ║ >
+      ║ ╚════════
+      ╚══════════
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
+
   def test_change_nth
     input = [
       *[''] * 1000,

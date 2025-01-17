@@ -12,7 +12,9 @@ func runTmux(args []string, opts *Options) (int, error) {
 	fzf, rest := args[0], args[1:]
 	args = []string{"--bind=ctrl-z:ignore"}
 	if !opts.Tmux.border && opts.BorderShape == tui.BorderUndefined {
-		args = append(args, "--border")
+		// We append --border option at the end, because `--style=full:STYLE`
+		// may have changed the default border style.
+		rest = append(rest, "--border")
 	}
 	if opts.Tmux.border && opts.Margin == defaultMargin() {
 		args = append(args, "--margin=0,1")

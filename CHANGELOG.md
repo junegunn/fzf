@@ -17,7 +17,7 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
 | `minimal` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-minimal.png"/> |
 
 - Style presets (#4160)
-    - `--style=full`
+    - `--style=full[:BORDER_STYLE]`
     - `--style=default`
     - `--style=minimal`
 - Border and label for the list section (#4148)
