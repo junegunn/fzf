@@ -31,13 +31,14 @@ function fzf_key_bindings
     set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
+    set -l result
 
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root=$dir" "$FZF_CTRL_T_OPTS")
       set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
       set -lx FZF_DEFAULT_OPTS_FILE ''
-      eval (__fzfcmd) -m --query=$fzf_query | while read -l r; set -a result $r; end
+      set result (eval (__fzfcmd) -m --query=$fzf_query)
     end
     if test -z "$result"
       commandline -f repaint
@@ -57,34 +58,25 @@ function fzf_key_bindings
   function fzf-history-widget -d "Show command history"
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
     begin
-      set -l FISH_MAJOR (string split -- '.' $version)[1]
-      set -l FISH_MINOR (string split -- '.' $version)[2]
-
       # merge history from other sessions before searching
       test -z "$fish_private_mode"; and builtin history merge
 
-      # history's -z flag is needed for multi-line support.
-      # history's -z flag was added in fish 2.4.0, so don't use it for versions
-      # before 2.4.0.
-      if test "$FISH_MAJOR" -gt 2 -o \( "$FISH_MAJOR" -eq 2 -a "$FISH_MINOR" -ge 4 \)
-        set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
-        set -lx FZF_DEFAULT_OPTS_FILE ''
-        if type -q perl
-          set -l fzf_command (__fzfcmd) --tac --read0 --print0 -q (commandline)
-          builtin history -z --reverse | command perl -0 -pe 's/^/$.\t/g; s/\n/\n\t/gm' | $fzf_command | string replace -r '^\d*\t' '' | read -lz result
-          and commandline -- $result
-        else
-          set -l h (builtin history -z | string split0)
-          set -l fzf_command (__fzfcmd) --read0 --print0 -q (commandline)
-          for i in (seq (count $h) -1 1)
-            string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect)
-          end | $fzf_command | string replace -r '^\d*\t' '' | read -lz result
-          and commandline -- $result
-        end
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line +m $FZF_CTRL_R_OPTS")
+      set -lx FZF_DEFAULT_OPTS_FILE ''
+      set -lx FZF_DEFAULT_COMMAND
+      string match -q -r -- '/fish$' $SHELL; or set -lx SHELL (type -p fish)
+      if type -q perl
+        set -a FZF_DEFAULT_OPTS '--tac'
+        set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
       else
-        builtin history | eval (__fzfcmd) -q '(commandline)' | read -l result
-        and commandline -- $result
+        set FZF_DEFAULT_COMMAND \
+          'set -l h (builtin history -z --reverse | string split0);' \
+          'for i in (seq (count $h) -1 1);' \
+          'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
+          'end'
       end
+      set -l result (eval "$FZF_DEFAULT_COMMAND | $(__fzfcmd) --read0 --print0 -q (commandline) --bind='enter:become:string replace -a -- \n\t \n {2..} | string collect'")
+      and commandline -- $result
     end
     commandline -f repaint
   end
@@ -100,7 +92,7 @@ function fzf_key_bindings
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path --walker-root=$dir" "$FZF_ALT_C_OPTS")
       set -lx FZF_DEFAULT_OPTS_FILE ''
       set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
-      eval (__fzfcmd) +m --query=$fzf_query | read -l result
+      set -l result (eval (__fzfcmd) +m --query=$fzf_query)
 
       if test -n "$result"
         cd -- $result
