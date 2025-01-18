@@ -61,7 +61,7 @@ function fzf_key_bindings
       # merge history from other sessions before searching
       test -z "$fish_private_mode"; and builtin history merge
 
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line $FZF_CTRL_R_OPTS +m")
+      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line +m $FZF_CTRL_R_OPTS")
       set -lx FZF_DEFAULT_OPTS_FILE ''
       set -lx FZF_DEFAULT_COMMAND
       string match -q -r -- '/fish$' $SHELL; or set -lx SHELL (type -p fish)
@@ -75,8 +75,8 @@ function fzf_key_bindings
           'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
           'end'
       end
-      set -l result (eval "$FZF_DEFAULT_COMMAND | $(__fzfcmd) --read0 --print0 -q (commandline)")
-      and commandline -- (string replace -r -- '^\d*\t' '' $result)
+      set -l result (eval "$FZF_DEFAULT_COMMAND | $(__fzfcmd) --read0 --print0 -q (commandline) --bind='enter:become:string replace -a -- \n\t \n {2..} | string collect'")
+      and commandline -- $result
     end
     commandline -f repaint
   end
