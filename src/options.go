@@ -1262,6 +1262,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.Header)
 			case "header-bg":
 				mergeAttr(&theme.HeaderBg)
+			case "gap-line":
+				mergeAttr(&theme.GapLine)
 			default:
 				fail()
 			}

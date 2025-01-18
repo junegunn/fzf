@@ -957,7 +957,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 
 	// Gap line
 	if t.gap > 0 && len(*opts.GapLine) > 0 {
-		t.gapLine, t.gapLineLen = t.ansiLabelPrinter(*opts.GapLine, &tui.ColListBorder, true)
+		t.gapLine, t.gapLineLen = t.ansiLabelPrinter(*opts.GapLine, &tui.ColGapLine, true)
 	}
 
 	if opts.Ellipsis != nil {

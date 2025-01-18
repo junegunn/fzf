@@ -341,6 +341,7 @@ type ColorTheme struct {
 	BorderLabel      ColorAttr
 	ListLabel        ColorAttr
 	ListBorder       ColorAttr
+	GapLine          ColorAttr
 }
 
 type Event struct {
@@ -655,6 +656,7 @@ var (
 	ColHeaderLabel          ColorPair
 	ColSeparator            ColorPair
 	ColScrollbar            ColorPair
+	ColGapLine              ColorPair
 	ColBorder               ColorPair
 	ColPreview              ColorPair
 	ColPreviewBorder        ColorPair
@@ -708,6 +710,7 @@ func EmptyTheme() *ColorTheme {
 		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
 		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
 		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
+		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
@@ -752,6 +755,7 @@ func NoColorTheme() *ColorTheme {
 		HeaderBg:         ColorAttr{colDefault, AttrUndefined},
 		HeaderBorder:     ColorAttr{colDefault, AttrUndefined},
 		HeaderLabel:      ColorAttr{colDefault, AttrUndefined},
+		GapLine:          ColorAttr{colDefault, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
@@ -793,6 +797,7 @@ func init() {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 	Dark256 = &ColorTheme{
@@ -831,6 +836,7 @@ func init() {
 		InputBg:          ColorAttr{colUndefined, AttrUndefined},
 		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
 		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
+		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 	Light256 = &ColorTheme{
@@ -872,6 +878,7 @@ func init() {
 		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
 		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
 		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
+		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
 	}
 }
@@ -927,6 +934,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.ListBorder = o(theme.Border, theme.ListBorder)
 	theme.Separator = o(theme.ListBorder, theme.Separator)
 	theme.Scrollbar = o(theme.ListBorder, theme.Scrollbar)
+	theme.GapLine = o(theme.ListBorder, theme.GapLine)
 	/*
 		--color list-border:green
 		--color scrollbar:red
@@ -992,6 +1000,7 @@ func initPalette(theme *ColorTheme) {
 	ColInfo = pair(theme.Info, theme.InputBg)
 	ColSeparator = pair(theme.Separator, theme.InputBg)
 	ColScrollbar = pair(theme.Scrollbar, theme.ListBg)
+	ColGapLine = pair(theme.GapLine, theme.ListBg)
 	ColBorder = pair(theme.Border, theme.Bg)
 	ColBorderLabel = pair(theme.BorderLabel, theme.Bg)
 	ColPreviewLabel = pair(theme.PreviewLabel, theme.PreviewBg)
