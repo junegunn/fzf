@@ -401,7 +401,7 @@ func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []in
 		if i == 0 {
 			fmt.Print("  ")
 			for j := int(f); j <= lastIdx; j++ {
-				fmt.Printf(" " + string(T[j]) + " ")
+				fmt.Print(" " + string(T[j]) + " ")
 			}
 			fmt.Println()
 		}
