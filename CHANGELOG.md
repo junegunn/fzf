@@ -3,6 +3,7 @@ CHANGELOG
 
 0.58.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.58.0/_
 
 This version introduces three new border types, `--list-border`, `--input-border`, and `--header-border`, offering much greater flexibility for customizing the user interface.
 
@@ -67,8 +68,7 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
   declare -f |
     perl -0 -pe 's/^}\n/}\0/gm' |
     bat --plain --language bash --color always |
-    fzf --read0 --ansi --layout reverse --multi --highlight-line \
-        --gap
+    fzf --read0 --ansi --layout reverse --multi --highlight-line --gap
   ```
     * You can customize the line using `--gap-line[=STR]`.
 - You can specify `border-native` to `--tmux` so that native tmux border is used instead of `--border`. This can be useful if you start a different program from inside the popup.
@@ -101,7 +101,7 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
 - A single-character delimiter is now treated as a plain string delimiter rather than a regular expression delimiter, even if it's a regular expression meta-character.
     - This means you can just write `--delimiter '|'` instead of escaping it as `--delimiter '\|'`
 - Bug fixes
-- Bug fixes in fish scripts (thanks to @bitraid)
+- Bug fixes and improvements in fish scripts (thanks to @bitraid)
 
 0.57.0
 ------

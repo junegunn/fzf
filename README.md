@@ -67,6 +67,7 @@ Table of Contents
         * [`--tmux` mode](#--tmux-mode)
     * [Search syntax](#search-syntax)
     * [Environment variables](#environment-variables)
+    * [Customizing the look](#customizing-the-look)
     * [Options](#options)
     * [Demo](#demo)
 * [Examples](#examples)
@@ -423,9 +424,56 @@ or `py`.
 >
 > The available options are described later in this document.
 
+### Customizing the look
+
+The user interface of fzf is fully customizable with a large number of
+configuration options. For a quick setup, you can start with one of the style
+presets — `default`, `full`, or `minimal` — using the `--style` option.
+
+```sh
+fzf --style full \
+    --preview 'fzf-preview.sh {}' --bind 'focus:transform-header:file --brief {}'
+```
+
+| Preset    | Screenshot                                                                             |
+| :---      | :---                                                                                   |
+| `default` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-default.png"/> |
+| `full`    | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-full.png"/>    |
+| `minimal` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-minimal.png"/> |
+
+Here's an example based on the `full` preset:
+
+<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-4-borders.png"/>
+
+<details>
+
+```sh
+git ls-files | fzf --style full \
+    --border --padding 1,2 \
+    --border-label ' Demo ' --input-label ' Input ' --header-label ' File Type ' \
+    --preview 'fzf-preview.sh {}' \
+    --bind 'result:transform-list-label:
+        if [[ -z $FZF_QUERY ]]; then
+          echo " $FZF_MATCH_COUNT items "
+        else
+          echo " $FZF_MATCH_COUNT matches for [$FZF_QUERY] "
+        fi
+        ' \
+    --bind 'focus:transform-preview-label:[[ -n {} ]] && printf " Previewing [%s] " {}' \
+    --bind 'focus:+transform-header:file --brief {} || echo "No file selected"' \
+    --bind 'ctrl-r:change-list-label( Reloading the list )+reload(sleep 2; git ls-files)' \
+    --color 'border:#aaaaaa,label:#cccccc' \
+    --color 'preview-border:#9999cc,preview-label:#ccccff' \
+    --color 'list-border:#669966,list-label:#99cc99' \
+    --color 'input-border:#996666,input-label:#ffcccc' \
+    --color 'header-border:#6699cc,header-label:#99ccff'
+```
+
+</details>
+
 ### Options
 
-See the man page (`man fzf`) for the full list of options.
+See the man page (`fzf --man` or `man fzf`) for the full list of options.
 
 ### Demo
 If you learn by watching videos, check out this screencast by [@samoshkin](https://github.com/samoshkin) to explore `fzf` features.
