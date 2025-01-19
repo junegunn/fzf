@@ -213,6 +213,16 @@ func NewColorAttr() ColorAttr {
 	return ColorAttr{Color: colUndefined, Attr: AttrUndefined}
 }
 
+func (a ColorAttr) Merge(other ColorAttr) ColorAttr {
+	if other.Color != colUndefined {
+		a.Color = other.Color
+	}
+	if other.Attr != AttrUndefined {
+		a.Attr = a.Attr.Merge(other.Attr)
+	}
+	return a
+}
+
 const (
 	colUndefined Color = -2
 	colDefault   Color = -1
@@ -904,7 +914,9 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.DarkBg = o(baseTheme.DarkBg, theme.DarkBg)
 	theme.Prompt = o(baseTheme.Prompt, theme.Prompt)
 	theme.Match = o(baseTheme.Match, theme.Match)
-	theme.Current = o(baseTheme.Current, theme.Current)
+	// Inherit from 'fg', so that we don't have to write 'current-fg:dim'
+	// e.g. fzf --delimiter / --nth -1 --color fg:dim,nth:regular
+	theme.Current = theme.Fg.Merge(o(baseTheme.Current, theme.Current))
 	theme.CurrentMatch = o(baseTheme.CurrentMatch, theme.CurrentMatch)
 	theme.Spinner = o(baseTheme.Spinner, theme.Spinner)
 	theme.Info = o(baseTheme.Info, theme.Info)

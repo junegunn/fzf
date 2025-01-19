@@ -1011,7 +1011,7 @@ func attrCodes(attr Attr) []string {
 	if (attr & AttrClear) > 0 {
 		return codes
 	}
-	if (attr & Bold) > 0 {
+	if (attr&Bold) > 0 || (attr&BoldForce) > 0 {
 		codes = append(codes, "1")
 	}
 	if (attr & Dim) > 0 {

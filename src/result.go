@@ -150,10 +150,6 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	}
 
 	for _, off := range nthOffsets {
-		// Exclude the whole line
-		if int(off[1])-int(off[0]) == result.item.text.Length() {
-			continue
-		}
 		for i := off[0]; i < off[1]; i++ {
 			cols[i].nth = true
 		}
@@ -190,7 +186,12 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	add := func(idx int) {
 		if (curr.color || curr.nth || curr.match) && idx > start {
 			if curr.match {
-				color := colMatch
+				var color tui.ColorPair
+				if curr.nth {
+					color = colBase.WithAttr(attrNth).Merge(colMatch)
+				} else {
+					color = colBase.Merge(colMatch)
+				}
 				var url *url
 				if curr.color && theme.Colored {
 					ansi := itemColors[curr.index]
@@ -206,12 +207,12 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 					//      echo -e "\x1b[42mfoo\x1b[mbar" | fzf --ansi --color bg+:1,hl+:-1:underline
 					if color.Fg().IsDefault() && origColor.HasBg() {
 						color = origColor
+						if curr.nth {
+							color = color.WithAttr(attrNth)
+						}
 					} else {
 						color = origColor.MergeNonDefault(color)
 					}
-				}
-				if curr.nth {
-					color = color.WithAttr(attrNth)
 				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true, url: url})

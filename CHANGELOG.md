@@ -90,11 +90,11 @@ Also, fzf now offers "style presets" for quick customization, which can be activ
   ls -al | fzf --nth -1 --color nth:reverse:bold
 
   # Dim the other parts
-  ls -al | fzf --nth -1 --color nth:regular,fg:dim,current-fg:dim
+  ls -al | fzf --nth -1 --color nth:regular,fg:dim
 
   # With 'change-nth'. The current nth option is exported as $FZF_NTH.
   ps -ef | fzf --reverse --header-lines 1 --header-border bottom --input-border \
-             --color nth:regular,fg:dim,current-fg:dim \
+             --color nth:regular,fg:dim \
              --bind 'ctrl-n:change-nth(8..|1|2|3|4|5|6|7|)' \
              --bind 'result:transform-prompt:echo "${FZF_NTH}> "'
   ```

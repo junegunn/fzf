@@ -3135,7 +3135,7 @@ func postProcessOptions(opts *Options) error {
 		boldify := func(c tui.ColorAttr) tui.ColorAttr {
 			dup := c
 			if (c.Attr & tui.AttrRegular) == 0 {
-				dup.Attr |= tui.Bold
+				dup.Attr |= tui.BoldForce
 			}
 			return dup
 		}

@@ -44,7 +44,7 @@ func (s *ansiState) ToString() string {
 	}
 
 	ret := ""
-	if s.attr&tui.Bold > 0 {
+	if s.attr&tui.Bold > 0 || s.attr&tui.BoldForce > 0 {
 		ret += "1;"
 	}
 	if s.attr&tui.Dim > 0 {

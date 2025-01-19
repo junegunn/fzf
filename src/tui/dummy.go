@@ -11,8 +11,9 @@ func HasFullscreenRenderer() bool {
 var DefaultBorderShape = BorderRounded
 
 func (a Attr) Merge(b Attr) Attr {
-	if b == AttrRegular {
-		return b
+	if b&AttrRegular > 0 {
+		// Only keep bold attribute set by the system
+		return b | (a & BoldForce)
 	}
 
 	return a | b
@@ -22,6 +23,7 @@ const (
 	AttrUndefined = Attr(0)
 	AttrRegular   = Attr(1 << 8)
 	AttrClear     = Attr(1 << 9)
+	BoldForce     = Attr(1 << 10)
 
 	Bold          = Attr(1)
 	Dim           = Attr(1 << 1)
