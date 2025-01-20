@@ -11,6 +11,7 @@ import (
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
+	"github.com/junegunn/fzf/src/util"
 
 	"github.com/junegunn/go-shellwords"
 	"github.com/rivo/uniseg"
@@ -650,7 +651,7 @@ func defaultOptions() *Options {
 		Man:          false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
-		Scheme:       "default",
+		Scheme:       "", // Unknown
 		Extended:     true,
 		Phony:        false,
 		Case:         CaseSmart,
@@ -661,7 +662,7 @@ func defaultOptions() *Options {
 		Sort:         1000,
 		Track:        trackDisabled,
 		Tac:          false,
-		Criteria:     []criterion{byScore, byLength},
+		Criteria:     []criterion{}, // Unknown
 		Multi:        0,
 		Ansi:         false,
 		Mouse:        true,
@@ -799,19 +800,6 @@ func parseAlgo(str string) (algo.Algo, error) {
 		return algo.FuzzyMatchV2, nil
 	}
 	return nil, errors.New("invalid algorithm (expected: v1 or v2)")
-}
-
-func processScheme(opts *Options) error {
-	if !algo.Init(opts.Scheme) {
-		return errors.New("invalid scoring scheme (expected: default|path|history)")
-	}
-	switch opts.Scheme {
-	case "history":
-		opts.Criteria = []criterion{byScore}
-	case "path":
-		opts.Criteria = []criterion{byScore, byPathname, byLength}
-	}
-	return nil
 }
 
 func parseBorder(str string, optional bool, allowLine bool) (tui.BorderShape, error) {
@@ -1035,6 +1023,19 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		}
 	}
 	return chords, nil
+}
+
+func parseScheme(str string) (string, []criterion, error) {
+	str = strings.ToLower(str)
+	switch str {
+	case "history":
+		return str, []criterion{byScore}, nil
+	case "path":
+		return str, []criterion{byScore, byPathname, byLength}, nil
+	case "default":
+		return str, []criterion{byScore, byLength}, nil
+	}
+	return str, nil, errors.New("invalid scoring scheme: " + str + " (expected: default|path|history)")
 }
 
 func parseTiebreak(str string) ([]criterion, error) {
@@ -2267,7 +2268,9 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			opts.Scheme = strings.ToLower(str)
+			if opts.Scheme, opts.Criteria, err = parseScheme(str); err != nil {
+				return err
+			}
 		case "--expect":
 			str, err := nextString("key names required")
 			if err != nil {
@@ -3166,7 +3169,9 @@ func postProcessOptions(opts *Options) error {
 		return errors.New("failed to start pprof profiles: " + err.Error())
 	}
 
-	return processScheme(opts)
+	algo.Init(opts.Scheme)
+
+	return nil
 }
 
 func parseShellWords(str string) ([]string, error) {
@@ -3216,7 +3221,18 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		return nil, err
 	}
 
-	// 4. Final validation of merged options
+	// 4. Change default scheme when builtin walker is used
+	if len(opts.Scheme) == 0 {
+		opts.Scheme = "default"
+		if len(opts.Criteria) == 0 {
+			if util.IsTty(os.Stdin) && len(os.Getenv("FZF_DEFAULT_COMMAND")) == 0 {
+				opts.Scheme = "path"
+			}
+			_, opts.Criteria, _ = parseScheme(opts.Scheme)
+		}
+	}
+
+	// 5. Final validation of merged options
 	if err := validateOptions(opts); err != nil {
 		return nil, err
 	}
