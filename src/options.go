@@ -238,6 +238,7 @@ const (
 	byLength
 	byBegin
 	byEnd
+	byPathname
 )
 
 type heightSpec struct {
@@ -804,8 +805,11 @@ func processScheme(opts *Options) error {
 	if !algo.Init(opts.Scheme) {
 		return errors.New("invalid scoring scheme (expected: default|path|history)")
 	}
-	if opts.Scheme == "history" {
+	switch opts.Scheme {
+	case "history":
 		opts.Criteria = []criterion{byScore}
+	case "path":
+		opts.Criteria = []criterion{byScore, byPathname, byLength}
 	}
 	return nil
 }
@@ -1040,6 +1044,7 @@ func parseTiebreak(str string) ([]criterion, error) {
 	hasLength := false
 	hasBegin := false
 	hasEnd := false
+	hasPathname := false
 	check := func(notExpected *bool, name string) error {
 		if *notExpected {
 			return errors.New("duplicate sort criteria: " + name)
@@ -1061,6 +1066,11 @@ func parseTiebreak(str string) ([]criterion, error) {
 				return nil, err
 			}
 			criteria = append(criteria, byChunk)
+		case "pathname":
+			if err := check(&hasPathname, "pathname"); err != nil {
+				return nil, err
+			}
+			criteria = append(criteria, byPathname)
 		case "length":
 			if err := check(&hasLength, "length"); err != nil {
 				return nil, err

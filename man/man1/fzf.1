@@ -76,7 +76,8 @@ Generic scoring scheme designed to work well with any type of input.
 .RS
 Additional bonus point is only given to the characters after path separator.
 You might want to choose this scheme over \fBdefault\fR if you have many files
-with spaces in their paths.
+with spaces in their paths. This also sets \fB\-\-tiebreak=pathname,length\fR,
+to prioritize matches occurring in the tail element of a file path.
 .RE
 .RE
 
@@ -140,15 +141,17 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 .br
 
 .br
-.BR length "  Prefers line with shorter length"
+.BR length "   Prefers line with shorter length"
 .br
-.BR chunk "   Prefers line with shorter matched chunk (delimited by whitespaces)"
+.BR chunk "    Prefers line with shorter matched chunk (delimited by whitespaces)"
 .br
-.BR begin "   Prefers line with matched substring closer to the beginning"
+.BR begin "    Prefers line with matched substring closer to the beginning"
 .br
-.BR end "     Prefers line with matched substring closer to the end"
+.BR end "      Prefers line with matched substring closer to the end"
 .br
-.BR index "   Prefers line that appeared earlier in the input stream"
+.BR pathname " Prefers line with matched substring in the tail element of a path"
+.br
+.BR index "    Prefers line that appeared earlier in the input stream"
 .br
 
 .br

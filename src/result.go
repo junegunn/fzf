@@ -69,6 +69,23 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 			}
 		case byLength:
 			val = item.TrimLength()
+		case byPathname:
+			if validOffsetFound {
+				// lastDelim := strings.LastIndexByte(item.text.ToString(), '/')
+				lastDelim := -1
+				s := item.text.ToString()
+				for i := len(s) - 1; i >= 0; i-- {
+					if s[i] == '/' || s[i] == '\\' {
+						lastDelim = i
+						break
+					}
+				}
+				if lastDelim < 0 {
+					val = math.MaxUint16
+				} else if lastDelim <= minBegin {
+					val = util.AsUint16(minBegin - lastDelim)
+				}
+			}
 		case byBegin, byEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
