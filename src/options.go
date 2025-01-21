@@ -3225,7 +3225,14 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	if len(opts.Scheme) == 0 {
 		opts.Scheme = "default"
 		if len(opts.Criteria) == 0 {
-			if util.IsTty(os.Stdin) && len(os.Getenv("FZF_DEFAULT_COMMAND")) == 0 {
+			// NOTE: Let's assume $FZF_DEFAULT_COMMAND generates a list of file paths.
+			// But it is possible that $FZF_DEFAULT_COMMAND is set to a command that
+			// doesn't generate file paths.
+			//
+			// In that case, you can either
+			//   1. explicitly set --scheme=default,
+			//   2. or replace $FZF_DEFAULT_COMMAND with an equivalent start:reload binding.
+			if !opts.hasReloadOnStart() && util.IsTty(os.Stdin) {
 				opts.Scheme = "path"
 			}
 			_, opts.Criteria, _ = parseScheme(opts.Scheme)
@@ -3238,6 +3245,17 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	}
 
 	return opts, nil
+}
+
+func (opts *Options) hasReloadOnStart() bool {
+	if actions, prs := opts.Keymap[tui.Start.AsEvent()]; prs {
+		for _, action := range actions {
+			if action.t == actReload || action.t == actReloadSync {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (opts *Options) extractReloadOnStart() string {

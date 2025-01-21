@@ -91,6 +91,13 @@ more weight to the chronological ordering. This also sets
 .RE
 .RE
 
+.RS
+fzf chooses \fBpath\fR scheme when the input is a TTY device, where fzf would
+start its built-in walker or run \fB$FZF_DEFAULT_COMMAND\fR, and there is no
+\fBreload\fR action bound to \fBstart\fR event. Otherwise, it chooses
+\fBdefault\fR scheme.
+.RE
+
 .TP
 .BI "\-\-algo=" TYPE
 Fuzzy matching algorithm (default: v2)
@@ -1125,9 +1132,9 @@ Show man page
 .SH ENVIRONMENT VARIABLES
 .TP
 .B FZF_DEFAULT_COMMAND
-Default command to use when input is tty. On *nix systems, fzf runs the command
-with \fB$SHELL \-c\fR if \fBSHELL\fR is set, otherwise with \fBsh \-c\fR, so in
-this case make sure that the command is POSIX-compliant.
+Default command to use when input is a TTY device. On *nix systems, fzf runs
+the command with \fB$SHELL \-c\fR if \fBSHELL\fR is set, otherwise with \fBsh
+\-c\fR, so in this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options.
