@@ -358,12 +358,17 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
 		if prevState != nil && strings.HasSuffix(ansiCode, "0K") {
 			state.lbg = prevState.bg
-		} else if ansiCode == "\x1b]8;;\x1b\\" { // End of a hyperlink
-			state.url = nil
-		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && strings.HasSuffix(ansiCode, "\x1b\\") {
-			if paramsEnd := strings.IndexRune(ansiCode[4:], ';'); paramsEnd >= 0 {
+		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && (strings.HasSuffix(ansiCode, "\x1b\\") || strings.HasSuffix(ansiCode, "\a")) {
+			stLen := 2
+			if strings.HasSuffix(ansiCode, "\a") {
+				stLen = 1
+			}
+			// "\x1b]8;;\x1b\\" or "\x1b]8;;\a"
+			if len(ansiCode) == 5+stLen && ansiCode[4] == ';' {
+				state.url = nil
+			} else if paramsEnd := strings.IndexRune(ansiCode[4:], ';'); paramsEnd >= 0 {
 				params := ansiCode[4 : 4+paramsEnd]
-				uri := ansiCode[5+paramsEnd : len(ansiCode)-2]
+				uri := ansiCode[5+paramsEnd : len(ansiCode)-stLen]
 				state.url = &url{uri: uri, params: params}
 			}
 		}
