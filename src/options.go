@@ -164,6 +164,9 @@ Usage: fzf [options]
     --header-border[=STYLE]  Draw border around the header section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
                               top|bottom|left|right|none] (default: rounded)
+    --header-lines-border[=STYLE]
+                             Display header from --header-lines with a separate border.
+                             Pass 'none' to still separate it but without a border.
     --header-label=LABEL     Label to print on the header border
     --header-label-pos=COL   Position of the header label
                              [POSITIVE_INTEGER: columns from left|
@@ -597,6 +600,7 @@ type Options struct {
 	ListBorderShape   tui.BorderShape
 	InputBorderShape  tui.BorderShape
 	HeaderBorderShape tui.BorderShape
+	HeaderLinesShape  tui.BorderShape
 	InputLabel        labelOpts
 	HeaderLabel       labelOpts
 	BorderLabel       labelOpts
@@ -2669,6 +2673,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.HeaderBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
 				return err
 			}
+		case "--no-header-lines-border":
+			opts.HeaderLinesShape = tui.BorderNone
+		case "--header-lines-border":
+			hasArg, arg := optionalNextString()
+			if opts.HeaderLinesShape, err = parseBorder(arg, !hasArg, false); err != nil {
+				return err
+			}
 		case "--no-header-label":
 			opts.HeaderLabel.label = ""
 		case "--header-label":
@@ -3014,6 +3025,12 @@ func postProcessOptions(opts *Options) error {
 
 	if opts.HeaderBorderShape == tui.BorderUndefined {
 		opts.HeaderBorderShape = tui.BorderNone
+	}
+
+	if opts.HeaderLinesShape == tui.BorderNone {
+		opts.HeaderLinesShape = tui.BorderPhantom
+	} else if opts.HeaderLinesShape == tui.BorderUndefined {
+		opts.HeaderLinesShape = tui.BorderNone
 	}
 
 	if opts.Pointer == nil {

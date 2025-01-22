@@ -316,6 +316,7 @@ type Terminal struct {
 	listBorderShape    tui.BorderShape
 	inputBorderShape   tui.BorderShape
 	headerBorderShape  tui.BorderShape
+	headerLinesShape   tui.BorderShape
 	listLabel          labelPrinter
 	listLabelLen       int
 	listLabelOpts      labelOpts
@@ -328,6 +329,8 @@ type Terminal struct {
 	inputBorder        tui.Window
 	headerWindow       tui.Window
 	headerBorder       tui.Window
+	headerLinesWindow  tui.Window
+	headerLinesBorder  tui.Window
 	wborder            tui.Window
 	pborder            tui.Window
 	pwindow            tui.Window
@@ -864,6 +867,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		listBorderShape:    opts.ListBorderShape,
 		inputBorderShape:   opts.InputBorderShape,
 		headerBorderShape:  opts.HeaderBorderShape,
+		headerLinesShape:   opts.HeaderLinesShape,
 		borderWidth:        1,
 		listLabel:          nil,
 		listLabelOpts:      opts.ListLabel,
@@ -1106,7 +1110,7 @@ func (t *Terminal) visibleHeaderLines() int {
 }
 
 func (t *Terminal) visibleHeaderLinesInList() int {
-	if t.headerWindow != nil {
+	if t.headerWindow != nil || t.headerLinesWindow != nil {
 		return 0
 	}
 	return t.visibleHeaderLines()
@@ -1114,15 +1118,22 @@ func (t *Terminal) visibleHeaderLinesInList() int {
 
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
-	extra := t.visibleHeaderLines() + 1
+	extra := 1
 	if t.inputBorderShape.Visible() {
 		extra += borderLines(t.inputBorderShape)
 	}
 	if t.listBorderShape.Visible() {
 		extra += borderLines(t.listBorderShape)
 	}
-	if t.headerBorderShape.Visible() {
-		extra += borderLines(t.headerBorderShape)
+	if t.headerVisible {
+		if t.hasHeaderWindow() {
+			extra += borderLines(t.headerBorderShape)
+		}
+		extra += len(t.header0)
+		if t.hasHeaderLinesWindow() {
+			extra += borderLines(t.headerLinesShape)
+		}
+		extra += t.headerLines
 	}
 	if !t.noSeparatorLine() {
 		extra++
@@ -1644,6 +1655,23 @@ func (t *Terminal) forceRerenderList() {
 	t.prevLines = make([]itemLine, len(t.prevLines))
 }
 
+func (t *Terminal) hasHeaderWindow() bool {
+	if !t.headerVisible {
+		return false
+	}
+	if t.hasHeaderLinesWindow() {
+		return len(t.header0) > 0
+	}
+	if t.headerBorderShape.Visible() {
+		return len(t.header0)+t.headerLines > 0
+	}
+	return t.inputBorderShape.Visible()
+}
+
+func (t *Terminal) hasHeaderLinesWindow() bool {
+	return t.headerVisible && t.headerLines > 0 && t.headerLinesShape.Visible()
+}
+
 func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	t.forcePreview = forcePreview
 	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
@@ -1665,6 +1693,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 	if t.headerBorder != nil {
 		t.headerBorder = nil
+	}
+	if t.headerLinesWindow != nil {
+		t.headerLinesWindow = nil
+	}
+	if t.headerLinesBorder != nil {
+		t.headerLinesBorder = nil
 	}
 	if t.inputWindow != nil {
 		t.inputWindow = nil
@@ -1716,7 +1750,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	availableLines := height
 	shift := 0
 	shrink := 0
-	hasInputWindow := t.inputBorderShape.Visible() || t.headerBorderShape.Visible()
+	hasHeaderWindow := t.hasHeaderWindow()
+	hasHeaderLinesWindow := t.hasHeaderLinesWindow()
+	hasInputWindow := t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow
 	if hasInputWindow {
 		inputWindowHeight := 2
 		if t.noSeparatorLine() {
@@ -1733,10 +1769,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 
 	// Adjust position and size of the list window if header border is set
-	hasHeaderWindow := t.visibleHeaderLines() > 0 && (t.headerBorderShape.Visible() || t.inputBorderShape.Visible())
 	headerBorderHeight := 0
 	if hasHeaderWindow {
 		headerWindowHeight := t.visibleHeaderLines()
+		if hasHeaderLinesWindow {
+			headerWindowHeight -= t.headerLines
+		}
 		headerBorderHeight = util.Min(availableLines, borderLines(t.headerBorderShape)+headerWindowHeight)
 		if t.layout == layoutReverse {
 			shift += headerBorderHeight
@@ -1745,6 +1783,18 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			shrink += headerBorderHeight
 		}
 		availableLines -= headerBorderHeight
+	}
+
+	headerLinesHeight := 0
+	if hasHeaderLinesWindow {
+		headerLinesHeight = util.Min(availableLines, borderLines(t.headerLinesShape)+t.headerLines)
+		if t.layout == layoutReverse {
+			shift += headerLinesHeight
+			shrink += headerLinesHeight
+		} else {
+			shrink += headerLinesHeight
+		}
+		availableLines -= headerLinesHeight
 	}
 
 	// Set up list border
@@ -1995,22 +2045,36 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		var btop int
 		if hasHeaderWindow && t.headerFirst {
 			if t.layout == layoutReverse {
-				btop = w.Top() - inputBorderHeight
+				btop = w.Top() - inputBorderHeight - headerLinesHeight
 			} else {
-				btop = w.Top() + w.Height()
+				btop = w.Top() + w.Height() + headerLinesHeight
 			}
 		} else {
 			if t.layout == layoutReverse {
 				btop = w.Top() - shrink
 			} else {
-				btop = w.Top() + w.Height() + headerBorderHeight
+				btop = w.Top() + w.Height() + headerBorderHeight + headerLinesHeight
 			}
+		}
+		left := w.Left()
+		if !t.inputBorderShape.HasLeft() && t.listBorderShape.HasLeft() {
+			left += t.borderWidth + 1
+		}
+		width := w.Width()
+		if t.listBorderShape.HasRight() && !t.inputBorderShape.HasRight() {
+			width -= t.borderWidth + 1
 		}
 		t.inputBorder = t.tui.NewWindow(
 			btop,
-			w.Left(),
-			w.Width(),
+			left,
+			width,
 			inputBorderHeight, tui.WindowInput, tui.MakeBorderStyle(t.inputBorderShape, t.unicode), true)
+		if left > w.Left() {
+			// Small box on the left to erase the residue
+			// e.g.
+			//  fzf --list-border --header-border --bind 'space:change-header(hello),enter:change-header()'
+			t.tui.NewWindow(btop, w.Left(), left-w.Left(), inputBorderHeight, tui.WindowInput, noBorder, false).Erase()
+		}
 		t.inputWindow = createInnerWindow(t.inputBorder, t.inputBorderShape, tui.WindowInput)
 	}
 
@@ -2021,21 +2085,46 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			if t.layout == layoutReverse {
 				btop = w.Top() - shrink
 			} else {
-				btop = w.Top() + w.Height() + inputBorderHeight
+				btop = w.Top() + w.Height() + inputBorderHeight + headerLinesHeight
 			}
 		} else {
 			if t.layout == layoutReverse {
-				btop = w.Top() - headerBorderHeight
+				btop = w.Top() - headerBorderHeight - headerLinesHeight
 			} else {
-				btop = w.Top() + w.Height()
+				btop = w.Top() + w.Height() + headerLinesHeight
 			}
 		}
+		width := w.Width()
+		if t.listBorderShape.HasRight() && !t.headerBorderShape.HasRight() {
+			width -= t.borderWidth + 1
+		}
+
 		t.headerBorder = t.tui.NewWindow(
 			btop,
 			w.Left(),
-			w.Width(),
+			width,
 			headerBorderHeight, tui.WindowHeader, tui.MakeBorderStyle(t.headerBorderShape, t.unicode), true)
 		t.headerWindow = createInnerWindow(t.headerBorder, t.headerBorderShape, tui.WindowHeader)
+	}
+
+	// Set up header lines border
+	if hasHeaderLinesWindow {
+		var btop int
+		if t.layout == layoutReverse {
+			btop = w.Top() - headerLinesHeight
+		} else {
+			btop = w.Top() + w.Height()
+		}
+		width := w.Width()
+		if t.listBorderShape.HasRight() && !t.headerLinesShape.HasRight() {
+			width -= t.borderWidth + 1
+		}
+		t.headerLinesBorder = t.tui.NewWindow(
+			btop,
+			w.Left(),
+			width,
+			headerLinesHeight, tui.WindowHeader, tui.MakeBorderStyle(t.headerLinesShape, t.unicode), true)
+		t.headerLinesWindow = createInnerWindow(t.headerLinesBorder, t.headerLinesShape, tui.WindowHeader)
 	}
 
 	// Print border label
@@ -2383,23 +2472,53 @@ func (t *Terminal) printInfoImpl() {
 }
 
 func (t *Terminal) printHeader() {
-	headerLines := t.visibleHeaderLines()
-	if t.headerBorderShape.Visible() && (t.headerWindow == nil && headerLines > 0 || t.headerWindow != nil && headerLines != t.headerWindow.Height()) {
+	allHeaderLines := t.visibleHeaderLines()
+	primaryHeaderLines := allHeaderLines
+	if t.headerLinesShape.Visible() {
+		primaryHeaderLines -= t.headerLines
+	}
+	// We may need to resize header windows
+	if (t.headerBorderShape.Visible() || t.headerLinesShape.Visible()) &&
+		(t.headerWindow == nil && primaryHeaderLines > 0 || t.headerWindow != nil && primaryHeaderLines != t.headerWindow.Height()) ||
+		t.headerLinesShape.Visible() && (t.headerLinesWindow == nil && t.headerLines > 0 || t.headerLinesWindow != nil && t.headerLines != t.headerLinesWindow.Height()) {
 		t.resizeWindows(false, true)
 		t.printList()
 		t.printPrompt()
 		t.printInfo()
 		t.printPreview()
 	}
-	t.withWindow(t.headerWindow, func() { t.printHeaderImpl() })
-}
-
-func (t *Terminal) printHeaderImpl() {
-	if t.visibleHeaderLines() == 0 {
+	if !t.headerVisible {
 		return
 	}
+
+	t.withWindow(t.headerWindow, func() {
+		var lines []string
+		if !t.headerLinesShape.Visible() {
+			lines = t.header
+		}
+		t.printHeaderImpl(t.headerWindow, t.headerBorderShape, t.header0, lines)
+	})
+	if t.headerLinesShape.Visible() {
+		t.withWindow(t.headerLinesWindow, func() {
+			t.printHeaderImpl(t.headerLinesWindow, t.headerLinesShape, nil, t.header)
+		})
+	}
+}
+
+func (t *Terminal) headerIndent(borderShape tui.BorderShape) int {
+	indentSize := t.pointerLen + t.markerLen
+	if t.listBorderShape.HasLeft() {
+		indentSize += 1 + t.borderWidth
+	}
+	if borderShape.HasLeft() {
+		indentSize -= 1 + t.borderWidth
+	}
+	return indentSize
+}
+
+func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShape, lines1 []string, lines2 []string) {
 	max := t.window.Height()
-	if t.inputWindow == nil && t.headerWindow == nil && t.headerFirst {
+	if t.inputWindow == nil && window == nil && t.headerFirst {
 		max--
 		if !t.noSeparatorLine() {
 			max--
@@ -2419,22 +2538,17 @@ func (t *Terminal) printHeaderImpl() {
 	//   fzf --header-lines 3 --style full --no-header-border
 	//   fzf --header-lines 3 --style full --no-header-border --no-input-border
 	indentSize := t.pointerLen + t.markerLen
-	if t.headerWindow != nil {
-		if t.listBorderShape.HasLeft() {
-			indentSize += 1 + t.borderWidth
-		}
-		if t.headerBorderShape.HasLeft() {
-			indentSize -= 1 + t.borderWidth
-		}
+	if window != nil {
+		indentSize = t.headerIndent(borderShape)
 	}
 	indent := strings.Repeat(" ", indentSize)
 	t.wrap = false
-	for idx, lineStr := range append(append([]string{}, t.header0...), t.header...) {
+	for idx, lineStr := range append(append([]string{}, lines1...), lines2...) {
 		line := idx
-		if needReverse && idx < len(t.header0) {
-			line = len(t.header0) - idx - 1
+		if needReverse && idx < len(lines1) {
+			line = len(lines1) - idx - 1
 		}
-		if t.inputWindow == nil && t.headerWindow == nil && !t.headerFirst {
+		if t.inputWindow == nil && window == nil && !t.headerFirst {
 			line++
 			if !t.noSeparatorLine() {
 				line++
@@ -3415,6 +3529,12 @@ func (t *Terminal) flush() {
 		}
 		if t.headerWindow != nil {
 			windows = append(windows, t.headerWindow)
+		}
+		if t.headerLinesBorder != nil {
+			windows = append(windows, t.headerLinesBorder)
+		}
+		if t.headerLinesWindow != nil {
+			windows = append(windows, t.headerLinesWindow)
 		}
 		if t.inputBorder != nil {
 			windows = append(windows, t.inputBorder)
@@ -5354,12 +5474,29 @@ func (t *Terminal) Loop() error {
 				// TODO: Should we trigger this on mouse up instead?
 				//       Should we still trigger it when the position has changed from the down event?
 				if t.headerVisible && t.headerWindow != nil && t.headerWindow.Enclose(my, mx) {
-					mx -= t.headerWindow.Left() + t.pointerLen + t.markerLen
+					mx -= t.headerWindow.Left() + t.headerIndent(t.headerBorderShape)
 					my -= t.headerWindow.Top()
 					if mx < 0 {
 						break
 					}
 					t.clickHeaderLine = my + 1
+					if t.layout != layoutReverse && t.headerLinesWindow != nil {
+						t.clickHeaderLine += t.headerLines
+					}
+					t.clickHeaderColumn = mx + 1
+					return doActions(actionsFor(tui.ClickHeader))
+				}
+
+				if t.headerVisible && t.headerLinesWindow != nil && t.headerLinesWindow.Enclose(my, mx) {
+					mx -= t.headerLinesWindow.Left() + t.headerIndent(t.headerLinesShape)
+					my -= t.headerLinesWindow.Top()
+					if mx < 0 {
+						break
+					}
+					t.clickHeaderLine = my + 1
+					if t.layout == layoutReverse {
+						t.clickHeaderLine += len(t.header0)
+					}
 					t.clickHeaderColumn = mx + 1
 					return doActions(actionsFor(tui.ClickHeader))
 				}

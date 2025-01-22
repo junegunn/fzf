@@ -376,6 +376,7 @@ const (
 	BorderUndefined BorderShape = iota
 	BorderLine
 	BorderNone
+	BorderPhantom
 	BorderRounded
 	BorderSharp
 	BorderBold
@@ -392,7 +393,7 @@ const (
 
 func (s BorderShape) HasLeft() bool {
 	switch s {
-	case BorderNone, BorderLine, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
+	case BorderNone, BorderPhantom, BorderLine, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
 		return false
 	}
 	return true
@@ -400,7 +401,7 @@ func (s BorderShape) HasLeft() bool {
 
 func (s BorderShape) HasRight() bool {
 	switch s {
-	case BorderNone, BorderLine, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
+	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
 		return false
 	}
 	return true
@@ -408,7 +409,7 @@ func (s BorderShape) HasRight() bool {
 
 func (s BorderShape) HasTop() bool {
 	switch s {
-	case BorderNone, BorderLine, BorderLeft, BorderRight, BorderBottom, BorderVertical: // No top
+	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderRight, BorderBottom, BorderVertical: // No top
 		return false
 	}
 	return true
@@ -416,7 +417,7 @@ func (s BorderShape) HasTop() bool {
 
 func (s BorderShape) HasBottom() bool {
 	switch s {
-	case BorderNone, BorderLine, BorderLeft, BorderRight, BorderTop, BorderVertical: // No bottom
+	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderRight, BorderTop, BorderVertical: // No bottom
 		return false
 	}
 	return true
@@ -441,7 +442,7 @@ type BorderStyle struct {
 type BorderCharacter int
 
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
-	if shape == BorderNone {
+	if shape == BorderNone || shape == BorderPhantom {
 		return BorderStyle{
 			shape:       shape,
 			top:         ' ',
