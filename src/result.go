@@ -80,9 +80,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 						break
 					}
 				}
-				if lastDelim < 0 {
-					val = math.MaxUint16
-				} else if lastDelim <= minBegin {
+				if lastDelim <= minBegin {
 					val = util.AsUint16(minBegin - lastDelim)
 				}
 			}
