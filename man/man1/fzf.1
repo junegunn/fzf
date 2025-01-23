@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jan 2025" "fzf 0.58.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jan 2025" "fzf 0.59.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -76,7 +76,8 @@ Generic scoring scheme designed to work well with any type of input.
 .RS
 Additional bonus point is only given to the characters after path separator.
 You might want to choose this scheme over \fBdefault\fR if you have many files
-with spaces in their paths.
+with spaces in their paths. This also sets \fB\-\-tiebreak=pathname,length\fR,
+to prioritize matches occurring in the tail element of a file path.
 .RE
 .RE
 
@@ -88,6 +89,13 @@ ordering is important. No additional bonus points are given so that we give
 more weight to the chronological ordering. This also sets
 \fB\-\-tiebreak=index\fR.
 .RE
+.RE
+
+.RS
+fzf chooses \fBpath\fR scheme when the input is a TTY device, where fzf would
+start its built-in walker or run \fB$FZF_DEFAULT_COMMAND\fR, and there is no
+\fBreload\fR action bound to \fBstart\fR event. Otherwise, it chooses
+\fBdefault\fR scheme.
 .RE
 
 .TP
@@ -140,15 +148,17 @@ Comma-separated list of sort criteria to apply when the scores are tied.
 .br
 
 .br
-.BR length "  Prefers line with shorter length"
+.BR length "   Prefers line with shorter length"
 .br
-.BR chunk "   Prefers line with shorter matched chunk (delimited by whitespaces)"
+.BR chunk "    Prefers line with shorter matched chunk (delimited by whitespaces)"
 .br
-.BR begin "   Prefers line with matched substring closer to the beginning"
+.BR pathname " Prefers line with matched substring in the file name of the path"
 .br
-.BR end "     Prefers line with matched substring closer to the end"
+.BR begin "    Prefers line with matched substring closer to the beginning"
 .br
-.BR index "   Prefers line that appeared earlier in the input stream"
+.BR end "      Prefers line with matched substring closer to the end"
+.br
+.BR index "    Prefers line that appeared earlier in the input stream"
 .br
 
 .br
@@ -1128,9 +1138,9 @@ Show man page
 .SH ENVIRONMENT VARIABLES
 .TP
 .B FZF_DEFAULT_COMMAND
-Default command to use when input is tty. On *nix systems, fzf runs the command
-with \fB$SHELL \-c\fR if \fBSHELL\fR is set, otherwise with \fBsh \-c\fR, so in
-this case make sure that the command is POSIX-compliant.
+Default command to use when input is a TTY device. On *nix systems, fzf runs
+the command with \fB$SHELL \-c\fR if \fBSHELL\fR is set, otherwise with \fBsh
+\-c\fR, so in this case make sure that the command is POSIX-compliant.
 .TP
 .B FZF_DEFAULT_OPTS
 Default options.

@@ -188,6 +188,9 @@ func Run(opts *Options) (int, error) {
 			forward = false
 		case byBegin:
 			forward = true
+		case byPathname:
+			withPos = true
+			forward = false
 		}
 	}
 
