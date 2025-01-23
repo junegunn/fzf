@@ -2019,16 +2019,16 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			innerHeight-shrink, tui.WindowList, noBorder, true)
 	}
 
-	createInnerWindow := func(b tui.Window, shape tui.BorderShape, windowType tui.WindowType) tui.Window {
+	createInnerWindow := func(b tui.Window, shape tui.BorderShape, windowType tui.WindowType, shift int) tui.Window {
 		top := b.Top()
-		left := b.Left()
+		left := b.Left() + shift
 		if shape.HasTop() {
 			top++
 		}
 		if shape.HasLeft() {
 			left += t.borderWidth + 1
 		}
-		width := b.Width() - borderColumns(shape, t.borderWidth)
+		width := b.Width() - borderColumns(shape, t.borderWidth) - shift
 		if shape.HasRight() {
 			width++
 		}
@@ -2056,26 +2056,22 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 				btop = w.Top() + w.Height() + headerBorderHeight + headerLinesHeight
 			}
 		}
-		left := w.Left()
+		shift := 0
 		if !t.inputBorderShape.HasLeft() && t.listBorderShape.HasLeft() {
-			left += t.borderWidth + 1
-		}
-		width := w.Width()
-		if t.listBorderShape.HasRight() && !t.inputBorderShape.HasRight() {
-			width -= t.borderWidth + 1
+			shift += t.borderWidth + 1
 		}
 		t.inputBorder = t.tui.NewWindow(
 			btop,
-			left,
-			width,
+			w.Left(),
+			w.Width(),
 			inputBorderHeight, tui.WindowInput, tui.MakeBorderStyle(t.inputBorderShape, t.unicode), true)
-		if left > w.Left() {
+		if shift > 0 && !t.inputBorderShape.Visible() {
 			// Small box on the left to erase the residue
 			// e.g.
 			//  fzf --list-border --header-border --bind 'space:change-header(hello),enter:change-header()'
-			t.tui.NewWindow(btop, w.Left(), left-w.Left(), inputBorderHeight, tui.WindowInput, noBorder, false).Erase()
+			t.tui.NewWindow(btop, w.Left(), shift, inputBorderHeight, tui.WindowInput, noBorder, false).Erase()
 		}
-		t.inputWindow = createInnerWindow(t.inputBorder, t.inputBorderShape, tui.WindowInput)
+		t.inputWindow = createInnerWindow(t.inputBorder, t.inputBorderShape, tui.WindowInput, shift)
 	}
 
 	// Set up header border
@@ -2094,17 +2090,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 				btop = w.Top() + w.Height() + headerLinesHeight
 			}
 		}
-		width := w.Width()
-		if t.listBorderShape.HasRight() && !t.headerBorderShape.HasRight() {
-			width -= t.borderWidth + 1
-		}
-
 		t.headerBorder = t.tui.NewWindow(
 			btop,
 			w.Left(),
-			width,
+			w.Width(),
 			headerBorderHeight, tui.WindowHeader, tui.MakeBorderStyle(t.headerBorderShape, t.unicode), true)
-		t.headerWindow = createInnerWindow(t.headerBorder, t.headerBorderShape, tui.WindowHeader)
+		t.headerWindow = createInnerWindow(t.headerBorder, t.headerBorderShape, tui.WindowHeader, 0)
 	}
 
 	// Set up header lines border
@@ -2115,16 +2106,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		} else {
 			btop = w.Top() + w.Height()
 		}
-		width := w.Width()
-		if t.listBorderShape.HasRight() && !t.headerLinesShape.HasRight() {
-			width -= t.borderWidth + 1
-		}
 		t.headerLinesBorder = t.tui.NewWindow(
 			btop,
 			w.Left(),
-			width,
+			w.Width(),
 			headerLinesHeight, tui.WindowHeader, tui.MakeBorderStyle(t.headerLinesShape, t.unicode), true)
-		t.headerLinesWindow = createInnerWindow(t.headerLinesBorder, t.headerLinesShape, tui.WindowHeader)
+		t.headerLinesWindow = createInnerWindow(t.headerLinesBorder, t.headerLinesShape, tui.WindowHeader, 0)
 	}
 
 	// Print border label
@@ -2394,7 +2381,7 @@ func (t *Terminal) printInfoImpl() {
 	}
 
 	if t.infoStyle == infoRight {
-		maxWidth := t.window.Width()
+		maxWidth := t.window.Width() - 1
 		if t.reading {
 			// Need space for spinner and a margin column
 			maxWidth -= 2
@@ -2446,7 +2433,7 @@ func (t *Terminal) printInfoImpl() {
 		}
 	}
 
-	maxWidth := t.window.Width() - pos
+	maxWidth := t.window.Width() - pos - 1
 	if outputPrinter == nil {
 		output = t.trimMessage(output, maxWidth)
 		t.window.CPrint(tui.ColInfo, output)
@@ -2464,7 +2451,7 @@ func (t *Terminal) printInfoImpl() {
 		return
 	}
 
-	fillLength := maxWidth - outputLen - 2
+	fillLength := maxWidth - outputLen - 1
 	if fillLength > 0 {
 		t.window.CPrint(tui.ColSeparator, " ")
 		printSeparator(fillLength, false)
@@ -2565,7 +2552,10 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 
 		t.printHighlighted(Result{item: item},
 			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
-			func(markerClass) { t.window.Print(indent) }, nil)
+			func(markerClass) int {
+				t.window.Print(indent)
+				return indentSize
+			}, nil)
 	}
 	t.wrap = wrap
 }
@@ -2725,11 +2715,12 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		}
 		return marker
 	}
+	indentSize := t.pointerLen + t.markerLen
 	if current {
-		preTask := func(marker markerClass) {
+		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
 			if w < 0 {
-				return
+				return indentSize
 			}
 			if len(label) == 0 {
 				t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
@@ -2737,20 +2728,21 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				t.window.CPrint(tui.ColCurrentCursor, label)
 			}
 			if w-t.markerLen < 0 {
-				return
+				return indentSize
 			}
 			if selected {
 				t.window.CPrint(tui.ColCurrentMarker, markerFor(marker))
 			} else {
 				t.window.CPrint(tui.ColCurrentSelectedEmpty, t.markerEmpty)
 			}
+			return indentSize
 		}
 		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, line, maxLine, forceRedraw, preTask, postTask)
 	} else {
-		preTask := func(marker markerClass) {
+		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
 			if w < 0 {
-				return
+				return indentSize
 			}
 			if len(label) == 0 {
 				t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
@@ -2758,13 +2750,14 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				t.window.CPrint(tui.ColCursor, label)
 			}
 			if w-t.markerLen < 0 {
-				return
+				return indentSize
 			}
 			if selected {
 				t.window.CPrint(tui.ColMarker, markerFor(marker))
 			} else {
 				t.window.Print(t.markerEmpty)
 			}
+			return indentSize
 		}
 		var base, match tui.ColorPair
 		if selected {
@@ -2821,7 +2814,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass), postTask func(int, int, bool, bool)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -2950,6 +2943,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		t.move(actualLineNum, 0, forceRedraw && postTask == nil)
 
+		indentSize := t.pointerLen + t.markerLen
 		if preTask != nil {
 			var marker markerClass
 			if numItemLines == 1 {
@@ -2978,10 +2972,10 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				}
 			}
 
-			preTask(marker)
+			indentSize = preTask(marker)
 		}
 
-		maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
+		maxWidth := t.window.Width() - (indentSize + 1)
 		wasWrapped := false
 		if wrapped {
 			maxWidth -= t.wrapSignWidth
