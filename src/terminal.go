@@ -5416,7 +5416,7 @@ func (t *Terminal) Loop() error {
 					}
 				}
 
-				if pborderDragging >= 0 {
+				if pborderDragging >= 0 && t.hasPreviewWindow() {
 					var newSize int
 					var prevSize int
 					switch t.activePreviewOpts.position {
@@ -5447,7 +5447,7 @@ func (t *Terminal) Loop() error {
 					}
 
 					t.activePreviewOpts.size = sizeSpec{float64(newSize), false}
-					updatePreviewWindow(false)
+					updatePreviewWindow(true)
 					req(reqPreviewRefresh)
 					break
 				}
