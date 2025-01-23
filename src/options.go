@@ -3221,17 +3221,18 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		return nil, err
 	}
 
-	// 4. Change default scheme when builtin walker is used
+	// 4. Change default scheme when built-in walker is used
 	if len(opts.Scheme) == 0 {
 		opts.Scheme = "default"
 		if len(opts.Criteria) == 0 {
 			// NOTE: Let's assume $FZF_DEFAULT_COMMAND generates a list of file paths.
-			// But it is possible that $FZF_DEFAULT_COMMAND is set to a command that
-			// doesn't generate file paths.
+			// But it is possible that it is set to a command that doesn't generate
+			// file paths.
 			//
 			// In that case, you can either
 			//   1. explicitly set --scheme=default,
-			//   2. or replace $FZF_DEFAULT_COMMAND with an equivalent start:reload binding.
+			//   2. or replace $FZF_DEFAULT_COMMAND with an equivalent 'start:reload'
+			//      binding, which is the new preferred way.
 			if !opts.hasReloadOnStart() && util.IsTty(os.Stdin) {
 				opts.Scheme = "path"
 			}
