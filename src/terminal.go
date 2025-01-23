@@ -5662,7 +5662,10 @@ func (t *Terminal) Loop() error {
 					// Preview command can be running in the background if the size of
 					// the preview window is 0 but not 'hidden'
 					wasHidden := currentPreviewOpts.hidden
-					updatePreviewWindow(false)
+
+					// FIXME: One-time preview window can't reappear once hidden
+					// fzf --bind space:preview:ls --bind 'enter:change-preview-window:down|left|up|hidden|'
+					updatePreviewWindow(t.hasPreviewWindow() && !t.activePreviewOpts.hidden)
 					if wasHidden && t.hasPreviewWindow() {
 						// Restart
 						refreshPreview(t.previewOpts.command)
