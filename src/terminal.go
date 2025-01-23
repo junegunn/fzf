@@ -4678,6 +4678,9 @@ func (t *Terminal) Loop() error {
 				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents {
 					if newIndex := t.currentIndex(); newIndex != currentIndex {
 						t.lastFocus = newIndex
+						if t.infoCommand != "" {
+							req(reqInfo)
+						}
 						actions = onFocus
 						continue
 					}

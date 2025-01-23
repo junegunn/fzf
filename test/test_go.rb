@@ -3008,6 +3008,13 @@ class TestGoFZF < TestBase
     tmux.until { assert_match(%r{   --1/10000/10000-- *$}, _1[-1]) }
   end
 
+  def test_info_command_and_focus
+    tmux.send_keys(%(seq 100 | #{FZF} --separator x --info-command 'echo $FZF_POS' --bind focus:clear-query), :Enter)
+    tmux.until { |lines| tmux.until { assert_match(%r{^  1 xx}, _1[-2]) } }
+    tmux.send_keys :Up
+    tmux.until { |lines| tmux.until { assert_match(%r{^  2 xx}, _1[-2]) } }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.item_count }
