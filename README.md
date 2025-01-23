@@ -725,7 +725,7 @@ Since fzf is a general-purpose text filter, its algorithm was designed to
 "generally" work well with any kind of input. However, admittedly, there is no
 true one-size-fits-all solution, and you may want to tweak the algorithm and
 some of the settings depending on the type of the input. To make this process
-easier, fzf provides a set of "scheme"s for some common types of input.
+easier, fzf provides a set of "scheme"s for some common input types.
 
 | Scheme             | Description                                                                         |
 | :---               | :---                                                                                |
