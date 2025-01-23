@@ -735,9 +735,6 @@ easier, fzf provides a set of "scheme"s for some common input types.
 
 (See `fzf --man` for the details)
 
-fzf heuristically chooses which scheme to use, but it will not always be
-perfect. If you see suboptimal behavior, try setting the scheme explicitly.
-
 ### Performance
 
 fzf is fast. Performance should not be a problem in most use cases. However,
