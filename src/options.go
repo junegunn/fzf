@@ -47,8 +47,8 @@ Usage: fzf [options]
     --tail=NUM               Maximum number of items to keep in memory
     --disabled               Do not perform search
     --tiebreak=CRI[,..]      Comma-separated list of sort criteria to apply
-                             when the scores are tied [length|chunk|begin|end|index]
-                             (default: length)
+                             when the scores are tied
+                             [length|chunk|pathname|begin|end|index] (default: length)
 
   INPUT/OUTPUT
     --read0                  Read input delimited by ASCII NUL characters
