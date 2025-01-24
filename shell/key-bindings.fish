@@ -75,7 +75,7 @@ function fzf_key_bindings
           'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
           'end'
       end
-      set -l result (eval "$FZF_DEFAULT_COMMAND | $(__fzfcmd) --read0 --print0 -q (commandline) --bind='enter:become:string replace -a -- \n\t \n {2..} | string collect'")
+      set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --read0 --print0 -q (commandline | string escape) "--bind=enter:become:'string replace -a -- \n\t \n {2..} | string collect'")
       and commandline -- $result
     end
     commandline -f repaint
