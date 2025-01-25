@@ -3,7 +3,6 @@ bin/fzf.exe
 dist
 target
 pkg
-Gemfile.lock
 .DS_Store
 doc/tags
 vendor
