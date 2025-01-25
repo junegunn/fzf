@@ -32,6 +32,10 @@ const consoleDevice string = "/dev/tty"
 var offsetRegexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
 var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
+func (r *LightRenderer) Bell() {
+	r.flushRaw("\a")
+}
+
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
 }

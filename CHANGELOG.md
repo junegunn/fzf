@@ -9,9 +9,15 @@ CHANGELOG
     - fzf will automatically choose `path` scheme when the input is a TTY device, where fzf would start its built-in walker or run `$FZF_DEFAULT_COMMAND` which is usually a command for listing files.
 - Added `--header-lines-border` to display header from `--header-lines` with a separate border
   ```sh
+  # Use --header-lines-border to separate two headers
   ps -ef | fzf --style full --layout reverse --header-lines 1 \
                --bind 'ctrl-r:reload(ps -ef)' --header 'Press CTRL-R to reload' \
                --header-lines-border bottom --no-list-border
+  ```
+- Added `bell` action to ring the terminal bell
+  ```sh
+  # Press CTRL-Y to copy the current line to the clipboard and ring the bell
+  fzf --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+bell'
   ```
 - Bug fixes and improvements
 - Fixed fish script to support fish 3.1.2 or later (@bitraid)

@@ -1586,6 +1586,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			} else {
 				return nil, errors.New("unable to put non-printable character")
 			}
+		case "bell":
+			appendAction(actBell)
 		default:
 			t := isExecuteAction(specLower)
 			if t == actIgnore {

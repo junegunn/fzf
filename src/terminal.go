@@ -567,6 +567,7 @@ const (
 	actBecome
 	actShowHeader
 	actHideHeader
+	actBell
 )
 
 func (a actionType) Name() string {
@@ -4704,6 +4705,8 @@ func (t *Terminal) Loop() error {
 						t.executor.Become(t.ttyin, t.environ(), command)
 					}
 				}
+			case actBell:
+				t.tui.Bell()
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, "")
 			case actExecuteMulti:

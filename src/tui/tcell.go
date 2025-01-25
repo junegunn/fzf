@@ -100,6 +100,10 @@ const (
 	BoldForce     = Attr(1 << 10)
 )
 
+func (r *FullscreenRenderer) Bell() {
+	_screen.Beep()
+}
+
 func (r *FullscreenRenderer) PassThrough(str string) {
 	// No-op
 	// https://github.com/gdamore/tcell/pull/650#issuecomment-1806442846

@@ -580,6 +580,7 @@ type Renderer interface {
 	PassThrough(string)
 	NeedScrollbarRedraw() bool
 	ShouldEmitResizeEvent() bool
+	Bell()
 
 	GetChar() Event
 
