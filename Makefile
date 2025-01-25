@@ -83,7 +83,7 @@ test: $(SOURCES)
 				github.com/junegunn/fzf/src/util
 
 itest:
-	ruby test/*.rb
+	ruby test/runner.rb
 
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
