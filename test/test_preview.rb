@@ -408,10 +408,10 @@ class TestPreview < TestInteractive
 
   def test_change_preview_window
     tmux.send_keys "seq 1000 | #{FZF} --preview 'echo [[{}]]' --no-preview-border --bind '" \
-      'a:change-preview(echo __{}__),' \
-      'b:change-preview-window(down)+change-preview(echo =={}==)+change-preview-window(up),' \
-      'c:change-preview(),d:change-preview-window(hidden),' \
-      "e:preview(printf ::%${FZF_PREVIEW_COLUMNS}s{})+change-preview-window(up),f:change-preview-window(up,wrap)'", :Enter
+                   'a:change-preview(echo __{}__),' \
+                   'b:change-preview-window(down)+change-preview(echo =={}==)+change-preview-window(up),' \
+                   'c:change-preview(),d:change-preview-window(hidden),' \
+                   "e:preview(printf ::%${FZF_PREVIEW_COLUMNS}s{})+change-preview-window(up),f:change-preview-window(up,wrap)'", :Enter
     tmux.until { |lines| assert_equal 1000, lines.item_count }
     tmux.until { |lines| assert_includes lines[0], '[[1]]' }
 
@@ -464,7 +464,7 @@ class TestPreview < TestInteractive
 
   def test_change_preview_window_rotate
     tmux.send_keys "seq 100 | #{FZF} --preview-window left,border-none --preview 'echo hello' --bind '" \
-      "a:change-preview-window(right|down|up|hidden|)'", :Enter
+                   "a:change-preview-window(right|down|up|hidden|)'", :Enter
     tmux.until { |lines| assert(lines.any? { _1.include?('100/100') }) }
     3.times do
       tmux.until { |lines| lines[0].start_with?('hello') }
@@ -482,7 +482,7 @@ class TestPreview < TestInteractive
 
   def test_change_preview_window_rotate_hidden
     tmux.send_keys "seq 100 | #{FZF} --preview-window hidden --preview 'echo =={}==' --bind '" \
-      "a:change-preview-window(nohidden||down,1|)'", :Enter
+                   "a:change-preview-window(nohidden||down,1|)'", :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.until { |lines| refute_includes lines[1], '==1==' }
     tmux.send_keys 'a'

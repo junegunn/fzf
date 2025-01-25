@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'bundler/setup'
 require 'minitest/autorun'
 require 'fileutils'
 require 'English'
@@ -188,7 +189,6 @@ class TestBase < Minitest::Test
   end
 
   def setup
-    FileUtils.rm_f([TEMPNAME, FIFONAME])
     File.mkfifo(FIFONAME)
   end
 
@@ -208,11 +208,11 @@ class TestBase < Minitest::Test
     raise 'fzf_output not taken' if @thread
 
     @thread = Thread.new { File.read(FIFONAME) }
-    fzf!(*opts) + " > #{FIFONAME}"
+    fzf!(*opts) + " > #{FIFONAME.shellescape}"
   end
 
   def fzf!(*opts)
-    opts = opts.map do |o|
+    opts = opts.filter_map do |o|
       case o
       when Symbol
         o = o.to_s
@@ -220,7 +220,7 @@ class TestBase < Minitest::Test
       when String, Numeric
         o.to_s
       end
-    end.compact
+    end
     "#{FZF} #{opts.join(' ')}"
   end
 end

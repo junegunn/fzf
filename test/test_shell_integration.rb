@@ -134,7 +134,7 @@ module TestShell
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 'foo bar'
-    tmux.until { |lines| assert lines[-4]&.match?(/"foo/) } unless shell == :zsh
+    tmux.until { |lines| assert_includes lines[-4], '"foo' } unless shell == :zsh
     tmux.until { |lines| assert lines[-3]&.match?(/bar"␊?/) }
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines[-1]&.match?(/bar"␊?/) }
@@ -319,7 +319,7 @@ module CompletionTest
     tmux.prepare
 
     triggers = ['**', '~~', '++', 'ff', '/']
-    triggers.concat(['&', '[', ';', '`']) if instance_of?(TestZsh)
+    triggers.push('&', '[', ';', '`') if instance_of?(TestZsh)
 
     triggers.each do |trigger|
       set_var('FZF_COMPLETION_TRIGGER', trigger)
@@ -382,14 +382,14 @@ module CompletionTest
 
     tmux.send_keys 'ssh jg@localhost**', :Tab
     tmux.until do |lines|
-      assert lines.match_count >= 1
+      assert_operator lines.match_count, :>=, 1
     end
 
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines.any_include?('ssh jg@localhost') }
     tmux.send_keys ' -i /tmp/fzf-test-ssh**', :Tab
     tmux.until do |lines|
-      assert lines.match_count >= 5
+      assert_operator lines.match_count, :>=, 5
       assert_equal 0, lines.select_count
     end
     tmux.send_keys :Tab, :Tab, :Tab
@@ -401,7 +401,7 @@ module CompletionTest
 
     tmux.send_keys 'localhost**', :Tab
     tmux.until do |lines|
-      assert lines.match_count >= 1
+      assert_operator lines.match_count, :>=, 1
     end
   end
 end

@@ -752,7 +752,7 @@ class TestCore < TestInteractive
   end
 
   def test_hscroll_off
-    writelines(['=' * 10_000 + '0123456789'])
+    writelines([('=' * 10_000) + '0123456789'])
     [0, 3, 6].each do |off|
       tmux.prepare
       tmux.send_keys "#{FZF} --hscroll-off=#{off} -q 0 --bind space:toggle-hscroll < #{tempname}", :Enter
@@ -820,11 +820,11 @@ class TestCore < TestInteractive
     tmux.send_keys 'C-j'
     tmux.until { |lines| assert_includes lines[-7], '5 5' }
     tmux.send_keys '3'
-    tmux.until { |lines| assert(lines.any? { _1.include?('jumped to 3') }) }
+    tmux.until { |lines| assert(lines.any? { it.include?('jumped to 3') }) }
     tmux.send_keys 'C-j'
     tmux.until { |lines| assert_includes lines[-7], '5 5' }
     tmux.send_keys 'C-c'
-    tmux.until { |lines| assert(lines.any? { _1.include?('jump cancelled at 3') }) }
+    tmux.until { |lines| assert(lines.any? { it.include?('jump cancelled at 3') }) }
   end
 
   def test_pointer
@@ -1246,135 +1246,135 @@ class TestCore < TestInteractive
   def test_labels_center
     tmux.send_keys 'echo x | fzf --border --border-label foobar --preview : --preview-label barfoo --bind "space:change-border-label(foobarfoo)+change-preview-label(barfoobar),enter:transform-border-label(echo foo{}foo)+transform-preview-label(echo bar{}bar)"', :Enter
     tmux.until do
-      assert_includes(_1[0], '─foobar─')
-      assert_includes(_1[1], '─barfoo─')
+      assert_includes(it[0], '─foobar─')
+      assert_includes(it[1], '─barfoo─')
     end
     tmux.send_keys :space
     tmux.until do
-      assert_includes(_1[0], '─foobarfoo─')
-      assert_includes(_1[1], '─barfoobar─')
+      assert_includes(it[0], '─foobarfoo─')
+      assert_includes(it[1], '─barfoobar─')
     end
     tmux.send_keys :Enter
     tmux.until do
-      assert_includes(_1[0], '─fooxfoo─')
-      assert_includes(_1[1], '─barxbar─')
+      assert_includes(it[0], '─fooxfoo─')
+      assert_includes(it[1], '─barxbar─')
     end
   end
 
   def test_labels_left
     tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos 2 --preview : --preview-label barfoo --preview-label-pos 2', :Enter
     tmux.until do
-      assert_includes(_1[0], '╭foobar─')
-      assert_includes(_1[1], '╭barfoo─')
+      assert_includes(it[0], '╭foobar─')
+      assert_includes(it[1], '╭barfoo─')
     end
   end
 
   def test_labels_right
     tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos -2 --preview : --preview-label barfoo --preview-label-pos -2', :Enter
     tmux.until do
-      assert_includes(_1[0], '─foobar╮')
-      assert_includes(_1[1], '─barfoo╮')
+      assert_includes(it[0], '─foobar╮')
+      assert_includes(it[1], '─barfoo╮')
     end
   end
 
   def test_labels_bottom
     tmux.send_keys ': | fzf --border rounded --preview-window border-rounded --border-label foobar --border-label-pos 2:bottom --preview : --preview-label barfoo --preview-label-pos -2:bottom', :Enter
     tmux.until do
-      assert_includes(_1[-1], '╰foobar─')
-      assert_includes(_1[-2], '─barfoo╯')
+      assert_includes(it[-1], '╰foobar─')
+      assert_includes(it[-2], '─barfoo╯')
     end
   end
 
   def test_labels_variables
     tmux.send_keys ': | fzf --border --border-label foobar --preview "echo \$FZF_BORDER_LABEL // \$FZF_PREVIEW_LABEL" --preview-label barfoo --bind "space:change-border-label(barbaz)+change-preview-label(bazbar)+refresh-preview,enter:transform-border-label(echo 123)+transform-preview-label(echo 456)+refresh-preview"', :Enter
     tmux.until do
-      assert_includes(_1[0], '─foobar─')
-      assert_includes(_1[1], '─barfoo─')
-      assert_includes(_1[2], ' foobar // barfoo ')
+      assert_includes(it[0], '─foobar─')
+      assert_includes(it[1], '─barfoo─')
+      assert_includes(it[2], ' foobar // barfoo ')
     end
     tmux.send_keys :Space
     tmux.until do
-      assert_includes(_1[0], '─barbaz─')
-      assert_includes(_1[1], '─bazbar─')
-      assert_includes(_1[2], ' barbaz // bazbar ')
+      assert_includes(it[0], '─barbaz─')
+      assert_includes(it[1], '─bazbar─')
+      assert_includes(it[2], ' barbaz // bazbar ')
     end
     tmux.send_keys :Enter
     tmux.until do
-      assert_includes(_1[0], '─123─')
-      assert_includes(_1[1], '─456─')
-      assert_includes(_1[2], ' 123 // 456 ')
+      assert_includes(it[0], '─123─')
+      assert_includes(it[1], '─456─')
+      assert_includes(it[2], ' 123 // 456 ')
     end
   end
 
   def test_info_separator_unicode
     tmux.send_keys 'seq 100 | fzf -q55', :Enter
-    tmux.until { assert_includes(_1[-2], '  1/100 ─') }
+    tmux.until { assert_includes(it[-2], '  1/100 ─') }
   end
 
   def test_info_separator_no_unicode
     tmux.send_keys 'seq 100 | fzf -q55 --no-unicode', :Enter
-    tmux.until { assert_includes(_1[-2], '  1/100 -') }
+    tmux.until { assert_includes(it[-2], '  1/100 -') }
   end
 
   def test_info_separator_repeat
     tmux.send_keys 'seq 100 | fzf -q55 --separator _-', :Enter
-    tmux.until { assert_includes(_1[-2], '  1/100 _-_-') }
+    tmux.until { assert_includes(it[-2], '  1/100 _-_-') }
   end
 
   def test_info_separator_ansi_colors_and_tabs
     tmux.send_keys "seq 100 | fzf -q55 --tabstop 4 --separator $'\\x1b[33ma\\tb'", :Enter
-    tmux.until { assert_includes(_1[-2], '  1/100 a   ba   ba') }
+    tmux.until { assert_includes(it[-2], '  1/100 a   ba   ba') }
   end
 
   def test_info_no_separator
     tmux.send_keys 'seq 100 | fzf -q55 --no-separator', :Enter
-    tmux.until { assert(_1[-2] == '  1/100') }
+    tmux.until { assert_operator(it[-2], :==, '  1/100') }
   end
 
   def test_info_right
     tmux.send_keys "#{FZF} --info=right --separator x --bind 'start:reload:seq 100; sleep 10'", :Enter
-    tmux.until { assert_match(%r{xxx [⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, _1[-2]) }
+    tmux.until { assert_match(%r{xxx [⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, it[-2]) }
   end
 
   def test_info_inline_right
     tmux.send_keys "#{FZF} --info=inline-right --bind 'start:reload:seq 100; sleep 10'", :Enter
-    tmux.until { assert_match(%r{[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, _1[-1]) }
+    tmux.until { assert_match(%r{[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] 100/100}, it[-1]) }
   end
 
   def test_info_inline_right_clearance
     tmux.send_keys "seq 100000 | #{FZF} --info inline-right", :Enter
-    tmux.until { assert_match(%r{100000/100000}, _1[-1]) }
+    tmux.until { assert_match(%r{100000/100000}, it[-1]) }
     tmux.send_keys 'x'
-    tmux.until { assert_match(%r{     0/100000}, _1[-1]) }
+    tmux.until { assert_match(%r{     0/100000}, it[-1]) }
   end
 
   def test_info_command
     tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"'), :Enter)
-    tmux.until { assert_match(%r{^  --1/10000/10000-- xx}, _1[-2]) }
+    tmux.until { assert_match(%r{^  --1/10000/10000-- xx}, it[-2]) }
     tmux.send_keys :Up
-    tmux.until { assert_match(%r{^  --2/10000/10000-- xx}, _1[-2]) }
+    tmux.until { assert_match(%r{^  --2/10000/10000-- xx}, it[-2]) }
   end
 
   def test_info_command_inline
     tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline:xx), :Enter)
-    tmux.until { assert_match(%r{^>  xx--1/10000/10000-- xx}, _1[-1]) }
+    tmux.until { assert_match(%r{^>  xx--1/10000/10000-- xx}, it[-1]) }
   end
 
   def test_info_command_right
     tmux.send_keys(%(seq 10000 | #{FZF} --separator x --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info right), :Enter)
-    tmux.until { assert_match(%r{xx --1/10000/10000-- *$}, _1[-2]) }
+    tmux.until { assert_match(%r{xx --1/10000/10000-- *$}, it[-2]) }
   end
 
   def test_info_command_inline_right
     tmux.send_keys(%(seq 10000 | #{FZF} --info-command 'echo -e "--\\x1b[33m$FZF_POS\\x1b[m/$FZF_INFO--"' --info inline-right), :Enter)
-    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, _1[-1]) }
+    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, it[-1]) }
   end
 
   def test_info_command_and_focus
     tmux.send_keys(%(seq 100 | #{FZF} --separator x --info-command 'echo $FZF_POS' --bind focus:clear-query), :Enter)
-    tmux.until { assert_match(/^  1 xx/, _1[-2]) }
+    tmux.until { assert_match(/^  1 xx/, it[-2]) }
     tmux.send_keys :Up
-    tmux.until { assert_match(/^  2 xx/, _1[-2]) }
+    tmux.until { assert_match(/^  2 xx/, it[-2]) }
   end
 
   def test_prev_next_selected
@@ -1495,18 +1495,18 @@ class TestCore < TestInteractive
     tmux.send_keys '1'
     tmux.until do |lines|
       assert_equal 2, lines.match_count
-      refute(lines.any? { _1.include?('only match') })
-      refute(lines.any? { _1.include?('no match') })
+      refute(lines.any? { it.include?('only match') })
+      refute(lines.any? { it.include?('no match') })
     end
     tmux.send_keys '0'
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert(lines.any? { _1.include?('only match') })
+      assert(lines.any? { it.include?('only match') })
     end
     tmux.send_keys '0'
     tmux.until do |lines|
       assert_equal 0, lines.match_count
-      assert(lines.any? { _1.include?('no match') })
+      assert(lines.any? { it.include?('no match') })
     end
   end
 

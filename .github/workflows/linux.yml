@@ -30,7 +30,7 @@ jobs:
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.1.0
+        ruby-version: 3.4.1
 
     - name: Install packages
       run: sudo apt-get install --yes zsh fish tmux

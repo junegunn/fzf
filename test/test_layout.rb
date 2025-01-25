@@ -5,7 +5,7 @@ require_relative 'lib/common'
 # Test cases that mainly use assert_block to verify the layout of fzf
 class TestLayout < TestInteractive
   def assert_block(expected, lines)
-    cols = expected.lines.map(&:chomp).map(&:length).max
+    cols = expected.lines.map { it.chomp.length }.max
     top = lines.take(expected.lines.length).map { _1[0, cols].rstrip + "\n" }.join
     bottom = lines.reverse.take(expected.lines.length).reverse.map { _1[0, cols].rstrip + "\n" }.join
     assert_includes [top, bottom], expected

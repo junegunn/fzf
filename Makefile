@@ -90,7 +90,7 @@ bench:
 
 lint: $(SOURCES) test/*.rb test/lib/*.rb
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
-	rubocop --require rubocop-minitest --require rubocop-performance
+	bundle exec rubocop -a --require rubocop-minitest --require rubocop-performance
 
 install: bin/fzf
 

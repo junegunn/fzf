@@ -1,3 +1,5 @@
+AllCops:
+  NewCops: enable
 Layout/LineLength:
   Enabled: false
 Metrics:
@@ -28,5 +30,11 @@ Style/WordArray:
   MinSize: 1
 Minitest/AssertEqual:
   Enabled: false
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: false
 Naming/VariableNumber:
+  Enabled: false
+Lint/EmptyBlock:
+  Enabled: false
+Style/SafeNavigationChainLength:
   Enabled: false

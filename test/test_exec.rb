@@ -174,7 +174,7 @@ class TestExec < TestInteractive
     system("chmod +x #{tempname}")
 
     tmux.send_keys fzf.sub('FZF_DEFAULT_COMMAND=', "FZF_DEFAULT_COMMAND=#{tempname}"), :Enter
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     assert_equal 'Started', fzf_output
     wait { refute system("pgrep -f #{tempname}") }
