@@ -1332,7 +1332,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header)|transform|change-(?:preview-window|preview|multi|nth)|(?:re|un)bind|pos|put|print)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search)|transform|change-(?:preview-window|preview|multi|nth)|(?:re|un)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1744,6 +1744,10 @@ func isExecuteAction(str string) actionType {
 		return actTransformPrompt
 	case "transform-query":
 		return actTransformQuery
+	case "transform-search":
+		return actTransformSearch
+	case "search":
+		return actSearch
 	}
 	return actIgnore
 }
@@ -3252,7 +3256,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 			//   1. explicitly set --scheme=default,
 			//   2. or replace $FZF_DEFAULT_COMMAND with an equivalent 'start:reload'
 			//      binding, which is the new preferred way.
-			if !opts.hasReloadOnStart() && util.IsTty(os.Stdin) {
+			if !opts.hasReloadOrTransformOnStart() && util.IsTty(os.Stdin) {
 				opts.Scheme = "path"
 			}
 			_, opts.Criteria, _ = parseScheme(opts.Scheme)
@@ -3267,10 +3271,10 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 	return opts, nil
 }
 
-func (opts *Options) hasReloadOnStart() bool {
+func (opts *Options) hasReloadOrTransformOnStart() bool {
 	if actions, prs := opts.Keymap[tui.Start.AsEvent()]; prs {
 		for _, action := range actions {
-			if action.t == actReload || action.t == actReloadSync {
+			if action.t == actReload || action.t == actReloadSync || action.t == actTransform {
 				return true
 			}
 		}

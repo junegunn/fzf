@@ -1069,6 +1069,24 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 'up', lines[-1] }
   end
 
+  def test_search
+    tmux.send_keys %(seq 100 | #{FZF} --query 0 --bind space:search:1), :Enter
+    tmux.until { |lines| assert_equal 10, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 20, lines.match_count }
+    tmux.send_keys '0'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
+
+  def test_transform_search
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'change:transform-search:echo {q}{q}'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys '1'
+    tmux.until { |lines| assert_equal 28, lines.match_count }
+    tmux.send_keys :BSpace, '0'
+    tmux.until { |lines| assert_equal 10, lines.match_count }
+  end
+
   def test_clear_selection
     tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }

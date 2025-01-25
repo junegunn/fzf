@@ -1,8 +1,8 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2024/06/24*
-* *Requires fzf 0.54.0 or later*
+* *Last update: 2025/01/26*
+* *Requires fzf 0.59.0 or later*
 
 ---
 
@@ -22,6 +22,7 @@ Advanced fzf examples
     * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
     * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
     * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
+    * [Controlling Ripgrap search and fzf search simultaneously](#controlling-ripgrap-search-and-fzf-search-simultaneously)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
     * [Files listed in `git status`](#files-listed-in-git-status)
@@ -495,6 +496,48 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --prompt '1. ripgrep> ' \
     --delimiter : \
     --header 'CTRL-T: Switch between ripgrep/fzf' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+### Controlling Ripgrap search and fzf search simultaneously
+
+fzf 0.59.0 added `search` action that allows you to trigger an fzf search
+with an arbitrary query string. This means fzf is no longer restricted to the
+exact query entered in the prompt.
+
+In the example below, `transform` action is used to conditionally trigger
+either `reload` for ripgrep or `search` for fzf. The first word of the query
+initiates the Ripgrep process to generate the initial results, while the
+remainder of the query is passed to fzf for secondary filtering.
+
+```sh
+#!/usr/bin/env bash
+
+# Switch between Ripgrep mode and fzf filtering mode (CTRL-T)
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+TRANSFORMER='
+  words=($FZF_QUERY)
+
+  # If $FZF_QUERY contains multiple words, drop the first word,
+  # and trigger fzf search with the rest
+  if [[ ${#words[@]} -gt 1 ]]; then
+    echo "search:${FZF_QUERY#* }"
+
+  # Otherwise, if the query does not end with a space,
+  # restart ripgrep and reload the list
+  elif ! [[ $FZF_QUERY =~ \ $ ]]; then
+    echo "reload:sleep 0.1; $RG_PREFIX \"${words[0]}\" || true"
+  fi
+'
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --with-shell 'bash -c' \
+    --bind "start:transform:$TRANSFORMER" \
+    --bind "change:transform:$TRANSFORMER" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
     --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
     --bind 'enter:become(vim {1} +{2})'

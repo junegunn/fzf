@@ -277,6 +277,7 @@ type Terminal struct {
 	xoffset            int
 	yanked             []rune
 	input              []rune
+	inputOverride      *[]rune
 	multi              int
 	multiLine          bool
 	sort               bool
@@ -533,6 +534,8 @@ const (
 	actTransformPreviewLabel
 	actTransformPrompt
 	actTransformQuery
+	actTransformSearch
+	actSearch
 	actPreview
 	actChangePreview
 	actChangePreviewWindow
@@ -1354,7 +1357,13 @@ func (t *Terminal) getScrollbar() (int, int) {
 func (t *Terminal) Input() (bool, []rune) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
-	return t.paused, copySlice(t.input)
+	paused := t.paused
+	src := t.input
+	if t.inputOverride != nil {
+		paused = false
+		src = *t.inputOverride
+	}
+	return paused, copySlice(src)
 }
 
 // UpdateCount updates the count information
@@ -3837,6 +3846,14 @@ func (t *Terminal) fullRedraw() {
 	t.printAll()
 }
 
+func (t *Terminal) captureLine(template string) string {
+	return t.executeCommand(template, false, true, true, true, "")
+}
+
+func (t *Terminal) captureLines(template string) string {
+	return t.executeCommand(template, false, true, true, false, "")
+}
+
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool, info string) string {
 	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
@@ -4751,12 +4768,12 @@ func (t *Terminal) Loop() error {
 					req(reqPreviewRefresh)
 				}
 			case actTransformPrompt:
-				prompt := t.executeCommand(a.a, false, true, true, true, "")
+				prompt := t.captureLine(a.a)
 				t.promptString = prompt
 				t.prompt, t.promptLen = t.parsePrompt(prompt)
 				req(reqPrompt)
 			case actTransformQuery:
-				query := t.executeCommand(a.a, false, true, true, true, "")
+				query := t.captureLine(a.a)
 				t.input = []rune(query)
 				t.cx = len(t.input)
 			case actToggleSort:
@@ -4840,7 +4857,7 @@ func (t *Terminal) Loop() error {
 			case actChangeHeader, actTransformHeader:
 				header := a.a
 				if a.t == actTransformHeader {
-					header = t.executeCommand(a.a, false, true, true, false, "")
+					header = t.captureLines(a.a)
 				}
 				if t.changeHeader(header) {
 					req(reqHeader, reqList, reqPrompt, reqInfo)
@@ -4878,40 +4895,40 @@ func (t *Terminal) Loop() error {
 					req(reqRedrawPreviewLabel)
 				}
 			case actTransform:
-				body := t.executeCommand(a.a, false, true, true, false, "")
+				body := t.captureLines(a.a)
 				if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
 					return doActions(actions)
 				}
 			case actTransformHeaderLabel:
-				label := t.executeCommand(a.a, false, true, true, true, "")
+				label := t.captureLine(a.a)
 				t.headerLabelOpts.label = label
 				if t.headerBorder != nil {
 					t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
 					req(reqRedrawHeaderLabel)
 				}
 			case actTransformInputLabel:
-				label := t.executeCommand(a.a, false, true, true, true, "")
+				label := t.captureLine(a.a)
 				t.inputLabelOpts.label = label
 				if t.inputBorder != nil {
 					t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(label, &tui.ColInputLabel, false)
 					req(reqRedrawInputLabel)
 				}
 			case actTransformListLabel:
-				label := t.executeCommand(a.a, false, true, true, true, "")
+				label := t.captureLine(a.a)
 				t.listLabelOpts.label = label
 				if t.wborder != nil {
 					t.listLabel, t.listLabelLen = t.ansiLabelPrinter(label, &tui.ColListLabel, false)
 					req(reqRedrawListLabel)
 				}
 			case actTransformBorderLabel:
-				label := t.executeCommand(a.a, false, true, true, true, "")
+				label := t.captureLine(a.a)
 				t.borderLabelOpts.label = label
 				if t.border != nil {
 					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
 			case actTransformPreviewLabel:
-				label := t.executeCommand(a.a, false, true, true, true, "")
+				label := t.captureLine(a.a)
 				t.previewLabelOpts.label = label
 				if t.pborder != nil {
 					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
@@ -5309,6 +5326,14 @@ func (t *Terminal) Loop() error {
 					t.track = trackDisabled
 				}
 				req(reqInfo)
+			case actSearch:
+				override := []rune(a.a)
+				t.inputOverride = &override
+				changed = true
+			case actTransformSearch:
+				override := []rune(t.captureLine(a.a))
+				t.inputOverride = &override
+				changed = true
 			case actEnableSearch:
 				t.paused = false
 				changed = true
@@ -5734,6 +5759,9 @@ func (t *Terminal) Loop() error {
 			}
 			t.truncateQuery()
 			queryChanged = string(previousInput) != string(t.input)
+			if queryChanged {
+				t.inputOverride = nil
+			}
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs && !doActions(onChanges) {
 				continue

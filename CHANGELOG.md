@@ -14,6 +14,27 @@ CHANGELOG
                --bind 'ctrl-r:reload(ps -ef)' --header 'Press CTRL-R to reload' \
                --header-lines-border bottom --no-list-border
   ```
+- Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
+  ```sh
+  TRANSFORMER='
+    words=($FZF_QUERY)
+
+    # If $FZF_QUERY contains multiple words, drop the first word,
+    # and trigger fzf search with the rest
+    if [[ ${#words[@]} -gt 1 ]]; then
+      echo "search:${FZF_QUERY#* }"
+
+    # Otherwise, if the query does not end with a space,
+    # restart ripgrep and reload the list
+    elif ! [[ $FZF_QUERY =~ \ $ ]]; then
+      echo "reload:rg --column --color=always --smart-case \"${words[0]}\""
+    fi
+  '
+  fzf --ansi --disabled \
+    --with-shell 'bash -c' \
+    --bind "start:transform:$TRANSFORMER" \
+    --bind "change:transform:$TRANSFORMER"
+  ```
 - Added `bell` action to ring the terminal bell
   ```sh
   # Press CTRL-Y to copy the current line to the clipboard and ring the bell

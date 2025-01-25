@@ -94,8 +94,8 @@ more weight to the chronological ordering. This also sets
 .RS
 fzf chooses \fBpath\fR scheme when the input is a TTY device, where fzf would
 start its built-in walker or run \fB$FZF_DEFAULT_COMMAND\fR, and there is no
-\fBreload\fR action bound to \fBstart\fR event. Otherwise, it chooses
-\fBdefault\fR scheme.
+\fBreload\fR or \fBtransform\fR action bound to \fBstart\fR event. Otherwise,
+it chooses \fBdefault\fR scheme.
 .RE
 
 .TP
@@ -1609,6 +1609,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBreload(...)\fR                  (see below for the details)
     \fBreload\-sync(...)\fR             (see below for the details)
     \fBreplace\-query\fR                (replace query string with the current selection)
+    \fBsearch(...)\fR                  (trigger fzf search with the given string)
     \fBselect\fR
     \fBselect\-all\fR                   (select all matches)
     \fBshow\-header\fR
@@ -1639,6 +1640,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform\-query(...)\fR         (transform query string using an external command)
+    \fBtransform\-search(...)\fR        (trigger fzf search with the output of an external command)
     \fBunbind(...)\fR                  (unbind bindings)
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
