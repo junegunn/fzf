@@ -30,19 +30,19 @@ jobs:
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 3.1.0
+        ruby-version: 3.4.1
 
     - name: Install packages
       run: sudo apt-get install --yes zsh fish tmux
 
     - name: Install Ruby gems
-      run: sudo gem install --no-document minitest:5.25.1 rubocop:1.65.0 rubocop-minitest:0.35.1 rubocop-performance:1.21.1
+      run: bundle install
 
     - name: Rubocop
-      run: rubocop --require rubocop-minitest --require rubocop-performance
+      run: make lint
 
     - name: Unit test
       run: make test
 
     - name: Integration test
-      run: make install && ./install --all && tmux new-session -d && ruby test/test_go.rb --verbose
+      run: make install && ./install --all && tmux new-session -d && ruby test/runner.rb --verbose
