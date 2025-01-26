@@ -1291,7 +1291,9 @@ more \fBactions\fR. You can use it to customize key bindings or implement
 dynamic behaviors.
 
 \fB\-\-bind\fR takes a comma-separated list of binding expressions. Each binding
-expression is \fBKEY:ACTION\fR or \fBEVENT:ACTION\fR.
+expression is \fBKEY:ACTION\fR or \fBEVENT:ACTION\fR. You can bind actions to
+multiple keys and events by writing comma-separated list of keys and events
+before the colon. e.g. \fBKEY1,KEY2,EVENT1,EVENT2:ACTION\fR.
 
 e.g.
      \fBfzf \-\-bind=ctrl\-j:accept,ctrl\-k:kill\-line\fR

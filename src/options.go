@@ -1638,33 +1638,44 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) error {
 	var err error
 	masked := maskActionContents(str)
 	idx := 0
+	keys := []string{}
 	for _, pairStr := range strings.Split(masked, ",") {
 		origPairStr := str[idx : idx+len(pairStr)]
 		idx += len(pairStr) + 1
 
 		pair := strings.SplitN(pairStr, ":", 2)
-		if len(pair) < 2 {
-			return errors.New("bind action not specified: " + origPairStr)
+		if len(pair[0]) == 0 {
+			return errors.New("key name required")
 		}
-		var key tui.Event
-		if len(pair[0]) == 1 && pair[0][0] == escapedColon {
-			key = tui.Key(':')
-		} else if len(pair[0]) == 1 && pair[0][0] == escapedComma {
-			key = tui.Key(',')
-		} else if len(pair[0]) == 1 && pair[0][0] == escapedPlus {
-			key = tui.Key('+')
-		} else {
-			keys, err := parseKeyChordsImpl(pair[0], "key name required")
+		keys = append(keys, pair[0])
+		if len(pair) < 2 {
+			continue
+		}
+		for _, keyName := range keys {
+			var key tui.Event
+			if len(keyName) == 1 && keyName[0] == escapedColon {
+				key = tui.Key(':')
+			} else if len(keyName) == 1 && keyName[0] == escapedComma {
+				key = tui.Key(',')
+			} else if len(keyName) == 1 && keyName[0] == escapedPlus {
+				key = tui.Key('+')
+			} else {
+				keys, err := parseKeyChordsImpl(keyName, "key name required")
+				if err != nil {
+					return err
+				}
+				key = firstKey(keys)
+			}
+			putAllowed := key.Type == tui.Rune && unicode.IsGraphic(key.Char)
+			keymap[key], err = parseActionList(pair[1], origPairStr[len(pair[0])+1:], keymap[key], putAllowed)
 			if err != nil {
 				return err
 			}
-			key = firstKey(keys)
 		}
-		putAllowed := key.Type == tui.Rune && unicode.IsGraphic(key.Char)
-		keymap[key], err = parseActionList(pair[1], origPairStr[len(pair[0])+1:], keymap[key], putAllowed)
-		if err != nil {
-			return err
-		}
+		keys = keys[:0]
+	}
+	if len(keys) > 0 {
+		return errors.New("bind action not specified: " + strings.Join(keys, ", "))
 	}
 	return nil
 }

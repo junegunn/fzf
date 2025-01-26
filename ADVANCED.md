@@ -515,8 +515,6 @@ remainder of the query is passed to fzf for secondary filtering.
 ```sh
 #!/usr/bin/env bash
 
-# Switch between Ripgrep mode and fzf filtering mode (CTRL-T)
-RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
 TRANSFORMER='
   words=($FZF_QUERY)
@@ -530,15 +528,14 @@ TRANSFORMER='
   # restart ripgrep and reload the list
   elif ! [[ $FZF_QUERY =~ \ $ ]]; then
     pat=${words[0]}
-    echo "reload:sleep 0.1; $RG_PREFIX \"$pat\" || true"
+    echo "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case \"$pat\" || true"
   else
     echo search:
   fi
 '
 fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --with-shell 'bash -c' \
-    --bind "start:transform:$TRANSFORMER" \
-    --bind "change:transform:$TRANSFORMER" \
+    --bind "start,change:transform:$TRANSFORMER" \
     --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
@@ -575,8 +572,7 @@ pods() {
     --info=inline --layout=reverse --header-lines=1 \
     --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
     --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
-    --bind 'start:reload:$command' \
-    --bind 'ctrl-r:reload:$command' \
+    --bind 'start,ctrl-r:reload:$command' \
     --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
     --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
     --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
