@@ -1296,7 +1296,10 @@ multiple keys and events by writing comma-separated list of keys and events
 before the colon. e.g. \fBKEY1,KEY2,EVENT1,EVENT2:ACTION\fR.
 
 e.g.
-     \fBfzf \-\-bind=ctrl\-j:accept,ctrl\-k:kill\-line\fR
+     \fBfzf \-\-bind=ctrl\-j:accept,ctrl\-k:kill\-line
+
+     # Load 'ps \-ef' output on start and reload it on CTRL\-R
+     fzf \-\-bind 'start,ctrl\-r:reload:ps \-ef'\fR
 
 .SS AVAILABLE KEYS:    (SYNONYMS)
 \fIctrl\-[a\-z]\fR
