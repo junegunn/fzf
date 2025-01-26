@@ -47,8 +47,12 @@ CHANGELOG
   '
   fzf --ansi --disabled \
     --with-shell 'bash -c' \
-    --bind "start:transform:$TRANSFORMER" \
-    --bind "change:transform:$TRANSFORMER"
+    --bind "start,change:transform:$TRANSFORMER"
+  ```
+- You can now bind actions to multiple keys and events at once by writing a comma-separated list of keys and events before the colon
+  ```sh
+  # Load 'ps -ef' output on start and reload it on CTRL-R
+  fzf --bind 'start,ctrl-r:reload:ps -ef'
   ```
 - Added `bell` action to ring the terminal bell
   ```sh
