@@ -626,15 +626,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 
 	// middle := t & 0b1
 	left := t&0b11 == 0
-
-	// shift := t & 0b100
-	// ctrl := t & 0b1000
-	mod := t&0b1100 > 0
-
-	drag := t&0b100000 > 0
+	ctrl := t&0b10000 > 0
+	alt := t&0b01000 > 0
+	shift := t&0b00100 > 0
+	drag := t&0b100000 > 0 // 32
 
 	if scroll != 0 {
-		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, ctrl, alt, shift}}
 	}
 
 	double := false
@@ -658,7 +656,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 			}
 		}
 	}
-	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
+	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, ctrl, alt, shift}}
 }
 
 func (r *LightRenderer) smcup() {

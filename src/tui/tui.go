@@ -150,6 +150,10 @@ func (e Event) Comparable() Event {
 }
 
 func (e Event) KeyName() string {
+	if me := e.MouseEvent; me != nil {
+		return me.Name()
+	}
+
 	if e.Type >= Invalid {
 		return ""
 	}
@@ -367,7 +371,37 @@ type MouseEvent struct {
 	Left   bool
 	Down   bool
 	Double bool
-	Mod    bool
+	Ctrl   bool
+	Alt    bool
+	Shift  bool
+}
+
+func (e MouseEvent) Mod() bool {
+	return e.Ctrl || e.Alt || e.Shift
+}
+
+func (e MouseEvent) Name() string {
+	name := ""
+	if e.Down {
+		return name
+	}
+
+	if e.Ctrl {
+		name += "ctrl-"
+	}
+	if e.Alt {
+		name += "alt-"
+	}
+	if e.Shift {
+		name += "shift-"
+	}
+	if e.Double {
+		name += "double-"
+	}
+	if !e.Left {
+		name += "right-"
+	}
+	return name + "click"
 }
 
 type BorderShape int

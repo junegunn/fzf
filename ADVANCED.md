@@ -529,7 +529,10 @@ TRANSFORMER='
   # Otherwise, if the query does not end with a space,
   # restart ripgrep and reload the list
   elif ! [[ $FZF_QUERY =~ \ $ ]]; then
-    echo "reload:sleep 0.1; $RG_PREFIX \"${words[0]}\" || true"
+    pat=${words[0]}
+    echo "reload:sleep 0.1; $RG_PREFIX \"$pat\" || true"
+  else
+    echo search:
   fi
 '
 fzf --ansi --disabled --query "$INITIAL_QUERY" \

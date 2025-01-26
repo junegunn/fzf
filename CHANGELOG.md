@@ -26,6 +26,7 @@ CHANGELOG
                          echo "$FZF_CLICK_HEADER_WORD> "
                        )'
   ```
+    - `kill` completion for bash and zsh were updated to use this feature
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh
   TRANSFORMER='
@@ -40,6 +41,8 @@ CHANGELOG
     # restart ripgrep and reload the list
     elif ! [[ $FZF_QUERY =~ \ $ ]]; then
       echo "reload:rg --column --color=always --smart-case \"${words[0]}\""
+    else
+      echo search:
     fi
   '
   fzf --ansi --disabled \
