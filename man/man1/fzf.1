@@ -1519,11 +1519,21 @@ e.g.
 
 \fIclick\-header\fR
 .RS
-Triggered when a mouse click occurs within the header. Sets \fBFZF_CLICK_HEADER_LINE\fR and \fBFZF_CLICK_HEADER_COLUMN\fR environment variables starting from 1.
+Triggered when a mouse click occurs within the header. Sets
+\fBFZF_CLICK_HEADER_LINE\fR and \fBFZF_CLICK_HEADER_COLUMN\fR environment
+variables starting from 1. It optionally sets \fBFZF_CLICK_HEADER_WORD\fR and
+\fBFZF_CLICK_HEADER_NTH\fR if clicked on a word.
 
 e.g.
-     \fBprintf "head1\\nhead2" | fzf \-\-header\-lines=2 \-\-bind 'click\-header:transform\-prompt:printf ${FZF_CLICK_HEADER_LINE}x${FZF_CLICK_HEADER_COLUMN}'\fR
-
+     \fB# Click on the header line to limit search scope
+     ps \-ef | fzf \-\-style full \-\-layout reverse \-\-header\-lines 1 \\
+                  \-\-header\-lines\-border bottom \-\-no\-list\-border \\
+                  \-\-color fg:dim,nth:regular \\
+                  \-\-bind 'click\-header:transform\-nth(
+                            echo $FZF_CLICK_HEADER_NTH
+                          )+transform\-prompt(
+                            echo "$FZF_CLICK_HEADER_WORD> "
+                          )'\fR
 .RE
 
 .SS AVAILABLE ACTIONS:
@@ -1637,6 +1647,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform\-header\-label(...)\fR  (transform header label using an external command)
     \fBtransform\-input\-label(...)\fR   (transform input label using an external command)
     \fBtransform\-list\-label(...)\fR    (transform list label using an external command)
+    \fBtransform\-nth(...)\fR           (transform nth using an external command)
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform\-query(...)\fR         (transform query string using an external command)

@@ -531,6 +531,7 @@ const (
 	actTransformInputLabel
 	actTransformHeader
 	actTransformHeaderLabel
+	actTransformNth
 	actTransformPreviewLabel
 	actTransformPrompt
 	actTransformQuery
@@ -1065,6 +1066,7 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
+	env = t.addClickHeaderWord(env)
 
 	// Add preview environment variables if preview is enabled
 	pwindowSize := t.pwindowSize()
@@ -1393,6 +1395,8 @@ func (t *Terminal) changeHeader(header string) bool {
 	}
 	needFullRedraw := len(t.header0) != len(lines)
 	t.header0 = lines
+	t.clickHeaderLine = 0
+	t.clickHeaderColumn = 0
 	return needFullRedraw
 }
 
@@ -4089,6 +4093,64 @@ func (t *Terminal) currentIndex() int32 {
 	return minItem.Index()
 }
 
+func (t *Terminal) addClickHeaderWord(env []string) []string {
+	/*
+	 * echo $'HL1\nHL2' | fzf --header-lines 3 --header $'H1\nH2' --header-lines-border --bind 'click-header:preview:env | grep FZF_CLICK'
+	 *
+	 *   REVERSE      DEFAULT
+	 *   H1      1            1
+	 *   H2      2    HL2     2
+	 *   -------      HL1     3
+	 *   HL1     3    -------
+	 *   HL2     4    H1      4
+	 *           5    H2      5
+	 */
+	lineNum := t.clickHeaderLine - 1
+	if lineNum < 0 {
+		// Never clicked on the header
+		return env
+	}
+
+	var line string
+	if t.layout == layoutReverse {
+		if lineNum < len(t.header0) {
+			line = t.header0[lineNum]
+		} else if lineNum-len(t.header0) < len(t.header) {
+			line = t.header[lineNum-len(t.header0)]
+		}
+	} else {
+		// NOTE: t.header is padded with empty strings so that its size is equal to t.headerLines
+		if lineNum < len(t.header) {
+			line = t.header[len(t.header)-lineNum-1]
+		} else if lineNum-len(t.header) < len(t.header0) {
+			line = t.header0[lineNum-len(t.header)]
+		}
+	}
+	if len(line) == 0 {
+		return env
+	}
+
+	colNum := t.clickHeaderColumn - 1
+	words := Tokenize(line, t.delimiter)
+	for idx, token := range words {
+		prefixWidth := int(token.prefixLength)
+		word := token.text.ToString()
+		trimmed := strings.TrimSpace(word)
+		trimWidth, _ := util.RunesWidth([]rune(trimmed), prefixWidth, t.tabstop, math.MaxInt32)
+
+		if colNum >= prefixWidth && colNum < prefixWidth+trimWidth {
+			env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_WORD=%s", trimmed))
+			nth := fmt.Sprintf("FZF_CLICK_HEADER_NTH=%d", idx+1)
+			if idx == len(words)-1 {
+				nth += ".."
+			}
+			env = append(env, nth)
+			return env
+		}
+	}
+	return env
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() error {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -4833,11 +4895,14 @@ func (t *Terminal) Loop() error {
 				}
 				t.multi = multi
 				req(reqList, reqInfo)
-			case actChangeNth:
-				changed = true
+			case actChangeNth, actTransformNth:
+				expr := a.a
+				if a.t == actTransformNth {
+					expr = t.captureLine(a.a)
+				}
 
 				// Split nth expression
-				tokens := strings.Split(a.a, "|")
+				tokens := strings.Split(expr, "|")
 				if nth, err := splitNth(tokens[0]); err == nil {
 					// Changed
 					newNth = &nth
@@ -4845,12 +4910,15 @@ func (t *Terminal) Loop() error {
 					// The default
 					newNth = &t.nth
 				}
-				t.nthCurrent = *newNth
 				// Cycle
 				if len(tokens) > 1 {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
 				}
-				t.forceRerenderList()
+				if !compareRanges(t.nthCurrent, *newNth) {
+					changed = true
+					t.nthCurrent = *newNth
+					t.forceRerenderList()
+				}
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)

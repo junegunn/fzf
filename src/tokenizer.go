@@ -22,6 +22,18 @@ func (r Range) IsFull() bool {
 	return r.begin == rangeEllipsis && r.end == rangeEllipsis
 }
 
+func compareRanges(r1 []Range, r2 []Range) bool {
+	if len(r1) != len(r2) {
+		return false
+	}
+	for idx := range r1 {
+		if r1[idx] != r2[idx] {
+			return false
+		}
+	}
+	return true
+}
+
 func RangesToString(ranges []Range) string {
 	strs := []string{}
 	for _, r := range ranges {
