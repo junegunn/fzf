@@ -9,7 +9,7 @@ class TestExec < TestInteractive
     opts = %[--bind "alt-a:execute(echo /{}/ >> #{output})+change-header(alt-a),alt-b:execute[echo /{}{}/ >> #{output}]+change-header(alt-b),C:execute(echo /{}{}{}/ >> #{output})+change-header(C)"]
     writelines(%w[foo'bar foo"bar foo$bar])
     tmux.send_keys "cat #{tempname} | #{FZF} #{opts}", :Enter
-    tmux.until { |lines| assert_equal 3, lines.item_count }
+    tmux.until { |lines| assert_equal 3, lines.match_count }
 
     ready = ->(s) { tmux.until { |lines| assert_includes lines[-3], s } }
     tmux.send_keys :Escape, :a
@@ -142,11 +142,11 @@ class TestExec < TestInteractive
 
   def test_interrupt_execute
     tmux.send_keys "seq 100 | #{FZF} --bind 'ctrl-l:execute:echo executing {}; sleep 100'", :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 'C-l'
     tmux.until { |lines| assert lines.any_include?('executing 1') }
     tmux.send_keys 'C-c'
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 99
     tmux.until { |lines| assert_equal 1, lines.match_count }
   end
@@ -158,7 +158,7 @@ class TestExec < TestInteractive
     system("chmod +x #{tempname}")
 
     tmux.send_keys FZF.sub('FZF_DEFAULT_COMMAND=', "FZF_DEFAULT_COMMAND=#{tempname}"), :Enter
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys 'C-c'
     tmux.send_keys 'C-l', 'closed'
     tmux.until { |lines| assert_includes lines[0], 'closed' }
@@ -189,9 +189,9 @@ class TestExec < TestInteractive
     system("chmod +x #{tempname}")
 
     tmux.send_keys "seq 1 3 | #{FZF} --bind 'ctrl-r:reload(#{tempname})'", :Enter
-    tmux.until { |lines| assert_equal 3, lines.item_count }
+    tmux.until { |lines| assert_equal 3, lines.match_count }
     tmux.send_keys 'C-r'
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys 'C-c'
     tmux.send_keys 'C-l', 'closed'
     tmux.until { |lines| assert_includes lines[0], 'closed' }
@@ -207,9 +207,9 @@ class TestExec < TestInteractive
     system("chmod +x #{tempname}")
 
     tmux.send_keys "seq 1 3 | #{fzf("--bind 'ctrl-r:reload(#{tempname})'")}", :Enter
-    tmux.until { |lines| assert_equal 3, lines.item_count }
+    tmux.until { |lines| assert_equal 3, lines.match_count }
     tmux.send_keys 'C-r'
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     assert_equal 'Started', fzf_output
     wait { refute system("pgrep -f #{tempname}") }
@@ -245,7 +245,7 @@ class TestExec < TestInteractive
 
   def test_reload_should_terminate_standard_input_stream
     tmux.send_keys %(ruby -e "STDOUT.sync = true; loop { puts 1; sleep 0.1 }" | fzf --bind 'start:reload(seq 100)'), :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
   end
 
   def test_clear_list_when_header_lines_changed_due_to_reload
@@ -264,7 +264,7 @@ class TestExec < TestInteractive
     tmux.until { |lines| assert_includes lines[1], '[[0]]' }
     tmux.send_keys :Space
     tmux.until do |lines|
-      assert_equal 100, lines.item_count
+      assert_equal 100, lines.match_count
       assert_includes lines[1], '[[0]]'
     end
     tmux.send_keys :Up
@@ -280,16 +280,16 @@ class TestExec < TestInteractive
 
   def test_reload_and_change_preview_should_update_preview
     tmux.send_keys "seq 3 | #{FZF} --bind 'ctrl-t:reload(echo 4)+change-preview(echo {})'", :Enter
-    tmux.until { |lines| assert_equal 3, lines.item_count }
+    tmux.until { |lines| assert_equal 3, lines.match_count }
     tmux.until { |lines| refute_includes lines[1], '1' }
     tmux.send_keys 'C-t'
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.until { |lines| assert_includes lines[1], '4' }
   end
 
   def test_reload_sync
     tmux.send_keys "seq 100 | #{FZF} --bind 'load:reload-sync(sleep 1; seq 1000)+unbind(load)'", :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys '00'
     tmux.until { |lines| assert_equal 1, lines.match_count }
     # After 1 second
@@ -404,7 +404,7 @@ class TestExec < TestInteractive
 
   def test_become
     tmux.send_keys "seq 100 | #{FZF} --bind 'enter:become:seq {} | #{FZF}'", :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 999
     tmux.until { |lines| assert_equal 0, lines.match_count }
     tmux.send_keys :Enter

@@ -123,7 +123,7 @@ class TestPreview < TestInteractive
   def test_preview_size_0
     tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0 --bind space:toggle-preview), :Enter
     tmux.until do |lines|
-      assert_equal 100, lines.item_count
+      assert_equal 100, lines.match_count
       assert_equal '  100/100', lines[1]
       assert_equal '> 1', lines[2]
     end
@@ -147,7 +147,7 @@ class TestPreview < TestInteractive
 
   def test_preview_size_0_hidden
     tmux.send_keys %(seq 100 | #{FZF} --reverse --preview 'echo {} >> #{tempname}; echo ' --preview-window 0,hidden --bind space:toggle-preview), :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys :Down, :Down
     tmux.until { |lines| assert_includes lines, '> 3' }
     wait { refute_path_exists tempname }
@@ -217,7 +217,7 @@ class TestPreview < TestInteractive
   def test_preview_update_on_select
     tmux.send_keys %(seq 10 | fzf -m --preview 'echo {+}' --bind a:toggle-all),
                    :Enter
-    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.send_keys 'a'
     tmux.until { |lines| assert(lines.any? { |line| line.include?(' 1 2 3 4 5 ') }) }
     tmux.send_keys 'a'
@@ -232,7 +232,7 @@ class TestPreview < TestInteractive
 
   def test_preview_bindings_with_default_preview
     tmux.send_keys "seq 10 | #{FZF} --preview 'echo [{}]' --bind 'a:preview(echo [{}{}]),b:preview(echo [{}{}{}]),c:refresh-preview'", :Enter
-    tmux.until { |lines| lines.item_count == 10 }
+    tmux.until { |lines| lines.match_count == 10 }
     tmux.until { |lines| assert_includes lines[1], '[1]' }
     tmux.send_keys 'a'
     tmux.until { |lines| assert_includes lines[1], '[11]' }
@@ -246,7 +246,7 @@ class TestPreview < TestInteractive
 
   def test_preview_bindings_without_default_preview
     tmux.send_keys "seq 10 | #{FZF} --bind 'a:preview(echo [{}{}]),b:preview(echo [{}{}{}]),c:refresh-preview'", :Enter
-    tmux.until { |lines| lines.item_count == 10 }
+    tmux.until { |lines| lines.match_count == 10 }
     tmux.until { |lines| refute_includes lines[1], '1' }
     tmux.send_keys 'a'
     tmux.until { |lines| assert_includes lines[1], '[11]' }
@@ -283,7 +283,7 @@ class TestPreview < TestInteractive
 
   def test_preview_clear_screen
     tmux.send_keys %{seq 100 | #{FZF} --preview 'for i in $(seq 300); do (( i % 200 == 0 )) && printf "\\033[2J"; echo "[$i]"; sleep 0.001; done'}, :Enter
-    tmux.until { |lines| lines.item_count == 100 }
+    tmux.until { |lines| lines.match_count == 100 }
     tmux.until { |lines| lines[1]&.include?('[200]') }
   end
 
@@ -292,7 +292,7 @@ class TestPreview < TestInteractive
     file.sync = true
 
     tmux.send_keys %(seq 100 | #{FZF} --preview 'echo start; tail -f "#{file.path}"' --preview-window follow --bind 'up:preview-up,down:preview-down,space:change-preview-window:follow|nofollow' --preview-window '~4'), :Enter
-    tmux.until { |lines| lines.item_count == 100 }
+    tmux.until { |lines| lines.match_count == 100 }
 
     # Write to the temporary file, and check if the preview window is showing
     # the last line of the file
@@ -382,7 +382,7 @@ class TestPreview < TestInteractive
 
   def test_preview_header
     tmux.send_keys "seq 100 | #{FZF} --bind ctrl-k:preview-up+preview-up,ctrl-j:preview-down+preview-down+preview-down --preview 'seq 1000' --preview-window 'top:+{1}:~3'", :Enter
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     top5 = ->(lines) { lines.drop(1).take(5).map { |s| s[/[0-9]+/] } }
     tmux.until do |lines|
       assert_includes lines[1], '4/1000'
@@ -412,7 +412,7 @@ class TestPreview < TestInteractive
                    'b:change-preview-window(down)+change-preview(echo =={}==)+change-preview-window(up),' \
                    'c:change-preview(),d:change-preview-window(hidden),' \
                    "e:preview(printf ::%${FZF_PREVIEW_COLUMNS}s{})+change-preview-window(up),f:change-preview-window(up,wrap)'", :Enter
-    tmux.until { |lines| assert_equal 1000, lines.item_count }
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.until { |lines| assert_includes lines[0], '[[1]]' }
 
     # change-preview action permanently changes the preview command set by --preview
@@ -515,7 +515,7 @@ class TestPreview < TestInteractive
 
   def test_toggle_alternative_preview_window
     tmux.send_keys "seq 10 | #{FZF} --bind space:toggle-preview --preview-window '<100000(hidden,up,border-none)' --preview 'echo /{}/{}/'", :Enter
-    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until { |lines| refute_includes lines, '/1/1/' }
     tmux.send_keys :Space
     tmux.until { |lines| assert_includes lines, '/1/1/' }
@@ -523,7 +523,7 @@ class TestPreview < TestInteractive
 
   def test_alternative_preview_window_opts
     tmux.send_keys "seq 10 | #{FZF} --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
-    tmux.until { |lines| assert_equal 10, lines.item_count }
+    tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until do |lines|
       assert_equal ['╭────╮', '│ 10 │', '│ 0  │', '│ 10 │', '│ 1  │'], lines.take(5).map(&:strip)
     end
