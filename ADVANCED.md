@@ -517,18 +517,15 @@ remainder of the query is passed to fzf for secondary filtering.
 
 INITIAL_QUERY="${*:-}"
 TRANSFORMER='
-  words=($FZF_QUERY)
+  rg_pat={q:1}      # The first word is passed to ripgrep
+  fzf_pat={q:2..}   # The rest are passed to fzf
+  rg_pat_org={q:s1} # The first word with trailing whitespaces preserved.
+                    # We use this to avoid unnecessary reloading of ripgrep.
 
-  # If $FZF_QUERY contains multiple words, drop the first word,
-  # and trigger fzf search with the rest
-  if [[ ${#words[@]} -gt 1 ]]; then
-    echo "search:${FZF_QUERY#* }"
-
-  # Otherwise, if the query does not end with a space,
-  # restart ripgrep and reload the list
-  elif ! [[ $FZF_QUERY =~ \ $ ]]; then
-    pat=${words[0]}
-    echo "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case \"$pat\" || true"
+  if [[ -n $fzf_pat ]]; then
+    echo "search:$fzf_pat"
+  elif ! [[ $rg_pat_org =~ \ $ ]]; then
+    printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
   else
     echo search:
   fi

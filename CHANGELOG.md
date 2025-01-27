@@ -14,7 +14,7 @@ CHANGELOG
                --bind 'ctrl-r:reload(ps -ef)' --header 'Press CTRL-R to reload' \
                --header-lines-border bottom --no-list-border
   ```
-- `click-header` event will also set `$FZF_CLICK_HEADER_WORD` and `$FZF_CLICK_HEADER_NTH`. You can use it to implement a clickable header that changes the search scope using the new `transform-nth` action.
+- `click-header` event now sets `$FZF_CLICK_HEADER_WORD` and `$FZF_CLICK_HEADER_NTH`. You can use them to implement a clickable header for changing the search scope using the new `transform-nth` action.
   ```sh
   # Click on the header line to limit search scope
   ps -ef | fzf --style full --layout reverse --header-lines 1 \
@@ -26,21 +26,21 @@ CHANGELOG
                          echo "$FZF_CLICK_HEADER_WORD> "
                        )'
   ```
+    - `$FZF_KEY` was updated to expose the type of the click. e.g. `click`, `ctrl-click`, etc. You can use it to implement a more sophisticated behavior.
     - `kill` completion for bash and zsh were updated to use this feature
+- Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh
   TRANSFORMER='
-    words=($FZF_QUERY)
+    rg_pat={q:1}      # The first word is passed to ripgrep
+    fzf_pat={q:2..}   # The rest are passed to fzf
+    rg_pat_org={q:s1} # The first word with trailing whitespaces preserved.
+                      # We use this to avoid unnecessary reloading of ripgrep.
 
-    # If $FZF_QUERY contains multiple words, drop the first word,
-    # and trigger fzf search with the rest
-    if [[ ${#words[@]} -gt 1 ]]; then
-      echo "search:${FZF_QUERY#* }"
-
-    # Otherwise, if the query does not end with a space,
-    # restart ripgrep and reload the list
-    elif ! [[ $FZF_QUERY =~ \ $ ]]; then
-      echo "reload:rg --column --color=always --smart-case \"${words[0]}\""
+    if [[ -n $fzf_pat ]]; then
+      echo "search:$fzf_pat"
+    elif ! [[ $rg_pat_org =~ \ $ ]]; then
+      printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
     else
       echo search:
     fi
