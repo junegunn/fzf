@@ -412,7 +412,7 @@ _fzf_proc_completion() {
   local transformer
   transformer='
     if [[ $FZF_KEY =~ ctrl|alt|shift ]] && [[ -n $FZF_NTH ]]; then
-      nths=( $(tr , " " <<< "$FZF_NTH") )
+      nths=( ${FZF_NTH//,/ } )
       new_nths=()
       found=0
       for nth in ${nths[@]}; do
@@ -423,7 +423,8 @@ _fzf_proc_completion() {
         fi
       done
       [[ $found = 0 ]] && new_nths+=($FZF_CLICK_HEADER_NTH)
-      new_nths=$(echo ${new_nths[@]} | tr " " ,)
+      new_nths=${new_nths[*]}
+      new_nths=${new_nths// /,}
       echo "change-nth($new_nths)+change-prompt($new_nths> )"
     else
       if [[ $FZF_NTH = $FZF_CLICK_HEADER_NTH ]]; then
