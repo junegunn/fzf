@@ -1387,6 +1387,8 @@ Loop:
 		masked += strings.Repeat(" ", loc[1])
 		action = action[loc[1]:]
 	}
+	masked = strings.ReplaceAll(masked, ",,,", string([]rune{',', escapedComma, ','}))
+	masked = strings.ReplaceAll(masked, ",:,", string([]rune{',', escapedColon, ','}))
 	masked = strings.ReplaceAll(masked, "::", string([]rune{escapedColon, ':'}))
 	masked = strings.ReplaceAll(masked, ",:", string([]rune{escapedComma, ':'}))
 	masked = strings.ReplaceAll(masked, "+:", string([]rune{escapedPlus, ':'}))

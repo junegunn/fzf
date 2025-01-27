@@ -418,9 +418,9 @@ class TestCore < TestInteractive
   end
 
   def test_bind
-    tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:accept,u,U:up,X,Y,Z:toggle-up,t:toggle')}", :Enter
+    tmux.send_keys "seq 1 1000 | #{fzf('-m --bind=ctrl-j:accept,u,:,U:up,X,,,Z:toggle-up,t:toggle')}", :Enter
     tmux.until { |lines| assert_equal '  1000/1000 (0)', lines[-2] }
-    tmux.send_keys 'uUu', 'XYZ', 'tt', 'uu', 'ttt', 'C-j'
+    tmux.send_keys 'uU:', 'X,Z', 'tt', 'uu', 'ttt', 'C-j'
     assert_equal %w[4 5 6 9], fzf_output_lines
   end
 
