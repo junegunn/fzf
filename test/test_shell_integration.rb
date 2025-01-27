@@ -32,7 +32,7 @@ module TestShell
 
     tmux.prepare
     tmux.send_keys 'C-t'
-    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys :Tab, :Tab, :Tab
     tmux.until { |lines| assert lines.any_include?(' (3)') }
     tmux.send_keys :Enter
@@ -46,7 +46,7 @@ module TestShell
 
     tmux.prepare
     tmux.send_keys 'echo ', 'C-t'
-    tmux.until { |lines| assert_equal 2, lines.item_count }
+    tmux.until { |lines| assert_equal 2, lines.match_count }
     tmux.send_keys 'fzf-unicode'
     tmux.until { |lines| assert_equal 2, lines.match_count }
 
@@ -88,7 +88,7 @@ module TestShell
 
     tmux.prepare
     tmux.send_keys :Escape, :c
-    tmux.until { |lines| assert_equal 1, lines.item_count }
+    tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
 
     tmux.prepare
