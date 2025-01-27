@@ -54,7 +54,45 @@ __fzf_cd__() {
   ) && printf 'builtin cd -- %q' "$(builtin unset CDPATH && builtin cd -- "$dir" && builtin pwd)"
 }
 
-if command -v perl > /dev/null; then
+if command -v ruby > /dev/null; then
+  __fzf_history__() {
+    local n output
+    builtin history -w /tmp/fzf-bash-history
+    output=$(
+      ruby -e '
+        fmt = begin
+          require "rouge"
+          formatter = Rouge::Formatters::Terminal256.new(Rouge::Themes::Monokai.new)
+          lexer = Rouge::Lexers::Shell.new
+          lambda { |c| formatter.format(lexer.lex(c)) }
+        rescue LoadError
+          lambda { |c| c }
+        end
+
+        h = {}
+        i = 0
+        File.read("/tmp/fzf-bash-history").encode!("UTF-8", "UTF-8", :invalid => :replace).scan(/^#([0-9]+)$\n(.*?)\n(?=^#[0-9]+$|\z)/m) do |t, c|
+          next if c.empty?
+          h.delete(c)
+          h[c] = [i += 1, t]
+        end
+        h.to_a.reverse.each do |c, it|
+          i, t = it
+          print "\x1b[33m#{i}\t\x1b[32m#{Time.at(t.to_i).strftime(%[%F %T])}\x1b[m  "
+          print fmt[c.gsub("\n", "\n\t")]
+          print "\0"
+        end
+      ' | FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n1,4.. --ansi --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"$'\t'"↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} +m --read0") \
+          FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) --query "$READLINE_LINE" --bind 'enter:become:echo {4..}'
+    ) || return
+    READLINE_LINE=$(command perl -pe 's/^\d*\t//' <<< "$output")
+    if [[ -z "$READLINE_POINT" ]]; then
+      echo "$READLINE_LINE"
+    else
+      READLINE_POINT=0x7fffffff
+    fi
+  }
+elif command -v perl > /dev/null; then
   __fzf_history__() {
     local output script
     script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; s/\n/\n\t/gm; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
