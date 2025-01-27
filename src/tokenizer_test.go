@@ -40,6 +40,18 @@ func TestParseRange(t *testing.T) {
 			t.Errorf("%v", r)
 		}
 	}
+	{
+		i := "1..3..5"
+		if r, ok := ParseRange(&i); ok {
+			t.Errorf("%v", r)
+		}
+	}
+	{
+		i := "-3..3"
+		if r, ok := ParseRange(&i); ok {
+			t.Errorf("%v", r)
+		}
+	}
 }
 
 func TestTokenize(t *testing.T) {

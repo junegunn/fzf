@@ -15,7 +15,7 @@ func TtyIn() (*os.File, error) {
 	return os.Stdin, nil
 }
 
-// TtyIn on Windows returns nil
+// TtyOut on Windows returns nil
 func TtyOut() (*os.File, error) {
 	return nil, nil
 }

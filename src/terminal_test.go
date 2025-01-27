@@ -484,7 +484,12 @@ func TestParsePlaceholder(t *testing.T) {
 		// III. query type placeholder
 		// query flag is not removed after parsing, so it gets doubled
 		// while the double q is invalid, it is useful here for testing purposes
-		`{q}`: `{qq}`,
+		`{q}`:        `{qq}`,
+		`{q:1}`:      `{qq:1}`,
+		`{q:2..}`:    `{qq:2..}`,
+		`{q:..}`:     `{qq:..}`,
+		`{q:2..-1}`:  `{qq:2..-1}`,
+		`{q:s2..-1}`: `{sqq:2..-1}`, // FIXME
 
 		// IV. escaping placeholder
 		`\{}`:   `{}`,

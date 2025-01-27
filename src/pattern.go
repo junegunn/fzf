@@ -60,6 +60,7 @@ type Pattern struct {
 	cacheKey      string
 	delimiter     Delimiter
 	nth           []Range
+	revision      int
 	procFun       map[termType]algo.Algo
 	cache         *ChunkCache
 }
@@ -72,7 +73,7 @@ func init() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision int, runes []rune) *Pattern {
 
 	var asString string
 	if extended {
@@ -140,6 +141,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		sortable:      sortable,
 		cacheable:     cacheable,
 		nth:           nth,
+		revision:      revision,
 		delimiter:     delimiter,
 		cache:         cache,
 		procFun:       make(map[termType]algo.Algo)}
@@ -393,12 +395,15 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 
 func (p *Pattern) transformInput(item *Item) []Token {
 	if item.transformed != nil {
-		return *item.transformed
+		transformed := *item.transformed
+		if transformed.revision == p.revision {
+			return transformed.tokens
+		}
 	}
 
 	tokens := Tokenize(item.text.ToString(), p.delimiter)
 	ret := Transform(tokens, p.nth)
-	item.transformed = &ret
+	item.transformed = &transformed{p.revision, ret}
 	return ret
 }
 

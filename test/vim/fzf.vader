@@ -13,7 +13,7 @@ Execute (fzf#run with dir option):
 
   execute 'lcd' fnameescape(cwd)
   let result = sort(fzf#run({ 'source': 'git ls-files', 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_go.rb'], result
+  AssertEqual ['fzf.vader'], result
   AssertEqual 1, haslocaldir()
   AssertEqual getcwd(), cwd
 
@@ -23,8 +23,8 @@ Execute (fzf#run with Funcref command):
     call add(g:ret, a:e)
   endfunction
   let result = sort(fzf#run({ 'source': 'git ls-files', 'sink': function('g:FzfTest'), 'options': '--filter e', 'dir': g:dir }))
-  AssertEqual ['fzf.vader', 'test_go.rb'], result
-  AssertEqual ['fzf.vader', 'test_go.rb'], sort(g:ret)
+  AssertEqual ['fzf.vader'], result
+  AssertEqual ['fzf.vader'], sort(g:ret)
 
 Execute (fzf#run with string source):
   let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
@@ -78,18 +78,18 @@ Execute (fzf#wrap):
 
   let opts = fzf#wrap('foobar')
   Log opts
-  AssertEqual '~40%', opts.down
+  AssertEqual 0.9, opts.window.width
   Assert opts.options =~ '--expect='
   Assert !has_key(opts, 'sink')
   Assert has_key(opts, 'sink*')
 
   let opts = fzf#wrap('foobar', {}, 0)
   Log opts
-  AssertEqual '~40%', opts.down
+  AssertEqual 0.9, opts.window.width
 
   let opts = fzf#wrap('foobar', {}, 1)
   Log opts
-  Assert !has_key(opts, 'down')
+  Assert !has_key(opts, 'window')
 
   let opts = fzf#wrap('foobar', {'down': '50%'})
   Log opts
@@ -148,7 +148,7 @@ Execute (fzf#wrap):
 
   let g:fzf_colors = { 'fg': ['fg', 'Error'] }
   let opts = fzf#wrap({})
-  Assert opts.options =~ '^--color=fg:'
+  Assert opts.options =~ '--color=fg:'
 
 Execute (fzf#shellescape with sh):
   AssertEqual '''''', fzf#shellescape('', 'sh')

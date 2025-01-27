@@ -43,7 +43,7 @@ I would like to thank all the sponsors of this project who make it possible for 
 
 If you'd like to sponsor this project, please visit https://github.com/sponsors/junegunn.
 
-<!-- sponsors --><a href="https://github.com/miyanokomiya"><img src="https:&#x2F;&#x2F;github.com&#x2F;miyanokomiya.png" width="60px" alt="User avatar: miyanokomiya" /></a><a href="https://github.com/jonhoo"><img src="https:&#x2F;&#x2F;github.com&#x2F;jonhoo.png" width="60px" alt="User avatar: Jon Gjengset" /></a><a href="https://github.com/AceofSpades5757"><img src="https:&#x2F;&#x2F;github.com&#x2F;AceofSpades5757.png" width="60px" alt="User avatar: Kyle L. Davis" /></a><a href="https://github.com/Frederick888"><img src="https:&#x2F;&#x2F;github.com&#x2F;Frederick888.png" width="60px" alt="User avatar: Frederick Zhang" /></a><a href="https://github.com/moritzdietz"><img src="https:&#x2F;&#x2F;github.com&#x2F;moritzdietz.png" width="60px" alt="User avatar: Moritz Dietz" /></a><a href="https://github.com/mikker"><img src="https:&#x2F;&#x2F;github.com&#x2F;mikker.png" width="60px" alt="User avatar: Mikkel Malmberg" /></a><a href="https://github.com/pldubouilh"><img src="https:&#x2F;&#x2F;github.com&#x2F;pldubouilh.png" width="60px" alt="User avatar: Pierre Dubouilh" /></a><a href="https://github.com/trantor"><img src="https:&#x2F;&#x2F;github.com&#x2F;trantor.png" width="60px" alt="User avatar: Fulvio Scapin" /></a><a href="https://github.com/rcorre"><img src="https:&#x2F;&#x2F;github.com&#x2F;rcorre.png" width="60px" alt="User avatar: Ryan Roden-Corrent" /></a><a href="https://github.com/blissdev"><img src="https:&#x2F;&#x2F;github.com&#x2F;blissdev.png" width="60px" alt="User avatar: Jordan Arentsen" /></a><a href="https://github.com/aexvir"><img src="https:&#x2F;&#x2F;github.com&#x2F;aexvir.png" width="60px" alt="User avatar: Alex Viscreanu" /></a><a href="https://github.com/dbalatero"><img src="https:&#x2F;&#x2F;github.com&#x2F;dbalatero.png" width="60px" alt="User avatar: David Balatero" /></a><a href="https://github.com/moobar"><img src="https:&#x2F;&#x2F;github.com&#x2F;moobar.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/benelan"><img src="https:&#x2F;&#x2F;github.com&#x2F;benelan.png" width="60px" alt="User avatar: Ben Elan" /></a><a href="https://github.com/pawelduda"><img src="https:&#x2F;&#x2F;github.com&#x2F;pawelduda.png" width="60px" alt="User avatar: Paweł Duda" /></a><a href="https://github.com/slezica"><img src="https:&#x2F;&#x2F;github.com&#x2F;slezica.png" width="60px" alt="User avatar: Santiago Lezica" /></a><a href="https://github.com/pbwn"><img src="https:&#x2F;&#x2F;github.com&#x2F;pbwn.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/pyrho"><img src="https:&#x2F;&#x2F;github.com&#x2F;pyrho.png" width="60px" alt="User avatar: Damien Rajon" /></a><a href="https://github.com/ArtBIT"><img src="https:&#x2F;&#x2F;github.com&#x2F;ArtBIT.png" width="60px" alt="User avatar: ArtBIT" /></a><a href="https://github.com/da-moon"><img src="https:&#x2F;&#x2F;github.com&#x2F;da-moon.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/hovissimo"><img src="https:&#x2F;&#x2F;github.com&#x2F;hovissimo.png" width="60px" alt="User avatar: Hovis" /></a><a href="https://github.com/Yarden-zamir"><img src="https:&#x2F;&#x2F;github.com&#x2F;Yarden-zamir.png" width="60px" alt="User avatar: Yarden zamir" /></a><a href="https://github.com/dariusjonda"><img src="https:&#x2F;&#x2F;github.com&#x2F;dariusjonda.png" width="60px" alt="User avatar: Darius Jonda" /></a><a href="https://github.com/cristiand391"><img src="https:&#x2F;&#x2F;github.com&#x2F;cristiand391.png" width="60px" alt="User avatar: Cristian Dominguez" /></a><a href="https://github.com/eliangcs"><img src="https:&#x2F;&#x2F;github.com&#x2F;eliangcs.png" width="60px" alt="User avatar: Chang-Hung Liang" /></a><a href="https://github.com/asphaltbuffet"><img src="https:&#x2F;&#x2F;github.com&#x2F;asphaltbuffet.png" width="60px" alt="User avatar: Ben Lechlitner" /></a><a href="https://github.com/looshch"><img src="https:&#x2F;&#x2F;github.com&#x2F;looshch.png" width="60px" alt="User avatar: george looshch" /></a><a href="https://github.com/kg8m"><img src="https:&#x2F;&#x2F;github.com&#x2F;kg8m.png" width="60px" alt="User avatar: Takumi KAGIYAMA" /></a><a href="https://github.com/polm"><img src="https:&#x2F;&#x2F;github.com&#x2F;polm.png" width="60px" alt="User avatar: Paul OLeary McCann" /></a><a href="https://github.com/rbeeger"><img src="https:&#x2F;&#x2F;github.com&#x2F;rbeeger.png" width="60px" alt="User avatar: Robert Beeger" /></a><a href="https://github.com/yowayb"><img src="https:&#x2F;&#x2F;github.com&#x2F;yowayb.png" width="60px" alt="User avatar: Yoway Buorn" /></a><a href="https://github.com/scalisi"><img src="https:&#x2F;&#x2F;github.com&#x2F;scalisi.png" width="60px" alt="User avatar: Josh Scalisi" /></a><a href="https://github.com/alecbcs"><img src="https:&#x2F;&#x2F;github.com&#x2F;alecbcs.png" width="60px" alt="User avatar: Alec Scott" /></a><a href="https://github.com/thnxdev"><img src="https:&#x2F;&#x2F;github.com&#x2F;thnxdev.png" width="60px" alt="User avatar: thanks.dev" /></a><a href="https://github.com/artursapek"><img src="https:&#x2F;&#x2F;github.com&#x2F;artursapek.png" width="60px" alt="User avatar: Artur Sapek" /></a><a href="https://github.com/ramnes"><img src="https:&#x2F;&#x2F;github.com&#x2F;ramnes.png" width="60px" alt="User avatar: Guillaume Gelin" /></a><a href="https://github.com/jyc"><img src="https:&#x2F;&#x2F;github.com&#x2F;jyc.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/roblevy"><img src="https:&#x2F;&#x2F;github.com&#x2F;roblevy.png" width="60px" alt="User avatar: Rob Levy" /></a><a href="https://github.com/glozow"><img src="https:&#x2F;&#x2F;github.com&#x2F;glozow.png" width="60px" alt="User avatar: Gloria Zhao" /></a><a href="https://github.com/toupeira"><img src="https:&#x2F;&#x2F;github.com&#x2F;toupeira.png" width="60px" alt="User avatar: Markus Koller" /></a><a href="https://github.com/rkpatel33"><img src="https:&#x2F;&#x2F;github.com&#x2F;rkpatel33.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/jamesob"><img src="https:&#x2F;&#x2F;github.com&#x2F;jamesob.png" width="60px" alt="User avatar: jamesob" /></a><a href="https://github.com/jlebray"><img src="https:&#x2F;&#x2F;github.com&#x2F;jlebray.png" width="60px" alt="User avatar: Johan Le Bray" /></a><a href="https://github.com/panosl1"><img src="https:&#x2F;&#x2F;github.com&#x2F;panosl1.png" width="60px" alt="User avatar: Panos Lampropoulos" /></a><a href="https://github.com/bespinian"><img src="https:&#x2F;&#x2F;github.com&#x2F;bespinian.png" width="60px" alt="User avatar: bespinian" /></a><a href="https://github.com/scosu"><img src="https:&#x2F;&#x2F;github.com&#x2F;scosu.png" width="60px" alt="User avatar: Markus Schneider-Pargmann" /></a><a href="https://github.com/smithbm2316"><img src="https:&#x2F;&#x2F;github.com&#x2F;smithbm2316.png" width="60px" alt="User avatar: Ben Smith" /></a><a href="https://github.com/charlieegan3"><img src="https:&#x2F;&#x2F;github.com&#x2F;charlieegan3.png" width="60px" alt="User avatar: Charlie Egan" /></a><a href="https://github.com/thobbs"><img src="https:&#x2F;&#x2F;github.com&#x2F;thobbs.png" width="60px" alt="User avatar: Tyler Hobbs" /></a><a href="https://github.com/neilparikh"><img src="https:&#x2F;&#x2F;github.com&#x2F;neilparikh.png" width="60px" alt="User avatar: Neil Parikh" /></a><a href="https://github.com/shkm"><img src="https:&#x2F;&#x2F;github.com&#x2F;shkm.png" width="60px" alt="User avatar: Jamie Schembri" /></a><a href="https://github.com/BasedScience"><img src="https:&#x2F;&#x2F;github.com&#x2F;BasedScience.png" width="60px" alt="User avatar: dockien" /></a><a href="https://github.com/RussellGilmore"><img src="https:&#x2F;&#x2F;github.com&#x2F;RussellGilmore.png" width="60px" alt="User avatar: Russell Gilmore" /></a><a href="https://github.com/meribold"><img src="https:&#x2F;&#x2F;github.com&#x2F;meribold.png" width="60px" alt="User avatar: Lukas Waymann" /></a><a href="https://github.com/terminaldweller"><img src="https:&#x2F;&#x2F;github.com&#x2F;terminaldweller.png" width="60px" alt="User avatar: Farzad Sadeghi" /></a><a href="https://github.com/jaydee-coder"><img src="https:&#x2F;&#x2F;github.com&#x2F;jaydee-coder.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/kazuhideoki"><img src="https:&#x2F;&#x2F;github.com&#x2F;kazuhideoki.png" width="60px" alt="User avatar: Kazuhide Oki" /></a><a href="https://github.com/TaNorbs"><img src="https:&#x2F;&#x2F;github.com&#x2F;TaNorbs.png" width="60px" alt="User avatar: Norbs" /></a><a href="https://github.com/iveteran"><img src="https:&#x2F;&#x2F;github.com&#x2F;iveteran.png" width="60px" alt="User avatar: Yu" /></a><a href="https://github.com/fvalasiad"><img src="https:&#x2F;&#x2F;github.com&#x2F;fvalasiad.png" width="60px" alt="User avatar: Fotios Valasiadis" /></a><a href="https://github.com/chillax"><img src="https:&#x2F;&#x2F;github.com&#x2F;chillax.png" width="60px" alt="User avatar: Joonas Korhonen" /></a><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/miyanokomiya"><img src="https:&#x2F;&#x2F;github.com&#x2F;miyanokomiya.png" width="60px" alt="User avatar: miyanokomiya" /></a><a href="https://github.com/jonhoo"><img src="https:&#x2F;&#x2F;github.com&#x2F;jonhoo.png" width="60px" alt="User avatar: Jon Gjengset" /></a><a href="https://github.com/AceofSpades5757"><img src="https:&#x2F;&#x2F;github.com&#x2F;AceofSpades5757.png" width="60px" alt="User avatar: Kyle L. Davis" /></a><a href="https://github.com/Frederick888"><img src="https:&#x2F;&#x2F;github.com&#x2F;Frederick888.png" width="60px" alt="User avatar: Frederick Zhang" /></a><a href="https://github.com/moritzdietz"><img src="https:&#x2F;&#x2F;github.com&#x2F;moritzdietz.png" width="60px" alt="User avatar: Moritz Dietz" /></a><a href="https://github.com/mikker"><img src="https:&#x2F;&#x2F;github.com&#x2F;mikker.png" width="60px" alt="User avatar: Mikkel Malmberg" /></a><a href="https://github.com/pldubouilh"><img src="https:&#x2F;&#x2F;github.com&#x2F;pldubouilh.png" width="60px" alt="User avatar: Pierre Dubouilh" /></a><a href="https://github.com/trantor"><img src="https:&#x2F;&#x2F;github.com&#x2F;trantor.png" width="60px" alt="User avatar: Fulvio Scapin" /></a><a href="https://github.com/rcorre"><img src="https:&#x2F;&#x2F;github.com&#x2F;rcorre.png" width="60px" alt="User avatar: Ryan Roden-Corrent" /></a><a href="https://github.com/blissdev"><img src="https:&#x2F;&#x2F;github.com&#x2F;blissdev.png" width="60px" alt="User avatar: Jordan Arentsen" /></a><a href="https://github.com/aexvir"><img src="https:&#x2F;&#x2F;github.com&#x2F;aexvir.png" width="60px" alt="User avatar: Alex Viscreanu" /></a><a href="https://github.com/dbalatero"><img src="https:&#x2F;&#x2F;github.com&#x2F;dbalatero.png" width="60px" alt="User avatar: David Balatero" /></a><a href="https://github.com/moobar"><img src="https:&#x2F;&#x2F;github.com&#x2F;moobar.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/benelan"><img src="https:&#x2F;&#x2F;github.com&#x2F;benelan.png" width="60px" alt="User avatar: Ben Elan" /></a><a href="https://github.com/pawelduda"><img src="https:&#x2F;&#x2F;github.com&#x2F;pawelduda.png" width="60px" alt="User avatar: Paweł Duda" /></a><a href="https://github.com/pbwn"><img src="https:&#x2F;&#x2F;github.com&#x2F;pbwn.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/pyrho"><img src="https:&#x2F;&#x2F;github.com&#x2F;pyrho.png" width="60px" alt="User avatar: Damien Rajon" /></a><a href="https://github.com/ArtBIT"><img src="https:&#x2F;&#x2F;github.com&#x2F;ArtBIT.png" width="60px" alt="User avatar: ArtBIT" /></a><a href="https://github.com/da-moon"><img src="https:&#x2F;&#x2F;github.com&#x2F;da-moon.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/hovissimo"><img src="https:&#x2F;&#x2F;github.com&#x2F;hovissimo.png" width="60px" alt="User avatar: Hovis" /></a><a href="https://github.com/dariusjonda"><img src="https:&#x2F;&#x2F;github.com&#x2F;dariusjonda.png" width="60px" alt="User avatar: Darius Jonda" /></a><a href="https://github.com/cristiand391"><img src="https:&#x2F;&#x2F;github.com&#x2F;cristiand391.png" width="60px" alt="User avatar: Cristian Dominguez" /></a><a href="https://github.com/eliangcs"><img src="https:&#x2F;&#x2F;github.com&#x2F;eliangcs.png" width="60px" alt="User avatar: Chang-Hung Liang" /></a><a href="https://github.com/asphaltbuffet"><img src="https:&#x2F;&#x2F;github.com&#x2F;asphaltbuffet.png" width="60px" alt="User avatar: Ben Lechlitner" /></a><a href="https://github.com/looshch"><img src="https:&#x2F;&#x2F;github.com&#x2F;looshch.png" width="60px" alt="User avatar: george looshch" /></a><a href="https://github.com/kg8m"><img src="https:&#x2F;&#x2F;github.com&#x2F;kg8m.png" width="60px" alt="User avatar: Takumi KAGIYAMA" /></a><a href="https://github.com/polm"><img src="https:&#x2F;&#x2F;github.com&#x2F;polm.png" width="60px" alt="User avatar: Paul OLeary McCann" /></a><a href="https://github.com/rbeeger"><img src="https:&#x2F;&#x2F;github.com&#x2F;rbeeger.png" width="60px" alt="User avatar: Robert Beeger" /></a><a href="https://github.com/yowayb"><img src="https:&#x2F;&#x2F;github.com&#x2F;yowayb.png" width="60px" alt="User avatar: Yoway Buorn" /></a><a href="https://github.com/scalisi"><img src="https:&#x2F;&#x2F;github.com&#x2F;scalisi.png" width="60px" alt="User avatar: Josh Scalisi" /></a><a href="https://github.com/alecbcs"><img src="https:&#x2F;&#x2F;github.com&#x2F;alecbcs.png" width="60px" alt="User avatar: Alec Scott" /></a><a href="https://github.com/thnxdev"><img src="https:&#x2F;&#x2F;github.com&#x2F;thnxdev.png" width="60px" alt="User avatar: thanks.dev" /></a><a href="https://github.com/artursapek"><img src="https:&#x2F;&#x2F;github.com&#x2F;artursapek.png" width="60px" alt="User avatar: Artur Sapek" /></a><a href="https://github.com/ramnes"><img src="https:&#x2F;&#x2F;github.com&#x2F;ramnes.png" width="60px" alt="User avatar: Guillaume Gelin" /></a><a href="https://github.com/jyc"><img src="https:&#x2F;&#x2F;github.com&#x2F;jyc.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/roblevy"><img src="https:&#x2F;&#x2F;github.com&#x2F;roblevy.png" width="60px" alt="User avatar: Rob Levy" /></a><a href="https://github.com/glozow"><img src="https:&#x2F;&#x2F;github.com&#x2F;glozow.png" width="60px" alt="User avatar: Gloria Zhao" /></a><a href="https://github.com/toupeira"><img src="https:&#x2F;&#x2F;github.com&#x2F;toupeira.png" width="60px" alt="User avatar: Markus Koller" /></a><a href="https://github.com/rkpatel33"><img src="https:&#x2F;&#x2F;github.com&#x2F;rkpatel33.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/jamesob"><img src="https:&#x2F;&#x2F;github.com&#x2F;jamesob.png" width="60px" alt="User avatar: jamesob" /></a><a href="https://github.com/jlebray"><img src="https:&#x2F;&#x2F;github.com&#x2F;jlebray.png" width="60px" alt="User avatar: Johan Le Bray" /></a><a href="https://github.com/panosl1"><img src="https:&#x2F;&#x2F;github.com&#x2F;panosl1.png" width="60px" alt="User avatar: Panos Lampropoulos" /></a><a href="https://github.com/bespinian"><img src="https:&#x2F;&#x2F;github.com&#x2F;bespinian.png" width="60px" alt="User avatar: bespinian" /></a><a href="https://github.com/scosu"><img src="https:&#x2F;&#x2F;github.com&#x2F;scosu.png" width="60px" alt="User avatar: Markus Schneider-Pargmann" /></a><a href="https://github.com/smithbm2316"><img src="https:&#x2F;&#x2F;github.com&#x2F;smithbm2316.png" width="60px" alt="User avatar: Ben Smith" /></a><a href="https://github.com/charlieegan3"><img src="https:&#x2F;&#x2F;github.com&#x2F;charlieegan3.png" width="60px" alt="User avatar: Charlie Egan" /></a><a href="https://github.com/thobbs"><img src="https:&#x2F;&#x2F;github.com&#x2F;thobbs.png" width="60px" alt="User avatar: Tyler Hobbs" /></a><a href="https://github.com/neilparikh"><img src="https:&#x2F;&#x2F;github.com&#x2F;neilparikh.png" width="60px" alt="User avatar: Neil Parikh" /></a><a href="https://github.com/shkm"><img src="https:&#x2F;&#x2F;github.com&#x2F;shkm.png" width="60px" alt="User avatar: Jamie Schembri" /></a><a href="https://github.com/BasedScience"><img src="https:&#x2F;&#x2F;github.com&#x2F;BasedScience.png" width="60px" alt="User avatar: dockien" /></a><a href="https://github.com/RussellGilmore"><img src="https:&#x2F;&#x2F;github.com&#x2F;RussellGilmore.png" width="60px" alt="User avatar: Russell Gilmore" /></a><a href="https://github.com/meribold"><img src="https:&#x2F;&#x2F;github.com&#x2F;meribold.png" width="60px" alt="User avatar: Lukas Waymann" /></a><a href="https://github.com/terminaldweller"><img src="https:&#x2F;&#x2F;github.com&#x2F;terminaldweller.png" width="60px" alt="User avatar: Farzad Sadeghi" /></a><a href="https://github.com/jaydee-coder"><img src="https:&#x2F;&#x2F;github.com&#x2F;jaydee-coder.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/brpaz"><img src="https:&#x2F;&#x2F;github.com&#x2F;brpaz.png" width="60px" alt="User avatar: Bruno Paz" /></a><a href="https://github.com/Unambiguous"><img src="https:&#x2F;&#x2F;github.com&#x2F;Unambiguous.png" width="60px" alt="User avatar: " /></a><a href="https://github.com/timobenn"><img src="https:&#x2F;&#x2F;github.com&#x2F;timobenn.png" width="60px" alt="User avatar: Timothy Bennett" /></a><a href="https://github.com/danhorner"><img src="https:&#x2F;&#x2F;github.com&#x2F;danhorner.png" width="60px" alt="User avatar: Daniel Horner" /></a><a href="https://github.com/devmatteini"><img src="https:&#x2F;&#x2F;github.com&#x2F;devmatteini.png" width="60px" alt="User avatar: Cosimo Matteini" /></a><a href="https://github.com/Saulimedes"><img src="https:&#x2F;&#x2F;github.com&#x2F;Saulimedes.png" width="60px" alt="User avatar: Paul Becker" /></a><a href="https://github.com/rdmarsh"><img src="https:&#x2F;&#x2F;github.com&#x2F;rdmarsh.png" width="60px" alt="User avatar: David Marsh" /></a><!-- sponsors -->
 
 Table of Contents
 -----------------
@@ -67,6 +67,7 @@ Table of Contents
         * [`--tmux` mode](#--tmux-mode)
     * [Search syntax](#search-syntax)
     * [Environment variables](#environment-variables)
+    * [Customizing the look](#customizing-the-look)
     * [Options](#options)
     * [Demo](#demo)
 * [Examples](#examples)
@@ -82,6 +83,7 @@ Table of Contents
     * [Custom fuzzy completion](#custom-fuzzy-completion)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
+    * [Customizing for different types of input](#customizing-for-different-types-of-input)
     * [Performance](#performance)
     * [Executing external programs](#executing-external-programs)
     * [Turning into a different process](#turning-into-a-different-process)
@@ -343,7 +345,7 @@ fzf --height -3
 With `--tmux` option, fzf will start in a tmux popup.
 
 ```sh
-# --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
+# --tmux [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]]
 
 fzf --tmux center         # Center, 50% width and height
 fzf --tmux 80%            # Center, 80% width and height
@@ -423,9 +425,56 @@ or `py`.
 >
 > The available options are described later in this document.
 
+### Customizing the look
+
+The user interface of fzf is fully customizable with a large number of
+configuration options. For a quick setup, you can start with one of the style
+presets — `default`, `full`, or `minimal` — using the `--style` option.
+
+```sh
+fzf --style full \
+    --preview 'fzf-preview.sh {}' --bind 'focus:transform-header:file --brief {}'
+```
+
+| Preset    | Screenshot                                                                             |
+| :---      | :---                                                                                   |
+| `default` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-default.png"/> |
+| `full`    | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-full.png"/>    |
+| `minimal` | <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-style-minimal.png"/> |
+
+Here's an example based on the `full` preset:
+
+<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-4-borders.png"/>
+
+<details>
+
+```sh
+git ls-files | fzf --style full \
+    --border --padding 1,2 \
+    --border-label ' Demo ' --input-label ' Input ' --header-label ' File Type ' \
+    --preview 'fzf-preview.sh {}' \
+    --bind 'result:transform-list-label:
+        if [[ -z $FZF_QUERY ]]; then
+          echo " $FZF_MATCH_COUNT items "
+        else
+          echo " $FZF_MATCH_COUNT matches for [$FZF_QUERY] "
+        fi
+        ' \
+    --bind 'focus:transform-preview-label:[[ -n {} ]] && printf " Previewing [%s] " {}' \
+    --bind 'focus:+transform-header:file --brief {} || echo "No file selected"' \
+    --bind 'ctrl-r:change-list-label( Reloading the list )+reload(sleep 2; git ls-files)' \
+    --color 'border:#aaaaaa,label:#cccccc' \
+    --color 'preview-border:#9999cc,preview-label:#ccccff' \
+    --color 'list-border:#669966,list-label:#99cc99' \
+    --color 'input-border:#996666,input-label:#ffcccc' \
+    --color 'header-border:#6699cc,header-label:#99ccff'
+```
+
+</details>
+
 ### Options
 
-See the man page (`man fzf`) for the full list of options.
+See the man page (`fzf --man` or `man fzf`) for the full list of options.
 
 ### Demo
 If you learn by watching videos, check out this screencast by [@samoshkin](https://github.com/samoshkin) to explore `fzf` features.
@@ -670,6 +719,22 @@ See [README-VIM.md](README-VIM.md).
 Advanced topics
 ---------------
 
+### Customizing for different types of input
+
+Since fzf is a general-purpose text filter, its algorithm was designed to
+"generally" work well with any kind of input. However, admittedly, there is no
+true one-size-fits-all solution, and you may want to tweak the algorithm and
+some of the settings depending on the type of the input. To make this process
+easier, fzf provides a set of "scheme"s for some common input types.
+
+| Scheme             | Description                                                                         |
+| :---               | :---                                                                                |
+| `--scheme=default` | Generic scheme designed to work well with any kind of input                         |
+| `--scheme=path`    | Suitable for file paths                                                             |
+| `--scheme=history` | Suitable for command history or any input where chronological ordering is important |
+
+(See `fzf --man` for the details)
+
 ### Performance
 
 fzf is fast. Performance should not be a problem in most use cases. However,
@@ -679,6 +744,8 @@ you might want to be aware of the options that can affect performance.
   makes the initial scanning slower. So it's not recommended that you add it
   to your `$FZF_DEFAULT_OPTS`.
 - `--nth` makes fzf slower because it has to tokenize each line.
+- A plain string `--delimiter` should be preferred over a regular expression
+  delimiter.
 - `--with-nth` makes fzf slower as fzf has to tokenize and reassemble each
   line.
 

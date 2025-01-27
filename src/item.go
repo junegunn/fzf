@@ -6,10 +6,17 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
+type transformed struct {
+	// Because nth can be changed dynamically by change-nth action, we need to
+	// keep the revision number at the time of transformation.
+	revision int
+	tokens   []Token
+}
+
 // Item represents each input line. 56 bytes.
 type Item struct {
 	text        util.Chars    // 32 = 24 + 1 + 1 + 2 + 4
-	transformed *[]Token      // 8
+	transformed *transformed  // 8
 	origText    *[]byte       // 8
 	colors      *[]ansiOffset // 8
 }

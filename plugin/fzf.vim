@@ -1081,7 +1081,7 @@ endfunction
 
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
-  let opts = { 'options': ['--multi'] }
+  let opts = { 'options': ['--multi', '--scheme', 'path'] }
   if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win && !&shellslash

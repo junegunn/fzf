@@ -32,6 +32,10 @@ const consoleDevice string = "/dev/tty"
 var offsetRegexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
 var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
 
+func (r *LightRenderer) Bell() {
+	r.flushRaw("\a")
+}
+
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
 }
@@ -116,19 +120,19 @@ type LightRenderer struct {
 }
 
 type LightWindow struct {
-	renderer *LightRenderer
-	colored  bool
-	preview  bool
-	border   BorderStyle
-	top      int
-	left     int
-	width    int
-	height   int
-	posx     int
-	posy     int
-	tabstop  int
-	fg       Color
-	bg       Color
+	renderer   *LightRenderer
+	colored    bool
+	windowType WindowType
+	border     BorderStyle
+	top        int
+	left       int
+	width      int
+	height     int
+	posx       int
+	posy       int
+	tabstop    int
+	fg         Color
+	bg         Color
 }
 
 func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
@@ -174,7 +178,6 @@ func (r *LightRenderer) Init() error {
 		return err
 	}
 	r.updateTerminalSize()
-	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
 	if r.fullscreen {
 		r.smcup()
@@ -623,15 +626,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 
 	// middle := t & 0b1
 	left := t&0b11 == 0
-
-	// shift := t & 0b100
-	// ctrl := t & 0b1000
-	mod := t&0b1100 > 0
-
-	drag := t&0b100000 > 0
+	ctrl := t&0b10000 > 0
+	alt := t&0b01000 > 0
+	shift := t&0b00100 > 0
+	drag := t&0b100000 > 0 // 32
 
 	if scroll != 0 {
-		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, ctrl, alt, shift}}
 	}
 
 	double := false
@@ -655,7 +656,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 			}
 		}
 	}
-	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
+	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, ctrl, alt, shift}}
 }
 
 func (r *LightRenderer) smcup() {
@@ -780,27 +781,40 @@ func (r *LightRenderer) MaxY() int {
 	return r.height
 }
 
-func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
+func (r *LightRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
+	width = util.Max(0, width)
+	height = util.Max(0, height)
 	w := &LightWindow{
-		renderer: r,
-		colored:  r.theme.Colored,
-		preview:  preview,
-		border:   borderStyle,
-		top:      top,
-		left:     left,
-		width:    width,
-		height:   height,
-		tabstop:  r.tabstop,
-		fg:       colDefault,
-		bg:       colDefault}
-	if preview {
-		w.fg = r.theme.PreviewFg.Color
-		w.bg = r.theme.PreviewBg.Color
-	} else {
+		renderer:   r,
+		colored:    r.theme.Colored,
+		windowType: windowType,
+		border:     borderStyle,
+		top:        top,
+		left:       left,
+		width:      width,
+		height:     height,
+		tabstop:    r.tabstop,
+		fg:         colDefault,
+		bg:         colDefault}
+	switch windowType {
+	case WindowBase:
 		w.fg = r.theme.Fg.Color
 		w.bg = r.theme.Bg.Color
+	case WindowList:
+		w.fg = r.theme.ListFg.Color
+		w.bg = r.theme.ListBg.Color
+	case WindowInput:
+		w.fg = r.theme.Input.Color
+		w.bg = r.theme.InputBg.Color
+	case WindowHeader:
+		w.fg = r.theme.Header.Color
+		w.bg = r.theme.HeaderBg.Color
+	case WindowPreview:
+		w.fg = r.theme.PreviewFg.Color
+		w.bg = r.theme.PreviewBg.Color
 	}
-	if !w.bg.IsDefault() && w.border.shape != BorderNone {
+	if erase && !w.bg.IsDefault() && w.border.shape != BorderNone {
+		// fzf --color bg:blue --border --padding 1,2
 		w.Erase()
 	}
 	w.drawBorder(false)
@@ -816,6 +830,9 @@ func (w *LightWindow) DrawHBorder() {
 }
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
+	if w.height == 0 {
+		return
+	}
 	switch w.border.shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
@@ -845,7 +862,14 @@ func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 
 func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
@@ -863,7 +887,14 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 func (w *LightWindow) drawBorderVertical(left, right bool) {
 	vw := runeWidth(w.border.left)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	for y := 0; y < w.height; y++ {
@@ -883,7 +914,14 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	w.Move(0, 0)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
@@ -943,9 +981,16 @@ func (w *LightWindow) Y() int {
 	return w.posy
 }
 
+func (w *LightWindow) EncloseX(x int) bool {
+	return x >= w.left && x < (w.left+w.width)
+}
+
+func (w *LightWindow) EncloseY(y int) bool {
+	return y >= w.top && y < (w.top+w.height)
+}
+
 func (w *LightWindow) Enclose(y int, x int) bool {
-	return x >= w.left && x < (w.left+w.width) &&
-		y >= w.top && y < (w.top+w.height)
+	return w.EncloseX(x) && w.EncloseY(y)
 }
 
 func (w *LightWindow) Move(y int, x int) {
@@ -968,7 +1013,7 @@ func attrCodes(attr Attr) []string {
 	if (attr & AttrClear) > 0 {
 		return codes
 	}
-	if (attr & Bold) > 0 {
+	if (attr&Bold) > 0 || (attr&BoldForce) > 0 {
 		codes = append(codes, "1")
 	}
 	if (attr & Dim) > 0 {
