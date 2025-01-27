@@ -20,6 +20,25 @@ var (
 	consoleFlagsOutput = uint32(windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING | windows.ENABLE_PROCESSED_OUTPUT | windows.DISABLE_NEWLINE_AUTO_RETURN)
 )
 
+func SetConsoleUTF8() error {
+	var err error
+	var result uintptr = 0
+
+	const utf8CodePage = 65001
+
+	k32 := syscall.MustLoadDLL("kernel32.dll")
+	result, _, err = k32.MustFindProc("SetConsoleCP").Call(utf8CodePage)
+	if result == 0 {
+		return err
+	}
+	result, _, err = k32.MustFindProc("SetConsoleOutputCP").Call(utf8CodePage)
+	if result == 0 {
+		return err
+	}
+
+	return nil
+}
+
 // IsLightRendererSupported checks to see if the Light renderer is supported
 func IsLightRendererSupported() bool {
 	var oldState uint32
@@ -60,6 +79,10 @@ func (r *LightRenderer) initPlatform() error {
 		return err
 	}
 	r.inHandle = uintptr(inHandle)
+
+	if err := SetConsoleUTF8(); err != nil {
+		return err
+	}
 
 	r.setupTerminal()
 
