@@ -70,7 +70,7 @@ Usage: fzf [options]
                              If prefixed with '~', fzf will determine the height
                              according to the input size.
     --min-height=HEIGHT      Minimum height for percent --height is given in percent
-                             (default: 10)
+                             (default: 10 or above depending on the other options)
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              [,border-native] (default: center,50%)
@@ -673,7 +673,7 @@ func defaultOptions() *Options {
 		Theme:        theme,
 		Black:        false,
 		Bold:         true,
-		MinHeight:    10,
+		MinHeight:    -1,
 		Layout:       layoutDefault,
 		Cycle:        false,
 		Wrap:         false,
@@ -3038,6 +3038,21 @@ func validateOptions(opts *Options) error {
 	return nil
 }
 
+func noSeparatorLine(style infoStyle, separator bool) bool {
+	switch style {
+	case infoInline:
+		return true
+	case infoHidden, infoInlineRight:
+		return !separator
+	}
+	return false
+}
+
+func (opts *Options) noSeparatorLine() bool {
+	sep := opts.Separator == nil && !opts.InputBorderShape.Visible() || opts.Separator != nil && len(*opts.Separator) > 0
+	return noSeparatorLine(opts.InfoStyle, sep)
+}
+
 // This function can have side-effects and alter some global states.
 // So we run it on fzf.Run and not on ParseOptions.
 func postProcessOptions(opts *Options) error {
@@ -3201,6 +3216,37 @@ func postProcessOptions(opts *Options) error {
 	// If --height option is not supported on the platform, just ignore it
 	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		opts.Height = heightSpec{}
+	}
+
+	// Sets --min-height automatically
+	if opts.Height.size > 0 && opts.Height.percent && opts.MinHeight < 0 {
+		// 10 items and 1 prompt line
+		opts.MinHeight = 10 + 1 + borderLines(opts.BorderShape) + borderLines(opts.ListBorderShape) + borderLines(opts.InputBorderShape)
+		if len(opts.Header) > 0 {
+			opts.MinHeight += borderLines(opts.HeaderBorderShape) + len(opts.Header)
+		}
+		if opts.HeaderLines > 0 {
+			borderShape := opts.HeaderBorderShape
+			if opts.HeaderLinesShape.Visible() {
+				borderShape = opts.HeaderLinesShape
+			}
+			opts.MinHeight += borderLines(borderShape) + opts.HeaderLines
+		}
+		if !opts.noSeparatorLine() {
+			opts.MinHeight++
+		}
+		if len(opts.Preview.command) > 0 && (opts.Preview.position == posUp || opts.Preview.position == posDown) && opts.Preview.Visible() && opts.Preview.position == posUp {
+			borderShape := opts.Preview.border
+			if opts.Preview.border == tui.BorderLine {
+				borderShape = tui.BorderTop
+			}
+			opts.MinHeight += borderLines(borderShape) + 10
+		}
+		for _, s := range []sizeSpec{opts.Margin[0], opts.Margin[2], opts.Padding[0], opts.Padding[2]} {
+			if !s.percent {
+				opts.MinHeight += int(s.size)
+			}
+		}
 	}
 
 	if err := opts.initProfiling(); err != nil {

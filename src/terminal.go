@@ -799,7 +799,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
 				effectiveMinHeight += 1 + borderLines(opts.Preview.Border())
 			}
-			if noSeparatorLine(opts.InfoStyle, opts.Separator == nil || uniseg.StringWidth(*opts.Separator) > 0) {
+			if opts.noSeparatorLine() {
 				effectiveMinHeight--
 			}
 			effectiveMinHeight += borderLines(opts.BorderShape)
@@ -1262,16 +1262,6 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	_, promptLen := t.processTabs([]rune(trimmed), 0)
 
 	return output, promptLen
-}
-
-func noSeparatorLine(style infoStyle, separator bool) bool {
-	switch style {
-	case infoInline:
-		return true
-	case infoHidden, infoInlineRight:
-		return !separator
-	}
-	return false
 }
 
 func (t *Terminal) noSeparatorLine() bool {

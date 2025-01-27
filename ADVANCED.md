@@ -93,7 +93,7 @@ fzf --height=40% --layout=reverse --info=inline --border --margin=1 --padding=1
 
 ![image](https://user-images.githubusercontent.com/700826/113379932-dfeac200-93b5-11eb-9e28-df1a2ee71f90.png)
 
-*(See `Layout` section of the man page to see the full list of options)*
+*(See man page to see the full list of options)*
 
 But you definitely don't want to repeat `--height=40% --layout=reverse
 --info=inline --border --margin=1 --padding=1` every time you use fzf. You
