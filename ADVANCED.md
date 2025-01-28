@@ -22,7 +22,7 @@ Advanced fzf examples
     * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
     * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
     * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
-    * [Controlling Ripgrap search and fzf search simultaneously](#controlling-ripgrap-search-and-fzf-search-simultaneously)
+    * [Controlling Ripgrep search and fzf search simultaneously](#controlling-ripgrep-search-and-fzf-search-simultaneously)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
     * [Files listed in `git status`](#files-listed-in-git-status)
@@ -501,7 +501,7 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --bind 'enter:become(vim {1} +{2})'
 ```
 
-### Controlling Ripgrap search and fzf search simultaneously
+### Controlling Ripgrep search and fzf search simultaneously
 
 fzf 0.59.0 added `search` action that allows you to trigger an fzf search
 with an arbitrary query string. This means fzf is no longer restricted to the
