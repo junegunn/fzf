@@ -31,19 +31,18 @@ CHANGELOG
 - Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh
+  export TEMP=$(mktemp -u)
+  trap 'rm -f "$TEMP"' EXIT
+
   TRANSFORMER='
     rg_pat={q:1}      # The first word is passed to ripgrep
     fzf_pat={q:2..}   # The rest are passed to fzf
-    rg_pat_org={q:s1} # The first word with trailing whitespaces preserved.
-                      # We use this to avoid unnecessary reloading of ripgrep.
 
-    if [[ -n $fzf_pat ]]; then
-      echo "search:$fzf_pat"
-    elif ! [[ $rg_pat_org =~ \ $ ]]; then
+    if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+      echo "$rg_pat" > "$TEMP"
       printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
-    else
-      echo search:
     fi
+    echo "+search:$fzf_pat"
   '
   fzf --ansi --disabled \
     --with-shell 'bash -c' \
