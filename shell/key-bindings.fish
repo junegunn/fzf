@@ -64,7 +64,8 @@ function fzf_key_bindings
       set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line +m $FZF_CTRL_R_OPTS")
       set -lx FZF_DEFAULT_OPTS_FILE ''
       set -lx FZF_DEFAULT_COMMAND
-      string match -q -r -- '/fish$' $SHELL; or set -lx SHELL (type -p fish)
+      set -a -- FZF_DEFAULT_OPTS --with-shell=(status fish-path)\\ -c
+
       if type -q perl
         set -a FZF_DEFAULT_OPTS '--tac'
         set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
