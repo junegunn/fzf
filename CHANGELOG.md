@@ -53,6 +53,15 @@ CHANGELOG
   # Load 'ps -ef' output on start and reload it on CTRL-R
   fzf --bind 'start,ctrl-r:reload:ps -ef'
   ```
+- `--min-height` option now takes a number followed by `+`, which tells fzf to show at least that many items in the list section. The default value is now changed to `10+`.
+  ```sh
+  # You will only see the input section which takes 3 lines
+  fzf --style=full --height 1% --min-height 3
+
+  # You will see 3 items in the list section
+  fzf --style full --height 1% --min-height 3+
+  ```
+    - Shell integration scripts were updated to use `--min-height 20+` by default
 - Added `bell` action to ring the terminal bell
   ```sh
   # Press CTRL-Y to copy the current line to the clipboard and ring the bell

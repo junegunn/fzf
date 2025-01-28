@@ -336,9 +336,12 @@ Adaptive height has the following limitations:
 * It will not find the right size when there are multi-line items
 
 .TP
-.BI "\-\-min\-height=" "HEIGHT"
-Minimum height when \fB\-\-height\fR is given in percent (default: 10).
-Ignored when \fB\-\-height\fR is not specified.
+.BI "\-\-min\-height=" "HEIGHT[+]"
+Minimum height when \fB\-\-height\fR is given as a percentage.
+Add \fB+\fR to automatically increase the value according to the other
+layout options so that the specified number of items are visible in the list
+section (default: \fB10+\fR).
+Ignored when \fB\-\-height\fR is not specified or set as an absolute value.
 .TP
 .BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
 Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or

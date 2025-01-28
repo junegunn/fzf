@@ -69,8 +69,9 @@ Usage: fzf [options]
                              minus the given value.
                              If prefixed with '~', fzf will determine the height
                              according to the input size.
-    --min-height=HEIGHT      Minimum height for percent --height is given in percent
-                             (default: 10 or above depending on the other options)
+    --min-height=HEIGHT[+]   Minimum height when --height is given as a percentage.
+                             Add '+' to automatically increase the value
+                             according to the other layout options (default: 10+).
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              [,border-native] (default: center,50%)
@@ -673,7 +674,7 @@ func defaultOptions() *Options {
 		Theme:        theme,
 		Black:        false,
 		Bold:         true,
-		MinHeight:    -1,
+		MinHeight:    -10,
 		Layout:       layoutDefault,
 		Cycle:        false,
 		Wrap:         false,
@@ -2662,9 +2663,23 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 		case "--min-height":
-			if opts.MinHeight, err = nextInt("height required: HEIGHT"); err != nil {
+			expr, err := nextString("minimum height required: HEIGHT[+]")
+			if err != nil {
 				return err
 			}
+			auto := false
+			if strings.HasSuffix(expr, "+") {
+				expr = expr[:len(expr)-1]
+				auto = true
+			}
+			num, err := atoi(expr)
+			if err != nil || num < 0 {
+				return errors.New("minimum height must be a non-negative integer")
+			}
+			if auto {
+				num *= -1
+			}
+			opts.MinHeight = num
 		case "--no-height":
 			opts.Height = heightSpec{}
 		case "--no-margin":
@@ -3220,8 +3235,7 @@ func postProcessOptions(opts *Options) error {
 
 	// Sets --min-height automatically
 	if opts.Height.size > 0 && opts.Height.percent && opts.MinHeight < 0 {
-		// 10 items and 1 prompt line
-		opts.MinHeight = 10 + 1 + borderLines(opts.BorderShape) + borderLines(opts.ListBorderShape) + borderLines(opts.InputBorderShape)
+		opts.MinHeight = -opts.MinHeight + 1 + borderLines(opts.BorderShape) + borderLines(opts.ListBorderShape) + borderLines(opts.InputBorderShape)
 		if len(opts.Header) > 0 {
 			opts.MinHeight += borderLines(opts.HeaderBorderShape) + len(opts.Header)
 		}

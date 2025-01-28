@@ -20,7 +20,7 @@ function fzf_key_bindings
     # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
     # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
     test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    echo "--height $FZF_TMUX_HEIGHT --bind=ctrl-z:ignore" $argv[1]
+    echo "--height $FZF_TMUX_HEIGHT --min-height 20+ --bind=ctrl-z:ignore" $argv[1]
     test -r "$FZF_DEFAULT_OPTS_FILE"; and string collect -N -- <$FZF_DEFAULT_OPTS_FILE
     echo $FZF_DEFAULT_OPTS $argv[2]
   end

@@ -845,4 +845,35 @@ class TestLayout < TestInteractive
       assert lines[1]&.end_with?('1000││')
     end
   end
+
+  def test_min_height_no_auto
+    tmux.send_keys %(seq 100 | #{FZF} --border sharp --style full:sharp --height 1% --min-height 5), :Enter
+
+    block = <<~BLOCK
+      ┌───────
+      │ ┌─────
+      │ │ >
+      │ └─────
+      └───────
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
+
+  def test_min_height_auto
+    tmux.send_keys %(seq 100 | #{FZF} --style full:sharp --height 1% --min-height 5+), :Enter
+
+    block = <<~BLOCK
+      ┌─────────
+      │   5
+      │   4
+      │   3
+      │   2
+      │ > 1
+      └─────────
+      ┌─────────
+      │ >
+      └─────────
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end
