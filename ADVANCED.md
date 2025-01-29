@@ -508,8 +508,8 @@ with an arbitrary query string. This means fzf is no longer restricted to the
 exact query entered in the prompt.
 
 In the example below, `transform` action is used to conditionally trigger
-either `reload` for ripgrep or `search` for fzf. The first word of the query
-initiates the Ripgrep process to generate the initial results, while the
+`reload` for ripgrep, followed by `search` for fzf. The first word of the
+query initiates the Ripgrep process to generate the initial results, while the
 remainder of the query is passed to fzf for secondary filtering.
 
 ```sh
