@@ -1129,9 +1129,15 @@ func (t *Terminal) visibleHeaderLinesInList() int {
 
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
-	extra := 1
-	if t.inputBorderShape.Visible() {
-		extra += borderLines(t.inputBorderShape)
+	extra := 0
+	if !t.inputless {
+		extra++
+		if !t.noSeparatorLine() {
+			extra++
+		}
+		if t.inputBorderShape.Visible() {
+			extra += borderLines(t.inputBorderShape)
+		}
 	}
 	if t.listBorderShape.Visible() {
 		extra += borderLines(t.listBorderShape)
@@ -1145,9 +1151,6 @@ func (t *Terminal) extraLines() int {
 			extra += borderLines(t.headerLinesShape)
 		}
 		extra += t.headerLines
-	}
-	if !t.noSeparatorLine() {
-		extra++
 	}
 	return extra
 }
@@ -1640,8 +1643,11 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
+	if t.inputless {
+		minAreaHeight--
+	}
 	if t.noSeparatorLine() {
-		minAreaHeight -= 1
+		minAreaHeight--
 	}
 	if t.needPreviewWindow() {
 		minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
@@ -1878,6 +1884,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			switch previewOpts.position {
 			case posUp, posDown:
 				minWindowHeight := minHeight
+				if t.inputless {
+					minWindowHeight--
+				}
 				if t.noSeparatorLine() {
 					minWindowHeight--
 				}
