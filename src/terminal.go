@@ -1358,7 +1358,10 @@ func (t *Terminal) Input() (bool, []rune) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	paused := t.paused
-	src := t.input
+	var src []rune
+	if !t.inputless {
+		src = t.input
+	}
 	if t.inputOverride != nil {
 		paused = false
 		src = *t.inputOverride
