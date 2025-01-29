@@ -615,6 +615,7 @@ type Renderer interface {
 	NeedScrollbarRedraw() bool
 	ShouldEmitResizeEvent() bool
 	Bell()
+	HideCursor()
 
 	GetChar() Event
 
@@ -662,6 +663,7 @@ type FullscreenRenderer struct {
 	forceBlack   bool
 	prevDownTime time.Time
 	clicks       [][2]int
+	showCursor   bool
 }
 
 func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Renderer {
@@ -670,7 +672,8 @@ func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Rende
 		mouse:        mouse,
 		forceBlack:   forceBlack,
 		prevDownTime: time.Unix(0, 0),
-		clicks:       [][2]int{}}
+		clicks:       [][2]int{},
+		showCursor:   true}
 	return r
 }
 

@@ -324,6 +324,7 @@ type Terminal struct {
 	cleanExit          bool
 	executor           *util.Executor
 	paused             bool
+	inputless          bool
 	border             tui.Window
 	window             tui.Window
 	inputWindow        tui.Window
@@ -810,6 +811,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if err != nil {
 		return nil, err
 	}
+	if opts.Inputless {
+		renderer.HideCursor()
+	}
 	wordRubout := "[^\\pL\\pN][\\pL\\pN]"
 	wordNext := "[\\pL\\pN][^\\pL\\pN]|(.$)"
 	if opts.FileWord {
@@ -887,6 +891,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		cleanExit:          opts.ClearOnExit,
 		executor:           executor,
 		paused:             opts.Phony,
+		inputless:          opts.Inputless,
 		cycle:              opts.Cycle,
 		highlightLine:      opts.CursorLine,
 		headerVisible:      true,
@@ -1756,7 +1761,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	shrink := 0
 	hasHeaderWindow := t.hasHeaderWindow()
 	hasHeaderLinesWindow := t.hasHeaderLinesWindow()
-	hasInputWindow := t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow
+	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow)
 	if hasInputWindow {
 		inputWindowHeight := 2
 		if t.noSeparatorLine() {
@@ -2227,6 +2232,9 @@ func (t *Terminal) promptLine() int {
 }
 
 func (t *Terminal) placeCursor() {
+	if t.inputless {
+		return
+	}
 	if t.inputWindow != nil {
 		y := t.inputWindow.Height() - 1
 		if t.layout == layoutReverse {
@@ -2239,6 +2247,9 @@ func (t *Terminal) placeCursor() {
 }
 
 func (t *Terminal) printPrompt() {
+	if t.inputless {
+		return
+	}
 	w := t.window
 	if t.inputWindow != nil {
 		w = t.inputWindow
@@ -2266,6 +2277,9 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 }
 
 func (t *Terminal) printInfo() {
+	if t.inputless {
+		return
+	}
 	t.withWindow(t.inputWindow, func() { t.printInfoImpl() })
 }
 
@@ -5829,7 +5843,13 @@ func (t *Terminal) Loop() error {
 			} else if !doActions(actions) {
 				continue
 			}
-			t.truncateQuery()
+			if t.inputless {
+				// Always just discard the query
+				t.input = nil
+				t.cx = 0
+			} else {
+				t.truncateQuery()
+			}
 			queryChanged = string(previousInput) != string(t.input)
 			if queryChanged {
 				t.inputOverride = nil
@@ -6016,6 +6036,9 @@ func (t *Terminal) vset(o int) bool {
 
 // Number of prompt lines in the list window
 func (t *Terminal) promptLines() int {
+	if t.inputless {
+		return 0
+	}
 	if t.inputWindow != nil {
 		return 0
 	}

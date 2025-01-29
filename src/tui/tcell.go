@@ -52,6 +52,7 @@ type TcellWindow struct {
 	borderStyle BorderStyle
 	uri         *string
 	params      *string
+	showCursor  bool
 }
 
 func (w *TcellWindow) Top() int {
@@ -72,7 +73,9 @@ func (w *TcellWindow) Height() int {
 
 func (w *TcellWindow) Refresh() {
 	if w.moveCursor {
-		_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		if w.showCursor {
+			_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		}
 		w.moveCursor = false
 	}
 	w.lastX = 0
@@ -102,6 +105,10 @@ const (
 
 func (r *FullscreenRenderer) Bell() {
 	_screen.Beep()
+}
+
+func (r *FullscreenRenderer) HideCursor() {
+	r.showCursor = false
 }
 
 func (r *FullscreenRenderer) PassThrough(str string) {
@@ -167,6 +174,9 @@ func (r *FullscreenRenderer) getScreen() (tcell.Screen, error) {
 		s, e := tcell.NewScreen()
 		if e != nil {
 			return nil, e
+		}
+		if !r.showCursor {
+			s.HideCursor()
 		}
 		_screen = s
 	}
@@ -590,7 +600,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		width:       width,
 		height:      height,
 		normal:      normal,
-		borderStyle: borderStyle}
+		borderStyle: borderStyle,
+		showCursor:  r.showCursor}
 	w.Erase()
 	return w
 }
