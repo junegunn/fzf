@@ -1270,7 +1270,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noSeparatorLine() bool {
-	return noSeparatorLine(t.infoStyle, t.separatorLen > 0)
+	return t.inputless || noSeparatorLine(t.infoStyle, t.separatorLen > 0)
 }
 
 func getScrollbar(perLine int, total int, height int, offset int) (int, int) {
@@ -5695,7 +5695,7 @@ func (t *Terminal) Loop() error {
 					// Header
 					numLines := t.visibleHeaderLinesInList()
 					lineOffset := 0
-					if t.inputWindow == nil && !t.headerFirst {
+					if !t.inputless && t.inputWindow == nil && !t.headerFirst {
 						// offset for info line
 						if t.noSeparatorLine() {
 							lineOffset = 1
