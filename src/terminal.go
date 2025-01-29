@@ -2523,7 +2523,7 @@ func (t *Terminal) headerIndent(borderShape tui.BorderShape) int {
 
 func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShape, lines1 []string, lines2 []string) {
 	max := t.window.Height()
-	if t.inputWindow == nil && window == nil && t.headerFirst {
+	if !t.inputless && t.inputWindow == nil && window == nil && t.headerFirst {
 		max--
 		if !t.noSeparatorLine() {
 			max--
@@ -2553,7 +2553,7 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 		if needReverse && idx < len(lines1) {
 			line = len(lines1) - idx - 1
 		}
-		if t.inputWindow == nil && window == nil && !t.headerFirst {
+		if !t.inputless && t.inputWindow == nil && window == nil && !t.headerFirst {
 			line++
 			if !t.noSeparatorLine() {
 				line++
