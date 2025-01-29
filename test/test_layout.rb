@@ -876,4 +876,19 @@ class TestLayout < TestInteractive
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
+
+  def test_min_height_auto_no_input
+    tmux.send_keys %(seq 100 | #{FZF} --style full:sharp --no-input --height 1% --min-height 5+), :Enter
+
+    block = <<~BLOCK
+      ┌─────────
+      │   5
+      │   4
+      │   3
+      │   2
+      │ > 1
+      └─────────
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end

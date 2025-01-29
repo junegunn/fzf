@@ -28,6 +28,13 @@ CHANGELOG
   ```
     - `$FZF_KEY` was updated to expose the type of the click. e.g. `click`, `ctrl-click`, etc. You can use it to implement a more sophisticated behavior.
     - `kill` completion for bash and zsh were updated to use this feature
+- Added `--no-input` option to completely disable and hide the input section
+  ```sh
+  # Click header to trigger search
+  fzf --header '[src] [test]' --no-input --layout reverse \
+      --header-border bottom --input-border \
+      --bind 'click-header:transform-search:echo ${FZF_CLICK_HEADER_WORD:1:-1}'
+  ```
 - Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh

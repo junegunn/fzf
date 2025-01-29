@@ -77,7 +77,13 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		r.flushRaw("\x1b[?7l\x1b[?25l" + r.queued.String() + "\x1b[?25h\x1b[?7h")
+		raw := "\x1b[?7l\x1b[?25l" + r.queued.String()
+		if r.showCursor {
+			raw += "\x1b[?25h\x1b[?7h"
+		} else {
+			raw += "\x1b[?7h"
+		}
+		r.flushRaw(raw)
 		r.queued.Reset()
 	}
 }
@@ -110,6 +116,7 @@ type LightRenderer struct {
 	y             int
 	x             int
 	maxHeightFunc func(int) int
+	showCursor    bool
 
 	// Windows only
 	ttyinChannel    chan byte
@@ -152,7 +159,8 @@ func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse 
 		tabstop:       tabstop,
 		fullscreen:    fullscreen,
 		upOneLine:     false,
-		maxHeightFunc: maxHeightFunc}
+		maxHeightFunc: maxHeightFunc,
+		showCursor:    true}
 	return &r, nil
 }
 
@@ -759,6 +767,9 @@ func (r *LightRenderer) Close() {
 	} else if !r.fullscreen {
 		r.csi("u")
 	}
+	if !r.showCursor {
+		r.csi("?25h")
+	}
 	r.disableMouse()
 	r.flush()
 	r.closePlatform()
@@ -1213,4 +1224,8 @@ func (w *LightWindow) Erase() {
 
 func (w *LightWindow) EraseMaybe() bool {
 	return false
+}
+
+func (r *LightRenderer) HideCursor() {
+	r.showCursor = false
 }

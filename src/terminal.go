@@ -324,6 +324,7 @@ type Terminal struct {
 	cleanExit          bool
 	executor           *util.Executor
 	paused             bool
+	inputless          bool
 	border             tui.Window
 	window             tui.Window
 	inputWindow        tui.Window
@@ -810,6 +811,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if err != nil {
 		return nil, err
 	}
+	if opts.Inputless {
+		renderer.HideCursor()
+	}
 	wordRubout := "[^\\pL\\pN][\\pL\\pN]"
 	wordNext := "[\\pL\\pN][^\\pL\\pN]|(.$)"
 	if opts.FileWord {
@@ -887,6 +891,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		cleanExit:          opts.ClearOnExit,
 		executor:           executor,
 		paused:             opts.Phony,
+		inputless:          opts.Inputless,
 		cycle:              opts.Cycle,
 		highlightLine:      opts.CursorLine,
 		headerVisible:      true,
@@ -1124,9 +1129,15 @@ func (t *Terminal) visibleHeaderLinesInList() int {
 
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
-	extra := 1
-	if t.inputBorderShape.Visible() {
-		extra += borderLines(t.inputBorderShape)
+	extra := 0
+	if !t.inputless {
+		extra++
+		if !t.noSeparatorLine() {
+			extra++
+		}
+		if t.inputBorderShape.Visible() {
+			extra += borderLines(t.inputBorderShape)
+		}
 	}
 	if t.listBorderShape.Visible() {
 		extra += borderLines(t.listBorderShape)
@@ -1140,9 +1151,6 @@ func (t *Terminal) extraLines() int {
 			extra += borderLines(t.headerLinesShape)
 		}
 		extra += t.headerLines
-	}
-	if !t.noSeparatorLine() {
-		extra++
 	}
 	return extra
 }
@@ -1265,7 +1273,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noSeparatorLine() bool {
-	return noSeparatorLine(t.infoStyle, t.separatorLen > 0)
+	return t.inputless || noSeparatorLine(t.infoStyle, t.separatorLen > 0)
 }
 
 func getScrollbar(perLine int, total int, height int, offset int) (int, int) {
@@ -1350,7 +1358,10 @@ func (t *Terminal) Input() (bool, []rune) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	paused := t.paused
-	src := t.input
+	var src []rune
+	if !t.inputless {
+		src = t.input
+	}
 	if t.inputOverride != nil {
 		paused = false
 		src = *t.inputOverride
@@ -1635,8 +1646,11 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 
 	minAreaWidth := minWidth
 	minAreaHeight := minHeight
+	if t.inputless {
+		minAreaHeight--
+	}
 	if t.noSeparatorLine() {
-		minAreaHeight -= 1
+		minAreaHeight--
 	}
 	if t.needPreviewWindow() {
 		minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
@@ -1756,7 +1770,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	shrink := 0
 	hasHeaderWindow := t.hasHeaderWindow()
 	hasHeaderLinesWindow := t.hasHeaderLinesWindow()
-	hasInputWindow := t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow
+	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow)
 	if hasInputWindow {
 		inputWindowHeight := 2
 		if t.noSeparatorLine() {
@@ -1873,6 +1887,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			switch previewOpts.position {
 			case posUp, posDown:
 				minWindowHeight := minHeight
+				if t.inputless {
+					minWindowHeight--
+				}
 				if t.noSeparatorLine() {
 					minWindowHeight--
 				}
@@ -2227,6 +2244,9 @@ func (t *Terminal) promptLine() int {
 }
 
 func (t *Terminal) placeCursor() {
+	if t.inputless {
+		return
+	}
 	if t.inputWindow != nil {
 		y := t.inputWindow.Height() - 1
 		if t.layout == layoutReverse {
@@ -2239,6 +2259,9 @@ func (t *Terminal) placeCursor() {
 }
 
 func (t *Terminal) printPrompt() {
+	if t.inputless {
+		return
+	}
 	w := t.window
 	if t.inputWindow != nil {
 		w = t.inputWindow
@@ -2266,6 +2289,9 @@ func (t *Terminal) trimMessage(message string, maxWidth int) string {
 }
 
 func (t *Terminal) printInfo() {
+	if t.inputless {
+		return
+	}
 	t.withWindow(t.inputWindow, func() { t.printInfoImpl() })
 }
 
@@ -2509,7 +2535,7 @@ func (t *Terminal) headerIndent(borderShape tui.BorderShape) int {
 
 func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShape, lines1 []string, lines2 []string) {
 	max := t.window.Height()
-	if t.inputWindow == nil && window == nil && t.headerFirst {
+	if !t.inputless && t.inputWindow == nil && window == nil && t.headerFirst {
 		max--
 		if !t.noSeparatorLine() {
 			max--
@@ -2539,7 +2565,7 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 		if needReverse && idx < len(lines1) {
 			line = len(lines1) - idx - 1
 		}
-		if t.inputWindow == nil && window == nil && !t.headerFirst {
+		if !t.inputless && t.inputWindow == nil && window == nil && !t.headerFirst {
 			line++
 			if !t.noSeparatorLine() {
 				line++
@@ -5681,7 +5707,7 @@ func (t *Terminal) Loop() error {
 					// Header
 					numLines := t.visibleHeaderLinesInList()
 					lineOffset := 0
-					if t.inputWindow == nil && !t.headerFirst {
+					if !t.inputless && t.inputWindow == nil && !t.headerFirst {
 						// offset for info line
 						if t.noSeparatorLine() {
 							lineOffset = 1
@@ -5829,7 +5855,13 @@ func (t *Terminal) Loop() error {
 			} else if !doActions(actions) {
 				continue
 			}
-			t.truncateQuery()
+			if t.inputless {
+				// Always just discard the change
+				t.input = previousInput
+				t.cx = len(t.input)
+			} else {
+				t.truncateQuery()
+			}
 			queryChanged = string(previousInput) != string(t.input)
 			if queryChanged {
 				t.inputOverride = nil
@@ -6016,6 +6048,9 @@ func (t *Terminal) vset(o int) bool {
 
 // Number of prompt lines in the list window
 func (t *Terminal) promptLines() int {
+	if t.inputless {
+		return 0
+	}
 	if t.inputWindow != nil {
 		return 0
 	}
