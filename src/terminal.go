@@ -1358,7 +1358,10 @@ func (t *Terminal) Input() (bool, []rune) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	paused := t.paused
-	src := t.input
+	var src []rune
+	if !t.inputless {
+		src = t.input
+	}
 	if t.inputOverride != nil {
 		paused = false
 		src = *t.inputOverride
@@ -5853,9 +5856,9 @@ func (t *Terminal) Loop() error {
 				continue
 			}
 			if t.inputless {
-				// Always just discard the query
-				t.input = nil
-				t.cx = 0
+				// Always just discard the change
+				t.input = previousInput
+				t.cx = len(t.input)
 			} else {
 				t.truncateQuery()
 			}
