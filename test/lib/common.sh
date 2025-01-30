@@ -9,7 +9,7 @@ export FZF_DEFAULT_OPTS="--no-scrollbar --pointer '>' --marker '>'"
 # Setup fzf
 # ---------
 if [[ ! "$PATH" == *<%= BASE %>/bin* ]]; then
-  export PATH="${PATH:+${PATH}:}<%= BASE %>/bin"
+  export PATH="<%= BASE %>/bin${PATH:+:${PATH}}"
 fi
 
 # Auto-completion
