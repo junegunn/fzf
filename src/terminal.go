@@ -569,6 +569,7 @@ const (
 	actDeselect
 	actUnbind
 	actRebind
+	actToggleBind
 	actBecome
 	actShowHeader
 	actHideHeader
@@ -5757,6 +5758,16 @@ func (t *Terminal) Loop() error {
 				if keys, err := parseKeyChords(a.a, "PANIC"); err == nil {
 					for key := range keys {
 						if originalAction, found := t.keymapOrg[key]; found {
+							t.keymap[key] = originalAction
+						}
+					}
+				}
+			case actToggleBind:
+				if keys, err := parseKeyChords(a.a, "PANIC"); err == nil {
+					for key := range keys {
+						if _, bound := t.keymap[key]; bound {
+							delete(t.keymap, key)
+						} else if originalAction, found := t.keymapOrg[key]; found {
 							t.keymap[key] = originalAction
 						}
 					}

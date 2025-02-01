@@ -74,6 +74,7 @@ CHANGELOG
   # Press CTRL-Y to copy the current line to the clipboard and ring the bell
   fzf --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+bell'
   ```
+- Added `toggle-bind` action
 - Bug fixes and improvements
 - Fixed fish script to support fish 3.1.2 or later (@bitraid)
 

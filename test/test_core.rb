@@ -1174,8 +1174,8 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 2, lines.select_count }
   end
 
-  def test_unbind_rebind
-    tmux.send_keys "seq 100 | #{FZF} --bind 'c:clear-query,d:unbind(c,d),e:rebind(c,d)'", :Enter
+  def test_unbind_rebind_toggle_bind
+    tmux.send_keys "seq 100 | #{FZF} --bind 'c:clear-query,d:unbind(c,d),e:rebind(c,d),f:toggle-bind(c)'", :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 'ab'
     tmux.until { |lines| assert_equal '> ab', lines[-1] }
@@ -1185,6 +1185,10 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal '> abcd', lines[-1] }
     tmux.send_keys 'ecabddc'
     tmux.until { |lines| assert_equal '> abdc', lines[-1] }
+    tmux.send_keys 'fcabfc'
+    tmux.until { |lines| assert_equal '> abc', lines[-1] }
+    tmux.send_keys 'fc'
+    tmux.until { |lines| assert_equal '>', lines[-1] }
   end
 
   def test_scroll_off

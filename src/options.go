@@ -1336,7 +1336,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth)|transform|change-(?:preview-window|preview|multi)|(?:re|un)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1620,7 +1620,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
 				switch t {
-				case actUnbind, actRebind:
+				case actUnbind, actRebind, actToggleBind:
 					if _, err := parseKeyChordsImpl(actionArg, spec[0:offset]+" target required"); err != nil {
 						return nil, err
 					}
@@ -1705,6 +1705,8 @@ func isExecuteAction(str string) actionType {
 		return actUnbind
 	case "rebind":
 		return actRebind
+	case "toggle-bind":
+		return actToggleBind
 	case "preview":
 		return actPreview
 	case "change-header":
