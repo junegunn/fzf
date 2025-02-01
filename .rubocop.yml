@@ -6,6 +6,8 @@ Metrics:
   Enabled: false
 Lint/ShadowingOuterLocalVariable:
   Enabled: false
+Lint/NestedMethodDefinition:
+  Enabled: false
 Style/MethodCallWithArgsParentheses:
   Enabled: true
   AllowedMethods:

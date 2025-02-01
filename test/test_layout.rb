@@ -927,7 +927,7 @@ class TestLayout < TestInteractive
   def test_layout_reverse_list
     prefix = "seq 5 | #{FZF} --layout reverse-list --no-list-border --height ~100% --border sharp "
     suffixes = [
-      %[],
+      %(),
       %[--header "$(seq 101 103)"],
       %[--header "$(seq 101 103)" --header-first],
       %[--header "$(seq 101 103)" --header-lines 3],
@@ -941,7 +941,7 @@ class TestLayout < TestInteractive
       %[--header "$(seq 101 103)" --header-border sharp --header-lines 3 --header-lines-border sharp --header-first --no-input],
       %[--header "$(seq 101 103)" --input-border sharp],
       %[--header "$(seq 101 103)" --style full:sharp],
-      %[--header "$(seq 101 103)" --style full:sharp --header-first],
+      %[--header "$(seq 101 103)" --style full:sharp --header-first]
     ]
     output = <<~BLOCK
       ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌───────── ┌─────── ┌───────── ┌───────── ┌─────────

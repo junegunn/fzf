@@ -1618,15 +1618,15 @@ class TestCore < TestInteractive
 
     tmux.send_keys %(seq 100 | #{FZF} --multi --reverse --preview-window up,noborder --preview 'env | grep ^FZF_ | sort' --no-input --bind enter:show-input+refresh-preview,space:disable-search+refresh-preview), :Enter
     expected = {
-      FZF_TOTAL_COUNT:  '100',
-      FZF_MATCH_COUNT:  '100',
+      FZF_TOTAL_COUNT: '100',
+      FZF_MATCH_COUNT: '100',
       FZF_SELECT_COUNT: '0',
-      FZF_ACTION:       'start',
-      FZF_KEY:          '',
-      FZF_POS:          '1',
-      FZF_QUERY:        '',
-      FZF_PROMPT:       '>',
-      FZF_INPUT_STATE:  'hidden'
+      FZF_ACTION: 'start',
+      FZF_KEY: '',
+      FZF_POS: '1',
+      FZF_QUERY: '',
+      FZF_PROMPT: '>',
+      FZF_INPUT_STATE: 'hidden'
     }
     tmux.until do |lines|
       assert_equal expected, to_vars(lines).slice(*expected.keys)
