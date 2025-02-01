@@ -37,10 +37,10 @@ CHANGELOG
 
   # Vim-like mode switch
   fzf --layout reverse-list --no-input \
-      --bind 'j:down,k:up,/:show-input+unbind(j,k)' \
+      --bind 'j:down,k:up,/:show-input+unbind(j,k,/)' \
       --bind 'enter,esc,ctrl-c:transform:
         if [[ $FZF_INPUT_STATE = enabled ]]; then
-          echo "rebind(j,k)+hide-input"
+          echo "rebind(j,k,/)+hide-input"
         elif [[ $FZF_KEY = enter ]]; then
           echo accept
         else
