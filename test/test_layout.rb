@@ -6,9 +6,9 @@ require_relative 'lib/common'
 class TestLayout < TestInteractive
   def assert_block(expected, lines)
     cols = expected.lines.map { it.chomp.length }.max
-    top = lines.take(expected.lines.length).map { _1[0, cols].rstrip + "\n" }.join
-    bottom = lines.reverse.take(expected.lines.length).reverse.map { _1[0, cols].rstrip + "\n" }.join
-    assert_includes [top, bottom], expected
+    top = lines.take(expected.lines.length).map { it[0, cols].rstrip + "\n" }.join.chomp
+    bottom = lines.reverse.take(expected.lines.length).reverse.map { it[0, cols].rstrip + "\n" }.join.chomp
+    assert_includes [top, bottom], expected.chomp
   end
 
   def test_vanilla
@@ -19,7 +19,7 @@ class TestLayout < TestInteractive
         100000/100000
       >
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
 
     # Testing basic key bindings
     tmux.send_keys '99', 'C-a', '1', 'C-f', '3', 'C-b', 'C-h', 'C-u', 'C-e', 'C-y', 'C-k', 'Tab', 'BTab'
@@ -29,7 +29,7 @@ class TestLayout < TestInteractive
         856/100000
       > 391
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
 
     tmux.send_keys :Enter
     assert_equal '3910', fzf_output
@@ -46,7 +46,7 @@ class TestLayout < TestInteractive
         1
         foobar
     OUTPUT
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_header_first_reverse
@@ -59,7 +59,7 @@ class TestLayout < TestInteractive
       >   < 997/997
       > 4
     OUTPUT
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_change_and_transform_header
@@ -76,7 +76,7 @@ class TestLayout < TestInteractive
           1/1
         >
       OUTPUT
-      tmux.until { assert_block(expected, _1) }
+      tmux.until { assert_block(expected, it) }
       tmux.send_keys :Space
       expected = <<~OUTPUT
         > 3
@@ -89,7 +89,7 @@ class TestLayout < TestInteractive
           1/1
         >
       OUTPUT
-      tmux.until { assert_block(expected, _1) }
+      tmux.until { assert_block(expected, it) }
       next unless i.zero?
 
       teardown
@@ -107,7 +107,7 @@ class TestLayout < TestInteractive
         1/1
       >
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
     tmux.send_keys :Space
     expected = <<~OUTPUT
       > 3
@@ -120,7 +120,7 @@ class TestLayout < TestInteractive
         1/1
       >
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_reload_and_change_cache
@@ -130,7 +130,7 @@ class TestLayout < TestInteractive
         1/1
       >
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
     tmux.send_keys :z
     expected = <<~OUTPUT
       > foo
@@ -138,7 +138,7 @@ class TestLayout < TestInteractive
         1/1
       >
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_toggle_header
@@ -155,7 +155,7 @@ class TestLayout < TestInteractive
       │   foo
       ╰───────
     OUTPUT
-    tmux.until { assert_block(before, _1) }
+    tmux.until { assert_block(before, it) }
     tmux.send_keys :Space
     after = <<~OUTPUT
       ╭───────
@@ -169,9 +169,9 @@ class TestLayout < TestInteractive
       │ >
       ╰───────
     OUTPUT
-    tmux.until { assert_block(after, _1) }
+    tmux.until { assert_block(after, it) }
     tmux.send_keys :Space
-    tmux.until { assert_block(before, _1) }
+    tmux.until { assert_block(before, it) }
   end
 
   def test_height_range_fit
@@ -184,7 +184,7 @@ class TestLayout < TestInteractive
       │ >   < 3/3
       ╰──────────
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_height_range_fit_preview_above
@@ -203,7 +203,7 @@ class TestLayout < TestInteractive
       │ >   < 3/3
       ╰──────────
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_height_range_fit_preview_above_alternative
@@ -224,7 +224,7 @@ class TestLayout < TestInteractive
       │
       └─────────
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_height_range_fit_preview_left
@@ -240,7 +240,7 @@ class TestLayout < TestInteractive
       │        │ >
       │
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_height_range_overflow
@@ -252,7 +252,7 @@ class TestLayout < TestInteractive
       │ >   < 100/100
       ╰──────────────
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_no_extra_newline_issue_3209
@@ -269,7 +269,7 @@ class TestLayout < TestInteractive
         100/100 ─
       >
     OUTPUT
-    tmux.until { assert_block(expected, _1) }
+    tmux.until { assert_block(expected, it) }
   end
 
   def test_fzf_multi_line
@@ -286,7 +286,7 @@ class TestLayout < TestInteractive
       │ >
       ╰───────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
     tmux.send_keys :Up, :Up
     block = <<~BLOCK
       ╭───────
@@ -294,7 +294,7 @@ class TestLayout < TestInteractive
       │ >┃2
       │ >┃3
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
 
     block = <<~BLOCK
       │ >┃
@@ -302,7 +302,7 @@ class TestLayout < TestInteractive
       │ >
       ╰───
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_fzf_multi_line_reverse
@@ -318,7 +318,7 @@ class TestLayout < TestInteractive
       │  ┃2
       │  ┃3
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_fzf_multi_line_no_pointer_and_marker
@@ -334,7 +334,7 @@ class TestLayout < TestInteractive
       │ 2
       │ 3
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_gap
@@ -351,7 +351,7 @@ class TestLayout < TestInteractive
       │   ┈┈┈┈┈┈┈┈┈┈┈┈┈┈
       │   4
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_gap_2
@@ -368,7 +368,7 @@ class TestLayout < TestInteractive
       │   xyzxyzxyzxyzxy
       │   3
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_list_border_and_label
@@ -385,7 +385,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_input_border_and_label
@@ -403,7 +403,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_input_border_and_label_header_first
@@ -421,7 +421,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_list_input_border_and_label
@@ -444,7 +444,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
     tmux.send_keys :Space
     block = <<~BLOCK
       │   ║   11
@@ -460,7 +460,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_list_input_border_and_label_header_first
@@ -483,7 +483,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
     tmux.send_keys :Space
     block = <<~BLOCK
       │   ║   11
@@ -499,7 +499,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_header_border_and_label
@@ -518,7 +518,7 @@ class TestLayout < TestInteractive
       │
       ╰────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_header_border_toggle
@@ -533,7 +533,7 @@ class TestLayout < TestInteractive
       │ >
       ╰────────────
     BLOCK
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
 
     tmux.send_keys :Space
     block2 = <<~BLOCK
@@ -547,10 +547,10 @@ class TestLayout < TestInteractive
           100/100 ─
         >
     BLOCK
-    tmux.until { assert_block(block2, _1) }
+    tmux.until { assert_block(block2, it) }
 
     tmux.send_keys :Enter
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
   end
 
   def test_header_border_toggle_with_header_lines
@@ -567,7 +567,7 @@ class TestLayout < TestInteractive
           98/98 ─
         >
     BLOCK
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
 
     tmux.send_keys :Space
     block2 = <<~BLOCK
@@ -582,10 +582,10 @@ class TestLayout < TestInteractive
           98/98 ─
         >
     BLOCK
-    tmux.until { assert_block(block2, _1) }
+    tmux.until { assert_block(block2, it) }
 
     tmux.send_keys :Enter
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
   end
 
   def test_header_border_toggle_with_header_lines_header_first
@@ -602,7 +602,7 @@ class TestLayout < TestInteractive
       │   1
       ╰──────────
     BLOCK
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
 
     tmux.send_keys :Space
     block2 = <<~BLOCK
@@ -617,10 +617,10 @@ class TestLayout < TestInteractive
       │   hello
       ╰──────────
     BLOCK
-    tmux.until { assert_block(block2, _1) }
+    tmux.until { assert_block(block2, it) }
 
     tmux.send_keys :Enter
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
   end
 
   def test_header_border_toggle_with_header_lines_header_lines_border
@@ -637,7 +637,7 @@ class TestLayout < TestInteractive
           98/98 ─
         >
     BLOCK
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
 
     tmux.send_keys :Space
     block2 = <<~BLOCK
@@ -653,10 +653,10 @@ class TestLayout < TestInteractive
           98/98 ─
         >
     BLOCK
-    tmux.until { assert_block(block2, _1) }
+    tmux.until { assert_block(block2, it) }
 
     tmux.send_keys :Enter
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
   end
 
   def test_header_border_toggle_with_header_lines_header_first_header_lines_border
@@ -673,7 +673,7 @@ class TestLayout < TestInteractive
           98/98 ─
         >
     BLOCK
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
 
     tmux.send_keys :Space
     block2 = <<~BLOCK
@@ -689,10 +689,10 @@ class TestLayout < TestInteractive
       │   hello
       ╰──────────
     BLOCK
-    tmux.until { assert_block(block2, _1) }
+    tmux.until { assert_block(block2, it) }
 
     tmux.send_keys :Enter
-    tmux.until { assert_block(block1, _1) }
+    tmux.until { assert_block(block1, it) }
   end
 
   def test_header_border_and_label_header_first
@@ -711,7 +711,7 @@ class TestLayout < TestInteractive
       │
       ╰────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_header_border_and_label_with_list_border
@@ -731,7 +731,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_header_border_and_label_with_list_border_header_first
@@ -751,7 +751,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_all_borders
@@ -773,7 +773,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_all_borders_header_first
@@ -795,7 +795,7 @@ class TestLayout < TestInteractive
       │
       ╰──────────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_style_full_adaptive_height
@@ -811,7 +811,7 @@ class TestLayout < TestInteractive
       │ >
       ╰────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_style_full_adaptive_height_double
@@ -829,7 +829,7 @@ class TestLayout < TestInteractive
       ║ ╚════════
       ╚══════════
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_preview_window_noinfo
@@ -856,7 +856,7 @@ class TestLayout < TestInteractive
       │ └─────
       └───────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_min_height_auto
@@ -874,7 +874,7 @@ class TestLayout < TestInteractive
       │ >
       └─────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_min_height_auto_no_input
@@ -889,7 +889,7 @@ class TestLayout < TestInteractive
       │ > 1
       └─────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
   end
 
   def test_min_height_auto_no_input_reverse_list
@@ -904,6 +904,61 @@ class TestLayout < TestInteractive
       │   5
       └─────────
     BLOCK
-    tmux.until { assert_block(block, _1) }
+    tmux.until { assert_block(block, it) }
+  end
+
+  def test_layout_reverse_list
+    prefix = "seq 5 | #{FZF} --layout reverse-list --no-list-border --height ~100% --border sharp "
+    suffixes = [
+      %[],
+      %[--header "$(seq 101 103)"],
+      %[--header "$(seq 101 103)" --header-first],
+      %[--header "$(seq 101 103)" --header-lines 3],
+      %[--header "$(seq 101 103)" --header-lines 3 --header-first],
+      %[--header "$(seq 101 103)" --header-border sharp],
+      %[--header "$(seq 101 103)" --header-border sharp --header-first],
+      %[--header "$(seq 101 103)" --header-border sharp --header-lines 3],
+      %[--header "$(seq 101 103)" --header-border sharp --header-lines 3 --header-lines-border sharp],
+      %[--header "$(seq 101 103)" --header-border sharp --header-lines 3 --header-lines-border sharp --header-first],
+      %[--header "$(seq 101 103)" --header-border sharp --header-lines 3 --header-lines-border sharp --header-first --input-border sharp],
+      %[--header "$(seq 101 103)" --header-border sharp --header-lines 3 --header-lines-border sharp --header-first --no-input],
+      %[--header "$(seq 101 103)" --input-border sharp],
+      %[--header "$(seq 101 103)" --style full:sharp],
+      %[--header "$(seq 101 103)" --style full:sharp --header-first],
+    ]
+    output = <<~BLOCK
+      ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌───────── ┌─────── ┌───────── ┌───────── ┌─────────
+      │ > 1     │ > 1     │ > 1     │   1     │   1     │ > 1     │ > 1     │   1     │ ┌────── │ ┌────── │ ┌─────── │ ┌───── │ > 1      │ ┌─────── │ ┌───────
+      │   2     │   2     │   2     │   2     │   2     │   2     │   2     │   2     │ │ 1     │ │ 1     │ │ 1      │ │ 1    │   2      │ │ > 1    │ │ > 1
+      │   3     │   3     │   3     │   3     │   3     │   3     │   3     │   3     │ │ 2     │ │ 2     │ │ 2      │ │ 2    │   3      │ │   2    │ │   2
+      │   4     │   4     │   4     │ > 4     │ > 4     │   4     │   4     │ > 4     │ │ 3     │ │ 3     │ │ 3      │ │ 3    │   4      │ │   3    │ │   3
+      │   5     │   5     │   5     │   5     │   5     │   5     │   5     │   5     │ └────── │ └────── │ └─────── │ └───── │   5      │ │   4    │ │   4
+      │   5/5 ─ │   101   │   5/5 ─ │   101   │   2/2 ─ │ ┌────── │   5/5 ─ │ ┌────── │ > 4     │ > 4     │ > 4      │ > 4    │   101    │ │   5    │ │   5
+      │ >       │   102   │ >       │   102   │ >       │ │ 101   │ >       │ │ 101   │   5     │   5     │   5      │   5    │   102    │ └─────── │ └───────
+      └──────── │   103   │   101   │   103   │   101   │ │ 102   │ ┌────── │ │ 102   │ ┌────── │   2/2 ─ │ ┌─────── │ ┌───── │   103    │ ┌─────── │ ┌───────
+                │   5/5 ─ │   102   │   2/2 ─ │   102   │ │ 103   │ │ 101   │ │ 103   │ │ 101   │ >       │ │   2/2  │ │ 101  │ ┌─────── │ │   101  │ │ >
+                │ >       │   103   │ >       │   103   │ └────── │ │ 102   │ └────── │ │ 102   │ ┌────── │ │ >      │ │ 102  │ │   5/5  │ │   102  │ └───────
+                └──────── └──────── └──────── └──────── │   5/5 ─ │ │ 103   │   2/2 ─ │ │ 103   │ │ 101   │ └─────── │ │ 103  │ │ >      │ │   103  │ ┌───────
+                                                        │ >       │ └────── │ >       │ └────── │ │ 102   │ ┌─────── │ └───── │ └─────── │ └─────── │ │   101
+                                                        └──────── └──────── └──────── │   2/2 ─ │ │ 103   │ │ 101    └─────── └───────── │ ┌─────── │ │   102
+                                                                                      │ >       │ └────── │ │ 102                        │ │ >      │ │   103
+                                                                                      └──────── └──────── │ │ 103                        │ └─────── │ └───────
+                                                                                                          │ └───────                     └───────── └─────────
+                                                                                                          └─────────
+    BLOCK
+
+    expects = []
+    output.each_line.first.scan(/\S+/) do
+      offset = Regexp.last_match.offset(0)
+      expects << output.lines.filter_map { it[offset[0]...offset[1]]&.strip }.take_while { !it.empty? }.join("\n")
+    end
+
+    suffixes.zip(expects).each do |suffix, block|
+      tmux.send_keys(prefix + suffix, :Enter)
+      tmux.until { assert_block(block, it) }
+
+      teardown
+      setup
+    end
   end
 end

@@ -1138,6 +1138,16 @@ func (t *Terminal) visibleHeaderLinesInList() int {
 	return t.visibleHeaderLines()
 }
 
+func (t *Terminal) visibleInputLinesInList() int {
+	if t.inputWindow != nil || t.inputless {
+		return 0
+	}
+	if t.noSeparatorLine() {
+		return 1
+	}
+	return 2
+}
+
 // Extra number of lines needed to display fzf
 func (t *Terminal) extraLines() int {
 	extra := 0
@@ -1817,7 +1827,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	headerLinesHeight := 0
 	if hasHeaderLinesWindow {
 		headerLinesHeight = util.Min(availableLines, borderLines(t.headerLinesShape)+t.headerLines)
-		if t.layout == layoutReverse {
+		if t.layout != layoutDefault {
 			shift += headerLinesHeight
 			shrink += headerLinesHeight
 		} else {
@@ -2078,12 +2088,16 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		if hasHeaderWindow && t.headerFirst {
 			if t.layout == layoutReverse {
 				btop = w.Top() - inputBorderHeight - headerLinesHeight
+			} else if t.layout == layoutReverseList {
+				btop = w.Top() + w.Height()
 			} else {
 				btop = w.Top() + w.Height() + headerLinesHeight
 			}
 		} else {
 			if t.layout == layoutReverse {
 				btop = w.Top() - shrink
+			} else if t.layout == layoutReverseList {
+				btop = w.Top() + w.Height() + headerBorderHeight
 			} else {
 				btop = w.Top() + w.Height() + headerBorderHeight + headerLinesHeight
 			}
@@ -2112,12 +2126,16 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		if hasInputWindow && t.headerFirst {
 			if t.layout == layoutReverse {
 				btop = w.Top() - shrink
+			} else if t.layout == layoutReverseList {
+				btop = w.Top() + w.Height() + inputBorderHeight
 			} else {
 				btop = w.Top() + w.Height() + inputBorderHeight + headerLinesHeight
 			}
 		} else {
 			if t.layout == layoutReverse {
 				btop = w.Top() - headerBorderHeight - headerLinesHeight
+			} else if t.layout == layoutReverseList {
+				btop = w.Top() + w.Height()
 			} else {
 				btop = w.Top() + w.Height() + headerLinesHeight
 			}
@@ -2133,7 +2151,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	// Set up header lines border
 	if hasHeaderLinesWindow {
 		var btop int
-		if t.layout == layoutReverse {
+		if t.layout != layoutDefault {
 			btop = w.Top() - headerLinesHeight
 		} else {
 			btop = w.Top() + w.Height()
@@ -2195,17 +2213,28 @@ func (t *Terminal) move(y int, x int, clear bool) {
 	case layoutDefault:
 		y = h - y - 1
 	case layoutReverseList:
-		n := t.visibleHeaderLinesInList()
-		if !t.inputless {
-			n++
-		}
-		if !t.noSeparatorLine() {
-			n++
-		}
-		if y < n {
+		if t.window == t.inputWindow || t.window == t.headerWindow {
+			// From bottom to top
 			y = h - y - 1
 		} else {
-			y -= n
+			/*
+			 * List 1
+			 * List 2
+			 * Header 1
+			 * Header 2
+			 * Input 2
+			 * Input 1
+			 */
+			i := t.visibleInputLinesInList()
+			n := t.visibleHeaderLinesInList()
+			if i > 0 && y < i {
+				y = h - y - 1
+			} else if n > 0 && y < i+n {
+				y = h - y - 1
+			} else {
+				// Top to bottom
+				y -= n + i
+			}
 		}
 	}
 
@@ -4145,13 +4174,13 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 	/*
 	 * echo $'HL1\nHL2' | fzf --header-lines 3 --header $'H1\nH2' --header-lines-border --bind 'click-header:preview:env | grep FZF_CLICK'
 	 *
-	 *   REVERSE      DEFAULT
-	 *   H1      1            1
-	 *   H2      2    HL2     2
-	 *   -------      HL1     3
-	 *   HL1     3    -------
-	 *   HL2     4    H1      4
-	 *           5    H2      5
+	 *   REVERSE      DEFAULT      REVERSE-LIST
+	 *   H1      1            1    HL1     1
+	 *   H2      2    HL2     2    HL2     2
+	 *   -------      HL1     3            3
+	 *   HL1     3    -------      -------
+	 *   HL2     4    H1      4    H1      4
+	 *           5    H2      5    H2      5
 	 */
 	lineNum := t.clickHeaderLine - 1
 	if lineNum < 0 {
@@ -4159,20 +4188,20 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 		return env
 	}
 
+	// NOTE: t.header is padded with empty strings so that its size is equal to t.headerLines
 	var line string
+	headers := [2][]string{t.header, t.header0}
 	if t.layout == layoutReverse {
-		if lineNum < len(t.header0) {
-			line = t.header0[lineNum]
-		} else if lineNum-len(t.header0) < len(t.header) {
-			line = t.header[lineNum-len(t.header0)]
+		headers[0], headers[1] = headers[1], headers[0]
+	}
+	if lineNum < len(headers[0]) {
+		index := lineNum
+		if t.layout == layoutDefault {
+			index = len(headers[0]) - index - 1
 		}
-	} else {
-		// NOTE: t.header is padded with empty strings so that its size is equal to t.headerLines
-		if lineNum < len(t.header) {
-			line = t.header[len(t.header)-lineNum-1]
-		} else if lineNum-len(t.header) < len(t.header0) {
-			line = t.header0[lineNum-len(t.header)]
-		}
+		line = headers[0][index]
+	} else if lineNum-len(headers[0]) < len(headers[1]) {
+		line = headers[1][lineNum-len(headers[0])]
 	}
 	if len(line) == 0 {
 		return env

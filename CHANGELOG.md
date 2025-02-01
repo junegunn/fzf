@@ -70,6 +70,7 @@ CHANGELOG
   fzf --style full --height 1% --min-height 3+
   ```
     - Shell integration scripts were updated to use `--min-height 20+` by default
+- `--header-lines` will be displayed at the top in `reverse-list` layout
 - Added `bell` action to ring the terminal bell
   ```sh
   # Press CTRL-Y to copy the current line to the clipboard and ring the bell

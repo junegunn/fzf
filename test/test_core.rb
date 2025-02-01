@@ -576,9 +576,9 @@ class TestCore < TestInteractive
     tmux.send_keys "seq 100 | #{fzf('--header-lines=10 -q 5 --layout=reverse-list')}", :Enter
     2.times do
       tmux.until do |lines|
-        assert_equal '> 50', lines[0]
-        assert_equal '  2', lines[-4]
-        assert_equal '  1', lines[-3]
+        assert_equal '  9', lines[8]
+        assert_equal '  10', lines[9]
+        assert_equal '> 50', lines[10]
         assert_equal '  18/90', lines[-2]
       end
       tmux.send_keys :Up
@@ -665,7 +665,7 @@ class TestCore < TestInteractive
     tmux.until do |lines|
       assert_equal '  90/90', lines[-2]
       assert_equal header.map { |line| "  #{line}".rstrip }, lines[-7...-2]
-      assert_equal ('  1'..'  10').to_a.reverse, lines[-17...-7]
+      assert_equal ('  1'..'  10').to_a, lines.take(10)
     end
   end
 
