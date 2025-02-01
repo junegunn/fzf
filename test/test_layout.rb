@@ -338,7 +338,7 @@ class TestLayout < TestInteractive
   end
 
   def test_gap
-    tmux.send_keys %(seq 100 | #{FZF} --gap --border --reverse), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --gap --border rounded --reverse), :Enter
     block = <<~BLOCK
       ╭─────────────────
       │ >
@@ -355,7 +355,7 @@ class TestLayout < TestInteractive
   end
 
   def test_gap_2
-    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --gap-line xyz --border --reverse), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --gap=2 --gap-line xyz --border rounded --reverse), :Enter
     block = <<~BLOCK
       ╭─────────────────
       │ >
@@ -799,7 +799,7 @@ class TestLayout < TestInteractive
   end
 
   def test_style_full_adaptive_height
-    tmux.send_keys %(seq 1| #{FZF} --style=full --height=~100% --header-lines=1 --info=default), :Enter
+    tmux.send_keys %(seq 1| #{FZF} --style=full:rounded --height=~100% --header-lines=1 --info=default), :Enter
     block = <<~BLOCK
       ╭────────
       ╰────────

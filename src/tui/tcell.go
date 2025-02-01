@@ -560,7 +560,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 func (r *FullscreenRenderer) Pause(clear bool) {
 	if clear {
-		_screen.Fini()
+		r.Close()
 	}
 }
 
@@ -572,6 +572,7 @@ func (r *FullscreenRenderer) Resume(clear bool, sigcont bool) {
 
 func (r *FullscreenRenderer) Close() {
 	_screen.Fini()
+	_screen = nil
 }
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {

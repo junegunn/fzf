@@ -524,7 +524,7 @@ class TestPreview < TestInteractive
   end
 
   def test_alternative_preview_window_opts
-    tmux.send_keys "seq 10 | #{FZF} --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
+    tmux.send_keys "seq 10 | #{FZF} --preview-border rounded --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until do |lines|
       assert_equal ['╭────╮', '│ 10 │', '│ 0  │', '│ 10 │', '│ 1  │'], lines.take(5).map(&:strip)
