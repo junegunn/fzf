@@ -1500,6 +1500,12 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrack)
 		case "toggle-track-current":
 			appendAction(actToggleTrackCurrent)
+		case "toggle-input":
+			appendAction(actToggleInput)
+		case "hide-input":
+			appendAction(actHideInput)
+		case "show-input":
+			appendAction(actShowInput)
 		case "toggle-header":
 			appendAction(actToggleHeader)
 		case "toggle-wrap":

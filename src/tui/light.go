@@ -1228,4 +1228,10 @@ func (w *LightWindow) EraseMaybe() bool {
 
 func (r *LightRenderer) HideCursor() {
 	r.showCursor = false
+	r.csi("?25l")
+}
+
+func (r *LightRenderer) ShowCursor() {
+	r.showCursor = true
+	r.csi("?25h")
 }

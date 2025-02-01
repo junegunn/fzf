@@ -505,6 +505,9 @@ const (
 	actToggleMultiLine
 	actToggleHscroll
 	actTrackCurrent
+	actToggleInput
+	actHideInput
+	actShowInput
 	actUntrackCurrent
 	actDown
 	actUp
@@ -1064,6 +1067,13 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	if len(t.nthCurrent) > 0 {
 		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
 	}
+	inputState := "enabled"
+	if t.inputless {
+		inputState = "hidden"
+	} else if t.paused {
+		inputState = "disabled"
+	}
+	env = append(env, "FZF_INPUT_STATE="+inputState)
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
@@ -2492,22 +2502,29 @@ func (t *Terminal) printInfoImpl() {
 	}
 }
 
-func (t *Terminal) printHeader() {
+func (t *Terminal) resizeIfNeeded() bool {
+	// Check if input border is used and input has changed
+	if t.inputBorderShape.Visible() && t.inputWindow == nil && !t.inputless {
+		t.printAll()
+		return true
+	}
+
+	// Check if the header borders are used and header has changed
 	allHeaderLines := t.visibleHeaderLines()
 	primaryHeaderLines := allHeaderLines
 	if t.headerLinesShape.Visible() {
 		primaryHeaderLines -= t.headerLines
 	}
-	// We may need to resize header windows
 	if (t.headerBorderShape.Visible() || t.headerLinesShape.Visible()) &&
 		(t.headerWindow == nil && primaryHeaderLines > 0 || t.headerWindow != nil && primaryHeaderLines != t.headerWindow.Height()) ||
 		t.headerLinesShape.Visible() && (t.headerLinesWindow == nil && t.headerLines > 0 || t.headerLinesWindow != nil && t.headerLines != t.headerLinesWindow.Height()) {
-		t.resizeWindows(false, true)
-		t.printList()
-		t.printPrompt()
-		t.printInfo()
-		t.printPreview()
+		t.printAll()
+		return true
 	}
+	return false
+}
+
+func (t *Terminal) printHeader() {
 	if !t.headerVisible {
 		return
 	}
@@ -4498,7 +4515,11 @@ func (t *Terminal) Loop() error {
 				//  U t.uiMutex                 |
 				t.uiMutex.Lock()
 				t.mutex.Lock()
-				printInfo := util.RunOnce(t.printInfo)
+				printInfo := util.RunOnce(func() {
+					if !t.resizeIfNeeded() {
+						t.printInfo()
+					}
+				})
 				for _, key := range keys {
 					req := util.EventType(key)
 					value := (*events)[req]
@@ -4540,7 +4561,9 @@ func (t *Terminal) Loop() error {
 						}
 						t.printList()
 					case reqHeader:
-						t.printHeader()
+						if !t.resizeIfNeeded() {
+							t.printHeader()
+						}
 					case reqActivate:
 						t.suppress = false
 						if t.hasPreviewer() {
@@ -4796,6 +4819,7 @@ func (t *Terminal) Loop() error {
 			return true
 		}
 		doAction = func(a *action) bool {
+		Action:
 			switch a.t {
 			case actIgnore, actStart, actClick:
 			case actBecome:
@@ -5416,6 +5440,28 @@ func (t *Terminal) Loop() error {
 				t.forceRerenderList()
 				t.hscroll = !t.hscroll
 				req(reqList)
+			case actToggleInput, actShowInput, actHideInput:
+				switch a.t {
+				case actToggleInput:
+					t.inputless = !t.inputless
+				case actShowInput:
+					if !t.inputless {
+						break Action
+					}
+					t.inputless = false
+				case actHideInput:
+					if t.inputless {
+						break Action
+					}
+					t.inputless = true
+				}
+				t.forceRerenderList()
+				if t.inputless {
+					t.tui.HideCursor()
+				} else {
+					t.tui.ShowCursor()
+				}
+				req(reqList, reqInfo, reqPrompt, reqHeader)
 			case actTrackCurrent:
 				if t.track == trackDisabled {
 					t.track = trackCurrent

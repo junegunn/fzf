@@ -111,6 +111,10 @@ func (r *FullscreenRenderer) HideCursor() {
 	r.showCursor = false
 }
 
+func (r *FullscreenRenderer) ShowCursor() {
+	r.showCursor = true
+}
+
 func (r *FullscreenRenderer) PassThrough(str string) {
 	// No-op
 	// https://github.com/gdamore/tcell/pull/650#issuecomment-1806442846

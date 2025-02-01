@@ -616,6 +616,7 @@ type Renderer interface {
 	ShouldEmitResizeEvent() bool
 	Bell()
 	HideCursor()
+	ShowCursor()
 
 	GetChar() Event
 

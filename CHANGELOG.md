@@ -35,6 +35,7 @@ CHANGELOG
       --header-border bottom --input-border \
       --bind 'click-header:transform-search:echo ${FZF_CLICK_HEADER_WORD:1:-1}'
   ```
+    - You can later show the input section using `show-input` or `toggle-input` action, and hide it again using `hide-input`, or `toggle-input`.
 - Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh
