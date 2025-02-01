@@ -671,7 +671,7 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlJ, actDown)
 	add(tui.CtrlK, actUp)
 	add(tui.CtrlL, actClearScreen)
-	add(tui.CtrlM, actAccept)
+	add(tui.Enter, actAccept)
 	add(tui.CtrlN, actDown)
 	add(tui.CtrlP, actUp)
 	add(tui.CtrlU, actUnixLineDiscard)

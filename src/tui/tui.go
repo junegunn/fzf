@@ -28,7 +28,7 @@ const (
 	CtrlJ
 	CtrlK
 	CtrlL
-	CtrlM
+	Enter
 	CtrlN
 	CtrlO
 	CtrlP
@@ -160,6 +160,9 @@ func (e Event) KeyName() string {
 
 	switch e.Type {
 	case Rune:
+		if e.Char == ' ' {
+			return "space"
+		}
 		return string(e.Char)
 	case Alt:
 		return "alt-" + string(e.Char)

@@ -885,7 +885,7 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		case "right":
 			add(tui.Right)
 		case "enter", "return":
-			add(tui.CtrlM)
+			add(tui.Enter)
 		case "space":
 			chords[tui.Key(' ')] = key
 		case "backspace", "bspace", "bs":
@@ -3220,7 +3220,7 @@ func postProcessOptions(opts *Options) error {
 
 	// If 'double-click' is left unbound, bind it to the action bound to 'enter'
 	if _, prs := opts.Keymap[tui.DoubleClick.AsEvent()]; !prs {
-		opts.Keymap[tui.DoubleClick.AsEvent()] = opts.Keymap[tui.CtrlM.AsEvent()]
+		opts.Keymap[tui.DoubleClick.AsEvent()] = opts.Keymap[tui.Enter.AsEvent()]
 	}
 
 	// If we're not using extended search mode, --nth option becomes irrelevant

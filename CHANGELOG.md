@@ -34,6 +34,19 @@ CHANGELOG
   fzf --header '[src] [test]' --no-input --layout reverse \
       --header-border bottom --input-border \
       --bind 'click-header:transform-search:echo ${FZF_CLICK_HEADER_WORD:1:-1}'
+
+  # Vim-like mode switch
+  fzf --layout reverse-list --no-input \
+      --bind 'j:down,k:up,/:show-input+unbind(j,k)' \
+      --bind 'enter,esc,ctrl-c:transform:
+        if [[ $FZF_INPUT_STATE = enabled ]]; then
+          echo "rebind(j,k)+hide-input"
+        elif [[ $FZF_KEY = enter ]]; then
+          echo accept
+        else
+          echo abort
+        fi
+      '
   ```
     - You can later show the input section using `show-input` or `toggle-input` action, and hide it again using `hide-input`, or `toggle-input`.
 - Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
