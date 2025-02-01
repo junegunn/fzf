@@ -2533,7 +2533,7 @@ func (t *Terminal) printInfoImpl() {
 
 func (t *Terminal) resizeIfNeeded() bool {
 	// Check if input border is used and input has changed
-	if t.inputBorderShape.Visible() && t.inputWindow == nil && !t.inputless {
+	if t.inputBorderShape.Visible() && t.inputWindow == nil && !t.inputless || t.inputWindow != nil && t.inputless {
 		t.printAll()
 		return true
 	}
@@ -5948,6 +5948,7 @@ func (t *Terminal) Loop() error {
 				// Always just discard the change
 				t.input = previousInput
 				t.cx = len(t.input)
+				beof = false
 			} else {
 				t.truncateQuery()
 			}
