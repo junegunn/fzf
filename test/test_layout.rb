@@ -891,4 +891,19 @@ class TestLayout < TestInteractive
     BLOCK
     tmux.until { assert_block(block, _1) }
   end
+
+  def test_min_height_auto_no_input_reverse_list
+    tmux.send_keys %(seq 100 | #{FZF} --style full:sharp --layout reverse-list --no-input --height 1% --min-height 5+), :Enter
+
+    block = <<~BLOCK
+      ┌─────────
+      │ > 1
+      │   2
+      │   3
+      │   4
+      │   5
+      └─────────
+    BLOCK
+    tmux.until { assert_block(block, _1) }
+  end
 end

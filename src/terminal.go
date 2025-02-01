@@ -2184,9 +2184,12 @@ func (t *Terminal) move(y int, x int, clear bool) {
 	case layoutDefault:
 		y = h - y - 1
 	case layoutReverseList:
-		n := 2 + t.visibleHeaderLinesInList()
-		if t.noSeparatorLine() {
-			n--
+		n := t.visibleHeaderLinesInList()
+		if !t.inputless {
+			n++
+		}
+		if !t.noSeparatorLine() {
+			n++
 		}
 		if y < n {
 			y = h - y - 1
