@@ -3,10 +3,14 @@ CHANGELOG
 
 0.59.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.59.0/_
+
 - Prioritizing file name matches (#4192)
     - Added a new tiebreak option `pathname` for prioritizing file name matches
     - `--scheme=path` now sets `--tiebreak=pathname,length`
-    - fzf will automatically choose `path` scheme when the input is a TTY device, where fzf would start its built-in walker or run `$FZF_DEFAULT_COMMAND` which is usually a command for listing files.
+    - fzf will automatically choose `path` scheme
+        * when the input is a TTY device, where fzf would start its built-in walker or run `$FZF_DEFAULT_COMMAND` which is usually a command for listing files,
+        * but not when `reload` or `transform` action is bound to `start` event, because in that case, fzf can't be sure of the input type.
 - Added `--header-lines-border` to display header from `--header-lines` with a separate border
   ```sh
   # Use --header-lines-border to separate two headers

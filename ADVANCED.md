@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2025/01/26*
+* *Last update: 2025/02/02*
 * *Requires fzf 0.59.0 or later*
 
 ---
@@ -503,9 +503,9 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
 
 ### Controlling Ripgrep search and fzf search simultaneously
 
-fzf 0.59.0 added `search` action that allows you to trigger an fzf search
-with an arbitrary query string. This means fzf is no longer restricted to the
-exact query entered in the prompt.
+`search` and `transform-search` action allow you to trigger an fzf search with
+an arbitrary query string. This frees fzf from strictly following the prompt
+input, enabling custom search syntax.
 
 In the example below, `transform` action is used to conditionally trigger
 `reload` for ripgrep, followed by `search` for fzf. The first word of the
@@ -535,7 +535,7 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
-    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --preview-window 'up,60%,border-line,+{2}+3/3,~3' \
     --bind 'enter:become(vim {1} +{2})'
 ```
 
