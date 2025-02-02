@@ -299,9 +299,4 @@ class TestFilter < TestBase
       assert_equal expected, result
     end
   end
-
-  def test_abort_action_chain
-    assert_equal '1', `seq 100 | #{FZF} --bind 'load:accept+up+up'`.chomp
-    assert_equal '', `seq 100 | #{FZF} --bind 'load:abort+become(echo {})'`.chomp
-  end
 end

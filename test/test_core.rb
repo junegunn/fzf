@@ -1652,4 +1652,17 @@ class TestCore < TestInteractive
       assert_equal expected, to_vars(lines).slice(*expected.keys)
     end
   end
+
+  def test_abort_action_chain
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'load:accept+up+up' > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      assert_equal '1', File.read(tempname).chomp
+    end
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'load:abort+become(echo {})' > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      assert_equal '', File.read(tempname).chomp
+    end
+  end
 end
