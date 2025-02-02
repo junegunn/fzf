@@ -1616,7 +1616,7 @@ class TestCore < TestInteractive
       end
     end
 
-    tmux.send_keys %(seq 100 | #{FZF} --multi --reverse --preview-window up,noborder --preview 'env | grep ^FZF_ | sort' --no-input --bind enter:show-input+refresh-preview,space:disable-search+refresh-preview), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --multi --reverse --preview-window up,99%,noborder --preview 'env | grep ^FZF_ | sort' --no-input --bind enter:show-input+refresh-preview,space:disable-search+refresh-preview), :Enter
     expected = {
       FZF_TOTAL_COUNT: '100',
       FZF_MATCH_COUNT: '100',
