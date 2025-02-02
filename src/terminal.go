@@ -4831,6 +4831,10 @@ func (t *Terminal) Loop() error {
 					if !doAction(action) {
 						return false
 					}
+					// A terminal action performed. We should stop processing more.
+					if !looping {
+						break
+					}
 				}
 
 				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents {
