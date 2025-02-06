@@ -60,7 +60,7 @@ type Pattern struct {
 	cacheKey      string
 	delimiter     Delimiter
 	nth           []Range
-	revision      int
+	revision      revision
 	procFun       map[termType]algo.Algo
 	cache         *ChunkCache
 }
@@ -73,7 +73,7 @@ func init() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision int, runes []rune) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune) *Pattern {
 
 	var asString string
 	if extended {

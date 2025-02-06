@@ -9,7 +9,7 @@ import (
 type transformed struct {
 	// Because nth can be changed dynamically by change-nth action, we need to
 	// keep the revision number at the time of transformation.
-	revision int
+	revision revision
 	tokens   []Token
 }
 

@@ -2932,7 +2932,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		if !wholeCovered && t.nthAttr > 0 {
 			var tokens []Token
-			if item.transformed != nil {
+			if item.transformed != nil && item.transformed.revision == t.merger.revision {
 				tokens = item.transformed.tokens
 			} else {
 				tokens = Transform(Tokenize(item.text.ToString(), t.delimiter), t.nthCurrent)
