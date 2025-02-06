@@ -390,6 +390,12 @@ type Terminal struct {
 	clickHeaderLine    int
 	clickHeaderColumn  int
 	proxyScript        string
+	numLinesCache      map[int32]numLinesCacheValue
+}
+
+type numLinesCacheValue struct {
+	atMost   int
+	numLines int
 }
 
 type selectedItem struct {
@@ -947,7 +953,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		initFunc:           func() error { return renderer.Init() },
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
-		lastFocus:          minItem.Index()}
+		lastFocus:          minItem.Index(),
+		numLinesCache:      make(map[int32]numLinesCacheValue)}
 
 	// This should be called before accessing tui.Color*
 	tui.InitTheme(opts.Theme, renderer.DefaultTheme(), opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
@@ -1318,12 +1325,22 @@ func (t *Terminal) wrapCols() int {
 	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+1), 1)
 }
 
+func (t *Terminal) clearNumLinesCache() {
+	t.numLinesCache = make(map[int32]numLinesCacheValue)
+}
+
 // Number of lines the item takes including the gap
 func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
 	var numLines int
 	if !t.wrap && !t.multiLine {
 		numLines = 1 + t.gap
 		return numLines, numLines > atMost
+	}
+	if cached, prs := t.numLinesCache[item.Index()]; prs {
+		// Can we use this cache? Let's be conservative.
+		if cached.atMost >= atMost {
+			return cached.numLines, false
+		}
 	}
 	var overflow bool
 	if !t.wrap && t.multiLine {
@@ -1334,6 +1351,9 @@ func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
 		numLines = len(lines)
 	}
 	numLines += t.gap
+	if !overflow {
+		t.numLinesCache[item.Index()] = numLinesCacheValue{atMost, numLines}
+	}
 	return numLines, overflow || numLines > atMost
 }
 
@@ -1461,6 +1481,7 @@ func (t *Terminal) UpdateList(merger *Merger) {
 		if !t.revision.compatible(newRevision) {
 			// Reloaded: clear selection
 			t.selected = make(map[int32]selectedItem)
+			t.clearNumLinesCache()
 		} else {
 			// Trimmed by --tail: filter selection by index
 			filtered := make(map[int32]selectedItem)
@@ -1712,6 +1733,7 @@ func (t *Terminal) hasHeaderLinesWindow() bool {
 }
 
 func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
+	t.clearNumLinesCache()
 	t.forcePreview = forcePreview
 	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
 	width := screenWidth - marginInt[1] - marginInt[3]
@@ -5464,9 +5486,11 @@ func (t *Terminal) Loop() error {
 				req(reqList, reqInfo, reqPrompt, reqHeader)
 			case actToggleWrap:
 				t.wrap = !t.wrap
+				t.clearNumLinesCache()
 				req(reqList, reqHeader)
 			case actToggleMultiLine:
 				t.multiLine = !t.multiLine
+				t.clearNumLinesCache()
 				req(reqList)
 			case actToggleHscroll:
 				// Force re-rendering of the list
