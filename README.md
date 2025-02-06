@@ -2,12 +2,12 @@ Supported by
 ----------
 <div align="center" markdown="1">
 
-[![Warp](https://github.com/user-attachments/assets/0c3b132c-8984-49cf-918a-db6f6abe2c01)](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)<br>
+[![Warp](https://github.com/user-attachments/assets/0c3b132c-8984-49cf-918a-db6f6abe2c01)](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
 
-### [Fzf's Terminal of Choice for Developers](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)
+### [Fzf's Terminal of Choice for Developers](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)
 
-[The Intelligent Terminal](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)<br>
-[Available for MacOS and Linux](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)<br>
+[The Intelligent Terminal](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
+[Available for MacOS and Linux](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
 
 </div>
 
