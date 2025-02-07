@@ -1,18 +1,14 @@
-Supported by 
-----------
 <div align="center" markdown="1">
+<sup>Special thanks to:</sup>
+<br>
+<br>
+<img alt="Warp sponsorship" width="400" src="https://github.com/user-attachments/assets/ab8dd143-b0fd-4904-bdc5-dd7ecac94eae">
 
-[![Warp](https://github.com/user-attachments/assets/0c3b132c-8984-49cf-918a-db6f6abe2c01)](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
-
-### [Fzf's Terminal of Choice for Developers](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)
-
-[The Intelligent Terminal](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
-[Available for MacOS and Linux](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
+### [Warp, the intelligent terminal for developers](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)
+[Available for MacOS and Linux](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=inquirer)<br>
 
 </div>
-
-----------
-
+<hr>
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![github-actions](https://github.com/junegunn/fzf/workflows/Test%20fzf%20on%20Linux/badge.svg)](https://github.com/junegunn/fzf/actions)
 ===
 
