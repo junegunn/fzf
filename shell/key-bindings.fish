@@ -171,18 +171,20 @@ function fzf_key_bindings
         # if $dir is "." but commandline is not a relative path, this means no file path found
         set fzf_query $commandline
       else
+        # Special characters must be double escaped.
+        set -l re_dir (string escape -n -- $dir)
         # Also remove trailing slash after dir, to "split" input properly
-        set fzf_query (string replace -r -- "^$dir/?" '' $commandline)
+        set fzf_query (string replace -r -- "^$re_dir/?" '' $commandline)
       end
     end
 
-    echo (string escape -- $dir)
-    echo (string escape -- $fzf_query)
-    echo $prefix
+    echo -- $dir
+    string escape -- $fzf_query
+    echo -- $prefix
   end
 
   function __fzf_get_dir -d 'Find the longest existing filepath from input string'
-    set dir $argv
+    set dir (string unescape -n -- $argv)
 
     # Strip trailing slash, unless $dir is root dir (/)
     set dir (string replace -r -- '(?<!^)/$' '' $dir)
@@ -194,7 +196,7 @@ function fzf_key_bindings
       set dir (dirname -- "$dir")
     end
 
-    echo $dir
+    string escape -n -- $dir
   end
 
 end
