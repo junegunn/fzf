@@ -978,4 +978,17 @@ class TestLayout < TestInteractive
       setup
     end
   end
+
+  def test_change_header_and_label_at_once
+    tmux.send_keys %(seq 10 | #{FZF} --border sharp --header-border sharp --header-label-pos 3 --bind 'focus:change-header(header)+change-header-label(label)'), :Enter
+    block = <<~BLOCK
+      │ ┌─label──
+      │ │ header
+      │ └────────
+      │   10/10 ─
+      │ >
+      └──────────
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
 end

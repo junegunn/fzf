@@ -5043,75 +5043,58 @@ func (t *Terminal) Loop() error {
 				} else {
 					req(reqHeader)
 				}
-			case actChangeHeaderLabel:
-				t.headerLabelOpts.label = a.a
-				if t.headerBorder != nil {
-					t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(a.a, &tui.ColHeaderLabel, false)
-					req(reqRedrawHeaderLabel)
+			case actChangeHeaderLabel, actTransformHeaderLabel:
+				label := a.a
+				if a.t == actTransformHeaderLabel {
+					label = t.captureLine(a.a)
 				}
-			case actChangeInputLabel:
-				t.inputLabelOpts.label = a.a
+				t.headerLabelOpts.label = label
+				t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
+				req(reqRedrawHeaderLabel)
+			case actChangeInputLabel, actTransformInputLabel:
+				label := a.a
+				if a.t == actTransformInputLabel {
+					label = t.captureLine(a.a)
+				}
+				t.inputLabelOpts.label = label
 				if t.inputBorder != nil {
-					t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(a.a, &tui.ColInputLabel, false)
+					t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(label, &tui.ColInputLabel, false)
 					req(reqRedrawInputLabel)
 				}
-			case actChangeListLabel:
-				t.listLabelOpts.label = a.a
+			case actChangeListLabel, actTransformListLabel:
+				label := a.a
+				if a.t == actTransformListLabel {
+					label = t.captureLine(a.a)
+				}
+				t.listLabelOpts.label = label
 				if t.wborder != nil {
-					t.listLabel, t.listLabelLen = t.ansiLabelPrinter(a.a, &tui.ColListLabel, false)
+					t.listLabel, t.listLabelLen = t.ansiLabelPrinter(label, &tui.ColListLabel, false)
 					req(reqRedrawListLabel)
 				}
-			case actChangeBorderLabel:
-				t.borderLabelOpts.label = a.a
+			case actChangeBorderLabel, actTransformBorderLabel:
+				label := a.a
+				if a.t == actTransformBorderLabel {
+					label = t.captureLine(a.a)
+				}
+				t.borderLabelOpts.label = label
 				if t.border != nil {
-					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(a.a, &tui.ColBorderLabel, false)
+					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 					req(reqRedrawBorderLabel)
 				}
-			case actChangePreviewLabel:
-				t.previewLabelOpts.label = a.a
+			case actChangePreviewLabel, actTransformPreviewLabel:
+				label := a.a
+				if a.t == actTransformPreviewLabel {
+					label = t.captureLine(a.a)
+				}
+				t.previewLabelOpts.label = label
 				if t.pborder != nil {
-					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(a.a, &tui.ColPreviewLabel, false)
+					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
 					req(reqRedrawPreviewLabel)
 				}
 			case actTransform:
 				body := t.captureLines(a.a)
 				if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
 					return doActions(actions)
-				}
-			case actTransformHeaderLabel:
-				label := t.captureLine(a.a)
-				t.headerLabelOpts.label = label
-				if t.headerBorder != nil {
-					t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
-					req(reqRedrawHeaderLabel)
-				}
-			case actTransformInputLabel:
-				label := t.captureLine(a.a)
-				t.inputLabelOpts.label = label
-				if t.inputBorder != nil {
-					t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(label, &tui.ColInputLabel, false)
-					req(reqRedrawInputLabel)
-				}
-			case actTransformListLabel:
-				label := t.captureLine(a.a)
-				t.listLabelOpts.label = label
-				if t.wborder != nil {
-					t.listLabel, t.listLabelLen = t.ansiLabelPrinter(label, &tui.ColListLabel, false)
-					req(reqRedrawListLabel)
-				}
-			case actTransformBorderLabel:
-				label := t.captureLine(a.a)
-				t.borderLabelOpts.label = label
-				if t.border != nil {
-					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
-					req(reqRedrawBorderLabel)
-				}
-			case actTransformPreviewLabel:
-				label := t.captureLine(a.a)
-				t.previewLabelOpts.label = label
-				if t.pborder != nil {
-					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
-					req(reqRedrawPreviewLabel)
 				}
 			case actChangePrompt:
 				t.promptString = a.a
