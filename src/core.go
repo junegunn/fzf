@@ -198,10 +198,26 @@ func Run(opts *Options) (int, error) {
 	inputRevision := revision{}
 	snapshotRevision := revision{}
 	patternCache := make(map[string]*Pattern)
+	denyMutex := sync.Mutex{}
+	denylist := make(map[int32]struct{})
+	clearDenylist := func() {
+		denyMutex.Lock()
+		if len(denylist) > 0 {
+			patternCache = make(map[string]*Pattern)
+		}
+		denylist = make(map[int32]struct{})
+		denyMutex.Unlock()
+	}
 	patternBuilder := func(runes []rune) *Pattern {
+		denyMutex.Lock()
+		denylistCopy := make(map[int32]struct{})
+		for k, v := range denylist {
+			denylistCopy[k] = v
+		}
+		denyMutex.Unlock()
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes)
+			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy)
 	}
 	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
@@ -301,6 +317,9 @@ func Run(opts *Options) (int, error) {
 	var snapshot []*Chunk
 	var count int
 	restart := func(command commandSpec, environ []string) {
+		if !useSnapshot {
+			clearDenylist()
+		}
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
@@ -347,7 +366,8 @@ func Run(opts *Options) (int, error) {
 					} else {
 						reading = reading && evt == EvtReadNew
 					}
-					if useSnapshot && evt == EvtReadFin {
+					if useSnapshot && evt == EvtReadFin { // reload-sync
+						clearDenylist()
 						useSnapshot = false
 					}
 					if !useSnapshot {
@@ -378,9 +398,21 @@ func Run(opts *Options) (int, error) {
 						command = val.command
 						environ = val.environ
 						changed = val.changed
+						bump := false
+						if len(val.denylist) > 0 && val.revision.compatible(inputRevision) {
+							denyMutex.Lock()
+							for _, itemIndex := range val.denylist {
+								denylist[itemIndex] = struct{}{}
+							}
+							denyMutex.Unlock()
+							bump = true
+						}
 						if val.nth != nil {
 							// Change nth and clear caches
 							nth = *val.nth
+							bump = true
+						}
+						if bump {
 							patternCache = make(map[string]*Pattern)
 							cache.Clear()
 							inputRevision.bumpMinor()
