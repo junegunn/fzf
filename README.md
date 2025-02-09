@@ -1,3 +1,17 @@
+<div align="center" markdown="1">
+   <sup>Special thanks to:</sup>
+   <br>
+   <br>
+   <a href="https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf">
+      <img alt="Warp sponsorship" width="400" src="https://github.com/user-attachments/assets/ab8dd143-b0fd-4904-bdc5-dd7ecac94eae">
+   </a>
+
+### [Warp, the intelligent terminal for developers](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)
+[Available for MacOS and Linux](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
+
+</div>
+<hr>
+
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![github-actions](https://github.com/junegunn/fzf/workflows/Test%20fzf%20on%20Linux/badge.svg)](https://github.com/junegunn/fzf/actions)
 ===
 
