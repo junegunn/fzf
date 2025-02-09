@@ -57,15 +57,15 @@ elif ! [[ $KITTY_WINDOW_ID ]] && (( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES == $(stt
   dim=${FZF_PREVIEW_COLUMNS}x$((FZF_PREVIEW_LINES - 1))
 fi
 
-# 1. Use kitty icat on kitty terminal
-if [[ $KITTY_WINDOW_ID ]]; then
+# 1. Use icat (from Kitty) if kitten is installed
+if [[ $KITTY_WINDOW_ID ]] || [[ $GHOSTTY_RESOURCES_DIR ]] && command -v kitten > /dev/null; then
   # 1. 'memory' is the fastest option but if you want the image to be scrollable,
   #    you have to use 'stream'.
   #
   # 2. The last line of the output is the ANSI reset code without newline.
   #    This confuses fzf and makes it render scroll offset indicator.
   #    So we remove the last line and append the reset code to its previous line.
-  kitty icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place="$dim@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
+  kitten icat --clear --transfer-mode=memory --unicode-placeholder --stdin=no --place="$dim@0x0" "$file" | sed '$d' | sed $'$s/$/\e[m/'
 
 # 2. Use chafa with Sixel output
 elif command -v chafa > /dev/null; then
