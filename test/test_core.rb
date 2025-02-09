@@ -1666,8 +1666,8 @@ class TestCore < TestInteractive
     end
   end
 
-  def test_deny
-    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:deny,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
+  def test_exclude
+    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
 
     tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.until { |lines| assert_includes lines, '> 1' }
@@ -1687,7 +1687,7 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 1000, lines.match_count }
     tmux.until { |lines| assert_includes lines, '> 2' }
 
-    # TODO: We should also check the behavior of 'deny' during reloads
+    # TODO: We should also check the behavior of 'exclude' during reloads
   end
 
   def test_accept_nth

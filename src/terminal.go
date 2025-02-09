@@ -584,7 +584,7 @@ const (
 	actShowHeader
 	actHideHeader
 	actBell
-	actDeny
+	actExclude
 )
 
 func (a actionType) Name() string {
@@ -4911,7 +4911,7 @@ func (t *Terminal) Loop() error {
 				}
 			case actBell:
 				t.tui.Bell()
-			case actDeny:
+			case actExclude:
 				if len(t.selected) > 0 {
 					for _, item := range t.sortSelected() {
 						denylist = append(denylist, item.item.Index())
