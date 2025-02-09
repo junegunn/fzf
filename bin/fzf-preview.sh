@@ -57,8 +57,8 @@ elif ! [[ $KITTY_WINDOW_ID ]] && (( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES == $(stt
   dim=${FZF_PREVIEW_COLUMNS}x$((FZF_PREVIEW_LINES - 1))
 fi
 
-# 1. Use kitty icat on kitty terminal
-if [[ $KITTY_WINDOW_ID ]]; then
+# 1. Use kitty icat on kitty terminal and ghostty terminal
+if [[ $KITTY_WINDOW_ID || $GHOSTTY_RESOURCES_DIR ]]; then
   # 1. 'memory' is the fastest option but if you want the image to be scrollable,
   #    you have to use 'stream'.
   #
