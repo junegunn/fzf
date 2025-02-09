@@ -58,7 +58,7 @@ elif ! [[ $KITTY_WINDOW_ID ]] && (( FZF_PREVIEW_TOP + FZF_PREVIEW_LINES == $(stt
 fi
 
 # 1. Use icat (from Kitty) if kitten is installed
-if command -v kitten > /dev/null; then
+if [[ $KITTY_WINDOW_ID ]] || [[ $GHOSTTY_RESOURCES_DIR ]] && command -v kitten > /dev/null; then
   # 1. 'memory' is the fastest option but if you want the image to be scrollable,
   #    you have to use 'stream'.
   #
