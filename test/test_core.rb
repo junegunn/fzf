@@ -1669,23 +1669,80 @@ class TestCore < TestInteractive
   def test_exclude
     tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
 
-    tmux.until { |lines| assert_equal 1000, lines.match_count }
-    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 1'
+    end
     tmux.send_keys :a
-    tmux.until { |lines| assert_includes lines, '> 2' }
-    tmux.until { |lines| assert_equal 999, lines.match_count }
+    tmux.until do |lines|
+      assert_includes lines, '> 2'
+      assert_equal 999, lines.match_count
+    end
     tmux.send_keys :Up, :BTab, :BTab, :BTab, :a
-    tmux.until { |lines| assert_equal 996, lines.match_count }
-    tmux.until { |lines| assert_includes lines, '> 9' }
+    tmux.until do |lines|
+      assert_equal 996, lines.match_count
+      assert_includes lines, '> 9'
+    end
     tmux.send_keys :b
-    tmux.until { |lines| assert_equal 1000, lines.match_count }
-    tmux.until { |lines| assert_includes lines, '> 5' }
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 5'
+    end
     tmux.send_keys :Tab, :Tab, :Tab, :a
-    tmux.until { |lines| assert_equal 997, lines.match_count }
-    tmux.until { |lines| assert_includes lines, '> 2' }
+    tmux.until do |lines|
+      assert_equal 997, lines.match_count
+      assert_includes lines, '> 2'
+    end
     tmux.send_keys :c
-    tmux.until { |lines| assert_equal 1000, lines.match_count }
-    tmux.until { |lines| assert_includes lines, '> 2' }
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 2'
+    end
+
+    # TODO: We should also check the behavior of 'exclude' during reloads
+  end
+
+  def test_exclude_current
+    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude-current,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
+
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 1'
+    end
+    tmux.send_keys :a
+    tmux.until do |lines|
+      assert_includes lines, '> 2'
+      assert_equal 999, lines.match_count
+    end
+    tmux.send_keys :Up, :BTab, :BTab, :BTab, :a
+    tmux.until do |lines|
+      assert_equal 998, lines.match_count
+      assert_equal 3, lines.select_count
+      assert_includes lines, '> 7'
+    end
+    tmux.send_keys :b
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_equal 0, lines.select_count
+      assert_includes lines, '> 5'
+    end
+    tmux.send_keys :Tab, :Tab, :Tab, :a
+    tmux.until do |lines|
+      assert_equal 999, lines.match_count
+      assert_equal 3, lines.select_count
+      assert_includes lines, '>>3'
+    end
+    tmux.send_keys :a
+    tmux.until do |lines|
+      assert_equal 998, lines.match_count
+      assert_equal 2, lines.select_count
+      assert_includes lines, '>>4'
+    end
+    tmux.send_keys :c
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 2'
+    end
 
     # TODO: We should also check the behavior of 'exclude' during reloads
   end

@@ -585,6 +585,7 @@ const (
 	actHideHeader
 	actBell
 	actExclude
+	actExcludeCurrent
 )
 
 func (a actionType) Name() string {
@@ -4926,6 +4927,12 @@ func (t *Terminal) Loop() error {
 					}
 				}
 				changed = true
+			case actExcludeCurrent:
+				if item := t.currentItem(); item != nil {
+					denylist = append(denylist, item.Index())
+					t.deselectItem(item)
+					changed = true
+				}
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, "")
 			case actExecuteMulti:
