@@ -1665,4 +1665,30 @@ class TestCore < TestInteractive
       assert_equal '', File.read(tempname).chomp
     end
   end
+
+  def test_accept_nth
+    tmux.send_keys %((echo "foo  bar  baz"; echo "bar baz  foo") | #{FZF} --multi --accept-nth 2,2 --sync --bind start:select-all+accept > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      assert_equal ['bar  bar', 'baz  baz'], File.readlines(tempname, chomp: true)
+    end
+  end
+
+  def test_accept_nth_string_delimiter
+    tmux.send_keys %(echo "foo  ,bar,baz" | #{FZF} -d, --accept-nth 2,2,1,3,1 --sync --bind start:accept > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      # Last delimiter and the whitespaces are removed
+      assert_equal ['bar,bar,foo  ,bazfoo'], File.readlines(tempname, chomp: true)
+    end
+  end
+
+  def test_accept_nth_regex_delimiter
+    tmux.send_keys %(echo "foo  :,:bar,baz" | #{FZF} --delimiter='[:,]+' --accept-nth 2,2,1,3,1 --sync --bind start:accept > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      # Last delimiter and the whitespaces are removed
+      assert_equal ['bar,bar,foo  :,:bazfoo'], File.readlines(tempname, chomp: true)
+    end
+  end
 end

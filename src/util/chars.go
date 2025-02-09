@@ -189,6 +189,27 @@ func (chars *Chars) TrimTrailingWhitespaces() {
 	chars.slice = chars.slice[0 : len(chars.slice)-whitespaces]
 }
 
+func (chars *Chars) TrimSuffix(runes []rune) {
+	lastIdx := len(chars.slice)
+	firstIdx := lastIdx - len(runes)
+	if firstIdx < 0 {
+		return
+	}
+
+	for i := firstIdx; i < lastIdx; i++ {
+		char := chars.Get(i)
+		if char != runes[i-firstIdx] {
+			return
+		}
+	}
+
+	chars.slice = chars.slice[0:firstIdx]
+}
+
+func (chars *Chars) SliceRight(last int) {
+	chars.slice = chars.slice[:last]
+}
+
 func (chars *Chars) ToString() string {
 	if runes := chars.optionalRunes(); runes != nil {
 		return string(runes)

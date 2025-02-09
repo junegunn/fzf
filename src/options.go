@@ -41,6 +41,7 @@ Usage: fzf [options]
                              integer or a range expression ([BEGIN]..[END]).
     --with-nth=N[,..]        Transform the presentation of each line using
                              field index expressions
+    --accept-nth=N[,..]      Define which fields to print on accept
     -d, --delimiter=STR      Field delimiter regex (default: AWK-style)
     +s, --no-sort            Do not sort the result
     --literal                Do not normalize latin script letters
@@ -544,6 +545,7 @@ type Options struct {
 	Normalize         bool
 	Nth               []Range
 	WithNth           []Range
+	AcceptNth         []Range
 	Delimiter         Delimiter
 	Sort              int
 	Track             trackOption
@@ -666,6 +668,7 @@ func defaultOptions() *Options {
 		Normalize:    true,
 		Nth:          make([]Range, 0),
 		WithNth:      make([]Range, 0),
+		AcceptNth:    make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
 		Track:        trackDisabled,
@@ -2381,6 +2384,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			if opts.WithNth, err = splitNth(str); err != nil {
+				return err
+			}
+		case "--accept-nth":
+			str, err := nextString("nth expression required")
+			if err != nil {
+				return err
+			}
+			if opts.AcceptNth, err = splitNth(str); err != nil {
 				return err
 			}
 		case "-s", "--sort":

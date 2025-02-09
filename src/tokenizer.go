@@ -211,7 +211,36 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	return withPrefixLengths(tokens, 0)
 }
 
-func joinTokens(tokens []Token) string {
+// StripLastDelimiter removes the trailing delimiter and whitespaces from the
+// last token.
+func StripLastDelimiter(tokens []Token, delimiter Delimiter) []Token {
+	if len(tokens) == 0 {
+		return tokens
+	}
+
+	lastToken := tokens[len(tokens)-1]
+
+	if delimiter.str == nil && delimiter.regex == nil {
+		lastToken.text.TrimTrailingWhitespaces()
+	} else {
+		if delimiter.str != nil {
+			lastToken.text.TrimSuffix([]rune(*delimiter.str))
+		} else if delimiter.regex != nil {
+			str := lastToken.text.ToString()
+			locs := delimiter.regex.FindAllStringIndex(str, -1)
+			if len(locs) > 0 {
+				lastLoc := locs[len(locs)-1]
+				lastToken.text.SliceRight(lastLoc[0])
+			}
+		}
+		lastToken.text.TrimTrailingWhitespaces()
+	}
+
+	return tokens
+}
+
+// JoinTokens concatenates the tokens into a single string
+func JoinTokens(tokens []Token) string {
 	var output bytes.Buffer
 	for _, token := range tokens {
 		output.WriteString(token.text.ToString())
@@ -229,7 +258,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				chars := util.ToChars(stringBytes(joinTokens(tokens)))
+				chars := util.ToChars(stringBytes(JoinTokens(tokens)))
 				parts = append(parts, &chars)
 			} else {
 				if idx < 0 {

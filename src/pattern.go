@@ -403,6 +403,8 @@ func (p *Pattern) transformInput(item *Item) []Token {
 
 	tokens := Tokenize(item.text.ToString(), p.delimiter)
 	ret := Transform(tokens, p.nth)
+	// TODO: We could apply StripLastDelimiter to exclude the last delimiter from
+	// the search allowing suffix match with a string or a regex delimiter.
 	item.transformed = &transformed{p.revision, ret}
 	return ret
 }
