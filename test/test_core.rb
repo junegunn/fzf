@@ -1666,8 +1666,8 @@ class TestCore < TestInteractive
     end
   end
 
-  def test_exclude
-    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
+  def test_exclude_multi
+    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude-multi,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
 
     tmux.until do |lines|
       assert_equal 1000, lines.match_count
@@ -1702,8 +1702,8 @@ class TestCore < TestInteractive
     # TODO: We should also check the behavior of 'exclude' during reloads
   end
 
-  def test_exclude_current
-    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude-current,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
+  def test_exclude
+    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
 
     tmux.until do |lines|
       assert_equal 1000, lines.match_count
