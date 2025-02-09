@@ -1603,6 +1603,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			}
 		case "bell":
 			appendAction(actBell)
+		case "exclude":
+			appendAction(actExclude)
 		default:
 			t := isExecuteAction(specLower)
 			if t == actIgnore {

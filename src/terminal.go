@@ -584,6 +584,7 @@ const (
 	actShowHeader
 	actHideHeader
 	actBell
+	actExclude
 )
 
 func (a actionType) Name() string {
@@ -621,12 +622,14 @@ type placeholderFlags struct {
 }
 
 type searchRequest struct {
-	sort    bool
-	sync    bool
-	nth     *[]Range
-	command *commandSpec
-	environ []string
-	changed bool
+	sort     bool
+	sync     bool
+	nth      *[]Range
+	command  *commandSpec
+	environ  []string
+	changed  bool
+	denylist []int32
+	revision revision
 }
 
 type previewRequest struct {
@@ -4751,6 +4754,7 @@ func (t *Terminal) Loop() error {
 		changed := false
 		beof := false
 		queryChanged := false
+		denylist := []int32{}
 
 		// Special handling of --sync. Activate the interface on the second tick.
 		if loopIndex == 1 && t.deferActivation() {
@@ -4907,6 +4911,21 @@ func (t *Terminal) Loop() error {
 				}
 			case actBell:
 				t.tui.Bell()
+			case actExclude:
+				if len(t.selected) > 0 {
+					for _, item := range t.sortSelected() {
+						denylist = append(denylist, item.item.Index())
+					}
+					// Clear selected items
+					t.selected = make(map[int32]selectedItem)
+					t.version++
+				} else {
+					item := t.currentItem()
+					if item != nil {
+						denylist = append(denylist, item.Index())
+					}
+				}
+				changed = true
 			case actExecute, actExecuteSilent:
 				t.executeCommand(a.a, false, a.t == actExecuteSilent, false, false, "")
 			case actExecuteMulti:
@@ -6016,7 +6035,7 @@ func (t *Terminal) Loop() error {
 		reload := changed || newCommand != nil
 		var reloadRequest *searchRequest
 		if reload {
-			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, command: newCommand, environ: t.environ(), changed: changed}
+			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.merger.Revision()}
 		}
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 

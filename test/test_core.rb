@@ -1666,6 +1666,30 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_exclude
+    tmux.send_keys %(seq 1000 | #{FZF} --multi --bind 'a:exclude,b:reload(seq 1000),c:reload-sync(seq 1000)'), :Enter
+
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines, '> 2' }
+    tmux.until { |lines| assert_equal 999, lines.match_count }
+    tmux.send_keys :Up, :BTab, :BTab, :BTab, :a
+    tmux.until { |lines| assert_equal 996, lines.match_count }
+    tmux.until { |lines| assert_includes lines, '> 9' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.until { |lines| assert_includes lines, '> 5' }
+    tmux.send_keys :Tab, :Tab, :Tab, :a
+    tmux.until { |lines| assert_equal 997, lines.match_count }
+    tmux.until { |lines| assert_includes lines, '> 2' }
+    tmux.send_keys :c
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.until { |lines| assert_includes lines, '> 2' }
+
+    # TODO: We should also check the behavior of 'exclude' during reloads
+  end
+
   def test_accept_nth
     tmux.send_keys %((echo "foo  bar  baz"; echo "bar baz  foo") | #{FZF} --multi --accept-nth 2,2 --sync --bind start:select-all+accept > #{tempname}), :Enter
     wait do
