@@ -39,20 +39,22 @@ func (p ColorPair) style() tcell.Style {
 type Attr int32
 
 type TcellWindow struct {
-	color       bool
-	windowType  WindowType
-	top         int
-	left        int
-	width       int
-	height      int
-	normal      ColorPair
-	lastX       int
-	lastY       int
-	moveCursor  bool
-	borderStyle BorderStyle
-	uri         *string
-	params      *string
-	showCursor  bool
+	color         bool
+	windowType    WindowType
+	top           int
+	left          int
+	width         int
+	height        int
+	normal        ColorPair
+	lastX         int
+	lastY         int
+	moveCursor    bool
+	borderStyle   BorderStyle
+	uri           *string
+	params        *string
+	showCursor    bool
+	wrapSign      string
+	wrapSignWidth int
 }
 
 func (w *TcellWindow) Top() int {
@@ -629,6 +631,11 @@ func (w *TcellWindow) EraseMaybe() bool {
 	return true
 }
 
+func (w *TcellWindow) SetWrapSign(sign string, width int) {
+	w.wrapSign = sign
+	w.wrapSignWidth = width
+}
+
 func (w *TcellWindow) EncloseX(x int) bool {
 	return x >= w.left && x < (w.left+w.width)
 }
@@ -757,11 +764,18 @@ Loop:
 
 		// word wrap:
 		xPos := w.left + w.lastX + lx
-		if xPos >= (w.left + w.width) {
+		if xPos >= w.left+w.width {
 			w.lastY++
 			w.lastX = 0
 			lx = 0
 			xPos = w.left
+			wgr := uniseg.NewGraphemes(w.wrapSign)
+			for wgr.Next() {
+				rs := wgr.Runes()
+				_screen.SetContent(w.left+lx, w.top+w.lastY, rs[0], rs[1:], style.Dim(true))
+				lx += uniseg.StringWidth(string(rs))
+			}
+			xPos = w.left + lx
 		}
 
 		yPos := w.top + w.lastY

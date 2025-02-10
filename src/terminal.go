@@ -1936,6 +1936,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					pwidth -= 1
 				}
 				t.pwindow = t.tui.NewWindow(y, x, pwidth, pheight, tui.WindowPreview, noBorder, true)
+				t.pwindow.SetWrapSign(t.wrapSign, t.wrapSignWidth)
 				if !hadPreviewWindow {
 					t.pwindow.Erase()
 				}

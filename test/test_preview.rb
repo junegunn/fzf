@@ -453,7 +453,7 @@ class TestPreview < TestInteractive
     tmux.send_keys 'f'
     tmux.until do |lines|
       assert_equal '::', lines[0]
-      assert_equal '  3', lines[1]
+      assert_equal '↳   3', lines[1]
     end
   end
 
@@ -527,7 +527,7 @@ class TestPreview < TestInteractive
     tmux.send_keys "seq 10 | #{FZF} --preview-border rounded --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until do |lines|
-      assert_equal ['╭────╮', '│ 10 │', '│ 0  │', '│ 10 │', '│ 1  │'], lines.take(5).map(&:strip)
+      assert_equal ['╭────╮', '│ 10 │', '│ ↳ 0│', '│ 10 │', '│ ↳ 1│'], lines.take(5).map(&:strip)
     end
   end
 

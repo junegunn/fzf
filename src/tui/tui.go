@@ -659,6 +659,8 @@ type Window interface {
 	LinkEnd()
 	Erase()
 	EraseMaybe() bool
+
+	SetWrapSign(string, int)
 }
 
 type FullscreenRenderer struct {

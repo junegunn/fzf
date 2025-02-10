@@ -44,8 +44,9 @@ func (r *LightRenderer) stderr(str string) {
 	r.stderrInternal(str, true, "")
 }
 
-const CR string = "\x1b[2m␍"
-const LF string = "\x1b[2m␊"
+const DIM string = "\x1b[2m"
+const CR string = DIM + "␍"
+const LF string = DIM + "␊"
 
 func (r *LightRenderer) stderrInternal(str string, allowNLCR bool, resetCode string) {
 	bytes := []byte(str)
@@ -127,19 +128,21 @@ type LightRenderer struct {
 }
 
 type LightWindow struct {
-	renderer   *LightRenderer
-	colored    bool
-	windowType WindowType
-	border     BorderStyle
-	top        int
-	left       int
-	width      int
-	height     int
-	posx       int
-	posy       int
-	tabstop    int
-	fg         Color
-	bg         Color
+	renderer      *LightRenderer
+	colored       bool
+	windowType    WindowType
+	border        BorderStyle
+	top           int
+	left          int
+	width         int
+	height        int
+	posx          int
+	posy          int
+	tabstop       int
+	fg            Color
+	bg            Color
+	wrapSign      string
+	wrapSignWidth int
 }
 
 func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
@@ -1105,11 +1108,12 @@ type wrappedLine struct {
 	displayWidth int
 }
 
-func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLine {
+func wrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapSignWidth int) []wrappedLine {
 	lines := []wrappedLine{}
 	width := 0
 	line := ""
 	gr := uniseg.NewGraphemes(input)
+	max := initialMax
 	for gr.Next() {
 		rs := gr.Runes()
 		str := string(rs)
@@ -1131,6 +1135,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 			line = str
 			prefixLength = 0
 			width = w
+			max = initialMax - wrapSignWidth
 		}
 	}
 	lines = append(lines, wrappedLine{string(line), width})
@@ -1140,7 +1145,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 	allLines := strings.Split(str, "\n")
 	for i, line := range allLines {
-		lines := wrapLine(line, w.posx, w.width, w.tabstop)
+		lines := wrapLine(line, w.posx, w.width, w.tabstop, w.wrapSignWidth)
 		for j, wl := range lines {
 			w.stderrInternal(wl.text, false, resetCode)
 			w.posx += wl.displayWidth
@@ -1153,6 +1158,11 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 				w.MoveAndClear(w.posy, w.posx)
 				w.Move(w.posy+1, 0)
 				w.renderer.stderr(resetCode)
+				if len(lines) > 1 {
+					w.stderrInternal(DIM+w.wrapSign, false, resetCode)
+					w.renderer.stderr(resetCode)
+					w.Move(w.posy, w.wrapSignWidth)
+				}
 			}
 		}
 	}
@@ -1224,6 +1234,11 @@ func (w *LightWindow) Erase() {
 
 func (w *LightWindow) EraseMaybe() bool {
 	return false
+}
+
+func (w *LightWindow) SetWrapSign(sign string, width int) {
+	w.wrapSign = sign
+	w.wrapSignWidth = width
 }
 
 func (r *LightRenderer) HideCursor() {
