@@ -1161,8 +1161,8 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 				if len(lines) > 1 {
 					sign := w.wrapSign
 					width := w.wrapSignWidth
-					if width > w.width-w.posx {
-						runes, truncatedWidth := util.Truncate(w.wrapSign, w.width-w.posx)
+					if width > w.width {
+						runes, truncatedWidth := util.Truncate(w.wrapSign, w.width)
 						sign = string(runes)
 						width = truncatedWidth
 					}
