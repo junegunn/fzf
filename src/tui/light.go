@@ -1159,9 +1159,16 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 				w.Move(w.posy+1, 0)
 				w.renderer.stderr(resetCode)
 				if len(lines) > 1 {
-					w.stderrInternal(DIM+w.wrapSign, false, resetCode)
+					sign := w.wrapSign
+					width := w.wrapSignWidth
+					if width > w.width-w.posx {
+						runes, truncatedWidth := util.Truncate(w.wrapSign, w.width-w.posx)
+						sign = string(runes)
+						width = truncatedWidth
+					}
+					w.stderrInternal(DIM+sign, false, resetCode)
 					w.renderer.stderr(resetCode)
-					w.Move(w.posy, w.wrapSignWidth)
+					w.Move(w.posy, width)
 				}
 			}
 		}

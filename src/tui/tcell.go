@@ -766,10 +766,18 @@ Loop:
 		xPos := w.left + w.lastX + lx
 		if xPos >= w.left+w.width {
 			w.lastY++
+			if w.lastY >= w.height {
+				return FillSuspend
+			}
 			w.lastX = 0
 			lx = 0
 			xPos = w.left
-			wgr := uniseg.NewGraphemes(w.wrapSign)
+			sign := w.wrapSign
+			if w.wrapSignWidth > w.width {
+				runes, _ := util.Truncate(sign, w.width)
+				sign = string(runes)
+			}
+			wgr := uniseg.NewGraphemes(sign)
 			for wgr.Next() {
 				rs := wgr.Runes()
 				_screen.SetContent(w.left+lx, w.top+w.lastY, rs[0], rs[1:], style.Dim(true))
