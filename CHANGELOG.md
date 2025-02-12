@@ -3,6 +3,7 @@ CHANGELOG
 
 0.60.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.60.0/_
 
 - Added `--accept-nth` for choosing output fields
   ```sh
