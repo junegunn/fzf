@@ -78,6 +78,11 @@ type Delimiter struct {
 	str   *string
 }
 
+// IsAwk returns true if the delimiter is an AWK-style delimiter
+func (d Delimiter) IsAwk() bool {
+	return d.regex == nil && d.str == nil
+}
+
 // String returns the string representation of a Delimiter.
 func (d Delimiter) String() string {
 	return fmt.Sprintf("Delimiter{regex: %v, str: &%q}", d.regex, *d.str)
