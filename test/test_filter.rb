@@ -59,6 +59,13 @@ class TestFilter < TestBase
       `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 < #{tempname}`.chomp
   end
 
+  def test_with_nth_template
+    writelines(['hello world ', 'byebye'])
+    assert_equal \
+      'hello world ',
+      `#{FZF} -f"^he he.he." -x -n 2.. --with-nth '{2} {1}. {1}.' < #{tempname}`.chomp
+  end
+
   def test_with_nth_ansi
     writelines(["\x1b[33mhello \x1b[34;1mworld\x1b[m ", 'byebye'])
     assert_equal \

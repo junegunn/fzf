@@ -96,7 +96,7 @@ func Run(opts *Options) (int, error) {
 	var chunkList *ChunkList
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
-	if len(opts.WithNth) == 0 {
+	if opts.WithNth == nil {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, byteString(data))
@@ -109,6 +109,7 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
+		nthTransformer := opts.WithNth(opts.Delimiter)
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
@@ -127,15 +128,13 @@ func Run(opts *Options) (int, error) {
 					}
 				}
 			}
-			trans := Transform(tokens, opts.WithNth)
-			transformed := JoinTokens(trans)
+			transformed := nthTransformer(tokens)
 			if len(header) < opts.HeaderLines {
 				header = append(header, transformed)
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
 			item.text, item.colors = ansiProcessor(stringBytes(transformed))
-			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++

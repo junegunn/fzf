@@ -305,7 +305,7 @@ type Terminal struct {
 	nthAttr            tui.Attr
 	nth                []Range
 	nthCurrent         []Range
-	acceptNth          []Range
+	acceptNth          func([]Token) string
 	tabstop            int
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
@@ -919,7 +919,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
-		acceptNth:          opts.AcceptNth,
 		tabstop:            opts.Tabstop,
 		hasStartActions:    false,
 		hasResultActions:   false,
@@ -961,6 +960,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		lastAction:         actStart,
 		lastFocus:          minItem.Index(),
 		numLinesCache:      make(map[int32]numLinesCacheValue)}
+	if opts.AcceptNth != nil {
+		t.acceptNth = opts.AcceptNth(t.delimiter)
+	}
 
 	// This should be called before accessing tui.Color*
 	tui.InitTheme(opts.Theme, renderer.DefaultTheme(), opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
@@ -1570,9 +1572,11 @@ func (t *Terminal) output() bool {
 	transform := func(item *Item) string {
 		return item.AsString(t.ansi)
 	}
-	if len(t.acceptNth) > 0 {
+	if t.acceptNth != nil {
 		transform = func(item *Item) string {
-			return JoinTokens(StripLastDelimiter(Transform(Tokenize(item.AsString(t.ansi), t.delimiter), t.acceptNth), t.delimiter))
+			tokens := Tokenize(item.AsString(t.ansi), t.delimiter)
+			transformed := t.acceptNth(tokens)
+			return StripLastDelimiter(transformed, t.delimiter)
 		}
 	}
 	found := len(t.selected) > 0

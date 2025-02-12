@@ -117,12 +117,33 @@ transformed lines (unlike in \fB\-\-preview\fR where fields are extracted from
 the original lines) because fzf doesn't allow searching against the hidden
 fields.
 .TP
-.BI "\-\-with\-nth=" "N[,..]"
-Transform the presentation of each line using field index expressions
+.BI "\-\-with\-nth=" "N[,..] or TEMPLATE"
+Transform the presentation of each line using the field index expressions.
+For advanced transformation, you can provide a template containing field index
+expressions in curly braces.
+
+.RS
+e.g.
+     # Single expression: drop the first field
+     echo foo bar baz | fzf --with-nth 2..
+
+     # Use template to rearrange fields
+     echo foo,bar,baz | fzf --delimiter , --with-nth '{1},{3},{2},{1..2}'
+.RE
 .TP
-.BI "\-\-accept\-nth=" "N[,..]"
+.BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
 Define which fields to print on accept. The last delimiter is stripped from the
-output.
+output. For advanced transformation, you can provide a template containing
+field index expressions in curly braces.
+
+.RS
+e.g.
+     # Single expression
+     echo foo bar baz | fzf --accept-nth 2
+
+     # Template
+     echo foo bar baz | fzf --accept-nth '1st: {1}, 2nd: {2}, 3rd: {3}'
+.RE
 .TP
 .B "+s, \-\-no\-sort"
 Do not sort the result

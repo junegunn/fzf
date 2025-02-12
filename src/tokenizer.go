@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -211,32 +212,18 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	return withPrefixLengths(tokens, 0)
 }
 
-// StripLastDelimiter removes the trailing delimiter and whitespaces from the
-// last token.
-func StripLastDelimiter(tokens []Token, delimiter Delimiter) []Token {
-	if len(tokens) == 0 {
-		return tokens
-	}
-
-	lastToken := tokens[len(tokens)-1]
-
-	if delimiter.str == nil && delimiter.regex == nil {
-		lastToken.text.TrimTrailingWhitespaces()
-	} else {
-		if delimiter.str != nil {
-			lastToken.text.TrimSuffix([]rune(*delimiter.str))
-		} else if delimiter.regex != nil {
-			str := lastToken.text.ToString()
-			locs := delimiter.regex.FindAllStringIndex(str, -1)
-			if len(locs) > 0 {
-				lastLoc := locs[len(locs)-1]
-				lastToken.text.SliceRight(lastLoc[0])
-			}
+// StripLastDelimiter removes the trailing delimiter and whitespaces
+func StripLastDelimiter(str string, delimiter Delimiter) string {
+	if delimiter.str != nil {
+		str = strings.TrimSuffix(str, *delimiter.str)
+	} else if delimiter.regex != nil {
+		locs := delimiter.regex.FindAllStringIndex(str, -1)
+		if len(locs) > 0 {
+			lastLoc := locs[len(locs)-1]
+			str = str[:lastLoc[0]]
 		}
-		lastToken.text.TrimTrailingWhitespaces()
 	}
-
-	return tokens
+	return strings.TrimRightFunc(str, unicode.IsSpace)
 }
 
 // JoinTokens concatenates the tokens into a single string

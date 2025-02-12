@@ -544,8 +544,8 @@ type Options struct {
 	Case              Case
 	Normalize         bool
 	Nth               []Range
-	WithNth           []Range
-	AcceptNth         []Range
+	WithNth           func(Delimiter) func([]Token) string
+	AcceptNth         func(Delimiter) func([]Token) string
 	Delimiter         Delimiter
 	Sort              int
 	Track             trackOption
@@ -667,8 +667,6 @@ func defaultOptions() *Options {
 		Case:         CaseSmart,
 		Normalize:    true,
 		Nth:          make([]Range, 0),
-		WithNth:      make([]Range, 0),
-		AcceptNth:    make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
 		Track:        trackDisabled,
@@ -769,6 +767,62 @@ func splitNth(str string) ([]Range, error) {
 		ranges[idx] = r
 	}
 	return ranges, nil
+}
+
+func nthTransformer(str string) (func(Delimiter) func([]Token) string, error) {
+	// ^[0-9,-.]+$"
+	if match, _ := regexp.MatchString("^[0-9,-.]+$", str); match {
+		nth, err := splitNth(str)
+		if err != nil {
+			return nil, err
+		}
+		return func(Delimiter) func([]Token) string {
+			return func(tokens []Token) string {
+				return JoinTokens(Transform(tokens, nth))
+			}
+		}, nil
+	}
+
+	// {...} {...} ...
+	placeholder := regexp.MustCompile("{[0-9,-.]+}")
+	indexes := placeholder.FindAllStringIndex(str, -1)
+	if indexes == nil {
+		return nil, errors.New("template should include at least 1 placeholder: " + str)
+	}
+
+	type NthParts struct {
+		str string
+		nth []Range
+	}
+
+	parts := make([]NthParts, len(indexes))
+	idx := 0
+	for _, index := range indexes {
+		if idx < index[0] {
+			parts = append(parts, NthParts{str: str[idx:index[0]]})
+		}
+		if nth, err := splitNth(str[index[0]+1 : index[1]-1]); err == nil {
+			parts = append(parts, NthParts{nth: nth})
+		}
+		idx = index[1]
+	}
+	if idx < len(str) {
+		parts = append(parts, NthParts{str: str[idx:]})
+	}
+
+	return func(delimiter Delimiter) func([]Token) string {
+		return func(tokens []Token) string {
+			str := ""
+			for _, holder := range parts {
+				if holder.nth != nil {
+					str += StripLastDelimiter(JoinTokens(Transform(tokens, holder.nth)), delimiter)
+				} else {
+					str += holder.str
+				}
+			}
+			return str
+		}
+	}, nil
 }
 
 func delimiterRegexp(str string) Delimiter {
@@ -2387,7 +2441,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			if opts.WithNth, err = splitNth(str); err != nil {
+			if opts.WithNth, err = nthTransformer(str); err != nil {
 				return err
 			}
 		case "--accept-nth":
@@ -2395,7 +2449,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			if opts.AcceptNth, err = splitNth(str); err != nil {
+			if opts.AcceptNth, err = nthTransformer(str); err != nil {
 				return err
 			}
 		case "-s", "--sort":

@@ -1,6 +1,40 @@
 CHANGELOG
 =========
 
+0.60.0
+------
+
+- Added `--accept-nth` for choosing output fields
+  ```sh
+  ps -ef | fzf --multi --header-lines 1 | awk '{print $2}'
+  # Becomes
+  ps -ef | fzf --multi --header-lines 1 --accept-nth 2
+
+  git branch | fzf | cut -c3-
+  # Can be rewritten as
+  git branch | fzf --accept-nth -1
+  ```
+- `--accept-nth` and `--with-nth` now support a template that includes multiple field index expressions in curly braces
+  ```sh
+  echo foo,bar,baz | fzf --delimiter , --accept-nth '{1}, {3}, {2}'
+    # foo, baz, bar
+
+  echo foo,bar,baz | fzf --delimiter , --with-nth '{1},{3},{2},{1..2}'
+    # foo,baz,bar,foo,bar
+  ```
+- Added `exclude` and `exclude-multi` actions for dynamically excluding items
+  ```sh
+  seq 100 | fzf --bind 'ctrl-x:exclude'
+
+  # 'exclude-multi' will exclude the selected items or the current item
+  seq 100 | fzf --multi --bind 'ctrl-x:exclude-multi'
+  ```
+- Preview window now prints wrap indicator when wrapping is enabled
+  ```sh
+  seq 100 | xargs | fzf --wrap --preview 'echo {}' --preview-window wrap
+  ```
+- Bug fixes and improvements
+
 0.59.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.59.0/_
@@ -365,7 +399,7 @@ _Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_
 - fzf will not start the initial reader when `reload` or `reload-sync` is bound to `start` event. `fzf < /dev/null` or `: | fzf` are no longer required and extraneous `load` event will not fire due to the empty list.
   ```sh
   # Now this will work as expected. Previously, this would print an invalid header line.
-  # `fzf < /dev/null` or `: | fzf` would fix the problem, but then an extraneous 
+  # `fzf < /dev/null` or `: | fzf` would fix the problem, but then an extraneous
   # `load` event would fire and the header would be prematurely updated.
   fzf --header 'Loading ...' --header-lines 1 \
       --bind 'start:reload:sleep 1; ps -ef' \
