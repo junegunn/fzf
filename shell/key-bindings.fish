@@ -136,39 +136,41 @@ function fzf_key_bindings
   end
 
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
-    set -l commandline (commandline -t)
+    set -l dir '.'
+    set -l query
+    set -l commandline (commandline -t | string unescape -n)
 
-    # strip -option= from token if present
+    # Strip -option= from token if present
     set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
     set commandline (string replace -- "$prefix" '' $commandline)
 
     # Enable home directory expansion of leading ~/
     set commandline (string replace -r -- '^~/' '\$HOME/' $commandline)
 
-    # escape special characters, except for the $ sign of valid variable names,
-    # so that after eval, the original string is returned, but with the
-    # variable names replaced by their values.
+    # Escape special characters, except for the $ sign of valid variable names,
+    # so that the original string with expanded variables is returned after eval.
     set commandline (string escape -n -- $commandline)
-    set commandline (string replace -r -a -- '\x5c\$(?=[\w])' '\$' $commandline)
+    set commandline (string replace -r -a -- '\\\\\$(?=[\w])' '\$' $commandline)
 
     # eval is used to do shell expansion on paths
     eval set commandline $commandline
 
-    # Combine multiple consecutive slashes into one, and unescape.
-    set commandline (string replace -r -a -- '/+' '/' $commandline | string unescape -n)
+    # Combine multiple consecutive slashes into one.
+    set commandline (string replace -r -a -- '/+' '/' $commandline)
 
-    if test -z "$commandline"
-      # Default to current directory with no --query
-      set dir '.'
-      set fzf_query ''
-    else
-      set dir (__fzf_get_dir $commandline)
+    if test -n "$commandline"
+      # Strip trailing slash, unless $dir is root dir (/)
+      set dir (string replace -r -- '(?<!^)/$' '' $commandline)
 
-      # BUG: on combined expressions, if a left argument is a single `!`, the
-      # builtin test command of fish will treat it as the ! operator. To
-      # overcome this, have the variable parts on the right.
-      if test "." = "$dir" -a "./" != (string sub -l 2 -- $commandline)
-        # if $dir is "." but commandline is not a relative path, this means no file path found
+      # Set $dir to the longest existing filepath
+      while not test -d "$dir"
+        # If path is absolute, this can keep going until ends up at /
+        # If path is relative, this can keep going until entire input is consumed, dirname returns "."
+        set dir (dirname -- $dir)
+      end
+
+      if test "$dir" = '.'; and test (string sub -l 2 -- $commandline) != './'
+        # If $dir is "." but commandline is not a relative path, this means no file path found
         set fzf_query $commandline
       else
         # Also remove trailing slash after dir, to "split" input properly
@@ -176,25 +178,7 @@ function fzf_key_bindings
       end
     end
 
-    echo -- $dir
-    string escape -- $fzf_query
-    echo -- $prefix
-  end
-
-  function __fzf_get_dir -d 'Find the longest existing filepath from input string'
-    set dir $argv
-
-    # Strip trailing slash, unless $dir is root dir (/)
-    set dir (string replace -r -- '(?<!^)/$' '' $dir)
-
-    # Iteratively check if dir exists and strip tail end of path
-    while test ! -d "$dir"
-      # If path is absolute, this can keep going until ends up at /
-      # If path is relative, this can keep going until entire input is consumed, dirname returns "."
-      set dir (dirname -- "$dir")
-    end
-
-    string escape -n -- $dir
+    string escape -n -- "$dir" "$fzf_query" "$prefix"
   end
 
 end
