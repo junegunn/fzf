@@ -109,8 +109,7 @@ function fzf_key_bindings
   end
 
   function __fzfcmd
-    test -n "$FZF_TMUX"; or set FZF_TMUX 0
-    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
+    test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
     if test -n "$FZF_TMUX_OPTS"
       echo "fzf-tmux $FZF_TMUX_OPTS -- "
     else if test "$FZF_TMUX" = "1"
