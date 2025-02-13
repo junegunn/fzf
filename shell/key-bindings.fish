@@ -32,27 +32,22 @@ function fzf_key_bindings
     set -lx dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
-    set -l result
 
-    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    begin
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root=$dir" "$FZF_CTRL_T_OPTS")
-      set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
-      set -lx FZF_DEFAULT_OPTS_FILE ''
-      set result (eval (__fzfcmd) -m --query=$fzf_query)
-    end
-    if test -z "$result"
-      commandline -f repaint
-      return
-    else
+    set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
+      "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root=$dir" \
+      "$FZF_CTRL_T_OPTS --multi")
+
+    set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
+    set -lx FZF_DEFAULT_OPTS_FILE
+
+    if set -l result (eval (__fzfcmd) --query=$fzf_query)
       # Remove last token from commandline.
-      commandline -t ""
+      commandline -t ''
+      for i in $result
+        commandline -it -- $prefix(string escape -- $i)' '
+      end
     end
-    for i in $result
-      commandline -it -- $prefix
-      commandline -it -- (string escape -- $i)
-      commandline -it -- ' '
-    end
+
     commandline -f repaint
   end
 
