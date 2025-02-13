@@ -3172,7 +3172,9 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			displayWidth = t.displayWidthWithLimit(line, 0, displayWidth)
 		}
 
-		t.printColoredString(t.window, line, offsets, colBase)
+		if maxWidth > 0 {
+			t.printColoredString(t.window, line, offsets, colBase)
+		}
 		if postTask != nil {
 			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw)
 		} else {
