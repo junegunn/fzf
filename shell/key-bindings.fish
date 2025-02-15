@@ -89,20 +89,16 @@ function fzf_key_bindings
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
-    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    begin
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --walker=dir,follow,hidden --scheme=path --walker-root=$dir" "$FZF_ALT_C_OPTS")
-      set -lx FZF_DEFAULT_OPTS_FILE ''
-      set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
-      set -l result (eval (__fzfcmd) +m --query=$fzf_query)
+    set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
+      "--reverse --walker=dir,follow,hidden --scheme=path --walker-root=$dir" \
+      "$FZF_ALT_C_OPTS --no-multi")
 
-      if test -n "$result"
-        cd -- $result
+    set -lx FZF_DEFAULT_OPTS_FILE
+    set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
 
-        # Remove last token from commandline.
-        commandline -t ""
-        commandline -it -- $prefix
-      end
+    if set -l result (eval (__fzfcmd) --query=$fzf_query)
+      cd -- $result
+      commandline -rt -- $prefix
     end
 
     commandline -f repaint
