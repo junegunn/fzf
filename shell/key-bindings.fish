@@ -52,29 +52,34 @@ function fzf_key_bindings
   end
 
   function fzf-history-widget -d "Show command history"
-    test -n "$FZF_TMUX_HEIGHT"; or set FZF_TMUX_HEIGHT 40%
-    begin
-      # merge history from other sessions before searching
-      test -z "$fish_private_mode"; and builtin history merge
+    set -l fzf_query (commandline | string escape)
 
-      set -lx FZF_DEFAULT_OPTS (__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '"\t"↳ ' --highlight-line +m $FZF_CTRL_R_OPTS")
-      set -lx FZF_DEFAULT_OPTS_FILE ''
-      set -lx FZF_DEFAULT_COMMAND
-      set -a -- FZF_DEFAULT_OPTS --with-shell=(status fish-path)\\ -c
+    set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
+      '--nth=2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign="\t↳ "' \
+      "--highlight-line --no-multi $FZF_CTRL_R_OPTS --read0 --print0" \
+      "--bind='enter:become:string replace -a -- \n\t \n {2..} | string collect'" \
+      '--with-shell='(status fish-path)\\ -c)
 
-      if type -q perl
-        set -a FZF_DEFAULT_OPTS '--tac'
-        set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
-      else
-        set FZF_DEFAULT_COMMAND \
-          'set -l h (builtin history -z --reverse | string split0);' \
-          'for i in (seq (count $h) -1 1);' \
-          'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
-          'end'
-      end
-      set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --read0 --print0 -q (commandline | string escape) "--bind=enter:become:'string replace -a -- \n\t \n {2..} | string collect'")
-      and commandline -- $result
+    set -lx FZF_DEFAULT_OPTS_FILE
+    set -lx FZF_DEFAULT_COMMAND
+
+    if type -q perl
+      set -a FZF_DEFAULT_OPTS '--tac'
+      set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
+    else
+      set FZF_DEFAULT_COMMAND \
+        'set -l h (builtin history -z --reverse | string split0);' \
+        'for i in (seq (count $h) -1 1);' \
+        'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
+        'end'
     end
+
+    # Merge history from other sessions before searching
+    test -z "$fish_private_mode"; and builtin history merge
+
+    set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query)
+    and commandline -- $result
+
     commandline -f repaint
   end
 
