@@ -116,18 +116,15 @@ function fzf_key_bindings
   end
 
   bind \cr fzf-history-widget
+  bind -M insert \cr fzf-history-widget
+
   if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
     bind \ct fzf-file-widget
-  end
-  if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
-    bind \ec fzf-cd-widget
-  end
-
-  bind -M insert \cr fzf-history-widget
-  if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
     bind -M insert \ct fzf-file-widget
   end
+
   if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
+    bind \ec fzf-cd-widget
     bind -M insert \ec fzf-cd-widget
   end
 
