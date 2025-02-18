@@ -14,6 +14,10 @@
 
 # Key bindings
 # ------------
+# For compatibility with fish versions down to 3.1.2, the script does not use:
+# - The -f/--function switch of command: set
+# - The process substitution syntax: $(cmd)
+# - Ranges that omit start/end indexes: $var[$start..] $var[..$end] $var[..]
 function fzf_key_bindings
 
   function __fzf_defaults
