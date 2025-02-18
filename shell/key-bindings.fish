@@ -26,6 +26,63 @@ function fzf_key_bindings
       $FZF_DEFAULT_OPTS $argv[2..-1]
   end
 
+  function __fzfcmd
+    test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
+    if test -n "$FZF_TMUX_OPTS"
+      echo "fzf-tmux $FZF_TMUX_OPTS -- "
+    else if test "$FZF_TMUX" = "1"
+      echo "fzf-tmux -d$FZF_TMUX_HEIGHT -- "
+    else
+      echo "fzf"
+    end
+  end
+
+  function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
+    set -l dir '.'
+    set -l query
+    set -l commandline (commandline -t | string unescape -n)
+
+    # Strip -option= from token if present
+    set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
+    set commandline (string replace -- "$prefix" '' $commandline)
+
+    # Enable home directory expansion of leading ~/
+    set commandline (string replace -r -- '^~/' '\$HOME/' $commandline)
+
+    # Escape special characters, except for the $ sign of valid variable names,
+    # so that the original string with expanded variables is returned after eval.
+    set commandline (string escape -n -- $commandline)
+    set commandline (string replace -r -a -- '\\\\\$(?=[\w])' '\$' $commandline)
+
+    # eval is used to do shell expansion on paths
+    eval set commandline $commandline
+
+    # Combine multiple consecutive slashes into one.
+    set commandline (string replace -r -a -- '/+' '/' $commandline)
+
+    if test -n "$commandline"
+      # Strip trailing slash, unless $dir is root dir (/)
+      set dir (string replace -r -- '(?<!^)/$' '' $commandline)
+
+      # Set $dir to the longest existing filepath
+      while not test -d "$dir"
+        # If path is absolute, this can keep going until ends up at /
+        # If path is relative, this can keep going until entire input is consumed, dirname returns "."
+        set dir (dirname -- $dir)
+      end
+
+      if test "$dir" = '.'; and test (string sub -l 2 -- $commandline) != './'
+        # If $dir is "." but commandline is not a relative path, this means no file path found
+        set fzf_query $commandline
+      else
+        # Also remove trailing slash after dir, to "split" input properly
+        set fzf_query (string replace -r -- "^$dir/?" '' $commandline)
+      end
+    end
+
+    string escape -n -- "$dir" "$fzf_query" "$prefix"
+  end
+
   # Store current token in $dir as root for the 'find' command
   function fzf-file-widget -d "List files and folders"
     set -l commandline (__fzf_parse_commandline)
@@ -104,17 +161,6 @@ function fzf_key_bindings
     commandline -f repaint
   end
 
-  function __fzfcmd
-    test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
-    if test -n "$FZF_TMUX_OPTS"
-      echo "fzf-tmux $FZF_TMUX_OPTS -- "
-    else if test "$FZF_TMUX" = "1"
-      echo "fzf-tmux -d$FZF_TMUX_HEIGHT -- "
-    else
-      echo "fzf"
-    end
-  end
-
   bind \cr fzf-history-widget
   bind -M insert \cr fzf-history-widget
 
@@ -126,52 +172,6 @@ function fzf_key_bindings
   if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
     bind \ec fzf-cd-widget
     bind -M insert \ec fzf-cd-widget
-  end
-
-  function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
-    set -l dir '.'
-    set -l query
-    set -l commandline (commandline -t | string unescape -n)
-
-    # Strip -option= from token if present
-    set -l prefix (string match -r -- '^-[^\s=]+=' $commandline)
-    set commandline (string replace -- "$prefix" '' $commandline)
-
-    # Enable home directory expansion of leading ~/
-    set commandline (string replace -r -- '^~/' '\$HOME/' $commandline)
-
-    # Escape special characters, except for the $ sign of valid variable names,
-    # so that the original string with expanded variables is returned after eval.
-    set commandline (string escape -n -- $commandline)
-    set commandline (string replace -r -a -- '\\\\\$(?=[\w])' '\$' $commandline)
-
-    # eval is used to do shell expansion on paths
-    eval set commandline $commandline
-
-    # Combine multiple consecutive slashes into one.
-    set commandline (string replace -r -a -- '/+' '/' $commandline)
-
-    if test -n "$commandline"
-      # Strip trailing slash, unless $dir is root dir (/)
-      set dir (string replace -r -- '(?<!^)/$' '' $commandline)
-
-      # Set $dir to the longest existing filepath
-      while not test -d "$dir"
-        # If path is absolute, this can keep going until ends up at /
-        # If path is relative, this can keep going until entire input is consumed, dirname returns "."
-        set dir (dirname -- $dir)
-      end
-
-      if test "$dir" = '.'; and test (string sub -l 2 -- $commandline) != './'
-        # If $dir is "." but commandline is not a relative path, this means no file path found
-        set fzf_query $commandline
-      else
-        # Also remove trailing slash after dir, to "split" input properly
-        set fzf_query (string replace -r -- "^$dir/?" '' $commandline)
-      end
-    end
-
-    string escape -n -- "$dir" "$fzf_query" "$prefix"
   end
 
 end
