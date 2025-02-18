@@ -73,7 +73,7 @@ module TestShell
     tmux.prepare
     tmux.send_keys :Escape, :c
     lines = tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..]
+    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..].chomp('/')
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -241,7 +241,7 @@ module CompletionTest
     tmux.until do |lines|
       assert_equal 1, lines.match_count
       assert_includes lines, '> 55'
-      assert_includes lines, '> /tmp/fzf-test/d55'
+      assert_includes lines, '> /tmp/fzf-test/d55/'
     end
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'cd /tmp/fzf-test/d55/', lines[-1] }
