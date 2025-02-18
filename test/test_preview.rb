@@ -544,4 +544,18 @@ class TestPreview < TestInteractive
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> 2' }
   end
+
+  def test_preview_query_should_not_be_affected_by_search
+    tmux.send_keys "seq 1 | #{FZF} --bind 'change:transform-search(echo {q:1})' --preview 'echo [{q}/{}]'", :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys '1'
+    tmux.until { |lines| assert lines.any_include?('[1/1]') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[1 /1]') }
+    tmux.send_keys '2'
+    tmux.until do |lines|
+      assert lines.any_include?('[1 2/1]')
+      assert_equal 1, lines.match_count
+    end
+  end
 end
