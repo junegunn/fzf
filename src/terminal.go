@@ -3384,8 +3384,10 @@ func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unc
 	wiped := false
 	image := false
 	wireframe := false
+	var index int
+	var line string
 Loop:
-	for _, line := range lines {
+	for index, line = range lines {
 		var lbg tui.Color = -1
 		if ansi != nil {
 			ansi.lbg = -1
@@ -3528,6 +3530,7 @@ Loop:
 		}
 		lineNo++
 	}
+	t.previewer.scrollable = t.previewer.scrollable || index < len(lines)-1
 	t.previewed.image = image
 	t.previewed.wireframe = wireframe
 }
