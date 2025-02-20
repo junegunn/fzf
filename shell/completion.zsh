@@ -99,9 +99,9 @@ if [[ -o interactive ]]; then
 __fzf_defaults() {
   # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
   # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
-  echo "--height ${FZF_TMUX_HEIGHT:-40%} --min-height 20+ --bind=ctrl-z:ignore $1"
+  echo -E "--height ${FZF_TMUX_HEIGHT:-40%} --min-height 20+ --bind=ctrl-z:ignore $1"
   command cat "${FZF_DEFAULT_OPTS_FILE-}" 2> /dev/null
-  echo "${FZF_DEFAULT_OPTS-} $2"
+  echo -E "${FZF_DEFAULT_OPTS-} $2"
 }
 
 __fzf_comprun() {
