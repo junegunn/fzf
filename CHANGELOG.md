@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.60.1
+------
+- Bug fixes and minor improvements
+    - Built-in walker now prints directory entries with a trailing slash
+    - Fixed a bug causing unexpected behavior with [fzf-tab](https://github.com/Aloxaf/fzf-tab). Please upgrade if you use it.
+- Thanks to @alexeisersun, @bitraid, @Lompik, and @fsc0 for the contributions
+
 0.60.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.60.0/_
