@@ -452,7 +452,7 @@ function! fzf#wrap(...)
   return opts
 endfunction
 
-function! fzf#use_sh()
+function! s:use_sh()
   let [shell, shellslash, shellcmdflag, shellxquote] = [&shell, &shellslash, &shellcmdflag, &shellxquote]
   if s:is_win
     set shell=cmd.exe
@@ -464,6 +464,15 @@ function! fzf#use_sh()
   endif
   return [shell, shellslash, shellcmdflag, shellxquote]
 endfunction
+
+function! fzf#with_sh(func) abort
+  let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
+  try
+    return a:func()
+  finally
+    let [&shell, &shellslash, &shellcmdflag, &shellxquote] = [shell, shellslash, shellcmdflag, shellxquote]
+  endtry
+endf
 
 function! s:writefile(...)
   if call('writefile', a:000) == -1
@@ -499,7 +508,7 @@ let s:need_cmd_window = has('win32unix') && $TERM_PROGRAM ==# 'mintty' && s:comp
 
 function! fzf#run(...) abort
 try
-  let [shell, shellslash, shellcmdflag, shellxquote] = fzf#use_sh()
+  let [shell, shellslash, shellcmdflag, shellxquote] = s:use_sh()
 
   let dict   = exists('a:1') ? copy(a:1) : {}
   let temps  = { 'result': s:fzf_tempname() }
@@ -872,7 +881,7 @@ function! s:execute_term(dict, command, temps) abort
   let winrest = winrestcmd()
   let pbuf = bufnr('')
   let [ppos, winopts, is_popup] = s:split(a:dict)
-  call fzf#use_sh()
+  call s:use_sh()
   let b:fzf = a:dict
   let fzf = { 'buf': bufnr(''), 'pbuf': pbuf, 'ppos': ppos, 'dict': a:dict, 'temps': a:temps,
             \ 'winopts': winopts, 'winrest': winrest, 'lines': &lines,
