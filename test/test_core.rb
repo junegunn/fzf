@@ -1771,12 +1771,14 @@ class TestCore < TestInteractive
       # Last delimiter and the whitespaces are removed
       assert_equal ['bar,bar,foo  :,:bazfoo'], File.readlines(tempname, chomp: true)
     end
+  end
 
-    tmux.send_keys %(echo "foo:,bar:,baz" | #{FZF} --delimiter='[:,]+' --accept-nth 2.. --sync --bind start:accept > #{tempname}), :Enter
+  def test_accept_nth_regex_delimiter_strip_last
+    tmux.send_keys %((echo "foo:,bar:,baz"; echo "foo:,bar:,baz:,qux:,") | #{FZF} --multi --delimiter='[:,]+' --accept-nth 2.. --sync --bind 'load:select-all+accept' > #{tempname}), :Enter
     wait do
       assert_path_exists tempname
       # Last delimiter and the whitespaces are removed
-      assert_equal ['bar:,baz'], File.readlines(tempname, chomp: true)
+      assert_equal ['bar:,baz', 'bar:,baz:,qux'], File.readlines(tempname, chomp: true)
     end
   end
 
