@@ -225,7 +225,9 @@ func StripLastDelimiter(str string, delimiter Delimiter) string {
 		locs := delimiter.regex.FindAllStringIndex(str, -1)
 		if len(locs) > 0 {
 			lastLoc := locs[len(locs)-1]
-			str = str[:lastLoc[0]]
+			if lastLoc[1] == len(str) {
+				str = str[:lastLoc[0]]
+			}
 		}
 	}
 	return strings.TrimRightFunc(str, unicode.IsSpace)

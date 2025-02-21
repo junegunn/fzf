@@ -1773,6 +1773,15 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_accept_nth_regex_delimiter_strip_last
+    tmux.send_keys %((echo "foo:,bar:,baz"; echo "foo:,bar:,baz:,qux:,") | #{FZF} --multi --delimiter='[:,]+' --accept-nth 2.. --sync --bind 'load:select-all+accept' > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      # Last delimiter and the whitespaces are removed
+      assert_equal ['bar:,baz', 'bar:,baz:,qux'], File.readlines(tempname, chomp: true)
+    end
+  end
+
   def test_accept_nth_template
     tmux.send_keys %(echo "foo  ,bar,baz" | #{FZF} -d, --accept-nth '1st: {1}, 3rd: {3}, 2nd: {2}' --sync --bind start:accept > #{tempname}), :Enter
     wait do
