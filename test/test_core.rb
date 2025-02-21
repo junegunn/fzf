@@ -1771,6 +1771,13 @@ class TestCore < TestInteractive
       # Last delimiter and the whitespaces are removed
       assert_equal ['bar,bar,foo  :,:bazfoo'], File.readlines(tempname, chomp: true)
     end
+
+    tmux.send_keys %(echo "foo:,bar:,baz" | #{FZF} --delimiter='[:,]+' --accept-nth 2.. --sync --bind start:accept > #{tempname}), :Enter
+    wait do
+      assert_path_exists tempname
+      # Last delimiter and the whitespaces are removed
+      assert_equal ['bar:,baz'], File.readlines(tempname, chomp: true)
+    end
   end
 
   def test_accept_nth_template
