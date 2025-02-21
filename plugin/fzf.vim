@@ -99,10 +99,11 @@ function! s:shellesc_cmd(arg)
 endfunction
 
 function! fzf#shellescape(arg, ...)
-  let shell = get(a:000, 0, s:is_win ? 'cmd.exe' : 'sh')
-  if shell =~# 'cmd.exe$'
+  let shell = get(a:000, 0)
+  if s:is_win && (shell =~# 'cmd.exe$' || &shell =~# 'cmd.exe$')
     return s:shellesc_cmd(a:arg)
   endif
+  let shell = get(a:000, 0, 'sh')
   try
     let [shell, &shell] = [&shell, shell]
     return s:fzf_call('shellescape', a:arg)
