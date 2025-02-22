@@ -1722,6 +1722,9 @@ e.g.
      \fBfzf \-\-multi \-\-bind 'ctrl\-a:select\-all+accept'\fR
      \fBfzf \-\-multi \-\-bind 'ctrl\-a:select\-all' \-\-bind 'ctrl\-a:+accept'\fR
 
+Any action after a terminal action that exits fzf, such as \fBaccept\fR or
+\fBabort\fR, is ignored.
+
 .SS ACTION ARGUMENT
 
 An action denoted with \fB(...)\fR suffix takes an argument.
