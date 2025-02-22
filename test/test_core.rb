@@ -827,6 +827,24 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert(lines.any? { it.include?('jump cancelled at 3') }) }
   end
 
+  def test_jump_no_pointer
+    tmux.send_keys "seq 100 | #{FZF} --pointer= --jump-labels 12345 --bind ctrl-j:jump", :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| assert_equal '5 5', lines[-7] }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| assert_equal ' 5', lines[-7] }
+  end
+
+  def test_jump_no_pointer_no_marker
+    tmux.send_keys "seq 100 | #{FZF} --pointer= --marker= --jump-labels 12345 --bind ctrl-j:jump", :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| assert_equal '55', lines[-7] }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| assert_equal '5', lines[-7] }
+  end
+
   def test_pointer
     tmux.send_keys "seq 10 | #{fzf("--pointer '>>'")}", :Enter
     # Assert that specified pointer is displayed

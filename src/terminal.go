@@ -2755,11 +2755,15 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	item := result.item
 	_, selected := t.selected[item.Index()]
 	label := ""
+	extraWidth := 0
 	if t.jumping != jumpDisabled {
 		if index < len(t.jumpLabels) {
 			// Striped
 			current = index%2 == 0
-			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", t.pointerLen-1)
+			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
+			if t.pointerLen == 0 {
+				extraWidth = 1
+			}
 		}
 	} else if current {
 		label = t.pointer
@@ -2788,6 +2792,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool) {
+		width += extraWidth
 		if (current || selected) && t.highlightLine {
 			color := tui.ColSelected
 			if current {
