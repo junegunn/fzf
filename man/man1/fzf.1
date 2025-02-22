@@ -122,7 +122,8 @@ fields.
 .BI "\-\-with\-nth=" "N[,..] or TEMPLATE"
 Transform the presentation of each line using the field index expressions.
 For advanced transformation, you can provide a template containing field index
-expressions in curly braces.
+expressions in curly braces. When you use a template, the trailing delimiter is
+stripped from each expression, giving you more control over the output.
 
 .RS
 e.g.
@@ -136,7 +137,9 @@ e.g.
 .BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
 Define which fields to print on accept. The last delimiter is stripped from the
 output. For advanced transformation, you can provide a template containing
-field index expressions in curly braces.
+field index expressions in curly braces. When you use a template, the trailing
+delimiter is stripped from each expression, giving you more control over the
+output.
 
 .RS
 e.g.
