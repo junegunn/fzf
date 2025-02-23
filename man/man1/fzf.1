@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Feb 2025" "fzf 0.60.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Feb 2025" "fzf 0.60.2" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -124,6 +124,7 @@ Transform the presentation of each line using the field index expressions.
 For advanced transformation, you can provide a template containing field index
 expressions in curly braces. When you use a template, the trailing delimiter is
 stripped from each expression, giving you more control over the output.
+\fB{n}\fR in template evaluates to the zero-based ordinal index of the line.
 
 .RS
 e.g.
@@ -131,7 +132,7 @@ e.g.
      echo foo bar baz | fzf --with-nth 2..
 
      # Use template to rearrange fields
-     echo foo,bar,baz | fzf --delimiter , --with-nth '{1},{3},{2},{1..2}'
+     echo foo,bar,baz | fzf --delimiter , --with-nth '{n},{1},{3},{2},{1..2}'
 .RE
 .TP
 .BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
@@ -139,7 +140,8 @@ Define which fields to print on accept. The last delimiter is stripped from the
 output. For advanced transformation, you can provide a template containing
 field index expressions in curly braces. When you use a template, the trailing
 delimiter is stripped from each expression, giving you more control over the
-output.
+output. \fB{n}\fR in template evaluates to the zero-based ordinal index of the
+line.
 
 .RS
 e.g.
@@ -147,7 +149,7 @@ e.g.
      echo foo bar baz | fzf --accept-nth 2
 
      # Template
-     echo foo bar baz | fzf --accept-nth '1st: {1}, 2nd: {2}, 3rd: {3}'
+     echo foo bar baz | fzf --accept-nth 'Index: {n}, 1st: {1}, 2nd: {2}, 3rd: {3}'
 .RE
 .TP
 .B "+s, \-\-no\-sort"

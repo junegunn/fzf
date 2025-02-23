@@ -3,7 +3,10 @@ CHANGELOG
 
 0.60.2
 ------
-- Template for `--with-nth` and `--accept-nth` now supports `{n}` which evaluates to the zero-based ordinal index of the item.
+- Template for `--with-nth` and `--accept-nth` now supports `{n}` which evaluates to the zero-based ordinal index of the item
+- Fixed a regression that caused the last field in the "nth" expression to be trimmed when a regular expression delimiter is used
+    - Thanks to @phanen for the fix
+- Fixed 'jump' action when the pointer is an empty string
 
 0.60.1
 ------
