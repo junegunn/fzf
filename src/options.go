@@ -544,8 +544,8 @@ type Options struct {
 	Case              Case
 	Normalize         bool
 	Nth               []Range
-	WithNth           func(Delimiter) func([]Token) string
-	AcceptNth         func(Delimiter) func([]Token) string
+	WithNth           func(Delimiter) func([]Token, int32) string
+	AcceptNth         func(Delimiter) func([]Token, int32) string
 	Delimiter         Delimiter
 	Sort              int
 	Track             trackOption
@@ -769,30 +769,31 @@ func splitNth(str string) ([]Range, error) {
 	return ranges, nil
 }
 
-func nthTransformer(str string) (func(Delimiter) func([]Token) string, error) {
+func nthTransformer(str string) (func(Delimiter) func([]Token, int32) string, error) {
 	// ^[0-9,-.]+$"
 	if match, _ := regexp.MatchString("^[0-9,-.]+$", str); match {
 		nth, err := splitNth(str)
 		if err != nil {
 			return nil, err
 		}
-		return func(Delimiter) func([]Token) string {
-			return func(tokens []Token) string {
+		return func(Delimiter) func([]Token, int32) string {
+			return func(tokens []Token, index int32) string {
 				return JoinTokens(Transform(tokens, nth))
 			}
 		}, nil
 	}
 
 	// {...} {...} ...
-	placeholder := regexp.MustCompile("{[0-9,-.]+}")
+	placeholder := regexp.MustCompile("{[0-9,-.]+}|{n}")
 	indexes := placeholder.FindAllStringIndex(str, -1)
 	if indexes == nil {
 		return nil, errors.New("template should include at least 1 placeholder: " + str)
 	}
 
 	type NthParts struct {
-		str string
-		nth []Range
+		str   string
+		index bool
+		nth   []Range
 	}
 
 	parts := make([]NthParts, len(indexes))
@@ -801,7 +802,10 @@ func nthTransformer(str string) (func(Delimiter) func([]Token) string, error) {
 		if idx < index[0] {
 			parts = append(parts, NthParts{str: str[idx:index[0]]})
 		}
-		if nth, err := splitNth(str[index[0]+1 : index[1]-1]); err == nil {
+		expr := str[index[0]+1 : index[1]-1]
+		if expr == "n" {
+			parts = append(parts, NthParts{index: true})
+		} else if nth, err := splitNth(expr); err == nil {
 			parts = append(parts, NthParts{nth: nth})
 		}
 		idx = index[1]
@@ -810,12 +814,16 @@ func nthTransformer(str string) (func(Delimiter) func([]Token) string, error) {
 		parts = append(parts, NthParts{str: str[idx:]})
 	}
 
-	return func(delimiter Delimiter) func([]Token) string {
-		return func(tokens []Token) string {
+	return func(delimiter Delimiter) func([]Token, int32) string {
+		return func(tokens []Token, index int32) string {
 			str := ""
 			for _, holder := range parts {
 				if holder.nth != nil {
 					str += StripLastDelimiter(JoinTokens(Transform(tokens, holder.nth)), delimiter)
+				} else if holder.index {
+					if index >= 0 {
+						str += strconv.Itoa(int(index))
+					}
 				} else {
 					str += holder.str
 				}

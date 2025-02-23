@@ -128,7 +128,7 @@ func Run(opts *Options) (int, error) {
 					}
 				}
 			}
-			transformed := nthTransformer(tokens)
+			transformed := nthTransformer(tokens, itemIndex)
 			if len(header) < opts.HeaderLines {
 				header = append(header, transformed)
 				eventBox.Set(EvtHeader, header)

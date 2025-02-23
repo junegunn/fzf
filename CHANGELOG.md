@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.60.2
+------
+- Template for `--with-nth` and `--accept-nth` now supports `{n}` which evaluates to the zero-based ordinal index of the item.
+
 0.60.1
 ------
 - Bug fixes and minor improvements

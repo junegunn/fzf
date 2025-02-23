@@ -305,7 +305,7 @@ type Terminal struct {
 	nthAttr            tui.Attr
 	nth                []Range
 	nthCurrent         []Range
-	acceptNth          func([]Token) string
+	acceptNth          func([]Token, int32) string
 	tabstop            int
 	margin             [4]sizeSpec
 	padding            [4]sizeSpec
@@ -1576,7 +1576,7 @@ func (t *Terminal) output() bool {
 	if t.acceptNth != nil {
 		transform = func(item *Item) string {
 			tokens := Tokenize(item.AsString(t.ansi), t.delimiter)
-			transformed := t.acceptNth(tokens)
+			transformed := t.acceptNth(tokens, item.Index())
 			return StripLastDelimiter(transformed, t.delimiter)
 		}
 	}
