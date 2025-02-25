@@ -51,3 +51,9 @@ func (item *Item) AsString(stripAnsi bool) string {
 	}
 	return item.text.ToString()
 }
+
+func (item *Item) acceptNth(stripAnsi bool, delimiter Delimiter, transformer func([]Token, int32) string) string {
+	tokens := Tokenize(item.AsString(stripAnsi), delimiter)
+	transformed := transformer(tokens, item.Index())
+	return StripLastDelimiter(transformed, delimiter)
+}

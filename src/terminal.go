@@ -1575,9 +1575,7 @@ func (t *Terminal) output() bool {
 	}
 	if t.acceptNth != nil {
 		transform = func(item *Item) string {
-			tokens := Tokenize(item.AsString(t.ansi), t.delimiter)
-			transformed := t.acceptNth(tokens, item.Index())
-			return StripLastDelimiter(transformed, t.delimiter)
+			return item.acceptNth(t.ansi, t.delimiter, t.acceptNth)
 		}
 	}
 	found := len(t.selected) > 0

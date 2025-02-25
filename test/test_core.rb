@@ -238,6 +238,11 @@ class TestCore < TestInteractive
     assert_equal %w[5555 55], fzf_output_lines
   end
 
+  def test_select_1_accept_nth
+    tmux.send_keys "seq 1 100 | #{fzf(:with_nth, '..,..', :print_query, :q, 5555, :'1', :accept_nth, '"{1} // {1}"')}", :Enter
+    assert_equal ['5555', '55 // 55'], fzf_output_lines
+  end
+
   def test_exit_0
     tmux.send_keys "seq 1 100 | #{fzf(:with_nth, '..,..', :print_query, :q, 555_555, :'0')}", :Enter
     assert_equal %w[555555], fzf_output_lines
