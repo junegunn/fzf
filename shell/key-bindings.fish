@@ -116,10 +116,9 @@ function fzf_key_bindings
     set -l fzf_query (commandline | string escape)
 
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
-      '--nth=2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign="\t↳ "' \
-      "--highlight-line --no-multi $FZF_CTRL_R_OPTS --read0 --print0" \
-      "--bind='enter:become:string replace -a -- \n\t \n {2..} | string collect'" \
-      '--with-shell='(status fish-path)\\ -c)
+      '--nth=2..,.. --scheme=history --multi --wrap-sign="\t↳ "' \
+      "--bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS" \
+      '--accept-nth=2.. --read0 --print0 --with-shell='(status fish-path)\\ -c)
 
     set -lx FZF_DEFAULT_OPTS_FILE
     set -lx FZF_DEFAULT_COMMAND
@@ -138,8 +137,12 @@ function fzf_key_bindings
     # Merge history from other sessions before searching
     test -z "$fish_private_mode"; and builtin history merge
 
-    set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query)
-    and commandline -- $result
+    if set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query | string split0)
+      commandline -- (string replace -a -- \n\t \n $result[1])
+      test (count $result) -gt 1; and for i in $result[2..-1]
+        commandline -i -- (string replace -a -- \n\t \n \n$i)
+      end
+    end
 
     commandline -f repaint
   end

@@ -482,4 +482,36 @@ class TestFish < TestBase
     tmux.send_keys "set -g #{name} '#{val}'", :Enter
     tmux.prepare
   end
+
+  def test_ctrl_r_multi
+    tmux.send_keys ':', :Enter
+    tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
+    tmux.prepare
+    tmux.send_keys 'C-l', 'C-r'
+    block = <<~BLOCK
+      echo "foo
+      bar"
+      echo "bar
+      foo"
+    BLOCK
+    tmux.until do |lines|
+      block.lines.each_with_index do |line, idx|
+        assert_includes lines[-6 + idx], line.chomp
+      end
+    end
+    tmux.send_keys :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(2)' }
+    tmux.send_keys :Enter
+    block = <<~BLOCK
+      echo "bar
+      foo"
+      echo "foo
+      bar"
+    BLOCK
+    tmux.until do |lines|
+      assert_equal block.lines.map(&:chomp), lines
+    end
+  end
 end
