@@ -1347,7 +1347,7 @@ func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
 	}
 	if cached, prs := t.numLinesCache[item.Index()]; prs {
 		// Can we use this cache? Let's be conservative.
-		if cached.atMost >= atMost {
+		if cached.atMost <= atMost {
 			return cached.numLines, false
 		}
 	}
