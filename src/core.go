@@ -135,6 +135,7 @@ func Run(opts *Options) (int, error) {
 				return false
 			}
 			item.text, item.colors = ansiProcessor(stringBytes(transformed))
+			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++

@@ -778,7 +778,7 @@ func nthTransformer(str string) (func(Delimiter) func([]Token, int32) string, er
 		}
 		return func(Delimiter) func([]Token, int32) string {
 			return func(tokens []Token, index int32) string {
-				return strings.TrimRightFunc(JoinTokens(Transform(tokens, nth)), unicode.IsSpace)
+				return JoinTokens(Transform(tokens, nth))
 			}
 		}, nil
 	}
