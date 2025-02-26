@@ -59,12 +59,12 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 		})
 	}()
 
-	var command string
+	var command, input string
 	commandPrefix += ` --no-force-tty-in --proxy-script "$0"`
 	if opts.Input == nil && (opts.ForceTtyIn || util.IsTty(os.Stdin)) {
 		command = fmt.Sprintf(`%s > %q`, commandPrefix, output)
 	} else {
-		input, err := fifo("proxy-input")
+		input, err = fifo("proxy-input")
 		if err != nil {
 			return ExitError, err
 		}
@@ -148,6 +148,9 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 				if err != nil {
 					return ExitError, err
 				}
+				os.Remove(temp)
+				os.Remove(input)
+				os.Remove(output)
 				executor.Become(ttyin, env, command)
 			}
 			return code, err
