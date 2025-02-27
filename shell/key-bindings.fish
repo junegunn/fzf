@@ -96,12 +96,12 @@ function fzf_key_bindings
 
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
       "--reverse --walker=file,dir,follow,hidden --scheme=path --walker-root=$dir" \
-      "$FZF_CTRL_T_OPTS --multi")
+      "$FZF_CTRL_T_OPTS --multi --print0")
 
     set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
     set -lx FZF_DEFAULT_OPTS_FILE
 
-    if set -l result (eval (__fzfcmd) --query=$fzf_query)
+    if set -l result (eval (__fzfcmd) --query=$fzf_query | string split0)
       # Remove last token from commandline.
       commandline -t ''
       for i in $result
@@ -155,12 +155,12 @@ function fzf_key_bindings
 
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
       "--reverse --walker=dir,follow,hidden --scheme=path --walker-root=$dir" \
-      "$FZF_ALT_C_OPTS --no-multi")
+      "$FZF_ALT_C_OPTS --no-multi --print0")
 
     set -lx FZF_DEFAULT_OPTS_FILE
     set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
 
-    if set -l result (eval (__fzfcmd) --query=$fzf_query)
+    if set -l result (eval (__fzfcmd) --query=$fzf_query | string split0)
       cd -- $result
       commandline -rt -- $prefix
     end
