@@ -2286,7 +2286,11 @@ func (t *Terminal) move(y int, x int, clear bool) {
 }
 
 func (t *Terminal) truncateQuery() {
-	t.input, _ = t.trimRight(t.input, maxPatternLength)
+	// We're limiting the length of the query not to make fzf unresponsive when
+	// the user accidentally pastes a huge chunk of text. Therefore, we're not
+	// interested in the exact display width of the query. We just limit the
+	// number of runes.
+	t.input = t.input[:util.Min(len(t.input), maxPatternLength)]
 	t.cx = util.Constrain(t.cx, 0, len(t.input))
 }
 
