@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -95,7 +96,6 @@ func (r *LightRenderer) flushRaw(sequence string) {
 
 // Light renderer
 type LightRenderer struct {
-	closed        *util.AtomicBool
 	theme         *ColorTheme
 	mouse         bool
 	forceBlack    bool
@@ -120,6 +120,7 @@ type LightRenderer struct {
 	showCursor    bool
 
 	// Windows only
+	mutex           sync.Mutex
 	ttyinChannel    chan byte
 	inHandle        uintptr
 	outHandle       uintptr
@@ -151,7 +152,6 @@ func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse 
 		out = os.Stderr
 	}
 	r := LightRenderer{
-		closed:        util.NewAtomicBool(false),
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
@@ -775,9 +775,8 @@ func (r *LightRenderer) Close() {
 	}
 	r.disableMouse()
 	r.flush()
-	r.closePlatform()
 	r.restoreTerminal()
-	r.closed.Set(true)
+	r.closePlatform()
 }
 
 func (r *LightRenderer) Top() int {

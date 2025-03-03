@@ -18,6 +18,7 @@ const (
 var (
 	consoleFlagsInput  = uint32(windows.ENABLE_VIRTUAL_TERMINAL_INPUT | windows.ENABLE_PROCESSED_INPUT | windows.ENABLE_EXTENDED_FLAGS)
 	consoleFlagsOutput = uint32(windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING | windows.ENABLE_PROCESSED_OUTPUT | windows.DISABLE_NEWLINE_AUTO_RETURN)
+	counter            = uint64(0)
 )
 
 // IsLightRendererSupported checks to see if the Light renderer is supported
@@ -61,27 +62,11 @@ func (r *LightRenderer) initPlatform() error {
 	}
 	r.inHandle = uintptr(inHandle)
 
-	r.setupTerminal()
-
 	// channel for non-blocking reads. Buffer to make sure
 	// we get the ESC sets:
 	r.ttyinChannel = make(chan byte, 1024)
 
-	// the following allows for non-blocking IO.
-	// syscall.SetNonblock() is a NOOP under Windows.
-	go func() {
-		fd := int(r.inHandle)
-		b := make([]byte, 1)
-		for !r.closed.Get() {
-			// HACK: if run from PSReadline, something resets ConsoleMode to remove ENABLE_VIRTUAL_TERMINAL_INPUT.
-			_ = windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
-
-			_, err := util.Read(fd, b)
-			if err == nil {
-				r.ttyinChannel <- b[0]
-			}
-		}
-	}()
+	r.setupTerminal()
 
 	return nil
 }
@@ -100,18 +85,42 @@ func openTtyOut() (*os.File, error) {
 	return os.Stderr, nil
 }
 
-func (r *LightRenderer) setupTerminal() error {
-	if err := windows.SetConsoleMode(windows.Handle(r.outHandle), consoleFlagsOutput); err != nil {
-		return err
-	}
-	return windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
+func (r *LightRenderer) setupTerminal() {
+	windows.SetConsoleMode(windows.Handle(r.outHandle), consoleFlagsOutput)
+	windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
+
+	// The following allows for non-blocking IO.
+	// syscall.SetNonblock() is a NOOP under Windows.
+	current := counter
+	go func() {
+		fd := int(r.inHandle)
+		b := make([]byte, 1)
+		for {
+			if _, err := util.Read(fd, b); err == nil {
+				r.mutex.Lock()
+				// This condition prevents the goroutine from running after the renderer
+				// has been closed or paused.
+				if current != counter {
+					r.mutex.Unlock()
+					break
+				}
+				r.ttyinChannel <- b[0]
+				// HACK: if run from PSReadline, something resets ConsoleMode to remove ENABLE_VIRTUAL_TERMINAL_INPUT.
+				windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
+				r.mutex.Unlock()
+			}
+		}
+	}()
 }
 
-func (r *LightRenderer) restoreTerminal() error {
-	if err := windows.SetConsoleMode(windows.Handle(r.inHandle), r.origStateInput); err != nil {
-		return err
-	}
-	return windows.SetConsoleMode(windows.Handle(r.outHandle), r.origStateOutput)
+func (r *LightRenderer) restoreTerminal() {
+	r.mutex.Lock()
+	counter++
+	// We're setting ENABLE_VIRTUAL_TERMINAL_INPUT to allow escape sequences to be read during 'execute'.
+	// e.g. fzf --bind 'enter:execute:less {}'
+	windows.SetConsoleMode(windows.Handle(r.inHandle), r.origStateInput|windows.ENABLE_VIRTUAL_TERMINAL_INPUT)
+	windows.SetConsoleMode(windows.Handle(r.outHandle), r.origStateOutput)
+	r.mutex.Unlock()
 }
 
 func (r *LightRenderer) Size() TermSize {
