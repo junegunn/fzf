@@ -86,7 +86,7 @@ Table of Contents
     * [fzf Theme Playground](#fzf-theme-playground)
 * [Related projects](#related-projects)
 * [License](#license)
-* [Sponsors ❤️](#sponsors-)
+* [Sponsors :heart:](#sponsors-heart)
 
 <!-- vim-markdown-toc -->
 
@@ -973,8 +973,8 @@ The MIT License (MIT)
 
 Copyright (c) 2013-2024 Junegunn Choi
 
-Sponsors ❤️
------------
+Sponsors :heart:
+----------------
 
 I would like to thank all the sponsors of this project who make it possible for me to continue to improve fzf.
 
