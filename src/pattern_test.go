@@ -68,7 +68,7 @@ func buildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 	return BuildPattern(NewChunkCache(), make(map[string]*Pattern),
 		fuzzy, fuzzyAlgo, extended, caseMode, normalize, forward,
-		withPos, cacheable, nth, delimiter, 0, runes)
+		withPos, cacheable, nth, delimiter, revision{}, runes, nil)
 }
 
 func TestExact(t *testing.T) {

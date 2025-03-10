@@ -73,7 +73,7 @@ module TestShell
     tmux.prepare
     tmux.send_keys :Escape, :c
     lines = tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..]
+    expected = lines.reverse.find { |l| l.start_with?('> ') }[2..].chomp('/')
     tmux.send_keys :Enter
     tmux.prepare
     tmux.send_keys :pwd, :Enter
@@ -241,7 +241,7 @@ module CompletionTest
     tmux.until do |lines|
       assert_equal 1, lines.match_count
       assert_includes lines, '> 55'
-      assert_includes lines, '> /tmp/fzf-test/d55'
+      assert_includes lines, '> /tmp/fzf-test/d55/'
     end
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'cd /tmp/fzf-test/d55/', lines[-1] }
@@ -481,5 +481,37 @@ class TestFish < TestBase
     tmux.prepare
     tmux.send_keys "set -g #{name} '#{val}'", :Enter
     tmux.prepare
+  end
+
+  def test_ctrl_r_multi
+    tmux.send_keys ':', :Enter
+    tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
+    tmux.prepare
+    tmux.send_keys 'C-l', 'C-r'
+    block = <<~BLOCK
+      echo "foo
+      bar"
+      echo "bar
+      foo"
+    BLOCK
+    tmux.until do |lines|
+      block.lines.each_with_index do |line, idx|
+        assert_includes lines[-6 + idx], line.chomp
+      end
+    end
+    tmux.send_keys :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(2)' }
+    tmux.send_keys :Enter
+    block = <<~BLOCK
+      echo "bar
+      foo"
+      echo "foo
+      bar"
+    BLOCK
+    tmux.until do |lines|
+      assert_equal block.lines.map(&:chomp), lines
+    end
   end
 end

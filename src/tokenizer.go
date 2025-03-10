@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/junegunn/fzf/src/util"
 )
@@ -75,6 +76,11 @@ func (t Token) String() string {
 type Delimiter struct {
 	regex *regexp.Regexp
 	str   *string
+}
+
+// IsAwk returns true if the delimiter is an AWK-style delimiter
+func (d Delimiter) IsAwk() bool {
+	return d.regex == nil && d.str == nil
 }
 
 // String returns the string representation of a Delimiter.
@@ -211,7 +217,24 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	return withPrefixLengths(tokens, 0)
 }
 
-func joinTokens(tokens []Token) string {
+// StripLastDelimiter removes the trailing delimiter and whitespaces
+func StripLastDelimiter(str string, delimiter Delimiter) string {
+	if delimiter.str != nil {
+		str = strings.TrimSuffix(str, *delimiter.str)
+	} else if delimiter.regex != nil {
+		locs := delimiter.regex.FindAllStringIndex(str, -1)
+		if len(locs) > 0 {
+			lastLoc := locs[len(locs)-1]
+			if lastLoc[1] == len(str) {
+				str = str[:lastLoc[0]]
+			}
+		}
+	}
+	return strings.TrimRightFunc(str, unicode.IsSpace)
+}
+
+// JoinTokens concatenates the tokens into a single string
+func JoinTokens(tokens []Token) string {
 	var output bytes.Buffer
 	for _, token := range tokens {
 		output.WriteString(token.text.ToString())
@@ -229,7 +252,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 		if r.begin == r.end {
 			idx := r.begin
 			if idx == rangeEllipsis {
-				chars := util.ToChars(stringBytes(joinTokens(tokens)))
+				chars := util.ToChars(stringBytes(JoinTokens(tokens)))
 				parts = append(parts, &chars)
 			} else {
 				if idx < 0 {

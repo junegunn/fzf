@@ -453,7 +453,7 @@ class TestPreview < TestInteractive
     tmux.send_keys 'f'
     tmux.until do |lines|
       assert_equal '::', lines[0]
-      assert_equal '  3', lines[1]
+      assert_equal '↳   3', lines[1]
     end
   end
 
@@ -524,10 +524,10 @@ class TestPreview < TestInteractive
   end
 
   def test_alternative_preview_window_opts
-    tmux.send_keys "seq 10 | #{FZF} --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
+    tmux.send_keys "seq 10 | #{FZF} --preview-border rounded --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until do |lines|
-      assert_equal ['╭────╮', '│ 10 │', '│ 0  │', '│ 10 │', '│ 1  │'], lines.take(5).map(&:strip)
+      assert_equal ['╭────╮', '│ 10 │', '│ ↳ 0│', '│ 10 │', '│ ↳ 1│'], lines.take(5).map(&:strip)
     end
   end
 
@@ -543,5 +543,19 @@ class TestPreview < TestInteractive
     tmux.until { |lines| assert_includes lines, '> 1' }
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> 2' }
+  end
+
+  def test_preview_query_should_not_be_affected_by_search
+    tmux.send_keys "seq 1 | #{FZF} --bind 'change:transform-search(echo {q:1})' --preview 'echo [{q}/{}]'", :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys '1'
+    tmux.until { |lines| assert lines.any_include?('[1/1]') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[1 /1]') }
+    tmux.send_keys '2'
+    tmux.until do |lines|
+      assert lines.any_include?('[1 2/1]')
+      assert_equal 1, lines.match_count
+    end
   end
 end

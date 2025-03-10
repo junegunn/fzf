@@ -21,7 +21,7 @@ func _() {
 	_ = x[CtrlJ-10]
 	_ = x[CtrlK-11]
 	_ = x[CtrlL-12]
-	_ = x[CtrlM-13]
+	_ = x[Enter-13]
 	_ = x[CtrlN-14]
 	_ = x[CtrlO-15]
 	_ = x[CtrlP-16]
@@ -110,7 +110,7 @@ func _() {
 	_ = x[ClickHeader-99]
 }
 
-const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLCtrlMCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlDeleteCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltCtrlAltInvalidFatalMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeader"
+const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLEnterCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlDeleteCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltCtrlAltInvalidFatalMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeader"
 
 var _EventType_index = [...]uint16{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 135, 144, 154, 167, 183, 192, 201, 209, 218, 224, 230, 238, 240, 244, 248, 253, 257, 260, 266, 273, 282, 291, 301, 312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 333, 336, 339, 351, 356, 363, 370, 378, 388, 400, 412, 425, 428, 435, 442, 447, 452, 463, 472, 482, 492, 503, 511, 521, 530, 541, 556, 573, 579, 585, 596, 601, 605, 610, 613, 617, 623, 627, 637, 648}
 

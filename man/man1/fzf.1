@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jan 2025" "fzf 0.59.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Mar 2025" "fzf 0.60.3" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -56,7 +56,9 @@ Case-insensitive match (default: smart-case match)
 Case-sensitive match
 .TP
 .B "\-\-smart\-case"
-Smart-case match (default)
+Smart-case match (default). In this mode, the search is case-insensitive by
+default, but it becomes case-sensitive if the query contains any uppercase
+letters.
 .TP
 .B "\-\-literal"
 Do not normalize latin script letters for matching.
@@ -117,8 +119,38 @@ transformed lines (unlike in \fB\-\-preview\fR where fields are extracted from
 the original lines) because fzf doesn't allow searching against the hidden
 fields.
 .TP
-.BI "\-\-with\-nth=" "N[,..]"
-Transform the presentation of each line using field index expressions
+.BI "\-\-with\-nth=" "N[,..] or TEMPLATE"
+Transform the presentation of each line using the field index expressions.
+For advanced transformation, you can provide a template containing field index
+expressions in curly braces. When you use a template, the trailing delimiter is
+stripped from each expression, giving you more control over the output.
+\fB{n}\fR in template evaluates to the zero-based ordinal index of the line.
+
+.RS
+e.g.
+     # Single expression: drop the first field
+     echo foo bar baz | fzf --with-nth 2..
+
+     # Use template to rearrange fields
+     echo foo,bar,baz | fzf --delimiter , --with-nth '{n},{1},{3},{2},{1..2}'
+.RE
+.TP
+.BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
+Define which fields to print on accept. The last delimiter is stripped from the
+output. For advanced transformation, you can provide a template containing
+field index expressions in curly braces. When you use a template, the trailing
+delimiter is stripped from each expression, giving you more control over the
+output. \fB{n}\fR in template evaluates to the zero-based ordinal index of the
+line.
+
+.RS
+e.g.
+     # Single expression
+     echo foo bar baz | fzf --accept-nth 2
+
+     # Template
+     echo foo bar baz | fzf --accept-nth 'Index: {n}, 1st: {1}, 2nd: {2}, 3rd: {3}'
+.RE
 .TP
 .B "+s, \-\-no\-sort"
 Do not sort the result
@@ -336,9 +368,12 @@ Adaptive height has the following limitations:
 * It will not find the right size when there are multi-line items
 
 .TP
-.BI "\-\-min\-height=" "HEIGHT"
-Minimum height when \fB\-\-height\fR is given in percent (default: 10).
-Ignored when \fB\-\-height\fR is not specified.
+.BI "\-\-min\-height=" "HEIGHT[+]"
+Minimum height when \fB\-\-height\fR is given as a percentage.
+Add \fB+\fR to automatically increase the value according to the other
+layout options so that the specified number of items are visible in the list
+section (default: \fB10+\fR).
+Ignored when \fB\-\-height\fR is not specified or set as an absolute value.
 .TP
 .BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
 Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
@@ -616,6 +651,13 @@ Label to print on the list border
 Position of the list label
 
 .SS INPUT SECTION
+
+.TP
+.B "\-\-no\-input"
+Disable and hide the input section. You can no longer type in queries. To
+trigger a search, use \fBsearch\fR action. You can later show the input section
+using \fBshow\-input\fR or \fBtoggle\-input\fR action, and hide it again using
+\fBhide\-input\fR, or \fBtoggle\-input\fR.
 
 .TP
 .BI "\-\-prompt=" "STR"
@@ -1214,6 +1256,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_QUERY "           Current query string"
 .br
+.BR FZF_INPUT_STATE "     Current input state (enabled, disabled, hidden)"
+.br
 .BR FZF_NTH "             Current \-\-nth option"
 .br
 .BR FZF_PROMPT "          Prompt string"
@@ -1585,6 +1629,8 @@ A key or an event can be bound to one or more of the following actions.
     \fBdown\fR                         \fIctrl\-j  ctrl\-n  down\fR
     \fBenable\-search\fR                (enable search functionality)
     \fBend\-of\-line\fR                  \fIctrl\-e  end\fR
+    \fBexclude\fR                      (exclude the current item from the result)
+    \fBexclude\-multi\fR                (exclude the selected items or the current item from the result)
     \fBexecute(...)\fR                 (see below for the details)
     \fBexecute\-silent(...)\fR          (see below for the details)
     \fBfirst\fR                        (move to the first match; same as \fBpos(1)\fR)
@@ -1602,6 +1648,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBhalf\-page\-down\fR
     \fBhalf\-page\-up\fR
     \fBhide\-header\fR
+    \fBhide\-input\fR
     \fBhide\-preview\fR
     \fBoffset\-down\fR                  (similar to CTRL\-E of Vim)
     \fBoffset\-up\fR                    (similar to CTRL\-Y of Vim)
@@ -1630,13 +1677,16 @@ A key or an event can be bound to one or more of the following actions.
     \fBselect\fR
     \fBselect\-all\fR                   (select all matches)
     \fBshow\-header\fR
+    \fBshow\-input\fR
     \fBshow\-preview\fR
     \fBtoggle\fR                       (\fIright\-click\fR)
     \fBtoggle\-all\fR                   (toggle all matches)
     \fBtoggle\-in\fR                    (\fB\-\-layout=reverse*\fR ? \fBtoggle+up\fR : \fBtoggle+down\fR)
     \fBtoggle\-out\fR                   (\fB\-\-layout=reverse*\fR ? \fBtoggle+down\fR : \fBtoggle+up\fR)
+    \fBtoggle\-bind\fR
     \fBtoggle\-header\fR
     \fBtoggle\-hscroll\fR
+    \fBtoggle\-input\fR
     \fBtoggle\-multi\-line\fR
     \fBtoggle\-preview\fR
     \fBtoggle\-preview\-wrap\fR
@@ -1673,6 +1723,9 @@ Multiple actions can be chained using \fB+\fR separator.
 e.g.
      \fBfzf \-\-multi \-\-bind 'ctrl\-a:select\-all+accept'\fR
      \fBfzf \-\-multi \-\-bind 'ctrl\-a:select\-all' \-\-bind 'ctrl\-a:+accept'\fR
+
+Any action after a terminal action that exits fzf, such as \fBaccept\fR or
+\fBabort\fR, is ignored.
 
 .SS ACTION ARGUMENT
 

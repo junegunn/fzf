@@ -41,6 +41,7 @@ Usage: fzf [options]
                              integer or a range expression ([BEGIN]..[END]).
     --with-nth=N[,..]        Transform the presentation of each line using
                              field index expressions
+    --accept-nth=N[,..]      Define which fields to print on accept
     -d, --delimiter=STR      Field delimiter regex (default: AWK-style)
     +s, --no-sort            Do not sort the result
     --literal                Do not normalize latin script letters
@@ -69,8 +70,9 @@ Usage: fzf [options]
                              minus the given value.
                              If prefixed with '~', fzf will determine the height
                              according to the input size.
-    --min-height=HEIGHT      Minimum height for percent --height is given in percent
-                             (default: 10)
+    --min-height=HEIGHT[+]   Minimum height when --height is given as a percentage.
+                             Add '+' to automatically increase the value
+                             according to the other layout options (default: 10+).
     --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              [,border-native] (default: center,50%)
@@ -126,6 +128,7 @@ Usage: fzf [options]
                              (default: 0 or center)
 
   INPUT SECTION
+    --no-input               Disable and hide the input section
     --prompt=STR             Input prompt (default: '> ')
     --info=STYLE             Finder info style
                              [default|right|hidden|inline[-right][:PREFIX]]
@@ -537,10 +540,12 @@ type Options struct {
 	Scheme            string
 	Extended          bool
 	Phony             bool
+	Inputless         bool
 	Case              Case
 	Normalize         bool
 	Nth               []Range
-	WithNth           []Range
+	WithNth           func(Delimiter) func([]Token, int32) string
+	AcceptNth         func(Delimiter) func([]Token, int32) string
 	Delimiter         Delimiter
 	Sort              int
 	Track             trackOption
@@ -658,10 +663,10 @@ func defaultOptions() *Options {
 		Scheme:       "", // Unknown
 		Extended:     true,
 		Phony:        false,
+		Inputless:    false,
 		Case:         CaseSmart,
 		Normalize:    true,
 		Nth:          make([]Range, 0),
-		WithNth:      make([]Range, 0),
 		Delimiter:    Delimiter{},
 		Sort:         1000,
 		Track:        trackDisabled,
@@ -673,7 +678,7 @@ func defaultOptions() *Options {
 		Theme:        theme,
 		Black:        false,
 		Bold:         true,
-		MinHeight:    10,
+		MinHeight:    -10,
 		Layout:       layoutDefault,
 		Cycle:        false,
 		Wrap:         false,
@@ -762,6 +767,70 @@ func splitNth(str string) ([]Range, error) {
 		ranges[idx] = r
 	}
 	return ranges, nil
+}
+
+func nthTransformer(str string) (func(Delimiter) func([]Token, int32) string, error) {
+	// ^[0-9,-.]+$"
+	if match, _ := regexp.MatchString("^[0-9,-.]+$", str); match {
+		nth, err := splitNth(str)
+		if err != nil {
+			return nil, err
+		}
+		return func(Delimiter) func([]Token, int32) string {
+			return func(tokens []Token, index int32) string {
+				return JoinTokens(Transform(tokens, nth))
+			}
+		}, nil
+	}
+
+	// {...} {...} ...
+	placeholder := regexp.MustCompile("{[0-9,-.]+}|{n}")
+	indexes := placeholder.FindAllStringIndex(str, -1)
+	if indexes == nil {
+		return nil, errors.New("template should include at least 1 placeholder: " + str)
+	}
+
+	type NthParts struct {
+		str   string
+		index bool
+		nth   []Range
+	}
+
+	parts := make([]NthParts, len(indexes))
+	idx := 0
+	for _, index := range indexes {
+		if idx < index[0] {
+			parts = append(parts, NthParts{str: str[idx:index[0]]})
+		}
+		expr := str[index[0]+1 : index[1]-1]
+		if expr == "n" {
+			parts = append(parts, NthParts{index: true})
+		} else if nth, err := splitNth(expr); err == nil {
+			parts = append(parts, NthParts{nth: nth})
+		}
+		idx = index[1]
+	}
+	if idx < len(str) {
+		parts = append(parts, NthParts{str: str[idx:]})
+	}
+
+	return func(delimiter Delimiter) func([]Token, int32) string {
+		return func(tokens []Token, index int32) string {
+			str := ""
+			for _, holder := range parts {
+				if holder.nth != nil {
+					str += StripLastDelimiter(JoinTokens(Transform(tokens, holder.nth)), delimiter)
+				} else if holder.index {
+					if index >= 0 {
+						str += strconv.Itoa(int(index))
+					}
+				} else {
+					str += holder.str
+				}
+			}
+			return str
+		}
+	}, nil
 }
 
 func delimiterRegexp(str string) Delimiter {
@@ -881,7 +950,7 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		case "right":
 			add(tui.Right)
 		case "enter", "return":
-			add(tui.CtrlM)
+			add(tui.Enter)
 		case "space":
 			chords[tui.Key(' ')] = key
 		case "backspace", "bspace", "bs":
@@ -1332,7 +1401,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth)|transform|change-(?:preview-window|preview|multi)|(?:re|un)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1496,6 +1565,12 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleTrack)
 		case "toggle-track-current":
 			appendAction(actToggleTrackCurrent)
+		case "toggle-input":
+			appendAction(actToggleInput)
+		case "hide-input":
+			appendAction(actHideInput)
+		case "show-input":
+			appendAction(actShowInput)
 		case "toggle-header":
 			appendAction(actToggleHeader)
 		case "toggle-wrap":
@@ -1590,6 +1665,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			}
 		case "bell":
 			appendAction(actBell)
+		case "exclude":
+			appendAction(actExclude)
+		case "exclude-multi":
+			appendAction(actExcludeMulti)
 		default:
 			t := isExecuteAction(specLower)
 			if t == actIgnore {
@@ -1616,7 +1695,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					actions = append(actions, &action{t: t, a: actionArg})
 				}
 				switch t {
-				case actUnbind, actRebind:
+				case actUnbind, actRebind, actToggleBind:
 					if _, err := parseKeyChordsImpl(actionArg, spec[0:offset]+" target required"); err != nil {
 						return nil, err
 					}
@@ -1701,6 +1780,8 @@ func isExecuteAction(str string) actionType {
 		return actUnbind
 	case "rebind":
 		return actRebind
+	case "toggle-bind":
+		return actToggleBind
 	case "preview":
 		return actPreview
 	case "change-header":
@@ -2314,6 +2395,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Phony = false
 		case "--disabled", "--phony":
 			opts.Phony = true
+		case "--no-input":
+			opts.Inputless = true
 		case "--tiebreak":
 			str, err := nextString("sort criterion required")
 			if err != nil {
@@ -2366,7 +2449,15 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			if opts.WithNth, err = splitNth(str); err != nil {
+			if opts.WithNth, err = nthTransformer(str); err != nil {
+				return err
+			}
+		case "--accept-nth":
+			str, err := nextString("nth expression required")
+			if err != nil {
+				return err
+			}
+			if opts.AcceptNth, err = nthTransformer(str); err != nil {
 				return err
 			}
 		case "-s", "--sort":
@@ -2662,9 +2753,23 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 		case "--min-height":
-			if opts.MinHeight, err = nextInt("height required: HEIGHT"); err != nil {
+			expr, err := nextString("minimum height required: HEIGHT[+]")
+			if err != nil {
 				return err
 			}
+			auto := false
+			if strings.HasSuffix(expr, "+") {
+				expr = expr[:len(expr)-1]
+				auto = true
+			}
+			num, err := atoi(expr)
+			if err != nil || num < 0 {
+				return errors.New("minimum height must be a non-negative integer")
+			}
+			if auto {
+				num *= -1
+			}
+			opts.MinHeight = num
 		case "--no-height":
 			opts.Height = heightSpec{}
 		case "--no-margin":
@@ -3038,6 +3143,24 @@ func validateOptions(opts *Options) error {
 	return nil
 }
 
+func noSeparatorLine(style infoStyle, separator bool) bool {
+	switch style {
+	case infoInline:
+		return true
+	case infoHidden, infoInlineRight:
+		return !separator
+	}
+	return false
+}
+
+func (opts *Options) noSeparatorLine() bool {
+	if opts.Inputless {
+		return true
+	}
+	sep := opts.Separator == nil && !opts.InputBorderShape.Visible() || opts.Separator != nil && len(*opts.Separator) > 0
+	return noSeparatorLine(opts.InfoStyle, sep)
+}
+
 // This function can have side-effects and alter some global states.
 // So we run it on fzf.Run and not on ParseOptions.
 func postProcessOptions(opts *Options) error {
@@ -3064,7 +3187,14 @@ func postProcessOptions(opts *Options) error {
 	if opts.HeaderLinesShape == tui.BorderNone {
 		opts.HeaderLinesShape = tui.BorderPhantom
 	} else if opts.HeaderLinesShape == tui.BorderUndefined {
-		opts.HeaderLinesShape = tui.BorderNone
+		// In reverse-list layout, header lines should be at the top, while
+		// ordinary header should be at the bottom. So let's use a separate
+		// window for the header lines.
+		if opts.Layout == layoutReverseList {
+			opts.HeaderLinesShape = tui.BorderPhantom
+		} else {
+			opts.HeaderLinesShape = tui.BorderNone
+		}
 	}
 
 	if opts.Pointer == nil {
@@ -3167,7 +3297,7 @@ func postProcessOptions(opts *Options) error {
 
 	// If 'double-click' is left unbound, bind it to the action bound to 'enter'
 	if _, prs := opts.Keymap[tui.DoubleClick.AsEvent()]; !prs {
-		opts.Keymap[tui.DoubleClick.AsEvent()] = opts.Keymap[tui.CtrlM.AsEvent()]
+		opts.Keymap[tui.DoubleClick.AsEvent()] = opts.Keymap[tui.Enter.AsEvent()]
 	}
 
 	// If we're not using extended search mode, --nth option becomes irrelevant
@@ -3201,6 +3331,39 @@ func postProcessOptions(opts *Options) error {
 	// If --height option is not supported on the platform, just ignore it
 	if !tui.IsLightRendererSupported() && opts.Height.size > 0 {
 		opts.Height = heightSpec{}
+	}
+
+	// Sets --min-height automatically
+	if opts.Height.size > 0 && opts.Height.percent && opts.MinHeight < 0 {
+		opts.MinHeight = -opts.MinHeight + borderLines(opts.BorderShape) + borderLines(opts.ListBorderShape)
+		if !opts.Inputless {
+			opts.MinHeight += 1 + borderLines(opts.InputBorderShape)
+			if !opts.noSeparatorLine() {
+				opts.MinHeight++
+			}
+		}
+		if len(opts.Header) > 0 {
+			opts.MinHeight += borderLines(opts.HeaderBorderShape) + len(opts.Header)
+		}
+		if opts.HeaderLines > 0 {
+			borderShape := opts.HeaderBorderShape
+			if opts.HeaderLinesShape.Visible() {
+				borderShape = opts.HeaderLinesShape
+			}
+			opts.MinHeight += borderLines(borderShape) + opts.HeaderLines
+		}
+		if len(opts.Preview.command) > 0 && (opts.Preview.position == posUp || opts.Preview.position == posDown) && opts.Preview.Visible() && opts.Preview.position == posUp {
+			borderShape := opts.Preview.border
+			if opts.Preview.border == tui.BorderLine {
+				borderShape = tui.BorderTop
+			}
+			opts.MinHeight += borderLines(borderShape) + 10
+		}
+		for _, s := range []sizeSpec{opts.Margin[0], opts.Margin[2], opts.Padding[0], opts.Padding[2]} {
+			if !s.percent {
+				opts.MinHeight += int(s.size)
+			}
+		}
 	}
 
 	if err := opts.initProfiling(); err != nil {

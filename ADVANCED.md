@@ -1,7 +1,7 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2025/01/26*
+* *Last update: 2025/02/02*
 * *Requires fzf 0.59.0 or later*
 
 ---
@@ -22,7 +22,7 @@ Advanced fzf examples
     * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
     * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
     * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
-    * [Controlling Ripgrap search and fzf search simultaneously](#controlling-ripgrap-search-and-fzf-search-simultaneously)
+    * [Controlling Ripgrep search and fzf search simultaneously](#controlling-ripgrep-search-and-fzf-search-simultaneously)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
     * [Files listed in `git status`](#files-listed-in-git-status)
@@ -93,7 +93,7 @@ fzf --height=40% --layout=reverse --info=inline --border --margin=1 --padding=1
 
 ![image](https://user-images.githubusercontent.com/700826/113379932-dfeac200-93b5-11eb-9e28-df1a2ee71f90.png)
 
-*(See `Layout` section of the man page to see the full list of options)*
+*(See man page to see the full list of options)*
 
 But you definitely don't want to repeat `--height=40% --layout=reverse
 --info=inline --border --margin=1 --padding=1` every time you use fzf. You
@@ -501,34 +501,33 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --bind 'enter:become(vim {1} +{2})'
 ```
 
-### Controlling Ripgrap search and fzf search simultaneously
+### Controlling Ripgrep search and fzf search simultaneously
 
-fzf 0.59.0 added `search` action that allows you to trigger an fzf search
-with an arbitrary query string. This means fzf is no longer restricted to the
-exact query entered in the prompt.
+`search` and `transform-search` action allow you to trigger an fzf search with
+an arbitrary query string. This frees fzf from strictly following the prompt
+input, enabling custom search syntax.
 
 In the example below, `transform` action is used to conditionally trigger
-either `reload` for ripgrep or `search` for fzf. The first word of the query
-initiates the Ripgrep process to generate the initial results, while the
+`reload` for ripgrep, followed by `search` for fzf. The first word of the
+query initiates the Ripgrep process to generate the initial results, while the
 remainder of the query is passed to fzf for secondary filtering.
 
 ```sh
 #!/usr/bin/env bash
 
+export TEMP=$(mktemp -u)
+trap 'rm -f "$TEMP"' EXIT
+
 INITIAL_QUERY="${*:-}"
 TRANSFORMER='
   rg_pat={q:1}      # The first word is passed to ripgrep
   fzf_pat={q:2..}   # The rest are passed to fzf
-  rg_pat_org={q:s1} # The first word with trailing whitespaces preserved.
-                    # We use this to avoid unnecessary reloading of ripgrep.
 
-  if [[ -n $fzf_pat ]]; then
-    echo "search:$fzf_pat"
-  elif ! [[ $rg_pat_org =~ \ $ ]]; then
+  if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+    echo "$rg_pat" > "$TEMP"
     printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
-  else
-    echo search:
   fi
+  echo "+search:$fzf_pat"
 '
 fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --with-shell 'bash -c' \
@@ -536,7 +535,7 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
-    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --preview-window 'up,60%,border-line,+{2}+3/3,~3' \
     --bind 'enter:become(vim {1} +{2})'
 ```
 

@@ -52,11 +52,24 @@ class TestFilter < TestBase
       `find . -print0 | #{FZF} --read0 -e -f "^#{lines.last}$"`.chomp
   end
 
+  def test_nth_suffix_match
+    assert_equal \
+      'foo,bar,baz',
+      `echo foo,bar,baz | #{FZF} -d, -f'bar$' -n2`.chomp
+  end
+
   def test_with_nth_basic
     writelines(['hello world ', 'byebye'])
     assert_equal \
       'hello world ',
       `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 < #{tempname}`.chomp
+  end
+
+  def test_with_nth_template
+    writelines(['hello world ', 'byebye'])
+    assert_equal \
+      'hello world ',
+      `#{FZF} -f"^he he.he." -x -n 2.. --with-nth '{2} {1}. {1}.' < #{tempname}`.chomp
   end
 
   def test_with_nth_ansi

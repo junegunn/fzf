@@ -28,7 +28,7 @@ const (
 	CtrlJ
 	CtrlK
 	CtrlL
-	CtrlM
+	Enter
 	CtrlN
 	CtrlO
 	CtrlP
@@ -160,6 +160,9 @@ func (e Event) KeyName() string {
 
 	switch e.Type {
 	case Rune:
+		if e.Char == ' ' {
+			return "space"
+		}
 		return string(e.Char)
 	case Alt:
 		return "alt-" + string(e.Char)
@@ -615,6 +618,8 @@ type Renderer interface {
 	NeedScrollbarRedraw() bool
 	ShouldEmitResizeEvent() bool
 	Bell()
+	HideCursor()
+	ShowCursor()
 
 	GetChar() Event
 
@@ -654,6 +659,8 @@ type Window interface {
 	LinkEnd()
 	Erase()
 	EraseMaybe() bool
+
+	SetWrapSign(string, int)
 }
 
 type FullscreenRenderer struct {
@@ -662,6 +669,7 @@ type FullscreenRenderer struct {
 	forceBlack   bool
 	prevDownTime time.Time
 	clicks       [][2]int
+	showCursor   bool
 }
 
 func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Renderer {
@@ -670,7 +678,8 @@ func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Rende
 		mouse:        mouse,
 		forceBlack:   forceBlack,
 		prevDownTime: time.Unix(0, 0),
-		clicks:       [][2]int{}}
+		clicks:       [][2]int{},
+		showCursor:   true}
 	return r
 }
 

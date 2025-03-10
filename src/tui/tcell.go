@@ -39,19 +39,22 @@ func (p ColorPair) style() tcell.Style {
 type Attr int32
 
 type TcellWindow struct {
-	color       bool
-	windowType  WindowType
-	top         int
-	left        int
-	width       int
-	height      int
-	normal      ColorPair
-	lastX       int
-	lastY       int
-	moveCursor  bool
-	borderStyle BorderStyle
-	uri         *string
-	params      *string
+	color         bool
+	windowType    WindowType
+	top           int
+	left          int
+	width         int
+	height        int
+	normal        ColorPair
+	lastX         int
+	lastY         int
+	moveCursor    bool
+	borderStyle   BorderStyle
+	uri           *string
+	params        *string
+	showCursor    bool
+	wrapSign      string
+	wrapSignWidth int
 }
 
 func (w *TcellWindow) Top() int {
@@ -72,7 +75,9 @@ func (w *TcellWindow) Height() int {
 
 func (w *TcellWindow) Refresh() {
 	if w.moveCursor {
-		_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		if w.showCursor {
+			_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		}
 		w.moveCursor = false
 	}
 	w.lastX = 0
@@ -102,6 +107,14 @@ const (
 
 func (r *FullscreenRenderer) Bell() {
 	_screen.Beep()
+}
+
+func (r *FullscreenRenderer) HideCursor() {
+	r.showCursor = false
+}
+
+func (r *FullscreenRenderer) ShowCursor() {
+	r.showCursor = true
 }
 
 func (r *FullscreenRenderer) PassThrough(str string) {
@@ -167,6 +180,9 @@ func (r *FullscreenRenderer) getScreen() (tcell.Screen, error) {
 		s, e := tcell.NewScreen()
 		if e != nil {
 			return nil, e
+		}
+		if !r.showCursor {
+			s.HideCursor()
 		}
 		_screen = s
 	}
@@ -546,7 +562,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 func (r *FullscreenRenderer) Pause(clear bool) {
 	if clear {
-		_screen.Fini()
+		r.Close()
 	}
 }
 
@@ -558,6 +574,7 @@ func (r *FullscreenRenderer) Resume(clear bool, sigcont bool) {
 
 func (r *FullscreenRenderer) Close() {
 	_screen.Fini()
+	_screen = nil
 }
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
@@ -590,7 +607,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		width:       width,
 		height:      height,
 		normal:      normal,
-		borderStyle: borderStyle}
+		borderStyle: borderStyle,
+		showCursor:  r.showCursor}
 	w.Erase()
 	return w
 }
@@ -611,6 +629,11 @@ func (w *TcellWindow) Erase() {
 func (w *TcellWindow) EraseMaybe() bool {
 	w.Erase()
 	return true
+}
+
+func (w *TcellWindow) SetWrapSign(sign string, width int) {
+	w.wrapSign = sign
+	w.wrapSignWidth = width
 }
 
 func (w *TcellWindow) EncloseX(x int) bool {
@@ -741,11 +764,26 @@ Loop:
 
 		// word wrap:
 		xPos := w.left + w.lastX + lx
-		if xPos >= (w.left + w.width) {
+		if xPos >= w.left+w.width {
 			w.lastY++
+			if w.lastY >= w.height {
+				return FillSuspend
+			}
 			w.lastX = 0
 			lx = 0
 			xPos = w.left
+			sign := w.wrapSign
+			if w.wrapSignWidth > w.width {
+				runes, _ := util.Truncate(sign, w.width)
+				sign = string(runes)
+			}
+			wgr := uniseg.NewGraphemes(sign)
+			for wgr.Next() {
+				rs := wgr.Runes()
+				_screen.SetContent(w.left+lx, w.top+w.lastY, rs[0], rs[1:], style.Dim(true))
+				lx += uniseg.StringWidth(string(rs))
+			}
+			xPos = w.left + lx
 		}
 
 		yPos := w.top + w.lastY

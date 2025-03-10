@@ -45,6 +45,8 @@ func (r *FullscreenRenderer) Clear()                             {}
 func (r *FullscreenRenderer) NeedScrollbarRedraw() bool          { return false }
 func (r *FullscreenRenderer) ShouldEmitResizeEvent() bool        { return false }
 func (r *FullscreenRenderer) Bell()                              {}
+func (r *FullscreenRenderer) HideCursor()                        {}
+func (r *FullscreenRenderer) ShowCursor()                        {}
 func (r *FullscreenRenderer) Refresh()                           {}
 func (r *FullscreenRenderer) Close()                             {}
 func (r *FullscreenRenderer) Size() TermSize                     { return TermSize{} }

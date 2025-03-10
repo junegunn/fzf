@@ -9,7 +9,7 @@ import (
 type transformed struct {
 	// Because nth can be changed dynamically by change-nth action, we need to
 	// keep the revision number at the time of transformation.
-	revision int
+	revision revision
 	tokens   []Token
 }
 
@@ -50,4 +50,10 @@ func (item *Item) AsString(stripAnsi bool) string {
 		return string(*item.origText)
 	}
 	return item.text.ToString()
+}
+
+func (item *Item) acceptNth(stripAnsi bool, delimiter Delimiter, transformer func([]Token, int32) string) string {
+	tokens := Tokenize(item.AsString(stripAnsi), delimiter)
+	transformed := transformer(tokens, item.Index())
+	return StripLastDelimiter(transformed, delimiter)
 }

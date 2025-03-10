@@ -767,6 +767,9 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 					char = unicode.To(unicode.LowerCase, char)
 				}
 			}
+			if normalize {
+				char = normalizeRune(char)
+			}
 
 			pidx_ := indexAt(pidx, lenPattern, forward)
 			pchar := pattern[pidx_]

@@ -1,12 +1,77 @@
 CHANGELOG
 =========
 
+0.60.3
+------
+- Bug fixes and improvements
+    - [fish] Enable multiple history commands insertion (#4280) (@bitraid)
+    - [walker] Append '/' to directory entries on MSYS2 (#4281)
+    - Trim trailing whitespaces after processing ANSI sequences (#4282)
+    - Remove temp files before `become` when using `--tmux` option (#4283)
+    - Fix condition for using item numlines cache (#4285) (@alex-huff)
+    - Make `--accept-nth` compatible with `--select-1` (#4287)
+    - Increase the query length limit from 300 to 1000 (#4292)
+    - [windows] Prevent fzf from consuming user input while paused (#4260)
+
+0.60.2
+------
+- Template for `--with-nth` and `--accept-nth` now supports `{n}` which evaluates to the zero-based ordinal index of the item
+- Fixed a regression that caused the last field in the "nth" expression to be trimmed when a regular expression delimiter is used
+    - Thanks to @phanen for the fix
+- Fixed 'jump' action when the pointer is an empty string
+
+0.60.1
+------
+- Bug fixes and minor improvements
+    - Built-in walker now prints directory entries with a trailing slash
+    - Fixed a bug causing unexpected behavior with [fzf-tab](https://github.com/Aloxaf/fzf-tab). Please upgrade if you use it.
+- Thanks to @alexeisersun, @bitraid, @Lompik, and @fsc0 for the contributions
+
+0.60.0
+------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.60.0/_
+
+- Added `--accept-nth` for choosing output fields
+  ```sh
+  ps -ef | fzf --multi --header-lines 1 | awk '{print $2}'
+  # Becomes
+  ps -ef | fzf --multi --header-lines 1 --accept-nth 2
+
+  git branch | fzf | cut -c3-
+  # Can be rewritten as
+  git branch | fzf --accept-nth -1
+  ```
+- `--accept-nth` and `--with-nth` now support a template that includes multiple field index expressions in curly braces
+  ```sh
+  echo foo,bar,baz | fzf --delimiter , --accept-nth '{1}, {3}, {2}'
+    # foo, baz, bar
+
+  echo foo,bar,baz | fzf --delimiter , --with-nth '{1},{3},{2},{1..2}'
+    # foo,baz,bar,foo,bar
+  ```
+- Added `exclude` and `exclude-multi` actions for dynamically excluding items
+  ```sh
+  seq 100 | fzf --bind 'ctrl-x:exclude'
+
+  # 'exclude-multi' will exclude the selected items or the current item
+  seq 100 | fzf --multi --bind 'ctrl-x:exclude-multi'
+  ```
+- Preview window now prints wrap indicator when wrapping is enabled
+  ```sh
+  seq 100 | xargs | fzf --wrap --preview 'echo {}' --preview-window wrap
+  ```
+- Bug fixes and improvements
+
 0.59.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.59.0/_
+
 - Prioritizing file name matches (#4192)
     - Added a new tiebreak option `pathname` for prioritizing file name matches
     - `--scheme=path` now sets `--tiebreak=pathname,length`
-    - fzf will automatically choose `path` scheme when the input is a TTY device, where fzf would start its built-in walker or run `$FZF_DEFAULT_COMMAND` which is usually a command for listing files.
+    - fzf will automatically choose `path` scheme
+        * when the input is a TTY device, where fzf would start its built-in walker or run `$FZF_DEFAULT_COMMAND` which is usually a command for listing files,
+        * but not when `reload` or `transform` action is bound to `start` event, because in that case, fzf can't be sure of the input type.
 - Added `--header-lines-border` to display header from `--header-lines` with a separate border
   ```sh
   # Use --header-lines-border to separate two headers
@@ -28,22 +93,42 @@ CHANGELOG
   ```
     - `$FZF_KEY` was updated to expose the type of the click. e.g. `click`, `ctrl-click`, etc. You can use it to implement a more sophisticated behavior.
     - `kill` completion for bash and zsh were updated to use this feature
+- Added `--no-input` option to completely disable and hide the input section
+  ```sh
+  # Click header to trigger search
+  fzf --header '[src] [test]' --no-input --layout reverse \
+      --header-border bottom --input-border \
+      --bind 'click-header:transform-search:echo ${FZF_CLICK_HEADER_WORD:1:-1}'
+
+  # Vim-like mode switch
+  fzf --layout reverse-list --no-input \
+      --bind 'j:down,k:up,/:show-input+unbind(j,k,/)' \
+      --bind 'enter,esc,ctrl-c:transform:
+        if [[ $FZF_INPUT_STATE = enabled ]]; then
+          echo "rebind(j,k,/)+hide-input"
+        elif [[ $FZF_KEY = enter ]]; then
+          echo accept
+        else
+          echo abort
+        fi
+      '
+  ```
+    - You can later show the input section using `show-input` or `toggle-input` action, and hide it again using `hide-input`, or `toggle-input`.
 - Extended `{q}` placeholder to support ranges. e.g. `{q:1}`, `{q:2..}`, etc.
 - Added `search(...)` and `transform-search(...)` action to trigger an fzf search with an arbitrary query string. This can be used to extend the search syntax of fzf. In the following example, fzf will use the first word of the query to trigger ripgrep search, and use the rest of the query to perform fzf search within the result.
   ```sh
+  export TEMP=$(mktemp -u)
+  trap 'rm -f "$TEMP"' EXIT
+
   TRANSFORMER='
     rg_pat={q:1}      # The first word is passed to ripgrep
     fzf_pat={q:2..}   # The rest are passed to fzf
-    rg_pat_org={q:s1} # The first word with trailing whitespaces preserved.
-                      # We use this to avoid unnecessary reloading of ripgrep.
 
-    if [[ -n $fzf_pat ]]; then
-      echo "search:$fzf_pat"
-    elif ! [[ $rg_pat_org =~ \ $ ]]; then
+    if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+      echo "$rg_pat" > "$TEMP"
       printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
-    else
-      echo search:
     fi
+    echo "+search:$fzf_pat"
   '
   fzf --ansi --disabled \
     --with-shell 'bash -c' \
@@ -54,11 +139,22 @@ CHANGELOG
   # Load 'ps -ef' output on start and reload it on CTRL-R
   fzf --bind 'start,ctrl-r:reload:ps -ef'
   ```
+- `--min-height` option now takes a number followed by `+`, which tells fzf to show at least that many items in the list section. The default value is now changed to `10+`.
+  ```sh
+  # You will only see the input section which takes 3 lines
+  fzf --style=full --height 1% --min-height 3
+
+  # You will see 3 items in the list section
+  fzf --style full --height 1% --min-height 3+
+  ```
+    - Shell integration scripts were updated to use `--min-height 20+` by default
+- `--header-lines` will be displayed at the top in `reverse-list` layout
 - Added `bell` action to ring the terminal bell
   ```sh
   # Press CTRL-Y to copy the current line to the clipboard and ring the bell
   fzf --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+bell'
   ```
+- Added `toggle-bind` action
 - Bug fixes and improvements
 - Fixed fish script to support fish 3.1.2 or later (@bitraid)
 
@@ -330,7 +426,7 @@ _Release highlights: https://junegunn.github.io/fzf/releases/0.54.0/_
 - fzf will not start the initial reader when `reload` or `reload-sync` is bound to `start` event. `fzf < /dev/null` or `: | fzf` are no longer required and extraneous `load` event will not fire due to the empty list.
   ```sh
   # Now this will work as expected. Previously, this would print an invalid header line.
-  # `fzf < /dev/null` or `: | fzf` would fix the problem, but then an extraneous 
+  # `fzf < /dev/null` or `: | fzf` would fix the problem, but then an extraneous
   # `load` event would fire and the header would be prematurely updated.
   fzf --header 'Loading ...' --header-lines 1 \
       --bind 'start:reload:sleep 1; ps -ef' \

@@ -96,7 +96,7 @@ func Run(opts *Options) (int, error) {
 	var chunkList *ChunkList
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
-	if len(opts.WithNth) == 0 {
+	if opts.WithNth == nil {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, byteString(data))
@@ -109,6 +109,7 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
+		nthTransformer := opts.WithNth(opts.Delimiter)
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			tokens := Tokenize(byteString(data), opts.Delimiter)
 			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
@@ -127,8 +128,7 @@ func Run(opts *Options) (int, error) {
 					}
 				}
 			}
-			trans := Transform(tokens, opts.WithNth)
-			transformed := joinTokens(trans)
+			transformed := nthTransformer(tokens, itemIndex)
 			if len(header) < opts.HeaderLines {
 				header = append(header, transformed)
 				eventBox.Set(EvtHeader, header)
@@ -195,15 +195,30 @@ func Run(opts *Options) (int, error) {
 	}
 
 	nth := opts.Nth
-	nthRevision := 0
-	patternCache := make(map[string]*Pattern)
-	patternBuilder := func(runes []rune) *Pattern {
-		return BuildPattern(cache, patternCache,
-			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, nth, opts.Delimiter, nthRevision, runes)
-	}
 	inputRevision := revision{}
 	snapshotRevision := revision{}
+	patternCache := make(map[string]*Pattern)
+	denyMutex := sync.Mutex{}
+	denylist := make(map[int32]struct{})
+	clearDenylist := func() {
+		denyMutex.Lock()
+		if len(denylist) > 0 {
+			patternCache = make(map[string]*Pattern)
+		}
+		denylist = make(map[int32]struct{})
+		denyMutex.Unlock()
+	}
+	patternBuilder := func(runes []rune) *Pattern {
+		denyMutex.Lock()
+		denylistCopy := make(map[int32]struct{})
+		for k, v := range denylist {
+			denylistCopy[k] = v
+		}
+		denyMutex.Unlock()
+		return BuildPattern(cache, patternCache,
+			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
+			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy)
+	}
 	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
@@ -302,6 +317,9 @@ func Run(opts *Options) (int, error) {
 	var snapshot []*Chunk
 	var count int
 	restart := func(command commandSpec, environ []string) {
+		if !useSnapshot {
+			clearDenylist()
+		}
 		reading = true
 		chunkList.Clear()
 		itemIndex = 0
@@ -348,7 +366,8 @@ func Run(opts *Options) (int, error) {
 					} else {
 						reading = reading && evt == EvtReadNew
 					}
-					if useSnapshot && evt == EvtReadFin {
+					if useSnapshot && evt == EvtReadFin { // reload-sync
+						clearDenylist()
 						useSnapshot = false
 					}
 					if !useSnapshot {
@@ -379,10 +398,21 @@ func Run(opts *Options) (int, error) {
 						command = val.command
 						environ = val.environ
 						changed = val.changed
+						bump := false
+						if len(val.denylist) > 0 && val.revision.compatible(inputRevision) {
+							denyMutex.Lock()
+							for _, itemIndex := range val.denylist {
+								denylist[itemIndex] = struct{}{}
+							}
+							denyMutex.Unlock()
+							bump = true
+						}
 						if val.nth != nil {
 							// Change nth and clear caches
 							nth = *val.nth
-							nthRevision++
+							bump = true
+						}
+						if bump {
 							patternCache = make(map[string]*Pattern)
 							cache.Clear()
 							inputRevision.bumpMinor()
@@ -447,8 +477,17 @@ func Run(opts *Options) (int, error) {
 									if len(opts.Expect) > 0 {
 										opts.Printer("")
 									}
+									transformer := func(item *Item) string {
+										return item.AsString(opts.Ansi)
+									}
+									if opts.AcceptNth != nil {
+										fn := opts.AcceptNth(opts.Delimiter)
+										transformer = func(item *Item) string {
+											return item.acceptNth(opts.Ansi, opts.Delimiter, fn)
+										}
+									}
 									for i := 0; i < count; i++ {
-										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
+										opts.Printer(transformer(val.Get(i).item))
 									}
 									if count == 0 {
 										exitCode = ExitNoMatch
