@@ -10,7 +10,7 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-func assert(t *testing.T, context string, got interface{}, want interface{}) bool {
+func assert(t *testing.T, context string, got any, want any) bool {
 	if got == want {
 		return true
 	} else {

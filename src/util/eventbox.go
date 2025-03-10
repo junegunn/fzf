@@ -6,7 +6,7 @@ import "sync"
 type EventType int
 
 // Events is a type that associates EventType to any data
-type Events map[EventType]interface{}
+type Events map[EventType]any
 
 // EventBox is used for coordinating events
 type EventBox struct {
@@ -36,7 +36,7 @@ func (b *EventBox) Wait(callback func(*Events)) {
 }
 
 // Set turns on the event type on the box
-func (b *EventBox) Set(event EventType, value interface{}) {
+func (b *EventBox) Set(event EventType, value any) {
 	b.cond.L.Lock()
 	b.events[event] = value
 	if _, found := b.ignore[event]; !found {
