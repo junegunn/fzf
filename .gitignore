@@ -11,3 +11,4 @@ gopath
 fzf
 tmp
 *.patch
+.idea
