@@ -565,7 +565,7 @@ func (item *Item) String() string {
 }
 
 // Helper function to parse, execute and convert "text/template" to string. Panics on error.
-func templateToString(format string, data interface{}) string {
+func templateToString(format string, data any) string {
 	bb := &bytes.Buffer{}
 
 	err := template.Must(template.New("").Parse(format)).Execute(bb, data)
