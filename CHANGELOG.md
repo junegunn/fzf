@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.61.0
+------
+- Added `--ghost=TEXT` to display a ghost text when the input is empty
+  ```sh
+  # Display "Type to search" when the input is empty
+  fzf --ghost "Type to search"
+  ```
+
 0.60.3
 ------
 - Bug fixes and improvements

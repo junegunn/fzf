@@ -136,6 +136,7 @@ Usage: fzf [options]
     --separator=STR          Draw horizontal separator on info line using the string
                              (default: '─' or '-')
     --no-separator           Hide info line separator
+    --ghost=TEXT             Ghost text to display when the input is empty
     --filepath-word          Make word-wise movements respect path separators
     --input-border[=STYLE]   Draw border around the input section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
@@ -574,6 +575,7 @@ type Options struct {
 	InfoStyle         infoStyle
 	InfoPrefix        string
 	InfoCommand       string
+	Ghost             string
 	Separator         *string
 	JumpLabels        string
 	Prompt            string
@@ -689,6 +691,7 @@ func defaultOptions() *Options {
 		ScrollOff:    3,
 		FileWord:     false,
 		InfoStyle:    infoDefault,
+		Ghost:        "",
 		Separator:    nil,
 		JumpLabels:   defaultJumpLabels,
 		Prompt:       "> ",
@@ -2597,6 +2600,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-separator":
 			nosep := ""
 			opts.Separator = &nosep
+		case "--ghost":
+			if opts.Ghost, err = nextString("ghost text required"); err != nil {
+				return err
+			}
 		case "--scrollbar":
 			given, bar := optionalNextString()
 			if given {

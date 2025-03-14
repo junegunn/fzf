@@ -1813,4 +1813,22 @@ class TestCore < TestInteractive
       assert_equal ['[0] 1st: foo, 3rd: baz, 2nd: bar'], File.readlines(tempname, chomp: true)
     end
   end
+
+  def test_ghost
+    tmux.send_keys %(seq 100 | #{FZF} --prompt 'X ' --ghost 'Type in query ...'), :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines, 'X Type in query ...'
+    end
+    tmux.send_keys '100'
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, 'X 100'
+    end
+    tmux.send_keys 'C-u'
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines, 'X Type in query ...'
+    end
+  end
 end
