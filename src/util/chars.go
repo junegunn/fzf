@@ -294,9 +294,10 @@ func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWi
 			line = line[:len(line)-1]
 		}
 
+		hasWrapSign := false
 		for {
 			cols := wrapCols
-			if len(wrapped) > 0 {
+			if hasWrapSign {
 				cols -= wrapSignWidth
 			}
 			_, overflowIdx := RunesWidth(line, 0, tabstop, cols)
@@ -309,9 +310,11 @@ func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWi
 					return wrapped, true
 				}
 				wrapped = append(wrapped, line[:overflowIdx])
+				hasWrapSign = true
 				line = line[overflowIdx:]
 				continue
 			}
+			hasWrapSign = false
 
 			// Restore trailing '\n'
 			if newline {
