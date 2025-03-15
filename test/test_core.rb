@@ -1831,4 +1831,19 @@ class TestCore < TestInteractive
       assert_includes lines, 'X Type in query ...'
     end
   end
+
+  def test_ghost_inline
+    tmux.send_keys %(seq 100 | #{FZF} --info 'inline: Y' --no-separator --prompt 'X ' --ghost 'Type in query ...'), :Enter
+    tmux.until do |lines|
+      assert_includes lines, 'X Type in query ... Y100/100'
+    end
+    tmux.send_keys '100'
+    tmux.until do |lines|
+      assert_includes lines, 'X 100  Y1/100'
+    end
+    tmux.send_keys 'C-u'
+    tmux.until do |lines|
+      assert_includes lines, 'X Type in query ... Y100/100'
+    end
+  end
 end

@@ -2485,6 +2485,10 @@ func (t *Terminal) printInfoImpl() {
 		outputPrinter, outputLen = t.ansiLabelPrinter(output, &tui.ColInfo, false)
 	}
 
+	shiftLen := t.queryLen[0] + t.queryLen[1] + 1
+	if shiftLen == 1 && len(t.ghost) > 0 {
+		shiftLen = util.StringWidth(t.ghost)
+	}
 	switch t.infoStyle {
 	case infoDefault:
 		if !move(line+1, 0, t.separatorLen == 0) {
@@ -2498,9 +2502,9 @@ func (t *Terminal) printInfoImpl() {
 			return
 		}
 	case infoInlineRight:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		pos = t.promptLen + shiftLen
 	case infoInline:
-		pos = t.promptLen + t.queryLen[0] + t.queryLen[1] + 1
+		pos = t.promptLen + shiftLen
 		printInfoPrefix()
 	}
 
