@@ -311,12 +311,12 @@ __fzf_generic_path_completion() {
           else
             if [[ $1 =~ dir ]]; then
               walker=dir,follow
-              rest=${FZF_COMPLETION_DIR_OPTS-}
+              eval "rest=(${FZF_COMPLETION_DIR_OPTS-})"
             else
               walker=file,dir,follow,hidden
-              rest=${FZF_COMPLETION_PATH_OPTS-}
+              eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
             fi
-            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" $rest
+            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" "${rest[@]}"
           fi | while read -r item; do
             printf "%q " "${item%$3}$3"
           done
