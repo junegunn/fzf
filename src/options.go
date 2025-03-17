@@ -340,7 +340,7 @@ type previewOpts struct {
 }
 
 func (o *previewOpts) Visible() bool {
-	return o.size.size > 0 || o.alternative != nil && o.alternative.size.size > 0
+	return o.size.size != 0 || o.alternative != nil && o.alternative.size.size > 0
 }
 
 func (o *previewOpts) Toggle() {
@@ -468,7 +468,7 @@ func parseLabelPosition(opts *labelOpts, arg string) error {
 }
 
 func (a previewOpts) aboveOrBelow() bool {
-	return a.size.size > 0 && (a.position == posUp || a.position == posDown)
+	return a.size.size != 0 && (a.position == posUp || a.position == posDown)
 }
 
 type previewOptsCompare int
@@ -1878,14 +1878,14 @@ func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
 		}
 
 		if val < 0 {
-			return spec, errors.New(label + " must be non-negative")
+			return spec, errors.New(label + " (with %) must be non-negative")
 		}
 		if val > maxPercent {
 			return spec, fmt.Errorf("%s too large (max: %d%%)", label, int(maxPercent))
 		}
 	} else {
 		if strings.Contains(str, ".") {
-			return spec, errors.New(label + " (without %) must be a non-negative integer")
+			return spec, errors.New(label + " (without %) must be an integer")
 		}
 
 		i, err := atoi(str)
@@ -1893,9 +1893,6 @@ func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
 			return spec, err
 		}
 		val = float64(i)
-		if val < 0 {
-			return spec, errors.New(label + " must be non-negative")
-		}
 	}
 	return sizeSpec{val, percent}, nil
 }
@@ -1969,7 +1966,7 @@ func parsePreviewWindow(opts *previewOpts, input string) error {
 func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 	var err error
 	tokenRegex := regexp.MustCompile(`[:,]*(<([1-9][0-9]*)\(([^)<]+)\)|[^,:]+)`)
-	sizeRegex := regexp.MustCompile("^[0-9]+%?$")
+	sizeRegex := regexp.MustCompile("^-?[0-9]+%?$")
 	offsetRegex := regexp.MustCompile(`^(\+{(-?[0-9]+|n)})?([+-][0-9]+)*(-?/[1-9][0-9]*)?$`)
 	headerRegex := regexp.MustCompile("^~(0|[1-9][0-9]*)$")
 	tokens := tokenRegex.FindAllStringSubmatch(input, -1)

@@ -1622,7 +1622,13 @@ func calculateSize(base int, size sizeSpec, occupied int, minSize int) int {
 	if size.percent {
 		return util.Constrain(int(float64(base)*0.01*size.size), minSize, max)
 	}
-	return util.Constrain(int(size.size)+minSize-1, minSize, max)
+	var unconstrained int
+	if size.size < 0 {
+		unconstrained = int(float64(base) + size.size) - occupied + 1
+	} else {
+		unconstrained = int(size.size) + minSize - 1
+	}
+	return util.Constrain(unconstrained, minSize, max)
 }
 
 func (t *Terminal) minPreviewSize(opts *previewOpts) (int, int) {
