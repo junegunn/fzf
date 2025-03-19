@@ -4638,7 +4638,7 @@ func (t *Terminal) Loop() error {
 						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
 						info := false
-						if focusChanged && t.track == trackCurrent {
+						if focusChanged && focusedIndex >= 0 && t.track == trackCurrent {
 							t.track = trackDisabled
 							info = true
 						}
