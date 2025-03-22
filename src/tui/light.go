@@ -214,6 +214,7 @@ func (r *LightRenderer) Init() error {
 	}
 
 	r.enableMouse()
+	r.csi("?2004h") // Enable bracketed paste mode
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
@@ -462,10 +463,11 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				// Bracketed paste mode: \e[200~ ... \e[201~
 				if len(r.buffer) > 5 && r.buffer[3] == '0' && (r.buffer[4] == '0' || r.buffer[4] == '1') && r.buffer[5] == '~' {
-					// Immediately discard the sequence from the buffer and reread input
-					r.buffer = r.buffer[6:]
-					*sz = 0
-					return r.GetChar()
+					*sz = 6
+					if r.buffer[4] == '0' {
+						return Event{BracketedPasteBegin, 0, nil}
+					}
+					return Event{BracketedPasteEnd, 0, nil}
 				}
 				return Event{Invalid, 0, nil} // INS
 			case '3':

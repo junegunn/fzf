@@ -8,6 +8,7 @@ CHANGELOG
   # Display "Type to search" when the input is empty
   fzf --ghost "Type to search"
   ```
+- Bug fixes and improvements
 
 0.60.3
 ------

@@ -197,6 +197,7 @@ func (r *FullscreenRenderer) initScreen() error {
 	if e = s.Init(); e != nil {
 		return e
 	}
+	s.EnablePaste()
 	if r.mouse {
 		s.EnableMouse()
 	} else {
@@ -266,6 +267,11 @@ func (r *FullscreenRenderer) Size() TermSize {
 func (r *FullscreenRenderer) GetChar() Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
+	case *tcell.EventPaste:
+		if ev.Start() {
+			return Event{BracketedPasteBegin, 0, nil}
+		}
+		return Event{BracketedPasteEnd, 0, nil}
 	case *tcell.EventResize:
 		// Ignore the first resize event
 		// https://github.com/gdamore/tcell/blob/v2.7.0/TUTORIAL.md?plain=1#L18

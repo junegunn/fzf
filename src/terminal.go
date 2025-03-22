@@ -279,6 +279,7 @@ type Terminal struct {
 	yanked             []rune
 	input              []rune
 	inputOverride      *[]rune
+	pasting            *[]rune
 	multi              int
 	multiLine          bool
 	sort               bool
@@ -459,6 +460,8 @@ const (
 	actStart
 	actClick
 	actInvalid
+	actBracketedPasteBegin
+	actBracketedPasteEnd
 	actChar
 	actMouse
 	actBeginningOfLine
@@ -668,6 +671,8 @@ func defaultKeymap() map[tui.Event][]*action {
 
 	add(tui.Fatal, actFatal)
 	add(tui.Invalid, actInvalid)
+	add(tui.BracketedPasteBegin, actBracketedPasteBegin)
+	add(tui.BracketedPasteEnd, actBracketedPasteEnd)
 	add(tui.CtrlA, actBeginningOfLine)
 	add(tui.CtrlB, actBackwardChar)
 	add(tui.CtrlC, actAbort)
@@ -4977,6 +4982,14 @@ func (t *Terminal) Loop() error {
 			case actInvalid:
 				t.mutex.Unlock()
 				return false
+			case actBracketedPasteBegin:
+				current := []rune(t.input)
+				t.pasting = &current
+			case actBracketedPasteEnd:
+				if t.pasting != nil {
+					queryChanged = string(t.input) != string(*t.pasting)
+					t.pasting = nil
+				}
 			case actTogglePreview, actShowPreview, actHidePreview:
 				var act bool
 				switch a.t {
@@ -6036,7 +6049,7 @@ func (t *Terminal) Loop() error {
 			} else {
 				t.truncateQuery()
 			}
-			queryChanged = string(previousInput) != string(t.input)
+			queryChanged = queryChanged || t.pasting == nil && string(previousInput) != string(t.input)
 			if queryChanged {
 				t.inputOverride = nil
 			}

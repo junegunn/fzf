@@ -103,6 +103,8 @@ const (
 
 	Invalid
 	Fatal
+	BracketedPasteBegin
+	BracketedPasteEnd
 
 	Mouse
 	DoubleClick
