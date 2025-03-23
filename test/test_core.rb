@@ -1846,4 +1846,14 @@ class TestCore < TestInteractive
       assert_includes lines, 'X Type in query ... Y100/100'
     end
   end
+
+  def test_offset_middle
+    tmux.send_keys %(seq 1000 | #{FZF} --sync --no-input --reverse --height 5 --scroll-off 0 --bind space:offset-middle), :Enter
+    line = nil
+    tmux.until { |lines| line = lines.index('> 1') }
+    tmux.send_keys :PgDn
+    tmux.until { |lines| assert_includes lines[line + 4], "> 5" }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines[line + 2], "> 5" }
+  end
 end

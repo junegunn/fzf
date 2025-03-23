@@ -5486,6 +5486,7 @@ func (t *Terminal) Loop() error {
 				t.scrollOff = t.window.Height()
 				t.constrain()
 				t.scrollOff = soff
+				req(reqList)
 			case actJump:
 				t.jumping = jumpEnabled
 				req(reqJump)
