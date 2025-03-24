@@ -5867,7 +5867,7 @@ func (t *Terminal) Loop() error {
 
 				if me.Down {
 					mxCons := util.Constrain(mx-t.promptLen, 0, len(t.input))
-					if t.inputWindow == nil && my == t.promptLine() && mxCons >= 0 {
+					if !t.inputless && t.inputWindow == nil && my == t.promptLine() && mxCons >= 0 {
 						// Prompt
 						t.cx = mxCons + t.xoffset
 					} else if my >= min {
