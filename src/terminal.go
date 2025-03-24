@@ -1306,8 +1306,11 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 		t.wrap = false
 		t.withWindow(t.inputWindow, func() {
 			line := t.promptLine()
+			preTask := func(markerClass) int {
+				return 1
+			}
 			t.printHighlighted(
-				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, nil, nil)
+				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, preTask, nil)
 		})
 		t.wrap = wrap
 	}
@@ -2341,15 +2344,18 @@ func (t *Terminal) placeCursor() {
 	if t.inputless {
 		return
 	}
+	x := t.promptLen + t.queryLen[0]
 	if t.inputWindow != nil {
 		y := t.inputWindow.Height() - 1
 		if t.layout == layoutReverse {
 			y = 0
 		}
-		t.inputWindow.Move(y, t.promptLen+t.queryLen[0])
+		x = util.Min(x, t.inputWindow.Width()-1)
+		t.inputWindow.Move(y, x)
 		return
 	}
-	t.move(t.promptLine(), t.promptLen+t.queryLen[0], false)
+	x = util.Min(x, t.window.Width()-1)
+	t.move(t.promptLine(), x, false)
 }
 
 func (t *Terminal) printPrompt() {
