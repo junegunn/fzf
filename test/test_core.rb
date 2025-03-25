@@ -1856,4 +1856,14 @@ class TestCore < TestInteractive
     tmux.send_keys :Space
     tmux.until { |lines| assert_includes lines[line + 2], "> 5" }
   end
+
+  def test_no_input_query
+    tmux.send_keys %(seq 1000 | #{FZF} --no-input --query 555 --bind space:toggle-input), :Enter
+    tmux.until { |lines| assert_includes lines, '> 555' }
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 555'
+    end
+  end
 end
