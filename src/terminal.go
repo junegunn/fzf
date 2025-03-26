@@ -4934,6 +4934,14 @@ func (t *Terminal) Loop() error {
 			return true
 		}
 		doAction = func(a *action) bool {
+			// Keep track of the current query before the action is executed,
+			// so we can restore it when the input section is hidden (--no-input).
+			// * By doing this, we don't have to add a conditional branch to each
+			//   query modifying action.
+			// * We restore the query after each action instead of after a set of
+			//   actions to allow changing the query even when the input is hidden
+			//     e.g. fzf --no-input --bind 'space:show-input+change-query(foo)+hide-input'
+			currentInput := t.input
 		Action:
 			switch a.t {
 			case actIgnore, actStart, actClick:
@@ -6025,6 +6033,13 @@ func (t *Terminal) Loop() error {
 			if !processExecution(a.t) {
 				t.lastAction = a.t
 			}
+
+			if t.inputless {
+				// Always just discard the change
+				t.input = currentInput
+				t.cx = len(t.input)
+				beof = false
+			}
 			return true
 		}
 
@@ -6045,12 +6060,7 @@ func (t *Terminal) Loop() error {
 			} else if !doActions(actions) {
 				continue
 			}
-			if t.inputless {
-				// Always just discard the change
-				t.input = previousInput
-				t.cx = len(t.input)
-				beof = false
-			} else {
+			if !t.inputless {
 				t.truncateQuery()
 			}
 			queryChanged = queryChanged || t.pasting == nil && string(previousInput) != string(t.input)
