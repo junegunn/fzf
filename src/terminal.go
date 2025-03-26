@@ -47,13 +47,15 @@ cases for example.
 	    |-?[0-9]+                               # shorthand syntax (x..x)
 	)
 */
-var placeholder *regexp.Regexp
-var whiteSuffix *regexp.Regexp
-var offsetComponentRegex *regexp.Regexp
-var offsetTrimCharsRegex *regexp.Regexp
-var passThroughBeginRegex *regexp.Regexp
-var passThroughEndTmuxRegex *regexp.Regexp
-var ttyin *os.File
+var (
+	placeholder             *regexp.Regexp
+	whiteSuffix             *regexp.Regexp
+	offsetComponentRegex    *regexp.Regexp
+	offsetTrimCharsRegex    *regexp.Regexp
+	passThroughBeginRegex   *regexp.Regexp
+	passThroughEndTmuxRegex *regexp.Regexp
+	ttyin                   *os.File
+)
 
 const clearCode string = "\x1b[2J"
 
@@ -282,6 +284,7 @@ type Terminal struct {
 	pasting            *[]rune
 	multi              int
 	multiLine          bool
+	multiNoAutoSelect  bool
 	sort               bool
 	toggleSort         bool
 	track              trackOption
@@ -879,6 +882,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		input:              input,
 		multi:              opts.Multi,
 		multiLine:          opts.ReadZero && opts.MultiLine,
+		multiNoAutoSelect:  opts.MultiNoAutoSelect,
 		wrap:               opts.Wrap,
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
@@ -967,7 +971,8 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
 		lastFocus:          minItem.Index(),
-		numLinesCache:      make(map[int32]numLinesCacheValue)}
+		numLinesCache:      make(map[int32]numLinesCacheValue),
+	}
 	if opts.AcceptNth != nil {
 		t.acceptNth = opts.AcceptNth(t.delimiter)
 	}
@@ -1587,10 +1592,12 @@ func (t *Terminal) output() bool {
 	}
 	found := len(t.selected) > 0
 	if !found {
-		current := t.currentItem()
-		if current != nil {
-			t.printer(transform(current))
-			found = true
+		if !t.multiNoAutoSelect {
+			current := t.currentItem()
+			if current != nil {
+				t.printer(transform(current))
+				found = true
+			}
 		}
 	} else {
 		for _, sel := range t.sortSelected() {
@@ -2691,7 +2698,8 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 		state = newState
 		item := &Item{
 			text:   util.ToChars([]byte(trimmed)),
-			colors: colors}
+			colors: colors,
+		}
 
 		t.printHighlighted(Result{item: item},
 			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
@@ -2792,8 +2800,10 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 
 	// Avoid unnecessary redraw
 	numLines, _ := t.numItemLines(item, maxLine-line+1)
-	newLine := itemLine{valid: true, firstLine: line, numLines: numLines, cy: index + t.offset, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1]}
+	newLine := itemLine{
+		valid: true, firstLine: line, numLines: numLines, cy: index + t.offset, current: current, selected: selected, label: label,
+		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1],
+	}
 	prevLine := t.prevLines[line]
 	forceRedraw := !prevLine.valid || prevLine.other || prevLine.firstLine != newLine.firstLine
 	printBar := func(lineNum int, forceRedraw bool) bool {
@@ -4576,7 +4586,7 @@ func (t *Terminal) Loop() error {
 	}
 
 	go func() { // Render loop
-		var focusedIndex = minItem.Index()
+		focusedIndex := minItem.Index()
 		var version int64 = -1
 		running := true
 		code := ExitError

@@ -369,7 +369,8 @@ func defaultTmuxOptions(index int) *tmuxOptions {
 		position: posCenter,
 		width:    sizeSpec{50, true},
 		height:   sizeSpec{50, true},
-		index:    index}
+		index:    index,
+	}
 }
 
 func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
@@ -566,6 +567,7 @@ type Options struct {
 	Wrap              bool
 	WrapSign          *string
 	MultiLine         bool
+	MultiNoAutoSelect bool
 	CursorLine        bool
 	KeepRight         bool
 	Hscroll           bool
@@ -656,82 +658,84 @@ func defaultOptions() *Options {
 	}
 
 	return &Options{
-		Bash:         false,
-		Zsh:          false,
-		Fish:         false,
-		Man:          false,
-		Fuzzy:        true,
-		FuzzyAlgo:    algo.FuzzyMatchV2,
-		Scheme:       "", // Unknown
-		Extended:     true,
-		Phony:        false,
-		Inputless:    false,
-		Case:         CaseSmart,
-		Normalize:    true,
-		Nth:          make([]Range, 0),
-		Delimiter:    Delimiter{},
-		Sort:         1000,
-		Track:        trackDisabled,
-		Tac:          false,
-		Criteria:     []criterion{}, // Unknown
-		Multi:        0,
-		Ansi:         false,
-		Mouse:        true,
-		Theme:        theme,
-		Black:        false,
-		Bold:         true,
-		MinHeight:    -10,
-		Layout:       layoutDefault,
-		Cycle:        false,
-		Wrap:         false,
-		MultiLine:    true,
-		KeepRight:    false,
-		Hscroll:      true,
-		HscrollOff:   10,
-		ScrollOff:    3,
-		FileWord:     false,
-		InfoStyle:    infoDefault,
-		Ghost:        "",
-		Separator:    nil,
-		JumpLabels:   defaultJumpLabels,
-		Prompt:       "> ",
-		Pointer:      nil,
-		Marker:       nil,
-		MarkerMulti:  nil,
-		Query:        "",
-		Select1:      false,
-		Exit0:        false,
-		Filter:       nil,
-		ToggleSort:   false,
-		Expect:       make(map[tui.Event]string),
-		Keymap:       make(map[tui.Event][]*action),
-		Preview:      defaultPreviewOpts(""),
-		PrintQuery:   false,
-		ReadZero:     false,
-		Printer:      func(str string) { fmt.Println(str) },
-		PrintSep:     "\n",
-		Sync:         false,
-		History:      nil,
-		Header:       make([]string, 0),
-		HeaderLines:  0,
-		HeaderFirst:  false,
-		Gap:          0,
-		Ellipsis:     nil,
-		Scrollbar:    nil,
-		Margin:       defaultMargin(),
-		Padding:      defaultMargin(),
-		Unicode:      true,
-		Ambidouble:   os.Getenv("RUNEWIDTH_EASTASIAN") == "1",
-		Tabstop:      8,
-		BorderLabel:  labelOpts{},
-		PreviewLabel: labelOpts{},
-		Unsafe:       false,
-		ClearOnExit:  true,
-		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
-		WalkerRoot:   []string{"."},
-		WalkerSkip:   []string{".git", "node_modules"},
-		Help:         false,
-		Version:      false}
+		Bash:              false,
+		Zsh:               false,
+		Fish:              false,
+		Man:               false,
+		Fuzzy:             true,
+		FuzzyAlgo:         algo.FuzzyMatchV2,
+		Scheme:            "", // Unknown
+		Extended:          true,
+		Phony:             false,
+		Inputless:         false,
+		Case:              CaseSmart,
+		Normalize:         true,
+		Nth:               make([]Range, 0),
+		Delimiter:         Delimiter{},
+		Sort:              1000,
+		Track:             trackDisabled,
+		Tac:               false,
+		Criteria:          []criterion{}, // Unknown
+		Multi:             0,
+		Ansi:              false,
+		Mouse:             true,
+		Theme:             theme,
+		Black:             false,
+		Bold:              true,
+		MinHeight:         -10,
+		Layout:            layoutDefault,
+		Cycle:             false,
+		Wrap:              false,
+		MultiLine:         true,
+		MultiNoAutoSelect: false,
+		KeepRight:         false,
+		Hscroll:           true,
+		HscrollOff:        10,
+		ScrollOff:         3,
+		FileWord:          false,
+		InfoStyle:         infoDefault,
+		Ghost:             "",
+		Separator:         nil,
+		JumpLabels:        defaultJumpLabels,
+		Prompt:            "> ",
+		Pointer:           nil,
+		Marker:            nil,
+		MarkerMulti:       nil,
+		Query:             "",
+		Select1:           false,
+		Exit0:             false,
+		Filter:            nil,
+		ToggleSort:        false,
+		Expect:            make(map[tui.Event]string),
+		Keymap:            make(map[tui.Event][]*action),
+		Preview:           defaultPreviewOpts(""),
+		PrintQuery:        false,
+		ReadZero:          false,
+		Printer:           func(str string) { fmt.Println(str) },
+		PrintSep:          "\n",
+		Sync:              false,
+		History:           nil,
+		Header:            make([]string, 0),
+		HeaderLines:       0,
+		HeaderFirst:       false,
+		Gap:               0,
+		Ellipsis:          nil,
+		Scrollbar:         nil,
+		Margin:            defaultMargin(),
+		Padding:           defaultMargin(),
+		Unicode:           true,
+		Ambidouble:        os.Getenv("RUNEWIDTH_EASTASIAN") == "1",
+		Tabstop:           8,
+		BorderLabel:       labelOpts{},
+		PreviewLabel:      labelOpts{},
+		Unsafe:            false,
+		ClearOnExit:       true,
+		WalkerOpts:        walkerOpts{file: true, hidden: true, follow: true},
+		WalkerRoot:        []string{"."},
+		WalkerSkip:        []string{".git", "node_modules"},
+		Help:              false,
+		Version:           false,
+	}
 }
 
 func isDir(path string) bool {
@@ -1868,7 +1872,7 @@ func strLines(str string) []string {
 }
 
 func parseSize(str string, maxPercent float64, label string) (sizeSpec, error) {
-	var spec = sizeSpec{}
+	spec := sizeSpec{}
 	var val float64
 	var err error
 	percent := strings.HasSuffix(str, "%")
@@ -1954,7 +1958,8 @@ func parseInfoStyle(str string) (infoStyle, string, error) {
 	}
 	for _, spec := range []infoSpec{
 		{"inline", infoInline},
-		{"inline-right", infoInlineRight}} {
+		{"inline-right", infoInlineRight},
+	} {
 		if strings.HasPrefix(str, spec.name+":") {
 			return spec.style, strings.ReplaceAll(str[len(spec.name)+1:], "\n", " "), nil
 		}
@@ -2496,6 +2501,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.Multi, err = optionalNumeric(maxMulti); err != nil {
 				return err
 			}
+		case "--multi-no-auto-select":
+			opts.MultiNoAutoSelect = true
 		case "+m", "--no-multi":
 			opts.Multi = 0
 		case "--ansi":
