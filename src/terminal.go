@@ -6039,6 +6039,8 @@ func (t *Terminal) Loop() error {
 				t.input = currentInput
 				t.cx = len(t.input)
 				beof = false
+			} else if string(t.input) != string(currentInput) {
+				t.inputOverride = nil
 			}
 			return true
 		}
@@ -6064,9 +6066,6 @@ func (t *Terminal) Loop() error {
 				t.truncateQuery()
 			}
 			queryChanged = queryChanged || t.pasting == nil && string(previousInput) != string(t.input)
-			if queryChanged {
-				t.inputOverride = nil
-			}
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs && !doActions(onChanges) {
 				continue
