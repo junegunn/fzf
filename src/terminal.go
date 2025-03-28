@@ -5133,7 +5133,12 @@ func (t *Terminal) Loop() error {
 					header = t.captureLines(a.a)
 				}
 				if t.changeHeader(header) {
-					req(reqHeader, reqList, reqPrompt, reqInfo)
+					if t.headerWindow != nil {
+						// Need to resize header window
+						req(reqFullRedraw)
+					} else {
+						req(reqHeader, reqList, reqPrompt, reqInfo)
+					}
 				} else {
 					req(reqHeader)
 				}
