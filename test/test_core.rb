@@ -1890,4 +1890,34 @@ class TestCore < TestInteractive
     tmux.send_keys :Space
     tmux.until { |lines| assert_includes lines, '> 777' }
   end
+
+  def test_change_pointer
+    tmux.send_keys %(seq 2 | #{FZF} --bind 'a:change-pointer(a),b:change-pointer(bb),c:change-pointer(),d:change-pointer(ddd)'), :Enter
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_includes lines, 'a 1' }
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert_includes lines, 'bb 1' }
+    tmux.send_keys 'c'
+    tmux.until { |lines| assert_includes lines, ' 1' }
+    tmux.send_keys 'd'
+    tmux.until { |lines| refute_includes lines, 'ddd 1' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, ' 2' }
+  end
+
+  def test_transform_pointer
+    tmux.send_keys %(seq 2 | #{FZF} --bind 'a:transform-pointer(echo a),b:transform-pointer(echo bb),c:transform-pointer(),d:transform-pointer(echo ddd)'), :Enter
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_includes lines, 'a 1' }
+    tmux.send_keys 'b'
+    tmux.until { |lines| assert_includes lines, 'bb 1' }
+    tmux.send_keys 'c'
+    tmux.until { |lines| assert_includes lines, ' 1' }
+    tmux.send_keys 'd'
+    tmux.until { |lines| refute_includes lines, 'ddd 1' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, ' 2' }
+  end
 end

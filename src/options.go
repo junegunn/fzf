@@ -1404,7 +1404,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth|pointer)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1799,6 +1799,8 @@ func isExecuteAction(str string) actionType {
 		return actChangeInputLabel
 	case "change-header-label":
 		return actChangeHeaderLabel
+	case "change-pointer":
+		return actChangePointer
 	case "change-preview-window":
 		return actChangePreviewWindow
 	case "change-preview":
@@ -1839,6 +1841,8 @@ func isExecuteAction(str string) actionType {
 		return actTransformHeader
 	case "transform-nth":
 		return actTransformNth
+	case "transform-pointer":
+		return actTransformPointer
 	case "transform-prompt":
 		return actTransformPrompt
 	case "transform-query":

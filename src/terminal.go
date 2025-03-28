@@ -547,12 +547,14 @@ const (
 	actTransformHeader
 	actTransformHeaderLabel
 	actTransformNth
+	actTransformPointer
 	actTransformPreviewLabel
 	actTransformPrompt
 	actTransformQuery
 	actTransformSearch
 	actSearch
 	actPreview
+	actChangePointer
 	actChangePreview
 	actChangePreviewWindow
 	actPreviewTop
@@ -5950,6 +5952,21 @@ func (t *Terminal) Loop() error {
 							t.keymap[key] = originalAction
 						}
 					}
+				}
+			case actChangePointer, actTransformPointer:
+				pointer := a.a
+				if a.t == actTransformPointer {
+					pointer = t.captureLine(a.a)
+				}
+				length := uniseg.StringWidth(pointer)
+				if length <= 2 {
+					if length != t.pointerLen {
+						t.forceRerenderList()
+					}
+					t.pointer = pointer
+					t.pointerLen = length
+					t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+					req(reqList)
 				}
 			case actChangePreview:
 				if t.previewOpts.command != a.a {
