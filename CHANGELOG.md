@@ -8,6 +8,7 @@ CHANGELOG
   # Display "Type to search" when the input is empty
   fzf --ghost "Type to search"
   ```
+- Added `change-ghost` and `transform-ghost` actions for dynamically changing the ghost text
 - Added `change-pointer` and `transform-pointer` actions for dynamically changing the pointer sign
 - Bug fixes and improvements
 

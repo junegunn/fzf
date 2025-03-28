@@ -1815,7 +1815,7 @@ class TestCore < TestInteractive
   end
 
   def test_ghost
-    tmux.send_keys %(seq 100 | #{FZF} --prompt 'X ' --ghost 'Type in query ...'), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --prompt 'X ' --ghost 'Type in query ...' --bind 'space:change-ghost:Y Z' --bind 'enter:transform-ghost:echo Z Y'), :Enter
     tmux.until do |lines|
       assert_equal 100, lines.match_count
       assert_includes lines, 'X Type in query ...'
@@ -1830,6 +1830,10 @@ class TestCore < TestInteractive
       assert_equal 100, lines.match_count
       assert_includes lines, 'X Type in query ...'
     end
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines, 'X Y Z' }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_includes lines, 'X Z Y' }
   end
 
   def test_ghost_inline

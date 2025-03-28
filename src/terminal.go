@@ -475,15 +475,19 @@ const (
 	actBackwardWord
 	actCancel
 	actChangeBorderLabel
-	actChangeListLabel
-	actChangeInputLabel
+	actChangeGhost
 	actChangeHeader
 	actChangeHeaderLabel
+	actChangeInputLabel
+	actChangeListLabel
 	actChangeMulti
+	actChangeNth
+	actChangePointer
+	actChangePreview
 	actChangePreviewLabel
+	actChangePreviewWindow
 	actChangePrompt
 	actChangeQuery
-	actChangeNth
 	actClearScreen
 	actClearQuery
 	actClearSelection
@@ -542,10 +546,11 @@ const (
 	actTogglePreviewWrap
 	actTransform
 	actTransformBorderLabel
-	actTransformListLabel
-	actTransformInputLabel
+	actTransformGhost
 	actTransformHeader
 	actTransformHeaderLabel
+	actTransformInputLabel
+	actTransformListLabel
 	actTransformNth
 	actTransformPointer
 	actTransformPreviewLabel
@@ -554,9 +559,6 @@ const (
 	actTransformSearch
 	actSearch
 	actPreview
-	actChangePointer
-	actChangePreview
-	actChangePreviewWindow
 	actPreviewTop
 	actPreviewBottom
 	actPreviewUp
@@ -5957,6 +5959,15 @@ func (t *Terminal) Loop() error {
 							t.keymap[key] = originalAction
 						}
 					}
+				}
+			case actChangeGhost, actTransformGhost:
+				ghost := a.a
+				if a.t == actTransformGhost {
+					ghost = t.captureLine(a.a)
+				}
+				t.ghost = ghost
+				if len(t.input) == 0 {
+					req(reqPrompt)
 				}
 			case actChangePointer, actTransformPointer:
 				pointer := a.a
