@@ -75,6 +75,14 @@ func TestReplacePlaceholder(t *testing.T) {
 	result = replacePlaceholderTest("echo {}", true, Delimiter{}, printsep, false, "query", items1)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}")
 
+	// {r}, strip ansi
+	result = replacePlaceholderTest("echo {r}", true, Delimiter{}, printsep, false, "query", items1)
+	checkFormat("echo   foo'bar baz")
+
+	// {r..}, strip ansi
+	result = replacePlaceholderTest("echo {r..}", true, Delimiter{}, printsep, false, "query", items1)
+	checkFormat("echo foo'bar baz")
+
 	// {}, with multiple items
 	result = replacePlaceholderTest("echo {}", true, Delimiter{}, printsep, false, "query", items2)
 	checkFormat("echo {{.O}}foo{{.I}}bar baz{{.O}}")

@@ -38,7 +38,7 @@ As such it is not useful for validation, but rather to generate test
 cases for example.
 
 	\\?(?:                                      # escaped type
-	    {\+?s?f?RANGE(?:,RANGE)*}               # token type
+	    {\+?s?f?r?RANGE(?:,RANGE)*}             # token type
 	    {q[:s?RANGE]}                           # query type
 	    |{\+?n?f?}                              # item type (notice no mandatory element inside brackets)
 	)
@@ -65,7 +65,7 @@ const maxFocusEvents = 10000
 const blockDuration = 1 * time.Second
 
 func init() {
-	placeholder = regexp.MustCompile(`\\?(?:{[+sf]*[0-9,-.]*}|{q(?::s?[0-9,-.]+)?}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
+	placeholder = regexp.MustCompile(`\\?(?:{[+sfr]*[0-9,-.]*}|{q(?::s?[0-9,-.]+)?}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
@@ -628,6 +628,7 @@ type placeholderFlags struct {
 	number        bool
 	forceUpdate   bool
 	file          bool
+	raw           bool
 }
 
 type searchRequest struct {
@@ -3782,6 +3783,8 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			flags.number = true
 		case 'f':
 			flags.file = true
+		case 'r':
+			flags.raw = true
 		case 'q':
 			flags.forceUpdate = true
 			trimmed += string(char)
@@ -3933,7 +3936,7 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 						return "''"
 					}
 					return strconv.Itoa(int(n))
-				case flags.file:
+				case flags.file || flags.raw:
 					return item.AsString(params.stripAnsi)
 				default:
 					return params.executor.QuoteEntry(item.AsString(params.stripAnsi))
@@ -3975,7 +3978,7 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 				if !flags.preserveSpace {
 					str = strings.TrimSpace(str)
 				}
-				if !flags.file {
+				if !flags.file && !flags.raw {
 					str = params.executor.QuoteEntry(str)
 				}
 				return str
