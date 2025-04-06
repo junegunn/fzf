@@ -213,8 +213,7 @@ func (r *LightRenderer) Init() error {
 		}
 	}
 
-	r.enableMouse()
-	r.csi("?2004h") // Enable bracketed paste mode
+	r.enableModes()
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
@@ -683,7 +682,7 @@ func (r *LightRenderer) rmcup() {
 }
 
 func (r *LightRenderer) Pause(clear bool) {
-	r.disableMouse()
+	r.disableModes()
 	r.restoreTerminal()
 	if clear {
 		if r.fullscreen {
@@ -696,12 +695,13 @@ func (r *LightRenderer) Pause(clear bool) {
 	}
 }
 
-func (r *LightRenderer) enableMouse() {
+func (r *LightRenderer) enableModes() {
 	if r.mouse {
 		r.csi("?1000h")
 		r.csi("?1002h")
 		r.csi("?1006h")
 	}
+	r.csi("?2004h") // Enable bracketed paste mode
 }
 
 func (r *LightRenderer) disableMouse() {
@@ -712,6 +712,11 @@ func (r *LightRenderer) disableMouse() {
 	}
 }
 
+func (r *LightRenderer) disableModes() {
+	r.disableMouse()
+	r.csi("?2004l")
+}
+
 func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
 	if clear {
@@ -720,7 +725,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		} else {
 			r.rmcup()
 		}
-		r.enableMouse()
+		r.enableModes()
 		r.flush()
 	} else if sigcont && !r.fullscreen && r.mouse {
 		// NOTE: SIGCONT (Coming back from CTRL-Z):
@@ -775,8 +780,7 @@ func (r *LightRenderer) Close() {
 	if !r.showCursor {
 		r.csi("?25h")
 	}
-	r.csi("?2004l") // Disable bracketed paste mode we enabled in Init()
-	r.disableMouse()
+	r.disableModes()
 	r.flush()
 	r.restoreTerminal()
 	r.closePlatform()

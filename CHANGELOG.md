@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.61.1
+------
+- Disable bracketed-paste mode on exit. This fixes issue where pasting breaks after running fzf on old bash versions that don't support the mode.
+
 0.61.0
 ------
 - Added `--ghost=TEXT` to display a ghost text when the input is empty
