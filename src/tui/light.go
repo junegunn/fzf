@@ -775,6 +775,7 @@ func (r *LightRenderer) Close() {
 	if !r.showCursor {
 		r.csi("?25h")
 	}
+	r.csi("?2004l") // Disable bracketed paste mode we enabled in Init()
 	r.disableMouse()
 	r.flush()
 	r.restoreTerminal()
