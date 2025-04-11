@@ -323,7 +323,9 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 						return filepath.SkipDir
 					}
 				}
-				path += sep
+				if path != sep {
+					path += sep
+				}
 			}
 			if ((opts.file && !isDir) || (opts.dir && isDir)) && r.pusher(stringBytes(path)) {
 				atomic.StoreInt32(&r.event, int32(EvtReadNew))
