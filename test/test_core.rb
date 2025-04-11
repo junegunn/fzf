@@ -1931,4 +1931,9 @@ class TestCore < TestInteractive
     tmux.send_keys :Space
     tmux.until { |lines| assert lines.any_include?('bar') }
   end
+
+  def test_trailing_new_line
+    tmux.send_keys %(echo -en "foo\n" | fzf --read0 --no-multi-line), :Enter
+    tmux.until { |lines| assert_includes lines, '> foo␊' }
+  end
 end

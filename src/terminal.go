@@ -3144,7 +3144,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			wasWrapped = true
 		}
 
-		if len(line) > 0 && line[len(line)-1] == '\n' {
+		if len(line) > 0 && line[len(line)-1] == '\n' && lineOffset < len(lines)-1 {
 			line = line[:len(line)-1]
 		} else {
 			wrapped = true
