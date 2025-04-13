@@ -991,4 +991,16 @@ class TestLayout < TestInteractive
     BLOCK
     tmux.until { assert_block(block, it) }
   end
+
+  def test_header_border_no_pointer_and_marker
+    tmux.send_keys %(seq 10 | #{FZF} --header-lines 1 --header-border sharp --no-list-border --pointer '' --marker ''), :Enter
+    block = <<~BLOCK
+      ┌──────
+      │ 1
+      └──────
+        9/9 ─
+      >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
 end

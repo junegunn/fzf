@@ -2647,6 +2647,9 @@ func (t *Terminal) headerIndent(borderShape tui.BorderShape) int {
 	}
 	if borderShape.HasLeft() {
 		indentSize -= 1 + t.borderWidth
+		if indentSize < 0 {
+			indentSize = 0
+		}
 	}
 	return indentSize
 }
