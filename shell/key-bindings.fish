@@ -51,20 +51,26 @@ function fzf_key_bindings
     set -l -- fish_major (string match -r -- '^\d+' $version)
     set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
 
+    # fish v3.3.0 and newer: Don't use option prefix if " -- " is preceded.
+    set -l -- match_regex '(?<fzf_query>[\s\S]*?(?=\n?$)$)'
+    set -l -- prefix_regex '^-[^\s=]+=|^-(?!-)\S'
+    if test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
+    or string match -q -v -- '* -- *' (string sub -l (commandline -Cp) -- (commandline -p))
+      set -- match_regex "(?<prefix>$prefix_regex)?$match_regex"
+    end
+
     # Set $prefix and expanded $fzf_query with preserved trailing newlines.
     if test "$fish_major" -ge 4
       # fish v4.0.0 and newer
-      string match -q -r -- '(?<prefix>^-[^\s=]+=)?(?<fzf_query>[\s\S]*?(?=\n?$)$)' \
-        (commandline --current-token --tokens-expanded | string collect -N)
+      string match -q -r -- $match_regex (commandline --current-token --tokens-expanded | string collect -N)
     else if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
       # fish v3.2.0 - v3.7.1 (last v3)
-      string match -q -r -- '(?<prefix>^-[^\s=]+=)?(?<fzf_query>[\s\S]*?(?=\n?$)$)' \
-        (commandline --current-token --tokenize | string collect -N)
+      string match -q -r -- $match_regex (commandline --current-token --tokenize | string collect -N)
       eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)' '')
     else
       # fish older than v3.2.0 (v3.1b1 - v3.1.2)
       set -l -- cl_token (commandline --current-token --tokenize | string collect -N)
-      set -- prefix (string match -r -- '^-[^\s=]+=' $cl_token)
+      set -- prefix (string match -r -- $prefix_regex $cl_token)
       set -- fzf_query (string replace -- "$prefix" '' $cl_token | string collect -N)
       eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)|\\\n\\\n$' '')
     end
