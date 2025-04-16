@@ -147,7 +147,10 @@ function fzf_key_bindings
   end
 
   function fzf-history-widget -d "Show command history"
-    set -l fzf_query (commandline | string escape)
+    set -l -- command_line (commandline)
+    set -l -- current_line (commandline -L)
+    set -l -- total_lines (count $command_line)
+    set -l -- fzf_query (string escape -- $command_line[$current_line])
 
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
       '--nth=2..,.. --scheme=history --multi --wrap-sign="\t↳ "' \
@@ -172,9 +175,13 @@ function fzf_key_bindings
     test -z "$fish_private_mode"; and builtin history merge
 
     if set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query | string split0)
-      commandline -- (string replace -a -- \n\t \n $result[1])
-      test (count $result) -gt 1; and for i in $result[2..-1]
-        commandline -i -- (string replace -a -- \n\t \n \n$i)
+      if test "$total_lines" -eq 1
+        commandline -- (string replace -a -- \n\t \n $result)
+      else
+        set -l a (math $current_line - 1)
+        set -l b (math $current_line + 1)
+        commandline -- $command_line[1..$a] (string replace -a -- \n\t \n $result)
+        commandline -a -- '' $command_line[$b..-1]
       end
     end
 
