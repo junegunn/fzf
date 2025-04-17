@@ -14,11 +14,20 @@
 
 # Key bindings
 # ------------
-# For compatibility with fish versions down to 3.1.2, the script does not use:
-# - The -f/--function switch of command: set
-# - The process substitution syntax: $(cmd)
-# - Ranges that omit start/end indexes: $var[$start..] $var[..$end] $var[..]
+# The oldest supported fish version is 3.1b1. To maintain compatibility, the
+# command substitution syntax $(cmd) should never be used, even behind a version
+# check, otherwise the source command will fail on fish versions older than 3.4.0.
 function fzf_key_bindings
+
+  # Check fish version
+  set -l fish_ver (string match -r '^(\d+).(\d+)' $version 2> /dev/null; or echo 0\n0\n0)
+  if test \( "$fish_ver[2]" -lt 3 \) -o \( "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1 \)
+    echo "This script requires fish version 3.1b1 or newer." >&2
+    return 1
+  else if not type -q fzf
+    echo "fzf was not found in path." >&2
+    return 1
+  end
 
   function __fzf_defaults
     # $argv[1]: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
