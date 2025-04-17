@@ -748,7 +748,7 @@ fzf (`execute`, `execute-silent`).
 fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort'
 ```
 
-See *KEY BINDINGS* section of the man page for details.
+See *KEY/EVENT BINDINGS* section of the man page for details.
 
 ### Turning into a different process
 
