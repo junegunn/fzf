@@ -45,4 +45,7 @@ jobs:
       run: make test
 
     - name: Integration test
+      # GitHub Actions run without a TTY device. This is a workaround to get one,
+      # https://github.com/actions/runner/issues/241
+      shell: 'script --return --quiet --log-out /dev/null --command "bash -e {0}"'
       run: make install && ./install --all && tmux new-session -d && ruby test/runner.rb --verbose

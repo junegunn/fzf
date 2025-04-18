@@ -43,14 +43,14 @@ func (r *LightRenderer) closePlatform() {
 }
 
 func openTty(mode int) (*os.File, error) {
+	tty := ttyname()
+	if len(tty) > 0 {
+		if in, err := os.OpenFile(tty, mode, 0); err == nil && util.IsTty(in) {
+			return in, nil
+		}
+	}
 	in, err := os.OpenFile(consoleDevice, mode, 0)
 	if err != nil {
-		tty := ttyname()
-		if len(tty) > 0 {
-			if in, err := os.OpenFile(tty, mode, 0); err == nil {
-				return in, nil
-			}
-		}
 		return nil, errors.New("failed to open " + consoleDevice)
 	}
 	return in, nil

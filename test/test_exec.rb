@@ -380,7 +380,7 @@ class TestExec < TestInteractive
   end
 
   def test_become_tty
-    tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty'", :Enter
+    tmux.send_keys "sleep 0.5 | #{FZF} --bind 'start:reload:ls' --bind 'load:become:tty' 2>/dev/null", :Enter
     tmux.until { |lines| assert_includes lines, '/dev/tty' }
   end
 
