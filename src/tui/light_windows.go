@@ -76,12 +76,12 @@ func (r *LightRenderer) closePlatform() {
 	windows.SetConsoleMode(windows.Handle(r.inHandle), r.origStateInput)
 }
 
-func openTtyIn() (*os.File, error) {
+func openTtyIn(ttyDefault string) (*os.File, error) {
 	// not used
 	return nil, nil
 }
 
-func openTtyOut() (*os.File, error) {
+func openTtyOut(ttyDefault string) (*os.File, error) {
 	return os.Stderr, nil
 }
 
