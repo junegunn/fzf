@@ -55,7 +55,7 @@ func openTty(ttyDefault string, mode int) (*os.File, error) {
 				return in, nil
 			}
 		}
-		if len(ttyDefault) == 0 {
+		if ttyDefault != DefaultTtyDevice {
 			if in, err = os.OpenFile(DefaultTtyDevice, mode, 0); err == nil {
 				return in, nil
 			}
