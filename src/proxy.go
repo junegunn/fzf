@@ -145,7 +145,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 					env = elems[1:]
 				}
 				executor := util.NewExecutor(opts.WithShell)
-				ttyin, err := tui.TtyIn()
+				ttyin, err := tui.TtyIn(opts.TtyDefault)
 				if err != nil {
 					return ExitError, err
 				}

@@ -631,6 +631,7 @@ type Options struct {
 	MEMProfile        string
 	BlockProfile      string
 	MutexProfile      string
+	TtyDefault        string
 }
 
 func filterNonEmpty(input []string) []string {
@@ -730,6 +731,7 @@ func defaultOptions() *Options {
 		WalkerOpts:   walkerOpts{file: true, hidden: true, follow: true},
 		WalkerRoot:   []string{"."},
 		WalkerSkip:   []string{".git", "node_modules"},
+		TtyDefault:   tui.DefaultTtyDevice,
 		Help:         false,
 		Version:      false}
 }
@@ -2336,6 +2338,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 		case "--no-tmux":
 			opts.Tmux = nil
+		case "--tty-default":
+			if opts.TtyDefault, err = nextString("tty device name required"); err != nil {
+				return err
+			}
+		case "--no-tty-default":
+			opts.TtyDefault = ""
 		case "--force-tty-in":
 			// NOTE: We need this because `system('fzf --tmux < /dev/tty')` doesn't
 			// work on Neovim. Same as '-' option of fzf-tmux.
