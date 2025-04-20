@@ -28,7 +28,7 @@ const (
 	maxInputBuffer  = 1024 * 1024
 )
 
-const consoleDevice string = "/dev/tty"
+const DefaultTtyDevice string = "/dev/tty"
 
 var offsetRegexp = regexp.MustCompile("(.*?)\x00?\x1b\\[([0-9]+);([0-9]+)R")
 var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
@@ -146,8 +146,8 @@ type LightWindow struct {
 	wrapSignWidth int
 }
 
-func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
-	out, err := openTtyOut()
+func NewLightRenderer(ttyDefault string, ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
+	out, err := openTtyOut(ttyDefault)
 	if err != nil {
 		out = os.Stderr
 	}
@@ -271,7 +271,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		return nil, errors.New("failed to read " + consoleDevice)
+		return nil, errors.New("failed to read " + DefaultTtyDevice)
 	}
 
 	retries := 0
