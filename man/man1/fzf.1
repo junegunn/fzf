@@ -230,9 +230,10 @@ e.g. \fB# Avoid rendering both fzf instances at the same time
 .RE
 .TP
 .B "\-\-no\-tty\-default"
-Make fzf search for the current TTY device instead of using \fB/dev/tty\fR.
-This option was added to avoid the problem when trying to open emacsclient from
-within fzf.
+Make fzf search for the current TTY device via standard error instead of using
+\fB/dev/tty\fR. This option was added to avoid the problem when trying to open
+emacsclient from within fzf. Alternativly, you can change the default TTY
+device by setting \fB--tty-default=DEVICE_NAME\fR.
 
 .SS GLOBAL STYLE
 .TP
