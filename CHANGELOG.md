@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.61.2
+------
+- Fixed panic when using header border without pointer/marker (@phanen)
+- Fixed `--tmux` option when already inside a tmux popup (@peikk0)
+- Bug fixes and improvements in CTRL-T binding of fish (#4334) (@bitraid)
+- Added `--no-tty-default` option to make fzf search for the current TTY device instead of defaulting to `/dev/tty` (#4242)
+
 0.61.1
 ------
 - Disable bracketed-paste mode on exit. This fixes issue where pasting breaks after running fzf on old bash versions that don't support the mode.
