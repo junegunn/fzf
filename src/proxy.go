@@ -98,8 +98,7 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 		validIdentifier := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 		for _, pairStr := range os.Environ() {
 			pair := strings.SplitN(pairStr, "=", 2)
-			// TMUX_PANE is never set inside a tmux popup, and should not be set so as to not be detected as a regular tmux pane
-			if validIdentifier.MatchString(pair[0]) && pair[0] != "TMUX_PANE" {
+			if validIdentifier.MatchString(pair[0]) {
 				exports = append(exports, fmt.Sprintf("export %s=%s", pair[0], escapeSingleQuote(pair[1])))
 			} else if strings.HasPrefix(pair[0], "BASH_FUNC_") && strings.HasSuffix(pair[0], "%%") {
 				name := pair[0][10 : len(pair[0])-2]

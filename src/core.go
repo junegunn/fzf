@@ -39,7 +39,7 @@ func (r revision) compatible(other revision) bool {
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if opts.Filter == nil {
-		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && len(os.Getenv("TMUX_PANE")) > 0 && opts.Tmux.index >= opts.Height.index {
+		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
 			return runTmux(os.Args, opts)
 		}
 
