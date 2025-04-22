@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.61.3
+------
+- Reverted #4351 as it caused `tmux run-shell 'fzf --tmux'` to fail (#4559 #4560)
+- More environment variables for child processes (#4356)
+
 0.61.2
 ------
 - Fixed panic when using header border without pointer/marker (@phanen)
