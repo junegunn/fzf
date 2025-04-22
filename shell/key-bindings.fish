@@ -144,13 +144,8 @@ function fzf_key_bindings
     set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
     set -lx FZF_DEFAULT_OPTS_FILE
 
-    if set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
-      # Remove last token from commandline.
-      commandline -t ''
-      for i in $result
-        commandline -it -- $prefix(string escape -- $i)' '
-      end
-    end
+    set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+    and commandline -rt -- (string join -- ' ' $prefix(string escape -- $result))' '
 
     commandline -f repaint
   end
