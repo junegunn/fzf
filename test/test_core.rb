@@ -1632,14 +1632,16 @@ class TestCore < TestInteractive
   end
 
   def test_env_vars
-    def to_vars(lines)
-      lines.select { it.start_with?('FZF_') }.to_h do
-        key, val = it.split('=', 2)
+    def env_vars
+      return {} unless File.exist?(tempname)
+
+      File.readlines(tempname).select { it.start_with?('FZF_') }.to_h do
+        key, val = it.chomp.split('=', 2)
         [key.to_sym, val]
       end
     end
 
-    tmux.send_keys %(seq 100 | #{FZF} --multi --reverse --preview-window up,99%,noborder --preview 'env | grep ^FZF_ | sort' --no-input --bind enter:show-input+refresh-preview,space:disable-search+refresh-preview), :Enter
+    tmux.send_keys %(seq 100 | #{FZF} --multi --reverse --preview-window 0 --preview 'env | grep ^FZF_ | sort > #{tempname}' --no-input --bind enter:show-input+refresh-preview,space:disable-search+refresh-preview), :Enter
     expected = {
       FZF_TOTAL_COUNT: '100',
       FZF_MATCH_COUNT: '100',
@@ -1648,31 +1650,32 @@ class TestCore < TestInteractive
       FZF_KEY: '',
       FZF_POS: '1',
       FZF_QUERY: '',
-      FZF_PROMPT: '>',
+      FZF_POINTER: '>',
+      FZF_PROMPT: '> ',
       FZF_INPUT_STATE: 'hidden'
     }
-    tmux.until do |lines|
-      assert_equal expected, to_vars(lines).slice(*expected.keys)
+    tmux.until do
+      assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys :Enter
-    tmux.until do |lines|
+    tmux.until do
       expected.merge!(FZF_INPUT_STATE: 'enabled', FZF_ACTION: 'show-input', FZF_KEY: 'enter')
-      assert_equal expected, to_vars(lines).slice(*expected.keys)
+      assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys :Tab, :Tab
-    tmux.until do |lines|
+    tmux.until do
       expected.merge!(FZF_ACTION: 'toggle-down', FZF_KEY: 'tab', FZF_POS: '3', FZF_SELECT_COUNT: '2')
-      assert_equal expected, to_vars(lines).slice(*expected.keys)
+      assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys '99'
-    tmux.until do |lines|
+    tmux.until do
       expected.merge!(FZF_ACTION: 'char', FZF_KEY: '9', FZF_QUERY: '99', FZF_MATCH_COUNT: '1', FZF_POS: '1')
-      assert_equal expected, to_vars(lines).slice(*expected.keys)
+      assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys :Space
-    tmux.until do |lines|
+    tmux.until do
       expected.merge!(FZF_INPUT_STATE: 'disabled', FZF_ACTION: 'disable-search', FZF_KEY: 'space')
-      assert_equal expected, to_vars(lines).slice(*expected.keys)
+      assert_equal expected, env_vars.slice(*expected.keys)
     end
   end
 
