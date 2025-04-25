@@ -295,6 +295,7 @@ func Run(opts *Options) (int, error) {
 	// Event coordination
 	reading := true
 	ticks := 0
+	startTick := 0
 	var nextCommand *commandSpec
 	var nextEnviron []string
 	eventBox.Watch(EvtReadNew)
@@ -321,6 +322,7 @@ func Run(opts *Options) (int, error) {
 			clearDenylist()
 		}
 		reading = true
+		startTick = ticks
 		chunkList.Clear()
 		itemIndex = 0
 		inputRevision.bumpMajor()
@@ -509,7 +511,7 @@ func Run(opts *Options) (int, error) {
 		}
 		if delay && reading {
 			dur := util.DurWithin(
-				time.Duration(ticks)*coordinatorDelayStep,
+				time.Duration(ticks-startTick)*coordinatorDelayStep,
 				0, coordinatorDelayMax)
 			time.Sleep(dur)
 		}
