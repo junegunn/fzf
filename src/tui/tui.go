@@ -308,6 +308,12 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 	return dup
 }
 
+func (p ColorPair) WithBg(bg ColorAttr) ColorPair {
+	dup := p
+	bgPair := ColorPair{colUndefined, bg.Color, bg.Attr}
+	return dup.Merge(bgPair)
+}
+
 func (p ColorPair) MergeAttr(other ColorPair) ColorPair {
 	return p.WithAttr(other.attr)
 }
@@ -328,6 +334,7 @@ type ColorTheme struct {
 	Bg               ColorAttr
 	ListFg           ColorAttr
 	ListBg           ColorAttr
+	AltBg            ColorAttr
 	Nth              ColorAttr
 	SelectedFg       ColorAttr
 	SelectedBg       ColorAttr
@@ -735,6 +742,7 @@ func EmptyTheme() *ColorTheme {
 		Bg:               ColorAttr{colUndefined, AttrUndefined},
 		ListFg:           ColorAttr{colUndefined, AttrUndefined},
 		ListBg:           ColorAttr{colUndefined, AttrUndefined},
+		AltBg:            ColorAttr{colUndefined, AttrUndefined},
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
@@ -780,6 +788,7 @@ func NoColorTheme() *ColorTheme {
 		Bg:               ColorAttr{colDefault, AttrUndefined},
 		ListFg:           ColorAttr{colDefault, AttrUndefined},
 		ListBg:           ColorAttr{colDefault, AttrUndefined},
+		AltBg:            ColorAttr{colUndefined, AttrUndefined},
 		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
 		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
 		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
@@ -825,6 +834,7 @@ func init() {
 		Bg:               ColorAttr{colDefault, AttrUndefined},
 		ListFg:           ColorAttr{colUndefined, AttrUndefined},
 		ListBg:           ColorAttr{colUndefined, AttrUndefined},
+		AltBg:            ColorAttr{colUndefined, AttrUndefined},
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
@@ -864,6 +874,7 @@ func init() {
 		Bg:               ColorAttr{colDefault, AttrUndefined},
 		ListFg:           ColorAttr{colUndefined, AttrUndefined},
 		ListBg:           ColorAttr{colUndefined, AttrUndefined},
+		AltBg:            ColorAttr{colUndefined, AttrUndefined},
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
@@ -903,6 +914,7 @@ func init() {
 		Bg:               ColorAttr{colDefault, AttrUndefined},
 		ListFg:           ColorAttr{colUndefined, AttrUndefined},
 		ListBg:           ColorAttr{colUndefined, AttrUndefined},
+		AltBg:            ColorAttr{colUndefined, AttrUndefined},
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},

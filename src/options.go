@@ -1295,6 +1295,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.Current)
 			case "current-bg", "bg+":
 				mergeAttr(&theme.DarkBg)
+			case "alt-bg":
+				mergeAttr(&theme.AltBg)
 			case "selected-fg":
 				mergeAttr(&theme.SelectedFg)
 			case "selected-bg":
