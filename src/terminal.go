@@ -1258,7 +1258,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, false)
+			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr)
 		}
 		for limit > 0 {
 			if length > limit {
@@ -2791,17 +2791,28 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	_, selected := t.selected[item.Index()]
 	label := ""
 	extraWidth := 0
+	alt := false
+	altBg := t.theme.AltBg
+	selectedBg := selected && t.theme.SelectedBg != t.theme.ListBg
 	if t.jumping != jumpDisabled {
 		if index < len(t.jumpLabels) {
 			// Striped
-			current = index%2 == 0
+			if !altBg.IsColorDefined() {
+				altBg = t.theme.DarkBg
+				alt = index%2 == 0
+			} else {
+				alt = index%2 == 1
+			}
 			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
 			if t.pointerLen == 0 {
 				extraWidth = 1
 			}
 		}
-	} else if current {
-		label = t.pointer
+	} else {
+		if current {
+			label = t.pointer
+		}
+		alt = !selectedBg && altBg.IsColorDefined() && index%2 == 1
 	}
 
 	// Avoid unnecessary redraw
@@ -2828,10 +2839,12 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
 	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool) {
 		width += extraWidth
-		if (current || selected) && t.highlightLine {
+		if (current || selected || alt) && t.highlightLine {
 			color := tui.ColSelected
 			if current {
 				color = tui.ColCurrent
+			} else if alt {
+				color = color.WithBg(altBg)
 			}
 			fillSpaces := maxWidth - width
 			if wrapped {
@@ -2928,6 +2941,10 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		} else {
 			base = tui.ColNormal
 			match = tui.ColMatch
+		}
+		if alt {
+			base = base.WithBg(altBg)
+			match = match.WithBg(altBg)
 		}
 		finalLineNum = t.printHighlighted(result, base, match, false, true, line, maxLine, forceRedraw, preTask, postTask)
 	}
@@ -3027,7 +3044,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			sort.Sort(ByOrder(nthOffsets))
 		}
 	}
-	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, current)
+	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr)
 
 	maxLines := 1
 	if t.canSpanMultiLines() {

@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+0.62.0
+------
+- Added `alt-bg` color to create striped lines to visually separate rows
+  ```sh
+  fzf --color bg:237,alt-bg:238,current-bg:236 --highlight-line
+
+  declare -f | perl -0777 -pe 's/^}\n/}\0/gm' |
+    bat --plain --language bash --color always |
+    fzf --read0 --ansi --reverse --multi \
+        --color bg:237,alt-bg:238,current-bg:236 --highlight-line
+  ```
+- [fish] Improvements in CTRL-R binding (@bitraid)
+    - You can trigger CTRL-R in the middle of a command to insert the selected item
+    - You can delete history items with SHIFT-DEL
+- Bug fixes and improvements
+    - Fixed unnecessary 100ms delay after `reload`
+
 0.61.3
 ------
 - Reverted #4351 as it caused `tmux run-shell 'fzf --tmux'` to fail (#4559 #4560)

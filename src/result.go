@@ -119,7 +119,7 @@ func minRank() Result {
 	return Result{item: &minItem, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, theme *tui.ColorTheme, colBase tui.ColorPair, colMatch tui.ColorPair, attrNth tui.Attr, current bool) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, theme *tui.ColorTheme, colBase tui.ColorPair, colMatch tui.ColorPair, attrNth tui.Attr) []colorOffset {
 	itemColors := result.item.Colors()
 
 	// No ANSI codes
@@ -182,18 +182,10 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 		fg := ansi.color.fg
 		bg := ansi.color.bg
 		if fg == -1 {
-			if current {
-				fg = theme.Current.Color
-			} else {
-				fg = theme.Fg.Color
-			}
+			fg = colBase.Fg()
 		}
 		if bg == -1 {
-			if current {
-				bg = theme.DarkBg.Color
-			} else {
-				bg = theme.Bg.Color
-			}
+			bg = colBase.Bg()
 		}
 		return tui.NewColorPair(fg, bg, ansi.color.attr).MergeAttr(base)
 	}
