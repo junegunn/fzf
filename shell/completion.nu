@@ -417,7 +417,7 @@ def _fzf_complete_kill_nu [prefix: string] {
 
 # This function checks for the trigger and dispatches to the appropriate completer
 def fzf_tab_handler [] {
-  let trigger = $env.FZF_COMPLETION_TRIGGER? | default '**'
+  let trigger: string = $env.FZF_COMPLETION_TRIGGER? | default '**'
   if ($trigger | is-empty) {
       # Handle empty trigger case if needed, maybe trigger on space?
       # For now, assume trigger is non-empty like '**'
@@ -428,18 +428,18 @@ def fzf_tab_handler [] {
   let cursor_pos = (commandline get-cursor) # Get the record containing cursor info
 
   # Check if the text *up to the cursor* ends with the trigger
-  let line_before_cursor = $current_line | str substring 0..<$cursor_pos
+  let line_before_cursor: string = $current_line | str substring 0..<$cursor_pos
   let ends_with_trigger = ($line_before_cursor | str ends-with $trigger)
 
   if $ends_with_trigger {
     # --- Trigger Found ---
 
     # Store the line content just before the trigger for context
-    let length_without_trigger = ($line_before_cursor | str length) - ($trigger | str length)
-    let line_without_trigger = $line_before_cursor | str substring 0..<$length_without_trigger
+    let length_without_trigger: int = ($line_before_cursor | str length) - ($trigger | str length)
+    let line_without_trigger: string = $line_before_cursor | str substring 0..<$length_without_trigger
 
     # Identify command word (first word) and the prefix being completed
-    let words = ($line_without_trigger | split words)
+    let words = ($line_without_trigger | split row ' ')
     let cmd_word = ($words | first | default "")
 
     # Prefix is the last word segment *before* the trigger.
