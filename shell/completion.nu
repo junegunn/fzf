@@ -60,28 +60,32 @@ def __fzf_defaults_nu [prepend: string, append: string] {
 }
 
 # Wrapper for running fzf or fzf-tmux
-def __fzf_comprun_nu [...args] {
+def __fzf_comprun_nu [
+  context_name: string, # e.g., "fzf-completion", "fzf-helper" - mainly for potential debugging
+  query: string,        # The initial query string for fzf
+  ...fzf_opts: string # Remaining options for fzf/fzf-tmux
+  ] {
   # Check for custom comprun function (Nu equivalent)
   if ((help commands | where name == '_fzf_comprun_nu') | is-not-empty) {
     # Note: Nushell doesn't have a direct equivalent to Zsh/Bash `type -t _fzf_comprun`.
     # This check assumes a user might define a custom command named `_fzf_comprun_nu`.
-    _fzf_comprun_nu ...$args
+    _fzf_comprun_nu $context_name $query ...$fzf_opts # Pass args correctly to custom function
   } else if ($env.TMUX_PANE? | is-not-empty) and (($env.FZF_TMUX? | default 0) != 0 or ($env.FZF_TMUX_OPTS? | is-not-empty)) {
     # Running inside tmux, use fzf-tmux
     # Skip the first arg which is cmd_word (passed for context but not needed by fzf/fzf-tmux itself)
-    let fzf_args = $args | skip 1
+    let final_fzf_opts = ['--query', $query] | append $fzf_opts
+
     if ($env.FZF_TMUX_OPTS? | is-not-empty) {
       # If FZF_TMUX_OPTS contains multiple options as a single string, split them.
       let tmux_opts_list = $env.FZF_TMUX_OPTS | split words
-      fzf-tmux ...$tmux_opts_list -- ...$fzf_args
+      fzf-tmux ...$tmux_opts_list -- ...$final_fzf_opts
     } else {
-      fzf-tmux -d $env.FZF_TMUX_HEIGHT -- ...$fzf_args
+      fzf-tmux -d $env.FZF_TMUX_HEIGHT -- ...$final_fzf_opts
     }
   } else {
     # Not in tmux or not configured for fzf-tmux, use fzf directly
-    # Skip the first arg (cmd_word)
-    let fzf_args = $args | skip 1
-    fzf ...$fzf_args
+    let final_fzf_opts = ['--query', $query] | append $fzf_opts
+    fzf ...$final_fzf_opts
   }
 }
 
@@ -147,33 +151,36 @@ def __fzf_generic_path_completion_nu [
   let base = $prefix
   # Note: Zsh `eval "base=$base"` handles complex expansions like `$(...)`.
   # Nushell doesn't evaluate arbitrary strings in the same way. We assume `prefix`
-  # is a simple path prefix here.
+  # We assume `prefix` is a simple path prefix. Expand leading ~ if present.
+  let base_expanded = $base | path expand --no-symlink # Expand ~ but don't resolve symlinks yet
 
   # Determine the directory to search within
-  let dir = if ($base | path type) == 'dir' {
-     $base
-  } else if ($base | str contains '/') {
-     $base | path dirname
+  let dir = if ($base_expanded | path type) == 'dir' {
+    $base_expanded
+  } else if ($base_expanded | str contains (char separator)) { # Use platform separator
+    $base_expanded | path dirname
   } else {
      '.'
   }
 
   # Find the deepest existing directory part of the path to use as root for find/ls
   let root_dir = $dir
+  # Use path expand to normalize and handle .., ., etc.
+  let root_dir_expanded = $dir | path expand # Resolve fully now, including symlinks by default
+
   # Simplified logic: Use the determined 'dir'. Zsh has a loop to find existing parents.
   # Nushell's `find` or `ls` might handle non-existent paths gracefully or error.
   # Let's try with the derived dir, using path expand for clarity.
-  # let root_dir_expanded = $root_dir | path expand | path normalize --no-symlink # Use normalized path for find
-  let root_dir_expanded = $root_dir | path expand # Use normalized path for find
 
 
   # Calculate leftover part (what the user typed after the last slash)
   let leftover = if $root_dir == '.' {
-    $base
+    $base # If base didn't contain '/', leftover is the whole base
   } else {
     # Ensure root_dir_expanded has a trailing slash for correct replacement
-    let root_to_replace = if ($root_dir_expanded | str ends-with '/') { $root_dir_expanded } else { $"($root_dir_expanded)/" }
-    $base | str replace $root_to_replace ''
+    let root_to_replace = if ($root_dir_expanded | str ends-with (char separator)) { $root_dir_expanded } else { $"($root_dir_expanded)(char separator)" }
+    # Use the ~ expanded base for replacement
+    $base_expanded | str replace $root_to_replace ''
   }
 
   # --- Candidate Generation ---
@@ -200,9 +207,9 @@ def __fzf_generic_path_completion_nu [
         # Path completion: find files, dirs, links
         ['(', '-type', 'd', '-o', '-type', 'f', '-o', '-type', 'l', ')']
     }
-    # Ensure root_dir_expanded is treated as a single path, even if it contains spaces
+    # root_dir_expanded should be treated as a single path argument
     let root_path_arg = $root_dir_expanded
-    let all_find_opts = $find_opts | append $prune_opts | append $type_opts | append ['-a', '-not', '-path', $root_path_arg, '-print0']
+    let all_find_opts = $find_opts | append $prune_opts | append $type_opts | append ['-a', '-not', '-path', $root_path_arg, '-print'] # Use -print with | lines
 
     try {
       # Use run-external for find, pipe to lines (which splits by newline by default)
@@ -226,7 +233,7 @@ def __fzf_generic_path_completion_nu [
 
   # Pipe candidates to fzf
   let fzf_selection = $candidates
-    | __fzf_comprun_nu "fzf-completion" $leftover ...$fzf_all_opts # Pass context name and query
+    | __fzf_comprun_nu "fzf-path-completion" $leftover ...$fzf_all_opts # Pass context name, query, and options
     | str trim # fzf output often has trailing newline
 
   # --- Format Selection ---
@@ -283,7 +290,7 @@ def _fzf_complete_nu [
 
   # Run fzf and get selection
   let fzf_selection = $candidates
-  | __fzf_comprun_nu "fzf-completion" $prefix ...$fzf_default_opts ...$fzf_opts # Pass context name, options, and query
+  | __fzf_comprun_nu "fzf-helper" $prefix ...$fzf_default_opts ...$fzf_opts # Pass context name, query, and options
   | str trim # Trim potential trailing newline from fzf
 
   # Apply post-processing if closure provided and selection is not empty
