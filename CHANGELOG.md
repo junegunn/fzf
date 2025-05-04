@@ -30,7 +30,8 @@ CHANGELOG
     - You can trigger CTRL-R in the middle of a command to insert the selected item
     - You can delete history items with SHIFT-DEL
 - Bug fixes and improvements
-    - Fixed unnecessary 100ms delay after `reload`
+    - Fixed unnecessary 100ms delay after `reload` (#4364)
+    - Fixed `selected-bg` not applied to colored items (#4372)
 
 0.61.3
 ------
