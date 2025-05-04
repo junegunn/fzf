@@ -333,7 +333,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("colors should now be equivalent: %v, %v", tui.Dark256, customized)
 	}
 
-	customized, _ = parseTheme(theme, "fg:231,dark,bg:232")
+	customized, _ = parseTheme(theme, "fg:231,dark   bg:232")
 	if customized.Fg != tui.Dark256.Fg || customized.Bg == tui.Dark256.Bg {
 		t.Errorf("color not customized")
 	}

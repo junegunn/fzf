@@ -1184,7 +1184,12 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 	var err error
 	theme := dupeTheme(defaultTheme)
 	rrggbb := regexp.MustCompile("^#[0-9a-fA-F]{6}$")
-	for _, str := range strings.Split(strings.ToLower(str), ",") {
+	comma := regexp.MustCompile(`[\s,]+`)
+	for _, str := range comma.Split(strings.ToLower(str), -1) {
+		str = strings.TrimSpace(str)
+		if len(str) == 0 {
+			continue
+		}
 		switch str {
 		case "dark":
 			theme = dupeTheme(tui.Dark256)

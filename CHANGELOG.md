@@ -3,6 +3,20 @@ CHANGELOG
 
 0.62.0
 ------
+- Relaxed the `--color` option syntax to allow whitespace-separated entries (in addition to commas), making multi-line definitions easier to write and read
+  ```sh
+  # seoul256-light
+  fzf --style full --color='
+    fg:#616161 fg+:#616161
+    bg:#ffffff bg+:#e9e9e9 alt-bg:#f1f1f1
+    hl:#719872 hl+:#719899
+    pointer:#e12672 marker:#e17899
+    header:#719872
+    spinner:#719899 info:#727100
+    prompt:#0099bd query:#616161
+    border:#e1e1e1
+  '
+  ```
 - Added `alt-bg` color to create striped lines to visually separate rows
   ```sh
   fzf --color bg:237,alt-bg:238,current-bg:236 --highlight-line
