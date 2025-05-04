@@ -46,7 +46,17 @@ def __fzf_defaults_nu [prepend: string, append: string] {
   | append $file_opts # Append options from file
   | append ($default_opts | split words | where not ($in | is-empty)) # Append options from $FZF_DEFAULT_OPTS
   | append ($append | split words | where not ($in | is-empty)) # Append options from function argument
-  | where not ($in | is-empty) # Remove any empty strings
+  | where {|it|
+      try {
+        # Check if it's a string and not empty. If this fails for an item (e.g., error),
+        # the catch block handles it.
+        ($it | is-string) and not ($it | is-empty)
+      } catch {
+        # If any error occurred when processing this item (like trying to call is-string on an error),
+        # return false to filter it out.
+        false
+      }
+    } # Filter to keep only non-empty strings, safely handling potential errors
 }
 
 # Wrapper for running fzf or fzf-tmux
@@ -407,18 +417,19 @@ def fzf_tab_handler [] {
       return # Do nothing if trigger is empty
   }
 
-  let current_line = (input list | get 0) # Get the current line buffer
-  let cursor_pos = (input get | get cursor | default 0)
+  let current_line = (commandline) # Get the current line buffer as a string
+  let cursor_pos = (commandline get-cursor) # Get the record containing cursor info
 
   # Check if the text *up to the cursor* ends with the trigger
-  let line_before_cursor = $current_line | str substring 0 $cursor_pos
+  let line_before_cursor = $current_line | str substring 0..<$cursor_pos
   let ends_with_trigger = ($line_before_cursor | str ends-with $trigger)
 
   if $ends_with_trigger {
     # --- Trigger Found ---
 
     # Store the line content just before the trigger for context
-    let line_without_trigger = $line_before_cursor | str substring 0 (($line_before_cursor | str length) - ($trigger | str length))
+    let length_without_trigger = ($line_before_cursor | str length) - ($trigger | str length)
+    let line_without_trigger = $line_before_cursor | str substring 0..<$length_without_trigger
 
     # Identify command word (first word) and the prefix being completed
     let words = ($line_without_trigger | split words)
@@ -496,8 +507,8 @@ def fzf_tab_handler [] {
 
       # Construct the new line buffer string:
       # Part before the trigger + part after the original cursor
-      let part_before_trigger = $current_line | str substring 0 $start_trigger_pos
-      let part_after_trigger = $current_line | str substring $cursor_pos
+      let part_before_trigger = $current_line | str substring 0..$start_trigger_pos
+      let part_after_trigger = $current_line | str substring $cursor_pos..
       let new_buffer_string = $part_before_trigger + $part_after_trigger
 
       # Replace the entire buffer with the new string
