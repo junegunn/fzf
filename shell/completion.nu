@@ -558,7 +558,7 @@ export-env {
       {
         name: fzf_completion # A unique name for this keybinding
         modifier: none # Tab doesn't typically require a modifier
-        keycode: Tab # Keycode for the Tab key (confirm with `keybindings list --keycodes` if needed)
+        keycode: tab # Keycode for the Tab key (confirm with `keybindings list --keycodes` if needed)
         mode: [emacs, vi_normal, vi_insert] # Apply this binding in all common modes
         event: {
           send: executehostcommand # Execute a Nushell command
