@@ -151,55 +151,56 @@ def __fzf_generic_path_completion_nu [
     suffix: string,           # Suffix to add to selection (e.g., "/")
     _tail: string             # Trailing chars (e.g., space, often handled by insertion logic now)
 ] {
-  let base = $prefix
-  # Note: Zsh `eval "base=$base"` handles complex expansions like `$(...)`.
-  # Nushell doesn't evaluate arbitrary strings in the same way. We assume `prefix`
-  # We assume `prefix` is a simple path prefix. Expand leading ~ if present.
-  let base_expanded: string = $base | path expand --no-symlink # Expand ~ but don't resolve symlinks yet
+  # --- Determine walker root and initial query from the raw prefix ---
+  let raw_prefix = $prefix # Use the original prefix before any expansion
 
-  # Determine the directory to search within
-  let dir: string = if ($base_expanded | path type) == 'dir' {
-    $base_expanded
-  } else if ($base_expanded | str contains (char separator)) { # Use platform separator
-    $base_expanded | path dirname
+  mut walker_root = "."
+  mut initial_query = ""
+
+  if ($raw_prefix | is-empty) {
+      # Case: "**"
+      $walker_root = "."
+      $initial_query = ""
+  } else if ($raw_prefix | str contains (char separator)) {
+      # Case: "dir/subdir/partial**" or "dir/**"
+      $walker_root = $raw_prefix | path dirname
+      $initial_query = $raw_prefix | path basename
+      # Handle edge case where prefix ends with separator, e.g., "dir/"
+      if ($raw_prefix | str ends-with (char separator)) {
+          # Remove trailing separator to get the intended directory
+          $walker_root = $raw_prefix | str substring 0..-2
+          $initial_query = ""
+      }
+      # Ensure walker_root isn't empty if prefix was like "/file**"
+      # or if path dirname returned empty string for some reason (e.g. prefix="file/")
+      if ($walker_root | is-empty) {
+           if ($raw_prefix | str starts-with (char separator)) { $walker_root = (char separator) }
+           else if ($raw_prefix | str ends-with (char separator)) { $walker_root = $raw_prefix | str substring 0..-2 }
+           else { $walker_root = "." } # Fallback if dirname weirdly fails
+      }
+
   } else {
-     '.'
-  }
-
-  # Find the deepest existing directory part of the path to use as root for find/ls
-  let root_dir = $dir
-  # Use path expand to normalize and handle .., ., etc.
-  let root_dir_expanded: string = $dir | path expand # Resolve fully now, including symlinks by default
-
-  # Simplified logic: Use the determined 'dir'. Zsh has a loop to find existing parents.
-  # Nushell's `find` or `ls` might handle non-existent paths gracefully or error.
-  # Let's try with the derived dir, using path expand for clarity.
-
-
-  # Calculate leftover part (what the user typed after the last slash)
-  let leftover = if $root_dir == '.' {
-    $base # If base didn't contain '/', leftover is the whole base
-  } else {
-    # Ensure root_dir_expanded has a trailing slash for correct replacement
-    let root_to_replace: string = if ($root_dir_expanded | str ends-with (char separator)) { $root_dir_expanded } else { $"($root_dir_expanded)(char separator)" }
-    # Use the ~ expanded base for replacement
-    $base_expanded | str replace $root_to_replace ''
+      # Case: "partial**" (no slashes)
+      $walker_root = "."
+      $initial_query = $raw_prefix
   }
 
   # --- Candidate Generation ---
-  # Use the custom generator if provided, otherwise use external `find`.
+  # Keep existing logic for custom generators vs walker, but use newly calculated values.
+  # Custom generators might still expect/need an absolute path. Expand walker_root only for them.
+  let root_dir_for_custom_gen = $walker_root | path expand # Provide absolute path for custom generator
+
   let generation_result = if not ($compgen_cmd_name | is-empty) {
-    # Construct the command call as a list and execute using the spread operator
-    let command_call = [$compgen_cmd_name, $root_dir_expanded]
-    let custom_candidates = try {
-        ...$command_call # Execute the command with its argument
-    } catch {
-        print -e $"Error executing custom compgen command '($compgen_cmd_name)' with arg '($root_dir_expanded)'"
-        [] # Return empty list on error
-    }
-    { candidates: $custom_candidates, use_walker: false } # Return record
+      let command_call = [$compgen_cmd_name, $root_dir_for_custom_gen] # Pass expanded path
+      let custom_candidates = try {
+          ...$command_call
+      } catch {
+          print -e $"Error executing custom compgen command '($compgen_cmd_name)' with arg '($root_dir_for_custom_gen)'"
+          []
+      }
+      { candidates: $custom_candidates, use_walker: false }
   } else {
-    { candidates: [], use_walker: true } # Return record
+      { candidates: [], use_walker: true }
   }
 
   let candidates = $generation_result.candidates
@@ -207,7 +208,6 @@ def __fzf_generic_path_completion_nu [
 
   # --- Run FZF ---
   let fzf_default_opts = (__fzf_defaults_nu "--reverse --scheme=path" ($env.FZF_COMPLETION_OPTS | default ''))
-  # Add completion-type specific options
   let completion_type_opts = if $suffix == '/' {
       $env.FZF_COMPLETION_DIR_OPTS? | default '' | split words
   } else {
@@ -216,42 +216,49 @@ def __fzf_generic_path_completion_nu [
 
   mut fzf_all_opts = $fzf_default_opts | append $fzf_opts_nu | append $completion_type_opts
 
-  # If using the walker, add walker options
+  # If using the walker, add walker options with the *correct* (potentially relative) walker_root
   if $use_walker {
     let walker_type = if ($suffix == '/') {
-        # Directory completion: find only directories, follow links
         "dir,follow"
     } else {
-        # Path completion: find files, dirs, links, follow links, include hidden
         "file,dir,follow,hidden"
     }
-    # Add walker options
-    $fzf_all_opts = $fzf_all_opts | append ["--walker", $walker_type, "--walker-root", $root_dir_expanded]
+    # Use the 'walker_root' calculated at the beginning
+    $fzf_all_opts = $fzf_all_opts | append ["--walker", $walker_type, "--walker-root", $walker_root]
   }
 
-  # Pipe candidates (if any) to fzf or let fzf use its walker
+  # Pipe candidates or run walker, using the 'initial_query' calculated earlier
   let fzf_selection = if $use_walker {
-      # No input pipe, fzf uses walker
-      __fzf_comprun_nu "fzf-path-completion-walker" $leftover ...$fzf_all_opts
+      # Pass the calculated 'initial_query'
+      __fzf_comprun_nu "fzf-path-completion-walker" $initial_query ...$fzf_all_opts
   } else {
-      # Pipe custom candidates
-      $candidates | __fzf_comprun_nu "fzf-path-completion-custom" $leftover ...$fzf_all_opts
-  } | str trim # fzf output often has trailing newline
+      # Pass the calculated 'initial_query'
+      $candidates | __fzf_comprun_nu "fzf-path-completion-custom" $initial_query ...$fzf_all_opts
+  } | str trim
 
   # --- Format Selection ---
+  # Reconstruct the full path relative to the original prefix structure,
+  # as fzf walker output is relative to --walker-root.
   let completed_item = if ($fzf_selection | is-not-empty) {
+      let joined_path = if ($fzf_selection | path type) == 'absolute' or $walker_root == '.' {
+          # If selection is absolute OR walker_root was '.', use selection as is.
+          $fzf_selection
+      } else {
+          # Otherwise, join the walker_root and the selection.
+          $walker_root | path join $fzf_selection
+      }
       # Add suffix (e.g., "/" for directories)
-      $fzf_selection + $suffix
+      $joined_path + $suffix
   } else {
       "" # No selection
   }
 
+
   # --- Return Result ---
-  # Nushell completers return a list of completion strings.
   if ($completed_item | is-not-empty) {
-     [$completed_item] # Return selection as a list containing one item
+      [$completed_item]
   } else {
-     [] # Return empty list if no selection
+      []
   }
 }
 
