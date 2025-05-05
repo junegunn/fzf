@@ -65,10 +65,22 @@ def __fzf_defaults_nu [prepend: string, append: string] {
 def __fzf_comprun_nu [
   context_name: string, # e.g., "fzf-completion", "fzf-helper" - mainly for potential debugging
   query: string,        # The initial query string for fzf
-  ...fzf_opts: string # Remaining options for fzf/fzf-tmux
+  ...fzf_opts: list<string> # Remaining options for fzf/fzf-tmux
   ] {
+
+  # in which case $stdin_content will be null.
+  let stdin_content = try {
+    # Collect stdin into a single string. Adjust if structured data is expected.
+    $in | into string
+  } catch {
+    null # Set to null if there's no stdin or an error occurs reading it
+  }
+
   # Get the configured height, defaulting to '40%'
   let height_opt = $env.FZF_TMUX_HEIGHT? | default '40%'
+
+  # Determine if fzf should generate its own candidates via walker
+  let has_walker = ($fzf_opts | find --regex -- '-?-?walker' | is-not-empty)
 
   # Check for custom comprun function (Nu equivalent)
   if ((help commands | where name == '_fzf_comprun_nu') | is-not-empty) {
@@ -82,17 +94,37 @@ def __fzf_comprun_nu [
 
     iif ($env.FZF_TMUX_OPTS? | is-not-empty) {
       # If FZF_TMUX_OPTS contains multiple options as a single string, split them.
-      let tmux_opts_list = $env.FZF_TMUX_OPTS | split words
-      fzf-tmux ...$tmux_opts_list -- ...$final_fzf_inner_opts
+      let tmux_opts_list = $env.FZF_TMUX_OPTS | split row ' '
+
+      if $has_walker or ($stdin_content == null) {
+        # Run directly if walker or no stdin provided
+        fzf-tmux ...$tmux_opts_list -- ...$final_fzf_inner_opts
+      } else {
+        # Pipe captured stdin to fzf-tmux
+        $stdin_content | fzf-tmux ...$tmux_opts_list -- ...$final_fzf_inner_opts
+      }
     } else {
       # Use the default -d option with the configured height for fzf-tmux
-      fzf-tmux -d $height_opt -- ...$final_fzf_inner_opts
+
+      if $has_walker or ($stdin_content == null) {
+        # Run directly if walker or no stdin provided
+        fzf-tmux -d $height_opt -- ...$final_fzf_inner_opts
+      } else {
+        # Pipe captured stdin to fzf-tmux
+        $stdin_content | fzf-tmux -d $height_opt -- ...$final_fzf_inner_opts
+      }
     }
   } else {
     # Not in tmux or not configured for fzf-tmux, use fzf directly
     # Add --height option for plain fzf
     let final_fzf_opts = ['--height', $height_opt, '--query', $query] | append $fzf_opts
-    fzf ...$final_fzf_opts
+    if $has_walker or ($stdin_content == null) {
+      # Run directly if walker or no stdin provided
+      fzf ...$final_fzf_opts
+    } else {
+      # Pipe captured stdin to fzf
+      $stdin_content | fzf ...$final_fzf_opts
+    }
   }
 }
 
@@ -113,9 +145,9 @@ def __fzf_list_hosts_nu [] {
       | parse --regex '^\s*host(?:name)?\s+(?<hosts>.+)' # Extract hosts after keyword
       | default { hosts: null } # Handle lines that don't match regex
       | get hosts
-      | where $in != null
-      | split words
-      | where not ($in =~ '[*?%]') # Exclude patterns containing *, ?, or %
+      | where {|it| $it != null }
+      | split row ' '
+      | where {|it| not ($it =~ '[*?%]') } # Exclude patterns containing *, ?, or %
     )
     (
       # Process known_hosts file
@@ -123,7 +155,7 @@ def __fzf_list_hosts_nu [] {
       | parse --regex '^(?:\[)?(?<hosts>[a-z0-9.,:_-]+)' # Extract hostnames (possibly in [], possibly comma-separated) - added underscore
       | default { hosts: null }
       | get hosts
-      | where $in != null
+      | where {|it| $it != null }
       | each { |it| $it | split row ',' } # Split comma-separated hosts if any
       | flatten
     )
@@ -137,12 +169,12 @@ def __fzf_list_hosts_nu [] {
       | parse --regex '^\s*\S+\s+(?<hosts>.+)' # Extract hosts part (after IP)
       | default { hosts: null }
       | get hosts
-      | where $in != null
-      | split words # Split multiple hosts on the same line
+      | where {|it| $it != null }
+      | split row ' ' # Split multiple hosts on the same line
     )
   ]
   | flatten # Combine all lists into a single stream
-  | where not ($in | is-empty) # Remove empty entries
+  | where {|it| not ($it | is-empty) } # Remove empty entries
   | sort | uniq # Sort and remove duplicates
 }
 
@@ -294,12 +326,15 @@ def _fzf_complete_nu [
   let candidates = try {
     do $data_gen_closure
   } catch {
-    print -e $"Error executing data_gen closure: ($data_gen_closure)"
+    # Capture the actual error object provided by the catch block
+    let actual_error = $in
+    # Print a more informative error message including the actual error details
+    print -e $"Error executing data_gen closure. Closure code: ($data_gen_closure). Actual error: ($actual_error)"
     []
   }
 
   # Run fzf and get selection
-  let fzf_selection = $candidates
+  let fzf_selection = $candidates | to text
   | __fzf_comprun_nu "fzf-helper" $prefix ...$fzf_default_opts ...$fzf_opts # Pass context name, query, and options
   | str trim # Trim potential trailing newline from fzf
 
@@ -325,7 +360,7 @@ def _fzf_complete_nu [
 
 # SSH/Telnet completion
 def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
-  let words = ($input_line_before_trigger | split words)
+  let words = ($input_line_before_trigger | split row ' ')
   let word_count = $words | length
 
   # Find the index of the word being completed (which is the prefix)
@@ -390,7 +425,7 @@ def _fzf_complete_unalias_nu [prefix: string] {
 # Kill completion post-processor (extracts PID)
 def _fzf_complete_kill_post_nu [selected_line: string] {
   # Assuming standard ps output where PID is the second column
-  $selected_line | split words | get 1 | default ""
+  $selected_line | split row ' ' | get 1 | default ""
 }
 
 # Kill completion
