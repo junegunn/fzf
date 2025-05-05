@@ -218,7 +218,7 @@ def __fzf_generic_path_completion_nu [
       $env.FZF_COMPLETION_PATH_OPTS? | default '' | split words
   }
 
-  mut fzf_all_opts = $fzf_default_opts | append $fzf_opts_nu | append $completion_type_opts
+  mut fzf_all_opts = $fzf_default_opts | append $fzf_opts_nu | append $completion_type_opts | append '--reverse'
 
   # If using the walker, add walker options with the *correct* (potentially relative) walker_root
   if $use_walker {
