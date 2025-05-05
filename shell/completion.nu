@@ -40,7 +40,7 @@ def __fzf_defaults_nu [prepend: string, append: string] {
   }
 
   # Build options list
-  [$"--height" ($env.FZF_TMUX_HEIGHT? | default '40%') $prepend]
+  [$prepend] # Start with the prepend argument
   | append $file_opts # Append options from file
   | append ($default_opts | split words | where not ($in | is-empty)) # Append options from $FZF_DEFAULT_OPTS
   | append ($append | split words | where not ($in | is-empty)) # Append options from function argument
@@ -63,6 +63,9 @@ def __fzf_comprun_nu [
   query: string,        # The initial query string for fzf
   ...fzf_opts: string # Remaining options for fzf/fzf-tmux
   ] {
+  # Get the configured height, defaulting to '40%'
+  let height_opt = $env.FZF_TMUX_HEIGHT? | default '40%'
+
   # Check for custom comprun function (Nu equivalent)
   if ((help commands | where name == '_fzf_comprun_nu') | is-not-empty) {
     # Note: Nushell doesn't have a direct equivalent to Zsh/Bash `type -t _fzf_comprun`.
@@ -71,18 +74,20 @@ def __fzf_comprun_nu [
   } else if ($env.TMUX_PANE? | is-not-empty) and (($env.FZF_TMUX? | default 0) != 0 or ($env.FZF_TMUX_OPTS? | is-not-empty)) {
     # Running inside tmux, use fzf-tmux
     # Skip the first arg which is cmd_word (passed for context but not needed by fzf/fzf-tmux itself)
-    let final_fzf_opts = ['--query', $query] | append $fzf_opts
+    let final_fzf_inner_opts = ['--query', $query] | append $fzf_opts
 
-    if ($env.FZF_TMUX_OPTS? | is-not-empty) {
+    iif ($env.FZF_TMUX_OPTS? | is-not-empty) {
       # If FZF_TMUX_OPTS contains multiple options as a single string, split them.
       let tmux_opts_list = $env.FZF_TMUX_OPTS | split words
-      fzf-tmux ...$tmux_opts_list -- ...$final_fzf_opts
+      fzf-tmux ...$tmux_opts_list -- ...$final_fzf_inner_opts
     } else {
-      fzf-tmux -d $env.FZF_TMUX_HEIGHT -- ...$final_fzf_opts
+      # Use the default -d option with the configured height for fzf-tmux
+      fzf-tmux -d $height_opt -- ...$final_fzf_inner_opts
     }
   } else {
     # Not in tmux or not configured for fzf-tmux, use fzf directly
-    let final_fzf_opts = ['--query', $query] | append $fzf_opts
+    # Add --height option for plain fzf
+    let final_fzf_opts = ['--height', $height_opt, '--query', $query] | append $fzf_opts
     fzf ...$final_fzf_opts
   }
 }
