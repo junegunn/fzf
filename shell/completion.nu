@@ -457,8 +457,6 @@ def fzf_tab_handler [] {
         $spans | last | default ""
     }
 
-    print '---- '  $line_without_trigger ' ---'
-
     # Calculate the start position of the prefix within the original line
     let start_replace_pos = ($line_without_trigger | str length) - ($prefix | str length)
     # The end position of the replacement is the cursor position (end of the trigger)
