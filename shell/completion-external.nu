@@ -431,65 +431,56 @@ def _fzf_complete_kill_nu [query: string] {
 # This function is registered with Nushell's external completion system.
 # It gets called when Tab is pressed.
 let fzf_external_completer = {|spans|
-    let trigger: string = $env.FZF_COMPLETION_TRIGGER? | default '**'
+  let trigger: string = $env.FZF_COMPLETION_TRIGGER? | default '**'
 
-    if ($trigger | is-empty) { return null } # Cannot work with empty trigger
-    if (($spans | length ) == 0) { return null } # Nothing to complete
+  if ($trigger | is-empty) { return null } # Cannot work with empty trigger
+  if (($spans | length ) == 0) { return null } # Nothing to complete
 
-    let last_span = $spans | last
-    let line_so_far = $spans | str join ' ' # Reconstruct line for context
+  let last_span = $spans | last
+  let line_before_cursor = $spans | str join ' ' # Reconstruct line for context
 
-    # Check if the last span (the word being completed) ends with the trigger
-    if ($last_span | str ends-with $trigger) {
-        # --- Trigger Found ---
+  if ($last_span | str ends-with $trigger) {
+    # --- Trigger Found ---
 
-        # Calculate the prefix (part before the trigger in the last span)
-        let prefix = $last_span | str substring 0..(-1 * ($trigger | str length) - 1)
+    
 
-        # Determine command word (first word on the line)
-        let cmd_word = if (($spans | length ) > 1) {
-            $spans.0 # Usually the first span
-        } else if not ($prefix | is-empty) {
-             # If only one span and it contains prefix + trigger, it might be the command
-             "" # Treat as generic path completion if command itself has trigger
-        } else {
-            "" # No command word yet
+    let cmd_word = ($spans | first | default "")
+
+    # Calculate the prefix (part before the trigger in the last span)
+    let prefix = $last_span | str substring 0..(-1 * ($trigger | str length) - 1)
+
+    # Reconstruct the line content *before* the trigger for context
+    # This is an approximation based on spans
+    let line_without_trigger = $spans | take (($spans | length) - 1) | append $prefix | str join ' '
+
+    # --- Dispatch to Completer ---
+    mut completion_results = [] # Will hold the list of strings from the completer
+
+    match $cmd_word {
+        "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
+        "export" | "printenv" => { $completion_results = (_fzf_complete_export_nu $prefix) }
+        "unset" => { $completion_results = (_fzf_complete_unset_nu $prefix) }
+        "unalias" => { $completion_results = (_fzf_complete_unalias_nu $prefix) }
+        "kill" => { $completion_results = (_fzf_complete_kill_nu $prefix) }
+        "cd" | "pushd" | "rmdir" => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
+        # Add other command-specific completions here
+        _ => {
+            # Default to path completion if no specific command matches or cmd_word is empty
+            $completion_results = (_fzf_path_completion_nu $prefix)
         }
-
-        #return [$cmd_word, $prefix]
-
-        # Reconstruct the line content *before* the trigger for context
-        # This is an approximation based on spans
-        let line_without_trigger_approx = $spans | take (($spans | length) - 1) | append $prefix | str join ' '
-
-        # --- Dispatch to Completer ---
-        mut completion_results = [] # Will hold the list of strings from the completer
-
-        match $cmd_word {
-            "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger_approx) }
-            "export" | "printenv" => { $completion_results = (_fzf_complete_export_nu $prefix) }
-            "unset" => { $completion_results = (_fzf_complete_unset_nu $prefix) }
-            "unalias" => { $completion_results = (_fzf_complete_unalias_nu $prefix) }
-            "kill" => { $completion_results = (_fzf_complete_kill_nu $prefix) }
-            "cd" | "pushd" | "rmdir" => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
-            # Add other command-specific completions here
-            _ => {
-                # Default to path completion if no specific command matches or cmd_word is empty
-                $completion_results = (_fzf_path_completion_nu $prefix)
-            }
-        }
-
-        # --- Return Results ---
-        # The _fzf_... functions return a list of completion strings.
-        # Nushell's completer expects the suggestions for the token being completed (prefix + trigger).
-        # The results from the helper functions should be the final desired strings.
-        # We don't need to manually add spaces; Nushell handles that.
-        $completion_results # Return the list directly
-    } else {
-        # --- Trigger Not Found ---
-        # Return null to let Nushell fall back to other completers (e.g., default file completion).
-        null
     }
+
+    # --- Return Results ---
+    # The _fzf_... functions return a list of completion strings.
+    # Nushell's completer expects the suggestions for the token being completed (prefix + trigger).
+    # The results from the helper functions should be the final desired strings.
+    # We don't need to manually add spaces; Nushell handles that.
+    $completion_results # Return the list directly
+  } else {
+    # --- Trigger Not Found ---
+    # Return null to let Nushell fall back to other completers (e.g., default file completion).
+    null
+  }
 }
 
 # --- WRAPPER AND REGISTRATION ---
@@ -499,25 +490,28 @@ let previous_external_completer = $env.config? | get completions? | get external
 
 # Define the new wrapper completer
 let fzf_wrapper_completer = {|spans|
-    # 1. Try the FZF completer logic first
-    let fzf_result = do $fzf_external_completer $spans
 
-    # 2. If FZF returned a result (a list, even an empty one), return it.
-    #    `null` means FZF didn't handle it because the trigger wasn't present.
-    if $fzf_result != null {
-        # print "DEBUG: FZF Wrapper returning FZF result." # Debug
-        $fzf_result
-    } else {
-        # 3. FZF didn't handle it, so call the previous completer (if it exists).
-        if $previous_external_completer != null {
-            # print "DEBUG: FZF Wrapper calling previous completer." # Debug
-            do $previous_external_completer $spans
-        } else {
-            # 4. No previous completer, and FZF didn't handle it. Return null.
-            # print "DEBUG: FZF Wrapper returning null (no previous completer)." # Debug
-            null
-        }
-    }
+  
+  #return ('[{"value":"bundle ","display":"bundle","description":"Move objects and refs by archive","style":{"fg":"blue"}}]' | from json)
+  # 1. Try the FZF completer logic first
+  let fzf_result = do $fzf_external_completer $spans
+
+  # 2. If FZF returned a result (a list, even an empty one), return it.
+  #    `null` means FZF didn't handle it because the trigger wasn't present.
+  if $fzf_result != null {
+      # print "DEBUG: FZF Wrapper returning FZF result." # Debug
+      $fzf_result
+  } else {
+      # 3. FZF didn't handle it, so call the previous completer (if it exists).
+      if $previous_external_completer != null {
+          # print "DEBUG: FZF Wrapper calling previous completer." # Debug
+          do $previous_external_completer $spans
+      } else {
+          # 4. No previous completer, and FZF didn't handle it. Return null.
+          # print "DEBUG: FZF Wrapper returning null (no previous completer)." # Debug
+          null
+      }
+  }
 }
 
 # Register the new wrapper completer
