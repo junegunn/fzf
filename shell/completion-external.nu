@@ -376,29 +376,29 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
 # Export completion
 def _fzf_complete_export_nu [query: string] {
   let vars_gen_closure = {|| env | get name } # Nushell `env` provides names directly
-  # Zsh options: -m -- ; Nu: pass ["-m"]
-  _fzf_complete_nu $query $vars_gen_closure ["-m"] {} # Pass prefix
+  # Zsh options: -m -- ; Nu: pass ["-m"] ; +m = multiple choice
+  _fzf_complete_nu $query $vars_gen_closure ["-m"] {}
 }
 
 # Unset completion (same as export)
-def _fzf_complete_unset_nu [prefix: string] {
-  _fzf_complete_export_nu $prefix # Re-use export logic (already passes prefix)
+def _fzf_complete_unset_nu [query: string] {
+  _fzf_complete_export_nu $query # Re-use export logic
 }
 
 # Unalias completion
 def _fzf_complete_unalias_nu [query: string] {
   let aliases_gen_closure = {|| aliases | get alias } # Use 'alias' column from `aliases` command
-  # Zsh options: +m -- ; Nu: pass ["+m"]
-  _fzf_complete_nu $query $aliases_gen_closure ["+m"] {} # Pass prefix
+  # Zsh options: +m -- ; Nu: pass ["+m"] ; +m = multiple choice
+  _fzf_complete_nu $query $aliases_gen_closure ["+m"] {}
 }
 
 # Kill completion post-processor (extracts PID)
-def _fzf_complete_kill_post_nu [selected_line: string] {
+def _fzf_complete_kill_post_get_pid [selected_line: string] {
   # Assuming standard ps output where PID is the second column
-  $selected_line | split row ' ' | get 1 | default ""
+  $selected_line | from ssv --noheaders | get 0.column1
 }
 
-# Kill completion
+# Kill completion to get process PID
 def _fzf_complete_kill_nu [query: string] {
   let ps_gen_closure = {|| # Define ps generator as a closure
     # Try standard ps, then busybox, then cygwin format approximation
@@ -421,11 +421,11 @@ def _fzf_complete_kill_nu [query: string] {
 
   # Note: Complex Zsh FZF bindings for kill (click-header transformer) are omitted for simplicity.
   # Users can set custom bindings via FZF_DEFAULT_OPTS if needed.
-  let kill_post_closure = {|selected_line| _fzf_complete_kill_post_nu $selected_line }
+  let kill_post_closure = {|selected_line| _fzf_complete_kill_post_get_pid $selected_line }
 
   let fzf_opts = ["-m", "--header-lines=1", "--no-preview", "--wrap", "--color", "fg:dim,nth:regular"]
 
-  _fzf_complete_nu $query $ps_gen_closure $fzf_opts $kill_post_closure # Pass prefix
+  _fzf_complete_nu $query $ps_gen_closure $fzf_opts $kill_post_closure
 }
 
 
@@ -444,8 +444,6 @@ let fzf_external_completer = {|spans|
 
   if ($last_span | str ends-with $trigger) {
     # --- Trigger Found ---
-
-    
 
     let cmd_word = ($spans | first | default "")
 
@@ -494,25 +492,20 @@ let previous_external_completer = $env.config? | get completions? | get external
 # Define the new wrapper completer
 let fzf_wrapper_completer = {|spans|
 
-  
-  #return ('[{"value":"bundle ","display":"bundle","description":"Move objects and refs by archive","style":{"fg":"blue"}}]' | from json)
   # 1. Try the FZF completer logic first
   let fzf_result = do $fzf_external_completer $spans
 
   # 2. If FZF returned a result (a list, even an empty one), return it.
   #    `null` means FZF didn't handle it because the trigger wasn't present.
   if $fzf_result != null {
-      # print "DEBUG: FZF Wrapper returning FZF result." # Debug
-      $fzf_result
+      return $fzf_result
   } else {
       # 3. FZF didn't handle it, so call the previous completer (if it exists).
       if $previous_external_completer != null {
-          # print "DEBUG: FZF Wrapper calling previous completer." # Debug
           do $previous_external_completer $spans
       } else {
           # 4. No previous completer, and FZF didn't handle it. Return null.
-          # print "DEBUG: FZF Wrapper returning null (no previous completer)." # Debug
-          null
+          return null
       }
   }
 }

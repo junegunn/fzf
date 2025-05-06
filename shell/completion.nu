@@ -372,29 +372,29 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
 # Export completion
 def _fzf_complete_export_nu [query: string] {
   let vars_gen_closure = {|| env | get name } # Nushell `env` provides names directly
-  # Zsh options: -m -- ; Nu: pass ["-m"]
-  _fzf_complete_nu $query $vars_gen_closure ["-m"] {} # Pass prefix
+  # Zsh options: -m -- ; Nu: pass ["-m"] ; +m = multiple choice
+  _fzf_complete_nu $query $vars_gen_closure ["-m"] {}
 }
 
 # Unset completion (same as export)
-def _fzf_complete_unset_nu [prefix: string] {
-  _fzf_complete_export_nu $prefix # Re-use export logic (already passes prefix)
+def _fzf_complete_unset_nu [query: string] {
+  _fzf_complete_export_nu $query # Re-use export logic
 }
 
 # Unalias completion
 def _fzf_complete_unalias_nu [query: string] {
   let aliases_gen_closure = {|| aliases | get alias } # Use 'alias' column from `aliases` command
-  # Zsh options: +m -- ; Nu: pass ["+m"]
-  _fzf_complete_nu $query $aliases_gen_closure ["+m"] {} # Pass prefix
+  # Zsh options: +m -- ; Nu: pass ["+m"] ; +m = multiple choice
+  _fzf_complete_nu $query $aliases_gen_closure ["+m"] {}
 }
 
 # Kill completion post-processor (extracts PID)
-def _fzf_complete_kill_post_nu [selected_line: string] {
+def _fzf_complete_kill_post_get_pid [selected_line: string] {
   # Assuming standard ps output where PID is the second column
-  $selected_line | split row ' ' | get 1 | default ""
+  $selected_line | from ssv --noheaders | get 0.column1
 }
 
-# Kill completion
+# Kill completion to get process PID
 def _fzf_complete_kill_nu [query: string] {
   let ps_gen_closure = {|| # Define ps generator as a closure
     # Try standard ps, then busybox, then cygwin format approximation
@@ -417,11 +417,11 @@ def _fzf_complete_kill_nu [query: string] {
 
   # Note: Complex Zsh FZF bindings for kill (click-header transformer) are omitted for simplicity.
   # Users can set custom bindings via FZF_DEFAULT_OPTS if needed.
-  let kill_post_closure = {|selected_line| _fzf_complete_kill_post_nu $selected_line }
+  let kill_post_closure = {|selected_line| _fzf_complete_kill_post_get_pid $selected_line }
 
   let fzf_opts = ["-m", "--header-lines=1", "--no-preview", "--wrap", "--color", "fg:dim,nth:regular"]
 
-  _fzf_complete_nu $query $ps_gen_closure $fzf_opts $kill_post_closure # Pass prefix
+  _fzf_complete_nu $query $ps_gen_closure $fzf_opts $kill_post_closure
 }
 
 
