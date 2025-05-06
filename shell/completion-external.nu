@@ -119,7 +119,6 @@ def __fzf_comprun_nu [
     # Add --height option for plain fzf
     let final_fzf_opts = ['--height', $height_opt] | append $fzf_prefinal_opt
 
-    #print ($final_fzf_opts | to text)
     if $has_walker or ($stdin_content == null) {
       # Run directly if walker or no stdin provided
       fzf ...$final_fzf_opts
@@ -211,9 +210,11 @@ def __fzf_generic_path_completion_nu [
       # Ensure walker_root isn't empty if prefix was like "/file**"
       # or if path dirname returned empty string for some reason (e.g. prefix="file/")
       if ($walker_root | is-empty) {
-           if ($raw_prefix | str starts-with (char separator)) { $walker_root = (char separator) }
-           else if ($raw_prefix | str ends-with (char separator)) { $walker_root = $raw_prefix | str substring 0..-2 }
-           else { $walker_root = "." } # Fallback if dirname weirdly fails
+        if ($raw_prefix | str starts-with (char separator)) {
+          $walker_root = (char separator) 
+        } else if ($raw_prefix | str ends-with (char separator)) {
+          $walker_root = $raw_prefix | str substring 0..-2 
+        } else { $walker_root = "." } # Fallback if dirname weirdly fails
       }
 
   } else {
@@ -250,19 +251,21 @@ def __fzf_generic_path_completion_nu [
   # --- Format Selection ---
   # Reconstruct the full path relative to the original prefix structure,
   # as fzf walker output is relative to --walker-root.
-  let completed_item = if ($fzf_selection | is-not-empty) {
-      let joined_path = if ($fzf_selection | path type) == 'absolute' or $walker_root == '.' {
-          # If selection is absolute OR walker_root was '.', use selection as is.
-          $fzf_selection
-      } else {
-          # Otherwise, join the walker_root and the selection.
-          $walker_root | path join $fzf_selection
-      }
-      # Add suffix (e.g., "/" for directories)
-      $joined_path + $suffix
-  } else {
-      "" # No selection
-  }
+  # let completed_item = if ($fzf_selection | is-not-empty) {
+  #     let joined_path = if ($fzf_selection | path type) == 'absolute' or $walker_root == '.' {
+  #         # If selection is absolute OR walker_root was '.', use selection as is.
+  #         $fzf_selection
+  #     } else {
+  #         # Otherwise, join the walker_root and the selection.
+  #         $walker_root | path join $fzf_selection
+  #     }
+  #     # Add suffix (e.g., "/" for directories)
+  #     $joined_path + $suffix
+  # } else {
+  #     "" # No selection
+  # }
+
+  let completed_item = $fzf_selection
 
 
   # --- Return Result ---

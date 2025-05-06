@@ -115,7 +115,6 @@ def __fzf_comprun_nu [
     # Add --height option for plain fzf
     let final_fzf_opts = ['--height', $height_opt] | append $fzf_prefinal_opt
 
-    #print ($final_fzf_opts | to text)
     if $has_walker or ($stdin_content == null) {
       # Run directly if walker or no stdin provided
       fzf ...$final_fzf_opts
