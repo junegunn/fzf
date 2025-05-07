@@ -430,8 +430,8 @@ def _fzf_complete_kill_nu [query: string] {
 # This function checks for the trigger and dispatches to the appropriate completer
 def fzf_tab_handler [] {
   let trigger: string = $env.FZF_COMPLETION_TRIGGER? | default '**'
+  if ($trigger | is-empty) { return null } # Cannot work with a trigger set to '' (blank)
 
-  if ($trigger | is-empty) { return null } # Cannot work with empty trigger
 
 
   let current_line = (commandline) # Get the current line buffer as a string
@@ -542,7 +542,8 @@ def fzf_tab_handler [] {
     # 3. Hope future Nushell versions provide a way to chain or call default bindings.
     #
     # For now, accept that default Tab completion might be disabled.
-    return # Explicitly do nothing, allowing potential (but unlikely) fallback.
+    
+    return null # Explicitly do nothing, allowing potential (but unlikely) fallback.
   }
 }
 
@@ -554,17 +555,28 @@ export-env {
   # Prevent adding the keybinding multiple times if the script is sourced again
   if not ($env.__fzf_completion_keybinding_loaded? | default false) {
     $env.__fzf_completion_keybinding_loaded = true
-    $env.config.keybindings = $env.config.keybindings | append [
-      {
-        name: fzf_completion # A unique name for this keybinding
-        modifier: none # Tab doesn't typically require a modifier
-        keycode: tab # Keycode for the Tab key (confirm with `keybindings list --keycodes` if needed)
-        mode: [emacs, vi_normal, vi_insert] # Apply this binding in all common modes
-        event: {
-          send: executehostcommand # Execute a Nushell command
-          cmd: "fzf_tab_handler" # The command to execute
+    let updated = (
+      $env.config.keybindings
+      | each {|it|
+          if $it.name == "completion_menu" {
+            let new_event = (
+              try {
+                let original_until = $it.event.until
+                $it.event
+                | upsert until ([{ send: executehostcommand cmd: "fzf_tab_handler" }] ++ $original_until)
+              } catch {|err|
+                # If something goes wrong (e.g. no 'until'), return the original event untouched
+                $it.event
+              }
+            )
+            $it | upsert event $new_event
+          } else {
+            $it
+          }
         }
-      }
-    ]
+    )
+    
+    $env.config = ($env.config | upsert keybindings $updated)
+
   }
 }
