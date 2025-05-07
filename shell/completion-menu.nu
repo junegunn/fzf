@@ -5,7 +5,7 @@
 # /_/   /___/_/ completion-menu.nu
 
 
-# A different implementation aproach than completion.nu
+# An implementation of completion.nu
 # This tries to load FZF as a menu, and tries to implement
 # a fallback using the until event type.
 # https://www.nushell.sh/book/line_editor.html#until-type
