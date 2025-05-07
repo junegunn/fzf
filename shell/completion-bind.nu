@@ -5,7 +5,7 @@
 # /_/   /___/_/ completion-bind.nu
 
 
-# A implementation of completion.nu
+# An implementation of completion.nu
 # This adds a tab keybinding to load FZF.
 # The disavantage is that currently it is not possible
 # to fallback to Nushell default completer.
