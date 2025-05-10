@@ -31,9 +31,6 @@ if [[ $- =~ i ]]; then
 
 ###########################################################
 
-# To redraw line after fzf closes (printf '\e[5n')
-bind '"\e[0n": redraw-current-line' 2> /dev/null
-
 __fzf_defaults() {
   # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
   # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
@@ -328,6 +325,8 @@ __fzf_generic_path_completion() {
         else
           COMPREPLY=( "$cur" )
         fi
+        # To redraw line after fzf closes (printf '\e[5n')
+        bind '"\e[0n": redraw-current-line' 2> /dev/null
         printf '\e[5n'
         return 0
       fi
@@ -384,6 +383,7 @@ _fzf_complete() {
     else
       COMPREPLY=("$cur")
     fi
+    bind '"\e[0n": redraw-current-line' 2> /dev/null
     printf '\e[5n'
     return 0
   else
