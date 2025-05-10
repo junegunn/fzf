@@ -325,6 +325,7 @@ __fzf_generic_path_completion() {
         else
           COMPREPLY=( "$cur" )
         fi
+        # To redraw line after fzf closes (printf '\e[5n')
         bind '"\e[0n": redraw-current-line' 2> /dev/null
         printf '\e[5n'
         return 0
