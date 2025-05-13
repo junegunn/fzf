@@ -554,7 +554,10 @@ try
     let optstr .= ' --no-tmux --height='.height
   endif
   " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
-  let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
+  if !(exists('&winborder') && &winborder !=# '' && &winborder !=# 'none')
+    let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
+  endif
+
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
