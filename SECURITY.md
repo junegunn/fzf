@@ -17,7 +17,7 @@ To report a security vulnerability, please provide the following information:
    - Provide a detailed description of the security vulnerability.
    - Include as much information as possible to help us understand and address the issue.
 
-Send this information, along with any additional relevant details, to <email AT somewhere or other channel>.
+Send this information, along with any additional relevant details, to <junegunn.c AT gmail DOT com>.
 
 ## Confidentiality
 
