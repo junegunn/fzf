@@ -24,6 +24,8 @@
   <img src="https://img.shields.io/github/stars/junegunn/fzf" alt="Stars">
 </div>
 
+---
+
 fzf is a general-purpose command-line fuzzy finder.
 
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-preview.png" width=640>
