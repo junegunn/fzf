@@ -1,5 +1,5 @@
 ---
-name: Test fzf on Linux
+name: build
 
 on:
   push:

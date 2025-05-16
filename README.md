@@ -10,10 +10,19 @@
 [Available for MacOS, Linux, & Windows](https://www.warp.dev/?utm_source=github&utm_medium=referral&utm_campaign=fzf)<br>
 
 </div>
-<hr>
 
-<img src="https://raw.githubusercontent.com/junegunn/i/master/fzf.png" height="170" alt="fzf - a command-line fuzzy finder"> [![github-actions](https://github.com/junegunn/fzf/workflows/Test%20fzf%20on%20Linux/badge.svg)](https://github.com/junegunn/fzf/actions)
-===
+---
+
+<div align="center" markdown="1">
+  <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-color.png" alt="fzf - a command-line fuzzy finder">
+  <a href="https://github.com/junegunn/fzf/actions">
+    <img src="https://github.com/junegunn/fzf/actions/workflows/linux.yml/badge.svg?branch=master" alt="Build Status">
+  </a>
+  <img src="https://img.shields.io/github/license/junegunn/fzf" alt="License">
+  <img src="https://img.shields.io/github/created-at/junegunn/fzf" alt="Created-at">
+  <img src="https://img.shields.io/github/contributors/junegunn/fzf" alt="Contributors">
+  <img src="https://img.shields.io/github/stars/junegunn/fzf" alt="Stars">
+</div>
 
 fzf is a general-purpose command-line fuzzy finder.
 
