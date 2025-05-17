@@ -13,15 +13,14 @@
 
 ---
 
-<div align="center" markdown="1">
+<div align="center">
   <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-color.png" alt="fzf - a command-line fuzzy finder">
-  <a href="https://github.com/junegunn/fzf/actions">
-    <img src="https://github.com/junegunn/fzf/actions/workflows/linux.yml/badge.svg?branch=master" alt="Build Status">
-  </a>
-  <img src="https://img.shields.io/github/license/junegunn/fzf" alt="License">
-  <img src="https://img.shields.io/github/created-at/junegunn/fzf" alt="Created-at">
-  <img src="https://img.shields.io/github/contributors/junegunn/fzf" alt="Contributors">
-  <img src="https://img.shields.io/github/stars/junegunn/fzf" alt="Stars">
+  <a href="https://github.com/junegunn/fzf/actions"><img src="https://github.com/junegunn/fzf/actions/workflows/linux.yml/badge.svg?branch=master" alt="Build Status"></a>
+  <a href="http://github.com/junegunn/fzf/releases"><img src="https://img.shields.io/github/v/tag/junegunn/fzf" alt="Version"></a>
+  <a href="https://github.com/junegunn/fzf?tab=MIT-1-ov-file#readme"><img src="https://img.shields.io/github/license/junegunn/fzf" alt="License"></a>
+  <a href="https://github.com/junegunn/fzf/graphs/contributors"><img src="https://img.shields.io/github/contributors/junegunn/fzf" alt="Contributors"></a>
+  <a href="https://github.com/sponsors/junegunn"><img src="https://img.shields.io/github/sponsors/junegunn" alt="Sponsors"></a>
+  <a href="https://github.com/junegunn/fzf/stargazers"><img src="https://img.shields.io/github/stars/junegunn/fzf?style=flat" alt="Stars"></a>
 </div>
 
 ---
