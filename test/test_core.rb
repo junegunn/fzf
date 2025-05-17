@@ -1859,9 +1859,9 @@ class TestCore < TestInteractive
     line = nil
     tmux.until { |lines| line = lines.index('> 1') }
     tmux.send_keys :PgDn
-    tmux.until { |lines| assert_includes lines[line + 4], "> 5" }
+    tmux.until { |lines| assert_includes lines[line + 4], '> 5' }
     tmux.send_keys :Space
-    tmux.until { |lines| assert_includes lines[line + 2], "> 5" }
+    tmux.until { |lines| assert_includes lines[line + 2], '> 5' }
   end
 
   def test_no_input_query
