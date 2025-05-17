@@ -992,6 +992,36 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(block, it) }
   end
 
+  def test_label_trunction
+    command = <<~CMD
+      seq 10 | #{FZF} --style full --border --header-lines=1 --preview ':' \\
+        --border-label "#{'b' * 1000}" \\
+        --preview-label "#{'p' * 1000}" \\
+        --header-label "#{'h' * 1000}" \\
+        --header-label "#{'h' * 1000}" \\
+        --input-label "#{'i' * 1000}" \\
+        --list-label "#{'l' * 1000}"
+    CMD
+    writelines(command.lines.map(&:chomp))
+    tmux.send_keys("sh #{tempname}", :Enter)
+    tmux.until do |lines|
+      text = lines.join
+      assert_includes text, 'b··'
+      assert_includes text, 'l··p'
+      assert_includes text, 'p··'
+      assert_includes text, 'h··'
+      assert_includes text, 'i··'
+    end
+  end
+
+  def test_separator_no_ellipsis
+    tmux.send_keys %(seq 10 | #{FZF} --separator "$(seq 1000 | tr '\\n' ' ')"), :Enter
+    tmux.until do |lines|
+      assert_equal 10, lines.match_count
+      refute_includes lines.join, '··'
+    end
+  end
+
   def test_header_border_no_pointer_and_marker
     tmux.send_keys %(seq 10 | #{FZF} --header-lines 1 --header-border sharp --no-list-border --pointer '' --marker ''), :Enter
     block = <<~BLOCK
