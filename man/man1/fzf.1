@@ -1108,11 +1108,6 @@ e.g.
      # Send action to the server
      curl \-XPOST localhost:6266 \-d 'reload(seq 100)+change\-prompt(hundred> )'
 
-     # Get program state in JSON format (experimental)
-     # * Make sure NOT to access this endpoint from execute/transform actions
-     #   as it will result in a timeout
-     curl localhost:6266
-
      # Start HTTP server on port 6266 with remote connections allowed
      # * Listening on non-localhost address requires using an API key
      export FZF_API_KEY="$(head \-c 32 /dev/urandom | base64)"
@@ -1123,6 +1118,24 @@ e.g.
 
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf \-\-listen \-\-bind 'start:execute\-silent:echo $FZF_PORT > /tmp/fzf\-port'
+
+     # Get program state in JSON format (experimental)
+     # - GET Parameters:
+     #    - limit: number of items to return (default: 100)
+     #    - offset: number of items to skip (default: 0)
+     curl localhost:6266
+
+     # Automatically select items with .txt extension
+     fzf \-\-multi \-\-sync \-\-listen \-\-bind 'load:transform:
+       pos=1
+       curl \-s localhost:$FZF_PORT?limit=1000 | jq \-r .matches[].text | while read \-r text; do
+         if [[ $text =~ \\.txt$ ]]; then
+           echo \-n "+pos($pos)+select"
+         fi
+         pos=$((pos + 1))
+       done
+       echo +first
+     '
      \fR
 
 .SS DIRECTORY TRAVERSAL
