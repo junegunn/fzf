@@ -3412,44 +3412,48 @@ func parseShellWords(str string) ([]string, error) {
 }
 
 // ParseOptions parses command-line options
-func ParseOptions(useDefaults bool, args []string) (*Options, error) {
+func ParseOptions(useDefaults bool, args []string) (*Options, []string, error) {
 	opts := defaultOptions()
 	index := 0
+
+	envDerivedArgs := [] string {}
 
 	if useDefaults {
 		// 1. Options from $FZF_DEFAULT_OPTS_FILE
 		if path := os.Getenv("FZF_DEFAULT_OPTS_FILE"); path != "" {
 			bytes, err := os.ReadFile(path)
 			if err != nil {
-				return nil, errors.New("$FZF_DEFAULT_OPTS_FILE: " + err.Error())
+				return nil, nil, errors.New("$FZF_DEFAULT_OPTS_FILE: " + err.Error())
 			}
 
 			words, parseErr := parseShellWords(string(bytes))
 			if parseErr != nil {
-				return nil, errors.New(path + ": " + parseErr.Error())
+				return nil, nil, errors.New(path + ": " + parseErr.Error())
 			}
 			if len(words) > 0 {
 				if err := parseOptions(&index, opts, words); err != nil {
-					return nil, errors.New(path + ": " + err.Error())
+					return nil, nil, errors.New(path + ": " + err.Error())
 				}
+				envDerivedArgs = append(envDerivedArgs, words...)
 			}
 		}
 
 		// 2. Options from $FZF_DEFAULT_OPTS string
 		words, parseErr := parseShellWords(os.Getenv("FZF_DEFAULT_OPTS"))
 		if parseErr != nil {
-			return nil, errors.New("$FZF_DEFAULT_OPTS: " + parseErr.Error())
+			return nil, nil, errors.New("$FZF_DEFAULT_OPTS: " + parseErr.Error())
 		}
 		if len(words) > 0 {
 			if err := parseOptions(&index, opts, words); err != nil {
-				return nil, errors.New("$FZF_DEFAULT_OPTS: " + err.Error())
+				return nil, nil, errors.New("$FZF_DEFAULT_OPTS: "  + err.Error())
 			}
+			envDerivedArgs = append(envDerivedArgs, words...)
 		}
 	}
 
 	// 3. Options from command-line arguments
 	if err := parseOptions(&index, opts, args); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// 4. Change default scheme when built-in walker is used
@@ -3473,10 +3477,10 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 
 	// 5. Final validation of merged options
 	if err := validateOptions(opts); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return opts, nil
+	return opts, envDerivedArgs, nil
 }
 
 func (opts *Options) hasReloadOrTransformOnStart() bool {
