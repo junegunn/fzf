@@ -1282,6 +1282,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 			switch components[0] {
 			case "query", "input", "input-fg":
 				mergeAttr(&theme.Input)
+			case "ghost":
+				mergeAttr(&theme.Ghost)
 			case "disabled":
 				mergeAttr(&theme.Disabled)
 			case "fg":

@@ -2386,7 +2386,7 @@ func (t *Terminal) printPrompt() {
 
 	before, after := t.updatePromptOffset()
 	if len(before) == 0 && len(after) == 0 && len(t.ghost) > 0 {
-		w.CPrint(tui.ColInput.WithAttr(tui.Dim), t.ghost)
+		w.CPrint(tui.ColGhost, t.ghost)
 		return
 	}
 
