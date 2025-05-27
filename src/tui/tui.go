@@ -1051,7 +1051,7 @@ func initPalette(theme *ColorTheme) {
 	ColNormal = pair(theme.ListFg, theme.ListBg)
 	ColSelected = pair(theme.SelectedFg, theme.SelectedBg)
 	ColInput = pair(theme.Input, theme.InputBg)
-	ColDisabled = pair(theme.Disabled, theme.ListBg)
+	ColDisabled = pair(theme.Disabled, theme.InputBg)
 	ColMatch = pair(theme.Match, theme.ListBg)
 	ColSelectedMatch = pair(theme.SelectedMatch, theme.SelectedBg)
 	ColCursor = pair(theme.Cursor, theme.Gutter)
