@@ -48,7 +48,7 @@ func exit(code int, err error) {
 func main() {
 	protector.Protect()
 
-	options, err := fzf.ParseOptions(true, os.Args[1:])
+	options, envArgs, err := fzf.ParseOptions(true, os.Args[1:])
 	if err != nil {
 		exit(fzf.ExitError, err)
 		return
@@ -96,6 +96,6 @@ func main() {
 		return
 	}
 
-	code, err := fzf.Run(options)
+	code, err := fzf.Run(options, envArgs)
 	exit(code, err)
 }
