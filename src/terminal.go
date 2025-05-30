@@ -3044,7 +3044,8 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			}
 			for _, token := range tokens {
 				start := token.prefixLength
-				end := start + int32(token.text.Length())
+				length := token.text.Length() - token.text.TrailingWhitespaces()
+				end := start + int32(length)
 				nthOffsets = append(nthOffsets, Offset{int32(start), int32(end)})
 			}
 			sort.Sort(ByOrder(nthOffsets))
