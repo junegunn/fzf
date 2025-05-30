@@ -18,6 +18,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/rivo/uniseg"
 
@@ -4300,43 +4301,61 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 	 *   HL2     4    H1      4    H1      4
 	 *           5    H2      5    H2      5
 	 */
-	lineNum := t.clickHeaderLine - 1
-	if lineNum < 0 {
+	clickHeaderLine := t.clickHeaderLine - 1
+	if clickHeaderLine < 0 {
 		// Never clicked on the header
 		return env
 	}
 
 	// NOTE: t.header is padded with empty strings so that its size is equal to t.headerLines
-	var line string
+	nthBase := 0
 	headers := [2][]string{t.header, t.header0}
 	if t.layout == layoutReverse {
 		headers[0], headers[1] = headers[1], headers[0]
 	}
-	if lineNum < len(headers[0]) {
-		index := lineNum
-		if t.layout == layoutDefault {
-			index = len(headers[0]) - index - 1
+	var words []Token
+	var lineNum int
+	for lineNum = 0; lineNum <= clickHeaderLine; lineNum++ {
+		currentLine := lineNum == clickHeaderLine
+		var line string
+		if lineNum < len(headers[0]) {
+			index := lineNum
+			if t.layout == layoutDefault {
+				index = len(headers[0]) - index - 1
+			}
+			line = headers[0][index]
+		} else if lineNum-len(headers[0]) < len(headers[1]) {
+			line = headers[1][lineNum-len(headers[0])]
 		}
-		line = headers[0][index]
-	} else if lineNum-len(headers[0]) < len(headers[1]) {
-		line = headers[1][lineNum-len(headers[0])]
-	}
-	if len(line) == 0 {
-		return env
+		if currentLine && len(line) == 0 {
+			return env
+		}
+
+		words = Tokenize(line, t.delimiter)
+		if currentLine {
+			break
+		} else {
+			// TODO: Counting can be incorrect when the delimiter contains new line
+			// characters, and there are empty lines in the header.
+			nthBase += len(words)
+		}
 	}
 
 	colNum := t.clickHeaderColumn - 1
-	words := Tokenize(line, t.delimiter)
 	for idx, token := range words {
 		prefixWidth := int(token.prefixLength)
 		word := token.text.ToString()
-		trimmed := strings.TrimSpace(word)
+		trimmed := strings.TrimRightFunc(word, unicode.IsSpace)
 		trimWidth, _ := util.RunesWidth([]rune(trimmed), prefixWidth, t.tabstop, math.MaxInt32)
 
-		if colNum >= prefixWidth && colNum < prefixWidth+trimWidth {
+		// Find the position of the first non-space character in the word
+		minPos := strings.IndexFunc(trimmed, func(r rune) bool {
+			return !unicode.IsSpace(r)
+		})
+		if colNum >= minPos && colNum >= prefixWidth && colNum < prefixWidth+trimWidth {
 			env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_WORD=%s", trimmed))
-			nth := fmt.Sprintf("FZF_CLICK_HEADER_NTH=%d", idx+1)
-			if idx == len(words)-1 {
+			nth := fmt.Sprintf("FZF_CLICK_HEADER_NTH=%d", nthBase+idx+1)
+			if lineNum == len(t.header)+len(t.header0)-1 && idx == len(words)-1 {
 				nth += ".."
 			}
 			env = append(env, nth)
