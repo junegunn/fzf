@@ -176,7 +176,7 @@ func TestColorOffset(t *testing.T) {
 		assert(9, 35, 37, tui.NewColorPair(4, 8, tui.Bold))
 		expected := tui.Bold | attr
 		if attr == tui.AttrRegular {
-			expected = tui.AttrRegular
+			expected = tui.Bold
 		}
 		assert(10, 37, 39, tui.NewColorPair(4, 8, expected))
 		assert(11, 39, 40, tui.NewColorPair(4, 8, tui.Bold))

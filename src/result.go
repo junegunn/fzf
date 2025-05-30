@@ -228,10 +228,11 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 					offset: [2]int32{int32(start), int32(idx)}, color: color, match: true, url: url})
 			} else if curr.color {
 				ansi := itemColors[curr.index]
-				color := ansiToColorPair(ansi, colBase)
+				base := colBase
 				if curr.nth {
-					color = color.WithAttr(attrNth)
+					base = base.WithAttr(attrNth)
 				}
+				color := ansiToColorPair(ansi, base)
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
 					color:  color,
