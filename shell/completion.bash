@@ -572,7 +572,7 @@ __fzf_defc() {
   if __fzf_orig_completion_instantiate "$cmd" "$func"; then
     eval "$REPLY"
   else
-    complete -F "$func" $opts "$cmd"
+    eval "complete -F \"$func\" $opts \"$cmd\""
   fi
 }
 
