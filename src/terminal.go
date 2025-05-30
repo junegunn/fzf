@@ -3559,10 +3559,15 @@ Loop:
 				str, width := t.processTabs(trimmed, prefixWidth)
 				if width > prefixWidth {
 					prefixWidth = width
-					if t.theme.Colored && ansi != nil && ansi.colored() {
+					colored := ansi != nil && ansi.colored()
+					if t.theme.Colored && colored {
 						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
 					} else {
-						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, str)
+						attr := tui.AttrRegular
+						if colored {
+							attr = ansi.attr
+						}
+						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), attr, str)
 					}
 				}
 				return !isTrimmed &&
