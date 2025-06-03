@@ -503,7 +503,7 @@ if ! declare -F __fzf_list_hosts > /dev/null; then
       ) \
       <(
         __fzf_exec_awk -F ',' '
-          match($0, /^[[a-z0-9.,:-]+/) {
+          match($0, /^[[a-zA-Z0-9.,:-]+/) {
             $0 = substr($0, 1, RLENGTH)
             gsub(/\[/, "")
             for (i = 1; i <= NF; i++)
