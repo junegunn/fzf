@@ -460,7 +460,23 @@ _fzf_proc_completion_post() {
 #   }
 if ! declare -F __fzf_list_hosts > /dev/null; then
   __fzf_list_hosts() {
-    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
+    command cat \
+      <(
+        # Note: To make the pathname expansion of "~/.ssh/config.d/*" work
+        # properly, we need to adjust the related shell options.  We need to
+        # unset "set -f" and "GLOBIGNORE", which disable the pathname expansion
+        # totally or partially.  We need to unset "dotglob" and "nocaseglob" to
+        # avoid matching unwanted files.  We need to unset "failglob" to avoid
+        # outputting the error messages to the terminal when no matching is
+        # found.  We need to set "nullglob" to avoid attempting to read the
+        # literal filename '~/.ssh/config.d/*' when no matching is found.
+        set +f
+        GLOBIGNORE=
+        shopt -u dotglob nocaseglob failglob
+        shopt -s nullglob
+
+        command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]'
+      ) \
       <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
       <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0' | command sed 's/#.*//') |
       command awk '{for (i = 2; i <= NF; i++) print $i}' | command sort -u
