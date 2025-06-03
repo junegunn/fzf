@@ -460,7 +460,7 @@ _fzf_proc_completion_post() {
 #   }
 if ! declare -F __fzf_list_hosts > /dev/null; then
   __fzf_list_hosts() {
-    command cat \
+    command sort -u \
       <(
         # Note: To make the pathname expansion of "~/.ssh/config.d/*" work
         # properly, we need to adjust the related shell options.  We need to
@@ -475,11 +475,34 @@ if ! declare -F __fzf_list_hosts > /dev/null; then
         shopt -u dotglob nocaseglob failglob
         shopt -s nullglob
 
-        command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]'
+        command awk '
+          tolower($1) ~ /^host(name)?$/ {
+            for (i = 2; i <= NF; i++)
+              if ($i !~ /[*?%]/)
+                print $i
+          }
+        ' ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null
       ) \
-      <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
-      <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0' | command sed 's/#.*//') |
-      command awk '{for (i = 2; i <= NF; i++) print $i}' | command sort -u
+      <(
+        command awk -F ',' '
+          match($0, /^[[a-z0-9.,:-]+/) {
+            $0 = substr($0, 1, RLENGTH)
+            gsub(/\[/, "")
+            for (i = 1; i <= NF; i++)
+              print $i
+          }
+        ' ~/.ssh/known_hosts 2> /dev/null
+      ) \
+      <(
+        command awk '
+          /^[[:blank:]]*(#|$)|0\.0\.0\.0/ { next }
+          {
+            sub(/#.*/, "")
+            for (i = 2; i <= NF; i++)
+              print $i
+          }
+        ' /etc/hosts 2> /dev/null 
+      )
   }
 fi
 
