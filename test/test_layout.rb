@@ -992,7 +992,7 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(block, it) }
   end
 
-  def test_label_trunction
+  def test_label_truncation
     command = <<~CMD
       seq 10 | #{FZF} --style full --border --header-lines=1 --preview ':' \\
         --border-label "#{'b' * 1000}" \\
