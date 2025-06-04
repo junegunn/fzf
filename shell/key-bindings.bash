@@ -36,12 +36,20 @@ __fzf_defaults() {
 __fzf_exec_awk() {
   if [[ -z ${__fzf_awk-} ]]; then
     __fzf_awk=awk
-
-    # choose the faster mawk if: it's installed && build date >= 20230322 &&
-    # version >= 1.3.4
-    local n x y z d
-    IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
-    [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+    if [[ $OSTYPE == solaris* && -x /usr/xpg4/bin/awk ]]; then
+      # Note: Solaris awk at /usr/bin/awk is meant for backward compatibility
+      # with an ancient implementation of 1977 awk in the original UNIX.  It
+      # lacks many features of POSIX awk, so it is essentially useless in the
+      # modern point of view.  To use a standard-conforming version in Solaris,
+      # one needs to explicitly use /usr/xpg4/bin/awk.
+      __fzf_awk=/usr/xpg4/bin/awk
+    else
+      # choose the faster mawk if: it's installed && build date >= 20230322 &&
+      # version >= 1.3.4
+      local n x y z d
+      IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+      [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+    fi
   fi
 
   # Note: macOS awk has a quirk that it stops processing at all when it sees
