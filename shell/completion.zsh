@@ -277,6 +277,7 @@ if ! declare -f __fzf_list_hosts > /dev/null; then
           # 16-year-old mawk unfortunately.  We need to use [ \t] instead.
           match(tolower($0), /^[ \t]*host(name)?[ \t]*[ \t=]/) {
             $0 = substr($0, RLENGTH + 1) # Remove "Host(name)?=?"
+            sub(/#.*/, "")
             for (i = 1; i <= NF; i++)
               if ($i !~ /[*?%]/)
                 print $i
