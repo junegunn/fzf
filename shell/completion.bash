@@ -529,7 +529,10 @@ if ! declare -F __fzf_list_hosts > /dev/null; then
       ) \
       <(
         __fzf_exec_awk '
-          /^[[:blank:]]*(#|$)|0\.0\.0\.0/ { next }
+          # Note: mawk <= 1.3.3-20090705 does not support the POSIX brackets of
+          # the form [[:blank:]], and Ubuntu 18.04 LTS still uses this
+          # 16-year-old mawk unfortunately.  We need to use [ \t] instead.
+          /^[ \t]*(#|$)|0\.0\.0\.0/ { next }
           {
             sub(/#.*/, "")
             for (i = 2; i <= NF; i++)
