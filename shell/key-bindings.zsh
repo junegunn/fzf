@@ -46,6 +46,32 @@ __fzf_defaults() {
   echo -E "${FZF_DEFAULT_OPTS-} $2"
 }
 
+# This function performs `exec awk "$@"` safely by working around awk
+# compatibility issues.
+#
+# Note: To reduce an extra fork, this function performs "exec" so is expected
+# to be run as the last command in a subshell.
+#
+# Note: This function is included with {completion,key-bindings}.{bash,zsh} and
+# synchronized.
+__fzf_exec_awk() {
+  if [[ -z ${__fzf_awk-} ]]; then
+    __fzf_awk=awk
+
+    # choose the faster mawk if: it's installed && build date >= 20230322 &&
+    # version >= 1.3.4
+    local n x y z d
+    IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+    [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+  fi
+
+  # Note: macOS awk has a quirk that it stops processing at all when it sees
+  # any data not following UTF-8 in the input stream when the current LC_CTYPE
+  # specifies the UTF-8 encoding.  To work around this quirk, one needs to
+  # specify LC_ALL=C to change the current encoding to the plain one.
+  LC_ALL=C exec "$__fzf_awk" "$@"
+}
+
 # CTRL-T - Paste the selected file path(s) into the command line
 __fzf_select() {
   setopt localoptions pipefail no_aliases 2> /dev/null
@@ -117,13 +143,13 @@ fzf-history-widget() {
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m --read0") \
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   else
-    selected="$(fc -rl 1 | awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
+    selected="$(fc -rl 1 | __fzf_exec_awk '{ cmd=$0; sub(/^[ \t]*[0-9]+\**[ \t]+/, "", cmd); if (!seen[cmd]++) print $0 }' |
       FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} --query=${(qqq)LBUFFER} +m") \
       FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd))"
   fi
   local ret=$?
   if [ -n "$selected" ]; then
-    if [[ $(awk '{print $1; exit}' <<< "$selected") =~ ^[1-9][0-9]* ]]; then
+    if [[ $(__fzf_exec_awk '{print $1; exit}' <<< "$selected") =~ ^[1-9][0-9]* ]]; then
       zle vi-fetch-history -n $MATCH
     else # selected is a custom query, not from history
       LBUFFER="$selected"
