@@ -104,6 +104,32 @@ __fzf_defaults() {
   echo -E "${FZF_DEFAULT_OPTS-} $2"
 }
 
+# This function performs `exec awk "$@"` safely by working around awk
+# compatibility issues.
+#
+# Note: To reduce an extra fork, this function performs "exec" so is expected
+# to be run as the last command in a subshell.
+#
+# Note: This function is included with {completion,key-bindings}.{bash,zsh} and
+# synchronized.
+__fzf_exec_awk() {
+  if [[ -z ${__fzf_awk-} ]]; then
+    __fzf_awk=awk
+
+    # choose the faster mawk if: it's installed && build date >= 20230322 &&
+    # version >= 1.3.4
+    local n x y z d
+    IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+    [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+  fi
+
+  # Note: macOS awk has a quirk that it stops processing at all when it sees
+  # any data not following UTF-8 in the input stream when the current LC_CTYPE
+  # specifies the UTF-8 encoding.  To work around this quirk, one needs to
+  # specify LC_ALL=C to change the current encoding to the plain one.
+  LC_ALL=C exec "$__fzf_awk" "$@"
+}
+
 __fzf_comprun() {
   if [[ "$(type _fzf_comprun 2>&1)" =~ function ]]; then
     _fzf_comprun "$@"
@@ -253,7 +279,7 @@ if ! declare -f __fzf_list_hosts > /dev/null; then
         # when no matching is found.
         setopt GLOB NO_DOT_GLOB CASE_GLOB NO_NOMATCH NULL_GLOB
 
-        command awk '
+        __fzf_exec_awk '
           tolower($1) ~ /^host(name)?$/ {
             for (i = 2; i <= NF; i++)
               if ($i !~ /[*?%]/)
@@ -262,7 +288,7 @@ if ! declare -f __fzf_list_hosts > /dev/null; then
         ' ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null
       ) \
       <(
-        command awk -F ',' '
+        __fzf_exec_awk -F ',' '
           match($0, /^[[a-z0-9.,:-]+/) {
             $0 = substr($0, 1, RLENGTH)
             gsub(/\[/, "")
@@ -272,7 +298,7 @@ if ! declare -f __fzf_list_hosts > /dev/null; then
         ' ~/.ssh/known_hosts 2> /dev/null
       ) \
       <(
-        command awk '
+        __fzf_exec_awk '
           /^[[:blank:]]*(#|$)|0\.0\.0\.0/ { next }
           {
             sub(/#.*/, "")
@@ -300,7 +326,7 @@ _fzf_complete_ssh() {
     *)
       local user
       [[ $prefix =~ @ ]] && user="${prefix%%@*}@"
-      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | awk -v user="$user" '{print user $0}')
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | __fzf_exec_awk -v user="$user" '{print user $0}')
       ;;
   esac
 }
@@ -358,7 +384,7 @@ _fzf_complete_kill() {
 }
 
 _fzf_complete_kill_post() {
-  awk '{print $2}'
+  __fzf_exec_awk '{print $2}'
 }
 
 fzf-completion() {
