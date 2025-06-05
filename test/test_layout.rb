@@ -39,11 +39,11 @@ class TestLayout < TestInteractive
     tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first", :Enter
     block = <<~OUTPUT
       > 4
-        997/997
-      >
         3
         2
         1
+        997/997
+      >
         foobar
     OUTPUT
     tmux.until { assert_block(block, it) }
@@ -53,10 +53,10 @@ class TestLayout < TestInteractive
     tmux.send_keys "seq 1000 | #{FZF} --header foobar --header-lines 3 --header-first --reverse --inline-info", :Enter
     block = <<~OUTPUT
         foobar
+      >   < 997/997
         1
         2
         3
-      >   < 997/997
       > 4
     OUTPUT
     tmux.until { assert_block(block, it) }
@@ -148,10 +148,10 @@ class TestLayout < TestInteractive
       │
       │   4
       │ > 3
-      │   2/2
-      │ >
       │   2
       │   1
+      │   2/2
+      │ >
       │   foo
       ╰───────
     OUTPUT
@@ -609,11 +609,11 @@ class TestLayout < TestInteractive
       │   4
       │ > 3
       ╰──────────
+          2
+          1
           98/98 ─
         >
       ╭──────────
-      │   2
-      │   1
       │   hello
       ╰──────────
     BLOCK
@@ -666,12 +666,12 @@ class TestLayout < TestInteractive
       │   4
       │ > 3
       ╰──────────
+          98/98 ─
+        >
       ╔══════════
       ║   2
       ║   1
       ╚══════════
-          98/98 ─
-        >
     BLOCK
     tmux.until { assert_block(block1, it) }
 
