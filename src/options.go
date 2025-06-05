@@ -3218,15 +3218,6 @@ func postProcessOptions(opts *Options) error {
 
 	if opts.HeaderLinesShape == tui.BorderNone {
 		opts.HeaderLinesShape = tui.BorderPhantom
-	} else if opts.HeaderLinesShape == tui.BorderUndefined {
-		// In reverse-list layout, header lines should be at the top, while
-		// ordinary header should be at the bottom. So let's use a separate
-		// window for the header lines.
-		if opts.Layout == layoutReverseList {
-			opts.HeaderLinesShape = tui.BorderPhantom
-		} else {
-			opts.HeaderLinesShape = tui.BorderNone
-		}
 	}
 
 	if opts.Pointer == nil {
