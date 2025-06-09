@@ -83,7 +83,7 @@ Usage: fzf [options]
     --padding=PADDING        Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
     --border[=STYLE]         Draw border around the finder
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|none] (default: rounded)
+                              top|bottom|left|right|line|none] (default: rounded)
     --border-label=LABEL     Label to print on the border
     --border-label-pos=COL   Position of the border label
                              [POSITIVE_INTEGER: columns from left|
@@ -140,7 +140,7 @@ Usage: fzf [options]
     --filepath-word          Make word-wise movements respect path separators
     --input-border[=STYLE]   Draw border around the input section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|none] (default: rounded)
+                              top|bottom|left|right|line|none] (default: rounded)
     --input-label=LABEL      Label to print on the input border
     --input-label-pos=COL    Position of the input label
                              [POSITIVE_INTEGER: columns from left|
@@ -168,12 +168,23 @@ Usage: fzf [options]
     --header-first           Print header before the prompt line
     --header-border[=STYLE]  Draw border around the header section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|none] (default: rounded)
+                              top|bottom|left|right|line|none] (default: rounded)
     --header-lines-border[=STYLE]
                              Display header from --header-lines with a separate border.
                              Pass 'none' to still separate it but without a border.
     --header-label=LABEL     Label to print on the header border
     --header-label-pos=COL   Position of the header label
+                             [POSITIVE_INTEGER: columns from left|
+                              NEGATIVE_INTEGER: columns from right][:bottom]
+                             (default: 0 or center)
+
+  FOOTER
+    --footer=STR             String to print as footer
+    --footer-border[=STYLE]  Draw border around the footer section
+                             [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
+                              top|bottom|left|right|line|none] (default: line)
+    --footer-label=LABEL     Label to print on the footer border
+    --footer-label-pos=COL   Position of the footer label
                              [POSITIVE_INTEGER: columns from left|
                               NEGATIVE_INTEGER: columns from right][:bottom]
                              (default: 0 or center)
@@ -599,6 +610,7 @@ type Options struct {
 	Header            []string
 	HeaderLines       int
 	HeaderFirst       bool
+	Footer            []string
 	Gap               int
 	GapLine           *string
 	Ellipsis          *string
@@ -610,8 +622,10 @@ type Options struct {
 	InputBorderShape  tui.BorderShape
 	HeaderBorderShape tui.BorderShape
 	HeaderLinesShape  tui.BorderShape
+	FooterBorderShape tui.BorderShape
 	InputLabel        labelOpts
 	HeaderLabel       labelOpts
+	FooterLabel       labelOpts
 	BorderLabel       labelOpts
 	ListLabel         labelOpts
 	PreviewLabel      labelOpts
@@ -716,6 +730,7 @@ func defaultOptions() *Options {
 		Header:       make([]string, 0),
 		HeaderLines:  0,
 		HeaderFirst:  false,
+		Footer:       make([]string, 0),
 		Gap:          0,
 		Ellipsis:     nil,
 		Scrollbar:    nil,
@@ -880,12 +895,9 @@ func parseAlgo(str string) (algo.Algo, error) {
 	return nil, errors.New("invalid algorithm (expected: v1 or v2)")
 }
 
-func parseBorder(str string, optional bool, allowLine bool) (tui.BorderShape, error) {
+func parseBorder(str string, optional bool) (tui.BorderShape, error) {
 	switch str {
 	case "line":
-		if !allowLine {
-			return tui.BorderNone, errors.New("'line' is only allowed for preview border")
-		}
 		return tui.BorderLine, nil
 	case "rounded":
 		return tui.BorderRounded, nil
@@ -1348,6 +1360,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.HeaderBorder)
 			case "header-label":
 				mergeAttr(&theme.HeaderLabel)
+			case "footer-border":
+				mergeAttr(&theme.FooterBorder)
+			case "footer-label":
+				mergeAttr(&theme.FooterLabel)
 			case "spinner":
 				mergeAttr(&theme.Spinner)
 			case "info":
@@ -1360,6 +1376,10 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.Header)
 			case "header-bg":
 				mergeAttr(&theme.HeaderBg)
+			case "footer", "footer-fg":
+				mergeAttr(&theme.Footer)
+			case "footer-bg":
+				mergeAttr(&theme.FooterBg)
 			case "gap-line":
 				mergeAttr(&theme.GapLine)
 			default:
@@ -1415,7 +1435,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header)-label|header|search|nth|pointer|ghost)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1800,6 +1820,8 @@ func isExecuteAction(str string) actionType {
 		return actPreview
 	case "change-header":
 		return actChangeHeader
+	case "change-footer":
+		return actChangeFooter
 	case "change-list-label":
 		return actChangeListLabel
 	case "change-border-label":
@@ -1810,6 +1832,8 @@ func isExecuteAction(str string) actionType {
 		return actChangeInputLabel
 	case "change-header-label":
 		return actChangeHeaderLabel
+	case "change-footer-label":
+		return actChangeFooterLabel
 	case "change-ghost":
 		return actChangeGhost
 	case "change-pointer":
@@ -1850,6 +1874,10 @@ func isExecuteAction(str string) actionType {
 		return actTransformInputLabel
 	case "transform-header-label":
 		return actTransformHeaderLabel
+	case "transform-footer-label":
+		return actTransformFooterLabel
+	case "transform-footer":
+		return actTransformFooter
 	case "transform-header":
 		return actTransformHeader
 	case "transform-ghost":
@@ -2729,6 +2757,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.HeaderLines, err = nextInt("number of header lines required"); err != nil {
 				return err
 			}
+		case "--no-footer":
+			opts.Footer = []string{}
+		case "--footer":
+			str, err := nextString("footer string required")
+			if err != nil {
+				return err
+			}
+			opts.Footer = strLines(str)
 		case "--header-first":
 			opts.HeaderFirst = true
 		case "--no-header-first":
@@ -2773,7 +2809,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Preview.border = tui.BorderNone
 		case "--preview-border":
 			hasArg, arg := optionalNextString()
-			if opts.Preview.border, err = parseBorder(arg, !hasArg, true); err != nil {
+			if opts.Preview.border, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
 		case "--height":
@@ -2812,13 +2848,16 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.BorderShape = tui.BorderNone
 		case "--border":
 			hasArg, arg := optionalNextString()
-			if opts.BorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
+			if opts.BorderShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
 		case "--list-border":
 			hasArg, arg := optionalNextString()
-			if opts.ListBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
+			if opts.ListBorderShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
+			}
+			if opts.ListBorderShape == tui.BorderLine {
+				return errors.New("list border cannot be 'line'")
 			}
 		case "--no-list-border":
 			opts.ListBorderShape = tui.BorderNone
@@ -2841,14 +2880,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.HeaderBorderShape = tui.BorderNone
 		case "--header-border":
 			hasArg, arg := optionalNextString()
-			if opts.HeaderBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
+			if opts.HeaderBorderShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
 		case "--no-header-lines-border":
 			opts.HeaderLinesShape = tui.BorderNone
 		case "--header-lines-border":
 			hasArg, arg := optionalNextString()
-			if opts.HeaderLinesShape, err = parseBorder(arg, !hasArg, false); err != nil {
+			if opts.HeaderLinesShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
 		case "--no-header-label":
@@ -2865,11 +2904,32 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err := parseLabelPosition(&opts.HeaderLabel, pos); err != nil {
 				return err
 			}
+		case "--no-footer-border":
+			opts.FooterBorderShape = tui.BorderNone
+		case "--footer-border":
+			hasArg, arg := optionalNextString()
+			if opts.FooterBorderShape, err = parseBorder(arg, !hasArg); err != nil {
+				return err
+			}
+		case "--no-footer-label":
+			opts.FooterLabel.label = ""
+		case "--footer-label":
+			if opts.FooterLabel.label, err = nextString("footer label required"); err != nil {
+				return err
+			}
+		case "--footer-label-pos":
+			pos, err := nextString("footer label position required (positive or negative integer or 'center')")
+			if err != nil {
+				return err
+			}
+			if err := parseLabelPosition(&opts.FooterLabel, pos); err != nil {
+				return err
+			}
 		case "--no-input-border":
 			opts.InputBorderShape = tui.BorderNone
 		case "--input-border":
 			hasArg, arg := optionalNextString()
-			if opts.InputBorderShape, err = parseBorder(arg, !hasArg, false); err != nil {
+			if opts.InputBorderShape, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
 		case "--no-input-label":
@@ -3077,6 +3137,7 @@ func applyPreset(opts *Options, preset string) error {
 		opts.ListBorderShape = tui.BorderUndefined
 		opts.InputBorderShape = tui.BorderUndefined
 		opts.HeaderBorderShape = tui.BorderUndefined
+		opts.FooterBorderShape = tui.BorderUndefined
 		opts.Preview.border = defaultBorderShape
 		opts.Preview.info = true
 		opts.InfoStyle = infoDefault
@@ -3088,6 +3149,7 @@ func applyPreset(opts *Options, preset string) error {
 		opts.ListBorderShape = tui.BorderUndefined
 		opts.InputBorderShape = tui.BorderUndefined
 		opts.HeaderBorderShape = tui.BorderUndefined
+		opts.FooterBorderShape = tui.BorderLine
 		opts.Preview.border = tui.BorderLine
 		opts.Preview.info = false
 		opts.InfoStyle = infoDefault
@@ -3103,16 +3165,22 @@ func applyPreset(opts *Options, preset string) error {
 		}
 		if len(tokens) == 2 && len(tokens[1]) > 0 {
 			var err error
-			defaultBorderShape, err = parseBorder(tokens[1], false, false)
+			defaultBorderShape, err = parseBorder(tokens[1], false)
 			if err != nil {
 				return err
 			}
 		}
 
-		opts.ListBorderShape = defaultBorderShape
+		if defaultBorderShape != tui.BorderLine {
+			opts.ListBorderShape = defaultBorderShape
+		}
 		opts.InputBorderShape = defaultBorderShape
 		opts.HeaderBorderShape = defaultBorderShape
+		opts.FooterBorderShape = defaultBorderShape
 		opts.Preview.border = defaultBorderShape
+		if defaultBorderShape == tui.BorderLine {
+			opts.BorderShape = defaultBorderShape
+		}
 		opts.Preview.info = true
 		opts.InfoStyle = infoInlineRight
 		opts.Theme.Gutter = tui.NewColorAttr()
@@ -3185,6 +3253,10 @@ func noSeparatorLine(style infoStyle, separator bool) bool {
 	return false
 }
 
+func (opts *Options) useTmux() bool {
+	return opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index
+}
+
 func (opts *Options) noSeparatorLine() bool {
 	if opts.Inputless {
 		return true
@@ -3214,6 +3286,10 @@ func postProcessOptions(opts *Options) error {
 
 	if opts.HeaderBorderShape == tui.BorderUndefined {
 		opts.HeaderBorderShape = tui.BorderNone
+	}
+
+	if opts.FooterBorderShape == tui.BorderUndefined {
+		opts.FooterBorderShape = tui.BorderLine
 	}
 
 	if opts.HeaderLinesShape == tui.BorderNone {

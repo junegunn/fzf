@@ -979,6 +979,126 @@ class TestLayout < TestInteractive
     end
   end
 
+  def test_layout_default_with_footer
+    prefix = %[
+      seq 3 | #{FZF} --no-list-border --height ~100% \
+        --border sharp --footer "$(seq 201 202)" --footer-label FOOT --footer-label-pos 3 \
+        --header-label HEAD --header-label-pos 3:bottom \
+        --bind 'space:transform-footer-label(echo foot)+change-header-label(head)'
+    ].strip + ' '
+    suffixes = [
+      %(),
+      %[--header "$(seq 101 102)"],
+      %[--header "$(seq 101 102)" --header-first],
+      %[--header "$(seq 101 102)" --header-lines 2],
+      %[--header "$(seq 101 102)" --header-lines 2 --header-first],
+      %[--header "$(seq 101 102)" --header-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-first],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp --header-first --input-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp --header-first --no-input],
+      %[--header "$(seq 101 102)" --footer-border sharp --input-border line],
+      %[--header "$(seq 101 102)" --style full:sharp --header-first]
+    ]
+    output = <<~BLOCK
+      ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌───────── ┌──────── ┌──────── ┌─────────
+      │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201    │   201   │ ┌─FOOT─ │ ┌─FOOT──
+      │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202    │   202   │ │ 201   │ │   201
+      │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT── │ ──FOOT─ │ │ 202   │ │   202
+      │   3     │   3     │   3     │ > 3     │ > 3     │   3     │   3     │ > 3     │ > 3     │ > 3      │ > 3     │ └────── │ └───────
+      │   2     │   2     │   2     │   2     │   2     │   2     │   2     │ ┌────── │ ┌────── │ ┌─────── │ ┌────── │   3     │ ┌───────
+      │ > 1     │ > 1     │ > 1     │   1     │   1     │ > 1     │ > 1     │ │ 2     │ │ 2     │ │ 2      │ │ 2     │   2     │ │   3
+      │   3/3 ─ │   101   │   3/3 ─ │   101   │   1/1 ─ │ ┌────── │   3/3 ─ │ │ 1     │ │ 1     │ │ 1      │ │ 1     │ > 1     │ │   2
+      │ >       │   102   │ >       │   102   │ >       │ │ 101   │ >       │ │ 101   │ └────── │ └─────── │ └────── │   101   │ │ > 1
+      └──────── │   3/3 ─ │   101   │   1/1 ─ │   101   │ │ 102   │ ┌────── │ │ 102   │ ┌────── │ ┌─────── │ ┌────── │   102   │ └───────
+                │ >       │   102   │ >       │   102   │ └─HEAD─ │ │ 101   │ └─HEAD─ │ │ 101   │ │   1/1  │ │ 101   │ ─────── │ ┌───────
+                └──────── └──────── └──────── └──────── │   3/3 ─ │ │ 102   │   1/1 ─ │ │ 102   │ │ >      │ │ 102   │   3/3   │ │ >
+                                                        │ >       │ └─HEAD─ │ >       │ └─HEAD─ │ └─────── │ └─HEAD─ │ >       │ └───────
+                                                        └──────── └──────── └──────── │   1/1 ─ │ ┌─────── └──────── └──────── │ ┌───────
+                                                                                      │ >       │ │ 101                        │ │   101
+                                                                                      └──────── │ │ 102                        │ │   102
+                                                                                                │ └─HEAD──                     │ └─HEAD──
+                                                                                                └─────────                     └─────────
+    BLOCK
+
+    expects = []
+    output.each_line.first.scan(/\S+/) do
+      offset = Regexp.last_match.offset(0)
+      expects << output.lines.filter_map { it[offset[0]...offset[1]]&.strip }.take_while { !it.empty? }.join("\n")
+    end
+
+    suffixes.zip(expects).each do |suffix, block|
+      tmux.send_keys(prefix + suffix, :Enter)
+      tmux.until { assert_block(block, it) }
+      tmux.send_keys :Space
+      tmux.until { assert_block(block.downcase, it) }
+
+      teardown
+      setup
+    end
+  end
+
+  def test_layout_reverse_list_with_footer
+    prefix = %[
+      seq 3 | #{FZF} --layout reverse-list --no-list-border --height ~100% \
+        --border sharp --footer "$(seq 201 202)" --footer-label FOOT --footer-label-pos 3 \
+        --header-label HEAD --header-label-pos 3:bottom \
+        --bind 'space:transform-footer-label(echo foot)+change-header-label(head)'
+    ].strip + ' '
+    suffixes = [
+      %(),
+      %[--header "$(seq 101 102)"],
+      %[--header "$(seq 101 102)" --header-first],
+      %[--header "$(seq 101 102)" --header-lines 2],
+      %[--header "$(seq 101 102)" --header-lines 2 --header-first],
+      %[--header "$(seq 101 102)" --header-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-first],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp --header-first --input-border sharp],
+      %[--header "$(seq 101 102)" --header-border sharp --header-lines 2 --header-lines-border sharp --header-first --no-input],
+      %[--header "$(seq 101 102)" --footer-border sharp --input-border line],
+      %[--header "$(seq 101 102)" --style full:sharp --header-first]
+    ]
+    output = <<~BLOCK
+      ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌──────── ┌───────── ┌──────── ┌──────── ┌─────────
+      │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201   │   201    │   201   │ ┌─FOOT─ │ ┌─FOOT──
+      │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202   │   202    │   202   │ │ 201   │ │   201
+      │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT─ │ ──FOOT── │ ──FOOT─ │ │ 202   │ │   202
+      │ > 1     │ > 1     │ > 1     │   1     │   1     │ > 1     │ > 1     │   1     │ ┌────── │ ┌─────── │ ┌────── │ └────── │ └───────
+      │   2     │   2     │   2     │   2     │   2     │   2     │   2     │   2     │ │ 1     │ │ 1      │ │ 1     │ > 1     │ ┌───────
+      │   3     │   3     │   3     │ > 3     │ > 3     │   3     │   3     │ > 3     │ │ 2     │ │ 2      │ │ 2     │   2     │ │ > 1
+      │   3/3 ─ │   101   │   3/3 ─ │   101   │   1/1 ─ │ ┌────── │   3/3 ─ │ ┌────── │ └────── │ └─────── │ └────── │   3     │ │   2
+      │ >       │   102   │ >       │   102   │ >       │ │ 101   │ >       │ │ 101   │ > 3     │ > 3      │ > 3     │   101   │ │   3
+      └──────── │   3/3 ─ │   101   │   1/1 ─ │   101   │ │ 102   │ ┌────── │ │ 102   │ ┌────── │ ┌─────── │ ┌────── │   102   │ └───────
+                │ >       │   102   │ >       │   102   │ └─HEAD─ │ │ 101   │ └─HEAD─ │ │ 101   │ │   1/1  │ │ 101   │ ─────── │ ┌───────
+                └──────── └──────── └──────── └──────── │   3/3 ─ │ │ 102   │   1/1 ─ │ │ 102   │ │ >      │ │ 102   │   3/3   │ │ >
+                                                        │ >       │ └─HEAD─ │ >       │ └─HEAD─ │ └─────── │ └─HEAD─ │ >       │ └───────
+                                                        └──────── └──────── └──────── │   1/1 ─ │ ┌─────── └──────── └──────── │ ┌───────
+                                                                                      │ >       │ │ 101                        │ │   101
+                                                                                      └──────── │ │ 102                        │ │   102
+                                                                                                │ └─HEAD──                     │ └─HEAD──
+                                                                                                └─────────                     └─────────
+    BLOCK
+
+    expects = []
+    output.each_line.first.scan(/\S+/) do
+      offset = Regexp.last_match.offset(0)
+      expects << output.lines.filter_map { it[offset[0]...offset[1]]&.strip }.take_while { !it.empty? }.join("\n")
+    end
+
+    suffixes.zip(expects).each do |suffix, block|
+      tmux.send_keys(prefix + suffix, :Enter)
+      tmux.until { assert_block(block, it) }
+      tmux.send_keys :Space
+      tmux.until { assert_block(block.downcase, it) }
+
+      teardown
+      setup
+    end
+  end
+
   def test_change_header_and_label_at_once
     tmux.send_keys %(seq 10 | #{FZF} --border sharp --header-border sharp --header-label-pos 3 --bind 'focus:change-header(header)+change-header-label(label)'), :Enter
     block = <<~BLOCK
@@ -1032,5 +1152,80 @@ class TestLayout < TestInteractive
       >
     BLOCK
     tmux.until { assert_block(block, it) }
+  end
+
+  def test_combinations
+    skip unless ENV['LONGTEST']
+
+    base = [
+      '--pointer=@',
+      '--exact',
+      '--query=123',
+      '--header="$(seq 101 103)"',
+      '--header-lines=3',
+      '--footer "$(seq 201 203)"',
+      '--preview "echo foobar"'
+    ]
+    options = [
+      ['--separator==', '--no-separator'],
+      ['--info=default', '--info=inline', '--info=inline-right'],
+      ['--no-input-border', '--input-border'],
+      ['--no-header-border', '--header-border=none', '--header-border'],
+      ['--no-header-lines-border', '--header-lines-border'],
+      ['--no-footer-border', '--footer-border'],
+      ['--no-list-border', '--list-border'],
+      ['--preview-window=right', '--preview-window=up', '--preview-window=down', '--preview-window=left'],
+      ['--header-first', '--no-header-first'],
+      ['--layout=default', '--layout=reverse', '--layout=reverse-list']
+    ]
+    # Combination of all options
+    combinations = options[0].product(*options.drop(1))
+    combinations.each_with_index do |combination, index|
+      opts = base + combination
+      command = %(seq 1001 2000 | #{FZF} #{opts.join(' ')})
+      puts "# #{index + 1}/#{combinations.length}\n#{command}"
+      tmux.send_keys command, :Enter
+      tmux.until do |lines|
+        layout = combination.find { it.start_with?('--layout=') }.split('=').last
+        header_first = combination.include?('--header-first')
+
+        # Input
+        input = lines.index { it.include?('> 123') }
+        assert(input)
+
+        # Info
+        info = lines.index { it.include?('11/997') }
+        assert(info)
+
+        assert(layout == 'reverse' ? input <= info : input >= info)
+
+        # List
+        item1 = lines.index { it.include?('1230') }
+        item2 = lines.index { it.include?('1231') }
+        assert_equal(item1, layout == 'default' ? item2 + 1 : item2 - 1)
+
+        # Preview
+        assert(lines.any? { it.include?('foobar') })
+
+        # Header
+        header1 = lines.index { it.include?('101') }
+        header2 = lines.index { it.include?('102') }
+        assert_equal(header2, header1 + 1)
+        assert((layout == 'reverse') == header_first ? input > header1 : input < header1)
+
+        # Footer
+        footer1 = lines.index { it.include?('201') }
+        footer2 = lines.index { it.include?('202') }
+        assert_equal(footer2, footer1 + 1)
+        assert(layout == 'reverse' ? footer1 > item2 : footer1 < item2)
+
+        # Header lines
+        hline1 = lines.index { it.include?('1001') }
+        hline2 = lines.index { it.include?('1002') }
+        assert_equal(hline1, layout == 'default' ? hline2 + 1 : hline2 - 1)
+        assert(layout == 'reverse' ? hline1 > header1 : hline1 < header1)
+      end
+      tmux.send_keys :Enter
+    end
   end
 end

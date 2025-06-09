@@ -600,6 +600,8 @@ func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int,
 		normal = ColNormal
 	case WindowHeader:
 		normal = ColHeader
+	case WindowFooter:
+		normal = ColFooter
 	case WindowInput:
 		normal = ColInput
 	case WindowPreview:
@@ -865,6 +867,8 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 			style = ColListBorder.style()
 		case WindowHeader:
 			style = ColHeaderBorder.style()
+		case WindowFooter:
+			style = ColFooterBorder.style()
 		case WindowInput:
 			style = ColInputBorder.style()
 		case WindowPreview:
