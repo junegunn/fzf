@@ -829,11 +829,14 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, wind
 	case WindowHeader:
 		w.fg = r.theme.Header.Color
 		w.bg = r.theme.HeaderBg.Color
+	case WindowFooter:
+		w.fg = r.theme.Footer.Color
+		w.bg = r.theme.FooterBg.Color
 	case WindowPreview:
 		w.fg = r.theme.PreviewFg.Color
 		w.bg = r.theme.PreviewBg.Color
 	}
-	if erase && !w.bg.IsDefault() && w.border.shape != BorderNone {
+	if erase && !w.bg.IsDefault() && w.border.shape != BorderNone && w.height > 0 {
 		// fzf --color bg:blue --border --padding 1,2
 		w.Erase()
 	}
@@ -889,6 +892,8 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 		color = ColInputBorder
 	case WindowHeader:
 		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -914,6 +919,8 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 		color = ColInputBorder
 	case WindowHeader:
 		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}
@@ -941,6 +948,8 @@ func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 		color = ColInputBorder
 	case WindowHeader:
 		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
 	case WindowPreview:
 		color = ColPreviewBorder
 	}

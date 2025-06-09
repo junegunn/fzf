@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "May 2025" "fzf 0.62.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jun 2025" "fzf 0.63.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -503,6 +503,8 @@ Draw border around the finder
 .br
 .BR vertical "      Vertical lines on each side of the finder"
 .br
+.BR line "          Single line border (position automatically determined)"
+.br
 .BR top " (up)"
 .br
 .BR bottom " (down)"
@@ -517,6 +519,9 @@ Draw border around the finder
 If you use a terminal emulator where each box-drawing character takes
 2 columns, try setting \fB\-\-ambidouble\fR. If the border is still not properly
 rendered, set \fB\-\-no\-unicode\fR.
+
+\fBline\fR style draws a single separator line at the top when \fB\-\-height\fR
+is used.
 
 .TP
 .BI "\-\-border\-label" [=LABEL]
@@ -661,7 +666,8 @@ Do not display scrollbar. A synonym for \fB\-\-scrollbar=''\fB
 
 .TP
 .BI "\-\-list\-border" [=STYLE]
-Draw border around the list section
+Draw border around the list section. \fBline\fR style is not supported for
+this border.
 
 .TP
 .BI "\-\-list\-label" [=LABEL]
@@ -748,7 +754,8 @@ actions are affected:
 \fBkill\-word\fR
 .TP
 .BI "\-\-input\-border" [=STYLE]
-Draw border around the input section
+Draw border around the input section. \fBline\fR style draws a single separator
+line between the input section and the list section.
 
 .TP
 .BI "\-\-input\-label" [=LABEL]
@@ -848,8 +855,7 @@ e.g.
 
 .TP
 .BI "\-\-preview\-border" [=STYLE]
-Short for \fB\-\-preview\-window=border\-STYLE\fR. In addition to the other
-styles, \fBline\fR style is also supported for preview border, which draws
+Short for \fB\-\-preview\-window=border\-STYLE\fR. \fBline\fR style draws
 a single separator line between the preview window and the rest of the
 interface.
 
@@ -1005,7 +1011,8 @@ Print header before the prompt line. When both normal header and header lines
 (\fB\-\-header\-lines\fR) are present, this applies only to the normal header.
 .TP
 .BI "\-\-header\-border" [=STYLE]
-Draw border around the header section
+Draw border around the header section. \fBline\fR style draws a single
+separator line between the header window and the list section.
 
 .TP
 .BI "\-\-header\-label" [=LABEL]
@@ -1019,7 +1026,30 @@ Position of the header label
 .BI "\-\-header\-lines\-border" [=STYLE]
 Display header from \fB--header\-lines\fR with a separate border. Pass
 \fBnone\fR to still separate the header lines but without a border. To combine
-two headers, use \fB\-\-no\-header\-lines\-border\fR.
+two headers, use \fB\-\-no\-header\-lines\-border\fR. \fBline\fR style draws
+a single separator line between the header lines and the list section.
+
+.SS FOOTER
+
+.TP
+.BI "\-\-footer=" "STR"
+The given string will be printed as the sticky footer. The lines are displayed
+in the given order from top to bottom regardless of \fB\-\-layout\fR option, and
+are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even when
+\fB\-\-ansi\fR is not set.
+
+.TP
+.BI "\-\-footer\-border" [=STYLE]
+Draw border around the header section. \fBline\fR style draws a single
+separator line between the footer and the list section.
+
+.TP
+.BI "\-\-footer\-label" [=LABEL]
+Label to print on the footer border
+
+.TP
+.BI "\-\-footer\-label\-pos" [=N[:top|bottom]]
+Position of the footer label
 
 .SS SCRIPTING
 .TP
