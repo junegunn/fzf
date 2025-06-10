@@ -1435,9 +1435,9 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|&?transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|&?transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
-	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
+	actionNameRegexp = regexp.MustCompile("(?i)^&?[a-z-]+")
 }
 
 func maskActionContents(action string) string {
@@ -1892,6 +1892,36 @@ func isExecuteAction(str string) actionType {
 		return actTransformQuery
 	case "transform-search":
 		return actTransformSearch
+	case "&transform":
+		return actAsyncTransform
+	case "&transform-list-label":
+		return actAsyncTransformListLabel
+	case "&transform-border-label":
+		return actAsyncTransformBorderLabel
+	case "&transform-preview-label":
+		return actAsyncTransformPreviewLabel
+	case "&transform-input-label":
+		return actAsyncTransformInputLabel
+	case "&transform-header-label":
+		return actAsyncTransformHeaderLabel
+	case "&transform-footer-label":
+		return actAsyncTransformFooterLabel
+	case "&transform-footer":
+		return actAsyncTransformFooter
+	case "&transform-header":
+		return actAsyncTransformHeader
+	case "&transform-ghost":
+		return actAsyncTransformGhost
+	case "&transform-nth":
+		return actAsyncTransformNth
+	case "&transform-pointer":
+		return actAsyncTransformPointer
+	case "&transform-prompt":
+		return actAsyncTransformPrompt
+	case "&transform-query":
+		return actAsyncTransformQuery
+	case "&transform-search":
+		return actAsyncTransformSearch
 	case "search":
 		return actSearch
 	}

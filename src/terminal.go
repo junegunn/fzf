@@ -388,6 +388,7 @@ type Terminal struct {
 	startChan          chan fitpad
 	killChan           chan bool
 	serverInputChan    chan []*action
+	callbackChan       chan func()
 	keyChan            chan tui.Event
 	eventChan          chan tui.Event
 	slab               *util.Slab
@@ -489,6 +490,7 @@ const (
 	actBackwardDeleteCharEof
 	actBackwardWord
 	actCancel
+
 	actChangeBorderLabel
 	actChangeGhost
 	actChangeHeader
@@ -505,6 +507,7 @@ const (
 	actChangePreviewWindow
 	actChangePrompt
 	actChangeQuery
+
 	actClearScreen
 	actClearQuery
 	actClearSelection
@@ -561,6 +564,7 @@ const (
 	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
+
 	actTransform
 	actTransformBorderLabel
 	actTransformGhost
@@ -576,6 +580,23 @@ const (
 	actTransformPrompt
 	actTransformQuery
 	actTransformSearch
+
+	actAsyncTransform
+	actAsyncTransformBorderLabel
+	actAsyncTransformGhost
+	actAsyncTransformHeader
+	actAsyncTransformFooter
+	actAsyncTransformHeaderLabel
+	actAsyncTransformFooterLabel
+	actAsyncTransformInputLabel
+	actAsyncTransformListLabel
+	actAsyncTransformNth
+	actAsyncTransformPointer
+	actAsyncTransformPreviewLabel
+	actAsyncTransformPrompt
+	actAsyncTransformQuery
+	actAsyncTransformSearch
+
 	actSearch
 	actPreview
 	actPreviewTop
@@ -613,6 +634,7 @@ const (
 	actBell
 	actExclude
 	actExcludeMulti
+	actAsync
 )
 
 func (a actionType) Name() string {
@@ -623,10 +645,34 @@ func processExecution(action actionType) bool {
 	switch action {
 	case actTransform,
 		actTransformBorderLabel,
+		actTransformGhost,
 		actTransformHeader,
+		actTransformFooter,
+		actTransformHeaderLabel,
+		actTransformFooterLabel,
+		actTransformInputLabel,
+		actTransformListLabel,
+		actTransformNth,
+		actTransformPointer,
 		actTransformPreviewLabel,
 		actTransformPrompt,
 		actTransformQuery,
+		actTransformSearch,
+		actAsyncTransform,
+		actAsyncTransformBorderLabel,
+		actAsyncTransformGhost,
+		actAsyncTransformHeader,
+		actAsyncTransformFooter,
+		actAsyncTransformHeaderLabel,
+		actAsyncTransformFooterLabel,
+		actAsyncTransformInputLabel,
+		actAsyncTransformListLabel,
+		actAsyncTransformNth,
+		actAsyncTransformPointer,
+		actAsyncTransformPreviewLabel,
+		actAsyncTransformPrompt,
+		actAsyncTransformQuery,
+		actAsyncTransformSearch,
 		actPreview,
 		actChangePreview,
 		actRefreshPreview,
@@ -773,7 +819,7 @@ func mayTriggerPreview(opts *Options) bool {
 	for _, actions := range opts.Keymap {
 		for _, action := range actions {
 			switch action.t {
-			case actPreview, actChangePreview, actTransform:
+			case actPreview, actChangePreview, actTransform, actAsyncTransform:
 				return true
 			}
 		}
@@ -987,6 +1033,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
+		callbackChan:       make(chan func(), 100),
 		keyChan:            make(chan tui.Event),
 		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
 		tui:                renderer,
@@ -4291,6 +4338,32 @@ func (t *Terminal) captureLines(template string) string {
 	return t.executeCommand(template, false, true, true, false, "")
 }
 
+func (t *Terminal) captureAsync(template string, firstLineOnly bool, callback func(string)) {
+	_, list := t.buildPlusList(template, false)
+	command, tempFiles := t.replacePlaceholder(template, false, string(t.input), list)
+	go func() {
+		cmd := t.executor.ExecCommand(command, false)
+		cmd.Env = t.environ()
+
+		out, _ := cmd.StdoutPipe()
+		reader := bufio.NewReader(out)
+		var output string
+		if err := cmd.Start(); err == nil {
+			if firstLineOnly {
+				output, _ = reader.ReadString('\n')
+				output = strings.TrimRight(output, "\r\n")
+			} else {
+				bytes, _ := io.ReadAll(reader)
+				output = string(bytes)
+			}
+			cmd.Wait()
+		}
+		removeFiles(tempFiles)
+
+		t.callbackChan <- func() { callback(output) }
+	}()
+}
+
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool, info string) string {
 	line := ""
 	valid, list := t.buildPlusList(template, forcePlus)
@@ -5089,11 +5162,27 @@ func (t *Terminal) Loop() error {
 		barrier <- true
 		needBarrier = false
 	}
+
+	// These variables are defined outside the loop to be accessible from closures
+	events := []util.EventType{}
+	changed := false
+	var newNth *[]Range
+	req := func(evts ...util.EventType) {
+		for _, event := range evts {
+			events = append(events, event)
+			if event == reqClose || event == reqQuit {
+				looping = false
+			}
+		}
+	}
+
+	// The main event loop
 	for loopIndex := int64(0); looping; loopIndex++ {
 		var newCommand *commandSpec
-		var newNth *[]Range
 		var reloadSync bool
-		changed := false
+		events = []util.EventType{}
+		changed = false
+		newNth = nil
 		beof := false
 		queryChanged := false
 		denylist := []int32{}
@@ -5110,6 +5199,7 @@ func (t *Terminal) Loop() error {
 
 		var event tui.Event
 		actions := []*action{}
+		callbacks := []func(){}
 		select {
 		case event = <-t.keyChan:
 			needBarrier = true
@@ -5141,6 +5231,20 @@ func (t *Terminal) Loop() error {
 					}
 				}
 			}
+		case callback := <-t.callbackChan:
+			event = tui.Invalid.AsEvent()
+			actions = append(actions, &action{t: actAsync})
+			callbacks = append(callbacks, callback)
+		DrainCallback:
+			for {
+				select {
+				case callback = <-t.callbackChan:
+					callbacks = append(callbacks, callback)
+					continue DrainCallback
+				default:
+					break DrainCallback
+				}
+			}
 		}
 
 		t.mutex.Lock()
@@ -5155,15 +5259,6 @@ func (t *Terminal) Loop() error {
 		previousInput := t.input
 		previousCx := t.cx
 		t.lastKey = event.KeyName()
-		events := []util.EventType{}
-		req := func(evts ...util.EventType) {
-			for _, event := range evts {
-				events = append(events, event)
-				if event == reqClose || event == reqQuit {
-					looping = false
-				}
-			}
-		}
 		updatePreviewWindow := func(forcePreview bool) {
 			t.resizeWindows(forcePreview, false)
 			req(reqPrompt, reqList, reqInfo, reqHeader, reqFooter)
@@ -5238,9 +5333,29 @@ func (t *Terminal) Loop() error {
 			//   actions to allow changing the query even when the input is hidden
 			//     e.g. fzf --no-input --bind 'space:show-input+change-query(foo)+hide-input'
 			currentInput := t.input
+			capture := func(firstLineOnly bool, callback func(string)) {
+				if a.t >= actAsyncTransform {
+					// &transform-*
+					t.captureAsync(a.a, firstLineOnly, callback)
+				} else if a.t >= actTransform {
+					// transform-*
+					if firstLineOnly {
+						callback(t.captureLine(a.a))
+					} else {
+						callback(t.captureLines(a.a))
+					}
+				} else {
+					// change-*
+					callback(a.a)
+				}
+			}
 		Action:
 			switch a.t {
 			case actIgnore, actStart, actClick:
+			case actAsync:
+				for _, callback := range callbacks {
+					callback()
+				}
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {
@@ -5333,15 +5448,17 @@ func (t *Terminal) Loop() error {
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
 				}
-			case actTransformPrompt:
-				prompt := t.captureLine(a.a)
-				t.promptString = prompt
-				t.prompt, t.promptLen = t.parsePrompt(prompt)
-				req(reqPrompt)
-			case actTransformQuery:
-				query := t.captureLine(a.a)
-				t.input = []rune(query)
-				t.cx = len(t.input)
+			case actTransformPrompt, actAsyncTransformPrompt:
+				capture(true, func(prompt string) {
+					t.promptString = prompt
+					t.prompt, t.promptLen = t.parsePrompt(prompt)
+					req(reqPrompt)
+				})
+			case actTransformQuery, actAsyncTransformQuery:
+				capture(true, func(query string) {
+					t.input = []rune(query)
+					t.cx = len(t.input)
+				})
 			case actToggleSort:
 				t.sort = !t.sort
 				changed = true
@@ -5399,119 +5516,102 @@ func (t *Terminal) Loop() error {
 				}
 				t.multi = multi
 				req(reqList, reqInfo)
-			case actChangeNth, actTransformNth:
-				expr := a.a
-				if a.t == actTransformNth {
-					expr = t.captureLine(a.a)
-				}
-
-				// Split nth expression
-				tokens := strings.Split(expr, "|")
-				if nth, err := splitNth(tokens[0]); err == nil {
-					// Changed
-					newNth = &nth
-				} else {
-					// The default
-					newNth = &t.nth
-				}
-				// Cycle
-				if len(tokens) > 1 {
-					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
-				}
-				if !compareRanges(t.nthCurrent, *newNth) {
-					changed = true
-					t.nthCurrent = *newNth
-					t.forceRerenderList()
-				}
+			case actChangeNth, actTransformNth, actAsyncTransformNth:
+				capture(true, func(expr string) {
+					// Split nth expression
+					tokens := strings.Split(expr, "|")
+					if nth, err := splitNth(tokens[0]); err == nil {
+						// Changed
+						newNth = &nth
+					} else {
+						// The default
+						newNth = &t.nth
+					}
+					// Cycle
+					if len(tokens) > 1 {
+						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
+					}
+					if !compareRanges(t.nthCurrent, *newNth) {
+						changed = true
+						t.nthCurrent = *newNth
+						t.forceRerenderList()
+					}
+				})
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
-			case actChangeHeader, actTransformHeader:
-				header := a.a
-				if a.t == actTransformHeader {
-					header = t.captureLines(a.a)
-				}
-				if t.changeHeader(header) {
-					if t.headerWindow != nil {
-						// Need to resize header window
+			case actChangeHeader, actTransformHeader, actAsyncTransformHeader:
+				capture(false, func(header string) {
+					if t.changeHeader(header) {
+						if t.headerWindow != nil {
+							// Need to resize header window
+							req(reqFullRedraw)
+						} else {
+							req(reqHeader, reqList, reqPrompt, reqInfo)
+						}
+					} else {
+						req(reqHeader)
+					}
+				})
+			case actChangeFooter, actTransformFooter, actAsyncTransformFooter:
+				capture(false, func(footer string) {
+					if t.changeFooter(footer) {
 						req(reqFullRedraw)
 					} else {
-						req(reqHeader, reqList, reqPrompt, reqInfo)
+						req(reqFooter)
 					}
-				} else {
-					req(reqHeader)
-				}
-			case actChangeFooter, actTransformFooter:
-				footer := a.a
-				if a.t == actTransformFooter {
-					footer = t.captureLines(a.a)
-				}
-				if t.changeFooter(footer) {
-					req(reqFullRedraw)
-				} else {
-					req(reqFooter)
-				}
-			case actChangeHeaderLabel, actTransformHeaderLabel:
-				label := a.a
-				if a.t == actTransformHeaderLabel {
-					label = t.captureLine(a.a)
-				}
-				t.headerLabelOpts.label = label
-				t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
-				req(reqRedrawHeaderLabel)
-			case actChangeFooterLabel, actTransformFooterLabel:
-				label := a.a
-				if a.t == actTransformFooterLabel {
-					label = t.captureLine(a.a)
-				}
-				t.footerLabelOpts.label = label
-				t.footerLabel, t.footerLabelLen = t.ansiLabelPrinter(label, &tui.ColFooterLabel, false)
-				req(reqRedrawFooterLabel)
-			case actChangeInputLabel, actTransformInputLabel:
-				label := a.a
-				if a.t == actTransformInputLabel {
-					label = t.captureLine(a.a)
-				}
-				t.inputLabelOpts.label = label
-				if t.inputBorder != nil {
-					t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(label, &tui.ColInputLabel, false)
-					req(reqRedrawInputLabel)
-				}
-			case actChangeListLabel, actTransformListLabel:
-				label := a.a
-				if a.t == actTransformListLabel {
-					label = t.captureLine(a.a)
-				}
-				t.listLabelOpts.label = label
-				if t.wborder != nil {
-					t.listLabel, t.listLabelLen = t.ansiLabelPrinter(label, &tui.ColListLabel, false)
-					req(reqRedrawListLabel)
-				}
-			case actChangeBorderLabel, actTransformBorderLabel:
-				label := a.a
-				if a.t == actTransformBorderLabel {
-					label = t.captureLine(a.a)
-				}
-				t.borderLabelOpts.label = label
-				if t.border != nil {
-					t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
-					req(reqRedrawBorderLabel)
-				}
-			case actChangePreviewLabel, actTransformPreviewLabel:
-				label := a.a
-				if a.t == actTransformPreviewLabel {
-					label = t.captureLine(a.a)
-				}
-				t.previewLabelOpts.label = label
-				if t.pborder != nil {
-					t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
-					req(reqRedrawPreviewLabel)
-				}
-			case actTransform:
-				body := t.captureLines(a.a)
-				if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
-					return doActions(actions)
-				}
+				})
+			case actChangeHeaderLabel, actTransformHeaderLabel, actAsyncTransformHeaderLabel:
+				capture(true, func(label string) {
+					t.headerLabelOpts.label = label
+					t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
+					req(reqRedrawHeaderLabel)
+				})
+			case actChangeFooterLabel, actTransformFooterLabel, actAsyncTransformFooterLabel:
+				capture(true, func(label string) {
+					t.footerLabelOpts.label = label
+					t.footerLabel, t.footerLabelLen = t.ansiLabelPrinter(label, &tui.ColFooterLabel, false)
+					req(reqRedrawFooterLabel)
+				})
+			case actChangeInputLabel, actTransformInputLabel, actAsyncTransformInputLabel:
+				capture(true, func(label string) {
+					t.inputLabelOpts.label = label
+					if t.inputBorder != nil {
+						t.inputLabel, t.inputLabelLen = t.ansiLabelPrinter(label, &tui.ColInputLabel, false)
+						req(reqRedrawInputLabel)
+					}
+				})
+			case actChangeListLabel, actTransformListLabel, actAsyncTransformListLabel:
+				capture(true, func(label string) {
+					t.listLabelOpts.label = label
+					if t.wborder != nil {
+						t.listLabel, t.listLabelLen = t.ansiLabelPrinter(label, &tui.ColListLabel, false)
+						req(reqRedrawListLabel)
+					}
+				})
+			case actChangeBorderLabel, actTransformBorderLabel, actAsyncTransformBorderLabel:
+				capture(true, func(label string) {
+					t.borderLabelOpts.label = label
+					if t.border != nil {
+						t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
+						req(reqRedrawBorderLabel)
+					}
+				})
+			case actChangePreviewLabel, actTransformPreviewLabel, actAsyncTransformPreviewLabel:
+				capture(true, func(label string) {
+					t.previewLabelOpts.label = label
+					if t.pborder != nil {
+						t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(label, &tui.ColPreviewLabel, false)
+						req(reqRedrawPreviewLabel)
+					}
+				})
+			case actTransform, actAsyncTransform:
+				capture(false, func(body string) {
+					if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
+						// NOTE: We're not properly passing the return value here
+						doActions(actions)
+					}
+				})
 			case actChangePrompt:
 				t.promptString = a.a
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
@@ -5933,10 +6033,12 @@ func (t *Terminal) Loop() error {
 				override := []rune(a.a)
 				t.inputOverride = &override
 				changed = true
-			case actTransformSearch:
-				override := []rune(t.captureLine(a.a))
-				t.inputOverride = &override
-				changed = true
+			case actTransformSearch, actAsyncTransformSearch:
+				capture(true, func(query string) {
+					override := []rune(query)
+					t.inputOverride = &override
+					changed = true
+				})
 			case actEnableSearch:
 				t.paused = false
 				changed = true
@@ -6276,30 +6378,26 @@ func (t *Terminal) Loop() error {
 						}
 					}
 				}
-			case actChangeGhost, actTransformGhost:
-				ghost := a.a
-				if a.t == actTransformGhost {
-					ghost = t.captureLine(a.a)
-				}
-				t.ghost = ghost
-				if len(t.input) == 0 {
-					req(reqPrompt)
-				}
-			case actChangePointer, actTransformPointer:
-				pointer := a.a
-				if a.t == actTransformPointer {
-					pointer = t.captureLine(a.a)
-				}
-				length := uniseg.StringWidth(pointer)
-				if length <= 2 {
-					if length != t.pointerLen {
-						t.forceRerenderList()
+			case actChangeGhost, actTransformGhost, actAsyncTransformGhost:
+				capture(true, func(ghost string) {
+					t.ghost = ghost
+					if len(t.input) == 0 {
+						req(reqPrompt)
 					}
-					t.pointer = pointer
-					t.pointerLen = length
-					t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
-					req(reqList)
-				}
+				})
+			case actChangePointer, actTransformPointer, actAsyncTransformPointer:
+				capture(true, func(pointer string) {
+					length := uniseg.StringWidth(pointer)
+					if length <= 2 {
+						if length != t.pointerLen {
+							t.forceRerenderList()
+						}
+						t.pointer = pointer
+						t.pointerLen = length
+						t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+						req(reqList)
+					}
+				})
 			case actChangePreview:
 				if t.previewOpts.command != a.a {
 					t.previewOpts.command = a.a
