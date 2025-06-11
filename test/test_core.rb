@@ -1943,10 +1943,11 @@ class TestCore < TestInteractive
   def test_async_transform
     time = Time.now
     tmux.send_keys %(
-      seq 100 | #{FZF} --style full:line --list-border --border sharp \
+      seq 100 | #{FZF} --style full --border --preview : \
           --bind 'focus:&transform-header(sleep 0.5; echo th.)' \
           --bind 'focus:+&transform-footer(sleep 0.5; echo tf.)' \
           --bind 'focus:+&transform-border-label(sleep 0.5; echo tbl.)' \
+          --bind "focus:+&transform-preview-label(sleep 0.5; echo tpl.)" \
           --bind 'focus:+&transform-input-label(sleep 0.5; echo til.)' \
           --bind 'focus:+&transform-list-label(sleep 0.5; echo tll.)' \
           --bind 'focus:+&transform-header-label(sleep 0.5; echo thl.)' \
@@ -1956,7 +1957,7 @@ class TestCore < TestInteractive
     ).strip, :Enter
     tmux.until do |lines|
       assert lines.any_include?('100/100')
-      %w[th tf tbl til tll thl tfl tp tg].each do
+      %w[th tf tbl tpl til tll thl tfl tp tg].each do
         assert lines.any_include?("#{it}.")
       end
     end
