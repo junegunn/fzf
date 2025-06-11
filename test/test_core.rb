@@ -1939,4 +1939,28 @@ class TestCore < TestInteractive
     tmux.send_keys %(echo -en "foo\n" | fzf --read0 --no-multi-line), :Enter
     tmux.until { |lines| assert_includes lines, '> foo␊' }
   end
+
+  def test_async_transform
+    time = Time.now
+    tmux.send_keys %(
+      seq 100 | #{FZF} --style full:line --list-border --border sharp \
+          --bind 'focus:&transform-header(sleep 0.5; echo th.)' \
+          --bind 'focus:+&transform-footer(sleep 0.5; echo tf.)' \
+          --bind 'focus:+&transform-border-label(sleep 0.5; echo tbl.)' \
+          --bind 'focus:+&transform-input-label(sleep 0.5; echo til.)' \
+          --bind 'focus:+&transform-list-label(sleep 0.5; echo tll.)' \
+          --bind 'focus:+&transform-header-label(sleep 0.5; echo thl.)' \
+          --bind 'focus:+&transform-footer-label(sleep 0.5; echo tfl.)' \
+          --bind 'focus:+&transform-prompt(sleep 0.5; echo tp.)' \
+          --bind 'focus:+&transform-ghost(sleep 0.5; echo tg.)'
+    ).strip, :Enter
+    tmux.until do |lines|
+      assert lines.any_include?('100/100')
+      %w[th tf tbl til tll thl tfl tp tg].each do
+        assert lines.any_include?("#{it}.")
+      end
+    end
+    elapsed = Time.now - time
+    assert elapsed < 2
+  end
 end

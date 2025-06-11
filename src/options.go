@@ -2887,7 +2887,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			if opts.ListBorderShape == tui.BorderLine {
-				return errors.New("list border cannot be 'line'")
+				if hasArg {
+					// '--list-border line' is not allowed
+					return errors.New("list border cannot be 'line'")
+				}
+				// This is when '--style full:line' is previously specified and
+				// '--list-border' is specified without an argument.
+				opts.ListBorderShape = tui.BorderRounded
 			}
 		case "--no-list-border":
 			opts.ListBorderShape = tui.BorderNone
