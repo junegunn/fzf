@@ -1435,7 +1435,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|&?transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|&?transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform|bg-transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|transform|bg-transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^&?[a-z-]+")
 }
@@ -1892,35 +1892,35 @@ func isExecuteAction(str string) actionType {
 		return actTransformQuery
 	case "transform-search":
 		return actTransformSearch
-	case "&transform":
+	case "bg-transform":
 		return actAsyncTransform
-	case "&transform-list-label":
+	case "bg-transform-list-label":
 		return actAsyncTransformListLabel
-	case "&transform-border-label":
+	case "bg-transform-border-label":
 		return actAsyncTransformBorderLabel
-	case "&transform-preview-label":
+	case "bg-transform-preview-label":
 		return actAsyncTransformPreviewLabel
-	case "&transform-input-label":
+	case "bg-transform-input-label":
 		return actAsyncTransformInputLabel
-	case "&transform-header-label":
+	case "bg-transform-header-label":
 		return actAsyncTransformHeaderLabel
-	case "&transform-footer-label":
+	case "bg-transform-footer-label":
 		return actAsyncTransformFooterLabel
-	case "&transform-footer":
+	case "bg-transform-footer":
 		return actAsyncTransformFooter
-	case "&transform-header":
+	case "bg-transform-header":
 		return actAsyncTransformHeader
-	case "&transform-ghost":
+	case "bg-transform-ghost":
 		return actAsyncTransformGhost
-	case "&transform-nth":
+	case "bg-transform-nth":
 		return actAsyncTransformNth
-	case "&transform-pointer":
+	case "bg-transform-pointer":
 		return actAsyncTransformPointer
-	case "&transform-prompt":
+	case "bg-transform-prompt":
 		return actAsyncTransformPrompt
-	case "&transform-query":
+	case "bg-transform-query":
 		return actAsyncTransformQuery
-	case "&transform-search":
+	case "bg-transform-search":
 		return actAsyncTransformSearch
 	case "search":
 		return actSearch

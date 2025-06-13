@@ -1944,16 +1944,16 @@ class TestCore < TestInteractive
     time = Time.now
     tmux.send_keys %(
       seq 100 | #{FZF} --style full --border --preview : \
-          --bind 'focus:&transform-header(sleep 0.5; echo th.)' \
-          --bind 'focus:+&transform-footer(sleep 0.5; echo tf.)' \
-          --bind 'focus:+&transform-border-label(sleep 0.5; echo tbl.)' \
-          --bind "focus:+&transform-preview-label(sleep 0.5; echo tpl.)" \
-          --bind 'focus:+&transform-input-label(sleep 0.5; echo til.)' \
-          --bind 'focus:+&transform-list-label(sleep 0.5; echo tll.)' \
-          --bind 'focus:+&transform-header-label(sleep 0.5; echo thl.)' \
-          --bind 'focus:+&transform-footer-label(sleep 0.5; echo tfl.)' \
-          --bind 'focus:+&transform-prompt(sleep 0.5; echo tp.)' \
-          --bind 'focus:+&transform-ghost(sleep 0.5; echo tg.)'
+          --bind 'focus:bg-transform-header(sleep 0.5; echo th.)' \
+          --bind 'focus:+bg-transform-footer(sleep 0.5; echo tf.)' \
+          --bind 'focus:+bg-transform-border-label(sleep 0.5; echo tbl.)' \
+          --bind "focus:+bg-transform-preview-label(sleep 0.5; echo tpl.)" \
+          --bind 'focus:+bg-transform-input-label(sleep 0.5; echo til.)' \
+          --bind 'focus:+bg-transform-list-label(sleep 0.5; echo tll.)' \
+          --bind 'focus:+bg-transform-header-label(sleep 0.5; echo thl.)' \
+          --bind 'focus:+bg-transform-footer-label(sleep 0.5; echo tfl.)' \
+          --bind 'focus:+bg-transform-prompt(sleep 0.5; echo tp.)' \
+          --bind 'focus:+bg-transform-ghost(sleep 0.5; echo tg.)'
     ).strip, :Enter
     tmux.until do |lines|
       assert lines.any_include?('100/100')
