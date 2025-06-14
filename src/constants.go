@@ -28,7 +28,6 @@ const (
 	previewDelayed    = 500 * time.Millisecond
 	maxPatternLength  = 1000
 	maxMulti          = math.MaxInt32
-	maxBgProcesses    = 200
 
 	// Matcher
 	numPartitionsMultiplier = 8
