@@ -389,6 +389,7 @@ type Terminal struct {
 	killChan           chan bool
 	serverInputChan    chan []*action
 	callbackChan       chan func()
+	semaphore          chan struct{}
 	keyChan            chan tui.Event
 	eventChan          chan tui.Event
 	slab               *util.Slab
@@ -1034,6 +1035,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
 		callbackChan:       make(chan func(), 100),
+		semaphore:          make(chan struct{}, maxBgProcesses),
 		keyChan:            make(chan tui.Event),
 		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
 		tui:                renderer,
@@ -4342,6 +4344,8 @@ func (t *Terminal) captureAsync(template string, firstLineOnly bool, callback fu
 	_, list := t.buildPlusList(template, false)
 	command, tempFiles := t.replacePlaceholder(template, false, string(t.input), list)
 	go func() {
+		t.semaphore <- struct{}{}
+
 		cmd := t.executor.ExecCommand(command, false)
 		cmd.Env = t.environ()
 
@@ -4360,6 +4364,7 @@ func (t *Terminal) captureAsync(template string, firstLineOnly bool, callback fu
 		}
 		removeFiles(tempFiles)
 
+		<-t.semaphore
 		t.callbackChan <- func() { callback(output) }
 	}()
 }
