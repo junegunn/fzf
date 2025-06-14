@@ -113,21 +113,21 @@ func _() {
 	_ = x[actTransformPrompt-102]
 	_ = x[actTransformQuery-103]
 	_ = x[actTransformSearch-104]
-	_ = x[actAsyncTransform-105]
-	_ = x[actAsyncTransformBorderLabel-106]
-	_ = x[actAsyncTransformGhost-107]
-	_ = x[actAsyncTransformHeader-108]
-	_ = x[actAsyncTransformFooter-109]
-	_ = x[actAsyncTransformHeaderLabel-110]
-	_ = x[actAsyncTransformFooterLabel-111]
-	_ = x[actAsyncTransformInputLabel-112]
-	_ = x[actAsyncTransformListLabel-113]
-	_ = x[actAsyncTransformNth-114]
-	_ = x[actAsyncTransformPointer-115]
-	_ = x[actAsyncTransformPreviewLabel-116]
-	_ = x[actAsyncTransformPrompt-117]
-	_ = x[actAsyncTransformQuery-118]
-	_ = x[actAsyncTransformSearch-119]
+	_ = x[actBgTransform-105]
+	_ = x[actBgTransformBorderLabel-106]
+	_ = x[actBgTransformGhost-107]
+	_ = x[actBgTransformHeader-108]
+	_ = x[actBgTransformFooter-109]
+	_ = x[actBgTransformHeaderLabel-110]
+	_ = x[actBgTransformFooterLabel-111]
+	_ = x[actBgTransformInputLabel-112]
+	_ = x[actBgTransformListLabel-113]
+	_ = x[actBgTransformNth-114]
+	_ = x[actBgTransformPointer-115]
+	_ = x[actBgTransformPreviewLabel-116]
+	_ = x[actBgTransformPrompt-117]
+	_ = x[actBgTransformQuery-118]
+	_ = x[actBgTransformSearch-119]
 	_ = x[actSearch-120]
 	_ = x[actPreview-121]
 	_ = x[actPreviewTop-122]
@@ -168,9 +168,9 @@ func _() {
 	_ = x[actAsync-157]
 }
 
-const _actionType_name = "actIgnoreactStartactClickactInvalidactBracketedPasteBeginactBracketedPasteEndactCharactMouseactBeginningOfLineactAbortactAcceptactAcceptNonEmptyactAcceptOrPrintQueryactBackwardCharactBackwardDeleteCharactBackwardDeleteCharEofactBackwardWordactCancelactChangeBorderLabelactChangeGhostactChangeHeaderactChangeFooteractChangeHeaderLabelactChangeFooterLabelactChangeInputLabelactChangeListLabelactChangeMultiactChangeNthactChangePointeractChangePreviewactChangePreviewLabelactChangePreviewWindowactChangePromptactChangeQueryactClearScreenactClearQueryactClearSelectionactCloseactDeleteCharactDeleteCharEofactEndOfLineactFatalactForwardCharactForwardWordactKillLineactKillWordactUnixLineDiscardactUnixWordRuboutactYankactBackwardKillWordactSelectAllactDeselectAllactToggleactToggleSearchactToggleAllactToggleDownactToggleUpactToggleInactToggleOutactToggleTrackactToggleTrackCurrentactToggleHeaderactToggleWrapactToggleMultiLineactToggleHscrollactTrackCurrentactToggleInputactHideInputactShowInputactUntrackCurrentactDownactUpactPageUpactPageDownactPositionactHalfPageUpactHalfPageDownactOffsetUpactOffsetDownactOffsetMiddleactJumpactJumpAcceptactPrintQueryactRefreshPreviewactReplaceQueryactToggleSortactShowPreviewactHidePreviewactTogglePreviewactTogglePreviewWrapactTransformactTransformBorderLabelactTransformGhostactTransformHeaderactTransformFooteractTransformHeaderLabelactTransformFooterLabelactTransformInputLabelactTransformListLabelactTransformNthactTransformPointeractTransformPreviewLabelactTransformPromptactTransformQueryactTransformSearchactAsyncTransformactAsyncTransformBorderLabelactAsyncTransformGhostactAsyncTransformHeaderactAsyncTransformFooteractAsyncTransformHeaderLabelactAsyncTransformFooterLabelactAsyncTransformInputLabelactAsyncTransformListLabelactAsyncTransformNthactAsyncTransformPointeractAsyncTransformPreviewLabelactAsyncTransformPromptactAsyncTransformQueryactAsyncTransformSearchactSearchactPreviewactPreviewTopactPreviewBottomactPreviewUpactPreviewDownactPreviewPageUpactPreviewPageDownactPreviewHalfPageUpactPreviewHalfPageDownactPrevHistoryactPrevSelectedactPrintactPutactNextHistoryactNextSelectedactExecuteactExecuteSilentactExecuteMultiactSigStopactFirstactLastactReloadactReloadSyncactDisableSearchactEnableSearchactSelectactDeselectactUnbindactRebindactToggleBindactBecomeactShowHeaderactHideHeaderactBellactExcludeactExcludeMultiactAsync"
+const _actionType_name = "actIgnoreactStartactClickactInvalidactBracketedPasteBeginactBracketedPasteEndactCharactMouseactBeginningOfLineactAbortactAcceptactAcceptNonEmptyactAcceptOrPrintQueryactBackwardCharactBackwardDeleteCharactBackwardDeleteCharEofactBackwardWordactCancelactChangeBorderLabelactChangeGhostactChangeHeaderactChangeFooteractChangeHeaderLabelactChangeFooterLabelactChangeInputLabelactChangeListLabelactChangeMultiactChangeNthactChangePointeractChangePreviewactChangePreviewLabelactChangePreviewWindowactChangePromptactChangeQueryactClearScreenactClearQueryactClearSelectionactCloseactDeleteCharactDeleteCharEofactEndOfLineactFatalactForwardCharactForwardWordactKillLineactKillWordactUnixLineDiscardactUnixWordRuboutactYankactBackwardKillWordactSelectAllactDeselectAllactToggleactToggleSearchactToggleAllactToggleDownactToggleUpactToggleInactToggleOutactToggleTrackactToggleTrackCurrentactToggleHeaderactToggleWrapactToggleMultiLineactToggleHscrollactTrackCurrentactToggleInputactHideInputactShowInputactUntrackCurrentactDownactUpactPageUpactPageDownactPositionactHalfPageUpactHalfPageDownactOffsetUpactOffsetDownactOffsetMiddleactJumpactJumpAcceptactPrintQueryactRefreshPreviewactReplaceQueryactToggleSortactShowPreviewactHidePreviewactTogglePreviewactTogglePreviewWrapactTransformactTransformBorderLabelactTransformGhostactTransformHeaderactTransformFooteractTransformHeaderLabelactTransformFooterLabelactTransformInputLabelactTransformListLabelactTransformNthactTransformPointeractTransformPreviewLabelactTransformPromptactTransformQueryactTransformSearchactBgTransformactBgTransformBorderLabelactBgTransformGhostactBgTransformHeaderactBgTransformFooteractBgTransformHeaderLabelactBgTransformFooterLabelactBgTransformInputLabelactBgTransformListLabelactBgTransformNthactBgTransformPointeractBgTransformPreviewLabelactBgTransformPromptactBgTransformQueryactBgTransformSearchactSearchactPreviewactPreviewTopactPreviewBottomactPreviewUpactPreviewDownactPreviewPageUpactPreviewPageDownactPreviewHalfPageUpactPreviewHalfPageDownactPrevHistoryactPrevSelectedactPrintactPutactNextHistoryactNextSelectedactExecuteactExecuteSilentactExecuteMultiactSigStopactFirstactLastactReloadactReloadSyncactDisableSearchactEnableSearchactSelectactDeselectactUnbindactRebindactToggleBindactBecomeactShowHeaderactHideHeaderactBellactExcludeactExcludeMultiactAsync"
 
-var _actionType_index = [...]uint16{0, 9, 17, 25, 35, 57, 77, 84, 92, 110, 118, 127, 144, 165, 180, 201, 225, 240, 249, 269, 283, 298, 313, 333, 353, 372, 390, 404, 416, 432, 448, 469, 491, 506, 520, 534, 547, 564, 572, 585, 601, 613, 621, 635, 649, 660, 671, 689, 706, 713, 732, 744, 758, 767, 782, 794, 807, 818, 829, 841, 855, 876, 891, 904, 922, 938, 953, 967, 979, 991, 1008, 1015, 1020, 1029, 1040, 1051, 1064, 1079, 1090, 1103, 1118, 1125, 1138, 1151, 1168, 1183, 1196, 1210, 1224, 1240, 1260, 1272, 1295, 1312, 1330, 1348, 1371, 1394, 1416, 1437, 1452, 1471, 1495, 1513, 1530, 1548, 1565, 1593, 1615, 1638, 1661, 1689, 1717, 1744, 1770, 1790, 1814, 1843, 1866, 1888, 1911, 1920, 1930, 1943, 1959, 1971, 1985, 2001, 2019, 2039, 2061, 2075, 2090, 2098, 2104, 2118, 2133, 2143, 2159, 2174, 2184, 2192, 2199, 2208, 2221, 2237, 2252, 2261, 2272, 2281, 2290, 2303, 2312, 2325, 2338, 2345, 2355, 2370, 2378}
+var _actionType_index = [...]uint16{0, 9, 17, 25, 35, 57, 77, 84, 92, 110, 118, 127, 144, 165, 180, 201, 225, 240, 249, 269, 283, 298, 313, 333, 353, 372, 390, 404, 416, 432, 448, 469, 491, 506, 520, 534, 547, 564, 572, 585, 601, 613, 621, 635, 649, 660, 671, 689, 706, 713, 732, 744, 758, 767, 782, 794, 807, 818, 829, 841, 855, 876, 891, 904, 922, 938, 953, 967, 979, 991, 1008, 1015, 1020, 1029, 1040, 1051, 1064, 1079, 1090, 1103, 1118, 1125, 1138, 1151, 1168, 1183, 1196, 1210, 1224, 1240, 1260, 1272, 1295, 1312, 1330, 1348, 1371, 1394, 1416, 1437, 1452, 1471, 1495, 1513, 1530, 1548, 1562, 1587, 1606, 1626, 1646, 1671, 1696, 1720, 1743, 1760, 1781, 1807, 1827, 1846, 1866, 1875, 1885, 1898, 1914, 1926, 1940, 1956, 1974, 1994, 2016, 2030, 2045, 2053, 2059, 2073, 2088, 2098, 2114, 2129, 2139, 2147, 2154, 2163, 2176, 2192, 2207, 2216, 2227, 2236, 2245, 2258, 2267, 2280, 2293, 2300, 2310, 2325, 2333}
 
 func (i actionType) String() string {
 	if i < 0 || i >= actionType(len(_actionType_index)-1) {

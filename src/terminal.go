@@ -581,21 +581,21 @@ const (
 	actTransformQuery
 	actTransformSearch
 
-	actAsyncTransform
-	actAsyncTransformBorderLabel
-	actAsyncTransformGhost
-	actAsyncTransformHeader
-	actAsyncTransformFooter
-	actAsyncTransformHeaderLabel
-	actAsyncTransformFooterLabel
-	actAsyncTransformInputLabel
-	actAsyncTransformListLabel
-	actAsyncTransformNth
-	actAsyncTransformPointer
-	actAsyncTransformPreviewLabel
-	actAsyncTransformPrompt
-	actAsyncTransformQuery
-	actAsyncTransformSearch
+	actBgTransform
+	actBgTransformBorderLabel
+	actBgTransformGhost
+	actBgTransformHeader
+	actBgTransformFooter
+	actBgTransformHeaderLabel
+	actBgTransformFooterLabel
+	actBgTransformInputLabel
+	actBgTransformListLabel
+	actBgTransformNth
+	actBgTransformPointer
+	actBgTransformPreviewLabel
+	actBgTransformPrompt
+	actBgTransformQuery
+	actBgTransformSearch
 
 	actSearch
 	actPreview
@@ -658,21 +658,21 @@ func processExecution(action actionType) bool {
 		actTransformPrompt,
 		actTransformQuery,
 		actTransformSearch,
-		actAsyncTransform,
-		actAsyncTransformBorderLabel,
-		actAsyncTransformGhost,
-		actAsyncTransformHeader,
-		actAsyncTransformFooter,
-		actAsyncTransformHeaderLabel,
-		actAsyncTransformFooterLabel,
-		actAsyncTransformInputLabel,
-		actAsyncTransformListLabel,
-		actAsyncTransformNth,
-		actAsyncTransformPointer,
-		actAsyncTransformPreviewLabel,
-		actAsyncTransformPrompt,
-		actAsyncTransformQuery,
-		actAsyncTransformSearch,
+		actBgTransform,
+		actBgTransformBorderLabel,
+		actBgTransformGhost,
+		actBgTransformHeader,
+		actBgTransformFooter,
+		actBgTransformHeaderLabel,
+		actBgTransformFooterLabel,
+		actBgTransformInputLabel,
+		actBgTransformListLabel,
+		actBgTransformNth,
+		actBgTransformPointer,
+		actBgTransformPreviewLabel,
+		actBgTransformPrompt,
+		actBgTransformQuery,
+		actBgTransformSearch,
 		actPreview,
 		actChangePreview,
 		actRefreshPreview,
@@ -819,7 +819,7 @@ func mayTriggerPreview(opts *Options) bool {
 	for _, actions := range opts.Keymap {
 		for _, action := range actions {
 			switch action.t {
-			case actPreview, actChangePreview, actTransform, actAsyncTransform:
+			case actPreview, actChangePreview, actTransform, actBgTransform:
 				return true
 			}
 		}
@@ -5334,7 +5334,7 @@ func (t *Terminal) Loop() error {
 			//     e.g. fzf --no-input --bind 'space:show-input+change-query(foo)+hide-input'
 			currentInput := t.input
 			capture := func(firstLineOnly bool, callback func(string)) {
-				if a.t >= actAsyncTransform {
+				if a.t >= actBgTransform {
 					// &transform-*
 					t.captureAsync(a.a, firstLineOnly, callback)
 				} else if a.t >= actTransform {
@@ -5448,13 +5448,13 @@ func (t *Terminal) Loop() error {
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
 				}
-			case actTransformPrompt, actAsyncTransformPrompt:
+			case actTransformPrompt, actBgTransformPrompt:
 				capture(true, func(prompt string) {
 					t.promptString = prompt
 					t.prompt, t.promptLen = t.parsePrompt(prompt)
 					req(reqPrompt)
 				})
-			case actTransformQuery, actAsyncTransformQuery:
+			case actTransformQuery, actBgTransformQuery:
 				capture(true, func(query string) {
 					t.input = []rune(query)
 					t.cx = len(t.input)
@@ -5516,7 +5516,7 @@ func (t *Terminal) Loop() error {
 				}
 				t.multi = multi
 				req(reqList, reqInfo)
-			case actChangeNth, actTransformNth, actAsyncTransformNth:
+			case actChangeNth, actTransformNth, actBgTransformNth:
 				capture(true, func(expr string) {
 					// Split nth expression
 					tokens := strings.Split(expr, "|")
@@ -5540,7 +5540,7 @@ func (t *Terminal) Loop() error {
 			case actChangeQuery:
 				t.input = []rune(a.a)
 				t.cx = len(t.input)
-			case actChangeHeader, actTransformHeader, actAsyncTransformHeader:
+			case actChangeHeader, actTransformHeader, actBgTransformHeader:
 				capture(false, func(header string) {
 					if t.changeHeader(header) {
 						if t.headerWindow != nil {
@@ -5553,7 +5553,7 @@ func (t *Terminal) Loop() error {
 						req(reqHeader)
 					}
 				})
-			case actChangeFooter, actTransformFooter, actAsyncTransformFooter:
+			case actChangeFooter, actTransformFooter, actBgTransformFooter:
 				capture(false, func(footer string) {
 					if t.changeFooter(footer) {
 						req(reqFullRedraw)
@@ -5561,19 +5561,19 @@ func (t *Terminal) Loop() error {
 						req(reqFooter)
 					}
 				})
-			case actChangeHeaderLabel, actTransformHeaderLabel, actAsyncTransformHeaderLabel:
+			case actChangeHeaderLabel, actTransformHeaderLabel, actBgTransformHeaderLabel:
 				capture(true, func(label string) {
 					t.headerLabelOpts.label = label
 					t.headerLabel, t.headerLabelLen = t.ansiLabelPrinter(label, &tui.ColHeaderLabel, false)
 					req(reqRedrawHeaderLabel)
 				})
-			case actChangeFooterLabel, actTransformFooterLabel, actAsyncTransformFooterLabel:
+			case actChangeFooterLabel, actTransformFooterLabel, actBgTransformFooterLabel:
 				capture(true, func(label string) {
 					t.footerLabelOpts.label = label
 					t.footerLabel, t.footerLabelLen = t.ansiLabelPrinter(label, &tui.ColFooterLabel, false)
 					req(reqRedrawFooterLabel)
 				})
-			case actChangeInputLabel, actTransformInputLabel, actAsyncTransformInputLabel:
+			case actChangeInputLabel, actTransformInputLabel, actBgTransformInputLabel:
 				capture(true, func(label string) {
 					t.inputLabelOpts.label = label
 					if t.inputBorder != nil {
@@ -5581,7 +5581,7 @@ func (t *Terminal) Loop() error {
 						req(reqRedrawInputLabel)
 					}
 				})
-			case actChangeListLabel, actTransformListLabel, actAsyncTransformListLabel:
+			case actChangeListLabel, actTransformListLabel, actBgTransformListLabel:
 				capture(true, func(label string) {
 					t.listLabelOpts.label = label
 					if t.wborder != nil {
@@ -5589,7 +5589,7 @@ func (t *Terminal) Loop() error {
 						req(reqRedrawListLabel)
 					}
 				})
-			case actChangeBorderLabel, actTransformBorderLabel, actAsyncTransformBorderLabel:
+			case actChangeBorderLabel, actTransformBorderLabel, actBgTransformBorderLabel:
 				capture(true, func(label string) {
 					t.borderLabelOpts.label = label
 					if t.border != nil {
@@ -5597,7 +5597,7 @@ func (t *Terminal) Loop() error {
 						req(reqRedrawBorderLabel)
 					}
 				})
-			case actChangePreviewLabel, actTransformPreviewLabel, actAsyncTransformPreviewLabel:
+			case actChangePreviewLabel, actTransformPreviewLabel, actBgTransformPreviewLabel:
 				capture(true, func(label string) {
 					t.previewLabelOpts.label = label
 					if t.pborder != nil {
@@ -5605,7 +5605,7 @@ func (t *Terminal) Loop() error {
 						req(reqRedrawPreviewLabel)
 					}
 				})
-			case actTransform, actAsyncTransform:
+			case actTransform, actBgTransform:
 				capture(false, func(body string) {
 					if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
 						// NOTE: We're not properly passing the return value here
@@ -6033,7 +6033,7 @@ func (t *Terminal) Loop() error {
 				override := []rune(a.a)
 				t.inputOverride = &override
 				changed = true
-			case actTransformSearch, actAsyncTransformSearch:
+			case actTransformSearch, actBgTransformSearch:
 				capture(true, func(query string) {
 					override := []rune(query)
 					t.inputOverride = &override
@@ -6378,14 +6378,14 @@ func (t *Terminal) Loop() error {
 						}
 					}
 				}
-			case actChangeGhost, actTransformGhost, actAsyncTransformGhost:
+			case actChangeGhost, actTransformGhost, actBgTransformGhost:
 				capture(true, func(ghost string) {
 					t.ghost = ghost
 					if len(t.input) == 0 {
 						req(reqPrompt)
 					}
 				})
-			case actChangePointer, actTransformPointer, actAsyncTransformPointer:
+			case actChangePointer, actTransformPointer, actBgTransformPointer:
 				capture(true, func(pointer string) {
 					length := uniseg.StringWidth(pointer)
 					if length <= 2 {

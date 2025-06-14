@@ -1893,35 +1893,35 @@ func isExecuteAction(str string) actionType {
 	case "transform-search":
 		return actTransformSearch
 	case "bg-transform":
-		return actAsyncTransform
+		return actBgTransform
 	case "bg-transform-list-label":
-		return actAsyncTransformListLabel
+		return actBgTransformListLabel
 	case "bg-transform-border-label":
-		return actAsyncTransformBorderLabel
+		return actBgTransformBorderLabel
 	case "bg-transform-preview-label":
-		return actAsyncTransformPreviewLabel
+		return actBgTransformPreviewLabel
 	case "bg-transform-input-label":
-		return actAsyncTransformInputLabel
+		return actBgTransformInputLabel
 	case "bg-transform-header-label":
-		return actAsyncTransformHeaderLabel
+		return actBgTransformHeaderLabel
 	case "bg-transform-footer-label":
-		return actAsyncTransformFooterLabel
+		return actBgTransformFooterLabel
 	case "bg-transform-footer":
-		return actAsyncTransformFooter
+		return actBgTransformFooter
 	case "bg-transform-header":
-		return actAsyncTransformHeader
+		return actBgTransformHeader
 	case "bg-transform-ghost":
-		return actAsyncTransformGhost
+		return actBgTransformGhost
 	case "bg-transform-nth":
-		return actAsyncTransformNth
+		return actBgTransformNth
 	case "bg-transform-pointer":
-		return actAsyncTransformPointer
+		return actBgTransformPointer
 	case "bg-transform-prompt":
-		return actAsyncTransformPrompt
+		return actBgTransformPrompt
 	case "bg-transform-query":
-		return actAsyncTransformQuery
+		return actBgTransformQuery
 	case "bg-transform-search":
-		return actAsyncTransformSearch
+		return actBgTransformSearch
 	case "search":
 		return actSearch
 	}
