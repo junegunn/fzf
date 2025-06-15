@@ -3,7 +3,7 @@ CHANGELOG
 
 0.63.0
 ------
-- Added background transform actions that runs asynchronously in the background
+- Added background variants of transform actions with `bg-` prefix that run asynchronously in the background
   ```sh
   GETTER='curl -s http://metaphorpsum.com/sentences/1'
   fzf --style full --border --preview : \
@@ -15,7 +15,7 @@ CHANGELOG
       --bind "focus:+bg-transform-list-label:$GETTER" \
       --bind "focus:+bg-transform-header-label:$GETTER" \
       --bind "focus:+bg-transform-footer-label:$GETTER" \
-      --bind "focus:+bg-transform-ghost:$GETTER"
+      --bind "focus:+bg-transform-ghost:$GETTER" \
       --bind "focus:+bg-transform-prompt:$GETTER"
 ```
 
