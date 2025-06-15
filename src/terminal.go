@@ -1036,7 +1036,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
-		callbackChan:       make(chan func(), 100),
+		callbackChan:       make(chan func(), maxBgProcesses),
 		bgQueue:            make(map[action][]func()),
 		bgSemaphore:        make(chan struct{}, maxBgProcesses),
 		bgSemaphores:       make(map[action]chan struct{}),
