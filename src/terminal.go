@@ -2631,7 +2631,9 @@ func (t *Terminal) printPrompt() {
 
 	before, after := t.updatePromptOffset()
 	if len(before) == 0 && len(after) == 0 && len(t.ghost) > 0 {
-		w.CPrint(tui.ColGhost, t.ghost)
+		maxWidth := util.Max(1, w.Width()-t.promptLen-1)
+		runes, _ := t.trimRight([]rune(t.ghost), maxWidth)
+		w.CPrint(tui.ColGhost, string(runes))
 		return
 	}
 
@@ -5384,7 +5386,7 @@ func (t *Terminal) Loop() error {
 			currentInput := t.input
 			capture := func(firstLineOnly bool, callback func(string)) {
 				if a.t >= actBgTransform {
-					// &transform-*
+					// bg-transform-*
 					t.captureAsync(*a, firstLineOnly, callback)
 				} else if a.t >= actTransform {
 					// transform-*
