@@ -29,6 +29,10 @@ const (
 	maxPatternLength  = 1000
 	maxMulti          = math.MaxInt32
 
+	// Background processes
+	maxBgProcesses          = 30
+	maxBgProcessesPerAction = 3
+
 	// Matcher
 	numPartitionsMultiplier = 8
 	maxPartitions           = 32

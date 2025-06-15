@@ -389,6 +389,9 @@ type Terminal struct {
 	killChan           chan bool
 	serverInputChan    chan []*action
 	callbackChan       chan func()
+	bgQueue            map[action][]func()
+	bgSemaphore        chan struct{}
+	bgSemaphores       map[action]chan struct{}
 	keyChan            chan tui.Event
 	eventChan          chan tui.Event
 	slab               *util.Slab
@@ -1034,6 +1037,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
 		callbackChan:       make(chan func(), 100),
+		bgQueue:            make(map[action][]func()),
+		bgSemaphore:        make(chan struct{}, maxBgProcesses),
+		bgSemaphores:       make(map[action]chan struct{}),
 		keyChan:            make(chan tui.Event),
 		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
 		tui:                renderer,
@@ -4338,10 +4344,10 @@ func (t *Terminal) captureLines(template string) string {
 	return t.executeCommand(template, false, true, true, false, "")
 }
 
-func (t *Terminal) captureAsync(template string, firstLineOnly bool, callback func(string)) {
-	_, list := t.buildPlusList(template, false)
-	command, tempFiles := t.replacePlaceholder(template, false, string(t.input), list)
-	go func() {
+func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(string)) {
+	_, list := t.buildPlusList(a.a, false)
+	command, tempFiles := t.replacePlaceholder(a.a, false, string(t.input), list)
+	item := func() {
 		cmd := t.executor.ExecCommand(command, false)
 		cmd.Env = t.environ()
 
@@ -4361,7 +4367,50 @@ func (t *Terminal) captureAsync(template string, firstLineOnly bool, callback fu
 		removeFiles(tempFiles)
 
 		t.callbackChan <- func() { callback(output) }
-	}()
+	}
+	queue, prs := t.bgQueue[a]
+	if !prs {
+		queue = []func(){}
+	}
+	queue = append(queue, item)
+	t.bgQueue[a] = queue
+}
+
+func (t *Terminal) dispatchAsync() {
+Loop:
+	for a, queue := range t.bgQueue {
+		if len(queue) == 0 {
+			continue
+		}
+		t.bgQueue[a] = nil // Reset the queue
+
+		semaphore, prs := t.bgSemaphores[a]
+		if !prs {
+			semaphore = make(chan struct{}, maxBgProcessesPerAction)
+			t.bgSemaphores[a] = semaphore
+		}
+		for _, item := range queue {
+			select {
+			// Acquire local semaphore
+			case semaphore <- struct{}{}:
+			default:
+				// Failed to acquire local semaphore, putting the last one back to the queue
+				t.bgQueue[a] = queue[len(queue)-1:]
+				continue Loop
+			}
+			todo := item
+			go func() {
+				// Acquire global semaphore
+				t.bgSemaphore <- struct{}{}
+
+				todo()
+				// Release local semaphore
+				<-semaphore
+				// Release global semaphore
+				<-t.bgSemaphore
+			}()
+		}
+	}
 }
 
 func (t *Terminal) executeCommand(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool, info string) string {
@@ -5336,7 +5385,7 @@ func (t *Terminal) Loop() error {
 			capture := func(firstLineOnly bool, callback func(string)) {
 				if a.t >= actBgTransform {
 					// &transform-*
-					t.captureAsync(a.a, firstLineOnly, callback)
+					t.captureAsync(*a, firstLineOnly, callback)
 				} else if a.t >= actTransform {
 					// transform-*
 					if firstLineOnly {
@@ -6549,6 +6598,10 @@ func (t *Terminal) Loop() error {
 		if reload {
 			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.merger.Revision()}
 		}
+
+		// Dispatch queued background requests
+		t.dispatchAsync()
+
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
 		if reload {
