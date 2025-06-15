@@ -4379,10 +4379,10 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 func (t *Terminal) dispatchAsync() {
 Loop:
 	for a, queue := range t.bgQueue {
+		delete(t.bgQueue, a)
 		if len(queue) == 0 {
 			continue
 		}
-		t.bgQueue[a] = nil // Reset the queue
 
 		semaphore, prs := t.bgSemaphores[a]
 		if !prs {
@@ -4394,7 +4394,7 @@ Loop:
 			// Acquire local semaphore
 			case semaphore <- struct{}{}:
 			default:
-				// Failed to acquire local semaphore, putting the last one back to the queue
+				// Failed to acquire local semaphore, putting only the last one back to the queue
 				t.bgQueue[a] = queue[len(queue)-1:]
 				continue Loop
 			}
