@@ -1435,7 +1435,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1892,6 +1892,36 @@ func isExecuteAction(str string) actionType {
 		return actTransformQuery
 	case "transform-search":
 		return actTransformSearch
+	case "bg-transform":
+		return actBgTransform
+	case "bg-transform-list-label":
+		return actBgTransformListLabel
+	case "bg-transform-border-label":
+		return actBgTransformBorderLabel
+	case "bg-transform-preview-label":
+		return actBgTransformPreviewLabel
+	case "bg-transform-input-label":
+		return actBgTransformInputLabel
+	case "bg-transform-header-label":
+		return actBgTransformHeaderLabel
+	case "bg-transform-footer-label":
+		return actBgTransformFooterLabel
+	case "bg-transform-footer":
+		return actBgTransformFooter
+	case "bg-transform-header":
+		return actBgTransformHeader
+	case "bg-transform-ghost":
+		return actBgTransformGhost
+	case "bg-transform-nth":
+		return actBgTransformNth
+	case "bg-transform-pointer":
+		return actBgTransformPointer
+	case "bg-transform-prompt":
+		return actBgTransformPrompt
+	case "bg-transform-query":
+		return actBgTransformQuery
+	case "bg-transform-search":
+		return actBgTransformSearch
 	case "search":
 		return actSearch
 	}
@@ -2857,7 +2887,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			if opts.ListBorderShape == tui.BorderLine {
-				return errors.New("list border cannot be 'line'")
+				if hasArg {
+					// '--list-border line' is not allowed
+					return errors.New("list border cannot be 'line'")
+				}
+				// This is when '--style full:line' is previously specified and
+				// '--list-border' is specified without an argument.
+				opts.ListBorderShape = tui.BorderRounded
 			}
 		case "--no-list-border":
 			opts.ListBorderShape = tui.BorderNone

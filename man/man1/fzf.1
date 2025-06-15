@@ -1805,6 +1805,9 @@ A key or an event can be bound to one or more of the following actions.
     \fBup\fR                           \fIctrl\-k  ctrl\-p  up\fR
     \fByank\fR                         \fIctrl\-y\fR
 
+Each \fBtransform*\fR action has a corresponding \fBbg\-transform*\fR
+variant that runs the command in the background.
+
 .SS ACTION COMPOSITION
 
 Multiple actions can be chained using \fB+\fR separator.
@@ -1928,6 +1931,14 @@ e.g.
                     echo accept ||
                     echo "change\-header:Invalid selection"'
     \fR
+
+.SS TRANSFORM IN THE BACKGROUND
+
+Transform actions are synchronous, meaning fzf becomes unresponsive while the
+command runs. To avoid this, each \fBtransform*\fR action has a corresponding
+\fBbg\-transform*\fR variant that runs in the background. Unless you need to
+chain multiple transform actions where later ones depend on earlier results,
+prefer using the \fBbg\fR variant.
 
 .SS PREVIEW BINDING
 
