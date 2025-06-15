@@ -17,7 +17,7 @@ CHANGELOG
       --bind "focus:+bg-transform-footer-label:$GETTER" \
       --bind "focus:+bg-transform-ghost:$GETTER" \
       --bind "focus:+bg-transform-prompt:$GETTER"
-```
+  ```
 
 0.62.0
 ------
