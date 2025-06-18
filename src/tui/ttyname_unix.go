@@ -48,7 +48,7 @@ func TtyIn(ttyDefault string) (*os.File, error) {
 	return openTtyIn(ttyDefault)
 }
 
-// TtyIn returns terminal device to write to
+// TtyOut returns terminal device to write to
 func TtyOut(ttyDefault string) (*os.File, error) {
 	return openTtyOut(ttyDefault)
 }
