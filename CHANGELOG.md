@@ -3,6 +3,11 @@ CHANGELOG
 
 0.63.0
 ------
+- Added `{*}` placeholder flag that evaluates to all matched items.
+  ```bash
+  seq 10000 | fzf --preview "awk '{sum += \$1} END {print sum}' {*f}"
+  ```
+  - Use this with caution, as it can make fzf sluggish for large lists.
 - Added background variants of transform actions with `bg-` prefix that run asynchronously in the background
   ```sh
   GETTER='curl -s http://metaphorpsum.com/sentences/1'
