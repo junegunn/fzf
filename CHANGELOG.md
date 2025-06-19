@@ -3,6 +3,31 @@ CHANGELOG
 
 0.63.0
 ------
+- Added footer. The default border style for footer is `line`, which draws a single separator line.
+  ```sh
+  fzf --reverse --footer "fzf: friend zone forever"
+  ```
+  - Options
+      - `--footer-border[=STYLE]`
+      - `--footer-label=LABEL`
+      - `--footer-label-pos=COL[:bottom]`
+  - Colors
+      - `footer`
+      - `footer-bg`
+      - `footer-border`
+      - `footer-label`
+  - Actions
+      - `change-footer`
+      - `transform-footer`
+      - `bg-transform-footer`
+      - `change-footer-label`
+      - `transform-footer-label`
+      - `bg-transform-footer-label`
+- `line` border style is now allowed for all types of border except for `--list-border`.
+  ```sh
+  fzf --height 50% --style full:line --preview 'cat {}' \
+      --bind 'focus:bg-transform-header(file {})+bg-transform-footer(wc {})'
+  ```
 - Added `{*}` placeholder flag that evaluates to all matched items.
   ```bash
   seq 10000 | fzf --preview "awk '{sum += \$1} END {print sum}' {*f}"
