@@ -14,6 +14,7 @@ builds:
       - windows
       - freebsd
       - openbsd
+      - android
     goarch:
       - amd64
       - arm
@@ -22,9 +23,9 @@ builds:
       - ppc64le
       - s390x
     goarm:
-      - 5
-      - 6
-      - 7
+      - "5"
+      - "6"
+      - "7"
     flags:
       - -trimpath
     ldflags:
@@ -38,6 +39,10 @@ builds:
         goarch: arm64
       - goos: openbsd
         goarch: arm64
+      - goos: android
+        goarch: amd64
+      - goos: android
+        goarch: arm
 
 # .goreleaser.yaml
 notarize:
