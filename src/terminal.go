@@ -66,7 +66,7 @@ const maxFocusEvents = 10000
 const blockDuration = 1 * time.Second
 
 func init() {
-	placeholder = regexp.MustCompile(`\\?(?:{[+*sfr]*[0-9,-.]*}|{q(?::s?[0-9,-.]+)?}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
+	placeholder = regexp.MustCompile(`\\?(?:{[+sfr]*[0-9,-.]*}|{q(?::s?[0-9,-.]+)?}|{fzf:(?:query|action|prompt)}|{\+?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
 	offsetComponentRegex = regexp.MustCompile(`([+-][0-9]+)|(-?/[1-9][0-9]*)`)
 	offsetTrimCharsRegex = regexp.MustCompile(`[^0-9/+-]`)
@@ -692,7 +692,6 @@ func processExecution(action actionType) bool {
 
 type placeholderFlags struct {
 	plus          bool
-	asterisk      bool
 	preserveSpace bool
 	number        bool
 	forceUpdate   bool
@@ -714,7 +713,7 @@ type searchRequest struct {
 type previewRequest struct {
 	template     string
 	scrollOffset int
-	list         [3][]*Item
+	list         []*Item
 	env          []string
 	query        string
 }
@@ -4100,8 +4099,6 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	trimmed := ""
 	for _, char := range match[1:] {
 		switch char {
-		case '*':
-			flags.asterisk = true
 		case '+':
 			flags.plus = true
 		case 's':
@@ -4125,16 +4122,19 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 	return false, matchWithoutFlags, flags
 }
 
-func hasPreviewFlags(template string) (slot bool, plus bool, asterisk bool, forceUpdate bool) {
+func hasPreviewFlags(template string) (slot bool, plus bool, forceUpdate bool) {
 	for _, match := range placeholder.FindAllString(template, -1) {
 		escaped, _, flags := parsePlaceholder(match)
 		if escaped {
 			continue
 		}
+		if flags.plus {
+			plus = true
+		}
+		if flags.forceUpdate {
+			forceUpdate = true
+		}
 		slot = true
-		plus = plus || flags.plus
-		asterisk = asterisk || flags.asterisk
-		forceUpdate = forceUpdate || flags.forceUpdate
 	}
 	return
 }
@@ -4146,17 +4146,17 @@ type replacePlaceholderParams struct {
 	printsep   string
 	forcePlus  bool
 	query      string
-	allItems   [3][]*Item // current, select, and all matched items
+	allItems   []*Item
 	lastAction actionType
 	prompt     string
 	executor   *util.Executor
 }
 
 func (t *Terminal) replacePlaceholderInInitialCommand(template string) (string, []string) {
-	return t.replacePlaceholder(template, false, string(t.input), [3][]*Item{nil, nil, nil})
+	return t.replacePlaceholder(template, false, string(t.input), []*Item{nil, nil})
 }
 
-func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list [3][]*Item) (string, []string) {
+func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list []*Item) (string, []string) {
 	return replacePlaceholder(replacePlaceholderParams{
 		template:   template,
 		stripAnsi:  t.ansi,
@@ -4177,7 +4177,7 @@ func (t *Terminal) evaluateScrollOffset() int {
 	}
 
 	// We only need the current item to calculate the scroll offset
-	replaced, tempFiles := t.replacePlaceholder(t.activePreviewOpts.scroll, false, "", [3][]*Item{{t.currentItem()}, nil, nil})
+	replaced, tempFiles := t.replacePlaceholder(t.activePreviewOpts.scroll, false, "", []*Item{t.currentItem(), nil})
 	removeFiles(tempFiles)
 	offsetExpr := offsetTrimCharsRegex.ReplaceAllString(replaced, "")
 
@@ -4209,9 +4209,14 @@ func (t *Terminal) evaluateScrollOffset() int {
 
 func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 	tempFiles := []string{}
-	current := params.allItems[0]
-	selected := params.allItems[1]
-	matched := params.allItems[2]
+	current := params.allItems[:1]
+	selected := params.allItems[1:]
+	if current[0] == nil {
+		current = []*Item{}
+	}
+	if selected[0] == nil {
+		selected = []*Item{}
+	}
 
 	// replace placeholders one by one
 	replaced := placeholder.ReplaceAllStringFunc(params.template, func(match string) string {
@@ -4307,9 +4312,7 @@ func replacePlaceholder(params replacePlaceholderParams) (string, []string) {
 		// apply 'replace' function over proper set of items and return result
 
 		items := current
-		if flags.asterisk {
-			items = matched
-		} else if flags.plus || params.forcePlus {
+		if flags.plus || params.forcePlus {
 			items = selected
 		}
 		replacements := make([]string, len(items))
@@ -4543,15 +4546,11 @@ func (t *Terminal) currentItem() *Item {
 	return nil
 }
 
-func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, [3][]*Item) {
+func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, []*Item) {
 	current := t.currentItem()
-	slot, plus, asterisk, forceUpdate := hasPreviewFlags(template)
-	if !(!slot || forceUpdate || asterisk || (forcePlus || plus) && len(t.selected) > 0) {
-		if current == nil {
-			// Invalid
-			return false, [3][]*Item{nil, nil, nil}
-		}
-		return true, [3][]*Item{{current}, {current}, nil}
+	slot, plus, forceUpdate := hasPreviewFlags(template)
+	if !(!slot || forceUpdate || (forcePlus || plus) && len(t.selected) > 0) {
+		return current != nil, []*Item{current, current}
 	}
 
 	// We would still want to update preview window even if there is no match if
@@ -4562,26 +4561,17 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, [3][]*I
 		current = &minItem
 	}
 
-	var all []*Item
-	if asterisk {
-		cnt := t.merger.Length()
-		all = make([]*Item, cnt)
-		for i := 0; i < cnt; i++ {
-			item := t.merger.Get(i).item
-			all[i] = item
-		}
-	}
-
 	var sels []*Item
 	if len(t.selected) == 0 {
-		sels = []*Item{current}
-	} else if len(t.selected) > 0 {
-		sels = make([]*Item, len(t.selected))
+		sels = []*Item{current, current}
+	} else {
+		sels = make([]*Item, len(t.selected)+1)
+		sels[0] = current
 		for i, sel := range t.sortSelected() {
-			sels[i] = sel.item
+			sels[i+1] = sel.item
 		}
 	}
-	return true, [3][]*Item{{current}, sels, all}
+	return true, sels
 }
 
 func (t *Terminal) selectItem(item *Item) bool {
@@ -4841,8 +4831,7 @@ func (t *Terminal) Loop() error {
 			stop := false
 			t.previewBox.WaitFor(reqPreviewReady)
 			for {
-				requested := false
-				var items [3][]*Item
+				var items []*Item
 				var commandTemplate string
 				var env []string
 				var query string
@@ -4860,7 +4849,6 @@ func (t *Terminal) Loop() error {
 							items = request.list
 							env = request.env
 							query = request.query
-							requested = true
 						}
 					}
 					events.Clear()
@@ -4868,7 +4856,7 @@ func (t *Terminal) Loop() error {
 				if stop {
 					break
 				}
-				if !requested {
+				if items == nil {
 					continue
 				}
 				version++
@@ -6408,7 +6396,7 @@ func (t *Terminal) Loop() error {
 					// We run the command even when there's no match
 					// 1. If the template doesn't have any slots
 					// 2. If the template has {q}
-					slot, _, _, forceUpdate := hasPreviewFlags(a.a)
+					slot, _, forceUpdate := hasPreviewFlags(a.a)
 					valid = !slot || forceUpdate
 				}
 				if valid {
@@ -6597,7 +6585,7 @@ func (t *Terminal) Loop() error {
 		}
 
 		if queryChanged && t.canPreview() && len(t.previewOpts.command) > 0 {
-			_, _, _, forceUpdate := hasPreviewFlags(t.previewOpts.command)
+			_, _, forceUpdate := hasPreviewFlags(t.previewOpts.command)
 			if forceUpdate {
 				t.version++
 			}
