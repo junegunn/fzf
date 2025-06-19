@@ -1479,11 +1479,18 @@ func getScrollbar(perLine int, total int, height int, offset int) (int, int) {
 	return barLength, barStart
 }
 
+func (t *Terminal) barCol() int {
+	if len(t.scrollbar) == 0 && !t.listBorderShape.HasRight() && !t.borderShape.HasRight() && !t.hasPreviewWindowOnRight() {
+		return 0
+	}
+	return 1
+}
+
 func (t *Terminal) wrapCols() int {
 	if !t.wrap {
 		return 0 // No wrap
 	}
-	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+1), 1)
+	return util.Max(t.window.Width()-(t.pointerLen+t.markerLen+t.barCol()), 1)
 }
 
 func (t *Terminal) clearNumLinesCache() {
@@ -3070,9 +3077,11 @@ func (t *Terminal) printList() {
 func (t *Terminal) printBar(lineNum int, forceRedraw bool, barRange [2]int) bool {
 	hasBar := lineNum >= barRange[0] && lineNum < barRange[1]
 	if (hasBar != t.prevLines[lineNum].hasBar || forceRedraw) && t.window.Width() > 0 {
-		t.move(lineNum, t.window.Width()-1, true)
-		if len(t.scrollbar) > 0 && hasBar {
-			t.window.CPrint(tui.ColScrollbar, t.scrollbar)
+		if len(t.scrollbar) > 0 {
+			t.move(lineNum, t.window.Width()-1, true)
+			if hasBar {
+				t.window.CPrint(tui.ColScrollbar, t.scrollbar)
+			}
 		}
 	}
 	return hasBar
@@ -3128,7 +3137,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 		return line + numLines - 1
 	}
 
-	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + 1)
+	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + t.barCol())
 	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool) {
 		width += extraWidth
 		if (current || selected || alt) && t.highlightLine {
@@ -3447,7 +3456,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			indentSize = preTask(marker)
 		}
 
-		maxWidth := t.window.Width() - (indentSize + 1)
+		maxWidth := t.window.Width() - (indentSize + t.barCol())
 		wasWrapped := false
 		if wrapped {
 			wrapSign := t.wrapSign
@@ -4537,6 +4546,10 @@ func (t *Terminal) canPreview() bool {
 
 func (t *Terminal) hasPreviewWindow() bool {
 	return t.pwindow != nil
+}
+
+func (t *Terminal) hasPreviewWindowOnRight() bool {
+	return t.hasPreviewWindow() && t.activePreviewOpts.position == posRight
 }
 
 func (t *Terminal) currentItem() *Item {
