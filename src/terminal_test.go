@@ -12,7 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
+func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems [3][]*Item) string {
 	replaced, _ := replacePlaceholder(replacePlaceholderParams{
 		template:   template,
 		stripAnsi:  stripAnsi,
@@ -30,11 +30,11 @@ func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter
 
 func TestReplacePlaceholder(t *testing.T) {
 	item1 := newItem("  foo'bar \x1b[31mbaz\x1b[m")
-	items1 := []*Item{item1, item1}
-	items2 := []*Item{
-		newItem("foo'bar \x1b[31mbaz\x1b[m"),
-		newItem("foo'bar \x1b[31mbaz\x1b[m"),
-		newItem("FOO'BAR \x1b[31mBAZ\x1b[m")}
+	items1 := [3][]*Item{{item1}, {item1}, nil}
+	items2 := [3][]*Item{
+		{newItem("foo'bar \x1b[31mbaz\x1b[m")},
+		{newItem("foo'bar \x1b[31mbaz\x1b[m"),
+			newItem("FOO'BAR \x1b[31mBAZ\x1b[m")}, nil}
 
 	delim := "'"
 	var regex *regexp.Regexp
@@ -145,11 +145,11 @@ func TestReplacePlaceholder(t *testing.T) {
 	checkFormat("echo {{.O}} {{.O}}")
 
 	// No match
-	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, nil})
+	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", [3][]*Item{nil, nil, nil})
 	check("echo /")
 
 	// No match, but with selections
-	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, item1})
+	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", [3][]*Item{nil, {item1}, nil})
 	checkFormat("echo /{{.O}}  foo{{.I}}bar baz{{.O}}")
 
 	// String delimiter
@@ -166,17 +166,18 @@ func TestReplacePlaceholder(t *testing.T) {
 		Test single placeholders, but focus on the placeholders' parameters (e.g. flags).
 		see: TestParsePlaceholder
 	*/
-	items3 := []*Item{
+	items3 := [3][]*Item{
 		// single line
-		newItem("1a 1b 1c 1d 1e 1f"),
+		{newItem("1a 1b 1c 1d 1e 1f")},
 		// multi line
-		newItem("1a 1b 1c 1d 1e 1f"),
-		newItem("2a 2b 2c 2d 2e 2f"),
-		newItem("3a 3b 3c 3d 3e 3f"),
-		newItem("4a 4b 4c 4d 4e 4f"),
-		newItem("5a 5b 5c 5d 5e 5f"),
-		newItem("6a 6b 6c 6d 6e 6f"),
-		newItem("7a 7b 7c 7d 7e 7f"),
+		{newItem("1a 1b 1c 1d 1e 1f"),
+			newItem("2a 2b 2c 2d 2e 2f"),
+			newItem("3a 3b 3c 3d 3e 3f"),
+			newItem("4a 4b 4c 4d 4e 4f"),
+			newItem("5a 5b 5c 5d 5e 5f"),
+			newItem("6a 6b 6c 6d 6e 6f"),
+			newItem("7a 7b 7c 7d 7e 7f")},
+		nil,
 	}
 	stripAnsi := false
 	forcePlus := false
@@ -557,14 +558,14 @@ func newItem(str string) *Item {
 	return &Item{origText: &bytes, text: util.ToChars([]byte(trimmed))}
 }
 
-// Functions tested in this file require array of items (allItems). The array needs
-// to consist of at least two nils. This is helper function.
-func newItems(str ...string) []*Item {
-	result := make([]*Item, util.Max(len(str), 2))
+// Functions tested in this file require array of items (allItems).
+// This is helper function.
+func newItems(str ...string) [3][]*Item {
+	result := make([]*Item, len(str))
 	for i, s := range str {
 		result[i] = newItem(s)
 	}
-	return result
+	return [3][]*Item{result, nil, nil}
 }
 
 // (for logging purposes)
@@ -588,7 +589,7 @@ func templateToString(format string, data any) string {
 type give struct {
 	template string
 	query    string
-	allItems []*Item
+	allItems [3][]*Item
 }
 type want struct {
 	/*
@@ -626,25 +627,25 @@ func testCommands(t *testing.T, tests []testCase) {
 	// evaluate the test cases
 	for idx, test := range tests {
 		gotOutput := replacePlaceholderTest(
-			test.give.template, stripAnsi, delimiter, printsep, forcePlus,
-			test.give.query,
-			test.give.allItems)
+			test.template, stripAnsi, delimiter, printsep, forcePlus,
+			test.query,
+			test.allItems)
 		switch {
-		case test.want.output != "":
-			if gotOutput != test.want.output {
+		case test.output != "":
+			if gotOutput != test.output {
 				t.Errorf("tests[%v]:\ngave{\n\ttemplate: '%s',\n\tquery: '%s',\n\tallItems: %s}\nand got '%s',\nbut want '%s'",
 					idx,
-					test.give.template, test.give.query, test.give.allItems,
-					gotOutput, test.want.output)
+					test.template, test.query, test.allItems,
+					gotOutput, test.output)
 			}
-		case test.want.match != "":
-			wantMatch := strings.ReplaceAll(test.want.match, `\`, `\\`)
+		case test.match != "":
+			wantMatch := strings.ReplaceAll(test.match, `\`, `\\`)
 			wantRegex := regexp.MustCompile(wantMatch)
 			if !wantRegex.MatchString(gotOutput) {
 				t.Errorf("tests[%v]:\ngave{\n\ttemplate: '%s',\n\tquery: '%s',\n\tallItems: %s}\nand got '%s',\nbut want '%s'",
 					idx,
-					test.give.template, test.give.query, test.give.allItems,
-					gotOutput, test.want.match)
+					test.template, test.query, test.allItems,
+					gotOutput, test.match)
 			}
 		default:
 			t.Errorf("tests[%v]: test case does not describe 'want' property", idx)
