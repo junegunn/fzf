@@ -395,7 +395,7 @@ type Terminal struct {
 	killChan           chan bool
 	serverInputChan    chan []*action
 	callbackChan       chan versionedCallback
-	bgQueue            map[action][]func()
+	bgQueue            map[action][]func(bool)
 	bgSemaphore        chan struct{}
 	bgSemaphores       map[action]chan struct{}
 	keyChan            chan tui.Event
@@ -1047,7 +1047,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
 		callbackChan:       make(chan versionedCallback, maxBgProcesses),
-		bgQueue:            make(map[action][]func()),
+		bgQueue:            make(map[action][]func(bool)),
 		bgSemaphore:        make(chan struct{}, maxBgProcesses),
 		bgSemaphores:       make(map[action]chan struct{}),
 		keyChan:            make(chan tui.Event),
@@ -4371,27 +4371,29 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 	version := t.bgVersion
 	cmd := t.executor.ExecCommand(command, false)
 	cmd.Env = t.environ()
-	item := func() {
-		out, _ := cmd.StdoutPipe()
-		reader := bufio.NewReader(out)
-		var output string
-		if err := cmd.Start(); err == nil {
-			if firstLineOnly {
-				output, _ = reader.ReadString('\n')
-				output = strings.TrimRight(output, "\r\n")
-			} else {
-				bytes, _ := io.ReadAll(reader)
-				output = string(bytes)
+	item := func(proceed bool) {
+		if proceed {
+			out, _ := cmd.StdoutPipe()
+			reader := bufio.NewReader(out)
+			var output string
+			if err := cmd.Start(); err == nil {
+				if firstLineOnly {
+					output, _ = reader.ReadString('\n')
+					output = strings.TrimRight(output, "\r\n")
+				} else {
+					bytes, _ := io.ReadAll(reader)
+					output = string(bytes)
+				}
+				cmd.Wait()
 			}
-			cmd.Wait()
+			t.callbackChan <- versionedCallback{version, func() { callback(output) }}
 		}
 		removeFiles(tempFiles)
 
-		t.callbackChan <- versionedCallback{version, func() { callback(output) }}
 	}
 	queue, prs := t.bgQueue[a]
 	if !prs {
-		queue = []func(){}
+		queue = []func(bool){}
 	}
 	queue = append(queue, item)
 	t.bgQueue[a] = queue
@@ -4416,6 +4418,9 @@ Loop:
 			case semaphore <- struct{}{}:
 			default:
 				// Failed to acquire local semaphore, putting only the last one back to the queue
+				for _, item := range queue[:len(queue)-1] {
+					item(false)
+				}
 				t.bgQueue[a] = queue[len(queue)-1:]
 				continue Loop
 			}
@@ -4424,7 +4429,7 @@ Loop:
 				// Acquire global semaphore
 				t.bgSemaphore <- struct{}{}
 
-				todo()
+				todo(true)
 				// Release local semaphore
 				<-semaphore
 				// Release global semaphore
@@ -5291,7 +5296,7 @@ func (t *Terminal) Loop() error {
 
 		var event tui.Event
 		actions := []*action{}
-		callbacks := []func(){}
+		callbacks := []versionedCallback{}
 		select {
 		case event = <-t.keyChan:
 			needBarrier = true
@@ -5326,16 +5331,12 @@ func (t *Terminal) Loop() error {
 		case callback := <-t.callbackChan:
 			event = tui.Invalid.AsEvent()
 			actions = append(actions, &action{t: actAsync})
-			if callback.version == t.bgVersion {
-				callbacks = append(callbacks, callback.callback)
-			}
+			callbacks = append(callbacks, callback)
 		DrainCallback:
 			for {
 				select {
 				case callback = <-t.callbackChan:
-					if callback.version == t.bgVersion {
-						callbacks = append(callbacks, callback.callback)
-					}
+					callbacks = append(callbacks, callback)
 					continue DrainCallback
 				default:
 					break DrainCallback
@@ -5450,7 +5451,9 @@ func (t *Terminal) Loop() error {
 			case actIgnore, actStart, actClick:
 			case actAsync:
 				for _, callback := range callbacks {
-					callback()
+					if t.bgVersion == callback.version {
+						callback.callback()
+					}
 				}
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
