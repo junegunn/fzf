@@ -33,8 +33,19 @@ CHANGELOG
   seq 10000 | fzf --preview "awk '{sum += \$1} END {print sum}' {*f}"
   ```
   - Use this with caution, as it can make fzf sluggish for large lists.
-- Added background variants of transform actions with `bg-` prefix that run asynchronously in the background
+- Added asynchronous transform actions with `bg-` prefix that run asynchronously in the background, along with `bg-cancel` action to ignore currently running `bg-transform` actions.
   ```sh
+  # Implement popup that disappears after 1 second
+  #   * Use footer as the popup
+  #   * Use `bell` to ring the terminal bell
+  #   * Use `bg-transform-footer` to clear the footer after 1 second
+  #   * Use `bg-cancel` to ignore currently running background transform actions
+  fzf --multi --list-border \
+      --bind 'enter:execute-silent(echo -n {+} | pbcopy)+bell' \
+      --bind 'enter:+transform-footer(echo Copied {} to clipboard)' \
+      --bind 'enter:+bg-cancel+bg-transform-footer(sleep 1)'
+
+  # It's okay for the commands to take a little while because they run in the background
   GETTER='curl -s http://metaphorpsum.com/sentences/1'
   fzf --style full --border --preview : \
       --bind "focus:bg-transform-header:$GETTER" \
@@ -48,6 +59,8 @@ CHANGELOG
       --bind "focus:+bg-transform-ghost:$GETTER" \
       --bind "focus:+bg-transform-prompt:$GETTER"
   ```
+- SSH completion enhancements by @akinomyoga
+- Bug fixes and improvements
 
 0.62.0
 ------

@@ -230,6 +230,11 @@ type Status struct {
 	Selected   []StatusItem `json:"selected"`
 }
 
+type versionedCallback struct {
+	version  int64
+	callback func()
+}
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
@@ -371,6 +376,7 @@ type Terminal struct {
 	selected           map[int32]selectedItem
 	version            int64
 	revision           revision
+	bgVersion          int64
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
@@ -388,7 +394,7 @@ type Terminal struct {
 	startChan          chan fitpad
 	killChan           chan bool
 	serverInputChan    chan []*action
-	callbackChan       chan func()
+	callbackChan       chan versionedCallback
 	bgQueue            map[action][]func()
 	bgSemaphore        chan struct{}
 	bgSemaphores       map[action]chan struct{}
@@ -600,6 +606,8 @@ const (
 	actBgTransformPrompt
 	actBgTransformQuery
 	actBgTransformSearch
+
+	actBgCancel
 
 	actSearch
 	actPreview
@@ -1038,7 +1046,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
-		callbackChan:       make(chan func(), maxBgProcesses),
+		callbackChan:       make(chan versionedCallback, maxBgProcesses),
 		bgQueue:            make(map[action][]func()),
 		bgSemaphore:        make(chan struct{}, maxBgProcesses),
 		bgSemaphores:       make(map[action]chan struct{}),
@@ -4360,10 +4368,10 @@ func (t *Terminal) captureLines(template string) string {
 func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(string)) {
 	_, list := t.buildPlusList(a.a, false)
 	command, tempFiles := t.replacePlaceholder(a.a, false, string(t.input), list)
+	version := t.bgVersion
+	cmd := t.executor.ExecCommand(command, false)
+	cmd.Env = t.environ()
 	item := func() {
-		cmd := t.executor.ExecCommand(command, false)
-		cmd.Env = t.environ()
-
 		out, _ := cmd.StdoutPipe()
 		reader := bufio.NewReader(out)
 		var output string
@@ -4379,7 +4387,7 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 		}
 		removeFiles(tempFiles)
 
-		t.callbackChan <- func() { callback(output) }
+		t.callbackChan <- versionedCallback{version, func() { callback(output) }}
 	}
 	queue, prs := t.bgQueue[a]
 	if !prs {
@@ -5318,12 +5326,16 @@ func (t *Terminal) Loop() error {
 		case callback := <-t.callbackChan:
 			event = tui.Invalid.AsEvent()
 			actions = append(actions, &action{t: actAsync})
-			callbacks = append(callbacks, callback)
+			if callback.version == t.bgVersion {
+				callbacks = append(callbacks, callback.callback)
+			}
 		DrainCallback:
 			for {
 				select {
 				case callback = <-t.callbackChan:
-					callbacks = append(callbacks, callback)
+					if callback.version == t.bgVersion {
+						callbacks = append(callbacks, callback.callback)
+					}
 					continue DrainCallback
 				default:
 					break DrainCallback
@@ -5696,6 +5708,8 @@ func (t *Terminal) Loop() error {
 						doActions(actions)
 					}
 				})
+			case actBgCancel:
+				t.bgVersion++
 			case actChangePrompt:
 				t.promptString = a.a
 				t.prompt, t.promptLen = t.parsePrompt(a.a)

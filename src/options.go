@@ -1703,6 +1703,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actExclude)
 		case "exclude-multi":
 			appendAction(actExcludeMulti)
+		case "bg-cancel":
+			appendAction(actBgCancel)
 		default:
 			t := isExecuteAction(specLower)
 			if t == actIgnore {
