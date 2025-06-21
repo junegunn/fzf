@@ -236,6 +236,11 @@ type versionedCallback struct {
 	callback func()
 }
 
+type runningCmd struct {
+	cmd       *exec.Cmd
+	tempFiles []string
+}
+
 // Terminal represents terminal input/output
 type Terminal struct {
 	initDelay          time.Duration
@@ -378,7 +383,7 @@ type Terminal struct {
 	version            int64
 	revision           revision
 	bgVersion          int64
-	runningCmds        *util.ConcurrentSet[*exec.Cmd]
+	runningCmds        *util.ConcurrentSet[*runningCmd]
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
@@ -1032,7 +1037,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		proxyScript:        opts.ProxyScript,
 		merger:             EmptyMerger(revision{}),
 		selected:           make(map[int32]selectedItem),
-		runningCmds:        util.NewConcurrentSet[*exec.Cmd](),
+		runningCmds:        util.NewConcurrentSet[*runningCmd](),
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
@@ -4372,7 +4377,7 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 	_, list := t.buildPlusList(a.a, false)
 	command, tempFiles := t.replacePlaceholder(a.a, false, string(t.input), list)
 	version := t.bgVersion
-	cmd := t.executor.ExecCommand(command, false)
+	cmd := t.executor.ExecCommand(command, true)
 	cmd.Env = t.environ()
 	item := func(proceed bool) {
 		if proceed {
@@ -4380,7 +4385,8 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 			reader := bufio.NewReader(out)
 			var output string
 			if err := cmd.Start(); err == nil {
-				t.runningCmds.Add(cmd)
+				runningCmd := runningCmd{cmd, tempFiles}
+				t.runningCmds.Add(&runningCmd)
 				if firstLineOnly {
 					output, _ = reader.ReadString('\n')
 					output = strings.TrimRight(output, "\r\n")
@@ -4389,7 +4395,7 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 					output = string(bytes)
 				}
 				cmd.Wait()
-				t.runningCmds.Remove(cmd)
+				t.runningCmds.Remove(&runningCmd)
 			}
 			t.callbackChan <- versionedCallback{version, func() { callback(output) }}
 		}
@@ -5058,8 +5064,9 @@ func (t *Terminal) Loop() error {
 			if code <= ExitNoMatch && t.history != nil {
 				t.history.append(string(t.input))
 			}
-			t.runningCmds.ForEach(func(cmd *exec.Cmd) {
-				util.KillCommand(cmd)
+			t.runningCmds.ForEach(func(cmd *runningCmd) {
+				util.KillCommand(cmd.cmd)
+				removeFiles(cmd.tempFiles)
 			})
 			running = false
 			t.mutex.Unlock()
@@ -5721,6 +5728,9 @@ func (t *Terminal) Loop() error {
 				})
 			case actBgCancel:
 				t.bgVersion++
+				t.runningCmds.ForEach(func(cmd *runningCmd) {
+					util.KillCommand(cmd.cmd)
+				})
 			case actChangePrompt:
 				t.promptString = a.a
 				t.prompt, t.promptLen = t.parsePrompt(a.a)
