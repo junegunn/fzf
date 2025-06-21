@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 	"regexp"
 	"sort"
@@ -377,6 +378,7 @@ type Terminal struct {
 	version            int64
 	revision           revision
 	bgVersion          int64
+	runningCmds        *util.ConcurrentSet[*exec.Cmd]
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
@@ -1030,6 +1032,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		proxyScript:        opts.ProxyScript,
 		merger:             EmptyMerger(revision{}),
 		selected:           make(map[int32]selectedItem),
+		runningCmds:        util.NewConcurrentSet[*exec.Cmd](),
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
@@ -4377,6 +4380,7 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 			reader := bufio.NewReader(out)
 			var output string
 			if err := cmd.Start(); err == nil {
+				t.runningCmds.Add(cmd)
 				if firstLineOnly {
 					output, _ = reader.ReadString('\n')
 					output = strings.TrimRight(output, "\r\n")
@@ -4385,6 +4389,7 @@ func (t *Terminal) captureAsync(a action, firstLineOnly bool, callback func(stri
 					output = string(bytes)
 				}
 				cmd.Wait()
+				t.runningCmds.Remove(cmd)
 			}
 			t.callbackChan <- versionedCallback{version, func() { callback(output) }}
 		}
@@ -5053,6 +5058,9 @@ func (t *Terminal) Loop() error {
 			if code <= ExitNoMatch && t.history != nil {
 				t.history.append(string(t.input))
 			}
+			t.runningCmds.ForEach(func(cmd *exec.Cmd) {
+				util.KillCommand(cmd)
+			})
 			running = false
 			t.mutex.Unlock()
 		}
