@@ -448,6 +448,7 @@ const (
 	reqReinit
 	reqFullRedraw
 	reqResize
+	reqRedraw
 	reqRedrawInputLabel
 	reqRedrawHeaderLabel
 	reqRedrawFooterLabel
@@ -5137,12 +5138,16 @@ func (t *Terminal) Loop() error {
 					case reqReinit:
 						t.tui.Resume(t.fullscreen, true)
 						t.fullRedraw()
-					case reqResize, reqFullRedraw:
+					case reqResize, reqFullRedraw, reqRedraw:
 						if req == reqResize {
 							t.termSize = t.tui.Size()
 						}
 						wasHidden := t.pwindow == nil
-						t.fullRedraw()
+						if req == reqRedraw {
+							t.printAll()
+						} else {
+							t.fullRedraw()
+						}
 						if wasHidden && t.hasPreviewWindow() {
 							refreshPreview(t.previewOpts.command)
 						}
@@ -5624,7 +5629,7 @@ func (t *Terminal) Loop() error {
 					if t.changeHeader(header) {
 						if t.headerWindow != nil {
 							// Need to resize header window
-							req(reqFullRedraw)
+							req(reqRedraw)
 						} else {
 							req(reqHeader, reqList, reqPrompt, reqInfo)
 						}
@@ -5635,7 +5640,7 @@ func (t *Terminal) Loop() error {
 			case actChangeFooter, actTransformFooter, actBgTransformFooter:
 				capture(false, func(footer string) {
 					if t.changeFooter(footer) {
-						req(reqFullRedraw)
+						req(reqRedraw)
 					} else {
 						req(reqFooter)
 					}
