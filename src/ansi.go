@@ -356,7 +356,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 		state = ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg, prevState.url}
 	}
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
-		if prevState != nil && strings.HasSuffix(ansiCode, "0K") {
+		if prevState != nil && (strings.HasSuffix(ansiCode, "0K") || strings.HasSuffix(ansiCode, "[K")) {
 			state.lbg = prevState.bg
 		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && (strings.HasSuffix(ansiCode, "\x1b\\") || strings.HasSuffix(ansiCode, "\a")) {
 			stLen := 2
