@@ -24,6 +24,7 @@ const (
 	AttrRegular   = Attr(1 << 8)
 	AttrClear     = Attr(1 << 9)
 	BoldForce     = Attr(1 << 10)
+	FullBg        = Attr(1 << 11)
 
 	Bold          = Attr(1)
 	Dim           = Attr(1 << 1)

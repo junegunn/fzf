@@ -19,6 +19,10 @@ type colorOffset struct {
 	url    *url
 }
 
+func (co colorOffset) IsFullBgMarker(at int32) bool {
+	return at == co.offset[0] && at == co.offset[1] && co.color.Attr()&tui.FullBg > 0
+}
+
 type Result struct {
 	item   *Item
 	points [4]uint16
@@ -149,12 +153,20 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 		color bool
 		match bool
 		nth   bool
+		fbg   tui.Color
 	}
 
-	cols := make([]cellInfo, maxCol)
+	cols := make([]cellInfo, maxCol+1)
+	for idx := range cols {
+		cols[idx].fbg = -1
+	}
 	for colorIndex, ansi := range itemColors {
-		for i := ansi.offset[0]; i < ansi.offset[1]; i++ {
-			cols[i] = cellInfo{colorIndex, true, false, false}
+		if ansi.offset[0] == ansi.offset[1] && ansi.color.attr&tui.FullBg > 0 {
+			cols[ansi.offset[0]].fbg = ansi.color.lbg
+		} else {
+			for i := ansi.offset[0]; i < ansi.offset[1]; i++ {
+				cols[i] = cellInfo{colorIndex, true, false, false, cols[i].fbg}
+			}
 		}
 	}
 
@@ -176,7 +188,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	// ------------  ----  --  ----
 	//   ++++++++      ++++++++++
 	// --++++++++--  --++++++++++---
-	var curr cellInfo = cellInfo{0, false, false, false}
+	curr := cellInfo{0, false, false, false, -1}
 	start := 0
 	ansiToColorPair := func(ansi ansiOffset, base tui.ColorPair) tui.ColorPair {
 		if !theme.Colored {
@@ -194,6 +206,13 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	}
 	var colors []colorOffset
 	add := func(idx int) {
+		if curr.fbg >= 0 {
+			colors = append(colors, colorOffset{
+				offset: [2]int32{int32(start), int32(start)},
+				color:  tui.NewColorPair(-1, curr.fbg, tui.FullBg),
+				match:  false,
+				url:    nil})
+		}
 		if (curr.color || curr.nth || curr.match) && idx > start {
 			if curr.match {
 				var color tui.ColorPair

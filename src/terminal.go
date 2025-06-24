@@ -3155,11 +3155,13 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 
 	maxWidth := t.window.Width() - (t.pointerLen + t.markerLen + t.barCol())
-	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool) {
+	postTask := func(lineNum int, width int, wrapped bool, forceRedraw bool, lbg tui.ColorPair) {
 		width += extraWidth
-		if (current || selected || alt) && t.highlightLine {
+		if (current || selected || alt) && t.highlightLine || lbg.IsFullBgMarker() {
 			color := tui.ColSelected
-			if current {
+			if lbg.IsFullBgMarker() {
+				color = lbg
+			} else if current {
 				color = tui.ColCurrent
 			} else if alt {
 				color = color.WithBg(altBg)
@@ -3311,7 +3313,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -3396,9 +3398,19 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		line := lines[lineOffset]
 		finalLineNum = lineNum
 		offsets := []colorOffset{}
-		for _, offset := range allOffsets {
-			if offset.offset[0] >= int32(from+len(line)) {
-				allOffsets = allOffsets[len(offsets):]
+		lbg := tui.NoColorPair()
+		var lineLen int
+		for idx, offset := range allOffsets {
+			lineLen = len(line)
+			if lineLen > 0 && line[lineLen-1] == '\n' {
+				lineLen--
+			}
+			lineEnd := int32(from + lineLen)
+			if offset.offset[0] >= lineEnd {
+				if offset.IsFullBgMarker(lineEnd) {
+					lbg = offset.color
+				}
+				allOffsets = allOffsets[idx:]
 				break
 			}
 
@@ -3406,23 +3418,30 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				continue
 			}
 
-			if offset.offset[1] < int32(from+len(line)) {
+			if offset.offset[1] < lineEnd {
 				offset.offset[0] -= int32(from)
 				offset.offset[1] -= int32(from)
 				offsets = append(offsets, offset)
 			} else {
+				if idx < len(allOffsets)-1 {
+					next := allOffsets[idx+1]
+					if next.IsFullBgMarker(lineEnd) {
+						lbg = next.color
+						idx++
+					}
+				}
 				dupe := offset
-				dupe.offset[0] = int32(from + len(line))
+				dupe.offset[0] = lineEnd
 
 				offset.offset[0] -= int32(from)
-				offset.offset[1] = int32(from + len(line))
+				offset.offset[1] = lineEnd
 				offsets = append(offsets, offset)
 
-				allOffsets = append([]colorOffset{dupe}, allOffsets[len(offsets):]...)
+				allOffsets = append([]colorOffset{dupe}, allOffsets[idx+1:]...)
 				break
 			}
 		}
-		from += len(line)
+		from += lineLen
 		if lineOffset < skipLines {
 			continue
 		}
@@ -3553,7 +3572,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			t.printColoredString(t.window, line, offsets, colBase)
 		}
 		if postTask != nil {
-			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw)
+			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw, lbg)
 		} else {
 			t.markOtherLine(actualLineNum)
 		}

@@ -273,6 +273,10 @@ func NewColorPair(fg Color, bg Color, attr Attr) ColorPair {
 	return ColorPair{fg, bg, attr}
 }
 
+func NoColorPair() ColorPair {
+	return ColorPair{-1, -1, 0}
+}
+
 func (p ColorPair) Fg() Color {
 	return p.fg
 }
@@ -283,6 +287,10 @@ func (p ColorPair) Bg() Color {
 
 func (p ColorPair) Attr() Attr {
 	return p.attr
+}
+
+func (p ColorPair) IsFullBgMarker() bool {
+	return p.attr&FullBg > 0
 }
 
 func (p ColorPair) HasBg() bool {
