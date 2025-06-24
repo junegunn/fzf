@@ -59,6 +59,12 @@ CHANGELOG
       --bind "focus:+bg-transform-ghost:$GETTER" \
       --bind "focus:+bg-transform-prompt:$GETTER"
   ```
+- Added support for full-line background color in the list section
+  ```sh
+  for i in $(seq 16 255); do
+    echo -e "\x1b[48;5;${i}m\x1b[0Khello"
+  done | fzf --ansi
+  ```
 - SSH completion enhancements by @akinomyoga
 - Bug fixes and improvements
 
