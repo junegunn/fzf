@@ -126,7 +126,17 @@ func Run(opts *Options) (int, error) {
 				return false
 			}
 			item.text, item.colors = ansiProcessor(stringBytes(transformed))
-			item.text.TrimTrailingWhitespaces()
+
+			// We should not trim trailing whitespaces with background colors
+			var maxColorOffset int32
+			if item.colors != nil {
+				for _, ansi := range *item.colors {
+					if ansi.color.bg >= 0 {
+						maxColorOffset = util.Max32(maxColorOffset, ansi.offset[1])
+					}
+				}
+			}
+			item.text.TrimTrailingWhitespaces(int(maxColorOffset))
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++
