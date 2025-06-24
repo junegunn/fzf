@@ -399,10 +399,15 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 		return state
 	}
 
-	if len(ansiCode) <= 3 {
+	reset := func() {
 		state.fg = -1
 		state.bg = -1
 		state.attr = 0
+		state.lbg = -1
+	}
+
+	if len(ansiCode) <= 3 {
+		reset()
 		return state
 	}
 	ansiCode = ansiCode[2 : len(ansiCode)-1]
@@ -456,10 +461,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 				case 29:
 					state.attr = state.attr &^ tui.StrikeThrough
 				case 0:
-					state.fg = -1
-					state.bg = -1
-					state.attr = 0
-					state.lbg = -1
+					reset()
 					state256 = 0
 				default:
 					if num >= 30 && num <= 37 {
@@ -499,10 +501,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 
 	// Empty sequence: reset
 	if count == 0 {
-		state.fg = -1
-		state.bg = -1
-		state.attr = 0
-		state.lbg = -1
+		reset()
 	}
 
 	if state256 > 0 {
