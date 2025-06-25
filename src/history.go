@@ -8,11 +8,12 @@ import (
 
 // History struct represents input history
 type History struct {
-	path     string
-	lines    []string
-	modified map[int]string
-	maxSize  int
-	cursor   int
+	path       string
+	lines      []string
+	modified   map[int]string
+	maxSize    int
+	cursor     int
+	lastSearch string
 }
 
 // NewHistory returns the pointer to a new History struct
@@ -43,11 +44,12 @@ func NewHistory(path string, maxSize int) (*History, error) {
 		lines = append(lines, "")
 	}
 	return &History{
-		path:     path,
-		maxSize:  maxSize,
-		lines:    lines,
-		modified: make(map[int]string),
-		cursor:   len(lines) - 1}, nil
+		path:       path,
+		maxSize:    maxSize,
+		lines:      lines,
+		modified:   make(map[int]string),
+		cursor:     len(lines) - 1,
+		lastSearch: ""}, nil
 }
 
 func (h *History) append(line string) error {
@@ -95,6 +97,9 @@ func (h *History) next() string {
 }
 
 func (h *History) prevSearch(substr string) string {
+	if substr == "" {
+		return h.previous()
+	}
 	for {
 		if h.cursor > 0 {
 			h.cursor--
@@ -109,6 +114,9 @@ func (h *History) prevSearch(substr string) string {
 }
 
 func (h *History) nextSearch(substr string) string {
+	if substr == "" {
+		return h.next()
+	}
 	for {
 		if h.cursor < len(h.lines)-1 {
 			h.cursor++

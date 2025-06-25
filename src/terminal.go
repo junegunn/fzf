@@ -6102,7 +6102,15 @@ func (t *Terminal) Loop() error {
 					if a.t == actPrevHistorySearch {
 						histSearch = t.history.prevSearch
 					}
-					hist := histSearch(a.a)
+					toSearch := t.history.lastSearch
+					if len(toSearch) == 0 {
+						toSearch = a.a
+						if len(toSearch) == 0 {
+							toSearch = string(t.input)
+						}
+						t.history.lastSearch = toSearch
+					}
+					hist := histSearch(toSearch)
 					if len(hist) != 0 {
 						t.input = trimQuery(hist)
 						t.cx = len(t.input)
@@ -6625,6 +6633,13 @@ func (t *Terminal) Loop() error {
 				}
 			}
 
+			if t.history != nil &&
+				a.t != actPrevHistory &&
+				a.t != actNextHistory &&
+				a.t != actPrevHistorySearch &&
+				a.t != actNextHistorySearch {
+				t.history.lastSearch = ""
+			}
 			if !processExecution(a.t) {
 				t.lastAction = a.t
 			}
