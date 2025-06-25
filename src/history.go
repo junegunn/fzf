@@ -93,3 +93,31 @@ func (h *History) next() string {
 	}
 	return h.current()
 }
+
+func (h *History) prevSearch(substr string) string {
+	for {
+		if h.cursor > 0 {
+			h.cursor--
+		} else {
+			return ""
+		}
+		curstr := h.current()
+		if strings.Contains(curstr, substr) {
+			return curstr
+		}
+	}
+}
+
+func (h *History) nextSearch(substr string) string {
+	for {
+		if h.cursor < len(h.lines)-1 {
+			h.cursor++
+		} else {
+			return ""
+		}
+		curstr := h.current()
+		if strings.Contains(curstr, substr) {
+			return curstr
+		}
+	}
+}

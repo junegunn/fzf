@@ -627,10 +627,12 @@ const (
 	actPreviewHalfPageUp
 	actPreviewHalfPageDown
 	actPrevHistory
+	actPrevHistorySearch
 	actPrevSelected
 	actPrint
 	actPut
 	actNextHistory
+	actNextHistorySearch
 	actNextSelected
 	actExecute
 	actExecuteSilent
@@ -6092,6 +6094,19 @@ func (t *Terminal) Loop() error {
 					t.history.override(string(t.input))
 					t.input = trimQuery(t.history.next())
 					t.cx = len(t.input)
+				}
+			case actNextHistorySearch, actPrevHistorySearch:
+				if t.history != nil {
+					t.history.override(string(t.input))
+					histSearch := t.history.nextSearch
+					if a.t == actPrevHistorySearch {
+						histSearch = t.history.prevSearch
+					}
+					hist := histSearch(a.a)
+					if len(hist) != 0 {
+						t.input = trimQuery(hist)
+						t.cx = len(t.input)
+					}
 				}
 			case actToggleSearch:
 				t.paused = !t.paused
