@@ -3399,13 +3399,8 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		finalLineNum = lineNum
 		offsets := []colorOffset{}
 		lbg := tui.NoColorPair()
-		var lineLen int
 		for idx, offset := range allOffsets {
-			lineLen = len(line)
-			if lineLen > 0 && line[lineLen-1] == '\n' {
-				lineLen--
-			}
-			lineEnd := int32(from + lineLen)
+			lineEnd := int32(from + len(line))
 			if offset.offset[0] >= lineEnd {
 				if offset.IsFullBgMarker(lineEnd) {
 					lbg = offset.color
@@ -3441,7 +3436,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				break
 			}
 		}
-		from += lineLen
+		from += len(line)
 		if lineOffset < skipLines {
 			continue
 		}

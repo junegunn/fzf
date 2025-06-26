@@ -81,7 +81,7 @@ func Run(opts *Options) (int, error) {
 			lineAnsiState = newState
 
 			// Full line background is found. Add a special marker.
-			if !opts.ReadZero && offsets != nil && newState != nil && len(*offsets) > 0 && newState.lbg >= 0 {
+			if offsets != nil && newState != nil && len(*offsets) > 0 && newState.lbg >= 0 {
 				marker := (*offsets)[len(*offsets)-1]
 				marker.offset[0] = marker.offset[1]
 				marker.color.bg = newState.lbg
