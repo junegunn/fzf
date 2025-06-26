@@ -304,11 +304,11 @@ class TestFilter < TestBase
   def test_boundary_match
     # Underscore boundaries should be ranked lower
     {
-      default: [' x '] + %w[/x/ [x] -x- -x_ _x- _x_],
-      path: ['/x/', ' x '] + %w[[x] -x- -x_ _x- _x_],
-      history: ['[x]', '-x-', ' x '] + %w[/x/ -x_ _x- _x_]
+      default: [' xyz '] + %w[/xyz/ [xyz] -xyz- -xyz_ _xyz- _xyz_],
+      path: ['/xyz/', ' xyz '] + %w[[xyz] -xyz- -xyz_ _xyz- _xyz_],
+      history: ['[xyz]', '-xyz-', ' xyz '] + %w[/xyz/ -xyz_ _xyz- _xyz_]
     }.each do |scheme, expected|
-      result = `printf -- 'xxx\n-xx\nxx-\n_x_\n_x-\n-x_\n[x]\n-x-\n x \n/x/\n' | #{FZF} -f"'x'" --scheme=#{scheme}`.lines(chomp: true)
+      result = `printf -- 'xxyzx\n-xxyz\nxyzx-\n_xyz_\n_xyz-\n-xyz_\n[xyz]\n-xyz-\n xyz \n/xyz/\n' | #{FZF} -f"'xyz'" --scheme=#{scheme}`.lines(chomp: true)
       assert_equal expected, result
     end
   end

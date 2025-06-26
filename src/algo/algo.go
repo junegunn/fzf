@@ -827,7 +827,7 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 
 	// For simplicity, only look at the bonus at the first character position
 	pidx := 0
-	bestPos, bonus, bestBonus := -1, int16(0), int16(-1)
+	bestPos, bonus, bbonus, bestBonus := -1, int16(0), int16(0), int16(-1)
 	for index := 0; index < lenRunes; index++ {
 		index_ := indexAt(index, lenRunes, forward)
 		char := text.Get(index_)
@@ -849,7 +849,16 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 				bonus = bonusAt(text, index_)
 			}
 			if boundaryCheck {
-				ok = bonus >= bonusBoundary
+				if forward && pidx_ == 0 {
+					bbonus = bonus
+				} else if !forward && pidx_ == lenPattern-1 {
+					if index_ < lenRunes-1 {
+						bbonus = bonusAt(text, index_+1)
+					} else {
+						bbonus = bonusBoundaryWhite
+					}
+				}
+				ok = bbonus >= bonusBoundary
 				if ok && pidx_ == 0 {
 					ok = index_ == 0 || charClassOf(text.Get(index_-1)) <= charDelimiter
 				}
