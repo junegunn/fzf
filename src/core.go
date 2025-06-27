@@ -88,6 +88,9 @@ func Run(opts *Options) (int, error) {
 				marker.color.attr = marker.color.attr | tui.FullBg
 				newOffsets := append(*offsets, marker)
 				offsets = &newOffsets
+
+				// Reset the full-line background color
+				lineAnsiState.lbg = -1
 			}
 			return util.ToChars(stringBytes(trimmed)), offsets
 		}

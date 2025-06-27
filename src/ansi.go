@@ -287,6 +287,8 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 						[2]int32{int32(runeCount), int32(runeCount)},
 						marker,
 					})
+					// Reset the full-line background color
+					newState.lbg = -1
 				}
 			}
 
