@@ -103,6 +103,7 @@ const (
 	AttrRegular   = Attr(1 << 7)
 	AttrClear     = Attr(1 << 8)
 	BoldForce     = Attr(1 << 10)
+	FullBg        = Attr(1 << 11)
 )
 
 func (r *FullscreenRenderer) Bell() {
@@ -161,10 +162,10 @@ func (c Color) Style() tcell.Color {
 func (a Attr) Merge(b Attr) Attr {
 	if b&AttrRegular > 0 {
 		// Only keep bold attribute set by the system
-		return b | (a & BoldForce)
+		return (b &^ AttrRegular) | (a & BoldForce)
 	}
 
-	return a | b
+	return (a &^ AttrRegular) | b
 }
 
 // handle the following as private members of FullscreenRenderer instance

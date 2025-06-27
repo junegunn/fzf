@@ -406,7 +406,6 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 		state.fg = -1
 		state.bg = -1
 		state.attr = 0
-		state.lbg = -1
 	}
 
 	if len(ansiCode) <= 3 {
