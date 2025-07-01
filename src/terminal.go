@@ -2928,7 +2928,7 @@ func (t *Terminal) printHeader() {
 }
 
 func (t *Terminal) printFooter() {
-	if len(t.footer) == 0 {
+	if len(t.footer) == 0 || t.footerWindow == nil {
 		return
 	}
 	indentSize := t.headerIndent(t.footerBorderShape)
