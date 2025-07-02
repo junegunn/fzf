@@ -5184,10 +5184,10 @@ func (t *Terminal) Loop() error {
 						t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, true)
 					case reqRedrawPreviewLabel:
 						t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.activePreviewOpts.Border(), true)
-					case reqReinit:
-						t.tui.Resume(t.fullscreen, true)
-						t.fullRedraw()
-					case reqResize, reqFullRedraw, reqRedraw:
+					case reqReinit, reqResize, reqFullRedraw, reqRedraw:
+						if req == reqReinit {
+							t.tui.Resume(t.fullscreen, true)
+						}
 						if req == reqResize {
 							t.termSize = t.tui.Size()
 						}
