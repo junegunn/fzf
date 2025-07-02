@@ -450,31 +450,35 @@ func (a byTimeOrder) Less(i, j int) bool {
 	return a[i].at.Before(a[j].at)
 }
 
+// EventTypes are listed in the order of their priority.
 const (
-	reqPrompt util.EventType = iota
+	reqResize util.EventType = iota
+	reqReinit
+	reqFullRedraw
+	reqRedraw
+
+	reqJump
+	reqPrompt
 	reqInfo
 	reqHeader
 	reqFooter
 	reqList
-	reqJump
-	reqActivate
-	reqReinit
-	reqFullRedraw
-	reqResize
-	reqRedraw
 	reqRedrawInputLabel
 	reqRedrawHeaderLabel
 	reqRedrawFooterLabel
 	reqRedrawListLabel
 	reqRedrawBorderLabel
 	reqRedrawPreviewLabel
-	reqClose
-	reqPrintQuery
+
 	reqPreviewReady
 	reqPreviewEnqueue
 	reqPreviewDisplay
 	reqPreviewRefresh
 	reqPreviewDelayed
+
+	reqActivate
+	reqClose
+	reqPrintQuery
 	reqBecome
 	reqQuit
 	reqFatal
@@ -1624,14 +1628,12 @@ func (t *Terminal) changeHeader(header string) bool {
 	return needFullRedraw
 }
 
-func (t *Terminal) changeFooter(footer string) bool {
+func (t *Terminal) changeFooter(footer string) {
 	var lines []string
 	if len(footer) > 0 {
 		lines = strings.Split(strings.TrimSuffix(footer, "\n"), "\n")
 	}
-	needFullRedraw := len(t.footer) != len(lines)
 	t.footer = lines
-	return needFullRedraw
 }
 
 // UpdateHeader updates the header
@@ -2885,6 +2887,13 @@ func (t *Terminal) printInfoImpl() {
 func (t *Terminal) resizeIfNeeded() bool {
 	// Check if input border is used and input has changed
 	if t.inputBorderShape.Visible() && t.inputWindow == nil && !t.inputless || t.inputWindow != nil && t.inputless {
+		t.printAll()
+		return true
+	}
+
+	// Check footer window
+	if len(t.footer) > 0 && (t.footerWindow == nil || t.footerWindow.Height() != len(t.footer)) ||
+		len(t.footer) == 0 && t.footerWindow != nil {
 		t.printAll()
 		return true
 	}
@@ -5116,6 +5125,8 @@ func (t *Terminal) Loop() error {
 				t.uiMutex.Lock()
 				t.mutex.Lock()
 				info := false
+				header := false
+				footer := false
 				for _, key := range keys {
 					req := util.EventType(key)
 					value := (*events)[req]
@@ -5153,13 +5164,9 @@ func (t *Terminal) Loop() error {
 						}
 						t.printList()
 					case reqHeader:
-						if !t.resizeIfNeeded() {
-							t.printHeader()
-						}
+						header = true
 					case reqFooter:
-						if !t.resizeIfNeeded() {
-							t.printFooter()
-						}
+						footer = true
 					case reqActivate:
 						t.suppress = false
 						if t.hasPreviewer() {
@@ -5243,8 +5250,16 @@ func (t *Terminal) Loop() error {
 						return
 					}
 				}
-				if info && !t.resizeIfNeeded() {
-					t.printInfo()
+				if (info || header || footer) && !t.resizeIfNeeded() {
+					if info {
+						t.printInfo()
+					}
+					if header {
+						t.printHeader()
+					}
+					if footer {
+						t.printFooter()
+					}
 				}
 				t.flush()
 				t.mutex.Unlock()
@@ -5670,24 +5685,17 @@ func (t *Terminal) Loop() error {
 				t.cx = len(t.input)
 			case actChangeHeader, actTransformHeader, actBgTransformHeader:
 				capture(false, func(header string) {
+					// When a dedicated header window is not used, we may need to
+					// update other elements as well.
 					if t.changeHeader(header) {
-						if t.headerWindow != nil {
-							// Need to resize header window
-							req(reqRedraw)
-						} else {
-							req(reqHeader, reqList, reqPrompt, reqInfo)
-						}
-					} else {
-						req(reqHeader)
+						req(reqList, reqPrompt, reqInfo)
 					}
+					req(reqHeader)
 				})
 			case actChangeFooter, actTransformFooter, actBgTransformFooter:
 				capture(false, func(footer string) {
-					if t.changeFooter(footer) {
-						req(reqRedraw)
-					} else {
-						req(reqFooter)
-					}
+					t.changeFooter(footer)
+					req(reqFooter)
 				})
 			case actChangeHeaderLabel, actTransformHeaderLabel, actBgTransformHeaderLabel:
 				capture(true, func(label string) {

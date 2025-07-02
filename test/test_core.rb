@@ -1981,4 +1981,11 @@ class TestCore < TestInteractive
       refute lines.any_include?('[1]')
     end
   end
+
+  def test_render_order
+    tmux.send_keys %(seq 100 | #{FZF} --bind='focus:preview(echo boom)+change-footer(bam)'), :Enter
+    tmux.until { assert_equal 100, it.match_count }
+    tmux.until { assert it.any_include?('boom') }
+    tmux.until { assert it.any_include?('bam') }
+  end
 end
