@@ -1938,6 +1938,17 @@ e.g.
                     echo "change\-header:Invalid selection"'
     \fR
 
+A common mistake when writing a \fBtransform\fR action is not escaping
+placeholder expressions when passing them back to fzf. In the following
+example, if you don't escape \fB{}\fR, fzf will immediately replace it with the
+single-quoted string of the current item. This causes single quotes to appear
+in the header and footer, and the script will break if any item contains
+double-quote characters.
+
+    \fBfzf \-\-bind 'focus:transform:[[ $FZF_ACTION =~ up ]] &&
+                echo "change\-header()+transform\-footer:echo \\{}" ||
+                echo "change\-footer()+transform\-header:echo \\{}"'\fR
+
 .SS TRANSFORM IN THE BACKGROUND
 
 Transform actions are synchronous, meaning fzf becomes unresponsive while the
