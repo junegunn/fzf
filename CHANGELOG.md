@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.63.1
+------
+- [Halfwidth and fullwidth alphanumeric and punctuation characters](https://en.wikipedia.org/wiki/Halfwidth_and_Fullwidth_Forms_(Unicode_block)) are now internally normalized to their ASCII equivalents to allow matching with ASCII queries.
+  ```sh
+  echo ＡＢＣ| fzf -q abc
+  ```
+- Fixed a bug which caused fzf to abort due to incorrect update ordering.
+
 0.63.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.63.0/_
