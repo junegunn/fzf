@@ -110,11 +110,12 @@ func _() {
 	_ = x[Jump-99]
 	_ = x[JumpCancel-100]
 	_ = x[ClickHeader-101]
+	_ = x[Multi-102]
 }
 
-const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLEnterCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlDeleteCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltCtrlAltInvalidFatalBracketedPasteBeginBracketedPasteEndMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeader"
+const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLEnterCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlDeleteCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltCtrlAltInvalidFatalBracketedPasteBeginBracketedPasteEndMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeaderMulti"
 
-var _EventType_index = [...]uint16{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 135, 144, 154, 167, 183, 192, 201, 209, 218, 224, 230, 238, 240, 244, 248, 253, 257, 260, 266, 273, 282, 291, 301, 312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 333, 336, 339, 351, 356, 363, 370, 378, 388, 400, 412, 425, 428, 435, 442, 447, 466, 483, 488, 499, 508, 518, 528, 539, 547, 557, 566, 577, 592, 609, 615, 621, 632, 637, 641, 646, 649, 653, 659, 663, 673, 684}
+var _EventType_index = [...]uint16{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 135, 144, 154, 167, 183, 192, 201, 209, 218, 224, 230, 238, 240, 244, 248, 253, 257, 260, 266, 273, 282, 291, 301, 312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 333, 336, 339, 351, 356, 363, 370, 378, 388, 400, 412, 425, 428, 435, 442, 447, 466, 483, 488, 499, 508, 518, 528, 539, 547, 557, 566, 577, 592, 609, 615, 621, 632, 637, 641, 646, 649, 653, 659, 663, 673, 684, 689}
 
 func (i EventType) String() string {
 	if i < 0 || i >= EventType(len(_EventType_index)-1) {
