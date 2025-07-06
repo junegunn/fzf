@@ -1930,7 +1930,10 @@ class TestCore < TestInteractive
 
   def test_change_header_on_header_window
     tmux.send_keys %(seq 100 | #{FZF} --list-border --input-border --bind 'start:change-header(foo),space:change-header(bar)'), :Enter
-    tmux.until { |lines| assert lines.any_include?('foo') }
+    tmux.until do |lines|
+      assert lines.any_include?('100/100')
+      assert lines.any_include?('foo')
+    end
     tmux.send_keys :Space
     tmux.until { |lines| assert lines.any_include?('bar') }
   end

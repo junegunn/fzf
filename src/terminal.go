@@ -2901,16 +2901,19 @@ func (t *Terminal) resizeIfNeeded() bool {
 	// Check if the header borders are used and header has changed
 	allHeaderLines := t.visibleHeaderLines()
 	primaryHeaderLines := allHeaderLines
-	if t.hasHeaderLinesWindow() {
+	needHeaderWindow := t.hasHeaderWindow()
+	needHeaderLinesWindow := t.hasHeaderLinesWindow()
+	if needHeaderLinesWindow {
 		primaryHeaderLines -= t.headerLines
 	}
 	// FIXME: Full redraw is triggered if there are too many lines in the header
 	// so that the header window cannot display all of them.
-	needHeaderLinesWindow := t.hasHeaderLinesWindow()
-	if (t.headerBorderShape.Visible() || needHeaderLinesWindow) &&
-		(t.headerWindow == nil && primaryHeaderLines > 0 || t.headerWindow != nil && primaryHeaderLines != t.headerWindow.Height()) ||
-		needHeaderLinesWindow && (t.headerLinesWindow == nil || t.headerLinesWindow != nil && t.headerLines != t.headerLinesWindow.Height()) ||
-		!needHeaderLinesWindow && t.headerLinesWindow != nil {
+	if (needHeaderWindow && t.headerWindow == nil) ||
+		(!needHeaderWindow && t.headerWindow != nil) ||
+		(needHeaderWindow && t.headerWindow != nil && primaryHeaderLines != t.headerWindow.Height()) ||
+		(needHeaderLinesWindow && t.headerLinesWindow == nil) ||
+		(!needHeaderLinesWindow && t.headerLinesWindow != nil) ||
+		(needHeaderLinesWindow && t.headerLinesWindow != nil && t.headerLines != t.headerLinesWindow.Height()) {
 		t.printAll()
 		return true
 	}
