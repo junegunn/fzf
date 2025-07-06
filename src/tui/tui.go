@@ -132,6 +132,7 @@ const (
 	Jump
 	JumpCancel
 	ClickHeader
+	Multi
 )
 
 func (t EventType) AsEvent() Event {

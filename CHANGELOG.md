@@ -1,13 +1,18 @@
 CHANGELOG
 =========
 
-0.63.1
+0.64.0
 ------
+- Added `multi` event that is triggered when the multi-selection has changed.
+  ```sh
+  fzf --multi --bind 'multi:transform-footer:(( FZF_SELECT_COUNT )) && echo "Selected: $FZF_SELECT_COUNT item(s)"'
+  ```
 - [Halfwidth and fullwidth alphanumeric and punctuation characters](https://en.wikipedia.org/wiki/Halfwidth_and_Fullwidth_Forms_(Unicode_block)) are now internally normalized to their ASCII equivalents to allow matching with ASCII queries.
   ```sh
   echo ＡＢＣ| fzf -q abc
   ```
 - Fixed a bug which caused fzf to abort due to incorrect update ordering.
+- Renamed `clear-selection` action to `clear-multi` for consistency.
 
 0.63.0
 ------

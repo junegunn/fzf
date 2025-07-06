@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jun 2025" "fzf 0.63.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Jul 2025" "fzf 0.64.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -1609,6 +1609,10 @@ e.g.
      # Beware not to introduce an infinite loop
      seq 10 | fzf \-\-bind 'focus:up' \-\-cycle\fR
 .RE
+\fImulti\fR
+.RS
+Triggered when the multi\-selection has changed.
+.RE
 
 \fIone\fR
 .RS
@@ -1711,7 +1715,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBchange\-prompt(...)\fR           (change prompt to the given string)
     \fBchange\-query(...)\fR            (change query string to the given string)
     \fBclear\-screen\fR                 \fIctrl\-l\fR
-    \fBclear\-selection\fR              (clear multi\-selection)
+    \fBclear\-multi\fR                  (clear multi\-selection)
     \fBclose\fR                        (close preview window if open, abort fzf otherwise)
     \fBclear\-query\fR                  (clear query string)
     \fBdelete\-char\fR                  \fIdel\fR

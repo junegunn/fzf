@@ -1988,4 +1988,15 @@ class TestCore < TestInteractive
     tmux.until { assert it.any_include?('boom') }
     tmux.until { assert it.any_include?('bam') }
   end
+
+  def test_multi_event
+    tmux.send_keys %(seq 100 | #{FZF} --multi --bind 'multi:transform-footer:(( FZF_SELECT_COUNT )) && echo "Selected $FZF_SELECT_COUNT item(s)"'), :Enter
+    tmux.until { assert_equal 100, it.match_count }
+    tmux.send_keys :Tab
+    tmux.until { assert_equal 1, it.select_count }
+    tmux.until { assert it.any_include?('Selected 1 item(s)') }
+    tmux.send_keys :Tab
+    tmux.until { assert_equal 0, it.select_count }
+    tmux.until { refute it.any_include?('Selected') }
+  end
 end

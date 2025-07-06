@@ -1008,6 +1008,8 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.JumpCancel)
 		case "click-header":
 			add(tui.ClickHeader)
+		case "multi":
+			add(tui.Multi)
 		case "alt-enter", "alt-return":
 			chords[tui.CtrlAltKey('m')] = key
 		case "alt-space":
@@ -1561,7 +1563,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actCancel)
 		case "clear-query":
 			appendAction(actClearQuery)
-		case "clear-selection":
+		case "clear-multi", "clear-selection":
 			appendAction(actClearSelection)
 		case "forward-char":
 			appendAction(actForwardChar)

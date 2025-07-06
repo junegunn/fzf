@@ -5399,6 +5399,7 @@ func (t *Terminal) Loop() error {
 		}
 		previousInput := t.input
 		previousCx := t.cx
+		previousVersion := t.version
 		t.lastKey = event.KeyName()
 		updatePreviewWindow := func(forcePreview bool) {
 			t.resizeWindows(forcePreview, false)
@@ -6654,6 +6655,9 @@ func (t *Terminal) Loop() error {
 				continue
 			}
 			if onEOFs, prs := t.keymap[tui.BackwardEOF.AsEvent()]; beof && prs && !doActions(onEOFs) {
+				continue
+			}
+			if onMultis, prs := t.keymap[tui.Multi.AsEvent()]; t.version != previousVersion && prs && !doActions(onMultis) {
 				continue
 			}
 		} else {
