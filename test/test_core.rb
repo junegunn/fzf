@@ -2002,4 +2002,37 @@ class TestCore < TestInteractive
     tmux.until { assert_equal 0, it.select_count }
     tmux.until { refute it.any_include?('Selected') }
   end
+
+  def test_preserve_selection_on_revision_bump
+    tmux.send_keys %(seq 100 | #{FZF} --multi --sync --query "'1" --bind 'a:select-all+change-header(pressed a),b:change-header(pressed b)+change-nth(1),c:exclude'), :Enter
+    tmux.until do
+      assert_equal 20, it.match_count
+      assert_equal 0, it.select_count
+    end
+    tmux.send_keys :a
+    tmux.until do
+      assert_equal 20, it.match_count
+      assert_equal 20, it.select_count
+      assert it.any_include?('pressed a')
+    end
+    tmux.send_keys :b
+    tmux.until do
+      assert_equal 20, it.match_count
+      assert_equal 20, it.select_count
+      refute it.any_include?('pressed a')
+      assert it.any_include?('pressed b')
+    end
+    tmux.send_keys :a
+    tmux.until do
+      assert_equal 20, it.match_count
+      assert_equal 20, it.select_count
+      assert it.any_include?('pressed a')
+      refute it.any_include?('pressed b')
+    end
+    tmux.send_keys :c
+    tmux.until do
+      assert_equal 19, it.match_count
+      assert_equal 19, it.select_count
+    end
+  end
 end

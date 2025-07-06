@@ -1680,12 +1680,12 @@ func (t *Terminal) UpdateList(merger *Merger) {
 			// Trimmed by --tail: filter selection by index
 			filtered := make(map[int32]selectedItem)
 			minIndex := merger.minIndex
-			maxIndex := minIndex + int32(merger.Length())
+			maxIndex := merger.maxIndex
 			for k, v := range t.selected {
 				var included bool
 				if maxIndex > minIndex {
 					included = k >= minIndex && k < maxIndex
-				} else { // int32 overflow [==>   <==]
+				} else if maxIndex < minIndex { // int32 overflow [==>   <==]
 					included = k >= minIndex || k < maxIndex
 				}
 				if included {
