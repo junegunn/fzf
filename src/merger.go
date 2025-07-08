@@ -4,7 +4,7 @@ import "fmt"
 
 // EmptyMerger is a Merger with no data
 func EmptyMerger(revision revision) *Merger {
-	return NewMerger(nil, [][]Result{}, false, false, revision, 0)
+	return NewMerger(nil, [][]Result{}, false, false, revision, 0, 0)
 }
 
 // Merger holds a set of locally sorted lists of items and provides the view of
@@ -22,14 +22,16 @@ type Merger struct {
 	pass     bool
 	revision revision
 	minIndex int32
+	maxIndex int32
 }
 
 // PassMerger returns a new Merger that simply returns the items in the
 // original order
 func PassMerger(chunks *[]*Chunk, tac bool, revision revision) *Merger {
-	var minIndex int32
+	var minIndex, maxIndex int32
 	if len(*chunks) > 0 {
 		minIndex = (*chunks)[0].items[0].Index()
+		maxIndex = (*chunks)[len(*chunks)-1].lastIndex(minIndex)
 	}
 	mg := Merger{
 		pattern:  nil,
@@ -38,7 +40,8 @@ func PassMerger(chunks *[]*Chunk, tac bool, revision revision) *Merger {
 		count:    0,
 		pass:     true,
 		revision: revision,
-		minIndex: minIndex}
+		minIndex: minIndex,
+		maxIndex: maxIndex}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += chunk.count
@@ -47,7 +50,7 @@ func PassMerger(chunks *[]*Chunk, tac bool, revision revision) *Merger {
 }
 
 // NewMerger returns a new Merger
-func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revision revision, minIndex int32) *Merger {
+func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revision revision, minIndex int32, maxIndex int32) *Merger {
 	mg := Merger{
 		pattern:  pattern,
 		lists:    lists,
@@ -59,7 +62,8 @@ func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revisi
 		final:    false,
 		count:    0,
 		revision: revision,
-		minIndex: minIndex}
+		minIndex: minIndex,
+		maxIndex: maxIndex}
 
 	for _, list := range mg.lists {
 		mg.count += len(list)

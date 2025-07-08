@@ -44,11 +44,11 @@ func ttyname() string {
 }
 
 // TtyIn returns terminal device to read user input
-func TtyIn() (*os.File, error) {
-	return openTtyIn()
+func TtyIn(ttyDefault string) (*os.File, error) {
+	return openTtyIn(ttyDefault)
 }
 
-// TtyIn returns terminal device to write to
-func TtyOut() (*os.File, error) {
-	return openTtyOut()
+// TtyOut returns terminal device to write to
+func TtyOut(ttyDefault string) (*os.File, error) {
+	return openTtyOut(ttyDefault)
 }

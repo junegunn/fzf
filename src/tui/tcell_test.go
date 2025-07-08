@@ -10,7 +10,7 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-func assert(t *testing.T, context string, got interface{}, want interface{}) bool {
+func assert(t *testing.T, context string, got any, want any) bool {
 	if got == want {
 		return true
 	} else {
@@ -82,9 +82,9 @@ func TestGetCharEventKey(t *testing.T) {
 		{giveKey{tcell.KeyTab, rune(tcell.KeyTab), tcell.ModNone}, wantKey{Tab, 0, nil}},     // unhandled, actual "Tab" keystroke
 		{giveKey{tcell.KeyTAB, rune(tcell.KeyTAB), tcell.ModNone}, wantKey{Tab, 0, nil}},     // fabricated, unhandled
 		// KeyEnter is alias for KeyCR
-		{giveKey{tcell.KeyCtrlM, rune(tcell.KeyCtrlM), tcell.ModNone}, wantKey{CtrlM, 0, nil}}, // actual "Enter" keystroke
-		{giveKey{tcell.KeyCR, rune(tcell.KeyCR), tcell.ModNone}, wantKey{CtrlM, 0, nil}},       // fabricated, unhandled
-		{giveKey{tcell.KeyEnter, rune(tcell.KeyEnter), tcell.ModNone}, wantKey{CtrlM, 0, nil}}, // fabricated, unhandled
+		{giveKey{tcell.KeyCtrlM, rune(tcell.KeyCtrlM), tcell.ModNone}, wantKey{Enter, 0, nil}}, // actual "Enter" keystroke
+		{giveKey{tcell.KeyCR, rune(tcell.KeyCR), tcell.ModNone}, wantKey{Enter, 0, nil}},       // fabricated, unhandled
+		{giveKey{tcell.KeyEnter, rune(tcell.KeyEnter), tcell.ModNone}, wantKey{Enter, 0, nil}}, // fabricated, unhandled
 		// Ctrl+Alt keys
 		{giveKey{tcell.KeyCtrlA, rune(tcell.KeyCtrlA), tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAlt, 'a', nil}},                  // fabricated
 		{giveKey{tcell.KeyCtrlA, rune(tcell.KeyCtrlA), tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{CtrlAlt, 'a', nil}}, // fabricated
@@ -233,7 +233,7 @@ Quick reference
 10	1	KeyCtrlJ	KeyLF = ^J		CtrlJ
 11	1	KeyCtrlK	KeyVT = ^K		CtrlK
 12	1	KeyCtrlL	KeyFF = ^L		CtrlL
-13	1	KeyCtrlM	KeyCR = ^M	KeyEnter	CtrlM
+13	1	KeyCtrlM	KeyCR = ^M	KeyEnter	Enter
 14	1	KeyCtrlN	KeySO = ^N		CtrlN
 15	1	KeyCtrlO	KeySI = ^O		CtrlO
 16	1	KeyCtrlP	KeyDLE = ^P		CtrlP

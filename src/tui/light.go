@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -27,10 +28,14 @@ const (
 	maxInputBuffer  = 1024 * 1024
 )
 
-const consoleDevice string = "/dev/tty"
+const DefaultTtyDevice string = "/dev/tty"
 
-var offsetRegexp = regexp.MustCompile("(.*)\x1b\\[([0-9]+);([0-9]+)R")
+var offsetRegexp = regexp.MustCompile("(.*?)\x00?\x1b\\[([0-9]+);([0-9]+)R")
 var offsetRegexpBegin = regexp.MustCompile("^\x1b\\[[0-9]+;[0-9]+R")
+
+func (r *LightRenderer) Bell() {
+	r.flushRaw("\a")
+}
 
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
@@ -40,8 +45,9 @@ func (r *LightRenderer) stderr(str string) {
 	r.stderrInternal(str, true, "")
 }
 
-const CR string = "\x1b[2m␍"
-const LF string = "\x1b[2m␊"
+const DIM string = "\x1b[2m"
+const CR string = DIM + "␍"
+const LF string = DIM + "␊"
 
 func (r *LightRenderer) stderrInternal(str string, allowNLCR bool, resetCode string) {
 	bytes := []byte(str)
@@ -73,14 +79,23 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		fmt.Fprint(r.ttyout, "\x1b[?7l\x1b[?25l"+r.queued.String()+"\x1b[?25h\x1b[?7h")
+		raw := "\x1b[?7l\x1b[?25l" + r.queued.String()
+		if r.showCursor {
+			raw += "\x1b[?25h\x1b[?7h"
+		} else {
+			raw += "\x1b[?7h"
+		}
+		r.flushRaw(raw)
 		r.queued.Reset()
 	}
 }
 
+func (r *LightRenderer) flushRaw(sequence string) {
+	fmt.Fprint(r.ttyout, sequence)
+}
+
 // Light renderer
 type LightRenderer struct {
-	closed        *util.AtomicBool
 	theme         *ColorTheme
 	mouse         bool
 	forceBlack    bool
@@ -102,8 +117,10 @@ type LightRenderer struct {
 	y             int
 	x             int
 	maxHeightFunc func(int) int
+	showCursor    bool
 
 	// Windows only
+	mutex           sync.Mutex
 	ttyinChannel    chan byte
 	inHandle        uintptr
 	outHandle       uintptr
@@ -112,28 +129,29 @@ type LightRenderer struct {
 }
 
 type LightWindow struct {
-	renderer *LightRenderer
-	colored  bool
-	preview  bool
-	border   BorderStyle
-	top      int
-	left     int
-	width    int
-	height   int
-	posx     int
-	posy     int
-	tabstop  int
-	fg       Color
-	bg       Color
+	renderer      *LightRenderer
+	colored       bool
+	windowType    WindowType
+	border        BorderStyle
+	top           int
+	left          int
+	width         int
+	height        int
+	posx          int
+	posy          int
+	tabstop       int
+	fg            Color
+	bg            Color
+	wrapSign      string
+	wrapSignWidth int
 }
 
-func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
-	out, err := openTtyOut()
+func NewLightRenderer(ttyDefault string, ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
+	out, err := openTtyOut(ttyDefault)
 	if err != nil {
 		out = os.Stderr
 	}
 	r := LightRenderer{
-		closed:        util.NewAtomicBool(false),
 		theme:         theme,
 		forceBlack:    forceBlack,
 		mouse:         mouse,
@@ -144,7 +162,8 @@ func NewLightRenderer(ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse 
 		tabstop:       tabstop,
 		fullscreen:    fullscreen,
 		upOneLine:     false,
-		maxHeightFunc: maxHeightFunc}
+		maxHeightFunc: maxHeightFunc,
+		showCursor:    true}
 	return &r, nil
 }
 
@@ -170,7 +189,6 @@ func (r *LightRenderer) Init() error {
 		return err
 	}
 	r.updateTerminalSize()
-	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
 	if r.fullscreen {
 		r.smcup()
@@ -195,7 +213,7 @@ func (r *LightRenderer) Init() error {
 		}
 	}
 
-	r.enableMouse()
+	r.enableModes()
 	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
 	r.csi("G")
 	r.csi("K")
@@ -253,7 +271,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 	c, ok := r.getch(nonblock)
 	if !nonblock && !ok {
 		r.Close()
-		return nil, errors.New("failed to read " + consoleDevice)
+		return nil, errors.New("failed to read " + DefaultTtyDevice)
 	}
 
 	retries := 0
@@ -444,10 +462,11 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				// Bracketed paste mode: \e[200~ ... \e[201~
 				if len(r.buffer) > 5 && r.buffer[3] == '0' && (r.buffer[4] == '0' || r.buffer[4] == '1') && r.buffer[5] == '~' {
-					// Immediately discard the sequence from the buffer and reread input
-					r.buffer = r.buffer[6:]
-					*sz = 0
-					return r.GetChar()
+					*sz = 6
+					if r.buffer[4] == '0' {
+						return Event{BracketedPasteBegin, 0, nil}
+					}
+					return Event{BracketedPasteEnd, 0, nil}
 				}
 				return Event{Invalid, 0, nil} // INS
 			case '3':
@@ -619,15 +638,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 
 	// middle := t & 0b1
 	left := t&0b11 == 0
-
-	// shift := t & 0b100
-	// ctrl := t & 0b1000
-	mod := t&0b1100 > 0
-
-	drag := t&0b100000 > 0
+	ctrl := t&0b10000 > 0
+	alt := t&0b01000 > 0
+	shift := t&0b00100 > 0
+	drag := t&0b100000 > 0 // 32
 
 	if scroll != 0 {
-		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, mod}}
+		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, ctrl, alt, shift}}
 	}
 
 	double := false
@@ -651,19 +668,21 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 			}
 		}
 	}
-	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
+	return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, ctrl, alt, shift}}
 }
 
 func (r *LightRenderer) smcup() {
-	r.csi("?1049h")
+	r.flush()
+	r.flushRaw("\x1b[?1049h")
 }
 
 func (r *LightRenderer) rmcup() {
-	r.csi("?1049l")
+	r.flush()
+	r.flushRaw("\x1b[?1049l")
 }
 
 func (r *LightRenderer) Pause(clear bool) {
-	r.disableMouse()
+	r.disableModes()
 	r.restoreTerminal()
 	if clear {
 		if r.fullscreen {
@@ -676,12 +695,13 @@ func (r *LightRenderer) Pause(clear bool) {
 	}
 }
 
-func (r *LightRenderer) enableMouse() {
+func (r *LightRenderer) enableModes() {
 	if r.mouse {
 		r.csi("?1000h")
 		r.csi("?1002h")
 		r.csi("?1006h")
 	}
+	r.csi("?2004h") // Enable bracketed paste mode
 }
 
 func (r *LightRenderer) disableMouse() {
@@ -692,6 +712,11 @@ func (r *LightRenderer) disableMouse() {
 	}
 }
 
+func (r *LightRenderer) disableModes() {
+	r.disableMouse()
+	r.csi("?2004l")
+}
+
 func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
 	if clear {
@@ -700,7 +725,7 @@ func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 		} else {
 			r.rmcup()
 		}
-		r.enableMouse()
+		r.enableModes()
 		r.flush()
 	} else if sigcont && !r.fullscreen && r.mouse {
 		// NOTE: SIGCONT (Coming back from CTRL-Z):
@@ -752,11 +777,13 @@ func (r *LightRenderer) Close() {
 	} else if !r.fullscreen {
 		r.csi("u")
 	}
-	r.disableMouse()
+	if !r.showCursor {
+		r.csi("?25h")
+	}
+	r.disableModes()
 	r.flush()
-	r.closePlatform()
 	r.restoreTerminal()
-	r.closed.Set(true)
+	r.closePlatform()
 }
 
 func (r *LightRenderer) Top() int {
@@ -774,27 +801,43 @@ func (r *LightRenderer) MaxY() int {
 	return r.height
 }
 
-func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
+func (r *LightRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
+	width = util.Max(0, width)
+	height = util.Max(0, height)
 	w := &LightWindow{
-		renderer: r,
-		colored:  r.theme.Colored,
-		preview:  preview,
-		border:   borderStyle,
-		top:      top,
-		left:     left,
-		width:    width,
-		height:   height,
-		tabstop:  r.tabstop,
-		fg:       colDefault,
-		bg:       colDefault}
-	if preview {
-		w.fg = r.theme.PreviewFg.Color
-		w.bg = r.theme.PreviewBg.Color
-	} else {
+		renderer:   r,
+		colored:    r.theme.Colored,
+		windowType: windowType,
+		border:     borderStyle,
+		top:        top,
+		left:       left,
+		width:      width,
+		height:     height,
+		tabstop:    r.tabstop,
+		fg:         colDefault,
+		bg:         colDefault}
+	switch windowType {
+	case WindowBase:
 		w.fg = r.theme.Fg.Color
 		w.bg = r.theme.Bg.Color
+	case WindowList:
+		w.fg = r.theme.ListFg.Color
+		w.bg = r.theme.ListBg.Color
+	case WindowInput:
+		w.fg = r.theme.Input.Color
+		w.bg = r.theme.InputBg.Color
+	case WindowHeader:
+		w.fg = r.theme.Header.Color
+		w.bg = r.theme.HeaderBg.Color
+	case WindowFooter:
+		w.fg = r.theme.Footer.Color
+		w.bg = r.theme.FooterBg.Color
+	case WindowPreview:
+		w.fg = r.theme.PreviewFg.Color
+		w.bg = r.theme.PreviewBg.Color
 	}
-	if !w.bg.IsDefault() && w.border.shape != BorderNone {
+	if erase && !w.bg.IsDefault() && w.border.shape != BorderNone && w.height > 0 {
+		// fzf --color bg:blue --border --padding 1,2
 		w.Erase()
 	}
 	w.drawBorder(false)
@@ -810,6 +853,9 @@ func (w *LightWindow) DrawHBorder() {
 }
 
 func (w *LightWindow) drawBorder(onlyHorizontal bool) {
+	if w.height == 0 {
+		return
+	}
 	switch w.border.shape {
 	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
 		w.drawBorderAround(onlyHorizontal)
@@ -839,7 +885,16 @@ func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 
 func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
@@ -857,7 +912,16 @@ func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
 func (w *LightWindow) drawBorderVertical(left, right bool) {
 	vw := runeWidth(w.border.left)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	for y := 0; y < w.height; y++ {
@@ -877,7 +941,16 @@ func (w *LightWindow) drawBorderVertical(left, right bool) {
 func (w *LightWindow) drawBorderAround(onlyHorizontal bool) {
 	w.Move(0, 0)
 	color := ColBorder
-	if w.preview {
+	switch w.windowType {
+	case WindowList:
+		color = ColListBorder
+	case WindowInput:
+		color = ColInputBorder
+	case WindowHeader:
+		color = ColHeaderBorder
+	case WindowFooter:
+		color = ColFooterBorder
+	case WindowPreview:
 		color = ColPreviewBorder
 	}
 	hw := runeWidth(w.border.top)
@@ -929,9 +1002,6 @@ func (w *LightWindow) Height() int {
 func (w *LightWindow) Refresh() {
 }
 
-func (w *LightWindow) Close() {
-}
-
 func (w *LightWindow) X() int {
 	return w.posx
 }
@@ -940,9 +1010,16 @@ func (w *LightWindow) Y() int {
 	return w.posy
 }
 
+func (w *LightWindow) EncloseX(x int) bool {
+	return x >= w.left && x < (w.left+w.width)
+}
+
+func (w *LightWindow) EncloseY(y int) bool {
+	return y >= w.top && y < (w.top+w.height)
+}
+
 func (w *LightWindow) Enclose(y int, x int) bool {
-	return x >= w.left && x < (w.left+w.width) &&
-		y >= w.top && y < (w.top+w.height)
+	return w.EncloseX(x) && w.EncloseY(y)
 }
 
 func (w *LightWindow) Move(y int, x int) {
@@ -965,7 +1042,7 @@ func attrCodes(attr Attr) []string {
 	if (attr & AttrClear) > 0 {
 		return codes
 	}
-	if (attr & Bold) > 0 {
+	if (attr&Bold) > 0 || (attr&BoldForce) > 0 {
 		codes = append(codes, "1")
 	}
 	if (attr & Dim) > 0 {
@@ -1046,11 +1123,12 @@ type wrappedLine struct {
 	displayWidth int
 }
 
-func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLine {
+func wrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapSignWidth int) []wrappedLine {
 	lines := []wrappedLine{}
 	width := 0
 	line := ""
 	gr := uniseg.NewGraphemes(input)
+	max := initialMax
 	for gr.Next() {
 		rs := gr.Runes()
 		str := string(rs)
@@ -1072,6 +1150,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 			line = str
 			prefixLength = 0
 			width = w
+			max = initialMax - wrapSignWidth
 		}
 	}
 	lines = append(lines, wrappedLine{string(line), width})
@@ -1081,7 +1160,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 	allLines := strings.Split(str, "\n")
 	for i, line := range allLines {
-		lines := wrapLine(line, w.posx, w.width, w.tabstop)
+		lines := wrapLine(line, w.posx, w.width, w.tabstop, w.wrapSignWidth)
 		for j, wl := range lines {
 			w.stderrInternal(wl.text, false, resetCode)
 			w.posx += wl.displayWidth
@@ -1094,10 +1173,22 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 				w.MoveAndClear(w.posy, w.posx)
 				w.Move(w.posy+1, 0)
 				w.renderer.stderr(resetCode)
+				if len(lines) > 1 {
+					sign := w.wrapSign
+					width := w.wrapSignWidth
+					if width > w.width {
+						runes, truncatedWidth := util.Truncate(w.wrapSign, w.width)
+						sign = string(runes)
+						width = truncatedWidth
+					}
+					w.stderrInternal(DIM+sign, false, resetCode)
+					w.renderer.stderr(resetCode)
+					w.Move(w.posy, width)
+				}
 			}
 		}
 	}
-	if w.posx+1 >= w.Width() {
+	if w.posx >= w.Width() {
 		if w.posy+1 >= w.height {
 			return FillSuspend
 		}
@@ -1165,4 +1256,19 @@ func (w *LightWindow) Erase() {
 
 func (w *LightWindow) EraseMaybe() bool {
 	return false
+}
+
+func (w *LightWindow) SetWrapSign(sign string, width int) {
+	w.wrapSign = sign
+	w.wrapSignWidth = width
+}
+
+func (r *LightRenderer) HideCursor() {
+	r.showCursor = false
+	r.csi("?25l")
+}
+
+func (r *LightRenderer) ShowCursor() {
+	r.showCursor = true
+	r.csi("?25h")
 }

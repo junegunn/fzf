@@ -44,11 +44,6 @@ func needWinpty(opts *Options) bool {
 }
 
 func runWinpty(args []string, opts *Options) (int, error) {
-	sh, err := sh()
-	if err != nil {
-		return ExitError, err
-	}
-
 	argStr := escapeSingleQuote(args[0])
 	for _, arg := range args[1:] {
 		argStr += " " + escapeSingleQuote(arg)
@@ -56,20 +51,30 @@ func runWinpty(args []string, opts *Options) (int, error) {
 	argStr += ` --no-winpty`
 
 	if isMintty345() {
-		return runProxy(argStr, func(temp string) *exec.Cmd {
+		return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
+			sh, err := sh(needBash)
+			if err != nil {
+				return nil, err
+			}
+
 			cmd := exec.Command(sh, temp)
 			cmd.Env = append(os.Environ(), "MSYS=enable_pcon")
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
-			return cmd
+			return cmd, nil
 		}, opts, false)
 	}
 
-	return runProxy(argStr, func(temp string) *exec.Cmd {
+	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
+		sh, err := sh(needBash)
+		if err != nil {
+			return nil, err
+		}
+
 		cmd := exec.Command(sh, "-c", fmt.Sprintf(`winpty < /dev/tty > /dev/tty -- sh %q`, temp))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		return cmd
+		return cmd, nil
 	}, opts, false)
 }

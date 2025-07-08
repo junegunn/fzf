@@ -1,8 +1,8 @@
 Advanced fzf examples
 ======================
 
-* *Last update: 2024/06/24*
-* *Requires fzf 0.54.0 or later*
+* *Last update: 2025/02/02*
+* *Requires fzf 0.59.0 or later*
 
 ---
 
@@ -22,6 +22,7 @@ Advanced fzf examples
     * [Switching to fzf-only search mode](#switching-to-fzf-only-search-mode)
     * [Switching between Ripgrep mode and fzf mode](#switching-between-ripgrep-mode-and-fzf-mode)
     * [Switching between Ripgrep mode and fzf mode using a single key binding](#switching-between-ripgrep-mode-and-fzf-mode-using-a-single-key-binding)
+    * [Controlling Ripgrep search and fzf search simultaneously](#controlling-ripgrep-search-and-fzf-search-simultaneously)
 * [Log tailing](#log-tailing)
 * [Key bindings for git objects](#key-bindings-for-git-objects)
     * [Files listed in `git status`](#files-listed-in-git-status)
@@ -92,7 +93,7 @@ fzf --height=40% --layout=reverse --info=inline --border --margin=1 --padding=1
 
 ![image](https://user-images.githubusercontent.com/700826/113379932-dfeac200-93b5-11eb-9e28-df1a2ee71f90.png)
 
-*(See `Layout` section of the man page to see the full list of options)*
+*(See man page to see the full list of options)*
 
 But you definitely don't want to repeat `--height=40% --layout=reverse
 --info=inline --border --margin=1 --padding=1` every time you use fzf. You
@@ -128,7 +129,7 @@ fzf  --height 70% --tmux 70%
 You can also specify the position, width, and height of the popup window in
 the following format:
 
-* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]`
+* `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]]`
 
 ```sh
 # 100% width and 60% height
@@ -500,6 +501,44 @@ fzf --ansi --disabled --query "$INITIAL_QUERY" \
     --bind 'enter:become(vim {1} +{2})'
 ```
 
+### Controlling Ripgrep search and fzf search simultaneously
+
+`search` and `transform-search` action allow you to trigger an fzf search with
+an arbitrary query string. This frees fzf from strictly following the prompt
+input, enabling custom search syntax.
+
+In the example below, `transform` action is used to conditionally trigger
+`reload` for ripgrep, followed by `search` for fzf. The first word of the
+query initiates the Ripgrep process to generate the initial results, while the
+remainder of the query is passed to fzf for secondary filtering.
+
+```sh
+#!/usr/bin/env bash
+
+export TEMP=$(mktemp -u)
+trap 'rm -f "$TEMP"' EXIT
+
+INITIAL_QUERY="${*:-}"
+TRANSFORMER='
+  rg_pat={q:1}      # The first word is passed to ripgrep
+  fzf_pat={q:2..}   # The rest are passed to fzf
+
+  if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+    echo "$rg_pat" > "$TEMP"
+    printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
+  fi
+  echo "+search:$fzf_pat"
+'
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --with-shell 'bash -c' \
+    --bind "start,change:transform:$TRANSFORMER" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-line,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
 Log tailing
 -----------
 
@@ -529,8 +568,7 @@ pods() {
     --info=inline --layout=reverse --header-lines=1 \
     --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
     --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
-    --bind 'start:reload:$command' \
-    --bind 'ctrl-r:reload:$command' \
+    --bind 'start,ctrl-r:reload:$command' \
     --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
     --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
     --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \

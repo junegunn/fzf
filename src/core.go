@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 )
 
@@ -39,7 +40,7 @@ func (r revision) compatible(other revision) bool {
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if opts.Filter == nil {
-		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
+		if opts.useTmux() {
 			return runTmux(os.Args, opts)
 		}
 
@@ -74,20 +75,24 @@ func Run(opts *Options) (int, error) {
 
 	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
-		if opts.Theme.Colored {
-			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				prevLineAnsiState = lineAnsiState
-				trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
-				lineAnsiState = newState
-				return util.ToChars(stringBytes(trimmed)), offsets
+		ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
+			prevLineAnsiState = lineAnsiState
+			trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
+			lineAnsiState = newState
+
+			// Full line background is found. Add a special marker.
+			if offsets != nil && newState != nil && len(*offsets) > 0 && newState.lbg >= 0 {
+				marker := (*offsets)[len(*offsets)-1]
+				marker.offset[0] = marker.offset[1]
+				marker.color.bg = newState.lbg
+				marker.color.attr = marker.color.attr | tui.FullBg
+				newOffsets := append(*offsets, marker)
+				offsets = &newOffsets
+
+				// Reset the full-line background color
+				lineAnsiState.lbg = -1
 			}
-		} else {
-			// When color is disabled but ansi option is given,
-			// we simply strip out ANSI codes from the input
-			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				trimmed, _, _ := extractColor(byteString(data), nil, nil)
-				return util.ToChars(stringBytes(trimmed)), nil
-			}
+			return util.ToChars(stringBytes(trimmed)), offsets
 		}
 	}
 
@@ -96,7 +101,7 @@ func Run(opts *Options) (int, error) {
 	var chunkList *ChunkList
 	var itemIndex int32
 	header := make([]string, 0, opts.HeaderLines)
-	if len(opts.WithNth) == 0 {
+	if opts.WithNth == nil {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			if len(header) < opts.HeaderLines {
 				header = append(header, byteString(data))
@@ -109,9 +114,10 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
+		nthTransformer := opts.WithNth(opts.Delimiter)
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			tokens := Tokenize(byteString(data), opts.Delimiter)
-			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
+			if opts.Ansi && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
 					ansiStateDup := *prevLineAnsiState
@@ -127,15 +133,24 @@ func Run(opts *Options) (int, error) {
 					}
 				}
 			}
-			trans := Transform(tokens, opts.WithNth)
-			transformed := joinTokens(trans)
+			transformed := nthTransformer(tokens, itemIndex)
 			if len(header) < opts.HeaderLines {
 				header = append(header, transformed)
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
 			item.text, item.colors = ansiProcessor(stringBytes(transformed))
-			item.text.TrimTrailingWhitespaces()
+
+			// We should not trim trailing whitespaces with background colors
+			var maxColorOffset int32
+			if item.colors != nil {
+				for _, ansi := range *item.colors {
+					if ansi.color.bg >= 0 {
+						maxColorOffset = util.Max32(maxColorOffset, ansi.offset[1])
+					}
+				}
+			}
+			item.text.TrimTrailingWhitespaces(int(maxColorOffset))
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++
@@ -172,7 +187,9 @@ func Run(opts *Options) (int, error) {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 
-		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
+		readyChan := make(chan bool)
+		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, readyChan)
+		<-readyChan
 	}
 
 	// Matcher
@@ -186,16 +203,37 @@ func Run(opts *Options) (int, error) {
 			forward = false
 		case byBegin:
 			forward = true
+		case byPathname:
+			withPos = true
+			forward = false
 		}
 	}
-	patternCache := make(map[string]*Pattern)
-	patternBuilder := func(runes []rune) *Pattern {
-		return BuildPattern(cache, patternCache,
-			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, opts.Nth, opts.Delimiter, runes)
-	}
+
+	nth := opts.Nth
 	inputRevision := revision{}
 	snapshotRevision := revision{}
+	patternCache := make(map[string]*Pattern)
+	denyMutex := sync.Mutex{}
+	denylist := make(map[int32]struct{})
+	clearDenylist := func() {
+		denyMutex.Lock()
+		if len(denylist) > 0 {
+			patternCache = make(map[string]*Pattern)
+		}
+		denylist = make(map[int32]struct{})
+		denyMutex.Unlock()
+	}
+	patternBuilder := func(runes []rune) *Pattern {
+		denyMutex.Lock()
+		denylistCopy := make(map[int32]struct{})
+		for k, v := range denylist {
+			denylistCopy[k] = v
+		}
+		denyMutex.Unlock()
+		return BuildPattern(cache, patternCache,
+			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
+			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy)
+	}
 	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
 
 	// Filtering mode
@@ -224,7 +262,7 @@ func Run(opts *Options) (int, error) {
 					}
 					return false
 				}, eventBox, executor, opts.ReadZero, false)
-			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv)
+			reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, nil)
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
@@ -272,6 +310,7 @@ func Run(opts *Options) (int, error) {
 	// Event coordination
 	reading := true
 	ticks := 0
+	startTick := 0
 	var nextCommand *commandSpec
 	var nextEnviron []string
 	eventBox.Watch(EvtReadNew)
@@ -294,12 +333,18 @@ func Run(opts *Options) (int, error) {
 	var snapshot []*Chunk
 	var count int
 	restart := func(command commandSpec, environ []string) {
+		if !useSnapshot {
+			clearDenylist()
+		}
 		reading = true
+		startTick = ticks
 		chunkList.Clear()
 		itemIndex = 0
 		inputRevision.bumpMajor()
 		header = make([]string, 0, opts.HeaderLines)
-		go reader.restart(command, environ)
+		readyChan := make(chan bool)
+		go reader.restart(command, environ, readyChan)
+		<-readyChan
 	}
 
 	exitCode := ExitOk
@@ -338,7 +383,8 @@ func Run(opts *Options) (int, error) {
 					} else {
 						reading = reading && evt == EvtReadNew
 					}
-					if useSnapshot && evt == EvtReadFin {
+					if useSnapshot && evt == EvtReadFin { // reload-sync
+						clearDenylist()
 						useSnapshot = false
 					}
 					if !useSnapshot {
@@ -369,6 +415,25 @@ func Run(opts *Options) (int, error) {
 						command = val.command
 						environ = val.environ
 						changed = val.changed
+						bump := false
+						if len(val.denylist) > 0 && val.revision.compatible(inputRevision) {
+							denyMutex.Lock()
+							for _, itemIndex := range val.denylist {
+								denylist[itemIndex] = struct{}{}
+							}
+							denyMutex.Unlock()
+							bump = true
+						}
+						if val.nth != nil {
+							// Change nth and clear caches
+							nth = *val.nth
+							bump = true
+						}
+						if bump {
+							patternCache = make(map[string]*Pattern)
+							cache.Clear()
+							inputRevision.bumpMinor()
+						}
 						if command != nil {
 							useSnapshot = val.sync
 						}
@@ -429,8 +494,17 @@ func Run(opts *Options) (int, error) {
 									if len(opts.Expect) > 0 {
 										opts.Printer("")
 									}
+									transformer := func(item *Item) string {
+										return item.AsString(opts.Ansi)
+									}
+									if opts.AcceptNth != nil {
+										fn := opts.AcceptNth(opts.Delimiter)
+										transformer = func(item *Item) string {
+											return item.acceptNth(opts.Ansi, opts.Delimiter, fn)
+										}
+									}
 									for i := 0; i < count; i++ {
-										opts.Printer(val.Get(i).item.AsString(opts.Ansi))
+										opts.Printer(transformer(val.Get(i).item))
 									}
 									if count == 0 {
 										exitCode = ExitNoMatch
@@ -452,7 +526,7 @@ func Run(opts *Options) (int, error) {
 		}
 		if delay && reading {
 			dur := util.DurWithin(
-				time.Duration(ticks)*coordinatorDelayStep,
+				time.Duration(ticks-startTick)*coordinatorDelayStep,
 				0, coordinatorDelayMax)
 			time.Sleep(dur)
 		}

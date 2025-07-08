@@ -60,8 +60,10 @@ type Pattern struct {
 	cacheKey      string
 	delimiter     Delimiter
 	nth           []Range
+	revision      revision
 	procFun       map[termType]algo.Algo
 	cache         *ChunkCache
+	denylist      map[int32]struct{}
 }
 
 var _splitRegex *regexp.Regexp
@@ -72,7 +74,7 @@ func init() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}) *Pattern {
 
 	var asString string
 	if extended {
@@ -140,8 +142,10 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		sortable:      sortable,
 		cacheable:     cacheable,
 		nth:           nth,
+		revision:      revision,
 		delimiter:     delimiter,
 		cache:         cache,
+		denylist:      denylist,
 		procFun:       make(map[termType]algo.Algo)}
 
 	ptr.cacheKey = ptr.buildCacheKey()
@@ -241,6 +245,9 @@ func parseTerms(fuzzy bool, caseMode Case, normalize bool, str string) []termSet
 
 // IsEmpty returns true if the pattern is effectively empty
 func (p *Pattern) IsEmpty() bool {
+	if len(p.denylist) > 0 {
+		return false
+	}
 	if !p.extended {
 		return len(p.text) == 0
 	}
@@ -294,14 +301,38 @@ func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []Result {
 func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Result {
 	matches := []Result{}
 
+	if len(p.denylist) == 0 {
+		// Huge code duplication for minimizing unnecessary map lookups
+		if space == nil {
+			for idx := 0; idx < chunk.count; idx++ {
+				if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match != nil {
+					matches = append(matches, *match)
+				}
+			}
+		} else {
+			for _, result := range space {
+				if match, _, _ := p.MatchItem(result.item, p.withPos, slab); match != nil {
+					matches = append(matches, *match)
+				}
+			}
+		}
+		return matches
+	}
+
 	if space == nil {
 		for idx := 0; idx < chunk.count; idx++ {
+			if _, prs := p.denylist[chunk.items[idx].Index()]; prs {
+				continue
+			}
 			if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match != nil {
 				matches = append(matches, *match)
 			}
 		}
 	} else {
 		for _, result := range space {
+			if _, prs := p.denylist[result.item.Index()]; prs {
+				continue
+			}
 			if match, _, _ := p.MatchItem(result.item, p.withPos, slab); match != nil {
 				matches = append(matches, *match)
 			}
@@ -393,12 +424,22 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 
 func (p *Pattern) transformInput(item *Item) []Token {
 	if item.transformed != nil {
-		return *item.transformed
+		transformed := *item.transformed
+		if transformed.revision == p.revision {
+			return transformed.tokens
+		}
 	}
 
 	tokens := Tokenize(item.text.ToString(), p.delimiter)
 	ret := Transform(tokens, p.nth)
-	item.transformed = &ret
+	// Strip the last delimiter to allow suffix match
+	if len(ret) > 0 && !p.delimiter.IsAwk() {
+		chars := ret[len(ret)-1].text
+		stripped := StripLastDelimiter(chars.ToString(), p.delimiter)
+		newChars := util.ToChars(stringBytes(stripped))
+		ret[len(ret)-1].text = &newChars
+	}
+	item.transformed = &transformed{p.revision, ret}
 	return ret
 }
 
