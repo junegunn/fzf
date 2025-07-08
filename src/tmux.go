@@ -9,13 +9,22 @@ import (
 
 func runTmux(args []string, opts *Options) (int, error) {
 	// Prepare arguments
-	fzf := args[0]
-	args = append([]string{"--bind=ctrl-z:ignore"}, args[1:]...)
-	if opts.BorderShape == tui.BorderUndefined {
-		args = append(args, "--border")
+	fzf, rest := args[0], args[1:]
+	args = []string{"--bind=ctrl-z:ignore"}
+	if !opts.Tmux.border && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
+		// We append --border option at the end, because `--style=full:STYLE`
+		// may have changed the default border style.
+		if tui.DefaultBorderShape == tui.BorderRounded {
+			rest = append(rest, "--border=rounded")
+		} else {
+			rest = append(rest, "--border=sharp")
+		}
+	}
+	if opts.Tmux.border && opts.Margin == defaultMargin() {
+		args = append(args, "--margin=0,1")
 	}
 	argStr := escapeSingleQuote(fzf)
-	for _, arg := range args {
+	for _, arg := range append(args, rest...) {
 		argStr += " " + escapeSingleQuote(arg)
 	}
 	argStr += ` --no-tmux --no-height`
@@ -33,7 +42,10 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// M        Both    The mouse position
 	// W        Both    The window position on the status line
 	// S        -y      The line above or below the status line
-	tmuxArgs := []string{"display-popup", "-E", "-B", "-d", dir}
+	tmuxArgs := []string{"display-popup", "-E", "-d", dir}
+	if !opts.Tmux.border {
+		tmuxArgs = append(tmuxArgs, "-B")
+	}
 	switch opts.Tmux.position {
 	case posUp:
 		tmuxArgs = append(tmuxArgs, "-xC", "-y0")
@@ -49,9 +61,12 @@ func runTmux(args []string, opts *Options) (int, error) {
 	tmuxArgs = append(tmuxArgs, "-w"+opts.Tmux.width.String())
 	tmuxArgs = append(tmuxArgs, "-h"+opts.Tmux.height.String())
 
-	return runProxy(argStr, func(temp string) *exec.Cmd {
-		sh, _ := sh()
+	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
+		sh, err := sh(needBash)
+		if err != nil {
+			return nil, err
+		}
 		tmuxArgs = append(tmuxArgs, sh, temp)
-		return exec.Command("tmux", tmuxArgs...)
+		return exec.Command("tmux", tmuxArgs...), nil
 	}, opts, true)
 }

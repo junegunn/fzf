@@ -39,19 +39,22 @@ func (p ColorPair) style() tcell.Style {
 type Attr int32
 
 type TcellWindow struct {
-	color       bool
-	preview     bool
-	top         int
-	left        int
-	width       int
-	height      int
-	normal      ColorPair
-	lastX       int
-	lastY       int
-	moveCursor  bool
-	borderStyle BorderStyle
-	uri         *string
-	params      *string
+	color         bool
+	windowType    WindowType
+	top           int
+	left          int
+	width         int
+	height        int
+	normal        ColorPair
+	lastX         int
+	lastY         int
+	moveCursor    bool
+	borderStyle   BorderStyle
+	uri           *string
+	params        *string
+	showCursor    bool
+	wrapSign      string
+	wrapSignWidth int
 }
 
 func (w *TcellWindow) Top() int {
@@ -72,7 +75,9 @@ func (w *TcellWindow) Height() int {
 
 func (w *TcellWindow) Refresh() {
 	if w.moveCursor {
-		_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		if w.showCursor {
+			_screen.ShowCursor(w.left+w.lastX, w.top+w.lastY)
+		}
 		w.moveCursor = false
 	}
 	w.lastX = 0
@@ -97,7 +102,21 @@ const (
 	AttrUndefined = Attr(0)
 	AttrRegular   = Attr(1 << 7)
 	AttrClear     = Attr(1 << 8)
+	BoldForce     = Attr(1 << 10)
+	FullBg        = Attr(1 << 11)
 )
+
+func (r *FullscreenRenderer) Bell() {
+	_screen.Beep()
+}
+
+func (r *FullscreenRenderer) HideCursor() {
+	r.showCursor = false
+}
+
+func (r *FullscreenRenderer) ShowCursor() {
+	r.showCursor = true
+}
 
 func (r *FullscreenRenderer) PassThrough(str string) {
 	// No-op
@@ -106,8 +125,12 @@ func (r *FullscreenRenderer) PassThrough(str string) {
 
 func (r *FullscreenRenderer) Resize(maxHeightFunc func(int) int) {}
 
-func (r *FullscreenRenderer) defaultTheme() *ColorTheme {
-	if _screen.Colors() >= 256 {
+func (r *FullscreenRenderer) DefaultTheme() *ColorTheme {
+	s, e := r.getScreen()
+	if e != nil {
+		return Default16
+	}
+	if s.Colors() >= 256 {
 		return Dark256
 	}
 	return Default16
@@ -137,7 +160,12 @@ func (c Color) Style() tcell.Color {
 }
 
 func (a Attr) Merge(b Attr) Attr {
-	return a | b
+	if b&AttrRegular > 0 {
+		// Only keep bold attribute set by the system
+		return (b &^ AttrRegular) | (a & BoldForce)
+	}
+
+	return (a &^ AttrRegular) | b
 }
 
 // handle the following as private members of FullscreenRenderer instance
@@ -148,20 +176,34 @@ var (
 	_initialResize   bool = true
 )
 
+func (r *FullscreenRenderer) getScreen() (tcell.Screen, error) {
+	if _screen == nil {
+		s, e := tcell.NewScreen()
+		if e != nil {
+			return nil, e
+		}
+		if !r.showCursor {
+			s.HideCursor()
+		}
+		_screen = s
+	}
+	return _screen, nil
+}
+
 func (r *FullscreenRenderer) initScreen() error {
-	s, e := tcell.NewScreen()
+	s, e := r.getScreen()
 	if e != nil {
 		return e
 	}
 	if e = s.Init(); e != nil {
 		return e
 	}
+	s.EnablePaste()
 	if r.mouse {
 		s.EnableMouse()
 	} else {
 		s.DisableMouse()
 	}
-	_screen = s
 
 	return nil
 }
@@ -174,7 +216,6 @@ func (r *FullscreenRenderer) Init() error {
 	if err := r.initScreen(); err != nil {
 		return err
 	}
-	initTheme(r.theme, r.defaultTheme(), r.forceBlack)
 
 	return nil
 }
@@ -227,6 +268,11 @@ func (r *FullscreenRenderer) Size() TermSize {
 func (r *FullscreenRenderer) GetChar() Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
+	case *tcell.EventPaste:
+		if ev.Start() {
+			return Event{BracketedPasteBegin, 0, nil}
+		}
+		return Event{BracketedPasteEnd, 0, nil}
 	case *tcell.EventResize:
 		// Ignore the first resize event
 		// https://github.com/gdamore/tcell/blob/v2.7.0/TUTORIAL.md?plain=1#L18
@@ -243,7 +289,11 @@ func (r *FullscreenRenderer) GetChar() Event {
 		// so mouse click is three consecutive events, but the first and last are indistinguishable from movement events (with released buttons)
 		// dragging has same structure, it only repeats the middle (main) event appropriately
 		x, y := ev.Position()
-		mod := ev.Modifiers() != 0
+
+		mod := ev.Modifiers()
+		ctrl := (mod & tcell.ModCtrl) > 0
+		alt := (mod & tcell.ModAlt) > 0
+		shift := (mod & tcell.ModShift) > 0
 
 		// since we dont have mouse down events (unlike LightRenderer), we need to track state in prevButton
 		prevButton, button := _prevMouseButton, ev.Buttons()
@@ -252,9 +302,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 		switch {
 		case button&tcell.WheelDown != 0:
-			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, false, mod}}
+			return Event{Mouse, 0, &MouseEvent{y, x, -1, false, false, false, ctrl, alt, shift}}
 		case button&tcell.WheelUp != 0:
-			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, false, mod}}
+			return Event{Mouse, 0, &MouseEvent{y, x, +1, false, false, false, ctrl, alt, shift}}
 		case button&tcell.Button1 != 0:
 			double := false
 			if !drag {
@@ -277,9 +327,9 @@ func (r *FullscreenRenderer) GetChar() Event {
 				}
 			}
 			// fire single or double click event
-			return Event{Mouse, 0, &MouseEvent{y, x, 0, true, !double, double, mod}}
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, true, !double, double, ctrl, alt, shift}}
 		case button&tcell.Button2 != 0:
-			return Event{Mouse, 0, &MouseEvent{y, x, 0, false, true, false, mod}}
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, false, true, false, ctrl, alt, shift}}
 		default:
 			// double and single taps on Windows don't quite work due to
 			// the console acting on the events and not allowing us
@@ -288,7 +338,11 @@ func (r *FullscreenRenderer) GetChar() Event {
 			down := left || button&tcell.Button3 != 0
 			double := false
 
-			return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, mod}}
+			// No need to report mouse movement events when no button is pressed
+			if drag {
+				return Event{Invalid, 0, nil}
+			}
+			return Event{Mouse, 0, &MouseEvent{y, x, 0, left, down, double, ctrl, alt, shift}}
 		}
 
 		// process keyboard:
@@ -670,7 +724,7 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 func (r *FullscreenRenderer) Pause(clear bool) {
 	if clear {
-		_screen.Fini()
+		r.Close()
 	}
 }
 
@@ -682,6 +736,7 @@ func (r *FullscreenRenderer) Resume(clear bool, sigcont bool) {
 
 func (r *FullscreenRenderer) Close() {
 	_screen.Fini()
+	_screen = nil
 }
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
@@ -692,26 +747,34 @@ func (r *FullscreenRenderer) RefreshWindows(windows []Window) {
 	_screen.Show()
 }
 
-func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
-	normal := ColNormal
-	if preview {
+func (r *FullscreenRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
+	width = util.Max(0, width)
+	height = util.Max(0, height)
+	normal := ColBorder
+	switch windowType {
+	case WindowList:
+		normal = ColNormal
+	case WindowHeader:
+		normal = ColHeader
+	case WindowFooter:
+		normal = ColFooter
+	case WindowInput:
+		normal = ColInput
+	case WindowPreview:
 		normal = ColPreview
 	}
 	w := &TcellWindow{
 		color:       r.theme.Colored,
-		preview:     preview,
+		windowType:  windowType,
 		top:         top,
 		left:        left,
 		width:       width,
 		height:      height,
 		normal:      normal,
-		borderStyle: borderStyle}
+		borderStyle: borderStyle,
+		showCursor:  r.showCursor}
 	w.Erase()
 	return w
-}
-
-func (w *TcellWindow) Close() {
-	// TODO
 }
 
 func fill(x, y, w, h int, n ColorPair, r rune) {
@@ -723,11 +786,7 @@ func fill(x, y, w, h int, n ColorPair, r rune) {
 }
 
 func (w *TcellWindow) Erase() {
-	if w.borderStyle.shape.HasLeft() {
-		fill(w.left-1, w.top, w.width, w.height-1, w.normal, ' ')
-	} else {
-		fill(w.left, w.top, w.width-1, w.height-1, w.normal, ' ')
-	}
+	fill(w.left, w.top, w.width-1, w.height-1, w.normal, ' ')
 	w.drawBorder(false)
 }
 
@@ -736,9 +795,21 @@ func (w *TcellWindow) EraseMaybe() bool {
 	return true
 }
 
+func (w *TcellWindow) SetWrapSign(sign string, width int) {
+	w.wrapSign = sign
+	w.wrapSignWidth = width
+}
+
+func (w *TcellWindow) EncloseX(x int) bool {
+	return x >= w.left && x < (w.left+w.width)
+}
+
+func (w *TcellWindow) EncloseY(y int) bool {
+	return y >= w.top && y < (w.top+w.height)
+}
+
 func (w *TcellWindow) Enclose(y int, x int) bool {
-	return x >= w.left && x < (w.left+w.width) &&
-		y >= w.top && y < (w.top+w.height)
+	return w.EncloseX(x) && w.EncloseY(y)
 }
 
 func (w *TcellWindow) Move(y int, x int) {
@@ -828,7 +899,7 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 	}
 	style = style.
 		Blink(a&Attr(tcell.AttrBlink) != 0).
-		Bold(a&Attr(tcell.AttrBold) != 0).
+		Bold(a&Attr(tcell.AttrBold) != 0 || a&BoldForce != 0).
 		Dim(a&Attr(tcell.AttrDim) != 0).
 		Reverse(a&Attr(tcell.AttrReverse) != 0).
 		Underline(a&Attr(tcell.AttrUnderline) != 0).
@@ -857,11 +928,26 @@ Loop:
 
 		// word wrap:
 		xPos := w.left + w.lastX + lx
-		if xPos >= (w.left + w.width) {
+		if xPos >= w.left+w.width {
 			w.lastY++
+			if w.lastY >= w.height {
+				return FillSuspend
+			}
 			w.lastX = 0
 			lx = 0
 			xPos = w.left
+			sign := w.wrapSign
+			if w.wrapSignWidth > w.width {
+				runes, _ := util.Truncate(sign, w.width)
+				sign = string(runes)
+			}
+			wgr := uniseg.NewGraphemes(sign)
+			for wgr.Next() {
+				rs := wgr.Runes()
+				_screen.SetContent(w.left+lx, w.top+w.lastY, rs[0], rs[1:], style.Dim(true))
+				lx += uniseg.StringWidth(string(rs))
+			}
+			xPos = w.left + lx
 		}
 
 		yPos := w.top + w.lastY
@@ -915,6 +1001,9 @@ func (w *TcellWindow) DrawHBorder() {
 }
 
 func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
+	if w.height == 0 {
+		return
+	}
 	shape := w.borderStyle.shape
 	if shape == BorderNone {
 		return
@@ -927,10 +1016,19 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 
 	var style tcell.Style
 	if w.color {
-		if w.preview {
-			style = ColPreviewBorder.style()
-		} else {
+		switch w.windowType {
+		case WindowBase:
 			style = ColBorder.style()
+		case WindowList:
+			style = ColListBorder.style()
+		case WindowHeader:
+			style = ColHeaderBorder.style()
+		case WindowFooter:
+			style = ColFooterBorder.style()
+		case WindowInput:
+			style = ColInputBorder.style()
+		case WindowPreview:
+			style = ColPreviewBorder.style()
 		}
 	} else {
 		style = w.normal.style()

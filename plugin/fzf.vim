@@ -1,4 +1,4 @@
-" Copyright (c) 2013-2024 Junegunn Choi
+" Copyright (c) 2013-2025 Junegunn Choi
 "
 " MIT License
 "
@@ -358,7 +358,7 @@ endfunction
 
 function! s:get_color(attr, ...)
   " Force 24 bit colors: g:fzf_force_termguicolors (temporary workaround for https://github.com/junegunn/fzf.vim/issues/1152)
-  let gui = get(g:, 'fzf_force_termguicolors', 0) || (!s:is_win && !has('win32unix') && has('termguicolors') && &termguicolors)
+  let gui = get(g:, 'fzf_force_termguicolors', 0) || (!s:is_win && !has('win32unix') && (has('gui_running') || has('termguicolors') && &termguicolors))
   let fam = gui ? 'gui' : 'cterm'
   let pat = gui ? '^#[a-f0-9]\+' : '^[0-9]\+$'
   for group in a:000
@@ -553,8 +553,15 @@ try
     let height = s:calc_size(&lines, dict.down, dict)
     let optstr .= ' --no-tmux --height='.height
   endif
-  " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
-  let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
+
+  if exists('&winborder') && &winborder !=# '' && &winborder !=# 'none'
+    " Add 1-column horizontal margin
+    let optstr = join(['--margin 0,1', optstr])
+  else
+    " Respect --border option given in $FZF_DEFAULT_OPTS and 'options'
+    let optstr = join([s:border_opt(get(dict, 'window', 0)), s:extract_option($FZF_DEFAULT_OPTS, 'border'), optstr])
+  endif
+
   let command = prefix.(use_tmux ? s:fzf_tmux(dict) : fzf_exec).' '.optstr.' > '.temps.result
 
   if use_term
@@ -1081,7 +1088,7 @@ endfunction
 
 function! s:cmd(bang, ...) abort
   let args = copy(a:000)
-  let opts = { 'options': ['--multi'] }
+  let opts = { 'options': ['--multi', '--scheme', 'path'] }
   if len(args) && isdirectory(expand(args[-1]))
     let opts.dir = substitute(substitute(remove(args, -1), '\\\(["'']\)', '\1', 'g'), '[/\\]*$', '/', '')
     if s:is_win && !&shellslash

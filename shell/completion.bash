@@ -31,16 +31,31 @@ if [[ $- =~ i ]]; then
 
 ###########################################################
 
-# To redraw line after fzf closes (printf '\e[5n')
-bind '"\e[0n": redraw-current-line' 2> /dev/null
+#----BEGIN INCLUDE common.sh
+# NOTE: Do not directly edit this section, which is copied from "common.sh".
+# To modify it, one can edit "common.sh" and run "./update-common.sh" to apply
+# the changes. See code comments in "common.sh" for the implementation details.
 
 __fzf_defaults() {
-  # $1: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
-  # $2: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
-  echo "--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore $1"
+  printf '%s\n' "--height ${FZF_TMUX_HEIGHT:-40%} --min-height 20+ --bind=ctrl-z:ignore $1"
   command cat "${FZF_DEFAULT_OPTS_FILE-}" 2> /dev/null
-  echo "${FZF_DEFAULT_OPTS-} $2"
+  printf '%s\n' "${FZF_DEFAULT_OPTS-} $2"
 }
+
+__fzf_exec_awk() {
+  if [[ -z ${__fzf_awk-} ]]; then
+    __fzf_awk=awk
+    if [[ $OSTYPE == solaris* && -x /usr/xpg4/bin/awk ]]; then
+      __fzf_awk=/usr/xpg4/bin/awk
+    else
+      local n x y z d
+      IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+      [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+    fi
+  fi
+  LC_ALL=C exec "$__fzf_awk" "$@"
+}
+#----END INCLUDE
 
 __fzf_comprun() {
   if [[ "$(type -t _fzf_comprun 2>&1)" = function ]]; then
@@ -264,6 +279,7 @@ _fzf_handle_dynamic_completion() {
     # _completion_loader may not have updated completion for the command
     if [[ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]]; then
       __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
+      __fzf_orig_completion_get_orig_func "$cmd" || ret=1
 
       # Update orig_complete by _fzf_orig_completion entry
       [[ $orig_complete =~ ' -F '(_fzf_[^ ]+)' ' ]] &&
@@ -310,12 +326,12 @@ __fzf_generic_path_completion() {
           else
             if [[ $1 =~ dir ]]; then
               walker=dir,follow
-              rest=${FZF_COMPLETION_DIR_OPTS-}
+              eval "rest=(${FZF_COMPLETION_DIR_OPTS-})"
             else
               walker=file,dir,follow,hidden
-              rest=${FZF_COMPLETION_PATH_OPTS-}
+              eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
             fi
-            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" $rest
+            __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" "${rest[@]}"
           fi | while read -r item; do
             printf "%q " "${item%$3}$3"
           done
@@ -327,6 +343,8 @@ __fzf_generic_path_completion() {
         else
           COMPREPLY=( "$cur" )
         fi
+        # To redraw line after fzf closes (printf '\e[5n')
+        bind '"\e[0n": redraw-current-line' 2> /dev/null
         printf '\e[5n'
         return 0
       fi
@@ -364,7 +382,7 @@ _fzf_complete() {
   fi
 
   local cur selected trigger cmd post
-  post="$(caller 0 | command awk '{print $2}')_post"
+  post="$(caller 0 | __fzf_exec_awk '{print $2}')_post"
   type -t "$post" > /dev/null 2>&1 || post='command cat'
 
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
@@ -376,13 +394,14 @@ _fzf_complete() {
     selected=$(
       FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
       FZF_DEFAULT_OPTS_FILE='' \
-        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | command tr '\n' ' ')
+        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | eval "$post" | command tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [[ -n "$selected" ]]; then
       COMPREPLY=("$selected")
     else
       COMPREPLY=("$cur")
     fi
+    bind '"\e[0n": redraw-current-line' 2> /dev/null
     printf '\e[5n'
     return 0
   else
@@ -408,7 +427,33 @@ _fzf_complete_kill() {
 }
 
 _fzf_proc_completion() {
-  _fzf_complete -m --header-lines=1 --no-preview --wrap -- "$@" < <(
+  local transformer
+  transformer='
+    if [[ $FZF_KEY =~ ctrl|alt|shift ]] && [[ -n $FZF_NTH ]]; then
+      nths=( ${FZF_NTH//,/ } )
+      new_nths=()
+      found=0
+      for nth in ${nths[@]}; do
+        if [[ $nth = $FZF_CLICK_HEADER_NTH ]]; then
+          found=1
+        else
+          new_nths+=($nth)
+        fi
+      done
+      [[ $found = 0 ]] && new_nths+=($FZF_CLICK_HEADER_NTH)
+      new_nths=${new_nths[*]}
+      new_nths=${new_nths// /,}
+      echo "change-nth($new_nths)+change-prompt($new_nths> )"
+    else
+      if [[ $FZF_NTH = $FZF_CLICK_HEADER_NTH ]]; then
+        echo "change-nth()+change-prompt(> )"
+      else
+        echo "change-nth($FZF_CLICK_HEADER_NTH)+change-prompt($FZF_CLICK_HEADER_WORD> )"
+      fi
+    fi
+  '
+  _fzf_complete -m --header-lines=1 --no-preview --wrap --color fg:dim,nth:regular \
+    --bind "click-header:transform:$transformer" -- "$@" < <(
     command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
       command ps -eo user,pid,ppid,time,args 2> /dev/null || # For BusyBox
       command ps --everyone --full --windows # For cygwin
@@ -416,7 +461,7 @@ _fzf_proc_completion() {
 }
 
 _fzf_proc_completion_post() {
-  command awk '{print $2}'
+  __fzf_exec_awk '{print $2}'
 }
 
 # To use custom hostname lists, override __fzf_list_hosts.
@@ -433,10 +478,54 @@ _fzf_proc_completion_post() {
 #   }
 if ! declare -F __fzf_list_hosts > /dev/null; then
   __fzf_list_hosts() {
-    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | command awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?%]') \
-      <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts 2> /dev/null | command tr ',' '\n' | command tr -d '[' | command awk '{ print $1 " " $1 }') \
-      <(command grep -v '^\s*\(#\|$\)' /etc/hosts 2> /dev/null | command grep -Fv '0.0.0.0' | command sed 's/#.*//') |
-      command awk '{for (i = 2; i <= NF; i++) print $i}' | command sort -u
+    command sort -u \
+      <(
+        # Note: To make the pathname expansion of "~/.ssh/config.d/*" work
+        # properly, we need to adjust the related shell options.  We need to
+        # unset "set -f" and "GLOBIGNORE", which disable the pathname expansion
+        # totally or partially.  We need to unset "dotglob" and "nocaseglob" to
+        # avoid matching unwanted files.  We need to unset "failglob" to avoid
+        # outputting the error messages to the terminal when no matching is
+        # found.  We need to set "nullglob" to avoid attempting to read the
+        # literal filename '~/.ssh/config.d/*' when no matching is found.
+        set +f
+        GLOBIGNORE=
+        shopt -u dotglob nocaseglob failglob
+        shopt -s nullglob
+
+        __fzf_exec_awk '
+          # Note: mawk <= 1.3.3-20090705 does not support the POSIX brackets of
+          # the form [[:blank:]], and Ubuntu 18.04 LTS still uses this
+          # 16-year-old mawk unfortunately.  We need to use [ \t] instead.
+          match(tolower($0), /^[ \t]*host(name)?[ \t]*[ \t=]/) {
+            $0 = substr($0, RLENGTH + 1) # Remove "Host(name)?=?"
+            sub(/#.*/, "")
+            for (i = 1; i <= NF; i++)
+              if ($i !~ /[*?%]/)
+                print $i
+          }
+        ' ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null
+      ) \
+      <(
+        __fzf_exec_awk -F ',' '
+          match($0, /^[][a-zA-Z0-9.,:-]+/) {
+            $0 = substr($0, 1, RLENGTH)
+            gsub(/[][]|:[^,]*/, "")
+            for (i = 1; i <= NF; i++)
+              print $i
+          }
+        ' ~/.ssh/known_hosts 2> /dev/null
+      ) \
+      <(
+        __fzf_exec_awk '
+          {
+            sub(/#.*/, "")
+            for (i = 2; i <= NF; i++)
+              if ($i != "0.0.0.0")
+                print $i
+          }
+        ' /etc/hosts 2> /dev/null 
+      )
   }
 fi
 
@@ -457,7 +546,7 @@ _fzf_complete_ssh() {
     *)
       local user=
       [[ "$2" =~ '@' ]] && user="${2%%@*}@"
-      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | command awk -v user="$user" '{print user $0}')
+      _fzf_complete +m -- "$@" < <(__fzf_list_hosts | __fzf_exec_awk -v user="$user" '{print user $0}')
       ;;
   esac
 }
@@ -545,7 +634,7 @@ __fzf_defc() {
   if __fzf_orig_completion_instantiate "$cmd" "$func"; then
     eval "$REPLY"
   else
-    complete -F "$func" $opts "$cmd"
+    eval "complete -F \"$func\" $opts \"$cmd\""
   fi
 }
 

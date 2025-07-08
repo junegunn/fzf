@@ -473,6 +473,103 @@ var normalized = map[rune]rune{
 	'ử': 'u',
 	'ữ': 'u',
 	'ự': 'u',
+
+	// https://en.wikipedia.org/wiki/Halfwidth_and_Fullwidth_Forms_(Unicode_block)
+	0xFF01: '!',  // Fullwidth exclamation
+	0xFF02: '"',  // Fullwidth quotation mark
+	0xFF03: '#',  // Fullwidth number sign
+	0xFF04: '$',  // Fullwidth dollar sign
+	0xFF05: '%',  // Fullwidth percent
+	0xFF06: '&',  // Fullwidth ampersand
+	0xFF07: '\'', // Fullwidth apostrophe
+	0xFF08: '(',  // Fullwidth left parenthesis
+	0xFF09: ')',  // Fullwidth right parenthesis
+	0xFF0A: '*',  // Fullwidth asterisk
+	0xFF0B: '+',  // Fullwidth plus
+	0xFF0C: ',',  // Fullwidth comma
+	0xFF0D: '-',  // Fullwidth hyphen-minus
+	0xFF0E: '.',  // Fullwidth period
+	0xFF0F: '/',  // Fullwidth slash
+	0xFF10: '0',
+	0xFF11: '1',
+	0xFF12: '2',
+	0xFF13: '3',
+	0xFF14: '4',
+	0xFF15: '5',
+	0xFF16: '6',
+	0xFF17: '7',
+	0xFF18: '8',
+	0xFF19: '9',
+	0xFF1A: ':', // Fullwidth colon
+	0xFF1B: ';', // Fullwidth semicolon
+	0xFF1C: '<', // Fullwidth less-than
+	0xFF1D: '=', // Fullwidth equal
+	0xFF1E: '>', // Fullwidth greater-than
+	0xFF1F: '?', // Fullwidth question mark
+	0xFF20: '@', // Fullwidth at sign
+	0xFF21: 'A',
+	0xFF22: 'B',
+	0xFF23: 'C',
+	0xFF24: 'D',
+	0xFF25: 'E',
+	0xFF26: 'F',
+	0xFF27: 'G',
+	0xFF28: 'H',
+	0xFF29: 'I',
+	0xFF2A: 'J',
+	0xFF2B: 'K',
+	0xFF2C: 'L',
+	0xFF2D: 'M',
+	0xFF2E: 'N',
+	0xFF2F: 'O',
+	0xFF30: 'P',
+	0xFF31: 'Q',
+	0xFF32: 'R',
+	0xFF33: 'S',
+	0xFF34: 'T',
+	0xFF35: 'U',
+	0xFF36: 'V',
+	0xFF37: 'W',
+	0xFF38: 'X',
+	0xFF39: 'Y',
+	0xFF3A: 'Z',
+	0xFF3B: '[',  // Fullwidth left bracket
+	0xFF3C: '\\', // Fullwidth backslash
+	0xFF3D: ']',  // Fullwidth right bracket
+	0xFF3E: '^',  // Fullwidth circumflex
+	0xFF3F: '_',  // Fullwidth underscore
+	0xFF40: '`',  // Fullwidth grave accent
+	0xFF41: 'a',
+	0xFF42: 'b',
+	0xFF43: 'c',
+	0xFF44: 'd',
+	0xFF45: 'e',
+	0xFF46: 'f',
+	0xFF47: 'g',
+	0xFF48: 'h',
+	0xFF49: 'i',
+	0xFF4A: 'j',
+	0xFF4B: 'k',
+	0xFF4C: 'l',
+	0xFF4D: 'm',
+	0xFF4E: 'n',
+	0xFF4F: 'o',
+	0xFF50: 'p',
+	0xFF51: 'q',
+	0xFF52: 'r',
+	0xFF53: 's',
+	0xFF54: 't',
+	0xFF55: 'u',
+	0xFF56: 'v',
+	0xFF57: 'w',
+	0xFF58: 'x',
+	0xFF59: 'y',
+	0xFF5A: 'z',
+	0xFF5B: '{', // Fullwidth left brace
+	0xFF5C: '|', // Fullwidth vertical bar
+	0xFF5D: '}', // Fullwidth right brace
+	0xFF5E: '~', // Fullwidth tilde
+	0xFF61: '.', // Halfwidth ideographic full stop
 }
 
 // NormalizeRunes normalizes latin script letters
@@ -480,7 +577,7 @@ func NormalizeRunes(runes []rune) []rune {
 	ret := make([]rune, len(runes))
 	copy(ret, runes)
 	for idx, r := range runes {
-		if r < 0x00C0 || r > 0x2184 {
+		if r < 0x00C0 || r > 0xFF61 {
 			continue
 		}
 		n := normalized[r]

@@ -12,7 +12,7 @@ import (
 	"github.com/junegunn/fzf/src/util"
 )
 
-func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems []*Item) string {
+func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter, printsep string, forcePlus bool, query string, allItems [3][]*Item) string {
 	replaced, _ := replacePlaceholder(replacePlaceholderParams{
 		template:   template,
 		stripAnsi:  stripAnsi,
@@ -30,11 +30,11 @@ func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter
 
 func TestReplacePlaceholder(t *testing.T) {
 	item1 := newItem("  foo'bar \x1b[31mbaz\x1b[m")
-	items1 := []*Item{item1, item1}
-	items2 := []*Item{
-		newItem("foo'bar \x1b[31mbaz\x1b[m"),
-		newItem("foo'bar \x1b[31mbaz\x1b[m"),
-		newItem("FOO'BAR \x1b[31mBAZ\x1b[m")}
+	items1 := [3][]*Item{{item1}, {item1}, nil}
+	items2 := [3][]*Item{
+		{newItem("foo'bar \x1b[31mbaz\x1b[m")},
+		{newItem("foo'bar \x1b[31mbaz\x1b[m"),
+			newItem("FOO'BAR \x1b[31mBAZ\x1b[m")}, nil}
 
 	delim := "'"
 	var regex *regexp.Regexp
@@ -74,6 +74,14 @@ func TestReplacePlaceholder(t *testing.T) {
 	// {}, strip ansi
 	result = replacePlaceholderTest("echo {}", true, Delimiter{}, printsep, false, "query", items1)
 	checkFormat("echo {{.O}}  foo{{.I}}bar baz{{.O}}")
+
+	// {r}, strip ansi
+	result = replacePlaceholderTest("echo {r}", true, Delimiter{}, printsep, false, "query", items1)
+	checkFormat("echo   foo'bar baz")
+
+	// {r..}, strip ansi
+	result = replacePlaceholderTest("echo {r..}", true, Delimiter{}, printsep, false, "query", items1)
+	checkFormat("echo foo'bar baz")
 
 	// {}, with multiple items
 	result = replacePlaceholderTest("echo {}", true, Delimiter{}, printsep, false, "query", items2)
@@ -137,11 +145,11 @@ func TestReplacePlaceholder(t *testing.T) {
 	checkFormat("echo {{.O}} {{.O}}")
 
 	// No match
-	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, nil})
+	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", [3][]*Item{nil, nil, nil})
 	check("echo /")
 
 	// No match, but with selections
-	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", []*Item{nil, item1})
+	result = replacePlaceholderTest("echo {}/{+}", true, Delimiter{}, printsep, false, "query", [3][]*Item{nil, {item1}, nil})
 	checkFormat("echo /{{.O}}  foo{{.I}}bar baz{{.O}}")
 
 	// String delimiter
@@ -158,17 +166,18 @@ func TestReplacePlaceholder(t *testing.T) {
 		Test single placeholders, but focus on the placeholders' parameters (e.g. flags).
 		see: TestParsePlaceholder
 	*/
-	items3 := []*Item{
+	items3 := [3][]*Item{
 		// single line
-		newItem("1a 1b 1c 1d 1e 1f"),
+		{newItem("1a 1b 1c 1d 1e 1f")},
 		// multi line
-		newItem("1a 1b 1c 1d 1e 1f"),
-		newItem("2a 2b 2c 2d 2e 2f"),
-		newItem("3a 3b 3c 3d 3e 3f"),
-		newItem("4a 4b 4c 4d 4e 4f"),
-		newItem("5a 5b 5c 5d 5e 5f"),
-		newItem("6a 6b 6c 6d 6e 6f"),
-		newItem("7a 7b 7c 7d 7e 7f"),
+		{newItem("1a 1b 1c 1d 1e 1f"),
+			newItem("2a 2b 2c 2d 2e 2f"),
+			newItem("3a 3b 3c 3d 3e 3f"),
+			newItem("4a 4b 4c 4d 4e 4f"),
+			newItem("5a 5b 5c 5d 5e 5f"),
+			newItem("6a 6b 6c 6d 6e 6f"),
+			newItem("7a 7b 7c 7d 7e 7f")},
+		nil,
 	}
 	stripAnsi := false
 	forcePlus := false
@@ -484,7 +493,12 @@ func TestParsePlaceholder(t *testing.T) {
 		// III. query type placeholder
 		// query flag is not removed after parsing, so it gets doubled
 		// while the double q is invalid, it is useful here for testing purposes
-		`{q}`: `{qq}`,
+		`{q}`:        `{qq}`,
+		`{q:1}`:      `{qq:1}`,
+		`{q:2..}`:    `{qq:2..}`,
+		`{q:..}`:     `{qq:..}`,
+		`{q:2..-1}`:  `{qq:2..-1}`,
+		`{q:s2..-1}`: `{sqq:2..-1}`, // FIXME
 
 		// IV. escaping placeholder
 		`\{}`:   `{}`,
@@ -507,6 +521,34 @@ func TestParsePlaceholder(t *testing.T) {
 	}
 }
 
+func TestExtractPassthroughs(t *testing.T) {
+	for _, middle := range []string{
+		"\x1bPtmux;\x1b\x1bbar\x1b\\",
+		"\x1bPtmux;\x1b\x1bbar\x1bbar\x1b\\",
+		"\x1b]1337;bar\x1b\\",
+		"\x1b]1337;bar\x1bbar\x1b\\",
+		"\x1b]1337;bar\a",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1b\\",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1b\\\r",
+		"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1bbar\x1b\\\r",
+		"\x1b_Gm=1;AAAAAAAAA=\x1b\\",
+		"\x1b_Gm=1;AAAAAAAAA=\x1b\\\r",
+		"\x1b_Gm=1;\x1bAAAAAAAAA=\x1b\\\r",
+	} {
+		line := "foo" + middle + "baz"
+		loc := findPassThrough(line)
+		if loc == nil || line[0:loc[0]] != "foo" || line[loc[1]:] != "baz" {
+			t.Error("failed to find passthrough")
+		}
+		garbage := "\x1bPtmux;\x1b]1337;\x1b_Ga=\x1b]1337;bar\x1b."
+		line = strings.Repeat("foo"+middle+middle+"baz", 3) + garbage
+		passthroughs, result := extractPassThroughs(line)
+		if result != "foobazfoobazfoobaz"+garbage || len(passthroughs) != 6 {
+			t.Error("failed to extract passthroughs")
+		}
+	}
+}
+
 /* utilities section */
 
 // Item represents one line in fzf UI. Usually it is relative path to files and folders.
@@ -516,14 +558,14 @@ func newItem(str string) *Item {
 	return &Item{origText: &bytes, text: util.ToChars([]byte(trimmed))}
 }
 
-// Functions tested in this file require array of items (allItems). The array needs
-// to consist of at least two nils. This is helper function.
-func newItems(str ...string) []*Item {
-	result := make([]*Item, util.Max(len(str), 2))
+// Functions tested in this file require array of items (allItems).
+// This is helper function.
+func newItems(str ...string) [3][]*Item {
+	result := make([]*Item, len(str))
 	for i, s := range str {
 		result[i] = newItem(s)
 	}
-	return result
+	return [3][]*Item{result, nil, nil}
 }
 
 // (for logging purposes)
@@ -532,7 +574,7 @@ func (item *Item) String() string {
 }
 
 // Helper function to parse, execute and convert "text/template" to string. Panics on error.
-func templateToString(format string, data interface{}) string {
+func templateToString(format string, data any) string {
 	bb := &bytes.Buffer{}
 
 	err := template.Must(template.New("").Parse(format)).Execute(bb, data)
@@ -547,7 +589,7 @@ func templateToString(format string, data interface{}) string {
 type give struct {
 	template string
 	query    string
-	allItems []*Item
+	allItems [3][]*Item
 }
 type want struct {
 	/*
@@ -585,25 +627,25 @@ func testCommands(t *testing.T, tests []testCase) {
 	// evaluate the test cases
 	for idx, test := range tests {
 		gotOutput := replacePlaceholderTest(
-			test.give.template, stripAnsi, delimiter, printsep, forcePlus,
-			test.give.query,
-			test.give.allItems)
+			test.template, stripAnsi, delimiter, printsep, forcePlus,
+			test.query,
+			test.allItems)
 		switch {
-		case test.want.output != "":
-			if gotOutput != test.want.output {
+		case test.output != "":
+			if gotOutput != test.output {
 				t.Errorf("tests[%v]:\ngave{\n\ttemplate: '%s',\n\tquery: '%s',\n\tallItems: %s}\nand got '%s',\nbut want '%s'",
 					idx,
-					test.give.template, test.give.query, test.give.allItems,
-					gotOutput, test.want.output)
+					test.template, test.query, test.allItems,
+					gotOutput, test.output)
 			}
-		case test.want.match != "":
-			wantMatch := strings.ReplaceAll(test.want.match, `\`, `\\`)
+		case test.match != "":
+			wantMatch := strings.ReplaceAll(test.match, `\`, `\\`)
 			wantRegex := regexp.MustCompile(wantMatch)
 			if !wantRegex.MatchString(gotOutput) {
 				t.Errorf("tests[%v]:\ngave{\n\ttemplate: '%s',\n\tquery: '%s',\n\tallItems: %s}\nand got '%s',\nbut want '%s'",
 					idx,
-					test.give.template, test.give.query, test.give.allItems,
-					gotOutput, test.want.match)
+					test.template, test.query, test.allItems,
+					gotOutput, test.match)
 			}
 		default:
 			t.Errorf("tests[%v]: test case does not describe 'want' property", idx)

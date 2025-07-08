@@ -76,7 +76,7 @@ func TestCharsLines(t *testing.T) {
 	check(true, 100, 3, 1, 1, 8, false)
 
 	// With wrap sign (3 + 2)
-	check(true, 100, 3, 2, 1, 12, false)
+	check(true, 100, 3, 2, 1, 10, false)
 
 	// With wrap sign (3 + 2) and no multi-line
 	check(false, 100, 3, 2, 1, 13, false)

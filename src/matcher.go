@@ -102,7 +102,7 @@ func (m *Matcher) Loop() {
 		if !cacheCleared {
 			if count == prevCount {
 				// Look up mergerCache
-				if cached, found := m.mergerCache[patternString]; found {
+				if cached, found := m.mergerCache[patternString]; found && cached.final == request.final {
 					merger = cached
 				}
 			} else {
@@ -165,6 +165,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 	}
 
 	minIndex := request.chunks[0].items[0].Index()
+	maxIndex := request.chunks[numChunks-1].lastIndex(minIndex)
 	cancelled := util.NewAtomicBool(false)
 
 	slices := m.sliceChunks(request.chunks)
@@ -236,7 +237,7 @@ func (m *Matcher) scan(request MatchRequest) (*Merger, bool) {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
-	return NewMerger(pattern, partialResults, m.sort && request.pattern.sortable, m.tac, request.revision, minIndex), false
+	return NewMerger(pattern, partialResults, m.sort && request.pattern.sortable, m.tac, request.revision, minIndex, maxIndex), false
 }
 
 // Reset is called to interrupt/signal the ongoing search

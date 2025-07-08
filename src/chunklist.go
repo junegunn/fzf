@@ -41,6 +41,13 @@ func (c *Chunk) IsFull() bool {
 	return c.count == chunkSize
 }
 
+func (c *Chunk) lastIndex(minValue int32) int32 {
+	if c.count == 0 {
+		return minValue
+	}
+	return c.items[c.count-1].Index() + 1 // Exclusive
+}
+
 func (cl *ChunkList) lastChunk() *Chunk {
 	return cl.chunks[len(cl.chunks)-1]
 }

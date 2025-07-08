@@ -68,7 +68,7 @@ func buildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 	return BuildPattern(NewChunkCache(), make(map[string]*Pattern),
 		fuzzy, fuzzyAlgo, extended, caseMode, normalize, forward,
-		withPos, cacheable, nth, delimiter, runes)
+		withPos, cacheable, nth, delimiter, revision{}, runes, nil)
 }
 
 func TestExact(t *testing.T) {
@@ -135,12 +135,12 @@ func TestOrigTextAndTransformed(t *testing.T) {
 		chunk.items[0] = Item{
 			text:        util.ToChars([]byte("junegunn")),
 			origText:    &origBytes,
-			transformed: &trans}
+			transformed: &transformed{pattern.revision, trans}}
 		pattern.extended = extended
 		matches := pattern.matchChunk(&chunk, nil, slab) // No cache
 		if !(matches[0].item.text.ToString() == "junegunn" &&
 			string(*matches[0].item.origText) == "junegunn.choi" &&
-			reflect.DeepEqual(*matches[0].item.transformed, trans)) {
+			reflect.DeepEqual((*matches[0].item.transformed).tokens, trans)) {
 			t.Error("Invalid match result", matches)
 		}
 
@@ -148,7 +148,7 @@ func TestOrigTextAndTransformed(t *testing.T) {
 		if !(match.item.text.ToString() == "junegunn" &&
 			string(*match.item.origText) == "junegunn.choi" &&
 			offsets[0][0] == 0 && offsets[0][1] == 5 &&
-			reflect.DeepEqual(*match.item.transformed, trans)) {
+			reflect.DeepEqual((*match.item.transformed).tokens, trans)) {
 			t.Error("Invalid match result", match, offsets, extended)
 		}
 		if !((*pos)[0] == 4 && (*pos)[1] == 0) {

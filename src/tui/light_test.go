@@ -10,7 +10,7 @@ import (
 func TestLightRenderer(t *testing.T) {
 	tty_file, _ := os.Open("")
 	renderer, _ := NewLightRenderer(
-		tty_file, &ColorTheme{}, true, false, 0, false, true,
+		"", tty_file, &ColorTheme{}, true, false, 0, false, true,
 		func(h int) int { return h })
 
 	light_renderer := renderer.(*LightRenderer)
@@ -76,7 +76,7 @@ func TestLightRenderer(t *testing.T) {
 	assertCharSequence("\n", "ctrl-j")
 	assertCharSequence("\x0b", "ctrl-k")
 	assertCharSequence("\x0c", "ctrl-l")
-	assertCharSequence("\r", "ctrl-m") // enter
+	assertCharSequence("\r", "enter") // enter
 	assertCharSequence("\x0e", "ctrl-n")
 	assertCharSequence("\x0f", "ctrl-o")
 	assertCharSequence("\x10", "ctrl-p")
@@ -331,9 +331,5 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[12~", "f2")
 	assertEscSequence("\x1b[13~", "f3")
 	assertEscSequence("\x1b[14~", "f4")
-
-	// bracketed paste mode
-	assertEscSequence("\x1b[200~\x1b[1;3A", "alt-up")
-	assertEscSequence("\x1b[201~\x1b[1;3B", "alt-down")
 
 }

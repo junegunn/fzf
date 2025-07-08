@@ -11,11 +11,11 @@ func ttyname() string {
 }
 
 // TtyIn on Windows returns os.Stdin
-func TtyIn() (*os.File, error) {
+func TtyIn(ttyDefault string) (*os.File, error) {
 	return os.Stdin, nil
 }
 
-// TtyIn on Windows returns nil
-func TtyOut() (*os.File, error) {
+// TtyOut on Windows returns nil
+func TtyOut(ttyDefault string) (*os.File, error) {
 	return nil, nil
 }
