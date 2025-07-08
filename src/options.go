@@ -1549,6 +1549,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actBackwardDeleteCharEof)
 		case "backward-word":
 			appendAction(actBackwardWord)
+		case "backward-subword":
+			appendAction(actBackwardSubWord)
 		case "clear-screen":
 			appendAction(actClearScreen)
 		case "delete-char":
@@ -1569,6 +1571,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actForwardChar)
 		case "forward-word":
 			appendAction(actForwardWord)
+		case "forward-subword":
+			appendAction(actForwardSubWord)
 		case "jump":
 			appendAction(actJump)
 		case "jump-accept":
@@ -1577,6 +1581,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actKillLine)
 		case "kill-word":
 			appendAction(actKillWord)
+		case "kill-subword":
+			appendAction(actKillSubWord)
 		case "unix-line-discard", "line-discard":
 			appendAction(actUnixLineDiscard)
 		case "unix-word-rubout", "word-rubout":
@@ -1585,6 +1591,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actYank)
 		case "backward-kill-word":
 			appendAction(actBackwardKillWord)
+		case "backward-kill-subword":
+			appendAction(actBackwardKillSubWord)
 		case "toggle-down":
 			appendAction(actToggle, actDown)
 		case "toggle-up":
