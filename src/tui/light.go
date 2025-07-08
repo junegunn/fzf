@@ -457,6 +457,24 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
 					return Event{AltShiftDelete, 0, nil}
 				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '1' {
+					return Event{AltDelete, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '2' {
+					return Event{AltShiftDelete, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '3' {
+					return Event{CtrlAltDelete, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '4' {
+					return Event{CtrlAltShiftDelete, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '5' {
+					return Event{CtrlAltDelete, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '6' {
+					return Event{CtrlAltShiftDelete, 0, nil}
+				}
 				if len(r.buffer) == 6 && r.buffer[5] == '~' {
 					*sz = 6
 					switch r.buffer[4] {
@@ -474,6 +492,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{CtrlAltDelete, 0, nil}
 					case '8':
 						return Event{CtrlAltShiftDelete, 0, nil}
+					case '9':
+						return Event{AltDelete, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -485,6 +505,24 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
 					return Event{AltShiftPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '1' {
+					return Event{AltPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '2' {
+					return Event{AltShiftPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '3' {
+					return Event{CtrlAltPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '4' {
+					return Event{CtrlAltShiftPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '5' {
+					return Event{CtrlAltPageUp, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '6' {
+					return Event{CtrlAltShiftPageUp, 0, nil}
 				}
 				if len(r.buffer) == 6 && r.buffer[5] == '~' {
 					*sz = 6
@@ -503,6 +541,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{CtrlAltPageUp, 0, nil}
 					case '8':
 						return Event{CtrlAltShiftPageUp, 0, nil}
+					case '9':
+						return Event{AltPageUp, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -512,6 +552,24 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 				}
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '0' {
 					return Event{AltShiftPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '1' {
+					return Event{AltPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '2' {
+					return Event{AltShiftPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '3' {
+					return Event{CtrlAltPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '4' {
+					return Event{CtrlAltShiftPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '5' {
+					return Event{CtrlAltPageDown, 0, nil}
+				}
+				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' && r.buffer[5] == '6' {
+					return Event{CtrlAltShiftPageDown, 0, nil}
 				}
 				if len(r.buffer) == 6 && r.buffer[5] == '~' {
 					*sz = 6
@@ -530,6 +588,8 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						return Event{CtrlAltPageDown, 0, nil}
 					case '8':
 						return Event{CtrlAltShiftPageDown, 0, nil}
+					case '9':
+						return Event{AltPageDown, 0, nil}
 					}
 				}
 				return Event{Invalid, 0, nil}
@@ -570,7 +630,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case '1', '2', '3', '4', '5', '6', '7', '8':
+					case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 						//                   Kitty      iTerm2     WezTerm
 						// SHIFT-ARROW       "\e[1;2D"
 						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
@@ -580,10 +640,19 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						alt := r.buffer[4] == '3' || r.buffer[4] == '4' || r.buffer[4] == '7' || r.buffer[4] == '8'
 						shift := r.buffer[4] == '2' || r.buffer[4] == '4' || r.buffer[4] == '6' || r.buffer[4] == '8'
 						char := r.buffer[5]
-						if r.buffer[4] == '1' && r.buffer[5] == '0' {
+						if r.buffer[4] == '9' {
 							ctrl = false
-							shift = true
-							alt = true // treat META as ALT here
+							alt = true
+							shift = false
+							if len(r.buffer) < 6 {
+								return Event{Invalid, 0, nil}
+							}
+							*sz = 6
+							char = r.buffer[5]
+						} else if r.buffer[4] == '1' && (r.buffer[5] == '0' || r.buffer[5] == '1' || r.buffer[5] == '2' || r.buffer[5] == '3' || r.buffer[5] == '4' || r.buffer[5] == '5' || r.buffer[5] == '6') {
+							ctrl = r.buffer[5] == '3' || r.buffer[5] == '4' || r.buffer[5] == '5' || r.buffer[5] == '6'
+							alt = true
+							shift = r.buffer[5] == '0' || r.buffer[5] == '2' || r.buffer[5] == '4' || r.buffer[5] == '6'
 							if len(r.buffer) < 7 {
 								return Event{Invalid, 0, nil}
 							}
