@@ -1698,6 +1698,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning\-of\-line\fR            \fIctrl\-a  home\fR
     \fBbell\fR                         (ring the terminal bell)
+    \fBbg\-cancel\fR                    (cancel background transform processes)
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
     \fBchange\-ghost(...)\fR            (change ghost text to the given string)
@@ -1959,7 +1960,8 @@ Transform actions are synchronous, meaning fzf becomes unresponsive while the
 command runs. To avoid this, each \fBtransform*\fR action has a corresponding
 \fBbg\-transform*\fR variant that runs in the background. Unless you need to
 chain multiple transform actions where later ones depend on earlier results,
-prefer using the \fBbg\fR variant.
+prefer using the \fBbg\fR variant. To cancel currently running background
+transform processes, use \fBbg\-cancel\fR action.
 
 .SS PREVIEW BINDING
 
