@@ -394,7 +394,8 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
-					continue
+					// Inverted match. The entire termSet is not a match.
+					return nil, 0, nil
 				}
 				offset, currentScore = off, score
 				matched = true
