@@ -65,6 +65,7 @@ type Pattern struct {
 	procFun       map[termType]algo.Algo
 	cache         *ChunkCache
 	denylist      map[int32]struct{}
+	keymapConvert bool
 }
 
 var (
@@ -140,8 +141,8 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 	}
 
 	var altText []rune
+	textRunes := []rune(asString)
 	if keymapConvert {
-		textRunes := []rune(asString)
 		needsConversion := false
 		for _, r := range textRunes {
 			if _, ok := qwertyMapping[r]; ok {
@@ -180,7 +181,8 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		delimiter:     delimiter,
 		cache:         cache,
 		denylist:      denylist,
-		procFun:       make(map[termType]algo.Algo)}
+		procFun:       make(map[termType]algo.Algo),
+		keymapConvert: keymapConvert}
 
 	ptr.cacheKey = ptr.buildCacheKey()
 	ptr.procFun[termFuzzy] = fuzzyAlgo
@@ -378,7 +380,7 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Re
 // MatchItem returns true if the Item is a match
 func (p *Pattern) MatchItem(item *Item, withPos bool, slab *util.Slab) (*Result, []Offset, *[]int) {
 	if p.extended {
-		if offsets, bonus, pos := p.extendedMatch(item, withPos, slab); len(offsets) == len(p.termSets) {
+		if offsets, bonus, pos := p.extendedMatch(item, withPos, slab, p.keymapConvert); len(offsets) == len(p.termSets) {
 			result := buildResult(item, offsets, bonus)
 			return &result, offsets, pos
 		}
@@ -417,7 +419,7 @@ func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset,
 	return offset, bonus, pos
 }
 
-func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Offset, int, *[]int) {
+func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab, keymapConvert bool) ([]Offset, int, *[]int) {
 	var input []Token
 	if len(p.nth) == 0 {
 		input = []Token{{text: &item.text, prefixLength: 0}}
