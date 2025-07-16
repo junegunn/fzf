@@ -631,10 +631,12 @@ const (
 	actPreviewHalfPageUp
 	actPreviewHalfPageDown
 	actPrevHistory
+	actPrevHistorySearch
 	actPrevSelected
 	actPrint
 	actPut
 	actNextHistory
+	actNextHistorySearch
 	actNextSelected
 	actExecute
 	actExecuteSilent
@@ -6088,6 +6090,9 @@ func (t *Terminal) Loop() error {
 				prefix := copySlice(t.input[:t.cx])
 				t.input = append(append(prefix, event.Char), t.input[t.cx:]...)
 				t.cx++
+				if t.history != nil {
+					t.history.lastSearch = ""
+				}
 			case actPrevHistory:
 				if t.history != nil {
 					t.history.override(string(t.input))
@@ -6099,6 +6104,28 @@ func (t *Terminal) Loop() error {
 					t.history.override(string(t.input))
 					t.input = trimQuery(t.history.next())
 					t.cx = len(t.input)
+				}
+			case actNextHistorySearch, actPrevHistorySearch:
+				if t.history != nil {
+					t.history.override(string(t.input))
+					histSearch := t.history.nextSearch
+					if a.t == actPrevHistorySearch {
+						histSearch = t.history.prevSearch
+					}
+					toSearch := t.history.lastSearch
+					if len(toSearch) == 0 {
+						toSearch = a.a
+						if len(toSearch) == 0 {
+							toSearch = string(t.input)
+						}
+						t.history.lastSearch = toSearch
+					}
+					hist := histSearch(toSearch)
+					fmt.Fprintf(os.Stderr, "DEBUGPRINT[2]: terminal.go:6116: toSearch=%+v\n", toSearch)
+					if len(hist) != 0 {
+						t.input = trimQuery(hist)
+						t.cx = len(t.input)
+					}
 				}
 			case actToggleSearch:
 				t.paused = !t.paused
@@ -6617,6 +6644,13 @@ func (t *Terminal) Loop() error {
 				}
 			}
 
+			// if t.history != nil &&
+			// 	a.t != actPrevHistory &&
+			// 	a.t != actNextHistory &&
+			// 	a.t != actPrevHistorySearch &&
+			// 	a.t != actNextHistorySearch {
+			// 	t.history.lastSearch = ""
+			// }
 			if !processExecution(a.t) {
 				t.lastAction = a.t
 			}
