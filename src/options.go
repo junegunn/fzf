@@ -45,6 +45,8 @@ Usage: fzf [options]
     -d, --delimiter=STR      Field delimiter regex (default: AWK-style)
     +s, --no-sort            Do not sort the result
     --literal                Do not normalize latin script letters
+    --keymap-convert, +C     Enable keyboard layout conversion (e.g. Hebrew to QWERTY)
+    --no-keymap-convert, -C  Disable keyboard layout conversion (default)
     --tail=NUM               Maximum number of items to keep in memory
     --disabled               Do not perform search
     --tiebreak=CRI[,..]      Comma-separated list of sort criteria to apply
