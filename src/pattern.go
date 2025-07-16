@@ -68,39 +68,18 @@ type Pattern struct {
 }
 
 var (
-	_splitRegex *regexp.Regexp
-	hebrewToQwerty = map[rune]rune{
-		'א': 't',
-		'ב': 'c',
-		'ג': 'd',
-		'ד': 's',
-		'ה': 'v',
-		'ו': 'u',
-		'ז': 'z',
-		'ח': 'j',
-		'ט': 'y',
-		'י': 'h',
-		'כ': 'f',
-		'ך': 'f',
-		'ל': 'k',
-		'מ': 'n',
-		'ם': 'n',
-		'נ': 'b',
-		'ס': 'x',
-		'ע': 'g',
-		'פ': 'p',
-		'ף': 'p',
-		'צ': 'm',
-		'ץ': 'm',
-		'ק': 'e',
-		'ר': 'r',
-		'ש': 'a',
-		'ת': 'w',
-	}
+	_splitRegex   *regexp.Regexp
+	qwertyMapping map[rune]rune
 )
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
+	qwertyMapping = make(map[rune]rune)
+	for _, kmap := range Keymap {
+		for k, v := range kmap {
+			qwertyMapping[k] = v
+		}
+	}
 }
 
 // BuildPattern builds Pattern object from the given arguments
@@ -164,7 +143,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 	textRunes := []rune(asString)
 	hasHebrew := false
 	for _, r := range textRunes {
-		if _, ok := hebrewToQwerty[r]; ok {
+		if _, ok := qwertyMapping[r]; ok {
 			hasHebrew = true
 			break
 		}
@@ -172,7 +151,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 	if hasHebrew {
 		altRunes := make([]rune, len(textRunes))
 		for i, r := range textRunes {
-			if qwerty, ok := hebrewToQwerty[r]; ok {
+			if qwerty, ok := qwertyMapping[r]; ok {
 				altRunes[i] = qwerty
 			} else {
 				altRunes[i] = r
@@ -460,7 +439,7 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 			altText := term.text
 			hasHebrew := false
 			for _, r := range altText {
-				if _, ok := hebrewToQwerty[r]; ok {
+				if _, ok := qwertyMapping[r]; ok {
 					hasHebrew = true
 					break
 				}
@@ -468,7 +447,7 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 			if hasHebrew {
 				altRunes := make([]rune, len(altText))
 				for i, r := range altText {
-					if qwerty, ok := hebrewToQwerty[r]; ok {
+					if qwerty, ok := qwertyMapping[r]; ok {
 						altRunes[i] = qwerty
 					} else {
 						altRunes[i] = r
