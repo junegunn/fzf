@@ -54,6 +54,7 @@ type Pattern struct {
 	forward       bool
 	withPos       bool
 	text          []rune
+	altText       []rune
 	termSets      []termSet
 	sortable      bool
 	cacheable     bool
@@ -66,7 +67,37 @@ type Pattern struct {
 	denylist      map[int32]struct{}
 }
 
-var _splitRegex *regexp.Regexp
+var (
+	_splitRegex *regexp.Regexp
+	hebrewToQwerty = map[rune]rune{
+		'א': 't',
+		'ב': 'c',
+		'ג': 'd',
+		'ד': 's',
+		'ה': 'v',
+		'ו': 'u',
+		'ז': 'z',
+		'ח': 'j',
+		'ט': 'y',
+		'י': 'h',
+		'כ': 'f',
+		'ך': 'f',
+		'ל': 'k',
+		'מ': 'n',
+		'ם': 'n',
+		'נ': 'b',
+		'ס': 'x',
+		'ע': 'g',
+		'פ': 'p',
+		'ף': 'p',
+		'צ': 'm',
+		'ץ': 'm',
+		'ק': 'e',
+		'ר': 'r',
+		'ש': 'a',
+		'ת': 'w',
+	}
+)
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
@@ -129,6 +160,27 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		}
 	}
 
+	var altText []rune
+	textRunes := []rune(asString)
+	hasHebrew := false
+	for _, r := range textRunes {
+		if _, ok := hebrewToQwerty[r]; ok {
+			hasHebrew = true
+			break
+		}
+	}
+	if hasHebrew {
+		altRunes := make([]rune, len(textRunes))
+		for i, r := range textRunes {
+			if qwerty, ok := hebrewToQwerty[r]; ok {
+				altRunes[i] = qwerty
+			} else {
+				altRunes[i] = r
+			}
+		}
+		altText = altRunes
+	}
+
 	ptr := &Pattern{
 		fuzzy:         fuzzy,
 		fuzzyAlgo:     fuzzyAlgo,
@@ -137,7 +189,8 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		normalize:     normalize,
 		forward:       forward,
 		withPos:       withPos,
-		text:          []rune(asString),
+		text:          textRunes,
+		altText:       altText,
 		termSets:      termSets,
 		sortable:      sortable,
 		cacheable:     cacheable,
@@ -366,10 +419,21 @@ func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset,
 	} else {
 		input = p.transformInput(item)
 	}
-	if p.fuzzy {
-		return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
+
+	matchFunc := func(pattern []rune) (Offset, int, *[]int) {
+		if p.fuzzy {
+			return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, pattern, withPos, slab)
+		}
+		return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.normalize, p.forward, pattern, withPos, slab)
 	}
-	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
+
+	offset, bonus, pos := matchFunc(p.text)
+	if p.altText != nil {
+		if altOffset, altBonus, altPos := matchFunc(p.altText); altBonus > bonus {
+			return altOffset, altBonus, altPos
+		}
+	}
+	return offset, bonus, pos
 }
 
 func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Offset, int, *[]int) {
@@ -392,6 +456,31 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
 			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
+
+			altText := term.text
+			hasHebrew := false
+			for _, r := range altText {
+				if _, ok := hebrewToQwerty[r]; ok {
+					hasHebrew = true
+					break
+				}
+			}
+			if hasHebrew {
+				altRunes := make([]rune, len(altText))
+				for i, r := range altText {
+					if qwerty, ok := hebrewToQwerty[r]; ok {
+						altRunes[i] = qwerty
+					} else {
+						altRunes[i] = r
+					}
+				}
+				altText = altRunes
+			}
+
+			if altOff, altScore, altPos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, altText, withPos, slab); altScore > score {
+				off, score, pos = altOff, altScore, altPos
+			}
+
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
