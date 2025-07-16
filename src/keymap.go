@@ -52,7 +52,7 @@ var Keymap = map[string]map[rune]rune{
 		'л': 'k',
 		'д': 'l',
 		'ж': ';',
-		'э': '',
+		'э': ''',
 		'я': 'z',
 		'ч': 'x',
 		'с': 'c',
@@ -61,5 +61,6 @@ var Keymap = map[string]map[rune]rune{
 		'т': 'n',
 		'ь': 'm',
 		'б': ',',
-		'ю': '.',}
+		'ю': '.',
+	},
 }
