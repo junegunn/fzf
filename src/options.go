@@ -646,6 +646,7 @@ type Options struct {
 	BlockProfile      string
 	MutexProfile      string
 	TtyDefault        string
+	KeymapConvert     bool
 }
 
 func filterNonEmpty(input []string) []string {
@@ -2587,6 +2588,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Multi = 0
 		case "--ansi":
 			opts.Ansi = true
+		case "--keymap-convert", "+C":
+			opts.KeymapConvert = true
+		case "--no-keymap-convert", "-C":
+			opts.KeymapConvert = false
 		case "--no-ansi":
 			opts.Ansi = false
 		case "--no-mouse":

@@ -84,7 +84,7 @@ func init() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}, keymapConvert bool) *Pattern {
 
 	var asString string
 	if extended {
@@ -140,24 +140,26 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 	}
 
 	var altText []rune
-	textRunes := []rune(asString)
-	needsConversion := false
-	for _, r := range textRunes {
-		if _, ok := qwertyMapping[r]; ok {
-			needsConversion = true
-			break
-		}
-	}
-	if needsConversion {
-		altRunes := make([]rune, len(textRunes))
-		for i, r := range textRunes {
-			if qwerty, ok := qwertyMapping[r]; ok {
-				altRunes[i] = qwerty
-			} else {
-				altRunes[i] = r
+	if keymapConvert {
+		textRunes := []rune(asString)
+		needsConversion := false
+		for _, r := range textRunes {
+			if _, ok := qwertyMapping[r]; ok {
+				needsConversion = true
+				break
 			}
 		}
-		altText = altRunes
+		if needsConversion {
+			altRunes := make([]rune, len(textRunes))
+			for i, r := range textRunes {
+				if qwerty, ok := qwertyMapping[r]; ok {
+					altRunes[i] = qwerty
+				} else {
+					altRunes[i] = r
+				}
+			}
+			altText = altRunes
+		}
 	}
 
 	ptr := &Pattern{
@@ -437,23 +439,25 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
 
 			altText := term.text
-			needsConversion := false
-			for _, r := range altText {
-				if _, ok := qwertyMapping[r]; ok {
-					needsConversion = true
-					break
-				}
-			}
-			if needsConversion {
-				altRunes := make([]rune, len(altText))
-				for i, r := range altText {
-					if qwerty, ok := qwertyMapping[r]; ok {
-						altRunes[i] = qwerty
-					} else {
-						altRunes[i] = r
+			if keymapConvert {
+				needsConversion := false
+				for _, r := range altText {
+					if _, ok := qwertyMapping[r]; ok {
+						needsConversion = true
+						break
 					}
 				}
-				altText = altRunes
+				if needsConversion {
+					altRunes := make([]rune, len(altText))
+					for i, r := range altText {
+						if qwerty, ok := qwertyMapping[r]; ok {
+							altRunes[i] = qwerty
+						} else {
+							altRunes[i] = r
+						}
+					}
+					altText = altRunes
+				}
 			}
 
 			if altOff, altScore, altPos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, altText, withPos, slab); altScore > score {
