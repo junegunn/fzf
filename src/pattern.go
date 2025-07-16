@@ -141,14 +141,14 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 
 	var altText []rune
 	textRunes := []rune(asString)
-	hasHebrew := false
+	needsConversion := false
 	for _, r := range textRunes {
 		if _, ok := qwertyMapping[r]; ok {
-			hasHebrew = true
+			needsConversion = true
 			break
 		}
 	}
-	if hasHebrew {
+	if needsConversion {
 		altRunes := make([]rune, len(textRunes))
 		for i, r := range textRunes {
 			if qwerty, ok := qwertyMapping[r]; ok {
@@ -437,14 +437,14 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
 
 			altText := term.text
-			hasHebrew := false
+			needsConversion := false
 			for _, r := range altText {
 				if _, ok := qwertyMapping[r]; ok {
-					hasHebrew = true
+					needsConversion = true
 					break
 				}
 			}
-			if hasHebrew {
+			if needsConversion {
 				altRunes := make([]rune, len(altText))
 				for i, r := range altText {
 					if qwerty, ok := qwertyMapping[r]; ok {
