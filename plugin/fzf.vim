@@ -1027,8 +1027,23 @@ if has('nvim')
     let buf = nvim_create_buf(v:false, v:true)
     let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
     let win = nvim_open_win(buf, v:true, opts)
-    silent! call setwinvar(win, '&winhighlight', 'Pmenu:,Normal:Normal')
     call setwinvar(win, '&colorcolumn', '')
+
+    " Colors
+    try
+      call setwinvar(win, '&winhighlight', 'Pmenu:,Normal:Normal')
+      let rules = get(g:, 'fzf_colors', {})
+      if has_key(rules, 'bg')
+        let color = call('s:get_color', rules.bg)
+        if len(color)
+          let ns = nvim_create_namespace('fzf_popup')
+          let hl = nvim_set_hl(ns, 'Normal',
+                \ &termguicolors ? { 'bg': color } : { 'ctermbg': str2nr(color) })
+          call nvim_win_set_hl_ns(win, ns)
+        endif
+      endif
+    catch
+    endtry
     return buf
   endfunction
 else
