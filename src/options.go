@@ -1008,6 +1008,8 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 			add(tui.JumpCancel)
 		case "click-header":
 			add(tui.ClickHeader)
+		case "click-footer":
+			add(tui.ClickFooter)
 		case "multi":
 			add(tui.Multi)
 		case "alt-enter", "alt-return":

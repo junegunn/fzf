@@ -1,6 +1,27 @@
 CHANGELOG
 =========
 
+0.65.0
+------
+- Added `click-footer` event that is triggered when the footer section is clicked. When the event is triggered, the following environment variables are set:
+    - `$FZF_CLICK_FOOTER_COLUMN` - clicked column (1-based)
+    - `$FZF_CLICK_FOOTER_LINE` - clicked line (1-based)
+    - `$FZF_CLICK_FOOTER_WORD` - the word under the cursor
+  ```sh
+  fzf --footer $'[Edit] [View]\n[Copy to clipboard]' \
+      --with-shell 'bash -c' \
+      --bind 'click-footer:transform:
+        [[ $FZF_CLICK_FOOTER_WORD =~ Edit ]] && echo "execute:vim \{}"
+        [[ $FZF_CLICK_FOOTER_WORD =~ View ]] && echo "execute:view \{}"
+        (( FZF_CLICK_FOOTER_LINE == 2 )) && (( FZF_CLICK_FOOTER_COLUMN < 20 )) &&
+            echo "execute-silent(echo -n \{} | pbcopy)+bell"
+      '
+  ```
+- Added support for `{*n}` and `{*nf}` placeholder.
+    - `{*n}` evaluates to the zero-based ordinal index of all matched items.
+    - `{*nf}` evaluates to the temporary file containing that.
+- Bug fixes
+
 0.64.0
 ------
 - Added `multi` event that is triggered when the multi-selection has changed.

@@ -422,6 +422,8 @@ type Terminal struct {
 	forcePreview       bool
 	clickHeaderLine    int
 	clickHeaderColumn  int
+	clickFooterLine    int
+	clickFooterColumn  int
 	proxyScript        string
 	numLinesCache      map[int32]numLinesCacheValue
 }
@@ -1259,7 +1261,10 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, fmt.Sprintf("FZF_POS=%d", util.Min(t.merger.Length(), t.cy+1)))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
+	env = append(env, fmt.Sprintf("FZF_CLICK_FOOTER_LINE=%d", t.clickFooterLine))
+	env = append(env, fmt.Sprintf("FZF_CLICK_FOOTER_COLUMN=%d", t.clickFooterColumn))
 	env = t.addClickHeaderWord(env)
+	env = t.addClickFooterWord(env)
 
 	// Add preview environment variables if preview is enabled
 	pwindowSize := t.pwindowSize()
@@ -1634,6 +1639,8 @@ func (t *Terminal) changeFooter(footer string) {
 		lines = strings.Split(strings.TrimSuffix(footer, "\n"), "\n")
 	}
 	t.footer = lines
+	t.clickFooterLine = 0
+	t.clickFooterColumn = 0
 }
 
 // UpdateHeader updates the header
@@ -4803,6 +4810,35 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 	return env
 }
 
+func (t *Terminal) addClickFooterWord(env []string) []string {
+	clickFooterLine := t.clickFooterLine - 1
+	if clickFooterLine < 0 || clickFooterLine >= len(t.footer) {
+		// Never clicked on the footer
+		return env
+	}
+
+	// NOTE: Unlike in click-header, we don't use --delimiter here, since we're
+	// only interested in the word, not nth. Does this make sense?
+	words := Tokenize(t.footer[clickFooterLine], Delimiter{})
+	colNum := t.clickFooterColumn - 1
+	for _, token := range words {
+		prefixWidth := int(token.prefixLength)
+		word := token.text.ToString()
+		trimmed := strings.TrimRightFunc(word, unicode.IsSpace)
+		trimWidth, _ := util.RunesWidth([]rune(trimmed), prefixWidth, t.tabstop, math.MaxInt32)
+
+		// Find the position of the first non-space character in the word
+		minPos := strings.IndexFunc(trimmed, func(r rune) bool {
+			return !unicode.IsSpace(r)
+		})
+		if colNum >= minPos && colNum >= prefixWidth && colNum < prefixWidth+trimWidth {
+			env = append(env, fmt.Sprintf("FZF_CLICK_FOOTER_WORD=%s", trimmed))
+			return env
+		}
+	}
+	return env
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() error {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -6378,6 +6414,18 @@ func (t *Terminal) Loop() error {
 					}
 					t.clickHeaderColumn = mx + 1
 					return doActions(actionsFor(tui.ClickHeader))
+				}
+
+				// Inside the footer window
+				if clicked && t.footerWindow != nil && t.footerWindow.Enclose(my, mx) {
+					mx -= t.footerWindow.Left() + t.headerIndent(t.footerBorderShape)
+					my -= t.footerWindow.Top()
+					if mx < 0 {
+						break
+					}
+					t.clickFooterLine = my + 1
+					t.clickFooterColumn = mx + 1
+					return doActions(actionsFor(tui.ClickFooter))
 				}
 
 				// Ignored

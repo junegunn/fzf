@@ -132,6 +132,7 @@ const (
 	Jump
 	JumpCancel
 	ClickHeader
+	ClickFooter
 	Multi
 )
 
