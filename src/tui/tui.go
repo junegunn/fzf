@@ -504,7 +504,7 @@ type BorderCharacter int
 func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 	if shape == BorderNone || shape == BorderPhantom {
 		return BorderStyle{
-			shape:       shape,
+			shape:       BorderRounded,
 			top:         ' ',
 			bottom:      ' ',
 			left:        ' ',
