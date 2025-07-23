@@ -17,6 +17,22 @@ CHANGELOG
             echo "execute-silent(echo -n \{} | pbcopy)+bell"
       '
   ```
+- Added `trigger(...)` action that triggers events bound to another key or event.
+  ```sh
+  # You can click on each key name to trigger the actions bound to that key
+  fzf --footer 'Ctrl-E: Edit / Ctrl-V: View / Ctrl-Y: Copy to clipboard' \
+      --with-shell 'bash -c' \
+      --bind 'ctrl-e:execute:vim {}' \
+      --bind 'ctrl-v:execute:view {}' \
+      --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+bell' \
+      --bind 'click-footer:transform:
+        [[ $FZF_CLICK_FOOTER_WORD =~ Ctrl ]] && echo "trigger(${FZF_CLICK_FOOTER_WORD%:})"
+      '
+  ```
+    - You can specify a series of keys and events
+      ```sh
+      fzf --bind 'a:up,b:trigger(a,a,a)'
+      ```
 - Added support for `{*n}` and `{*nf}` placeholder.
     - `{*n}` evaluates to the zero-based ordinal index of all matched items.
     - `{*nf}` evaluates to the temporary file containing that.

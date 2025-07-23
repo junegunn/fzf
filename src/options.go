@@ -932,15 +932,12 @@ func parseBorder(str string, optional bool) (tui.BorderShape, error) {
 	return tui.BorderNone, errors.New("invalid border style (expected: rounded|sharp|bold|block|thinblock|double|horizontal|vertical|top|bottom|left|right|none)")
 }
 
-func parseKeyChords(str string, message string) (map[tui.Event]string, error) {
-	return parseKeyChordsImpl(str, message)
-}
-
-func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error) {
+func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Event, error) {
 	if len(str) == 0 {
-		return nil, errors.New(message)
+		return nil, nil, errors.New(message)
 	}
 
+	list := []tui.Event{}
 	str = regexp.MustCompile("(?i)(alt-),").ReplaceAllString(str, "$1"+string([]rune{escapedComma}))
 	tokens := strings.Split(str, ",")
 	if str == "," || strings.HasPrefix(str, ",,") || strings.HasSuffix(str, ",,") || strings.Contains(str, ",,,") {
@@ -956,6 +953,7 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		lkey := strings.ToLower(key)
 		add := func(e tui.EventType) {
 			chords[e.AsEvent()] = key
+			list = append(list, e.AsEvent())
 		}
 		switch lkey {
 		case "up":
@@ -969,7 +967,9 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		case "enter", "return":
 			add(tui.Enter)
 		case "space":
-			chords[tui.Key(' ')] = key
+			evt := tui.Key(' ')
+			chords[evt] = key
+			list = append(list, evt)
 		case "backspace", "bspace", "bs":
 			add(tui.Backspace)
 		case "ctrl-space":
@@ -1013,9 +1013,13 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		case "multi":
 			add(tui.Multi)
 		case "alt-enter", "alt-return":
-			chords[tui.CtrlAltKey('m')] = key
+			evt := tui.CtrlAltKey('m')
+			chords[evt] = key
+			list = append(list, evt)
 		case "alt-space":
-			chords[tui.AltKey(' ')] = key
+			evt := tui.AltKey(' ')
+			chords[evt] = key
+			list = append(list, evt)
 		case "alt-bs", "alt-bspace", "alt-backspace":
 			add(tui.AltBackspace)
 		case "alt-up":
@@ -1093,7 +1097,9 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 		default:
 			runes := []rune(key)
 			if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
-				chords[tui.CtrlAltKey(rune(key[9]))] = key
+				evt := tui.CtrlAltKey(rune(key[9]))
+				chords[evt] = key
+				list = append(list, evt)
 			} else if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				add(tui.EventType(tui.CtrlA.Int() + int(lkey[5]) - 'a'))
 			} else if len(runes) == 5 && strings.HasPrefix(lkey, "alt-") {
@@ -1106,17 +1112,21 @@ func parseKeyChordsImpl(str string, message string) (map[tui.Event]string, error
 				case escapedPlus:
 					r = '+'
 				}
-				chords[tui.AltKey(r)] = key
+				evt := tui.AltKey(r)
+				chords[evt] = key
+				list = append(list, evt)
 			} else if len(key) == 2 && strings.HasPrefix(lkey, "f") && key[1] >= '1' && key[1] <= '9' {
 				add(tui.EventType(tui.F1.Int() + int(key[1]) - '1'))
 			} else if len(runes) == 1 {
-				chords[tui.Key(runes[0])] = key
+				evt := tui.Key(runes[0])
+				chords[evt] = key
+				list = append(list, evt)
 			} else {
-				return nil, errors.New("unsupported key: " + key)
+				return nil, list, errors.New("unsupported key: " + key)
 			}
 		}
 	}
-	return chords, nil
+	return chords, list, nil
 }
 
 func parseScheme(str string) (string, []criterion, error) {
@@ -1439,7 +1449,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header|footer|search|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1736,7 +1746,7 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 				}
 				switch t {
 				case actUnbind, actRebind, actToggleBind:
-					if _, err := parseKeyChordsImpl(actionArg, spec[0:offset]+" target required"); err != nil {
+					if _, _, err := parseKeyChords(actionArg, spec[0:offset]+" target required"); err != nil {
 						return nil, err
 					}
 				case actChangePreviewWindow:
@@ -1781,7 +1791,7 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) error {
 			} else if len(keyName) == 1 && keyName[0] == escapedPlus {
 				key = tui.Key('+')
 			} else {
-				keys, err := parseKeyChordsImpl(keyName, "key name required")
+				keys, _, err := parseKeyChords(keyName, "key name required")
 				if err != nil {
 					return err
 				}
@@ -1928,6 +1938,8 @@ func isExecuteAction(str string) actionType {
 		return actBgTransformQuery
 	case "bg-transform-search":
 		return actBgTransformSearch
+	case "trigger":
+		return actTrigger
 	case "search":
 		return actSearch
 	}
@@ -1935,7 +1947,7 @@ func isExecuteAction(str string) actionType {
 }
 
 func parseToggleSort(keymap map[tui.Event][]*action, str string) error {
-	keys, err := parseKeyChords(str, "key name required")
+	keys, _, err := parseKeyChords(str, "key name required")
 	if err != nil {
 		return err
 	}
@@ -2474,7 +2486,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			chords, err := parseKeyChords(str, "key names required")
+			chords, _, err := parseKeyChords(str, "key names required")
 			if err != nil {
 				return err
 			}

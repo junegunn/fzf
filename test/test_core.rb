@@ -2035,4 +2035,14 @@ class TestCore < TestInteractive
       assert_equal 19, it.select_count
     end
   end
+
+  def test_trigger
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'a:up+trigger(a),b:trigger(a,a,b,a)'), :Enter
+    tmux.until { assert_equal 100, it.match_count }
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines, '> 3' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines, '> 9' }
+  end
 end
