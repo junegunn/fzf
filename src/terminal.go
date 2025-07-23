@@ -2291,10 +2291,17 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 						innerMarginInt[0]+shift, innerMarginInt[3]+pwidth+m, innerWidth-pwidth-m, innerHeight-shrink, tui.WindowList, noBorder, true)
 
 					// Clear characters on the margin
-					//   fzf --bind 'space:preview(seq 100)' --preview-window left,1
+					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1
 					if !hasListBorder {
 						for y := 0; y < innerHeight; y++ {
 							t.window.Move(y, -1)
+							t.window.Print(" ")
+						}
+					}
+					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1,border-none
+					if !previewOpts.Border().HasRight() {
+						for y := 0; y < innerHeight; y++ {
+							t.window.Move(y, -2)
 							t.window.Print(" ")
 						}
 					}
