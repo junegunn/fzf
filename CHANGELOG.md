@@ -36,7 +36,12 @@ CHANGELOG
 - Added support for `{*n}` and `{*nf}` placeholder.
     - `{*n}` evaluates to the zero-based ordinal index of all matched items.
     - `{*nf}` evaluates to the temporary file containing that.
-- Bug fixes
+- Bug fixes and improvements
+    - [neovim] Fixed margin background color when `&winborder` is used (#4453)
+    - Fixed rendering error when hiding a preview window without border (#4465)
+    - fix(shell): check for mawk existence before version check (#4468)
+        - Thanks to @LangLangBart and @akinomyoga
+    - Fixed `--no-header-lines-border` behavior (08027e7a)
 
 0.64.0
 ------
