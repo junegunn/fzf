@@ -1801,6 +1801,11 @@ func (t *Terminal) displayWidth(runes []rune) int {
 	return width
 }
 
+func (t *Terminal) displayWidthWithPrefix(str string, prefixWidth int) int {
+	width, _ := util.RunesWidth([]rune(str), prefixWidth, t.tabstop, math.MaxInt32)
+	return width
+}
+
 const (
 	minWidth  = 4
 	minHeight = 3
@@ -4767,6 +4772,7 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 	if t.layout == layoutReverse {
 		headers[0], headers[1] = headers[1], headers[0]
 	}
+	var trimmedLine string
 	var words []Token
 	var lineNum int
 	for lineNum = 0; lineNum <= clickHeaderLine; lineNum++ {
@@ -4785,7 +4791,9 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 			return env
 		}
 
-		words = Tokenize(line, t.delimiter)
+		// NOTE: We can't expand tabs here because the delimiter can contain tabs.
+		trimmedLine, _, _ = extractColor(line, nil, nil)
+		words = Tokenize(trimmedLine, t.delimiter)
 		if currentLine {
 			break
 		} else {
@@ -4796,11 +4804,14 @@ func (t *Terminal) addClickHeaderWord(env []string) []string {
 	}
 
 	colNum := t.clickHeaderColumn - 1
+	prefixWidth, prefixLength := 0, 0
 	for idx, token := range words {
-		prefixWidth := int(token.prefixLength)
-		word := token.text.ToString()
+		prefixWidth += t.displayWidthWithPrefix(trimmedLine[prefixLength:token.prefixLength], prefixWidth)
+		prefixLength = int(token.prefixLength)
+
+		word, _ := t.processTabs(token.text.ToRunes(), prefixWidth)
 		trimmed := strings.TrimRightFunc(word, unicode.IsSpace)
-		trimWidth, _ := util.RunesWidth([]rune(trimmed), prefixWidth, t.tabstop, math.MaxInt32)
+		trimWidth := t.displayWidthWithPrefix(trimmed, prefixWidth)
 
 		// Find the position of the first non-space character in the word
 		minPos := strings.IndexFunc(trimmed, func(r rune) bool {
@@ -4828,13 +4839,15 @@ func (t *Terminal) addClickFooterWord(env []string) []string {
 
 	// NOTE: Unlike in click-header, we don't use --delimiter here, since we're
 	// only interested in the word, not nth. Does this make sense?
-	words := Tokenize(t.footer[clickFooterLine], Delimiter{})
+	trimmed, _, _ := extractColor(t.footer[clickFooterLine], nil, nil)
+	trimmed, _ = t.processTabs([]rune(trimmed), 0)
+	words := Tokenize(trimmed, Delimiter{})
 	colNum := t.clickFooterColumn - 1
 	for _, token := range words {
 		prefixWidth := int(token.prefixLength)
 		word := token.text.ToString()
 		trimmed := strings.TrimRightFunc(word, unicode.IsSpace)
-		trimWidth, _ := util.RunesWidth([]rune(trimmed), prefixWidth, t.tabstop, math.MaxInt32)
+		trimWidth := t.displayWidthWithPrefix(trimmed, prefixWidth)
 
 		// Find the position of the first non-space character in the word
 		minPos := strings.IndexFunc(trimmed, func(r rune) bool {
