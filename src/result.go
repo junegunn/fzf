@@ -237,7 +237,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 					if color.Fg().IsDefault() && origColor.HasBg() {
 						color = origColor
 						if curr.nth {
-							color = color.WithAttr(attrNth)
+							color = color.WithAttr(attrNth &^ tui.AttrRegular)
 						}
 					} else {
 						color = origColor.MergeNonDefault(color)
