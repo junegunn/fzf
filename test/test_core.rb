@@ -2045,4 +2045,19 @@ class TestCore < TestInteractive
     tmux.send_keys :b
     tmux.until { |lines| assert_includes lines, '> 9' }
   end
+
+  def test_change_nth_unset_default
+    tmux.send_keys %(echo foo bar | #{FZF} --nth 2 --query fb --bind space:change-nth:), :Enter
+    tmux.until do
+      assert_equal 1, it.item_count
+      assert_equal 0, it.match_count
+    end
+
+    tmux.send_keys :Space
+
+    tmux.until do
+      assert_equal 1, it.item_count
+      assert_equal 1, it.match_count
+    end
+  end
 end

@@ -5726,7 +5726,7 @@ func (t *Terminal) Loop() error {
 				capture(true, func(expr string) {
 					// Split nth expression
 					tokens := strings.Split(expr, "|")
-					if nth, err := splitNth(tokens[0]); err == nil {
+					if nth, err := splitNth(tokens[0]); err == nil || len(expr) == 0 {
 						// Changed
 						newNth = &nth
 					} else {
