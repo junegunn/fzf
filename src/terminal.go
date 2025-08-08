@@ -1394,7 +1394,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 			if !fill {
 				ellipsis, ellipsisWidth = util.Truncate(t.ellipsis, limit)
 			}
-			if length > limit-ellipsisWidth {
+			if length > limit {
 				trimmedRunes, _ := t.trimRight(runes, limit-ellipsisWidth)
 				window.CPrint(*color, string(trimmedRunes)+string(ellipsis))
 			} else if fill {

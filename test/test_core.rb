@@ -1415,6 +1415,11 @@ class TestCore < TestInteractive
     tmux.until { assert_match(%r{   --1/10000/10000-- *$}, it[-1]) }
   end
 
+  def test_info_command_inline_right_no_ansi
+    tmux.send_keys(%(seq 10000 | #{FZF} --info-command 'echo -e "--$FZF_POS/$FZF_INFO--"' --info inline-right), :Enter)
+    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, it[-1]) }
+  end
+
   def test_info_command_and_focus
     tmux.send_keys(%(seq 100 | #{FZF} --separator x --info-command 'echo $FZF_POS' --bind focus:clear-query), :Enter)
     tmux.until { assert_match(/^  1 xx/, it[-2]) }
