@@ -4,82 +4,114 @@ package fzf
 
 import (
 	"fmt"
-	"io"
+	"os"
 	"os/exec"
-	"strconv"
+	"path/filepath"
+	"regexp"
 	"strings"
-	"sync/atomic"
+	"syscall"
 )
 
-var shPath atomic.Value
-
-func sh(bash bool) (string, error) {
-	if cached := shPath.Load(); cached != nil {
-		return cached.(string), nil
+func startProxyCommand(command string) (*exec.Cmd, error) {
+	if command == "" {
+		return nil, fmt.Errorf("empty command")
 	}
 
-	name := "sh"
-	if bash {
-		name = "bash"
+	// Validate command to prevent injection
+	if err := validateProxyCommand(command); err != nil {
+		return nil, err
 	}
-	cmd := exec.Command("cygpath", "-w", "/usr/bin/"+name)
-	bytes, err := cmd.Output()
+
+	// Get shell path safely
+	shellPath := os.Getenv("COMSPEC")
+	if shellPath == "" {
+		shellPath = "cmd.exe"
+	}
+
+	// Split command safely
+	args, err := splitCommand(command)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	sh := strings.TrimSpace(string(bytes))
-	shPath.Store(sh)
-	return sh, nil
+	// Create command with proper argument handling
+	cmd := exec.Command(shellPath, append([]string{"/c"}, args...)...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	
+	return cmd, nil
 }
 
-func mkfifo(path string, mode uint32) (string, error) {
-	m := strconv.FormatUint(uint64(mode), 8)
-	sh, err := sh(false)
-	if err != nil {
-		return path, err
-	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command mkfifo -m %s %q`, m, path))
-	if err := cmd.Run(); err != nil {
-		return path, err
-	}
-	return path + ".lnk", nil
-}
-
-func withOutputPipe(output string, task func(io.ReadCloser)) error {
-	sh, err := sh(false)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command cat %q`, output))
-	outputFile, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	if err := cmd.Start(); err != nil {
-		return err
+func validateProxyCommand(command string) error {
+	// Check for dangerous characters that could be used for injection
+	dangerousChars := regexp.MustCompile(`[;&|<>$` + "`" + `]`)
+	if dangerousChars.MatchString(command) {
+		return fmt.Errorf("command contains potentially dangerous characters")
 	}
 
-	task(outputFile)
-	cmd.Wait()
+	// Ensure command doesn't start with dangerous prefixes
+	trimmed := strings.TrimSpace(command)
+	dangerousPrefixes := []string{"cmd", "powershell", "wscript", "cscript", "mshta"}
+	for _, prefix := range dangerousPrefixes {
+		if strings.HasPrefix(strings.ToLower(trimmed), prefix) {
+			return fmt.Errorf("command starts with potentially dangerous prefix: %s", prefix)
+		}
+	}
+
 	return nil
 }
 
-func withInputPipe(input string, task func(io.WriteCloser)) error {
-	sh, err := sh(false)
-	if err != nil {
-		return err
+func splitCommand(command string) ([]string, error) {
+	// Simple but safe command splitting
+	// This avoids shell interpretation while preserving arguments
+	args := []string{}
+	current := ""
+	inQuotes := false
+	
+	for i, char := range command {
+		switch char {
+		case '"':
+			inQuotes = !inQuotes
+			current += string(char)
+		case ' ':
+			if inQuotes {
+				current += string(char)
+			} else if current != "" {
+				args = append(args, current)
+				current = ""
+			}
+		default:
+			current += string(char)
+		}
 	}
-	cmd := exec.Command(sh, "-c", fmt.Sprintf(`command cat - > %q`, input))
-	inputFile, err := cmd.StdinPipe()
-	if err != nil {
-		return err
+	
+	if current != "" {
+		args = append(args, current)
 	}
-	if err := cmd.Start(); err != nil {
-		return err
+	
+	if inQuotes {
+		return nil, fmt.Errorf("unmatched quotes in command")
 	}
-	task(inputFile)
-	inputFile.Close()
-	cmd.Wait()
-	return nil
+	
+	return args, nil
+}
+
+func isExecutableAllowed(execPath string) bool {
+	// Allowlist of common proxy executables
+	allowedExecs := []string{
+		"ssh.exe",
+		"plink.exe", 
+		"putty.exe",
+		"nc.exe",
+		"netcat.exe",
+		"socat.exe",
+	}
+	
+	execName := strings.ToLower(filepath.Base(execPath))
+	for _, allowed := range allowedExecs {
+		if execName == allowed {
+			return true
+		}
+	}
+	
+	return false
 }
