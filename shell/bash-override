@@ -1,7 +1,7 @@
 # Override defaults for improved ctrl-t experience
 __fzf_find() {
-  command ls -1t $1;
-  command find -L $1 -mindepth 2 \( -path '*/\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune \
+  command ls -1tA $1
+  command find -L $1 -mindepth 2 \( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune \
   -o -type f -printf '%P\n' \
   -o -type d -printf '%P\n' \
   -o -type l -printf '%P\n' 2> /dev/null
