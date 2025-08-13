@@ -128,7 +128,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 
 	// No ANSI codes
 	if len(itemColors) == 0 && len(nthOffsets) == 0 {
-		var offsets []colorOffset
+		offsets := make([]colorOffset, 0, len(matchOffsets))
 		for _, off := range matchOffsets {
 			offsets = append(offsets, colorOffset{offset: [2]int32{off[0], off[1]}, color: colMatch, match: true})
 		}
