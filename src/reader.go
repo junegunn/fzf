@@ -285,7 +285,7 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 			if strings.HasPrefix(ignore, sep) {
 				ignoresSuffix = append(ignoresSuffix, ignore)
 			} else {
-				// 'foo/bar' should match match
+				// 'foo/bar' should match
 				// * 'foo/bar'
 				// * 'baz/foo/bar'
 				// * but NOT 'bazfoo/bar'
