@@ -179,6 +179,12 @@ You can download the official fzf binaries from the releases page.
 
 * https://github.com/junegunn/fzf/releases
 
+On Linux and macOS the process can be automated using [gah](https://github.com/marverix/gah):
+
+```
+gah install fzf
+```
+
 ### Setting up shell integration
 
 Add the following line to your shell configuration file.
