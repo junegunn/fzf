@@ -164,7 +164,7 @@ download() {
 }
 
 # Try to download binary executable
-archi=$(uname -smo)
+archi=$(uname -smo 2>/dev/null || uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
