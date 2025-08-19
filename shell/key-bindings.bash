@@ -125,7 +125,7 @@ bind -m emacs-standard '"\C-z": vi-editing-mode'
 if (( BASH_VERSINFO[0] < 4 )); then
   # CTRL-T - Paste the selected file path into the command line
   if [[ "${FZF_CTRL_T_COMMAND-x}" != "" ]]; then
-    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
+    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f\C-y\ey\C-_"'
     bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
     bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
   fi
@@ -150,7 +150,7 @@ fi
 
 # ALT-C - cd into the selected directory
 if [[ "${FZF_ALT_C_COMMAND-x}" != "" ]]; then
-  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
+  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d\C-y\ey\C-_"'
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 fi
