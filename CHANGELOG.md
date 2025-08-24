@@ -1,6 +1,54 @@
 CHANGELOG
 =========
 
+0.65.1
+------
+- Fixed incorrect `$FZF_CLICK_HEADER_WORD` and `$FZF_CLICK_FOOTER_WORD` when the header or footer contains ANSI escape sequences and tab characters.
+- Fixed a bug where you cannot unset the default `--nth` using `change-nth` action.
+- Fixed a highlighting bug when using `--color fg:dim,nth:regular` pattern over ANSI-colored items.
+
+0.65.0
+------
+- Added `click-footer` event that is triggered when the footer section is clicked. When the event is triggered, the following environment variables are set:
+    - `$FZF_CLICK_FOOTER_COLUMN` - clicked column (1-based)
+    - `$FZF_CLICK_FOOTER_LINE` - clicked line (1-based)
+    - `$FZF_CLICK_FOOTER_WORD` - the word under the cursor
+  ```sh
+  fzf --footer $'[Edit] [View]\n[Copy to clipboard]' \
+      --with-shell 'bash -c' \
+      --bind 'click-footer:transform:
+        [[ $FZF_CLICK_FOOTER_WORD =~ Edit ]] && echo "execute:vim \{}"
+        [[ $FZF_CLICK_FOOTER_WORD =~ View ]] && echo "execute:view \{}"
+        (( FZF_CLICK_FOOTER_LINE == 2 )) && (( FZF_CLICK_FOOTER_COLUMN < 20 )) &&
+            echo "execute-silent(echo -n \{} | pbcopy)+bell"
+      '
+  ```
+- Added `trigger(...)` action that triggers events bound to another key or event.
+  ```sh
+  # You can click on each key name to trigger the actions bound to that key
+  fzf --footer 'Ctrl-E: Edit / Ctrl-V: View / Ctrl-Y: Copy to clipboard' \
+      --with-shell 'bash -c' \
+      --bind 'ctrl-e:execute:vim {}' \
+      --bind 'ctrl-v:execute:view {}' \
+      --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+bell' \
+      --bind 'click-footer:transform:
+        [[ $FZF_CLICK_FOOTER_WORD =~ Ctrl ]] && echo "trigger(${FZF_CLICK_FOOTER_WORD%:})"
+      '
+  ```
+    - You can specify a series of keys and events
+      ```sh
+      fzf --bind 'a:up,b:trigger(a,a,a)'
+      ```
+- Added support for `{*n}` and `{*nf}` placeholder.
+    - `{*n}` evaluates to the zero-based ordinal index of all matched items.
+    - `{*nf}` evaluates to the temporary file containing that.
+- Bug fixes and improvements
+    - [neovim] Fixed margin background color when `&winborder` is used (#4453)
+    - Fixed rendering error when hiding a preview window without border (#4465)
+    - fix(shell): check for mawk existence before version check (#4468)
+        - Thanks to @LangLangBart and @akinomyoga
+    - Fixed `--no-header-lines-border` behavior (08027e7a)
+
 0.64.0
 ------
 - Added `multi` event that is triggered when the multi-selection has changed.

@@ -47,9 +47,9 @@ __fzf_exec_awk() {
     __fzf_awk=awk
     if [[ $OSTYPE == solaris* && -x /usr/xpg4/bin/awk ]]; then
       __fzf_awk=/usr/xpg4/bin/awk
-    else
+    elif command -v mawk >/dev/null 2>&1; then
       local n x y z d
-      IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+      IFS=' .' read -r n x y z d <<< $(command mawk -W version 2> /dev/null)
       [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
     fi
   fi
@@ -524,7 +524,7 @@ if ! declare -F __fzf_list_hosts > /dev/null; then
               if ($i != "0.0.0.0")
                 print $i
           }
-        ' /etc/hosts 2> /dev/null 
+        ' /etc/hosts 2> /dev/null
       )
   }
 fi

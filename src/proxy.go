@@ -90,11 +90,12 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 		}
 	}
 
-	// * Write the command to a temporary file and run it with sh to ensure POSIX compliance.
-	// * Nullify FZF_DEFAULT_* variables as tmux popup may inject them even when undefined.
-	exports := []string{"FZF_DEFAULT_COMMAND=", "FZF_DEFAULT_OPTS=", "FZF_DEFAULT_OPTS_FILE="}
+	// Write the command to a temporary file and run it with sh to ensure POSIX compliance.
+	var exports []string
 	needBash := false
 	if withExports {
+		// Nullify FZF_DEFAULT_* variables as tmux popup may inject them even when undefined.
+		exports = []string{"FZF_DEFAULT_COMMAND=", "FZF_DEFAULT_OPTS=", "FZF_DEFAULT_OPTS_FILE="}
 		validIdentifier := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 		for _, pairStr := range os.Environ() {
 			pair := strings.SplitN(pairStr, "=", 2)

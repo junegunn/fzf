@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Jul 2025" "fzf 0.64.0" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Aug 2025" "fzf 0.65.1" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -1046,7 +1046,7 @@ are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even whe
 
 .TP
 .BI "\-\-footer\-border" [=STYLE]
-Draw border around the header section. \fBline\fR style draws a single
+Draw border around the footer section. \fBline\fR style draws a single
 separator line between the footer and the list section.
 
 .TP
@@ -1682,6 +1682,14 @@ e.g.
                           )'\fR
 .RE
 
+\fIclick\-footer\fR
+.RS
+Triggered when a mouse click occurs within the footer. Sets
+\fBFZF_CLICK_FOOTER_LINE\fR and \fBFZF_CLICK_FOOTER_COLUMN\fR environment
+variables starting from 1. It optionally sets \fBFZF_CLICK_FOOTER_WORD\fR
+if clicked on a word.
+.RE
+
 .SS AVAILABLE ACTIONS:
 A key or an event can be bound to one or more of the following actions.
 
@@ -1698,6 +1706,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning\-of\-line\fR            \fIctrl\-a  home\fR
     \fBbell\fR                         (ring the terminal bell)
+    \fBbg\-cancel\fR                    (cancel background transform processes)
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
     \fBchange\-ghost(...)\fR            (change ghost text to the given string)
@@ -1808,6 +1817,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform\-query(...)\fR         (transform query string using an external command)
     \fBtransform\-search(...)\fR        (trigger fzf search with the output of an external command)
+    \fBtrigger(...)\fR                 (trigger actions bound to a comma-separated list of keys and events)
     \fBunbind(...)\fR                  (unbind bindings)
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
@@ -1959,7 +1969,8 @@ Transform actions are synchronous, meaning fzf becomes unresponsive while the
 command runs. To avoid this, each \fBtransform*\fR action has a corresponding
 \fBbg\-transform*\fR variant that runs in the background. Unless you need to
 chain multiple transform actions where later ones depend on earlier results,
-prefer using the \fBbg\fR variant.
+prefer using the \fBbg\fR variant. To cancel currently running background
+transform processes, use \fBbg\-cancel\fR action.
 
 .SS PREVIEW BINDING
 

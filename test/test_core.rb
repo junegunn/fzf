@@ -1415,6 +1415,11 @@ class TestCore < TestInteractive
     tmux.until { assert_match(%r{   --1/10000/10000-- *$}, it[-1]) }
   end
 
+  def test_info_command_inline_right_no_ansi
+    tmux.send_keys(%(seq 10000 | #{FZF} --info-command 'echo -e "--$FZF_POS/$FZF_INFO--"' --info inline-right), :Enter)
+    tmux.until { assert_match(%r{   --1/10000/10000-- *$}, it[-1]) }
+  end
+
   def test_info_command_and_focus
     tmux.send_keys(%(seq 100 | #{FZF} --separator x --info-command 'echo $FZF_POS' --bind focus:clear-query), :Enter)
     tmux.until { assert_match(/^  1 xx/, it[-2]) }
@@ -2033,6 +2038,31 @@ class TestCore < TestInteractive
     tmux.until do
       assert_equal 19, it.match_count
       assert_equal 19, it.select_count
+    end
+  end
+
+  def test_trigger
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'a:up+trigger(a),b:trigger(a,a,b,a)'), :Enter
+    tmux.until { assert_equal 100, it.match_count }
+    tmux.until { |lines| assert_includes lines, '> 1' }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_includes lines, '> 3' }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_includes lines, '> 9' }
+  end
+
+  def test_change_nth_unset_default
+    tmux.send_keys %(echo foo bar | #{FZF} --nth 2 --query fb --bind space:change-nth:), :Enter
+    tmux.until do
+      assert_equal 1, it.item_count
+      assert_equal 0, it.match_count
+    end
+
+    tmux.send_keys :Space
+
+    tmux.until do
+      assert_equal 1, it.item_count
+      assert_equal 1, it.match_count
     end
   end
 end
