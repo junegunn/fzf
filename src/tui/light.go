@@ -335,6 +335,8 @@ func (r *LightRenderer) GetChar() Event {
 		return Event{CtrlQ, 0, nil}
 	case 127:
 		return Event{Backspace, 0, nil}
+	case 8:
+		return Event{CtrlBackspace, 0, nil}
 	case 0:
 		return Event{CtrlSpace, 0, nil}
 	case 28:
@@ -381,6 +383,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	}
 
 	*sz = 2
+	if r.buffer[1] == 8 {
+		return Event{CtrlAltBackspace, 0, nil}
+	}
 	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
 		return CtrlAltKey(rune(r.buffer[1] + 'a' - 1))
 	}

@@ -71,7 +71,7 @@ func TestLightRenderer(t *testing.T) {
 	assertCharSequence("\x05", "ctrl-e")
 	assertCharSequence("\x06", "ctrl-f")
 	assertCharSequence("\x07", "ctrl-g")
-	assertCharSequence("\b", "ctrl-h") // backspace
+	// ctrl-h is the same as ctrl-backspace
 	// ctrl-i is the same as tab
 	assertCharSequence("\n", "ctrl-j")
 	assertCharSequence("\x0b", "ctrl-k")
@@ -141,9 +141,10 @@ func TestLightRenderer(t *testing.T) {
 	assertCharSequence("\t", "tab")
 	assertEscSequence("\x1b[Z", "shift-tab")
 
+	assertCharSequence("\x7f", "backspace")
 	assertEscSequence("\x1b\x7f", "alt-backspace")
-	assertEscSequence("\x1b\b", "ctrl-alt-h") // ctrl-alt-backspace
-	assertCharSequence("\b", "ctrl-h")        // ctrl-backspace
+	assertCharSequence("\b", "ctrl-backspace")
+	assertEscSequence("\x1b\b", "ctrl-alt-backspace")
 
 	assertEscSequence("\x1b[A", "up")
 	assertEscSequence("\x1b[B", "down")
@@ -151,7 +152,6 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[D", "left")
 	assertEscSequence("\x1b[H", "home")
 	assertEscSequence("\x1b[F", "end")
-	assertCharSequence("\x7f", "backspace")
 	assertEscSequence("\x1b[2~", "insert")
 	assertEscSequence("\x1b[3~", "delete")
 	assertEscSequence("\x1b[5~", "page-up")
