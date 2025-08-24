@@ -2,7 +2,7 @@ module github.com/junegunn/fzf
 
 require (
 	github.com/charlievieth/fastwalk v1.0.12
-	github.com/gdamore/tcell/v2 v2.8.1
+	github.com/gdamore/tcell/v2 v2.9.0
 	github.com/junegunn/go-shellwords v0.0.0-20250127100254-2aa3b3277741
 	github.com/mattn/go-isatty v0.0.20
 	github.com/rivo/uniseg v0.4.7
@@ -19,4 +19,3 @@ require (
 
 go 1.20
 
-replace github.com/gdamore/tcell/v2 => github.com/masmu/tcell/v2 v2.0.0-20240930104616-573bc14c91fd
