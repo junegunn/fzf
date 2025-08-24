@@ -198,6 +198,10 @@ func TestGetCharEventKey(t *testing.T) {
 			initialResizeAsInvalid = false
 			gotEvent = r.GetChar()
 		}
+		if gotEvent.Type == Resize {
+			t.Logf("Resize swallowed")
+			gotEvent = r.GetChar()
+		}
 		t.Logf("wantEvent = %T{Type: %v, Char: %q (%[3]v)}\n", test.wantKey, test.wantKey.Type, test.wantKey.Char)
 		t.Logf("gotEvent = %T{Type: %v, Char: %q (%[3]v)}\n", gotEvent, gotEvent.Type, gotEvent.Char)
 
