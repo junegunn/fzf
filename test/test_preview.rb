@@ -190,17 +190,17 @@ class TestPreview < TestInteractive
   end
 
   def test_preview_asterisk
-    tmux.send_keys %(seq 5 | #{FZF} --multi --preview 'echo [{} / {+} / {*}]' --preview-window '+{1}'), :Enter
+    tmux.send_keys %(seq 5 | #{FZF} --multi --preview 'echo [{}/{+}/{*}/{*n}]' --preview-window '+{1}'), :Enter
     tmux.until { |lines| assert_equal 5, lines.match_count }
-    tmux.until { |lines| assert_includes lines[1], ' [1 / 1 / 1 2 3 4 5] ' }
+    tmux.until { |lines| assert_includes lines[1], ' [1/1/1 2 3 4 5/0 1 2 3 4] ' }
     tmux.send_keys :BTab
-    tmux.until { |lines| assert_includes lines[1], ' [2 / 1 / 1 2 3 4 5] ' }
+    tmux.until { |lines| assert_includes lines[1], ' [2/1/1 2 3 4 5/0 1 2 3 4] ' }
     tmux.send_keys :BTab
-    tmux.until { |lines| assert_includes lines[1], ' [3 / 1 2 / 1 2 3 4 5] ' }
+    tmux.until { |lines| assert_includes lines[1], ' [3/1 2/1 2 3 4 5/0 1 2 3 4] ' }
     tmux.send_keys '5'
-    tmux.until { |lines| assert_includes lines[1], ' [5 / 1 2 / 5] ' }
+    tmux.until { |lines| assert_includes lines[1], ' [5/1 2/5/4] ' }
     tmux.send_keys '5'
-    tmux.until { |lines| assert_includes lines[1], ' [ / 1 2 / ] ' }
+    tmux.until { |lines| assert_includes lines[1], ' [/1 2//] ' }
   end
 
   def test_preview_file

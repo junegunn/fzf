@@ -33,9 +33,9 @@ __fzf_exec_awk() {
     __fzf_awk=awk
     if [[ $OSTYPE == solaris* && -x /usr/xpg4/bin/awk ]]; then
       __fzf_awk=/usr/xpg4/bin/awk
-    else
+    elif command -v mawk >/dev/null 2>&1; then
       local n x y z d
-      IFS=' .' read n x y z d <<< $(command mawk -W version 2> /dev/null)
+      IFS=' .' read -r n x y z d <<< $(command mawk -W version 2> /dev/null)
       [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
     fi
   fi
@@ -125,7 +125,7 @@ bind -m emacs-standard '"\C-z": vi-editing-mode'
 if (( BASH_VERSINFO[0] < 4 )); then
   # CTRL-T - Paste the selected file path into the command line
   if [[ "${FZF_CTRL_T_COMMAND-x}" != "" ]]; then
-    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f"'
+    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f\C-y\ey\C-_"'
     bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
     bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
   fi
@@ -150,7 +150,7 @@ fi
 
 # ALT-C - cd into the selected directory
 if [[ "${FZF_ALT_C_COMMAND-x}" != "" ]]; then
-  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
+  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d\C-y\ey\C-_"'
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 fi
