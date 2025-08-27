@@ -182,15 +182,6 @@ func atoi(s string, defaultValue int) int {
 	return value
 }
 
-func byteInSet(val byte, slice []byte) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
 func (r *LightRenderer) Init() error {
 	r.escDelay = atoi(os.Getenv("ESCDELAY"), defaultEscDelay)
 
@@ -660,9 +651,9 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
 						// CTRL-SHIFT-ARROW  "\e[1;6D"             N/A
 						// CMD-SHIFT-ARROW   "\e[1;10D" N/A        N/A ("\e[1;2D")
-						ctrl := byteInSet(r.buffer[4], []byte{'5', '6', '7', '8'})
-						alt := byteInSet(r.buffer[4], []byte{'3', '4', '7', '8'})
-						shift := byteInSet(r.buffer[4], []byte{'2', '4', '6', '8'})
+						ctrl := bytes.IndexByte([]byte{'5', '6', '7', '8'}, r.buffer[4]) >= 0
+						alt := bytes.IndexByte([]byte{'3', '4', '7', '8'}, r.buffer[4]) >= 0
+						shift := bytes.IndexByte([]byte{'2', '4', '6', '8'}, r.buffer[4]) >= 0
 						char := r.buffer[5]
 						if r.buffer[4] == '9' {
 							ctrl = false
@@ -673,10 +664,10 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							}
 							*sz = 6
 							char = r.buffer[5]
-						} else if r.buffer[4] == '1' && byteInSet(r.buffer[5], []byte{'0', '1', '2', '3', '4', '5', '6'}) {
-							ctrl = byteInSet(r.buffer[5], []byte{'3', '4', '5', '6'})
+						} else if r.buffer[4] == '1' && bytes.IndexByte([]byte{'0', '1', '2', '3', '4', '5', '6'}, r.buffer[5]) >= 0 {
+							ctrl = bytes.IndexByte([]byte{'3', '4', '5', '6'}, r.buffer[5]) >= 0
 							alt = true
-							shift = byteInSet(r.buffer[5], []byte{'0', '2', '4', '6'})
+							shift = bytes.IndexByte([]byte{'0', '2', '4', '6'}, r.buffer[5]) >= 0
 							if len(r.buffer) < 7 {
 								return Event{Invalid, 0, nil}
 							}
