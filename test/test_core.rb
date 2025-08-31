@@ -108,6 +108,40 @@ class TestCore < TestInteractive
     assert_equal %w[3 2 5 6 8 7], fzf_output_lines
   end
 
+  def test_subword_forward
+    tmux.send_keys "#{FZF} --bind K:kill-subword,F:forward-subword -q 'foo bar foo-bar fooFooBar'", :Enter, :Home
+    tmux.until { |lines| assert_equal '> foo bar foo-bar fooFooBar', lines.last }
+
+    tmux.send_keys 'F', :Delete
+    tmux.until { |lines| assert_equal '> foobar foo-bar fooFooBar', lines.last }
+
+    tmux.send_keys 'K'
+    tmux.until { |lines| assert_equal '> foo foo-bar fooFooBar', lines.last }
+
+    tmux.send_keys 'F', 'K'
+    tmux.until { |lines| assert_equal '> foo foo fooFooBar', lines.last }
+
+    tmux.send_keys 'F', 'F', 'K'
+    tmux.until { |lines| assert_equal '> foo foo fooFoo', lines.last }
+  end
+
+  def test_subword_backward
+    tmux.send_keys "#{FZF} --bind K:backward-kill-subword,B:backward-subword -q 'foo bar foo-bar fooBar'", :Enter
+    tmux.until { |lines| assert_equal '> foo bar foo-bar fooBar', lines.last }
+
+    tmux.send_keys 'B', :BSpace
+    tmux.until { |lines| assert_equal '> foo bar foo-bar foBar', lines.last }
+
+    tmux.send_keys 'K'
+    tmux.until { |lines| assert_equal '> foo bar foo-bar Bar', lines.last }
+
+    tmux.send_keys 'B', :BSpace
+    tmux.until { |lines| assert_equal '> foo bar foobar Bar', lines.last }
+
+    tmux.send_keys 'B', 'B', :BSpace
+    tmux.until { |lines| assert_equal '> foobar foobar Bar', lines.last }
+  end
+
   def test_multi_max
     tmux.send_keys "seq 1 10 | #{FZF} -m 3 --bind A:select-all,T:toggle-all --preview 'echo [{+}]/{}'", :Enter
 
