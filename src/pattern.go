@@ -54,6 +54,7 @@ type Pattern struct {
 	forward       bool
 	withPos       bool
 	text          []rune
+	altText       []rune
 	termSets      []termSet
 	sortable      bool
 	cacheable     bool
@@ -64,17 +65,27 @@ type Pattern struct {
 	procFun       map[termType]algo.Algo
 	cache         *ChunkCache
 	denylist      map[int32]struct{}
+	keymapConvert bool
 }
 
-var _splitRegex *regexp.Regexp
+var (
+	_splitRegex   *regexp.Regexp
+	qwertyMapping map[rune]rune
+)
 
 func init() {
 	_splitRegex = regexp.MustCompile(" +")
+	qwertyMapping = make(map[rune]rune)
+	for _, kmap := range Keymap {
+		for k, v := range kmap {
+			qwertyMapping[k] = v
+		}
+	}
 }
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}, keymapConvert bool) *Pattern {
 
 	var asString string
 	if extended {
@@ -129,6 +140,29 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		}
 	}
 
+	var altText []rune
+	textRunes := []rune(asString)
+	if keymapConvert {
+		needsConversion := false
+		for _, r := range textRunes {
+			if _, ok := qwertyMapping[r]; ok {
+				needsConversion = true
+				break
+			}
+		}
+		if needsConversion {
+			altRunes := make([]rune, len(textRunes))
+			for i, r := range textRunes {
+				if qwerty, ok := qwertyMapping[r]; ok {
+					altRunes[i] = qwerty
+				} else {
+					altRunes[i] = r
+				}
+			}
+			altText = altRunes
+		}
+	}
+
 	ptr := &Pattern{
 		fuzzy:         fuzzy,
 		fuzzyAlgo:     fuzzyAlgo,
@@ -137,7 +171,8 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		normalize:     normalize,
 		forward:       forward,
 		withPos:       withPos,
-		text:          []rune(asString),
+		text:          textRunes,
+		altText:       altText,
 		termSets:      termSets,
 		sortable:      sortable,
 		cacheable:     cacheable,
@@ -146,7 +181,8 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		delimiter:     delimiter,
 		cache:         cache,
 		denylist:      denylist,
-		procFun:       make(map[termType]algo.Algo)}
+		procFun:       make(map[termType]algo.Algo),
+		keymapConvert: keymapConvert}
 
 	ptr.cacheKey = ptr.buildCacheKey()
 	ptr.procFun[termFuzzy] = fuzzyAlgo
@@ -344,7 +380,7 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Re
 // MatchItem returns true if the Item is a match
 func (p *Pattern) MatchItem(item *Item, withPos bool, slab *util.Slab) (*Result, []Offset, *[]int) {
 	if p.extended {
-		if offsets, bonus, pos := p.extendedMatch(item, withPos, slab); len(offsets) == len(p.termSets) {
+		if offsets, bonus, pos := p.extendedMatch(item, withPos, slab, p.keymapConvert); len(offsets) == len(p.termSets) {
 			result := buildResult(item, offsets, bonus)
 			return &result, offsets, pos
 		}
@@ -366,13 +402,24 @@ func (p *Pattern) basicMatch(item *Item, withPos bool, slab *util.Slab) (Offset,
 	} else {
 		input = p.transformInput(item)
 	}
-	if p.fuzzy {
-		return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
+
+	matchFunc := func(pattern []rune) (Offset, int, *[]int) {
+		if p.fuzzy {
+			return p.iter(p.fuzzyAlgo, input, p.caseSensitive, p.normalize, p.forward, pattern, withPos, slab)
+		}
+		return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.normalize, p.forward, pattern, withPos, slab)
 	}
-	return p.iter(algo.ExactMatchNaive, input, p.caseSensitive, p.normalize, p.forward, p.text, withPos, slab)
+
+	offset, bonus, pos := matchFunc(p.text)
+	if p.altText != nil {
+		if altOffset, altBonus, altPos := matchFunc(p.altText); altBonus > bonus {
+			return altOffset, altBonus, altPos
+		}
+	}
+	return offset, bonus, pos
 }
 
-func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Offset, int, *[]int) {
+func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab, keymapConvert bool) ([]Offset, int, *[]int) {
 	var input []Token
 	if len(p.nth) == 0 {
 		input = []Token{{text: &item.text, prefixLength: 0}}
@@ -392,6 +439,33 @@ func (p *Pattern) extendedMatch(item *Item, withPos bool, slab *util.Slab) ([]Of
 		for _, term := range termSet {
 			pfun := p.procFun[term.typ]
 			off, score, pos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, term.text, withPos, slab)
+
+			altText := term.text
+			if keymapConvert {
+				needsConversion := false
+				for _, r := range altText {
+					if _, ok := qwertyMapping[r]; ok {
+						needsConversion = true
+						break
+					}
+				}
+				if needsConversion {
+					altRunes := make([]rune, len(altText))
+					for i, r := range altText {
+						if qwerty, ok := qwertyMapping[r]; ok {
+							altRunes[i] = qwerty
+						} else {
+							altRunes[i] = r
+						}
+					}
+					altText = altRunes
+				}
+			}
+
+			if altOff, altScore, altPos := p.iter(pfun, input, term.caseSensitive, term.normalize, p.forward, altText, withPos, slab); altScore > score {
+				off, score, pos = altOff, altScore, altPos
+			}
+
 			if sidx := off[0]; sidx >= 0 {
 				if term.inv {
 					continue
