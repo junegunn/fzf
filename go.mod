@@ -1,7 +1,7 @@
 module github.com/junegunn/fzf
 
 require (
-	github.com/charlievieth/fastwalk v1.0.12
+	github.com/charlievieth/fastwalk v1.0.13
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/junegunn/go-shellwords v0.0.0-20250127100254-2aa3b3277741
 	github.com/mattn/go-isatty v0.0.20
@@ -17,4 +17,4 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 )
 
-go 1.20
+go 1.21
