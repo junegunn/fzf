@@ -1807,7 +1807,9 @@ A key or an event can be bound to one or more of the following actions.
     \fBbackward\-char\fR                \fIctrl\-b  left\fR
     \fBbackward\-delete\-char\fR         \fIctrl\-h ctrl\-bspace bspace\fR
     \fBbackward\-delete\-char/eof\fR     (same as \fBbackward\-delete\-char\fR except aborts fzf if query is empty)
+    \fBbackward\-kill\-subword\fR
     \fBbackward\-kill\-word\fR           \fIalt\-bs\fR
+    \fBbackward\-subword\fR
     \fBbackward\-word\fR                \fIalt\-b   shift\-left\fR
     \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning\-of\-line\fR            \fIctrl\-a  home\fR
@@ -1847,10 +1849,12 @@ A key or an event can be bound to one or more of the following actions.
     \fBexecute\-silent(...)\fR          (see below for the details)
     \fBfirst\fR                        (move to the first match; same as \fBpos(1)\fR)
     \fBforward\-char\fR                 \fIctrl\-f  right\fR
+    \fBforward\-subword\fR
     \fBforward\-word\fR                 \fIalt\-f   shift\-right\fR
     \fBignore\fR
     \fBjump\fR                         (EasyMotion-like 2-keystroke movement)
     \fBkill\-line\fR
+    \fBkill\-subword\fR
     \fBkill\-word\fR                    \fIalt\-d\fR
     \fBlast\fR                         (move to the last match; same as \fBpos(\-1)\fR)
     \fBnext\-history\fR                 (\fIctrl\-n\fR on \fB\-\-history\fR)
