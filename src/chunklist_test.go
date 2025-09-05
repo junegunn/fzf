@@ -52,7 +52,7 @@ func TestChunkList(t *testing.T) {
 
 	// Add more data
 	for i := 0; i < chunkSize*2; i++ {
-		cl.Push([]byte(fmt.Sprintf("item %d", i)))
+		cl.Push(fmt.Appendf(nil, "item %d", i))
 	}
 
 	// Previous snapshot should remain the same
@@ -86,7 +86,7 @@ func TestChunkListTail(t *testing.T) {
 	})
 	total := chunkSize*2 + chunkSize/2
 	for i := 0; i < total; i++ {
-		cl.Push([]byte(fmt.Sprintf("item %d", i)))
+		cl.Push(fmt.Appendf(nil, "item %d", i))
 	}
 
 	snapshot, count, changed := cl.Snapshot(0)
