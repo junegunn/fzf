@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.65.2
+------
+- Bug fixes and improvements
+    - Fix incorrect truncation of `--info-command` with `--info=inline-right` (#4479)
+    - [install] Support old uname in macOS (#4492)
+    - [bash 3] Fix `CTRL-T` and `ALT-C` to preserve the last yank (#4496)
+    - Do not unset `FZF_DEFAULT_*` variables when using winpty (#4497) (#4400)
+    - Fix rendering of items with tabs when using a non-default ellipsis (#4505)
+- **This is the final release to support Windows 7.**
+    - Future versions will be built with the latest Go toolchain, which has dropped support for Windows 7.
+
 0.65.1
 ------
 - Fixed incorrect `$FZF_CLICK_HEADER_WORD` and `$FZF_CLICK_FOOTER_WORD` when the header or footer contains ANSI escape sequences and tab characters.
