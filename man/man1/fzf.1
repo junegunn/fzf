@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Aug 2025" "fzf 0.65.1" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Aug 2025" "fzf 0.65.2" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -1473,11 +1473,21 @@ e.g.
 .br
 \fIalt\-right\fR
 .br
+\fIalt\-home\fR
+.br
+\fIalt\-end\fR
+.br
+\fIalt\-backspace\fR  (\fIalt\-bspace\fR \fIalt\-bs\fR)
+.br
+\fIalt\-delete\fR
+.br
+\fIalt\-page\-up\fR
+.br
+\fIalt\-page\-down\fR
+.br
 \fIalt\-enter\fR
 .br
 \fIalt\-space\fR
-.br
-\fIalt\-backspace\fR  (\fIalt\-bspace\fR \fIalt\-bs\fR)
 .br
 \fItab\fR
 .br
@@ -1505,6 +1515,26 @@ e.g.
 .br
 \fIpage\-down\fR      (\fIpgdn\fR)
 .br
+\fIctrl\-up\fR
+.br
+\fIctrl\-down\fR
+.br
+\fIctrl\-left\fR
+.br
+\fIctrl\-right\fR
+.br
+\fIctrl\-home\fR
+.br
+\fIctrl\-end\fR
+.br
+\fIctrl\-backspace\fR  (\fIctrl\-bspace\fR \fIctrl\-bs\fR)
+.br
+\fIctrl\-delete\fR
+.br
+\fIctrl\-page\-up\fR
+.br
+\fIctrl\-page\-down\fR
+.br
 \fIshift\-up\fR
 .br
 \fIshift\-down\fR
@@ -1513,7 +1543,15 @@ e.g.
 .br
 \fIshift\-right\fR
 .br
+\fIshift\-home\fR
+.br
+\fIshift\-end\fR
+.br
 \fIshift\-delete\fR
+.br
+\fIshift\-page\-up\fR
+.br
+\fIshift\-page\-down\fR
 .br
 \fIalt\-shift\-up\fR
 .br
@@ -1522,6 +1560,72 @@ e.g.
 \fIalt\-shift\-left\fR
 .br
 \fIalt\-shift\-right\fR
+.br
+\fIalt\-shift\-home\fR
+.br
+\fIalt\-shift\-end\fR
+.br
+\fIalt\-shift\-delete\fR
+.br
+\fIalt\-shift\-page\-up\fR
+.br
+\fIalt\-shift\-page\-down\fR
+.br
+\fIctrl\-alt\-up\fR
+.br
+\fIctrl\-alt\-down\fR
+.br
+\fIctrl\-alt\-left\fR
+.br
+\fIctrl\-alt\-right\fR
+.br
+\fIctrl\-alt\-home\fR
+.br
+\fIctrl\-alt\-end\fR
+.br
+\fIctrl\-alt\-backspace\fR  (\fIctrl\-alt\-bspace\fR \fIctrl\-alt\-bs\fR)
+.br
+\fIctrl\-alt\-delete\fR
+.br
+\fIctrl\-alt\-page\-up\fR
+.br
+\fIctrl\-alt\-page\-down\fR
+.br
+\fIctrl\-shift\-up\fR
+.br
+\fIctrl\-shift\-down\fR
+.br
+\fIctrl\-shift\-left\fR
+.br
+\fIctrl\-shift\-right\fR
+.br
+\fIctrl\-shift\-home\fR
+.br
+\fIctrl\-shift\-end\fR
+.br
+\fIctrl\-shift\-delete\fR
+.br
+\fIctrl\-shift\-page\-up\fR
+.br
+\fIctrl\-shift\-page\-down\fR
+.br
+\fIctrl\-alt\-shift\-up\fR
+.br
+\fIctrl\-alt\-shift\-down\fR
+.br
+\fIctrl\-alt\-shift\-left\fR
+.br
+\fIctrl\-alt\-shift\-right\fR
+.br
+\fIctrl\-alt\-shift\-home\fR
+.br
+\fIctrl\-alt\-shift\-end\fR
+.br
+\fIctrl\-alt\-shift\-delete\fR
+.br
+\fIctrl\-alt\-shift\-page\-up\fR
+.br
+\fIctrl\-alt\-shift\-page\-down\fR
 .br
 \fIleft\-click\fR
 .br
@@ -1546,6 +1650,8 @@ e.g.
 \fIshift\-scroll\-down\fR
 .br
 or any single character
+
+Note that some terminal emulators may not support \fIctrl-*\fR bindings.
 
 .SS AVAILABLE EVENTS:
 \fIstart\fR
@@ -1699,7 +1805,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBaccept\-non\-empty\fR             (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
     \fBaccept\-or\-print\-query\fR        (same as \fBaccept\fR except that it prints the query when there's no match)
     \fBbackward\-char\fR                \fIctrl\-b  left\fR
-    \fBbackward\-delete\-char\fR         \fIctrl\-h  bspace\fR
+    \fBbackward\-delete\-char\fR         \fIctrl\-h ctrl\-bspace bspace\fR
     \fBbackward\-delete\-char/eof\fR     (same as \fBbackward\-delete\-char\fR except aborts fzf if query is empty)
     \fBbackward\-kill\-subword\fR
     \fBbackward\-kill\-word\fR           \fIalt\-bs\fR

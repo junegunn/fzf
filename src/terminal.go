@@ -788,6 +788,7 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlF, actForwardChar)
 	add(tui.CtrlH, actBackwardDeleteChar)
 	add(tui.Backspace, actBackwardDeleteChar)
+	add(tui.CtrlBackspace, actBackwardDeleteChar)
 	add(tui.Tab, actToggleDown)
 	add(tui.ShiftTab, actToggleUp)
 	add(tui.CtrlJ, actDown)
@@ -2627,11 +2628,11 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 	}
 	maxWidth := util.Max(1, w.Width()-t.promptLen-1)
 
-	_, overflow := t.trimLeft(t.input[:t.cx], maxWidth)
+	_, overflow := t.trimLeft(t.input[:t.cx], maxWidth, 0)
 	minOffset := int(overflow)
 	maxOffset := minOffset + (maxWidth-util.Max(0, maxWidth-t.cx))/2
 	t.xoffset = util.Constrain(t.xoffset, minOffset, maxOffset)
-	before, _ := t.trimLeft(t.input[t.xoffset:t.cx], maxWidth)
+	before, _ := t.trimLeft(t.input[t.xoffset:t.cx], maxWidth, 0)
 	beforeLen := t.displayWidth(before)
 	after, _ := t.trimRight(t.input[t.cx:], maxWidth-beforeLen)
 	afterLen := t.displayWidth(after)
@@ -3332,22 +3333,22 @@ func (t *Terminal) displayWidthWithLimit(runes []rune, prefixWidth int, limit in
 	return width
 }
 
-func (t *Terminal) trimLeft(runes []rune, width int) ([]rune, int32) {
+func (t *Terminal) trimLeft(runes []rune, width int, ellipsisWidth int) ([]rune, int32) {
 	width = util.Max(0, width)
 	var trimmed int32
 	// Assume that each rune takes at least one column on screen
-	if len(runes) > width+2 {
-		diff := len(runes) - width - 2
+	if len(runes) > width {
+		diff := len(runes) - width
 		trimmed = int32(diff)
 		runes = runes[diff:]
 	}
 
 	currentWidth := t.displayWidth(runes)
 
-	for currentWidth > width && len(runes) > 0 {
+	for currentWidth > width-ellipsisWidth && len(runes) > 0 {
 		runes = runes[1:]
 		trimmed++
-		currentWidth = t.displayWidthWithLimit(runes, 2, width)
+		currentWidth = t.displayWidthWithLimit(runes, ellipsisWidth, width)
 	}
 	return runes, trimmed
 }
@@ -3572,7 +3573,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			}
 			if t.hscroll {
 				if t.keepRight && pos == nil {
-					trimmed, diff := t.trimLeft(line, maxWidth-ellipsisWidth)
+					trimmed, diff := t.trimLeft(line, maxWidth, ellipsisWidth)
 					transformOffsets(diff, false)
 					line = append(ellipsis, trimmed...)
 				} else if !t.overflow(line[:maxe], maxWidth-ellipsisWidth) {
@@ -3588,7 +3589,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 					}
 					// ..ri..
 					var diff int32
-					line, diff = t.trimLeft(line, maxWidth-ellipsisWidth)
+					line, diff = t.trimLeft(line, maxWidth, ellipsisWidth)
 
 					// Transform offsets
 					transformOffsets(diff, rightTrim)
