@@ -782,6 +782,7 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlF, actForwardChar)
 	add(tui.CtrlH, actBackwardDeleteChar)
 	add(tui.Backspace, actBackwardDeleteChar)
+	add(tui.CtrlBackspace, actBackwardDeleteChar)
 	add(tui.Tab, actToggleDown)
 	add(tui.ShiftTab, actToggleUp)
 	add(tui.CtrlJ, actDown)
