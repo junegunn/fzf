@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/junegunn/fzf/src/util"
+	"github.com/junegunn/tcell/v2"
 )
 
 func assert(t *testing.T, context string, got any, want any) bool {
