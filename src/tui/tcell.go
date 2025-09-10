@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/junegunn/fzf/src/util"
+	"github.com/junegunn/tcell/v2"
 
 	"github.com/rivo/uniseg"
 )
