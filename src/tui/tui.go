@@ -776,6 +776,7 @@ var (
 	ColMatch                ColorPair
 	ColCursor               ColorPair
 	ColCursorEmpty          ColorPair
+	ColCursorEmptyChar      ColorPair
 	ColMarker               ColorPair
 	ColSelected             ColorPair
 	ColSelectedMatch        ColorPair
@@ -1168,6 +1169,7 @@ func initPalette(theme *ColorTheme) {
 	ColSelectedMatch = pair(theme.SelectedMatch, theme.SelectedBg)
 	ColCursor = pair(theme.Cursor, theme.Gutter)
 	ColCursorEmpty = pair(blank, theme.Gutter)
+	ColCursorEmptyChar = pair(theme.Gutter, theme.ListBg)
 	if theme.SelectedBg.Color != theme.ListBg.Color {
 		ColMarker = pair(theme.Marker, theme.SelectedBg)
 	} else {

@@ -272,6 +272,7 @@ type Terminal struct {
 	footerLabel        labelPrinter
 	footerLabelLen     int
 	footerLabelOpts    labelOpts
+	gutterChar         bool
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -1096,7 +1097,12 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	// Pre-calculated empty pointer and marker signs
-	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+	if t.unicode && !t.theme.Gutter.Color.IsDefault() {
+		t.gutterChar = true
+		t.pointerEmpty = "▌" + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
+	} else {
+		t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+	}
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 	t.listLabel, t.listLabelLen = t.ansiLabelPrinter(opts.ListLabel.label, &tui.ColListLabel, false)
 	t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(opts.BorderLabel.label, &tui.ColBorderLabel, false)
@@ -3096,9 +3102,21 @@ func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
 	t.renderBar(line, barRange)
 }
 
+func (t *Terminal) gutter(current bool) {
+	var color tui.ColorPair
+	if current {
+		color = tui.ColCurrentCursorEmpty
+	} else if t.gutterChar {
+		color = tui.ColCursorEmptyChar
+	} else {
+		color = tui.ColCursorEmpty
+	}
+	t.window.CPrint(color, t.pointerEmpty)
+}
+
 func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
 	t.move(line, 0, false)
-	t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+	t.gutter(false)
 	t.window.Print(t.markerEmpty)
 	x := t.pointerLen + t.markerLen
 
@@ -3262,7 +3280,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
+				t.gutter(true)
 			} else {
 				t.window.CPrint(tui.ColCurrentCursor, label)
 			}
@@ -3284,7 +3302,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+				t.gutter(false)
 			} else {
 				t.window.CPrint(tui.ColCursor, label)
 			}
