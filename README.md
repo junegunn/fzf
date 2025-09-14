@@ -47,10 +47,10 @@ characters and still get the results you want.
 Highlights
 ----------
 
-- 📦 **Portable** — Distributed as a single binary for easy installation
-- ⚡ **Blazingly fast** — Highly optimized code instantly processes millions of items
-- 🛠️ **Extremely versatile** — Fully customizable via an event-action binding mechanism
-- 🔋 **Batteries included** — Includes integration with bash, zsh, fish, Vim, and Neovim
+- **Portable** — Distributed as a single binary for easy installation
+- **Fast** — Optimized to process millions of items instantly
+- **Versatile** — Fully customizable through an event-action binding mechanism
+- **All-inclusive** — Comes with integrations for Bash, Zsh, Fish, Vim, and Neovim
 
 Table of Contents
 -----------------
