@@ -3630,7 +3630,7 @@ func (t *Terminal) printColoredString(window tui.Window, text []rune, offsets []
 	for _, offset := range offsets {
 		b := util.Constrain32(offset.offset[0], index, maxOffset)
 		e := util.Constrain32(offset.offset[1], index, maxOffset)
-		if url != nil && offset.url == nil {
+		if url != nil && offset.url != url {
 			url = nil
 			window.LinkEnd()
 		}
