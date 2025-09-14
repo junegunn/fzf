@@ -724,13 +724,13 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 func (r *FullscreenRenderer) Pause(clear bool) {
 	if clear {
-		r.Close()
+		_screen.Suspend()
 	}
 }
 
 func (r *FullscreenRenderer) Resume(clear bool, sigcont bool) {
 	if clear {
-		r.initScreen()
+		_screen.Resume()
 	}
 }
 
