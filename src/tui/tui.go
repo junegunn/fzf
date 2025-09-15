@@ -1173,7 +1173,7 @@ func initPalette(theme *ColorTheme) {
 	if theme.SelectedBg.Color != theme.ListBg.Color {
 		ColMarker = pair(theme.Marker, theme.SelectedBg)
 	} else {
-		ColMarker = pair(theme.Marker, theme.Gutter)
+		ColMarker = pair(theme.Marker, theme.ListBg)
 	}
 	ColCurrent = pair(theme.Current, theme.DarkBg)
 	ColCurrentMatch = pair(theme.CurrentMatch, theme.DarkBg)
