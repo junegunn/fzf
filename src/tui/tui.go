@@ -926,7 +926,7 @@ func init() {
 		DarkBg:           ColorAttr{colBlack, AttrUndefined},
 		Prompt:           ColorAttr{colBlue, AttrUndefined},
 		Match:            ColorAttr{colGreen, AttrUndefined},
-		Current:          ColorAttr{colDefault, AttrUndefined},
+		Current:          ColorAttr{colWhite, AttrUndefined},
 		CurrentMatch:     ColorAttr{colGreen, AttrUndefined},
 		Spinner:          ColorAttr{colGreen, AttrUndefined},
 		Info:             ColorAttr{colYellow, AttrUndefined},
