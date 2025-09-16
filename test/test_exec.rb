@@ -403,7 +403,7 @@ class TestExec < TestInteractive
   end
 
   def test_become
-    tmux.send_keys "seq 100 | #{FZF} --bind 'enter:become:seq {} | #{FZF}'", :Enter
+    tmux.send_keys "seq 100 | fzf --bind 'enter:become:seq {} | fzf'", :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
     tmux.send_keys 999
     tmux.until { |lines| assert_equal 0, lines.match_count }
