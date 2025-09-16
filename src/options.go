@@ -109,6 +109,7 @@ Usage: fzf [options]
     --hscroll-off=COLS       Number of screen columns to keep to the right of the
                              highlighted substring (default: 10)
     --jump-labels=CHARS      Label characters for jump mode
+    --gutter=CHAR            Character used for the gutter column (default: '▌')
     --pointer=STR            Pointer to the current line (default: '▌' or '>')
     --marker=STR             Multi-select marker (default: '┃' or '>')
     --marker-multi-line=STR  Multi-select marker for multi-line entries;
