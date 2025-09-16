@@ -24,7 +24,7 @@ DEFAULT_TIMEOUT = 10
 FILE = File.expand_path(__FILE__)
 BASE = File.expand_path('../..', __dir__)
 Dir.chdir(BASE)
-FZF = "FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer \\> --marker \\>\" FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf".freeze
+FZF = %[FZF_DEFAULT_OPTS="--no-scrollbar --gutter ' ' --pointer '>' --marker '>'" FZF_DEFAULT_COMMAND= #{BASE}/bin/fzf].freeze
 
 def wait(timeout = DEFAULT_TIMEOUT)
   since = Time.now

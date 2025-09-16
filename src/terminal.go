@@ -272,6 +272,7 @@ type Terminal struct {
 	footerLabel        labelPrinter
 	footerLabelLen     int
 	footerLabelOpts    labelOpts
+	gutterReverse      bool
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
@@ -1094,10 +1095,27 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	// This should be called before accessing tui.Color*
 	tui.InitTheme(opts.Theme, renderer.DefaultTheme(), opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
 
+	// Gutter character
+	var gutterChar string
+	if opts.Gutter != nil {
+		gutterChar = *opts.Gutter
+	} else if t.unicode && !t.theme.Gutter.Color.IsDefault() {
+		gutterChar = "▌"
+	} else {
+		gutterChar = " "
+		t.gutterReverse = true
+	}
+
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	// Pre-calculated empty pointer and marker signs
-	t.pointerEmpty = strings.Repeat(" ", t.pointerLen)
+	if t.pointerLen == 0 {
+		t.pointerEmpty = ""
+	} else {
+		t.pointerEmpty = gutterChar + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
+	}
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
+
+	// Labels
 	t.listLabel, t.listLabelLen = t.ansiLabelPrinter(opts.ListLabel.label, &tui.ColListLabel, false)
 	t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(opts.BorderLabel.label, &tui.ColBorderLabel, false)
 	t.previewLabel, t.previewLabelLen = t.ansiLabelPrinter(opts.PreviewLabel.label, &tui.ColPreviewLabel, false)
@@ -3096,9 +3114,21 @@ func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
 	t.renderBar(line, barRange)
 }
 
+func (t *Terminal) gutter(current bool) {
+	var color tui.ColorPair
+	if current {
+		color = tui.ColCurrentCursorEmpty
+	} else if t.gutterReverse {
+		color = tui.ColCursorEmpty
+	} else {
+		color = tui.ColCursorEmptyChar
+	}
+	t.window.CPrint(color, t.pointerEmpty)
+}
+
 func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
 	t.move(line, 0, false)
-	t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+	t.gutter(false)
 	t.window.Print(t.markerEmpty)
 	x := t.pointerLen + t.markerLen
 
@@ -3262,7 +3292,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.window.CPrint(tui.ColCurrentCursorEmpty, t.pointerEmpty)
+				t.gutter(true)
 			} else {
 				t.window.CPrint(tui.ColCurrentCursor, label)
 			}
@@ -3284,7 +3314,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.window.CPrint(tui.ColCursorEmpty, t.pointerEmpty)
+				t.gutter(false)
 			} else {
 				t.window.CPrint(tui.ColCursor, label)
 			}

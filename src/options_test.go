@@ -462,7 +462,7 @@ func TestValidateSign(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		err := validateSign(testCase.inputSign, "")
+		err := validateSign(testCase.inputSign, "", 2)
 		if testCase.isValid && err != nil {
 			t.Errorf("Input sign `%s` caused error", testCase.inputSign)
 		}
