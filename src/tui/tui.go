@@ -303,6 +303,14 @@ const (
 	colMagenta
 	colCyan
 	colWhite
+	colGrey
+	colBrightRed
+	colBrightGreen
+	colBrightYellow
+	colBrightBlue
+	colBrightMagenta
+	colBrightCyan
+	colBrightWhite
 )
 
 type FillReturn int
@@ -923,11 +931,11 @@ func init() {
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
-		DarkBg:           ColorAttr{colBlack, AttrUndefined},
+		DarkBg:           ColorAttr{colGrey, AttrUndefined},
 		Prompt:           ColorAttr{colBlue, AttrUndefined},
 		Match:            ColorAttr{colGreen, AttrUndefined},
-		Current:          ColorAttr{colWhite, AttrUndefined},
-		CurrentMatch:     ColorAttr{colGreen, AttrUndefined},
+		Current:          ColorAttr{colBrightWhite, AttrUndefined},
+		CurrentMatch:     ColorAttr{colBrightGreen, AttrUndefined},
 		Spinner:          ColorAttr{colGreen, AttrUndefined},
 		Info:             ColorAttr{colYellow, AttrUndefined},
 		Cursor:           ColorAttr{colRed, AttrUndefined},
