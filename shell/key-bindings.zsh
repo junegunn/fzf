@@ -147,7 +147,7 @@ fzf-history-widget() {
       LBUFFER="$selected"
     fi
   fi
-  zle reset-prompt
+  zle fzf-redraw-prompt
   return $ret
 }
 zle     -N            fzf-history-widget
