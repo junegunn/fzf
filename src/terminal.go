@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"net"
 	"os"
@@ -952,9 +953,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		wordNext = fmt.Sprintf("[^%s]%s|(.$)", sep, sep)
 	}
 	keymapCopy := make(map[tui.Event][]*action)
-	for key, action := range opts.Keymap {
-		keymapCopy[key] = action
-	}
+	maps.Copy(keymapCopy, opts.Keymap)
 
 	t := Terminal{
 		initDelay:          delay,

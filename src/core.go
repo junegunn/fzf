@@ -2,6 +2,7 @@
 package fzf
 
 import (
+	"maps"
 	"os"
 	"sync"
 	"time"
@@ -226,9 +227,7 @@ func Run(opts *Options) (int, error) {
 	patternBuilder := func(runes []rune) *Pattern {
 		denyMutex.Lock()
 		denylistCopy := make(map[int32]struct{})
-		for k, v := range denylist {
-			denylistCopy[k] = v
-		}
+		maps.Copy(denylistCopy, denylist)
 		denyMutex.Unlock()
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
