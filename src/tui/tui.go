@@ -303,6 +303,14 @@ const (
 	colMagenta
 	colCyan
 	colWhite
+	colGrey
+	colBrightRed
+	colBrightGreen
+	colBrightYellow
+	colBrightBlue
+	colBrightMagenta
+	colBrightCyan
+	colBrightWhite
 )
 
 type FillReturn int
@@ -923,19 +931,19 @@ func init() {
 		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
 		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
-		DarkBg:           ColorAttr{colBlack, AttrUndefined},
+		DarkBg:           ColorAttr{colGrey, AttrUndefined},
 		Prompt:           ColorAttr{colBlue, AttrUndefined},
 		Match:            ColorAttr{colGreen, AttrUndefined},
-		Current:          ColorAttr{colYellow, AttrUndefined},
-		CurrentMatch:     ColorAttr{colGreen, AttrUndefined},
+		Current:          ColorAttr{colBrightWhite, AttrUndefined},
+		CurrentMatch:     ColorAttr{colBrightGreen, AttrUndefined},
 		Spinner:          ColorAttr{colGreen, AttrUndefined},
-		Info:             ColorAttr{colWhite, AttrUndefined},
+		Info:             ColorAttr{colYellow, AttrUndefined},
 		Cursor:           ColorAttr{colRed, AttrUndefined},
 		Marker:           ColorAttr{colMagenta, AttrUndefined},
 		Header:           ColorAttr{colCyan, AttrUndefined},
 		Footer:           ColorAttr{colCyan, AttrUndefined},
-		Border:           ColorAttr{colBlack, AttrUndefined},
-		BorderLabel:      ColorAttr{colWhite, AttrUndefined},
+		Border:           ColorAttr{colDefault, Dim},
+		BorderLabel:      ColorAttr{colDefault, AttrUndefined},
 		Ghost:            ColorAttr{colUndefined, Dim},
 		Disabled:         ColorAttr{colUndefined, AttrUndefined},
 		PreviewFg:        ColorAttr{colUndefined, AttrUndefined},

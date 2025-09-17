@@ -59,7 +59,7 @@ Usage: fzf [options]
 
   GLOBAL STYLE
     --style=PRESET           Apply a style preset [default|minimal|full[:BORDER_STYLE]
-    --color=COLSPEC          Base scheme (dark|light|16|bw) and/or custom colors
+    --color=COLSPEC          Base scheme (dark|light|base16|bw) and/or custom colors
     --no-color               Disable colors
     --no-bold                Do not use bold text
 
@@ -1326,7 +1326,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 			theme = dupeTheme(tui.Dark256)
 		case "light":
 			theme = dupeTheme(tui.Light256)
-		case "16":
+		case "base16", "16":
 			theme = dupeTheme(tui.Default16)
 		case "bw", "no":
 			theme = tui.NoColorTheme()
