@@ -47,10 +47,10 @@ __fzf_exec_awk() {
     __fzf_awk=awk
     if [[ $OSTYPE == solaris* && -x /usr/xpg4/bin/awk ]]; then
       __fzf_awk=/usr/xpg4/bin/awk
-    elif command -v mawk >/dev/null 2>&1; then
+    elif command -v mawk > /dev/null 2>&1; then
       local n x y z d
       IFS=' .' read -r n x y z d <<< $(command mawk -W version 2> /dev/null)
-      [[ $n == mawk ]] && (( d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004 )) && __fzf_awk=mawk
+      [[ $n == mawk ]] && ((d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004)) && __fzf_awk=mawk
     fi
   fi
   LC_ALL=C exec "$__fzf_awk" "$@"
@@ -58,9 +58,9 @@ __fzf_exec_awk() {
 #----END INCLUDE
 
 __fzf_comprun() {
-  if [[ "$(type -t _fzf_comprun 2>&1)" = function ]]; then
+  if [[ "$(type -t _fzf_comprun 2>&1)" == function ]]; then
     _fzf_comprun "$@"
-  elif [[ -n "${TMUX_PANE-}" ]] && { [[ "${FZF_TMUX:-0}" != 0 ]] || [[ -n "${FZF_TMUX_OPTS-}" ]]; }; then
+  elif [[ -n ${TMUX_PANE-} ]] && { [[ ${FZF_TMUX:-0} != 0 ]] || [[ -n ${FZF_TMUX_OPTS-} ]]; }; then
     shift
     fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- "$@"
   else
@@ -72,13 +72,13 @@ __fzf_comprun() {
 __fzf_orig_completion() {
   local l comp f cmd
   while read -r l; do
-    if [[ "$l" =~ ^(.*\ -F)\ *([^ ]*).*\ ([^ ]*)$ ]]; then
+    if [[ $l =~ ^(.*\ -F)\ *([^ ]*).*\ ([^ ]*)$ ]]; then
       comp="${BASH_REMATCH[1]}"
       f="${BASH_REMATCH[2]}"
       cmd="${BASH_REMATCH[3]}"
-      [[ "$f" = _fzf_* ]] && continue
+      [[ $f == _fzf_* ]] && continue
       printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
-      if [[ "$l" = *" -o nospace "* ]] && [[ ! "${__fzf_nospace_commands-}" = *" $cmd "* ]]; then
+      if [[ $l == *" -o nospace "* ]] && [[ ! ${__fzf_nospace_commands-} == *" $cmd "* ]]; then
         __fzf_nospace_commands="${__fzf_nospace_commands-} $cmd "
       fi
     fi
@@ -114,7 +114,7 @@ _fzf_opts_completion() {
   local cur prev opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
   opts="
     +c --no-color
     +i --no-ignore-case
@@ -197,28 +197,28 @@ _fzf_opts_completion() {
     --"
 
   case "${prev}" in
-  --scheme)
-    COMPREPLY=( $(compgen -W "default path history" -- "$cur") )
-    return 0
-    ;;
-  --tiebreak)
-    COMPREPLY=( $(compgen -W "length chunk begin end index" -- "$cur") )
-    return 0
-    ;;
-  --color)
-    COMPREPLY=( $(compgen -W "dark light 16 bw no" -- "$cur") )
-    return 0
-    ;;
-  --layout)
-    COMPREPLY=( $(compgen -W "default reverse reverse-list" -- "$cur") )
-    return 0
-    ;;
-  --info)
-    COMPREPLY=( $(compgen -W "default right hidden inline inline-right" -- "$cur") )
-    return 0
-    ;;
-  --preview-window)
-    COMPREPLY=( $(compgen -W "
+    --scheme)
+      COMPREPLY=($(compgen -W "default path history" -- "$cur"))
+      return 0
+      ;;
+    --tiebreak)
+      COMPREPLY=($(compgen -W "length chunk begin end index" -- "$cur"))
+      return 0
+      ;;
+    --color)
+      COMPREPLY=($(compgen -W "dark light 16 bw no" -- "$cur"))
+      return 0
+      ;;
+    --layout)
+      COMPREPLY=($(compgen -W "default reverse reverse-list" -- "$cur"))
+      return 0
+      ;;
+    --info)
+      COMPREPLY=($(compgen -W "default right hidden inline inline-right" -- "$cur"))
+      return 0
+      ;;
+    --preview-window)
+      COMPREPLY=($(compgen -W "
       default
       hidden
       nohidden
@@ -244,21 +244,21 @@ _fzf_opts_completion() {
       border-left
       border-right
       follow
-      nofollow" -- "$cur") )
-    return 0
-    ;;
-  --border)
-    COMPREPLY=( $(compgen -W "rounded sharp bold block thinblock double horizontal vertical top bottom left right none" -- "$cur") )
-    return 0
-    ;;
-  --border-label-pos|--preview-label-pos)
-    COMPREPLY=( $(compgen -W "center bottom top" -- "$cur") )
-    return 0
-    ;;
+      nofollow" -- "$cur"))
+      return 0
+      ;;
+    --border)
+      COMPREPLY=($(compgen -W "rounded sharp bold block thinblock double horizontal vertical top bottom left right none" -- "$cur"))
+      return 0
+      ;;
+    --border-label-pos | --preview-label-pos)
+      COMPREPLY=($(compgen -W "center bottom top" -- "$cur"))
+      return 0
+      ;;
   esac
 
-  if [[ "$cur" =~ ^-|\+ ]]; then
-    COMPREPLY=( $(compgen -W "${opts}" -- "$cur") )
+  if [[ $cur =~ ^-|\+ ]]; then
+    COMPREPLY=($(compgen -W "${opts}" -- "$cur"))
     return 0
   fi
 
@@ -272,7 +272,7 @@ _fzf_handle_dynamic_completion() {
   orig_cmd="$1"
   if __fzf_orig_completion_get_orig_func "$cmd"; then
     "$REPLY" "$@"
-  elif [[ -n "${_fzf_completion_loader-}" ]]; then
+  elif [[ -n ${_fzf_completion_loader-} ]]; then
     orig_complete=$(complete -p "$orig_cmd" 2> /dev/null)
     $_fzf_completion_loader "$@"
     ret=$?
@@ -282,11 +282,11 @@ _fzf_handle_dynamic_completion() {
       __fzf_orig_completion_get_orig_func "$cmd" || ret=1
 
       # Update orig_complete by _fzf_orig_completion entry
-      [[ $orig_complete =~ ' -F '(_fzf_[^ ]+)' ' ]] &&
-        __fzf_orig_completion_instantiate "$cmd" "${BASH_REMATCH[1]}" &&
-        orig_complete=$REPLY
+      [[ $orig_complete =~ ' -F '(_fzf_[^ ]+)' ' ]] \
+        && __fzf_orig_completion_instantiate "$cmd" "${BASH_REMATCH[1]}" \
+        && orig_complete=$REPLY
 
-      if [[ "${__fzf_nospace_commands-}" = *" $orig_cmd "* ]]; then
+      if [[ ${__fzf_nospace_commands-} == *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
       else
         eval "$orig_complete"
@@ -306,18 +306,18 @@ __fzf_generic_path_completion() {
   COMPREPLY=()
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   [[ $COMP_CWORD -ge 0 ]] && cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
+  if [[ $cur == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     base=${cur:0:${#cur}-${#trigger}}
     eval "base=$base" 2> /dev/null || return
 
     dir=
-    [[ $base = *"/"* ]] && dir="$base"
+    [[ $base == *"/"* ]] && dir="$base"
     while true; do
-      if [[ -z "$dir" ]] || [[ -d "$dir" ]]; then
-        leftover=${base/#"$dir"}
-        leftover=${leftover/#\/}
-        [[ -z "$dir" ]] && dir='.'
-        [[ "$dir" != "/" ]] && dir="${dir/%\//}"
+      if [[ -z $dir ]] || [[ -d $dir ]]; then
+        leftover=${base/#"$dir"/}
+        leftover=${leftover/#\//}
+        [[ -z $dir ]] && dir='.'
+        [[ $dir != "/" ]] && dir="${dir/%\//}"
         matches=$(
           export FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-} $2")
           unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
@@ -337,11 +337,11 @@ __fzf_generic_path_completion() {
           done
         )
         matches=${matches% }
-        [[ -z "$3" ]] && [[ "${__fzf_nospace_commands-}" = *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
-        if [[ -n "$matches" ]]; then
-          COMPREPLY=( "$matches" )
+        [[ -z $3 ]] && [[ ${__fzf_nospace_commands-} == *" ${COMP_WORDS[0]} "* ]] && matches="$matches "
+        if [[ -n $matches ]]; then
+          COMPREPLY=("$matches")
         else
-          COMPREPLY=( "$cur" )
+          COMPREPLY=("$cur")
         fi
         # To redraw line after fzf closes (printf '\e[5n')
         bind '"\e[0n": redraw-current-line' 2> /dev/null
@@ -349,7 +349,7 @@ __fzf_generic_path_completion() {
         return 0
       fi
       dir=$(command dirname "$dir")
-      [[ "$dir" =~ /$ ]] || dir="$dir"/
+      [[ $dir =~ /$ ]] || dir="$dir"/
     done
   else
     shift
@@ -365,15 +365,15 @@ _fzf_complete() {
   args=("$@")
   sep=
   for i in "${!args[@]}"; do
-    if [[ "${args[$i]}" = -- ]]; then
+    if [[ ${args[$i]} == -- ]]; then
       sep=$i
       break
     fi
   done
-  if [[ -n "$sep" ]]; then
+  if [[ -n $sep ]]; then
     str_arg=
     rest=("${args[@]:$((sep + 1)):${#args[@]}}")
-    args=("${args[@]:0:$sep}")
+    args=("${args[@]:0:sep}")
   else
     str_arg=$1
     args=()
@@ -388,15 +388,16 @@ _fzf_complete() {
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
   cmd="${COMP_WORDS[0]}"
   cur="${COMP_WORDS[COMP_CWORD]}"
-  if [[ "$cur" == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
+  if [[ $cur == *"$trigger" ]] && [[ $cur != *'$('* ]] && [[ $cur != *':='* ]] && [[ $cur != *'`'* ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
     selected=$(
       FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse" "${FZF_COMPLETION_OPTS-} $str_arg") \
       FZF_DEFAULT_OPTS_FILE='' \
-        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | eval "$post" | command tr '\n' ' ')
+        __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | eval "$post" | command tr '\n' ' '
+    )
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
-    if [[ -n "$selected" ]]; then
+    if [[ -n $selected ]]; then
       COMPREPLY=("$selected")
     else
       COMPREPLY=("$cur")
@@ -454,10 +455,12 @@ _fzf_proc_completion() {
   '
   _fzf_complete -m --header-lines=1 --no-preview --wrap --color fg:dim,nth:regular \
     --bind "click-header:transform:$transformer" -- "$@" < <(
-    command ps -eo user,pid,ppid,start,time,command 2> /dev/null ||
-      command ps -eo user,pid,ppid,time,args 2> /dev/null || # For BusyBox
-      command ps --everyone --full --windows # For cygwin
-  )
+      command ps -eo user,pid,ppid,start,time,command 2> /dev/null \
+        || command ps -eo user,pid,ppid,time,args 2> /dev/null \
+        ||
+        # For BusyBox
+        command ps --everyone --full --windows # For cygwin
+    )
 }
 
 _fzf_proc_completion_post() {
@@ -540,12 +543,12 @@ _fzf_host_completion() {
 # > and the third argument ($3) is the word preceding the word being completed on the current command line.
 _fzf_complete_ssh() {
   case $3 in
-    -i|-F|-E)
+    -i | -F | -E)
       _fzf_path_completion "$@"
       ;;
     *)
       local user=
-      [[ "$2" =~ '@' ]] && user="${2%%@*}@"
+      [[ $2 =~ '@' ]] && user="${2%%@*}@"
       _fzf_complete +m -- "$@" < <(__fzf_list_hosts | __fzf_exec_awk -v user="$user" '{print user $0}')
       ;;
   esac
@@ -589,9 +592,9 @@ __fzf_default_completion() {
 # We can't set up default completion,
 # 1. if it's already set up by another script
 # 2. or if the current version of bash doesn't support -D option
-complete | command grep -q __fzf_default_completion ||
-  complete | command grep -- '-D$' | command grep -qv _comp_complete_load ||
-  complete -D -F __fzf_default_completion -o default -o bashdefault 2> /dev/null
+complete | command grep -q __fzf_default_completion \
+  || complete | command grep -- '-D$' | command grep -qv _comp_complete_load \
+  || complete -D -F __fzf_default_completion -o default -o bashdefault 2> /dev/null
 
 d_cmds="${FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir}"
 
@@ -676,10 +679,10 @@ _fzf_setup_completion() {
   __fzf_orig_completion < <(complete -p "$@" 2> /dev/null)
   for cmd in "$@"; do
     case "$kind" in
-      dir)   __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
-      var)   __fzf_defc "$cmd" "$fn" "-o default -o nospace -v" ;;
+      dir) __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
+      var) __fzf_defc "$cmd" "$fn" "-o default -o nospace -v" ;;
       alias) __fzf_defc "$cmd" "$fn" "-a" ;;
-      *)     __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
+      *) __fzf_defc "$cmd" "$fn" "-o default -o bashdefault" ;;
     esac
   done
 }

@@ -13,7 +13,7 @@ fi
 update() {
   {
     sed -n '1,/^#----BEGIN INCLUDE common\.sh/p' "$1"
-    cat <<EOF
+    cat << EOF
 # NOTE: Do not directly edit this section, which is copied from "common.sh".
 # To modify it, one can edit "common.sh" and run "./update-common.sh" to apply
 # the changes. See code comments in "common.sh" for the implementation details.
