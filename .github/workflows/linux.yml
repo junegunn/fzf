@@ -33,7 +33,7 @@ jobs:
         ruby-version: 3.4.1
 
     - name: Install packages
-      run: sudo apt-get install --yes zsh fish tmux
+      run: sudo apt-get install --yes zsh fish tmux shfmt
 
     - name: Install Ruby gems
       run: bundle install

@@ -30,7 +30,7 @@ jobs:
         ruby-version: 3.0.0
 
     - name: Install packages
-      run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew install fish zsh tmux
+      run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew install fish zsh tmux shfmt
 
     - name: Install Ruby gems
       run: gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1
