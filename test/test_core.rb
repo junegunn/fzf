@@ -2004,7 +2004,7 @@ class TestCore < TestInteractive
       end
     end
     elapsed = Time.now - time
-    assert elapsed < 2
+    assert_operator elapsed, :<, 2
   end
 
   def test_bg_cancel
@@ -2017,7 +2017,7 @@ class TestCore < TestInteractive
     tmux.until { assert_equal 2, it.match_count }
     tmux.send_keys :Space
     tmux.until { |lines| assert lines.any_include?('[0]') }
-    sleep 2
+    sleep(2)
     tmux.until do |lines|
       assert lines.any_include?('[0]')
       refute lines.any_include?('[1]')
