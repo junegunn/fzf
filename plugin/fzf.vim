@@ -365,6 +365,8 @@ function! s:get_color(attr, ...)
     let code = synIDattr(synIDtrans(hlID(group)), a:attr, fam)
     if code =~? pat
       return code
+    elseif code == ''
+      return -1
     endif
   endfor
   return ''
