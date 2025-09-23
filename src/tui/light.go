@@ -479,6 +479,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					return Event{Delete, 0, nil}
 				}
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+					*sz = 7
 					switch r.buffer[5] {
 					case '0':
 						return Event{AltShiftDelete, 0, nil}
@@ -525,6 +526,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					return Event{PageUp, 0, nil}
 				}
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+					*sz = 7
 					switch r.buffer[5] {
 					case '0':
 						return Event{AltShiftPageUp, 0, nil}
@@ -569,6 +571,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					return Event{PageDown, 0, nil}
 				}
 				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+					*sz = 7
 					switch r.buffer[5] {
 					case '0':
 						return Event{AltShiftPageDown, 0, nil}
