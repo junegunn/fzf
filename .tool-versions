@@ -1,2 +1,3 @@
 golang 1.23
-ruby 3.4
+ruby   3.4
+shfmt  3.12

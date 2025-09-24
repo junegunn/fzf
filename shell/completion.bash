@@ -31,9 +31,10 @@ if [[ $- =~ i ]]; then
 
 ###########################################################
 
+#----BEGIN shfmt
 #----BEGIN INCLUDE common.sh
 # NOTE: Do not directly edit this section, which is copied from "common.sh".
-# To modify it, one can edit "common.sh" and run "./update-common.sh" to apply
+# To modify it, one can edit "common.sh" and run "./update.sh" to apply
 # the changes. See code comments in "common.sh" for the implementation details.
 
 __fzf_defaults() {
@@ -683,5 +684,6 @@ _fzf_setup_completion() {
     esac
   done
 }
+#----END shfmt
 
 fi
