@@ -64,19 +64,19 @@ remove_line() {
       line_no=1
       continue
     fi
-    line_no=$(( $(sed 's/:.*//' <<< "$line") + line_no - 1 ))
+    line_no=$(($(sed 's/:.*//' <<< "$line") + line_no - 1))
     content=$(sed 's/^[0-9]*://' <<< "$line")
     match=1
-    echo    "  - Line #$line_no: $content"
+    echo "  - Line #$line_no: $content"
     [ "$content" = "$1" ] || ask "    - Remove?"
     if [ $? -eq 0 ]; then
       temp=$(mktemp)
       awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$temp" &&
         cat "$temp" > "$src" && rm -f "$temp" || break
-      echo  "      - Removed"
+      echo "      - Removed"
     else
-      echo  "      - Skipped"
-      line_no=$(( line_no + 1 ))
+      echo "      - Skipped"
+      line_no=$((line_no + 1))
     fi
   done
   [ $match -eq 0 ] && echo "  - Nothing found"
@@ -109,6 +109,6 @@ if [ -d "${fish_dir}/functions" ]; then
 fi
 
 config_dir=$(dirname "$prefix_expand")
-if [[ "$xdg" = 1 ]] && [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
+if [[ $xdg == 1 ]] && [[ $config_dir == */fzf ]] && [[ -d $config_dir ]]; then
   rmdir "$config_dir"
 fi
