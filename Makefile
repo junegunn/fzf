@@ -10,9 +10,9 @@ BASH_SCRIPTS   := $(ROOT_DIR)/bin/fzf-preview.sh \
 					$(ROOT_DIR)/install \
 					$(ROOT_DIR)/uninstall \
 					$(ROOT_DIR)/shell/common.sh \
-					$(ROOT_DIR)/shell/update-common.sh
-BASH_SCRIPTS_INDENT_LEFT	:= $(ROOT_DIR)/shell/completion.bash \
-								$(ROOT_DIR)/shell/key-bindings.bash
+					$(ROOT_DIR)/shell/update.sh \
+					$(ROOT_DIR)/shell/completion.bash \
+					$(ROOT_DIR)/shell/key-bindings.bash
 
 ifdef FZF_VERSION
 VERSION        := $(FZF_VERSION)
@@ -100,17 +100,11 @@ bench:
 lint: $(SOURCES) test/*.rb test/lib/*.rb ${BASH_SCRIPTS}
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	bundle exec rubocop -a --require rubocop-minitest --require rubocop-performance
-	[ -z "$$(shfmt -d $(BASH_SCRIPTS))" ] || (echo "format bash files by (make fmt)"; exit 1)
+	shell/update.sh --check ${BASH_SCRIPTS}
 
-fmt: $(SOURCES) $(BASH_SCRIPTS) $(BASH_SCRIPTS_INDENT_LEFT)
+fmt: $(SOURCES) $(BASH_SCRIPTS)
 	gofmt -s -w src
-	shfmt -w $(BASH_SCRIPTS)
-	# shift left because we have an outermost if block for historical reasons.
-	for f in $(BASH_SCRIPTS_INDENT_LEFT); do \
-		shfmt -w "$$f"; \
-		tmp=$$(mktemp); \
-		sed 's/^  //' "$$f" > "$$tmp" && mv "$$tmp" "$$f"; \
-	done
+	shell/update.sh ${BASH_SCRIPTS}
 
 install: bin/fzf
 

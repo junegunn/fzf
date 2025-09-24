@@ -17,9 +17,10 @@ if [[ $- =~ i ]]; then
 # Key bindings
 # ------------
 
+#----BEGIN shfmt
 #----BEGIN INCLUDE common.sh
 # NOTE: Do not directly edit this section, which is copied from "common.sh".
-# To modify it, one can edit "common.sh" and run "./update-common.sh" to apply
+# To modify it, one can edit "common.sh" and run "./update.sh" to apply
 # the changes. See code comments in "common.sh" for the implementation details.
 
 __fzf_defaults() {
@@ -154,5 +155,6 @@ if [[ "${FZF_ALT_C_COMMAND-x}" != "" ]]; then
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 fi
+#----END shfmt
 
 fi
