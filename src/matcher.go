@@ -85,11 +85,11 @@ func (m *Matcher) Loop() {
 		cacheCleared := false
 		if request.sort != m.sort || request.revision != m.revision {
 			m.sort = request.sort
-			m.revision = request.revision
 			m.mergerCache = make(map[string]*Merger)
 			if !request.revision.compatible(m.revision) {
 				m.cache.Clear()
 			}
+			m.revision = request.revision
 			cacheCleared = true
 		}
 
