@@ -3,6 +3,7 @@ package fzf
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"strconv"
@@ -2603,9 +2604,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if err != nil {
 				return err
 			}
-			for k, v := range chords {
-				opts.Expect[k] = v
-			}
+			maps.Copy(opts.Expect, chords)
 		case "--no-expect":
 			opts.Expect = make(map[tui.Event]string)
 		case "--enabled", "--no-phony":
