@@ -400,7 +400,6 @@ type Terminal struct {
 	initFunc           func() error
 	prevLines          []itemLine
 	suppress           bool
-	sigstop            bool
 	startChan          chan fitpad
 	killChan           chan bool
 	serverInputChan    chan []*action
