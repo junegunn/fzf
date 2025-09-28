@@ -1124,7 +1124,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if opts.GutterRaw != nil {
 		gutterRawChar = *opts.GutterRaw
 	} else if t.unicode && !t.theme.Gutter.Color.IsDefault() {
-		// TODO: Doesn't look too good. Maybe use a different color instead, or both?
 		gutterRawChar = "▖"
 	} else {
 		gutterRawChar = ":"
@@ -4814,10 +4813,6 @@ func (t *Terminal) selectItem(item *Item) bool {
 	if len(t.selected) >= t.multi {
 		return false
 	}
-	// TODO: Should we allow selecting non-matching items?
-	// if t.raw && !t.isItemMatch(item) {
-	// 	return false
-	// }
 	if _, found := t.selected[item.Index()]; found {
 		return true
 	}
@@ -6158,12 +6153,10 @@ func (t *Terminal) Loop() error {
 			case actAccept:
 				req(reqClose)
 			case actAcceptNonEmpty:
-				// TODO: Allow accepting unmatched items in raw mode?
 				if len(t.selected) > 0 || t.merger.Length() > 0 || !t.reading && t.count == 0 {
 					req(reqClose)
 				}
 			case actAcceptOrPrintQuery:
-				// TODO: Allow accepting unmatched items in raw mode?
 				if len(t.selected) > 0 || t.merger.Length() > 0 {
 					req(reqClose)
 				} else {
