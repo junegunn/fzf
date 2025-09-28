@@ -6088,32 +6088,22 @@ func (t *Terminal) Loop() error {
 					t.vmove(1, true)
 					req(reqList)
 				}
-			case actDown, actDownMatch:
-				if t.raw && a.t == actDownMatch {
-					if t.resultMerger.Length() > 0 {
-						prevCy := t.cy
-						for t.vmove(-1, true) && !t.isCurrentItemMatch() {
-						}
-						if !t.isCurrentItemMatch() {
-							t.vset(prevCy)
-						}
-					}
-				} else {
-					t.vmove(-1, true)
+			case actDown, actDownMatch, actUp, actUpMatch:
+				dir := -1
+				if a.t == actUp || a.t == actUpMatch {
+					dir = 1
 				}
-				req(reqList)
-			case actUp, actUpMatch:
-				if t.raw && a.t == actUpMatch {
+				if t.raw && (a.t == actDownMatch || a.t == actUpMatch) {
 					if t.resultMerger.Length() > 0 {
 						prevCy := t.cy
-						for t.vmove(1, true) && !t.isCurrentItemMatch() {
+						for t.vmove(dir, true) && !t.isCurrentItemMatch() {
 						}
 						if !t.isCurrentItemMatch() {
 							t.vset(prevCy)
 						}
 					}
 				} else {
-					t.vmove(1, true)
+					t.vmove(dir, true)
 				}
 				req(reqList)
 			case actToggleRaw:
