@@ -350,8 +350,8 @@ func TestDefaultCtrlNP(t *testing.T) {
 			t.Error()
 		}
 	}
-	check([]string{}, tui.CtrlN, actDown)
-	check([]string{}, tui.CtrlP, actUp)
+	check([]string{}, tui.CtrlN, actDownMatch)
+	check([]string{}, tui.CtrlP, actUpMatch)
 
 	check([]string{"--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
 	check([]string{"--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)
