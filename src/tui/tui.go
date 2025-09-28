@@ -381,6 +381,12 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 	return dup
 }
 
+func (p ColorPair) WithFg(fg ColorAttr) ColorPair {
+	dup := p
+	fgPair := ColorPair{fg.Color, colUndefined, fg.Attr}
+	return dup.Merge(fgPair)
+}
+
 func (p ColorPair) WithBg(bg ColorAttr) ColorPair {
 	dup := p
 	bgPair := ColorPair{colUndefined, bg.Color, bg.Attr}
@@ -410,6 +416,7 @@ type ColorTheme struct {
 	ListBg           ColorAttr
 	AltBg            ColorAttr
 	Nth              ColorAttr
+	Hidden           ColorAttr
 	SelectedFg       ColorAttr
 	SelectedBg       ColorAttr
 	SelectedMatch    ColorAttr
@@ -866,6 +873,7 @@ func EmptyTheme() *ColorTheme {
 		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
 		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Hidden:           ColorAttr{colUndefined, Dim},
 	}
 }
 
@@ -916,6 +924,7 @@ func NoColorTheme() *ColorTheme {
 		FooterLabel:      ColorAttr{colDefault, AttrUndefined},
 		GapLine:          ColorAttr{colDefault, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Hidden:           ColorAttr{colUndefined, Dim},
 	}
 }
 
@@ -967,6 +976,7 @@ func init() {
 		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
 		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Hidden:           ColorAttr{colUndefined, Dim},
 	}
 	Dark256 = &ColorTheme{
 		Colored:          true,
@@ -1015,6 +1025,7 @@ func init() {
 		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
 		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Hidden:           ColorAttr{colUndefined, Dim},
 	}
 	Light256 = &ColorTheme{
 		Colored:          true,
@@ -1063,6 +1074,7 @@ func init() {
 		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
 		GapLine:          ColorAttr{colUndefined, AttrUndefined},
 		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Hidden:           ColorAttr{colUndefined, Dim},
 	}
 }
 

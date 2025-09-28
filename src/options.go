@@ -98,6 +98,7 @@ Usage: fzf [options]
     --wrap                   Enable line wrap
     --wrap-sign=STR          Indicator for wrapped lines
     --no-multi-line          Disable multi-line display of items when using --read0
+    --raw                    Enable raw mode (show non-matching items)
     --track                  Track the current selection when the result is updated
     --tac                    Reverse the order of the input
     --gap[=N]                Render empty lines between each item
@@ -111,6 +112,7 @@ Usage: fzf [options]
                              highlighted substring (default: 10)
     --jump-labels=CHARS      Label characters for jump mode
     --gutter=CHAR            Character used for the gutter column (default: '▌')
+    --gutter-raw=CHAR        Character used for the gutter column in raw mode (default: '▖')
     --pointer=STR            Pointer to the current line (default: '▌' or '>')
     --marker=STR             Multi-select marker (default: '┃' or '>')
     --marker-multi-line=STR  Multi-select marker for multi-line entries;
@@ -562,6 +564,7 @@ type Options struct {
 	AcceptNth         func(Delimiter) func([]Token, int32) string
 	Delimiter         Delimiter
 	Sort              int
+	Raw               bool
 	Track             trackOption
 	Tac               bool
 	Tail              int
@@ -593,6 +596,7 @@ type Options struct {
 	JumpLabels        string
 	Prompt            string
 	Gutter            *string
+	GutterRaw         *string
 	Pointer           *string
 	Marker            *string
 	MarkerMulti       *[3]string
@@ -714,6 +718,7 @@ func defaultOptions() *Options {
 		JumpLabels:   defaultJumpLabels,
 		Prompt:       "> ",
 		Gutter:       nil,
+		GutterRaw:    nil,
 		Pointer:      nil,
 		Marker:       nil,
 		MarkerMulti:  nil,
@@ -1442,6 +1447,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.SelectedBg)
 			case "nth":
 				mergeAttr(&theme.Nth)
+			case "hidden":
+				mergeAttr(&theme.Hidden)
 			case "gutter":
 				mergeAttr(&theme.Gutter)
 			case "hl":
@@ -1741,6 +1748,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleMultiLine)
 		case "toggle-hscroll":
 			appendAction(actToggleHscroll)
+		case "toggle-raw":
+			appendAction(actToggleRaw)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
@@ -1761,8 +1770,12 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggle)
 		case "down":
 			appendAction(actDown)
+		case "down-match":
+			appendAction(actDownMatch)
 		case "up":
 			appendAction(actUp)
+		case "up-match":
+			appendAction(actUpMatch)
 		case "first", "top":
 			appendAction(actFirst)
 		case "last":
@@ -1779,9 +1792,9 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actPrevHistory)
 		case "next-history":
 			appendAction(actNextHistory)
-		case "prev-selected":
+		case "up-selected", "prev-selected":
 			appendAction(actPrevSelected)
-		case "next-selected":
+		case "down-selected", "next-selected":
 			appendAction(actNextSelected)
 		case "show-preview":
 			appendAction(actShowPreview)
@@ -2682,6 +2695,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 		case "+s", "--no-sort":
 			opts.Sort = 0
+		case "--raw":
+			opts.Raw = true
+		case "--no-raw":
+			opts.Raw = false
 		case "--track":
 			opts.Track = trackEnabled
 		case "--no-track":
@@ -2866,6 +2883,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 			str = firstLine(str)
 			opts.Gutter = &str
+		case "--gutter-raw":
+			str, err := nextString("gutter character for raw mode required")
+			if err != nil {
+				return err
+			}
+			str = firstLine(str)
+			opts.GutterRaw = &str
 		case "--pointer":
 			str, err := nextString("pointer sign required")
 			if err != nil {
@@ -3386,6 +3410,12 @@ func validateOptions(opts *Options) error {
 
 	if opts.Gutter != nil {
 		if err := validateSign(*opts.Gutter, "gutter", 1); err != nil {
+			return err
+		}
+	}
+
+	if opts.GutterRaw != nil {
+		if err := validateSign(*opts.GutterRaw, "gutter", 1); err != nil {
 			return err
 		}
 	}

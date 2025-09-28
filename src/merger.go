@@ -141,6 +141,15 @@ func (mg *Merger) Get(idx int) Result {
 	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
 }
 
+func (mg *Merger) ToMap() map[int32]Result {
+	ret := make(map[int32]Result, mg.count)
+	for i := 0; i < mg.count; i++ {
+		result := mg.Get(i)
+		ret[result.Index()] = result
+	}
+	return ret
+}
+
 func (mg *Merger) cacheable() bool {
 	return mg.count < mergerCacheMax
 }
