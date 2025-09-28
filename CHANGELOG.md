@@ -36,7 +36,7 @@ To distinguish the raw mode, the gutter column is rendered in dashed line using
 `▖` character. But you can customize it using `--gutter-raw CHAR` option.
 
 ```sh
-# If you don't liked the dashed line and you just want a thinner gutter
+# If you don't like the dashed line and you just want a thinner gutter
 fzf --bind ctrl-x:toggle-raw --gutter-raw ▎
 ```
 
@@ -51,6 +51,10 @@ fzf --raw --color hidden:red:strikethrough
 # To unset the default 'dim' attribute, prefix the color spec with 'regular'
 fzf --raw --color hidden:regular:red:strikethrough
 ```
+
+#### Leveraging `toggle-raw` in shell integration
+
+`CTRL-R` binding (command history) now allows you to toggle raw mode with `CTRL-X`.
 
 ### Style changes
 
