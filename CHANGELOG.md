@@ -83,7 +83,8 @@ This version includes a few minor updates to fzf's classic visual style:
 
 #### `--gutter CHAR`
 
-Added `--gutter CHAR` option for customizing the gutter column. Some examples using [box-drawing characters](https://en.wikipedia.org/wiki/Box-drawing_characters):
+The gutter column can now be customized using `--gutter CHAR` and styled with
+`--color gutter:...`. Examples:
 
 ```sh
 # Right-aligned gutter
@@ -92,17 +93,11 @@ fzf --gutter '▐'
 # Even thinner gutter
 fzf --gutter '▎'
 
-# Checker
-fzf --gutter '▚'
+# Yellow checker pattern
+fzf --gutter '▚' --color gutter:yellow
 
-# Dotted
-fzf --gutter '▖'
-
-# Full-width
-fzf --gutter '█'
-
-# No gutter
-fzf --gutter ' '
+# Classic style
+fzf --gutter ' ' --color gutter:reverse
 ```
 
 #### `--gutter-raw CHAR`
