@@ -1750,6 +1750,10 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleHscroll)
 		case "toggle-raw":
 			appendAction(actToggleRaw)
+		case "enable-raw":
+			appendAction(actEnableRaw)
+		case "disable-raw":
+			appendAction(actDisableRaw)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
