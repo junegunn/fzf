@@ -150,7 +150,7 @@ fzf-history-widget() {
   zle reset-prompt
   return $ret
 }
-if [[ -z ${FZF_CTRL_R_DISABLED-} ]]; then
+if [[ ${FZF_CTRL_R_DISABLED-x} != "" ]]; then
   zle     -N            fzf-history-widget
   bindkey -M emacs '^R' fzf-history-widget
   bindkey -M vicmd '^R' fzf-history-widget
