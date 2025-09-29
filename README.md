@@ -218,9 +218,9 @@ Add the following line to your shell configuration file.
 > (e.g. `apt show fzf`)
 
 > [!TIP]
-> You can disable CTRL-T or ALT-C binding by setting `FZF_CTRL_T_COMMAND` or
-> `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
-> For example, to disable ALT-C binding:
+> You can disable the CTRL-T, CTRL-R, or ALT-C bindings by setting `FZF_CTRL_T_COMMAND`,
+> `FZF_CTRL_R_DISABLED`, or `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
+> For example, to disable ALT-C:
 >
 > * bash: `FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
 > * zsh: `FZF_ALT_C_COMMAND= source <(fzf --zsh)`
