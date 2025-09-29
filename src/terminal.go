@@ -1305,6 +1305,13 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	if len(t.nthCurrent) > 0 {
 		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
 	}
+	if t.raw {
+		val := "0"
+		if t.isCurrentItemMatch() {
+			val = "1"
+		}
+		env = append(env, "FZF_RAW="+val)
+	}
 	inputState := "enabled"
 	if t.inputless {
 		inputState = "hidden"

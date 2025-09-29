@@ -50,6 +50,22 @@ fzf --raw --color hidden:red:strikethrough
 fzf --raw --color hidden:regular:red:strikethrough
 ```
 
+#### Conditional actions for raw mode
+
+You may want to perform different actions depending on whether the current item
+is a match or not. For that, fzf now exports `$FZF_RAW` environment variable.
+
+It's:
+
+- Undefined if raw mode is disabled
+- `1` if the current item is a match
+- `0` otherwise
+
+```sh
+# Do not allow selecting non-matching items
+fzf --raw --bind 'enter:transform:[[ ${FZF_RAW-1} = 1 ]] && echo accept || echo bell'
+```
+
 #### Leveraging raw mode in shell integration
 
 The `CTRL-R` binding (command history) now lets you toggle raw mode with
