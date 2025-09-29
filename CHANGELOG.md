@@ -6,44 +6,42 @@ CHANGELOG
 
 ### Introducing "raw" mode
 
-In "raw" mode, non-matching items are also displayed in their original position,
-but dimmed. This is useful when you want to see the surrounding items of a match
-to understand the context. Raw mode can be enabled by using `--raw` option, but
-I find it more useful when toggled dynamically using `toggle-raw` action.
+This version introduces a new "raw" mode (named so because it shows the list
+"unfiltered"). In raw mode, non-matching items stay in their original positions,
+but appear dimmed. This allows you see surrounding items of a match and better
+understand the context of it. You can enable raw mode by default with `--raw`,
+but it's often more useful when toggled dynamically with the `toggle-raw`
+action.
 
 ```sh
-export FZF_CTRL_R_OPTS='--bind ctrl-x:toggle-raw'
+tree | fzf --reverse --bind ctrl-x:toggle-raw
 ```
 
-```sh
-tree | fzf --raw --reverse --bind ctrl-x:toggle-raw
-```
-
-While non-matching items are displayed in dimmed color, they are treated just
-like matching items in the list, so you place the cursor on them and do any
-action against them. But if you want to navigate through matching items only,
-you can use `down-match` and `up-match` actions, which are from now on bound to
-`CTRL-N` and `CTRL-P` respectively. Historically, `CTRL-N` and `CTRL-P` are
-bound to `next-history` and `prev-history` when `--history` option is used, so
-in that case, you'll have to manually bind the actions to the keys of your
-choice, or you can use `ALT-DOWN` and `ALT-UP` instead.
+While non-matching items are displayed in a dimmed color, they are treated just
+like matching items, so you place the cursor on them and perform any action. If
+you prefer to navigate only through matching items, use the `down-match` and
+`up-match` actions, which are from now on bound to `CTRL-N` and `CTRL-P`
+respectively. Historically, these keys were bound to `next-history` and
+`prev-history` when `--history` option is enabled, so in that case, you'll need
+to manually bind them, or use `ALT-DOWN` and `ALT-UP` instead.
 
 #### Customizing the look
 
 ##### Gutter
 
-To distinguish the raw mode, the gutter column is rendered in dashed line using
-`▖` character. But you can customize it using `--gutter-raw CHAR` option.
+To make the mode visually distinct, the gutter column is rendered in a dashed
+line using `▖` character. But you can customize it with the `--gutter-raw CHAR`
+option.
 
 ```sh
-# If you don't like the dashed line and you just want a thinner gutter
+# Use a thinner gutter instead of the default dashed line
 fzf --bind ctrl-x:toggle-raw --gutter-raw ▎
 ```
 
 ##### Color and style of non-matching items
 
-Non-matching items are displayed in dimmed color by default, but you can change
-it using `--color hidden:...` option.
+Non-matching items are displayed in a dimmed color by default, but you can
+change it with the `--color hidden:...` option.
 
 ```sh
 fzf --raw --color hidden:red:strikethrough
@@ -52,17 +50,18 @@ fzf --raw --color hidden:red:strikethrough
 fzf --raw --color hidden:regular:red:strikethrough
 ```
 
-#### Leveraging `toggle-raw` in shell integration
+#### Leveraging raw mode in shell integration
 
-`CTRL-R` binding (command history) now allows you to toggle raw mode with `CTRL-X`.
+The `CTRL-R` binding (command history) now lets you toggle raw mode with
+`CTRL-X`.
 
 ### Style changes
 
-This version introduces some minor changes to the traditional visual style of fzf.
+This version includes a few minor updates to fzf's classic visual style:
 
-- Narrowed the gutter column by using the left-half block character (`▌`).
-- Removed background colors from markers.
-- Updated `--color base16` (alias: `16`) theme so that it works better with both dark and light themes.
+- The gutter column is now narrower, rendered with the left-half block character (`▌`).
+- Markers no longer use background colors.
+- The `--color base16` theme (alias: `16`) has been updated for better compatibility with both dark and light themes.
 
 ### Added options
 
@@ -92,11 +91,11 @@ fzf --gutter ' '
 
 #### `--gutter-raw CHAR`
 
-As mentioned above, also added `--gutter-raw CHAR` option for customizing the gutter column in raw mode.
+As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
 
 ### Compatibility changes
 
-Starting from this version, fzf is built with Go 1.23. Support for some old OS versions has been dropped.
+Starting with this release, fzf is built with Go 1.23. Support for some old OS versions has been dropped.
 
 See https://go.dev/wiki/MinimumRequirements.
 
