@@ -577,6 +577,8 @@ const (
 	actToggleMultiLine
 	actToggleHscroll
 	actToggleRaw
+	actEnableRaw
+	actDisableRaw
 	actTrackCurrent
 	actToggleInput
 	actHideInput
@@ -6106,8 +6108,19 @@ func (t *Terminal) Loop() error {
 					t.vmove(dir, true)
 				}
 				req(reqList)
-			case actToggleRaw:
-				t.raw = !t.raw
+			case actToggleRaw, actEnableRaw, actDisableRaw:
+				prevRaw := t.raw
+				switch a.t {
+				case actEnableRaw:
+					t.raw = true
+				case actDisableRaw:
+					t.raw = false
+				case actToggleRaw:
+					t.raw = !t.raw
+				}
+				if prevRaw == t.raw {
+					break
+				}
 				prevPos := t.cy - t.offset
 				prevIndex := t.currentIndex()
 				if t.raw {

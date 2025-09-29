@@ -5,7 +5,7 @@ require_relative 'lib/common'
 # Testing raw mode
 class TestRaw < TestInteractive
   def test_raw_mode
-    tmux.send_keys %(seq 1000 | #{FZF} --raw --bind ctrl-x:toggle-raw --gutter '▌' --multi), :Enter
+    tmux.send_keys %(seq 1000 | #{FZF} --raw --bind ctrl-x:toggle-raw,a:enable-raw,b:disable-raw --gutter '▌' --multi), :Enter
     tmux.until { assert_equal 1000, it.match_count }
 
     tmux.send_keys 1
@@ -51,6 +51,20 @@ class TestRaw < TestInteractive
     tmux.until { assert_equal 3, it.select_count }
 
     tmux.send_keys 'C-x'
+    tmux.until do
+      assert_equal 1, it.select_count
+      assert_includes it, '▌ 110'
+      assert_includes it, '>>11'
+    end
+
+    tmux.send_keys 'a'
+    tmux.until do
+      assert_equal 1, it.select_count
+      assert_includes it, '>>11'
+      assert_includes it, '▖ 10'
+    end
+
+    tmux.send_keys 'b'
     tmux.until do
       assert_equal 1, it.select_count
       assert_includes it, '▌ 110'
