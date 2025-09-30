@@ -3412,16 +3412,9 @@ func validateOptions(opts *Options) error {
 		}
 	}
 
-	if opts.Gutter != nil {
-		if err := validateSign(*opts.Gutter, "gutter", 1); err != nil {
-			return err
-		}
-	}
-
-	if opts.GutterRaw != nil {
-		if err := validateSign(*opts.GutterRaw, "gutter", 1); err != nil {
-			return err
-		}
+	if opts.Gutter != nil && uniseg.StringWidth(*opts.Gutter) != 1 ||
+		opts.GutterRaw != nil && uniseg.StringWidth(*opts.GutterRaw) != 1 {
+		return errors.New("gutter display width should be 1")
 	}
 
 	if opts.Scrollbar != nil {
