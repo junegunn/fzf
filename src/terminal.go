@@ -1109,14 +1109,18 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		t.acceptNth = opts.AcceptNth(t.delimiter)
 	}
 
+	baseTheme := opts.BaseTheme
+	if baseTheme == nil {
+		baseTheme = renderer.DefaultTheme()
+	}
 	// This should be called before accessing tui.Color*
-	tui.InitTheme(opts.Theme, renderer.DefaultTheme(), opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
+	tui.InitTheme(opts.Theme, baseTheme, opts.Bold, opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
 
 	// Gutter character
 	var gutterChar, gutterRawChar string
 	if opts.Gutter != nil {
 		gutterChar = *opts.Gutter
-	} else if t.unicode && !t.theme.Gutter.Color.IsDefault() {
+	} else if t.unicode {
 		gutterChar = "▌"
 	} else {
 		gutterChar = " "
@@ -1125,7 +1129,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 
 	if opts.GutterRaw != nil {
 		gutterRawChar = *opts.GutterRaw
-	} else if t.unicode && !t.theme.Gutter.Color.IsDefault() {
+	} else if t.unicode {
 		gutterRawChar = "▖"
 	} else {
 		gutterRawChar = ":"

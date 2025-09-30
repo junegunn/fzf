@@ -36,8 +36,6 @@ func (p ColorPair) style() tcell.Style {
 	return style.Foreground(asTcellColor(p.Fg())).Background(asTcellColor(p.Bg()))
 }
 
-type Attr int32
-
 type TcellWindow struct {
 	color         bool
 	windowType    WindowType
@@ -98,14 +96,6 @@ const (
 	Italic             = Attr(tcell.AttrItalic)
 )
 
-const (
-	AttrUndefined = Attr(0)
-	AttrRegular   = Attr(1 << 7)
-	AttrClear     = Attr(1 << 8)
-	BoldForce     = Attr(1 << 10)
-	FullBg        = Attr(1 << 11)
-)
-
 func (r *FullscreenRenderer) Bell() {
 	_screen.Beep()
 }
@@ -157,15 +147,6 @@ func (c Color) Style() tcell.Color {
 	} else {
 		return tcell.Color(c)
 	}
-}
-
-func (a Attr) Merge(b Attr) Attr {
-	if b&AttrRegular > 0 {
-		// Only keep bold attribute set by the system
-		return (b &^ AttrRegular) | (a & BoldForce)
-	}
-
-	return (a &^ AttrRegular) | b
 }
 
 // handle the following as private members of FullscreenRenderer instance

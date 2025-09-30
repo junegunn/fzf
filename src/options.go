@@ -572,6 +572,7 @@ type Options struct {
 	Multi             int
 	Ansi              bool
 	Mouse             bool
+	BaseTheme         *tui.ColorTheme
 	Theme             *tui.ColorTheme
 	Black             bool
 	Bold              bool
@@ -672,9 +673,9 @@ func defaultPreviewOpts(command string) previewOpts {
 func defaultOptions() *Options {
 	var theme *tui.ColorTheme
 	if os.Getenv("NO_COLOR") != "" {
-		theme = tui.NoColorTheme()
+		theme = tui.NoColorTheme
 	} else {
-		theme = tui.EmptyTheme()
+		theme = tui.EmptyTheme
 	}
 
 	return &Options{
@@ -1317,8 +1318,9 @@ func dupeTheme(theme *tui.ColorTheme) *tui.ColorTheme {
 	return &dupe
 }
 
-func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, error) {
+func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui.ColorTheme, error) {
 	var err error
+	var baseTheme *tui.ColorTheme
 	theme := dupeTheme(defaultTheme)
 	rrggbb := regexp.MustCompile("^#[0-9a-fA-F]{6}$")
 	comma := regexp.MustCompile(`[\s,]+`)
@@ -1329,13 +1331,17 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 		}
 		switch str {
 		case "dark":
+			baseTheme = tui.Dark256
 			theme = dupeTheme(tui.Dark256)
 		case "light":
+			baseTheme = tui.Light256
 			theme = dupeTheme(tui.Light256)
 		case "base16", "16":
+			baseTheme = tui.Default16
 			theme = dupeTheme(tui.Default16)
 		case "bw", "no":
-			theme = tui.NoColorTheme()
+			baseTheme = tui.NoColorTheme
+			theme = dupeTheme(tui.NoColorTheme)
 		default:
 			fail := func() {
 				// Let the code proceed to simplify the error handling
@@ -1514,7 +1520,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 			}
 		}
 	}
-	return theme, err
+	return baseTheme, theme, err
 }
 
 func parseWalkerOpts(str string) (walkerOpts, error) {
@@ -2649,10 +2655,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--color":
 			_, spec := optionalNextString()
 			if len(spec) == 0 {
-				opts.Theme = tui.EmptyTheme()
+				opts.Theme = tui.EmptyTheme
 			} else {
-				if opts.Theme, err = parseTheme(opts.Theme, spec); err != nil {
+				var baseTheme *tui.ColorTheme
+				if baseTheme, opts.Theme, err = parseTheme(opts.Theme, spec); err != nil {
 					return err
+				}
+				if baseTheme != nil {
+					opts.BaseTheme = baseTheme
 				}
 			}
 		case "--toggle-sort":
@@ -2739,7 +2749,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-mouse":
 			opts.Mouse = false
 		case "+c", "--no-color":
-			opts.Theme = tui.NoColorTheme()
+			opts.BaseTheme = tui.NoColorTheme
+			opts.Theme = tui.NoColorTheme
 		case "+2", "--no-256":
 			opts.Theme = tui.Default16
 		case "--black":
@@ -3614,23 +3625,6 @@ func postProcessOptions(opts *Options) error {
 				break
 			}
 		}
-	}
-
-	if opts.Bold {
-		theme := opts.Theme
-		boldify := func(c tui.ColorAttr) tui.ColorAttr {
-			dup := c
-			if (c.Attr & tui.AttrRegular) == 0 {
-				dup.Attr |= tui.BoldForce
-			}
-			return dup
-		}
-		theme.Current = boldify(theme.Current)
-		theme.CurrentMatch = boldify(theme.CurrentMatch)
-		theme.Prompt = boldify(theme.Prompt)
-		theme.Input = boldify(theme.Input)
-		theme.Cursor = boldify(theme.Cursor)
-		theme.Spinner = boldify(theme.Spinner)
 	}
 
 	// If --height option is not supported on the platform, just ignore it
