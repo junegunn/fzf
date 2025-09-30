@@ -44,10 +44,10 @@ Non-matching items are displayed in a dimmed color by default, but you can
 change it with the `--color hidden:...` option.
 
 ```sh
+fzf --raw --color hidden:red
 fzf --raw --color hidden:red:strikethrough
-
-# To unset the default 'dim' attribute, prefix the color spec with 'regular'
-fzf --raw --color hidden:regular:red:strikethrough
+fzf --raw --color hidden:red:strikethrough:dim
+fzf --raw --color hidden:red:strikethrough:dim:italic
 ```
 
 #### Conditional actions for raw mode
@@ -104,7 +104,37 @@ fzf --gutter ' ' --color gutter:reverse
 
 As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
 
-### Compatibility changes
+### Breaking changes
+
+#### Hiding the gutter column
+
+In the previous versions, the recommended way to hide the gutter column was to
+set `--color gutter:-1`. That's because the gutter column was just a space
+character, reversed. But now that it's using a visible character (`▌`), applying
+the default color is no longer enough to hide it. Instead, you can set it to
+a space character.
+
+```sh
+# Hide the gutter column
+fzf --gutter ' '
+
+# Classic style
+fzf --gutter ' ' --color gutter:reverse
+```
+
+#### `--color` option
+
+In the previous versions, some elements had default style attributes applied and
+you would have to explicitly unset them with `regular` attribute if you wanted
+to reset them. This is no longer needed now, as the default style attributes
+are applied only when you do not specify any color or style for that element.
+
+```sh
+# No 'dim', just red and italic.
+fzf --ghost 'Type to search' --color ghost:red:italic
+```
+
+#### Compatibility changes
 
 Starting with this release, fzf is built with Go 1.23. Support for some old OS versions has been dropped.
 
