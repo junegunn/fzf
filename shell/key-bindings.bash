@@ -132,7 +132,7 @@ if ((BASH_VERSINFO[0] < 4)); then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  if [[ ${FZF_CTRL_R_DISABLED-x} != "" ]]; then
+  if [[ -z ${FZF_SHELL_EXCLUDE_CTRL_R-} ]]; then
     bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
     bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
     bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
@@ -146,7 +146,7 @@ else
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  if [[ ${FZF_CTRL_R_DISABLED-x} != "" ]]; then
+  if [[ -z ${FZF_SHELL_EXCLUDE_CTRL_R-} ]]; then
     bind -m emacs-standard -x '"\C-r": __fzf_history__'
     bind -m vi-command -x '"\C-r": __fzf_history__'
     bind -m vi-insert -x '"\C-r": __fzf_history__'

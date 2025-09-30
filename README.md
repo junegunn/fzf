@@ -218,13 +218,21 @@ Add the following line to your shell configuration file.
 > (e.g. `apt show fzf`)
 
 > [!TIP]
-> You can disable the CTRL-T, CTRL-R, or ALT-C bindings by setting `FZF_CTRL_T_COMMAND`,
-> `FZF_CTRL_R_DISABLED`, or `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
+> You can disable the CTRL-T or ALT-C bindings by setting `FZF_CTRL_T_COMMAND`
+> or `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
 > For example, to disable ALT-C:
 >
 > * bash: `FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
 > * zsh: `FZF_ALT_C_COMMAND= source <(fzf --zsh)`
 > * fish: `fzf --fish | FZF_ALT_C_COMMAND= source`
+
+> [!TIP]
+> You can disable the CTRL-R binding by setting `FZF_SHELL_EXCLUDE_CTRL_R` to
+> a non-empty value when sourcing the script. For example:
+>
+> * bash: `FZF_SHELL_EXCLUDE_CTRL_R=1 eval "$(fzf --bash)"`
+> * zsh: `FZF_SHELL_EXCLUDE_CTRL_R=1 source <(fzf --zsh)`
+> * fish: `fzf --fish | FZF_SHELL_EXCLUDE_CTRL_R=1 source`
 >
 > Setting the variables after sourcing the script will have no effect.
 

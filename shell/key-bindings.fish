@@ -214,7 +214,7 @@ function fzf_key_bindings
     commandline -f repaint
   end
 
-  if not set -q FZF_CTRL_R_DISABLED; or test -n "$FZF_CTRL_R_DISABLED"
+  if not set -q FZF_SHELL_EXCLUDE_CTRL_R; or test -z "$FZF_SHELL_EXCLUDE_CTRL_R"
     bind \cr fzf-history-widget
     bind -M insert \cr fzf-history-widget
   end
