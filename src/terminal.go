@@ -1485,7 +1485,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr)
+			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, false)
 		}
 		for limit > 0 {
 			if length > limit {
@@ -1548,7 +1548,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 				return 1
 			}
 			t.printHighlighted(
-				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, preTask, nil)
+				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, line, line, true, preTask, nil)
 		})
 		t.wrap = wrap
 	}
@@ -3063,7 +3063,7 @@ func (t *Terminal) printFooter() {
 				colors: colors}
 
 			t.printHighlighted(Result{item: item},
-				tui.ColFooter, tui.ColFooter, false, false, line, line, true,
+				tui.ColFooter, tui.ColFooter, false, false, false, line, line, true,
 				func(markerClass) int {
 					t.footerWindow.Print(indent)
 					return indentSize
@@ -3135,7 +3135,7 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 			colors: colors}
 
 		t.printHighlighted(Result{item: item},
-			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
+			tui.ColHeader, tui.ColHeader, false, false, false, line, line, true,
 			func(markerClass) int {
 				t.window.Print(indent)
 				return indentSize
@@ -3371,13 +3371,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			return indentSize
 		}
-		base := tui.ColCurrent
-		match := tui.ColCurrentMatch
-		if !matched {
-			base = base.WithFg(t.theme.Hidden)
-			match = match.WithFg(t.theme.Hidden)
-		}
-		finalLineNum = t.printHighlighted(result, base, match, true, true, line, maxLine, forceRedraw, preTask, postTask)
+		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
 	} else {
 		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
@@ -3411,11 +3405,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			base = base.WithBg(altBg)
 			match = match.WithBg(altBg)
 		}
-		if !matched {
-			base = base.WithFg(t.theme.Hidden)
-			match = match.WithFg(t.theme.Hidden)
-		}
-		finalLineNum = t.printHighlighted(result, base, match, false, true, line, maxLine, forceRedraw, preTask, postTask)
+		finalLineNum = t.printHighlighted(result, base, match, false, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
 	}
 	for i := 0; i < t.gap && finalLineNum < maxLine; i++ {
 		finalLineNum++
@@ -3462,7 +3452,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, hidden bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -3514,7 +3504,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			sort.Sort(ByOrder(nthOffsets))
 		}
 	}
-	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr)
+	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, hidden)
 
 	maxLines := 1
 	if t.canSpanMultiLines() {
