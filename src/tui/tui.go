@@ -16,6 +16,7 @@ const (
 	AttrClear     = Attr(1 << 9)
 	BoldForce     = Attr(1 << 10)
 	FullBg        = Attr(1 << 11)
+	Strip         = Attr(1 << 12)
 )
 
 func (a Attr) Merge(b Attr) Attr {
@@ -382,6 +383,10 @@ func (p ColorPair) Attr() Attr {
 
 func (p ColorPair) IsFullBgMarker() bool {
 	return p.attr&FullBg > 0
+}
+
+func (p ColorPair) ShouldStripColors() bool {
+	return p.attr&Strip > 0
 }
 
 func (p ColorPair) HasBg() bool {

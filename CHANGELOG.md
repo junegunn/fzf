@@ -50,6 +50,14 @@ fzf --raw --color hidden:red:strikethrough:dim
 fzf --raw --color hidden:red:strikethrough:dim:italic
 ```
 
+For colored input, dimming alone may not be enough, and you may prefer to remove
+colors entirely. For that case, a new special style attribute `strip` has been
+added.
+
+```sh
+fd --color always | fzf --ansi --raw --color hidden:dim:strip:strikethrough
+```
+
 #### Conditional actions for raw mode
 
 You may want to perform different actions depending on whether the current item

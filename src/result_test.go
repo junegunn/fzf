@@ -131,7 +131,7 @@ func TestColorOffset(t *testing.T) {
 
 	colBase := tui.NewColorPair(89, 189, tui.AttrUndefined)
 	colMatch := tui.NewColorPair(99, 199, tui.AttrUndefined)
-	colors := item.colorOffsets(offsets, nil, tui.Dark256, colBase, colMatch, tui.AttrUndefined)
+	colors := item.colorOffsets(offsets, nil, tui.Dark256, colBase, colMatch, tui.AttrUndefined, false)
 	assert := func(idx int, b int32, e int32, c tui.ColorPair) {
 		o := colors[idx]
 		if o.offset[0] != b || o.offset[1] != e || o.color != c {
@@ -158,7 +158,7 @@ func TestColorOffset(t *testing.T) {
 
 	nthOffsets := []Offset{{37, 39}, {42, 45}}
 	for _, attr := range []tui.Attr{tui.AttrRegular, tui.StrikeThrough} {
-		colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, attr)
+		colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, attr, false)
 
 		// [{[0 5] {1 5 0}} {[5 15] {1 5 8}} {[15 20] {1 5 0}}
 		//  {[22 25] {2 6 1}} {[25 27] {2 6 9}} {[27 30] {-1 -1 8}}

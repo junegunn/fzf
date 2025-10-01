@@ -1366,6 +1366,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui
 						cattr.Attr |= tui.Bold
 					case "dim":
 						cattr.Attr |= tui.Dim
+					case "strip":
+						cattr.Attr |= tui.Strip
 					case "italic":
 						cattr.Attr |= tui.Italic
 					case "underline":
