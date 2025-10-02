@@ -180,6 +180,7 @@ type itemLine struct {
 	result    Result
 	empty     bool
 	other     bool
+	hidden    bool
 }
 
 func (t *Terminal) inListWindow() bool {
@@ -3275,7 +3276,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	// Avoid unnecessary redraw
 	numLines, _ := t.numItemLines(item, maxLine-line+1)
 	newLine := itemLine{valid: true, firstLine: line, numLines: numLines, cy: index + t.offset, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1]}
+		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1], hidden: !matched}
 	prevLine := t.prevLines[line]
 	forceRedraw := !prevLine.valid || prevLine.other || prevLine.firstLine != newLine.firstLine
 	printBar := func(lineNum int, forceRedraw bool) bool {
@@ -3283,6 +3284,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 
 	if !forceRedraw &&
+		prevLine.hidden == newLine.hidden &&
 		prevLine.numLines == newLine.numLines &&
 		prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
