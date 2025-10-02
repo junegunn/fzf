@@ -3710,7 +3710,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 
 		if maxWidth > 0 {
-			t.printColoredString(t.window, line, offsets, colBase)
+			color := colBase
+			if hidden {
+				color = color.WithFg(t.theme.Hidden)
+			}
+			t.printColoredString(t.window, line, offsets, color)
 		}
 		if postTask != nil {
 			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw, lbg)
