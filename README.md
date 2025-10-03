@@ -522,6 +522,9 @@ the following key bindings in bash, zsh, and fish.
 - `CTRL-R` - Paste the selected command from history onto the command-line
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
+    - Press `ALT-R` to toggle "raw" mode where you can see the surrounding items
+      of a match. In this mode, you can press `CTRL-N` and `CTRL-P` to move
+      between the matching items only.
     - Press `CTRL-/` or `ALT-/` to toggle line wrapping
     - Set `FZF_CTRL_R_OPTS` to pass additional options to fzf
       ```sh
