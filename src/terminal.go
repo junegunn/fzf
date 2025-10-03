@@ -3707,7 +3707,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		if maxWidth > 0 {
 			color := colBase
 			if hidden {
-				color = color.WithFg(t.theme.Hidden)
+				color = color.WithFg(t.theme.Nomatch)
 			}
 			t.printColoredString(t.window, line, offsets, color)
 		}

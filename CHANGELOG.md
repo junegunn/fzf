@@ -21,9 +21,30 @@ While non-matching items are displayed in a dimmed color, they are treated just
 like matching items, so you place the cursor on them and perform any action. If
 you prefer to navigate only through matching items, use the `down-match` and
 `up-match` actions, which are from now on bound to `CTRL-N` and `CTRL-P`
-respectively. Historically, these keys were bound to `next-history` and
-`prev-history` when `--history` option is enabled, so in that case, you'll need
-to manually bind them, or use `ALT-DOWN` and `ALT-UP` instead.
+respectively, and also to `ALT-DOWN` and `ALT-UP`.
+
+| Key        | Action       | With `--history` |
+| :--        | :--          | :--              |
+| `down`     | `down`       |                  |
+| `up`       | `up`         |                  |
+| `ctrl-j`   | `down`       |                  |
+| `ctrl-k`   | `up`         |                  |
+| `ctrl-n`   | `down-match` | `next-history`   |
+| `ctrl-p`   | `up-match`   | `prev-history`   |
+| `alt-down` | `down-match` |                  |
+| `alt-up`   | `up-match`   |                  |
+
+> [!NOTE]
+> `CTRL-N` and `CTRL-P` are bound to `next-history` and `prev-history` when
+> `--history` option is enabled, so in that case, you'll need to manually bind
+> them, or use `ALT-DOWN` and `ALT-UP` instead.
+
+> [!TIP]
+> `up-match` and `down-match` are equivalent to `up` and `down` when not in
+> raw mode, so you can safely bind them to `up` and `arrow` keys if you prefer.
+> ```sh
+> fzf --bind up:up-match,down:down-match
+> ```
 
 #### Customizing the look
 
@@ -41,13 +62,13 @@ fzf --bind ctrl-x:toggle-raw --gutter-raw ▎
 ##### Color and style of non-matching items
 
 Non-matching items are displayed in a dimmed color by default, but you can
-change it with the `--color hidden:...` option.
+change it with the `--color nomatch:...` option.
 
 ```sh
-fzf --raw --color hidden:red
-fzf --raw --color hidden:red:strikethrough
-fzf --raw --color hidden:red:strikethrough:dim
-fzf --raw --color hidden:red:strikethrough:dim:italic
+fzf --raw --color nomatch:red
+fzf --raw --color nomatch:red:dim
+fzf --raw --color nomatch:red:dim:strikethrough
+fzf --raw --color nomatch:red:dim:strikethrough:italic
 ```
 
 For colored input, dimming alone may not be enough, and you may prefer to remove
@@ -55,7 +76,7 @@ colors entirely. For that case, a new special style attribute `strip` has been
 added.
 
 ```sh
-fd --color always | fzf --ansi --raw --color hidden:dim:strip:strikethrough
+fd --color always | fzf --ansi --raw --color nomatch:dim:strip:strikethrough
 ```
 
 #### Conditional actions for raw mode

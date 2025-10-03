@@ -256,7 +256,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 					base = base.WithAttr(attrNth)
 				}
 				if hidden {
-					base = base.WithFg(theme.Hidden)
+					base = base.WithFg(theme.Nomatch)
 				}
 				color := ansiToColorPair(ansi, base)
 				colors = append(colors, colorOffset{
@@ -267,7 +267,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 			} else {
 				color := colBase.WithAttr(attrNth)
 				if hidden {
-					color = color.WithFg(theme.Hidden)
+					color = color.WithFg(theme.Nomatch)
 				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
