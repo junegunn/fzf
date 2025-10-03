@@ -447,7 +447,7 @@ type ColorTheme struct {
 	ListBg           ColorAttr
 	AltBg            ColorAttr
 	Nth              ColorAttr
-	Hidden           ColorAttr
+	Nomatch          ColorAttr
 	SelectedFg       ColorAttr
 	SelectedBg       ColorAttr
 	SelectedMatch    ColorAttr
@@ -908,7 +908,7 @@ func init() {
 		FooterLabel:      defaultColor,
 		GapLine:          defaultColor,
 		Nth:              undefined,
-		Hidden:           undefined,
+		Nomatch:          undefined,
 	}
 
 	EmptyTheme = &ColorTheme{
@@ -958,7 +958,7 @@ func init() {
 		FooterLabel:      undefined,
 		GapLine:          undefined,
 		Nth:              undefined,
-		Hidden:           undefined,
+		Nomatch:          undefined,
 	}
 
 	Default16 = &ColorTheme{
@@ -1008,7 +1008,7 @@ func init() {
 		FooterLabel:      undefined,
 		GapLine:          undefined,
 		Nth:              undefined,
-		Hidden:           undefined,
+		Nomatch:          undefined,
 	}
 
 	Dark256 = &ColorTheme{
@@ -1058,7 +1058,7 @@ func init() {
 		FooterLabel:      undefined,
 		GapLine:          undefined,
 		Nth:              undefined,
-		Hidden:           undefined,
+		Nomatch:          undefined,
 	}
 
 	Light256 = &ColorTheme{
@@ -1108,7 +1108,7 @@ func init() {
 		FooterLabel:      undefined,
 		GapLine:          undefined,
 		Nth:              undefined,
-		Hidden:           undefined,
+		Nomatch:          undefined,
 	}
 }
 
@@ -1248,8 +1248,8 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		theme.Spinner = boldify(theme.Spinner)
 	}
 
-	if theme.Hidden.IsUndefined() {
-		theme.Hidden.Attr = Dim
+	if theme.Nomatch.IsUndefined() {
+		theme.Nomatch.Attr = Dim
 	}
 
 	initPalette(theme)
