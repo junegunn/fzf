@@ -14,7 +14,7 @@ but it's often more useful when toggled dynamically with the `toggle-raw`
 action.
 
 ```sh
-tree | fzf --reverse --bind ctrl-x:toggle-raw
+tree | fzf --reverse --bind alt-r:toggle-raw
 ```
 
 While non-matching items are displayed in a dimmed color, they are treated just
@@ -56,7 +56,7 @@ option.
 
 ```sh
 # Use a thinner gutter instead of the default dashed line
-fzf --bind ctrl-x:toggle-raw --gutter-raw ▎
+fzf --bind alt-r:toggle-raw --gutter-raw ▎
 ```
 
 ##### Color and style of non-matching items
@@ -97,8 +97,7 @@ fzf --raw --bind 'enter:transform:[[ ${FZF_RAW-1} = 1 ]] && echo accept || echo 
 
 #### Leveraging raw mode in shell integration
 
-The `CTRL-R` binding (command history) now lets you toggle raw mode with
-`CTRL-X`.
+The `CTRL-R` binding (command history) now lets you toggle raw mode with `ALT-R`.
 
 ### Style changes
 
