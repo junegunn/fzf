@@ -218,21 +218,13 @@ Add the following line to your shell configuration file.
 > (e.g. `apt show fzf`)
 
 > [!TIP]
-> You can disable the CTRL-T or ALT-C bindings by setting `FZF_CTRL_T_COMMAND`
-> or `FZF_ALT_C_COMMAND` to an empty string when sourcing the script.
-> For example, to disable ALT-C:
+> You can disable CTRL-T, CTRL-R, or ALT-C bindings by setting the
+> corresponding `*_COMMAND` variable to an empty string when sourcing the
+> script. For example, to disable CTRL-R and ALT-C:
 >
-> * bash: `FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
-> * zsh: `FZF_ALT_C_COMMAND= source <(fzf --zsh)`
-> * fish: `fzf --fish | FZF_ALT_C_COMMAND= source`
-
-> [!TIP]
-> You can disable the CTRL-R binding by setting `FZF_SHELL_EXCLUDE_CTRL_R` to
-> a non-empty value when sourcing the script. For example:
->
-> * bash: `FZF_SHELL_EXCLUDE_CTRL_R=1 eval "$(fzf --bash)"`
-> * zsh: `FZF_SHELL_EXCLUDE_CTRL_R=1 source <(fzf --zsh)`
-> * fish: `fzf --fish | FZF_SHELL_EXCLUDE_CTRL_R=1 source`
+> * bash: `FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
+> * zsh: `FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source <(fzf --zsh)`
+> * fish: `fzf --fish | FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source`
 >
 > Setting the variables after sourcing the script will have no effect.
 
@@ -539,6 +531,10 @@ the following key bindings in bash, zsh, and fish.
         --color header:italic
         --header 'Press CTRL-Y to copy command into clipboard'"
       ```
+    - Can be disabled by setting `FZF_CTRL_R_COMMAND` to an empty string when
+      sourcing the script
+    - This cannot be yet overriden by setting `FZF_CTRL_R_COMMAND`, attepting
+      that will issue a warning
 - `ALT-C` - cd into the selected directory
     - The list is generated using `--walker dir,follow,hidden` option
     - Set `FZF_ALT_C_COMMAND` to override the default command

@@ -7,6 +7,7 @@
 # - $FZF_TMUX_OPTS
 # - $FZF_CTRL_T_COMMAND
 # - $FZF_CTRL_T_OPTS
+# - $FZF_CTRL_R_COMMAND
 # - $FZF_CTRL_R_OPTS
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
@@ -214,7 +215,10 @@ function fzf_key_bindings
     commandline -f repaint
   end
 
-  if not set -q FZF_SHELL_EXCLUDE_CTRL_R; or test -z "$FZF_SHELL_EXCLUDE_CTRL_R"
+  if not set -q FZF_CTRL_R_COMMAND; or test -n "$FZF_CTRL_R_COMMAND"
+    if set -q FZF_CTRL_R_COMMAND; and test -n "$FZF_CTRL_R_COMMAND"
+      echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
+    end
     bind \cr fzf-history-widget
     bind -M insert \cr fzf-history-widget
   end
