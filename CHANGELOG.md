@@ -132,6 +132,20 @@ fzf --gutter ' ' --color gutter:reverse
 
 As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
 
+### Added environment variable
+
+`$FZF_DIRECTION` is now exported to child processes, indicating the list direction of the current layout.
+
+- `up` for the default layout
+- `down` for `reverse` or `reverse-list`
+
+This simplifies writing transform actions involving layout-dependent actions
+like `{up,down}-match`, `{up,down}-selected`, and `toggle+{up,down}`.
+
+```sh
+fzf --raw --bind 'result:first+transform:[[ $FZF_RAW = 0 ]] && echo $FZF_DIRECTION-match'
+```
+
 ### Breaking changes
 
 #### Hiding the gutter column

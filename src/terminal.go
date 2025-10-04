@@ -1307,6 +1307,11 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_LIST_LABEL="+t.listLabelOpts.label)
 	env = append(env, "FZF_INPUT_LABEL="+t.inputLabelOpts.label)
 	env = append(env, "FZF_HEADER_LABEL="+t.headerLabelOpts.label)
+	direction := "down"
+	if t.layout == layoutDefault {
+		direction = "up"
+	}
+	env = append(env, "FZF_DIRECTION="+direction)
 	if len(t.nthCurrent) > 0 {
 		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
 	}
