@@ -134,7 +134,7 @@ if ((BASH_VERSINFO[0] < 4)); then
 
   # CTRL-R - Paste the selected command from history into the command line
   if [[ ${FZF_CTRL_R_COMMAND-x} != "" ]]; then
-    if [[ -n ${FZF_CTRL_R_COMMAND+x} && -n $FZF_CTRL_R_COMMAND ]]; then
+    if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
       echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
     fi
     bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
@@ -151,7 +151,7 @@ else
 
   # CTRL-R - Paste the selected command from history into the command line
   if [[ ${FZF_CTRL_R_COMMAND-x} != "" ]]; then
-    if [[ -n ${FZF_CTRL_R_COMMAND+x} && -n $FZF_CTRL_R_COMMAND ]]; then
+    if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
       echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
     fi
     bind -m emacs-standard -x '"\C-r": __fzf_history__'

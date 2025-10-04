@@ -152,7 +152,7 @@ fzf-history-widget() {
   return $ret
 }
 if [[ "${FZF_CTRL_R_COMMAND-x}" != "" ]]; then
-  if [[ -n ${FZF_CTRL_R_COMMAND+x} && -n $FZF_CTRL_R_COMMAND ]]; then
+  if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
     echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
   fi
   zle     -N            fzf-history-widget

@@ -216,7 +216,7 @@ function fzf_key_bindings
   end
 
   if not set -q FZF_CTRL_R_COMMAND; or test -n "$FZF_CTRL_R_COMMAND"
-    if set -q FZF_CTRL_R_COMMAND; and test -n "$FZF_CTRL_R_COMMAND"
+    if test -n "$FZF_CTRL_R_COMMAND"
       echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
     end
     bind \cr fzf-history-widget
