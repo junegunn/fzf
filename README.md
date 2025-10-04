@@ -533,7 +533,7 @@ the following key bindings in bash, zsh, and fish.
       ```
     - Can be disabled by setting `FZF_CTRL_R_COMMAND` to an empty string when
       sourcing the script
-    - This cannot be yet overriden by setting `FZF_CTRL_R_COMMAND`, attepting
+    - This cannot be yet overridden by setting `FZF_CTRL_R_COMMAND`, attepting
       that will issue a warning
 - `ALT-C` - cd into the selected directory
     - The list is generated using `--walker dir,follow,hidden` option
