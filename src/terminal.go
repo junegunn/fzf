@@ -2397,6 +2397,13 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			innerHeight-shrink, tui.WindowList, noBorder, true)
 	}
 
+	if len(t.scrollbar) == 0 {
+		for y := 0; y < t.window.Height(); y++ {
+			t.window.Move(y, t.window.Width()-1)
+			t.window.Print(" ")
+		}
+	}
+
 	createInnerWindow := func(b tui.Window, shape tui.BorderShape, windowType tui.WindowType, shift int) tui.Window {
 		top := b.Top()
 		left := b.Left() + shift

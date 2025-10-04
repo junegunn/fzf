@@ -1192,6 +1192,29 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(block, it) }
   end
 
+  # https://github.com/junegunn/fzf/issues/4537
+  def test_no_scrollbar_preview_toggle
+    x = 'x' * 300
+    y = 'y' * 300
+    tmux.send_keys %(yes #{x} | head -1000 | fzf --bind 'tab:toggle-preview' --border --no-scrollbar --preview 'echo #{y}' --preview-window 'border-left'), :Enter
+
+    # │ ▌ xxxxxxxx·· │ yyyyyyyy│
+    tmux.until do |lines|
+      lines.any? { it.match?(/x·· │ y+│$/) }
+    end
+    tmux.send_keys :Tab
+
+    # │ ▌ xxxxxxxx·· │
+    tmux.until do |lines|
+      lines.none? { it.match?(/x··y│$/) }
+    end
+
+    tmux.send_keys :Tab
+    tmux.until do |lines|
+      lines.any? { it.match?(/x·· │ y+│$/) }
+    end
+  end
+
   def test_combinations
     skip unless ENV['LONGTEST']
 
