@@ -180,6 +180,7 @@ type itemLine struct {
 	result    Result
 	empty     bool
 	other     bool
+	hidden    bool
 }
 
 func (t *Terminal) inListWindow() bool {
@@ -274,9 +275,11 @@ type Terminal struct {
 	footerLabelLen     int
 	footerLabelOpts    labelOpts
 	gutterReverse      bool
+	gutterRawReverse   bool
 	pointer            string
 	pointerLen         int
 	pointerEmpty       string
+	pointerEmptyRaw    string
 	marker             string
 	markerLen          int
 	markerEmpty        string
@@ -297,6 +300,7 @@ type Terminal struct {
 	subWordNext        string
 	cx                 int
 	cy                 int
+	lastMatchingIndex  int32
 	offset             int
 	xoffset            int
 	yanked             []rune
@@ -383,6 +387,9 @@ type Terminal struct {
 	printer            func(string)
 	printsep           string
 	merger             *Merger
+	passMerger         *Merger
+	resultMerger       *Merger
+	matchMap           map[int32]Result
 	selected           map[int32]selectedItem
 	version            int64
 	revision           revision
@@ -429,6 +436,7 @@ type Terminal struct {
 	clickFooterColumn  int
 	proxyScript        string
 	numLinesCache      map[int32]numLinesCacheValue
+	raw                bool
 }
 
 type numLinesCacheValue struct {
@@ -569,13 +577,18 @@ const (
 	actToggleWrap
 	actToggleMultiLine
 	actToggleHscroll
+	actToggleRaw
+	actEnableRaw
+	actDisableRaw
 	actTrackCurrent
 	actToggleInput
 	actHideInput
 	actShowInput
 	actUntrackCurrent
 	actDown
+	actDownMatch
 	actUp
+	actUpMatch
 	actPageUp
 	actPageDown
 	actPosition
@@ -796,8 +809,10 @@ func defaultKeymap() map[tui.Event][]*action {
 	add(tui.CtrlK, actUp)
 	add(tui.CtrlL, actClearScreen)
 	add(tui.Enter, actAccept)
-	add(tui.CtrlN, actDown)
-	add(tui.CtrlP, actUp)
+	add(tui.CtrlN, actDownMatch)
+	add(tui.CtrlP, actUpMatch)
+	add(tui.AltDown, actDownMatch)
+	add(tui.AltUp, actUpMatch)
 	add(tui.CtrlU, actUnixLineDiscard)
 	add(tui.CtrlW, actUnixWordRubout)
 	add(tui.CtrlY, actYank)
@@ -953,6 +968,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	}
 	keymapCopy := maps.Clone(opts.Keymap)
 
+	em := EmptyMerger(revision{})
 	t := Terminal{
 		initDelay:          delay,
 		infoCommand:        opts.InfoCommand,
@@ -980,6 +996,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		subWordNext:        subWordNext,
 		cx:                 len(input),
 		cy:                 0,
+		lastMatchingIndex:  minItem.Index(),
 		offset:             0,
 		xoffset:            0,
 		yanked:             []rune{},
@@ -1039,6 +1056,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
 		tabstop:            opts.Tabstop,
+		raw:                opts.Raw,
 		hasStartActions:    false,
 		hasResultActions:   false,
 		hasFocusActions:    false,
@@ -1052,7 +1070,10 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
 		proxyScript:        opts.ProxyScript,
-		merger:             EmptyMerger(revision{}),
+		merger:             em,
+		passMerger:         em,
+		resultMerger:       em,
+		matchMap:           make(map[int32]Result),
 		selected:           make(map[int32]selectedItem),
 		runningCmds:        util.NewConcurrentSet[*runningCmd](),
 		reqBox:             util.NewEventBox(),
@@ -1089,26 +1110,41 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		t.acceptNth = opts.AcceptNth(t.delimiter)
 	}
 
+	baseTheme := opts.BaseTheme
+	if baseTheme == nil {
+		baseTheme = renderer.DefaultTheme()
+	}
 	// This should be called before accessing tui.Color*
-	tui.InitTheme(opts.Theme, renderer.DefaultTheme(), opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
+	tui.InitTheme(opts.Theme, baseTheme, opts.Bold, opts.Black, opts.InputBorderShape.Visible(), opts.HeaderBorderShape.Visible())
 
 	// Gutter character
-	var gutterChar string
+	var gutterChar, gutterRawChar string
 	if opts.Gutter != nil {
 		gutterChar = *opts.Gutter
-	} else if t.unicode && !t.theme.Gutter.Color.IsDefault() {
+	} else if t.unicode {
 		gutterChar = "▌"
 	} else {
 		gutterChar = " "
 		t.gutterReverse = true
 	}
 
+	if opts.GutterRaw != nil {
+		gutterRawChar = *opts.GutterRaw
+	} else if t.unicode {
+		gutterRawChar = "▖"
+	} else {
+		gutterRawChar = ":"
+		t.gutterRawReverse = false
+	}
+
 	t.prompt, t.promptLen = t.parsePrompt(opts.Prompt)
 	// Pre-calculated empty pointer and marker signs
 	if t.pointerLen == 0 {
 		t.pointerEmpty = ""
+		t.pointerEmptyRaw = ""
 	} else {
 		t.pointerEmpty = gutterChar + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
+		t.pointerEmptyRaw = gutterRawChar + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
 	}
 	t.markerEmpty = strings.Repeat(" ", t.markerLen)
 
@@ -1271,8 +1307,20 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_LIST_LABEL="+t.listLabelOpts.label)
 	env = append(env, "FZF_INPUT_LABEL="+t.inputLabelOpts.label)
 	env = append(env, "FZF_HEADER_LABEL="+t.headerLabelOpts.label)
+	direction := "down"
+	if t.layout == layoutDefault {
+		direction = "up"
+	}
+	env = append(env, "FZF_DIRECTION="+direction)
 	if len(t.nthCurrent) > 0 {
 		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
+	}
+	if t.raw {
+		val := "0"
+		if t.isCurrentItemMatch() {
+			val = "1"
+		}
+		env = append(env, "FZF_RAW="+val)
 	}
 	inputState := "enabled"
 	if t.inputless {
@@ -1282,7 +1330,7 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	}
 	env = append(env, "FZF_INPUT_STATE="+inputState)
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
-	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.merger.Length()))
+	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.resultMerger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
@@ -1443,7 +1491,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr)
+			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, false)
 		}
 		for limit > 0 {
 			if length > limit {
@@ -1506,7 +1554,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 				return 1
 			}
 			t.printHighlighted(
-				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, line, line, true, preTask, nil)
+				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, line, line, true, preTask, nil)
 		})
 		t.wrap = wrap
 	}
@@ -1693,7 +1741,8 @@ func (t *Terminal) UpdateProgress(progress float32) {
 }
 
 // UpdateList updates Merger to display the list
-func (t *Terminal) UpdateList(merger *Merger) {
+func (t *Terminal) UpdateList(result MatchResult) {
+	merger := result.merger
 	t.mutex.Lock()
 	prevIndex := minItem.Index()
 	newRevision := merger.Revision()
@@ -1706,6 +1755,15 @@ func (t *Terminal) UpdateList(merger *Merger) {
 	}
 	t.progress = 100
 	t.merger = merger
+	t.resultMerger = merger
+	t.passMerger = result.passMerger
+	if t.raw {
+		t.merger = result.passMerger
+		t.matchMap = t.resultMerger.ToMap()
+	} else {
+		t.merger = result.merger
+		t.matchMap = make(map[int32]Result)
+	}
 	if t.revision != newRevision {
 		if !t.revision.compatible(newRevision) {
 			// Reloaded: clear selection
@@ -1754,7 +1812,7 @@ func (t *Terminal) UpdateList(merger *Merger) {
 	}
 	needActivation := false
 	if !t.reading {
-		switch t.merger.Length() {
+		switch t.resultMerger.Length() {
 		case 0:
 			zero := tui.Zero.AsEvent()
 			if _, prs := t.keymap[zero]; prs {
@@ -2801,7 +2859,7 @@ func (t *Terminal) printInfoImpl() {
 		return
 	}
 
-	found := t.merger.Length()
+	found := t.resultMerger.Length()
 	total := util.Max(found, t.count)
 	output := fmt.Sprintf("%d/%d", found, total)
 	if t.toggleSort {
@@ -3018,7 +3076,7 @@ func (t *Terminal) printFooter() {
 				colors: colors}
 
 			t.printHighlighted(Result{item: item},
-				tui.ColFooter, tui.ColFooter, false, false, line, line, true,
+				tui.ColFooter, tui.ColFooter, false, false, false, line, line, true,
 				func(markerClass) int {
 					t.footerWindow.Print(indent)
 					return indentSize
@@ -3090,7 +3148,7 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 			colors: colors}
 
 		t.printHighlighted(Result{item: item},
-			tui.ColHeader, tui.ColHeader, false, false, line, line, true,
+			tui.ColHeader, tui.ColHeader, false, false, false, line, line, true,
 			func(markerClass) int {
 				t.window.Print(indent)
 				return indentSize
@@ -3122,12 +3180,16 @@ func (t *Terminal) gutter(current bool) {
 	var color tui.ColorPair
 	if current {
 		color = tui.ColCurrentCursorEmpty
-	} else if t.gutterReverse {
+	} else if !t.raw && t.gutterReverse || t.raw && t.gutterRawReverse {
 		color = tui.ColCursorEmpty
 	} else {
 		color = tui.ColCursorEmptyChar
 	}
-	t.window.CPrint(color, t.pointerEmpty)
+	gutter := t.pointerEmpty
+	if t.raw {
+		gutter = t.pointerEmptyRaw
+	}
+	t.window.CPrint(color, gutter)
 }
 
 func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
@@ -3162,7 +3224,11 @@ func (t *Terminal) printList() {
 	for line, itemCount := startLine, 0; line <= maxy; line, itemCount = line+1, itemCount+1 {
 		if itemCount < count {
 			item := t.merger.Get(itemCount + t.offset)
-			line = t.printItem(item, line, maxy, itemCount, itemCount == t.cy-t.offset, barRange)
+			current := itemCount == t.cy-t.offset
+			if current && (!t.raw || t.isItemMatch(item.item)) {
+				t.lastMatchingIndex = item.Index()
+			}
+			line = t.printItem(item, line, maxy, itemCount, current, barRange)
 		} else if !t.prevLines[line].empty {
 			t.renderEmptyLine(line, barRange)
 		}
@@ -3184,6 +3250,14 @@ func (t *Terminal) printBar(lineNum int, forceRedraw bool, barRange [2]int) bool
 
 func (t *Terminal) printItem(result Result, line int, maxLine int, index int, current bool, barRange [2]int) int {
 	item := result.item
+	matched := true
+	var matchResult Result
+	if t.raw {
+		if matchResult, matched = t.matchMap[item.Index()]; matched {
+			result = matchResult
+		}
+	}
+
 	_, selected := t.selected[item.Index()]
 	label := ""
 	extraWidth := 0
@@ -3214,7 +3288,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	// Avoid unnecessary redraw
 	numLines, _ := t.numItemLines(item, maxLine-line+1)
 	newLine := itemLine{valid: true, firstLine: line, numLines: numLines, cy: index + t.offset, current: current, selected: selected, label: label,
-		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1]}
+		result: result, queryLen: len(t.input), width: 0, hasBar: line >= barRange[0] && line < barRange[1], hidden: !matched}
 	prevLine := t.prevLines[line]
 	forceRedraw := !prevLine.valid || prevLine.other || prevLine.firstLine != newLine.firstLine
 	printBar := func(lineNum int, forceRedraw bool) bool {
@@ -3222,6 +3296,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	}
 
 	if !forceRedraw &&
+		prevLine.hidden == newLine.hidden &&
 		prevLine.numLines == newLine.numLines &&
 		prevLine.current == newLine.current &&
 		prevLine.selected == newLine.selected &&
@@ -3310,7 +3385,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			return indentSize
 		}
-		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, line, maxLine, forceRedraw, preTask, postTask)
+		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
 	} else {
 		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
@@ -3344,7 +3419,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			base = base.WithBg(altBg)
 			match = match.WithBg(altBg)
 		}
-		finalLineNum = t.printHighlighted(result, base, match, false, true, line, maxLine, forceRedraw, preTask, postTask)
+		finalLineNum = t.printHighlighted(result, base, match, false, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
 	}
 	for i := 0; i < t.gap && finalLineNum < maxLine; i++ {
 		finalLineNum++
@@ -3391,13 +3466,13 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, hidden bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
 	var pos *[]int
-	if match && t.merger.pattern != nil {
-		_, matchOffsets, pos = t.merger.pattern.MatchItem(item, true, t.slab)
+	if match && t.resultMerger.pattern != nil {
+		_, matchOffsets, pos = t.resultMerger.pattern.MatchItem(item, true, t.slab)
 	}
 	charOffsets := matchOffsets
 	if pos != nil {
@@ -3429,7 +3504,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		if !wholeCovered && t.nthAttr > 0 {
 			var tokens []Token
-			if item.transformed != nil && item.transformed.revision == t.merger.revision {
+			if item.transformed != nil && item.transformed.revision == t.resultMerger.revision {
 				tokens = item.transformed.tokens
 			} else {
 				tokens = Transform(Tokenize(item.text.ToString(), t.delimiter), t.nthCurrent)
@@ -3443,7 +3518,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			sort.Sort(ByOrder(nthOffsets))
 		}
 	}
-	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr)
+	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, hidden)
 
 	maxLines := 1
 	if t.canSpanMultiLines() {
@@ -3642,7 +3717,11 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 
 		if maxWidth > 0 {
-			t.printColoredString(t.window, line, offsets, colBase)
+			color := colBase
+			if hidden {
+				color = color.WithFg(t.theme.Nomatch)
+			}
+			t.printColoredString(t.window, line, offsets, color)
 		}
 		if postTask != nil {
 			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw, lbg)
@@ -4675,6 +4754,33 @@ func (t *Terminal) currentItem() *Item {
 		return t.merger.Get(t.cy).item
 	}
 	return nil
+}
+
+func (t *Terminal) isCurrentItemMatch() bool {
+	cnt := t.merger.Length()
+	if t.cy >= 0 && cnt > 0 && cnt > t.cy {
+		if !t.raw {
+			return true
+		}
+		item := t.merger.Get(t.cy).item
+		return t.isItemMatch(item)
+	}
+	return false
+}
+
+func (t *Terminal) isItemMatch(item *Item) bool {
+	_, matched := t.matchMap[item.Index()]
+	return matched
+}
+
+func (t *Terminal) filterSelected() {
+	filtered := make(map[int32]selectedItem)
+	for k, v := range t.selected {
+		if t.isItemMatch(v.item) {
+			filtered[k] = v
+		}
+	}
+	t.selected = filtered
 }
 
 func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, [3][]*Item) {
@@ -5917,8 +6023,9 @@ func (t *Terminal) Loop() error {
 				}
 			case actSelectAll:
 				if t.multi > 0 {
-					for i := 0; i < t.merger.Length(); i++ {
-						if !t.selectItem(t.merger.Get(i).item) {
+					// Limit the scope only to the matching items
+					for i := 0; i < t.resultMerger.Length(); i++ {
+						if !t.selectItem(t.resultMerger.Get(i).item) {
 							break
 						}
 					}
@@ -5926,8 +6033,10 @@ func (t *Terminal) Loop() error {
 				}
 			case actDeselectAll:
 				if t.multi > 0 {
-					for i := 0; i < t.merger.Length() && len(t.selected) > 0; i++ {
-						t.deselectItem(t.merger.Get(i).item)
+					// Also limit the scope only to the matching items, while this may
+					// not be straightforward in raw mode.
+					for i := 0; i < t.resultMerger.Length() && len(t.selected) > 0; i++ {
+						t.deselectItem(t.resultMerger.Get(i).item)
 					}
 					req(reqList, reqInfo)
 				}
@@ -5955,17 +6064,17 @@ func (t *Terminal) Loop() error {
 			case actToggleAll:
 				if t.multi > 0 {
 					prevIndexes := make(map[int]struct{})
-					for i := 0; i < t.merger.Length() && len(t.selected) > 0; i++ {
-						item := t.merger.Get(i).item
+					for i := 0; i < t.resultMerger.Length() && len(t.selected) > 0; i++ {
+						item := t.resultMerger.Get(i).item
 						if _, found := t.selected[item.Index()]; found {
 							prevIndexes[i] = struct{}{}
 							t.deselectItem(item)
 						}
 					}
 
-					for i := 0; i < t.merger.Length(); i++ {
+					for i := 0; i < t.resultMerger.Length(); i++ {
 						if _, found := prevIndexes[i]; !found {
-							item := t.merger.Get(i).item
+							item := t.resultMerger.Get(i).item
 							if !t.selectItem(item) {
 								break
 							}
@@ -5993,11 +6102,68 @@ func (t *Terminal) Loop() error {
 					t.vmove(1, true)
 					req(reqList)
 				}
-			case actDown:
-				t.vmove(-1, true)
+			case actDown, actDownMatch, actUp, actUpMatch:
+				dir := -1
+				if a.t == actUp || a.t == actUpMatch {
+					dir = 1
+				}
+				if t.raw && (a.t == actDownMatch || a.t == actUpMatch) {
+					if t.resultMerger.Length() > 0 {
+						prevCy := t.cy
+						for t.vmove(dir, true) && !t.isCurrentItemMatch() {
+						}
+						if !t.isCurrentItemMatch() {
+							t.vset(prevCy)
+						}
+					}
+				} else {
+					t.vmove(dir, true)
+				}
 				req(reqList)
-			case actUp:
-				t.vmove(1, true)
+			case actToggleRaw, actEnableRaw, actDisableRaw:
+				prevRaw := t.raw
+				switch a.t {
+				case actEnableRaw:
+					t.raw = true
+				case actDisableRaw:
+					t.raw = false
+				case actToggleRaw:
+					t.raw = !t.raw
+				}
+				if prevRaw == t.raw {
+					break
+				}
+				prevPos := t.cy - t.offset
+				prevIndex := t.currentIndex()
+				if t.raw {
+					// Build matchMap if not available
+					if len(t.matchMap) == 0 {
+						t.matchMap = t.resultMerger.ToMap()
+					}
+					t.merger = t.passMerger
+				} else {
+					t.merger = t.resultMerger
+
+					// Need to remove non-matching items from the selection
+					if t.multi > 0 && len(t.selected) > 0 {
+						t.filterSelected()
+						req(reqInfo)
+					}
+				}
+
+				// Try to retain position
+				if prevIndex != minItem.Index() {
+					i := t.merger.FindIndex(prevIndex)
+					if i >= 0 {
+						t.cy = i
+					} else {
+						t.cy = t.merger.FindIndex(t.lastMatchingIndex)
+					}
+					t.offset = t.cy - prevPos
+				}
+
+				// List needs to be rerendered
+				t.forceRerenderList()
 				req(reqList)
 			case actAccept:
 				req(reqClose)
@@ -6841,7 +7007,7 @@ func (t *Terminal) Loop() error {
 		reload := changed || newCommand != nil
 		var reloadRequest *searchRequest
 		if reload {
-			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.merger.Revision()}
+			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.resultMerger.Revision()}
 		}
 
 		// Dispatch queued background requests
@@ -6961,7 +7127,8 @@ func (t *Terminal) constrain() {
 	}
 }
 
-func (t *Terminal) vmove(o int, allowCycle bool) {
+// Returns true if the cursor position is successfully updated
+func (t *Terminal) vmove(o int, allowCycle bool) bool {
 	if t.layout != layoutDefault {
 		o *= -1
 	}
@@ -6978,7 +7145,7 @@ func (t *Terminal) vmove(o int, allowCycle bool) {
 			}
 		}
 	}
-	t.vset(dest)
+	return t.vset(dest)
 }
 
 func (t *Terminal) vset(o int) bool {
@@ -7045,9 +7212,9 @@ func (t *Terminal) dumpStatus(params getParams) string {
 		selected[i] = t.dumpItem(selectedItems[i+params.offset].item)
 	}
 
-	matches := make([]StatusItem, util.Max(0, util.Min(params.limit, t.merger.Length()-params.offset)))
+	matches := make([]StatusItem, util.Max(0, util.Min(params.limit, t.resultMerger.Length()-params.offset)))
 	for i := range matches {
-		matches[i] = t.dumpItem(t.merger.Get(i + params.offset).item)
+		matches[i] = t.dumpItem(t.resultMerger.Get(i + params.offset).item)
 	}
 
 	var current *StatusItem
@@ -7064,7 +7231,7 @@ func (t *Terminal) dumpStatus(params getParams) string {
 		Position:   t.cy,
 		Sort:       t.sort,
 		TotalCount: t.count,
-		MatchCount: t.merger.Length(),
+		MatchCount: t.resultMerger.Length(),
 		Current:    current,
 		Matches:    matches,
 		Selected:   selected,

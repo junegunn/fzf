@@ -3,30 +3,184 @@ CHANGELOG
 
 0.66.0
 ------
-- Style changes
-    - Updated `--color base16` (alias: `16`) theme so that it works better with both dark and light themes.
-    - Narrowed the gutter column by using the left-half block character (`▌`).
-    - Removed background colors from markers.
-- Added `--gutter CHAR` option for customizing the gutter column. Some examples using [box-drawing characters](https://en.wikipedia.org/wiki/Box-drawing_characters):
-  ```sh
-  # Right-aligned gutter
-  fzf --gutter '▐'
 
-  # Even thinner gutter
-  fzf --gutter '▎'
+### Introducing "raw" mode
 
-  # Checker
-  fzf --gutter '▚'
+This version introduces a new "raw" mode (named so because it shows the list
+"unfiltered"). In raw mode, non-matching items stay in their original positions,
+but appear dimmed. This allows you see surrounding items of a match and better
+understand the context of it. You can enable raw mode by default with `--raw`,
+but it's often more useful when toggled dynamically with the `toggle-raw`
+action.
 
-  # Dotted
-  fzf --gutter '▖'
+```sh
+tree | fzf --reverse --bind alt-r:toggle-raw
+```
 
-  # Full-width
-  fzf --gutter '█'
+While non-matching items are displayed in a dimmed color, they are treated just
+like matching items, so you place the cursor on them and perform any action. If
+you prefer to navigate only through matching items, use the `down-match` and
+`up-match` actions, which are from now on bound to `CTRL-N` and `CTRL-P`
+respectively, and also to `ALT-DOWN` and `ALT-UP`.
 
-  # No gutter
-  fzf --gutter ' '
-  ```
+| Key        | Action       | With `--history` |
+| :--        | :--          | :--              |
+| `down`     | `down`       |                  |
+| `up`       | `up`         |                  |
+| `ctrl-j`   | `down`       |                  |
+| `ctrl-k`   | `up`         |                  |
+| `ctrl-n`   | `down-match` | `next-history`   |
+| `ctrl-p`   | `up-match`   | `prev-history`   |
+| `alt-down` | `down-match` |                  |
+| `alt-up`   | `up-match`   |                  |
+
+> [!NOTE]
+> `CTRL-N` and `CTRL-P` are bound to `next-history` and `prev-history` when
+> `--history` option is enabled, so in that case, you'll need to manually bind
+> them, or use `ALT-DOWN` and `ALT-UP` instead.
+
+> [!TIP]
+> `up-match` and `down-match` are equivalent to `up` and `down` when not in
+> raw mode, so you can safely bind them to `up` and `arrow` keys if you prefer.
+> ```sh
+> fzf --bind up:up-match,down:down-match
+> ```
+
+#### Customizing the look
+
+##### Gutter
+
+To make the mode visually distinct, the gutter column is rendered in a dashed
+line using `▖` character. But you can customize it with the `--gutter-raw CHAR`
+option.
+
+```sh
+# Use a thinner gutter instead of the default dashed line
+fzf --bind alt-r:toggle-raw --gutter-raw ▎
+```
+
+##### Color and style of non-matching items
+
+Non-matching items are displayed in a dimmed color by default, but you can
+change it with the `--color nomatch:...` option.
+
+```sh
+fzf --raw --color nomatch:red
+fzf --raw --color nomatch:red:dim
+fzf --raw --color nomatch:red:dim:strikethrough
+fzf --raw --color nomatch:red:dim:strikethrough:italic
+```
+
+For colored input, dimming alone may not be enough, and you may prefer to remove
+colors entirely. For that case, a new special style attribute `strip` has been
+added.
+
+```sh
+fd --color always | fzf --ansi --raw --color nomatch:dim:strip:strikethrough
+```
+
+#### Conditional actions for raw mode
+
+You may want to perform different actions depending on whether the current item
+is a match or not. For that, fzf now exports `$FZF_RAW` environment variable.
+
+It's:
+
+- Undefined if raw mode is disabled
+- `1` if the current item is a match
+- `0` otherwise
+
+```sh
+# Do not allow selecting non-matching items
+fzf --raw --bind 'enter:transform:[[ ${FZF_RAW-1} = 1 ]] && echo accept || echo bell'
+```
+
+#### Leveraging raw mode in shell integration
+
+The `CTRL-R` binding (command history) now lets you toggle raw mode with `ALT-R`.
+
+### Style changes
+
+This version includes a few minor updates to fzf's classic visual style:
+
+- The gutter column is now narrower, rendered with the left-half block character (`▌`).
+- Markers no longer use background colors.
+- The `--color base16` theme (alias: `16`) has been updated for better compatibility with both dark and light themes.
+
+### Added options
+
+#### `--gutter CHAR`
+
+The gutter column can now be customized using `--gutter CHAR` and styled with
+`--color gutter:...`. Examples:
+
+```sh
+# Right-aligned gutter
+fzf --gutter '▐'
+
+# Even thinner gutter
+fzf --gutter '▎'
+
+# Yellow checker pattern
+fzf --gutter '▚' --color gutter:yellow
+
+# Classic style
+fzf --gutter ' ' --color gutter:reverse
+```
+
+#### `--gutter-raw CHAR`
+
+As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
+
+### Added environment variable
+
+`$FZF_DIRECTION` is now exported to child processes, indicating the list direction of the current layout.
+
+- `up` for the default layout
+- `down` for `reverse` or `reverse-list`
+
+This simplifies writing transform actions involving layout-dependent actions
+like `{up,down}-match`, `{up,down}-selected`, and `toggle+{up,down}`.
+
+```sh
+fzf --raw --bind 'result:first+transform:[[ $FZF_RAW = 0 ]] && echo $FZF_DIRECTION-match'
+```
+
+### Breaking changes
+
+#### Hiding the gutter column
+
+In the previous versions, the recommended way to hide the gutter column was to
+set `--color gutter:-1`. That's because the gutter column was just a space
+character, reversed. But now that it's using a visible character (`▌`), applying
+the default color is no longer enough to hide it. Instead, you can set it to
+a space character.
+
+```sh
+# Hide the gutter column
+fzf --gutter ' '
+
+# Classic style
+fzf --gutter ' ' --color gutter:reverse
+```
+
+#### `--color` option
+
+In the previous versions, some elements had default style attributes applied and
+you would have to explicitly unset them with `regular` attribute if you wanted
+to reset them. This is no longer needed now, as the default style attributes
+are applied only when you do not specify any color or style for that element.
+
+```sh
+# No 'dim', just red and italic.
+fzf --ghost 'Type to search' --color ghost:red:italic
+```
+
+#### Compatibility changes
+
+Starting with this release, fzf is built with Go 1.23. Support for some old OS versions has been dropped.
+
+See https://go.dev/wiki/MinimumRequirements.
 
 0.65.2
 ------

@@ -159,7 +159,7 @@ function fzf_key_bindings
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
       '--nth=2..,.. --scheme=history --multi --wrap-sign="\t↳ "' \
       '--bind=\'shift-delete:execute-silent(eval history delete --exact --case-sensitive -- (string escape -n -- {+} | string replace -r -a "^\d*\\\\\\t|(?<=\\\\\\n)\\\\\\t" ""))+reload(eval $FZF_DEFAULT_COMMAND)\'' \
-      "--bind=ctrl-r:toggle-sort --highlight-line $FZF_CTRL_R_OPTS" \
+      "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
       '--accept-nth=2.. --read0 --print0 --with-shell='(status fish-path)\\ -c)
 
     set -lx FZF_DEFAULT_OPTS_FILE

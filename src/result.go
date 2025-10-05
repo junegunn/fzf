@@ -123,7 +123,7 @@ func minRank() Result {
 	return Result{item: &minItem, points: [4]uint16{math.MaxUint16, 0, 0, 0}}
 }
 
-func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, theme *tui.ColorTheme, colBase tui.ColorPair, colMatch tui.ColorPair, attrNth tui.Attr) []colorOffset {
+func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, theme *tui.ColorTheme, colBase tui.ColorPair, colMatch tui.ColorPair, attrNth tui.Attr, hidden bool) []colorOffset {
 	itemColors := result.item.Colors()
 
 	// No ANSI codes
@@ -194,6 +194,10 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 		if !theme.Colored {
 			return tui.NewColorPair(-1, -1, ansi.color.attr).MergeAttr(base)
 		}
+		// fd --color always | fzf --ansi --delimiter / --nth -1 --color fg:dim:strip,nth:regular
+		if base.ShouldStripColors() {
+			return base
+		}
 		fg := ansi.color.fg
 		bg := ansi.color.bg
 		if fg == -1 {
@@ -251,6 +255,9 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 				if curr.nth {
 					base = base.WithAttr(attrNth)
 				}
+				if hidden {
+					base = base.WithFg(theme.Nomatch)
+				}
 				color := ansiToColorPair(ansi, base)
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
@@ -258,9 +265,13 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 					match:  false,
 					url:    ansi.color.url})
 			} else {
+				color := colBase.WithAttr(attrNth)
+				if hidden {
+					color = color.WithFg(theme.Nomatch)
+				}
 				colors = append(colors, colorOffset{
 					offset: [2]int32{int32(start), int32(idx)},
-					color:  colBase.WithAttr(attrNth),
+					color:  color,
 					match:  false,
 					url:    nil})
 			}

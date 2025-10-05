@@ -300,8 +300,12 @@ func TestBind(t *testing.T) {
 }
 
 func TestColorSpec(t *testing.T) {
+	var base *tui.ColorTheme
 	theme := tui.Dark256
-	dark, _ := parseTheme(theme, "dark")
+	base, dark, _ := parseTheme(theme, "dark")
+	if *dark != *base {
+		t.Errorf("incorrect base theme returned")
+	}
 	if *dark != *theme {
 		t.Errorf("colors should be equivalent")
 	}
@@ -309,7 +313,10 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("point should not be equivalent")
 	}
 
-	light, _ := parseTheme(theme, "dark,light")
+	base, light, _ := parseTheme(theme, "dark,light")
+	if *light != *base {
+		t.Errorf("incorrect base theme returned")
+	}
 	if *light == *theme {
 		t.Errorf("should not be equivalent")
 	}
@@ -320,7 +327,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("point should not be equivalent")
 	}
 
-	customized, _ := parseTheme(theme, "fg:231,bg:232")
+	_, customized, _ := parseTheme(theme, "fg:231,bg:232")
 	if customized.Fg.Color != 231 || customized.Bg.Color != 232 {
 		t.Errorf("color not customized")
 	}
@@ -333,7 +340,7 @@ func TestColorSpec(t *testing.T) {
 		t.Errorf("colors should now be equivalent: %v, %v", tui.Dark256, customized)
 	}
 
-	customized, _ = parseTheme(theme, "fg:231,dark   bg:232")
+	_, customized, _ = parseTheme(theme, "fg:231,dark   bg:232")
 	if customized.Fg != tui.Dark256.Fg || customized.Bg == tui.Dark256.Bg {
 		t.Errorf("color not customized")
 	}
@@ -350,8 +357,8 @@ func TestDefaultCtrlNP(t *testing.T) {
 			t.Error()
 		}
 	}
-	check([]string{}, tui.CtrlN, actDown)
-	check([]string{}, tui.CtrlP, actUp)
+	check([]string{}, tui.CtrlN, actDownMatch)
+	check([]string{}, tui.CtrlP, actUpMatch)
 
 	check([]string{"--bind=ctrl-n:accept"}, tui.CtrlN, actAccept)
 	check([]string{"--bind=ctrl-p:accept"}, tui.CtrlP, actAccept)

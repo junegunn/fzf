@@ -267,11 +267,11 @@ func Run(opts *Options) (int, error) {
 
 			// NOTE: Streaming filter is inherently not compatible with --tail
 			snapshot, _, _ := chunkList.Snapshot(opts.Tail)
-			merger, _ := matcher.scan(MatchRequest{
+			result := matcher.scan(MatchRequest{
 				chunks:  snapshot,
 				pattern: pattern})
-			for i := 0; i < merger.Length(); i++ {
-				opts.Printer(merger.Get(i).item.AsString(opts.Ansi))
+			for i := 0; i < result.merger.Length(); i++ {
+				opts.Printer(result.merger.Get(i).item.AsString(opts.Ansi))
 				found = true
 			}
 		}
@@ -479,12 +479,13 @@ func Run(opts *Options) (int, error) {
 
 				case EvtSearchFin:
 					switch val := value.(type) {
-					case *Merger:
+					case MatchResult:
+						merger := val.merger
 						if deferred {
-							count := val.Length()
+							count := merger.Length()
 							if opts.Select1 && count > 1 || opts.Exit0 && !opts.Select1 && count > 0 {
-								determine(val.final)
-							} else if val.final {
+								determine(merger.final)
+							} else if merger.final {
 								if opts.Exit0 && count == 0 || opts.Select1 && count == 1 {
 									if opts.PrintQuery {
 										opts.Printer(opts.Query)
@@ -502,7 +503,7 @@ func Run(opts *Options) (int, error) {
 										}
 									}
 									for i := 0; i < count; i++ {
-										opts.Printer(transformer(val.Get(i).item))
+										opts.Printer(transformer(merger.Get(i).item))
 									}
 									if count == 0 {
 										exitCode = ExitNoMatch
@@ -510,7 +511,7 @@ func Run(opts *Options) (int, error) {
 									stop = true
 									return
 								}
-								determine(val.final)
+								determine(merger.final)
 							}
 						}
 						terminal.UpdateList(val)
