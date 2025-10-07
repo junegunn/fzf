@@ -300,7 +300,6 @@ type Terminal struct {
 	subWordNext        string
 	cx                 int
 	cy                 int
-	lastMatchingIndex  int32
 	offset             int
 	xoffset            int
 	yanked             []rune
@@ -996,7 +995,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		subWordNext:        subWordNext,
 		cx:                 len(input),
 		cy:                 0,
-		lastMatchingIndex:  minItem.Index(),
 		offset:             0,
 		xoffset:            0,
 		yanked:             []rune{},
@@ -3218,9 +3216,6 @@ func (t *Terminal) printList() {
 		if itemCount < count {
 			item := t.merger.Get(itemCount + t.offset)
 			current := itemCount == t.cy-t.offset
-			if current && (!t.raw || t.isItemMatch(item.item)) {
-				t.lastMatchingIndex = item.Index()
-			}
 			line = t.printItem(item, line, maxy, itemCount, current, barRange)
 		} else if !t.prevLines[line].empty {
 			t.renderEmptyLine(line, barRange)
@@ -6115,26 +6110,50 @@ func (t *Terminal) Loop() error {
 				req(reqList)
 			case actToggleRaw, actEnableRaw, actDisableRaw:
 				prevRaw := t.raw
+				newRaw := t.raw
 				switch a.t {
 				case actEnableRaw:
-					t.raw = true
+					newRaw = true
 				case actDisableRaw:
-					t.raw = false
+					newRaw = false
 				case actToggleRaw:
-					t.raw = !t.raw
+					newRaw = !t.raw
 				}
-				if prevRaw == t.raw {
+				if prevRaw == newRaw {
 					break
 				}
 				prevPos := t.cy - t.offset
 				prevIndex := t.currentIndex()
-				if t.raw {
+				if newRaw {
 					// Build matchMap if not available
 					if len(t.matchMap) == 0 {
 						t.matchMap = t.resultMerger.ToMap()
 					}
 					t.merger = t.passMerger
 				} else {
+					// Find the closest matching item
+					if !t.isCurrentItemMatch() && t.resultMerger.Length() > 1 {
+						distance := 0
+					Loop:
+						for {
+							distance++
+							checks := 0
+							for _, cy := range []int{t.cy + distance, t.cy - distance} {
+								if cy >= 0 && cy < t.merger.Length() {
+									checks++
+									item := t.merger.Get(cy).item
+									if t.isItemMatch(item) {
+										prevIndex = item.Index()
+										break Loop
+									}
+								}
+							}
+							if checks == 0 {
+								break
+							}
+						}
+					}
+
 					t.merger = t.resultMerger
 
 					// Need to remove non-matching items from the selection
@@ -6143,15 +6162,11 @@ func (t *Terminal) Loop() error {
 						req(reqInfo)
 					}
 				}
+				t.raw = newRaw
 
 				// Try to retain position
 				if prevIndex != minItem.Index() {
-					i := t.merger.FindIndex(prevIndex)
-					if i >= 0 {
-						t.cy = i
-					} else {
-						t.cy = t.merger.FindIndex(t.lastMatchingIndex)
-					}
+					t.cy = util.Max(0, t.merger.FindIndex(prevIndex))
 					t.offset = t.cy - prevPos
 				}
 

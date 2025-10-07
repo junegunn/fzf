@@ -79,5 +79,27 @@ class TestRaw < TestInteractive
 
     tmux.send_keys :Space
     tmux.until { assert_includes it, '[[]] 11' }
+
+    tmux.send_keys 'C-u', '5'
+    tmux.until { assert_includes it, '> 5' }
+
+    tmux.send_keys 'C-x', 'C-p', 'C-p'
+    tmux.until do
+      assert_includes it, '> 25'
+      assert_includes it, '▖ 24'
+    end
+
+    tmux.send_keys 'C-x'
+    tmux.until do
+      assert_includes it, '> 25'
+      assert_includes it, '▌ 15'
+    end
+
+    # 35 is the closest match in raw mode
+    tmux.send_keys 'C-x', :Up, :Up, :Up, :Up, :Up, :Up, 'C-x'
+    tmux.until do
+      assert_includes it, '> 35'
+      assert_includes it, '▌ 25'
+    end
   end
 end
