@@ -206,10 +206,10 @@ Usage: fzf [options]
 
   ADVANCED
     --with-shell=STR         Shell command and flags to start child processes with
-    --listen[=SOCKET_PATH]   Start HTTP server to receive actions via Unix domain socket
-                             (Path should end with .sock)
     --listen[=[ADDR:]PORT]   Start HTTP server to receive actions via TCP
                              (To allow remote process execution, use --listen-unsafe)
+    --listen=SOCKET_PATH     Start HTTP server to receive actions via Unix domain socket
+                             (Path should end with .sock)
 
   DIRECTORY TRAVERSAL        (Only used when $FZF_DEFAULT_COMMAND is not set)
     --walker=OPTS            [file][,dir][,follow][,hidden] (default: file,follow,hidden)
