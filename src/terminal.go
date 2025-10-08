@@ -6339,7 +6339,7 @@ func (t *Terminal) Loop() error {
 				if a.t == actOffsetDown {
 					diff = -1
 				}
-				if t.layout == layoutReverse {
+				if t.layout != layoutDefault {
 					diff *= -1
 				}
 				t.offset += diff
@@ -6347,7 +6347,7 @@ func (t *Terminal) Loop() error {
 				t.constrain()
 				if before != t.offset {
 					t.offset = before
-					if t.layout == layoutReverse {
+					if t.layout != layoutDefault {
 						diff *= -1
 					}
 					t.vmove(diff, false)
