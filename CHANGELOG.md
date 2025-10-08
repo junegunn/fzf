@@ -174,6 +174,11 @@ like `{up,down}-match`, `{up,down}-selected`, and `toggle+{up,down}`.
 fzf --raw --bind 'result:first+transform:[[ $FZF_RAW = 0 ]] && echo $FZF_DIRECTION-match'
 ```
 
+### Added key support for `--bind`
+
+Pull request #3996 added support for many additional keys for `--bind` option,
+such as `ctrl-backspace`.
+
 ### Breaking changes
 
 #### Hiding the gutter column
