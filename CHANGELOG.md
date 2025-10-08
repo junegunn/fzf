@@ -124,6 +124,24 @@ This version includes a few minor updates to fzf's classic visual style:
 - Markers no longer use background colors.
 - The `--color base16` theme (alias: `16`) has been updated for better compatibility with both dark and light themes.
 
+### `--listen` now supports Unix domain sockets
+
+If an argument to `--listen` ends with `.sock`, fzf will listen on a Unix
+domain socket at the specified path.
+
+```sh
+fzf --listen /tmp/fzf.sock --no-tmux
+
+# GET
+curl --unix-socket /tmp/fzf.sock http
+
+# POST
+curl --unix-socket /tmp/fzf.sock http -d up
+```
+
+Note that any existing file at the given path will be removed before creating
+the socket, so avoid using an important file path.
+
 ### Added options
 
 #### `--gutter CHAR`

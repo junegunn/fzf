@@ -1268,7 +1268,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			return nil, err
 		}
 		t.listener = listener
-		t.listenPort = &port
+		if port > 0 {
+			t.listenPort = &port
+		}
 	}
 
 	if t.hasStartActions {
@@ -1292,6 +1294,9 @@ func (t *Terminal) environForPreview() []string {
 
 func (t *Terminal) environImpl(forPreview bool) []string {
 	env := os.Environ()
+	if t.listenAddr != nil && len(t.listenAddr.sock) > 0 {
+		env = append(env, "FZF_SOCK="+t.listenAddr.sock)
+	}
 	if t.listenPort != nil {
 		env = append(env, fmt.Sprintf("FZF_PORT=%d", *t.listenPort))
 	}

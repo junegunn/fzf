@@ -1133,19 +1133,25 @@ On Windows, the default value is \fBcmd /s/c\fR when \fB$SHELL\fR is not
 set.
 
 .TP
-.B "\-\-listen[=[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
-Start HTTP server and listen on the given address. It allows external processes
-to send actions to perform via POST method.
+.B "\-\-listen[=SOCKET_PATH|[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
+Start HTTP server and listen on the given address or Unix socket. It allows
+external processes to send actions to perform via POST method and query the
+program state via GET method. For the argument to be recognized as a socket
+path, it must have \fB.sock\fR extension.
 
 - If the port number is omitted or given as 0, fzf will automatically choose
-a port and export it as \fBFZF_PORT\fR environment variable to the child processes
+a port and export it as \fBFZF_PORT\fR environment variable to the child processes.
+
+- If a Unix socket path is given, fzf will create a Unix domain socket at the
+  given path. The existing file will be removed. The path to the socket file
+  is exported as \fBFZF_SOCK\fR environment variable.
 
 - If \fBFZF_API_KEY\fR environment variable is set, the server would require
-sending an API key with the same value in the \fBx\-api\-key\fR HTTP header
+  sending an API key with the same value in the \fBx\-api\-key\fR HTTP header.
 
-- \fBFZF_API_KEY\fR is required for a non-localhost listen address
+- \fBFZF_API_KEY\fR is required for a non-localhost listen address.
 
-- To allow remote process execution, use \fB\-\-listen\-unsafe\fR
+- To allow remote process execution, use \fB\-\-listen\-unsafe\fR.
 
 e.g.
      \fB# Start HTTP server on port 6266
@@ -1183,6 +1189,18 @@ e.g.
        echo +first
      '
      \fR
+
+Here is an example script that uses a Unix socket instead of a TCP port.
+
+    \fB
+    fzf --listen=/tmp/fzf.sock
+
+    # GET
+    curl --unix-socket /tmp/fzf.sock http
+
+    # POST
+    curl --unix-socket /tmp/fzf.sock http -d up
+    \fR
 
 .SS DIRECTORY TRAVERSAL
 .TP
@@ -1372,6 +1390,8 @@ fzf exports the following environment variables to its child processes.
 .BR FZF_KEY "             The name of the last key pressed"
 .br
 .BR FZF_PORT "            Port number when \-\-listen option is used"
+.br
+.BR FZF_SOCK "            Unix socket path when \-\-listen option is used"
 .br
 .BR FZF_PREVIEW_TOP "     Top position of the preview window"
 .br
