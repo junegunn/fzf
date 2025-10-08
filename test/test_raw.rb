@@ -102,4 +102,12 @@ class TestRaw < TestInteractive
       assert_includes it, '▌ 25'
     end
   end
+
+  def test_raw_best
+    tmux.send_keys %(seq 1000 | #{FZF} --raw --bind space:best), :Enter
+    tmux.send_keys 999
+    tmux.until { assert_includes it, '> 1' }
+    tmux.send_keys :Space
+    tmux.until { assert_includes it, '> 999' }
+  end
 end

@@ -1792,6 +1792,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actFirst)
 		case "last":
 			appendAction(actLast)
+		case "best":
+			appendAction(actBest)
 		case "page-up":
 			appendAction(actPageUp)
 		case "page-down":

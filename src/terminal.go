@@ -663,6 +663,7 @@ const (
 	actExecuteSilent
 	actExecuteMulti // Deprecated
 	actSigStop
+	actBest
 	actFirst
 	actLast
 	actReload
@@ -6203,8 +6204,14 @@ func (t *Terminal) Loop() error {
 					t.version++
 					req(reqList, reqInfo)
 				}
-			case actFirst:
-				t.vset(0)
+			case actFirst, actBest:
+				if t.raw && a.t == actBest {
+					if t.resultMerger.Length() > 0 {
+						t.vset(t.merger.FindIndex(t.resultMerger.Get(0).item.Index()))
+					}
+				} else {
+					t.vset(0)
+				}
 				t.constrain()
 				req(reqList)
 			case actLast:

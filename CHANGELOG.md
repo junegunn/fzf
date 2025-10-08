@@ -46,6 +46,23 @@ respectively, and also to `ALT-DOWN` and `ALT-UP`.
 > fzf --bind up:up-match,down:down-match
 > ```
 
+#### Customizing the behavior
+
+In raw mode, the input list is presented in its original order, unfiltered, and
+your cursor will not move to the matching item automatically. Here are ways to
+customize the behavior.
+
+```sh
+# When the result list is updated, move the cursor to the item with the best score
+# (assuming sorting is not disabled)
+fzf --raw --bind result:best
+
+# Move to the first matching item in the original list
+# - $FZF_RAW is set to 0 when raw mode is enabled and the current item is a non-match
+# - $FZF_DIRECTION is set to either 'up' or 'down' depending on the layout direction
+fzf --raw --bind 'result:first+transform:[[ $FZF_RAW = 0 ]] && echo $FZF_DIRECTION-match'
+```
+
 #### Customizing the look
 
 ##### Gutter
@@ -131,6 +148,17 @@ fzf --gutter ' ' --color gutter:reverse
 #### `--gutter-raw CHAR`
 
 As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
+
+### Added actions
+
+| Action        | Description                                                                                       |
+| ---           | ---                                                                                               |
+| `up-match`    | Move up to the matching item; identical to `up` if raw mode is disabled                           |
+| `down-match`  | Move down to the matching item; identical to `down` if raw mode is disabled                       |
+| `toggle-raw`  | Toggle raw mode                                                                                   |
+| `enable-raw`  | Enable raw mode                                                                                   |
+| `disable-raw` | Disable raw mode                                                                                  |
+| `best`        | Move to the first matching item with the best score; identical to `first` if raw mode is disabled |
 
 ### Added environment variable
 
