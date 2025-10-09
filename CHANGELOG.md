@@ -4,6 +4,30 @@ CHANGELOG
 0.66.0
 ------
 
+### Quick summary
+
+This version introduces many new features centered around the new "raw" mode.
+
+| Type        | Class   | Name                | Description                                        |
+| :--         | :--     | :--                 | :--                                                |
+| New         | Option  | `--raw`             | Enable raw mode by default                         |
+| New         | Option  | `--gutter CHAR`     | Set the gutter column character                    |
+| New         | Option  | `--gutter-raw CHAR` | Set the gutter column character in raw mode        |
+| Enhancement | Option  | `--listen SOCKET`   | Added support for Unix domain sockets              |
+| New         | Action  | `toggle-raw`        | Toggle raw mode                                    |
+| New         | Action  | `enable-raw`        | Enable raw mode                                    |
+| New         | Action  | `disable-raw`       | Disable raw mode                                   |
+| New         | Action  | `up-match`          | Move up to the matching item                       |
+| New         | Action  | `down-match`        | Move down to the matching item                     |
+| New         | Action  | `best`              | Move to the  matching item with the best score     |
+| New         | Color   | `nomatch`           | Color for non-matching items in raw mode           |
+| New         | Env Var | `FZF_RAW`           | Matching status in raw mode (0, 1, or undefined)   |
+| New         | Env Var | `FZF_DIRECTION`     | `up` or `down` depending on the layout             |
+| New         | Env Var | `FZF_SOCK`          | Path to the Unix domain socket fzf is listening on |
+| Enhancement | Key     | `CTRL-N`            | `down` -> `down-match`                             |
+| Enhancement | Key     | `CTRL-P`            | `up` -> `up-match`                                 |
+| Enhancement | Shell   | `CTRL-R` binding    | Toggle raw mode with `ALT-R`                       |
+
 ### Introducing "raw" mode
 
 This version introduces a new "raw" mode (named so because it shows the list
@@ -169,18 +193,22 @@ As noted above, the `--gutter-raw CHAR` option was also added for customizing th
 
 ### Added actions
 
-| Action        | Description                                                                                       |
-| ---           | ---                                                                                               |
-| `up-match`    | Move up to the matching item; identical to `up` if raw mode is disabled                           |
-| `down-match`  | Move down to the matching item; identical to `down` if raw mode is disabled                       |
-| `toggle-raw`  | Toggle raw mode                                                                                   |
-| `enable-raw`  | Enable raw mode                                                                                   |
-| `disable-raw` | Disable raw mode                                                                                  |
-| `best`        | Move to the first matching item with the best score; identical to `first` if raw mode is disabled |
+The following actions were introduced to support working with raw mode:
 
-### Added environment variable
+| Action        | Description                                                                                 |
+| :--           | :--                                                                                         |
+| `toggle-raw`  | Toggle raw mode                                                                             |
+| `enable-raw`  | Enable raw mode                                                                             |
+| `disable-raw` | Disable raw mode                                                                            |
+| `up-match`    | Move up to the matching item; identical to `up` if raw mode is disabled                     |
+| `down-match`  | Move down to the matching item; identical to `down` if raw mode is disabled                 |
+| `best`        | Move to the matching item with the best score; identical to `first` if raw mode is disabled |
 
-`$FZF_DIRECTION` is now exported to child processes, indicating the list direction of the current layout.
+### Added environment variables
+
+#### `$FZF_DIRECTION`
+
+`$FZF_DIRECTION` is now exported to child processes, indicating the list direction of the current layout:
 
 - `up` for the default layout
 - `down` for `reverse` or `reverse-list`
@@ -191,6 +219,17 @@ like `{up,down}-match`, `{up,down}-selected`, and `toggle+{up,down}`.
 ```sh
 fzf --raw --bind 'result:first+transform:[[ $FZF_RAW = 0 ]] && echo $FZF_DIRECTION-match'
 ```
+
+#### `$FZF_SOCK`
+
+When fzf is listening on a Unix domain socket using `--listen`, the path to the
+socket is exported as `$FZF_SOCK`, analogous to `$FZF_PORT` for TCP sockets.
+
+#### `$FZF_RAW`
+
+As described above, `$FZF_RAW` is now exported to child processes in raw mode,
+indicating whether the current item is a match (`1`) or not (`0`). It is not
+defined when not in raw mode.
 
 ### Added key support for `--bind`
 
