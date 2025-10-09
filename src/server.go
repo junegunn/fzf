@@ -89,11 +89,19 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, getHan
 	var listener net.Listener
 	var err error
 	if len(address.sock) > 0 {
-		os.Remove(address.sock)
+		if _, err := os.Stat(address.sock); err == nil {
+			// Check if the socket is already in use
+			if conn, err := net.Dial("unix", address.sock); err == nil {
+				conn.Close()
+				return nil, 0, fmt.Errorf("socket already in use: %s", address.sock)
+			}
+			os.Remove(address.sock)
+		}
 		listener, err = net.Listen("unix", address.sock)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to listen on %s", address.sock)
 		}
+		os.Chmod(address.sock, 0600)
 	} else {
 		addrStr := fmt.Sprintf("%s:%d", host, port)
 		listener, err = net.Listen("tcp", addrStr)
