@@ -299,6 +299,7 @@ color mappings. Each entry is separated by a comma and/or whitespaces.
     \fBheader (header\-fg)   \fRHeader
     \fBfooter (footer\-fg)   \fRFooter
     \fBnth                   \fRParts of the line specified by \fB\-\-nth\fR (only supports attributes)
+    \fBnomatch               \fRNon-matching items in raw mode (default: \fBdim\fR)
 
 .B ANSI COLORS:
     \fB\-1         \fRDefault terminal foreground/background color
@@ -324,7 +325,8 @@ color mappings. Each entry is separated by a comma and/or whitespaces.
     \fB#rrggbb    \fR24-bit colors
 
 .B ANSI ATTRIBUTES: (Only applies to foreground colors)
-    \fBregular    \fRClears previously set attributes; should precede the other ones
+    \fBregular        \fRClear previously set attributes; should precede the other ones
+    \fBstrip          \fRRemove colors
     \fBbold\fR
     \fBunderline\fR
     \fBreverse\fR
@@ -595,6 +597,9 @@ Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
 .TP
 .B "\-\-no\-multi\-line"
 Disable multi-line display of items when using \fB\-\-read0\fR
+.TP
+.B "\-\-raw"
+Enable raw mode where non-matching items are also displayed in a dimmed color.
 .TP
 .B "\-\-track"
 Make fzf track the current selection when the result list is updated.
@@ -1128,19 +1133,25 @@ On Windows, the default value is \fBcmd /s/c\fR when \fB$SHELL\fR is not
 set.
 
 .TP
-.B "\-\-listen[=[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
-Start HTTP server and listen on the given address. It allows external processes
-to send actions to perform via POST method.
+.B "\-\-listen[=SOCKET_PATH|[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
+Start HTTP server and listen on the given address or Unix socket. It allows
+external processes to send actions to perform via POST method and query the
+program state via GET method. For the argument to be recognized as a socket
+path, it must have \fB.sock\fR extension.
 
 - If the port number is omitted or given as 0, fzf will automatically choose
-a port and export it as \fBFZF_PORT\fR environment variable to the child processes
+a port and export it as \fBFZF_PORT\fR environment variable to the child processes.
+
+- If a Unix socket path is given, fzf will create a Unix domain socket at the
+  given path. The existing file will be removed. The path to the socket file
+  is exported as \fBFZF_SOCK\fR environment variable.
 
 - If \fBFZF_API_KEY\fR environment variable is set, the server would require
-sending an API key with the same value in the \fBx\-api\-key\fR HTTP header
+  sending an API key with the same value in the \fBx\-api\-key\fR HTTP header.
 
-- \fBFZF_API_KEY\fR is required for a non-localhost listen address
+- \fBFZF_API_KEY\fR is required for a non-localhost listen address.
 
-- To allow remote process execution, use \fB\-\-listen\-unsafe\fR
+- To allow remote process execution, use \fB\-\-listen\-unsafe\fR.
 
 e.g.
      \fB# Start HTTP server on port 6266
@@ -1178,6 +1189,18 @@ e.g.
        echo +first
      '
      \fR
+
+Here is an example script that uses a Unix socket instead of a TCP port.
+
+    \fB
+    fzf --listen=/tmp/fzf.sock
+
+    # GET
+    curl --unix-socket /tmp/fzf.sock http
+
+    # POST
+    curl --unix-socket /tmp/fzf.sock http -d up
+    \fR
 
 .SS DIRECTORY TRAVERSAL
 .TP
@@ -1330,6 +1353,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_COLUMNS "         Number of columns fzf takes up excluding padding and margin"
 .br
+.BR FZF_DIRECTION "       Direction of the list (\fBup\fR or \fBdown\fR)"
+.br
 .BR FZF_TOTAL_COUNT "     Total number of items"
 .br
 .BR FZF_MATCH_COUNT "     Number of matched items"
@@ -1366,6 +1391,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_PORT "            Port number when \-\-listen option is used"
 .br
+.BR FZF_SOCK "            Unix socket path when \-\-listen option is used"
+.br
 .BR FZF_PREVIEW_TOP "     Top position of the preview window"
 .br
 .BR FZF_PREVIEW_LEFT "    Left position of the preview window"
@@ -1373,6 +1400,8 @@ fzf exports the following environment variables to its child processes.
 .BR FZF_PREVIEW_LINES "   Number of lines in the preview window"
 .br
 .BR FZF_PREVIEW_COLUMNS " Number of columns in the preview window"
+.br
+.BR FZF_RAW "             Only in raw mode. 1 if the current item matches, 0 otherwise"
 
 .SH EXTENDED SEARCH MODE
 
@@ -1817,6 +1846,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning\-of\-line\fR            \fIctrl\-a  home\fR
     \fBbell\fR                         (ring the terminal bell)
+    \fBbest\fR                         (move to the best match; same as \fBfirst\fR if raw mode is disabled)
     \fBbg\-cancel\fR                    (cancel background transform processes)
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
@@ -1841,9 +1871,13 @@ A key or an event can be bound to one or more of the following actions.
     \fBdelete\-char\fR                  \fIdel\fR
     \fBdelete\-char/eof\fR              \fIctrl\-d\fR (same as \fBdelete\-char\fR except aborts fzf if query is empty)
     \fBdeselect\fR
-    \fBdeselect\-all\fR                 (deselect all matches; to also clear non-matched selections, use \fBclear\-multi\fR)
+    \fBdeselect\-all\fR                 (deselect all matches; to also clear non-matching selections, use \fBclear\-multi\fR)
+    \fBdisable\-raw\fR                  (disable raw mode)
     \fBdisable\-search\fR               (disable search functionality)
-    \fBdown\fR                         \fIctrl\-j  ctrl\-n  down\fR
+    \fBdown\fR                         \fIctrl\-j  down\fR
+    \fBdown\-match\fR                   \fIctrl\-n\fR  \fIalt\-down\fR (move to the match below the cursor)
+    \fBdown\-selected\fR                (move to the selected item below the cursor)
+    \fBenable\-raw\fR                   (enable raw mode)
     \fBenable\-search\fR                (enable search functionality)
     \fBend\-of\-line\fR                  \fIctrl\-e  end\fR
     \fBexclude\fR                      (exclude the current item from the result)
@@ -1861,7 +1895,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBkill\-word\fR                    \fIalt\-d\fR
     \fBlast\fR                         (move to the last match; same as \fBpos(\-1)\fR)
     \fBnext\-history\fR                 (\fIctrl\-n\fR on \fB\-\-history\fR)
-    \fBnext\-selected\fR                (move to the next selected item)
+    \fBnext\-selected\fR                (synonym to \fBdown\-selected\fR)
     \fBpage\-down\fR                    \fIpgdn\fR
     \fBpage\-up\fR                      \fIpgup\fR
     \fBhalf\-page\-down\fR
@@ -1874,7 +1908,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBoffset\-middle\fR                (place the current item is in the middle of the screen)
     \fBpos(...)\fR                     (move cursor to the numeric position; negative number to count from the end)
     \fBprev\-history\fR                 (\fIctrl\-p\fR on \fB\-\-history\fR)
-    \fBprev\-selected\fR                (move to the previous selected item)
+    \fBprev\-selected\fR                (synonym to \fBup\-selected\fR)
     \fBpreview(...)\fR                 (see below for the details)
     \fBpreview\-down\fR                 \fIshift\-down\fR
     \fBpreview\-up\fR                   \fIshift\-up\fR
@@ -1909,6 +1943,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\-multi\-line\fR
     \fBtoggle\-preview\fR
     \fBtoggle\-preview\-wrap\fR
+    \fBtoggle\-raw\fR                   (toggle raw mode for displaying non-matching items)
     \fBtoggle\-search\fR                (toggle search functionality)
     \fBtoggle\-sort\fR
     \fBtoggle\-track\fR                 (toggle global tracking option (\fB\-\-track\fR))
@@ -1935,7 +1970,9 @@ A key or an event can be bound to one or more of the following actions.
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
     \fBuntrack\-current\fR              (stop tracking the current item; no-op if global tracking is enabled)
-    \fBup\fR                           \fIctrl\-k  ctrl\-p  up\fR
+    \fBup\fR                           \fIctrl\-k  up\fR
+    \fBup\-match\fR                     \fIctrl\-p\fR  \fIalt\-up\fR (move to the match above the cursor)
+    \fBup\-selected\fR                  (move to the selected item above the cursor)
     \fByank\fR                         \fIctrl\-y\fR
 
 Each \fBtransform*\fR action has a corresponding \fBbg\-transform*\fR

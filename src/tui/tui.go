@@ -8,6 +8,26 @@ import (
 	"github.com/rivo/uniseg"
 )
 
+type Attr int32
+
+const (
+	AttrUndefined = Attr(0)
+	AttrRegular   = Attr(1 << 8)
+	AttrClear     = Attr(1 << 9)
+	BoldForce     = Attr(1 << 10)
+	FullBg        = Attr(1 << 11)
+	Strip         = Attr(1 << 12)
+)
+
+func (a Attr) Merge(b Attr) Attr {
+	if b&AttrRegular > 0 {
+		// Only keep bold attribute set by the system
+		return (b &^ AttrRegular) | (a & BoldForce)
+	}
+
+	return (a &^ AttrRegular) | b
+}
+
 // Types of user action
 //
 //go:generate stringer -type=EventType
@@ -275,6 +295,13 @@ func (a ColorAttr) IsColorDefined() bool {
 	return a.Color != colUndefined
 }
 
+func (a ColorAttr) IsAttrDefined() bool {
+	return a.Attr != AttrUndefined
+}
+func (a ColorAttr) IsUndefined() bool {
+	return !a.IsColorDefined() && !a.IsAttrDefined()
+}
+
 func NewColorAttr() ColorAttr {
 	return ColorAttr{Color: colUndefined, Attr: AttrUndefined}
 }
@@ -358,6 +385,10 @@ func (p ColorPair) IsFullBgMarker() bool {
 	return p.attr&FullBg > 0
 }
 
+func (p ColorPair) ShouldStripColors() bool {
+	return p.attr&Strip > 0
+}
+
 func (p ColorPair) HasBg() bool {
 	return p.attr&Reverse == 0 && p.bg != colDefault ||
 		p.attr&Reverse > 0 && p.fg != colDefault
@@ -379,6 +410,12 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 	dup := p
 	dup.attr = dup.attr.Merge(attr)
 	return dup
+}
+
+func (p ColorPair) WithFg(fg ColorAttr) ColorPair {
+	dup := p
+	fgPair := ColorPair{fg.Color, colUndefined, fg.Attr}
+	return dup.Merge(fgPair)
 }
 
 func (p ColorPair) WithBg(bg ColorAttr) ColorPair {
@@ -410,6 +447,7 @@ type ColorTheme struct {
 	ListBg           ColorAttr
 	AltBg            ColorAttr
 	Nth              ColorAttr
+	Nomatch          ColorAttr
 	SelectedFg       ColorAttr
 	SelectedBg       ColorAttr
 	SelectedMatch    ColorAttr
@@ -772,9 +810,11 @@ func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Rende
 }
 
 var (
-	Default16 *ColorTheme
-	Dark256   *ColorTheme
-	Light256  *ColorTheme
+	NoColorTheme *ColorTheme
+	EmptyTheme   *ColorTheme
+	Default16    *ColorTheme
+	Dark256      *ColorTheme
+	Light256     *ColorTheme
 
 	ColPrompt               ColorPair
 	ColNormal               ColorPair
@@ -818,119 +858,120 @@ var (
 	ColInputLabel           ColorPair
 )
 
-func EmptyTheme() *ColorTheme {
-	return &ColorTheme{
-		Colored:          true,
-		Input:            ColorAttr{colUndefined, AttrUndefined},
-		Fg:               ColorAttr{colUndefined, AttrUndefined},
-		Bg:               ColorAttr{colUndefined, AttrUndefined},
-		ListFg:           ColorAttr{colUndefined, AttrUndefined},
-		ListBg:           ColorAttr{colUndefined, AttrUndefined},
-		AltBg:            ColorAttr{colUndefined, AttrUndefined},
-		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
-		DarkBg:           ColorAttr{colUndefined, AttrUndefined},
-		Prompt:           ColorAttr{colUndefined, AttrUndefined},
-		Match:            ColorAttr{colUndefined, AttrUndefined},
-		Current:          ColorAttr{colUndefined, AttrUndefined},
-		CurrentMatch:     ColorAttr{colUndefined, AttrUndefined},
-		Spinner:          ColorAttr{colUndefined, AttrUndefined},
-		Info:             ColorAttr{colUndefined, AttrUndefined},
-		Cursor:           ColorAttr{colUndefined, AttrUndefined},
-		Marker:           ColorAttr{colUndefined, AttrUndefined},
-		Header:           ColorAttr{colUndefined, AttrUndefined},
-		Footer:           ColorAttr{colUndefined, AttrUndefined},
-		Border:           ColorAttr{colUndefined, AttrUndefined},
-		BorderLabel:      ColorAttr{colUndefined, AttrUndefined},
-		ListLabel:        ColorAttr{colUndefined, AttrUndefined},
-		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
-		Ghost:            ColorAttr{colUndefined, Dim},
-		Disabled:         ColorAttr{colUndefined, AttrUndefined},
-		PreviewFg:        ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:        ColorAttr{colUndefined, AttrUndefined},
-		Gutter:           ColorAttr{colUndefined, AttrUndefined},
-		PreviewBorder:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewScrollbar: ColorAttr{colUndefined, AttrUndefined},
-		PreviewLabel:     ColorAttr{colUndefined, AttrUndefined},
-		Separator:        ColorAttr{colUndefined, AttrUndefined},
-		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
-		InputBg:          ColorAttr{colUndefined, AttrUndefined},
-		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
-		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
-		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
-		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
-		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
-		FooterBg:         ColorAttr{colUndefined, AttrUndefined},
-		FooterBorder:     ColorAttr{colUndefined, AttrUndefined},
-		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
-		GapLine:          ColorAttr{colUndefined, AttrUndefined},
-		Nth:              ColorAttr{colUndefined, AttrUndefined},
-	}
-}
-
-func NoColorTheme() *ColorTheme {
-	return &ColorTheme{
-		Colored:          false,
-		Input:            ColorAttr{colDefault, AttrUndefined},
-		Fg:               ColorAttr{colDefault, AttrUndefined},
-		Bg:               ColorAttr{colDefault, AttrUndefined},
-		ListFg:           ColorAttr{colDefault, AttrUndefined},
-		ListBg:           ColorAttr{colDefault, AttrUndefined},
-		AltBg:            ColorAttr{colUndefined, AttrUndefined},
-		SelectedFg:       ColorAttr{colDefault, AttrUndefined},
-		SelectedBg:       ColorAttr{colDefault, AttrUndefined},
-		SelectedMatch:    ColorAttr{colDefault, AttrUndefined},
-		DarkBg:           ColorAttr{colDefault, AttrUndefined},
-		Prompt:           ColorAttr{colDefault, AttrUndefined},
-		Match:            ColorAttr{colDefault, Underline},
-		Current:          ColorAttr{colDefault, Reverse},
-		CurrentMatch:     ColorAttr{colDefault, Reverse | Underline},
-		Spinner:          ColorAttr{colDefault, AttrUndefined},
-		Info:             ColorAttr{colDefault, AttrUndefined},
-		Cursor:           ColorAttr{colDefault, AttrUndefined},
-		Marker:           ColorAttr{colDefault, AttrUndefined},
-		Header:           ColorAttr{colDefault, AttrUndefined},
-		Border:           ColorAttr{colDefault, AttrUndefined},
-		BorderLabel:      ColorAttr{colDefault, AttrUndefined},
-		Ghost:            ColorAttr{colDefault, Dim},
-		Disabled:         ColorAttr{colDefault, AttrUndefined},
-		PreviewFg:        ColorAttr{colDefault, AttrUndefined},
-		PreviewBg:        ColorAttr{colDefault, AttrUndefined},
-		Gutter:           ColorAttr{colDefault, AttrUndefined},
-		PreviewBorder:    ColorAttr{colDefault, AttrUndefined},
-		PreviewScrollbar: ColorAttr{colDefault, AttrUndefined},
-		PreviewLabel:     ColorAttr{colDefault, AttrUndefined},
-		ListLabel:        ColorAttr{colDefault, AttrUndefined},
-		ListBorder:       ColorAttr{colDefault, AttrUndefined},
-		Separator:        ColorAttr{colDefault, AttrUndefined},
-		Scrollbar:        ColorAttr{colDefault, AttrUndefined},
-		InputBg:          ColorAttr{colDefault, AttrUndefined},
-		InputBorder:      ColorAttr{colDefault, AttrUndefined},
-		InputLabel:       ColorAttr{colDefault, AttrUndefined},
-		HeaderBg:         ColorAttr{colDefault, AttrUndefined},
-		HeaderBorder:     ColorAttr{colDefault, AttrUndefined},
-		HeaderLabel:      ColorAttr{colDefault, AttrUndefined},
-		FooterBg:         ColorAttr{colDefault, AttrUndefined},
-		FooterBorder:     ColorAttr{colDefault, AttrUndefined},
-		FooterLabel:      ColorAttr{colDefault, AttrUndefined},
-		GapLine:          ColorAttr{colDefault, AttrUndefined},
-		Nth:              ColorAttr{colUndefined, AttrUndefined},
-	}
-}
-
 func init() {
+	defaultColor := ColorAttr{colDefault, AttrUndefined}
+	undefined := ColorAttr{colUndefined, AttrUndefined}
+
+	NoColorTheme = &ColorTheme{
+		Colored:          false,
+		Input:            defaultColor,
+		Fg:               defaultColor,
+		Bg:               defaultColor,
+		ListFg:           defaultColor,
+		ListBg:           defaultColor,
+		AltBg:            undefined,
+		SelectedFg:       defaultColor,
+		SelectedBg:       defaultColor,
+		SelectedMatch:    defaultColor,
+		DarkBg:           defaultColor,
+		Prompt:           defaultColor,
+		Match:            defaultColor,
+		Current:          undefined,
+		CurrentMatch:     undefined,
+		Spinner:          defaultColor,
+		Info:             defaultColor,
+		Cursor:           defaultColor,
+		Marker:           defaultColor,
+		Header:           defaultColor,
+		Border:           undefined,
+		BorderLabel:      defaultColor,
+		Ghost:            undefined,
+		Disabled:         defaultColor,
+		PreviewFg:        defaultColor,
+		PreviewBg:        defaultColor,
+		Gutter:           undefined,
+		PreviewBorder:    defaultColor,
+		PreviewScrollbar: defaultColor,
+		PreviewLabel:     defaultColor,
+		ListLabel:        defaultColor,
+		ListBorder:       defaultColor,
+		Separator:        defaultColor,
+		Scrollbar:        defaultColor,
+		InputBg:          defaultColor,
+		InputBorder:      defaultColor,
+		InputLabel:       defaultColor,
+		HeaderBg:         defaultColor,
+		HeaderBorder:     defaultColor,
+		HeaderLabel:      defaultColor,
+		FooterBg:         defaultColor,
+		FooterBorder:     defaultColor,
+		FooterLabel:      defaultColor,
+		GapLine:          defaultColor,
+		Nth:              undefined,
+		Nomatch:          undefined,
+	}
+
+	EmptyTheme = &ColorTheme{
+		Colored:          true,
+		Input:            undefined,
+		Fg:               undefined,
+		Bg:               undefined,
+		ListFg:           undefined,
+		ListBg:           undefined,
+		AltBg:            undefined,
+		SelectedFg:       undefined,
+		SelectedBg:       undefined,
+		SelectedMatch:    undefined,
+		DarkBg:           undefined,
+		Prompt:           undefined,
+		Match:            undefined,
+		Current:          undefined,
+		CurrentMatch:     undefined,
+		Spinner:          undefined,
+		Info:             undefined,
+		Cursor:           undefined,
+		Marker:           undefined,
+		Header:           undefined,
+		Footer:           undefined,
+		Border:           undefined,
+		BorderLabel:      undefined,
+		ListLabel:        undefined,
+		ListBorder:       undefined,
+		Ghost:            undefined,
+		Disabled:         undefined,
+		PreviewFg:        undefined,
+		PreviewBg:        undefined,
+		Gutter:           undefined,
+		PreviewBorder:    undefined,
+		PreviewScrollbar: undefined,
+		PreviewLabel:     undefined,
+		Separator:        undefined,
+		Scrollbar:        undefined,
+		InputBg:          undefined,
+		InputBorder:      undefined,
+		InputLabel:       undefined,
+		HeaderBg:         undefined,
+		HeaderBorder:     undefined,
+		HeaderLabel:      undefined,
+		FooterBg:         undefined,
+		FooterBorder:     undefined,
+		FooterLabel:      undefined,
+		GapLine:          undefined,
+		Nth:              undefined,
+		Nomatch:          undefined,
+	}
+
 	Default16 = &ColorTheme{
 		Colored:          true,
-		Input:            ColorAttr{colDefault, AttrUndefined},
-		Fg:               ColorAttr{colDefault, AttrUndefined},
-		Bg:               ColorAttr{colDefault, AttrUndefined},
-		ListFg:           ColorAttr{colUndefined, AttrUndefined},
-		ListBg:           ColorAttr{colUndefined, AttrUndefined},
-		AltBg:            ColorAttr{colUndefined, AttrUndefined},
-		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
+		Input:            defaultColor,
+		Fg:               defaultColor,
+		Bg:               defaultColor,
+		ListFg:           undefined,
+		ListBg:           undefined,
+		AltBg:            undefined,
+		SelectedFg:       undefined,
+		SelectedBg:       undefined,
+		SelectedMatch:    undefined,
 		DarkBg:           ColorAttr{colGrey, AttrUndefined},
 		Prompt:           ColorAttr{colBlue, AttrUndefined},
 		Match:            ColorAttr{colGreen, AttrUndefined},
@@ -942,43 +983,45 @@ func init() {
 		Marker:           ColorAttr{colMagenta, AttrUndefined},
 		Header:           ColorAttr{colCyan, AttrUndefined},
 		Footer:           ColorAttr{colCyan, AttrUndefined},
-		Border:           ColorAttr{colDefault, Dim},
-		BorderLabel:      ColorAttr{colDefault, AttrUndefined},
-		Ghost:            ColorAttr{colUndefined, Dim},
-		Disabled:         ColorAttr{colUndefined, AttrUndefined},
-		PreviewFg:        ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:        ColorAttr{colUndefined, AttrUndefined},
-		Gutter:           ColorAttr{colUndefined, AttrUndefined},
-		PreviewBorder:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewScrollbar: ColorAttr{colUndefined, AttrUndefined},
-		PreviewLabel:     ColorAttr{colUndefined, AttrUndefined},
-		ListLabel:        ColorAttr{colUndefined, AttrUndefined},
-		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
-		Separator:        ColorAttr{colUndefined, AttrUndefined},
-		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
-		InputBg:          ColorAttr{colUndefined, AttrUndefined},
-		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
-		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
-		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
-		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
-		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
-		FooterBg:         ColorAttr{colUndefined, AttrUndefined},
-		FooterBorder:     ColorAttr{colUndefined, AttrUndefined},
-		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
-		GapLine:          ColorAttr{colUndefined, AttrUndefined},
-		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Border:           undefined,
+		BorderLabel:      defaultColor,
+		Ghost:            undefined,
+		Disabled:         undefined,
+		PreviewFg:        undefined,
+		PreviewBg:        undefined,
+		Gutter:           undefined,
+		PreviewBorder:    undefined,
+		PreviewScrollbar: undefined,
+		PreviewLabel:     undefined,
+		ListLabel:        undefined,
+		ListBorder:       undefined,
+		Separator:        undefined,
+		Scrollbar:        undefined,
+		InputBg:          undefined,
+		InputBorder:      undefined,
+		InputLabel:       undefined,
+		HeaderBg:         undefined,
+		HeaderBorder:     undefined,
+		HeaderLabel:      undefined,
+		FooterBg:         undefined,
+		FooterBorder:     undefined,
+		FooterLabel:      undefined,
+		GapLine:          undefined,
+		Nth:              undefined,
+		Nomatch:          undefined,
 	}
+
 	Dark256 = &ColorTheme{
 		Colored:          true,
-		Input:            ColorAttr{colDefault, AttrUndefined},
-		Fg:               ColorAttr{colDefault, AttrUndefined},
-		Bg:               ColorAttr{colDefault, AttrUndefined},
-		ListFg:           ColorAttr{colUndefined, AttrUndefined},
-		ListBg:           ColorAttr{colUndefined, AttrUndefined},
-		AltBg:            ColorAttr{colUndefined, AttrUndefined},
-		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
+		Input:            defaultColor,
+		Fg:               defaultColor,
+		Bg:               defaultColor,
+		ListFg:           undefined,
+		ListBg:           undefined,
+		AltBg:            undefined,
+		SelectedFg:       undefined,
+		SelectedBg:       undefined,
+		SelectedMatch:    undefined,
 		DarkBg:           ColorAttr{236, AttrUndefined},
 		Prompt:           ColorAttr{110, AttrUndefined},
 		Match:            ColorAttr{108, AttrUndefined},
@@ -992,41 +1035,43 @@ func init() {
 		Footer:           ColorAttr{109, AttrUndefined},
 		Border:           ColorAttr{59, AttrUndefined},
 		BorderLabel:      ColorAttr{145, AttrUndefined},
-		Ghost:            ColorAttr{colUndefined, Dim},
-		Disabled:         ColorAttr{colUndefined, AttrUndefined},
-		PreviewFg:        ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:        ColorAttr{colUndefined, AttrUndefined},
-		Gutter:           ColorAttr{colUndefined, AttrUndefined},
-		PreviewBorder:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewScrollbar: ColorAttr{colUndefined, AttrUndefined},
-		PreviewLabel:     ColorAttr{colUndefined, AttrUndefined},
-		ListLabel:        ColorAttr{colUndefined, AttrUndefined},
-		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
-		Separator:        ColorAttr{colUndefined, AttrUndefined},
-		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
-		InputBg:          ColorAttr{colUndefined, AttrUndefined},
-		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
-		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
-		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
-		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
-		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
-		FooterBg:         ColorAttr{colUndefined, AttrUndefined},
-		FooterBorder:     ColorAttr{colUndefined, AttrUndefined},
-		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
-		GapLine:          ColorAttr{colUndefined, AttrUndefined},
-		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Ghost:            undefined,
+		Disabled:         undefined,
+		PreviewFg:        undefined,
+		PreviewBg:        undefined,
+		Gutter:           undefined,
+		PreviewBorder:    undefined,
+		PreviewScrollbar: undefined,
+		PreviewLabel:     undefined,
+		ListLabel:        undefined,
+		ListBorder:       undefined,
+		Separator:        undefined,
+		Scrollbar:        undefined,
+		InputBg:          undefined,
+		InputBorder:      undefined,
+		InputLabel:       undefined,
+		HeaderBg:         undefined,
+		HeaderBorder:     undefined,
+		HeaderLabel:      undefined,
+		FooterBg:         undefined,
+		FooterBorder:     undefined,
+		FooterLabel:      undefined,
+		GapLine:          undefined,
+		Nth:              undefined,
+		Nomatch:          undefined,
 	}
+
 	Light256 = &ColorTheme{
 		Colored:          true,
-		Input:            ColorAttr{colDefault, AttrUndefined},
-		Fg:               ColorAttr{colDefault, AttrUndefined},
-		Bg:               ColorAttr{colDefault, AttrUndefined},
-		ListFg:           ColorAttr{colUndefined, AttrUndefined},
-		ListBg:           ColorAttr{colUndefined, AttrUndefined},
-		AltBg:            ColorAttr{colUndefined, AttrUndefined},
-		SelectedFg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedBg:       ColorAttr{colUndefined, AttrUndefined},
-		SelectedMatch:    ColorAttr{colUndefined, AttrUndefined},
+		Input:            defaultColor,
+		Fg:               defaultColor,
+		Bg:               defaultColor,
+		ListFg:           undefined,
+		ListBg:           undefined,
+		AltBg:            undefined,
+		SelectedFg:       undefined,
+		SelectedBg:       undefined,
+		SelectedMatch:    undefined,
 		DarkBg:           ColorAttr{251, AttrUndefined},
 		Prompt:           ColorAttr{25, AttrUndefined},
 		Match:            ColorAttr{66, AttrUndefined},
@@ -1040,33 +1085,34 @@ func init() {
 		Footer:           ColorAttr{31, AttrUndefined},
 		Border:           ColorAttr{145, AttrUndefined},
 		BorderLabel:      ColorAttr{59, AttrUndefined},
-		Ghost:            ColorAttr{colUndefined, Dim},
-		Disabled:         ColorAttr{colUndefined, AttrUndefined},
-		PreviewFg:        ColorAttr{colUndefined, AttrUndefined},
-		PreviewBg:        ColorAttr{colUndefined, AttrUndefined},
-		Gutter:           ColorAttr{colUndefined, AttrUndefined},
-		PreviewBorder:    ColorAttr{colUndefined, AttrUndefined},
-		PreviewScrollbar: ColorAttr{colUndefined, AttrUndefined},
-		PreviewLabel:     ColorAttr{colUndefined, AttrUndefined},
-		ListLabel:        ColorAttr{colUndefined, AttrUndefined},
-		ListBorder:       ColorAttr{colUndefined, AttrUndefined},
-		Separator:        ColorAttr{colUndefined, AttrUndefined},
-		Scrollbar:        ColorAttr{colUndefined, AttrUndefined},
-		InputBg:          ColorAttr{colUndefined, AttrUndefined},
-		InputBorder:      ColorAttr{colUndefined, AttrUndefined},
-		InputLabel:       ColorAttr{colUndefined, AttrUndefined},
-		HeaderBg:         ColorAttr{colUndefined, AttrUndefined},
-		HeaderBorder:     ColorAttr{colUndefined, AttrUndefined},
-		HeaderLabel:      ColorAttr{colUndefined, AttrUndefined},
-		FooterBg:         ColorAttr{colUndefined, AttrUndefined},
-		FooterBorder:     ColorAttr{colUndefined, AttrUndefined},
-		FooterLabel:      ColorAttr{colUndefined, AttrUndefined},
-		GapLine:          ColorAttr{colUndefined, AttrUndefined},
-		Nth:              ColorAttr{colUndefined, AttrUndefined},
+		Ghost:            undefined,
+		Disabled:         undefined,
+		PreviewFg:        undefined,
+		PreviewBg:        undefined,
+		Gutter:           undefined,
+		PreviewBorder:    undefined,
+		PreviewScrollbar: undefined,
+		PreviewLabel:     undefined,
+		ListLabel:        undefined,
+		ListBorder:       undefined,
+		Separator:        undefined,
+		Scrollbar:        undefined,
+		InputBg:          undefined,
+		InputBorder:      undefined,
+		InputLabel:       undefined,
+		HeaderBg:         undefined,
+		HeaderBorder:     undefined,
+		HeaderLabel:      undefined,
+		FooterBg:         undefined,
+		FooterBorder:     undefined,
+		FooterLabel:      undefined,
+		GapLine:          undefined,
+		Nth:              undefined,
+		Nomatch:          undefined,
 	}
 }
 
-func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInputWindow bool, hasHeaderWindow bool) {
+func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlack bool, hasInputWindow bool, hasHeaderWindow bool) {
 	if forceBlack {
 		theme.Bg = ColorAttr{colBlack, AttrUndefined}
 	}
@@ -1086,18 +1132,36 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.Bg = o(baseTheme.Bg, theme.Bg)
 	theme.DarkBg = o(baseTheme.DarkBg, theme.DarkBg)
 	theme.Prompt = o(baseTheme.Prompt, theme.Prompt)
-	theme.Match = o(baseTheme.Match, theme.Match)
+	match := theme.Match
+	if !baseTheme.Colored && match.IsUndefined() {
+		match.Attr = Underline
+	}
+	theme.Match = o(baseTheme.Match, match)
 	// Inherit from 'fg', so that we don't have to write 'current-fg:dim'
 	// e.g. fzf --delimiter / --nth -1 --color fg:dim,nth:regular
-	theme.Current = theme.Fg.Merge(o(baseTheme.Current, theme.Current))
-	theme.CurrentMatch = o(baseTheme.CurrentMatch, theme.CurrentMatch)
+	current := theme.Current
+	if !baseTheme.Colored && current.IsUndefined() {
+		current.Attr = Reverse
+	}
+	theme.Current = theme.Fg.Merge(o(baseTheme.Current, current))
+	currentMatch := theme.CurrentMatch
+	if !baseTheme.Colored && currentMatch.IsUndefined() {
+		currentMatch.Attr = Reverse | Underline
+	}
+	theme.CurrentMatch = o(baseTheme.CurrentMatch, currentMatch)
 	theme.Spinner = o(baseTheme.Spinner, theme.Spinner)
 	theme.Info = o(baseTheme.Info, theme.Info)
 	theme.Cursor = o(baseTheme.Cursor, theme.Cursor)
 	theme.Marker = o(baseTheme.Marker, theme.Marker)
 	theme.Header = o(baseTheme.Header, theme.Header)
 	theme.Footer = o(baseTheme.Footer, theme.Footer)
-	theme.Border = o(baseTheme.Border, theme.Border)
+
+	// If border color is undefined, set it to default color with dim attribute.
+	border := theme.Border
+	if baseTheme.Border.IsUndefined() && border.IsUndefined() {
+		border.Attr = Dim
+	}
+	theme.Border = o(baseTheme.Border, border)
 	theme.BorderLabel = o(baseTheme.BorderLabel, theme.BorderLabel)
 
 	undefined := NewColorAttr()
@@ -1110,9 +1174,23 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.SelectedFg = o(theme.ListFg, theme.SelectedFg)
 	theme.SelectedBg = o(theme.ListBg, theme.SelectedBg)
 	theme.SelectedMatch = o(theme.Match, theme.SelectedMatch)
-	theme.Ghost = o(theme.Input, theme.Ghost)
+
+	ghost := theme.Ghost
+	if ghost.IsUndefined() {
+		ghost.Attr = Dim
+	} else if ghost.IsColorDefined() && !ghost.IsAttrDefined() {
+		// Don't want to inherit 'bold' from 'input'
+		ghost.Attr = AttrRegular
+	}
+	theme.Ghost = o(theme.Input, ghost)
 	theme.Disabled = o(theme.Input, theme.Disabled)
-	theme.Gutter = o(theme.DarkBg, theme.Gutter)
+
+	// Use dim gutter on non-colored themes if undefined
+	gutter := theme.Gutter
+	if !baseTheme.Colored && gutter.IsUndefined() {
+		gutter.Attr = Dim
+	}
+	theme.Gutter = o(theme.DarkBg, gutter)
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
 	theme.PreviewBg = o(theme.Bg, theme.PreviewBg)
 	theme.PreviewLabel = o(theme.BorderLabel, theme.PreviewLabel)
@@ -1153,6 +1231,26 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, forceBlack bool, hasInp
 	theme.FooterBg = o(theme.Bg, theme.FooterBg)
 	theme.FooterBorder = o(theme.Border, theme.FooterBorder)
 	theme.FooterLabel = o(theme.BorderLabel, theme.FooterLabel)
+
+	if boldify {
+		boldify := func(c ColorAttr) ColorAttr {
+			dup := c
+			if (c.Attr & AttrRegular) == 0 {
+				dup.Attr |= BoldForce
+			}
+			return dup
+		}
+		theme.Current = boldify(theme.Current)
+		theme.CurrentMatch = boldify(theme.CurrentMatch)
+		theme.Prompt = boldify(theme.Prompt)
+		theme.Input = boldify(theme.Input)
+		theme.Cursor = boldify(theme.Cursor)
+		theme.Spinner = boldify(theme.Spinner)
+	}
+
+	if theme.Nomatch.IsUndefined() {
+		theme.Nomatch.Attr = Dim
+	}
 
 	initPalette(theme)
 }

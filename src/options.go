@@ -98,6 +98,7 @@ Usage: fzf [options]
     --wrap                   Enable line wrap
     --wrap-sign=STR          Indicator for wrapped lines
     --no-multi-line          Disable multi-line display of items when using --read0
+    --raw                    Enable raw mode (show non-matching items)
     --track                  Track the current selection when the result is updated
     --tac                    Reverse the order of the input
     --gap[=N]                Render empty lines between each item
@@ -111,6 +112,7 @@ Usage: fzf [options]
                              highlighted substring (default: 10)
     --jump-labels=CHARS      Label characters for jump mode
     --gutter=CHAR            Character used for the gutter column (default: '▌')
+    --gutter-raw=CHAR        Character used for the gutter column in raw mode (default: '▖')
     --pointer=STR            Pointer to the current line (default: '▌' or '>')
     --marker=STR             Multi-select marker (default: '┃' or '>')
     --marker-multi-line=STR  Multi-select marker for multi-line entries;
@@ -204,8 +206,10 @@ Usage: fzf [options]
 
   ADVANCED
     --with-shell=STR         Shell command and flags to start child processes with
-    --listen[=[ADDR:]PORT]   Start HTTP server to receive actions (POST /)
+    --listen[=[ADDR:]PORT]   Start HTTP server to receive actions via TCP
                              (To allow remote process execution, use --listen-unsafe)
+    --listen=SOCKET_PATH     Start HTTP server to receive actions via Unix domain socket
+                             (Path should end with .sock)
 
   DIRECTORY TRAVERSAL        (Only used when $FZF_DEFAULT_COMMAND is not set)
     --walker=OPTS            [file][,dir][,follow][,hidden] (default: file,follow,hidden)
@@ -562,6 +566,7 @@ type Options struct {
 	AcceptNth         func(Delimiter) func([]Token, int32) string
 	Delimiter         Delimiter
 	Sort              int
+	Raw               bool
 	Track             trackOption
 	Tac               bool
 	Tail              int
@@ -569,6 +574,7 @@ type Options struct {
 	Multi             int
 	Ansi              bool
 	Mouse             bool
+	BaseTheme         *tui.ColorTheme
 	Theme             *tui.ColorTheme
 	Black             bool
 	Bold              bool
@@ -593,6 +599,7 @@ type Options struct {
 	JumpLabels        string
 	Prompt            string
 	Gutter            *string
+	GutterRaw         *string
 	Pointer           *string
 	Marker            *string
 	MarkerMulti       *[3]string
@@ -668,9 +675,9 @@ func defaultPreviewOpts(command string) previewOpts {
 func defaultOptions() *Options {
 	var theme *tui.ColorTheme
 	if os.Getenv("NO_COLOR") != "" {
-		theme = tui.NoColorTheme()
+		theme = tui.NoColorTheme
 	} else {
-		theme = tui.EmptyTheme()
+		theme = tui.EmptyTheme
 	}
 
 	return &Options{
@@ -714,6 +721,7 @@ func defaultOptions() *Options {
 		JumpLabels:   defaultJumpLabels,
 		Prompt:       "> ",
 		Gutter:       nil,
+		GutterRaw:    nil,
 		Pointer:      nil,
 		Marker:       nil,
 		MarkerMulti:  nil,
@@ -1312,8 +1320,9 @@ func dupeTheme(theme *tui.ColorTheme) *tui.ColorTheme {
 	return &dupe
 }
 
-func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, error) {
+func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui.ColorTheme, error) {
 	var err error
+	var baseTheme *tui.ColorTheme
 	theme := dupeTheme(defaultTheme)
 	rrggbb := regexp.MustCompile("^#[0-9a-fA-F]{6}$")
 	comma := regexp.MustCompile(`[\s,]+`)
@@ -1324,13 +1333,17 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 		}
 		switch str {
 		case "dark":
+			baseTheme = tui.Dark256
 			theme = dupeTheme(tui.Dark256)
 		case "light":
+			baseTheme = tui.Light256
 			theme = dupeTheme(tui.Light256)
 		case "base16", "16":
+			baseTheme = tui.Default16
 			theme = dupeTheme(tui.Default16)
 		case "bw", "no":
-			theme = tui.NoColorTheme()
+			baseTheme = tui.NoColorTheme
+			theme = dupeTheme(tui.NoColorTheme)
 		default:
 			fail := func() {
 				// Let the code proceed to simplify the error handling
@@ -1355,6 +1368,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 						cattr.Attr |= tui.Bold
 					case "dim":
 						cattr.Attr |= tui.Dim
+					case "strip":
+						cattr.Attr |= tui.Strip
 					case "italic":
 						cattr.Attr |= tui.Italic
 					case "underline":
@@ -1442,6 +1457,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 				mergeAttr(&theme.SelectedBg)
 			case "nth":
 				mergeAttr(&theme.Nth)
+			case "nomatch":
+				mergeAttr(&theme.Nomatch)
 			case "gutter":
 				mergeAttr(&theme.Gutter)
 			case "hl":
@@ -1507,7 +1524,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 			}
 		}
 	}
-	return theme, err
+	return baseTheme, theme, err
 }
 
 func parseWalkerOpts(str string) (walkerOpts, error) {
@@ -1741,6 +1758,12 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleMultiLine)
 		case "toggle-hscroll":
 			appendAction(actToggleHscroll)
+		case "toggle-raw":
+			appendAction(actToggleRaw)
+		case "enable-raw":
+			appendAction(actEnableRaw)
+		case "disable-raw":
+			appendAction(actDisableRaw)
 		case "show-header":
 			appendAction(actShowHeader)
 		case "hide-header":
@@ -1761,12 +1784,18 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggle)
 		case "down":
 			appendAction(actDown)
+		case "down-match":
+			appendAction(actDownMatch)
 		case "up":
 			appendAction(actUp)
+		case "up-match":
+			appendAction(actUpMatch)
 		case "first", "top":
 			appendAction(actFirst)
 		case "last":
 			appendAction(actLast)
+		case "best":
+			appendAction(actBest)
 		case "page-up":
 			appendAction(actPageUp)
 		case "page-down":
@@ -1779,9 +1808,9 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actPrevHistory)
 		case "next-history":
 			appendAction(actNextHistory)
-		case "prev-selected":
+		case "up-selected", "prev-selected":
 			appendAction(actPrevSelected)
-		case "next-selected":
+		case "down-selected", "next-selected":
 			appendAction(actNextSelected)
 		case "show-preview":
 			appendAction(actShowPreview)
@@ -2632,10 +2661,14 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--color":
 			_, spec := optionalNextString()
 			if len(spec) == 0 {
-				opts.Theme = tui.EmptyTheme()
+				opts.Theme = tui.EmptyTheme
 			} else {
-				if opts.Theme, err = parseTheme(opts.Theme, spec); err != nil {
+				var baseTheme *tui.ColorTheme
+				if baseTheme, opts.Theme, err = parseTheme(opts.Theme, spec); err != nil {
 					return err
+				}
+				if baseTheme != nil {
+					opts.BaseTheme = baseTheme
 				}
 			}
 		case "--toggle-sort":
@@ -2682,6 +2715,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 		case "+s", "--no-sort":
 			opts.Sort = 0
+		case "--raw":
+			opts.Raw = true
+		case "--no-raw":
+			opts.Raw = false
 		case "--track":
 			opts.Track = trackEnabled
 		case "--no-track":
@@ -2718,7 +2755,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-mouse":
 			opts.Mouse = false
 		case "+c", "--no-color":
-			opts.Theme = tui.NoColorTheme()
+			opts.BaseTheme = tui.NoColorTheme
+			opts.Theme = tui.NoColorTheme
 		case "+2", "--no-256":
 			opts.Theme = tui.Default16
 		case "--black":
@@ -2866,6 +2904,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 			str = firstLine(str)
 			opts.Gutter = &str
+		case "--gutter-raw":
+			str, err := nextString("gutter character for raw mode required")
+			if err != nil {
+				return err
+			}
+			str = firstLine(str)
+			opts.GutterRaw = &str
 		case "--pointer":
 			str, err := nextString("pointer sign required")
 			if err != nil {
@@ -3384,10 +3429,9 @@ func validateOptions(opts *Options) error {
 		}
 	}
 
-	if opts.Gutter != nil {
-		if err := validateSign(*opts.Gutter, "gutter", 1); err != nil {
-			return err
-		}
+	if opts.Gutter != nil && uniseg.StringWidth(*opts.Gutter) != 1 ||
+		opts.GutterRaw != nil && uniseg.StringWidth(*opts.GutterRaw) != 1 {
+		return errors.New("gutter display width should be 1")
 	}
 
 	if opts.Scrollbar != nil {
@@ -3587,23 +3631,6 @@ func postProcessOptions(opts *Options) error {
 				break
 			}
 		}
-	}
-
-	if opts.Bold {
-		theme := opts.Theme
-		boldify := func(c tui.ColorAttr) tui.ColorAttr {
-			dup := c
-			if (c.Attr & tui.AttrRegular) == 0 {
-				dup.Attr |= tui.BoldForce
-			}
-			return dup
-		}
-		theme.Current = boldify(theme.Current)
-		theme.CurrentMatch = boldify(theme.CurrentMatch)
-		theme.Prompt = boldify(theme.Prompt)
-		theme.Input = boldify(theme.Input)
-		theme.Cursor = boldify(theme.Cursor)
-		theme.Spinner = boldify(theme.Spinner)
 	}
 
 	// If --height option is not supported on the platform, just ignore it
