@@ -27,6 +27,7 @@ This version introduces many new features centered around the new "raw" mode.
 | Enhancement | Key     | `CTRL-N`            | `down` -> `down-match`                             |
 | Enhancement | Key     | `CTRL-P`            | `up` -> `up-match`                                 |
 | Enhancement | Shell   | `CTRL-R` binding    | Toggle raw mode with `ALT-R`                       |
+| Enhancement | Shell   | `CTRL-R` binding    | Opt-out with an empty `FZF_CTRL_R_COMMAND`         |
 
 ### Introducing "raw" mode
 
@@ -230,6 +231,17 @@ socket is exported as `$FZF_SOCK`, analogous to `$FZF_PORT` for TCP sockets.
 As described above, `$FZF_RAW` is now exported to child processes in raw mode,
 indicating whether the current item is a match (`1`) or not (`0`). It is not
 defined when not in raw mode.
+
+#### `$FZF_CTRL_R_COMMAND`
+
+You can opt-out `CTRL-R` binding from the shell integration by setting
+`FZF_CTRL_R_COMMAND` to an empty string. Setting it to any other value is not
+supported and will result in a warning.
+
+```sh
+# Disable the CTRL-R binding from the shell integration
+FZF_CTRL_R_COMMAND= eval "$(fzf --bash)"
+```
 
 ### Added key support for `--bind`
 
