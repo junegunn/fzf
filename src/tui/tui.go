@@ -1178,9 +1178,6 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	ghost := theme.Ghost
 	if ghost.IsUndefined() {
 		ghost.Attr = Dim
-	} else if ghost.IsColorDefined() && !ghost.IsAttrDefined() {
-		// Don't want to inherit 'bold' from 'input'
-		ghost.Attr = AttrRegular
 	}
 	theme.Ghost = o(theme.Input, ghost)
 	theme.Disabled = o(theme.Input, theme.Disabled)
@@ -1244,6 +1241,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		theme.CurrentMatch = boldify(theme.CurrentMatch)
 		theme.Prompt = boldify(theme.Prompt)
 		theme.Input = boldify(theme.Input)
+		theme.Disabled = boldify(theme.Disabled)
 		theme.Cursor = boldify(theme.Cursor)
 		theme.Spinner = boldify(theme.Spinner)
 	}
