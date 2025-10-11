@@ -7,6 +7,7 @@
 # - $FZF_TMUX_OPTS
 # - $FZF_CTRL_T_COMMAND
 # - $FZF_CTRL_T_OPTS
+# - $FZF_CTRL_R_COMMAND
 # - $FZF_CTRL_R_OPTS
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
@@ -132,9 +133,14 @@ if ((BASH_VERSINFO[0] < 4)); then
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
-  bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
-  bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
+  if [[ ${FZF_CTRL_R_COMMAND-x} != "" ]]; then
+    if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
+      echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
+    fi
+    bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
+    bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
+    bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
+  fi
 else
   # CTRL-T - Paste the selected file path into the command line
   if [[ ${FZF_CTRL_T_COMMAND-x} != "" ]]; then
@@ -144,9 +150,14 @@ else
   fi
 
   # CTRL-R - Paste the selected command from history into the command line
-  bind -m emacs-standard -x '"\C-r": __fzf_history__'
-  bind -m vi-command -x '"\C-r": __fzf_history__'
-  bind -m vi-insert -x '"\C-r": __fzf_history__'
+  if [[ ${FZF_CTRL_R_COMMAND-x} != "" ]]; then
+    if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
+      echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
+    fi
+    bind -m emacs-standard -x '"\C-r": __fzf_history__'
+    bind -m vi-command -x '"\C-r": __fzf_history__'
+    bind -m vi-insert -x '"\C-r": __fzf_history__'
+  fi
 fi
 
 # ALT-C - cd into the selected directory
