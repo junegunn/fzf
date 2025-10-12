@@ -29,7 +29,9 @@ This version introduces many new features centered around the new "raw" mode.
 | Enhancement | Shell   | `CTRL-R` binding    | Toggle raw mode with `ALT-R`                       |
 | Enhancement | Shell   | `CTRL-R` binding    | Opt-out with an empty `FZF_CTRL_R_COMMAND`         |
 
-### Introducing "raw" mode
+### 1. Introducing "raw" mode
+
+![](https://github.com/user-attachments/assets/9640ae11-b5f7-43fb-95f1-c29307fc17c2)
 
 This version introduces a new "raw" mode (named so because it shows the list
 "unfiltered"). In raw mode, non-matching items stay in their original positions,
@@ -141,7 +143,11 @@ fzf --raw --bind 'enter:transform:[[ ${FZF_RAW-1} = 1 ]] && echo accept || echo 
 
 The `CTRL-R` binding (command history) now lets you toggle raw mode with `ALT-R`.
 
-### Style changes
+### 2. Style changes
+
+The screenshot on the right shows the updated gutter style:
+
+![](https://github.com/user-attachments/assets/8ea7b5ef-c99e-4686-905b-22eb078b700a)
 
 This version includes a few minor updates to fzf's classic visual style:
 
@@ -149,7 +155,7 @@ This version includes a few minor updates to fzf's classic visual style:
 - Markers no longer use background colors.
 - The `--color base16` theme (alias: `16`) has been updated for better compatibility with both dark and light themes.
 
-### `--listen` now supports Unix domain sockets
+### 3. `--listen` now supports Unix domain sockets
 
 If an argument to `--listen` ends with `.sock`, fzf will listen on a Unix
 domain socket at the specified path.
@@ -167,7 +173,7 @@ curl --unix-socket /tmp/fzf.sock http -d up
 Note that any existing file at the given path will be removed before creating
 the socket, so avoid using an important file path.
 
-### Added options
+### 4. Added options
 
 #### `--gutter CHAR`
 
@@ -192,7 +198,7 @@ fzf --gutter ' ' --color gutter:reverse
 
 As noted above, the `--gutter-raw CHAR` option was also added for customizing the gutter column in raw mode.
 
-### Added actions
+### 5. Added actions
 
 The following actions were introduced to support working with raw mode:
 
@@ -205,7 +211,7 @@ The following actions were introduced to support working with raw mode:
 | `down-match`  | Move down to the matching item; identical to `down` if raw mode is disabled                 |
 | `best`        | Move to the matching item with the best score; identical to `first` if raw mode is disabled |
 
-### Added environment variables
+### 6. Added environment variables
 
 #### `$FZF_DIRECTION`
 
@@ -243,12 +249,12 @@ supported and will result in a warning.
 FZF_CTRL_R_COMMAND= eval "$(fzf --bash)"
 ```
 
-### Added key support for `--bind`
+### 7. Added key support for `--bind`
 
-Pull request #3996 added support for many additional keys for `--bind` option,
-such as `ctrl-backspace`.
+Pull request [#3996](https://github.com/junegunn/fzf/pull/3996) added support
+for many additional keys for `--bind` option, such as `ctrl-backspace`.
 
-### Breaking changes
+### 8. Breaking changes
 
 #### Hiding the gutter column
 
