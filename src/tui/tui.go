@@ -43,7 +43,7 @@ const (
 	CtrlE
 	CtrlF
 	CtrlG
-	CtrlH
+	CtrlBackspace
 	Tab
 	CtrlJ
 	CtrlK
@@ -137,7 +137,6 @@ const (
 	CtrlRight
 	CtrlHome
 	CtrlEnd
-	CtrlBackspace
 	CtrlDelete
 	CtrlPageUp
 	CtrlPageDown
