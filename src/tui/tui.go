@@ -295,8 +295,9 @@ func (a ColorAttr) IsColorDefined() bool {
 }
 
 func (a ColorAttr) IsAttrDefined() bool {
-	return a.Attr != AttrUndefined
+	return a.Attr&^BoldForce != AttrUndefined
 }
+
 func (a ColorAttr) IsUndefined() bool {
 	return !a.IsColorDefined() && !a.IsAttrDefined()
 }
@@ -1156,12 +1157,12 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	// e.g. fzf --delimiter / --nth -1 --color fg:dim,nth:regular
 	current := theme.Current
 	if !baseTheme.Colored && current.IsUndefined() {
-		current.Attr = Reverse
+		current.Attr |= Reverse
 	}
 	theme.Current = theme.Fg.Merge(o(baseTheme.Current, current))
 	currentMatch := theme.CurrentMatch
 	if !baseTheme.Colored && currentMatch.IsUndefined() {
-		currentMatch.Attr = Reverse | Underline
+		currentMatch.Attr |= Reverse | Underline
 	}
 	theme.CurrentMatch = o(baseTheme.CurrentMatch, currentMatch)
 	theme.Spinner = o(baseTheme.Spinner, theme.Spinner)

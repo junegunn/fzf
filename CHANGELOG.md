@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+0.66.1
+------
+- Bug fixes
+    - Fixed a bug preventing 'ctrl-h' from being bound to an action (#4556)
+    - Fixed `--no-color` / `NO_COLOR` theme
+
 0.66.0
 ------
 
@@ -35,10 +41,10 @@ This version introduces many new features centered around the new "raw" mode.
 
 This version introduces a new "raw" mode (named so because it shows the list
 "unfiltered"). In raw mode, non-matching items stay in their original positions,
-but appear dimmed. This allows you see surrounding items of a match and better
-understand the context of it. You can enable raw mode by default with `--raw`,
-but it's often more useful when toggled dynamically with the `toggle-raw`
-action.
+but appear dimmed. This allows you to see the surrounding items of a match and
+better understand the context of it. You can enable raw mode by default with
+`--raw`, but it's often more useful when toggled dynamically with the
+`toggle-raw` action.
 
 ```sh
 tree | fzf --reverse --bind alt-r:toggle-raw
