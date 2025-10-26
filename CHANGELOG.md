@@ -5,7 +5,7 @@ CHANGELOG
 ------
 - Bug fixes
     - Fixed a bug preventing 'ctrl-h' from being bound to an action (#4556)
-    - Fixed `--no-color` / `NO_COLOR` theme
+    - Fixed `--no-color` / `NO_COLOR` theme (#4561)
 
 0.66.0
 ------
