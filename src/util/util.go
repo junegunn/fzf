@@ -156,32 +156,33 @@ func Once(nextResponse bool) func() bool {
 func RepeatToFill(str string, length int, limit int) string {
 	times := limit / length
 	rest := limit % length
-	output := strings.Repeat(str, times)
+	var output strings.Builder
+	output.WriteString(strings.Repeat(str, times))
 	if rest > 0 {
 		for _, r := range str {
 			rest -= uniseg.StringWidth(string(r))
 			if rest < 0 {
 				break
 			}
-			output += string(r)
+			output.WriteString(string(r))
 			if rest == 0 {
 				break
 			}
 		}
 	}
-	return output
+	return output.String()
 }
 
 // ToKebabCase converts the given CamelCase string to kebab-case
 func ToKebabCase(s string) string {
-	name := ""
+	var name strings.Builder
 	for i, r := range s {
 		if i > 0 && r >= 'A' && r <= 'Z' {
-			name += "-"
+			name.WriteString("-")
 		}
-		name += string(r)
+		name.WriteString(string(r))
 	}
-	return strings.ToLower(name)
+	return strings.ToLower(name.String())
 }
 
 // CompareVersions compares two version strings

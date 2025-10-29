@@ -3907,21 +3907,21 @@ func findPassThrough(line string) []int {
 
 func extractPassThroughs(line string) ([]string, string) {
 	passThroughs := []string{}
-	transformed := ""
+	var transformed strings.Builder
 	index := 0
 	for {
 		rest := line[index:]
 		loc := findPassThrough(rest)
 		if loc == nil {
-			transformed += rest
+			transformed.WriteString(rest)
 			break
 		}
 		passThroughs = append(passThroughs, rest[loc[0]:loc[1]])
-		transformed += line[index : index+loc[0]]
+		transformed.WriteString(line[index : index+loc[0]])
 		index += loc[1]
 	}
 
-	return passThroughs, transformed
+	return passThroughs, transformed.String()
 }
 
 func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
@@ -4294,7 +4294,7 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 		return false, match, flags
 	}
 
-	trimmed := ""
+	var trimmed strings.Builder
 	for _, char := range match[1:] {
 		switch char {
 		case '*':
@@ -4311,13 +4311,13 @@ func parsePlaceholder(match string) (bool, string, placeholderFlags) {
 			flags.raw = true
 		case 'q':
 			flags.forceUpdate = true
-			trimmed += string(char)
+			trimmed.WriteString(string(char))
 		default:
-			trimmed += string(char)
+			trimmed.WriteString(string(char))
 		}
 	}
 
-	matchWithoutFlags := "{" + trimmed
+	matchWithoutFlags := "{" + trimmed.String()
 
 	return false, matchWithoutFlags, flags
 }

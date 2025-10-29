@@ -850,19 +850,19 @@ func nthTransformer(str string) (func(Delimiter) func([]Token, int32) string, er
 
 	return func(delimiter Delimiter) func([]Token, int32) string {
 		return func(tokens []Token, index int32) string {
-			str := ""
+			var str strings.Builder
 			for _, holder := range parts {
 				if holder.nth != nil {
-					str += StripLastDelimiter(JoinTokens(Transform(tokens, holder.nth)), delimiter)
+					str.WriteString(StripLastDelimiter(JoinTokens(Transform(tokens, holder.nth)), delimiter))
 				} else if holder.index {
 					if index >= 0 {
-						str += strconv.Itoa(int(index))
+						str.WriteString(strconv.Itoa(int(index)))
 					}
 				} else {
-					str += holder.str
+					str.WriteString(holder.str)
 				}
 			}
-			return str
+			return str.String()
 		}
 	}, nil
 }
