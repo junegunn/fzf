@@ -2978,9 +2978,10 @@ func (t *Terminal) printInfoImpl() {
 	if outputPrinter == nil {
 		output = t.trimMessage(output, maxWidth)
 		t.window.CPrint(tui.ColInfo, output)
-		if t.infoStyle == infoInline {
+		if t.infoStyle == infoInline && len(output) < maxWidth {
 			t.window.Print(" ")
 			printSpinner()
+			outputLen += 2
 		}
 	} else {
 		outputPrinter(t.window, maxWidth)
