@@ -26,7 +26,10 @@ __fzf_exec_awk() {
       # version >= 1.3.4
       local n x y z d
       IFS=' .' read -r n x y z d <<< $(command mawk -W version 2> /dev/null)
-      [[ $n == mawk ]] && ((d >= 20230302 && (x * 1000 + y) * 1000 + z >= 1003004)) && __fzf_awk=mawk
+      [[ $n == mawk ]] &&
+        (((x * 1000 + y) * 1000 + z >= 1003004)) 2> /dev/null &&
+        ((d >= 20230302)) 2> /dev/null &&
+        __fzf_awk=mawk
     fi
   fi
   # Note: macOS awk has a quirk that it stops processing at all when it sees
