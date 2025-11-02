@@ -3,6 +3,7 @@ package fzf
 import (
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/junegunn/fzf/src/tui"
 )
@@ -23,11 +24,12 @@ func runTmux(args []string, opts *Options) (int, error) {
 	if opts.Tmux.border && opts.Margin == defaultMargin() {
 		args = append(args, "--margin=0,1")
 	}
-	argStr := escapeSingleQuote(fzf)
+	var argStr strings.Builder
+	argStr.WriteString(escapeSingleQuote(fzf))
 	for _, arg := range append(args, rest...) {
-		argStr += " " + escapeSingleQuote(arg)
+		argStr.WriteString(" " + escapeSingleQuote(arg))
 	}
-	argStr += ` --no-tmux --no-height`
+	argStr.WriteString(` --no-tmux --no-height`)
 
 	// Get current directory
 	dir, err := os.Getwd()
@@ -61,7 +63,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	tmuxArgs = append(tmuxArgs, "-w"+opts.Tmux.width.String())
 	tmuxArgs = append(tmuxArgs, "-h"+opts.Tmux.height.String())
 
-	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
+	return runProxy(argStr.String(), func(temp string, needBash bool) (*exec.Cmd, error) {
 		sh, err := sh(needBash)
 		if err != nil {
 			return nil, err
