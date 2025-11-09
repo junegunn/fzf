@@ -2981,6 +2981,11 @@ func (t *Terminal) printInfoImpl() {
 	} else {
 		outputPrinter(t.window, maxWidth)
 	}
+	if t.infoStyle == infoInline && outputLen < maxWidth-1 && t.reading {
+		t.window.Print(" ")
+		printSpinner()
+		outputLen += 2
+	}
 
 	if t.infoStyle == infoInlineRight {
 		if t.separatorLen > 0 {
