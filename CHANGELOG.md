@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+0.67.0
+------
+- Added `--freeze-left=N` option to keep the leftmost N columns visible.
+  ```sh
+  # Keeps the file name column fixed and always visible
+  git grep --line-number --color=always -- '' |
+      fzf --ansi --delimiter : --freeze-left 1
+
+  # Used with --keep-right
+  git grep --line-number --color=always -- '' |
+      fzf --ansi --delimiter : --freeze-left 1 --keep-right
+  ```
+
 0.66.1
 ------
 - Bug fixes
