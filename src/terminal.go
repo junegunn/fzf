@@ -2978,13 +2978,13 @@ func (t *Terminal) printInfoImpl() {
 	if outputPrinter == nil {
 		output = t.trimMessage(output, maxWidth)
 		t.window.CPrint(tui.ColInfo, output)
-		if t.infoStyle == infoInline && len(output) < maxWidth-1 && t.reading {
-			t.window.Print(" ")
-			printSpinner()
-			outputLen += 2
-		}
 	} else {
 		outputPrinter(t.window, maxWidth)
+	}
+	if t.infoStyle == infoInline && outputLen < maxWidth-1 && t.reading {
+		t.window.Print(" ")
+		printSpinner()
+		outputLen += 2
 	}
 
 	if t.infoStyle == infoInlineRight {
