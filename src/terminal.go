@@ -331,6 +331,7 @@ type Terminal struct {
 	scrollbar          string
 	previewScrollbar   string
 	ansi               bool
+	freezeLeft         int
 	nthAttr            tui.Attr
 	nth                []Range
 	nthCurrent         []Range
@@ -1050,6 +1051,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		footer:             opts.Footer,
 		header0:            opts.Header,
 		ansi:               opts.Ansi,
+		freezeLeft:         opts.FreezeLeft,
 		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
@@ -3525,6 +3527,18 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	}
 	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, hidden)
 
+	// Determine split offset for horizontal scrolling with freeze
+	splitOffset := -1
+	if t.hscroll && !t.wrap && t.freezeLeft > 0 {
+		tokens := Tokenize(item.text.ToString(), t.delimiter)
+		if len(tokens) == 0 {
+			splitOffset = 0
+		} else {
+			token := tokens[util.Min(t.freezeLeft, len(tokens))-1]
+			splitOffset = int(token.prefixLength) + token.text.Length() - token.text.TrailingWhitespaces()
+		}
+	}
+
 	maxLines := 1
 	if t.canSpanMultiLines() {
 		maxLines = maxLineNum - lineNum + 1
@@ -3593,6 +3607,10 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				allOffsets = append([]colorOffset{dupe}, allOffsets[idx+1:]...)
 				break
 			}
+		}
+		splitOffsetLocal := 0
+		if splitOffset >= 0 && splitOffset > from && splitOffset < from+len(line) {
+			splitOffsetLocal = splitOffset - from
 		}
 		from += len(line)
 		if lineOffset < skipLines {
@@ -3667,69 +3685,88 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			wrapped = true
 		}
 
-		displayWidth = t.displayWidthWithLimit(line, 0, maxWidth)
-		if !t.wrap && displayWidth > maxWidth {
-			ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
-			maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(line))
-			transformOffsets := func(diff int32, rightTrim bool) {
-				for idx, offset := range offsets {
-					b, e := offset.offset[0], offset.offset[1]
-					el := int32(len(ellipsis))
-					b += el - diff
-					e += el - diff
-					b = util.Max32(b, el)
-					if rightTrim {
-						e = util.Min32(e, int32(maxWidth-ellipsisWidth))
-					}
-					offsets[idx].offset[0] = b
-					offsets[idx].offset[1] = util.Max32(b, e)
-				}
+		frozen := line[:splitOffsetLocal]
+		rest := line[splitOffsetLocal:]
+		displayWidthSum := 0
+		for fidx, runes := range [][]rune{frozen, rest} {
+			if len(runes) == 0 {
+				continue
 			}
-			if t.hscroll {
-				if t.keepRight && pos == nil {
-					trimmed, diff := t.trimLeft(line, maxWidth, ellipsisWidth)
-					transformOffsets(diff, false)
-					line = append(ellipsis, trimmed...)
-				} else if !t.overflow(line[:maxe], maxWidth-ellipsisWidth) {
-					// Stri..
-					line, _ = t.trimRight(line, maxWidth-ellipsisWidth)
-					line = append(line, ellipsis...)
+			if splitOffsetLocal > 0 && fidx == 1 {
+				for idx := range offsets {
+					offsets[idx].offset[0] -= int32(splitOffsetLocal)
+					offsets[idx].offset[1] -= int32(splitOffsetLocal)
+				}
+				maxe -= splitOffsetLocal
+			}
+			displayWidth = t.displayWidthWithLimit(runes, 0, maxWidth)
+			if !t.wrap && displayWidth > maxWidth {
+				ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
+				maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(runes))
+				transformOffsets := func(diff int32, rightTrim bool) {
+					for idx, offset := range offsets {
+						b, e := offset.offset[0], offset.offset[1]
+						el := int32(len(ellipsis))
+						b += el - diff
+						e += el - diff
+						b = util.Max32(b, el)
+						if rightTrim {
+							e = util.Min32(e, int32(maxWidth-ellipsisWidth))
+						}
+						offsets[idx].offset[0] = b
+						offsets[idx].offset[1] = util.Max32(b, e)
+					}
+				}
+				if t.hscroll {
+					if fidx > 0 && t.keepRight && pos == nil {
+						trimmed, diff := t.trimLeft(runes, maxWidth, ellipsisWidth)
+						transformOffsets(diff, false)
+						runes = append(ellipsis, trimmed...)
+					} else if fidx == 0 || !t.overflow(runes[:maxe], maxWidth-ellipsisWidth) {
+						// Stri..
+						runes, _ = t.trimRight(runes, maxWidth-ellipsisWidth)
+						runes = append(runes, ellipsis...)
+					} else {
+						// Stri..
+						rightTrim := false
+						if t.overflow(runes[maxe:], ellipsisWidth) {
+							runes = append(runes[:maxe], ellipsis...)
+							rightTrim = true
+						}
+						// ..ri..
+						var diff int32
+						runes, diff = t.trimLeft(runes, maxWidth, ellipsisWidth)
+
+						// Transform offsets
+						transformOffsets(diff, rightTrim)
+						runes = append(ellipsis, runes...)
+					}
 				} else {
-					// Stri..
-					rightTrim := false
-					if t.overflow(line[maxe:], ellipsisWidth) {
-						line = append(line[:maxe], ellipsis...)
-						rightTrim = true
+					runes, _ = t.trimRight(runes, maxWidth-ellipsisWidth)
+					runes = append(runes, ellipsis...)
+
+					for idx, offset := range offsets {
+						offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
+						offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 					}
-					// ..ri..
-					var diff int32
-					line, diff = t.trimLeft(line, maxWidth, ellipsisWidth)
-
-					// Transform offsets
-					transformOffsets(diff, rightTrim)
-					line = append(ellipsis, line...)
 				}
+				displayWidth = t.displayWidthWithLimit(runes, 0, displayWidth)
+			}
+			displayWidthSum += displayWidth
+
+			if maxWidth > 0 {
+				color := colBase
+				if hidden {
+					color = color.WithFg(t.theme.Nomatch)
+				}
+				t.printColoredString(t.window, runes, offsets, color)
 			} else {
-				line, _ = t.trimRight(line, maxWidth-ellipsisWidth)
-				line = append(line, ellipsis...)
-
-				for idx, offset := range offsets {
-					offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
-					offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
-				}
+				break
 			}
-			displayWidth = t.displayWidthWithLimit(line, 0, displayWidth)
-		}
-
-		if maxWidth > 0 {
-			color := colBase
-			if hidden {
-				color = color.WithFg(t.theme.Nomatch)
-			}
-			t.printColoredString(t.window, line, offsets, color)
+			maxWidth -= displayWidth
 		}
 		if postTask != nil {
-			postTask(actualLineNum, displayWidth, wasWrapped, forceRedraw, lbg)
+			postTask(actualLineNum, displayWidthSum, wasWrapped, forceRedraw, lbg)
 		} else {
 			t.markOtherLine(actualLineNum)
 		}

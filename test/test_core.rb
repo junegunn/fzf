@@ -1190,6 +1190,17 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert lines.any_include?('9999␊10000') }
   end
 
+  def test_freeze_left_keep_right
+    tmux.send_keys %[seq 10000 | #{FZF} --read0 --delimiter "\n" --freeze-left 3 --keep-right --ellipsis XX --no-multi-line --bind space:toggle-multi-line], :Enter
+    tmux.until { |lines| assert_match(/^> 1␊2␊3XX.*10000␊$/, lines[-3]) }
+    tmux.send_keys '5'
+    tmux.until { |lines| assert_match(/^> 1␊2␊3␊4␊5␊.*XX$/, lines[-3]) }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('> 1') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('1␊2␊3␊4␊5␊') }
+  end
+
   def test_backward_eof
     tmux.send_keys "echo foo | #{FZF} --bind 'backward-eof:reload(seq 100)'", :Enter
     tmux.until { |lines| lines.item_count == 1 && lines.match_count == 1 }
