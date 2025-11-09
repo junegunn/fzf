@@ -332,6 +332,7 @@ type Terminal struct {
 	previewScrollbar   string
 	ansi               bool
 	freezeLeft         int
+	freezeRight        int
 	nthAttr            tui.Attr
 	nth                []Range
 	nthCurrent         []Range
@@ -1052,6 +1053,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		header0:            opts.Header,
 		ansi:               opts.Ansi,
 		freezeLeft:         opts.FreezeLeft,
+		freezeRight:        opts.FreezeRight,
 		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
@@ -3528,14 +3530,30 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, hidden)
 
 	// Determine split offset for horizontal scrolling with freeze
-	splitOffset := -1
-	if t.hscroll && !t.wrap && t.freezeLeft > 0 {
-		tokens := Tokenize(item.text.ToString(), t.delimiter)
-		if len(tokens) == 0 {
-			splitOffset = 0
-		} else {
-			token := tokens[util.Min(t.freezeLeft, len(tokens))-1]
-			splitOffset = int(token.prefixLength) + token.text.Length() - token.text.TrailingWhitespaces()
+	splitOffset1 := -1
+	splitOffset2 := -1
+	if t.hscroll && !t.wrap {
+		var tokens []Token
+		if t.freezeLeft > 0 || t.freezeRight > 0 {
+			tokens = Tokenize(item.text.ToString(), t.delimiter)
+		}
+		// 0 1 2| 3 |4 5
+		// ----->   <---
+		if t.freezeLeft > 0 {
+			if len(tokens) > 0 {
+				token := tokens[util.Min(t.freezeLeft, len(tokens))-1]
+				splitOffset1 = int(token.prefixLength) + token.text.Length() - token.text.TrailingWhitespaces()
+			}
+		}
+		if t.freezeRight > 0 {
+			index := util.Max(t.freezeLeft-1, len(tokens)-t.freezeRight-1)
+			if index < 0 {
+				splitOffset2 = 0
+			} else if index >= t.freezeLeft {
+				token := tokens[index]
+				splitOffset2 = int(token.prefixLength) + token.text.Length()
+			}
+			splitOffset2 = util.Max(splitOffset2, splitOffset1)
 		}
 	}
 
@@ -3608,9 +3626,13 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				break
 			}
 		}
-		splitOffsetLocal := 0
-		if splitOffset >= 0 && splitOffset > from && splitOffset < from+len(line) {
-			splitOffsetLocal = splitOffset - from
+		splitOffsetLeft := 0
+		if splitOffset1 >= 0 && splitOffset1 > from && splitOffset1 < from+len(line) {
+			splitOffsetLeft = splitOffset1 - from
+		}
+		splitOffsetRight := -1
+		if splitOffset2 >= 0 && splitOffset2 >= from && splitOffset2 < from+len(line) {
+			splitOffsetRight = splitOffset2 - from
 		}
 		from += len(line)
 		if lineOffset < skipLines {
@@ -3618,10 +3640,10 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		}
 		actualLineOffset := lineOffset - skipLines
 
-		var maxe int
+		var maxEnd int
 		for _, offset := range offsets {
 			if offset.match {
-				maxe = util.Max(maxe, int(offset.offset[1]))
+				maxEnd = util.Max(maxEnd, int(offset.offset[1]))
 			}
 		}
 
@@ -3685,26 +3707,39 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			wrapped = true
 		}
 
-		frozen := line[:splitOffsetLocal]
-		rest := line[splitOffsetLocal:]
+		frozenLeft := line[:splitOffsetLeft]
+		middle := line[splitOffsetLeft:]
+		frozenRight := []rune{}
+		if splitOffsetRight >= splitOffsetLeft {
+			middle = line[splitOffsetLeft:splitOffsetRight]
+			frozenRight = line[splitOffsetRight:]
+		}
 		displayWidthSum := 0
-		for fidx, runes := range [][]rune{frozen, rest} {
+		todo := [3]func(){}
+		for fidx, runes := range [][]rune{frozenLeft, frozenRight, middle} {
 			if len(runes) == 0 {
 				continue
 			}
-			if splitOffsetLocal > 0 && fidx == 1 {
-				for idx := range offsets {
-					offsets[idx].offset[0] -= int32(splitOffsetLocal)
-					offsets[idx].offset[1] -= int32(splitOffsetLocal)
+			shift := 0
+			maxe := maxEnd
+			offs := make([]colorOffset, len(offsets))
+			for idx := range offsets {
+				offs[idx] = offsets[idx]
+				if fidx == 1 && splitOffsetRight > 0 {
+					shift = splitOffsetRight
+				} else if fidx == 2 && splitOffsetLeft > 0 {
+					shift = splitOffsetLeft
 				}
-				maxe -= splitOffsetLocal
+				offs[idx].offset[0] -= int32(shift)
+				offs[idx].offset[1] -= int32(shift)
 			}
+			maxe -= shift
 			displayWidth = t.displayWidthWithLimit(runes, 0, maxWidth)
 			if !t.wrap && displayWidth > maxWidth {
 				ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
 				maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(runes))
 				transformOffsets := func(diff int32, rightTrim bool) {
-					for idx, offset := range offsets {
+					for idx, offset := range offs {
 						b, e := offset.offset[0], offset.offset[1]
 						el := int32(len(ellipsis))
 						b += el - diff
@@ -3713,12 +3748,12 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 						if rightTrim {
 							e = util.Min32(e, int32(maxWidth-ellipsisWidth))
 						}
-						offsets[idx].offset[0] = b
-						offsets[idx].offset[1] = util.Max32(b, e)
+						offs[idx].offset[0] = b
+						offs[idx].offset[1] = util.Max32(b, e)
 					}
 				}
 				if t.hscroll {
-					if fidx > 0 && t.keepRight && pos == nil {
+					if fidx == 1 || fidx == 2 && t.keepRight && pos == nil {
 						trimmed, diff := t.trimLeft(runes, maxWidth, ellipsisWidth)
 						transformOffsets(diff, false)
 						runes = append(ellipsis, trimmed...)
@@ -3745,9 +3780,9 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 					runes, _ = t.trimRight(runes, maxWidth-ellipsisWidth)
 					runes = append(runes, ellipsis...)
 
-					for idx, offset := range offsets {
-						offsets[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
-						offsets[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
+					for idx, offset := range offs {
+						offs[idx].offset[0] = util.Min32(offset.offset[0], int32(maxWidth-len(ellipsis)))
+						offs[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 					}
 				}
 				displayWidth = t.displayWidthWithLimit(runes, 0, displayWidth)
@@ -3759,11 +3794,22 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				if hidden {
 					color = color.WithFg(t.theme.Nomatch)
 				}
-				t.printColoredString(t.window, runes, offsets, color)
+				todo[fidx] = func() {
+					t.printColoredString(t.window, runes, offs, color)
+				}
 			} else {
 				break
 			}
 			maxWidth -= displayWidth
+		}
+		if todo[0] != nil {
+			todo[0]()
+		}
+		if todo[2] != nil {
+			todo[2]()
+		}
+		if todo[1] != nil {
+			todo[1]()
 		}
 		if postTask != nil {
 			postTask(actualLineNum, displayWidthSum, wasWrapped, forceRedraw, lbg)

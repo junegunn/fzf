@@ -632,9 +632,13 @@ The given string will be repeated to draw a horizontal line on each gap
 .BI "\-\-freeze\-left=" "N"
 Number of fields to freeze on the left.
 .TP
+.BI "\-\-freeze\-right=" "N"
+Number of fields to freeze on the right.
+.TP
 .B "\-\-keep\-right"
 Keep the right end of the line visible when it's too long. Effective only when
-the query string is empty.
+the query string is empty. Use \fB\-\-freeze\-right=1\fR instead if you want
+the last field to be always visible even with a non-empty query.
 .TP
 .BI "\-\-scroll\-off=" "LINES"
 Number of screen lines to keep above or below when scrolling to the top or to
