@@ -371,10 +371,12 @@ func (r *FullscreenRenderer) GetChar() Event {
 				}
 			case rune(tcell.KeyCtrlH):
 				switch {
+				case ctrl:
+					return keyfn('h')
 				case alt:
 					return Event{AltBackspace, 0, nil}
-				case ctrl, none, shift:
-					return keyfn('h')
+				case none, shift:
+					return Event{Backspace, 0, nil}
 				}
 			}
 		case tcell.KeyCtrlI:
