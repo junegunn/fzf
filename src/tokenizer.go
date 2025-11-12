@@ -206,8 +206,9 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	if delimiter.regex != nil {
 		locs := delimiter.regex.FindAllStringIndex(text, -1)
 		begin := 0
-		for _, loc := range locs {
-			tokens = append(tokens, text[begin:loc[1]])
+		tokens = make([]string, len(locs))
+		for i, loc := range locs {
+			tokens[i] = text[begin:loc[1]]
 			begin = loc[1]
 		}
 		if begin < len(text) {

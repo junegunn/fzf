@@ -3522,11 +3522,12 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			} else {
 				tokens = Transform(Tokenize(item.text.ToString(), t.delimiter), t.nthCurrent)
 			}
-			for _, token := range tokens {
+			nthOffsets = make([]Offset, len(tokens))
+			for i, token := range tokens {
 				start := token.prefixLength
 				length := token.text.Length() - token.text.TrailingWhitespaces()
 				end := start + int32(length)
-				nthOffsets = append(nthOffsets, Offset{int32(start), int32(end)})
+				nthOffsets[i] = Offset{int32(start), int32(end)}
 			}
 			sort.Sort(ByOrder(nthOffsets))
 		}
