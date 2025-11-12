@@ -4819,7 +4819,7 @@ func (t *Terminal) buildPlusList(template string, forcePlus bool) (bool, [3][]*I
 	if asterisk {
 		cnt := t.merger.Length()
 		all = make([]*Item, cnt)
-		for i := 0; i < cnt; i++ {
+		for i := range cnt {
 			all[i] = t.merger.Get(i).item
 		}
 	}
@@ -7071,7 +7071,7 @@ func (t *Terminal) constrain() {
 
 	// May need to try again after adjusting the offset
 	t.offset = util.Constrain(t.offset, 0, count)
-	for tries := 0; tries < maxLines; tries++ {
+	for range maxLines {
 		numItems := maxLines
 		// How many items can be fit on screen including the current item?
 		if t.canSpanMultiLines() && t.merger.Length() > 0 {
@@ -7125,7 +7125,7 @@ func (t *Terminal) constrain() {
 			scrollOff := util.Min(maxLines/2, t.scrollOff)
 			newOffset := t.offset
 			// 2-phase adjustment to avoid infinite loop of alternating between moving up and down
-			for phase := 0; phase < 2; phase++ {
+			for phase := range 2 {
 				for {
 					prevOffset := newOffset
 					numItems := t.merger.Length()

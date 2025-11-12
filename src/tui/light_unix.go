@@ -98,7 +98,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	r.flush()
 	var err error
 	bytes := []byte{}
-	for tries := 0; tries < offsetPollTries; tries++ {
+	for tries := range offsetPollTries {
 		bytes, err = r.getBytesInternal(bytes, tries > 0)
 		if err != nil {
 			return -1, -1

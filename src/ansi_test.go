@@ -41,7 +41,7 @@ func testParserReference(t testing.TB, str string) {
 
 		equal := len(got) == len(exp)
 		if equal {
-			for i := 0; i < len(got); i++ {
+			for i := range got {
 				if got[i] != exp[i] {
 					equal = false
 					break
@@ -167,9 +167,9 @@ func TestNextAnsiEscapeSequence_Fuzz_Random(t *testing.T) {
 	randomString := func(rr *rand.Rand) string {
 		numChars := rand.Intn(50)
 		codePoints := make([]rune, numChars)
-		for i := 0; i < len(codePoints); i++ {
+		for i := range codePoints {
 			var r rune
-			for n := 0; n < 1000; n++ {
+			for range 1000 {
 				r = rune(rr.Intn(utf8.MaxRune))
 				// Allow 10% of runes to be invalid
 				if utf8.ValidRune(r) || rr.Float64() < 0.10 {
@@ -182,7 +182,7 @@ func TestNextAnsiEscapeSequence_Fuzz_Random(t *testing.T) {
 	}
 
 	rr := rand.New(rand.NewSource(1))
-	for i := 0; i < 100_000; i++ {
+	for range 100_000 {
 		testParserReference(t, randomString(rr))
 	}
 }
