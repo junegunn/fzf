@@ -502,7 +502,7 @@ func Run(opts *Options) (int, error) {
 											return item.acceptNth(opts.Ansi, opts.Delimiter, fn)
 										}
 									}
-									for i := 0; i < count; i++ {
+									for i := range count {
 										opts.Printer(transformer(merger.Get(i).item))
 									}
 									if count == 0 {

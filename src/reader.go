@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -178,7 +179,7 @@ func (r *Reader) feed(src io.Reader) {
 	for {
 		n := 0
 		scope := slab[:util.Min(len(slab), readerBufferSize)]
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			n, err = src.Read(scope)
 			if n > 0 || err != nil {
 				break
@@ -308,15 +309,11 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 				if !opts.hidden && base[0] == '.' && base != ".." {
 					return filepath.SkipDir
 				}
-				for _, ignore := range ignoresBase {
-					if ignore == base {
-						return filepath.SkipDir
-					}
+				if slices.Contains(ignoresBase, base) {
+					return filepath.SkipDir
 				}
-				for _, ignore := range ignoresFull {
-					if ignore == path {
-						return filepath.SkipDir
-					}
+				if slices.Contains(ignoresFull, path) {
+					return filepath.SkipDir
 				}
 				for _, ignore := range ignoresSuffix {
 					if strings.HasSuffix(path, ignore) {

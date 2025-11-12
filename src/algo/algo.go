@@ -365,7 +365,7 @@ func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int
 
 	firstIdx, idx, lastIdx := 0, 0, 0
 	var b byte
-	for pidx := 0; pidx < len(pattern); pidx++ {
+	for pidx := range pattern {
 		b = byte(pattern[pidx])
 		idx = trySkip(input, caseSensitive, b, idx)
 		if idx < 0 {
@@ -726,7 +726,7 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 	lenRunes := text.Length()
 	lenPattern := len(pattern)
 
-	for index := 0; index < lenRunes; index++ {
+	for index := range lenRunes {
 		char := text.Get(indexAt(index, lenRunes, forward))
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string

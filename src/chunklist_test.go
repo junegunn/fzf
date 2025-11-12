@@ -51,7 +51,7 @@ func TestChunkList(t *testing.T) {
 	}
 
 	// Add more data
-	for i := 0; i < chunkSize*2; i++ {
+	for i := range chunkSize * 2 {
 		cl.Push(fmt.Appendf(nil, "item %d", i))
 	}
 
@@ -85,7 +85,7 @@ func TestChunkListTail(t *testing.T) {
 		return true
 	})
 	total := chunkSize*2 + chunkSize/2
-	for i := 0; i < total; i++ {
+	for i := range total {
 		cl.Push(fmt.Appendf(nil, "item %d", i))
 	}
 

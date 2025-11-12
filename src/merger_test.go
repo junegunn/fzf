@@ -34,11 +34,11 @@ func buildLists(partiallySorted bool) ([][]Result, []Result) {
 	numLists := 4
 	lists := make([][]Result, numLists)
 	cnt := 0
-	for i := 0; i < numLists; i++ {
+	for i := range numLists {
 		numResults := rand.Int() % 20
 		cnt += numResults
 		lists[i] = make([]Result, numResults)
-		for j := 0; j < numResults; j++ {
+		for j := range numResults {
 			item := randResult()
 			lists[i][j] = item
 		}
@@ -60,7 +60,7 @@ func TestMergerUnsorted(t *testing.T) {
 	// Not sorted: same order
 	mg := NewMerger(nil, lists, false, false, revision{}, 0, 0)
 	assert(t, cnt == mg.Length(), "Invalid Length")
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		assert(t, items[i] == mg.Get(i), "Invalid Get")
 	}
 }
@@ -73,7 +73,7 @@ func TestMergerSorted(t *testing.T) {
 	mg := NewMerger(nil, lists, true, false, revision{}, 0, 0)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	sort.Sort(ByRelevance(items))
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		if items[i] != mg.Get(i) {
 			t.Error("Not sorted", items[i], mg.Get(i))
 		}

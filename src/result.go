@@ -91,7 +91,7 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 		case byBegin, byEnd:
 			if validOffsetFound {
 				whitePrefixLen := 0
-				for idx := 0; idx < numChars; idx++ {
+				for idx := range numChars {
 					r := item.text.Get(idx)
 					whitePrefixLen = idx
 					if idx == minBegin || !unicode.IsSpace(r) {
