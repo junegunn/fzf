@@ -3745,9 +3745,14 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				offs[idx].offset[1] -= int32(shift)
 			}
 			maxe -= shift
-			displayWidth = t.displayWidthWithLimit(runes, 0, maxWidth)
-			if !t.wrap && displayWidth > maxWidth {
-				ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth/2)
+			ellipsis, ellipsisWidth := util.Truncate(t.ellipsis, maxWidth)
+			adjustedMaxWidth := maxWidth
+			if fidx < 2 {
+				// For frozen parts, reserve space for the ellipsis in the middle part
+				adjustedMaxWidth -= ellipsisWidth
+			}
+			displayWidth = t.displayWidthWithLimit(runes, 0, adjustedMaxWidth)
+			if !t.wrap && displayWidth > adjustedMaxWidth {
 				maxe = util.Constrain(maxe+util.Min(maxWidth/2-ellipsisWidth, t.hscrollOff), 0, len(runes))
 				transformOffsets := func(diff int32, rightTrim bool) {
 					for idx, offset := range offs {
