@@ -1208,6 +1208,13 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_match(/^> 1 2 3XX.*XX9998 9999 10000$/,lines[-3]) }
   end
 
+  def test_freeze_left_and_right_delimiter
+    tmux.send_keys %[seq 10000 | tr "\n" ' ' | sed 's/ / , /g' | #{FZF} --freeze-left 3 --freeze-right 3 --ellipsis XX --delimiter ' , '], :Enter
+    tmux.until { |lines| assert_match(/XX, 9999 , 10000 ,$/, lines[-3]) }
+    tmux.send_keys "'1000"
+    tmux.until { |lines| assert_match(/^> 1 , 2 , 3 ,XX.*XX, 9999 , 10000 ,$/,lines[-3]) }
+  end
+
   def test_freeze_right_exceed_range
     tmux.send_keys %[seq 10000 | tr "\n" ' ' | #{FZF} --freeze-right 100000 --ellipsis XX], :Enter
     ['', "'1000"].each do |query|

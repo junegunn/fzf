@@ -234,6 +234,23 @@ func StripLastDelimiter(str string, delimiter Delimiter) string {
 	return strings.TrimRightFunc(str, unicode.IsSpace)
 }
 
+func GetLastDelimiter(str string, delimiter Delimiter) string {
+	if delimiter.str != nil {
+		if strings.HasSuffix(str, *delimiter.str) {
+			return *delimiter.str
+		}
+	} else if delimiter.regex != nil {
+		locs := delimiter.regex.FindAllStringIndex(str, -1)
+		if len(locs) > 0 {
+			lastLoc := locs[len(locs)-1]
+			if lastLoc[1] == len(str) {
+				return str[lastLoc[0]:]
+			}
+		}
+	}
+	return ""
+}
+
 // JoinTokens concatenates the tokens into a single string
 func JoinTokens(tokens []Token) string {
 	var output bytes.Buffer

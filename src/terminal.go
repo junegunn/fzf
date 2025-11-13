@@ -3546,8 +3546,9 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 		if t.freezeLeft > 0 || t.freezeRight > 0 {
 			tokens = Tokenize(item.text.ToString(), t.delimiter)
 		}
-		// 0 1 2| 3 |4 5
-		// ----->   <---
+
+		// 0 | 1 | 2 | 3 | 4 | 5
+		// ------>       <------
 		if t.freezeLeft > 0 {
 			if len(tokens) > 0 {
 				token := tokens[util.Min(t.freezeLeft, len(tokens))-1]
@@ -3560,7 +3561,8 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				splitOffset2 = 0
 			} else if index >= t.freezeLeft {
 				token := tokens[index]
-				splitOffset2 = int(token.prefixLength) + token.text.Length()
+				delimiter := strings.TrimLeftFunc(GetLastDelimiter(token.text.ToString(), t.delimiter), unicode.IsSpace)
+				splitOffset2 = int(token.prefixLength) + token.text.Length() - len([]rune(delimiter))
 			}
 			splitOffset2 = util.Max(splitOffset2, splitOffset1)
 		}
