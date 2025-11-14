@@ -4,12 +4,13 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.zsh
 #
-# - $FZF_TMUX                 (default: 0)
-# - $FZF_TMUX_OPTS            (default: empty)
-# - $FZF_COMPLETION_TRIGGER   (default: '**')
-# - $FZF_COMPLETION_OPTS      (default: empty)
-# - $FZF_COMPLETION_PATH_OPTS (default: empty)
-# - $FZF_COMPLETION_DIR_OPTS  (default: empty)
+# - $FZF_TMUX                        (default: 0)
+# - $FZF_TMUX_OPTS                   (default: empty)
+# - $FZF_COMPLETION_TRIGGER          (default: '**')
+# - $FZF_PER_CMD_COMPLETION_TRIGGERS (default: none)
+# - $FZF_COMPLETION_OPTS             (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS        (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS         (default: empty)
 
 
 # Both branches of the following `if` do the same thing -- define
@@ -141,12 +142,31 @@ __fzf_comprun() {
   fi
 }
 
-# Extract the name of the command. e.g. ls; foo=1 ssh **<tab>
-__fzf_extract_command() {
+# The $words array is only available in user-defined completion ZLE
+# widgets.
+__fzf_extract_command_zle() {
   # Control completion with the "compstate" parameter, insert and list nothing
   compstate[insert]=
   compstate[list]=
   cmd_word="${(Q)words[1]}"
+}
+
+# Extract the name of the command. e.g. ls; foo=1 ssh **<tab>
+# The command name is stored in the $cmd_word variable.
+__fzf_extract_command() {
+  # Check if at least one completion system (old or new) is active.
+  # If at least one user-defined completion widget is detected, nothing will
+  # be completed if neither the old nor the new completion system is enabled.
+  # In such cases, the 'zsh/compctl' module is loaded as a fallback.
+  if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( ${+functions[compdef]} )); then
+    zmodload -F zsh/compctl 2>/dev/null
+  fi
+  {
+    zle -C __fzf_extract_command_zle .complete-word __fzf_extract_command_zle
+    zle __fzf_extract_command_zle
+  } always {
+    zle -D __fzf_extract_command_zle 2>/dev/null
+  }
 }
 
 __fzf_generic_path_completion() {
@@ -399,8 +419,15 @@ fzf-completion() {
     return
   fi
 
-  # Explicitly allow for empty trigger.
+  __fzf_extract_command
   trigger=${FZF_COMPLETION_TRIGGER-'**'}
+
+  if (( ${+FZF_PER_CMD_COMPLETION_TRIGGERS} )); then
+    # Use a per-command completion trigger if available.
+    trigger=${FZF_PER_CMD_COMPLETION_TRIGGERS[$cmd_word]-$trigger}
+  fi
+
+  # Explicitly allow for empty trigger.
   [[ -z $trigger && ${LBUFFER[-1]} == ' ' ]] && tokens+=("")
 
   # When the trigger starts with ';', it becomes a separate token
@@ -416,25 +443,14 @@ fzf-completion() {
   if [ ${#tokens} -gt 1 -a "$tail" = "$trigger" ]; then
     d_cmds=(${=FZF_COMPLETION_DIR_COMMANDS-cd pushd rmdir})
 
-    {
+    [ -n $trigger ] && {
       cursor_pos=$CURSOR
       # Move the cursor before the trigger to preserve word array elements when
       # trigger chars like ';' or '`' would otherwise reset the 'words' array.
       CURSOR=$((cursor_pos - ${#trigger} - 1))
-      # Check if at least one completion system (old or new) is active.
-      # If at least one user-defined completion widget is detected, nothing will
-      # be completed if neither the old nor the new completion system is enabled.
-      # In such cases, the 'zsh/compctl' module is loaded as a fallback.
-      if ! zmodload -F zsh/parameter p:functions 2>/dev/null || ! (( ${+functions[compdef]} )); then
-        zmodload -F zsh/compctl 2>/dev/null
-      fi
-      # Create a completion widget to access the 'words' array (man zshcompwid)
-      zle -C __fzf_extract_command .complete-word __fzf_extract_command
-      zle __fzf_extract_command
+      __fzf_extract_command
     } always {
       CURSOR=$cursor_pos
-      # Delete the completion widget
-      zle -D __fzf_extract_command  2>/dev/null
     }
 
     [ -z "$trigger"      ] && prefix=${tokens[-1]} || prefix=${tokens[-1]:0:-${#trigger}}
