@@ -2490,6 +2490,8 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		if shape.HasRight() {
 			width++
 		}
+		// Make sure that the width does not exceed the list width
+		width = util.Min(t.window.Width()+t.headerIndentImpl(0, shape), width)
 		height := b.Height() - borderLines(shape)
 		return t.tui.NewWindow(top, left, width, height, windowType, noBorder, true)
 	}
@@ -3107,7 +3109,11 @@ func (t *Terminal) printFooter() {
 }
 
 func (t *Terminal) headerIndent(borderShape tui.BorderShape) int {
-	indentSize := t.pointerLen + t.markerLen
+	return t.headerIndentImpl(t.pointerLen+t.markerLen, borderShape)
+}
+
+func (t *Terminal) headerIndentImpl(base int, borderShape tui.BorderShape) int {
+	indentSize := base
 	if t.listBorderShape.HasLeft() {
 		indentSize += 1 + t.borderWidth
 	}

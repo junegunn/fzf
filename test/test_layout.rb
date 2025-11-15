@@ -1215,6 +1215,15 @@ class TestLayout < TestInteractive
     end
   end
 
+  def test_header_and_footer_should_not_be_wider_than_list
+    tmux.send_keys %(WIDE=$(printf 'x%.0s' {1..1000}); (echo $WIDE; echo $WIDE) | fzf --header-lines 1 --style full --header-border bottom --header-lines-border top --ellipsis XX --header "$WIDE" --footer "$WIDE" --no-footer-border), :Enter
+    tmux.until do |lines|
+      matches = lines.filter_map { |line| line[/x+XX/] }
+      assert_equal 4, matches.length
+      assert_equal 1, matches.uniq.length
+    end
+  end
+
   def test_combinations
     skip unless ENV['LONGTEST']
 
