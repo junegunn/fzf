@@ -110,21 +110,21 @@ func TestGetCharEventKey(t *testing.T) {
 		{giveKey{tcell.KeyDelete, 0, tcell.ModAlt}, wantKey{AltDelete, 0, nil}},
 		{giveKey{tcell.KeyBackspace, 0, tcell.ModCtrl}, wantKey{CtrlBackspace, 0, nil}},
 		{giveKey{tcell.KeyBackspace, 0, tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAltBackspace, 0, nil}},
-		{giveKey{tcell.KeyBackspace, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                     // fabricated, unhandled
-		{giveKey{tcell.KeyBS, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                            // fabricated, unhandled
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                         // fabricated, unhandled
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModNone}, wantKey{CtrlBackspace, 0, nil}},                                // actual "Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},                                  // actual "Alt+Backspace" keystroke
-		{giveKey{tcell.KeyDEL, rune(tcell.KeyDEL), tcell.ModCtrl}, wantKey{CtrlBackspace, 0, nil}},                                    // actual "Ctrl+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift}, wantKey{CtrlBackspace, 0, nil}},                               // actual "Shift+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAltBackspace, 0, nil}},                                 // actual "Ctrl+Alt+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModShift}, wantKey{CtrlBackspace, 0, nil}},                                  // actual "Ctrl+Shift+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift | tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},                 // actual "Shift+Alt+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{CtrlAltBackspace, 0, nil}},                // actual "Ctrl+Shift+Alt+Backspace" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl}, wantKey{CtrlBackspace, 0, nil}},                                // actual "Ctrl+H" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},                  // fabricated "Ctrl+Alt+H" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModShift}, wantKey{CtrlBackspace, 0, nil}},               // actual "Ctrl+Shift+H" keystroke
-		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{AltBackspace, 0, nil}}, // fabricated "Ctrl+Shift+Alt+H" keystroke
+		{giveKey{tcell.KeyBackspace, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                  // fabricated, unhandled
+		{giveKey{tcell.KeyBS, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                         // fabricated, unhandled
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},                                                      // fabricated, unhandled
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModNone}, wantKey{Backspace, 0, nil}},                                 // actual "Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},                               // actual "Alt+Backspace" keystroke
+		{giveKey{tcell.KeyDEL, rune(tcell.KeyDEL), tcell.ModCtrl}, wantKey{CtrlBackspace, 0, nil}},                                 // actual "Ctrl+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift}, wantKey{Backspace, 0, nil}},                                // actual "Shift+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAltBackspace, 0, nil}},                              // actual "Ctrl+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModShift}, wantKey{CtrlBackspace, 0, nil}},                               // actual "Ctrl+Shift+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModShift | tcell.ModAlt}, wantKey{AltBackspace, 0, nil}},              // actual "Shift+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, 0, tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{CtrlAltBackspace, 0, nil}},             // actual "Ctrl+Shift+Alt+Backspace" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl}, wantKey{CtrlH, 0, nil}},                                     // actual "Ctrl+H" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModAlt}, wantKey{CtrlAlt, 'h', nil}},                  // fabricated "Ctrl+Alt+H" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModShift}, wantKey{CtrlH, 0, nil}},                    // actual "Ctrl+Shift+H" keystroke
+		{giveKey{tcell.KeyCtrlH, rune(tcell.KeyCtrlH), tcell.ModCtrl | tcell.ModAlt | tcell.ModShift}, wantKey{CtrlAlt, 'h', nil}}, // fabricated "Ctrl+Shift+Alt+H" keystroke
 
 		// section 4: (Alt+Shift)+Key(Up|Down|Left|Right)
 		{giveKey{tcell.KeyUp, 0, tcell.ModNone}, wantKey{Up, 0, nil}},
