@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.66.1
+version=0.67.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -177,6 +177,7 @@ case "$archi" in
   Linux\ aarch64\ Android) download fzf-$version-android_arm64.tar.gz ;;
   Linux\ aarch64*) download fzf-$version-linux_arm64.tar.gz ;;
   Linux\ loongarch64*) download fzf-$version-linux_loong64.tar.gz ;;
+  Linux\ riscv64*) download fzf-$version-linux_riscv64.tar.gz ;;
   Linux\ ppc64le*) download fzf-$version-linux_ppc64le.tar.gz ;;
   Linux\ *64*) download fzf-$version-linux_amd64.tar.gz ;;
   Linux\ s390x*) download fzf-$version-linux_s390x.tar.gz ;;
