@@ -1217,7 +1217,7 @@ func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Eve
 		default:
 			runes := []rune(key)
 			if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
-				r := rune(key[9])
+				r := rune(lkey[9])
 				evt := tui.CtrlAltKey(r)
 				if r == 'h' && !util.IsWindows() {
 					evt = tui.CtrlAltBackspace.AsEvent()
