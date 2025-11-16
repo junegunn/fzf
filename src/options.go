@@ -1226,7 +1226,7 @@ func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Eve
 				list = append(list, evt)
 			} else if len(key) == 6 && strings.HasPrefix(lkey, "ctrl-") && isAlphabet(lkey[5]) {
 				evt := tui.EventType(tui.CtrlA.Int() + int(lkey[5]) - 'a')
-				r := rune(key[5])
+				r := rune(lkey[5])
 				if r == 'h' && !util.IsWindows() {
 					evt = tui.CtrlBackspace
 				}
