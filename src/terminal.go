@@ -3807,7 +3807,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 						offs[idx].offset[1] = util.Min32(offset.offset[1], int32(maxWidth))
 					}
 				}
-				displayWidth = t.displayWidthWithLimit(runes, 0, displayWidth)
+				displayWidth = t.displayWidthWithLimit(runes, 0, maxWidth)
 			}
 			displayWidthSum += displayWidth
 
