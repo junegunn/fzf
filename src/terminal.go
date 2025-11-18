@@ -284,10 +284,12 @@ type Terminal struct {
 	markerLen          int
 	markerEmpty        string
 	markerMultiLine    [3]string
-	queryLen           [2]int
-	layout             layoutType
-	fullscreen         bool
-	keepRight          bool
+	queryLen              [2]int
+	layout                layoutType
+	fullscreen            bool
+	fullscreenPreview     bool
+	fullscreenPreviewOrig bool // Original preview hidden state before fullscreen
+	keepRight             bool
 	hscroll            bool
 	hscrollOff         int
 	scrollOff          int
@@ -616,6 +618,7 @@ const (
 	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
+	actTogglePreviewFull
 
 	actTransform
 	actTransformBorderLabel
@@ -2087,6 +2090,11 @@ func (t *Terminal) determineHeaderLinesShape() (bool, tui.BorderShape) {
 }
 
 func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
+	// Safety check: resizeWindows may be called before tui initialization
+	if t.tui == nil {
+		return
+	}
+
 	t.clearNumLinesCache()
 	t.forcePreview = forcePreview
 	screenWidth, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
@@ -2283,9 +2291,39 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		var resizePreviewWindows func(previewOpts *previewOpts)
 		resizePreviewWindows = func(previewOpts *previewOpts) {
 			t.activePreviewOpts = previewOpts
-			if previewOpts.size.size == 0 {
+
+			// In fullscreen preview mode, ignore size restrictions
+			if !t.fullscreenPreview && previewOpts.size.size == 0 {
 				return
 			}
+
+			// Handle fullscreen preview mode - preview takes the same space as the item list
+			if t.fullscreenPreview && t.activePreviewOpts != nil && !t.activePreviewOpts.hidden {
+				// Validate dimensions
+				if width <= 0 || height <= 0 {
+					return
+				}
+
+				// Reserve 1 line for filename display at bottom
+				filenameLineHeight := 1
+				pwidth := width
+				pheight := height - filenameLineHeight
+
+				// Create preview border window (even though noBorder, needed for window management)
+				t.pborder = t.tui.NewWindow(marginInt[0], marginInt[3], width, pheight, tui.WindowPreview, noBorder, false)
+
+				// Preview content window - leave space for filename line
+				t.pwindow = t.tui.NewWindow(marginInt[0], marginInt[3], pwidth, pheight, tui.WindowPreview, noBorder, true)
+				if t.pwindow != nil {
+					t.pwindow.SetWrapSign(t.wrapSign, t.wrapSignWidth)
+					if !hadPreviewWindow {
+						t.pwindow.Erase()
+					}
+				}
+
+				return
+			}
+
 			hasThreshold := previewOpts.threshold > 0 && previewOpts.alternative != nil
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
@@ -2455,8 +2493,8 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		t.activePreviewOpts = &t.previewOpts
 	}
 
-	// Without preview window
-	if t.window == nil {
+	// Without preview window (or in fullscreen preview mode, skip list window)
+	if t.window == nil && !t.fullscreenPreview {
 		if listStickToRight {
 			// Put scrollbar closer to the right border for consistent look
 			innerWidth++
@@ -2470,7 +2508,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			innerHeight-shrink, tui.WindowList, noBorder, true)
 	}
 
-	if len(t.scrollbar) == 0 {
+	if t.window != nil && len(t.scrollbar) == 0 {
 		for y := 0; y < t.window.Height(); y++ {
 			t.window.Move(y, t.window.Width()-1)
 			t.window.Print(" ")
@@ -2502,7 +2540,17 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		w = t.window
 	}
 
-	if hasInputWindow {
+	// In fullscreen preview mode, create a minimal input window to show selected filename
+	if t.fullscreenPreview && t.pwindow != nil {
+		// Create filename display line at the bottom of the list area (reserved line)
+		inputHeight := 1
+		inputTop := marginInt[0] + height - inputHeight
+
+		t.inputBorder = t.tui.NewWindow(
+			inputTop, marginInt[3], width, inputHeight,
+			tui.WindowInput, noBorder, true)
+		t.inputWindow = t.inputBorder
+	} else if hasInputWindow && !t.fullscreenPreview && w != nil {
 		var btop int
 		if (hasHeaderWindow || hasHeaderLinesWindow) && t.headerFirst {
 			switch t.layout {
@@ -2549,7 +2597,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 
 	// Set up header border
-	if hasHeaderWindow {
+	if hasHeaderWindow && !t.fullscreenPreview && w != nil {
 		var btop int
 		if hasInputWindow && t.headerFirst {
 			if t.layout == layoutReverse {
@@ -2577,7 +2625,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 
 	// Set up header lines border
-	if hasHeaderLinesWindow {
+	if hasHeaderLinesWindow && !t.fullscreenPreview && w != nil {
 		var btop int
 		// NOTE: We still have to handle --header-first here in case
 		// --header-lines-border is set. Can't we just use header window instead
@@ -2610,7 +2658,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 
 	// Set up footer
-	if hasFooterWindow {
+	if hasFooterWindow && !t.fullscreenPreview && w != nil {
 		var btop int
 		if t.layout == layoutReverse {
 			btop = w.Top() + w.Height()
@@ -2758,6 +2806,11 @@ func (t *Terminal) placeCursor() {
 	if t.inputless {
 		return
 	}
+	// In fullscreen preview mode, don't show cursor on filename display
+	if t.fullscreenPreview {
+		t.tui.HideCursor()
+		return
+	}
 	x := t.promptLen + t.queryLen[0]
 	if t.inputWindow != nil {
 		y := t.inputWindow.Height() - 1
@@ -2780,9 +2833,30 @@ func (t *Terminal) printPrompt() {
 	if t.inputWindow != nil {
 		w = t.inputWindow
 	}
-	if w.Height() == 0 {
+	if w == nil || w.Height() == 0 {
 		return
 	}
+
+	// In fullscreen preview mode, show selected filename instead of prompt
+	if t.fullscreenPreview {
+		w.Move(0, 0)
+		w.Print(strings.Repeat(" ", w.Width())) // Clear line
+		w.Move(0, 0)
+		item := t.currentItem()
+		if item != nil {
+			filename := item.AsString(t.ansi)
+			maxWidth := w.Width()
+			if len(filename) > maxWidth {
+				runes, _ := t.trimRight([]rune(filename), maxWidth)
+				filename = string(runes)
+			}
+			w.CPrint(tui.ColPrompt, filename)
+		} else {
+			w.CPrint(tui.ColPrompt, "[No selection]")
+		}
+		return
+	}
+
 	t.prompt()
 
 	before, after := t.updatePromptOffset()
@@ -2817,7 +2891,7 @@ func (t *Terminal) printInfo() {
 }
 
 func (t *Terminal) printInfoImpl() {
-	if t.window.Width() <= 1 || t.window.Height() == 0 {
+	if t.window == nil || t.window.Width() <= 1 || t.window.Height() == 0 {
 		return
 	}
 	pos := 0
@@ -3074,7 +3148,7 @@ func (t *Terminal) printHeader() {
 }
 
 func (t *Terminal) printFooter() {
-	if len(t.footer) == 0 {
+	if len(t.footer) == 0 || t.footerWindow == nil {
 		return
 	}
 	indentSize := t.headerIndent(t.footerBorderShape)
@@ -3127,6 +3201,9 @@ func (t *Terminal) headerIndentImpl(base int, borderShape tui.BorderShape) int {
 }
 
 func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShape, lines1 []string, lines2 []string) {
+	if t.window == nil {
+		return
+	}
 	max := t.window.Height()
 	if !t.inputless && t.inputWindow == nil && window == nil && t.headerFirst {
 		max--
@@ -3236,6 +3313,11 @@ func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
 }
 
 func (t *Terminal) printList() {
+	// Skip list rendering in fullscreen preview mode
+	if t.fullscreenPreview || t.window == nil {
+		return
+	}
+
 	t.constrain()
 	barLength, barStart := t.getScrollbar()
 
@@ -4858,6 +4940,16 @@ func (t *Terminal) hasPreviewWindowOnRight() bool {
 	return t.hasPreviewWindow() && t.activePreviewOpts.position == posRight
 }
 
+// exitFullscreenPreview exits fullscreen preview mode and restores the original preview state
+func (t *Terminal) exitFullscreenPreview() {
+	if !t.fullscreenPreview {
+		return
+	}
+	t.fullscreenPreview = false
+	t.activePreviewOpts.hidden = t.fullscreenPreviewOrig
+	t.tui.ShowCursor()
+}
+
 func (t *Terminal) currentItem() *Item {
 	cnt := t.merger.Length()
 	if t.cy >= 0 && cnt > 0 && cnt > t.cy {
@@ -5479,6 +5571,10 @@ func (t *Terminal) Loop() error {
 							version = t.version
 							focusedIndex = currentIndex
 							refreshPreview(t.previewOpts.command)
+							// Update filename display in fullscreen preview mode when selection changes
+							if t.fullscreenPreview {
+								t.printPrompt()
+							}
 						}
 					case reqJump:
 						if t.merger.Length() == 0 {
@@ -5891,6 +5987,10 @@ func (t *Terminal) Loop() error {
 				}
 				if act {
 					t.activePreviewOpts.Toggle()
+					// Update saved state if we're in fullscreen mode to prevent stale state
+					if t.fullscreenPreview {
+						t.fullscreenPreviewOrig = t.activePreviewOpts.hidden
+					}
 					updatePreviewWindow(false)
 					if t.canPreview() {
 						valid, list := t.buildPlusList(t.previewOpts.command, false)
@@ -5914,6 +6014,29 @@ func (t *Terminal) Loop() error {
 					// Reset preview version so that full redraw occurs
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
+				}
+			case actTogglePreviewFull:
+				if t.hasPreviewer() && len(t.previewOpts.command) > 0 && t.activePreviewOpts != nil {
+					if !t.fullscreenPreview {
+						// Entering fullscreen mode - save original state
+						t.fullscreenPreviewOrig = t.activePreviewOpts.hidden
+						t.fullscreenPreview = true
+						// Show preview in fullscreen mode
+						t.activePreviewOpts.hidden = false
+						t.tui.HideCursor()
+					} else {
+						// Exiting fullscreen mode - restore original state
+						t.exitFullscreenPreview()
+					}
+					updatePreviewWindow(false)
+					if t.canPreview() {
+						valid, list := t.buildPlusList(t.previewOpts.command, false)
+						if valid {
+							t.cancelPreview()
+							t.previewBox.Set(reqPreviewEnqueue,
+								previewRequest{t.previewOpts.command, t.evaluateScrollOffset(), list, t.environForPreview(), string(t.input)})
+						}
+					}
 				}
 			case actTransformPrompt, actBgTransformPrompt:
 				capture(true, func(prompt string) {
@@ -7101,6 +7224,11 @@ func (t *Terminal) Loop() error {
 				t.truncateQuery()
 			}
 			queryChanged = queryChanged || t.pasting == nil && string(previousInput) != string(t.input)
+			// Auto-exit fullscreen preview mode when query is modified
+			if queryChanged && t.fullscreenPreview {
+				t.exitFullscreenPreview()
+				updatePreviewWindow(false)
+			}
 			changed = changed || queryChanged
 			if onChanges, prs := t.keymap[tui.Change.AsEvent()]; queryChanged && prs && !doActions(onChanges) {
 				continue
