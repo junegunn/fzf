@@ -462,6 +462,53 @@ class TestZsh < TestBase
       tmux.send_keys 'C-c'
     end
   end
+
+  def prepare_ctrl_r_test
+    tmux.send_keys ':', :Enter
+    tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "trailing"  ', :Enter
+    tmux.prepare
+    tmux.send_keys 'cat <<EOF | wc -c', :Enter, 'qux thud', :Enter, 'EOF', :Enter
+    tmux.prepare
+    tmux.send_keys 'C-l', 'C-r'
+  end
+
+  def test_ctrl_r_accept_or_print_query
+    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query')
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'Lasciate ogni speranza...'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'Lasciate ogni speranza...', lines[-1] }
+  end
+
+  def test_ctrl_r_multi_selection
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_equal 5, lines.match_count }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(3)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_match(/cat <<EOF \| wc -c\nqux thud\nEOF\necho "trailing"\necho "bar\nfoo"/, lines.join("\n"))
+    end
+  end
+
+  def test_ctrl_r_no_multi_selection
+    set_var('FZF_CTRL_R_OPTS', '--no-multi')
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys :Up, :Up
+    tmux.until { |lines| refute_includes lines[-2], '(2)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_match(/echo "bar\nfoo"/, lines.join("\n"))
+      refute_match(/echo "trailing"/, lines.join("\n"))
+    end
+  end
 end
 
 class TestFish < TestBase
