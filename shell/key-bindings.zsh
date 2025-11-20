@@ -129,7 +129,7 @@ fi
 # CTRL-R - Paste the selected command from history into the command line
 fzf-history-widget() {
   local selected extracted_with_perl=0
-  setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases noglob nobash_rematch extendedglob 2> /dev/null
+  setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases noglob extendedglob 2> /dev/null
   # Ensure the module is loaded if not already, and the required features, such
   # as the associative 'history' array, which maps event numbers to full history
   # lines, are set. Also, make sure Perl is installed for multi-line output.
