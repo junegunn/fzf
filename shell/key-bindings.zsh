@@ -172,16 +172,6 @@ fzf-history-widget() {
         # Join by newline after stripping trailing whitespace from each command
         BUFFER="${(pj:\n:)${(@)cmds%%[[:space:]]#}}"
         CURSOR=${#BUFFER}
-      else
-        zle reset-prompt
-        zle -M "
-${WIDGET}: Failed to retrieve the history command(s) from your selection.
-Please report this: https://github.com/junegunn/fzf/issues
-
-Options: $(print -r -- $(setopt))
-
-$(typeset -p extracted_with_perl cmds selected match BUFFER)"
-        return 1
       fi
     else # selected is a custom query, not from history
       LBUFFER="$selected"
