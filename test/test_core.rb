@@ -1235,6 +1235,16 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_freeze_right_with_ellipsis_and_scrolling
+    tmux.send_keys "{ seq 6; ruby -e 'print \"g\"*1000, \"\\n\"'; seq 8 100; } | #{FZF} --ellipsis='777' --freeze-right 1 --scroll-off 0 --bind a:offset-up", :Enter
+    tmux.until { |lines| assert_equal '  100/100', lines[-2] }
+    tmux.send_keys(*Array.new(6) { :a })
+    tmux.until do |lines|
+      assert_match(/> 777g+$/, lines[-3])
+      assert_equal 1, lines.count { |l| l.end_with?('g') }
+    end
+  end
+
   def test_backward_eof
     tmux.send_keys "echo foo | #{FZF} --bind 'backward-eof:reload(seq 100)'", :Enter
     tmux.until { |lines| lines.item_count == 1 && lines.match_count == 1 }
