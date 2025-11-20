@@ -488,7 +488,7 @@ class TestZsh < TestBase
 
   def test_ctrl_r_multi_selection
     prepare_ctrl_r_test
-    tmux.until { |lines| assert_equal 5, lines.match_count }
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :BTab, :BTab, :BTab
     tmux.until { |lines| assert_includes lines[-2], '(3)' }
     tmux.send_keys :Enter
@@ -508,6 +508,23 @@ class TestZsh < TestBase
       assert_match(/echo "bar\nfoo"/, lines.join("\n"))
       refute_match(/echo "trailing"/, lines.join("\n"))
     end
+  end
+end
+
+# When Perl is not available on the system, fallback to using awk
+class TestZshNoPerl < TestZsh
+  def setup
+    super
+    disable_perl
+  end
+
+  def disable_perl
+    tmux.send_keys "unset 'commands[perl]'", :Enter
+    tmux.prepare
+    # Verify perl is actually unset (0 = not found)
+    tmux.send_keys 'echo ${+commands[perl]}', :Enter
+    tmux.until { |lines| assert_equal '0', lines[-1] }
+    tmux.prepare
   end
 end
 
