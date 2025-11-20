@@ -150,7 +150,7 @@ fzf-history-widget() {
   local -a mbegin mend match
   if [ -n "$selected" ]; then
     # Heuristic to check if the selected value is from history or a custom query
-    if [[ $selected == [[:blank:]]#<->[[:blank:]]* ]]; then
+    if [[ $selected == [[:blank:]]#<->\*#[[:blank:]]* ]]; then
       # Split at newlines
       for line in ${(ps:\n:)selected}; do
         if (( extracted_with_perl )); then
