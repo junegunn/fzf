@@ -465,6 +465,10 @@ class TestZsh < TestBase
 
   def prepare_ctrl_r_test
     tmux.send_keys ':', :Enter
+    tmux.send_keys 'echo match-collision', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "line 1', :Enter, '2 line 2"', :Enter
+    tmux.prepare
     tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
     tmux.prepare
     tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
@@ -477,13 +481,24 @@ class TestZsh < TestBase
   end
 
   def test_ctrl_r_accept_or_print_query
-    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query')
+    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query --exact')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys 'Lasciate ogni speranza...'
+    tmux.send_keys 'foobar'
     tmux.until { |lines| assert_equal 0, lines.match_count }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'Lasciate ogni speranza...', lines[-1] }
+    tmux.until { |lines| assert_equal 'foobar', lines[-1] }
+  end
+
+  def test_ctrl_r_multiline_index_collision
+    # Leading number in multi-line history content is not confused with index
+    prepare_ctrl_r_test
+    tmux.send_keys "'line 1"
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ['echo "line 1', '2 line 2"'], lines[-2..]
+    end
   end
 
   def test_ctrl_r_multi_selection
@@ -493,7 +508,7 @@ class TestZsh < TestBase
     tmux.until { |lines| assert_includes lines[-2], '(3)' }
     tmux.send_keys :Enter
     tmux.until do |lines|
-      assert_match(/cat <<EOF \| wc -c\nqux thud\nEOF\necho "trailing"\necho "bar\nfoo"/, lines.join("\n"))
+      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF', 'echo "trailing"', 'echo "bar', 'foo"'], lines[-6..]
     end
   end
 
@@ -501,12 +516,11 @@ class TestZsh < TestBase
     set_var('FZF_CTRL_R_OPTS', '--no-multi')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys :Up, :Up
-    tmux.until { |lines| refute_includes lines[-2], '(2)' }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| refute_includes lines[-2], '(3)' }
     tmux.send_keys :Enter
     tmux.until do |lines|
-      assert_match(/echo "bar\nfoo"/, lines.join("\n"))
-      refute_match(/echo "trailing"/, lines.join("\n"))
+      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF'], lines[-3..]
     end
   end
 end
