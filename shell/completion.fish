@@ -4,12 +4,18 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_TMUX                 (default: 0)
-# - $FZF_TMUX_OPTS            (default: empty)
-# - $FZF_COMPLETION_TRIGGER   (default: '**')
-# - $FZF_COMPLETION_OPTS      (default: empty)
-# - $FZF_COMPLETION_PATH_OPTS (default: empty)
-# - $FZF_COMPLETION_DIR_OPTS  (default: empty)
+# - $FZF_TMUX                     (default: 0)
+# - $FZF_TMUX_OPTS                (default: empty)
+# - $FZF_COMPLETION_TRIGGER       (default: '**')
+# - $FZF_COMPLETION_OPTS          (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS     (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS      (default: empty)
+# - $FZF_COMPLETION_FILE_OPTS     (default: empty)
+# - $FZF_COMPLETION_DIR_COMMANDS  (default: cd pushd rmdir)
+# - $FZF_COMPLETION_FILE_COMMANDS (default: cat head tail less more nano)
+# - $FZF_COMPLETION_PATH_WALKER   (default: 'file,dir,follow,hidden')
+# - $FZF_COMPLETION_DIR_WALKER    (default: 'dir,follow')
+# - $FZF_COMPLETION_FILE_WALKER   (default: 'file,follow,hidden')
 
 function fzf_completion_setup
     # Check fish version
@@ -176,10 +182,25 @@ function fzf_completion_setup
                     set -l walker
                     set -l rest
                     if string match -q '*dir*' -- "$compgen"
-                        set walker "dir,follow"
+                        if test -n "$FZF_COMPLETION_DIR_WALKER"
+                            set walker $FZF_COMPLETION_DIR_WALKER
+                        else
+                            set walker "dir,follow"
+                        end
                         set rest $FZF_COMPLETION_DIR_OPTS
+                    else if string match -q '*file*' -- "$compgen"
+                        if test -n "$FZF_COMPLETION_FILE_WALKER"
+                            set walker $FZF_COMPLETION_FILE_WALKER
+                        else
+                            set walker "file,follow,hidden"
+                        end
+                        set rest $FZF_COMPLETION_FILE_OPTS
                     else
-                        set walker "file,dir,follow,hidden"
+                        if test -n "$FZF_COMPLETION_PATH_WALKER"
+                            set walker $FZF_COMPLETION_PATH_WALKER
+                        else
+                            set walker "file,dir,follow,hidden"
+                        end
                         set rest $FZF_COMPLETION_PATH_OPTS
                     end
                     # Build args list, filtering empty values
@@ -212,6 +233,10 @@ function fzf_completion_setup
 
     function _fzf_dir_completion
         __fzf_generic_path_completion $argv[1] $argv[2] _fzf_compgen_dir "" / "" $argv[3]
+    end
+
+    function _fzf_file_completion
+        __fzf_generic_path_completion $argv[1] $argv[2] _fzf_compgen_file -m "" " " $argv[3]
     end
 
     # SSH completion
@@ -415,11 +440,21 @@ function fzf_completion_setup
             set d_cmds cd pushd rmdir
         end
 
+        # File-only commands
+        set -l f_cmds
+        if test -n "$FZF_COMPLETION_FILE_COMMANDS"
+            set f_cmds (string split ' ' -- "$FZF_COMPLETION_FILE_COMMANDS")
+        else
+            set f_cmds cat head tail less more
+        end
+
         # Route to appropriate completion function
         if type -q "_fzf_complete_$cmd_word"
             eval "_fzf_complete_$cmd_word" (string escape -- "$prefix") (string escape -- "$lbuf") (string escape -- "$cmd_word")
         else if contains -- "$cmd_word" $d_cmds
             _fzf_dir_completion "$prefix" "$lbuf" "$cmd_word"
+        else if contains -- "$cmd_word" $f_cmds
+            _fzf_file_completion "$prefix" "$lbuf" "$cmd_word"
         else
             _fzf_path_completion "$prefix" "$lbuf" "$cmd_word"
         end
