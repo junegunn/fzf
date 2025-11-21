@@ -463,6 +463,23 @@ class TestZsh < TestBase
     end
   end
 
+  # Helper function to run test with Perl and again with Awk
+  def self.test_perl_and_awk(name, &block)
+    define_method("test_#{name}") do
+      instance_eval(&block)
+    end
+
+    define_method("test_#{name}_awk") do
+      tmux.send_keys "unset 'commands[perl]'", :Enter
+      tmux.prepare
+      # Verify perl is actually unset (0 = not found)
+      tmux.send_keys 'echo ${+commands[perl]}', :Enter
+      tmux.until { |lines| assert_equal '0', lines[-1] }
+      tmux.prepare
+      instance_eval(&block)
+    end
+  end
+
   def prepare_ctrl_r_test
     tmux.send_keys ':', :Enter
     tmux.send_keys 'echo match-collision', :Enter
@@ -480,7 +497,7 @@ class TestZsh < TestBase
     tmux.send_keys 'C-l', 'C-r'
   end
 
-  def test_ctrl_r_accept_or_print_query
+  test_perl_and_awk 'ctrl_r_accept_or_print_query' do
     set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query --exact')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
@@ -490,7 +507,7 @@ class TestZsh < TestBase
     tmux.until { |lines| assert_equal 'foobar', lines[-1] }
   end
 
-  def test_ctrl_r_multiline_index_collision
+  test_perl_and_awk 'ctrl_r_multiline_index_collision' do
     # Leading number in multi-line history content is not confused with index
     prepare_ctrl_r_test
     tmux.send_keys "'line 1"
@@ -501,7 +518,7 @@ class TestZsh < TestBase
     end
   end
 
-  def test_ctrl_r_multi_selection
+  test_perl_and_awk 'ctrl_r_multi_selection' do
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :BTab, :BTab, :BTab
@@ -512,7 +529,7 @@ class TestZsh < TestBase
     end
   end
 
-  def test_ctrl_r_no_multi_selection
+  test_perl_and_awk 'ctrl_r_no_multi_selection' do
     set_var('FZF_CTRL_R_OPTS', '--no-multi')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
@@ -522,23 +539,6 @@ class TestZsh < TestBase
     tmux.until do |lines|
       assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF'], lines[-3..]
     end
-  end
-end
-
-# When Perl is not available on the system, fallback to using awk
-class TestZshNoPerl < TestZsh
-  def setup
-    super
-    disable_perl
-  end
-
-  def disable_perl
-    tmux.send_keys "unset 'commands[perl]'", :Enter
-    tmux.prepare
-    # Verify perl is actually unset (0 = not found)
-    tmux.send_keys 'echo ${+commands[perl]}', :Enter
-    tmux.until { |lines| assert_equal '0', lines[-1] }
-    tmux.prepare
   end
 end
 
