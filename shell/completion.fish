@@ -46,7 +46,7 @@ function fzf_completion_setup
             else
                 set tmux_opts -d$FZF_TMUX_HEIGHT
             end
-            fzf-tmux $tmux_opts -- $argv[2..-1]
+            eval fzf-tmux $tmux_opts -- $argv[2..-1]
         else
             fzf $argv[2..-1]
         end
@@ -185,7 +185,7 @@ function fzf_completion_setup
                     # Build args list, filtering empty values
                     set -l fzf_args -q "$leftover" --walker "$walker" --walker-root="$dir"
                     test -n "$fzf_opts"; and set -a fzf_args $fzf_opts
-                    test -n "$rest"; and set -a fzf_args $rest
+                    test -n "$rest"; and eval set -a fzf_args $rest
                     set matches (__fzf_comprun "$cmd_word" $fzf_args < /dev/tty)
                 end
 
