@@ -44,7 +44,7 @@ function fzf_completion_setup
         if type -q _fzf_comprun
             _fzf_comprun $argv
         else if test -n "$TMUX_PANE"; and begin
-                test "$FZF_TMUX" != 0; or test -n "$FZF_TMUX_OPTS"
+                test -n "$FZF_TMUX" -a "$FZF_TMUX" != 0; or test -n "$FZF_TMUX_OPTS"
             end
             set -l tmux_opts
             if test -n "$FZF_TMUX_OPTS"
@@ -138,6 +138,13 @@ function fzf_completion_setup
             return
         end
 
+        # Extract option prefix if present (handles --option=value pattern)
+        set -l opt_prefix ""
+        if string match -q '*=*' -- "$base"
+            set opt_prefix (string match -r '^[^=]*=' -- "$base")
+            set base (string replace -r '^[^=]*=' '' -- "$base")
+        end
+
         # Expand the base path
         set -l expanded_base (eval echo $base 2>/dev/null)
         if test $status -ne 0
@@ -214,7 +221,7 @@ function fzf_completion_setup
                     set -l result ""
                     for item in $matches
                         set item (string replace -r "$suffix\$" '' -- "$item")$suffix
-                        set result "$result"(string escape -- "$item")" "
+                        set result "$result$opt_prefix"(string escape -- "$item")" "
                     end
                     set result (string trim -r -- "$result")
                     commandline -r -- "$lbuf$result$tail"
@@ -404,8 +411,20 @@ function fzf_completion_setup
         # Get the command word
         set -l cmd_word $tokens[1]
 
-        # Get current token without glob expansion
-        set -l current_token (commandline -t)
+        # Extract the current token
+        set -l current_token ""
+        set -l token_start 1
+        set -l lbuf_len (string length -- "$lbuf")
+        for i in (seq $lbuf_len -1 1)
+            set -l char (string sub -s $i -l 1 -- "$lbuf")
+            if test "$char" = ' ' -o "$char" = \t
+                set token_start (math $i + 1)
+                break
+            end
+        end
+        set current_token (string sub -s $token_start -- "$lbuf")
+
+        # Calculate prefix
         set -l prefix
         if test -z "$trigger"
             set prefix "$current_token"
@@ -421,15 +440,11 @@ function fzf_completion_setup
         end
 
         # Calculate lbuf without current token
-        if test -n "$current_token"
-            set -l token_len (string length -- "$current_token")
-            set -l lbuf_len (string length -- "$lbuf")
-            set -l new_len (math "$lbuf_len" - "$token_len")
-            if test -n "$new_len" -a "$new_len" -gt 0
-                set lbuf (string sub -l "$new_len" -- "$lbuf")
-            else
-                set lbuf ""
-            end
+        set -l new_len (math $token_start - 1)
+        if test $new_len -gt 0
+            set lbuf (string sub -l $new_len -- "$lbuf")
+        else
+            set lbuf ""
         end
 
         # Directory commands
