@@ -3202,14 +3202,22 @@ func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
 	t.renderBar(line, barRange)
 }
 
-func (t *Terminal) gutter(current bool) {
+func (t *Terminal) gutter(current bool, alt bool) {
 	var color tui.ColorPair
 	if current {
 		color = tui.ColCurrentCursorEmpty
 	} else if !t.raw && t.gutterReverse || t.raw && t.gutterRawReverse {
-		color = tui.ColCursorEmpty
+		if alt {
+			color = tui.ColAltCursorEmpty
+		} else {
+			color = tui.ColCursorEmpty
+		}
 	} else {
-		color = tui.ColCursorEmptyChar
+		if alt {
+			color = tui.ColAltCursorEmptyChar
+		} else {
+			color = tui.ColCursorEmptyChar
+		}
 	}
 	gutter := t.pointerEmpty
 	if t.raw {
@@ -3220,7 +3228,7 @@ func (t *Terminal) gutter(current bool) {
 
 func (t *Terminal) renderGapLine(line int, barRange [2]int, drawLine bool) {
 	t.move(line, 0, false)
-	t.gutter(false)
+	t.gutter(false, false)
 	t.window.Print(t.markerEmpty)
 	x := t.pointerLen + t.markerLen
 
@@ -3286,6 +3294,8 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	extraWidth := 0
 	alt := false
 	altBg := t.theme.AltBg
+	altGutter := false
+	altGutterBg := t.theme.AltGutter
 	selectedBg := selected && t.theme.SelectedBg != t.theme.ListBg
 	if t.jumping != jumpDisabled {
 		if index < len(t.jumpLabels) {
@@ -3293,8 +3303,10 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			if !altBg.IsColorDefined() {
 				altBg = t.theme.DarkBg
 				alt = index%2 == 0
+				altGutter = altGutterBg.IsColorDefined() && index%2 == 0
 			} else {
 				alt = index%2 == 1
+				altGutter = altGutterBg.IsColorDefined() && index%2 == 1
 			}
 			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
 			if t.pointerLen == 0 {
@@ -3306,6 +3318,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			label = t.pointer
 		}
 		alt = !selectedBg && altBg.IsColorDefined() && index%2 == 1
+		altGutter = altGutterBg.IsColorDefined() && index%2 == 1
 	}
 
 	// Avoid unnecessary redraw
@@ -3394,7 +3407,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.gutter(true)
+				t.gutter(true, false)
 			} else {
 				t.window.CPrint(tui.ColCurrentCursor, label)
 			}
@@ -3416,7 +3429,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.gutter(false)
+				t.gutter(false, altGutter)
 			} else {
 				t.window.CPrint(tui.ColCursor, label)
 			}
