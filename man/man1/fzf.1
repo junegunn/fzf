@@ -740,7 +740,7 @@ ENVIRONMENT VARIABLES EXPORTED TO CHILD PROCESSES.
 
 e.g.
      \fB# Prepend the current cursor position in yellow
-     fzf \-\-info\-command='echo \-e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
+     fzf \-\-info\-command='printf "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛\\n"'\fR
 
 .TP
 .B "\-\-no\-info"
@@ -2108,7 +2108,7 @@ payload of HTTP POST request to the \fB\-\-listen\fR server.
 
 e.g.
     \fB# Disallow selecting an empty line
-    echo \-e "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
+    printf "1. Hello\\n2. Goodbye\\n\\n3. Exit\\n" |
       fzf \-\-height '~100%' \-\-reverse \-\-header 'Select one' \\
           \-\-bind 'enter:transform:[[ \-n {} ]] &&
                     echo accept ||
