@@ -4,16 +4,18 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_COMPLETION_TRIGGER       (default: '**')
-# - $FZF_COMPLETION_OPTS          (default: empty)
-# - $FZF_COMPLETION_PATH_OPTS     (default: empty)
-# - $FZF_COMPLETION_DIR_OPTS      (default: empty)
-# - $FZF_COMPLETION_FILE_OPTS     (default: empty)
-# - $FZF_COMPLETION_DIR_COMMANDS  (default: cd pushd rmdir)
-# - $FZF_COMPLETION_FILE_COMMANDS (default: cat head tail less more nano)
-# - $FZF_COMPLETION_PATH_WALKER   (default: 'file,dir,follow,hidden')
-# - $FZF_COMPLETION_DIR_WALKER    (default: 'dir,follow')
-# - $FZF_COMPLETION_FILE_WALKER   (default: 'file,follow,hidden')
+# - $FZF_COMPLETION_TRIGGER         (default: '**')
+# - $FZF_COMPLETION_OPTS            (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS       (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS        (default: empty)
+# - $FZF_COMPLETION_FILE_OPTS       (default: empty)
+# - $FZF_COMPLETION_DIR_COMMANDS    (default: cd pushd rmdir)
+# - $FZF_COMPLETION_FILE_COMMANDS   (default: cat head tail less more nano)
+# - $FZF_COMPLETION_NATIVE_COMMANDS (default: ssh telnet set functions)
+# - $FZF_COMPLETION_PATH_WALKER     (default: 'file,dir,follow,hidden')
+# - $FZF_COMPLETION_DIR_WALKER      (default: 'dir,follow')
+# - $FZF_COMPLETION_FILE_WALKER     (default: 'file,follow,hidden')
+# - $FZF_COMPLETION_NATIVE_MODE     (default: 'complete', or 'complete-and-search')
 
 function fzf_completion_setup
     # Check fish version
@@ -33,6 +35,20 @@ function fzf_completion_setup
             _fzf_comprun $argv
         else
             fzf $argv[2..-1]
+        end
+    end
+
+    # Delegate to native fish completion for specific commands
+    # Use FZF_COMPLETION_NATIVE_MODE to choose: 'complete' (default) or 'complete-and-search'
+    function __fzf_complete_native
+        set -l prefix $argv[1]
+        set -l lbuf $argv[2]
+        # Replace command line with trigger removed, then invoke native completion
+        commandline -r -- "$lbuf$prefix"
+        if test "$FZF_COMPLETION_NATIVE_MODE" = complete-and-search
+            commandline -f complete-and-search
+        else
+            commandline -f complete
         end
     end
 
@@ -159,6 +175,38 @@ function fzf_completion_setup
         __fzf_generic_path_completion $argv[1] $argv[2] _fzf_compgen_file -m "" " " $argv[3]
     end
 
+    # Kill completion (process selection)
+    function _fzf_complete_kill
+        set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse" "$FZF_COMPLETION_OPTS")
+        set -lx FZF_DEFAULT_OPTS_FILE
+
+        # Try different ps formats, capture output directly
+        set -l ps_output (command ps -eo user,pid,ppid,start,time,command 2>/dev/null)
+        if test $status -ne 0 -o -z "$ps_output"
+            set ps_output (command ps -eo user,pid,ppid,time,args 2>/dev/null)
+        end
+        if test $status -ne 0 -o -z "$ps_output"
+            set ps_output (command ps --everyone --full --windows 2>/dev/null)
+        end
+
+        set -l result (printf '%s\n' $ps_output | __fzf_comprun $argv[3] -m --header-lines=1 --no-preview --wrap -q $argv[1])
+
+        if test -n "$result"
+            # Extract PIDs (second field)
+            set -l pids
+            for line in $result
+                set -l fields (string split -n ' ' -- "$line")
+                if test (count $fields) -ge 2
+                    set -a pids $fields[2]
+                end
+            end
+            if test (count $pids) -gt 0
+                commandline -r -- "$argv[2]"(string join ' ' -- $pids)" "
+            end
+        end
+        commandline -f repaint
+    end
+
     # Main completion function
     function fzf-completion
         set -l trigger (test -n "$FZF_COMPLETION_TRIGGER"; and echo "$FZF_COMPLETION_TRIGGER"; or echo '**')
@@ -167,7 +215,11 @@ function fzf_completion_setup
 
         if test (count $tokens) -lt 1
             # No tokens, fall back to default completion
-            commandline -f complete
+            if test "$FZF_COMPLETION_NATIVE_MODE" = complete-and-search
+                commandline -f complete-and-search
+            else
+                commandline -f complete
+            end
             return
         end
 
@@ -180,7 +232,11 @@ function fzf_completion_setup
         set -l tail (string sub -s -(string length -- "$trigger") -- "$lbuf")
         if test "$tail" != "$trigger"
             # No trigger, fall back to default completion
-            commandline -f complete
+            if test "$FZF_COMPLETION_NATIVE_MODE" = complete-and-search
+                commandline -f complete-and-search
+            else
+                commandline -f complete
+            end
             return
         end
 
@@ -232,9 +288,19 @@ function fzf_completion_setup
             set f_cmds cat head tail less more
         end
 
+        # Native completion commands
+        set -l n_cmds
+        if test -n "$FZF_COMPLETION_NATIVE_COMMANDS"
+            set n_cmds (string split ' ' -- "$FZF_COMPLETION_NATIVE_COMMANDS")
+        else
+            set n_cmds ssh telnet set functions
+        end
+
         # Route to appropriate completion function
         if type -q "_fzf_complete_$cmd_word"
             eval "_fzf_complete_$cmd_word" (string escape -- "$prefix") (string escape -- "$lbuf") (string escape -- "$cmd_word")
+        else if contains -- "$cmd_word" $n_cmds
+            __fzf_complete_native "$prefix" "$lbuf" "$cmd_word"
         else if contains -- "$cmd_word" $d_cmds
             _fzf_dir_completion "$prefix" "$lbuf" "$cmd_word"
         else if contains -- "$cmd_word" $f_cmds
