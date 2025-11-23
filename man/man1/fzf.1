@@ -840,6 +840,9 @@ e.g.
      # This won't work properly without 'f' flag due to ARG_MAX limit.
      seq 100000 | fzf \-\-preview "awk '{sum+=\\$1} END {print sum}' {*f}"\fR
 
+     \fB# Use {+f} to get the selected items as a line-separated list
+     seq 100 | fzf \-\-multi \-\-bind 'enter:become:cat {+f}'\fR
+
 Also,
 
 * \fB{q}\fR is replaced to the current query string
