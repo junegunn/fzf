@@ -4,8 +4,6 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_TMUX                     (default: 0)
-# - $FZF_TMUX_OPTS                (default: empty)
 # - $FZF_COMPLETION_TRIGGER       (default: '**')
 # - $FZF_COMPLETION_OPTS          (default: empty)
 # - $FZF_COMPLETION_PATH_OPTS     (default: empty)
@@ -28,31 +26,11 @@ function fzf_completion_setup
         return 1
     end
 
-    function __fzf_completion_defaults
-        # $argv[1]: Prepend to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
-        # $argv[2..]: Append to FZF_DEFAULT_OPTS_FILE and FZF_DEFAULT_OPTS
-        test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
-        string join ' ' -- \
-            "--height $FZF_TMUX_HEIGHT --min-height=20+ --bind=ctrl-z:ignore" $argv[1] \
-            (test -r "$FZF_DEFAULT_OPTS_FILE"; and string join -- ' ' <$FZF_DEFAULT_OPTS_FILE) \
-            $FZF_DEFAULT_OPTS $argv[2..-1]
-    end
-
     function __fzf_comprun
         # $argv[1]: command word (for custom _fzf_comprun function)
         # $argv[2..]: fzf arguments
         if type -q _fzf_comprun
             _fzf_comprun $argv
-        else if test -n "$TMUX_PANE"; and begin
-                test -n "$FZF_TMUX" -a "$FZF_TMUX" != 0; or test -n "$FZF_TMUX_OPTS"
-            end
-            set -l tmux_opts
-            if test -n "$FZF_TMUX_OPTS"
-                set tmux_opts $FZF_TMUX_OPTS
-            else
-                set tmux_opts -d$FZF_TMUX_HEIGHT
-            end
-            eval fzf-tmux $tmux_opts -- $argv[2..-1]
         else
             fzf $argv[2..-1]
         end
@@ -113,7 +91,7 @@ function fzf_completion_setup
                 end
 
                 # Run fzf
-                set -lx FZF_DEFAULT_OPTS (__fzf_completion_defaults "--reverse --scheme=path" "$FZF_COMPLETION_OPTS")
+                set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" "$FZF_COMPLETION_OPTS")
                 set -lx FZF_DEFAULT_COMMAND
                 set -lx FZF_DEFAULT_OPTS_FILE
 
@@ -209,27 +187,18 @@ function fzf_completion_setup
         # Get the command word
         set -l cmd_word $tokens[1]
 
-        # Extract the current token
-        set -l current_token ""
-        set -l token_start 1
-        set -l lbuf_len (string length -- "$lbuf")
-        for i in (seq $lbuf_len -1 1)
-            set -l char (string sub -s $i -l 1 -- "$lbuf")
-            if test "$char" = ' ' -o "$char" = \t
-                set token_start (math $i + 1)
-                break
-            end
-        end
-        set current_token (string sub -s $token_start -- "$lbuf")
+        # Get current token in two forms:
+        # - raw_token: preserves quotes/escapes, for lbuf calculation
+        # - current_token: processed by shell, for prefix calculation
+        set -l raw_token (commandline --current-token 2>/dev/null | string collect)
+        set -l current_token (commandline --current-token --tokenize 2>/dev/null | string collect)
 
-        # Calculate prefix
+        # Calculate prefix by removing trigger from current token (processed)
         set -l prefix
         if test -z "$trigger"
             set prefix "$current_token"
         else
-            set -l trigger_len (string length -- "$trigger")
-            set -l token_len (string length -- "$current_token")
-            set -l prefix_len (math $token_len - $trigger_len)
+            set -l prefix_len (math (string length -- "$current_token") - (string length -- "$trigger"))
             if test $prefix_len -gt 0
                 set prefix (string sub -l $prefix_len -- "$current_token")
             else
@@ -237,8 +206,10 @@ function fzf_completion_setup
             end
         end
 
-        # Calculate lbuf without current token
-        set -l new_len (math $token_start - 1)
+        # Calculate lbuf without current token (use raw_token to match command line)
+        set -l token_len (string length -- "$raw_token")
+        set -l lbuf_len (string length -- "$lbuf")
+        set -l new_len (math $lbuf_len - $token_len)
         if test $new_len -gt 0
             set lbuf (string sub -l $new_len -- "$lbuf")
         else
