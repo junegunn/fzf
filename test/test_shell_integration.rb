@@ -27,6 +27,10 @@ module TestShell
     tmux.prepare
   end
 
+  def trigger
+    '**'
+  end
+
   def test_ctrl_t
     set_var('FZF_CTRL_T_COMMAND', 'seq 100')
 
@@ -165,7 +169,7 @@ module CompletionTest
       FileUtils.touch(File.expand_path(f))
     end
     tmux.prepare
-    tmux.send_keys 'cat /tmp/fzf-test/10**', :Tab
+    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys ' !d'
     tmux.until { |lines| assert_equal 2, lines.match_count }
@@ -179,7 +183,7 @@ module CompletionTest
     # ~USERNAME**<TAB>
     user = `whoami`.chomp
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~#{user}**", :Tab
+    tmux.send_keys "cat ~#{user}#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys "/#{user}"
     tmux.until { |lines| assert(lines.any? { |l| l.end_with?("/#{user}") }) }
@@ -190,14 +194,21 @@ module CompletionTest
 
     # ~INVALID_USERNAME**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat ~such**', :Tab
+    tmux.send_keys "cat ~such#{trigger}", :Tab
     tmux.until(true) { |lines| assert lines.any_include?('no~such~user') }
     tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal 'cat no~such~user', lines[-1] }
+    tmux.until(true) do |lines|
+      if shell == :fish
+        # Fish's string escape quotes filenames with ~ to prevent tilde expansion
+        assert_equal 'cat no\\~such\\~user', lines[-1]
+      else
+        assert_equal 'cat no~such~user', lines[-1]
+      end
+    end
 
     # /tmp/fzf\ test**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf\ test/**', :Tab
+    tmux.send_keys "cat /tmp/fzf\\ test/#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'foobar$'
     tmux.until do |lines|
@@ -210,7 +221,7 @@ module CompletionTest
     # Should include hidden files
     (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/.hidden-#{i}") }
     tmux.send_keys 'C-u'
-    tmux.send_keys 'cat /tmp/fzf-test/hidden**', :Tab
+    tmux.send_keys "cat /tmp/fzf-test/hidden#{trigger}", :Tab
     tmux.until(true) do |lines|
       assert_equal 100, lines.match_count
       assert lines.any_include?('/tmp/fzf-test/.hidden-')
@@ -223,7 +234,7 @@ module CompletionTest
   end
 
   def test_file_completion_root
-    tmux.send_keys 'ls /**', :Tab
+    tmux.send_keys "ls /#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :Enter
   end
@@ -234,7 +245,7 @@ module CompletionTest
     end
     FileUtils.touch('/tmp/fzf-test/d55/xxx')
     tmux.prepare
-    tmux.send_keys 'cd /tmp/fzf-test/**', :Tab
+    tmux.send_keys "cd /tmp/fzf-test/#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :Tab, :Tab # Tab does not work here
     tmux.send_keys 55
@@ -262,12 +273,13 @@ module CompletionTest
   end
 
   def test_process_completion
+    skip('fish background job format differs') if shell == :fish
     tmux.send_keys 'sleep 12345 &', :Enter
     lines = tmux.until { |lines| assert lines[-1]&.start_with?('[1] ') }
     pid = lines[-1]&.split&.last
     tmux.prepare
     tmux.send_keys 'C-L'
-    tmux.send_keys 'kill **', :Tab
+    tmux.send_keys "kill #{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'sleep12345'
     tmux.until { |lines| assert lines.any_include?('sleep 12345') }
@@ -284,9 +296,13 @@ module CompletionTest
   end
 
   def test_custom_completion
-    tmux.send_keys '_fzf_compgen_path() { echo "$1"; seq 10; }', :Enter
+    if shell == :fish
+      tmux.send_keys 'function _fzf_compgen_path; echo $argv[1]; seq 10; end', :Enter
+    else
+      tmux.send_keys '_fzf_compgen_path() { echo "$1"; seq 10; }', :Enter
+    end
     tmux.prepare
-    tmux.send_keys 'ls /tmp/**', :Tab
+    tmux.send_keys "ls /tmp/#{trigger}", :Tab
     tmux.until { |lines| assert_equal 11, lines.match_count }
     tmux.send_keys :Tab, :Tab, :Tab
     tmux.until { |lines| assert_equal 3, lines.select_count }
@@ -295,11 +311,12 @@ module CompletionTest
   end
 
   def test_unset_completion
+    skip('fish has native completion for set and unset variables') if shell == :fish
     tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
     tmux.prepare
 
     # Using tmux
-    tmux.send_keys 'unset FZFFOOBR**', :Tab
+    tmux.send_keys "unset FZFFOOBR#{trigger}", :Tab
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal 'unset FZFFOOBAR', lines[-1] }
@@ -308,14 +325,19 @@ module CompletionTest
     # FZF_TMUX=1
     new_shell
     tmux.focus
-    tmux.send_keys 'unset FZFFOOBR**', :Tab
+    tmux.send_keys "unset FZFFOOBR#{trigger}", :Tab
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until { |lines| assert_equal 'unset FZFFOOBAR', lines[-1] }
   end
 
   def test_completion_in_command_sequence
-    tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
+    if shell == :fish
+      FileUtils.mkdir_p('/tmp/fzf-test-seq')
+      FileUtils.touch('/tmp/fzf-test-seq/fzffoobar')
+    else
+      tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
+    end
     tmux.prepare
 
     triggers = ['**', '~~', '++', 'ff', '/']
@@ -323,19 +345,30 @@ module CompletionTest
 
     triggers.each do |trigger|
       set_var('FZF_COMPLETION_TRIGGER', trigger)
-      command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}"
+      if shell == :fish
+        command = "echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobr#{trigger}"
+        expected = 'echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobar'
+      else
+        command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}"
+        expected = 'echo foo; QUX=THUD unset FZFFOOBAR'
+      end
       tmux.send_keys command.sub(/(;|`)$/, '\\\\\1'), :Tab
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
-      tmux.until { |lines| assert_equal 'echo foo; QUX=THUD unset FZFFOOBAR', lines[-1] }
+      tmux.until { |lines| assert_equal expected, lines[-1] }
     end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-seq') if shell == :fish
   end
 
   def test_file_completion_unicode
     FileUtils.mkdir_p('/tmp/fzf-test')
-    tmux.paste "cd /tmp/fzf-test; echo test3 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2701'; echo test4 > $'fzf-unicode \\355\\205\\214\\354\\212\\244\\355\\212\\2702'"
+    # Shell-agnostic file creation
+    File.write('/tmp/fzf-test/fzf-unicode 테스트1', "test3\n")
+    File.write('/tmp/fzf-test/fzf-unicode 테스트2', "test4\n")
+    tmux.send_keys 'cd /tmp/fzf-test', :Enter
     tmux.prepare
-    tmux.send_keys 'cat fzf-unicode**', :Tab
+    tmux.send_keys "cat fzf-unicode#{trigger}", :Tab
     tmux.until { |lines| assert_equal 2, lines.match_count }
 
     tmux.send_keys '1'
@@ -358,10 +391,11 @@ module CompletionTest
   end
 
   def test_custom_completion_api
+    skip('bash-specific _comprun/declare syntax') if shell == :fish
     tmux.send_keys 'eval "_fzf$(declare -f _comprun)"', :Enter
     %w[f g].each do |command|
       tmux.prepare
-      tmux.send_keys "#{command} b**", :Tab
+      tmux.send_keys "#{command} b#{trigger}", :Tab
       tmux.until do |lines|
         assert_equal 2, lines.item_count
         assert_equal 1, lines.match_count
@@ -378,16 +412,17 @@ module CompletionTest
   end
 
   def test_ssh_completion
+    skip('fish uses native ssh completion') if shell == :fish
     (1..5).each { |i| FileUtils.touch("/tmp/fzf-test-ssh-#{i}") }
 
-    tmux.send_keys 'ssh jg@localhost**', :Tab
+    tmux.send_keys "ssh jg@localhost#{trigger}", :Tab
     tmux.until do |lines|
       assert_operator lines.match_count, :>=, 1
     end
 
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines.any_include?('ssh jg@localhost') }
-    tmux.send_keys ' -i /tmp/fzf-test-ssh**', :Tab
+    tmux.send_keys " -i /tmp/fzf-test-ssh#{trigger}", :Tab
     tmux.until do |lines|
       assert_operator lines.match_count, :>=, 5
       assert_equal 0, lines.select_count
@@ -399,7 +434,7 @@ module CompletionTest
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines.any_include?('ssh jg@localhost  -i /tmp/fzf-test-ssh-') }
 
-    tmux.send_keys 'localhost**', :Tab
+    tmux.send_keys "localhost#{trigger}", :Tab
     tmux.until do |lines|
       assert_operator lines.match_count, :>=, 1
     end
@@ -424,7 +459,7 @@ class TestBash < TestBase
     tmux.paste 'touch /tmp/foo; _fzf_completion_loader=1'
     tmux.paste '_completion_loader() { complete -o default fake; }'
     tmux.paste 'complete -F _fzf_path_completion -o default -o bashdefault fake'
-    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.send_keys "fake /tmp/foo#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'C-c'
 
@@ -433,7 +468,7 @@ class TestBash < TestBase
     tmux.send_keys :Tab, 'C-u'
 
     tmux.prepare
-    tmux.send_keys 'fake /tmp/foo**', :Tab
+    tmux.send_keys "fake /tmp/foo#{trigger}", :Tab
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
   end
 end
@@ -455,7 +490,7 @@ class TestZsh < TestBase
     tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
     ['unset', '\unset', "'unset'"].each do |command|
       tmux.prepare
-      tmux.send_keys "#{command} FZFFOOBR**", :Tab
+      tmux.send_keys "#{command} FZFFOOBR#{trigger}", :Tab
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
       tmux.until { |lines| assert_equal "#{command} FZFFOOBAR", lines[-1] }
@@ -466,13 +501,18 @@ end
 
 class TestFish < TestBase
   include TestShell
+  include CompletionTest
 
   def shell
     :fish
   end
 
+  def trigger
+    '++'
+  end
+
   def new_shell
-    tmux.send_keys 'env FZF_TMUX=1 FZF_DEFAULT_OPTS=--no-scrollbar fish', :Enter
+    tmux.send_keys 'env FZF_TMUX=1 XDG_CONFIG_HOME=/tmp/fzf-fish fish', :Enter
     tmux.send_keys 'function fish_prompt; end; clear', :Enter
     tmux.until { |lines| assert_empty lines }
   end
