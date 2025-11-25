@@ -1460,6 +1460,20 @@ func (t *Terminal) MaxFitAndPad() (int, int) {
 	return fit, padHeight
 }
 
+func (t *Terminal) MaxFitAndPadWithMinHeight(userMinHeight int) (int, int) {
+	_, screenHeight, marginInt, paddingInt := t.adjustMarginAndPadding()
+	padHeight := marginInt[0] + marginInt[2] + paddingInt[0] + paddingInt[2]
+	maxPossibleFit := screenHeight - padHeight - t.extraLines()
+	
+	// If user specified a minimum height, use it but clamp to available screen space
+	if userMinHeight > 0 {
+		return util.Min(userMinHeight, maxPossibleFit), padHeight
+	}
+	
+	// Otherwise use the maximum possible fit
+	return maxPossibleFit, padHeight
+}
+
 func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool) (labelPrinter, int) {
 	// Nothing to do
 	if len(str) == 0 {
