@@ -18,6 +18,9 @@
 # - $FZF_COMPLETION_NATIVE_MODE     (default: 'complete', or 'complete-and-search')
 
 function fzf_completion_setup
+    # Load helper functions
+    fzf_key_bindings
+
     # Check fish version
     set -l fish_ver (string match -r '^(\d+).(\d+)' $version 2> /dev/null; or echo 0\n0\n0)
     if test \( "$fish_ver[2]" -lt 3 \) -o \( "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1 \)
@@ -25,10 +28,6 @@ function fzf_completion_setup
         return 1
     else if not type -q fzf
         echo "fzf was not found in path." >&2
-        return 1
-    else if not type -q __fzf_parse_commandline; or not type -q __fzf_defaults
-        echo "fzf completion requires key-bindings.fish to be sourced first." >&2
-        echo "Please source key-bindings.fish before completion.fish" >&2
         return 1
     end
 
@@ -75,10 +74,10 @@ function fzf_completion_setup
         # Run fzf
         if type -q "$compgen"
             set -l result (eval $compgen $dir | eval (__fzfcmd) --query=$fzf_query | string split0)
-            and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -- $result))$tail
+            and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
         else
             set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
-            and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -- $result))$tail
+            and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
         end
 
         commandline -f repaint
