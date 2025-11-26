@@ -439,6 +439,109 @@ module CompletionTest
       assert_operator lines.match_count, :>=, 1
     end
   end
+
+  def test_option_prefix_completion
+    skip('this test fails on bash/zsh') if shell != :fish
+    FileUtils.mkdir_p('/tmp/fzf-test-opt')
+    FileUtils.touch('/tmp/fzf-test-opt/xyz123')
+    tmux.prepare
+    tmux.send_keys "some-command --somearg=/tmp/fzf-test-opt/xyz#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert lines[-1]&.include?('xyz123') }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt')
+  end
+
+  def test_short_option_prefix_completion
+    skip('this test fails on bash/zsh') if shell != :fish
+    FileUtils.mkdir_p('/tmp/fzf-test-short')
+    FileUtils.touch('/tmp/fzf-test-short/xyz123')
+    tmux.prepare
+    tmux.send_keys "some-command -o/tmp/fzf-test-short/xyz#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert lines[-1]&.include?('xyz123') }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-short')
+  end
+
+  def test_filename_with_newline
+    skip('this test fails on bash/zsh, they replace the newline with a space') if shell != :fish
+    FileUtils.mkdir_p('/tmp/fzf-test-newline')
+    FileUtils.touch("/tmp/fzf-test-newline/xyz\nwith\nnewlines")
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test-newline/xyz#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'cat /tmp/fzf-test-newline/xyz\\nwith\\nnewlines', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-newline')
+  end
+
+  def test_path_with_special_chars
+    FileUtils.mkdir_p('/tmp/fzf-test-[special]')
+    FileUtils.touch('/tmp/fzf-test-[special]/xyz123')
+    tmux.prepare
+    tmux.send_keys "ls /tmp/fzf-test-\\[special\\]/xyz#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-\\[special\\]/xyz123', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-[special]')
+  end
+
+  def test_dollar_sign_in_path
+    FileUtils.mkdir_p('/tmp/fzf-test-$dollar')
+    FileUtils.touch('/tmp/fzf-test-$dollar/xyz123')
+    tmux.prepare
+    if shell == :fish
+      tmux.send_keys "ls /tmp/fzf-test-\\$dollar/xyz#{trigger}", :Tab
+    else
+      tmux.send_keys "ls '/tmp/fzf-test-$dollar/'xyz#{trigger}", :Tab
+    end
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-\\$dollar/xyz123', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-$dollar')
+  end
+
+  def test_completion_after_double_dash
+    FileUtils.mkdir_p('/tmp/fzf-test-ddash')
+    FileUtils.touch('/tmp/fzf-test-ddash/--xyz123')
+    tmux.prepare
+    tmux.send_keys "ls -- /tmp/fzf-test-ddash/--xyz#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls -- /tmp/fzf-test-ddash/--xyz123', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-ddash')
+  end
+
+  def test_double_dash_with_equals
+    FileUtils.mkdir_p('/tmp/fzf-test-ddash-eq')
+    FileUtils.touch('/tmp/fzf-test-ddash-eq/--foo=bar')
+    tmux.prepare
+    tmux.send_keys "ls -- /tmp/fzf-test-ddash-eq/--foo#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls -- /tmp/fzf-test-ddash-eq/--foo=bar', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-ddash-eq')
+  end
+
+  def test_query_with_dollar_sign
+    FileUtils.mkdir_p('/tmp/fzf-test-dollar-query')
+    FileUtils.touch('/tmp/fzf-test-dollar-query/file.fish')
+    tmux.prepare
+    tmux.send_keys "ls /tmp/fzf-test-dollar-query/.fish$#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-dollar-query/file.fish', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-dollar-query')
+  end
 end
 
 class TestBash < TestBase
