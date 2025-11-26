@@ -20,13 +20,13 @@ function fzf_completion_setup
     # Use complete builtin for specific commands
     function __fzf_complete_native
         # Have the command run in a subshell
-        set -lx -- FZF_DEFAULT_COMMAND "complete -C\"$argv[1] \" "
+        set -lx -- FZF_DEFAULT_COMMAND "complete -C \"$argv[1]\""
 
         set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '--reverse --nth=1 --color=fg:dim,nth:regular' \
             $FZF_COMPLETION_OPTS $argv[2..-1] '--accept-nth=1 --with-shell='(status fish-path)\\ -c)
 
         set -l result (eval (__fzfcmd))
-        and commandline -rt $result
+        and commandline -rt -- $result
 
         commandline -f repaint
     end
@@ -97,24 +97,36 @@ function fzf_completion_setup
             set -a tokens ""
         end
 
-        # Check if token ends with trigger
-        if test -z "$tokens"; or not string match -q -- "*$FZF_COMPLETION_TRIGGER" (commandline -t)
-            commandline -f complete
-            return
-        end
+        set -l current_token (commandline -t)
 
         # Get the command name
         set -l cmd_name $tokens[1]
 
-        # Strip trigger from commandline before parsing
-        test -n "$FZF_COMPLETION_TRIGGER"
-        and commandline -rt -- (string sub -e -(string length -- "$FZF_COMPLETION_TRIGGER") -- (commandline -t))
+        # Check if token ends with trigger and strip it
+        set -l trigger_len (string length -- "$FZF_COMPLETION_TRIGGER")
+        set -l has_trigger false
+        if test -n "$current_token"; and test (string length -- "$current_token") -ge $trigger_len
+            set -l token_suffix (string sub -s -$trigger_len -- "$current_token")
+            if test "$token_suffix" = "$FZF_COMPLETION_TRIGGER"
+                set has_trigger true
+                commandline -rt -- (string sub -e -$trigger_len -- "$current_token")
+                set current_token (commandline -t)
+            end
+        end
 
         # Parse commandline (now without trigger)
         set -l parsed (__fzf_parse_commandline)
         set -l dir $parsed[1]
         set -l fzf_query $parsed[2]
         set -l opt_prefix $parsed[3]
+
+        # Check if completing a flag/option (but not option with value like -o/path)
+        if string match -q -- '-*' "$current_token"; and test -z "$opt_prefix"
+            set -l -- fzf_opt --query=(string escape -- "$current_token")
+            set -l -- complete_cmd "$cmd_name $current_token"
+            __fzf_complete_native "$complete_cmd" $fzf_opt
+            return
+        end
 
         # Directory commands
         set -q FZF_COMPLETION_DIR_COMMANDS
@@ -128,12 +140,18 @@ function fzf_completion_setup
         set -q FZF_COMPLETION_NATIVE_COMMANDS
         or set -l FZF_COMPLETION_NATIVE_COMMANDS ssh telnet set functions type
 
+        # If no trigger, fall back to native completion
+        if not $has_trigger
+            commandline -f complete
+            return
+        end
+
         # Route to appropriate completion function
         if functions -q _fzf_complete_$cmd_name
-            eval _fzf_complete_$cmd_name (string escape -- "$fzf_query") (string escape -- "$cmd_name")
+            _fzf_complete_$cmd_name "$fzf_query" "$cmd_name"
         else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS
             set -l -- fzf_opt --query=(commandline -t | string escape)
-            __fzf_complete_native "$cmd_name" $fzf_opt
+            __fzf_complete_native "$cmd_name " $fzf_opt
         else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
             __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
         else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
