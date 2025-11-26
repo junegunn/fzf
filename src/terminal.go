@@ -3294,8 +3294,6 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 	extraWidth := 0
 	alt := false
 	altBg := t.theme.AltBg
-	altGutter := false
-	altGutterBg := t.theme.AltGutter
 	selectedBg := selected && t.theme.SelectedBg != t.theme.ListBg
 	if t.jumping != jumpDisabled {
 		if index < len(t.jumpLabels) {
@@ -3303,10 +3301,8 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			if !altBg.IsColorDefined() {
 				altBg = t.theme.DarkBg
 				alt = index%2 == 0
-				altGutter = altGutterBg.IsColorDefined() && index%2 == 0
 			} else {
 				alt = index%2 == 1
-				altGutter = altGutterBg.IsColorDefined() && index%2 == 1
 			}
 			label = t.jumpLabels[index:index+1] + strings.Repeat(" ", util.Max(0, t.pointerLen-1))
 			if t.pointerLen == 0 {
@@ -3318,7 +3314,6 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			label = t.pointer
 		}
 		alt = !selectedBg && altBg.IsColorDefined() && index%2 == 1
-		altGutter = altGutterBg.IsColorDefined() && index%2 == 1
 	}
 
 	// Avoid unnecessary redraw
@@ -3429,7 +3424,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 				return indentSize
 			}
 			if len(label) == 0 {
-				t.gutter(false, altGutter)
+				t.gutter(false, index%2 == 1)
 			} else {
 				t.window.CPrint(tui.ColCursor, label)
 			}

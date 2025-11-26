@@ -1216,6 +1216,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		gutter.Attr = Dim
 	}
 	theme.Gutter = o(theme.DarkBg, gutter)
+	theme.AltGutter = o(theme.Gutter, theme.AltGutter)
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
 	theme.PreviewBg = o(theme.Bg, theme.PreviewBg)
 	theme.PreviewLabel = o(theme.BorderLabel, theme.PreviewLabel)
