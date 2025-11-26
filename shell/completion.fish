@@ -4,7 +4,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_COMPLETION_TRIGGER         (default: '++')
+# - $FZF_COMPLETION_TRIGGER         (default: '**'
 # - $FZF_COMPLETION_OPTS            (default: empty)
 # - $FZF_COMPLETION_PATH_OPTS       (default: empty)
 # - $FZF_COMPLETION_DIR_OPTS        (default: empty)
@@ -72,7 +72,7 @@ function fzf_completion_setup
         set -lx FZF_DEFAULT_OPTS_FILE
 
         # Run fzf
-        if type -q "$compgen"
+        if functions -q "$compgen"
             set -l result (eval $compgen $dir | eval (__fzfcmd) --query=$fzf_query | string split0)
             and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
         else
@@ -124,11 +124,11 @@ function fzf_completion_setup
 
     # Main completion function
     function fzf-completion
-        set -l trigger (test -n "$FZF_COMPLETION_TRIGGER"; and echo "$FZF_COMPLETION_TRIGGER"; or echo '++')
+        set -l trigger (test -n "$FZF_COMPLETION_TRIGGER"; and echo "$FZF_COMPLETION_TRIGGER"; or echo '**')
 
         # Get tokens - use version-appropriate flags
         # Fish 4.0+: -x (--tokens-expanded) returns expanded tokens
-        # Fish 3.1-3.7: -o (--tokenize) returns tokenized output (deprecated in 3.2+ but still works)
+        # Fish 3.1-3.7: -o (--tokenize) returns tokenized output
         set -l fish_major (string match -r -- '^\d+' $version)
 
         set -l tokens
@@ -183,7 +183,7 @@ function fzf_completion_setup
         or set n_cmds ssh telnet set functions
 
         # Route to appropriate completion function
-        if type -q "_fzf_complete_$cmd_word"
+        if functions -q "_fzf_complete_$cmd_word"
             eval "_fzf_complete_$cmd_word" (string escape -- "$fzf_query") (string escape -- "$cmd_word")
         else if contains -- "$cmd_word" $n_cmds
             __fzf_complete_native
