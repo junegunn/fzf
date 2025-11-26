@@ -4,7 +4,7 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_COMPLETION_TRIGGER         (default: '**'
+# - $FZF_COMPLETION_TRIGGER         (default: '**')
 # - $FZF_COMPLETION_OPTS            (default: empty)
 # - $FZF_COMPLETION_PATH_OPTS       (default: empty)
 # - $FZF_COMPLETION_DIR_OPTS        (default: empty)
@@ -17,16 +17,6 @@
 function fzf_completion_setup
     # Load helper functions
     fzf_key_bindings
-
-    # Check fish version
-    set -l fish_ver (string match -r '^(\d+).(\d+)' $version 2> /dev/null; or echo 0\n0\n0)
-    if test \( "$fish_ver[2]" -lt 3 \) -o \( "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1 \)
-        echo "This script requires fish version 3.1b1 or newer." >&2
-        return 1
-    else if not type -q fzf
-        echo "fzf was not found in path." >&2
-        return 1
-    end
 
     # Delegate to native fish completion for specific commands
     # Use FZF_COMPLETION_NATIVE_MODE to choose: 'complete' (default) or 'complete-and-search'
