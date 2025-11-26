@@ -12,9 +12,6 @@
 # - $FZF_COMPLETION_DIR_COMMANDS    (default: cd pushd rmdir)
 # - $FZF_COMPLETION_FILE_COMMANDS   (default: cat head tail less more nano)
 # - $FZF_COMPLETION_NATIVE_COMMANDS (default: ssh telnet set functions)
-# - $FZF_COMPLETION_PATH_WALKER     (default: 'file,dir,follow,hidden')
-# - $FZF_COMPLETION_DIR_WALKER      (default: 'dir,follow')
-# - $FZF_COMPLETION_FILE_WALKER     (default: 'file,follow,hidden')
 # - $FZF_COMPLETION_NATIVE_MODE     (default: 'complete', or 'complete-and-search')
 
 function fzf_completion_setup
@@ -54,13 +51,13 @@ function fzf_completion_setup
         set -l walker
         set -l rest
         if string match -q '*dir*' -- "$compgen"
-            set walker (test -n "$FZF_COMPLETION_DIR_WALKER"; and echo $FZF_COMPLETION_DIR_WALKER; or echo "dir,follow")
+            set walker "dir,follow"
             set rest $FZF_COMPLETION_DIR_OPTS
         else if string match -q '*file*' -- "$compgen"
-            set walker (test -n "$FZF_COMPLETION_FILE_WALKER"; and echo $FZF_COMPLETION_FILE_WALKER; or echo "file,follow,hidden")
+            set walker "file,follow,hidden"
             set rest $FZF_COMPLETION_FILE_OPTS
         else
-            set walker (test -n "$FZF_COMPLETION_PATH_WALKER"; and echo $FZF_COMPLETION_PATH_WALKER; or echo "file,dir,follow,hidden")
+            set walker "file,dir,follow,hidden"
             set rest $FZF_COMPLETION_PATH_OPTS
         end
 
