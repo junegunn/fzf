@@ -11,7 +11,7 @@
 # - $FZF_COMPLETION_FILE_OPTS       (default: empty)
 # - $FZF_COMPLETION_DIR_COMMANDS    (default: cd pushd rmdir)
 # - $FZF_COMPLETION_FILE_COMMANDS   (default: cat head tail less more nano)
-# - $FZF_COMPLETION_NATIVE_COMMANDS (default: ssh telnet set functions)
+# - $FZF_COMPLETION_NATIVE_COMMANDS (default: ssh telnet set functions type)
 # - $FZF_COMPLETION_NATIVE_MODE     (default: 'complete', or 'complete-and-search')
 
 function fzf_completion_setup
@@ -177,7 +177,7 @@ function fzf_completion_setup
 
         # Native completion commands
         set -l n_cmds (string split ' ' -- "$FZF_COMPLETION_NATIVE_COMMANDS")
-        or set n_cmds ssh telnet set functions
+        or set n_cmds ssh telnet set functions type
 
         # Route to appropriate completion function
         if functions -q "_fzf_complete_$cmd_word"
