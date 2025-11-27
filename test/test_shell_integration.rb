@@ -657,4 +657,71 @@ class TestFish < TestBase
       assert_equal block.lines.map(&:chomp), lines
     end
   end
+
+  def test_single_flag_completion
+    tmux.prepare
+    tmux.send_keys "ls -#{trigger}", :Tab
+
+    # Should launch fzf with flag options
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+
+    # Should include common flags
+    tmux.until { |lines| assert lines.any_include?('-a') }
+
+    # Select one and verify insertion
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_match(/ls -\w+/, lines[-1]) }
+  end
+
+  def test_double_flag_completion
+    tmux.prepare
+    tmux.send_keys "ls --#{trigger}", :Tab
+
+    # Should launch fzf with flag options
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+
+    # Should include common flags
+    tmux.until { |lines| assert lines.any_include?('--all') }
+
+    # Select one and verify insertion
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_match(/ls --\w+/, lines[-1]) }
+  end
+
+  def test_command_completion
+    tmux.prepare
+    tmux.send_keys "ma#{trigger}", :Tab
+
+    # Should launch fzf with matching commands
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+
+    # Filter to specific command
+    tmux.send_keys 'keconv'
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert lines.any_include?('makeconv')
+    end
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'makeconv', lines[-1] }
+  end
+
+  def test_argument_completion_after_command
+    FileUtils.mkdir_p('/tmp/fzf-test-args')
+    FileUtils.touch('/tmp/fzf-test-args/match.txt')
+
+    tmux.prepare
+    tmux.send_keys "ls /tmp/fzf-test-args/ma#{trigger}", :Tab
+
+    # Should show file completion (NOT command completion)
+    tmux.until do |lines|
+      assert_operator lines.match_count, :>, 0
+      assert lines.any_include?('match.txt')
+    end
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_match(%r{ls /tmp/fzf-test-args/match\.txt}, lines[-1]) }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-args')
+  end
 end
