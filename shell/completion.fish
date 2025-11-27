@@ -22,11 +22,11 @@ function fzf_completion_setup
         # Have the command run in a subshell, format with column for better alignment
         set -lx -- FZF_DEFAULT_COMMAND "complete -C \"$argv[1]\" | column -t -s \t -o '│'"
 
-        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --delimiter='│' --color=fg:dim,nth:regular" \
-            $FZF_COMPLETION_OPTS $argv[2..-1] '--accept-nth=1 --with-shell='(status fish-path)\\ -c)
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "-m --reverse --delimiter='│' --color=fg:dim,nth:regular" \
+            $FZF_COMPLETION_OPTS $argv[2..-1] --print0 --accept-nth=1 --with-shell=(status fish-path)\\ -c)
 
-        set -l result (eval (__fzfcmd))
-        and commandline -rt -- $result
+        set -l result (eval (__fzfcmd) | string split0)
+        and commandline -rt -- (string join ' ' -- $result)
 
         commandline -f repaint
     end
