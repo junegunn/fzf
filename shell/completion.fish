@@ -19,10 +19,10 @@ function fzf_completion_setup
 
     # Use complete builtin for specific commands
     function __fzf_complete_native
-        # Have the command run in a subshell
-        set -lx -- FZF_DEFAULT_COMMAND "complete -C \"$argv[1]\""
+        # Have the command run in a subshell, format with column for better alignment
+        set -lx -- FZF_DEFAULT_COMMAND "complete -C \"$argv[1]\" | column -t -s \t -o '│'"
 
-        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '--reverse --nth=1 --color=fg:dim,nth:regular' \
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --delimiter='│' --color=fg:dim,nth:regular" \
             $FZF_COMPLETION_OPTS $argv[2..-1] '--accept-nth=1 --with-shell='(status fish-path)\\ -c)
 
         set -l result (eval (__fzfcmd))
