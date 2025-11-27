@@ -98,8 +98,6 @@ function fzf_completion_setup
         end
 
         set -l current_token (commandline -t)
-
-        # Get the command name
         set -l cmd_name $tokens[1]
 
         # Check if token ends with trigger and strip it
@@ -114,22 +112,27 @@ function fzf_completion_setup
             end
         end
 
-        # Parse commandline (now without trigger)
+        # If no trigger, fall back to native completion
+        if not $has_trigger
+            commandline -f complete
+            return
+        end
+
+        # Parse commandline
         set -l parsed (__fzf_parse_commandline)
         set -l dir $parsed[1]
         set -l fzf_query $parsed[2]
         set -l opt_prefix $parsed[3]
 
         # Check if completing a flag/option (but not option with value like -o/path)
-        if string match -q -- '-*' "$current_token"; and test -z "$opt_prefix"; and $has_trigger
+        if string match -q -- '-*' "$current_token"; and test -z "$opt_prefix"
             set -l -- fzf_opt --query=(string escape -- "$current_token")
-            set -l -- complete_cmd "$cmd_name $current_token"
-            __fzf_complete_native "$complete_cmd" $fzf_opt
+            __fzf_complete_native "$cmd_name $current_token" $fzf_opt
             return
         end
 
         # Check if completing command name (first token)
-        if $has_trigger; and test (count $tokens) = 0; and test -n "$current_token"
+        if test (count $tokens) = 0; and test -n "$current_token"
             # Don't trigger command completion for paths or options
             if not string match -qr -- '^[./~-]' "$current_token"
                 set -l -- fzf_opt --query=(string escape -- "$current_token")
@@ -149,12 +152,6 @@ function fzf_completion_setup
         # Native completion commands
         set -q FZF_COMPLETION_NATIVE_COMMANDS
         or set -l FZF_COMPLETION_NATIVE_COMMANDS ssh telnet set functions type
-
-        # If no trigger, fall back to native completion
-        if not $has_trigger
-            commandline -f complete
-            return
-        end
 
         # Route to appropriate completion function
         if functions -q _fzf_complete_$cmd_name
