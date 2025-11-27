@@ -121,7 +121,7 @@ function fzf_completion_setup
         set -l opt_prefix $parsed[3]
 
         # Check if completing a flag/option (but not option with value like -o/path)
-        if string match -q -- '-*' "$current_token"; and test -z "$opt_prefix"
+        if string match -q -- '-*' "$current_token"; and test -z "$opt_prefix"; and $has_trigger
             set -l -- fzf_opt --query=(string escape -- "$current_token")
             set -l -- complete_cmd "$cmd_name $current_token"
             __fzf_complete_native "$complete_cmd" $fzf_opt
