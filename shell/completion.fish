@@ -128,6 +128,16 @@ function fzf_completion_setup
             return
         end
 
+        # Check if completing command name (first token)
+        if $has_trigger; and test (count $tokens) = 0; and test -n "$current_token"
+            # Don't trigger command completion for paths or options
+            if not string match -qr -- '^[./~-]' "$current_token"
+                set -l -- fzf_opt --query=(string escape -- "$current_token")
+                __fzf_complete_native "$current_token" $fzf_opt
+                return
+            end
+        end
+
         # Directory commands
         set -q FZF_COMPLETION_DIR_COMMANDS
         or set -l FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
