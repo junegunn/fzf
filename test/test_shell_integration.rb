@@ -475,7 +475,10 @@ module CompletionTest
     # Test --opt=**<TAB>
     if shell != :zsh
       tmux.send_keys "some-command --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
       tmux.send_keys '1'
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
@@ -483,10 +486,13 @@ module CompletionTest
     end
 
     # Test -o=**<TAB>
-    if shell == :bash
+    if shell != :zsh
       tmux.send_keys 'C-u'
       tmux.send_keys "some-command -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
       tmux.send_keys '2'
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
@@ -494,10 +500,13 @@ module CompletionTest
     end
 
     # Test -- --opt=**<TAB>
-    if shell == :bash
+    if shell != :zsh
       tmux.send_keys 'C-u'
       tmux.send_keys "some-command -- --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
       tmux.send_keys '1'
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
@@ -505,10 +514,13 @@ module CompletionTest
     end
 
     # Test -- -o=**<TAB>
-    if shell == :bash
+    if shell != :zsh
       tmux.send_keys 'C-u'
       tmux.send_keys "some-command -- -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
       tmux.send_keys '2'
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
