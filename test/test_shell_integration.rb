@@ -466,6 +466,58 @@ module CompletionTest
     FileUtils.rm_rf('/tmp/fzf-test-short')
   end
 
+  def test_option_equals_completion
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq')
+    FileUtils.touch('/tmp/fzf-test-opt-eq/file1.txt')
+    FileUtils.touch('/tmp/fzf-test-opt-eq/file2.txt')
+    tmux.prepare
+
+    # Test --opt=**<TAB>
+    if shell != :zsh
+      tmux.send_keys "some-command --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.send_keys '1'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('--output=/tmp/fzf-test-opt-eq/file1.txt') }
+    end
+
+    # Test -o=**<TAB>
+    if shell == :bash
+      tmux.send_keys 'C-u'
+      tmux.send_keys "some-command -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.send_keys '2'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('-o=/tmp/fzf-test-opt-eq/file2.txt') }
+    end
+
+    # Test -- --opt=**<TAB>
+    if shell == :bash
+      tmux.send_keys 'C-u'
+      tmux.send_keys "some-command -- --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.send_keys '1'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('-- --output=/tmp/fzf-test-opt-eq/file1.txt') }
+    end
+
+    # Test -- -o=**<TAB>
+    if shell == :bash
+      tmux.send_keys 'C-u'
+      tmux.send_keys "some-command -- -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until { |lines| assert_equal 2, lines.match_count }
+      tmux.send_keys '2'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('-- -o=/tmp/fzf-test-opt-eq/file2.txt') }
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-eq')
+  end
+
   def test_filename_with_newline
     skip('this test fails on bash/zsh, they replace the newline with a space') if shell != :fish
     FileUtils.mkdir_p('/tmp/fzf-test-newline')
