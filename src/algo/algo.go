@@ -445,7 +445,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 
 	// Since O(nm) algorithm can be prohibitively expensive for large input,
 	// we fall back to the greedy algorithm.
-	if slab != nil && N*M > cap(slab.I16) {
+	// Also, we should not allow a very long pattern to avoid 16-bit integer
+	// overflow in the score matrix. 1000 is a safe limit.
+	if slab != nil && N*M > cap(slab.I16) || M > 1000 {
 		return FuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab)
 	}
 
