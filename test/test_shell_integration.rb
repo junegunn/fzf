@@ -462,6 +462,14 @@ class TestZsh < TestBase
       tmux.send_keys 'C-c'
     end
   end
+
+  def test_per_cmd_completion_triggers
+    tmux.send_keys 'declare -A FZF_PER_CMD_COMPLETION_TRIGGERS', :Enter
+    tmux.send_keys 'FZF_PER_CMD_COMPLETION_TRIGGERS[ls]=""', :Enter
+    tmux.send_keys 'ls /', :Tab
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys :Enter
+  end
 end
 
 class TestFish < TestBase
