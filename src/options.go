@@ -1476,6 +1476,8 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui
 				mergeAttr(&theme.Nomatch)
 			case "gutter":
 				mergeAttr(&theme.Gutter)
+			case "alt-gutter":
+				mergeAttr(&theme.AltGutter)
 			case "hl":
 				mergeAttr(&theme.Match)
 			case "current-hl", "hl+":

@@ -456,6 +456,7 @@ type ColorTheme struct {
 	PreviewBg        ColorAttr
 	DarkBg           ColorAttr
 	Gutter           ColorAttr
+	AltGutter        ColorAttr
 	Prompt           ColorAttr
 	InputBg          ColorAttr
 	InputBorder      ColorAttr
@@ -826,6 +827,8 @@ var (
 	ColCursor               ColorPair
 	ColCursorEmpty          ColorPair
 	ColCursorEmptyChar      ColorPair
+	ColAltCursorEmpty       ColorPair
+	ColAltCursorEmptyChar   ColorPair
 	ColMarker               ColorPair
 	ColSelected             ColorPair
 	ColSelectedMatch        ColorPair
@@ -891,6 +894,7 @@ func init() {
 		PreviewFg:        defaultColor,
 		PreviewBg:        defaultColor,
 		Gutter:           undefined,
+		AltGutter:        undefined,
 		PreviewBorder:    defaultColor,
 		PreviewScrollbar: defaultColor,
 		PreviewLabel:     defaultColor,
@@ -943,6 +947,7 @@ func init() {
 		PreviewFg:        undefined,
 		PreviewBg:        undefined,
 		Gutter:           undefined,
+		AltGutter:        undefined,
 		PreviewBorder:    undefined,
 		PreviewScrollbar: undefined,
 		PreviewLabel:     undefined,
@@ -991,6 +996,7 @@ func init() {
 		PreviewFg:        undefined,
 		PreviewBg:        undefined,
 		Gutter:           undefined,
+		AltGutter:        undefined,
 		PreviewBorder:    undefined,
 		PreviewScrollbar: undefined,
 		PreviewLabel:     undefined,
@@ -1041,6 +1047,7 @@ func init() {
 		PreviewFg:        undefined,
 		PreviewBg:        undefined,
 		Gutter:           undefined,
+		AltGutter:        undefined,
 		PreviewBorder:    undefined,
 		PreviewScrollbar: undefined,
 		PreviewLabel:     undefined,
@@ -1091,6 +1098,7 @@ func init() {
 		PreviewFg:        undefined,
 		PreviewBg:        undefined,
 		Gutter:           undefined,
+		AltGutter:        undefined,
 		PreviewBorder:    undefined,
 		PreviewScrollbar: undefined,
 		PreviewLabel:     undefined,
@@ -1208,6 +1216,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		gutter.Attr = Dim
 	}
 	theme.Gutter = o(theme.DarkBg, gutter)
+	theme.AltGutter = o(theme.Gutter, theme.AltGutter)
 	theme.PreviewFg = o(theme.Fg, theme.PreviewFg)
 	theme.PreviewBg = o(theme.Bg, theme.PreviewBg)
 	theme.PreviewLabel = o(theme.BorderLabel, theme.PreviewLabel)
@@ -1277,6 +1286,8 @@ func initPalette(theme *ColorTheme) {
 	ColCursor = pair(theme.Cursor, theme.Gutter)
 	ColCursorEmpty = pair(blank, theme.Gutter)
 	ColCursorEmptyChar = pair(theme.Gutter, theme.ListBg)
+	ColAltCursorEmpty = pair(blank, theme.AltGutter)
+	ColAltCursorEmptyChar = pair(theme.AltGutter, theme.ListBg)
 	if theme.SelectedBg.Color != theme.ListBg.Color {
 		ColMarker = pair(theme.Marker, theme.SelectedBg)
 	} else {
