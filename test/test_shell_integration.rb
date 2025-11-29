@@ -501,10 +501,10 @@ class TestZsh < TestBase
     set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query --exact')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys 'foobar'
+    tmux.send_keys '1 foobar'
     tmux.until { |lines| assert_equal 0, lines.match_count }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'foobar', lines[-1] }
+    tmux.until { |lines| assert_equal '1 foobar', lines[-1] }
   end
 
   test_perl_and_awk 'ctrl_r_multiline_index_collision' do

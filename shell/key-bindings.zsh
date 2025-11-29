@@ -150,14 +150,15 @@ fzf-history-widget() {
   local -a mbegin mend match
   if [ -n "$selected" ]; then
     # Heuristic to check if the selected value is from history or a custom query
-    if [[ $selected == [[:blank:]]#<->\*#[[:blank:]]* ]]; then
+    if ((( extracted_with_perl )) && [[ $selected == <->$'\t'* ]]) ||
+    ((( ! extracted_with_perl )) && [[ $selected == [[:blank:]]#<->(  |\* )* ]]); then
       # Split at newlines
       for line in ${(ps:\n:)selected}; do
         if (( extracted_with_perl )); then
           if [[ $line == (#b)(<->)(#B)$'\t'* ]]; then
             (( ${+history[${match[1]}]} )) && cmds+=("${history[${match[1]}]}")
           fi
-        elif [[ $line == [[:blank:]]#(#b)(<->)(#B)\*#[[:blank:]]* ]]; then
+        elif [[ $line == [[:blank:]]#(#b)(<->)(#B)(  |\* )* ]]; then
           # Avoid $history array: lags behind 'fc' on foreign commands (*)
           # https://zsh.org/mla/users/2024/msg00692.html
           # Push BUFFER onto stack; fetch and save history entry from BUFFER; restore
