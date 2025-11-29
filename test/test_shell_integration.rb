@@ -498,7 +498,7 @@ class TestZsh < TestBase
   end
 
   test_perl_and_awk 'ctrl_r_accept_or_print_query' do
-    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query --exact')
+    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query')
     prepare_ctrl_r_test
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys '1 foobar'
