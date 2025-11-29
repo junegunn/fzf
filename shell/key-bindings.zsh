@@ -164,7 +164,7 @@ fzf-history-widget() {
           # Push BUFFER onto stack; fetch and save history entry from BUFFER; restore
           zle .push-line
           zle vi-fetch-history -n ${match[1]}
-          (( "${#BUFFER}" )) && cmds+=("${BUFFER}")
+          (( ${#BUFFER} )) && cmds+=("${BUFFER}")
           BUFFER=""
           zle .get-line
         fi
