@@ -490,7 +490,7 @@ class TestZsh < TestBase
     tmux.prepare
     tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
     tmux.prepare
-    tmux.send_keys 'echo "trailing"  ', :Enter
+    tmux.send_keys 'echo "trailing_space "', :Enter
     tmux.prepare
     tmux.send_keys 'cat <<EOF | wc -c', :Enter, 'qux thud', :Enter, 'EOF', :Enter
     tmux.prepare
@@ -525,7 +525,7 @@ class TestZsh < TestBase
     tmux.until { |lines| assert_includes lines[-2], '(3)' }
     tmux.send_keys :Enter
     tmux.until do |lines|
-      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF', 'echo "trailing"', 'echo "bar', 'foo"'], lines[-6..]
+      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF', 'echo "trailing_space "', 'echo "bar', 'foo"'], lines[-6..]
     end
   end
 

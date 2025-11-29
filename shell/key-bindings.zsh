@@ -170,8 +170,8 @@ fzf-history-widget() {
         fi
       done
       if (( ${#cmds[@]} )); then
-        # Join by newline after stripping trailing whitespace from each command
-        BUFFER="${(pj:\n:)${(@)cmds%%[[:space:]]#}}"
+        # Join by newline after stripping trailing newlines from each command
+        BUFFER="${(pj:\n:)${(@)cmds%%$'\n'#}}"
         CURSOR=${#BUFFER}
       fi
     else # selected is a custom query, not from history
