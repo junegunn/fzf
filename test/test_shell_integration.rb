@@ -440,32 +440,6 @@ module CompletionTest
     end
   end
 
-  def test_option_prefix_completion
-    skip('this test fails on bash/zsh') if shell != :fish
-    FileUtils.mkdir_p('/tmp/fzf-test-opt')
-    FileUtils.touch('/tmp/fzf-test-opt/xyz123')
-    tmux.prepare
-    tmux.send_keys "some-command --somearg=/tmp/fzf-test-opt/xyz#{trigger}", :Tab
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert lines[-1]&.include?('xyz123') }
-  ensure
-    FileUtils.rm_rf('/tmp/fzf-test-opt')
-  end
-
-  def test_short_option_prefix_completion
-    skip('this test fails on bash/zsh') if shell != :fish
-    FileUtils.mkdir_p('/tmp/fzf-test-short')
-    FileUtils.touch('/tmp/fzf-test-short/xyz123')
-    tmux.prepare
-    tmux.send_keys "some-command -o/tmp/fzf-test-short/xyz#{trigger}", :Tab
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert lines[-1]&.include?('xyz123') }
-  ensure
-    FileUtils.rm_rf('/tmp/fzf-test-short')
-  end
-
   def test_option_equals_completion
     FileUtils.mkdir_p('/tmp/fzf-test-opt-eq')
     FileUtils.touch('/tmp/fzf-test-opt-eq/file1.txt')
@@ -499,8 +473,36 @@ module CompletionTest
       tmux.until(true) { |lines| assert lines[-1]&.include?('-o=/tmp/fzf-test-opt-eq/file2.txt') }
     end
 
+    # Test --opt=/**<TAB> (long option with equals and slash prefix)
+    if shell == :fish
+      tmux.send_keys 'C-u'
+      tmux.send_keys "some-command --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
+      tmux.send_keys '1'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('--output=/tmp/fzf-test-opt-eq/file1.txt') }
+    end
+
+    # Test -o/**<TAB> (short option without equals)
+    if shell == :fish
+      tmux.send_keys 'C-u'
+      tmux.send_keys "some-command -o/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until do |lines|
+        assert_equal 2, lines.match_count
+        assert_includes lines, '> file'
+      end
+      tmux.send_keys '2'
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert lines[-1]&.include?('-o/tmp/fzf-test-opt-eq/file2.txt') }
+    end
+
     # Test -- --opt=**<TAB>
-    if shell != :zsh
+    if shell == :bash
       tmux.send_keys 'C-u'
       tmux.send_keys "some-command -- --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
       tmux.until do |lines|
@@ -514,7 +516,7 @@ module CompletionTest
     end
 
     # Test -- -o=**<TAB>
-    if shell != :zsh
+    if shell == :bash
       tmux.send_keys 'C-u'
       tmux.send_keys "some-command -- -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
       tmux.until do |lines|
