@@ -21,13 +21,13 @@ function fzf_completion_setup
     function __fzf_complete_native
         set -l result
         if type -q column
-            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --delimiter='│'" \
+            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --delimiter='  ' --nth=1 --color=fg:dim,nth:regular" \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-            set result (eval complete -C \"$argv[1]\" \| column -t -s \\t -o \' │ \' \| (__fzfcmd))
+            set result (complete -C "$argv[1]" | awk '{gsub(/\t/, "│"); print}' | column -t -s '│' | eval (__fzfcmd))
         else
-            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '--reverse --nth=1 --color=fg:dim,nth:regular' \
+            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-            set result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
+            set result (complete -C "$argv[1]" | eval (__fzfcmd))
         end
         and commandline -rt -- (string join ' ' -- $result)' '
         commandline -f repaint
