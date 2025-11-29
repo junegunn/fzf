@@ -106,6 +106,7 @@ Table of Contents
     * [fzf Theme Playground](#fzf-theme-playground)
 * [Related projects](#related-projects)
 * [License](#license)
+* [Goods](#goods)
 * [Sponsors :heart:](#sponsors-heart)
 
 <!-- vim-markdown-toc -->
@@ -998,6 +999,11 @@ https://github.com/junegunn/fzf/wiki/Related-projects
 The MIT License (MIT)
 
 Copyright (c) 2013-2025 Junegunn Choi
+
+Goods
+-----
+
+Grab fzf T-shirts, mugs, and stickers here: https://commitgoods.com/collections/fzf
 
 Sponsors :heart:
 ----------------
