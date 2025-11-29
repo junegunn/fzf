@@ -27,7 +27,7 @@ function fzf_completion_setup
         else
             set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-            set result (complete -C "$argv[1]" | eval (__fzfcmd))
+            set result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
         end
         and commandline -rt -- (string join ' ' -- $result)' '
         commandline -f repaint
