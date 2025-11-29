@@ -440,149 +440,216 @@ module CompletionTest
     end
   end
 
-  def test_option_equals_completion
-    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq')
-    FileUtils.touch('/tmp/fzf-test-opt-eq/file1.txt')
-    FileUtils.touch('/tmp/fzf-test-opt-eq/file2.txt')
+  def test_option_equals_long_option
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq-long')
+    FileUtils.touch('/tmp/fzf-test-opt-eq-long/SECURITY.md')
     tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-eq-long', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command --opt=SECURI#{trigger}", :Tab
 
-    # Test --opt=**<TAB>
-    if shell != :zsh
-      tmux.send_keys "some-command --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+    case shell
+    when :bash, :fish
       tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> SECURI'
       end
-      tmux.send_keys '1'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('--output=/tmp/fzf-test-opt-eq/file1.txt') }
-    end
-
-    # Test -o=**<TAB>
-    if shell != :zsh
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
+      tmux.until(true) { |lines| assert_equal 'some-command --opt=SECURITY.md', lines[-1] }
+    when :zsh
       tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> --opt=SECURI'
       end
-      tmux.send_keys '2'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-o=/tmp/fzf-test-opt-eq/file2.txt') }
-    end
-
-    # Test --opt=/**<TAB> (long option with equals and slash prefix)
-    if shell != :zsh
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '1'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('--output=/tmp/fzf-test-opt-eq/file1.txt') }
-    end
-
-    # Test -o=/**<TAB> (short option with equals and slash prefix)
-    if shell != :zsh
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '2'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-o=/tmp/fzf-test-opt-eq/file2.txt') }
-    end
-
-    # Test -o/**<TAB> (short option without equals)
-    if shell == :fish
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -o/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '2'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-o/tmp/fzf-test-opt-eq/file2.txt') }
-    end
-
-    # Test -- --opt=**<TAB>
-    if shell == :bash
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -- --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '1'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-- --output=/tmp/fzf-test-opt-eq/file1.txt') }
-    end
-
-    # Test -- -o=**<TAB>
-    if shell == :bash
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -- -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '2'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-- -o=/tmp/fzf-test-opt-eq/file2.txt') }
-    end
-
-    # Test -- --opt=/**<TAB> (long option with equals and slash prefix after --)
-    if shell == :bash
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -- --output=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '1'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-- --output=/tmp/fzf-test-opt-eq/file1.txt') }
-    end
-
-    # Test -- -o=/**<TAB> (short option with equals and slash prefix after --)
-    if shell == :bash
-      tmux.send_keys 'C-u'
-      tmux.send_keys "some-command -- -o=/tmp/fzf-test-opt-eq/file#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.match_count
-        assert_includes lines, '> file'
-      end
-      tmux.send_keys '2'
-      tmux.until { |lines| assert_equal 1, lines.match_count }
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert lines[-1]&.include?('-- -o=/tmp/fzf-test-opt-eq/file2.txt') }
     end
   ensure
-    FileUtils.rm_rf('/tmp/fzf-test-opt-eq')
+    FileUtils.rm_rf('/tmp/fzf-test-opt-eq-long')
+  end
+
+  def test_option_equals_long_option_after_double_dash
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq-long-ddash')
+    FileUtils.touch('/tmp/fzf-test-opt-eq-long-ddash/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-eq-long-ddash', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -- --opt=SECURI#{trigger}", :Tab
+
+    case shell
+    when :bash
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> SECURI'
+      end
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal 'some-command -- --opt=SECURITY.md', lines[-1] }
+    when :fish, :zsh
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> --opt=SECURI'
+      end
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-eq-long-ddash')
+  end
+
+  def test_option_equals_short_option
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq-short')
+    FileUtils.touch('/tmp/fzf-test-opt-eq-short/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-eq-short', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -o=SECURI#{trigger}", :Tab
+
+    case shell
+    when :bash, :fish
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> SECURI'
+      end
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal 'some-command -o=SECURITY.md', lines[-1] }
+    when :zsh
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> -o=SECURI'
+      end
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-eq-short')
+  end
+
+  def test_option_equals_short_option_after_double_dash
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-eq-short-ddash')
+    FileUtils.touch('/tmp/fzf-test-opt-eq-short-ddash/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-eq-short-ddash', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -- -o=SECURI#{trigger}", :Tab
+
+    case shell
+    when :bash
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> SECURI'
+      end
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal 'some-command -- -o=SECURITY.md', lines[-1] }
+    when :fish, :zsh
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> -o=SECURI'
+      end
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-eq-short-ddash')
+  end
+
+  def test_option_no_equals_long_option
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-no-eq-long')
+    FileUtils.touch('/tmp/fzf-test-opt-no-eq-long/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-long', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command --optSECURI#{trigger}", :Tab
+
+    case shell
+    when :bash, :zsh
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> --optSECURI'
+      end
+    when :fish
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> optSECURI'
+      end
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-long')
+  end
+
+  def test_option_no_equals_long_option_after_double_dash
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-no-eq-long-ddash')
+    FileUtils.touch('/tmp/fzf-test-opt-no-eq-long-ddash/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-long-ddash', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -- --optSECURI#{trigger}", :Tab
+
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+      assert_includes lines, '> --optSECURI'
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-long-ddash')
+  end
+
+  def test_option_no_equals_short_option
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-no-eq-short')
+    FileUtils.touch('/tmp/fzf-test-opt-no-eq-short/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-short', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -oSECURI#{trigger}", :Tab
+
+    case shell
+    when :bash, :zsh
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> -oSECURI'
+      end
+    when :fish
+      tmux.until do |lines|
+        assert_equal 0, lines.match_count
+        assert_includes lines, '> oSECURI'
+      end
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-short')
+  end
+
+  def test_option_no_equals_short_option_after_double_dash
+    FileUtils.mkdir_p('/tmp/fzf-test-opt-no-eq-short-ddash')
+    FileUtils.touch('/tmp/fzf-test-opt-no-eq-short-ddash/SECURITY.md')
+    tmux.prepare
+    tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-short-ddash', :Enter
+    tmux.prepare
+    tmux.send_keys "some-command -- -oSECURI#{trigger}", :Tab
+
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+      assert_includes lines, '> -oSECURI'
+    end
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-short-ddash')
   end
 
   def test_filename_with_newline
-    skip('this test fails on bash/zsh, they replace the newline with a space') if shell != :fish
     FileUtils.mkdir_p('/tmp/fzf-test-newline')
     FileUtils.touch("/tmp/fzf-test-newline/xyz\nwith\nnewlines")
     tmux.prepare
-    tmux.send_keys "cat /tmp/fzf-test-newline/xyz#{trigger}", :Tab
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal 'cat /tmp/fzf-test-newline/xyz\\nwith\\nnewlines', lines[-1] }
+    tmux.send_keys 'cd /tmp/fzf-test-newline', :Enter
+    tmux.prepare
+    tmux.send_keys "cat xyz#{trigger}", :Tab
+
+    case shell
+    when :fish
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> xyz'
+      end
+      tmux.send_keys :Enter
+      # fish escapes newlines in filenames
+      tmux.until(true) { |lines| assert_equal 'cat xyz\\nwith\\nnewlines', lines[-1] }
+    when :bash, :zsh
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert_includes lines, '> xyz'
+      end
+      tmux.send_keys :Enter
+      # bash and zsh replace newlines with spaces in filenames
+      tmux.until(true) { |lines| assert_equal 'cat xyz with newlines', lines[-1] }
+    end
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-newline')
   end
