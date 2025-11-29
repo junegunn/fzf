@@ -69,7 +69,6 @@ func main() {
 	if options.Fish {
 		printScript("key-bindings.fish", fishKeyBindings)
 		printScript("completion.fish", fishCompletion)
-		fmt.Println("fzf_key_bindings")
 		return
 	}
 	if options.Help {
