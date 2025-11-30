@@ -22,13 +22,13 @@ function fzf_completion_setup
     function __fzf_complete_native
         set -l result
         if type -q column
-            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse" \
+            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
             set result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
         else
             set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-            set result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
+            set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
         end
         and commandline -rt -- (string join ' ' -- $result)' '
         commandline -f repaint
@@ -36,20 +36,19 @@ function fzf_completion_setup
 
     # Generic path completion
     function __fzf_generic_path_completion
-        set -l parsed (__fzf_parse_commandline)
-        set -lx dir $parsed[1]
-        set -l fzf_query $parsed[2]
-        set -l opt_prefix $parsed[3]
-        set -l compgen $argv[1]
-        set -l tail " "
+        set -lx -- dir $argv[1]
+        set -l -- fzf_query $argv[2]
+        set -l -- opt_prefix $argv[3]
+        set -l -- compgen $argv[4]
+        set -l -- tail " "
 
         # Set fzf options
-        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" "$FZF_COMPLETION_OPTS --print0")
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" $FZF_COMPLETION_OPTS --print0)
         set -lx FZF_DEFAULT_COMMAND
         set -lx FZF_DEFAULT_OPTS_FILE
 
         if string match -q -- '*dir*' $compgen
-            set tail ""
+            set -- tail ""
             set -a -- FZF_DEFAULT_OPTS "--walker=dir,follow $FZF_COMPLETION_DIR_OPTS"
         else if string match -q -- '*file*' $compgen
             set -a -- FZF_DEFAULT_OPTS "-m --walker=file,follow,hidden $FZF_COMPLETION_FILE_OPTS"
@@ -60,9 +59,9 @@ function fzf_completion_setup
         # Run fzf
         set -l result
         if functions -q "$compgen"
-            set result (eval $compgen $dir | eval (__fzfcmd) --query=$fzf_query | string split0)
+            set -- result (eval $compgen $dir \| (__fzfcmd) --query=$fzf_query | string split0)
         else
-            set result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+            set -- result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
         end
         and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
 
@@ -71,22 +70,25 @@ function fzf_completion_setup
 
     # Kill completion (process selection)
     function _fzf_complete_kill
-        set -lx FZF_DEFAULT_OPTS (__fzf_defaults "--reverse" "$FZF_COMPLETION_OPTS")
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS \
+            --accept-nth=2 -m --header-lines=1 --no-preview --wrap)
         set -lx FZF_DEFAULT_OPTS_FILE
-
-        set -l result (begin
-            command ps -eo user,pid,ppid,start,time,command 2>/dev/null
-            or command ps -eo user,pid,ppid,time,args 2>/dev/null # BusyBox
-            or command ps --everyone --full --windows 2>/dev/null # Cygwin
-        end | eval (__fzfcmd) --accept-nth=2 -m --header-lines=1 --no-preview --wrap --query=$argv[1])
-        and commandline -rt -- (string join ' ' -- $result)" "
+        if type -q ps
+            set -l -- ps_cmd 'begin command ps -eo user,pid,ppid,start,time,command 2>/dev/null;' \
+                'or command ps -eo user,pid,ppid,time,args 2>/dev/null;' \
+                'or command ps --everyone --full --windows 2>/dev/null; end'
+            set -l -- result (eval $ps_cmd \| (__fzfcmd) --query=$argv[1])
+            and commandline -rt -- (string join ' ' -- $result)" "
+        else
+            __fzf_complete_native "kill " --multi --query=$argv[1]
+        end
         commandline -f repaint
     end
 
     # Main completion function
     function fzf-completion
         set -q FZF_COMPLETION_TRIGGER
-        or set -l FZF_COMPLETION_TRIGGER '**'
+        or set -l -- FZF_COMPLETION_TRIGGER '**'
 
         # Set variables containing the major and minor fish version numbers, using
         # a method compatible with all supported fish versions.
@@ -96,36 +98,42 @@ function fzf_completion_setup
         # Get tokens - use version-appropriate flags
         set -l tokens
         if test $fish_major -ge 4
-            set tokens (commandline -xpc)
+            set -- tokens (commandline -xpc)
         else
-            set tokens (commandline -opc)
+            set -- tokens (commandline -opc)
         end
 
         set -l -- current_token (commandline -t)
         set -l -- cmd_name $tokens[1]
 
+        set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
         set -l -- has_trigger false
-        string match -qr -- (string escape --style regex -- $FZF_COMPLETION_TRIGGER)'$' $current_token
+        string match -qr -- $regex_trigger $current_token
         and set has_trigger true
 
         # Strip trigger from commandline before parsing
         if $has_trigger; and test -n "$FZF_COMPLETION_TRIGGER" -a -n "$current_token"
-            set -- current_token (string sub -e -(string length -- "$FZF_COMPLETION_TRIGGER") -- $current_token)
+            set -- current_token (string replace -r -- $regex_trigger '' $current_token)
             commandline -rt -- $current_token
         end
+
+        set -l -- parsed (__fzf_parse_commandline)
+        set -l -- dir $parsed[1]
+        set -l -- fzf_query $parsed[2]
+        set -l -- opt_prefix $parsed[3]
 
         if not $has_trigger
             commandline -f complete
             return
         else if test -z "$tokens"
-            __fzf_complete_native "" --query=$current_token
+            __fzf_complete_native "" --query=$opt_prefix$fzf_query
             return
         end
 
-        set -l disable_opt_comp false
+        set -l -- disable_opt_comp false
         if not test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
             string match -qe -- ' -- ' (string sub -l (commandline -Cp) -- (commandline -p))
-            and set disable_opt_comp true
+            and set -- disable_opt_comp true
         end
 
         if not $disable_opt_comp
@@ -140,34 +148,34 @@ function fzf_completion_setup
 
         # Directory commands
         set -q FZF_COMPLETION_DIR_COMMANDS
-        or set -l FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
+        or set -l -- FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
 
         # File-only commands
         set -q FZF_COMPLETION_FILE_COMMANDS
-        or set -l FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
+        or set -l -- FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
 
         # Native completion commands
         set -q FZF_COMPLETION_NATIVE_COMMANDS
-        or set -l FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
+        or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
 
         # Native completion commands (multi-selection)
         set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-        or set -l FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
+        or set -l -- FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
 
         # Route to appropriate completion function
         if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-            set -l -- fzf_opt --query=(commandline -t | string escape)
+            set -l -- fzf_opt --query=$fzf_query
             contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
             and set -a -- fzf_opt --multi
             __fzf_complete_native "$cmd_name " $fzf_opt
         else if functions -q _fzf_complete_$cmd_name
             _fzf_complete_$cmd_name "$fzf_query" "$cmd_name"
         else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
-            __fzf_generic_path_completion _fzf_compgen_dir
+            __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
         else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
-            __fzf_generic_path_completion _fzf_compgen_file
+            __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_file
         else
-            __fzf_generic_path_completion _fzf_compgen_path
+            __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_path
         end
     end
 
