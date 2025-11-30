@@ -274,23 +274,26 @@ module CompletionTest
 
   def test_process_completion
     skip('fish background job format differs') if shell == :fish
-    tmux.send_keys 'sleep 12345 &', :Enter
-    lines = tmux.until { |lines| assert lines[-1]&.start_with?('[1] ') }
-    pid = lines[-1]&.split&.last
-    tmux.prepare
-    tmux.send_keys 'C-L'
-    tmux.send_keys "kill #{trigger}", :Tab
-    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys 'sleep12345'
-    tmux.until { |lines| assert lines.any_include?('sleep 12345') }
-    tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal "kill #{pid}", lines[-1] }
-  ensure
-    if pid
-      begin
-        Process.kill('KILL', pid.to_i)
-      rescue StandardError
-        nil
+
+    begin
+      tmux.send_keys 'sleep 12345 &', :Enter
+      lines = tmux.until { |lines| assert lines[-1]&.start_with?('[1] ') }
+      pid = lines[-1]&.split&.last
+      tmux.prepare
+      tmux.send_keys 'C-L'
+      tmux.send_keys "kill #{trigger}", :Tab
+      tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+      tmux.send_keys 'sleep12345'
+      tmux.until { |lines| assert lines.any_include?('sleep 12345') }
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal "kill #{pid}", lines[-1] }
+    ensure
+      if pid
+        begin
+          Process.kill('KILL', pid.to_i)
+        rescue StandardError
+          nil
+        end
       end
     end
   end
@@ -392,23 +395,26 @@ module CompletionTest
 
   def test_custom_completion_api
     skip('bash-specific _comprun/declare syntax') if shell == :fish
-    tmux.send_keys 'eval "_fzf$(declare -f _comprun)"', :Enter
-    %w[f g].each do |command|
-      tmux.prepare
-      tmux.send_keys "#{command} b#{trigger}", :Tab
-      tmux.until do |lines|
-        assert_equal 2, lines.item_count
-        assert_equal 1, lines.match_count
-        assert lines.any_include?("prompt-#{command}")
-        assert lines.any_include?("preview-#{command}-bar")
+
+    begin
+      tmux.send_keys 'eval "_fzf$(declare -f _comprun)"', :Enter
+      %w[f g].each do |command|
+        tmux.prepare
+        tmux.send_keys "#{command} b#{trigger}", :Tab
+        tmux.until do |lines|
+          assert_equal 2, lines.item_count
+          assert_equal 1, lines.match_count
+          assert lines.any_include?("prompt-#{command}")
+          assert lines.any_include?("preview-#{command}-bar")
+        end
+        tmux.send_keys :Enter
+        tmux.until { |lines| assert_equal "#{command} #{command}barbar", lines[-1] }
+        tmux.send_keys 'C-u'
       end
-      tmux.send_keys :Enter
-      tmux.until { |lines| assert_equal "#{command} #{command}barbar", lines[-1] }
-      tmux.send_keys 'C-u'
+    ensure
+      tmux.prepare
+      tmux.send_keys 'unset -f _fzf_comprun', :Enter
     end
-  ensure
-    tmux.prepare
-    tmux.send_keys 'unset -f _fzf_comprun', :Enter
   end
 
   def test_ssh_completion
