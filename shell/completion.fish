@@ -4,14 +4,15 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_COMPLETION_TRIGGER         (default: '**')
-# - $FZF_COMPLETION_OPTS            (default: empty)
-# - $FZF_COMPLETION_PATH_OPTS       (default: empty)
-# - $FZF_COMPLETION_DIR_OPTS        (default: empty)
-# - $FZF_COMPLETION_FILE_OPTS       (default: empty)
-# - $FZF_COMPLETION_DIR_COMMANDS    (default: cd pushd rmdir)
-# - $FZF_COMPLETION_FILE_COMMANDS   (default: cat head tail less more nano)
-# - $FZF_COMPLETION_NATIVE_COMMANDS (default: ssh telnet set functions type)
+# - $FZF_COMPLETION_TRIGGER               (default: '**')
+# - $FZF_COMPLETION_OPTS                  (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS             (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS              (default: empty)
+# - $FZF_COMPLETION_FILE_OPTS             (default: empty)
+# - $FZF_COMPLETION_DIR_COMMANDS          (default: cd pushd rmdir)
+# - $FZF_COMPLETION_FILE_COMMANDS         (default: cat head tail less more nano)
+# - $FZF_COMPLETION_NATIVE_COMMANDS       (default: ssh telnet)
+# - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: set functions type)
 
 function fzf_completion_setup
     # Load helper functions
@@ -143,7 +144,7 @@ function fzf_completion_setup
 
         # File-only commands
         set -q FZF_COMPLETION_FILE_COMMANDS
-        or set -l FZF_COMPLETION_FILE_COMMANDS cat head tail less more
+        or set -l FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
 
         # Native completion commands
         set -q FZF_COMPLETION_NATIVE_COMMANDS
@@ -154,13 +155,13 @@ function fzf_completion_setup
         or set -l FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
 
         # Route to appropriate completion function
-        if functions -q _fzf_complete_$cmd_name
-            _fzf_complete_$cmd_name "$fzf_query" "$cmd_name"
-        else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
+        if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
             set -l -- fzf_opt --query=(commandline -t | string escape)
             contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
             and set -a -- fzf_opt --multi
             __fzf_complete_native "$cmd_name " $fzf_opt
+        else if functions -q _fzf_complete_$cmd_name
+            _fzf_complete_$cmd_name "$fzf_query" "$cmd_name"
         else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
             __fzf_generic_path_completion _fzf_compgen_dir
         else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
