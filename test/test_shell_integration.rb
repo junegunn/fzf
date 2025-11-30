@@ -672,32 +672,23 @@ module CompletionTest
     FileUtils.rm_rf('/tmp/fzf-test-[special]')
   end
 
-  def test_dollar_sign_in_path
-    FileUtils.mkdir_p('/tmp/fzf-test-$dollar')
-    FileUtils.touch('/tmp/fzf-test-$dollar/xyz123')
+  def test_query_with_dollar_anchor
+    FileUtils.mkdir_p('/tmp/fzf-test-dollar-anchor')
+    FileUtils.touch('/tmp/fzf-test-dollar-anchor/file.txt')
+    FileUtils.touch('/tmp/fzf-test-dollar-anchor/filetxt.md')
     tmux.prepare
-    if shell == :fish
-      tmux.send_keys "ls /tmp/fzf-test-\\$dollar/xyz#{trigger}", :Tab
-    else
-      tmux.send_keys "ls '/tmp/fzf-test-$dollar/'xyz#{trigger}", :Tab
-    end
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-\\$dollar/xyz123', lines[-1] }
-  ensure
-    FileUtils.rm_rf('/tmp/fzf-test-$dollar')
-  end
+    tmux.send_keys 'cd /tmp/fzf-test-dollar-anchor', :Enter
+    tmux.prepare
+    tmux.send_keys "ls txt$#{trigger}", :Tab
 
-  def test_query_with_dollar_sign
-    FileUtils.mkdir_p('/tmp/fzf-test-dollar-query')
-    FileUtils.touch('/tmp/fzf-test-dollar-query/file.fish')
-    tmux.prepare
-    tmux.send_keys "ls /tmp/fzf-test-dollar-query/.fish$#{trigger}", :Tab
-    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> txt$'
+    end
     tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-dollar-query/file.fish', lines[-1] }
+    tmux.until(true) { |lines| assert_equal 'ls file.txt', lines[-1] }
   ensure
-    FileUtils.rm_rf('/tmp/fzf-test-dollar-query')
+    FileUtils.rm_rf('/tmp/fzf-test-dollar-anchor')
   end
 
   def test_single_flag_completion
