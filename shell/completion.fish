@@ -24,9 +24,9 @@ function fzf_completion_setup
         if type -q column
             set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-            set result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
+            set -- result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
         else
-            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
+            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse --nth=1 --color=fg:dim,nth:regular \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
             set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
         end
@@ -43,17 +43,17 @@ function fzf_completion_setup
         set -l -- tail " "
 
         # Set fzf options
-        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" $FZF_COMPLETION_OPTS --print0)
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse --scheme=path $FZF_COMPLETION_OPTS --print0)
         set -lx FZF_DEFAULT_COMMAND
         set -lx FZF_DEFAULT_OPTS_FILE
 
         if string match -q -- '*dir*' $compgen
             set -- tail ""
-            set -a -- FZF_DEFAULT_OPTS "--walker=dir,follow $FZF_COMPLETION_DIR_OPTS"
+            set -a -- FZF_DEFAULT_OPTS --walker=dir,follow $FZF_COMPLETION_DIR_OPTS
         else if string match -q -- '*file*' $compgen
-            set -a -- FZF_DEFAULT_OPTS "-m --walker=file,follow,hidden $FZF_COMPLETION_FILE_OPTS"
+            set -a -- FZF_DEFAULT_OPTS --multi --walker=file,follow,hidden $FZF_COMPLETION_FILE_OPTS
         else
-            set -a -- FZF_DEFAULT_OPTS "-m --walker=file,dir,follow,hidden $FZF_COMPLETION_PATH_OPTS"
+            set -a -- FZF_DEFAULT_OPTS --multi --walker=file,dir,follow,hidden $FZF_COMPLETION_PATH_OPTS
         end
 
         # Run fzf
