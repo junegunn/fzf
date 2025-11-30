@@ -748,16 +748,16 @@ and adds the following:
 
 ```fish
 # Options for file-only completion
-set -g FZF_COMPLETION_FILE_OPTS '--walker file,follow,hidden'
+set -gx FZF_COMPLETION_FILE_OPTS '--walker file,follow,hidden'
 
 # Commands that trigger file-only completion
-set -g FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
+set -gx FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
 
 # Commands that use fish's native completion system
-set -g FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
+set -gx FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
 
 # Commands that use native completion with multi-select
-set -g FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
+set -gx FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
 ```
 
 When `**NATIVE**` options are set the Fish will use its native `complete -C` builtin for
