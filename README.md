@@ -557,8 +557,8 @@ Display modes for these bindings can be separately configured via
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
-Fuzzy completion for bash and zsh
----------------------------------
+Fuzzy completion for bash, zsh, and fish
+----------------------------------------
 
 ### Files and directories
 
@@ -724,6 +724,44 @@ _fzf_complete_foo_post() {
 
 [ -n "$BASH" ] && complete -F _fzf_complete_foo -o default -o bashdefault foo
 ```
+
+#### Fish
+
+Fish shell supports fuzzy completion with the same customizable `**` trigger as bash and zsh.
+
+```fish
+# Files and directories
+vim **<TAB>
+cd **<TAB>
+
+# Process IDs
+kill -9 **<TAB>
+
+# Native completions (uses fish's complete -C builtin)
+ssh **<TAB>
+set **<TAB>
+```
+
+Fish completion system supports the same customization options as bash and zsh (`FZF_COMPLETION_TRIGGER`,
+`FZF_COMPLETION_OPTS`, `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_COMMANDS`, `FZF_COMPLETION_DIR_OPTS`),
+and adds the following:
+
+```fish
+# Options for file-only completion
+set -g FZF_COMPLETION_FILE_OPTS '--walker file,follow,hidden'
+
+# Commands that trigger file-only completion
+set -g FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
+
+# Commands that use fish's native completion system
+set -g FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
+
+# Commands that use native completion with multi-select
+set -g FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
+```
+
+When `**NATIVE**` options are set the Fish will use its native `complete -C` builtin for
+command-specific completions.
 
 Vim plugin
 ----------
