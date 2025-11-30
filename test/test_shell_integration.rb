@@ -462,6 +462,84 @@ class TestZsh < TestBase
       tmux.send_keys 'C-c'
     end
   end
+
+  # Helper function to run test with Perl and again with Awk
+  def self.test_perl_and_awk(name, &block)
+    define_method("test_#{name}") do
+      instance_eval(&block)
+    end
+
+    define_method("test_#{name}_awk") do
+      tmux.send_keys "unset 'commands[perl]'", :Enter
+      tmux.prepare
+      # Verify perl is actually unset (0 = not found)
+      tmux.send_keys 'echo ${+commands[perl]}', :Enter
+      tmux.until { |lines| assert_equal '0', lines[-1] }
+      tmux.prepare
+      instance_eval(&block)
+    end
+  end
+
+  def prepare_ctrl_r_test
+    tmux.send_keys ':', :Enter
+    tmux.send_keys 'echo match-collision', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "line 1', :Enter, '2 line 2"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "foo', :Enter, 'bar"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo "trailing_space "', :Enter
+    tmux.prepare
+    tmux.send_keys 'cat <<EOF | wc -c', :Enter, 'qux thud', :Enter, 'EOF', :Enter
+    tmux.prepare
+    tmux.send_keys 'C-l', 'C-r'
+  end
+
+  test_perl_and_awk 'ctrl_r_accept_or_print_query' do
+    set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query')
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys '1 foobar'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal '1 foobar', lines[-1] }
+  end
+
+  test_perl_and_awk 'ctrl_r_multiline_index_collision' do
+    # Leading number in multi-line history content is not confused with index
+    prepare_ctrl_r_test
+    tmux.send_keys "'line 1"
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ['echo "line 1', '2 line 2"'], lines[-2..]
+    end
+  end
+
+  test_perl_and_awk 'ctrl_r_multi_selection' do
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(3)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF', 'echo "trailing_space "', 'echo "bar', 'foo"'], lines[-6..]
+    end
+  end
+
+  test_perl_and_awk 'ctrl_r_no_multi_selection' do
+    set_var('FZF_CTRL_R_OPTS', '--no-multi')
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| refute_includes lines[-2], '(3)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF'], lines[-3..]
+    end
+  end
 end
 
 class TestFish < TestBase
