@@ -26,7 +26,7 @@ function fzf_completion_setup
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
             set -- result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
         else
-            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse --nth=1 --color=fg:dim,nth:regular \
+            set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
                 $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
             set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
         end
@@ -43,7 +43,7 @@ function fzf_completion_setup
         set -l -- tail " "
 
         # Set fzf options
-        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse --scheme=path $FZF_COMPLETION_OPTS --print0)
+        set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" $FZF_COMPLETION_OPTS --print0)
         set -lx FZF_DEFAULT_COMMAND
         set -lx FZF_DEFAULT_OPTS_FILE
 
