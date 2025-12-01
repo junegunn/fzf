@@ -121,12 +121,13 @@ function fzf_completion_setup
         set -l -- dir $parsed[1]
         set -l -- fzf_query $parsed[2]
         set -l -- opt_prefix $parsed[3]
+        set -l -- full_query $opt_prefix$fzf_query
 
         if not $has_trigger
             commandline -f complete
             return
         else if test -z "$tokens"
-            __fzf_complete_native "" --query=$opt_prefix$fzf_query
+            __fzf_complete_native "" --query=$full_query
             return
         end
 
@@ -164,12 +165,12 @@ function fzf_completion_setup
 
         # Route to appropriate completion function
         if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-            set -l -- fzf_opt --query=$fzf_query
+            set -l -- fzf_opt --query=$full_query
             contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
             and set -a -- fzf_opt --multi
             __fzf_complete_native "$cmd_name " $fzf_opt
         else if functions -q _fzf_complete_$cmd_name
-            _fzf_complete_$cmd_name "$fzf_query" "$cmd_name"
+            _fzf_complete_$cmd_name "$full_query" "$cmd_name"
         else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
             __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
         else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
