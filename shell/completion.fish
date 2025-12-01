@@ -9,10 +9,10 @@
 # - $FZF_COMPLETION_PATH_OPTS             (default: empty)
 # - $FZF_COMPLETION_DIR_OPTS              (default: empty)
 # - $FZF_COMPLETION_FILE_OPTS             (default: empty)
-# - $FZF_COMPLETION_DIR_COMMANDS          (default: cd pushd rmdir)
-# - $FZF_COMPLETION_FILE_COMMANDS         (default: cat head tail less more nano)
-# - $FZF_COMPLETION_NATIVE_COMMANDS       (default: ssh telnet)
-# - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: set functions type)
+# - $FZF_COMPLETION_DIR_COMMANDS          (default: see variable declaration for default values)
+# - $FZF_COMPLETION_FILE_COMMANDS         (default: see variable declaration for default values)
+# - $FZF_COMPLETION_NATIVE_COMMANDS       (default: see variable declaration for default values)
+# - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: see variable declaration for default values)
 
 function fzf_completion_setup
     # Load helper functions
@@ -153,11 +153,12 @@ function fzf_completion_setup
 
         # File-only commands
         set -q FZF_COMPLETION_FILE_COMMANDS
-        or set -l -- FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
+        or set -l -- FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano sed sort uniq wc patch source \
+            bunzip2 bzip2 gunzip gzip
 
         # Native completion commands
         set -q FZF_COMPLETION_NATIVE_COMMANDS
-        or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
+        or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ftp git hg sftp ssh svn telnet
 
         # Native completion commands (multi-selection)
         set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
