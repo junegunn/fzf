@@ -741,7 +741,7 @@ ENVIRONMENT VARIABLES EXPORTED TO CHILD PROCESSES.
 
 e.g.
      \fB# Prepend the current cursor position in yellow
-     fzf \-\-info\-command='echo \-e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
+     fzf \-\-info\-command='printf "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
 
 .TP
 .B "\-\-no\-info"
@@ -840,6 +840,9 @@ e.g.
      \fB# See the sum of all the matched numbers
      # This won't work properly without 'f' flag due to ARG_MAX limit.
      seq 100000 | fzf \-\-preview "awk '{sum+=\\$1} END {print sum}' {*f}"\fR
+
+     \fB# Use {+f} to get the selected items as a line-separated list
+     seq 100 | fzf \-\-multi \-\-bind 'enter:become:cat {+f}'\fR
 
 Also,
 
@@ -2106,7 +2109,7 @@ payload of HTTP POST request to the \fB\-\-listen\fR server.
 
 e.g.
     \fB# Disallow selecting an empty line
-    echo \-e "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
+    printf "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
       fzf \-\-height '~100%' \-\-reverse \-\-header 'Select one' \\
           \-\-bind 'enter:transform:[[ \-n {} ]] &&
                     echo accept ||
