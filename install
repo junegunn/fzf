@@ -362,26 +362,50 @@ for shell in $shells; do
   append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
-if [ $key_bindings -eq 1 ] && [[ $shells =~ fish ]]; then
-  bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
-  if [ ! -e "$bind_file" ]; then
-    mkdir -p "${fish_dir}/functions"
-    create_file "$bind_file" \
-      'function fish_user_key_bindings' \
-      '  fzf --fish | source' \
-      'end'
-  else
-    echo "Check $bind_file:"
-    lno=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
-    if [[ -n $lno ]]; then
-      echo "  ** Found 'fzf_key_bindings' in line #$lno"
-      echo "  ** You have to replace the line to 'fzf --fish | source'"
-      echo
+fish_line=
+if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
+  fish_line='fzf --fish | source'
+elif [[ $key_bindings -eq 1 ]]; then
+  fish_line="fzf --fish | sed -n '/^### key-bindings/,/^### end/p' | source"
+elif [[ $auto_completion -eq 1 ]]; then
+  fish_line="fzf --fish | sed -n '/^### completion/,/^### end/p' | source"
+fi
+
+if [[ -n $fish_line ]] && [[ $shells =~ fish ]]; then
+  fish_config="${fish_dir}/config.fish"
+  if [ $update_config -eq 1 ]; then
+    echo "Update $fish_config:"
+    mkdir -p "${fish_dir}"
+    if [ -f "$fish_config" ] && \grep -qF "#----BEGIN FZF" "$fish_config"; then
+      echo "  - Already exists: #----BEGIN FZF block found"
+      # Update existing block
+      {
+        sed -n '1,/^[[:space:]]*#----BEGIN FZF/p' "$fish_config" | sed '$d'
+        cat << EOF
+#----BEGIN FZF
+$fish_line
+#----END FZF
+EOF
+        sed -n '/^[[:space:]]*#----END FZF/,$p' "$fish_config" | sed '1d'
+      } > "$fish_config.part"
+      mv -f "$fish_config.part" "$fish_config"
+      echo "    + Updated"
     else
-      echo "  - Clear"
-      echo
-      append_line $update_config "fzf --fish | source" "$bind_file"
+      [ -f "$fish_config" ] && echo >> "$fish_config"
+      cat >> "$fish_config" << EOF
+#----BEGIN FZF
+$fish_line
+#----END FZF
+EOF
+      echo "  - $fish_line"
+      echo "    + Added"
     fi
+    echo
+  else
+    echo "Update $fish_config:"
+    echo "  - $fish_line"
+    echo "    ~ Skipped"
+    echo
   fi
 fi
 
