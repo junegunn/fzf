@@ -376,20 +376,39 @@ if [[ -n $fish_line ]] && [[ $shells =~ fish ]]; then
   if [ $update_config -eq 1 ]; then
     echo "Update $fish_config:"
     mkdir -p "${fish_dir}"
-    if [ -f "$fish_config" ] && \grep -qF "#----BEGIN FZF" "$fish_config"; then
-      echo "  - Already exists: #----BEGIN FZF block found"
-      # Update existing block
-      {
-        sed -n '1,/^[[:space:]]*#----BEGIN FZF/p' "$fish_config" | sed '$d'
-        cat << EOF
-#----BEGIN FZF
-$fish_line
-#----END FZF
-EOF
-        sed -n '/^[[:space:]]*#----END FZF/,$p' "$fish_config" | sed '1d'
-      } > "$fish_config.part"
-      mv -f "$fish_config.part" "$fish_config"
-      echo "    + Updated"
+    if [ -f "$fish_config" ]; then
+      # Find FZF block boundaries
+      read begin_line end_line <<< $(awk '/#----BEGIN FZF/{b=NR} /#----END FZF/{e=NR; exit} END{print b,e}' "$fish_config")
+
+      if [ -n "$begin_line" ]; then
+        echo "  - $fish_line"
+        if [ -z "$end_line" ]; then
+          echo "    - ERROR: Found #----BEGIN FZF but no matching #----END FZF marker"
+          echo "      The config file appears to be malformed. Please fix it manually."
+          exit 1
+        fi
+
+        # Extract indent and existing content
+        indent=$(sed -n "${begin_line}p" "$fish_config" | sed 's/#----BEGIN FZF.*//')
+        existing_content=$(sed -n "$((begin_line + 1)),$((end_line - 1))p" "$fish_config" | sed "s/^${indent}//")
+
+        echo "    - Already exists:"
+        awk -v b="$begin_line" -v e="$end_line" 'NR >= b && NR <= e {printf "        Line %d:%s\n", NR, $0}' "$fish_config"
+
+        if [ "$existing_content" = "$fish_line" ]; then
+          echo "    ~ Skipped"
+        else
+          {
+            sed -n "1,$((begin_line - 1))p" "$fish_config"
+            echo "${indent}#----BEGIN FZF"
+            echo "${indent}$fish_line"
+            echo "${indent}#----END FZF"
+            sed -n "$((end_line + 1)),\$p" "$fish_config"
+          } > "$fish_config.part"
+          mv -f "$fish_config.part" "$fish_config"
+          echo "    + Updated"
+        fi
+      fi
     else
       [ -f "$fish_config" ] && echo >> "$fish_config"
       cat >> "$fish_config" << EOF
@@ -417,7 +436,7 @@ if [ $update_config -eq 1 ]; then
     echo
   fi
   [[ $shells =~ zsh ]] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-  [[ $shells =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
+  [[ $shells =~ fish ]] && echo "   source ${XDG_CONFIG_HOME:-~/.config}/fish/config.fish  # fish"
   echo
   echo 'Use uninstall script to remove fzf.'
   echo
