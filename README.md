@@ -1005,8 +1005,6 @@ Goods
 
 Grab fzf T-shirts, mugs, and stickers here: https://commitgoods.com/collections/fzf
 
-> _Everything in the shop is 15% off through Cyber Monday with the code `COMMITGOODSLAUNCH`_
-
 Sponsors :heart:
 ----------------
 
