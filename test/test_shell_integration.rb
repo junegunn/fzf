@@ -552,22 +552,26 @@ class TestZsh < TestBase
     # SHARE_HISTORY picks up foreign commands; marked with * in fc
     tmux.send_keys 'setopt SHARE_HISTORY', :Enter
     tmux.prepare
-    tmux.send_keys 'local_cmd_abc', :Enter
+    tmux.send_keys 'fzf_cmd_local', :Enter
     tmux.prepare
     # Mock foreign command (for testing only; don't edit your HISTFILE this way)
-    tmux.send_keys "echo ': 0:0;foreign_cmd_xyz' >>$HISTFILE", :Enter
+    tmux.send_keys "echo ': 0:0;fzf_cmd_foreign' >> $HISTFILE", :Enter
     tmux.prepare
     # Verify fc shows foreign command with asterisk
     tmux.send_keys 'fc -rl -1', :Enter
-    tmux.until { |lines| assert lines.any? { |l| l.match?(/^\s*\d+\* foreign_cmd_xyz/) } }
+    tmux.until { |lines| assert lines.any? { |l| l.match?(/^\s*\d+\* fzf_cmd_foreign/) } }
     tmux.prepare
     # Test ctrl-r correctly extracts the foreign command
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys '^foreign_cmd_xyz'
-    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys '^fzf_cmd_'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(2)' }
     tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'foreign_cmd_xyz', lines[-1] }
+    tmux.until do |lines|
+      assert_equal ['fzf_cmd_foreign', 'fzf_cmd_local'], lines[-2..]
+    end
   ensure
     FileUtils.rm_f(histfile)
   end
