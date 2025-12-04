@@ -546,7 +546,7 @@ class TestZsh < TestBase
   # https://github.com/junegunn/fzf/issues/4061
   # https://zsh.org/mla/users/2024/msg00692.html
   test_perl_and_awk 'ctrl_r_foreign_commands' do
-    histfile = tempname
+    histfile = "#{tempname}-foreign-hist"
     tmux.send_keys "HISTFILE=#{histfile}", :Enter
     tmux.prepare
     # SHARE_HISTORY picks up foreign commands; marked with * in fc
