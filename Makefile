@@ -1,4 +1,5 @@
 GO             ?= go
+DOCKER         ?= docker
 GOOS           ?= $(shell $(GO) env GOOS)
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
@@ -192,12 +193,12 @@ bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
 docker:
-	docker build -t fzf-ubuntu .
-	docker run -it fzf-ubuntu tmux
+	$(DOCKER) build -t fzf-ubuntu .
+	$(DOCKER) run -it fzf-ubuntu tmux
 
 docker-test:
-	docker build -t fzf-ubuntu .
-	docker run -it fzf-ubuntu
+	$(DOCKER) build -t fzf-ubuntu .
+	$(DOCKER) run -it fzf-ubuntu
 
 update:
 	$(GO) get -u
