@@ -333,7 +333,7 @@ append_line() {
       [ -f "$file" ] && echo >> "$file"
       echo "$line" >> "$file"
     else
-      sed -i "${at_lno}a\\$line" "$file"
+      sed -i.~fzf_bak "${at_lno}a\\"$'\n'"$line" "$file" && rm "$file.~fzf_bak"
     fi
     echo "    + Added"
   else
@@ -425,16 +425,16 @@ if [[ $shells =~ fish ]]; then
       echo "  - Clear"
       echo
       if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
-        sed -i "\#$fzf_completion#d" "$bind_file"
-        sed -i "\#$fzf_key_bindings#d" "$bind_file"
+        sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+        sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
         append_line $update_config "  fzf --fish | source" "$bind_file" "" "$lno_func"
       else
-        sed -i '/fzf --fish \| source/d' "$bind_file"
+        sed -i.~fzf_bak '/fzf --fish \| source/d' "$bind_file" && rm "$bind_file.~fzf_bak"
         if [[ $key_bindings -eq 1 ]]; then
-          sed -i "\#$fzf_completion#d" "$bind_file"
+          sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
           append_line $update_config "  $fzf_key_bindings" "$bind_file" "" "$lno_func"
         elif [[ $auto_completion -eq 1 ]]; then
-          sed -i "\#$fzf_key_bindings#d" "$bind_file"
+          sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
           append_line $update_config "  $fzf_completion" "$bind_file" "" "$lno_func"
         fi
       fi
