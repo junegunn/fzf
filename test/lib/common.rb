@@ -11,6 +11,7 @@ require 'net/http'
 require 'json'
 
 TEMPLATE = File.read(File.expand_path('common.sh', __dir__))
+FISH_TEMPLATE = File.read(File.expand_path('common.fish', __dir__))
 UNSETS = %w[
   FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS
   FZF_TMUX FZF_TMUX_OPTS
@@ -66,7 +67,16 @@ class Shell
     end
 
     def fish
-      "unset #{UNSETS.join(' ')}; rm -f ~/.local/share/fish/fzf_test_history; FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer '>' --marker '>'\" fish_history=fzf_test fish"
+      @fish ||=
+        begin
+          confdir = '/tmp/fzf-fish'
+          FileUtils.rm_rf(confdir)
+          FileUtils.mkdir_p("#{confdir}/fish/conf.d")
+          File.open("#{confdir}/fish/conf.d/fzf.fish", 'w') do |f|
+            f.puts ERB.new(FISH_TEMPLATE).result(binding)
+          end
+          "rm -f ~/.local/share/fish/fzf_test_history; XDG_CONFIG_HOME=#{confdir} fish"
+        end
     end
   end
 end
