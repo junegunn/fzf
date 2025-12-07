@@ -499,14 +499,14 @@ let fzf_wrapper_completer = {|spans|
   # 2. If FZF returned a result (a list, even an empty one), return it.
   #    `null` means FZF didn't handle it because the trigger wasn't present.
   if $fzf_result != null {
-      return $fzf_result
+      $fzf_result
   } else {
       # 3. FZF didn't handle it, so call the previous completer (if it exists).
       if $previous_external_completer != null {
           do $previous_external_completer $spans
       } else {
           # 4. No previous completer, and FZF didn't handle it. Return null.
-          return null
+          null
       }
   }
 }
