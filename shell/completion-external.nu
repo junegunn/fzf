@@ -375,9 +375,9 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
 }
 
 def _fzf_complete_pass_nu [prefix: string] {
-    let passwordstore_files_gen_closure = {||
-      ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
-    }
+  let passwordstore_files_gen_closure = {||
+    ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
+  }
   _fzf_complete_nu $prefix $passwordstore_files_gen_closure ["-m"] {}
 }
 
