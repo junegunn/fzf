@@ -374,7 +374,7 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
   $completion_result
 }
 
-def _fzf_complete_pass_nu [prefix: string, input_line_before_trigger: string] {
+def _fzf_complete_pass_nu [prefix: string] {
     let passwordstore_files_gen_closure = {||
       ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
     }
@@ -466,7 +466,7 @@ let fzf_external_completer = {|spans|
     mut completion_results = [] # Will hold the list of strings from the completer
 
     match $cmd_word {
-        "pass" => { $completion_results = (_fzf_complete_pass_nu $prefix $line_without_trigger) }
+        "pass" => { $completion_results = (_fzf_complete_pass_nu $prefix) }
         "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
         "export" | "printenv" => { $completion_results = (_fzf_complete_export_nu $prefix) }
         "unset" => { $completion_results = (_fzf_complete_unset_nu $prefix) }
