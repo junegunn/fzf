@@ -290,7 +290,7 @@ def _fzf_complete_nu [
     query: string,              # The initial query string for fzf
     data_gen_closure: closure,    # Closure that generates candidates
     fzf_opts_arg: list<string>,  # Extra options for fzf (like -m, +m)
-    post_process_closure: any # Closure to process the selected item (optional)
+    --post_process_closure: closure # Closure to process the selected item (optional)
 ] {
   
   # Generate candidates using the provided command
@@ -310,7 +310,7 @@ def _fzf_complete_nu [
   | str trim # Trim potential trailing newline from fzf
 
   # Apply post-processing if closure provided and selection is not empty
-  let processed_selection = if ($fzf_selection | is-not-empty) and (($post_process_closure | describe) == 'closure') {
+  let processed_selection = if ($fzf_selection | is-not-empty) and ($post_process_closure | is-not-empty) {
     # Call the post-processing closure with the selection
     try {
       do $post_process_closure $fzf_selection
@@ -365,7 +365,7 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
 
     # Zsh options: +m -- ; Nu: pass ["+m"]
     # Pass the host part of the prefix to _fzf_complete_nu for the initial query
-    let selected_host = (_fzf_complete_nu $query $host_candidates_gen ["+m"] null) # Pass host_prefix here
+    let selected_host = (_fzf_complete_nu $query $host_candidates_gen ["+m"]) # Pass host_prefix here
     if not ($selected_host | is-empty) {
       $completion_result = $selected_host # _fzf_complete_nu returns a list
     }
@@ -378,7 +378,7 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
 def _fzf_complete_export_nu [query: string] {
   let vars_gen_closure = {|| env | get name } # Nushell `env` provides names directly
   # Zsh options: -m -- ; Nu: pass ["-m"] ; +m = multiple choice
-  _fzf_complete_nu $query $vars_gen_closure ["-m"] null 
+  _fzf_complete_nu $query $vars_gen_closure ["-m"] 
 }
 
 # Unset completion (same as export)
@@ -390,7 +390,7 @@ def _fzf_complete_unset_nu [query: string] {
 def _fzf_complete_unalias_nu [query: string] {
   let aliases_gen_closure = {|| aliases | get alias } # Use 'alias' column from `aliases` command
   # Zsh options: +m -- ; Nu: pass ["+m"] ; +m = multiple choice
-  _fzf_complete_nu $query $aliases_gen_closure ["+m"] null 
+  _fzf_complete_nu $query $aliases_gen_closure ["+m"] 
 }
 
 # Kill completion post-processor (extracts PID)
@@ -426,7 +426,7 @@ def _fzf_complete_kill_nu [query: string] {
 
   let fzf_opts = ["-m", "--header-lines=1", "--no-preview", "--wrap", "--color", "fg:dim,nth:regular"]
 
-  _fzf_complete_nu $query $ps_gen_closure $fzf_opts $kill_post_closure
+  _fzf_complete_nu $query $ps_gen_closure $fzf_opts --post_process_closure $kill_post_closure
 }
 
 
