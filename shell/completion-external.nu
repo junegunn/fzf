@@ -49,7 +49,7 @@ $env.FZF_COMPLETION_VAR_COMMANDS = $env.FZF_COMPLETION_VAR_COMMANDS? | default [
 
 # Helper to build default fzf options list
 def __fzf_defaults_nu [prepend: list<string>, append: string] {
-  let default_opts = $env.FZF_DEFAULT_OPTS? | default ''
+  let default_opts      = $env.FZF_DEFAULT_OPTS? | default ''
   let default_opts_file = $env.FZF_DEFAULT_OPTS_FILE? | default ''
 
   let file_opts = try {
@@ -59,20 +59,18 @@ def __fzf_defaults_nu [prepend: list<string>, append: string] {
   }
 
   # Build options list
-  return $prepend # Start with the prepend argument
-  | append $file_opts # Append options from file
-  | append ($default_opts | split words | where not ($in | is-empty)) # Append options from $FZF_DEFAULT_OPTS
-  | append ($append | split words | where not ($in | is-empty)) # Append options from function argument
-  | where {|it| try { ($it | is-string) and not ($it | is-empty) } catch { false } } # Filter to keep only non-empty strings, safely handling potential errors
+                                                                                                     # Start with the prepend argument
+  return $prepend | append $file_opts                                                                # Append options from file
+                  | append ($default_opts | split words | where not ($in | is-empty))                # Append options from $FZF_DEFAULT_OPTS
+                  | append ($append | split words | where not ($in | is-empty))                      # Append options from function argument
+                  | where {|it| try { ($it | is-string) and not ($it | is-empty) } catch { false } } # Filter to keep only non-empty strings, safely handling potential errors
 }
 
 # Wrapper for running fzf or fzf-tmux
-def __fzf_comprun_nu [
-  context_name: string, # e.g., "fzf-completion", "fzf-helper" - mainly for potential debugging
-  query: string,        # The initial query string for fzf
-  fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
-  ] {
-
+def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fzf-helper" - mainly for potential debugging
+                     , query:        string       # The initial query string for fzf
+                     , fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
+                     ] {
   # in which case $stdin_content will be null.
   let stdin_content = try {
     # Collect stdin into a single string. Adjust if structured data is expected.
@@ -81,7 +79,7 @@ def __fzf_comprun_nu [
     null # Set to null if there's no stdin or an error occurs reading it
   }
 
-  let fzf_prefinal_opt = ['--query', $query, '--reverse'] 
+  let fzf_prefinal_opt = ['--query', $query, '--reverse']
     | append (__fzf_defaults_nu $fzf_opts_arg ($env.FZF_COMPLETION_OPTS | default ''))
 
   # Get the configured height, defaulting to '40%'
@@ -106,7 +104,7 @@ def __fzf_comprun_nu [
       # Use the default -d option with the configured height for fzf-tmux
       ['-d', $height_opt, '--'] | append $fzf_prefinal_opt
     }
-    
+
     if $has_walker or ($stdin_content == null) {
       # Run directly if walker or no stdin provided
       fzf-tmux ...$final_fzf_opts
@@ -114,7 +112,7 @@ def __fzf_comprun_nu [
       # Pipe captured stdin to fzf-tmux
       $stdin_content | fzf-tmux ...$final_fzf_opts
     }
-    
+
   } else {
     # Not in tmux or not configured for fzf-tmux, use fzf directly
     # Add --height option for plain fzf
@@ -133,46 +131,44 @@ def __fzf_comprun_nu [
 # Generate host list for ssh/telnet
 def __fzf_list_hosts_nu [] {
   # Translate the Zsh pipeline using Nu commands and external tools
-  let ssh_configs = try { open ~/.ssh/config | lines } catch { [] }
-  let ssh_configs_d = try { open ~/.ssh/config.d/* | lines } catch { [] }
+  let ssh_configs       = try { open ~/.ssh/config       | lines } catch { [] }
+  let ssh_configs_d     = try { open ~/.ssh/config.d/*   | lines } catch { [] }
   let ssh_config_global = try { open /etc/ssh/ssh_config | lines } catch { [] }
-  let known_hosts = try { open ~/.ssh/known_hosts | lines } catch { [] }
-  let hosts_file = try { open /etc/hosts | lines } catch { [] }
+  let known_hosts       = try { open ~/.ssh/known_hosts  | lines } catch { [] }
+  let hosts_file        = try { open /etc/hosts          | lines } catch { [] }
 
   [
     (
       # Process ssh config files
       $ssh_configs | append $ssh_configs_d | append $ssh_config_global
-      | where {|it| ($it | str downcase | str starts-with 'host') or ($it | str downcase | str starts-with 'hostname') }
-      | parse --regex '^\s*host(?:name)?\s+(?<hosts>.+)' # Extract hosts after keyword
-      | default { hosts: null } # Handle lines that don't match regex
-      | get hosts
-      | where {|it| $it != null }
-      | split row ' '
-      | where {|it| not ($it =~ '[*?%]') } # Exclude patterns containing *, ?, or %
+                   | where {|it| ($it | str downcase | str starts-with 'host') or ($it | str downcase | str starts-with 'hostname') }
+                   | parse --regex '^\s*host(?:name)?\s+(?<hosts>.+)' # Extract hosts after keyword
+                   | default { hosts: null }                          # Handle lines that don't match regex
+                   | get hosts
+                   | where {|it| $it != null }
+                   | split row ' '
+                   | where {|it| not ($it =~ '[*?%]') }               # Exclude patterns containing *, ?, or %
     )
     (
       # Process known_hosts file
-      $known_hosts
-      | parse --regex '^(?:\[)?(?<hosts>[a-z0-9.,:_-]+)' # Extract hostnames (possibly in [], possibly comma-separated) - added underscore
-      | default { hosts: null }
-      | get hosts
-      | where {|it| $it != null }
-      | each { |it| $it | split row ',' } # Split comma-separated hosts if any
-      | flatten
+      $known_hosts | parse --regex '^(?:\[)?(?<hosts>[a-z0-9.,:_-]+)' # Extract hostnames (possibly in [], possibly comma-separated) - added underscore
+                   | default { hosts: null }
+                   | get hosts
+                   | where {|it| $it != null }
+                   | each { |it| $it | split row ',' }                # Split comma-separated hosts if any
+                   | flatten
     )
     (
       # Process /etc/hosts file
-      $hosts_file
-      | where { |it| not ($it | str starts-with '#') } # Ignore comments
-      | where { |it| not ($it | str trim | is-empty) } # Ignore empty lines
-      | where { |it| not ($it | str contains '0.0.0.0') } # Ignore 0.0.0.0
-      | str replace --regex '#.*$' '' # Remove trailing comments
-      | parse --regex '^\s*\S+\s+(?<hosts>.+)' # Extract hosts part (after IP)
-      | default { hosts: null }
-      | get hosts
-      | where {|it| $it != null }
-      | split row ' ' # Split multiple hosts on the same line
+      $hosts_file | where { |it| not ($it | str starts-with '#') }    # Ignore comments
+                  | where { |it| not ($it | str trim | is-empty) }    # Ignore empty lines
+                  | where { |it| not ($it | str contains '0.0.0.0') } # Ignore 0.0.0.0
+                  | str replace --regex '#.*$' ''                     # Remove trailing comments
+                  | parse --regex '^\s*\S+\s+(?<hosts>.+)'            # Extract hosts part (after IP)
+                  | default { hosts: null }
+                  | get hosts
+                  | where {|it| $it != null }
+                  | split row ' '                                     # Split multiple hosts on the same line
     )
   ]
   | flatten # Combine all lists into a single stream
@@ -182,52 +178,50 @@ def __fzf_list_hosts_nu [] {
 
 
 # Base function for path/directory completion
-def __fzf_generic_path_completion_nu [
-    prefix: string,           # The text before the trigger
-    compgen_cmd_name: string,        # not used
-    fzf_opts_arg: list<string>, # Extra options for fzf
-    suffix: string           # Suffix to add to selection (e.g., "/")
-] {
+def __fzf_generic_path_completion_nu [ prefix:           string       # The text before the trigger
+                                     , compgen_cmd_name: string       # not used
+                                     , fzf_opts_arg:     list<string> # Extra options for fzf
+                                     , suffix:           string       # Suffix to add to selection (e.g. , "/")
+                                     ] {
   # --- Determine walker root and initial query from the raw prefix ---
   let raw_prefix = $prefix # Use the original prefix before any expansion
 
-  mut walker_root = "."
+  mut walker_root   = "."
   mut initial_query = ""
 
   if ($raw_prefix | is-empty) {
-      # Case: "**"
-      $walker_root = "."
-      $initial_query = ""
+    # Case: "**"
+    $walker_root   = "."
+    $initial_query = ""
   } else if ($raw_prefix | str contains (char separator)) {
-      # Case: "dir/subdir/partial**" or "dir/**"
-      $walker_root = $raw_prefix | path dirname
-      $initial_query = $raw_prefix | path basename
-      # Handle edge case where prefix ends with separator, e.g., "dir/"
-      if ($raw_prefix | str ends-with (char separator)) {
-          # Remove trailing separator to get the intended directory
-          $walker_root = $raw_prefix | str substring 0..-2
-          $initial_query = ""
-      }
-      # Ensure walker_root isn't empty if prefix was like "/file**"
-      # or if path dirname returned empty string for some reason (e.g. prefix="file/")
-      if ($walker_root | is-empty) {
-        if ($raw_prefix | str starts-with (char separator)) {
-          $walker_root = (char separator) 
-        } else if ($raw_prefix | str ends-with (char separator)) {
-          $walker_root = $raw_prefix | str substring 0..-2 
-        } else { $walker_root = "." } # Fallback if dirname weirdly fails
-      }
-
+    # Case: "dir/subdir/partial**" or "dir/**"
+    $walker_root   = $raw_prefix | path dirname
+    $initial_query = $raw_prefix | path basename
+    # Handle edge case where prefix ends with separator, e.g., "dir/"
+    if ($raw_prefix | str ends-with (char separator)) {
+      # Remove trailing separator to get the intended directory
+      $walker_root = $raw_prefix | str substring 0..-2
+      $initial_query = ""
+    }
+    # Ensure walker_root isn't empty if prefix was like "/file**"
+    # or if path dirname returned empty string for some reason (e.g. prefix="file/")
+    if ($walker_root | is-empty) {
+      if ($raw_prefix | str starts-with (char separator)) {
+        $walker_root = (char separator)
+      } else if ($raw_prefix | str ends-with (char separator)) {
+        $walker_root = $raw_prefix | str substring 0..-2
+      } else { $walker_root = "." } # Fallback if dirname weirdly fails
+    }
   } else {
-      # Case: "partial**" (no slashes)
-      $walker_root = "."
-      $initial_query = $raw_prefix
+    # Case: "partial**" (no slashes)
+    $walker_root   = "."
+    $initial_query = $raw_prefix
   }
 
   # --- Candidate Generation ---
   # Keep existing logic for custom generators vs walker, but use newly calculated values.
   # Custom generators might still expect/need an absolute path. Expand walker_root only for them.
- 
+
   # --- Prepare FZF options ---
   let completion_type_opts = if $suffix == '/' {
       $env.FZF_COMPLETION_DIR_OPTS? | default '' | split words
@@ -241,13 +235,12 @@ def __fzf_generic_path_completion_nu [
       "file,dir,follow,hidden"
   }
   # Use the 'walker_root' calculated at the beginning
-  let $fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root] 
-    | append $fzf_opts_arg 
-    | append $completion_type_opts
+  let $fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root] | append $fzf_opts_arg
+                                                                                                 | append $completion_type_opts
 
   # Call FZF run
   let fzf_selection = ( __fzf_comprun_nu "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
-  
+
 
   # --- Format Selection ---
   # Reconstruct the full path relative to the original prefix structure,
@@ -286,13 +279,11 @@ def _fzf_path_completion_nu [prefix: string] {
 
 # General completion helper for commands that feed a list to fzf
 # This is called by ssh, export, unalias, kill. everything exept path and dir
-def _fzf_complete_nu [
-    query: string,              # The initial query string for fzf
-    data_gen_closure: closure,    # Closure that generates candidates
-    fzf_opts_arg: list<string>,  # Extra options for fzf (like -m, +m)
-    --post_process_closure: closure # Closure to process the selected item (optional)
-] {
-  
+def _fzf_complete_nu [ query:                  string       # The initial query string for fzf
+                     , data_gen_closure:       closure      # Closure that generates candidates
+                     , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
+                     , --post_process_closure: closure      # Closure to process the selected item (optional)
+                     ] {
   # Generate candidates using the provided command
   let candidates = try {
     do $data_gen_closure
@@ -305,9 +296,9 @@ def _fzf_complete_nu [
   }
 
   # Run fzf and get selection
-  let fzf_selection = $candidates | to text 
-  | __fzf_comprun_nu "fzf-helper" $query $fzf_opts_arg 
-  | str trim # Trim potential trailing newline from fzf
+  let fzf_selection = $candidates | to text
+                                  | __fzf_comprun_nu "fzf-helper" $query $fzf_opts_arg
+                                  | str trim # Trim potential trailing newline from fzf
 
   # Apply post-processing if closure provided and selection is not empty
   let processed_selection = if ($fzf_selection | is-not-empty) and ($post_process_closure | is-not-empty) {
@@ -330,8 +321,10 @@ def _fzf_complete_nu [
 }
 
 # SSH/Telnet completion
-def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
-  let words = ($input_line_before_trigger | split row ' ')
+def _fzf_complete_ssh_nu [ prefix:                    string
+                         , input_line_before_trigger: string
+                         ] {
+  let words      = ($input_line_before_trigger | split row ' ')
   let word_count = $words | length
 
   # Find the index of the word being completed (which is the prefix)
@@ -339,7 +332,7 @@ def _fzf_complete_ssh_nu [prefix: string, input_line_before_trigger: string] {
   # If prefix is not empty, it's the last word, index is word_count - 1
   let completion_index = if ($prefix | is-empty) { $word_count } else { $word_count - 1 }
 
-  mut handled = false
+  mut handled           = false
   mut completion_result = [] # List of completion strings to return
 
   # Check for -i, -F, -E flags immediately preceding the cursor position
@@ -385,7 +378,7 @@ def _fzf_complete_pass_nu [prefix: string] {
 def _fzf_complete_export_nu [query: string] {
   let vars_gen_closure = {|| env | get name } # Nushell `env` provides names directly
   # Zsh options: -m -- ; Nu: pass ["-m"] ; +m = multiple choice
-  _fzf_complete_nu $query $vars_gen_closure ["-m"] 
+  _fzf_complete_nu $query $vars_gen_closure ["-m"]
 }
 
 # Unset completion (same as export)
@@ -397,7 +390,7 @@ def _fzf_complete_unset_nu [query: string] {
 def _fzf_complete_unalias_nu [query: string] {
   let aliases_gen_closure = {|| aliases | get alias } # Use 'alias' column from `aliases` command
   # Zsh options: +m -- ; Nu: pass ["+m"] ; +m = multiple choice
-  _fzf_complete_nu $query $aliases_gen_closure ["+m"] 
+  _fzf_complete_nu $query $aliases_gen_closure ["+m"]
 }
 
 # Kill completion post-processor (extracts PID)
@@ -444,7 +437,7 @@ def _fzf_complete_kill_nu [query: string] {
 let fzf_external_completer = {|spans|
   let trigger: string = $env.FZF_COMPLETION_TRIGGER? | default '**'
 
-  if ($trigger | is-empty) { return null } # Cannot work with empty trigger
+  if ($trigger | is-empty)     { return null } # Cannot work with empty trigger
   if (($spans | length ) == 0) { return null } # Nothing to complete
 
   let last_span = $spans | last
@@ -466,18 +459,18 @@ let fzf_external_completer = {|spans|
     mut completion_results = [] # Will hold the list of strings from the completer
 
     match $cmd_word {
-        "pass" => { $completion_results = (_fzf_complete_pass_nu $prefix) }
-        "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
-        "export" | "printenv" => { $completion_results = (_fzf_complete_export_nu $prefix) }
-        "unset" => { $completion_results = (_fzf_complete_unset_nu $prefix) }
-        "unalias" => { $completion_results = (_fzf_complete_unalias_nu $prefix) }
-        "kill" => { $completion_results = (_fzf_complete_kill_nu $prefix) }
-        "cd" | "pushd" | "rmdir" => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
-        # Add other command-specific completions here
-        _ => {
-            # Default to path completion if no specific command matches or cmd_word is empty
-            $completion_results = (_fzf_path_completion_nu $prefix)
-        }
+      "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                      }
+      "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
+      "export" | "printenv"             => { $completion_results = (_fzf_complete_export_nu $prefix)                    }
+      "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
+      "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
+      "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                      }
+      "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
+      # Add other command-specific completions here
+      _                                 => {
+          # Default to path completion if no specific command matches or cmd_word is empty
+          $completion_results = (_fzf_path_completion_nu $prefix)
+      }
     }
 
     # --- Return Results ---
@@ -500,22 +493,21 @@ let previous_external_completer = $env.config? | get completions? | get external
 
 # Define the new wrapper completer
 let fzf_wrapper_completer = {|spans|
-
   # 1. Try the FZF completer logic first
   let fzf_result = do $fzf_external_completer $spans
 
   # 2. If FZF returned a result (a list, even an empty one), return it.
   #    `null` means FZF didn't handle it because the trigger wasn't present.
   if $fzf_result != null {
-      $fzf_result
+    $fzf_result
   } else {
-      # 3. FZF didn't handle it, so call the previous completer (if it exists).
-      if $previous_external_completer != null {
-          do $previous_external_completer $spans
-      } else {
-          # 4. No previous completer, and FZF didn't handle it. Return null.
-          null
-      }
+    # 3. FZF didn't handle it, so call the previous completer (if it exists).
+    if $previous_external_completer != null {
+      do $previous_external_completer $spans
+    } else {
+      # 4. No previous completer, and FZF didn't handle it. Return null.
+      null
+    }
   }
 }
 
@@ -527,3 +519,6 @@ $env.config = $env.config | upsert completions {
     completer: $fzf_wrapper_completer
   }
 }
+
+#  vim: set sts=2 ts=2 sw=2 tw=120 et :
+
