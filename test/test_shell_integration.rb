@@ -540,6 +540,41 @@ class TestZsh < TestBase
       assert_equal ['cat <<EOF | wc -c', 'qux thud', 'EOF'], lines[-3..]
     end
   end
+
+  # NOTE: 'Perl/$history' won't see foreign cmds immediately, unlike 'awk/fc'.
+  # Perl passes only because another cmd runs between mocking and triggering C-r
+  # https://github.com/junegunn/fzf/issues/4061
+  # https://zsh.org/mla/users/2024/msg00692.html
+  test_perl_and_awk 'ctrl_r_foreign_commands' do
+    histfile = "#{tempname}-foreign-hist"
+    tmux.send_keys "HISTFILE=#{histfile}", :Enter
+    tmux.prepare
+    # SHARE_HISTORY picks up foreign commands; marked with * in fc
+    tmux.send_keys 'setopt SHARE_HISTORY', :Enter
+    tmux.prepare
+    tmux.send_keys 'fzf_cmd_local', :Enter
+    tmux.prepare
+    # Mock foreign command (for testing only; don't edit your HISTFILE this way)
+    tmux.send_keys "echo ': 0:0;fzf_cmd_foreign' >> $HISTFILE", :Enter
+    tmux.prepare
+    # Verify fc shows foreign command with asterisk
+    tmux.send_keys 'fc -rl -1', :Enter
+    tmux.until { |lines| assert lines.any? { |l| l.match?(/^\s*\d+\* fzf_cmd_foreign/) } }
+    tmux.prepare
+    # Test ctrl-r correctly extracts the foreign command
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys '^fzf_cmd_'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(2)' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ['fzf_cmd_foreign', 'fzf_cmd_local'], lines[-2..]
+    end
+  ensure
+    FileUtils.rm_f(histfile)
+  end
 end
 
 class TestFish < TestBase
