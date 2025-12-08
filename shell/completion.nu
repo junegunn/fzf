@@ -367,6 +367,31 @@ def _fzf_complete_ssh_nu [ prefix:                    string
   $completion_result
 }
 
+def _fzf_list_pacman_packages [--installed] {
+  let pkg_line_regex        = '^[^/ ]+/(\S+).*$'
+  let accumulating_closure  = { |line, acc|
+    match $line {
+      $l if $l =~ $pkg_line_regex => ( $acc | append ($l | str replace -r $pkg_line_regex '${1}') )
+      _                           => (                                                            )
+    }
+  }
+  do (if $installed {{|| pacman -Qs . }} else {{|| pacman -Ss .}}) | lines | where $it =~ $pkg_line_regex | each {$in | str replace -r $pkg_line_regex '${1}'}
+}
+
+def _fzf_complete_pacman_nu [ prefix:                    string
+                            , input_line_before_trigger: string
+                            ] {
+  let command_words = $input_line_before_trigger | split row ' '
+  let sub_command   = $command_words | skip 1 | first
+  match $sub_command {
+    $s if $s =~ "-S[bcdgilpqrsuvwy]*"     => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } ["-m"] )
+    $s if $s =~ "-Q[bcdegiklmnpqrstuv]*"  => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} ["-m"] )
+    $s if $s =~ "-F[blqrvxy]*"            => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } ["-m"] )
+    $s if $s =~ "-R[bcdnprsuv]*"          => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} ["-m"] )
+    _                                     => (                                                                         )
+  }
+}
+
 def _fzf_complete_pass_nu [prefix: string] {
   let passwordstore_files_gen_closure = {||
     ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
@@ -459,17 +484,18 @@ let fzf_external_completer = {|spans|
     mut completion_results = [] # Will hold the list of strings from the completer
 
     match $cmd_word {
-      "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                      }
-      "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
+      "pacman"                          => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
+      "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                         }
+      "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
       # "export" | "printenv"             => { $completion_results = (_fzf_complete_export_nu $prefix)                    }
       # "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
       # "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
-      "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                      }
-      "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
+      "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
+      "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")    }
       # Add other command-specific completions here
       _                                 => {
-          # Default to path completion if no specific command matches or cmd_word is empty
-          $completion_results = (_fzf_path_completion_nu $prefix)
+        # Default to path completion if no specific command matches or cmd_word is empty
+        $completion_results = (_fzf_path_completion_nu $prefix)
       }
     }
 
