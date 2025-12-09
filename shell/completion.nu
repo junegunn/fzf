@@ -314,7 +314,7 @@ def _fzf_complete_nu [ query:                  string       # The initial query 
   }
 
   if not ($processed_selection | is-empty) {
-    [$processed_selection] # Return as list
+    [($processed_selection | lines | str join ' ')]
   } else {
     []
   }
@@ -396,7 +396,7 @@ def _fzf_complete_unalias_nu [query: string] {
 # Kill completion post-processor (extracts PID)
 def _fzf_complete_kill_post_get_pid [selected_line: string] {
   # Assuming standard ps output where PID is the second column
-  $selected_line | from ssv --noheaders | get 0.column1
+  $selected_line | lines | each { $in | from ssv --noheaders | get 0.column1 } | to text
 }
 
 # Kill completion to get process PID
