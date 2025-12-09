@@ -54,15 +54,21 @@ const ctrl_r = {
   event: [
     {
       send: executehostcommand
-      cmd: "
-        let result = history
+      cmd: "commandline edit --insert (
+        history
           | get command
-          | str replace --all (char newline) ' '
-          | to text
-          | fzf --preview 'printf \'{}\' | nufmt --stdin 2>&1 | rg -v ERROR';
-        commandline edit --append $result;
-        commandline set-cursor --end
-      "
+          | reverse
+          | uniq
+          | str join (char -i 0)
+          | fzf
+            --scheme history
+            --read0
+            --layout reverse
+            --height 40%
+            --query (commandline)
+          | decode utf-8
+          | str trim
+      )"
     }
   ]
 }
