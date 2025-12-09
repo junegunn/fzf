@@ -37,8 +37,8 @@ const alt_c = {
       {
         send: executehostcommand
         cmd: "
-          let fzf_alt_c_command = \$\"($env.FZF_ALT_C_COMMAND) | fzf ($env.FZF_ALT_C_OPTS)\";
-          let result = nu -c $fzf_alt_c_command;
+          let fzf_command = \$\"($env.FZF_ALT_C_COMMAND) | fzf ($env.FZF_ALT_C_OPTS)\";
+          let result = nu -c $fzf_command;
           cd $result;
         "
       }
@@ -79,8 +79,8 @@ const ctrl_t =  {
       {
         send: executehostcommand
         cmd: "
-          let fzf_ctrl_t_command = \$\"($env.FZF_CTRL_T_COMMAND) | fzf ($env.FZF_CTRL_T_OPTS)\";
-          let result = nu -l -i -c $fzf_ctrl_t_command;
+          let fzf_command = \$\"($env.FZF_CTRL_T_COMMAND) | fzf ($env.FZF_CTRL_T_OPTS)\";
+          let result = nu -l -i -c $fzf_command;
           commandline edit --append $result;
           commandline set-cursor --end
         "
