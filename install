@@ -400,23 +400,12 @@ if [[ $shells =~ fish ]]; then
       lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
     fi
     lno_keys=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
-    lno_comp=$(\grep -nF "fzf_completion_setup" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
     if [[ -n $lno_keys ]]; then
       echo "  ** Found 'fzf_key_bindings' in line #$lno_keys"
       if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
         echo "  ** You have to replace the line to 'fzf --fish | source'"
       elif [[ $key_bindings -eq 1 ]]; then
         echo "  ** You have to replace the line to '$fzf_key_bindings'"
-      else
-        echo "  ** You have to remove the line"
-      fi
-      echo
-    elif [[ -n $lno_comp ]]; then
-      echo "  ** Found 'fzf_completion_setup' in line #$lno_comp"
-      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
-        echo "  ** You have to replace the line to 'fzf --fish | source'"
-      elif [[ $auto_completion -eq 1 ]]; then
-        echo "  ** You have to replace the line to '$fzf_completion'"
       else
         echo "  ** You have to remove the line"
       fi
