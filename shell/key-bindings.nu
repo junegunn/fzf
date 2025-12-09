@@ -11,7 +11,7 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-# Dependencies: `fd`, `bat, `rg`, `nufmt`, `tree`.
+# Dependencies: `fd`, `bat, `tree`.
 
 # Code provided by @igor-ramazanov
 # Source: https://github.com/junegunn/fzf/issues/4122#issuecomment-2607368316
