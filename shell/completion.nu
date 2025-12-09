@@ -461,9 +461,9 @@ let fzf_external_completer = {|spans|
     match $cmd_word {
       "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                      }
       "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger) }
-      "export" | "printenv"             => { $completion_results = (_fzf_complete_export_nu $prefix)                    }
-      "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
-      "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
+      # "export" | "printenv"             => { $completion_results = (_fzf_complete_export_nu $prefix)                    }
+      # "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
+      # "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
       "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                      }
       "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/") }
       # Add other command-specific completions here
