@@ -21,7 +21,7 @@ export-env {
   $env.FZF_TMUX_OPTS = "--height 40%"
   $env.FZF_CTRL_T_COMMAND = "fd --type file --hidden"
   $env.FZF_CTRL_T_OPTS = "--preview 'bat --color=always --style=full --line-range=:500 {}' "
-  $env.FZF_CTRL_R_OPTS = "" # Options for history search
+  $env.FZF_CTRL_R_OPTS     = "--scheme history --read0 --layout reverse --height 40% --query (commandline)"
   $env.FZF_ALT_C_COMMAND = "fd --type directory --hidden"
   $env.FZF_ALT_C_OPTS = "--preview 'tree -C {} | head -n 200'"
   $env.FZF_DEFAULT_COMMAND = "fd --type file --hidden"
@@ -55,17 +55,13 @@ const ctrl_r = {
     {
       send: executehostcommand
       cmd: "commandline edit --insert (
+        let fzf_command = \$\"fzf ($env.FZF_CTRL_R_OPTS)\";
         history
           | get command
           | reverse
           | uniq
           | str join (char -i 0)
-          | fzf
-            --scheme history
-            --read0
-            --layout reverse
-            --height 40%
-            --query (commandline)
+          | nu -l -i -c $fzf_command
           | decode utf-8
           | str trim
       )"
