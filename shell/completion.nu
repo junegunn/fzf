@@ -371,7 +371,7 @@ def _fzf_complete_pass_nu [prefix: string] {
   let passwordstore_files_gen_closure = {||
     ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
   }
-  _fzf_complete_nu $prefix $passwordstore_files_gen_closure ["-m"]
+  _fzf_complete_nu $prefix $passwordstore_files_gen_closure ["+m"]
 }
 
 # Export completion
