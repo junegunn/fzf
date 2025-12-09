@@ -18,13 +18,13 @@
 
 
 export-env {
-  $env.FZF_TMUX_OPTS = "--height 40%"
-  $env.FZF_CTRL_T_COMMAND = "fd --type file --hidden"
-  $env.FZF_CTRL_T_OPTS     = "--preview 'bat --color=always --style=full --line-range=:500 {}' "
-  $env.FZF_CTRL_R_OPTS     = ""
-  $env.FZF_ALT_C_COMMAND = "fd --type directory --hidden"
-  $env.FZF_ALT_C_OPTS      = "--preview 'tree -C {} | head -n 200'"
-  $env.FZF_DEFAULT_COMMAND = "fd --type file --hidden"
+  $env.FZF_TMUX_OPTS       = $env.FZF_TMUX_OPTS?       | default "--height 40%"
+  $env.FZF_CTRL_T_COMMAND  = $env.FZF_CTRL_T_COMMAND?  | default "fd --type file --hidden"
+  $env.FZF_CTRL_T_OPTS     = $env.FZF_CTRL_T_OPTS?     | default "--preview 'bat --color=always --style=full --line-range=:500 {}' "
+  $env.FZF_CTRL_R_OPTS     = $env.FZF_CTRL_R_OPTS?     | default ""
+  $env.FZF_ALT_C_COMMAND   = $env.FZF_ALT_C_COMMAND?   | default "fd --type directory --hidden"
+  $env.FZF_ALT_C_OPTS      = $env.FZF_ALT_C_OPTS?      | default "--preview 'tree -C {} | head -n 200'"
+  $env.FZF_DEFAULT_COMMAND = $env.FZF_DEFAULT_COMMAND? | default "fd --type file --hidden"
 }
 
 # Directories
