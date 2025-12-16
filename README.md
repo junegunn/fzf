@@ -59,6 +59,7 @@ Table of Contents
 
 * [Installation](#installation)
     * [Using Homebrew](#using-homebrew)
+    * [Using Mise](#using-mise)
     * [Linux packages](#linux-packages)
     * [Windows packages](#windows-packages)
     * [Using git](#using-git)
@@ -129,6 +130,14 @@ brew install fzf
 fzf is also available [via MacPorts][portfile]: `sudo port install fzf`
 
 [portfile]: https://github.com/macports/macports-ports/blob/master/sysutils/fzf/Portfile
+
+### Using Mise
+
+You can use [mise](https://github.com/jdx/mise) to install fzf.
+
+```sh
+mise use -g fzf@latest
+```
 
 ### Linux packages
 
