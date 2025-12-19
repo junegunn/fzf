@@ -42,9 +42,9 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 	for _, offset := range offsets {
 		b, e := int(offset[0]), int(offset[1])
 		if b < e {
-			minBegin = util.Min(b, minBegin)
-			minEnd = util.Min(e, minEnd)
-			maxEnd = util.Max(e, maxEnd)
+			minBegin = min(b, minBegin)
+			minEnd = min(e, minEnd)
+			maxEnd = max(e, maxEnd)
 			validOffsetFound = true
 		}
 	}

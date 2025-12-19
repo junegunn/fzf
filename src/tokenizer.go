@@ -302,7 +302,7 @@ func Transform(tokens []Token, withNth []Range) []Token {
 					end += numTokens + 1
 				}
 			}
-			minIdx = util.Max(0, begin-1)
+			minIdx = max(0, begin-1)
 			for idx := begin; idx <= end; idx++ {
 				if idx >= 1 && idx <= numTokens {
 					parts = append(parts, tokens[idx-1].text)

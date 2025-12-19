@@ -187,7 +187,7 @@ func (chars *Chars) TrailingWhitespaces() int {
 func (chars *Chars) TrimTrailingWhitespaces(maxIndex int) {
 	whitespaces := chars.TrailingWhitespaces()
 	end := len(chars.slice) - whitespaces
-	chars.slice = chars.slice[0:Max(end, maxIndex)]
+	chars.slice = chars.slice[0:max(end, maxIndex)]
 }
 
 func (chars *Chars) TrimSuffix(runes []rune) {
