@@ -312,4 +312,18 @@ class TestFilter < TestBase
       assert_equal expected, result
     end
   end
+
+  def test_accept_nth
+    # Single field selection
+    assert_equal 'three', `echo 'one two three' | #{FZF} -d' ' --with-nth 1 --accept-nth -1 -f one`.chomp
+
+    # Multiple field selection
+    writelines(['ID001:John:Developer', 'ID002:Jane:Manager', 'ID003:Bob:Designer'])
+    assert_equal 'ID001', `#{FZF} -d: --with-nth 2 --accept-nth 1 -f John < #{tempname}`.chomp
+    assert_equal "ID002:Manager", `#{FZF} -d: --with-nth 2 --accept-nth 1,3 -f Jane < #{tempname}`.chomp
+
+    # Test with different delimiters
+    writelines(['emp001 Alice Engineering', 'emp002 Bob Marketing'])
+    assert_equal 'emp001', `#{FZF} -d' ' --with-nth 2 --accept-nth 1 -f Alice < #{tempname}`.chomp
+  end
 end
