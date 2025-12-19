@@ -55,54 +55,14 @@ func Truncate(input string, limit int) ([]rune, int) {
 	return runes, width
 }
 
-// Max returns the largest integer
-func Max(first int, second int) int {
-	if first >= second {
-		return first
-	}
-	return second
-}
-
-// Max16 returns the largest integer
-func Max16(first int16, second int16) int16 {
-	if first >= second {
-		return first
-	}
-	return second
-}
-
-// Max32 returns the largest 32-bit integer
-func Max32(first int32, second int32) int32 {
-	if first > second {
-		return first
-	}
-	return second
-}
-
-// Min returns the smallest integer
-func Min(first int, second int) int {
-	if first <= second {
-		return first
-	}
-	return second
-}
-
-// Min32 returns the smallest 32-bit integer
-func Min32(first int32, second int32) int32 {
-	if first <= second {
-		return first
-	}
-	return second
-}
-
 // Constrain32 limits the given 32-bit integer with the upper and lower bounds
-func Constrain32(val int32, min int32, max int32) int32 {
-	return Max32(Min32(val, max), min)
+func Constrain32(val int32, minimum int32, maximum int32) int32 {
+	return max(min(val, maximum), minimum)
 }
 
 // Constrain limits the given integer with the upper and lower bounds
-func Constrain(val int, min int, max int) int {
-	return Max(Min(val, max), min)
+func Constrain(val int, minimum int, maximum int) int {
+	return max(min(val, maximum), minimum)
 }
 
 func AsUint16(val int) uint16 {
@@ -197,7 +157,7 @@ func CompareVersions(v1, v2 string) int {
 		return n
 	}
 
-	for i := 0; i < Max(len(parts1), len(parts2)); i++ {
+	for i := 0; i < max(len(parts1), len(parts2)); i++ {
 		var p1, p2 int
 		if i < len(parts1) {
 			p1 = atoi(parts1[i])

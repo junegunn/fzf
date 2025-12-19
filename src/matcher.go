@@ -55,7 +55,7 @@ const (
 // NewMatcher returns a new Matcher
 func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox, revision revision) *Matcher {
-	partitions := util.Min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
+	partitions := min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
 	return &Matcher{
 		cache:          cache,
 		patternBuilder: patternBuilder,

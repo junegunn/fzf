@@ -1033,8 +1033,8 @@ func (r *LightRenderer) MaxY() int {
 }
 
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, windowType WindowType, borderStyle BorderStyle, erase bool) Window {
-	width = util.Max(0, width)
-	height = util.Max(0, height)
+	width = max(0, width)
+	height = max(0, height)
 	w := &LightWindow{
 		renderer:   r,
 		colored:    r.theme.Colored,
