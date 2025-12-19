@@ -1,11 +1,11 @@
 package util
 
 import (
+	"cmp"
 	"math"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/uniseg"
@@ -55,13 +55,7 @@ func Truncate(input string, limit int) ([]rune, int) {
 	return runes, width
 }
 
-// Constrain32 limits the given 32-bit integer with the upper and lower bounds
-func Constrain32(val int32, minimum int32, maximum int32) int32 {
-	return max(min(val, maximum), minimum)
-}
-
-// Constrain limits the given integer with the upper and lower bounds
-func Constrain(val int, minimum int, maximum int) int {
+func Constrain[T cmp.Ordered](val, minimum, maximum T) T {
 	return max(min(val, maximum), minimum)
 }
 
@@ -72,18 +66,6 @@ func AsUint16(val int) uint16 {
 		return 0
 	}
 	return uint16(val)
-}
-
-// DurWithin limits the given time.Duration with the upper and lower bounds
-func DurWithin(
-	val time.Duration, min time.Duration, max time.Duration) time.Duration {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
 }
 
 // IsTty returns true if the file is a terminal
