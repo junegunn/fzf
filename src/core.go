@@ -530,7 +530,7 @@ func Run(opts *Options) (int, error) {
 			break
 		}
 		if delay && reading {
-			dur := util.DurWithin(
+			dur := util.Constrain(
 				time.Duration(ticks-startTick)*coordinatorDelayStep,
 				0, coordinatorDelayMax)
 			time.Sleep(dur)
