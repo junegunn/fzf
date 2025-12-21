@@ -589,7 +589,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 					if b >= bonusBoundary && b > fb {
 						consecutive = 1
 					} else {
-						b = max(b, max(bonusConsecutive, fb))
+						b = max(b, bonusConsecutive, fb)
 					}
 				}
 				if s1+b < s2 {
@@ -602,7 +602,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			Csub[off] = consecutive
 
 			inGap = s1 < s2
-			score := max(max(s1, s2), 0)
+			score := max(s1, s2, 0)
 			if pidx == M-1 && (forward && score > maxScore || !forward && score >= maxScore) {
 				maxScore, maxScorePos = score, col
 			}
@@ -686,7 +686,7 @@ func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, patter
 				if bonus >= bonusBoundary && bonus > firstBonus {
 					firstBonus = bonus
 				}
-				bonus = max(max(bonus, firstBonus), bonusConsecutive)
+				bonus = max(bonus, firstBonus, bonusConsecutive)
 			}
 			if pidx == 0 {
 				score += int(bonus * bonusFirstCharMultiplier)
