@@ -1,0 +1,133 @@
+#compdef fzf
+
+_fzf () {
+    _arguments -s -S \
+        --version"[Show version of fzf]" \
+        {-h,--help}"[Show list of command-line options]" \
+        {-x,--extended}"[Extended-search mode]" \
+        {+x,--no-extended}"[Disable extended search mode]" \
+        {-e,--exact}"[Enable exact match]" \
+        -i"[Case-insensitive match]" \
+        +i"[Case-sensitive match]" \
+        --literal"[Do not normalize latin script letters for matching]" \
+        --algo="[Fuzzy matching algorithm]:: :__algo" \
+        {-n,--nth}="[Comma-separated list of field index expressions for limiting search scope]" \
+        --with-nth="[Transform the presentation of each line using field index expressions]" \
+       {-d,--delimiter}="[Field delimiter regex for --nth and --with-nth]" \
+        --disabled"[Do not perform search - use fzf as a simple selector interface]" \
+        {+s,--no-sort}"[Do not sort the result]" \
+        --tac"[Reverse the order of the input]" \
+        --tiebreak="[Comma-separated list of sort criteria to apply when the scores are tied]:: :__tiebreak" \
+        {-m,--multi}"[Enable multi-select with tab/shift-tab - optional int to denote max number of selections]" \
+        {+m,--no-multi}"[Disable multi-select]" \
+        --no-mouse"[Disable mouse]" \
+        --bind="[Comma-separated list of custom key bindings]" \
+        --cycle"[Enable cyclic scroll]" \
+        --keep-right"[Keep the right end of the line visible when it's too long]" \
+        --scroll-off="[N screen lines to keep above or below when scrolling to top or bottom]" \
+        --no-hscroll"[Disable horizontal scroll]" \
+        --hscroll-off="[N screen columns to keep to right of highlighted substring]" \
+        --filepath-word"[Make word-wise movements and actions respect path separators]" \
+        --jump-labels="[Label characters for jump and jump-accept]" \
+        --height="[Display fzf window below the cursor with the given height instead of using the full screen.]" \
+        --min-height="[Height of fzf window below cursor - disables full screen]" \
+        --layout="[Choose the layout]:: :__layout" \
+        --reverse"[Synonym for --layout=reverse]" \
+        --border="[Draw border around the finder]:: :__border" \
+        --no-unicode"[Use ASCII instead of Unicode box drawing for border]" \
+        --margin="[Comma-separated expression for margins around the finder.]" \
+        --padding="[Comma-separated expression for padding inside the border. ]" \
+        --info="[Determines the display style of finder info.]:: :__info" \
+        --no-info"[A synonym for --info=hidden]" \
+        --prompt="[Input prompt]" \
+        --pointer="[Pointer to the current line]" \
+        --marker="[Multi-select marker]" \
+        --header="[The given string will be printed as the sticky header]" \
+        --header-lines="[First N lines to treat as sticky header]" \
+        --header-first"[Print header before the prompt line]" \
+        --ellipsis="[Ellipsis to show when line is truncated]" \
+       --ansi"[Enable processing of ANSI color codes]" \
+       --color="[Color configuration - base color scheme name followed by custom color mappings]:: :__color" \
+       --tabstop"[Number of spaces for a tab character]" \
+       --no-bold"[Do not use bold text]" \
+       --black"[Use black background]" \
+       --history="[Load search history from specified file and update file on completion]" \
+       --history-size="[Maximum number of entries in the history file]" \
+       --preview="[Execute given command for the current line and display in preview window]" \
+       --preview-window="[Determines the layout of the preview window]" \
+       {-q,--query}="[Start the finder with the given query]" \
+       {-1,--select-1}"[Select without interactive finder if only one match for --query found]" \
+       {-0,--exit-0}"[Exit without interactive finder if there is no match for --query]" \
+       {-f,--filter}="[Filter by string without interactive finder]" \
+       --print-query"[Print query as the first line]" \
+       --expect="[Comma-separated key list to complete fzf apart from enter key]" \
+       --read0"[Read input delimited by ASCII NUL characters instead of newline characters]" \
+       --print0"[Print output delimited by ASCII NUL characters instead of newline characters]" \
+       --no-clear"[Do not clear finder interface on exit]" \
+       --bind="[Takes a comma-separated list of binding expressions]" \
+       "*:filename:_files"
+}
+
+__algo() {
+    algorithms=(
+        'v2:Optimal scoring (quality)'
+        'v1:Faster but not quaranteed to find the optimal result'
+    )
+    _describe -t algorithms 'algo' algorithms
+}
+
+__tiebreak() {
+    criteria=(
+        'length:Prefers line with shorter length'
+        'begin:Prefers line with matched substring closer to the beginning'
+        'end:Prefers line with matched substring closer to the end'
+        'index:Prefers line that appeared earlier in the input stream'
+    )
+    _describe -t criteria 'criterion' criteria
+}
+
+__color() {
+    colorschemes=(
+        "dark:Color scheme for dark 256-color terminal"
+        "light:Color scheme for light 256-color terminal"
+        "16:Color scheme for 16-color terminal"
+        "bw:No colors (equivalent to --no-color)"
+    )
+
+    _describe -t colorschemes 'colorscheme' colorschemes
+}
+
+__layout() {
+    layouts=(
+        'default:Display from the bottom of the screen'
+        'reverse:Display from the top of the screen'
+        'reverse-list:Display from the top of the screen, prompt at the bottom'
+        )
+    _describe -t layouts 'layout' layouts
+}
+
+__border() {
+    styles=(
+        'rounded:Border with rounded corners (default)'
+        'sharp:Border with sharp corners'
+        'horizontal:Horizontal lines above and below the finder'
+        'vertical:Vertical lines on each side of the finder'
+        'top'
+        'bottom'
+        'left'
+        'right'
+        'none'
+    )
+    _describe -t styles 'style' styles
+}
+
+__info() {
+    styles=(
+        'default:Display on the next line to the prompt'
+        'inline:Display on the same line'
+        'hidden:Do not display finder info'
+    )
+    _describe -t styles 'style' styles
+}
+
+__fzf
