@@ -85,12 +85,14 @@ notarize:
 
 archives:
   - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    builds:
+    ids:
       - fzf
-    format: tar.gz
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
     files:
       - non-existent*
 
@@ -102,7 +104,7 @@ release:
   name_template: '{{ .Version }}'
 
 snapshot:
-  name_template: "{{ .Version }}-devel"
+  version_template: "{{ .Version }}-devel"
 
 changelog:
   sort: asc
