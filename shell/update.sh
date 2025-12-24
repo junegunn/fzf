@@ -8,24 +8,26 @@ dir=${0%"${0##*/}"}
 
 update() {
   {
-    sed -n '1,/^#----BEGIN INCLUDE common\.sh/p' "$1"
+    sed -n "1,/^#----BEGIN INCLUDE $1/p" "$2"
     cat << EOF
-# NOTE: Do not directly edit this section, which is copied from "common.sh".
-# To modify it, one can edit "common.sh" and run "./update.sh" to apply
-# the changes. See code comments in "common.sh" for the implementation details.
+# NOTE: Do not directly edit this section, which is copied from "$1".
+# To modify it, one can edit "$1" and run "./update.sh" to apply
+# the changes. See code comments in "$1" for the implementation details.
 EOF
     echo
-    grep -v '^[[:blank:]]*#' "$dir/common.sh" # remove code comments in common.sh
-    sed -n '/^#----END INCLUDE/,$p' "$1"
-  } > "$1.part"
+    grep -v '^[[:blank:]]*#' "$dir/$1" # remove code comments from the common file
+    sed -n '/^#----END INCLUDE/,$p' "$2"
+  } > "$2.part"
 
-  mv -f "$1.part" "$1"
+  mv -f "$2.part" "$2"
 }
 
-update "$dir/completion.bash"
-update "$dir/completion.zsh"
-update "$dir/key-bindings.bash"
-update "$dir/key-bindings.zsh"
+update "common.sh" "$dir/completion.bash"
+update "common.sh" "$dir/completion.zsh"
+update "common.sh" "$dir/key-bindings.bash"
+update "common.sh" "$dir/key-bindings.zsh"
+update "common.fish" "$dir/completion.fish"
+update "common.fish" "$dir/key-bindings.fish"
 
 # Check if --check is in ARGV
 check=0
