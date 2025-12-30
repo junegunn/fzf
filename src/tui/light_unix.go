@@ -5,6 +5,7 @@ package tui
 /*
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <termios.h>
 
 // Simple wrapper to call the ioctl
 int native_get_winsize(int fd, struct winsize *ws) {
@@ -14,6 +15,28 @@ int native_get_winsize(int fd, struct winsize *ws) {
 // Wrapper to call the stable POSIX tcgetattr function
 int get_terminal_state(int fd, struct termios *t) {
     return tcgetattr(fd, t);
+}
+
+// Helper to manually set the terminal to raw mode using Haiku's C headers
+int haiku_make_raw(int fd, struct termios *old) {
+    struct termios raw;
+    if (tcgetattr(fd, old) != 0) return -1;
+    raw = *old;
+    
+    // POSIX raw mode flags
+    raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+    raw.c_oflag &= ~OPOST;
+    raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    raw.c_cflag &= ~(CSIZE | PARENB);
+    raw.c_cflag |= CS8;
+    raw.c_cc[VMIN] = 1;
+    raw.c_cc[VTIME] = 0;
+
+    return tcsetattr(fd, TCSAFLUSH, &raw);
+}
+
+int haiku_restore(int fd, struct termios *old) {
+    return tcsetattr(fd, TCSAFLUSH, old);
 }
 */
 import "C"
@@ -33,7 +56,27 @@ import (
 
 // State wraps the C termios structure to keep it compatible with your existing code.
 type State struct {
+	state	
+}
+
+type state struct {
 	termios C.struct_termios
+}
+
+func MakeRaw(fd int) (*State, error) {
+	var oldState state
+	if C.haiku_make_raw(C.int(fd), &oldState.termios) != 0 {
+		return nil, fmt.Errorf("failed to set raw mode on Haiku via CGO")
+	}
+	return &State{state: oldState}, nil
+}
+
+func Restore(fd int, oldState *State) error {
+	//term_state := (*term.State)(unsafe.Pointer(oldState))
+	if C.haiku_restore(C.int(fd), &oldState.termios) != 0 {
+		return fmt.Errorf("haiku: failed to restore terminal")
+	}
+	return nil
 }
 
 // Attempt to replace:
@@ -55,7 +98,7 @@ func GetState(fd int) (*State, error) {
 		return nil, errors.New("failed to get terminal state (tcgetattr)")
 	}
 
-	return &State{termios: t}, nil
+	return &State{state{termios: t}}, nil
 }
 
 // Winsize matches the POSIX terminal window size structure
@@ -88,12 +131,15 @@ func (r *LightRenderer) fd() int {
 func (r *LightRenderer) initPlatform() error {
 	fd := r.fd()
 	origState, err := GetState(fd)
-	if err != nil {
+//	if err != nil {
+//		return err
+//	}
+	if false {
 		return err
 	}
 	r.origState = (*term.State)(unsafe.Pointer(origState))
 
-	term.MakeRaw(fd)
+	MakeRaw(fd)
 	return nil
 }
 
@@ -117,11 +163,14 @@ func openTtyIn() *os.File {
 }
 
 func (r *LightRenderer) setupTerminal() {
-	term.MakeRaw(r.fd())
+	MakeRaw(r.fd())
 }
 
 func (r *LightRenderer) restoreTerminal() {
-	term.Restore(r.fd(), r.origState)
+
+	state := (*State)(unsafe.Pointer(r.origState))
+	Restore(r.fd(), state)
+	//Restore(r.fd(), r.origState)
 }
 
 func (r *LightRenderer) updateTerminalSize() {
