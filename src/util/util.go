@@ -1,12 +1,16 @@
 package util
 
+/*
+#include <unistd.h>
+*/
+import "C"
 import (
 	"math"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/mattn/go-isatty"
+//	"github.com/mattn/go-isatty"
 	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 )
@@ -140,12 +144,16 @@ func DurWithin(
 
 // IsTty returns true if stdin is a terminal
 func IsTty() bool {
-	return isatty.IsTerminal(os.Stdin.Fd())
+	fd := C.int(os.Stdin.Fd())
+	return (C.isatty(fd) != 0)
+	//return isatty.IsTerminal(os.Stdin.Fd())
 }
 
 // ToTty returns true if stdout is a terminal
 func ToTty() bool {
-	return isatty.IsTerminal(os.Stdout.Fd())
+	fd := C.int(os.Stdout.Fd())
+	return (C.isatty(fd) != 0)
+	//return isatty.IsTerminal(os.Stdout.Fd())
 }
 
 // Once returns a function that returns the specified boolean value only once

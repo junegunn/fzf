@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"golang.org/x/sys/unix"
+//	"golang.org/x/sys/unix"
 )
 
 // ExecCommand executes the given command with $SHELL
@@ -49,5 +49,9 @@ func Read(fd int, b []byte) (int, error) {
 }
 
 func SetStdin(file *os.File) {
-	unix.Dup2(int(file.Fd()), 0)
+	//unix.Dup2(int(file.Fd()), 0)
+	//unix.Close(0)
+	//r1, _, errno := 
+	syscall.Syscall(syscall.SYS_DUP2, uintptr(file.Fd()), uintptr(0), 0)
+	//_ = r1
 }
