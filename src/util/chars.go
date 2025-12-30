@@ -1,6 +1,5 @@
 package util
 
-//import "C"
 import (
 	"fmt"
 	"unicode"
