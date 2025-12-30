@@ -36,6 +36,17 @@ type State struct {
 	termios C.struct_termios
 }
 
+// Attempt to replace:
+// Ref: https://cs.opensource.google/go/x/term/+/refs/tags/v0.38.0:term_unix.go
+// func getState(fd int) (*State, error) {
+//	termios, err := unix.IoctlGetTermios(fd, ioctlReadTermios)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return &State{state{termios: *termios}}, nil
+//}
+
 func GetState(fd int) (*State, error) {
 	var t C.struct_termios
 	
