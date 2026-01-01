@@ -3712,6 +3712,7 @@ func postProcessOptions(opts *Options) error {
 func parseShellWords(str string) ([]string, error) {
 	parser := shellwords.NewParser()
 	parser.ParseComment = true
+	parser.ParseEnv = true
 	return parser.Parse(str)
 }
 
