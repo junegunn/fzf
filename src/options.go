@@ -3709,10 +3709,10 @@ func postProcessOptions(opts *Options) error {
 	return nil
 }
 
-func parseShellWords(str string) ([]string, error) {
+func parseShellWords(str string, parseEnv bool) ([]string, error) {
 	parser := shellwords.NewParser()
 	parser.ParseComment = true
-	parser.ParseEnv = true
+	parser.ParseEnv = parseEnv
 	return parser.Parse(str)
 }
 
@@ -3729,7 +3729,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 				return nil, errors.New("$FZF_DEFAULT_OPTS_FILE: " + err.Error())
 			}
 
-			words, parseErr := parseShellWords(string(bytes))
+			words, parseErr := parseShellWords(string(bytes), true)
 			if parseErr != nil {
 				return nil, errors.New(path + ": " + parseErr.Error())
 			}
@@ -3741,7 +3741,7 @@ func ParseOptions(useDefaults bool, args []string) (*Options, error) {
 		}
 
 		// 2. Options from $FZF_DEFAULT_OPTS string
-		words, parseErr := parseShellWords(os.Getenv("FZF_DEFAULT_OPTS"))
+		words, parseErr := parseShellWords(os.Getenv("FZF_DEFAULT_OPTS"), false)
 		if parseErr != nil {
 			return nil, errors.New("$FZF_DEFAULT_OPTS: " + parseErr.Error())
 		}
