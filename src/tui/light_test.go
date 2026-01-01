@@ -10,7 +10,7 @@ import (
 func TestLightRenderer(t *testing.T) {
 	tty_file, _ := os.Open("")
 	renderer, _ := NewLightRenderer(
-		"", tty_file, &ColorTheme{}, true, false, 0, false, true,
+		"", tty_file, &ColorTheme{}, true, false, 0, false, false, true,
 		func(h int) int { return h })
 
 	light_renderer := renderer.(*LightRenderer)

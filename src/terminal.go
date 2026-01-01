@@ -942,7 +942,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		if tui.HasFullscreenRenderer() {
 			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
 		} else {
-			renderer, err = tui.NewLightRenderer(opts.TtyDefault, ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
+			renderer, err = tui.NewLightRenderer(opts.TtyDefault, ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, opts.KeepScreen,
 				true, func(h int) int { return h })
 		}
 	} else {
@@ -958,7 +958,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			effectiveMinHeight += borderLines(opts.BorderShape)
 			return min(termHeight, max(evaluateHeight(opts, termHeight), effectiveMinHeight))
 		}
-		renderer, err = tui.NewLightRenderer(opts.TtyDefault, ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, false, maxHeightFunc)
+		renderer, err = tui.NewLightRenderer(opts.TtyDefault, ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit, opts.KeepScreen, false, maxHeightFunc)
 	}
 	if err != nil {
 		return nil, err
