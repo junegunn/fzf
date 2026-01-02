@@ -750,6 +750,7 @@ type Renderer interface {
 	ShowCursor()
 
 	GetChar() Event
+	CancelGetChar()
 
 	Top() int
 	MaxX() int

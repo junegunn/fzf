@@ -703,6 +703,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 	return Event{Invalid, 0, nil}
 }
 
+func (r *FullscreenRenderer) CancelGetChar() {
+	// TODO
+}
+
 func (r *FullscreenRenderer) Pause(clear bool) {
 	if clear {
 		_screen.Suspend()

@@ -151,16 +151,16 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return int(bufferInfo.CursorPosition.Y), int(bufferInfo.CursorPosition.X)
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
+func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
 	if nonblock {
 		select {
 		case bc := <-r.ttyinChannel:
-			return int(bc), true
+			return int(bc), getCharSuccess
 		case <-time.After(timeoutInterval * time.Millisecond):
-			return 0, false
+			return 0, getCharError // NOTE: not really an error
 		}
 	} else {
 		bc := <-r.ttyinChannel
-		return int(bc), true
+		return int(bc), getCharSuccess
 	}
 }

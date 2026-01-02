@@ -99,7 +99,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	var err error
 	bytes := []byte{}
 	for tries := range offsetPollTries {
-		bytes, err = r.getBytesInternal(bytes, tries > 0)
+		bytes, _, err = r.getBytesInternal(bytes, tries > 0)
 		if err != nil {
 			return -1, -1
 		}
@@ -114,15 +114,60 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return -1, -1
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
+func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
 	b := make([]byte, 1)
 	fd := r.fd()
-	util.SetNonblock(r.ttyin, nonblock)
-	_, err := util.Read(fd, b)
-	if err != nil {
-		return 0, false
+	getter := func() (int, getCharResult) {
+		_, err := util.Read(fd, b)
+		if err != nil {
+			return 0, getCharError
+		}
+		return int(b[0]), getCharSuccess
 	}
-	return int(b[0]), true
+	if nonblock {
+		util.SetNonblock(r.ttyin, nonblock)
+		return getter()
+	}
+
+	rpipe, wpipe, _ := os.Pipe()
+	r.mutex.Lock()
+	r.cancel = func() {
+		wpipe.Write([]byte{0})
+	}
+	r.mutex.Unlock()
+	defer func() {
+		r.mutex.Lock()
+		r.cancel = nil
+		rpipe.Close()
+		wpipe.Close()
+		r.mutex.Unlock()
+	}()
+
+	for {
+		var rfds syscall.FdSet
+		cancelFd := int(rpipe.Fd())
+		rfds.Bits[fd/64] |= 1 << (fd % 64)
+		rfds.Bits[cancelFd/64] |= 1 << (cancelFd % 64)
+		maxFd := max(fd, cancelFd)
+
+		err := syscall.Select(maxFd+1, &rfds, nil, nil, nil)
+		if err != nil {
+			if err == syscall.EINTR {
+				continue
+			}
+			return 0, getCharError
+		}
+
+		// Cancel pipe triggered
+		if rfds.Bits[cancelFd/64]&(1<<(cancelFd%64)) != 0 {
+			return 0, getCharCancelled
+		}
+
+		// Data available
+		if rfds.Bits[fd/64]&(1<<(fd%64)) != 0 {
+			return getter()
+		}
+	}
 }
 
 func (r *LightRenderer) Size() TermSize {
