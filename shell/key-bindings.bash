@@ -121,7 +121,7 @@ else # awk - fallback for POSIX systems
 fi
 
 # Required to refresh the prompt after fzf
-bind -m emacs-standard '"\er": redraw-current-line'
+bind -m emacs-standard '"\C-\e(": redraw-current-line'
 
 bind -m vi-command '"\C-z": emacs-editing-mode'
 bind -m vi-insert '"\C-z": emacs-editing-mode'
@@ -130,7 +130,7 @@ bind -m emacs-standard '"\C-z": vi-editing-mode'
 if ((BASH_VERSINFO[0] < 4)); then
   # CTRL-T - Paste the selected file path into the command line
   if [[ ${FZF_CTRL_T_COMMAND-x} != "" ]]; then
-    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\er\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f\C-y\ey\C-_"'
+    bind -m emacs-standard '"\C-t": " \C-b\C-k \C-u`__fzf_select__`\e\C-e\C-\e(\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f\C-y\ey\C-_"'
     bind -m vi-command '"\C-t": "\C-z\C-t\C-z"'
     bind -m vi-insert '"\C-t": "\C-z\C-t\C-z"'
   fi
@@ -140,7 +140,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     if [[ -n ${FZF_CTRL_R_COMMAND-} ]]; then
       echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
     fi
-    bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\er"'
+    bind -m emacs-standard '"\C-r": "\C-e \C-u\C-y\ey\C-u`__fzf_history__`\e\C-e\C-\e("'
     bind -m vi-command '"\C-r": "\C-z\C-r\C-z"'
     bind -m vi-insert '"\C-r": "\C-z\C-r\C-z"'
   fi
@@ -165,7 +165,7 @@ fi
 
 # ALT-C - cd into the selected directory
 if [[ ${FZF_ALT_C_COMMAND-x} != "" ]]; then
-  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d\C-y\ey\C-_"'
+  bind -m emacs-standard '"\ec": " \C-b\C-k \C-u`__fzf_cd__`\e\C-e\C-\e(\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d\C-y\ey\C-_"'
   bind -m vi-command '"\ec": "\C-z\ec\C-z"'
   bind -m vi-insert '"\ec": "\C-z\ec\C-z"'
 fi
