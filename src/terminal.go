@@ -3810,9 +3810,12 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 					runes, _ = t.trimRight(runes, maxWidth-ellipsisWidth)
 					runes = append(runes, ellipsis...)
 
+					// Use character indices (len(runes)) instead of display width (maxWidth)
+					// to properly handle zero-width characters (combining marks, control chars)
+					contentLen := int32(len(runes) - len(ellipsis))
 					for idx, offset := range offs {
-						offs[idx].offset[0] = min(offset.offset[0], int32(maxWidth-len(ellipsis)))
-						offs[idx].offset[1] = min(offset.offset[1], int32(maxWidth))
+						offs[idx].offset[0] = min(offset.offset[0], contentLen)
+						offs[idx].offset[1] = min(offset.offset[1], contentLen)
 					}
 				}
 				displayWidth = t.displayWidthWithLimit(runes, 0, maxWidth)
