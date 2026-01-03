@@ -148,13 +148,13 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 	}()
 
 	for {
-		var rfds syscall.FdSet
+		var rfds unix.FdSet
 		cancelFd := int(rpipe.Fd())
 		rfds.Bits[fd/64] |= 1 << (fd % 64)
 		rfds.Bits[cancelFd/64] |= 1 << (cancelFd % 64)
 		maxFd := max(fd, cancelFd)
 
-		err := syscall.Select(maxFd+1, &rfds, nil, nil, nil)
+		_, err := unix.Select(maxFd+1, &rfds, nil, nil, nil)
 		if err != nil {
 			if err == syscall.EINTR {
 				continue
