@@ -129,7 +129,11 @@ func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
 		return getter()
 	}
 
-	rpipe, wpipe, _ := os.Pipe()
+	rpipe, wpipe, err := os.Pipe()
+	if err != nil {
+		// Fallback to blocking read without cancellation
+		return getter()
+	}
 	r.mutex.Lock()
 	r.cancel = func() {
 		wpipe.Write([]byte{0})
