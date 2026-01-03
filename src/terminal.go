@@ -5615,7 +5615,7 @@ func (t *Terminal) Loop() error {
 			select {
 			case <-ctx.Done():
 				return
-			case t.keyChan <- t.tui.GetChar():
+			case t.keyChan <- t.tui.GetChar(t.listenAddr != nil):
 			}
 		}
 	}()

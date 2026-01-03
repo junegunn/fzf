@@ -99,7 +99,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	var err error
 	bytes := []byte{}
 	for tries := range offsetPollTries {
-		bytes, _, err = r.getBytesInternal(bytes, tries > 0)
+		bytes, _, err = r.getBytesInternal(false, bytes, tries > 0)
 		if err != nil {
 			return -1, -1
 		}
@@ -114,7 +114,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return -1, -1
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
+func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
 	b := make([]byte, 1)
 	fd := r.fd()
 	getter := func() (int, getCharResult) {
@@ -124,7 +124,7 @@ func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
 		}
 		return int(b[0]), getCharSuccess
 	}
-	if nonblock {
+	if nonblock || !cancellable {
 		util.SetNonblock(r.ttyin, nonblock)
 		return getter()
 	}

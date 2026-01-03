@@ -749,7 +749,7 @@ type Renderer interface {
 	HideCursor()
 	ShowCursor()
 
-	GetChar() Event
+	GetChar(cancellable bool) Event
 	CancelGetChar()
 
 	Top() int

@@ -66,6 +66,11 @@ func (r *LightRenderer) initPlatform() error {
 	// we get the ESC sets:
 	r.ttyinChannel = make(chan byte, 1024)
 
+	r.cancelChannel = make(chan bool)
+	r.cancel = func() {
+		r.cancelChannel <- true
+	}
+
 	r.setupTerminal()
 
 	return nil
@@ -151,16 +156,26 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return int(bufferInfo.CursorPosition.Y), int(bufferInfo.CursorPosition.X)
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, getCharResult) {
-	if nonblock {
-		select {
-		case bc := <-r.ttyinChannel:
-			return int(bc), getCharSuccess
-		case <-time.After(timeoutInterval * time.Millisecond):
-			return 0, getCharError // NOTE: not really an error
-		}
-	} else {
+func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
+	if !nonblock && !cancellable {
 		bc := <-r.ttyinChannel
 		return int(bc), getCharSuccess
+	}
+
+	var timeout <-chan time.Time
+	if nonblock {
+		timeout = time.After(timeoutInterval * time.Millisecond)
+	}
+
+	select {
+	case bc := <-r.ttyinChannel:
+		return int(bc), getCharSuccess
+	case <-r.cancelChannel:
+		// NOTE: cancellable is only for avoiding the unnecessary cost and
+		// it is okay for this code to handle a cancel signal.
+		return 0, getCharCancelled
+	case <-timeout:
+		// NOTE: not really an error
+		return 0, getCharError
 	}
 }

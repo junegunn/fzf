@@ -135,6 +135,7 @@ type LightRenderer struct {
 
 	// Windows only
 	ttyinChannel    chan byte
+	cancelChannel   chan bool
 	inHandle        uintptr
 	outHandle       uintptr
 	origStateInput  uint32
@@ -275,12 +276,12 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) getBytes() ([]byte, getCharResult, error) {
-	return r.getBytesInternal(r.buffer, false)
+func (r *LightRenderer) getBytes(cancellable bool) ([]byte, getCharResult, error) {
+	return r.getBytesInternal(cancellable, r.buffer, false)
 }
 
-func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, getCharResult, error) {
-	c, result := r.getch(nonblock)
+func (r *LightRenderer) getBytesInternal(cancellable bool, buffer []byte, nonblock bool) ([]byte, getCharResult, error) {
+	c, result := r.getch(cancellable, nonblock)
 	if result == getCharCancelled {
 		return buffer, getCharCancelled, nil
 	}
@@ -297,7 +298,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 
 	pc := c
 	for {
-		c, result = r.getch(true)
+		c, result = r.getch(false, true)
 		if !result.ok() {
 			if retries > 0 {
 				retries--
@@ -324,11 +325,11 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 	return buffer, getCharSuccess, nil
 }
 
-func (r *LightRenderer) GetChar() Event {
+func (r *LightRenderer) GetChar(cancellable bool) Event {
 	var err error
 	var result getCharResult
 	if len(r.buffer) == 0 {
-		r.buffer, result, err = r.getBytes()
+		r.buffer, result, err = r.getBytes(cancellable)
 		if err != nil {
 			return Event{Fatal, 0, nil}
 		}
@@ -370,7 +371,7 @@ func (r *LightRenderer) GetChar() Event {
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
-			r.buffer, result, err = r.getBytes()
+			r.buffer, result, err = r.getBytes(true)
 			if err != nil {
 				return Event{Fatal, 0, nil}
 			}
