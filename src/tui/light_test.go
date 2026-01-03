@@ -15,10 +15,27 @@ func TestLightRenderer(t *testing.T) {
 
 	light_renderer := renderer.(*LightRenderer)
 
+	go func() {
+		for {
+			light_renderer.mutex.Lock()
+			ready := light_renderer.cancel != nil
+			light_renderer.mutex.Unlock()
+
+			if ready {
+				light_renderer.CancelGetChar()
+				break
+			}
+		}
+	}()
+	event := light_renderer.GetChar(true)
+	if event.Type != Invalid {
+		t.Error("Not cancelled")
+	}
+
 	assertCharSequence := func(sequence string, name string) {
 		bytes := []byte(sequence)
 		light_renderer.buffer = bytes
-		event := light_renderer.GetChar()
+		event := light_renderer.GetChar(true)
 		if event.KeyName() != name {
 			t.Errorf(
 				"sequence: %q | %v | '%s' (%s) != %s",
