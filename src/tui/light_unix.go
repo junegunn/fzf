@@ -147,14 +147,17 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 		r.mutex.Unlock()
 	}()
 
+	cancelFd := int(rpipe.Fd())
 	for {
 		var rfds unix.FdSet
-		cancelFd := int(rpipe.Fd())
-		rfds.Bits[fd/64] |= 1 << (fd % 64)
-		rfds.Bits[cancelFd/64] |= 1 << (cancelFd % 64)
-		maxFd := max(fd, cancelFd)
+		limit := len(rfds.Bits) * unix.NFDBITS
+		if fd >= limit || cancelFd >= limit {
+			return getter()
+		}
 
-		_, err := unix.Select(maxFd+1, &rfds, nil, nil, nil)
+		rfds.Set(fd)
+		rfds.Set(cancelFd)
+		_, err := unix.Select(max(fd, cancelFd)+1, &rfds, nil, nil, nil)
 		if err != nil {
 			if err == syscall.EINTR {
 				continue
