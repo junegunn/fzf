@@ -134,17 +134,13 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 		// Fallback to blocking read without cancellation
 		return getter()
 	}
-	r.mutex.Lock()
-	r.cancel = func() {
+	r.setCancel(func() {
 		wpipe.Write([]byte{0})
-	}
-	r.mutex.Unlock()
+	})
 	defer func() {
-		r.mutex.Lock()
-		r.cancel = nil
+		r.setCancel(nil)
 		rpipe.Close()
 		wpipe.Close()
-		r.mutex.Unlock()
 	}()
 
 	cancelFd := int(rpipe.Fd())

@@ -66,11 +66,6 @@ func (r *LightRenderer) initPlatform() error {
 	// we get the ESC sets:
 	r.ttyinChannel = make(chan byte, 1024)
 
-	r.cancelChannel = make(chan bool)
-	r.cancel = func() {
-		r.cancelChannel <- true
-	}
-
 	r.setupTerminal()
 
 	return nil
@@ -167,12 +162,19 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 		timeout = time.After(timeoutInterval * time.Millisecond)
 	}
 
+	var cancel chan struct{}
+	if cancellable {
+		cancel = make(chan struct{})
+		r.setCancel(func() {
+			close(cancel)
+		})
+		defer r.setCancel(nil)
+	}
+
 	select {
 	case bc := <-r.ttyinChannel:
 		return int(bc), getCharSuccess
-	case <-r.cancelChannel:
-		// NOTE: cancellable is only for avoiding the unnecessary cost and
-		// it is okay for this code to handle a cancel signal.
+	case <-cancel:
 		return 0, getCharCancelled
 	case <-timeout:
 		// NOTE: not really an error

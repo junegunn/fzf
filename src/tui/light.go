@@ -135,7 +135,6 @@ type LightRenderer struct {
 
 	// Windows only
 	ttyinChannel    chan byte
-	cancelChannel   chan bool
 	inHandle        uintptr
 	outHandle       uintptr
 	origStateInput  uint32
@@ -402,6 +401,12 @@ func (r *LightRenderer) CancelGetChar() {
 		r.cancel()
 		r.cancel = nil
 	}
+	r.mutex.Unlock()
+}
+
+func (r *LightRenderer) setCancel(f func()) {
+	r.mutex.Lock()
+	r.cancel = f
 	r.mutex.Unlock()
 }
 
