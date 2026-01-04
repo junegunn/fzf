@@ -100,6 +100,7 @@ type LightRenderer struct {
 	mouse         bool
 	forceBlack    bool
 	clearOnExit   bool
+	keepScreen    bool
 	prevDownTime  time.Time
 	clicks        [][2]int
 	ttyin         *os.File
@@ -146,7 +147,7 @@ type LightWindow struct {
 	wrapSignWidth int
 }
 
-func NewLightRenderer(ttyDefault string, ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
+func NewLightRenderer(ttyDefault string, ttyin *os.File, theme *ColorTheme, forceBlack bool, mouse bool, tabstop int, clearOnExit bool, keepScreen bool, fullscreen bool, maxHeightFunc func(int) int) (Renderer, error) {
 	out, err := openTtyOut(ttyDefault)
 	if err != nil {
 		out = os.Stderr
@@ -156,6 +157,7 @@ func NewLightRenderer(ttyDefault string, ttyin *os.File, theme *ColorTheme, forc
 		forceBlack:    forceBlack,
 		mouse:         mouse,
 		clearOnExit:   clearOnExit,
+		keepScreen:    keepScreen,
 		ttyin:         ttyin,
 		ttyout:        out,
 		yoffset:       0,
@@ -195,7 +197,7 @@ func (r *LightRenderer) Init() error {
 	} else {
 		// We assume that --no-clear is used for repetitive relaunching of fzf.
 		// So we do not clear the lower bottom of the screen.
-		if r.clearOnExit {
+		if r.clearOnExit && !r.keepScreen {
 			r.csi("J")
 		}
 		y, x := r.findOffset()
