@@ -26,6 +26,7 @@ const (
 	escPollInterval = 5
 	offsetPollTries = 10
 	maxInputBuffer  = 1024 * 1024
+	maxSelectTries  = 100
 )
 
 const DefaultTtyDevice string = "/dev/tty"

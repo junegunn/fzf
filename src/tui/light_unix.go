@@ -144,7 +144,7 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 	}()
 
 	cancelFd := int(rpipe.Fd())
-	for {
+	for range maxSelectTries {
 		var rfds unix.FdSet
 		limit := len(rfds.Bits) * unix.NFDBITS
 		if fd >= limit || cancelFd >= limit {
@@ -169,6 +169,7 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 			return getter()
 		}
 	}
+	return 0, getCharError
 }
 
 func (r *LightRenderer) Size() TermSize {
