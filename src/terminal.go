@@ -5615,7 +5615,7 @@ func (t *Terminal) Loop() error {
 			select {
 			case <-ctx.Done():
 				return
-			case t.keyChan <- t.tui.GetChar():
+			case t.keyChan <- t.tui.GetChar(t.listenAddr != nil):
 			}
 		}
 	}()
@@ -5702,6 +5702,13 @@ func (t *Terminal) Loop() error {
 					}
 				}
 			}
+			for _, action := range actions {
+				if action.t == actExecute {
+					t.tui.CancelGetChar()
+					break
+				}
+			}
+
 		case callback := <-t.callbackChan:
 			event = tui.Invalid.AsEvent()
 			actions = append(actions, &action{t: actAsync})
