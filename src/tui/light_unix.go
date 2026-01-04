@@ -115,9 +115,10 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 }
 
 func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
-	b := make([]byte, 1)
 	fd := r.fd()
 	getter := func() (int, getCharResult) {
+		b := make([]byte, 1)
+		util.SetNonblock(r.ttyin, nonblock)
 		_, err := util.Read(fd, b)
 		if err != nil {
 			return 0, getCharError
@@ -125,7 +126,6 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 		return int(b[0]), getCharSuccess
 	}
 	if nonblock || !cancellable {
-		util.SetNonblock(r.ttyin, nonblock)
 		return getter()
 	}
 
@@ -165,13 +165,11 @@ func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResu
 			return 0, getCharError
 		}
 
-		// Cancel pipe triggered
-		if rfds.Bits[cancelFd/64]&(1<<(cancelFd%64)) != 0 {
+		if rfds.IsSet(cancelFd) {
 			return 0, getCharCancelled
 		}
 
-		// Data available
-		if rfds.Bits[fd/64]&(1<<(fd%64)) != 0 {
+		if rfds.IsSet(fd) {
 			return getter()
 		}
 	}
