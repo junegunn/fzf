@@ -178,7 +178,7 @@ fzf-history-widget() {
       LBUFFER="$selected"
     fi
   fi
-  zle reset-prompt
+  zle fzf-redraw-prompt
   return $ret
 }
 if [[ ${FZF_CTRL_R_COMMAND-x} != "" ]]; then
