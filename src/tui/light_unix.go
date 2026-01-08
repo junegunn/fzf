@@ -99,7 +99,7 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	var err error
 	bytes := []byte{}
 	for tries := range offsetPollTries {
-		bytes, err = r.getBytesInternal(bytes, tries > 0)
+		bytes, _, err = r.getBytesInternal(false, bytes, tries > 0)
 		if err != nil {
 			return -1, -1
 		}
@@ -114,15 +114,62 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return -1, -1
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
-	b := make([]byte, 1)
+func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
 	fd := r.fd()
-	util.SetNonblock(r.ttyin, nonblock)
-	_, err := util.Read(fd, b)
-	if err != nil {
-		return 0, false
+	getter := func() (int, getCharResult) {
+		b := make([]byte, 1)
+		util.SetNonblock(r.ttyin, nonblock)
+		_, err := util.Read(fd, b)
+		if err != nil {
+			return 0, getCharError
+		}
+		return int(b[0]), getCharSuccess
 	}
-	return int(b[0]), true
+	if nonblock || !cancellable {
+		return getter()
+	}
+
+	rpipe, wpipe, err := os.Pipe()
+	if err != nil {
+		// Fallback to blocking read without cancellation
+		return getter()
+	}
+	r.setCancel(func() {
+		wpipe.Write([]byte{0})
+	})
+	defer func() {
+		r.setCancel(nil)
+		rpipe.Close()
+		wpipe.Close()
+	}()
+
+	cancelFd := int(rpipe.Fd())
+	for range maxSelectTries {
+		var rfds unix.FdSet
+		limit := len(rfds.Bits) * unix.NFDBITS
+		if fd >= limit || cancelFd >= limit {
+			return getter()
+		}
+
+		rfds.Set(fd)
+		rfds.Set(cancelFd)
+		_, err := unix.Select(max(fd, cancelFd)+1, &rfds, nil, nil, nil)
+		if err != nil {
+			if err == syscall.EINTR {
+				continue
+			}
+			return 0, getCharError
+		}
+
+		if rfds.IsSet(cancelFd) {
+			return 0, getCharCancelled
+		}
+
+		if rfds.IsSet(fd) {
+			return getter()
+		}
+	}
+	return 0, getCharError
 }
 
 func (r *LightRenderer) Size() TermSize {

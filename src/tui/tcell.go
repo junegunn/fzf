@@ -246,7 +246,7 @@ func (r *FullscreenRenderer) Size() TermSize {
 	return TermSize{lines, cols, 0, 0}
 }
 
-func (r *FullscreenRenderer) GetChar() Event {
+func (r *FullscreenRenderer) GetChar(cancellable bool) Event {
 	ev := _screen.PollEvent()
 	switch ev := ev.(type) {
 	case *tcell.EventPaste:
@@ -701,6 +701,10 @@ func (r *FullscreenRenderer) GetChar() Event {
 
 	// section 8: Invalid
 	return Event{Invalid, 0, nil}
+}
+
+func (r *FullscreenRenderer) CancelGetChar() {
+	// TODO
 }
 
 func (r *FullscreenRenderer) Pause(clear bool) {

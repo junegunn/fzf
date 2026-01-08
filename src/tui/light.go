@@ -26,6 +26,7 @@ const (
 	escPollInterval = 5
 	offsetPollTries = 10
 	maxInputBuffer  = 1024 * 1024
+	maxSelectTries  = 100
 )
 
 const DefaultTtyDevice string = "/dev/tty"
@@ -48,6 +49,18 @@ func (r *LightRenderer) stderr(str string) {
 const DIM string = "\x1b[2m"
 const CR string = DIM + "␍"
 const LF string = DIM + "␊"
+
+type getCharResult int
+
+const (
+	getCharSuccess getCharResult = iota
+	getCharError
+	getCharCancelled
+)
+
+func (r getCharResult) ok() bool {
+	return r == getCharSuccess
+}
 
 func (r *LightRenderer) stderrInternal(str string, allowNLCR bool, resetCode string) {
 	bytes := []byte(str)
@@ -104,6 +117,7 @@ type LightRenderer struct {
 	clicks        [][2]int
 	ttyin         *os.File
 	ttyout        *os.File
+	cancel        func()
 	buffer        []byte
 	origState     *term.State
 	width         int
@@ -118,9 +132,9 @@ type LightRenderer struct {
 	x             int
 	maxHeightFunc func(int) int
 	showCursor    bool
+	mutex         sync.Mutex
 
 	// Windows only
-	mutex           sync.Mutex
 	ttyinChannel    chan byte
 	inHandle        uintptr
 	outHandle       uintptr
@@ -262,16 +276,18 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
-func (r *LightRenderer) getBytes() ([]byte, error) {
-	bytes, err := r.getBytesInternal(r.buffer, false)
-	return bytes, err
+func (r *LightRenderer) getBytes(cancellable bool) ([]byte, getCharResult, error) {
+	return r.getBytesInternal(cancellable, r.buffer, false)
 }
 
-func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, error) {
-	c, ok := r.getch(nonblock)
-	if !nonblock && !ok {
+func (r *LightRenderer) getBytesInternal(cancellable bool, buffer []byte, nonblock bool) ([]byte, getCharResult, error) {
+	c, result := r.getch(cancellable, nonblock)
+	if result == getCharCancelled {
+		return buffer, getCharCancelled, nil
+	}
+	if !nonblock && !result.ok() {
 		r.Close()
-		return nil, errors.New("failed to read " + DefaultTtyDevice)
+		return nil, getCharError, errors.New("failed to read " + DefaultTtyDevice)
 	}
 
 	retries := 0
@@ -282,8 +298,8 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 
 	pc := c
 	for {
-		c, ok = r.getch(true)
-		if !ok {
+		c, result = r.getch(false, true)
+		if !result.ok() {
 			if retries > 0 {
 				retries--
 				time.Sleep(escPollInterval * time.Millisecond)
@@ -302,19 +318,23 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) ([]byte, 
 		// so terminate fzf immediately.
 		if len(buffer) > maxInputBuffer {
 			r.Close()
-			return nil, fmt.Errorf("input buffer overflow (%d): %v", len(buffer), buffer)
+			return nil, getCharError, fmt.Errorf("input buffer overflow (%d): %v", len(buffer), buffer)
 		}
 	}
 
-	return buffer, nil
+	return buffer, getCharSuccess, nil
 }
 
-func (r *LightRenderer) GetChar() Event {
+func (r *LightRenderer) GetChar(cancellable bool) Event {
 	var err error
+	var result getCharResult
 	if len(r.buffer) == 0 {
-		r.buffer, err = r.getBytes()
+		r.buffer, result, err = r.getBytes(cancellable)
 		if err != nil {
 			return Event{Fatal, 0, nil}
+		}
+		if result == getCharCancelled {
+			return Event{Invalid, 0, nil}
 		}
 	}
 	if len(r.buffer) == 0 {
@@ -351,9 +371,14 @@ func (r *LightRenderer) GetChar() Event {
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
-			if r.buffer, err = r.getBytes(); err != nil {
+			r.buffer, result, err = r.getBytes(true)
+			if err != nil {
 				return Event{Fatal, 0, nil}
 			}
+			if result == getCharCancelled {
+				return Event{Invalid, 0, nil}
+			}
+
 			ev = r.escSequence(&sz)
 		}
 		return ev
@@ -369,6 +394,21 @@ func (r *LightRenderer) GetChar() Event {
 	}
 	sz = rsz
 	return Event{Rune, char, nil}
+}
+
+func (r *LightRenderer) CancelGetChar() {
+	r.mutex.Lock()
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
+	r.mutex.Unlock()
+}
+
+func (r *LightRenderer) setCancel(f func()) {
+	r.mutex.Lock()
+	r.cancel = f
+	r.mutex.Unlock()
 }
 
 func (r *LightRenderer) escSequence(sz *int) Event {

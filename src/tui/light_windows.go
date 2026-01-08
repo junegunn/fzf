@@ -151,16 +151,33 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return int(bufferInfo.CursorPosition.Y), int(bufferInfo.CursorPosition.X)
 }
 
-func (r *LightRenderer) getch(nonblock bool) (int, bool) {
-	if nonblock {
-		select {
-		case bc := <-r.ttyinChannel:
-			return int(bc), true
-		case <-time.After(timeoutInterval * time.Millisecond):
-			return 0, false
-		}
-	} else {
+func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
+	if !nonblock && !cancellable {
 		bc := <-r.ttyinChannel
-		return int(bc), true
+		return int(bc), getCharSuccess
+	}
+
+	var timeout <-chan time.Time
+	if nonblock {
+		timeout = time.After(timeoutInterval * time.Millisecond)
+	}
+
+	var cancel chan struct{}
+	if cancellable {
+		cancel = make(chan struct{})
+		r.setCancel(func() {
+			close(cancel)
+		})
+		defer r.setCancel(nil)
+	}
+
+	select {
+	case bc := <-r.ttyinChannel:
+		return int(bc), getCharSuccess
+	case <-cancel:
+		return 0, getCharCancelled
+	case <-timeout:
+		// NOTE: not really an error
+		return 0, getCharError
 	}
 }
