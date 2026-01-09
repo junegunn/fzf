@@ -229,7 +229,7 @@ function fzf_completion_setup
       # not available on fish versions older that 3.4.0
       set -l -- cmd_opt (string match -r -- '^(-{1,2})([\w.,:+-]*)$' $current_token)
       if test -n "$cmd_opt[2]" -a \( "$cmd_opt[2]" = -- -o (string length -- "$cmd_opt[3]") -ne 1 \)
-        __fzf_complete_native "$cmd_name $cmd_opt[2]" --query=$cmd_opt[3] --multi
+        __fzf_complete_native "$tokens $cmd_opt[2]" --query=$cmd_opt[3] --multi
         return
       end
     end
@@ -245,7 +245,7 @@ function fzf_completion_setup
 
     # Native completion commands
     set -q FZF_COMPLETION_NATIVE_COMMANDS
-    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ftp git hg sftp ssh svn telnet
+    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ftp hg sftp ssh svn telnet
 
     # Native completion commands (multi-selection)
     set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
@@ -256,7 +256,7 @@ function fzf_completion_setup
       set -l -- fzf_opt --query=$full_query
       contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
       and set -a -- fzf_opt --multi
-      __fzf_complete_native "$cmd_name " $fzf_opt
+      __fzf_complete_native "$tokens " $fzf_opt
     else if functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name "$full_query" "$cmd_name"
     else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
