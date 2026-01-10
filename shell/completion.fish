@@ -159,13 +159,14 @@ function fzf_completion_setup
 
     # Escape command arguments for safe eval
     set -l cmd_str (string join ' ' -- (string escape -- $cmd))
+    set -l escaped_query (string escape -- $query)
 
     # Run command, pipe through fzf, optionally post-process
     set -l result
     if functions -q $post_func
-      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=(string escape -- $query) | $post_func")
+      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=$escaped_query | $post_func")
     else
-      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=(string escape -- $query)")
+      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=$escaped_query")
     end
     # Update commandline with result if selection was made
     and commandline -rt -- (string join ' ' -- (string escape -n -- $result))' '
