@@ -1,0 +1,485 @@
+#     ____      ____
+#    / __/___  / __/
+#   / /_/_  / / /_
+#  / __/ / /_/ __/
+# /_/   /___/_/ completion.fish
+#
+# - $FZF_COMPLETION_TRIGGER               (default: '**')
+# - $FZF_COMPLETION_OPTS                  (default: empty)
+# - $FZF_COMPLETION_PATH_OPTS             (default: empty)
+# - $FZF_COMPLETION_DIR_OPTS              (default: empty)
+# - $FZF_COMPLETION_FILE_OPTS             (default: empty)
+# - $FZF_COMPLETION_DIR_COMMANDS          (default: see variable declaration for default values)
+# - $FZF_COMPLETION_FILE_COMMANDS         (default: see variable declaration for default values)
+# - $FZF_COMPLETION_NATIVE_COMMANDS       (default: see variable declaration for default values)
+# - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: see variable declaration for default values)
+# - $FZF_COMPLETION_SUBCOMMAND_COMMANDS   (default: see variable declaration for default values)
+
+function fzf_completion_setup
+
+#----BEGIN INCLUDE common.fish
+# NOTE: Do not directly edit this section, which is copied from "common.fish".
+# To modify it, one can edit "common.fish" and run "./update.sh" to apply
+# the changes. See code comments in "common.fish" for the implementation details.
+
+  function __fzf_defaults
+    test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
+    string join ' ' -- \
+      "--height $FZF_TMUX_HEIGHT --min-height=20+ --bind=ctrl-z:ignore" $argv[1] \
+      (test -r "$FZF_DEFAULT_OPTS_FILE"; and string join -- ' ' <$FZF_DEFAULT_OPTS_FILE) \
+      $FZF_DEFAULT_OPTS $argv[2..-1]
+  end
+
+  function __fzfcmd
+    test -n "$FZF_TMUX_HEIGHT"; or set -l FZF_TMUX_HEIGHT 40%
+    if test -n "$FZF_TMUX_OPTS"
+      echo "fzf-tmux $FZF_TMUX_OPTS -- "
+    else if test "$FZF_TMUX" = "1"
+      echo "fzf-tmux -d$FZF_TMUX_HEIGHT -- "
+    else
+      echo "fzf"
+    end
+  end
+
+  function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
+    set -l fzf_query ''
+    set -l prefix ''
+    set -l dir '.'
+
+    set -l -- fish_major (string match -r -- '^\d+' $version)
+    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
+
+    set -l -- match_regex '(?<fzf_query>[\s\S]*?(?=\n?$)$)'
+    set -l -- prefix_regex '^-[^\s=]+=|^-(?!-)\S'
+    if test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
+    or string match -q -v -- '* -- *' (string sub -l (commandline -Cp) -- (commandline -p))
+      set -- match_regex "(?<prefix>$prefix_regex)?$match_regex"
+    end
+
+    if test "$fish_major" -ge 4
+      string match -q -r -- $match_regex (commandline --current-token --tokens-expanded | string collect -N)
+    else if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
+      string match -q -r -- $match_regex (commandline --current-token --tokenize | string collect -N)
+      eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)' '')
+    else
+      set -l -- cl_token (commandline --current-token --tokenize | string collect -N)
+      set -- prefix (string match -r -- $prefix_regex $cl_token)
+      set -- fzf_query (string replace -- "$prefix" '' $cl_token | string collect -N)
+      eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)|\\\n\\\n$' '')
+    end
+
+    if test -n "$fzf_query"
+      if test \( "$fish_major" -ge 4 \) -o \( "$fish_major" -eq 3 -a "$fish_minor" -ge 5 \)
+        set -- fzf_query (path normalize -- $fzf_query)
+        set -- dir $fzf_query
+        while not path is -d $dir
+          set -- dir (path dirname $dir)
+        end
+      else
+        if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
+          string match -q -r -- '(?<fzf_query>^[\s\S]*?(?=\n?$)$)' \
+            (string replace -r -a -- '(?<=/)/|(?<!^)/+(?!\n)$' '' $fzf_query | string collect -N)
+        else
+          set -- fzf_query (string replace -r -a -- '(?<=/)/|(?<!^)/+(?!\n)$' '' $fzf_query | string collect -N)
+          eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r '\\\n$' '')
+        end
+        set -- dir $fzf_query
+        while not test -d "$dir"
+          set -- dir (dirname -z -- "$dir" | string split0)
+        end
+      end
+
+      if not string match -q -- '.' $dir; or string match -q -r -- '^\./|^\.$' $fzf_query
+        if test "$fish_major" -ge 4
+          string match -q -r -- '^'(string escape --style=regex -- $dir)'/?(?<fzf_query>[\s\S]*)' $fzf_query
+        else if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
+          string match -q -r -- '^/?(?<fzf_query>[\s\S]*?(?=\n?$)$)' \
+            (string replace -- "$dir" '' $fzf_query | string collect -N)
+        else
+          set -- fzf_query (string replace -- "$dir" '' $fzf_query | string collect -N)
+          eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^/?|\\\n$' '')
+        end
+      end
+    end
+
+    string escape -n -- "$dir" "$fzf_query" "$prefix"
+  end
+#----END INCLUDE
+
+  # ===========================================================================
+  # Extension API for custom _fzf_complete_* implementations
+  # ===========================================================================
+  #
+  # Available helper functions for custom completions:
+  #
+  #   __fzf_get_clean_tokens
+  #     Returns commandline tokens with environment variable assignments filtered out.
+  #
+  #   __fzf_parse_commandline
+  #     Parses the current commandline token and returns three values:
+  #       [1] dir       - The directory to search in
+  #       [2] fzf_query - The query string for fzf
+  #       [3] prefix    - Optional prefix (e.g., -o= for options)
+  #
+  #   __fzf_generic_path_completion DIR QUERY PREFIX COMPGEN
+  #     Generic path completion with custom generator function.
+  #
+  #   _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]
+  #     Main completion helper for custom completions.
+  #
+  # ---------------------------------------------------------------------------
+  # _fzf_complete Usage
+  # ---------------------------------------------------------------------------
+  #
+  # FUNC_NAME must follow the naming convention: _fzf_complete_<command>
+  #
+  # OPTIONS (processed by _fzf_complete, not passed to fzf):
+  #   --query=QUERY   Use QUERY instead of parsing from commandline
+  #   --no-post       Disable post-processor for this invocation
+  #   --post=FUNC     Use FUNC as post-processor instead of FUNC_NAME_post
+  #
+  # All other options before '--' are passed to fzf.
+  #
+  # Post-processor functions:
+  #   By default, _fzf_complete looks for FUNC_NAME_post (e.g., _fzf_complete_git_post).
+  #   The post-processor receives fzf's output on stdin and should output the
+  #   final value(s) to insert into the commandline.
+  #
+  # Example - Basic custom completion:
+  #
+  #   function _fzf_complete_myapp
+  #       _fzf_complete (status current-function) --multi -- \
+  #           myapp list-items
+  #   end
+  #
+  # Example - With post-processor:
+  #
+  #   function _fzf_complete_git
+  #       set -l tokens (__fzf_get_clean_tokens)
+  #       switch $tokens[2]
+  #           case checkout switch
+  #               _fzf_complete (status current-function) --no-post -- \
+  #                   git branch --format='%(refname:short)'
+  #           case add
+  #               # Uses _fzf_complete_git_post to extract filename
+  #               _fzf_complete (status current-function) --multi -- \
+  #                   git status --short
+  #       end
+  #   end
+  #
+  #   function _fzf_complete_git_post
+  #       awk '{print $NF}'
+  #   end
+  #
+  # Example - Custom post-processor per subcommand:
+  #
+  #   function _fzf_complete_docker
+  #       set -l tokens (__fzf_get_clean_tokens)
+  #       switch $tokens[2]
+  #           case logs exec
+  #               _fzf_complete (status current-function) \
+  #                   --post=_fzf_docker_container_post -- docker ps
+  #           case rmi
+  #               _fzf_complete (status current-function) \
+  #                   --post=_fzf_docker_image_post -- docker images
+  #       end
+  #   end
+  #
+  # Note: Use (status current-function) instead of hardcoding the function name
+  # to avoid repetition and errors when renaming functions.
+  # ===========================================================================
+
+  # Helper function to get cleaned tokens (without environment variables)
+  function __fzf_get_clean_tokens
+    set -l fish_major (string match -r -- '^\d+' $version)
+
+    # Get tokens using version-appropriate flags
+    set -l tokens
+    if test $fish_major -ge 4
+      set tokens (commandline -xpc)
+    else
+      set tokens (commandline -opc)
+    end
+
+    # Filter out environment variable assignments
+    for token in $tokens
+      if not string match -qr '^[A-Za-z_][A-Za-z0-9_]*=' -- $token
+        printf '%s\n' $token
+      end
+    end
+  end
+
+  # Helper function for custom completions
+  function _fzf_complete
+    # Validate first argument is a function name following the convention
+    if test (count $argv) -lt 1
+      echo "_fzf_complete: missing function name argument" >&2
+      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
+      return 1
+    end
+    if not string match -q '_fzf_complete_*' -- $argv[1]
+      echo "_fzf_complete: function name must match '_fzf_complete_*' pattern" >&2
+      echo "  Got: $argv[1]" >&2
+      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
+      return 1
+    end
+
+    set -l func_name $argv[1]
+    set -l args $argv[2..-1]
+
+    # Parse custom options before passing rest to fzf
+    set -l query ""
+    set -l query_provided false
+    set -l no_post false
+    set -l custom_post ""
+    set -l fzf_args
+
+    for arg in $args
+      if string match -q -- '--query=*' $arg
+        set query (string replace -- '--query=' '' $arg)
+        set query_provided true
+      else if test "$arg" = "--no-post"
+        set no_post true
+      else if string match -q -- '--post=*' $arg
+        set custom_post (string replace -- '--post=' '' $arg)
+      else
+        set -a fzf_args $arg
+      end
+    end
+
+    # Split fzf options from command: args before '--' vs after '--'
+    set -l sep (contains -i -- -- $fzf_args)
+    if not set -q sep
+      echo "_fzf_complete: missing '--' separator before command" >&2
+      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
+      return 1
+    end
+
+    set -l fzf_opts $fzf_args[1..(math $sep - 1)]
+    set -l cmd $fzf_args[(math $sep + 1)..-1]
+
+    if test (count $cmd) -eq 0
+      echo "_fzf_complete: missing command after '--'" >&2
+      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
+      return 1
+    end
+
+    # Get query from parameter or parse from commandline
+    if not $query_provided
+      set query (__fzf_parse_commandline)[2]
+    end
+
+    # Determine post-processor function
+    set -l post_func ""
+    if not $no_post
+      if test -n "$custom_post"
+        set post_func $custom_post
+      else
+        set post_func $func_name"_post"
+      end
+    end
+
+    # Set up fzf base environment
+    set -lx FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS)
+    set -lx FZF_DEFAULT_OPTS_FILE
+
+    # Split fzf command for direct invocation
+    set -l fzf_cmd_parts (string split -n ' ' -- (__fzfcmd))
+
+    # Escape data source command for eval
+    set -l cmd_str (string join ' ' -- (string escape -- $cmd))
+
+    # Validate post-processor function exists
+    if test -n "$post_func"; and not functions -q $post_func
+      if test -n "$custom_post"
+        echo "_fzf_complete: warning: post-processor '$post_func' not found" >&2
+      end
+      set post_func ""
+    end
+
+    # Run: data source | fzf with options as args | optional post-processor
+    set -l result
+    if test -n "$post_func"
+      set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query | $post_func)
+    else
+      set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query)
+    end
+
+    # Update commandline with escaped result if selection was made
+    if test $status -eq 0; and test -n "$result"
+      commandline -rt -- (string join ' ' -- (string escape -n -- $result))' '
+    end
+
+    commandline -f repaint
+  end
+
+  # Use complete builtin for specific commands
+  function __fzf_complete_native
+    set -l result
+    if type -q column
+      set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse \
+      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
+      set -- result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
+    else
+      set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
+      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
+      set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
+    end
+    and commandline -rt -- (string join ' ' -- $result)' '
+    commandline -f repaint
+  end
+
+  # Generic path completion
+  function __fzf_generic_path_completion
+    set -lx -- dir $argv[1]
+    set -l -- fzf_query $argv[2]
+    set -l -- opt_prefix $argv[3]
+    set -l -- compgen $argv[4]
+    set -l -- tail " "
+
+    # Set fzf options
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" $FZF_COMPLETION_OPTS --print0)
+    set -lx FZF_DEFAULT_COMMAND
+    set -lx FZF_DEFAULT_OPTS_FILE
+
+    if string match -q -- '*dir*' $compgen
+      set -- tail ""
+      set -a -- FZF_DEFAULT_OPTS --walker=dir,follow $FZF_COMPLETION_DIR_OPTS
+    else if string match -q -- '*file*' $compgen
+      set -a -- FZF_DEFAULT_OPTS --multi --walker=file,follow,hidden $FZF_COMPLETION_FILE_OPTS
+    else
+      set -a -- FZF_DEFAULT_OPTS --multi --walker=file,dir,follow,hidden $FZF_COMPLETION_PATH_OPTS
+    end
+
+    # Run fzf
+    set -l result
+    if functions -q "$compgen"
+      set -- result (eval $compgen $dir \| (__fzfcmd) --query=$fzf_query | string split0)
+    else
+      set -- result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+    end
+    and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
+
+    commandline -f repaint
+  end
+
+  # Kill completion (process selection)
+  function _fzf_complete_kill
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS \
+    --accept-nth=2 -m --header-lines=1 --no-preview --wrap)
+    set -lx FZF_DEFAULT_OPTS_FILE
+    if type -q ps
+      set -l -- ps_cmd 'begin command ps -eo user,pid,ppid,start,time,command 2>/dev/null;' \
+      'or command ps -eo user,pid,ppid,time,args 2>/dev/null;' \
+      'or command ps --everyone --full --windows 2>/dev/null; end'
+      set -l -- result (eval $ps_cmd \| (__fzfcmd) --query=$argv[1])
+      and commandline -rt -- (string join ' ' -- $result)" "
+    else
+      __fzf_complete_native "kill " --multi --query=$argv[1]
+    end
+    commandline -f repaint
+  end
+
+  # Main completion function
+  function fzf-completion
+    set -q FZF_COMPLETION_TRIGGER
+    or set -l -- FZF_COMPLETION_TRIGGER '**'
+
+    # Get tokens
+    set -l -- tokens (__fzf_get_clean_tokens)
+    set -l -- cmd_name $tokens[1]
+    set -l -- current_token (commandline -t)
+
+    set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
+    set -l -- has_trigger false
+    string match -qr -- $regex_trigger $current_token
+    and set has_trigger true
+
+    # Strip trigger from commandline before parsing
+    if $has_trigger; and test -n "$FZF_COMPLETION_TRIGGER" -a -n "$current_token"
+      set -- current_token (string replace -r -- $regex_trigger '' $current_token)
+      commandline -rt -- $current_token
+    end
+
+    set -l -- parsed (__fzf_parse_commandline)
+    set -l -- dir $parsed[1]
+    set -l -- fzf_query $parsed[2]
+    set -l -- opt_prefix $parsed[3]
+    set -l -- full_query $opt_prefix$fzf_query
+
+    if not $has_trigger
+      commandline -f complete
+      return
+    else if test -z "$tokens"
+      __fzf_complete_native "" --query=$full_query
+      return
+    end
+
+    # Set variables containing the major and minor fish version numbers, using
+    # a method compatible with all supported fish versions.
+    set -l -- fish_major (string match -r -- '^\d+' $version)
+    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
+
+    set -l -- disable_opt_comp false
+    if not test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
+      string match -qe -- ' -- ' (string sub -l (commandline -Cp) -- (commandline -p))
+      and set -- disable_opt_comp true
+    end
+
+    if not $disable_opt_comp
+      # Not using the --groups-only option of string-match, because it is
+      # not available on fish versions older that 3.4.0
+      set -l -- cmd_opt (string match -r -- '^(-{1,2})([\w.,:+-]*)$' $current_token)
+      if test -n "$cmd_opt[2]" -a \( "$cmd_opt[2]" = -- -o (string length -- "$cmd_opt[3]") -ne 1 \)
+        __fzf_complete_native "$tokens $cmd_opt[2]" --query=$cmd_opt[3] --multi
+        return
+      end
+    end
+
+    # Directory commands
+    set -q FZF_COMPLETION_DIR_COMMANDS
+    or set -l -- FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
+
+    # File-only commands
+    set -q FZF_COMPLETION_FILE_COMMANDS
+    or set -l -- FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano sed sort uniq wc patch source \
+    bunzip2 bzip2 gunzip gzip
+
+    # Native completion commands
+    set -q FZF_COMPLETION_NATIVE_COMMANDS
+    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ftp hg sftp ssh svn telnet
+
+    # Native completion commands (multi-selection)
+    set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
+    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
+
+    # Subcommand programs (use native completion for first parameter only)
+    set -q FZF_COMPLETION_SUBCOMMAND_COMMANDS
+    or set -l -- FZF_COMPLETION_SUBCOMMAND_COMMANDS git docker kubectl cargo npm
+
+    # Route to appropriate completion function
+    if functions -q _fzf_complete_$cmd_name
+      _fzf_complete_$cmd_name "$full_query" "$cmd_name"
+    else if contains -- "$cmd_name" $FZF_COMPLETION_SUBCOMMAND_COMMANDS; and test (count $tokens) -eq 1
+      __fzf_complete_native "$cmd_name " --query=$full_query
+    else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
+      set -l -- fzf_opt --query=$full_query
+      contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
+      and set -a -- fzf_opt --multi
+      __fzf_complete_native "$tokens " $fzf_opt
+    else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
+      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
+    else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
+      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_file
+    else
+      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_path
+    end
+  end
+
+  # Bind tab to fzf-completion
+  bind \t fzf-completion
+  bind -M insert \t fzf-completion
+end
+
+# Run setup
+fzf_completion_setup
