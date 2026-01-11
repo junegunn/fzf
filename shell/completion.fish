@@ -289,9 +289,17 @@ function fzf_completion_setup
     # Escape data source command for eval
     set -l cmd_str (string join ' ' -- (string escape -- $cmd))
 
+    # Validate post-processor function exists
+    if test -n "$post_func"; and not functions -q $post_func
+      if test -n "$custom_post"
+        echo "_fzf_complete: warning: post-processor '$post_func' not found" >&2
+      end
+      set post_func ""
+    end
+
     # Run: data source | fzf with options as args | optional post-processor
     set -l result
-    if test -n "$post_func"; and functions -q $post_func
+    if test -n "$post_func"
       set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query | $post_func)
     else
       set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query)
