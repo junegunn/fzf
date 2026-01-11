@@ -331,6 +331,7 @@ type Terminal struct {
 	scrollbar          string
 	previewScrollbar   string
 	ansi               bool
+	ansiPreview        bool
 	freezeLeft         int
 	freezeRight        int
 	nthAttr            tui.Attr
@@ -1060,6 +1061,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		footer:             opts.Footer,
 		header0:            opts.Header,
 		ansi:               opts.Ansi,
+		ansiPreview:        opts.AnsiPreview,
 		freezeLeft:         opts.FreezeLeft,
 		freezeRight:        opts.FreezeRight,
 		nthAttr:            opts.Theme.Nth.Attr,
@@ -4472,9 +4474,17 @@ func (t *Terminal) replacePlaceholderInInitialCommand(template string) (string, 
 }
 
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list [3][]*Item) (string, []string) {
+	return t.replacePlaceholderWithPreview(template, forcePlus, input, list, false)
+}
+
+func (t *Terminal) replacePlaceholderWithPreview(template string, forcePlus bool, input string, list [3][]*Item, isPreview bool) (string, []string) {
+	stripAnsi := t.ansi
+	if isPreview && t.ansiPreview {
+		stripAnsi = false
+	}
 	return replacePlaceholder(replacePlaceholderParams{
 		template:   template,
-		stripAnsi:  t.ansi,
+		stripAnsi:  stripAnsi,
 		delimiter:  t.delimiter,
 		printsep:   t.printsep,
 		forcePlus:  forcePlus,
@@ -5268,7 +5278,7 @@ func (t *Terminal) Loop() error {
 				version++
 				// We don't display preview window if no match
 				if items[0] != nil {
-					command, tempFiles := t.replacePlaceholder(commandTemplate, false, query, items)
+					command, tempFiles := t.replacePlaceholderWithPreview(commandTemplate, false, query, items, true)
 					cmd := t.executor.ExecCommand(command, true)
 					cmd.Env = env
 
