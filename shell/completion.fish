@@ -156,6 +156,23 @@ function fzf_completion_setup
     commandline -f repaint
   end
 
+  function _fzf_complete
+    set -l -- args (string escape -- $argv | string join ' ' | string split -- ' -- ')
+    set -l -- post_func (status function)_(string split -- ' ' $args[2])[1]_post
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_DEFAULT_OPTS $args[1])
+    set -lx FZF_DEFAULT_OPTS_FILE
+    set -lx FZF_DEFAULT_COMMAND
+    set -l -- fzf_query (commandline -t | string escape)
+    set -l result
+    eval (__fzfcmd) --query=$fzf_query | while read -l r; set -a -- result $r; end
+    and if functions -q $post_func
+      commandline -rt -- (string collect -- $result | eval $post_func $args[2] | string join ' ')' '
+    else
+      commandline -rt -- (string join -- ' ' (string escape -- $result))' '
+    end
+    commandline -f repaint
+  end
+
   # Kill completion (process selection)
   function _fzf_complete_kill
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS \
@@ -190,6 +207,17 @@ function fzf_completion_setup
     else
       set -- tokens (commandline -opc)
     end
+
+    # Filter out leading environment variable assignments
+    set -l -- var_count 0
+    for i in $tokens
+      if string match -qr -- '^[\w]+=' $i
+        set var_count (math $var_count + 1)
+      else
+        break
+      end
+    end
+    set -e -- tokens[0..$var_count]
 
     set -l -- current_token (commandline -t)
     set -l -- cmd_name $tokens[1]
@@ -258,7 +286,7 @@ function fzf_completion_setup
 
     # Route to appropriate completion function
     if functions -q _fzf_complete_$cmd_name
-      _fzf_complete_$cmd_name "$full_query" "$cmd_name"
+      _fzf_complete_$cmd_name $tokens
     else if contains -- "$cmd_name" $FZF_COMPLETION_SUBCOMMAND_COMMANDS; and test (count $tokens) -eq 1
       __fzf_complete_native "$cmd_name " --query=$full_query
     else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
