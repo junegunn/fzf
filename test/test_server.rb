@@ -31,22 +31,32 @@ class TestServer < TestInteractive
   end
 
   def test_listen_with_api_key
-    post_uri = URI('http://localhost:6266')
+    uri = URI('http://localhost:6266')
     tmux.send_keys 'seq 10 | FZF_API_KEY=123abc fzf --listen 6266', :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }
     # Incorrect API Key
     [nil, { 'x-api-key' => '' }, { 'x-api-key' => '124abc' }].each do |headers|
-      res = Net::HTTP.post(post_uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
+      res = Net::HTTP.post(uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
+      assert_equal '401', res.code
+      assert_equal 'Unauthorized', res.message
+      assert_equal "invalid api key\n", res.body
+
+      res = Net::HTTP.get_response(uri, headers)
       assert_equal '401', res.code
       assert_equal 'Unauthorized', res.message
       assert_equal "invalid api key\n", res.body
     end
+
     # Valid API Key
     [{ 'x-api-key' => '123abc' }, { 'X-API-Key' => '123abc' }].each do |headers|
-      res = Net::HTTP.post(post_uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
+      res = Net::HTTP.post(uri, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ', headers)
       assert_equal '200', res.code
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
+
+      res = Net::HTTP.get_response(uri, headers)
+      assert_equal '200', res.code
+      assert_equal 'yo', JSON.parse(res.body, symbolize_names: true)[:query]
     end
   end
 end
