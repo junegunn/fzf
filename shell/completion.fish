@@ -108,17 +108,7 @@ function fzf_completion_setup
 
   # Helper function to get cleaned tokens (without environment variables)
   function __fzf_get_clean_tokens
-    set -l fish_major (string match -r -- '^\d+' $version)
-
-    # Get tokens using version-appropriate flags
-    set -l tokens
-    if test $fish_major -ge 4
-      set tokens (commandline -xpc)
-    else
-      set tokens (commandline -opc)
-    end
-
-    # Filter out environment variable assignments
+    set -l tokens (commandline -opc)
     for token in $tokens
       if not string match -qr '^[A-Za-z_][A-Za-z0-9_]*=' -- $token
         printf '%s\n' $token
@@ -245,10 +235,24 @@ function fzf_completion_setup
     set -q FZF_COMPLETION_TRIGGER
     or set -l -- FZF_COMPLETION_TRIGGER '**'
 
+    # Set variables containing the major and minor fish version numbers, using
+    # a method compatible with all supported fish versions.
+    set -l -- fish_major (string match -r -- '^\d+' $version)
+    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
+
+    # Get tokens - use version-appropriate flags
+    set -l tokens
+    if test $fish_major -ge 4
+      set -- tokens (commandline -xpc)
+    else
+      set -- tokens (commandline -opc)
+    end
+
+    set -l -- current_token (commandline -t)
+
     # Get tokens
     set -- tokens (__fzf_get_clean_tokens)
     set -l -- cmd_name $tokens[1]
-    set -l -- current_token (commandline -t)
 
     set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
     set -l -- has_trigger false
@@ -274,11 +278,6 @@ function fzf_completion_setup
       __fzf_complete_native "" --query=$full_query
       return
     end
-
-    # Set variables containing the major and minor fish version numbers, using
-    # a method compatible with all supported fish versions.
-    set -l -- fish_major (string match -r -- '^\d+' $version)
-    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
 
     set -l -- disable_opt_comp false
     if not test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
