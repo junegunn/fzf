@@ -106,89 +106,6 @@ function fzf_completion_setup
   end
 #----END INCLUDE
 
-  # ===========================================================================
-  # Extension API for custom _fzf_complete_* implementations
-  # ===========================================================================
-  #
-  # Available helper functions for custom completions:
-  #
-  #   __fzf_get_clean_tokens
-  #     Returns commandline tokens with environment variable assignments filtered out.
-  #
-  #   __fzf_parse_commandline
-  #     Parses the current commandline token and returns three values:
-  #       [1] dir       - The directory to search in
-  #       [2] fzf_query - The query string for fzf
-  #       [3] prefix    - Optional prefix (e.g., -o= for options)
-  #
-  #   __fzf_generic_path_completion DIR QUERY PREFIX COMPGEN
-  #     Generic path completion with custom generator function.
-  #
-  #   _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]
-  #     Main completion helper for custom completions.
-  #
-  # ---------------------------------------------------------------------------
-  # _fzf_complete Usage
-  # ---------------------------------------------------------------------------
-  #
-  # FUNC_NAME must follow the naming convention: _fzf_complete_<command>
-  #
-  # OPTIONS (processed by _fzf_complete, not passed to fzf):
-  #   --query=QUERY   Use QUERY instead of parsing from commandline
-  #   --no-post       Disable post-processor for this invocation
-  #   --post=FUNC     Use FUNC as post-processor instead of FUNC_NAME_post
-  #
-  # All other options before '--' are passed to fzf.
-  #
-  # Post-processor functions:
-  #   By default, _fzf_complete looks for FUNC_NAME_post (e.g., _fzf_complete_git_post).
-  #   The post-processor receives fzf's output on stdin and should output the
-  #   final value(s) to insert into the commandline.
-  #
-  # Example - Basic custom completion:
-  #
-  #   function _fzf_complete_myapp
-  #       _fzf_complete (status current-function) --multi -- \
-  #           myapp list-items
-  #   end
-  #
-  # Example - With post-processor:
-  #
-  #   function _fzf_complete_git
-  #       set -l tokens (__fzf_get_clean_tokens)
-  #       switch $tokens[2]
-  #           case checkout switch
-  #               _fzf_complete (status current-function) --no-post -- \
-  #                   git branch --format='%(refname:short)'
-  #           case add
-  #               # Uses _fzf_complete_git_post to extract filename
-  #               _fzf_complete (status current-function) --multi -- \
-  #                   git status --short
-  #       end
-  #   end
-  #
-  #   function _fzf_complete_git_post
-  #       awk '{print $NF}'
-  #   end
-  #
-  # Example - Custom post-processor per subcommand:
-  #
-  #   function _fzf_complete_docker
-  #       set -l tokens (__fzf_get_clean_tokens)
-  #       switch $tokens[2]
-  #           case logs exec
-  #               _fzf_complete (status current-function) \
-  #                   --post=_fzf_docker_container_post -- docker ps
-  #           case rmi
-  #               _fzf_complete (status current-function) \
-  #                   --post=_fzf_docker_image_post -- docker images
-  #       end
-  #   end
-  #
-  # Note: Use (status current-function) instead of hardcoding the function name
-  # to avoid repetition and errors when renaming functions.
-  # ===========================================================================
-
   # Helper function to get cleaned tokens (without environment variables)
   function __fzf_get_clean_tokens
     set -l fish_major (string match -r -- '^\d+' $version)
@@ -211,96 +128,48 @@ function fzf_completion_setup
 
   # Helper function for custom completions
   function _fzf_complete
-    # Validate first argument is a function name following the convention
-    if test (count $argv) -lt 1
-      echo "_fzf_complete: missing function name argument" >&2
-      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
-      return 1
-    end
+    # Validate first argument is a function name
     if not string match -q '_fzf_complete_*' -- $argv[1]
-      echo "_fzf_complete: function name must match '_fzf_complete_*' pattern" >&2
-      echo "  Got: $argv[1]" >&2
-      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
+      echo "Error: _fzf_complete requires function name as first argument" >&2
       return 1
     end
 
     set -l func_name $argv[1]
     set -l args $argv[2..-1]
 
-    # Parse custom options before passing rest to fzf
-    set -l query ""
-    set -l query_provided false
-    set -l no_post false
-    set -l custom_post ""
-    set -l fzf_args
-
-    for arg in $args
-      if string match -q -- '--query=*' $arg
-        set query (string replace -- '--query=' '' $arg)
-        set query_provided true
-      else if test "$arg" = "--no-post"
-        set no_post true
-      else if string match -q -- '--post=*' $arg
-        set custom_post (string replace -- '--post=' '' $arg)
-      else
-        set -a fzf_args $arg
-      end
-    end
-
     # Split fzf options from command: args before '--' vs after '--'
-    set -l sep (contains -i -- -- $fzf_args)
-    if not set -q sep
-      echo "_fzf_complete: missing '--' separator before command" >&2
-      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
-      return 1
-    end
+    set -l sep (contains -i -- -- $args)
+    set -q sep; or return 1
 
-    set -l fzf_opts $fzf_args[1..(math $sep - 1)]
-    set -l cmd $fzf_args[(math $sep + 1)..-1]
+    set -l fzf_opts $args[1..(math $sep - 1)]
+    set -l cmd $args[(math $sep + 1)..-1]
+    test (count $cmd) -gt 0; or return 1
 
-    if test (count $cmd) -eq 0
-      echo "_fzf_complete: missing command after '--'" >&2
-      echo "Usage: _fzf_complete FUNC_NAME [OPTIONS] -- COMMAND [ARGS...]" >&2
-      return 1
-    end
+    # Get current query from commandline
+    set -l query (__fzf_parse_commandline)[2]
 
-    # Get query from parameter or parse from commandline
-    if not $query_provided
-      set query (__fzf_parse_commandline)[2]
-    end
+    # Look for optional post-processor function (e.g. _fzf_complete_git_post)
+    set -l post_func $func_name"_post"
 
-    # Determine post-processor function
-    set -l post_func ""
-    if not $no_post
-      if test -n "$custom_post"
-        set post_func $custom_post
-      else
-        set post_func $func_name"_post"
-      end
-    end
-
-    # Set up fzf base environment
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS)
+    # Set up fzf environment
+    set -lx FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS $fzf_opts)
     set -lx FZF_DEFAULT_OPTS_FILE
 
-    # Split fzf command for direct invocation
-    set -l fzf_cmd_parts (string split -n ' ' -- (__fzfcmd))
+    set -l fzf_cmd (__fzfcmd)
 
-    # Escape data source command for eval
+    # Escape command arguments for safe eval
     set -l cmd_str (string join ' ' -- (string escape -- $cmd))
+    set -l escaped_query (string escape -- $query)
 
-    # Run: data source | fzf with options as args | optional post-processor
+    # Run command, pipe through fzf, optionally post-process
     set -l result
-    if test -n "$post_func"; and functions -q $post_func
-      set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query | $post_func)
+    if functions -q $post_func
+      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=$escaped_query | $post_func")
     else
-      set result (eval $cmd_str 2>/dev/null | $fzf_cmd_parts $fzf_opts --query=$query)
+      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=$escaped_query")
     end
-
-    # Update commandline with escaped result if selection was made
-    if test $status -eq 0; and test -n "$result"
-      commandline -rt -- (string join ' ' -- (string escape -n -- $result))' '
-    end
+    # Update commandline with result if selection was made
+    and commandline -rt -- (string join ' ' -- (string escape -n -- $result))' '
 
     commandline -f repaint
   end
@@ -378,7 +247,7 @@ function fzf_completion_setup
     or set -l -- FZF_COMPLETION_TRIGGER '**'
 
     # Get tokens
-    set -l -- tokens (__fzf_get_clean_tokens)
+    set -- tokens (__fzf_get_clean_tokens)
     set -l -- cmd_name $tokens[1]
     set -l -- current_token (commandline -t)
 
