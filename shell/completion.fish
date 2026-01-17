@@ -175,6 +175,7 @@ function fzf_completion_setup
 
   # Kill completion (process selection)
   function _fzf_complete_kill
+    set -l -- fzf_query (commandline -t | string escape)
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS \
     --accept-nth=2 -m --header-lines=1 --no-preview --wrap)
     set -lx FZF_DEFAULT_OPTS_FILE
@@ -182,10 +183,10 @@ function fzf_completion_setup
       set -l -- ps_cmd 'begin command ps -eo user,pid,ppid,start,time,command 2>/dev/null;' \
       'or command ps -eo user,pid,ppid,time,args 2>/dev/null;' \
       'or command ps --everyone --full --windows 2>/dev/null; end'
-      set -l -- result (eval $ps_cmd \| (__fzfcmd) --query=$argv[1])
+      set -l -- result (eval $ps_cmd \| (__fzfcmd) --query=$fzf_query)
       and commandline -rt -- (string join ' ' -- $result)" "
     else
-      __fzf_complete_native "kill " --multi --query=$argv[1]
+      __fzf_complete_native "kill " --multi --query=$fzf_query
     end
     commandline -f repaint
   end
