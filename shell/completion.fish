@@ -106,63 +106,6 @@ function fzf_completion_setup
   end
 #----END INCLUDE
 
-  # Helper function to get cleaned tokens (without environment variables)
-  function __fzf_get_clean_tokens
-    set -l tokens (commandline -opc)
-    for token in $tokens
-      if not string match -qr '^[A-Za-z_][A-Za-z0-9_]*=' -- $token
-        printf '%s\n' $token
-      end
-    end
-  end
-
-  # Helper function for custom completions
-  function _fzf_complete
-    # Validate first argument is a function name
-    if not string match -q '_fzf_complete_*' -- $argv[1]
-      echo "Error: _fzf_complete requires function name as first argument" >&2
-      return 1
-    end
-
-    set -l func_name $argv[1]
-    set -l args $argv[2..-1]
-
-    # Split fzf options from command: args before '--' vs after '--'
-    set -l sep (contains -i -- -- $args)
-    set -q sep; or return 1
-
-    set -l fzf_opts $args[1..(math $sep - 1)]
-    set -l cmd $args[(math $sep + 1)..-1]
-    test (count $cmd) -gt 0; or return 1
-
-    # Get current query from commandline
-    set -l query (__fzf_parse_commandline)[2]
-
-    # Look for optional post-processor function (e.g. _fzf_complete_git_post)
-    set -l post_func $func_name"_post"
-
-    # Set up fzf environment
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS $fzf_opts)
-    set -lx FZF_DEFAULT_OPTS_FILE
-
-    set -l fzf_cmd (__fzfcmd)
-
-    # Escape command arguments for safe eval
-    set -l cmd_str (string join ' ' -- (string escape -- $cmd))
-
-    # Run command, pipe through fzf, optionally post-process
-    set -l result
-    if functions -q $post_func
-      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=(string escape -- $query) | $post_func")
-    else
-      set result (eval "$cmd_str 2>/dev/null | $fzf_cmd --query=(string escape -- $query)")
-    end
-    # Update commandline with result if selection was made
-    and commandline -rt -- (string join ' ' -- (string escape -n -- $result))' '
-
-    commandline -f repaint
-  end
-
   # Use complete builtin for specific commands
   function __fzf_complete_native
     set -l result
@@ -249,9 +192,6 @@ function fzf_completion_setup
     end
 
     set -l -- current_token (commandline -t)
-
-    # Get tokens
-    set -- tokens (__fzf_get_clean_tokens)
     set -l -- cmd_name $tokens[1]
 
     set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
