@@ -650,6 +650,7 @@ type Options struct {
 	ListenAddr        *listenAddress
 	Unsafe            bool
 	ClearOnExit       bool
+	KeepScreen        bool
 	WalkerOpts        walkerOpts
 	WalkerRoot        []string
 	WalkerSkip        []string
@@ -3277,6 +3278,8 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.ClearOnExit = true
 		case "--no-clear":
 			opts.ClearOnExit = false
+		case "--no-clear-on-start":
+			opts.KeepScreen = true
 		case "--walker":
 			str, err := nextString("walker options required [file][,dir][,follow][,hidden]")
 			if err != nil {
