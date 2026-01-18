@@ -297,7 +297,7 @@ _fzf_handle_dynamic_completion() {
       fi
     fi
     [[ $ret -eq 0 ]] && return 124
-    return $ret
+    return "$ret"
   fi
 }
 
