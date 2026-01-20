@@ -5472,10 +5472,6 @@ func (t *Terminal) Loop() error {
 						t.printList()
 						currentIndex := t.currentIndex()
 						focusChanged := focusedIndex != currentIndex
-						if focusChanged && focusedIndex >= 0 && t.track == trackCurrent {
-							t.track = trackDisabled
-							info = true
-						}
 						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
 							t.lastFocus = currentIndex
 							t.eventChan <- tui.Focus.AsEvent()
@@ -6416,9 +6412,7 @@ func (t *Terminal) Loop() error {
 				// single-line mode
 				if !t.canSpanMultiLines() {
 					t.vset(t.cy + direction*linesToMove)
-					req(reqList)
-					break
-				}
+				} else {
 
 				// But in multi-line mode, we need to carefully limit the amount of
 				// vertical movement so that items are not skipped. In order to do
@@ -6461,6 +6455,7 @@ func (t *Terminal) Loop() error {
 						t.cy, t.offset = cy, offset
 						break
 					}
+				}
 				}
 				req(reqList)
 			case actOffsetUp, actOffsetDown:
@@ -6604,6 +6599,8 @@ func (t *Terminal) Loop() error {
 			case actTrackCurrent:
 				if t.track == trackDisabled {
 					t.track = trackCurrent
+					trackCurrentJustSet := true
+					_ = trackCurrentJustSet
 				}
 				req(reqInfo)
 			case actUntrackCurrent:
