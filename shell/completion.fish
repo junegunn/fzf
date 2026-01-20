@@ -252,10 +252,10 @@ function fzf_completion_setup
     bunzip2 bzip2 gunzip gzip
 
     if not $has_trigger
-      set -l -- fzf_opt --query=$full_query
+      set -l -- fzf_opt --select-1 --query=$full_query
       contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
       and set -a -- fzf_opt --multi
-      __fzf_complete_native "$tokens " $fzf_opt
+      __fzf_complete_native "$tokens $current_token" $fzf_opt
       return
     else if test -z "$tokens"
       __fzf_complete_native "" --query=$full_query
