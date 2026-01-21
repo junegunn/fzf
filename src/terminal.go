@@ -6414,48 +6414,48 @@ func (t *Terminal) Loop() error {
 					t.vset(t.cy + direction*linesToMove)
 				} else {
 
-				// But in multi-line mode, we need to carefully limit the amount of
-				// vertical movement so that items are not skipped. In order to do
-				// this, we calculate the minimum or maximum offset based on the
-				// direction of the movement and the number of lines of the items
-				// around the current scroll offset.
-				var minOffset, maxOffset, lineSum int
-				if direction > 0 {
-					maxOffset = t.offset
-					for ; maxOffset < t.merger.Length(); maxOffset++ {
-						itemLines, _ := t.numItemLines(t.merger.Get(maxOffset).item, maxItems)
-						lineSum += itemLines
-						if lineSum >= maxItems {
-							break
-						}
-					}
-				} else {
-					minOffset = t.offset
-					for ; minOffset >= 0 && minOffset < t.merger.Length(); minOffset-- {
-						itemLines, _ := t.numItemLines(t.merger.Get(minOffset).item, maxItems)
-						lineSum += itemLines
-						if lineSum >= maxItems {
-							if lineSum > maxItems {
-								minOffset++
+					// But in multi-line mode, we need to carefully limit the amount of
+					// vertical movement so that items are not skipped. In order to do
+					// this, we calculate the minimum or maximum offset based on the
+					// direction of the movement and the number of lines of the items
+					// around the current scroll offset.
+					var minOffset, maxOffset, lineSum int
+					if direction > 0 {
+						maxOffset = t.offset
+						for ; maxOffset < t.merger.Length(); maxOffset++ {
+							itemLines, _ := t.numItemLines(t.merger.Get(maxOffset).item, maxItems)
+							lineSum += itemLines
+							if lineSum >= maxItems {
+								break
 							}
+						}
+					} else {
+						minOffset = t.offset
+						for ; minOffset >= 0 && minOffset < t.merger.Length(); minOffset-- {
+							itemLines, _ := t.numItemLines(t.merger.Get(minOffset).item, maxItems)
+							lineSum += itemLines
+							if lineSum >= maxItems {
+								if lineSum > maxItems {
+									minOffset++
+								}
+								break
+							}
+						}
+					}
+
+					for i := 0; i < linesToMove; i++ {
+						cy, offset := t.cy, t.offset
+						t.vset(cy + direction)
+						t.constrain()
+						if cy == t.cy {
+							break
+						}
+						if i > 0 && (direction > 0 && t.offset > maxOffset ||
+							direction < 0 && t.offset < minOffset) {
+							t.cy, t.offset = cy, offset
 							break
 						}
 					}
-				}
-
-				for i := 0; i < linesToMove; i++ {
-					cy, offset := t.cy, t.offset
-					t.vset(cy + direction)
-					t.constrain()
-					if cy == t.cy {
-						break
-					}
-					if i > 0 && (direction > 0 && t.offset > maxOffset ||
-						direction < 0 && t.offset < minOffset) {
-						t.cy, t.offset = cy, offset
-						break
-					}
-				}
 				}
 				req(reqList)
 			case actOffsetUp, actOffsetDown:
