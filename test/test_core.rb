@@ -1625,7 +1625,7 @@ class TestCore < TestInteractive
     end
     tmux.send_keys :Up
     tmux.until do |lines|
-      refute_includes lines[-2], '+t'
+      assert_includes lines[-2], '+t'
     end
   end
 
