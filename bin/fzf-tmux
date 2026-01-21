@@ -159,11 +159,11 @@ fi
 set -e
 
 # Clean up named pipes on exit
-id=$RANDOM
-argsf="${TMPDIR:-/tmp}/fzf-args-$id"
-fifo1="${TMPDIR:-/tmp}/fzf-fifo1-$id"
-fifo2="${TMPDIR:-/tmp}/fzf-fifo2-$id"
-fifo3="${TMPDIR:-/tmp}/fzf-fifo3-$id"
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/fzf-tmux-XXXXXX")
+argsf="$tmpdir/args"
+fifo1="$tmpdir/fifo1"
+fifo2="$tmpdir/fifo2"
+fifo3="$tmpdir/fifo3"
 if tmux_win_opts=$(tmux show-options -p remain-on-exit \; show-options -p synchronize-panes 2> /dev/null); then
   tmux_win_opts=($(sed '/ off/d; s/synchronize-panes/set-option -p synchronize-panes/; s/remain-on-exit/set-option -p remain-on-exit/; s/$/ \\;/' <<< "$tmux_win_opts"))
   tmux_off_opts='; set-option -p synchronize-panes off ; set-option -p remain-on-exit off'
@@ -172,8 +172,7 @@ else
   tmux_off_opts='; set-window-option synchronize-panes off ; set-window-option remain-on-exit off'
 fi
 cleanup() {
-  \rm -f $argsf $fifo1 $fifo2 $fifo3
-
+  \rm -rf "$tmpdir"
   # Restore tmux window options
   if [[ ${#tmux_win_opts[@]} -gt 1 ]]; then
     eval "tmux ${tmux_win_opts[*]}"
@@ -196,7 +195,7 @@ cleanup() {
 trap 'cleanup 1' SIGUSR1
 trap 'cleanup' EXIT
 
-envs="export TERM=$TERM "
+envs="export TERM=$(printf %q "$TERM") "
 if [[ $opt =~ "-E" ]]; then
   if [[ $tmux_version == 3.2 ]]; then
     FZF_DEFAULT_OPTS="--margin 0,1 $FZF_DEFAULT_OPTS"
