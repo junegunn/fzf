@@ -207,11 +207,6 @@ func (r *LightRenderer) Init() error {
 	if r.fullscreen {
 		r.smcup()
 	} else {
-		// We assume that --no-clear is used for repetitive relaunching of fzf.
-		// So we do not clear the lower bottom of the screen.
-		if r.clearOnExit {
-			r.csi("J")
-		}
 		y, x := r.findOffset()
 		r.mouse = r.mouse && y >= 0
 		// When --no-clear is used for repetitive relaunching, there is a small
@@ -221,6 +216,11 @@ func (r *LightRenderer) Init() error {
 		if x > 0 && r.clearOnExit {
 			r.upOneLine = true
 			r.makeSpace()
+		}
+		// We assume that --no-clear is used for repetitive relaunching of fzf.
+		// So we do not clear the lower bottom of the screen.
+		if r.clearOnExit {
+			r.csi("J")
 		}
 		for i := 1; i < r.MaxY(); i++ {
 			r.makeSpace()
