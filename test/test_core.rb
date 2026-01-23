@@ -1629,6 +1629,77 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_page_up_action_chain
+    tmux.send_keys "seq 100 | #{FZF} --bind 'page-up:page-up+track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+    end
+    tmux.send_keys :PageUp
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+  end
+
+  def test_page_down_action_chain
+    tmux.send_keys "seq 100 | #{FZF} --height 100% --bind 'page-down:page-down+track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+    end
+    tmux.send_keys :PageDown
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+  end
+
+  def test_up_action_chain
+    tmux.send_keys "seq 100 | #{FZF} --bind 'up:up+track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+    end
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      assert_includes lines, '> 2'
+      assert_includes lines[-2], '+t'
+    end
+  end
+
+  def test_down_action_chain
+    tmux.send_keys "seq 100 | #{FZF} --bind 'down:down+track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2' }
+    tmux.send_keys :Down
+    tmux.until do |lines|
+      assert_includes lines, '> 1'
+      assert_includes lines[-2], '+t'
+    end
+  end
+
+  def test_track_persists_on_cursor_movement
+    tmux.send_keys "seq 100 | #{FZF} --bind 'page-up:page-up+track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+    end
+    tmux.send_keys :PageUp
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+    tmux.send_keys :Up
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+    tmux.send_keys :Down
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+    tmux.send_keys :Down
+    tmux.until do |lines|
+      assert_includes lines[-2], '+t'
+    end
+  end
+
   def test_one_and_zero
     tmux.send_keys "seq 10 | #{FZF} --bind 'zero:preview(echo no match),one:preview(echo {} is the only match)'", :Enter
     tmux.send_keys '1'
