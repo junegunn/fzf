@@ -119,7 +119,13 @@ function fzf_completion_setup
       $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
       set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
     end
-    and commandline -rt -- (string join ' ' -- $result)' '
+    and begin
+      set -l -- tail ' '
+      # Don't add trailing space if single result is a directory (only in override mode)
+      test -n "$FZF_COMPLETION_OVERRIDE_TAB"; and test (count $result) -eq 1
+      and test -d (string replace -r '^~' "$HOME" -- "$result"); and set -- tail ''
+      commandline -rt -- (string join ' ' -- $result)$tail
+    end
     commandline -f repaint
   end
 
