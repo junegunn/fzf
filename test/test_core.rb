@@ -1588,14 +1588,16 @@ class TestCore < TestInteractive
   end
 
   def test_track_action
-    tmux.send_keys "seq 1000 | #{FZF} --query 555 --bind t:track", :Enter
+    tmux.send_keys "seq 1000 | #{FZF} --pointer x --query 555 --bind t:track,T:up+track", :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
+      assert_includes lines, 'x 555'
       assert_includes lines, '> 555'
     end
     tmux.send_keys :BSpace
     tmux.until do |lines|
       assert_equal 28, lines.match_count
+      assert_includes lines, 'x 55'
       assert_includes lines, '> 55'
     end
     tmux.send_keys :t
@@ -1605,7 +1607,8 @@ class TestCore < TestInteractive
     tmux.send_keys :BSpace
     tmux.until do |lines|
       assert_equal 271, lines.match_count
-      assert_includes lines, '> 55'
+      assert_includes lines, 'x 55'
+      assert_includes lines, '> 5'
     end
 
     # Automatically disabled when the tracking item is no longer visible
@@ -1617,15 +1620,32 @@ class TestCore < TestInteractive
     tmux.send_keys :BSpace
     tmux.until do |lines|
       assert_equal 271, lines.match_count
+      assert_includes lines, 'x 52'
       assert_includes lines, '> 5'
     end
     tmux.send_keys :t
     tmux.until do |lines|
       assert_includes lines[-2], '+t'
     end
+
+    # Automatically disabled when the focus has moved
     tmux.send_keys :Up
     tmux.until do |lines|
+      assert_includes lines, 'x 53'
       refute_includes lines[-2], '+t'
+    end
+
+    # Should work even when combined with a focus moving actions
+    tmux.send_keys 'T'
+    tmux.until do |lines|
+      assert_includes lines, 'x 54'
+      assert_includes lines[-2], '+t'
+    end
+
+    tmux.send_keys 'T'
+    tmux.until do |lines|
+      assert_includes lines, 'x 55'
+      assert_includes lines[-2], '+t'
     end
   end
 

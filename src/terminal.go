@@ -1816,7 +1816,7 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		if i >= 0 {
 			t.cy = i
 			t.offset = t.cy - pos
-		} else if t.track == trackCurrent {
+		} else if t.track.Current() {
 			t.track = trackDisabled
 			t.cy = pos
 			t.offset = 0
@@ -2886,10 +2886,9 @@ func (t *Terminal) printInfoImpl() {
 			output += " -S"
 		}
 	}
-	switch t.track {
-	case trackEnabled:
+	if t.track.Global() {
 		output += " +T"
-	case trackCurrent:
+	} else if t.track.Current() {
 		output += " +t"
 	}
 	if t.multi > 0 {
@@ -5471,11 +5470,11 @@ func (t *Terminal) Loop() error {
 					case reqList:
 						t.printList()
 						currentIndex := t.currentIndex()
-						focusChanged := focusedIndex != currentIndex
-						if focusChanged && focusedIndex >= 0 && t.track == trackCurrent {
+						if t.track.Current() && t.track.index != currentIndex {
 							t.track = trackDisabled
 							info = true
 						}
+						focusChanged := focusedIndex != currentIndex
 						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
 							t.lastFocus = currentIndex
 							t.eventChan <- tui.Focus.AsEvent()
@@ -6550,11 +6549,10 @@ func (t *Terminal) Loop() error {
 				}
 				req(reqInfo)
 			case actToggleTrackCurrent:
-				switch t.track {
-				case trackCurrent:
+				if t.track.Current() {
 					t.track = trackDisabled
-				case trackDisabled:
-					t.track = trackCurrent
+				} else if t.track.Disabled() {
+					t.track = trackCurrent(t.currentIndex())
 				}
 				req(reqInfo)
 			case actShowHeader:
@@ -6602,12 +6600,13 @@ func (t *Terminal) Loop() error {
 				}
 				req(reqList, reqInfo, reqPrompt, reqHeader)
 			case actTrackCurrent:
-				if t.track == trackDisabled {
-					t.track = trackCurrent
+				// Global tracking has higher priority
+				if !t.track.Global() {
+					t.track = trackCurrent(t.currentIndex())
 				}
 				req(reqInfo)
 			case actUntrackCurrent:
-				if t.track == trackCurrent {
+				if t.track.Current() {
 					t.track = trackDisabled
 				}
 				req(reqInfo)

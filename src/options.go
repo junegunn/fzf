@@ -292,13 +292,31 @@ func defaultMargin() [4]sizeSpec {
 	return [4]sizeSpec{}
 }
 
-type trackOption int
+type trackOption struct {
+	enabled bool
+	index   int32
+}
 
-const (
-	trackDisabled trackOption = iota
-	trackEnabled
-	trackCurrent
+var (
+	trackDisabled = trackOption{false, minItem.Index()}
+	trackEnabled  = trackOption{true, minItem.Index()}
 )
+
+func (t trackOption) Disabled() bool {
+	return !t.enabled
+}
+
+func (t trackOption) Global() bool {
+	return t.enabled && t.index == minItem.Index()
+}
+
+func (t trackOption) Current() bool {
+	return t.enabled && t.index != minItem.Index()
+}
+
+func trackCurrent(index int32) trackOption {
+	return trackOption{true, index}
+}
 
 type windowPosition int
 
