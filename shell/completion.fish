@@ -14,7 +14,6 @@
 # - $FZF_COMPLETION_NATIVE_COMMANDS       (default: see variable declaration for default values)
 # - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: see variable declaration for default values)
 # - $FZF_COMPLETION_SUBCOMMAND_COMMANDS   (default: see variable declaration for default values)
-# - $FZF_COMPLETION_OVERRIDE_TAB          (default: empty, set to 1 to use fzf for all tab completions)
 
 function fzf_completion_setup
 
@@ -121,8 +120,8 @@ function fzf_completion_setup
     end
     and begin
       set -l -- tail ' '
-      # Don't add trailing space if single result is a directory (only in override mode)
-      test -n "$FZF_COMPLETION_OVERRIDE_TAB"; and test (count $result) -eq 1
+      # Don't add trailing space if single result is a directory (only when trigger is empty)
+      set -q FZF_COMPLETION_TRIGGER; and test -z "$FZF_COMPLETION_TRIGGER"; and test (count $result) -eq 1
       and test -d (string replace -r '^~' "$HOME" -- "$result"); and set -- tail ''
       commandline -rt -- (string join ' ' -- $result)$tail
     end
@@ -232,8 +231,10 @@ function fzf_completion_setup
 
     set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
     set -l -- has_trigger false
-    string match -qr -- $regex_trigger $current_token
-    and set has_trigger true
+    if test -n "$FZF_COMPLETION_TRIGGER"
+      string match -qr -- $regex_trigger $current_token
+      and set has_trigger true
+    end
 
     # Strip trigger from commandline before parsing
     if $has_trigger; and test -n "$FZF_COMPLETION_TRIGGER" -a -n "$current_token"
@@ -247,20 +248,22 @@ function fzf_completion_setup
     set -l -- opt_prefix $parsed[3]
     set -l -- full_query $opt_prefix$fzf_query
 
+    # When trigger is empty, treat every Tab as triggered (except ** globs)
     if not $has_trigger
-      if test -n "$FZF_COMPLETION_OVERRIDE_TAB"
-        # Native completion commands (multi-selection)
-        set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-        or set -l -- FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
-        set -l -- fzf_opt --select-1 --query=$full_query
-        contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-        and set -a -- fzf_opt --multi
-        __fzf_complete_native "$tokens $current_token" $fzf_opt
+      if set -q FZF_COMPLETION_TRIGGER; and test -z "$FZF_COMPLETION_TRIGGER"
+        # Preserve native fish glob behavior for ** patterns
+        if string match -qr -- '\*\*$' $current_token
+          commandline -f complete
+          return
+        end
+        set has_trigger true
       else
         commandline -f complete
+        return
       end
-      return
-    else if test -z "$tokens"
+    end
+
+    if test -z "$tokens"
       __fzf_complete_native "" --query=$full_query
       return
     end
@@ -316,6 +319,12 @@ function fzf_completion_setup
       __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
     else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
       __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_file
+    else if set -q FZF_COMPLETION_TRIGGER; and test -z "$FZF_COMPLETION_TRIGGER"
+      # Empty trigger: use native fish completions via fzf as fallback
+      set -l -- fzf_opt --select-1 --query=$full_query
+      contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
+      and set -a -- fzf_opt --multi
+      __fzf_complete_native "$tokens $current_token" $fzf_opt
     else
       __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_path
     end
