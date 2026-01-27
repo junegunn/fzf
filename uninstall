@@ -59,7 +59,7 @@ remove_line() {
   match=0
   while [ -n "$1" ]; do
     line=$(sed -n "$line_no,\$p" "$src" | \grep -m1 -nF "$1")
-    if [ $? -ne 0 ]; then
+    if [ "$?" -ne 0 ]; then
       shift
       line_no=1
       continue
@@ -69,9 +69,9 @@ remove_line() {
     match=1
     echo "  - Line #$line_no: $content"
     [ "$content" = "$1" ] || ask "    - Remove?"
-    if [ $? -eq 0 ]; then
+    if [ "$?" -eq 0 ]; then
       temp=$(mktemp)
-      awk -v n=$line_no 'NR == n {next} {print}' "$src" > "$temp" &&
+      awk -v n="$line_no" 'NR == n {next} {print}' "$src" > "$temp" &&
         cat "$temp" > "$src" && rm -f "$temp" || break
       echo "      - Removed"
     else
@@ -79,7 +79,7 @@ remove_line() {
       line_no=$((line_no + 1))
     fi
   done
-  [ $match -eq 0 ] && echo "  - Nothing found"
+  [ "$match" -eq 0 ] && echo "  - Nothing found"
   echo
 }
 
@@ -101,9 +101,7 @@ if [ -d "${fish_dir}/functions" ]; then
   remove "${fish_dir}/functions/fzf.fish"
   remove "${fish_dir}/functions/fzf_key_bindings.fish"
 
-  if [ -z "$(ls -A "${fish_dir}/functions")" ]; then
-    rmdir "${fish_dir}/functions"
-  else
+  if ! rmdir "${fish_dir}/functions" 2> /dev/null; then
     echo "Can't delete non-empty directory: \"${fish_dir}/functions\""
   fi
 fi
