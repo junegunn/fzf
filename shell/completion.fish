@@ -8,12 +8,8 @@
 # - $FZF_COMPLETION_OPTS                  (default: empty)
 # - $FZF_COMPLETION_PATH_OPTS             (default: empty)
 # - $FZF_COMPLETION_DIR_OPTS              (default: empty)
-# - $FZF_COMPLETION_FILE_OPTS             (default: empty)
 # - $FZF_COMPLETION_DIR_COMMANDS          (default: see variable declaration for default values)
-# - $FZF_COMPLETION_FILE_COMMANDS         (default: see variable declaration for default values)
 # - $FZF_COMPLETION_NATIVE_COMMANDS       (default: see variable declaration for default values)
-# - $FZF_COMPLETION_NATIVE_COMMANDS_MULTI (default: see variable declaration for default values)
-# - $FZF_COMPLETION_SUBCOMMAND_COMMANDS   (default: see variable declaration for default values)
 
 function fzf_completion_setup
 
@@ -288,43 +284,25 @@ function fzf_completion_setup
     set -q FZF_COMPLETION_DIR_COMMANDS
     or set -l -- FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
 
-    # File-only commands
-    set -q FZF_COMPLETION_FILE_COMMANDS
-    or set -l -- FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano sed sort uniq wc patch source \
-    bunzip2 bzip2 gunzip gzip
-
-    # Native completion commands
+    # Native completion commands (use fish's builtin completions via fzf)
     set -q FZF_COMPLETION_NATIVE_COMMANDS
-    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS ftp hg sftp ssh svn telnet
-
-    # Native completion commands (multi-selection)
-    set -q FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
-
-    # Subcommand programs (use native completion for first parameter only)
-    set -q FZF_COMPLETION_SUBCOMMAND_COMMANDS
-    or set -l -- FZF_COMPLETION_SUBCOMMAND_COMMANDS git docker kubectl cargo npm
+    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS git docker kubectl cargo npm \
+    ftp hg sftp ssh svn telnet set functions type
 
     # Route to appropriate completion function
     if functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name $tokens
-    else if contains -- "$cmd_name" $FZF_COMPLETION_SUBCOMMAND_COMMANDS; and test (count $tokens) -eq 1
-      __fzf_complete_native "$cmd_name " --query=$full_query
-    else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-      set -l -- fzf_opt --query=$full_query
-      contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-      and set -a -- fzf_opt --multi
+    else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS
+      set -l -- fzf_opt --query=$full_query --multi
+      # Auto-select unique match when trigger is empty (Tab acts as completion key)
+      set -q FZF_COMPLETION_TRIGGER; and test -z "$FZF_COMPLETION_TRIGGER"
+      and set -a -- fzf_opt --select-1
       __fzf_complete_native "$tokens " $fzf_opt
     else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
       __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
-    else if contains -- "$cmd_name" $FZF_COMPLETION_FILE_COMMANDS
-      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_file
     else if set -q FZF_COMPLETION_TRIGGER; and test -z "$FZF_COMPLETION_TRIGGER"
       # Empty trigger: use native fish completions via fzf as fallback
-      set -l -- fzf_opt --select-1 --query=$full_query
-      contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS_MULTI
-      and set -a -- fzf_opt --multi
-      __fzf_complete_native "$tokens $current_token" $fzf_opt
+      __fzf_complete_native "$tokens $current_token" --select-1 --query=$full_query --multi
     else
       __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_path
     end
