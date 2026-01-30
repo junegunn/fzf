@@ -101,20 +101,15 @@ function fzf_completion_setup
   # Use complete builtin for specific commands
   function __fzf_complete_native
     set -l result
-    if type -q column
-      set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse \
-      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-      set -- result (eval complete -C \"$argv[1]\" \| column -t -s \\t \| (__fzfcmd))
-    else
-      set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --nth=1 --color=fg:dim,nth:regular" \
-      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1)
-      set -- result (eval complete -C \"$argv[1]\" \| (__fzfcmd))
-    end
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults \
+      "--reverse --delimiter=\\t --nth=1 --color=fg:dim,nth:regular" \
+      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1 --read0 --print0)
+    set -- result (eval complete -C \"$argv[1]\" \| string join0 \| (__fzfcmd) | string split0)
     and begin
       set -l -- tail ' '
-      # Don't add trailing space if single result is a directory
+      # Don't add trailing space if single result ends with /
       test (count $result) -eq 1
-      and test -d (string replace -r '^~' "$HOME" -- "$result"); and set -- tail ''
+      and string match -q -- '*/' "$result"; and set -- tail ''
       commandline -rt -- (string join ' ' -- $result)$tail
     end
     commandline -f repaint
