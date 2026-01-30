@@ -9,7 +9,6 @@
 # - $FZF_COMPLETION_PATH_OPTS             (default: empty)
 # - $FZF_COMPLETION_DIR_OPTS              (default: empty)
 # - $FZF_COMPLETION_DIR_COMMANDS          (default: see variable declaration for default values)
-# - $FZF_COMPLETION_NATIVE_COMMANDS       (default: see variable declaration for default values)
 
 function fzf_completion_setup
 
@@ -116,8 +115,8 @@ function fzf_completion_setup
     end
     and begin
       set -l -- tail ' '
-      # Don't add trailing space if single result is a directory (only when trigger is empty)
-      test -z "$FZF_COMPLETION_TRIGGER"; and test (count $result) -eq 1
+      # Don't add trailing space if single result is a directory
+      test (count $result) -eq 1
       and test -d (string replace -r '^~' "$HOME" -- "$result"); and set -- tail ''
       commandline -rt -- (string join ' ' -- $result)$tail
     end
@@ -281,27 +280,17 @@ function fzf_completion_setup
     set -q FZF_COMPLETION_DIR_COMMANDS
     or set -l -- FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
 
-    # Native completion commands (use fish's builtin completions via fzf)
-    set -q FZF_COMPLETION_NATIVE_COMMANDS
-    or set -l -- FZF_COMPLETION_NATIVE_COMMANDS git docker kubectl cargo npm \
-    ftp hg sftp ssh svn telnet set functions type
-
     # Route to appropriate completion function
     if functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name $tokens
-    else if contains -- "$cmd_name" $FZF_COMPLETION_NATIVE_COMMANDS
+    else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
+      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
+    else
       set -l -- fzf_opt --query=$full_query --multi
       # Auto-select unique match when trigger is empty (Tab acts as completion key)
       test -z "$FZF_COMPLETION_TRIGGER"
       and set -a -- fzf_opt --select-1
-      __fzf_complete_native "$tokens " $fzf_opt
-    else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
-      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
-    else if test -z "$FZF_COMPLETION_TRIGGER"
-      # Empty trigger: use native fish completions via fzf as fallback
-      __fzf_complete_native "$tokens $current_token" --select-1 --query=$full_query --multi
-    else
-      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_path
+      __fzf_complete_native "$tokens $current_token" $fzf_opt
     end
   end
 
