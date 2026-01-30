@@ -6,9 +6,6 @@
 #
 # - $FZF_COMPLETION_TRIGGER               (default: '**')
 # - $FZF_COMPLETION_OPTS                  (default: empty)
-# - $FZF_COMPLETION_PATH_OPTS             (default: empty)
-# - $FZF_COMPLETION_DIR_OPTS              (default: empty)
-# - $FZF_COMPLETION_DIR_COMMANDS          (default: see variable declaration for default values)
 
 function fzf_completion_setup
 
@@ -195,14 +192,9 @@ function fzf_completion_setup
     set -q FZF_COMPLETION_TRIGGER
     or set -l -- FZF_COMPLETION_TRIGGER '**'
 
-    # Set variables containing the major and minor fish version numbers, using
-    # a method compatible with all supported fish versions.
-    set -l -- fish_major (string match -r -- '^\d+' $version)
-    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
-
     # Get tokens - use version-appropriate flags
     set -l tokens
-    if test $fish_major -ge 4
+    if test (string match -r -- '^\d+' $version) -ge 4
       set -- tokens (commandline -xpc)
     else
       set -- tokens (commandline -opc)
@@ -229,17 +221,11 @@ function fzf_completion_setup
       and set has_trigger true
     end
 
-    # Strip trigger from commandline before parsing
+    # Strip trigger from commandline
     if $has_trigger
       set -- current_token (string replace -r -- $regex_trigger '' $current_token)
       commandline -rt -- $current_token
     end
-
-    set -l -- parsed (__fzf_parse_commandline)
-    set -l -- dir $parsed[1]
-    set -l -- fzf_query $parsed[2]
-    set -l -- opt_prefix $parsed[3]
-    set -l -- full_query $opt_prefix$fzf_query
 
     # When trigger is empty, treat every Tab as triggered (except ** globs)
     if not $has_trigger
@@ -256,37 +242,15 @@ function fzf_completion_setup
     end
 
     if test -z "$tokens"
-      __fzf_complete_native "" --query=$full_query
+      __fzf_complete_native "" --query=$current_token
       return
     end
-
-    set -l -- disable_opt_comp false
-    if not test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
-      string match -qe -- ' -- ' (string sub -l (commandline -Cp) -- (commandline -p))
-      and set -- disable_opt_comp true
-    end
-
-    if not $disable_opt_comp
-      # Not using the --groups-only option of string-match, because it is
-      # not available on fish versions older that 3.4.0
-      set -l -- cmd_opt (string match -r -- '^(-{1,2})([\w.,:+-]*)$' $current_token)
-      if test -n "$cmd_opt[2]" -a \( "$cmd_opt[2]" = -- -o (string length -- "$cmd_opt[3]") -ne 1 \)
-        __fzf_complete_native "$tokens $cmd_opt[2]" --query=$cmd_opt[3] --multi
-        return
-      end
-    end
-
-    # Directory commands
-    set -q FZF_COMPLETION_DIR_COMMANDS
-    or set -l -- FZF_COMPLETION_DIR_COMMANDS cd pushd rmdir
 
     # Route to appropriate completion function
     if functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name $tokens
-    else if contains -- "$cmd_name" $FZF_COMPLETION_DIR_COMMANDS
-      __fzf_generic_path_completion "$dir" "$fzf_query" "$opt_prefix" _fzf_compgen_dir
     else
-      set -l -- fzf_opt --query=$full_query --multi
+      set -l -- fzf_opt --query=$current_token --multi
       # Auto-select unique match when trigger is empty (Tab acts as completion key)
       test -z "$FZF_COMPLETION_TRIGGER"
       and set -a -- fzf_opt --select-1
