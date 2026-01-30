@@ -79,15 +79,18 @@ Table of Contents
     * [Demo](#demo)
 * [Examples](#examples)
 * [Key bindings for command-line](#key-bindings-for-command-line)
-* [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
+* [Fuzzy completion](#fuzzy-completion)
     * [Files and directories](#files-and-directories)
     * [Process IDs](#process-ids)
     * [Host names](#host-names)
     * [Environment variables / Aliases](#environment-variables--aliases)
-    * [Customizing fzf options for completion](#customizing-fzf-options-for-completion)
-    * [Customizing completion source for paths and directories](#customizing-completion-source-for-paths-and-directories)
-    * [Supported commands](#supported-commands)
-    * [Custom fuzzy completion](#custom-fuzzy-completion)
+    * [Customizing fuzzy completion for bash and zsh](#customizing-fuzzy-completion-for-bash-and-zsh)
+        * [Customizing fzf options for completion](#customizing-fzf-options-for-completion)
+        * [Customizing completion source for paths and directories](#customizing-completion-source-for-paths-and-directories)
+        * [Supported commands (bash)](#supported-commands-bash)
+        * [Custom fuzzy completion](#custom-fuzzy-completion)
+    * [Customizing fuzzy completion for fish](#customizing-fuzzy-completion-for-fish)
+        * [Leveraging fish's native completion system](#leveraging-fishs-native-completion-system)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Customizing for different types of input](#customizing-for-different-types-of-input)
@@ -557,8 +560,10 @@ Display modes for these bindings can be separately configured via
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
-Fuzzy completion for bash, zsh, and fish
-----------------------------------------
+Fuzzy completion
+----------------
+
+Shell integration also provides fuzzy completion for bash, zsh, and fish.
 
 ### Files and directories
 
@@ -600,23 +605,28 @@ kill -9 **<TAB>
 
 ### Host names
 
-For ssh and telnet commands, fuzzy completion for hostnames is provided. The
-names are extracted from /etc/hosts and ~/.ssh/config.
+For ssh command, fuzzy completion for hostnames is provided. The names are
+extracted from /etc/hosts and ~/.ssh/config.
 
 ```sh
 ssh **<TAB>
-telnet **<TAB>
 ```
 
 ### Environment variables / Aliases
 
 ```sh
+# bash and zsh
 unset **<TAB>
 export **<TAB>
 unalias **<TAB>
+
+# fish
+set **<TAB>
 ```
 
-### Customizing fzf options for completion
+### Customizing fuzzy completion for bash and zsh
+
+#### Customizing fzf options for completion
 
 ```sh
 # Use ~~ as the trigger sequence instead of the default **
@@ -647,7 +657,7 @@ _fzf_comprun() {
 }
 ```
 
-### Customizing completion source for paths and directories
+#### Customizing completion source for paths and directories
 
 ```sh
 # Use fd (https://github.com/sharkdp/fd) for listing path candidates.
@@ -663,7 +673,7 @@ _fzf_compgen_dir() {
 }
 ```
 
-### Supported commands
+#### Supported commands (bash)
 
 On bash, fuzzy completion is enabled only for a predefined set of commands
 (`complete | grep _fzf` to see the list). But you can enable it for other
@@ -675,7 +685,7 @@ _fzf_setup_completion path ag git kubectl
 _fzf_setup_completion dir tree
 ```
 
-### Custom fuzzy completion
+#### Custom fuzzy completion
 
 _**(Custom completion API is experimental and subject to change)**_
 
@@ -725,43 +735,27 @@ _fzf_complete_foo_post() {
 [ -n "$BASH" ] && complete -F _fzf_complete_foo -o default -o bashdefault foo
 ```
 
-#### Fish
+### Customizing fuzzy completion for fish
 
-Fish shell supports fuzzy completion with the same customizable `**` trigger as bash and zsh.
+Fuzzy completion for fish supports the same environment variables as bash and
+zsh (`FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
+`FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_COMMANDS`,
+`FZF_COMPLETION_DIR_OPTS`).
 
-```fish
-# Files and directories
-vim **<TAB>
-cd **<TAB>
+#### Leveraging fish's native completion system
 
-# Process IDs
-kill -9 **<TAB>
+Fuzzy completion for fish can leverage fish's native completion system to
+populate the candidate list. This behavior is enabled by default for
+a predefined set of commands. See [the source code](shell/completion.fish) for
+the complete list.
 
-# Native completions (uses fish's complete -C builtin)
-ssh **<TAB>
-set **<TAB>
-```
-
-Fish completion system supports the same customization options as bash and zsh (`FZF_COMPLETION_TRIGGER`,
-`FZF_COMPLETION_OPTS`, `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_COMMANDS`, `FZF_COMPLETION_DIR_OPTS`),
-and adds the following:
+You can customize which commands use native completion by setting the
+`FZF_COMPLETION_NATIVE_COMMANDS` variable:
 
 ```fish
-# Options for file-only completion
-set -gx FZF_COMPLETION_FILE_OPTS '--walker file,follow,hidden'
-
-# Commands that trigger file-only completion
-set -gx FZF_COMPLETION_FILE_COMMANDS cat head tail less more nano
-
-# Commands that use fish's native completion system
-set -gx FZF_COMPLETION_NATIVE_COMMANDS ssh telnet
-
-# Commands that use native completion with multi-select
-set -gx FZF_COMPLETION_NATIVE_COMMANDS_MULTI set functions type
+set -gx FZF_COMPLETION_NATIVE_COMMANDS \
+  git docker kubectl cargo npm ftp hg sftp ssh svn telnet set functions type
 ```
-
-When `**NATIVE**` options are set the Fish will use its native `complete -C` builtin for
-command-specific completions.
 
 Vim plugin
 ----------

@@ -140,8 +140,6 @@ function fzf_completion_setup
     if string match -q -- '*dir*' $compgen
       set -- tail ""
       set -a -- FZF_DEFAULT_OPTS --walker=dir,follow $FZF_COMPLETION_DIR_OPTS
-    else if string match -q -- '*file*' $compgen
-      set -a -- FZF_DEFAULT_OPTS --multi --walker=file,follow,hidden $FZF_COMPLETION_FILE_OPTS
     else
       set -a -- FZF_DEFAULT_OPTS --multi --walker=file,dir,follow,hidden $FZF_COMPLETION_PATH_OPTS
     end
