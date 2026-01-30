@@ -110,6 +110,7 @@ function fzf_completion_setup
       # Don't add trailing space if single result ends with /
       test (count $result) -eq 1
       and string match -q -- '*/' "$result"; and set -- tail ''
+      set -- result (string escape -n -- $result | string replace -r '^\\\\~' '~')
       commandline -rt -- (string join ' ' -- $result)$tail
     end
     commandline -f repaint
@@ -236,19 +237,11 @@ function fzf_completion_setup
       end
     end
 
-    if test -z "$tokens"
-      __fzf_complete_native "" --query=$current_token
-      return
-    end
-
     # Route to appropriate completion function
-    if functions -q _fzf_complete_$cmd_name
+    if test -n "$tokens"; and functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name $tokens
     else
-      set -l -- fzf_opt --query=$current_token --multi
-      # Auto-select unique match when trigger is empty (Tab acts as completion key)
-      test -z "$FZF_COMPLETION_TRIGGER"
-      and set -a -- fzf_opt --select-1
+      set -l -- fzf_opt --query=$current_token --multi --select-1
       __fzf_complete_native "$tokens $current_token" $fzf_opt
     end
   end
