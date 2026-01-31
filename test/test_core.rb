@@ -2175,4 +2175,13 @@ class TestCore < TestInteractive
       assert_equal 1, it.match_count
     end
   end
+
+  def test_zero_width_characters
+    tmux.send_keys %(for i in {1..1000}; do string+="a̱$i"; printf '\\e[43m%s\\e[0m\\n' "$string"; done | #{FZF} --ansi --query a500 --ellipsis XX), :Enter
+    tmux.until do |lines|
+      assert_equal 981, lines.match_count
+      assert_match(/^> XX.*a̱500/, lines[-3])
+      assert(lines.reverse.drop(5).all? { it.match?(/^  XX.*a̱500.*XX/) })
+    end
+  end
 end

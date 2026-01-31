@@ -18,8 +18,13 @@ func StringWidth(s string) int {
 
 // RunesWidth returns runes width
 func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
+	return StringsWidth(string(runes), prefixWidth, tabstop, limit)
+}
+
+// StringsWidth returns the width of the string
+func StringsWidth(str string, prefixWidth int, tabstop int, limit int) (int, int) {
 	width := 0
-	gr := uniseg.NewGraphemes(string(runes))
+	gr := uniseg.NewGraphemes(str)
 	idx := 0
 	for gr.Next() {
 		rs := gr.Runes()
