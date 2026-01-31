@@ -102,12 +102,14 @@ function fzf_completion_setup
   function __fzf_complete_native
     set -l result
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults \
-      "--reverse --delimiter=\\t --nth=1 --color=fg:dim,nth:regular" \
+      "--reverse --delimiter=\\t --nth=1 --tabstop=40 --color=fg:dim,nth:regular" \
       $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1 --read0 --print0)
     set -- result (eval complete -C \"$argv[1]\" \| string join0 \| (__fzfcmd) | string split0)
     and begin
       set -l -- tail ' '
-      # Don't add trailing space if single result ends with /
+      # Append / to bare ~username results (fish omits it unlike other shells)
+      set -- result (string replace -r -- '^(~\w+)\s?$' '$1/' $result)
+      # Don't add trailing space if single result is a directory
       test (count $result) -eq 1
       and string match -q -- '*/' "$result"; and set -- tail ''
       set -- result (string escape -n -- $result | string replace -r '^\\\\~' '~')
@@ -241,7 +243,7 @@ function fzf_completion_setup
     if test -n "$tokens"; and functions -q _fzf_complete_$cmd_name
       _fzf_complete_$cmd_name $tokens
     else
-      set -l -- fzf_opt --query=$current_token --multi --select-1
+      set -l -- fzf_opt --query=$current_token --multi
       __fzf_complete_native "$tokens $current_token" $fzf_opt
     end
   end
