@@ -33,6 +33,27 @@ function fzf_completion_setup
     end
   end
 
+  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading environment variable assignments'
+    set -l tokens
+    if test (string match -r -- '^\d+' $version) -ge 4
+      set -- tokens (commandline -xpc)
+    else
+      set -- tokens (commandline -opc)
+    end
+
+    set -l -- var_count 0
+    for i in $tokens
+      if string match -qr -- '^[\w]+=' $i
+        set var_count (math $var_count + 1)
+      else
+        break
+      end
+    end
+    set -e -- tokens[0..$var_count]
+
+    string escape -n -- $tokens
+  end
+
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
     set -l fzf_query ''
     set -l prefix ''
@@ -118,38 +139,6 @@ function fzf_completion_setup
     commandline -f repaint
   end
 
-  # Generic path completion
-  function __fzf_generic_path_completion
-    set -lx -- dir $argv[1]
-    set -l -- fzf_query $argv[2]
-    set -l -- opt_prefix $argv[3]
-    set -l -- compgen $argv[4]
-    set -l -- tail " "
-
-    # Set fzf options
-    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults "--reverse --scheme=path" $FZF_COMPLETION_OPTS --print0)
-    set -lx FZF_DEFAULT_COMMAND
-    set -lx FZF_DEFAULT_OPTS_FILE
-
-    if string match -q -- '*dir*' $compgen
-      set -- tail ""
-      set -a -- FZF_DEFAULT_OPTS --walker=dir,follow $FZF_COMPLETION_DIR_OPTS
-    else
-      set -a -- FZF_DEFAULT_OPTS --multi --walker=file,dir,follow,hidden $FZF_COMPLETION_PATH_OPTS
-    end
-
-    # Run fzf
-    set -l result
-    if functions -q "$compgen"
-      set -- result (eval $compgen $dir \| (__fzfcmd) --query=$fzf_query | string split0)
-    else
-      set -- result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
-    end
-    and commandline -rt -- (string join -- ' ' $opt_prefix(string escape -n -- $result))$tail
-
-    commandline -f repaint
-  end
-
   function _fzf_complete
     set -l -- args (string escape -- $argv | string join ' ' | string split -- ' -- ')
     set -l -- post_func (status function)_(string split -- ' ' $args[2])[1]_post
@@ -190,25 +179,7 @@ function fzf_completion_setup
     set -q FZF_COMPLETION_TRIGGER
     or set -l -- FZF_COMPLETION_TRIGGER '**'
 
-    # Get tokens - use version-appropriate flags
-    set -l tokens
-    if test (string match -r -- '^\d+' $version) -ge 4
-      set -- tokens (commandline -xpc)
-    else
-      set -- tokens (commandline -opc)
-    end
-
-    # Filter out leading environment variable assignments
-    set -l -- var_count 0
-    for i in $tokens
-      if string match -qr -- '^[\w]+=' $i
-        set var_count (math $var_count + 1)
-      else
-        break
-      end
-    end
-    set -e -- tokens[0..$var_count]
-
+    set -l -- tokens (__fzf_cmd_tokens)
     set -l -- current_token (commandline -t)
     set -l -- cmd_name $tokens[1]
 

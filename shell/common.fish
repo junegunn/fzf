@@ -19,6 +19,29 @@
     end
   end
 
+  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading environment variable assignments'
+    # Get tokens - use version-appropriate flags
+    set -l tokens
+    if test (string match -r -- '^\d+' $version) -ge 4
+      set -- tokens (commandline -xpc)
+    else
+      set -- tokens (commandline -opc)
+    end
+
+    # Filter out leading environment variable assignments
+    set -l -- var_count 0
+    for i in $tokens
+      if string match -qr -- '^[\w]+=' $i
+        set var_count (math $var_count + 1)
+      else
+        break
+      end
+    end
+    set -e -- tokens[0..$var_count]
+
+    string escape -n -- $tokens
+  end
+
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
     set -l fzf_query ''
     set -l prefix ''

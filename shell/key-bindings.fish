@@ -54,6 +54,27 @@ function fzf_key_bindings
     end
   end
 
+  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading environment variable assignments'
+    set -l tokens
+    if test (string match -r -- '^\d+' $version) -ge 4
+      set -- tokens (commandline -xpc)
+    else
+      set -- tokens (commandline -opc)
+    end
+
+    set -l -- var_count 0
+    for i in $tokens
+      if string match -qr -- '^[\w]+=' $i
+        set var_count (math $var_count + 1)
+      else
+        break
+      end
+    end
+    set -e -- tokens[0..$var_count]
+
+    string escape -n -- $tokens
+  end
+
   function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath, fzf query, and optional -option= prefix'
     set -l fzf_query ''
     set -l prefix ''
@@ -128,7 +149,7 @@ function fzf_key_bindings
 
     set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
       "--reverse --walker=file,dir,follow,hidden --scheme=path" \
-      "$FZF_CTRL_T_OPTS --multi --print0")
+      "--multi $FZF_CTRL_T_OPTS --print0")
 
     set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
     set -lx FZF_DEFAULT_OPTS_FILE
