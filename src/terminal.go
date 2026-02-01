@@ -5209,7 +5209,7 @@ func (t *Terminal) Loop() error {
 
 	{ // Late initialization
 		intChan := make(chan os.Signal, 1)
-		signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(intChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 		go func() {
 			for {
 				select {
