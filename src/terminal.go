@@ -411,6 +411,7 @@ type Terminal struct {
 	suppress           bool
 	startChan          chan fitpad
 	killChan           chan bool
+	killedChan         chan bool
 	serverInputChan    chan []*action
 	callbackChan       chan versionedCallback
 	bgQueue            map[action][]func(bool)
@@ -1101,6 +1102,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		theme:              opts.Theme,
 		startChan:          make(chan fitpad, 1),
 		killChan:           make(chan bool),
+		killedChan:         make(chan bool),
 		serverInputChan:    make(chan []*action, 100),
 		callbackChan:       make(chan versionedCallback, maxBgProcesses),
 		bgQueue:            make(map[action][]func(bool)),
@@ -5031,6 +5033,7 @@ func (t *Terminal) toggleItem(item *Item) bool {
 func (t *Terminal) killPreview() {
 	select {
 	case t.killChan <- true:
+		<-t.killedChan
 	default:
 	}
 }
@@ -5396,6 +5399,7 @@ func (t *Terminal) Loop() error {
 								case immediately := <-t.killChan:
 									if immediately {
 										util.KillCommand(cmd)
+										t.killedChan <- true
 									} else {
 										// We can immediately kill a long-running preview program
 										// once we started rendering its partial output
@@ -5642,10 +5646,10 @@ func (t *Terminal) Loop() error {
 			})
 		}
 
-		t.eventBox.Set(EvtQuit, quitSignal{code, nil})
 		t.running.Set(false)
 		t.killPreview()
 		cancel()
+		t.eventBox.Set(EvtQuit, quitSignal{code, nil})
 	}()
 
 	looping := true
