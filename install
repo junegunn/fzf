@@ -243,16 +243,16 @@ fi
 
 echo
 for shell in $shells; do
+  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
+  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   [[ $shell == fish ]] && continue
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
-  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 
-  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   if [ $key_bindings -eq 0 ]; then
     fzf_key_bindings="# $fzf_key_bindings"
   fi
@@ -302,15 +302,16 @@ append_line() {
   line="$2"
   file="$3"
   pat="${4:-}"
+  at_lno="${5:-}"
   lines=""
 
   echo "Update $file:"
   echo "  - $line"
   if [ -f "$file" ]; then
-    if [ $# -lt 4 ]; then
-      lines=$(\grep -nF "$line" "$file")
-    else
+    if [[ -n $pat ]]; then
       lines=$(\grep -nF "$pat" "$file")
+    else
+      lines=$(\grep -nF "${line#"${line%%[![:space:]]*}"}" "$file")
     fi
   fi
 
@@ -328,8 +329,12 @@ append_line() {
 
   set -e
   if [ "$update" -eq 1 ]; then
-    [ -f "$file" ] && echo >> "$file"
-    echo "$line" >> "$file"
+    if [[ -z $at_lno ]]; then
+      [ -f "$file" ] && echo >> "$file"
+      echo "$line" >> "$file"
+    else
+      sed -i.~fzf_bak "${at_lno}a\\"$'\n'"$line" "$file" && rm "$file.~fzf_bak"
+    fi
     echo "    + Added"
   else
     echo "    ~ Skipped"
@@ -362,25 +367,66 @@ for shell in $shells; do
   append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
-if [ $key_bindings -eq 1 ] && [[ $shells =~ fish ]]; then
+if [[ $shells =~ fish ]]; then
   bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
-    mkdir -p "${fish_dir}/functions"
-    create_file "$bind_file" \
-      'function fish_user_key_bindings' \
-      '  fzf --fish | source' \
-      'end'
+    if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
+      mkdir -p "${fish_dir}/functions"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          '  fzf --fish | source' \
+          'end'
+      elif [[ $key_bindings -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          "  $fzf_key_bindings" \
+          'end'
+      elif [[ $auto_completion -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          "  $fzf_completion" \
+          'end'
+      fi
+      lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    else
+      lno_func=0
+    fi
   else
     echo "Check $bind_file:"
-    lno=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
-    if [[ -n $lno ]]; then
-      echo "  ** Found 'fzf_key_bindings' in line #$lno"
-      echo "  ** You have to replace the line to 'fzf --fish | source'"
+    lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -z $lno_func ]]; then
+      echo -e "function fish_user_key_bindings\nend" >> "$bind_file"
+      lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    fi
+    lno_keys=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -n $lno_keys ]]; then
+      echo "  ** Found 'fzf_key_bindings' in line #$lno_keys"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        echo "  ** You have to replace the line to 'fzf --fish | source'"
+      elif [[ $key_bindings -eq 1 ]]; then
+        echo "  ** You have to replace the line to '$fzf_key_bindings'"
+      else
+        echo "  ** You have to remove the line"
+      fi
       echo
     else
       echo "  - Clear"
       echo
-      append_line $update_config "fzf --fish | source" "$bind_file"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+        sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+        append_line $update_config "  fzf --fish | source" "$bind_file" "" "$lno_func"
+      else
+        sed -i.~fzf_bak '/fzf --fish \| source/d' "$bind_file" && rm "$bind_file.~fzf_bak"
+        if [[ $key_bindings -eq 1 ]]; then
+          sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+          append_line $update_config "  $fzf_key_bindings" "$bind_file" "" "$lno_func"
+        elif [[ $auto_completion -eq 1 ]]; then
+          sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+          append_line $update_config "  $fzf_completion" "$bind_file" "" "$lno_func"
+        fi
+      fi
     fi
   fi
 fi
@@ -393,7 +439,7 @@ if [ $update_config -eq 1 ]; then
     echo
   fi
   [[ $shells =~ zsh ]] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-  [[ $shells =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
+  [[ $shells =~ fish && $lno_func -ne 0 ]] && echo '   fzf_user_key_bindings  # fish'
   echo
   echo 'Use uninstall script to remove fzf.'
   echo
