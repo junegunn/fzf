@@ -19,7 +19,7 @@
     end
   end
 
-  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading environment variable assignments'
+  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading env assignments and command prefixes'
     # Get tokens - use version-appropriate flags
     set -l tokens
     if test (string match -r -- '^\d+' $version) -ge 4
@@ -38,6 +38,24 @@
       end
     end
     set -e -- tokens[0..$var_count]
+
+    # Skip command prefixes so callers see the actual command name,
+    # e.g. "builtin cd" → "cd", "env VAR=1 command cd" → "cd"
+    while true
+      switch "$tokens[1]"
+        case builtin command
+          set -e -- tokens[1]
+          test "$tokens[1]" = "--"; and set -e -- tokens[1]
+        case env
+          set -e -- tokens[1]
+          test "$tokens[1]" = "--"; and set -e -- tokens[1]
+          while string match -qr -- '^[\w]+=' "$tokens[1]"
+            set -e -- tokens[1]
+          end
+        case '*'
+          break
+      end
+    end
 
     string escape -n -- $tokens
   end

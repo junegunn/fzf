@@ -54,7 +54,7 @@ function fzf_key_bindings
     end
   end
 
-  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading environment variable assignments'
+  function __fzf_cmd_tokens -d 'Return command line tokens, skipping leading env assignments and command prefixes'
     set -l tokens
     if test (string match -r -- '^\d+' $version) -ge 4
       set -- tokens (commandline -xpc)
@@ -71,6 +71,22 @@ function fzf_key_bindings
       end
     end
     set -e -- tokens[0..$var_count]
+
+    while true
+      switch "$tokens[1]"
+        case builtin command
+          set -e -- tokens[1]
+          test "$tokens[1]" = "--"; and set -e -- tokens[1]
+        case env
+          set -e -- tokens[1]
+          test "$tokens[1]" = "--"; and set -e -- tokens[1]
+          while string match -qr -- '^[\w]+=' "$tokens[1]"
+            set -e -- tokens[1]
+          end
+        case '*'
+          break
+      end
+    end
 
     string escape -n -- $tokens
   end
