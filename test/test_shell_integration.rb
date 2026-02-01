@@ -465,11 +465,11 @@ class TestZsh < TestBase
 
   # Helper function to run test with Perl and again with Awk
   def self.test_perl_and_awk(name, &block)
-    define_method("test_#{name}") do
+    define_method(:"test_#{name}") do
       instance_eval(&block)
     end
 
-    define_method("test_#{name}_awk") do
+    define_method(:"test_#{name}_awk") do
       tmux.send_keys "unset 'commands[perl]'", :Enter
       tmux.prepare
       # Verify perl is actually unset (0 = not found)
@@ -559,7 +559,7 @@ class TestZsh < TestBase
     tmux.prepare
     # Verify fc shows foreign command with asterisk
     tmux.send_keys 'fc -rl -1', :Enter
-    tmux.until { |lines| assert lines.any? { |l| l.match?(/^\s*\d+\* fzf_cmd_foreign/) } }
+    tmux.until { |lines| assert(lines.any? { |l| l.match?(/^\s*\d+\* fzf_cmd_foreign/) }) }
     tmux.prepare
     # Test ctrl-r correctly extracts the foreign command
     tmux.send_keys 'C-r'
@@ -570,7 +570,7 @@ class TestZsh < TestBase
     tmux.until { |lines| assert_includes lines[-2], '(2)' }
     tmux.send_keys :Enter
     tmux.until do |lines|
-      assert_equal ['fzf_cmd_foreign', 'fzf_cmd_local'], lines[-2..]
+      assert_equal %w[fzf_cmd_foreign fzf_cmd_local], lines[-2..]
     end
   ensure
     FileUtils.rm_f(histfile)

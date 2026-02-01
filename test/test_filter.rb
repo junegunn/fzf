@@ -320,7 +320,7 @@ class TestFilter < TestBase
     # Multiple field selection
     writelines(['ID001:John:Developer', 'ID002:Jane:Manager', 'ID003:Bob:Designer'])
     assert_equal 'ID001', `#{FZF} -d: --with-nth 2 --accept-nth 1 -f John < #{tempname}`.chomp
-    assert_equal "ID002:Manager", `#{FZF} -d: --with-nth 2 --accept-nth 1,3 -f Jane < #{tempname}`.chomp
+    assert_equal 'ID002:Manager', `#{FZF} -d: --with-nth 2 --accept-nth 1,3 -f Jane < #{tempname}`.chomp
 
     # Test with different delimiters
     writelines(['emp001 Alice Engineering', 'emp002 Bob Marketing'])
