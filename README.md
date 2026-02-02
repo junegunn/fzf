@@ -90,7 +90,6 @@ Table of Contents
         * [Supported commands (bash)](#supported-commands-bash)
         * [Custom fuzzy completion](#custom-fuzzy-completion)
     * [Customizing fuzzy completion for fish](#customizing-fuzzy-completion-for-fish)
-        * [Leveraging fish's native completion system](#leveraging-fishs-native-completion-system)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Customizing for different types of input](#customizing-for-different-types-of-input)
@@ -737,25 +736,16 @@ _fzf_complete_foo_post() {
 
 ### Customizing fuzzy completion for fish
 
-Fuzzy completion for fish supports the same environment variables as bash and
-zsh (`FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
-`FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_COMMANDS`,
-`FZF_COMPLETION_DIR_OPTS`).
+Fuzzy completion for fish differs from bash and zsh in that it uses fish's
+native completion system to populate the candidate list, and the only
+configuration variables supported are `FZF_COMPLETION_TRIGGER` and
+`FZF_COMPLETION_OPTS`.
 
-#### Leveraging fish's native completion system
+So for example, unlike in bash and zsh, `ls **<TAB>` will not perform a recusive
+search under the current directory. For that, you need to use `CTRL-T` instead.
 
-Fuzzy completion for fish can leverage fish's native completion system to
-populate the candidate list. This behavior is enabled by default for
-a predefined set of commands. See [the source code](shell/completion.fish) for
-the complete list.
-
-You can customize which commands use native completion by setting the
-`FZF_COMPLETION_NATIVE_COMMANDS` variable:
-
-```fish
-set -gx FZF_COMPLETION_NATIVE_COMMANDS \
-  git docker kubectl cargo npm ftp hg sftp ssh svn telnet set functions type
-```
+You can still implement custom completion for a specific command by defining
+an `fzf_complete_COMMAND` function.
 
 Vim plugin
 ----------
