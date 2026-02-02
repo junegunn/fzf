@@ -741,11 +741,54 @@ native completion system to populate the candidate list, and the only
 configuration variables supported are `FZF_COMPLETION_TRIGGER` and
 `FZF_COMPLETION_OPTS`.
 
-So for example, unlike in bash and zsh, `ls **<TAB>` will not perform a recusive
+So for example, unlike in bash and zsh, `ls **<TAB>` will not perform a recursive
 search under the current directory. For that, you need to use `CTRL-T` instead.
 
 You can still implement custom completion for a specific command by defining
-an `fzf_complete_COMMAND` function.
+an `_fzf_complete_COMMAND` function. For example:
+
+```fish
+function _fzf_complete_foo
+  function _fzf_complete_foo_post
+    awk '{print $NF}'
+  end
+  _fzf_complete --multi --reverse --header-lines=3 -- $argv < (ls -al | psub)
+
+  functions -e _fzf_complete_foo_post
+end
+```
+
+And here's a more complex example for customizing `git`
+
+```fish
+function _fzf_complete_git
+  switch $argv[2]
+    case checkout switch
+      _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+
+    case add
+      function _fzf_complete_git_post
+        awk '{print $NF}'
+      end
+      _fzf_complete --multi --reverse -- $argv < (git status --short | psub)
+
+    case show log diff
+      function _fzf_complete_git_post
+        awk '{print $1}'
+      end
+      _fzf_complete --reverse --no-sort --preview='git show --color=always {1}' -- $argv < (git log --oneline | psub)
+
+    case ''
+      __fzf_complete_native "$argv[1] " --query=(commandline -t | string escape)
+
+    case '*'
+      set -l -- current_token (commandline -t)
+      __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+  end
+
+  functions -e _fzf_complete_git_post
+end
+```
 
 Vim plugin
 ----------
