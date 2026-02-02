@@ -169,7 +169,11 @@ module CompletionTest
       FileUtils.touch(File.expand_path(f))
     end
     tmux.prepare
-    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat /tmp/fzf-test/10', 'C-t'
+    else
+      tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys ' !d'
     tmux.until { |lines| assert_equal 2, lines.match_count }
@@ -183,7 +187,11 @@ module CompletionTest
     # ~USERNAME**<TAB>
     user = `whoami`.chomp
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~#{user}#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys "cat ~#{user}", 'C-t'
+    else
+      tmux.send_keys "cat ~#{user}#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys "/#{user}"
     tmux.until { |lines| assert(lines.any? { |l| l.end_with?("/#{user}") }) }
@@ -194,7 +202,11 @@ module CompletionTest
 
     # ~INVALID_USERNAME**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat ~such#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat ~such', 'C-t'
+    else
+      tmux.send_keys "cat ~such#{trigger}", :Tab
+    end
     tmux.until(true) { |lines| assert lines.any_include?('no~such~user') }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
@@ -208,7 +220,11 @@ module CompletionTest
 
     # /tmp/fzf\ test**<TAB>
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat /tmp/fzf\\ test/#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat /tmp/fzf\\ test/', 'C-t'
+    else
+      tmux.send_keys "cat /tmp/fzf\\ test/#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'foobar$'
     tmux.until do |lines|
@@ -221,7 +237,11 @@ module CompletionTest
     # Should include hidden files
     (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/.hidden-#{i}") }
     tmux.send_keys 'C-u'
-    tmux.send_keys "cat /tmp/fzf-test/hidden#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat /tmp/fzf-test/hidden', 'C-t'
+    else
+      tmux.send_keys "cat /tmp/fzf-test/hidden#{trigger}", :Tab
+    end
     tmux.until(true) do |lines|
       assert_equal 100, lines.match_count
       assert lines.any_include?('/tmp/fzf-test/.hidden-')
@@ -234,42 +254,56 @@ module CompletionTest
   end
 
   def test_file_completion_root
-    tmux.send_keys "ls /#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'ls /', 'C-t'
+    else
+      tmux.send_keys "ls /#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :Enter
   end
 
   def test_dir_completion
+    FileUtils.mkdir_p('/tmp/fzf-test-dir')
     (1..100).each do |idx|
-      FileUtils.mkdir_p("/tmp/fzf-test/d#{idx}")
+      FileUtils.mkdir_p("/tmp/fzf-test-dir/d#{idx}")
     end
-    FileUtils.touch('/tmp/fzf-test/d55/xxx')
+    FileUtils.touch('/tmp/fzf-test-dir/d55/xxx')
     tmux.prepare
-    tmux.send_keys "cd /tmp/fzf-test/#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cd /tmp/fzf-test-dir/', 'C-t'
+    else
+      tmux.send_keys "cd /tmp/fzf-test-dir/#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys :Tab, :Tab # Tab does not work here
-    tmux.send_keys 55
+    # Tab selects items in C-t's --multi mode, so skip for fish
+    tmux.send_keys :Tab, :Tab unless shell == :fish # Tab does not work here
+    tmux.send_keys '55/$'
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert_includes lines, '> 55'
-      assert_includes lines, '> /tmp/fzf-test/d55/'
+      assert_includes lines, '> 55/$'
+      assert_includes lines, '> /tmp/fzf-test-dir/d55/'
     end
     tmux.send_keys :Enter
-    tmux.until(true) { |lines| assert_equal 'cd /tmp/fzf-test/d55/', lines[-1] }
+    tmux.until(true) { |lines| assert_equal 'cd /tmp/fzf-test-dir/d55/', lines[-1] }
+    # C-t appends a trailing space after the result
+    tmux.send_keys :BSpace if shell == :fish
     tmux.send_keys :xx
-    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55/xx', lines[-1] }
+    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test-dir/d55/xx', lines[-1] }
 
     # Should not match regular files (bash-only)
     if instance_of?(TestBash)
       tmux.send_keys :Tab
-      tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55/xx', lines[-1] }
+      tmux.until { |lines| assert_equal 'cd /tmp/fzf-test-dir/d55/xx', lines[-1] }
     end
 
     # Fail back to plusdirs
     tmux.send_keys :BSpace, :BSpace, :BSpace
-    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55', lines[-1] }
+    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test-dir/d55', lines[-1] }
     tmux.send_keys :Tab
-    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test/d55/', lines[-1] }
+    tmux.until { |lines| assert_equal 'cd /tmp/fzf-test-dir/d55/', lines[-1] }
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test-dir')
   end
 
   def test_process_completion
@@ -299,11 +333,8 @@ module CompletionTest
   end
 
   def test_custom_completion
-    if shell == :fish
-      tmux.send_keys 'function _fzf_compgen_path; echo $argv[1]; seq 10; end', :Enter
-    else
-      tmux.send_keys '_fzf_compgen_path() { echo "$1"; seq 10; }', :Enter
-    end
+    skip('fish does not use _fzf_compgen_path; path completion is via ctrl-t') if shell == :fish
+    tmux.send_keys '_fzf_compgen_path() { echo "$1"; seq 10; }', :Enter
     tmux.prepare
     tmux.send_keys "ls /tmp/#{trigger}", :Tab
     tmux.until { |lines| assert_equal 11, lines.match_count }
@@ -371,7 +402,11 @@ module CompletionTest
     File.write('/tmp/fzf-test/fzf-unicode 테스트2', "test4\n")
     tmux.send_keys 'cd /tmp/fzf-test', :Enter
     tmux.prepare
-    tmux.send_keys "cat fzf-unicode#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat fzf-unicode', 'C-t'
+    else
+      tmux.send_keys "cat fzf-unicode#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_equal 2, lines.match_count }
 
     tmux.send_keys '1'
@@ -452,13 +487,24 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-eq-long', :Enter
     tmux.prepare
-    tmux.send_keys "some-command --opt=SECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command --opt=SECURI', 'C-t'
+    else
+      tmux.send_keys "some-command --opt=SECURI#{trigger}", :Tab
+    end
 
     case shell
-    when :bash, :fish
+    when :bash
       tmux.until do |lines|
         assert_equal 1, lines.match_count
         assert_includes lines, '> SECURI'
+      end
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal 'some-command --opt=SECURITY.md', lines[-1] }
+    when :fish
+      tmux.until do |lines|
+        assert_equal 1, lines.match_count
+        assert lines.any_include?('SECURITY.md')
       end
       tmux.send_keys :Enter
       tmux.until(true) { |lines| assert_equal 'some-command --opt=SECURITY.md', lines[-1] }
@@ -478,7 +524,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-eq-long-ddash', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -- --opt=SECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -- --opt=SECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -- --opt=SECURI#{trigger}", :Tab
+    end
 
     case shell
     when :bash
@@ -504,13 +554,17 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-eq-short', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -o=SECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -o=SECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -o=SECURI#{trigger}", :Tab
+    end
 
     case shell
     when :bash, :fish
       tmux.until do |lines|
         assert_equal 1, lines.match_count
-        assert_includes lines, '> SECURI'
+        assert lines.any_include?('> SECURITY.md')
       end
       tmux.send_keys :Enter
       tmux.until(true) { |lines| assert_equal 'some-command -o=SECURITY.md', lines[-1] }
@@ -530,13 +584,17 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-eq-short-ddash', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -- -o=SECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -- -o=SECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -- -o=SECURI#{trigger}", :Tab
+    end
 
     case shell
     when :bash
       tmux.until do |lines|
         assert_equal 1, lines.match_count
-        assert_includes lines, '> SECURI'
+        assert_includes lines, '> SECURITY.md'
       end
       tmux.send_keys :Enter
       tmux.until(true) { |lines| assert_equal 'some-command -- -o=SECURITY.md', lines[-1] }
@@ -556,19 +614,15 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-long', :Enter
     tmux.prepare
-    tmux.send_keys "some-command --optSECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command --optSECURI', 'C-t'
+    else
+      tmux.send_keys "some-command --optSECURI#{trigger}", :Tab
+    end
 
-    case shell
-    when :bash, :zsh
-      tmux.until do |lines|
-        assert_equal 0, lines.match_count
-        assert_includes lines, '> --optSECURI'
-      end
-    when :fish
-      tmux.until do |lines|
-        assert_equal 0, lines.match_count
-        assert_includes lines, '> optSECURI'
-      end
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+      assert_includes lines, '> --optSECURI'
     end
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-long')
@@ -580,7 +634,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-long-ddash', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -- --optSECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -- --optSECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -- --optSECURI#{trigger}", :Tab
+    end
 
     tmux.until do |lines|
       assert_equal 0, lines.match_count
@@ -596,7 +654,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-short', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -oSECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -oSECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -oSECURI#{trigger}", :Tab
+    end
 
     case shell
     when :bash, :zsh
@@ -606,9 +668,11 @@ module CompletionTest
       end
     when :fish
       tmux.until do |lines|
-        assert_equal 0, lines.match_count
-        assert_includes lines, '> oSECURI'
+        assert_equal 1, lines.match_count
+        assert lines.any_include?('> SECURITY.md')
       end
+      tmux.send_keys :Enter
+      tmux.until(true) { |lines| assert_equal 'some-command -oSECURITY.md', lines[-1] }
     end
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-opt-no-eq-short')
@@ -620,7 +684,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-opt-no-eq-short-ddash', :Enter
     tmux.prepare
-    tmux.send_keys "some-command -- -oSECURI#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'some-command -- -oSECURI', 'C-t'
+    else
+      tmux.send_keys "some-command -- -oSECURI#{trigger}", :Tab
+    end
 
     tmux.until do |lines|
       assert_equal 0, lines.match_count
@@ -636,7 +704,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-newline', :Enter
     tmux.prepare
-    tmux.send_keys "cat xyz#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'cat xyz', 'C-t'
+    else
+      tmux.send_keys "cat xyz#{trigger}", :Tab
+    end
 
     case shell
     when :fish
@@ -664,7 +736,11 @@ module CompletionTest
     FileUtils.mkdir_p('/tmp/fzf-test-[special]')
     FileUtils.touch('/tmp/fzf-test-[special]/xyz123')
     tmux.prepare
-    tmux.send_keys "ls /tmp/fzf-test-\\[special\\]/xyz#{trigger}", :Tab
+    if shell == :fish
+      tmux.send_keys 'ls /tmp/fzf-test-\[special\]/xyz', 'C-t'
+    else
+      tmux.send_keys "ls /tmp/fzf-test-\\[special\\]/xyz#{trigger}", :Tab
+    end
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until(true) { |lines| assert_equal 'ls /tmp/fzf-test-\\[special\\]/xyz123', lines[-1] }
@@ -679,8 +755,11 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-dollar-anchor', :Enter
     tmux.prepare
-    tmux.send_keys "ls txt$#{trigger}", :Tab
-
+    if shell == :fish
+      tmux.send_keys 'ls txt$', 'C-t'
+    else
+      tmux.send_keys "ls txt$#{trigger}", :Tab
+    end
     tmux.until do |lines|
       assert_equal 1, lines.match_count
       assert_includes lines, '> txt$'
@@ -697,27 +776,18 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-single-flag', :Enter
     tmux.prepare
-    tmux.send_keys "ls -#{trigger}", :Tab
-
-    case shell
-    when :fish
-      # fish provides native flag completion
-      tmux.until do |lines|
-        assert_operator lines.match_count, :>, 0
-        assert lines.any_include?('-a')
-        assert lines.any_include?('Show hidden')
-      end
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert_match(/ls -\w+/, lines[-1]) }
-    when :bash, :zsh
-      # bash and zsh fall back to file completion
-      tmux.until do |lines|
-        assert_equal 1, lines.match_count
-        assert_includes lines, '> -'
-      end
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert_equal 'ls -testfile.txt', lines[-1] }
+    if shell == :fish
+      tmux.send_keys 'ls -', 'C-t'
+    else
+      tmux.send_keys "ls -#{trigger}", :Tab
     end
+
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> -'
+    end
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls -testfile.txt', lines[-1] }
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-single-flag')
   end
@@ -728,27 +798,18 @@ module CompletionTest
     tmux.prepare
     tmux.send_keys 'cd /tmp/fzf-test-double-flag', :Enter
     tmux.prepare
-    tmux.send_keys "ls --#{trigger}", :Tab
-
-    case shell
-    when :fish
-      # fish provides native flag completion
-      tmux.until do |lines|
-        assert_operator lines.match_count, :>, 0
-        assert lines.any_include?('--all')
-        assert lines.any_include?('Show hidden')
-      end
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert_match(/ls --\w+/, lines[-1]) }
-    when :bash, :zsh
-      # bash and zsh fall back to file completion
-      tmux.until do |lines|
-        assert_equal 1, lines.match_count
-        assert_includes lines, '> --'
-      end
-      tmux.send_keys :Enter
-      tmux.until(true) { |lines| assert_equal 'ls --testfile.txt', lines[-1] }
+    if shell == :fish
+      tmux.send_keys 'ls --', 'C-t'
+    else
+      tmux.send_keys "ls --#{trigger}", :Tab
     end
+
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> --'
+    end
+    tmux.send_keys :Enter
+    tmux.until(true) { |lines| assert_equal 'ls --testfile.txt', lines[-1] }
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-double-flag')
   end

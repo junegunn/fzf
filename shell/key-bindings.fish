@@ -171,7 +171,7 @@ function fzf_key_bindings
     set -lx FZF_DEFAULT_OPTS_FILE
 
     set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
-    and commandline -rt -- (string join -- ' ' $prefix(string escape -- $result))' '
+    and commandline -rt -- (string join -- ' ' $prefix(string escape --no-quoted -- $result))' '
 
     commandline -f repaint
   end
