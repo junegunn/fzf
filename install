@@ -272,6 +272,10 @@ EOF
     else
       echo "eval \"\$(fzf --$shell)\"" >> "$src"
     fi
+    if [[ "$shell" = bash ]]; then
+      bash_override=shell/bash-override
+      [ -f "$bash_override" ] && echo >> "$src" && cat "$bash_override" >> "$src"
+    fi
   else
     cat >> "$src" << EOF
 # Auto-completion
