@@ -137,11 +137,15 @@ function fzf_completion_setup
 
   # Use complete builtin for specific commands
   function __fzf_complete_native
+    set -l -- token (commandline -t)
+    set -l -- completions (eval complete -C \"$argv[1]\")
+    test -n "$completions"; or begin commandline -f repaint; return; end
+
     set -l result
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults \
       "--reverse --delimiter=\\t --nth=1 --tabstop=40 --color=fg:dim,nth:regular" \
       $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1 --read0 --print0)
-    set -- result (eval complete -C \"$argv[1]\" \| string join0 \| (__fzfcmd) | string split0)
+    set -- result (string join0 -- $completions | eval (__fzfcmd) | string split0)
     and begin
       set -l -- tail ' '
       # Append / to bare ~username results (fish omits it unlike other shells)
@@ -149,7 +153,15 @@ function fzf_completion_setup
       # Don't add trailing space if single result is a directory
       test (count $result) -eq 1
       and string match -q -- '*/' "$result"; and set -- tail ''
-      set -- result (string escape -n -- $result | string replace -r '^\\\\~' '~')
+
+      set -l -- result (string escape -n -- $result)
+
+      string match -q -- '~*' "$token"
+      and set result (string replace -r -- '^\\\\~' '~' $result)
+
+      string match -q -- '$*' "$token"
+      and set result (string replace -r -- '^\\\\\$' '\$' $result)
+
       commandline -rt -- (string join ' ' -- $result)$tail
     end
     commandline -f repaint
