@@ -369,27 +369,30 @@ module CompletionTest
     if shell == :fish
       FileUtils.mkdir_p('/tmp/fzf-test-seq')
       FileUtils.touch('/tmp/fzf-test-seq/fzffoobar')
-    else
-      tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
-    end
-    tmux.prepare
-
-    triggers = ['**', '~~', '++', 'ff', '/']
-    triggers.push('&', '[', ';', '`') if instance_of?(TestZsh)
-
-    triggers.each do |trigger|
-      set_var('FZF_COMPLETION_TRIGGER', trigger)
-      if shell == :fish
-        command = "echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobr#{trigger}"
-        expected = 'echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobar'
-      else
-        command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}"
-        expected = 'echo foo; QUX=THUD unset FZFFOOBAR'
-      end
-      tmux.send_keys command.sub(/(;|`)$/, '\\\\\1'), :Tab
+      tmux.prepare
+      # Fish uses Shift-Tab for fzf completion (no trigger system)
+      command = 'echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobr'
+      expected = 'echo foo; QUX=THUD ls /tmp/fzf-test-seq/fzffoobar'
+      tmux.send_keys command, :BTab
       tmux.until { |lines| assert_equal 1, lines.match_count }
       tmux.send_keys :Enter
       tmux.until { |lines| assert_equal expected, lines[-1] }
+    else
+      tmux.send_keys 'export FZFFOOBAR=BAZ', :Enter
+      tmux.prepare
+
+      triggers = ['**', '~~', '++', 'ff', '/']
+      triggers.push('&', '[', ';', '`') if instance_of?(TestZsh)
+
+      triggers.each do |trigger|
+        set_var('FZF_COMPLETION_TRIGGER', trigger)
+        command = "echo foo; QUX=THUD unset FZFFOOBR#{trigger}"
+        expected = 'echo foo; QUX=THUD unset FZFFOOBAR'
+        tmux.send_keys command.sub(/(;|`)$/, '\\\\\1'), :Tab
+        tmux.until { |lines| assert_equal 1, lines.match_count }
+        tmux.send_keys :Enter
+        tmux.until { |lines| assert_equal expected, lines[-1] }
+      end
     end
   ensure
     FileUtils.rm_rf('/tmp/fzf-test-seq') if shell == :fish
