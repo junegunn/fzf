@@ -363,7 +363,7 @@ projects, and it will free up memory as you narrow down the results.
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
 fzf --ansi --disabled --query "$INITIAL_QUERY" \
-    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "start:reload:$RG_PREFIX {q} || true" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \
