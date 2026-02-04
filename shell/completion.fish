@@ -4,7 +4,6 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ completion.fish
 #
-# - $FZF_COMPLETION_TRIGGER               (default: '**')
 # - $FZF_COMPLETION_OPTS                  (default: empty)
 
 function fzf_completion_setup
@@ -141,9 +140,20 @@ function fzf_completion_setup
     set -l -- completions (eval complete -C \"$argv[1]\")
     test -n "$completions"; or begin commandline -f repaint; return; end
 
+    # Calculate tabstop based on longest completion item (sample first 500 for performance)
+    set -l -- tabstop 20
+    set -l -- sample_size (math "min(500, "(count $completions)")")
+    for c in $completions[1..$sample_size]
+      set -l -- len (string length -V -- (string split -- \t $c))
+      test -n "$len[2]" -a "$len[1]" -gt "$tabstop"
+      and set -- tabstop $len[1]
+    end
+    # limit to 120 to prevent long lines
+    set -- tabstop (math "min($tabstop + 4, 120)")
+
     set -l result
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults \
-      "--reverse --delimiter=\\t --nth=1 --tabstop=40 --color=fg:dim,nth:regular" \
+      "--reverse --delimiter=\\t --nth=1 --tabstop=$tabstop --color=fg:dim,nth:regular" \
       $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1 --read0 --print0)
     set -- result (string join0 -- $completions | eval (__fzfcmd) | string split0)
     and begin
@@ -204,39 +214,9 @@ function fzf_completion_setup
 
   # Main completion function
   function fzf-completion
-    set -q FZF_COMPLETION_TRIGGER
-    or set -l -- FZF_COMPLETION_TRIGGER '**'
-
     set -l -- tokens (__fzf_cmd_tokens)
     set -l -- current_token (commandline -t)
     set -l -- cmd_name $tokens[1]
-
-    set -l -- regex_trigger (string escape --style=regex -- $FZF_COMPLETION_TRIGGER)'$'
-    set -l -- has_trigger false
-    if test -n "$FZF_COMPLETION_TRIGGER"
-      string match -qr -- $regex_trigger $current_token
-      and set has_trigger true
-    end
-
-    # Strip trigger from commandline
-    if $has_trigger
-      set -- current_token (string replace -r -- $regex_trigger '' $current_token)
-      commandline -rt -- $current_token
-    end
-
-    # When trigger is empty, treat every Tab as triggered (except ** globs)
-    if not $has_trigger
-      if test -z "$FZF_COMPLETION_TRIGGER"
-        # Preserve native fish glob behavior for ** patterns
-        if string match -qr -- '\*\*$' $current_token
-          commandline -f complete
-          return
-        end
-      else
-        commandline -f complete
-        return
-      end
-    end
 
     # Route to appropriate completion function
     if test -n "$tokens"; and functions -q _fzf_complete_$cmd_name
@@ -247,9 +227,14 @@ function fzf_completion_setup
     end
   end
 
-  # Bind tab to fzf-completion
-  bind \t fzf-completion
-  bind -M insert \t fzf-completion
+  # Bind Shift-Tab to fzf-completion (Tab retains native Fish behavior)
+  if test (string match -r -- '^\d+' $version) -ge 4
+    bind shift-tab fzf-completion
+    bind -M insert shift-tab fzf-completion
+  else
+    bind -k btab fzf-completion
+    bind -M insert -k btab fzf-completion
+  end
 end
 
 # Run setup

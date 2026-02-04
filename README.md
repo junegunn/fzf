@@ -737,9 +737,9 @@ _fzf_complete_foo_post() {
 ### Customizing fuzzy completion for fish
 
 Fuzzy completion for fish differs from bash and zsh in that it uses fish's
-native completion system to populate the candidate list, and the only
-configuration variables supported are `FZF_COMPLETION_TRIGGER` and
-`FZF_COMPLETION_OPTS`.
+native completion system to populate the candidate list. Press `Shift-Tab` to
+trigger fzf completion while `Tab` retains native fish behavior. The only
+configuration variable supported is `FZF_COMPLETION_OPTS`.
 
 So for example, unlike in bash and zsh, `ls **<TAB>` will not perform a recursive
 search under the current directory. For that, you need to use `CTRL-T` instead.
