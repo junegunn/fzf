@@ -33,6 +33,9 @@ for opt in "$@"; do
   esac
 done
 
+cd "$(dirname "${BASH_SOURCE[0]}")"
+fzf_base=$(pwd)
+
 ask() {
   while true; do
     read -p "$1 ([y]/n) " -r
@@ -94,12 +97,15 @@ done
 bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
 if [ -f "$bind_file" ]; then
   remove_line "$bind_file" "fzf_key_bindings"
+  remove_line "$bind_file" "fzf_completion_setup"
   remove_line "$bind_file" "fzf --fish | source"
 fi
 
 if [ -d "${fish_dir}/functions" ]; then
   remove "${fish_dir}/functions/fzf.fish"
   remove "${fish_dir}/functions/fzf_key_bindings.fish"
+  remove_line "$bind_file" "source \"${fzf_base}/shell/completion.fish\""
+  remove_line "$bind_file" "source \"${fzf_base}/shell/key-bindings.fish\""
 
   if [ -z "$(ls -A "${fish_dir}/functions")" ]; then
     rmdir "${fish_dir}/functions"

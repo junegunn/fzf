@@ -2,33 +2,11 @@
 #    / __/___  / __/
 #   / /_/_  / / /_
 #  / __/ / /_/ __/
-# /_/   /___/_/ key-bindings.fish
+# /_/   /___/_/ completion.fish
 #
-# - $FZF_TMUX_OPTS
-# - $FZF_CTRL_T_COMMAND
-# - $FZF_CTRL_T_OPTS
-# - $FZF_CTRL_R_COMMAND
-# - $FZF_CTRL_R_OPTS
-# - $FZF_ALT_C_COMMAND
-# - $FZF_ALT_C_OPTS
+# - $FZF_COMPLETION_OPTS                  (default: empty)
 
-
-# Key bindings
-# ------------
-# The oldest supported fish version is 3.1b1. To maintain compatibility, the
-# command substitution syntax $(cmd) should never be used, even behind a version
-# check, otherwise the source command will fail on fish versions older than 3.4.0.
-function fzf_key_bindings
-
-  # Check fish version
-  set -l fish_ver (string match -r '^(\d+).(\d+)' $version 2> /dev/null; or echo 0\n0\n0)
-  if test \( "$fish_ver[2]" -lt 3 \) -o \( "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1 \)
-    echo "This script requires fish version 3.1b1 or newer." >&2
-    return 1
-  else if not type -q fzf
-    echo "fzf was not found in path." >&2
-    return 1
-  end
+function fzf_completion_setup
 
 #----BEGIN INCLUDE common.fish
 # NOTE: Do not directly edit this section, which is copied from "common.fish".
@@ -156,109 +134,108 @@ function fzf_key_bindings
   end
 #----END INCLUDE
 
-  # Store current token in $dir as root for the 'find' command
-  function fzf-file-widget -d "List files and folders"
-    set -l commandline (__fzf_parse_commandline)
-    set -lx dir $commandline[1]
-    set -l fzf_query $commandline[2]
-    set -l prefix $commandline[3]
+  # Use complete builtin for specific commands
+  function __fzf_complete_native
+    set -l -- token (commandline -t)
+    set -l -- completions (eval complete -C \"$argv[1]\")
+    test -n "$completions"; or begin commandline -f repaint; return; end
 
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
-      "--reverse --walker=file,dir,follow,hidden --scheme=path" \
-      "--multi $FZF_CTRL_T_OPTS --print0")
+    # Calculate tabstop based on longest completion item (sample first 500 for performance)
+    set -l -- tabstop 20
+    set -l -- sample_size (math "min(500, "(count $completions)")")
+    for c in $completions[1..$sample_size]
+      set -l -- len (string length -V -- (string split -- \t $c))
+      test -n "$len[2]" -a "$len[1]" -gt "$tabstop"
+      and set -- tabstop $len[1]
+    end
+    # limit to 120 to prevent long lines
+    set -- tabstop (math "min($tabstop + 4, 120)")
 
-    set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
-    set -lx FZF_DEFAULT_OPTS_FILE
+    set -l result
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults \
+      "--reverse --delimiter=\\t --nth=1 --tabstop=$tabstop --color=fg:dim,nth:regular" \
+      $FZF_COMPLETION_OPTS $argv[2..-1] --accept-nth=1 --read0 --print0)
+    set -- result (string join0 -- $completions | eval (__fzfcmd) | string split0)
+    and begin
+      set -l -- tail ' '
+      # Append / to bare ~username results (fish omits it unlike other shells)
+      set -- result (string replace -r -- '^(~\w+)\s?$' '$1/' $result)
+      # Don't add trailing space if single result is a directory
+      test (count $result) -eq 1
+      and string match -q -- '*/' "$result"; and set -- tail ''
 
-    set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
-    and commandline -rt -- (string join -- ' ' $prefix(string escape --no-quoted -- $result))' '
+      set -l -- result (string escape -n -- $result)
 
+      string match -q -- '~*' "$token"
+      and set result (string replace -r -- '^\\\\~' '~' $result)
+
+      string match -q -- '$*' "$token"
+      and set result (string replace -r -- '^\\\\\$' '\$' $result)
+
+      commandline -rt -- (string join ' ' -- $result)$tail
+    end
     commandline -f repaint
   end
 
-  function fzf-history-widget -d "Show command history"
-    set -l -- command_line (commandline)
-    set -l -- current_line (commandline -L)
-    set -l -- total_lines (count $command_line)
-    set -l -- fzf_query (string escape -- $command_line[$current_line])
-
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
-      '--nth=2..,.. --scheme=history --multi --wrap-sign="\t↳ "' \
-      '--bind=\'shift-delete:execute-silent(eval history delete --exact --case-sensitive -- (string escape -n -- {+} | string replace -r -a "^\d*\\\\\\t|(?<=\\\\\\n)\\\\\\t" ""))+reload(eval $FZF_DEFAULT_COMMAND)\'' \
-      "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
-      '--accept-nth=2.. --read0 --print0 --with-shell='(status fish-path)\\ -c)
-
+  function _fzf_complete
+    set -l -- args (string escape -- $argv | string join ' ' | string split -- ' -- ')
+    set -l -- post_func (status function)_(string split -- ' ' $args[2])[1]_post
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS $args[1])
     set -lx FZF_DEFAULT_OPTS_FILE
     set -lx FZF_DEFAULT_COMMAND
-
-    if type -q perl
-      set -a FZF_DEFAULT_OPTS '--tac'
-      set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
+    set -l -- fzf_query (commandline -t | string escape)
+    set -l result
+    eval (__fzfcmd) --query=$fzf_query | while read -l r; set -a -- result $r; end
+    and if functions -q $post_func
+      commandline -rt -- (string collect -- $result | eval $post_func $args[2] | string join ' ')' '
     else
-      set FZF_DEFAULT_COMMAND \
-        'set -l h (builtin history -z --reverse | string split0);' \
-        'for i in (seq (count $h) -1 1);' \
-        'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
-        'end'
+      commandline -rt -- (string join -- ' ' (string escape -- $result))' '
     end
-
-    # Merge history from other sessions before searching
-    test -z "$fish_private_mode"; and builtin history merge
-
-    if set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query | string split0)
-      if test "$total_lines" -eq 1
-        commandline -- (string replace -a -- \n\t \n $result)
-      else
-        set -l a (math $current_line - 1)
-        set -l b (math $current_line + 1)
-        commandline -- $command_line[1..$a] (string replace -a -- \n\t \n $result)
-        commandline -a -- '' $command_line[$b..-1]
-      end
-    end
-
     commandline -f repaint
   end
 
-  function fzf-cd-widget -d "Change directory"
-    set -l commandline (__fzf_parse_commandline)
-    set -lx dir $commandline[1]
-    set -l fzf_query $commandline[2]
-    set -l prefix $commandline[3]
-
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults \
-      "--reverse --walker=dir,follow,hidden --scheme=path" \
-      "$FZF_ALT_C_OPTS --no-multi --print0")
-
+  # Kill completion (process selection)
+  function _fzf_complete_kill
+    set -l -- fzf_query (commandline -t | string escape)
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults --reverse $FZF_COMPLETION_OPTS \
+    --accept-nth=2 -m --header-lines=1 --no-preview --wrap)
     set -lx FZF_DEFAULT_OPTS_FILE
-    set -lx FZF_DEFAULT_COMMAND "$FZF_ALT_C_COMMAND"
-
-    if set -l result (eval (__fzfcmd) --query=$fzf_query --walker-root=$dir | string split0)
-      cd -- $result
-      commandline -rt -- $prefix
+    if type -q ps
+      set -l -- ps_cmd 'begin command ps -eo user,pid,ppid,start,time,command 2>/dev/null;' \
+      'or command ps -eo user,pid,ppid,time,args 2>/dev/null;' \
+      'or command ps --everyone --full --windows 2>/dev/null; end'
+      set -l -- result (eval $ps_cmd \| (__fzfcmd) --query=$fzf_query)
+      and commandline -rt -- (string join ' ' -- $result)" "
+    else
+      __fzf_complete_native "kill " --multi --query=$fzf_query
     end
-
     commandline -f repaint
   end
 
-  if not set -q FZF_CTRL_R_COMMAND; or test -n "$FZF_CTRL_R_COMMAND"
-    if test -n "$FZF_CTRL_R_COMMAND"
-      echo "warning: FZF_CTRL_R_COMMAND is set to a custom command, but custom commands are not yet supported for CTRL-R" >&2
+  # Main completion function
+  function fzf-completion
+    set -l -- tokens (__fzf_cmd_tokens)
+    set -l -- current_token (commandline -t)
+    set -l -- cmd_name $tokens[1]
+
+    # Route to appropriate completion function
+    if test -n "$tokens"; and functions -q _fzf_complete_$cmd_name
+      _fzf_complete_$cmd_name $tokens
+    else
+      set -l -- fzf_opt --query=$current_token --multi
+      __fzf_complete_native "$tokens $current_token" $fzf_opt
     end
-    bind \cr fzf-history-widget
-    bind -M insert \cr fzf-history-widget
   end
 
-  if not set -q FZF_CTRL_T_COMMAND; or test -n "$FZF_CTRL_T_COMMAND"
-    bind \ct fzf-file-widget
-    bind -M insert \ct fzf-file-widget
+  # Bind Shift-Tab to fzf-completion (Tab retains native Fish behavior)
+  if test (string match -r -- '^\d+' $version) -ge 4
+    bind shift-tab fzf-completion
+    bind -M insert shift-tab fzf-completion
+  else
+    bind -k btab fzf-completion
+    bind -M insert -k btab fzf-completion
   end
-
-  if not set -q FZF_ALT_C_COMMAND; or test -n "$FZF_ALT_C_COMMAND"
-    bind \ec fzf-cd-widget
-    bind -M insert \ec fzf-cd-widget
-  end
-
 end
 
 # Run setup
-fzf_key_bindings
+fzf_completion_setup
