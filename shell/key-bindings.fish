@@ -21,8 +21,8 @@
 function fzf_key_bindings
 
   # Check fish version
-  set -l fish_ver (string match -r '^(\d+).(\d+)' $version 2> /dev/null; or echo 0\n0\n0)
-  if test \( "$fish_ver[2]" -lt 3 \) -o \( "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1 \)
+  if set -l -- fish_ver (string match -r '^(\d+)\.(\d+)' $version 2>/dev/null)
+  and test "$fish_ver[2]" -lt 3 -o "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1
     echo "This script requires fish version 3.1b1 or newer." >&2
     return 1
   else if not type -q fzf
@@ -182,24 +182,24 @@ function fzf_key_bindings
     set -l -- total_lines (count $command_line)
     set -l -- fzf_query (string escape -- $command_line[$current_line])
 
-    set -lx FZF_DEFAULT_OPTS (__fzf_defaults '' \
-      '--nth=2..,.. --scheme=history --multi --wrap-sign="\t↳ "' \
-      '--bind=\'shift-delete:execute-silent(eval history delete --exact --case-sensitive -- (string escape -n -- {+} | string replace -r -a "^\d*\\\\\\t|(?<=\\\\\\n)\\\\\\t" ""))+reload(eval $FZF_DEFAULT_COMMAND)\'' \
+    set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '' \
+      '--nth=2..,.. --scheme=history --multi --no-multi-line --wrap --wrap-sign="\t\t\t↳ "' \
+      '--bind=\'shift-delete:execute-silent(eval history delete --exact --case-sensitive -- (string escape -n -- {+} | string replace -ra "^\d*\\\\\\t" ""))+reload(eval $FZF_DEFAULT_COMMAND)\'' \
       "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
-      '--accept-nth=2.. --read0 --print0 --with-shell='(status fish-path)\\ -c)
+      '--accept-nth=2.. --delimiter="\t" --tabstop=4 --read0 --print0 --with-shell='(status fish-path)\\ -c)
 
     set -lx FZF_DEFAULT_OPTS_FILE
-    set -lx FZF_DEFAULT_COMMAND
 
-    if type -q perl
-      set -a FZF_DEFAULT_OPTS '--tac'
-      set FZF_DEFAULT_COMMAND 'builtin history -z --reverse | command perl -0 -pe \'s/^/$.\t/g; s/\n/\n\t/gm\''
-    else
-      set FZF_DEFAULT_COMMAND \
-        'set -l h (builtin history -z --reverse | string split0);' \
-        'for i in (seq (count $h) -1 1);' \
-        'string join0 -- $i\t(string replace -a -- \n \n\t $h[$i] | string collect);' \
-        'end'
+    set -lx -- FZF_DEFAULT_COMMAND 'builtin history -z --show-time="%s%t"'
+
+    # Enable syntax highlighting colors on fish v4.3.3 and newer
+    if set -l -- v (string match -r -- '^(\d+)\.(\d+)(?:\.(\d+))?' $version)
+    and test "$v[2]" -gt 4 -o "$v[2]" -eq 4 -a \
+      \( "$v[3]" -gt 3 -o "$v[3]" -eq 3 -a \
+      \( -n "$v[4]" -a "$v[4]" -ge 3 \) \)
+
+      set -a -- FZF_DEFAULT_OPTS '--ansi'
+      set -a -- FZF_DEFAULT_COMMAND '--color=always'
     end
 
     # Merge history from other sessions before searching
@@ -207,11 +207,11 @@ function fzf_key_bindings
 
     if set -l result (eval $FZF_DEFAULT_COMMAND \| (__fzfcmd) --query=$fzf_query | string split0)
       if test "$total_lines" -eq 1
-        commandline -- (string replace -a -- \n\t \n $result)
+        commandline -- $result
       else
         set -l a (math $current_line - 1)
         set -l b (math $current_line + 1)
-        commandline -- $command_line[1..$a] (string replace -a -- \n\t \n $result)
+        commandline -- $command_line[1..$a] $result
         commandline -a -- '' $command_line[$b..-1]
       end
     end
