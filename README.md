@@ -89,7 +89,7 @@ Table of Contents
         * [Customizing completion source for paths and directories](#customizing-completion-source-for-paths-and-directories)
         * [Supported commands (bash)](#supported-commands-bash)
         * [Custom fuzzy completion](#custom-fuzzy-completion)
-    * [Customizing fuzzy completion for fish](#customizing-fuzzy-completion-for-fish)
+    * [Fuzzy completion for fish](#fuzzy-completion-for-fish)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Customizing for different types of input](#customizing-for-different-types-of-input)
@@ -620,7 +620,7 @@ export **<TAB>
 unalias **<TAB>
 
 # fish
-set **<TAB>
+set <SHIFT-TAB>
 ```
 
 ### Customizing fuzzy completion for bash and zsh
@@ -734,18 +734,21 @@ _fzf_complete_foo_post() {
 [ -n "$BASH" ] && complete -F _fzf_complete_foo -o default -o bashdefault foo
 ```
 
-### Customizing fuzzy completion for fish
+### Fuzzy completion for fish
 
-Fuzzy completion for fish differs from bash and zsh in that it uses fish's
-native completion system to populate the candidate list. Press `Shift-Tab` to
-trigger fzf completion while `Tab` retains native fish behavior. The only
-configuration variable supported is `FZF_COMPLETION_OPTS`.
+(Available in 0.68.0 or later)
 
-So for example, unlike in bash and zsh, `ls **<TAB>` will not perform a recursive
-search under the current directory. For that, you need to use `CTRL-T` instead.
+Fuzzy completion for fish differs from bash and zsh in that:
 
-You can still implement custom completion for a specific command by defining
-an `_fzf_complete_COMMAND` function. For example:
+- It doesn't require a trigger sequence like `**`. Instead, if activates
+  on `Shift-TAB`, while `TAB` preserves fish's native completion behavior.
+- It relies on fish's native completion system to populate the candidate list,
+  rather than performing a recursive file system traversal. For recursive
+  searching, use the `CTRL-T` binding instead.
+- The only supported configuration variable is `FZF_COMPLETION_OPTS`.
+
+That said, just like in bash and zsh, you can implement custom completion for
+a specific command by defining an `_fzf_complete_COMMAND` function. For example:
 
 ```fish
 function _fzf_complete_foo
