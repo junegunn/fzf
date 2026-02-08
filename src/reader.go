@@ -303,8 +303,12 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		}
 		path = trimPath(path)
 		if path != "." {
-			isDir := de.IsDir()
-			if isDir || opts.follow && isSymlinkToDir(path, de) {
+			isDirSymlink := isSymlinkToDir(path, de)
+			if isDirSymlink && !opts.follow {
+				return filepath.SkipDir
+			}
+			isDir := de.IsDir() || isDirSymlink
+			if isDir {
 				base := filepath.Base(path)
 				if !opts.hidden && base[0] == '.' && base != ".." {
 					return filepath.SkipDir
