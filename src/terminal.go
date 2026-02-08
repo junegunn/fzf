@@ -4229,6 +4229,7 @@ Loop:
 				continue
 			} else if fillRet == tui.FillSuspend {
 				t.previewed.filled = true
+				t.previewer.scrollable = true
 				break
 			}
 			if unchanged && lineNo == 0 {
@@ -4242,6 +4243,7 @@ Loop:
 			}
 			if fillRet == tui.FillSuspend {
 				t.previewed.filled = true
+				t.previewer.scrollable = true
 				break
 			}
 		}
