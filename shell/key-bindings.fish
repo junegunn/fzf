@@ -185,6 +185,7 @@ function fzf_key_bindings
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '' \
       '--nth=2..,.. --scheme=history --multi --no-multi-line --wrap --wrap-sign="\t\t\t↳ "' \
       '--bind=\'shift-delete:execute-silent(eval history delete --exact --case-sensitive -- (string escape -n -- {+} | string replace -ra "^\d*\\\\\\t" ""))+reload(eval $FZF_DEFAULT_COMMAND)\'' \
+      '--bind="alt-enter:become(string join0 -- (string collect -- {+2..} | fish_indent -i))"' \
       "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
       '--accept-nth=2.. --delimiter="\t" --tabstop=4 --read0 --print0 --with-shell='(status fish-path)\\ -c)
 
