@@ -4913,6 +4913,13 @@ func (t *Terminal) hasPreviewWindowOnRight() bool {
 	return t.hasPreviewWindow() && t.activePreviewOpts.position == posRight
 }
 
+func (t *Terminal) togglePreview(hidden bool) {
+	t.previewOpts.hidden = hidden
+	if t.previewOpts.alternative != nil {
+		t.previewOpts.alternative.hidden = hidden
+	}
+}
+
 func (t *Terminal) currentItem() *Item {
 	cnt := t.merger.Length()
 	if t.cy >= 0 && cnt > 0 && cnt > t.cy {
@@ -5955,6 +5962,7 @@ func (t *Terminal) Loop() error {
 				}
 				if act {
 					t.activePreviewOpts.Toggle()
+					t.togglePreview(t.activePreviewOpts.hidden)
 					updatePreviewWindow(false)
 					if t.canPreview() {
 						valid, list := t.buildPlusList(t.previewOpts.command, false)
@@ -6217,6 +6225,7 @@ func (t *Terminal) Loop() error {
 			case actClose:
 				if t.hasPreviewWindow() {
 					t.activePreviewOpts.Toggle()
+					t.togglePreview(t.activePreviewOpts.hidden)
 					updatePreviewWindow(false)
 				} else {
 					req(reqQuit)
