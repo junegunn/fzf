@@ -1020,15 +1020,23 @@ class TestFish < TestBase
     tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
     tmux.prepare
     tmux.send_keys 'C-l', 'C-r'
+    offset = -6
     block = <<~BLOCK
       echo "foo
       bar"
       echo "bar
       foo"
     BLOCK
+    if shell == :fish
+      offset = -4
+      block = <<~FISH
+        echo "foo␊bar"
+        echo "bar␊foo"
+      FISH
+    end
     tmux.until do |lines|
       block.lines.each_with_index do |line, idx|
-        assert_includes lines[-6 + idx], line.chomp
+        assert_includes lines[idx + offset], line.chomp
       end
     end
     tmux.send_keys :BTab, :BTab
@@ -1040,6 +1048,12 @@ class TestFish < TestBase
       echo "foo
       bar"
     BLOCK
+    if shell == :fish
+      block = <<~FISH
+        echo "bar␊foo"
+        echo "foo␊bar"
+      FISH
+    end
     tmux.until do |lines|
       assert_equal block.lines.map(&:chomp), lines
     end
