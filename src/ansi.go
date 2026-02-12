@@ -338,14 +338,23 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	return trimmed, nil, state
 }
 
-func parseAnsiCode(s string) (int, string) {
+func parseAnsiCode(s string) (int, string, bool) {
 	var remaining string
-	var i int
-	// Faster than strings.IndexAny(";:")
-	i = strings.IndexByte(s, ';')
-	if i < 0 {
-		i = strings.IndexByte(s, ':')
+	var subParam bool
+	// Find the earliest separator. Semicolons separate independent SGR
+	// parameters while colons separate sub-parameters (e.g. 4:3 for curly
+	// underline, 58:2:R:G:B for underline color).
+	semiIdx := strings.IndexByte(s, ';')
+	colonIdx := strings.IndexByte(s, ':')
+
+	i := -1
+	if semiIdx >= 0 && (colonIdx < 0 || semiIdx <= colonIdx) {
+		i = semiIdx
+	} else if colonIdx >= 0 {
+		i = colonIdx
+		subParam = true
 	}
+
 	if i >= 0 {
 		remaining = s[i+1:]
 		s = s[:i]
@@ -358,14 +367,14 @@ func parseAnsiCode(s string) (int, string) {
 		for _, ch := range stringBytes(s) {
 			ch -= '0'
 			if ch > 9 {
-				return -1, remaining
+				return -1, remaining, false
 			}
 			code = code*10 + int(ch)
 		}
-		return code, remaining
+		return code, remaining, subParam
 	}
 
-	return -1, remaining
+	return -1, remaining, false
 }
 
 func interpretCode(ansiCode string, prevState *ansiState) ansiState {
@@ -416,88 +425,117 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 
 	state256 := 0
 	ptr := &state.fg
+	var dummyColor tui.Color // Used to consume and discard underline color (SGR 58)
+	var state4 bool          // true when the next value is an underline style sub-parameter
 
 	count := 0
 	for len(ansiCode) != 0 {
 		var num int
-		if num, ansiCode = parseAnsiCode(ansiCode); num != -1 {
-			count++
-			switch state256 {
-			case 0:
-				switch num {
-				case 38:
-					ptr = &state.fg
-					state256++
-				case 48:
-					ptr = &state.bg
-					state256++
-				case 39:
-					state.fg = -1
-				case 49:
-					state.bg = -1
-				case 1:
-					state.attr = state.attr | tui.Bold
-				case 2:
-					state.attr = state.attr | tui.Dim
-				case 3:
-					state.attr = state.attr | tui.Italic
-				case 4:
-					state.attr = state.attr | tui.Underline
-				case 5:
-					state.attr = state.attr | tui.Blink
-				case 7:
-					state.attr = state.attr | tui.Reverse
-				case 9:
-					state.attr = state.attr | tui.StrikeThrough
-				case 22:
-					state.attr = state.attr &^ tui.Bold
-					state.attr = state.attr &^ tui.Dim
-				case 23: // tput rmso
-					state.attr = state.attr &^ tui.Italic
-				case 24: // tput rmul
-					state.attr = state.attr &^ tui.Underline
-				case 25:
-					state.attr = state.attr &^ tui.Blink
-				case 27:
-					state.attr = state.attr &^ tui.Reverse
-				case 29:
-					state.attr = state.attr &^ tui.StrikeThrough
-				case 0:
-					reset()
-					state256 = 0
-				default:
-					if num >= 30 && num <= 37 {
-						state.fg = tui.Color(num - 30)
-					} else if num >= 40 && num <= 47 {
-						state.bg = tui.Color(num - 40)
-					} else if num >= 90 && num <= 97 {
-						state.fg = tui.Color(num - 90 + 8)
-					} else if num >= 100 && num <= 107 {
-						state.bg = tui.Color(num - 100 + 8)
-					}
-				}
+		var subParam bool
+		num, ansiCode, subParam = parseAnsiCode(ansiCode)
+		if num == -1 {
+			state4 = false
+			continue
+		}
+		count++
+		if state4 {
+			state4 = false
+			// Sub-parameter of SGR 4: underline style
+			// 0 = none, 1 = single, 2 = double, 3 = curly, 4 = dotted, 5 = dashed
+			if num == 0 {
+				state.attr = state.attr &^ tui.Underline
+			} else {
+				state.attr = state.attr | tui.Underline
+			}
+			continue
+		}
+		switch state256 {
+		case 0:
+			switch num {
+			case 38:
+				ptr = &state.fg
+				state256++
+			case 48:
+				ptr = &state.bg
+				state256++
+			case 58:
+				// Underline color (not rendered by fzf, but consume sub-parameters
+				// to avoid misinterpreting them as other SGR codes)
+				ptr = &dummyColor
+				state256++
+			case 39:
+				state.fg = -1
+			case 49:
+				state.bg = -1
+			case 59:
+				// Reset underline color (no-op, fzf doesn't track it)
 			case 1:
-				switch num {
-				case 2:
-					state256 = 10 // MAGIC
-				case 5:
-					state256++
-				default:
-					state256 = 0
-				}
+				state.attr = state.attr | tui.Bold
 			case 2:
-				*ptr = tui.Color(num)
+				state.attr = state.attr | tui.Dim
+			case 3:
+				state.attr = state.attr | tui.Italic
+			case 4:
+				if subParam {
+					// Colon sub-parameter follows (e.g. 4:3 for curly underline)
+					state4 = true
+				} else {
+					state.attr = state.attr | tui.Underline
+				}
+			case 5:
+				state.attr = state.attr | tui.Blink
+			case 7:
+				state.attr = state.attr | tui.Reverse
+			case 9:
+				state.attr = state.attr | tui.StrikeThrough
+			case 22:
+				state.attr = state.attr &^ tui.Bold
+				state.attr = state.attr &^ tui.Dim
+			case 23: // tput rmso
+				state.attr = state.attr &^ tui.Italic
+			case 24: // tput rmul
+				state.attr = state.attr &^ tui.Underline
+			case 25:
+				state.attr = state.attr &^ tui.Blink
+			case 27:
+				state.attr = state.attr &^ tui.Reverse
+			case 29:
+				state.attr = state.attr &^ tui.StrikeThrough
+			case 0:
+				reset()
 				state256 = 0
-			case 10:
-				*ptr = tui.Color(1<<24) | tui.Color(num<<16)
+			default:
+				if num >= 30 && num <= 37 {
+					state.fg = tui.Color(num - 30)
+				} else if num >= 40 && num <= 47 {
+					state.bg = tui.Color(num - 40)
+				} else if num >= 90 && num <= 97 {
+					state.fg = tui.Color(num - 90 + 8)
+				} else if num >= 100 && num <= 107 {
+					state.bg = tui.Color(num - 100 + 8)
+				}
+			}
+		case 1:
+			switch num {
+			case 2:
+				state256 = 10 // MAGIC
+			case 5:
 				state256++
-			case 11:
-				*ptr = *ptr | tui.Color(num<<8)
-				state256++
-			case 12:
-				*ptr = *ptr | tui.Color(num)
+			default:
 				state256 = 0
 			}
+		case 2:
+			*ptr = tui.Color(num)
+			state256 = 0
+		case 10:
+			*ptr = tui.Color(1<<24) | tui.Color(num<<16)
+			state256++
+		case 11:
+			*ptr = *ptr | tui.Color(num<<8)
+			state256++
+		case 12:
+			*ptr = *ptr | tui.Color(num)
+			state256 = 0
 		}
 	}
 
@@ -506,8 +544,15 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 		reset()
 	}
 
+	if state4 {
+		// Trailing 4: with no sub-parameter value, treat as single underline
+		state.attr = state.attr | tui.Underline
+	}
+
 	if state256 > 0 {
-		*ptr = -1
+		if ptr != &dummyColor {
+			*ptr = -1
+		}
 	}
 	return state
 }

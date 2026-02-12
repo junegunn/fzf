@@ -393,20 +393,105 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 
 func TestParseAnsiCode(t *testing.T) {
 	tests := []struct {
-		In, Exp string
-		N       int
+		In       string
+		Exp      string
+		N        int
+		SubParam bool
 	}{
-		{"123", "", 123},
-		{"1a", "", -1},
-		{"1a;12", "12", -1},
-		{"12;a", "a", 12},
-		{"-2", "", -1},
+		{"123", "", 123, false},
+		{"1a", "", -1, false},
+		{"1a;12", "12", -1, false},
+		{"12;a", "a", 12, false},
+		{"-2", "", -1, false},
+		// Colon sub-parameters: earliest separator wins
+		{"4:3", "3", 4, true},
+		{"4:3;31", "3;31", 4, true},
+		{"38:2:255:0:0", "2:255:0:0", 38, true},
+		{"58:5:200", "5:200", 58, true},
+		// Semicolon before colon
+		{"4;38:2:0:0:0", "38:2:0:0:0", 4, false},
 	}
 	for _, x := range tests {
-		n, s := parseAnsiCode(x.In)
-		if n != x.N || s != x.Exp {
-			t.Fatalf("%q: got: (%d %q) want: (%d %q)", x.In, n, s, x.N, x.Exp)
+		n, s, sub := parseAnsiCode(x.In)
+		if n != x.N || s != x.Exp || sub != x.SubParam {
+			t.Fatalf("%q: got: (%d %q %v) want: (%d %q %v)", x.In, n, s, sub, x.N, x.Exp, x.SubParam)
 		}
+	}
+}
+
+func TestInterpretCodeUnderlineStyles(t *testing.T) {
+	// 4:0 = no underline
+	state := interpretCode("\x1b[4:0m", nil)
+	if state.attr&tui.Underline != 0 {
+		t.Error("4:0 should not set underline")
+	}
+
+	// 4:1 = single underline
+	state = interpretCode("\x1b[4:1m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:1 should set underline")
+	}
+
+	// 4:3 = curly underline (rendered as single by fzf)
+	state = interpretCode("\x1b[4:3m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:3 should set underline")
+	}
+
+	// 4:3 should NOT set italic (3 is a sub-param, not SGR 3)
+	if state.attr&tui.Italic != 0 {
+		t.Error("4:3 should not set italic")
+	}
+
+	// 4:2;31 = double underline + red fg
+	state = interpretCode("\x1b[4:2;31m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:2;31 should set underline")
+	}
+	if state.fg != 1 {
+		t.Errorf("4:2;31 should set fg to red (1), got %d", state.fg)
+	}
+	if state.attr&tui.Dim != 0 {
+		t.Error("4:2;31 should not set dim")
+	}
+
+	// Plain 4 still works
+	state = interpretCode("\x1b[4m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4 should set underline")
+	}
+
+	// 4;2 (semicolon) = underline + dim
+	state = interpretCode("\x1b[4;2m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4;2 should set underline")
+	}
+	if state.attr&tui.Dim == 0 {
+		t.Error("4;2 should set dim")
+	}
+}
+
+func TestInterpretCodeUnderlineColor(t *testing.T) {
+	// 58:2:R:G:B should not affect fg or bg
+	state := interpretCode("\x1b[58:2:255:0:0m", nil)
+	if state.fg != -1 || state.bg != -1 {
+		t.Errorf("58:2:R:G:B should not affect fg/bg, got fg=%d bg=%d", state.fg, state.bg)
+	}
+
+	// 58:5:200 should not affect fg or bg
+	state = interpretCode("\x1b[58:5:200m", nil)
+	if state.fg != -1 || state.bg != -1 {
+		t.Errorf("58:5:N should not affect fg/bg, got fg=%d bg=%d", state.fg, state.bg)
+	}
+
+	// 58:2:R:G:B combined with 38:2:R:G:B should only set fg
+	state = interpretCode("\x1b[58:2:255:0:0;38:2:0:255:0m", nil)
+	expectedFg := tui.Color(1<<24 | 0<<16 | 255<<8 | 0)
+	if state.fg != expectedFg {
+		t.Errorf("expected fg=%d, got %d", expectedFg, state.fg)
+	}
+	if state.bg != -1 {
+		t.Errorf("bg should be -1, got %d", state.bg)
 	}
 }
 
