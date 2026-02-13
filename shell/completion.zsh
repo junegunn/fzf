@@ -174,15 +174,18 @@ __fzf_generic_path_completion() {
         export FZF_DEFAULT_OPTS
         FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-}")
         unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
+        if [[ $compgen =~ dir ]]; then
+          rest=${FZF_COMPLETION_DIR_OPTS-}
+        else
+          rest=${FZF_COMPLETION_PATH_OPTS-}
+        fi
         if declare -f "$compgen" > /dev/null; then
-          eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd_word" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover"
+          eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd_word" ${(Q)${(Z+n+)fzf_opts}} ${(Q)${(Z+n+)rest}} -q "$leftover"
         else
           if [[ $compgen =~ dir ]]; then
             walker=dir,follow
-            rest=${FZF_COMPLETION_DIR_OPTS-}
           else
             walker=file,dir,follow,hidden
-            rest=${FZF_COMPLETION_PATH_OPTS-}
           fi
           __fzf_comprun "$cmd_word" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" --walker "$walker" --walker-root="$dir" ${(Q)${(Z+n+)rest}} < /dev/tty
         fi | while read -r item; do
@@ -204,12 +207,12 @@ __fzf_generic_path_completion() {
 
 _fzf_path_completion() {
   __fzf_generic_path_completion "$1" "$2" _fzf_compgen_path \
-    "${FZF_COMPLETION_PATH_OPTS-} -m" "" " "
+    "-m" "" " "
 }
 
 _fzf_dir_completion() {
   __fzf_generic_path_completion "$1" "$2" _fzf_compgen_dir \
-    "${FZF_COMPLETION_DIR_OPTS-}" "/" ""
+    "" "/" ""
 }
 
 _fzf_feed_fifo() {
