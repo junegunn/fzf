@@ -1407,6 +1407,14 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui
 						cattr.Attr |= tui.Italic
 					case "underline":
 						cattr.Attr |= tui.Underline
+					case "underline-double":
+						cattr.Attr |= tui.Underline | tui.UlStyleDouble
+					case "underline-curly":
+						cattr.Attr |= tui.Underline | tui.UlStyleCurly
+					case "underline-dotted":
+						cattr.Attr |= tui.Underline | tui.UlStyleDotted
+					case "underline-dashed":
+						cattr.Attr |= tui.Underline | tui.UlStyleDashed
 					case "blink":
 						cattr.Attr |= tui.Blink
 					case "reverse":

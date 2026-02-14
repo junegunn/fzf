@@ -206,7 +206,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 		if bg == -1 {
 			bg = colBase.Bg()
 		}
-		return tui.NewColorPair(fg, bg, ansi.color.attr).MergeAttr(base)
+		return tui.NewColorPair(fg, bg, ansi.color.attr).WithUl(ansi.color.ul).MergeAttr(base)
 	}
 	var colors []colorOffset
 	add := func(idx int) {

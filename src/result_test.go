@@ -124,10 +124,10 @@ func TestColorOffset(t *testing.T) {
 	item := Result{
 		item: &Item{
 			colors: &[]ansiOffset{
-				{[2]int32{0, 20}, ansiState{1, 5, 0, -1, nil}},
-				{[2]int32{22, 27}, ansiState{2, 6, tui.Bold, -1, nil}},
-				{[2]int32{30, 32}, ansiState{3, 7, 0, -1, nil}},
-				{[2]int32{33, 40}, ansiState{4, 8, tui.Bold, -1, nil}}}}}
+				{[2]int32{0, 20}, ansiState{1, 5, -1, 0, -1, nil}},
+				{[2]int32{22, 27}, ansiState{2, 6, -1, tui.Bold, -1, nil}},
+				{[2]int32{30, 32}, ansiState{3, 7, -1, 0, -1, nil}},
+				{[2]int32{33, 40}, ansiState{4, 8, -1, tui.Bold, -1, nil}}}}}
 
 	colBase := tui.NewColorPair(89, 189, tui.AttrUndefined)
 	colMatch := tui.NewColorPair(99, 199, tui.AttrUndefined)

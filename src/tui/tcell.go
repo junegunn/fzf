@@ -825,6 +825,21 @@ func (w *TcellWindow) withUrl(style tcell.Style) tcell.Style {
 	return style
 }
 
+func underlineStyleFromAttr(a Attr) tcell.UnderlineStyle {
+	switch a.UnderlineStyle() {
+	case UlStyleDouble:
+		return tcell.UnderlineStyleDouble
+	case UlStyleCurly:
+		return tcell.UnderlineStyleCurly
+	case UlStyleDotted:
+		return tcell.UnderlineStyleDotted
+	case UlStyleDashed:
+		return tcell.UnderlineStyleDashed
+	default:
+		return tcell.UnderlineStyleSolid
+	}
+}
+
 func (w *TcellWindow) printString(text string, pair ColorPair) {
 	lx := 0
 	a := pair.Attr()
@@ -833,11 +848,18 @@ func (w *TcellWindow) printString(text string, pair ColorPair) {
 	if a&AttrClear == 0 {
 		style = style.
 			Reverse(a&Attr(tcell.AttrReverse) != 0).
-			Underline(a&Attr(tcell.AttrUnderline) != 0).
 			StrikeThrough(a&Attr(tcell.AttrStrikeThrough) != 0).
 			Italic(a&Attr(tcell.AttrItalic) != 0).
 			Blink(a&Attr(tcell.AttrBlink) != 0).
 			Dim(a&Attr(tcell.AttrDim) != 0)
+		if a&Attr(tcell.AttrUnderline) != 0 {
+			style = style.Underline(underlineStyleFromAttr(a))
+			if pair.Ul() != colDefault {
+				style = style.Underline(asTcellColor(pair.Ul()))
+			}
+		} else {
+			style = style.Underline(false)
+		}
 	}
 	style = w.withUrl(style)
 
@@ -887,9 +909,16 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 		Bold(a&Attr(tcell.AttrBold) != 0 || a&BoldForce != 0).
 		Dim(a&Attr(tcell.AttrDim) != 0).
 		Reverse(a&Attr(tcell.AttrReverse) != 0).
-		Underline(a&Attr(tcell.AttrUnderline) != 0).
 		StrikeThrough(a&Attr(tcell.AttrStrikeThrough) != 0).
 		Italic(a&Attr(tcell.AttrItalic) != 0)
+	if a&Attr(tcell.AttrUnderline) != 0 {
+		style = style.Underline(underlineStyleFromAttr(a))
+		if pair.Ul() != colDefault {
+			style = style.Underline(asTcellColor(pair.Ul()))
+		}
+	} else {
+		style = style.Underline(false)
+	}
 	style = w.withUrl(style)
 
 	gr := uniseg.NewGraphemes(text)
@@ -967,14 +996,14 @@ func (w *TcellWindow) LinkEnd() {
 	w.params = nil
 }
 
-func (w *TcellWindow) CFill(fg Color, bg Color, a Attr, str string) FillReturn {
+func (w *TcellWindow) CFill(fg Color, bg Color, ul Color, a Attr, str string) FillReturn {
 	if fg == colDefault {
 		fg = w.normal.Fg()
 	}
 	if bg == colDefault {
 		bg = w.normal.Bg()
 	}
-	return w.fillString(str, NewColorPair(fg, bg, a))
+	return w.fillString(str, NewColorPair(fg, bg, a).WithUl(ul))
 }
 
 func (w *TcellWindow) DrawBorder() {

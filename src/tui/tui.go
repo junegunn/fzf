@@ -17,7 +17,21 @@ const (
 	BoldForce     = Attr(1 << 10)
 	FullBg        = Attr(1 << 11)
 	Strip         = Attr(1 << 12)
+
+	// Underline style stored in bits 13-15 (3 bits, values 0-4)
+	// Only meaningful when the Underline attribute bit is also set.
+	// 0 = solid (default)
+	UnderlineStyleShift = 13
+	UnderlineStyleMask  = Attr(0b111 << UnderlineStyleShift)
+	UlStyleDouble       = Attr(0b001 << UnderlineStyleShift)
+	UlStyleCurly        = Attr(0b010 << UnderlineStyleShift)
+	UlStyleDotted       = Attr(0b011 << UnderlineStyleShift)
+	UlStyleDashed       = Attr(0b100 << UnderlineStyleShift)
 )
+
+func (a Attr) UnderlineStyle() Attr {
+	return a & UnderlineStyleMask
+}
 
 func (a Attr) Merge(b Attr) Attr {
 	if b&AttrRegular > 0 {
@@ -25,7 +39,12 @@ func (a Attr) Merge(b Attr) Attr {
 		return (b &^ AttrRegular) | (a & BoldForce)
 	}
 
-	return (a &^ AttrRegular) | b
+	merged := (a &^ AttrRegular) | b
+	// When b sets Underline, use b's underline style instead of OR'ing
+	if b&Underline > 0 {
+		merged = (merged &^ UnderlineStyleMask) | (b & UnderlineStyleMask)
+	}
+	return merged
 }
 
 // Types of user action
@@ -352,6 +371,7 @@ const (
 type ColorPair struct {
 	fg   Color
 	bg   Color
+	ul   Color
 	attr Attr
 }
 
@@ -363,11 +383,11 @@ func HexToColor(rrggbb string) Color {
 }
 
 func NewColorPair(fg Color, bg Color, attr Attr) ColorPair {
-	return ColorPair{fg, bg, attr}
+	return ColorPair{fg, bg, colDefault, attr}
 }
 
 func NoColorPair() ColorPair {
-	return ColorPair{-1, -1, 0}
+	return ColorPair{-1, -1, -1, 0}
 }
 
 func (p ColorPair) Fg() Color {
@@ -376,6 +396,16 @@ func (p ColorPair) Fg() Color {
 
 func (p ColorPair) Bg() Color {
 	return p.bg
+}
+
+func (p ColorPair) Ul() Color {
+	return p.ul
+}
+
+func (p ColorPair) WithUl(ul Color) ColorPair {
+	dup := p
+	dup.ul = ul
+	return dup
 }
 
 func (p ColorPair) Attr() Attr {
@@ -404,6 +434,9 @@ func (p ColorPair) merge(other ColorPair, except Color) ColorPair {
 	if other.bg != except {
 		dup.bg = other.bg
 	}
+	if other.ul != except {
+		dup.ul = other.ul
+	}
 	return dup
 }
 
@@ -415,13 +448,13 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 
 func (p ColorPair) WithFg(fg ColorAttr) ColorPair {
 	dup := p
-	fgPair := ColorPair{fg.Color, colUndefined, fg.Attr}
+	fgPair := ColorPair{fg.Color, colUndefined, colUndefined, fg.Attr}
 	return dup.Merge(fgPair)
 }
 
 func (p ColorPair) WithBg(bg ColorAttr) ColorPair {
 	dup := p
-	bgPair := ColorPair{colUndefined, bg.Color, bg.Attr}
+	bgPair := ColorPair{colUndefined, bg.Color, colUndefined, bg.Attr}
 	return dup.Merge(bgPair)
 }
 
@@ -783,7 +816,7 @@ type Window interface {
 	Print(text string)
 	CPrint(color ColorPair, text string)
 	Fill(text string) FillReturn
-	CFill(fg Color, bg Color, attr Attr, text string) FillReturn
+	CFill(fg Color, bg Color, ul Color, attr Attr, text string) FillReturn
 	LinkBegin(uri string, params string)
 	LinkEnd()
 	Erase()
@@ -1271,7 +1304,7 @@ func initPalette(theme *ColorTheme) {
 		if fg.Color == colDefault && (fg.Attr&Reverse) > 0 {
 			bg.Color = colDefault
 		}
-		return ColorPair{fg.Color, bg.Color, fg.Attr}
+		return ColorPair{fg.Color, bg.Color, colDefault, fg.Attr}
 	}
 	blank := theme.ListFg
 	blank.Attr = AttrRegular

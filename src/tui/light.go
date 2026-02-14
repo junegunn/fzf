@@ -1323,7 +1323,18 @@ func attrCodes(attr Attr) []string {
 		codes = append(codes, "3")
 	}
 	if (attr & Underline) > 0 {
-		codes = append(codes, "4")
+		switch attr.UnderlineStyle() {
+		case UlStyleDouble:
+			codes = append(codes, "4:2")
+		case UlStyleCurly:
+			codes = append(codes, "4:3")
+		case UlStyleDotted:
+			codes = append(codes, "4:4")
+		case UlStyleDashed:
+			codes = append(codes, "4:5")
+		default:
+			codes = append(codes, "4")
+		}
 	}
 	if (attr & Blink) > 0 {
 		codes = append(codes, "5")
@@ -1361,8 +1372,27 @@ func colorCodes(fg Color, bg Color) []string {
 	return codes
 }
 
-func (w *LightWindow) csiColor(fg Color, bg Color, attr Attr) (bool, string) {
+func ulColorCode(c Color) string {
+	if c == colDefault {
+		return ""
+	}
+	if c.is24() {
+		r := (c >> 16) & 0xff
+		g := (c >> 8) & 0xff
+		b := (c) & 0xff
+		return fmt.Sprintf("58;2;%d;%d;%d", r, g, b)
+	}
+	if c >= 0 && c < 256 {
+		return fmt.Sprintf("58;5;%d", c)
+	}
+	return ""
+}
+
+func (w *LightWindow) csiColor(fg Color, bg Color, ul Color, attr Attr) (bool, string) {
 	codes := append(attrCodes(attr), colorCodes(fg, bg)...)
+	if ulCode := ulColorCode(ul); ulCode != "" {
+		codes = append(codes, ulCode)
+	}
 	code := w.csi(";" + strings.Join(codes, ";") + "m")
 	return len(codes) > 0, code
 }
@@ -1376,13 +1406,13 @@ func cleanse(str string) string {
 }
 
 func (w *LightWindow) CPrint(pair ColorPair, text string) {
-	_, code := w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
+	_, code := w.csiColor(pair.Fg(), pair.Bg(), pair.Ul(), pair.Attr())
 	w.stderrInternal(cleanse(text), false, code)
 	w.csi("0m")
 }
 
 func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
-	hasColors, code := w.csiColor(fg, bg, attr)
+	hasColors, code := w.csiColor(fg, bg, colDefault, attr)
 	if hasColors {
 		defer w.csi("0m")
 	}
@@ -1472,7 +1502,7 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 
 func (w *LightWindow) setBg() string {
 	if w.bg != colDefault {
-		_, code := w.csiColor(colDefault, w.bg, AttrRegular)
+		_, code := w.csiColor(colDefault, w.bg, colDefault, AttrRegular)
 		return code
 	}
 	// Should clear dim attribute after ␍ in the preview window
@@ -1494,7 +1524,7 @@ func (w *LightWindow) Fill(text string) FillReturn {
 	return w.fill(text, code)
 }
 
-func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillReturn {
+func (w *LightWindow) CFill(fg Color, bg Color, ul Color, attr Attr, text string) FillReturn {
 	w.Move(w.posy, w.posx)
 	if fg == colDefault {
 		fg = w.fg
@@ -1502,7 +1532,7 @@ func (w *LightWindow) CFill(fg Color, bg Color, attr Attr, text string) FillRetu
 	if bg == colDefault {
 		bg = w.bg
 	}
-	if hasColors, resetCode := w.csiColor(fg, bg, attr); hasColors {
+	if hasColors, resetCode := w.csiColor(fg, bg, ul, attr); hasColors {
 		defer w.csi("0m")
 		return w.fill(text, resetCode)
 	}

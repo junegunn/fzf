@@ -369,10 +369,10 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 		}
 	}
 	assert("\x1b[m", nil, "")
-	assert("\x1b[m", &ansiState{attr: tui.Blink, lbg: -1}, "")
-	assert("\x1b[0m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
-	assert("\x1b[;m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
-	assert("\x1b[;;m", &ansiState{fg: 4, bg: 4, lbg: -1}, "")
+	assert("\x1b[m", &ansiState{attr: tui.Blink, ul: -1, lbg: -1}, "")
+	assert("\x1b[0m", &ansiState{fg: 4, bg: 4, ul: -1, lbg: -1}, "")
+	assert("\x1b[;m", &ansiState{fg: 4, bg: 4, ul: -1, lbg: -1}, "")
+	assert("\x1b[;;m", &ansiState{fg: 4, bg: 4, ul: -1, lbg: -1}, "")
 
 	assert("\x1b[31m", nil, "\x1b[31;49m")
 	assert("\x1b[41m", nil, "\x1b[39;41m")
@@ -380,33 +380,139 @@ func TestAnsiCodeStringConversion(t *testing.T) {
 	assert("\x1b[92m", nil, "\x1b[92;49m")
 	assert("\x1b[102m", nil, "\x1b[39;102m")
 
-	assert("\x1b[31m", &ansiState{fg: 4, bg: 4, lbg: -1}, "\x1b[31;44m")
-	assert("\x1b[1;2;31m", &ansiState{fg: 2, bg: -1, attr: tui.Reverse, lbg: -1}, "\x1b[1;2;7;31;49m")
+	assert("\x1b[31m", &ansiState{fg: 4, bg: 4, ul: -1, lbg: -1}, "\x1b[31;44m")
+	assert("\x1b[1;2;31m", &ansiState{fg: 2, bg: -1, ul: -1, attr: tui.Reverse, lbg: -1}, "\x1b[1;2;7;31;49m")
 	assert("\x1b[38;5;100;48;5;200m", nil, "\x1b[38;5;100;48;5;200m")
 	assert("\x1b[38:5:100:48:5:200m", nil, "\x1b[38;5;100;48;5;200m")
 	assert("\x1b[48;5;100;38;5;200m", nil, "\x1b[38;5;200;48;5;100m")
 	assert("\x1b[48;5;100;38;2;10;20;30;1m", nil, "\x1b[1;38;2;10;20;30;48;5;100m")
 	assert("\x1b[48;5;100;38;2;10;20;30;7m",
-		&ansiState{attr: tui.Dim | tui.Italic, fg: 1, bg: 1},
+		&ansiState{attr: tui.Dim | tui.Italic, fg: 1, bg: 1, ul: -1},
 		"\x1b[2;3;7;38;2;10;20;30;48;5;100m")
+
+	// Underline styles
+	assert("\x1b[4:3m", nil, "\x1b[4:3;39;49m")
+	assert("\x1b[4:2m", nil, "\x1b[4:2;39;49m")
+	assert("\x1b[4:4m", nil, "\x1b[4:4;39;49m")
+	assert("\x1b[4:5m", nil, "\x1b[4:5;39;49m")
+	assert("\x1b[4:1m", nil, "\x1b[4;39;49m")
+
+	// Underline color (256-color)
+	assert("\x1b[4;58;5;100m", nil, "\x1b[4;39;49;58;5;100m")
+	// Underline color (24-bit)
+	assert("\x1b[4;58;2;255;0;128m", nil, "\x1b[4;39;49;58;2;255;0;128m")
+	// Curly underline + underline color
+	assert("\x1b[4:3;58;2;255;0;0m", nil, "\x1b[4:3;39;49;58;2;255;0;0m")
+	// SGR 59 resets underline color
+	assert("\x1b[59m", &ansiState{fg: 1, bg: -1, ul: 100, lbg: -1}, "\x1b[31;49m")
 }
 
 func TestParseAnsiCode(t *testing.T) {
 	tests := []struct {
-		In, Exp string
-		N       int
+		In  string
+		Exp string
+		N   int
+		Sep byte
 	}{
-		{"123", "", 123},
-		{"1a", "", -1},
-		{"1a;12", "12", -1},
-		{"12;a", "a", 12},
-		{"-2", "", -1},
+		{"123", "", 123, 0},
+		{"1a", "", -1, 0},
+		{"1a;12", "12", -1, ';'},
+		{"12;a", "a", 12, ';'},
+		{"-2", "", -1, 0},
+		// Colon sub-parameters: earliest separator wins (@shtse8)
+		{"4:3", "3", 4, ':'},
+		{"4:3;31", "3;31", 4, ':'},
+		{"38:2:255:0:0", "2:255:0:0", 38, ':'},
+		{"58:5:200", "5:200", 58, ':'},
+		// Semicolon before colon
+		{"4;38:2:0:0:0", "38:2:0:0:0", 4, ';'},
 	}
 	for _, x := range tests {
-		n, s := parseAnsiCode(x.In)
-		if n != x.N || s != x.Exp {
-			t.Fatalf("%q: got: (%d %q) want: (%d %q)", x.In, n, s, x.N, x.Exp)
+		n, sep, s := parseAnsiCode(x.In)
+		if n != x.N || s != x.Exp || sep != x.Sep {
+			t.Fatalf("%q: got: (%d %q %q) want: (%d %q %q)", x.In, n, s, string(sep), x.N, x.Exp, string(x.Sep))
 		}
+	}
+}
+
+// Test cases adapted from @shtse8 (PR #4678)
+func TestInterpretCodeUnderlineStyles(t *testing.T) {
+	// 4:0 = no underline
+	state := interpretCode("\x1b[4:0m", nil)
+	if state.attr&tui.Underline != 0 {
+		t.Error("4:0 should not set underline")
+	}
+
+	// 4:1 = single underline
+	state = interpretCode("\x1b[4:1m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:1 should set underline")
+	}
+
+	// 4:3 = curly underline
+	state = interpretCode("\x1b[4:3m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:3 should set underline")
+	}
+	if state.attr.UnderlineStyle() != tui.UlStyleCurly {
+		t.Error("4:3 should set curly underline style")
+	}
+
+	// 4:3 should NOT set italic (3 is a sub-param, not SGR 3)
+	if state.attr&tui.Italic != 0 {
+		t.Error("4:3 should not set italic")
+	}
+
+	// 4:2;31 = double underline + red fg
+	state = interpretCode("\x1b[4:2;31m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4:2;31 should set underline")
+	}
+	if state.fg != 1 {
+		t.Errorf("4:2;31 should set fg to red (1), got %d", state.fg)
+	}
+	if state.attr&tui.Dim != 0 {
+		t.Error("4:2;31 should not set dim")
+	}
+
+	// Plain 4 still works
+	state = interpretCode("\x1b[4m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4 should set underline")
+	}
+
+	// 4;2 (semicolon) = underline + dim
+	state = interpretCode("\x1b[4;2m", nil)
+	if state.attr&tui.Underline == 0 {
+		t.Error("4;2 should set underline")
+	}
+	if state.attr&tui.Dim == 0 {
+		t.Error("4;2 should set dim")
+	}
+}
+
+// Test cases adapted from @shtse8 (PR #4678)
+func TestInterpretCodeUnderlineColor(t *testing.T) {
+	// 58:2:R:G:B should not affect fg or bg
+	state := interpretCode("\x1b[58:2:255:0:0m", nil)
+	if state.fg != -1 || state.bg != -1 {
+		t.Errorf("58:2:R:G:B should not affect fg/bg, got fg=%d bg=%d", state.fg, state.bg)
+	}
+
+	// 58:5:200 should not affect fg or bg
+	state = interpretCode("\x1b[58:5:200m", nil)
+	if state.fg != -1 || state.bg != -1 {
+		t.Errorf("58:5:N should not affect fg/bg, got fg=%d bg=%d", state.fg, state.bg)
+	}
+
+	// 58:2:R:G:B combined with 38:2:R:G:B should only set fg
+	state = interpretCode("\x1b[58:2:255:0:0;38:2:0:255:0m", nil)
+	expectedFg := tui.Color(1<<24 | 0<<16 | 255<<8 | 0)
+	if state.fg != expectedFg {
+		t.Errorf("expected fg=%d, got %d", expectedFg, state.fg)
+	}
+	if state.bg != -1 {
+		t.Errorf("bg should be -1, got %d", state.bg)
 	}
 }
 

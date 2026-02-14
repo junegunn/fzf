@@ -1,6 +1,39 @@
 CHANGELOG
 =========
 
+0.68.0
+------
+- Added support for underline style variants in `--color`:
+  `underline-double`, `underline-curly`, `underline-dotted`, `underline-dashed`
+  ```sh
+  fzf --color 'fg:underline-curly,current-fg:underline-dashed'
+  ```
+- Added support for underline styles (`4:N`) and underline colors (SGR 58/59)
+  ```sh
+  # In the list section
+  printf '\e[4:3;58;2;255;0;0mRed curly underline\e[0m\n' | fzf --ansi
+
+  # In the preview window
+  fzf --preview "printf '\e[4:3;58;2;255;0;0mRed curly underline\e[0m\n'"
+  ```
+- Added `alt-gutter` color option (#4602) (@hedgieinsocks)
+- Added fish completion support (#4605) (@lalvarezt)
+- zsh: Handle multi-line history selection (#4595) (@LangLangBart)
+- Bug fixes
+    - Fixed symlinks to directories being returned as files (#4676) (@skk64)
+    - Fixed SIGHUP signal handling (#4668) (@LangLangBart)
+    - Fixed preview process not killed on exit
+    - Fixed coloring of items with zero-width characters
+    - Fixed `track-current` unset after a combined movement action
+    - Fixed `--accept-nth` being ignored in filter mode (#4636) (@charemma)
+    - Fixed display width calculation with `maxWidth` (#4596) (@LangLangBart)
+    - Fixed clearing of the rest of the current line on start
+    - Fixed `x-api-key` header not required for GET requests
+    - Fixed key reading not cancelled when `execute` triggered via a server request (#4653)
+    - Fixed rebind of readline command `redraw-current-line` (#4635) (@jameslazo)
+    - Fixed `fzf-tmux` `TERM` quoting and added `mktemp` usage (#4664) (@Goofygiraffe06)
+    - Do not allow very long queries in `FuzzyMatchV2`
+
 0.67.0
 ------
 - Added `--freeze-left=N` option to keep the leftmost N columns always visible.

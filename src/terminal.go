@@ -1549,7 +1549,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 	//             // unless the part has a non-default ANSI state
 	loc := whiteSuffix.FindStringIndex(trimmed)
 	if loc != nil {
-		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{tui.ColPrompt.Fg(), tui.ColPrompt.Bg(), tui.AttrClear, -1, nil}}
+		blankState := ansiOffset{[2]int32{int32(loc[0]), int32(loc[1])}, ansiState{tui.ColPrompt.Fg(), tui.ColPrompt.Bg(), -1, tui.AttrClear, -1, nil}}
 		if item.colors != nil {
 			lastColor := (*item.colors)[len(*item.colors)-1]
 			if lastColor.offset[1] < int32(loc[1]) {
@@ -4144,7 +4144,7 @@ Loop:
 					top := true
 					for ; y < height; y++ {
 						t.pwindow.MoveAndClear(y, 0)
-						t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), tui.AttrRegular, t.makeImageBorder(maxWidth, top))
+						t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, tui.AttrRegular, t.makeImageBorder(maxWidth, top))
 						top = false
 					}
 					wireframe = true
@@ -4209,13 +4209,13 @@ Loop:
 					prefixWidth = width
 					colored := ansi != nil && ansi.colored()
 					if t.theme.Colored && colored {
-						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.attr, str)
+						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.ul, ansi.attr, str)
 					} else {
 						attr := tui.AttrRegular
 						if colored {
 							attr = ansi.attr
 						}
-						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), attr, str)
+						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, attr, str)
 					}
 				}
 				return !isTrimmed &&
@@ -4235,7 +4235,7 @@ Loop:
 				break
 			}
 			if t.theme.Colored && lbg >= 0 {
-				fillRet = t.pwindow.CFill(-1, lbg, tui.AttrRegular,
+				fillRet = t.pwindow.CFill(-1, lbg, -1, tui.AttrRegular,
 					strings.Repeat(" ", t.pwindow.Width()-t.pwindow.X())+"\n")
 			} else {
 				fillRet = t.pwindow.Fill("\n")
