@@ -13,15 +13,16 @@ type transformed struct {
 	tokens   []Token
 }
 
-// Item represents each input line. 56 bytes.
+// Item represents each input line. 64 bytes.
 type Item struct {
 	text        util.Chars    // 32 = 24 + 1 + 1 + 2 + 4
 	transformed *transformed  // 8
 	origText    *[]byte       // 8
+	rawOrigText *[]byte       // 8
 	colors      *[]ansiOffset // 8
 }
 
-// Index returns ordinal index of the Item
+// Index returns ordinal index of the ItemAdding rawText changes the struct size; the comment
 func (item *Item) Index() int32 {
 	return item.text.Index
 }
@@ -40,8 +41,11 @@ func (item *Item) Colors() []ansiOffset {
 	return *item.colors
 }
 
-// AsString returns the original string
+// AsString returns the original string (prefers the raw field when not stripping)
 func (item *Item) AsString(stripAnsi bool) string {
+	if item.rawOrigText != nil && !stripAnsi {
+		return string(*item.rawOrigText) // true raw ANSI
+	}
 	if item.origText != nil {
 		if stripAnsi {
 			trimmed, _, _ := extractColor(string(*item.origText), nil, nil)

@@ -56,6 +56,7 @@ Usage: fzf [options]
     --read0                  Read input delimited by ASCII NUL characters
     --print0                 Print output delimited by ASCII NUL characters
     --ansi                   Enable processing of ANSI color codes
+	--ansi-preview           Pass ANSI color codes to preview command
     --sync                   Synchronous search for multi-staged filtering
 
   GLOBAL STYLE
@@ -678,6 +679,7 @@ type Options struct {
 	BlockProfile      string
 	MutexProfile      string
 	TtyDefault        string
+	AnsiPreview       bool
 }
 
 func filterNonEmpty(input []string) []string {
@@ -784,7 +786,8 @@ func defaultOptions() *Options {
 		WalkerSkip:   []string{".git", "node_modules"},
 		TtyDefault:   tui.DefaultTtyDevice,
 		Help:         false,
-		Version:      false}
+		Version:      false,
+		AnsiPreview:  false,}
 }
 
 func isDir(path string) bool {
@@ -2801,8 +2804,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Multi = 0
 		case "--ansi":
 			opts.Ansi = true
+		case "--ansi-preview":
+			opts.AnsiPreview = true
 		case "--no-ansi":
 			opts.Ansi = false
+		case "--no-ansi-preview":
+			opts.AnsiPreview = false
 		case "--no-mouse":
 			opts.Mouse = false
 		case "+c", "--no-color":

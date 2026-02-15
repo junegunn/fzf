@@ -121,6 +121,11 @@ func Run(opts *Options) (int, error) {
 				eventBox.Set(EvtHeader, header)
 				return false
 			}
+			if opts.AnsiPreview {
+				rawCopy := make([]byte, len(data))
+				copy(rawCopy, data)
+				item.rawOrigText = &rawCopy
+			}
 			item.text, item.colors = ansiProcessor(data)
 			item.text.Index = itemIndex
 			itemIndex++
@@ -166,6 +171,11 @@ func Run(opts *Options) (int, error) {
 			item.text.TrimTrailingWhitespaces(int(maxColorOffset))
 			item.text.Index = itemIndex
 			item.origText = &data
+			if opts.AnsiPreview {
+				rawCopy := make([]byte, len(data))
+				copy(rawCopy, data)
+				item.rawOrigText = &rawCopy
+			}
 			itemIndex++
 			return true
 		})
