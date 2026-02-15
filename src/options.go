@@ -1863,6 +1863,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actTogglePreview)
 		case "toggle-preview-wrap":
 			appendAction(actTogglePreviewWrap)
+		case "toggle-preview-full":
+			appendAction(actTogglePreviewFull)
 		case "toggle-sort":
 			appendAction(actToggleSort)
 		case "offset-up":
@@ -3650,7 +3652,7 @@ func postProcessOptions(opts *Options) error {
 			case actToggleSort:
 				// To display "+S"/"-S" on info line
 				opts.ToggleSort = true
-			case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow:
+			case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow, actTogglePreviewFull:
 				reordered = append(reordered, act)
 			}
 		}
@@ -3661,7 +3663,7 @@ func postProcessOptions(opts *Options) error {
 		if len(reordered) > 0 {
 			for _, act := range actions {
 				switch act.t {
-				case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow:
+				case actTogglePreview, actShowPreview, actHidePreview, actChangePreviewWindow, actTogglePreviewFull:
 				default:
 					reordered = append(reordered, act)
 				}
