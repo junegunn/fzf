@@ -46,6 +46,8 @@ Usage: fzf [options]
     -d, --delimiter=STR      Field delimiter regex (default: AWK-style)
     +s, --no-sort            Do not sort the result
     --literal                Do not normalize latin script letters
+    --keymap-convert, +C     Enable keyboard layout conversion (e.g. Hebrew to QWERTY)
+    --no-keymap-convert, -C  Disable keyboard layout conversion (default)
     --tail=NUM               Maximum number of items to keep in memory
     --disabled               Do not perform search
     --tiebreak=CRI[,..]      Comma-separated list of sort criteria to apply
@@ -678,6 +680,7 @@ type Options struct {
 	BlockProfile      string
 	MutexProfile      string
 	TtyDefault        string
+	KeymapConvert     bool
 }
 
 func filterNonEmpty(input []string) []string {
@@ -2801,6 +2804,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Multi = 0
 		case "--ansi":
 			opts.Ansi = true
+		case "--keymap-convert", "+C":
+			opts.KeymapConvert = true
+		case "--no-keymap-convert", "-C":
+			opts.KeymapConvert = false
 		case "--no-ansi":
 			opts.Ansi = false
 		case "--no-mouse":
