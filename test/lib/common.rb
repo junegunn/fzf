@@ -163,6 +163,7 @@ class Tmux
       self.until(true) do |lines|
         message = "Prepare[#{tries}]"
         send_keys ' ', 'C-u', :Enter, message, :Left, :Right
+        sleep(0.15)
         lines[-1] == message
       end
     rescue Minitest::Assertion
