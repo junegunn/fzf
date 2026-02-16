@@ -1356,6 +1356,13 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	} else if t.paused {
 		inputState = "disabled"
 	}
+	if t.wrap {
+		if t.wrapWord {
+			env = append(env, "FZF_WRAP=word")
+		} else {
+			env = append(env, "FZF_WRAP=char")
+		}
+	}
 	env = append(env, "FZF_INPUT_STATE="+inputState)
 	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.resultMerger.Length()))
