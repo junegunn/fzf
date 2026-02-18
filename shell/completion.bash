@@ -124,6 +124,7 @@ _fzf_opts_completion() {
     +i --no-ignore-case
     +s --no-sort
     +x --no-extended
+    --accept-nth
     --ansi
     --bash
     --bind
@@ -137,56 +138,87 @@ _fzf_opts_completion() {
     --expect
     --filepath-word
     --fish
+    --footer
+    --footer-border
+    --footer-label
+    --footer-label-pos
+    --freeze-left
+    --freeze-right
+    --gap
+    --gap-line
+    --ghost
+    --gutter
+    --gutter-raw
     --header
+    --header-border
     --header-first
+    --header-label
+    --header-label-pos
     --header-lines
+    --header-lines-border
     --height
     --highlight-line
     --history
     --history-size
     --hscroll-off
     --info
+    --info-command
+    --input-border
+    --input-label
+    --input-label-pos
     --jump-labels
     --keep-right
     --layout
     --listen
     --listen-unsafe
+    --list-border
+    --list-label
+    --list-label-pos
     --literal
     --man
     --margin
     --marker
+    --marker-multi-line
     --min-height
     --no-bold
-    --no-clear
     --no-hscroll
-    --no-mouse
+    --no-input
+    --no-multi-line
     --no-scrollbar
     --no-separator
-    --no-unicode
     --padding
     --pointer
     --preview
+    --preview-border
     --preview-label
     --preview-label-pos
     --preview-window
     --print-query
     --print0
     --prompt
+    --raw
     --read0
-    --reverse
     --scheme
     --scroll-off
+    --scrollbar
     --separator
+    --smart-case
+    --style
     --sync
     --tabstop
     --tac
+    --tail
     --tiebreak
     --tmux
     --track
     --version
+    --walker
+    --walker-root
+    --walker-skip
     --with-nth
     --with-shell
     --wrap
+    --wrap-sign
     --zsh
     -0 --exit-0
     -1 --select-1
@@ -206,11 +238,11 @@ _fzf_opts_completion() {
       return 0
       ;;
     --tiebreak)
-      COMPREPLY=($(compgen -W "length chunk begin end index" -- "$cur"))
+      COMPREPLY=($(compgen -W "length chunk pathname begin end index" -- "$cur"))
       return 0
       ;;
     --color)
-      COMPREPLY=($(compgen -W "dark light 16 bw no" -- "$cur"))
+      COMPREPLY=($(compgen -W "dark light base16 16 bw no" -- "$cur"))
       return 0
       ;;
     --layout)
@@ -221,12 +253,21 @@ _fzf_opts_completion() {
       COMPREPLY=($(compgen -W "default right hidden inline inline-right" -- "$cur"))
       return 0
       ;;
+    --wrap)
+      COMPREPLY=($(compgen -W "char word" -- "$cur"))
+      return 0
+      ;;
+    --style)
+      COMPREPLY=($(compgen -W "default minimal full" -- "$cur"))
+      return 0
+      ;;
     --preview-window)
       COMPREPLY=($(compgen -W "
       default
       hidden
       nohidden
       wrap
+      wrap-word
       nowrap
       cycle
       nocycle
@@ -235,6 +276,7 @@ _fzf_opts_completion() {
       left
       right
       rounded border border-rounded
+      border-line
       sharp border-sharp
       border-bold
       border-block
@@ -248,14 +290,16 @@ _fzf_opts_completion() {
       border-left
       border-right
       follow
-      nofollow" -- "$cur"))
+      nofollow
+      info
+      noinfo" -- "$cur"))
       return 0
       ;;
-    --border)
-      COMPREPLY=($(compgen -W "rounded sharp bold block thinblock double horizontal vertical top bottom left right none" -- "$cur"))
+    --border | --list-border | --header-border | --header-lines-border | --footer-border | --input-border | --preview-border)
+      COMPREPLY=($(compgen -W "line rounded sharp bold block thinblock double horizontal vertical top bottom left right none" -- "$cur"))
       return 0
       ;;
-    --border-label-pos | --preview-label-pos)
+    --border-label-pos | --preview-label-pos | --list-label-pos | --header-label-pos | --footer-label-pos | --input-label-pos)
       COMPREPLY=($(compgen -W "center bottom top" -- "$cur"))
       return 0
       ;;
