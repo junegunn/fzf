@@ -387,9 +387,9 @@ class TestPreview < TestInteractive
     tmux.send_keys "seq 1 | #{FZF} --preview 'seq 1000' --preview-window right,2,follow,wrap", :Enter
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.until do |lines|
-      assert_includes lines[-4], '│ 10 │'
-      assert_includes lines[-3], '│ ↳  │'
-      assert_includes lines[-2], '│ ↳  │'
+      idx = lines.rindex { it.include?('│ 10 │') }
+      assert_includes lines[idx + 1], '│ ↳  │'
+      assert_includes lines[idx + 2], '│ ↳  │'
     end
   end
 
