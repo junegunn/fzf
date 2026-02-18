@@ -1050,7 +1050,7 @@ https://github.com/junegunn/fzf/wiki/Related-projects
 
 The MIT License (MIT)
 
-Copyright (c) 2013-2025 Junegunn Choi
+Copyright (c) 2013-2026 Junegunn Choi
 
 Goods
 -----
