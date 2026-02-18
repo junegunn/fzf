@@ -3,6 +3,14 @@ CHANGELOG
 
 0.68.0
 ------
+- Implemented word wrapping in the list section
+    - Added `--wrap=word` (or `--wrap-word`) option and `toggle-wrap-word` action
+      for word-level line wrapping in the list section
+    - Changed default binding of `ctrl-/` and `alt-/` from `toggle-wrap` to
+      `toggle-wrap-word`
+  ```sh
+  fzf --wrap=word
+  ```
 - Implemented word wrapping in the preview window
     - Added `wrap-word` flag for `--preview-window` to enable word-level wrapping
     - Added `toggle-preview-wrap-word` action

@@ -249,7 +249,7 @@ func (chars *Chars) Prepend(prefix string) {
 	}
 }
 
-func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWidth int, tabstop int) ([][]rune, bool) {
+func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWidth int, tabstop int, wrapWord bool) ([][]rune, bool) {
 	text := make([]rune, chars.Length())
 	copy(text, chars.ToRunes())
 
@@ -306,6 +306,19 @@ func (chars *Chars) Lines(multiLine bool, maxLines int, wrapCols int, wrapSignWi
 				// Might be a wide character
 				if overflowIdx == 0 {
 					overflowIdx = 1
+				}
+				if wrapWord {
+					// Find last space/tab at or before overflowIdx
+					breakIdx := -1
+					for k := overflowIdx; k > 0; k-- {
+						if line[k-1] == ' ' || line[k-1] == '\t' {
+							breakIdx = k
+							break
+						}
+					}
+					if breakIdx > 0 {
+						overflowIdx = breakIdx
+					}
 				}
 				if len(wrapped) >= maxLines {
 					return wrapped, true

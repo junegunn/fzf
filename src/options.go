@@ -95,7 +95,7 @@ Usage: fzf [options]
     -m, --multi[=MAX]        Enable multi-select with tab/shift-tab
     --highlight-line         Highlight the whole current line
     --cycle                  Enable cyclic scroll
-    --wrap                   Enable line wrap
+    --wrap[=MODE]            Enable line wrap (char|word, default: char)
     --wrap-sign=STR          Indicator for wrapped lines
     --no-multi-line          Disable multi-line display of items when using --read0
     --raw                    Enable raw mode (show non-matching items)
@@ -606,6 +606,7 @@ type Options struct {
 	Layout            layoutType
 	Cycle             bool
 	Wrap              bool
+	WrapWord          bool
 	WrapSign          *string
 	MultiLine         bool
 	CursorLine        bool
@@ -740,6 +741,7 @@ func defaultOptions() *Options {
 		Layout:       layoutDefault,
 		Cycle:        false,
 		Wrap:         false,
+		WrapWord:     false,
 		MultiLine:    true,
 		KeepRight:    false,
 		Hscroll:      true,
@@ -1804,6 +1806,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actToggleHeader)
 		case "toggle-wrap":
 			appendAction(actToggleWrap)
+		case "toggle-wrap-word":
+			appendAction(actToggleWrapWord)
 		case "toggle-multi-line":
 			appendAction(actToggleMultiLine)
 		case "toggle-hscroll":
@@ -2853,9 +2857,29 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-cycle":
 			opts.Cycle = false
 		case "--wrap":
-			opts.Wrap = true
+			given, str := optionalNextString()
+			if given {
+				switch str {
+				case "char":
+					opts.Wrap = true
+					opts.WrapWord = false
+				case "word":
+					opts.Wrap = true
+					opts.WrapWord = true
+				default:
+					return errors.New("invalid wrap mode: " + str + " (expected: char or word)")
+				}
+			} else {
+				opts.Wrap = true
+			}
 		case "--no-wrap":
 			opts.Wrap = false
+			opts.WrapWord = false
+		case "--wrap-word":
+			opts.Wrap = true
+			opts.WrapWord = true
+		case "--no-wrap-word":
+			opts.WrapWord = false
 		case "--wrap-sign":
 			str, err := nextString("wrap sign required")
 			if err != nil {

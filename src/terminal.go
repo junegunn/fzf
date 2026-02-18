@@ -250,6 +250,7 @@ type Terminal struct {
 	infoStyle          infoStyle
 	infoPrefix         string
 	wrap               bool
+	wrapWord           bool
 	wrapSign           string
 	wrapSignWidth      int
 	ghost              string
@@ -585,6 +586,7 @@ const (
 	actToggleTrackCurrent
 	actToggleHeader
 	actToggleWrap
+	actToggleWrapWord
 	actToggleMultiLine
 	actToggleHscroll
 	actToggleRaw
@@ -830,8 +832,8 @@ func defaultKeymap() map[tui.Event][]*action {
 	if !util.IsWindows() {
 		add(tui.CtrlZ, actSigStop)
 	}
-	add(tui.CtrlSlash, actToggleWrap)
-	addEvent(tui.AltKey('/'), actToggleWrap)
+	add(tui.CtrlSlash, actToggleWrapWord)
+	addEvent(tui.AltKey('/'), actToggleWrapWord)
 
 	addEvent(tui.AltKey('b'), actBackwardWord)
 	add(tui.ShiftLeft, actBackwardWord)
@@ -1014,6 +1016,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		multi:              opts.Multi,
 		multiLine:          opts.ReadZero && opts.MultiLine,
 		wrap:               opts.Wrap,
+		wrapWord:           opts.WrapWord,
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
 		track:              opts.Track,
@@ -1635,7 +1638,7 @@ func (t *Terminal) numItemLines(item *Item, atMost int) (int, bool) {
 		numLines, overflow = item.text.NumLines(atMost)
 	} else {
 		var lines [][]rune
-		lines, overflow = item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
+		lines, overflow = item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop, t.wrapWord)
 		numLines = len(lines)
 	}
 	numLines += t.gap
@@ -1651,7 +1654,7 @@ func (t *Terminal) itemLines(item *Item, atMost int) ([][]rune, bool) {
 		copy(text, item.text.ToRunes())
 		return [][]rune{text}, false
 	}
-	return item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop)
+	return item.text.Lines(t.multiLine, atMost, t.wrapCols(), t.wrapSignWidth, t.tabstop, t.wrapWord)
 }
 
 // Estimate the average number of lines per item. Instead of going through all
@@ -6721,8 +6724,16 @@ func (t *Terminal) Loop() error {
 			case actToggleHeader:
 				t.headerVisible = !t.headerVisible
 				req(reqList, reqInfo, reqPrompt, reqHeader)
-			case actToggleWrap:
-				t.wrap = !t.wrap
+			case actToggleWrap, actToggleWrapWord:
+				if a.t == actToggleWrapWord {
+					t.wrapWord = !t.wrapWord
+					t.wrap = t.wrapWord
+				} else {
+					t.wrap = !t.wrap
+					if !t.wrap {
+						t.wrapWord = false
+					}
+				}
 				t.clearNumLinesCache()
 				req(reqList, reqHeader)
 			case actToggleMultiLine:
