@@ -157,7 +157,7 @@ Usage: fzf [options]
     --preview=COMMAND        Command to preview highlighted line ({})
     --preview-window=OPT     Preview window layout (default: right:50%)
                              [up|down|left|right][,SIZE[%]]
-                             [,[no]wrap][,[no]cycle][,[no]follow][,[no]info]
+                             [,[no]wrap[-word]][,[no]cycle][,[no]follow][,[no]info]
                              [,[no]hidden][,border-STYLE]
                              [,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES]
                              [,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]
@@ -367,6 +367,7 @@ type previewOpts struct {
 	scroll      string
 	hidden      bool
 	wrap        bool
+	wrapWord    bool
 	cycle       bool
 	follow      bool
 	info        bool
@@ -543,7 +544,7 @@ func (o *previewOpts) compare(active *previewOpts, b *previewOpts) previewOptsCo
 		return previewOptsDifferentLayout
 	}
 
-	if a.wrap == b.wrap && a.headerLines == b.headerLines && a.info == b.info && a.scroll == b.scroll {
+	if a.wrap == b.wrap && a.wrapWord == b.wrapWord && a.headerLines == b.headerLines && a.info == b.info && a.scroll == b.scroll {
 		return previewOptsSame
 	}
 
@@ -691,7 +692,13 @@ func filterNonEmpty(input []string) []string {
 }
 
 func defaultPreviewOpts(command string) previewOpts {
-	return previewOpts{command, posRight, sizeSpec{50, true}, "", false, false, false, false, true, defaultBorderShape, 0, 0, nil}
+	return previewOpts{
+		command:  command,
+		position: posRight,
+		size:     sizeSpec{50, true},
+		info:     true,
+		border:   defaultBorderShape,
+	}
 }
 
 func defaultOptions() *Options {
@@ -1863,6 +1870,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			appendAction(actTogglePreview)
 		case "toggle-preview-wrap":
 			appendAction(actTogglePreviewWrap)
+		case "toggle-preview-wrap-word":
+			appendAction(actTogglePreviewWrapWord)
 		case "toggle-sort":
 			appendAction(actToggleSort)
 		case "offset-up":
@@ -2274,8 +2283,13 @@ func parsePreviewWindowImpl(opts *previewOpts, input string) error {
 			opts.hidden = false
 		case "wrap":
 			opts.wrap = true
+			opts.wrapWord = false
+		case "wrap-word":
+			opts.wrap = true
+			opts.wrapWord = true
 		case "nowrap":
 			opts.wrap = false
+			opts.wrapWord = false
 		case "cycle":
 			opts.cycle = true
 		case "nocycle":

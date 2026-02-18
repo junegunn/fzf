@@ -3,6 +3,14 @@ CHANGELOG
 
 0.68.0
 ------
+- Implemented word wrapping in the preview window
+    - Added `wrap-word` flag for `--preview-window` to enable word-level wrapping
+    - Added `toggle-preview-wrap-word` action
+  ```sh
+  fzf --preview 'bat --style=plain --color=always {}' \
+      --preview-window wrap-word \
+      --bind space:toggle-preview-wrap-word
+  ```
 - Added support for underline style variants in `--color`:
   `underline-double`, `underline-curly`, `underline-dotted`, `underline-dashed`
   ```sh
@@ -22,17 +30,17 @@ CHANGELOG
 - Bug fixes
     - Fixed symlinks to directories being returned as files (#4676) (@skk64)
     - Fixed SIGHUP signal handling (#4668) (@LangLangBart)
-    - Fixed preview process not killed on exit
-    - Fixed coloring of items with zero-width characters
-    - Fixed `track-current` unset after a combined movement action
+    - Fixed preview process not killed on exit (#4667)
+    - Fixed coloring of items with zero-width characters (#4620)
+    - Fixed `track-current` unset after a combined movement action (#4649)
     - Fixed `--accept-nth` being ignored in filter mode (#4636) (@charemma)
     - Fixed display width calculation with `maxWidth` (#4596) (@LangLangBart)
-    - Fixed clearing of the rest of the current line on start
-    - Fixed `x-api-key` header not required for GET requests
+    - Fixed clearing of the rest of the current line on start (#4652)
+    - Fixed `x-api-key` header not required for GET requests (#4627)
     - Fixed key reading not cancelled when `execute` triggered via a server request (#4653)
     - Fixed rebind of readline command `redraw-current-line` (#4635) (@jameslazo)
     - Fixed `fzf-tmux` `TERM` quoting and added `mktemp` usage (#4664) (@Goofygiraffe06)
-    - Do not allow very long queries in `FuzzyMatchV2`
+    - Do not allow very long queries in `FuzzyMatchV2` (#4608)
 
 0.67.0
 ------

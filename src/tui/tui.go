@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
@@ -829,16 +830,18 @@ type FullscreenRenderer struct {
 	theme        *ColorTheme
 	mouse        bool
 	forceBlack   bool
+	tabstop      int
 	prevDownTime time.Time
 	clicks       [][2]int
 	showCursor   bool
 }
 
-func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool) Renderer {
+func NewFullscreenRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop int) Renderer {
 	r := &FullscreenRenderer{
 		theme:        theme,
 		mouse:        mouse,
 		forceBlack:   forceBlack,
+		tabstop:      tabstop,
 		prevDownTime: time.Unix(0, 0),
 		clicks:       [][2]int{},
 		showCursor:   true}
@@ -1359,4 +1362,46 @@ func initPalette(theme *ColorTheme) {
 
 func runeWidth(r rune) int {
 	return uniseg.StringWidth(string(r))
+}
+
+// WrappedLine represents a single visual line after character-level wrapping.
+type WrappedLine struct {
+	Text         string
+	DisplayWidth int
+}
+
+// WrapLine splits a single line (no embedded \n) into visual lines
+// that fit within initialMax columns. Character-level wrapping only.
+func WrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapSignWidth int) []WrappedLine {
+	lines := []WrappedLine{}
+	width := 0
+	line := ""
+	gr := uniseg.NewGraphemes(input)
+	max := initialMax
+	for gr.Next() {
+		rs := gr.Runes()
+		str := string(rs)
+		var w int
+		if len(rs) == 1 && rs[0] == '\t' {
+			w = tabstop - (prefixLength+width)%tabstop
+			str = strings.Repeat(" ", w)
+		} else if rs[0] == '\r' {
+			w++
+		} else {
+			w = uniseg.StringWidth(str)
+		}
+		width += w
+
+		if prefixLength+width <= max {
+			line += str
+		} else {
+			lines = append(lines, WrappedLine{string(line), width - w})
+			line = str
+			prefixLength = 0
+			width = w
+			max = initialMax - wrapSignWidth
+		}
+	}
+	lines = append(lines, WrappedLine{string(line), width})
+	return lines
 }

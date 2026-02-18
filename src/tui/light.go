@@ -13,7 +13,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/junegunn/fzf/src/util"
-	"github.com/rivo/uniseg"
 
 	"golang.org/x/term"
 )
@@ -1419,52 +1418,13 @@ func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
 	w.stderrInternal(cleanse(text), false, code)
 }
 
-type wrappedLine struct {
-	text         string
-	displayWidth int
-}
-
-func wrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapSignWidth int) []wrappedLine {
-	lines := []wrappedLine{}
-	width := 0
-	line := ""
-	gr := uniseg.NewGraphemes(input)
-	max := initialMax
-	for gr.Next() {
-		rs := gr.Runes()
-		str := string(rs)
-		var w int
-		if len(rs) == 1 && rs[0] == '\t' {
-			w = tabstop - (prefixLength+width)%tabstop
-			str = repeat(' ', w)
-		} else if rs[0] == '\r' {
-			w++
-		} else {
-			w = uniseg.StringWidth(str)
-		}
-		width += w
-
-		if prefixLength+width <= max {
-			line += str
-		} else {
-			lines = append(lines, wrappedLine{string(line), width - w})
-			line = str
-			prefixLength = 0
-			width = w
-			max = initialMax - wrapSignWidth
-		}
-	}
-	lines = append(lines, wrappedLine{string(line), width})
-	return lines
-}
-
 func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 	allLines := strings.Split(str, "\n")
 	for i, line := range allLines {
-		lines := wrapLine(line, w.posx, w.width, w.tabstop, w.wrapSignWidth)
+		lines := WrapLine(line, w.posx, w.width, w.tabstop, w.wrapSignWidth)
 		for j, wl := range lines {
-			w.stderrInternal(wl.text, false, resetCode)
-			w.posx += wl.displayWidth
+			w.stderrInternal(wl.Text, false, resetCode)
+			w.posx += wl.DisplayWidth
 
 			// Wrap line
 			if j < len(lines)-1 || i < len(allLines)-1 {

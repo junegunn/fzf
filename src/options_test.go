@@ -448,6 +448,20 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.size.size == 70) {
 		t.Error(opts.Preview)
 	}
+
+	// wrap-word tests
+	opts = optsFor("--preview-window=wrap-word")
+	if !(opts.Preview.wrap == true && opts.Preview.wrapWord == true) {
+		t.Errorf("wrap-word: wrap=%v, wrapWord=%v", opts.Preview.wrap, opts.Preview.wrapWord)
+	}
+	opts = optsFor("--preview-window=wrap-word,nowrap")
+	if !(opts.Preview.wrap == false && opts.Preview.wrapWord == false) {
+		t.Errorf("wrap-word,nowrap: wrap=%v, wrapWord=%v", opts.Preview.wrap, opts.Preview.wrapWord)
+	}
+	opts = optsFor("--preview-window=wrap-word,wrap")
+	if !(opts.Preview.wrap == true && opts.Preview.wrapWord == false) {
+		t.Errorf("wrap-word,wrap: wrap=%v, wrapWord=%v", opts.Preview.wrap, opts.Preview.wrapWord)
+	}
 }
 
 func TestAdditiveExpect(t *testing.T) {

@@ -699,3 +699,72 @@ func readFile(path string) ([]byte, error) {
 		}
 	}
 }
+
+func TestWordWrapAnsiLine(t *testing.T) {
+	term := &Terminal{}
+
+	// Simple wrapping
+	result := term.wordWrapAnsiLine("hello world", 7, 2)
+	if len(result) != 2 || result[0] != "hello" || result[1] != "world" {
+		t.Errorf("Simple: %q", result)
+	}
+
+	// No wrapping needed
+	result = term.wordWrapAnsiLine("hello", 10, 2)
+	if len(result) != 1 || result[0] != "hello" {
+		t.Errorf("No wrap: %q", result)
+	}
+
+	// ANSI codes preserved across split
+	result = term.wordWrapAnsiLine("\x1b[31mhello \x1b[32mworld", 8, 2)
+	if len(result) != 2 || result[0] != "\x1b[31mhello" || result[1] != "\x1b[32mworld" {
+		t.Errorf("ANSI: %q", result)
+	}
+
+	// Long word (no space) — no break, let character wrapping handle it
+	result = term.wordWrapAnsiLine("abcdefghij", 5, 2)
+	if len(result) != 1 || result[0] != "abcdefghij" {
+		t.Errorf("Long word: %q", result)
+	}
+
+	// Multiple words with continuation wrapSignWidth
+	result = term.wordWrapAnsiLine("aa bb cc dd", 5, 2)
+	// max=5 for first line, max=3 for continuations (5-2)
+	// "aa bb" (5 wide), split at second space -> "aa bb" | "cc" | "dd"
+	if len(result) != 3 || result[0] != "aa bb" || result[1] != "cc" || result[2] != "dd" {
+		t.Errorf("Multiple words: %q", result)
+	}
+
+	// Empty string
+	result = term.wordWrapAnsiLine("", 10, 2)
+	if len(result) != 1 || result[0] != "" {
+		t.Errorf("Empty: %q", result)
+	}
+
+	// OSC 8 hyperlink preserved
+	result = term.wordWrapAnsiLine("\x1b]8;;http://example.com\x1b\\click here\x1b]8;;\x1b\\", 8, 2)
+	if len(result) != 2 {
+		t.Errorf("Hyperlink split count: %d, %q", len(result), result)
+	}
+
+	// Tab handling: tab expands to tabstop-aligned width
+	term.tabstop = 8
+	// "\thi there" — tab at column 0 expands to 8, total "hi" starts at 8
+	// maxWidth=15: "\thi" = 10 wide, "there" = 5 wide, total 16 > 15, wrap at space
+	result = term.wordWrapAnsiLine("\thi there", 15, 2)
+	if len(result) != 2 || result[0] != "\thi" || result[1] != "there" {
+		t.Errorf("Tab: %q", result)
+	}
+
+	// Tab as word boundary: "hello"(5) + tab(3→col8) + "world"(5) = 13 total
+	// maxWidth=13: fits without wrapping
+	result = term.wordWrapAnsiLine("hello\tworld", 13, 2)
+	if len(result) != 1 || result[0] != "hello\tworld" {
+		t.Errorf("Tab no wrap: %q", result)
+	}
+	// maxWidth=12: 13 > 12, wraps at tab
+	result = term.wordWrapAnsiLine("hello\tworld", 12, 2)
+	if len(result) != 2 || result[0] != "hello" || result[1] != "world" {
+		t.Errorf("Tab wrap: %q", result)
+	}
+}

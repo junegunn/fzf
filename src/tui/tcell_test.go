@@ -253,7 +253,7 @@ func TestGetCharEventKey(t *testing.T) {
 		{giveKey{tcell.KeyPause, 0, tcell.ModNone}, wantKey{Invalid, 0, nil}},  // unhandled
 
 	}
-	r := NewFullscreenRenderer(&ColorTheme{}, false, false)
+	r := NewFullscreenRenderer(&ColorTheme{}, false, false, 8)
 	r.Init()
 
 	// run and evaluate the tests
@@ -265,22 +265,22 @@ func TestGetCharEventKey(t *testing.T) {
 		t.Logf("giveEvent = %T{key: %v, ch: %q (%[3]v), mod: %#04b}\n", giveEvent, giveEvent.Key(), giveEvent.Rune(), giveEvent.Modifiers())
 
 		// process the event in fzf and evaluate the test
-		gotEvent := r.GetChar()
+		gotEvent := r.GetChar(true)
 		// skip Resize events, those are sometimes put in the buffer outside of this test
 		if initialResizeAsInvalid && gotEvent.Type == Invalid {
 			t.Logf("Resize as Invalid swallowed")
 			initialResizeAsInvalid = false
-			gotEvent = r.GetChar()
+			gotEvent = r.GetChar(true)
 		}
 		if gotEvent.Type == Resize {
 			t.Logf("Resize swallowed")
-			gotEvent = r.GetChar()
+			gotEvent = r.GetChar(true)
 		}
 		t.Logf("wantEvent = %T{Type: %v, Char: %q (%[3]v)}\n", test.wantKey, test.wantKey.Type, test.wantKey.Char)
 		t.Logf("gotEvent = %T{Type: %v, Char: %q (%[3]v)}\n", gotEvent, gotEvent.Type, gotEvent.Char)
 
-		assert(t, "r.GetChar().Type", gotEvent.Type, test.wantKey.Type)
-		assert(t, "r.GetChar().Char", gotEvent.Char, test.wantKey.Char)
+		assert(t, "r.GetChar(true).Type", gotEvent.Type, test.wantKey.Type)
+		assert(t, "r.GetChar(true).Char", gotEvent.Char, test.wantKey.Char)
 	}
 
 	r.Close()

@@ -617,6 +617,7 @@ const (
 	actHidePreview
 	actTogglePreview
 	actTogglePreviewWrap
+	actTogglePreviewWrapWord
 
 	actTransform
 	actTransformBorderLabel
@@ -941,7 +942,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	}
 	if fullscreen {
 		if tui.HasFullscreenRenderer() {
-			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse)
+			renderer = tui.NewFullscreenRenderer(opts.Theme, opts.Black, opts.Mouse, opts.Tabstop)
 		} else {
 			renderer, err = tui.NewLightRenderer(opts.TtyDefault, ttyin, opts.Theme, opts.Black, opts.Mouse, opts.Tabstop, opts.ClearOnExit,
 				true, func(h int) int { return h })
@@ -4089,6 +4090,75 @@ func extractPassThroughs(line string) ([]string, string) {
 	return passThroughs, transformed
 }
 
+func (t *Terminal) wordWrapAnsiLine(line string, maxWidth int, wrapSignWidth int) []string {
+	if maxWidth <= 0 {
+		return []string{line}
+	}
+
+	var result []string
+	lineStart := 0
+	width := 0
+	lastSpaceStart := -1
+	lastSpaceEnd := -1
+	widthBeforeLastSpace := 0
+	lastSpaceWidth := 0
+	max := maxWidth
+	pos := 0
+
+	for pos < len(line) {
+		// Find next ANSI escape sequence
+		start, end := nextAnsiEscapeSequence(line[pos:])
+
+		// Determine the end of printable text before the next escape
+		var printableEnd int
+		if start < 0 {
+			printableEnd = len(line)
+		} else {
+			printableEnd = pos + start
+		}
+
+		// Process printable characters using grapheme clusters
+		gr := uniseg.NewGraphemes(line[pos:printableEnd])
+		for gr.Next() {
+			gStart, gEnd := gr.Positions()
+			w := gr.Width()
+			str := gr.Str()
+
+			if str == "\t" {
+				w = t.tabstop - (width % t.tabstop)
+			}
+
+			if str == " " || str == "\t" {
+				lastSpaceStart = pos + gStart
+				lastSpaceEnd = pos + gEnd
+				widthBeforeLastSpace = width
+				lastSpaceWidth = w
+			}
+
+			width += w
+
+			if width > max && lastSpaceEnd > lineStart {
+				result = append(result, line[lineStart:lastSpaceStart])
+				lineStart = lastSpaceEnd
+				width -= widthBeforeLastSpace + lastSpaceWidth
+				lastSpaceStart = -1
+				lastSpaceEnd = -1
+				widthBeforeLastSpace = 0
+				max = maxWidth - wrapSignWidth
+			}
+		}
+		pos = printableEnd
+
+		// Skip the ANSI escape sequence
+		if start >= 0 {
+			pos += end - start
+		}
+	}
+
+	result = append(result, line[lineStart:])
+	return result
+}
+
 func (t *Terminal) renderPreviewText(height int, lines []string, lineNo int, unchanged bool) {
 	maxWidth := t.pwindow.Width()
 	var ansi *ansiState
@@ -4182,48 +4252,77 @@ Loop:
 				continue
 			}
 
+			// Pre-split line into sub-lines for word wrapping
+			var subLines []string
+			if t.activePreviewOpts.wrapWord {
+				subLines = t.wordWrapAnsiLine(line, maxWidth, t.wrapSignWidth)
+			} else {
+				subLines = []string{line}
+			}
+
 			var fillRet tui.FillReturn
-			prefixWidth := 0
-			var url *url
-			_, _, ansi = extractColor(line, ansi, func(str string, ansi *ansiState) bool {
-				trimmed := []rune(str)
-				isTrimmed := false
-				if !t.activePreviewOpts.wrap {
-					trimmed, isTrimmed = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+			wrap := t.activePreviewOpts.wrap
+			for subIdx, subLine := range subLines {
+				// Render wrap sign for continuation sub-lines
+				if subIdx > 0 {
+					if fillRet == tui.FillContinue {
+						fillRet = t.pwindow.Fill("\n")
+						if fillRet == tui.FillSuspend {
+							t.previewed.filled = true
+							break Loop
+						}
+					}
+					t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, tui.Dim, t.wrapSign)
 				}
-				if url == nil && ansi != nil && ansi.url != nil {
-					url = ansi.url
-					t.pwindow.LinkBegin(url.uri, url.params)
-				}
-				if url != nil && (ansi == nil || ansi.url == nil) {
-					url = nil
+
+				prefixWidth := t.pwindow.X()
+				var url *url
+				_, _, ansi = extractColor(subLine, ansi, func(str string, ansi *ansiState) bool {
+					trimmed := []rune(str)
+					isTrimmed := false
+					if !wrap {
+						trimmed, isTrimmed = t.trimRight(trimmed, maxWidth-t.pwindow.X())
+					}
+					if url == nil && ansi != nil && ansi.url != nil {
+						url = ansi.url
+						t.pwindow.LinkBegin(url.uri, url.params)
+					}
+					if url != nil && (ansi == nil || ansi.url == nil) {
+						url = nil
+						t.pwindow.LinkEnd()
+					}
+					if ansi != nil {
+						lbg = ansi.lbg
+					} else {
+						lbg = -1
+					}
+					str, width := t.processTabs(trimmed, prefixWidth)
+					if width > prefixWidth {
+						prefixWidth = width
+						colored := ansi != nil && ansi.colored()
+						if t.theme.Colored && colored {
+							fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.ul, ansi.attr, str)
+						} else {
+							attr := tui.AttrRegular
+							if colored {
+								attr = ansi.attr
+							}
+							fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, attr, str)
+						}
+					}
+					return !isTrimmed &&
+						(fillRet == tui.FillContinue || wrap && fillRet == tui.FillNextLine)
+				})
+				if url != nil {
 					t.pwindow.LinkEnd()
 				}
-				if ansi != nil {
-					lbg = ansi.lbg
-				} else {
-					lbg = -1
+
+				if fillRet == tui.FillSuspend {
+					t.previewed.filled = true
+					break Loop
 				}
-				str, width := t.processTabs(trimmed, prefixWidth)
-				if width > prefixWidth {
-					prefixWidth = width
-					colored := ansi != nil && ansi.colored()
-					if t.theme.Colored && colored {
-						fillRet = t.pwindow.CFill(ansi.fg, ansi.bg, ansi.ul, ansi.attr, str)
-					} else {
-						attr := tui.AttrRegular
-						if colored {
-							attr = ansi.attr
-						}
-						fillRet = t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, attr, str)
-					}
-				}
-				return !isTrimmed &&
-					(fillRet == tui.FillContinue || t.activePreviewOpts.wrap && fillRet == tui.FillNextLine)
-			})
-			if url != nil {
-				t.pwindow.LinkEnd()
 			}
+
 			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
 			if fillRet == tui.FillNextLine {
 				continue
@@ -5972,9 +6071,17 @@ func (t *Terminal) Loop() error {
 						t.cancelPreview()
 					}
 				}
-			case actTogglePreviewWrap:
+			case actTogglePreviewWrap, actTogglePreviewWrapWord:
 				if t.hasPreviewWindow() {
-					t.activePreviewOpts.wrap = !t.activePreviewOpts.wrap
+					if a.t == actTogglePreviewWrapWord {
+						t.activePreviewOpts.wrapWord = !t.activePreviewOpts.wrapWord
+						t.activePreviewOpts.wrap = t.activePreviewOpts.wrapWord
+					} else {
+						t.activePreviewOpts.wrap = !t.activePreviewOpts.wrap
+						if !t.activePreviewOpts.wrap {
+							t.activePreviewOpts.wrapWord = false
+						}
+					}
 					// Reset preview version so that full redraw occurs
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
