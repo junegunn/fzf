@@ -1250,7 +1250,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if opts.WrapSign != nil {
 		t.wrapSign = *opts.WrapSign
 	}
-	t.wrapSign, t.wrapSignWidth = t.processTabs([]rune(t.wrapSign), 0)
+	t.wrapSign, t.wrapSignWidth = t.processTabsStr(t.wrapSign, 0)
 	if opts.Scrollbar == nil {
 		if t.unicode && t.borderWidth == 1 {
 			t.scrollbar = "│"
@@ -1579,7 +1579,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 		})
 		t.wrap = wrap
 	}
-	_, promptLen := t.processTabs([]rune(trimmed), 0)
+	_, promptLen := t.processTabsStr(trimmed, 0)
 
 	return output, promptLen
 }
@@ -4162,8 +4162,9 @@ func (t *Terminal) previewLineHeight(line string, maxWidth int) int {
 // prefixWidth is the visual offset where the content starts (e.g. wrap sign width for
 // continuation lines), used for correct tab stop alignment.
 func (t *Terminal) ansiLineWidth(line string, prefixWidth int) int {
+	line = strings.TrimSuffix(line, "\n")
 	trimmed, _, _ := extractColor(line, nil, nil)
-	_, width := t.processTabs([]rune(trimmed), prefixWidth)
+	_, width := t.processTabsStr(trimmed, prefixWidth)
 	return width - prefixWidth
 }
 
@@ -4497,10 +4498,10 @@ func (t *Terminal) printPreviewDelayed() {
 	t.pwindow.CPrint(tui.ColInfo.WithAttr(tui.Reverse), message)
 }
 
-func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
+func (t *Terminal) processTabsStr(input string, prefixWidth int) (string, int) {
 	var strbuf strings.Builder
 	l := prefixWidth
-	gr := uniseg.NewGraphemes(string(runes))
+	gr := uniseg.NewGraphemes(input)
 	for gr.Next() {
 		rs := gr.Runes()
 		str := string(rs)
@@ -4515,6 +4516,10 @@ func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
 		l += w
 	}
 	return strbuf.String(), l
+}
+
+func (t *Terminal) processTabs(runes []rune, prefixWidth int) (string, int) {
+	return t.processTabsStr(string(runes), prefixWidth)
 }
 
 func (t *Terminal) printAll() {
@@ -5333,7 +5338,7 @@ func (t *Terminal) addClickFooterWord(env []string) []string {
 	// NOTE: Unlike in click-header, we don't use --delimiter here, since we're
 	// only interested in the word, not nth. Does this make sense?
 	trimmed, _, _ := extractColor(t.footer[clickFooterLine], nil, nil)
-	trimmed, _ = t.processTabs([]rune(trimmed), 0)
+	trimmed, _ = t.processTabsStr(trimmed, 0)
 	words := Tokenize(trimmed, Delimiter{})
 	colNum := t.clickFooterColumn - 1
 	for _, token := range words {
