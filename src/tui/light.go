@@ -1423,8 +1423,10 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 	for i, line := range allLines {
 		lines := WrapLine(line, w.posx, w.width, w.tabstop, w.wrapSignWidth)
 		for j, wl := range lines {
-			w.stderrInternal(wl.Text, false, resetCode)
-			w.posx += wl.DisplayWidth
+			if w.posx < w.width {
+				w.stderrInternal(wl.Text, false, resetCode)
+				w.posx += wl.DisplayWidth
+			}
 
 			// Wrap line
 			if j < len(lines)-1 || i < len(allLines)-1 {

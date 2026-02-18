@@ -1377,7 +1377,8 @@ func WrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapS
 	width := 0
 	line := ""
 	gr := uniseg.NewGraphemes(input)
-	max := initialMax
+	maxWidth := initialMax
+	contMax := max(1, initialMax-wrapSignWidth)
 	for gr.Next() {
 		rs := gr.Runes()
 		str := string(rs)
@@ -1392,14 +1393,14 @@ func WrapLine(input string, prefixLength int, initialMax int, tabstop int, wrapS
 		}
 		width += w
 
-		if prefixLength+width <= max {
+		if prefixLength+width <= maxWidth {
 			line += str
 		} else {
 			lines = append(lines, WrappedLine{string(line), width - w})
 			line = str
 			prefixLength = 0
 			width = w
-			max = initialMax - wrapSignWidth
+			maxWidth = contMax
 		}
 	}
 	lines = append(lines, WrappedLine{string(line), width})

@@ -383,6 +383,16 @@ class TestPreview < TestInteractive
     end
   end
 
+  def test_preview_follow_wrap
+    tmux.send_keys "seq 1 | #{FZF} --preview 'seq 1000' --preview-window right,2,follow,wrap", :Enter
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.until do |lines|
+      assert_includes lines[-4], '│ 10 │'
+      assert_includes lines[-3], '│ ↳  │'
+      assert_includes lines[-2], '│ ↳  │'
+    end
+  end
+
   def test_close
     tmux.send_keys "seq 100 | #{FZF} --preview 'echo foo' --bind ctrl-c:close", :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
@@ -541,7 +551,7 @@ class TestPreview < TestInteractive
     tmux.send_keys "seq 10 | #{FZF} --preview-border rounded --preview-window '~5,2,+0,<100000(~0,+100,wrap,noinfo)' --preview 'seq 1000'", :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }
     tmux.until do |lines|
-      assert_equal ['╭────╮', '│ 10 │', '│ ↳ 0│', '│ 10 │', '│ ↳ 1│'], lines.take(5).map(&:strip)
+      assert_equal ['╭────╮', '│ 10 │', '│ ↳  │', '│ 10 │', '│ ↳  │'], lines.take(5).map(&:strip)
     end
   end
 

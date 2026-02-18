@@ -4093,6 +4093,80 @@ func extractPassThroughs(line string) ([]string, string) {
 	return passThroughs, transformed
 }
 
+// followOffset computes the correct content-line offset for follow mode,
+// accounting for line wrapping in the preview window.
+func (t *Terminal) followOffset() int {
+	lines := t.previewer.lines
+	headerLines := t.activePreviewOpts.headerLines
+	height := t.pwindow.Height() - headerLines
+	if height <= 0 || len(lines) <= headerLines {
+		return headerLines
+	}
+
+	body := lines[headerLines:]
+	if !t.activePreviewOpts.wrap {
+		return max(t.previewer.offset, headerLines+len(body)-height)
+	}
+
+	maxWidth := t.pwindow.Width()
+	visualLines := 0
+	for i := len(body) - 1; i >= 0; i-- {
+		h := t.previewLineHeight(body[i], maxWidth)
+		if visualLines+h > height {
+			return headerLines + i + 1
+		}
+		visualLines += h
+	}
+	return headerLines
+}
+
+// previewLineHeight estimates the number of visual lines a preview content line
+// occupies when wrapping is enabled.
+func (t *Terminal) previewLineHeight(line string, maxWidth int) int {
+	if maxWidth <= 0 {
+		return 1
+	}
+
+	// For word-wrap mode, count the sub-lines produced by word wrapping.
+	// Each sub-line may still char-wrap if it contains a word longer than the width.
+	if t.activePreviewOpts.wrapWord {
+		subLines := t.wordWrapAnsiLine(line, maxWidth, t.wrapSignWidth)
+		total := 0
+		for i, sub := range subLines {
+			prefixWidth := 0
+			cols := maxWidth
+			if i > 0 {
+				prefixWidth = t.wrapSignWidth
+				cols -= t.wrapSignWidth
+			}
+			w := t.ansiLineWidth(sub, prefixWidth)
+			if cols <= 0 {
+				cols = 1
+			}
+			total += max(1, (w+cols-1)/cols)
+		}
+		return total
+	}
+
+	// For char-wrap, compute visible width and divide by available width.
+	w := t.ansiLineWidth(line, 0)
+	if w <= maxWidth {
+		return 1
+	}
+	remaining := w - maxWidth
+	contWidth := max(1, maxWidth-t.wrapSignWidth)
+	return 1 + (remaining+contWidth-1)/contWidth
+}
+
+// ansiLineWidth computes the display width of a string, skipping ANSI escape sequences.
+// prefixWidth is the visual offset where the content starts (e.g. wrap sign width for
+// continuation lines), used for correct tab stop alignment.
+func (t *Terminal) ansiLineWidth(line string, prefixWidth int) int {
+	trimmed, _, _ := extractColor(line, nil, nil)
+	_, width := t.processTabs([]rune(trimmed), prefixWidth)
+	return width - prefixWidth
+}
+
 func (t *Terminal) wordWrapAnsiLine(line string, maxWidth int, wrapSignWidth int) []string {
 	if maxWidth <= 0 {
 		return []string{line}
@@ -5704,7 +5778,7 @@ func (t *Terminal) Loop() error {
 						t.previewer.lines = result.lines
 						t.previewer.spinner = result.spinner
 						if t.hasPreviewWindow() && t.previewer.following.Enabled() {
-							t.previewer.offset = max(t.previewer.offset, len(t.previewer.lines)-(t.pwindow.Height()-t.activePreviewOpts.headerLines))
+							t.previewer.offset = t.followOffset()
 						} else if result.offset >= 0 {
 							t.previewer.offset = util.Constrain(result.offset, t.activePreviewOpts.headerLines, len(t.previewer.lines)-1)
 						}

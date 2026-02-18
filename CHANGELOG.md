@@ -36,6 +36,7 @@ CHANGELOG
 - Added fish completion support (#4605) (@lalvarezt)
 - zsh: Handle multi-line history selection (#4595) (@LangLangBart)
 - Bug fixes
+    - Fixed `--preview-window follow` not working correctly with wrapping (#3243, #4258)
     - Fixed symlinks to directories being returned as files (#4676) (@skk64)
     - Fixed SIGHUP signal handling (#4668) (@LangLangBart)
     - Fixed preview process not killed on exit (#4667)

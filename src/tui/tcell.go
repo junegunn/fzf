@@ -971,7 +971,9 @@ func (w *TcellWindow) fillString(text string, pair ColorPair) FillReturn {
 					w.renderWrapSign(style)
 				}
 			}
-			w.renderGraphemes(wl.Text, style)
+			if w.lastX < w.width {
+				w.renderGraphemes(wl.Text, style)
+			}
 		}
 	}
 	if w.lastX >= w.width {
