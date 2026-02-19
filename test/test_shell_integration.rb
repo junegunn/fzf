@@ -138,7 +138,7 @@ module TestShell
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_equal '>', lines[-1] }
     tmux.send_keys 'foo bar'
-    tmux.until { |lines| assert_includes lines[-4], '"foo' } unless shell == :zsh
+    tmux.until { |lines| assert_includes lines[-4], '"foo' } if shell == :bash
     tmux.until { |lines| assert lines[-3]&.match?(/bar"␊?/) }
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines[-1]&.match?(/bar"␊?/) }
@@ -1020,15 +1020,23 @@ class TestFish < TestBase
     tmux.send_keys 'echo "bar', :Enter, 'foo"', :Enter
     tmux.prepare
     tmux.send_keys 'C-l', 'C-r'
+    offset = -6
     block = <<~BLOCK
       echo "foo
       bar"
       echo "bar
       foo"
     BLOCK
+    if shell == :fish
+      offset = -4
+      block = <<~FISH
+        echo "foo␊bar"
+        echo "bar␊foo"
+      FISH
+    end
     tmux.until do |lines|
       block.lines.each_with_index do |line, idx|
-        assert_includes lines[-6 + idx], line.chomp
+        assert_includes lines[idx + offset], line.chomp
       end
     end
     tmux.send_keys :BTab, :BTab

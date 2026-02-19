@@ -35,6 +35,15 @@ CHANGELOG
 - Added `--preview-wrap-sign` to set a different wrap indicator for the preview
   window
 - Added `alt-gutter` color option (#4602) (@hedgieinsocks)
+- Added `$FZF_WRAP` environment variable to child processes (`char` or `word`
+  when wrapping is enabled) (#4672) (@bitraid)
+- fish: Improved command history (CTRL-R) (#4672) (@bitraid)
+    - Enabled syntax highlighting in the list on fish 4.3.3+
+    - Added syntax-highlighted preview window that auto-shows for long or
+      multi-line commands
+    - Added `ALT-ENTER` to reformat and insert selected commands
+    - Improved handling of bulk deletion of selected history entries
+      (`SHIFT-DELETE`)
 - Added fish completion support (#4605) (@lalvarezt)
 - zsh: Handle multi-line history selection (#4595) (@LangLangBart)
 - Bug fixes
