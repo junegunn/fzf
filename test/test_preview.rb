@@ -587,8 +587,8 @@ class TestPreview < TestInteractive
     tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m1234567890 \\x1b[mhello"; echo -e "\\x1b[33m1234567890 \\x1b[mhello"' --preview-window 10,wrap-word), :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert_equal 2, lines.count { |line| line.include?('│ 1234567890 │') }
-      assert_equal 2, lines.count { |line| line.include?('│ ↳ hello    │') }
+      assert_equal(2, lines.count { |line| line.include?('│ 1234567890 │') })
+      assert_equal(2, lines.count { |line| line.include?('│ ↳ hello    │') })
     end
   end
 
@@ -596,8 +596,8 @@ class TestPreview < TestInteractive
     tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m1234567890 \\x1b[mhello"; echo -e "\\x1b[33m1234567890 \\x1b[mhello"' --preview-window 2,wrap-word), :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert_equal 2, lines.count { |line| line.include?('│ 12 │') }
-      assert_equal 0, lines.count { |line| line.include?('│ h') }
+      assert_equal(2, lines.count { |line| line.include?('│ 12 │') })
+      assert_equal(0, lines.count { |line| line.include?('│ h') })
     end
   end
 
@@ -605,8 +605,8 @@ class TestPreview < TestInteractive
     tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m1234567890 \\x1b[mhello"; echo -e "\\x1b[33m1234567890 \\x1b[mhello"' --preview-window 1,wrap-word), :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
-      assert_equal 2, lines.count { |line| line.include?('│ 1 │') }
-      assert_equal 0, lines.count { |line| line.include?('│ h') }
+      assert_equal(2, lines.count { |line| line.include?('│ 1 │') })
+      assert_equal(0, lines.count { |line| line.include?('│ h') })
     end
   end
 end

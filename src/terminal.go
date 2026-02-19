@@ -4369,7 +4369,7 @@ Loop:
 				prefixWidth := t.pwindow.X()
 				var url *url
 				_, _, ansi = extractColor(subLine, ansi, func(str string, ansi *ansiState) bool {
-					if fillRet == tui.FillNextLine {
+					if len(str) > 0 && fillRet == tui.FillNextLine {
 						printWrapSign()
 						prefixWidth = t.pwindow.X()
 					}
