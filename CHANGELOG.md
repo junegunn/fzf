@@ -32,6 +32,8 @@ CHANGELOG
   # In the preview window
   fzf --preview "printf '\e[4:3;58;2;255;0;0mRed curly underline\e[0m\n'"
   ```
+- Added `--preview-wrap-sign` to set a different wrap indicator for the preview
+  window
 - Added `alt-gutter` color option (#4602) (@hedgieinsocks)
 - Added fish completion support (#4605) (@lalvarezt)
 - zsh: Handle multi-line history selection (#4595) (@LangLangBart)

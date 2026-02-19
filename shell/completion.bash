@@ -219,6 +219,7 @@ _fzf_opts_completion() {
     --with-shell
     --wrap
     --wrap-sign
+    --preview-wrap-sign
     --zsh
     -0 --exit-0
     -1 --select-1

@@ -167,6 +167,7 @@ Usage: fzf [options]
     --preview-label=LABEL
     --preview-label-pos=N    Same as --border-label and --border-label-pos,
                              but for preview window
+    --preview-wrap-sign=STR  Indicator for wrapped lines in the preview window
 
   HEADER
     --header=STR             String to print as header
@@ -608,6 +609,7 @@ type Options struct {
 	Wrap              bool
 	WrapWord          bool
 	WrapSign          *string
+	PreviewWrapSign   *string
 	MultiLine         bool
 	CursorLine        bool
 	KeepRight         bool
@@ -3113,6 +3115,12 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.Preview.border, err = parseBorder(arg, !hasArg); err != nil {
 				return err
 			}
+		case "--preview-wrap-sign":
+			str, err := nextString("preview wrap sign required")
+			if err != nil {
+				return err
+			}
+			opts.PreviewWrapSign = &str
 		case "--height":
 			str, err := nextString("height required: [~]HEIGHT[%]")
 			if err != nil {
