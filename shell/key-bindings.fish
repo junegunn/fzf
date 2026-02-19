@@ -183,7 +183,7 @@ function fzf_key_bindings
     set -l -- fzf_query (string escape -- $command_line[$current_line])
 
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '' \
-      '--nth=2..,.. --scheme=history --multi --no-multi-line --no-wrap --wrap-sign="\t\t\t↳·"' \
+      '--nth=2..,.. --scheme=history --multi --no-multi-line --no-wrap --wrap-sign="\t\t\t↳ " --preview-wrap-sign="↳ "' \
       '--bind=\'shift-delete:execute-silent(for i in (string split0 -- <{+f}); eval builtin history delete --exact --case-sensitive -- (string escape -n -- $i | string replace -r "^\d*\\\\\\t" ""); end)+reload(eval $FZF_DEFAULT_COMMAND)\'' \
       '--bind="alt-enter:become(string join0 -- (string collect -- {+2..} | fish_indent -i))"' \
       "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
@@ -207,7 +207,7 @@ function fzf_key_bindings
       set -p -- FZF_DEFAULT_OPTS \
         '--bind="focus,resize:bg-transform:if test \\"$FZF_COLUMNS\\" -gt 100 -a \\\\( \\"$FZF_SELECT_COUNT\\" -gt 0 -o \\\\( -z \\"$FZF_WRAP\\" -a (string length -- {}) -gt (math $FZF_COLUMNS - 4) \\\\) -o (string collect -- {2..} | fish_indent | count) -gt 1 \\\\); echo show-preview; else echo hide-preview; end"' \
         '--preview="string collect -- (test \\"$FZF_SELECT_COUNT\\" -gt 0; and string collect -- {+2..}) \\"\\n# \\"'$date_cmd' {2..} | fish_indent --ansi"' \
-        '--preview-window="right,50%,wrap,follow,info,hidden"'
+        '--preview-window="right,50%,wrap-word,follow,info,hidden"'
     end
 
     set -lx FZF_DEFAULT_OPTS_FILE
