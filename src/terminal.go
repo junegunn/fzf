@@ -4340,6 +4340,12 @@ Loop:
 
 			var fillRet tui.FillReturn
 			wrap := t.activePreviewOpts.wrap
+			printWrapSign := func() {
+				if t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, tui.Dim, t.wrapSign) == tui.FillNextLine {
+					t.pwindow.Move(t.pwindow.Y()-1, t.pwindow.Width())
+				}
+				fillRet = tui.FillContinue
+			}
 			for subIdx, subLine := range subLines {
 				// Render wrap sign for continuation sub-lines
 				if subIdx > 0 {
@@ -4350,12 +4356,16 @@ Loop:
 							break Loop
 						}
 					}
-					t.pwindow.CFill(tui.ColPreview.Fg(), tui.ColPreview.Bg(), -1, tui.Dim, t.wrapSign)
+					printWrapSign()
 				}
 
 				prefixWidth := t.pwindow.X()
 				var url *url
 				_, _, ansi = extractColor(subLine, ansi, func(str string, ansi *ansiState) bool {
+					if fillRet == tui.FillNextLine {
+						printWrapSign()
+						prefixWidth = t.pwindow.X()
+					}
 					trimmed := []rune(str)
 					isTrimmed := false
 					if !wrap {
