@@ -39,7 +39,7 @@ const (
 	progressMinDuration     = 200 * time.Millisecond
 
 	// Capacity of each chunk
-	chunkSize int = 100
+	chunkSize int = 1000
 
 	// Pre-allocated memory slices to minimize GC
 	slab16Size int = 100 * 1024 // 200KB * 32 = 12.8MB
