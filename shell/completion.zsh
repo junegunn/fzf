@@ -204,12 +204,12 @@ __fzf_generic_path_completion() {
 
 _fzf_path_completion() {
   __fzf_generic_path_completion "$1" "$2" _fzf_compgen_path \
-    "-m" "" " "
+    "${FZF_COMPLETION_PATH_OPTS-} -m" "" " "
 }
 
 _fzf_dir_completion() {
   __fzf_generic_path_completion "$1" "$2" _fzf_compgen_dir \
-    "" "/" ""
+    "${FZF_COMPLETION_DIR_OPTS-}" "/" ""
 }
 
 _fzf_feed_fifo() {
