@@ -180,7 +180,7 @@ __fzf_generic_path_completion() {
           rest=${FZF_COMPLETION_PATH_OPTS-}
         fi
         if declare -f "$compgen" > /dev/null; then
-          eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd_word" ${(Q)${(Z+n+)fzf_opts}} ${(Q)${(Z+n+)rest}} -q "$leftover"
+          eval "$compgen $(printf %q "$dir")" | __fzf_comprun "$cmd_word" ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" ${(Q)${(Z+n+)rest}}
         else
           if [[ $compgen =~ dir ]]; then
             walker=dir,follow

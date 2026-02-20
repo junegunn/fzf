@@ -376,7 +376,7 @@ __fzf_generic_path_completion() {
             eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
           fi
           if declare -F "$1" > /dev/null; then
-            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" "${rest[@]}" -q "$leftover"
+            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover" "${rest[@]}"
           else
             if [[ $1 =~ dir ]]; then
               walker=dir,follow
