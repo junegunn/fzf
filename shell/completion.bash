@@ -370,15 +370,18 @@ __fzf_generic_path_completion() {
         matches=$(
           export FZF_DEFAULT_OPTS=$(__fzf_defaults "--reverse --scheme=path" "${FZF_COMPLETION_OPTS-} $2")
           unset FZF_DEFAULT_COMMAND FZF_DEFAULT_OPTS_FILE
+          if [[ $1 =~ dir ]]; then
+            eval "rest=(${FZF_COMPLETION_DIR_OPTS-})"
+          else
+            eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
+          fi
           if declare -F "$1" > /dev/null; then
-            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover"
+            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover" "${rest[@]}"
           else
             if [[ $1 =~ dir ]]; then
               walker=dir,follow
-              eval "rest=(${FZF_COMPLETION_DIR_OPTS-})"
             else
               walker=file,dir,follow,hidden
-              eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
             fi
             __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" "${rest[@]}"
           fi | while read -r item; do
