@@ -38,9 +38,9 @@ if [[ $- =~ i ]]; then
 # the changes. See code comments in "common.sh" for the implementation details.
 
 __fzf_defaults() {
-  printf '%s\n' "--height ${FZF_TMUX_HEIGHT:-40%} --min-height 20+ --bind=ctrl-z:ignore $1"
+  builtin printf '%s\n' "--height ${FZF_TMUX_HEIGHT:-40%} --min-height 20+ --bind=ctrl-z:ignore $1"
   command cat "${FZF_DEFAULT_OPTS_FILE-}" 2> /dev/null
-  printf '%s\n' "${FZF_DEFAULT_OPTS-} $2"
+  builtin printf '%s\n' "${FZF_DEFAULT_OPTS-} $2"
 }
 
 __fzf_exec_awk() {
@@ -81,7 +81,7 @@ __fzf_orig_completion() {
       f="${BASH_REMATCH[2]}"
       cmd="${BASH_REMATCH[3]}"
       [[ $f == _fzf_* ]] && continue
-      printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
+      builtin printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
       if [[ $l == *" -o nospace "* ]] && [[ ${__fzf_nospace_commands-} != *" $cmd "* ]]; then
         __fzf_nospace_commands="${__fzf_nospace_commands-} $cmd "
       fi
@@ -111,7 +111,7 @@ __fzf_orig_completion_instantiate() {
   orig="${!orig_var-}"
   orig="${orig%#*}"
   [[ $orig == *' %s '* ]] || return 1
-  printf -v REPLY "$orig" "$func"
+  builtin printf -v REPLY "$orig" "$func"
 }
 
 _fzf_opts_completion() {
@@ -376,7 +376,7 @@ __fzf_generic_path_completion() {
             eval "rest=(${FZF_COMPLETION_PATH_OPTS-})"
           fi
           if declare -F "$1" > /dev/null; then
-            eval "$1 $(printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover" "${rest[@]}"
+            eval "$1 $(builtin printf %q "$dir")" | __fzf_comprun "$4" -q "$leftover" "${rest[@]}"
           else
             if [[ $1 =~ dir ]]; then
               walker=dir,follow
@@ -385,7 +385,7 @@ __fzf_generic_path_completion() {
             fi
             __fzf_comprun "$4" -q "$leftover" --walker "$walker" --walker-root="$dir" "${rest[@]}"
           fi | while read -r item; do
-            printf "%q " "${item%$3}$3"
+            builtin printf "%q " "${item%$3}$3"
           done
         )
         matches=${matches% }
@@ -395,9 +395,9 @@ __fzf_generic_path_completion() {
         else
           COMPREPLY=("$cur")
         fi
-        # To redraw line after fzf closes (printf '\e[5n')
+        # To redraw line after fzf closes (builtin printf '\e[5n')
         bind '"\e[0n": redraw-current-line' 2> /dev/null
-        printf '\e[5n'
+        builtin printf '\e[5n'
         return 0
       fi
       dir=$(command dirname "$dir")
@@ -455,7 +455,7 @@ _fzf_complete() {
       COMPREPLY=("$cur")
     fi
     bind '"\e[0n": redraw-current-line' 2> /dev/null
-    printf '\e[5n'
+    builtin printf '\e[5n'
     return 0
   else
     _fzf_handle_dynamic_completion "$cmd" "${rest[@]}"
@@ -527,7 +527,7 @@ _fzf_proc_completion_post() {
 #     # Set the local attribute for any non-local variable that is set by _known_hosts_real()
 #     local COMPREPLY=()
 #     _known_hosts_real ''
-#     printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
+#     builtin printf '%s\n' "${COMPREPLY[@]}" | command sort -u --version-sort
 #   }
 if ! declare -F __fzf_list_hosts > /dev/null; then
   __fzf_list_hosts() {
