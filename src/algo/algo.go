@@ -569,27 +569,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 		Hdiag := H[row+f-f0-1-width:][:len(Tsub)]
 		Hleft := H[row+f-f0-1:][:len(Tsub)]
 		Hleft[0] = 0
-		for off := 0; off < len(Tsub); off++ {
-			char := Tsub[off]
-			// When the left neighbor's score is 0 or 1 and the current character
-			// doesn't match, the score is guaranteed to be 0 (gap penalties
-			// are negative). Skip all the bonus/gap computation.
-			if pchar != char && Hleft[off] <= 1 {
-				Hsub[off] = 0
-				Csub[off] = 0
-				// Fast-forward: Hleft of the next cell is the Hsub we just
-				// wrote (0), so only a match can break the dead zone.
-				off++
-				for off < len(Tsub) && Tsub[off] != pchar {
-					Hsub[off] = 0
-					Csub[off] = 0
-					off++
-				}
-				off--
-				inGap = false
-				continue
-			}
-
+		for off, char := range Tsub {
 			col := off + f
 			var s1, s2, consecutive int16
 
