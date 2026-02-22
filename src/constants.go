@@ -65,7 +65,6 @@ const (
 	EvtSearchNew
 	EvtSearchProgress
 	EvtSearchFin
-	EvtHeader
 	EvtReady
 	EvtQuit
 )

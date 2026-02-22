@@ -326,4 +326,27 @@ class TestFilter < TestBase
     writelines(['emp001 Alice Engineering', 'emp002 Bob Marketing'])
     assert_equal 'emp001', `#{FZF} -d' ' --with-nth 2 --accept-nth 1 -f Alice < #{tempname}`.chomp
   end
+
+  def test_header_lines_filter
+    assert_equal %w[4 5 6 7 8 9 10],
+                 `seq 10 | #{FZF} --header-lines 3 -f ""`.lines(chomp: true)
+    assert_equal %w[5],
+                 `seq 10 | #{FZF} --header-lines 3 -f 5`.lines(chomp: true)
+    # Header items should not be matched
+    assert_empty `seq 10 | #{FZF} --header-lines 3 -f "^1$"`.lines(chomp: true)
+  end
+
+  def test_header_lines_filter_with_nth
+    writelines(%w[a:1 b:2 c:3 d:4 e:5])
+    assert_equal %w[c:3 d:4 e:5],
+                 `#{FZF} --header-lines 2 -d: --with-nth 2 -f "" < #{tempname}`.lines(chomp: true)
+    assert_equal %w[d:4],
+                 `#{FZF} --header-lines 2 -d: --with-nth 2 -f 4 < #{tempname}`.lines(chomp: true)
+  end
+
+  def test_header_lines_all_headers
+    # When all lines are header lines, no results
+    assert_empty `seq 3 | #{FZF} --header-lines 10 -f ""`.chomp
+    assert_equal 1, $CHILD_STATUS.exitstatus
+  end
 end

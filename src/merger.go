@@ -10,42 +10,46 @@ func EmptyMerger(revision revision) *Merger {
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
 type Merger struct {
-	pattern  *Pattern
-	lists    [][]Result
-	merged   []Result
-	chunks   *[]*Chunk
-	cursors  []int
-	sorted   bool
-	tac      bool
-	final    bool
-	count    int
-	pass     bool
-	revision revision
-	minIndex int32
-	maxIndex int32
+	pattern    *Pattern
+	lists      [][]Result
+	merged     []Result
+	chunks     *[]*Chunk
+	cursors    []int
+	sorted     bool
+	tac        bool
+	final      bool
+	count      int
+	pass       bool
+	startIndex int
+	revision   revision
+	minIndex   int32
+	maxIndex   int32
 }
 
 // PassMerger returns a new Merger that simply returns the items in the
-// original order
-func PassMerger(chunks *[]*Chunk, tac bool, revision revision) *Merger {
+// original order. startIndex items are skipped from the beginning.
+func PassMerger(chunks *[]*Chunk, tac bool, revision revision, startIndex int32) *Merger {
 	var minIndex, maxIndex int32
 	if len(*chunks) > 0 {
 		minIndex = (*chunks)[0].items[0].Index()
 		maxIndex = (*chunks)[len(*chunks)-1].lastIndex(minIndex)
 	}
+	si := int(startIndex)
 	mg := Merger{
-		pattern:  nil,
-		chunks:   chunks,
-		tac:      tac,
-		count:    0,
-		pass:     true,
-		revision: revision,
-		minIndex: minIndex,
-		maxIndex: maxIndex}
+		pattern:    nil,
+		chunks:     chunks,
+		tac:        tac,
+		count:      0,
+		pass:       true,
+		startIndex: si,
+		revision:   revision,
+		minIndex:   minIndex + startIndex,
+		maxIndex:   maxIndex}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += chunk.count
 	}
+	mg.count = max(0, mg.count-si)
 	return &mg
 }
 
@@ -113,6 +117,7 @@ func (mg *Merger) Get(idx int) Result {
 		if mg.tac {
 			idx = mg.count - idx - 1
 		}
+		idx += mg.startIndex
 		firstChunk := (*mg.chunks)[0]
 		if firstChunk.count < chunkSize && idx >= firstChunk.count {
 			idx -= firstChunk.count

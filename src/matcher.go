@@ -174,7 +174,7 @@ func (m *Matcher) scan(request MatchRequest) MatchResult {
 		return MatchResult{m, m, false}
 	}
 	pattern := request.pattern
-	passMerger := PassMerger(&request.chunks, m.tac, request.revision)
+	passMerger := PassMerger(&request.chunks, m.tac, request.revision, pattern.startIndex)
 	if pattern.IsEmpty() {
 		return MatchResult{passMerger, passMerger, false}
 	}

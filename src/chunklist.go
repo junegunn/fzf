@@ -52,6 +52,20 @@ func (cl *ChunkList) lastChunk() *Chunk {
 	return cl.chunks[len(cl.chunks)-1]
 }
 
+// GetItems returns the first n items from the given chunks
+func GetItems(chunks []*Chunk, n int) []Item {
+	items := make([]Item, 0, n)
+	for _, chunk := range chunks {
+		for i := 0; i < chunk.count && len(items) < n; i++ {
+			items = append(items, chunk.items[i])
+		}
+		if len(items) >= n {
+			break
+		}
+	}
+	return items
+}
+
 // CountItems returns the total number of Items
 func CountItems(cs []*Chunk) int {
 	if len(cs) == 0 {

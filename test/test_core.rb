@@ -2176,6 +2176,80 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_change_header_lines
+    tmux.send_keys %(seq 10 | #{FZF} --header-lines 3 --bind 'space:change-header-lines(5),enter:transform-header-lines(echo 1)'), :Enter
+    tmux.until do |lines|
+      assert_equal 7, lines.item_count
+      assert lines.any_include?('> 4')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 5, lines.item_count
+      assert lines.any_include?('> 6')
+    end
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal 9, lines.item_count
+      assert lines.any_include?('> 6')
+    end
+  end
+
+  def test_change_header_lines_to_zero
+    tmux.send_keys %(seq 5 | #{FZF} --header-lines 3 --bind 'space:bg-transform-header-lines(echo 0)'), :Enter
+    tmux.until do |lines|
+      assert_equal 2, lines.item_count
+      assert lines.any_include?('> 4')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 5, lines.item_count
+      # All items are now in the list, cursor stays on item 4
+      assert lines.any_include?('> 4')
+    end
+  end
+
+  def test_change_header_lines_deselect
+    # Selected items that become part of the header should be deselected
+    tmux.send_keys %(seq 10 | #{FZF} --multi --header-lines 0 --bind 'space:change-header-lines(3),enter:change-header-lines(1)'), :Enter
+    tmux.until do |lines|
+      assert_equal 10, lines.item_count
+      assert lines.any_include?('> 1')
+    end
+    # Select items 1, 2, 3 (these will become header lines)
+    tmux.send_keys :BTab, :BTab, :BTab
+    tmux.until { |lines| assert_equal 3, lines.select_count }
+    # Also select item 4 (this should remain selected)
+    tmux.send_keys :BTab
+    tmux.until { |lines| assert_equal 4, lines.select_count }
+    # Change header-lines to 3: items 1, 2, 3 become headers and should be deselected
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 7, lines.item_count
+      assert_equal 1, lines.select_count
+      assert lines.any_include?('> 5')
+    end
+    # Change header-lines to 1
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal 9, lines.item_count
+      assert_equal 1, lines.select_count
+      assert lines.any_include?('> 5')
+    end
+  end
+
+  def test_change_header_lines_reverse
+    tmux.send_keys %(seq 10 | #{FZF} --header-lines 2 --reverse --bind 'space:change-header-lines(4)'), :Enter
+    tmux.until do |lines|
+      assert_equal 8, lines.item_count
+      assert lines.any_include?('> 3')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 6, lines.item_count
+      assert lines.any_include?('> 5')
+    end
+  end
+
   def test_zero_width_characters
     tmux.send_keys %(for i in {1..1000}; do string+="a̱$i"; printf '\\e[43m%s\\e[0m\\n' "$string"; done | #{FZF} --ansi --query a500 --ellipsis XX), :Enter
     tmux.until do |lines|
