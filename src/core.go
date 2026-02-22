@@ -323,10 +323,11 @@ func Run(opts *Options) (int, error) {
 	query := []rune{}
 	determine := func(final bool) {
 		if heightUnknown {
-			if total >= maxFit || final {
+			items := max(0, total-int(headerLines))
+			if items >= maxFit || final {
 				deferred = false
 				heightUnknown = false
-				terminal.startChan <- fitpad{min(total, maxFit), padHeight}
+				terminal.startChan <- fitpad{min(items, maxFit), padHeight}
 			}
 		} else if deferred {
 			deferred = false
