@@ -1860,19 +1860,22 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		}
 		t.revision = newRevision
 		t.version++
-	}
-	if t.filterSelection && t.multi > 0 && len(t.selected) > 0 {
-		t.filterSelection = false
-		matchMap := t.resultMerger.ToMap()
-		filtered := make(map[int32]selectedItem)
-		for k, v := range t.selected {
-			if _, matched := matchMap[k]; matched {
-				filtered[k] = v
+
+		// Filter out selections that no longer match after with-nth change.
+		// Must be inside the revision check so we don't consume the flag
+		// on a stale EvtSearchFin from a previous search.
+		if t.filterSelection && t.multi > 0 && len(t.selected) > 0 {
+			matchMap := t.resultMerger.ToMap()
+			filtered := make(map[int32]selectedItem)
+			for k, v := range t.selected {
+				if _, matched := matchMap[k]; matched {
+					filtered[k] = v
+				}
 			}
+			t.selected = filtered
 		}
-		t.selected = filtered
+		t.filterSelection = false
 	}
-	t.filterSelection = false
 	if t.triggerLoad {
 		t.triggerLoad = false
 		t.eventChan <- tui.Load.AsEvent()
