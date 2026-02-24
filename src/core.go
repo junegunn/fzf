@@ -463,7 +463,7 @@ func Run(opts *Options) (int, error) {
 							// Reset cross-line ANSI state before re-processing all items
 							lineAnsiState = nil
 							prevLineAnsiState = nil
-							chunkList.Retransform(func(item *Item) {
+							chunkList.ForEachItem(func(item *Item) {
 								origBytes := *item.origText
 								savedIndex := item.Index()
 								if newTransformer != nil {

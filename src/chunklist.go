@@ -99,9 +99,9 @@ func (cl *ChunkList) Clear() {
 	cl.mutex.Unlock()
 }
 
-// Retransform iterates all items and applies fn to each one.
+// ForEachItem iterates all items and applies fn to each one.
 // The done callback runs under the lock to safely update shared state.
-func (cl *ChunkList) Retransform(fn func(*Item), done func()) {
+func (cl *ChunkList) ForEachItem(fn func(*Item), done func()) {
 	cl.mutex.Lock()
 	for _, chunk := range cl.chunks {
 		for i := 0; i < chunk.count; i++ {
