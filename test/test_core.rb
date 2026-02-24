@@ -1800,7 +1800,7 @@ class TestCore < TestInteractive
       'golf hotel india'
     ]
     writelines(input)
-    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:transform-with-nth(2)' -q bravo < #{tempname}), :Enter
+    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:transform-with-nth(echo 2)' -q '^bravo$' < #{tempname}), :Enter
     tmux.until do |lines|
       assert_equal 0, lines.match_count
     end
@@ -1811,7 +1811,7 @@ class TestCore < TestInteractive
   end
 
   def test_bg_transform_with_nth_output
-    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 2 --bind 'space:bg-transform-with-nth(3)'), :Enter
+    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 2 --bind 'space:bg-transform-with-nth(echo 3)'), :Enter
     tmux.until do |lines|
       assert_equal 2, lines.item_count
       assert lines.any_include?('b')
@@ -1819,6 +1819,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Space
     tmux.until do |lines|
       assert lines.any_include?('c')
+      refute lines.any_include?('b')
     end
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
@@ -1831,7 +1832,7 @@ class TestCore < TestInteractive
       'golf hotel india'
     ]
     writelines(input)
-    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:change-with-nth(2)' -q bravo < #{tempname}), :Enter
+    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:change-with-nth(2)' -q '^bravo$' < #{tempname}), :Enter
     tmux.until do |lines|
       assert_equal 0, lines.match_count
     end
@@ -1850,6 +1851,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Space
     tmux.until do |lines|
       assert lines.any_include?('c')
+      refute lines.any_include?('b')
     end
     tmux.send_keys :Enter
     tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
