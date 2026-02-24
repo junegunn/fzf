@@ -1372,7 +1372,7 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 		}
 	}
 	env = append(env, "FZF_INPUT_STATE="+inputState)
-	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", max(0, t.count-t.headerLines)))
+	env = append(env, fmt.Sprintf("FZF_TOTAL_COUNT=%d", t.count))
 	env = append(env, fmt.Sprintf("FZF_MATCH_COUNT=%d", t.resultMerger.Length()))
 	env = append(env, fmt.Sprintf("FZF_SELECT_COUNT=%d", len(t.selected)))
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
