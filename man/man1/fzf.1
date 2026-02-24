@@ -134,6 +134,14 @@ e.g.
      # Use template to rearrange fields
      echo foo,bar,baz | fzf --delimiter , --with-nth '{n},{1},{3},{2},{1..2}'
 .RE
+.RS
+
+\fBchange\-with\-nth\fR action is only available when \fB\-\-with\-nth\fR is set.
+When \fB\-\-with\-nth\fR is used, fzf retains the original input lines in memory
+so they can be re\-transformed on the fly (e.g. \fB\-\-with\-nth ..\fR to keep
+the original presentation). This increases memory usage, so only use
+\fB\-\-with\-nth\fR when you actually need field transformation.
+.RE
 .TP
 .BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
 Define which fields to print on accept. The last delimiter is stripped from the
@@ -1398,6 +1406,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_NTH "             Current \-\-nth option"
 .br
+.BR FZF_WITH_NTH "        Current \-\-with\-nth option"
+.br
 .BR FZF_PROMPT "          Prompt string"
 .br
 .BR FZF_GHOST "           Ghost string"
@@ -1888,6 +1898,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBchange\-multi\fR                 (enable multi-select mode with no limit)
     \fBchange\-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
     \fBchange\-nth(...)\fR              (change \fB\-\-nth\fR option; rotate through the multiple options separated by '|')
+    \fBchange\-with\-nth(...)\fR         (change \fB\-\-with\-nth\fR option; rotate through the multiple options separated by '|')
     \fBchange\-pointer(...)\fR          (change \fB\-\-pointer\fR option)
     \fBchange\-preview(...)\fR          (change \fB\-\-preview\fR option)
     \fBchange\-preview\-label(...)\fR    (change \fB\-\-preview\-label\fR to the given string)
@@ -1993,6 +2004,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform\-input\-label(...)\fR   (transform input label using an external command)
     \fBtransform\-list\-label(...)\fR    (transform list label using an external command)
     \fBtransform\-nth(...)\fR           (transform nth using an external command)
+    \fBtransform\-with\-nth(...)\fR      (transform with-nth using an external command)
     \fBtransform\-pointer(...)\fR       (transform pointer using an external command)
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)

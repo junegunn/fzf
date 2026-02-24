@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+0.69.0
+------
+- Added `change-with-nth` action for dynamically changing the `--with-nth` option
+  ```sh
+  echo -e "a b c\nd e f\ng h i" | fzf --with-nth .. \
+    --bind 'space:change-with-nth(1|2|3|1,3|2,3|)'
+  ```
+
 0.68.0
 ------
 - Implemented word wrapping in the list section
