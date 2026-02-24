@@ -340,8 +340,6 @@ type Terminal struct {
 	nthAttr              tui.Attr
 	nth                  []Range
 	nthCurrent           []Range
-	withNthExpr          string
-	withNthEnabled       bool
 	acceptNth            func([]Token, int32) string
 	tabstop              int
 	margin               [4]sizeSpec
@@ -386,7 +384,6 @@ type Terminal struct {
 	hasLoadActions       bool
 	hasResizeActions     bool
 	triggerLoad          bool
-	filterSelection      bool
 	reading              bool
 	running              *util.AtomicBool
 	failed               *string
@@ -554,7 +551,6 @@ const (
 	actChangeListLabel
 	actChangeMulti
 	actChangeNth
-	actChangeWithNth
 	actChangePointer
 	actChangePreview
 	actChangePreviewLabel
@@ -640,7 +636,6 @@ const (
 	actTransformInputLabel
 	actTransformListLabel
 	actTransformNth
-	actTransformWithNth
 	actTransformPointer
 	actTransformPreviewLabel
 	actTransformPrompt
@@ -660,7 +655,6 @@ const (
 	actBgTransformInputLabel
 	actBgTransformListLabel
 	actBgTransformNth
-	actBgTransformWithNth
 	actBgTransformPointer
 	actBgTransformPreviewLabel
 	actBgTransformPrompt
@@ -727,7 +721,6 @@ func processExecution(action actionType) bool {
 		actTransformInputLabel,
 		actTransformListLabel,
 		actTransformNth,
-		actTransformWithNth,
 		actTransformPointer,
 		actTransformPreviewLabel,
 		actTransformPrompt,
@@ -744,7 +737,6 @@ func processExecution(action actionType) bool {
 		actBgTransformInputLabel,
 		actBgTransformListLabel,
 		actBgTransformNth,
-		actBgTransformWithNth,
 		actBgTransformPointer,
 		actBgTransformPreviewLabel,
 		actBgTransformPrompt,
@@ -774,15 +766,10 @@ type placeholderFlags struct {
 	raw           bool
 }
 
-type withNthSpec struct {
-	fn func([]Token, int32) string // nil = clear (restore original)
-}
-
 type searchRequest struct {
 	sort        bool
 	sync        bool
 	nth         *[]Range
-	withNth     *withNthSpec
 	headerLines *int
 	command     *commandSpec
 	environ     []string
@@ -1093,8 +1080,6 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
-		withNthExpr:        opts.WithNthExpr,
-		withNthEnabled:     opts.WithNth != nil,
 		tabstop:            opts.Tabstop,
 		raw:                opts.Raw,
 		hasStartActions:    false,
@@ -1365,9 +1350,6 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_DIRECTION="+direction)
 	if len(t.nthCurrent) > 0 {
 		env = append(env, "FZF_NTH="+RangesToString(t.nthCurrent))
-	}
-	if len(t.withNthExpr) > 0 {
-		env = append(env, "FZF_WITH_NTH="+t.withNthExpr)
 	}
 	if t.raw {
 		val := "0"
@@ -1861,18 +1843,6 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		t.revision = newRevision
 		t.version++
 	}
-	if t.filterSelection && t.multi > 0 && len(t.selected) > 0 {
-		t.filterSelection = false
-		matchMap := t.resultMerger.ToMap()
-		filtered := make(map[int32]selectedItem)
-		for k, v := range t.selected {
-			if _, matched := matchMap[k]; matched {
-				filtered[k] = v
-			}
-		}
-		t.selected = filtered
-	}
-	t.filterSelection = false
 	if t.triggerLoad {
 		t.triggerLoad = false
 		t.eventChan <- tui.Load.AsEvent()
@@ -5952,7 +5922,6 @@ func (t *Terminal) Loop() error {
 	events := []util.EventType{}
 	changed := false
 	var newNth *[]Range
-	var newWithNth *withNthSpec
 	var newHeaderLines *int
 	req := func(evts ...util.EventType) {
 		for _, event := range evts {
@@ -5970,7 +5939,6 @@ func (t *Terminal) Loop() error {
 		events = []util.EventType{}
 		changed = false
 		newNth = nil
-		newWithNth = nil
 		newHeaderLines = nil
 		beof := false
 		queryChanged := false
@@ -6359,30 +6327,6 @@ func (t *Terminal) Loop() error {
 					if !compareRanges(t.nthCurrent, *newNth) {
 						changed = true
 						t.nthCurrent = *newNth
-						t.forceRerenderList()
-					}
-				})
-			case actChangeWithNth, actTransformWithNth, actBgTransformWithNth:
-				if !t.withNthEnabled {
-					break Action
-				}
-				capture(true, func(expr string) {
-					tokens := strings.Split(expr, "|")
-					withNthExpr := tokens[0]
-					if len(tokens) > 1 {
-						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
-					}
-					if withNthExpr != t.withNthExpr {
-						if len(withNthExpr) == 0 {
-							newWithNth = &withNthSpec{fn: nil}
-						} else if factory, err := nthTransformer(withNthExpr); err == nil {
-							newWithNth = &withNthSpec{fn: factory(t.delimiter)}
-						} else {
-							return
-						}
-						t.withNthExpr = withNthExpr
-						t.filterSelection = true
-						changed = true
 						t.forceRerenderList()
 					}
 				})
@@ -7533,7 +7477,7 @@ func (t *Terminal) Loop() error {
 		reload := changed || newCommand != nil
 		var reloadRequest *searchRequest
 		if reload {
-			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, withNth: newWithNth, headerLines: newHeaderLines, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.resultMerger.Revision()}
+			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, headerLines: newHeaderLines, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.resultMerger.Revision()}
 		}
 
 		// Dispatch queued background requests
