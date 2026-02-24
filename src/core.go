@@ -112,6 +112,42 @@ func Run(opts *Options) (int, error) {
 	cache := NewChunkCache()
 	var chunkList *ChunkList
 	var itemIndex int32
+	// transformItem applies with-nth transformation to an item's raw data.
+	// It handles ANSI token propagation using prevLineAnsiState for cross-line continuity.
+	transformItem := func(item *Item, data []byte, transformer func([]Token, int32) string, index int32) {
+		tokens := Tokenize(byteString(data), opts.Delimiter)
+		if opts.Ansi && len(tokens) > 1 {
+			var ansiState *ansiState
+			if prevLineAnsiState != nil {
+				ansiStateDup := *prevLineAnsiState
+				ansiState = &ansiStateDup
+			}
+			for _, token := range tokens {
+				prevAnsiState := ansiState
+				_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
+				if prevAnsiState != nil {
+					token.text.Prepend("\x1b[m" + prevAnsiState.ToString())
+				} else {
+					token.text.Prepend("\x1b[m")
+				}
+			}
+		}
+		transformed := transformer(tokens, index)
+		item.text, item.colors = ansiProcessor(stringBytes(transformed))
+
+		// We should not trim trailing whitespaces with background colors
+		var maxColorOffset int32
+		if item.colors != nil {
+			for _, ansi := range *item.colors {
+				if ansi.color.bg >= 0 {
+					maxColorOffset = max(maxColorOffset, ansi.offset[1])
+				}
+			}
+		}
+		item.text.TrimTrailingWhitespaces(int(maxColorOffset))
+	}
+
+	var nthTransformer func([]Token, int32) string
 	if opts.WithNth == nil {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			item.text, item.colors = ansiProcessor(data)
@@ -120,38 +156,14 @@ func Run(opts *Options) (int, error) {
 			return true
 		})
 	} else {
-		nthTransformer := opts.WithNth(opts.Delimiter)
+		nthTransformer = opts.WithNth(opts.Delimiter)
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
-			tokens := Tokenize(byteString(data), opts.Delimiter)
-			if opts.Ansi && len(tokens) > 1 {
-				var ansiState *ansiState
-				if prevLineAnsiState != nil {
-					ansiStateDup := *prevLineAnsiState
-					ansiState = &ansiStateDup
-				}
-				for _, token := range tokens {
-					prevAnsiState := ansiState
-					_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
-					if prevAnsiState != nil {
-						token.text.Prepend("\x1b[m" + prevAnsiState.ToString())
-					} else {
-						token.text.Prepend("\x1b[m")
-					}
-				}
+			currentTransformer := nthTransformer
+			if currentTransformer == nil {
+				item.text, item.colors = ansiProcessor(data)
+			} else {
+				transformItem(item, data, currentTransformer, itemIndex)
 			}
-			transformed := nthTransformer(tokens, itemIndex)
-			item.text, item.colors = ansiProcessor(stringBytes(transformed))
-
-			// We should not trim trailing whitespaces with background colors
-			var maxColorOffset int32
-			if item.colors != nil {
-				for _, ansi := range *item.colors {
-					if ansi.color.bg >= 0 {
-						maxColorOffset = max(maxColorOffset, ansi.offset[1])
-					}
-				}
-			}
-			item.text.TrimTrailingWhitespaces(int(maxColorOffset))
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++
@@ -420,6 +432,7 @@ func Run(opts *Options) (int, error) {
 					var environ []string
 					var changed bool
 					headerLinesChanged := false
+					withNthChanged := false
 					switch val := value.(type) {
 					case searchRequest:
 						sort = val.sort
@@ -444,6 +457,27 @@ func Run(opts *Options) (int, error) {
 							headerLines = int32(*val.headerLines)
 							headerUpdated = false
 							headerLinesChanged = true
+							bump = true
+						}
+						if val.withNth != nil {
+							newTransformer := val.withNth.fn
+							// Reset cross-line ANSI state before re-processing all items
+							lineAnsiState = nil
+							prevLineAnsiState = nil
+							chunkList.Retransform(func(item *Item) {
+								origBytes := *item.origText
+								savedIndex := item.Index()
+								if newTransformer != nil {
+									transformItem(item, origBytes, newTransformer, savedIndex)
+								} else {
+									item.text, item.colors = ansiProcessor(origBytes)
+								}
+								item.text.Index = savedIndex
+								item.transformed = nil
+							}, func() {
+								nthTransformer = newTransformer
+							})
+							withNthChanged = true
 							bump = true
 						}
 						if bump {
@@ -489,6 +523,8 @@ func Run(opts *Options) (int, error) {
 						} else {
 							terminal.UpdateHeader(nil)
 						}
+					} else if withNthChanged && headerLines > 0 {
+						terminal.UpdateHeader(GetItems(snapshot, int(headerLines)))
 					}
 					matcher.Reset(snapshot, input(), true, !reading, sort, snapshotRevision)
 					delay = false
