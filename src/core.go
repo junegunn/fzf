@@ -460,6 +460,11 @@ func Run(opts *Options) (int, error) {
 						}
 						if val.withNth != nil {
 							newTransformer := val.withNth.fn
+							// Cancel any in-flight scan and block the terminal from reading
+							// items before mutating them in-place. Snapshot shares middle
+							// chunk pointers, so the matcher and terminal can race with us.
+							matcher.CancelScan()
+							terminal.PauseRendering()
 							// Reset cross-line ANSI state before re-processing all items
 							lineAnsiState = nil
 							prevLineAnsiState = nil
@@ -476,6 +481,8 @@ func Run(opts *Options) (int, error) {
 							}, func() {
 								nthTransformer = newTransformer
 							})
+							terminal.ResumeRendering()
+							matcher.ResumeScan()
 							withNthChanged = true
 							bump = true
 						}

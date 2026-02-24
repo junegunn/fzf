@@ -1738,6 +1738,17 @@ func (t *Terminal) Input() (bool, []rune) {
 	return paused, copySlice(src)
 }
 
+// PauseRendering blocks the terminal from reading items.
+// Must be paired with ResumeRendering.
+func (t *Terminal) PauseRendering() {
+	t.mutex.Lock()
+}
+
+// ResumeRendering releases the lock acquired by PauseRendering.
+func (t *Terminal) ResumeRendering() {
+	t.mutex.Unlock()
+}
+
 // UpdateCount updates the count information
 func (t *Terminal) UpdateCount(cnt int, final bool, failedCommand *string) {
 	t.mutex.Lock()

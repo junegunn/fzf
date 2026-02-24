@@ -45,6 +45,8 @@ type Matcher struct {
 	slab           []*util.Slab
 	mergerCache    map[string]MatchResult
 	revision       revision
+	scanMutex      sync.Mutex
+	cancelScan     *util.AtomicBool
 }
 
 const (
@@ -66,7 +68,8 @@ func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 		partitions:     partitions,
 		slab:           make([]*util.Slab, partitions),
 		mergerCache:    make(map[string]MatchResult),
-		revision:       revision}
+		revision:       revision,
+		cancelScan:     util.NewAtomicBool(false)}
 }
 
 // Loop puts Matcher in action
@@ -126,7 +129,9 @@ func (m *Matcher) Loop() {
 		}
 
 		if result.merger == nil {
+			m.scanMutex.Lock()
 			result = m.scan(request)
+			m.scanMutex.Unlock()
 		}
 
 		if !result.cancelled {
@@ -238,7 +243,7 @@ func (m *Matcher) scan(request MatchRequest) MatchResult {
 			break
 		}
 
-		if m.reqBox.Peek(reqReset) {
+		if m.cancelScan.Get() || m.reqBox.Peek(reqReset) {
 			return MatchResult{nil, nil, wait()}
 		}
 
@@ -267,6 +272,20 @@ func (m *Matcher) Reset(chunks []*Chunk, patternRunes []rune, cancel bool, final
 		event = reqRetry
 	}
 	m.reqBox.Set(event, MatchRequest{chunks, pattern, final, sort, revision})
+}
+
+// CancelScan cancels any in-flight scan, waits for it to finish,
+// and prevents new scans from starting until ResumeScan is called.
+// This is used to safely mutate shared items (e.g., during with-nth changes).
+func (m *Matcher) CancelScan() {
+	m.cancelScan.Set(true)
+	m.scanMutex.Lock()
+	m.cancelScan.Set(false)
+}
+
+// ResumeScan allows scans to proceed again after CancelScan.
+func (m *Matcher) ResumeScan() {
+	m.scanMutex.Unlock()
 }
 
 func (m *Matcher) Stop() {
