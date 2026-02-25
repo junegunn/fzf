@@ -441,6 +441,15 @@ func TestPreviewOpts(t *testing.T) {
 		opts.Preview.size.size == 15) {
 		t.Error(opts.Preview)
 	}
+	opts = optsFor("--preview-window=up:-15:wrap:hidden")
+	if !(opts.Preview.command == "" &&
+		opts.Preview.hidden == true &&
+		opts.Preview.wrap == true &&
+		opts.Preview.position == posUp &&
+		opts.Preview.size.percent == false &&
+		opts.Preview.size.size == -15) {
+		t.Error(opts.Preview)
+	}
 	opts = optsFor("--preview=foo", "--preview-window=up", "--preview-window=default:70%")
 	if !(opts.Preview.command == "foo" &&
 		opts.Preview.position == posRight &&
