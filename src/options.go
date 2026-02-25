@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/junegunn/fzf/src/algo"
@@ -677,6 +678,7 @@ type Options struct {
 	WalkerSkip        []string
 	Version           bool
 	Help              bool
+	Bench             time.Duration
 	CPUProfile        string
 	MEMProfile        string
 	BlockProfile      string
@@ -3373,6 +3375,16 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
+		case "--bench":
+			str, err := nextString("duration required (e.g. 3s, 500ms)")
+			if err != nil {
+				return err
+			}
+			dur, err := time.ParseDuration(str)
+			if err != nil {
+				return errors.New("invalid duration for --bench: " + str)
+			}
+			opts.Bench = dur
 		case "--profile-cpu":
 			if opts.CPUProfile, err = nextString("file path required: cpu"); err != nil {
 				return err

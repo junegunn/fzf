@@ -2,6 +2,7 @@
 package fzf
 
 import (
+	"fmt"
 	"maps"
 	"os"
 	"sync"
@@ -181,7 +182,7 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Reader
-	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
+	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync && opts.Bench == 0
 	var reader *Reader
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
@@ -274,6 +275,37 @@ func Run(opts *Options) (int, error) {
 
 			// NOTE: Streaming filter is inherently not compatible with --tail
 			snapshot, _, _ := chunkList.Snapshot(opts.Tail)
+
+			if opts.Bench > 0 {
+				// Benchmark mode: repeat scan for the given duration
+				var times []time.Duration
+				deadline := time.Now().Add(opts.Bench)
+				for time.Now().Before(deadline) {
+					cache.Clear()
+					start := time.Now()
+					matcher.scan(MatchRequest{
+						chunks:  snapshot,
+						pattern: pattern})
+					times = append(times, time.Since(start))
+				}
+				// Print stats
+				var total time.Duration
+				minD, maxD := times[0], times[0]
+				for _, d := range times {
+					total += d
+					if d < minD {
+						minD = d
+					}
+					if d > maxD {
+						maxD = d
+					}
+				}
+				avg := total / time.Duration(len(times))
+				fmt.Printf("  %d iterations  avg: %v  min: %v  max: %v  total: %v\n",
+					len(times), avg, minD, maxD, total)
+				return ExitOk, nil
+			}
+
 			result := matcher.scan(MatchRequest{
 				chunks:  snapshot,
 				pattern: pattern})
