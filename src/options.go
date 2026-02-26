@@ -678,6 +678,7 @@ type Options struct {
 	WalkerSkip        []string
 	Version           bool
 	Help              bool
+	Threads           int
 	Bench             time.Duration
 	CPUProfile        string
 	MEMProfile        string
@@ -3375,6 +3376,13 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 				return err
 			}
 			opts.WalkerSkip = filterNonEmpty(strings.Split(str, ","))
+		case "--threads":
+			if opts.Threads, err = nextInt("number of threads required"); err != nil {
+				return err
+			}
+			if opts.Threads < 0 {
+				return errors.New("--threads must be a positive integer")
+			}
 		case "--bench":
 			str, err := nextString("duration required (e.g. 3s, 500ms)")
 			if err != nil {
