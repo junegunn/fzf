@@ -1884,6 +1884,43 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_change_with_nth_multiline
+    # Each item has 3 lines: "N-a\nN-b\nN-c"
+    # --with-nth 1 shows 1 line per item, --with-nth 1..3 shows 3 lines per item
+    tmux.send_keys %(seq 20 | xargs -I{} printf '{}-a\\n{}-b\\n{}-c\\0' | #{FZF} --read0 --delimiter "\n" --with-nth 1 --bind 'space:change-with-nth(1..3|1)' --no-sort), :Enter
+    tmux.until do |lines|
+      assert_equal 20, lines.item_count
+      assert lines.any_include?('1-a')
+      refute lines.any_include?('1-b')
+    end
+    # Expand to 3 lines per item
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('1-a')
+      assert lines.any_include?('1-b')
+      assert lines.any_include?('1-c')
+    end
+    # Scroll down a few items
+    5.times { tmux.send_keys :Down }
+    tmux.until do |lines|
+      assert lines.any_include?('6-a')
+      assert lines.any_include?('6-b')
+      assert lines.any_include?('6-c')
+    end
+    # Collapse back to 1 line per item
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('6-a')
+      refute lines.any_include?('6-b')
+    end
+    # Scroll down more after collapse
+    5.times { tmux.send_keys :Down }
+    tmux.until do |lines|
+      assert lines.any_include?('11-a')
+      refute lines.any_include?('11-b')
+    end
+  end
+
   def test_env_vars
     def env_vars
       return {} unless File.exist?(tempname)

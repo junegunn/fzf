@@ -6397,6 +6397,7 @@ func (t *Terminal) Loop() error {
 						t.withNthExpr = withNthExpr
 						t.filterSelection = true
 						changed = true
+						t.clearNumLinesCache()
 						t.forceRerenderList()
 					}
 				})
