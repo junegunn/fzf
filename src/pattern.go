@@ -65,6 +65,8 @@ type Pattern struct {
 	cache         *ChunkCache
 	denylist      map[int32]struct{}
 	startIndex    int32
+	directAlgo    algo.Algo
+	directTerm    *term
 }
 
 var _splitRegex *regexp.Regexp
@@ -151,6 +153,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		procFun:       make(map[termType]algo.Algo)}
 
 	ptr.cacheKey = ptr.buildCacheKey()
+	ptr.directAlgo, ptr.directTerm = ptr.buildDirectAlgo(fuzzyAlgo)
 	ptr.procFun[termFuzzy] = fuzzyAlgo
 	ptr.procFun[termEqual] = algo.EqualMatch
 	ptr.procFun[termExact] = algo.ExactMatchNaive
@@ -274,6 +277,22 @@ func (p *Pattern) buildCacheKey() string {
 	return strings.Join(cacheableTerms, "\t")
 }
 
+// buildDirectAlgo returns the algo function and term for the direct fast path
+// in matchChunk. Returns (nil, nil) if the pattern is not suitable.
+// Requirements: extended mode, single term set with single non-inverse fuzzy term, no nth.
+func (p *Pattern) buildDirectAlgo(fuzzyAlgo algo.Algo) (algo.Algo, *term) {
+	if !p.extended || len(p.nth) > 0 {
+		return nil, nil
+	}
+	if len(p.termSets) == 1 && len(p.termSets[0]) == 1 {
+		t := &p.termSets[0][0]
+		if !t.inv && t.typ == termFuzzy {
+			return fuzzyAlgo, t
+		}
+	}
+	return nil, nil
+}
+
 // CacheKey is used to build string to be used as the key of result cache
 func (p *Pattern) CacheKey() string {
 	return p.cacheKey
@@ -310,6 +329,35 @@ func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Re
 		if startIdx >= chunk.count {
 			return matches
 		}
+	}
+
+	// Fast path: single fuzzy term, no nth, no denylist.
+	// Calls the algo function directly, bypassing MatchItem/extendedMatch/iter
+	// and avoiding per-match []Offset heap allocation.
+	if p.directAlgo != nil && len(p.denylist) == 0 {
+		t := p.directTerm
+		if space == nil {
+			for idx := startIdx; idx < chunk.count; idx++ {
+				res, _ := p.directAlgo(t.caseSensitive, t.normalize, p.forward,
+					&chunk.items[idx].text, t.text, p.withPos, slab)
+				if res.Start >= 0 {
+					matches = append(matches, buildResultFromBounds(
+						&chunk.items[idx], res.Score,
+						int(res.Start), int(res.End), int(res.End), true))
+				}
+			}
+		} else {
+			for _, result := range space {
+				res, _ := p.directAlgo(t.caseSensitive, t.normalize, p.forward,
+					&result.item.text, t.text, p.withPos, slab)
+				if res.Start >= 0 {
+					matches = append(matches, buildResultFromBounds(
+						result.item, res.Score,
+						int(res.Start), int(res.End), int(res.End), true))
+				}
+			}
+		}
+		return matches
 	}
 
 	if len(p.denylist) == 0 {
