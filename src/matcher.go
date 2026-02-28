@@ -3,7 +3,6 @@ package fzf
 import (
 	"fmt"
 	"runtime"
-	"sort"
 	"sync"
 	"time"
 
@@ -43,6 +42,7 @@ type Matcher struct {
 	reqBox         *util.EventBox
 	partitions     int
 	slab           []*util.Slab
+	sortBuf        [][]Result
 	mergerCache    map[string]MatchResult
 	revision       revision
 }
@@ -68,6 +68,7 @@ func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 		reqBox:         util.NewEventBox(),
 		partitions:     partitions,
 		slab:           make([]*util.Slab, partitions),
+		sortBuf:        make([][]Result, partitions),
 		mergerCache:    make(map[string]MatchResult),
 		revision:       revision}
 }
@@ -215,11 +216,7 @@ func (m *Matcher) scan(request MatchRequest) MatchResult {
 				sliceMatches = append(sliceMatches, matches...)
 			}
 			if m.sort && request.pattern.sortable {
-				if m.tac {
-					sort.Sort(ByRelevanceTac(sliceMatches))
-				} else {
-					sort.Sort(ByRelevance(sliceMatches))
-				}
+				m.sortBuf[idx] = radixSortResults(sliceMatches, m.tac, m.sortBuf[idx])
 			}
 			resultChan <- partialResult{idx, sliceMatches}
 		}(idx, m.slab[idx], chunks)

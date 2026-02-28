@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"math"
+	"math/rand"
 	"sort"
 	"testing"
 
@@ -180,5 +181,62 @@ func TestColorOffset(t *testing.T) {
 		}
 		assert(10, 37, 39, tui.NewColorPair(4, 8, expected))
 		assert(11, 39, 40, tui.NewColorPair(4, 8, tui.Bold))
+	}
+}
+
+func TestRadixSortResults(t *testing.T) {
+	sortCriteria = []criterion{byScore, byLength}
+
+	rng := rand.New(rand.NewSource(42))
+
+	for _, n := range []int{128, 256, 500, 1000} {
+		for _, tac := range []bool{false, true} {
+			// Build items with random points and indices
+			items := make([]*Item, n)
+			for i := range items {
+				items[i] = &Item{text: util.Chars{Index: int32(i)}}
+			}
+
+			results := make([]Result, n)
+			for i := range results {
+				results[i] = Result{
+					item: items[i],
+					points: [4]uint16{
+						uint16(rng.Intn(256)),
+						uint16(rng.Intn(256)),
+						uint16(rng.Intn(256)),
+						uint16(rng.Intn(256)),
+					},
+				}
+			}
+
+			// Make some duplicates to test stability
+			for i := 0; i < n/4; i++ {
+				j := rng.Intn(n)
+				k := rng.Intn(n)
+				results[j].points = results[k].points
+			}
+
+			// Copy for reference sort
+			expected := make([]Result, n)
+			copy(expected, results)
+			if tac {
+				sort.Sort(ByRelevanceTac(expected))
+			} else {
+				sort.Sort(ByRelevance(expected))
+			}
+
+			// Radix sort
+			var scratch []Result
+			scratch = radixSortResults(results, tac, scratch)
+
+			for i := range results {
+				if results[i] != expected[i] {
+					t.Errorf("n=%d tac=%v: mismatch at index %d: got item %d, want item %d",
+						n, tac, i, results[i].item.Index(), expected[i].item.Index())
+					break
+				}
+			}
+		}
 	}
 }

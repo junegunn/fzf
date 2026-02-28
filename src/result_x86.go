@@ -14,3 +14,7 @@ func compareRanks(irank Result, jrank Result, tac bool) bool {
 	}
 	return (irank.item.Index() <= jrank.item.Index()) != tac
 }
+
+func sortKey(r *Result) uint64 {
+	return *(*uint64)(unsafe.Pointer(&r.points[0]))
+}
