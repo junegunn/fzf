@@ -339,3 +339,79 @@ func (a ByRelevanceTac) Swap(i, j int) {
 func (a ByRelevanceTac) Less(i, j int) bool {
 	return compareRanks(a[i], a[j], true)
 }
+
+// radixSortResults sorts Results by their points key using LSD radix sort.
+// O(n) time complexity vs O(n log n) for comparison sort.
+// The sort is stable, so equal-key items maintain original (item-index) order.
+// For tac mode, runs of equal keys are reversed after sorting.
+func radixSortResults(a []Result, tac bool, scratch []Result) []Result {
+	n := len(a)
+	if n < 128 {
+		if tac {
+			sort.Sort(ByRelevanceTac(a))
+		} else {
+			sort.Sort(ByRelevance(a))
+		}
+		return scratch[:0]
+	}
+
+	if cap(scratch) < n {
+		scratch = make([]Result, n)
+	}
+	buf := scratch[:n]
+	src, dst := a, buf
+	scattered := 0
+
+	for pass := range 8 {
+		shift := uint(pass) * 8
+
+		var count [256]int
+		for i := range src {
+			count[byte(sortKey(&src[i])>>shift)]++
+		}
+
+		// Skip if all items have the same byte value at this position
+		if count[byte(sortKey(&src[0])>>shift)] == n {
+			continue
+		}
+
+		var offset [256]int
+		for i := 1; i < 256; i++ {
+			offset[i] = offset[i-1] + count[i-1]
+		}
+
+		for i := range src {
+			b := byte(sortKey(&src[i]) >> shift)
+			dst[offset[b]] = src[i]
+			offset[b]++
+		}
+
+		src, dst = dst, src
+		scattered++
+	}
+
+	// If odd number of scatters, data is in buf, copy back to a
+	if scattered%2 == 1 {
+		copy(a, src)
+	}
+
+	// Handle tac: reverse runs of equal keys so equal-key items
+	// are in reverse item-index order
+	if tac {
+		i := 0
+		for i < n {
+			ki := sortKey(&a[i])
+			j := i + 1
+			for j < n && sortKey(&a[j]) == ki {
+				j++
+			}
+			if j-i > 1 {
+				for l, r := i, j-1; l < r; l, r = l+1, r-1 {
+					a[l], a[r] = a[r], a[l]
+				}
+			}
+			i = j
+		}
+	}
+	return scratch
+}
