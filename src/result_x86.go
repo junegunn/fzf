@@ -1,4 +1,4 @@
-//go:build 386 || amd64
+//go:build 386 || amd64 || arm64
 
 package fzf
 
