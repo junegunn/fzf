@@ -33,8 +33,6 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 		sort.Sort(ByOrder(offsets))
 	}
 
-	result := Result{item: item}
-	numChars := item.text.Length()
 	minBegin := math.MaxUint16
 	minEnd := math.MaxUint16
 	maxEnd := 0
@@ -48,6 +46,14 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 			validOffsetFound = true
 		}
 	}
+
+	return buildResultFromBounds(item, score, minBegin, minEnd, maxEnd, validOffsetFound)
+}
+
+// buildResultFromBounds builds a Result from pre-computed offset bounds.
+func buildResultFromBounds(item *Item, score int, minBegin, minEnd, maxEnd int, validOffsetFound bool) Result {
+	result := Result{item: item}
+	numChars := item.text.Length()
 
 	for idx, criterion := range sortCriteria {
 		val := uint16(math.MaxUint16)
@@ -75,7 +81,6 @@ func buildResult(item *Item, offsets []Offset, score int) Result {
 			val = item.TrimLength()
 		case byPathname:
 			if validOffsetFound {
-				// lastDelim := strings.LastIndexByte(item.text.ToString(), '/')
 				lastDelim := -1
 				s := item.text.ToString()
 				for i := len(s) - 1; i >= 0; i-- {
