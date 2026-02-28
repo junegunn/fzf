@@ -260,7 +260,7 @@ func Run(opts *Options) (int, error) {
 							return false
 						}
 						mutex.Lock()
-						if result, _, _ := pattern.MatchItem(&item, false, slab); result != nil {
+						if result, _, _ := pattern.MatchItem(&item, false, slab); result.item != nil {
 							opts.Printer(transformer(&item))
 							found = true
 						}
