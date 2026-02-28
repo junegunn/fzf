@@ -1780,16 +1780,25 @@ class TestCore < TestInteractive
     end
   end
 
-  def test_change_with_nth_clear
-    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 1 --bind 'space:change-with-nth()'), :Enter
+  def test_change_with_nth_default
+    # Empty value restores the default --with-nth
+    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 1 --bind 'space:change-with-nth(2|)'), :Enter
     tmux.until do |lines|
       assert_equal 2, lines.item_count
       assert lines.any_include?('a')
       refute lines.any_include?('b')
     end
+    # Switch to field 2
     tmux.send_keys :Space
     tmux.until do |lines|
-      assert lines.any_include?('a b c')
+      assert lines.any_include?('b')
+      refute lines.any_include?('a')
+    end
+    # Empty restores default (field 1)
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('a')
+      refute lines.any_include?('b')
     end
   end
 

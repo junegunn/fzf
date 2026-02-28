@@ -340,6 +340,7 @@ type Terminal struct {
 	nthAttr              tui.Attr
 	nth                  []Range
 	nthCurrent           []Range
+	withNthDefault       string
 	withNthExpr          string
 	withNthEnabled       bool
 	acceptNth            func([]Token, int32) string
@@ -1093,6 +1094,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		nthAttr:            opts.Theme.Nth.Attr,
 		nth:                opts.Nth,
 		nthCurrent:         opts.Nth,
+		withNthDefault:     opts.WithNthExpr,
 		withNthExpr:        opts.WithNthExpr,
 		withNthEnabled:     opts.WithNth != nil,
 		tabstop:            opts.Tabstop,
@@ -6386,10 +6388,12 @@ func (t *Terminal) Loop() error {
 					if len(tokens) > 1 {
 						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
 					}
+					// Empty value restores the default --with-nth
+					if len(withNthExpr) == 0 {
+						withNthExpr = t.withNthDefault
+					}
 					if withNthExpr != t.withNthExpr {
-						if len(withNthExpr) == 0 {
-							newWithNth = &withNthSpec{fn: nil}
-						} else if factory, err := nthTransformer(withNthExpr); err == nil {
+						if factory, err := nthTransformer(withNthExpr); err == nil {
 							newWithNth = &withNthSpec{fn: factory(t.delimiter)}
 						} else {
 							return
