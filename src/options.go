@@ -588,6 +588,7 @@ type Options struct {
 	FreezeLeft        int
 	FreezeRight       int
 	WithNth           func(Delimiter) func([]Token, int32) string
+	WithNthExpr       string
 	AcceptNth         func(Delimiter) func([]Token, int32) string
 	Delimiter         Delimiter
 	Sort              int
@@ -1629,7 +1630,7 @@ const (
 
 func init() {
 	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -2072,6 +2073,8 @@ func isExecuteAction(str string) actionType {
 		return actChangeMulti
 	case "change-nth":
 		return actChangeNth
+	case "change-with-nth":
+		return actChangeWithNth
 	case "pos":
 		return actPosition
 	case "execute":
@@ -2108,6 +2111,8 @@ func isExecuteAction(str string) actionType {
 		return actTransformGhost
 	case "transform-nth":
 		return actTransformNth
+	case "transform-with-nth":
+		return actTransformWithNth
 	case "transform-pointer":
 		return actTransformPointer
 	case "transform-prompt":
@@ -2140,6 +2145,8 @@ func isExecuteAction(str string) actionType {
 		return actBgTransformGhost
 	case "bg-transform-nth":
 		return actBgTransformNth
+	case "bg-transform-with-nth":
+		return actBgTransformWithNth
 	case "bg-transform-pointer":
 		return actBgTransformPointer
 	case "bg-transform-prompt":
@@ -2781,6 +2788,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			if opts.WithNth, err = nthTransformer(str); err != nil {
 				return err
 			}
+			opts.WithNthExpr = str
 		case "--accept-nth":
 			str, err := nextString("nth expression required")
 			if err != nil {

@@ -1745,6 +1745,191 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_change_with_nth
+    input = [
+      'foo bar baz',
+      'aaa bbb ccc',
+      'xxx yyy zzz'
+    ]
+    writelines(input)
+    # Start with field 1 only, cycle through fields, verify $FZF_WITH_NTH via prompt
+    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:change-with-nth(2|3|1),result:transform-prompt:echo "[$FZF_WITH_NTH]> "' < #{tempname}), :Enter
+    tmux.until do |lines|
+      assert_equal 3, lines.item_count
+      assert lines.any_include?('[1]>')
+      assert lines.any_include?('foo')
+      refute lines.any_include?('bar')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('[2]>')
+      assert lines.any_include?('bar')
+      refute lines.any_include?('foo')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('[3]>')
+      assert lines.any_include?('baz')
+      refute lines.any_include?('bar')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('[1]>')
+      assert lines.any_include?('foo')
+      refute lines.any_include?('bar')
+    end
+  end
+
+  def test_change_with_nth_default
+    # Empty value restores the default --with-nth
+    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 1 --bind 'space:change-with-nth(2|)'), :Enter
+    tmux.until do |lines|
+      assert_equal 2, lines.item_count
+      assert lines.any_include?('a')
+      refute lines.any_include?('b')
+    end
+    # Switch to field 2
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('b')
+      refute lines.any_include?('a')
+    end
+    # Empty restores default (field 1)
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('a')
+      refute lines.any_include?('b')
+    end
+  end
+
+  def test_transform_with_nth_search
+    input = [
+      'alpha bravo charlie',
+      'delta echo foxtrot',
+      'golf hotel india'
+    ]
+    writelines(input)
+    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:transform-with-nth(echo 2)' -q '^bravo$' < #{tempname}), :Enter
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+    end
+  end
+
+  def test_bg_transform_with_nth_output
+    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 2 --bind 'space:bg-transform-with-nth(echo 3)'), :Enter
+    tmux.until do |lines|
+      assert_equal 2, lines.item_count
+      assert lines.any_include?('b')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('c')
+      refute lines.any_include?('b')
+    end
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
+  end
+
+  def test_change_with_nth_search
+    input = [
+      'alpha bravo charlie',
+      'delta echo foxtrot',
+      'golf hotel india'
+    ]
+    writelines(input)
+    tmux.send_keys %(#{FZF} --with-nth 1 --bind 'space:change-with-nth(2)' -q '^bravo$' < #{tempname}), :Enter
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+    end
+  end
+
+  def test_change_with_nth_output
+    tmux.send_keys %(echo -e 'a b c\nd e f' | #{FZF} --with-nth 2 --bind 'space:change-with-nth(3)'), :Enter
+    tmux.until do |lines|
+      assert_equal 2, lines.item_count
+      assert lines.any_include?('b')
+    end
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('c')
+      refute lines.any_include?('b')
+    end
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
+  end
+
+  def test_change_with_nth_selection
+    # Items: field1 has unique values, field2 has 'match' or 'miss'
+    input = [
+      'one match x',
+      'two miss y',
+      'three match z'
+    ]
+    writelines(input)
+    # Start showing field 2 (match/miss), query 'match', select all matches, then switch to field 3
+    tmux.send_keys %(#{FZF} --with-nth 2 --multi --bind 'ctrl-a:select-all,space:change-with-nth(3)' -q match < #{tempname}), :Enter
+    tmux.until do |lines|
+      assert_equal 2, lines.match_count
+    end
+    # Select all matching items
+    tmux.send_keys 'C-a'
+    tmux.until do |lines|
+      assert lines.any_include?('(2)')
+    end
+    # Now change with-nth to field 3; 'x' and 'z' don't contain 'match'
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert_equal 0, lines.match_count
+      # Selections of non-matching items should be cleared
+      assert lines.any_include?('(0)')
+    end
+  end
+
+  def test_change_with_nth_multiline
+    # Each item has 3 lines: "N-a\nN-b\nN-c"
+    # --with-nth 1 shows 1 line per item, --with-nth 1..3 shows 3 lines per item
+    tmux.send_keys %(seq 20 | xargs -I{} printf '{}-a\\n{}-b\\n{}-c\\0' | #{FZF} --read0 --delimiter "\n" --with-nth 1 --bind 'space:change-with-nth(1..3|1)' --no-sort), :Enter
+    tmux.until do |lines|
+      assert_equal 20, lines.item_count
+      assert lines.any_include?('1-a')
+      refute lines.any_include?('1-b')
+    end
+    # Expand to 3 lines per item
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('1-a')
+      assert lines.any_include?('1-b')
+      assert lines.any_include?('1-c')
+    end
+    # Scroll down a few items
+    5.times { tmux.send_keys :Down }
+    tmux.until do |lines|
+      assert lines.any_include?('6-a')
+      assert lines.any_include?('6-b')
+      assert lines.any_include?('6-c')
+    end
+    # Collapse back to 1 line per item
+    tmux.send_keys :Space
+    tmux.until do |lines|
+      assert lines.any_include?('6-a')
+      refute lines.any_include?('6-b')
+    end
+    # Scroll down more after collapse
+    5.times { tmux.send_keys :Down }
+    tmux.until do |lines|
+      assert lines.any_include?('11-a')
+      refute lines.any_include?('11-b')
+    end
+  end
+
   def test_env_vars
     def env_vars
       return {} unless File.exist?(tempname)

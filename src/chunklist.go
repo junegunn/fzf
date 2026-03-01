@@ -99,6 +99,21 @@ func (cl *ChunkList) Clear() {
 	cl.mutex.Unlock()
 }
 
+// ForEachItem iterates all items and applies fn to each one.
+// The done callback runs under the lock to safely update shared state.
+func (cl *ChunkList) ForEachItem(fn func(*Item), done func()) {
+	cl.mutex.Lock()
+	for _, chunk := range cl.chunks {
+		for i := 0; i < chunk.count; i++ {
+			fn(&chunk.items[i])
+		}
+	}
+	if done != nil {
+		done()
+	}
+	cl.mutex.Unlock()
+}
+
 // Snapshot returns immutable snapshot of the ChunkList
 func (cl *ChunkList) Snapshot(tail int) ([]*Chunk, int, bool) {
 	cl.mutex.Lock()
