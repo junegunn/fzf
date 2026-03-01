@@ -1245,7 +1245,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	previewBorderDefined := theme.PreviewBorder != undefined
 
 	theme.NthSelectedAttr = theme.SelectedFg.Attr
-	theme.SelectedFg = o(theme.ListFg, theme.SelectedFg)
+	theme.SelectedFg = theme.ListFg.Merge(theme.SelectedFg)
 	theme.SelectedBg = o(theme.ListBg, theme.SelectedBg)
 	theme.SelectedMatch = o(theme.Match, theme.SelectedMatch)
 
