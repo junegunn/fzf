@@ -132,7 +132,7 @@ func TestColorOffset(t *testing.T) {
 
 	colBase := tui.NewColorPair(89, 189, tui.AttrUndefined)
 	colMatch := tui.NewColorPair(99, 199, tui.AttrUndefined)
-	colors := item.colorOffsets(offsets, nil, tui.Dark256, colBase, colMatch, tui.AttrUndefined, false)
+	colors := item.colorOffsets(offsets, nil, tui.Dark256, colBase, colMatch, tui.AttrUndefined, 0, false)
 	assert := func(idx int, b int32, e int32, c tui.ColorPair) {
 		o := colors[idx]
 		if o.offset[0] != b || o.offset[1] != e || o.color != c {
@@ -159,7 +159,7 @@ func TestColorOffset(t *testing.T) {
 
 	nthOffsets := []Offset{{37, 39}, {42, 45}}
 	for _, attr := range []tui.Attr{tui.AttrRegular, tui.StrikeThrough} {
-		colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, attr, false)
+		colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, attr, 0, false)
 
 		// [{[0 5] {1 5 0}} {[5 15] {1 5 8}} {[15 20] {1 5 0}}
 		//  {[22 25] {2 6 1}} {[25 27] {2 6 9}} {[27 30] {-1 -1 8}}
@@ -182,6 +182,37 @@ func TestColorOffset(t *testing.T) {
 		assert(10, 37, 39, tui.NewColorPair(4, 8, expected))
 		assert(11, 39, 40, tui.NewColorPair(4, 8, tui.Bold))
 	}
+
+	// Test nthOverlay: simulates nth:regular with current-fg:underline
+	// The overlay (underline) should survive even though nth:regular clears attrs.
+	// Precedence: fg < nth < current-fg
+	colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, tui.AttrRegular, tui.Underline, false)
+
+	// nth regions should have Underline (from overlay), not cleared by AttrRegular
+	// Non-nth regions keep colBase attrs (AttrUndefined)
+	assert(0, 0, 5, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(1, 5, 15, tui.NewColorPair(1, 5, tui.Underline))
+	assert(2, 15, 20, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(3, 22, 25, tui.NewColorPair(2, 6, tui.Bold))
+	assert(4, 25, 27, tui.NewColorPair(2, 6, tui.Bold|tui.Underline))
+	assert(5, 27, 30, colUnderline)
+	assert(6, 30, 32, tui.NewColorPair(3, 7, tui.Underline))
+	assert(7, 32, 33, colUnderline)
+	assert(8, 33, 35, tui.NewColorPair(4, 8, tui.Bold|tui.Underline))
+	assert(9, 35, 37, tui.NewColorPair(4, 8, tui.Bold))
+	// nth region within ANSI bold: AttrRegular clears, overlay adds Underline back
+	assert(10, 37, 39, tui.NewColorPair(4, 8, tui.Bold|tui.Underline))
+	assert(11, 39, 40, tui.NewColorPair(4, 8, tui.Bold))
+
+	// Test nthOverlay with additive attrs: nth:strikethrough with selected-fg:bold
+	colors = item.colorOffsets(offsets, nthOffsets, tui.Dark256, colRegular, colUnderline, tui.StrikeThrough, tui.Bold, false)
+
+	// Non-nth entries unchanged from overlay=0 case
+	assert(0, 0, 5, tui.NewColorPair(1, 5, tui.AttrUndefined))
+	assert(5, 27, 30, colUnderline) // match only, no nth
+	assert(7, 32, 33, colUnderline) // match only, no nth
+	// nth region within ANSI bold: StrikeThrough|Bold merged with ANSI Bold
+	assert(10, 37, 39, tui.NewColorPair(4, 8, tui.Bold|tui.StrikeThrough))
 }
 
 func TestRadixSortResults(t *testing.T) {

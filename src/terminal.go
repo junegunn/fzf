@@ -1554,7 +1554,7 @@ func (t *Terminal) ansiLabelPrinter(str string, color *tui.ColorPair, fill bool)
 	printFn := func(window tui.Window, limit int) {
 		if offsets == nil {
 			// tui.Col* are not initialized until renderer.Init()
-			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, false)
+			offsets = result.colorOffsets(nil, nil, t.theme, *color, *color, t.nthAttr, 0, false)
 		}
 		for limit > 0 {
 			if length > limit {
@@ -1617,7 +1617,7 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 				return 1
 			}
 			t.printHighlighted(
-				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, line, line, true, preTask, nil)
+				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, line, line, true, preTask, nil, 0)
 		})
 		t.wrap = wrap
 	}
@@ -3185,7 +3185,7 @@ func (t *Terminal) printFooter() {
 				func(markerClass) int {
 					t.footerWindow.Print(indent)
 					return indentSize
-				}, nil)
+				}, nil, 0)
 		}
 	})
 	t.wrap = wrap
@@ -3269,7 +3269,7 @@ func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShap
 			func(markerClass) int {
 				t.window.Print(indent)
 				return indentSize
-			}, nil)
+			}, nil, 0)
 	}
 	t.wrap = wrap
 }
@@ -3507,7 +3507,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			return indentSize
 		}
-		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
+		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask, t.theme.NthCurrentAttr)
 	} else {
 		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
@@ -3541,7 +3541,11 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			base = base.WithBg(altBg)
 			match = match.WithBg(altBg)
 		}
-		finalLineNum = t.printHighlighted(result, base, match, false, true, !matched, line, maxLine, forceRedraw, preTask, postTask)
+		var nthOverlay tui.Attr
+		if selected {
+			nthOverlay = t.theme.NthSelectedAttr
+		}
+		finalLineNum = t.printHighlighted(result, base, match, false, true, !matched, line, maxLine, forceRedraw, preTask, postTask, nthOverlay)
 	}
 	for i := 0; i < t.gap && finalLineNum < maxLine; i++ {
 		finalLineNum++
@@ -3642,7 +3646,7 @@ func (t *Terminal) overflow(runes []rune, max int) bool {
 	return t.displayWidthWithLimit(runes, 0, max) > max
 }
 
-func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, hidden bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair)) int {
+func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMatch tui.ColorPair, current bool, match bool, hidden bool, lineNum int, maxLineNum int, forceRedraw bool, preTask func(markerClass) int, postTask func(int, int, bool, bool, tui.ColorPair), nthOverlay tui.Attr) int {
 	var displayWidth int
 	item := result.item
 	matchOffsets := []Offset{}
@@ -3683,7 +3687,9 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			// But if 'nth' is set to 'regular', it's a sign that you're applying
 			// a different style to the rest of the string. e.g. 'nth:regular,fg:dim'
 			// In this case, we still need to apply it to clear the style.
-			colBase = colBase.WithAttr(t.nthAttr)
+			fgAttr := tui.ColNormal.Attr()
+			nthAttrFinal := fgAttr.Merge(t.nthAttr).Merge(nthOverlay)
+			colBase = colBase.WithNewAttr(nthAttrFinal)
 		}
 		if !wholeCovered && t.nthAttr > 0 {
 			var tokens []Token
@@ -3702,7 +3708,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			sort.Sort(ByOrder(nthOffsets))
 		}
 	}
-	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, hidden)
+	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, nthOverlay, hidden)
 
 	// Determine split offset for horizontal scrolling with freeze
 	splitOffset1 := -1

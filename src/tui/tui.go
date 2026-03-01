@@ -447,6 +447,12 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 	return dup
 }
 
+func (p ColorPair) WithNewAttr(attr Attr) ColorPair {
+	dup := p
+	dup.attr = attr
+	return dup
+}
+
 func (p ColorPair) WithFg(fg ColorAttr) ColorPair {
 	dup := p
 	fgPair := ColorPair{fg.Color, colUndefined, colUndefined, fg.Attr}
@@ -520,6 +526,8 @@ type ColorTheme struct {
 	ListLabel        ColorAttr
 	ListBorder       ColorAttr
 	GapLine          ColorAttr
+	NthCurrentAttr   Attr // raw current-fg attr (before fg merge) for nth overlay
+	NthSelectedAttr  Attr // raw selected-fg attr (before ListFg inherit) for nth overlay
 }
 
 type Event struct {
@@ -1205,7 +1213,9 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	if !baseTheme.Colored && current.IsUndefined() {
 		current.Attr |= Reverse
 	}
-	theme.Current = theme.Fg.Merge(o(baseTheme.Current, current))
+	resolvedCurrent := o(baseTheme.Current, current)
+	theme.NthCurrentAttr = resolvedCurrent.Attr
+	theme.Current = theme.Fg.Merge(resolvedCurrent)
 	currentMatch := theme.CurrentMatch
 	if !baseTheme.Colored && currentMatch.IsUndefined() {
 		currentMatch.Attr |= Reverse | Underline
@@ -1233,6 +1243,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	// These colors are not defined in the base themes
 	theme.ListFg = o(theme.Fg, theme.ListFg)
 	theme.ListBg = o(theme.Bg, theme.ListBg)
+	theme.NthSelectedAttr = theme.SelectedFg.Attr
 	theme.SelectedFg = o(theme.ListFg, theme.SelectedFg)
 	theme.SelectedBg = o(theme.ListBg, theme.SelectedBg)
 	theme.SelectedMatch = o(theme.Match, theme.SelectedMatch)
