@@ -3507,7 +3507,14 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			}
 			return indentSize
 		}
-		finalLineNum = t.printHighlighted(result, tui.ColCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask, t.theme.NthCurrentAttr)
+		colCurrent := tui.ColCurrent
+		nthOverlay := t.theme.NthCurrentAttr
+		if selected {
+			nthOverlay = t.theme.NthSelectedAttr.Merge(t.theme.NthCurrentAttr)
+			baseAttr := tui.ColNormal.Attr().Merge(t.theme.NthSelectedAttr).Merge(t.theme.NthCurrentAttr)
+			colCurrent = colCurrent.WithNewAttr(baseAttr)
+		}
+		finalLineNum = t.printHighlighted(result, colCurrent, tui.ColCurrentMatch, true, true, !matched, line, maxLine, forceRedraw, preTask, postTask, nthOverlay)
 	} else {
 		preTask := func(marker markerClass) int {
 			w := t.window.Width() - t.pointerLen
