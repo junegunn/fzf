@@ -278,15 +278,18 @@ func Run(opts *Options) (int, error) {
 
 			if opts.Bench > 0 {
 				// Benchmark mode: repeat scan for the given duration
+				totalItems := CountItems(snapshot)
+				var matchCount int
 				var times []time.Duration
 				deadline := time.Now().Add(opts.Bench)
 				for time.Now().Before(deadline) {
 					cache.Clear()
 					start := time.Now()
-					matcher.scan(MatchRequest{
+					result := matcher.scan(MatchRequest{
 						chunks:  snapshot,
 						pattern: pattern})
 					times = append(times, time.Since(start))
+					matchCount = result.merger.Length()
 				}
 				// Print stats
 				var total time.Duration
@@ -301,8 +304,14 @@ func Run(opts *Options) (int, error) {
 					}
 				}
 				avg := total / time.Duration(len(times))
-				fmt.Printf("  %d iterations  avg: %v  min: %v  max: %v  total: %v\n",
-					len(times), avg, minD, maxD, total)
+				selectivity := float64(matchCount) / float64(totalItems) * 100
+				fmt.Printf("  %d iterations  avg: %.2fms  min: %.2fms  max: %.2fms  total: %.2fs  items: %d  matches: %d (%.2f%%)\n",
+					len(times),
+					float64(avg.Microseconds())/1000,
+					float64(minD.Microseconds())/1000,
+					float64(maxD.Microseconds())/1000,
+					total.Seconds(),
+					totalItems, matchCount, selectivity)
 				return ExitOk, nil
 			}
 
