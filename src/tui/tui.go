@@ -1207,7 +1207,11 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		match.Attr = Underline
 	}
 	theme.Match = o(baseTheme.Match, match)
-	// Inherit from 'fg', so that we don't have to write 'current-fg:dim'
+	// These colors are not defined in the base themes.
+	// Resolve ListFg/ListBg early so Current and Selected can inherit from them.
+	theme.ListFg = o(theme.Fg, theme.ListFg)
+	theme.ListBg = o(theme.Bg, theme.ListBg)
+	// Inherit from 'list-fg', so that we don't have to write 'current-fg:dim'
 	// e.g. fzf --delimiter / --nth -1 --color fg:dim,nth:regular
 	current := theme.Current
 	if !baseTheme.Colored && current.IsUndefined() {
@@ -1215,7 +1219,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	}
 	resolvedCurrent := o(baseTheme.Current, current)
 	theme.NthCurrentAttr = resolvedCurrent.Attr
-	theme.Current = theme.Fg.Merge(resolvedCurrent)
+	theme.Current = theme.ListFg.Merge(resolvedCurrent)
 	currentMatch := theme.CurrentMatch
 	if !baseTheme.Colored && currentMatch.IsUndefined() {
 		currentMatch.Attr |= Reverse | Underline
@@ -1240,9 +1244,6 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	scrollbarDefined := theme.Scrollbar != undefined
 	previewBorderDefined := theme.PreviewBorder != undefined
 
-	// These colors are not defined in the base themes
-	theme.ListFg = o(theme.Fg, theme.ListFg)
-	theme.ListBg = o(theme.Bg, theme.ListBg)
 	theme.NthSelectedAttr = theme.SelectedFg.Attr
 	theme.SelectedFg = o(theme.ListFg, theme.SelectedFg)
 	theme.SelectedBg = o(theme.ListBg, theme.SelectedBg)
