@@ -7,4 +7,4 @@ tabe = "tabe"
 Iterm = "Iterm"
 
 [files]
-extend-exclude = ["README.md"]
+extend-exclude = ["README.md", "*.s"]
