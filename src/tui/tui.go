@@ -447,6 +447,12 @@ func (p ColorPair) WithAttr(attr Attr) ColorPair {
 	return dup
 }
 
+func (p ColorPair) WithNewAttr(attr Attr) ColorPair {
+	dup := p
+	dup.attr = attr
+	return dup
+}
+
 func (p ColorPair) WithFg(fg ColorAttr) ColorPair {
 	dup := p
 	fgPair := ColorPair{fg.Color, colUndefined, colUndefined, fg.Attr}
@@ -520,6 +526,8 @@ type ColorTheme struct {
 	ListLabel        ColorAttr
 	ListBorder       ColorAttr
 	GapLine          ColorAttr
+	NthCurrentAttr   Attr // raw current-fg attr (before fg merge) for nth overlay
+	NthSelectedAttr  Attr // raw selected-fg attr (before ListFg inherit) for nth overlay
 }
 
 type Event struct {
@@ -1199,13 +1207,19 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		match.Attr = Underline
 	}
 	theme.Match = o(baseTheme.Match, match)
-	// Inherit from 'fg', so that we don't have to write 'current-fg:dim'
+	// These colors are not defined in the base themes.
+	// Resolve ListFg/ListBg early so Current and Selected can inherit from them.
+	theme.ListFg = o(theme.Fg, theme.ListFg)
+	theme.ListBg = o(theme.Bg, theme.ListBg)
+	// Inherit from 'list-fg', so that we don't have to write 'current-fg:dim'
 	// e.g. fzf --delimiter / --nth -1 --color fg:dim,nth:regular
 	current := theme.Current
 	if !baseTheme.Colored && current.IsUndefined() {
 		current.Attr |= Reverse
 	}
-	theme.Current = theme.Fg.Merge(o(baseTheme.Current, current))
+	resolvedCurrent := o(baseTheme.Current, current)
+	theme.NthCurrentAttr = resolvedCurrent.Attr
+	theme.Current = theme.ListFg.Merge(resolvedCurrent)
 	currentMatch := theme.CurrentMatch
 	if !baseTheme.Colored && currentMatch.IsUndefined() {
 		currentMatch.Attr |= Reverse | Underline
@@ -1230,10 +1244,8 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	scrollbarDefined := theme.Scrollbar != undefined
 	previewBorderDefined := theme.PreviewBorder != undefined
 
-	// These colors are not defined in the base themes
-	theme.ListFg = o(theme.Fg, theme.ListFg)
-	theme.ListBg = o(theme.Bg, theme.ListBg)
-	theme.SelectedFg = o(theme.ListFg, theme.SelectedFg)
+	theme.NthSelectedAttr = theme.SelectedFg.Attr
+	theme.SelectedFg = theme.ListFg.Merge(theme.SelectedFg)
 	theme.SelectedBg = o(theme.ListBg, theme.SelectedBg)
 	theme.SelectedMatch = o(theme.Match, theme.SelectedMatch)
 
