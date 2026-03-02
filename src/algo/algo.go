@@ -321,22 +321,15 @@ type Algo func(caseSensitive bool, normalize bool, forward bool, input *util.Cha
 
 func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
 	byteArray := input.Bytes()[from:]
-	idx := bytes.IndexByte(byteArray, b)
-	if idx == 0 {
-		// Can't skip any further
-		return from
-	}
-	// We may need to search for the uppercase letter again. We don't have to
-	// consider normalization as we can be sure that this is an ASCII string.
+	// For case-insensitive search of a letter, search for both cases in one pass
 	if !caseSensitive && b >= 'a' && b <= 'z' {
-		if idx > 0 {
-			byteArray = byteArray[:idx]
+		idx := indexByteTwo(byteArray, b, b-32)
+		if idx < 0 {
+			return -1
 		}
-		uidx := bytes.IndexByte(byteArray, b-32)
-		if uidx >= 0 {
-			idx = uidx
-		}
+		return from + idx
 	}
+	idx := bytes.IndexByte(byteArray, b)
 	if idx < 0 {
 		return -1
 	}
@@ -380,14 +373,17 @@ func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int
 	}
 
 	// Find the last appearance of the last character of the pattern to limit the search scope
-	bu := b
-	if !caseSensitive && b >= 'a' && b <= 'z' {
-		bu = b - 32
-	}
 	scope := input.Bytes()[lastIdx:]
-	for offset := len(scope) - 1; offset > 0; offset-- {
-		if scope[offset] == b || scope[offset] == bu {
-			return firstIdx, lastIdx + offset + 1
+	if len(scope) > 1 {
+		tail := scope[1:]
+		var end int
+		if !caseSensitive && b >= 'a' && b <= 'z' {
+			end = lastIndexByteTwo(tail, b, b-32)
+		} else {
+			end = bytes.LastIndexByte(tail, b)
+		}
+		if end >= 0 {
+			return firstIdx, lastIdx + 1 + end + 1
 		}
 	}
 	return firstIdx, lastIdx + 1
