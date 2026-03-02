@@ -488,7 +488,7 @@ func (p *Pattern) transformInput(item *Item) []Token {
 		}
 	}
 
-	tokens := Tokenize(item.text.ToString(), p.delimiter)
+	tokens := Tokenize(item.AsString(true), p.delimiter)
 	ret := Transform(tokens, p.nth)
 	// Strip the last delimiter to allow suffix match
 	if len(ret) > 0 && !p.delimiter.IsAwk() {

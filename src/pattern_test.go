@@ -157,6 +157,29 @@ func TestOrigTextAndTransformed(t *testing.T) {
 	}
 }
 
+func TestTransformInputWithOrigText(t *testing.T) {
+	delim := Delimiter{str: &[]string{":"}[0]}
+	nth := []Range{{1, 1}}
+	origBytes := []byte("col1:col2")
+
+	test := func(query string, expectedMatches int) {
+		pat := buildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, false, true,
+			nth, delim, []rune(query))
+		chunk := Chunk{count: 1}
+		chunk.items[0] = Item{
+			text:     util.ToChars([]byte("col2")),
+			origText: &origBytes,
+		}
+		matches := pat.matchChunk(&chunk, nil, slab)
+		if len(matches) != expectedMatches {
+			t.Errorf("query=%q: expected %d matches, got %d", query, expectedMatches, len(matches))
+		}
+	}
+
+	test("col1", 1)
+	test("col2", 0)
+}
+
 func TestCacheKey(t *testing.T) {
 	test := func(extended bool, patStr string, expected string, cacheable bool) {
 		pat := buildPattern(true, algo.FuzzyMatchV2, extended, CaseSmart, false, true, false, true, []Range{}, Delimiter{}, []rune(patStr))
