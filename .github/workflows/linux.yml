@@ -44,5 +44,10 @@ jobs:
     - name: Unit test
       run: make test
 
+    - name: Fuzz test
+      run: |
+        go test ./src/algo/ -fuzz=FuzzIndexByteTwo -fuzztime=5s
+        go test ./src/algo/ -fuzz=FuzzLastIndexByteTwo -fuzztime=5s
+
     - name: Integration test
       run: make install && ./install --all && tmux new-session -d && ruby test/runner.rb --verbose
