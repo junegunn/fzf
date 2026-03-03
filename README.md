@@ -506,13 +506,17 @@ the following key bindings in bash, zsh, and fish.
       ```
     - Can be disabled by setting `FZF_CTRL_T_COMMAND` to an empty string when
       sourcing the script
-- `CTRL-R` - Paste the selected command from history onto the command-line
+- `CTRL-R` - Paste the selected command from history onto the command-line. With fish shell, it is possible to select multiple commands.
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
     - Press `ALT-R` to toggle "raw" mode where you can see the surrounding items
       of a match. In this mode, you can press `CTRL-N` and `CTRL-P` to move
       between the matching items only.
     - Press `CTRL-/` or `ALT-/` to toggle line wrapping
+    - Fish shell only:
+      - Press `SHIFT-DELETE` to delete the selected commands
+      - Press `ALT-ENTER` to reformat and insert the selected commands
+      - Press `ALT-T` to cycle through command prefix (timestamp, date/time, none)
     - Set `FZF_CTRL_R_OPTS` to pass additional options to fzf
       ```sh
       # CTRL-Y to copy the command into clipboard using pbcopy
@@ -520,6 +524,13 @@ the following key bindings in bash, zsh, and fish.
         --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
         --color header:italic
         --header 'Press CTRL-Y to copy command into clipboard'"
+      ```
+      ```fish
+      # Fish shell: Set date/time as default prefix
+      set -gx FZF_CTRL_R_OPTS "--with-nth 1,3.. --bind 'alt-t:change-with-nth(2..|3..|1,3..)'"
+
+      # Or display no prefix by default
+      set -gx FZF_CTRL_R_OPTS "--with-nth 3.. --bind 'alt-t:change-with-nth(2..|1,3..|3..)'"
       ```
     - Can be disabled by setting `FZF_CTRL_R_COMMAND` to an empty string when
       sourcing the script
