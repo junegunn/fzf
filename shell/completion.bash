@@ -211,6 +211,7 @@ _fzf_opts_completion() {
     --tiebreak
     --tmux
     --track
+    --track-nth
     --version
     --walker
     --walker-root
