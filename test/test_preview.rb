@@ -616,7 +616,7 @@ class TestPreview < TestInteractive
   end
 
   def test_preview_wrap_sign_between_ansi_fragments_overflow2
-    tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m123 \\x1b[mhi"; echo -e "\\x1b[33m123 \\x1b[mhi"' --preview-window 1,wrap-word), :Enter
+    tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m123 \\x1b[mhi"; echo -e "\\x1b[33m123 \\x1b[mhi"' --preview-window 1,wrap-word,noinfo), :Enter
     tmux.until do |lines|
       assert_equal 1, lines.match_count
       assert_equal(2, lines.count { |line| line.include?('│ 1 │') })
