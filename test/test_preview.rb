@@ -393,6 +393,20 @@ class TestPreview < TestInteractive
     end
   end
 
+  def test_preview_follow_wrap_long_line
+    tmux.send_keys %(seq 1 | #{FZF} --preview "seq 2; yes yes | head -10000 | tr '\n' ' '" --preview-window follow,wrap --bind up:preview-up,down:preview-down), :Enter
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert lines.any_include?('3/3 │')
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert lines.any_include?('2/3 │') }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert lines.any_include?('1/3 │') }
+    tmux.send_keys :Down
+    tmux.until { |lines| assert lines.any_include?('2/3 │') }
+  end
+
   def test_close
     tmux.send_keys "seq 100 | #{FZF} --preview 'echo foo' --bind ctrl-c:close", :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }

@@ -4223,7 +4223,7 @@ func (t *Terminal) followOffset() int {
 	for i := len(body) - 1; i >= 0; i-- {
 		h := t.previewLineHeight(body[i], maxWidth)
 		if visualLines+h > height {
-			return headerLines + i + 1
+			return min(len(lines)-1, headerLines+i+1)
 		}
 		visualLines += h
 	}
@@ -4521,7 +4521,7 @@ Loop:
 				}
 			}
 
-			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width()
+			t.previewer.scrollable = t.previewer.scrollable || t.pwindow.Y() == height-1 && t.pwindow.X() == t.pwindow.Width() || t.previewed.filled
 			if fillRet == tui.FillNextLine {
 				continue
 			} else if fillRet == tui.FillSuspend {
@@ -4544,7 +4544,7 @@ Loop:
 		}
 		lineNo++
 	}
-	t.previewer.scrollable = t.previewer.scrollable || index < len(lines)-1
+	t.previewer.scrollable = t.previewer.scrollable || t.previewed.filled || index < len(lines)-1
 	t.previewed.image = image
 	t.previewed.wireframe = wireframe
 }
