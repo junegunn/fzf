@@ -56,9 +56,9 @@ func TestParseRange(t *testing.T) {
 
 func TestTokenize(t *testing.T) {
 	// AWK-style
-	input := "  abc:  def:  ghi  "
+	input := "  abc: \n\t def:  ghi  "
 	tokens := Tokenize(input, Delimiter{})
-	if tokens[0].text.ToString() != "abc:  " || tokens[0].prefixLength != 2 {
+	if tokens[0].text.ToString() != "abc: \n\t " || tokens[0].prefixLength != 2 {
 		t.Errorf("%s", tokens)
 	}
 
@@ -71,9 +71,9 @@ func TestTokenize(t *testing.T) {
 	// With delimiter regex
 	tokens = Tokenize(input, delimiterRegexp("\\s+"))
 	if tokens[0].text.ToString() != "  " || tokens[0].prefixLength != 0 ||
-		tokens[1].text.ToString() != "abc:  " || tokens[1].prefixLength != 2 ||
-		tokens[2].text.ToString() != "def:  " || tokens[2].prefixLength != 8 ||
-		tokens[3].text.ToString() != "ghi  " || tokens[3].prefixLength != 14 {
+		tokens[1].text.ToString() != "abc: \n\t " || tokens[1].prefixLength != 2 ||
+		tokens[2].text.ToString() != "def:  " || tokens[2].prefixLength != 10 ||
+		tokens[3].text.ToString() != "ghi  " || tokens[3].prefixLength != 16 {
 		t.Errorf("%s", tokens)
 	}
 }

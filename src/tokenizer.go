@@ -161,7 +161,7 @@ func awkTokenizer(input string) ([]string, int) {
 	end := 0
 	for idx := 0; idx < len(input); idx++ {
 		r := input[idx]
-		white := r == 9 || r == 32
+		white := r == 9 || r == 32 || r == 10
 		switch state {
 		case awkNil:
 			if white {
