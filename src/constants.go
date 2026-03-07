@@ -34,9 +34,7 @@ const (
 	maxBgProcessesPerAction = 3
 
 	// Matcher
-	numPartitionsMultiplier = 8
-	maxPartitions           = 32
-	progressMinDuration     = 200 * time.Millisecond
+	progressMinDuration = 200 * time.Millisecond
 
 	// Capacity of each chunk
 	chunkSize int = 1000

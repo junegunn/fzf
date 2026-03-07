@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/junegunn/fzf/src/util"
@@ -57,7 +58,7 @@ const (
 // NewMatcher returns a new Matcher
 func NewMatcher(cache *ChunkCache, patternBuilder func([]rune) *Pattern,
 	sort bool, tac bool, eventBox *util.EventBox, revision revision, threads int) *Matcher {
-	partitions := min(numPartitionsMultiplier*runtime.NumCPU(), maxPartitions)
+	partitions := runtime.NumCPU()
 	if threads > 0 {
 		partitions = threads
 	}
@@ -148,27 +149,6 @@ func (m *Matcher) Loop() {
 	}
 }
 
-func (m *Matcher) sliceChunks(chunks []*Chunk) [][]*Chunk {
-	partitions := m.partitions
-	perSlice := len(chunks) / partitions
-
-	if perSlice == 0 {
-		partitions = len(chunks)
-		perSlice = 1
-	}
-
-	slices := make([][]*Chunk, partitions)
-	for i := 0; i < partitions; i++ {
-		start := i * perSlice
-		end := start + perSlice
-		if i == partitions-1 {
-			end = len(chunks)
-		}
-		slices[i] = chunks[start:end]
-	}
-	return slices
-}
-
 type partialResult struct {
 	index   int
 	matches []Result
@@ -192,39 +172,37 @@ func (m *Matcher) scan(request MatchRequest) MatchResult {
 	maxIndex := request.chunks[numChunks-1].lastIndex(minIndex)
 	cancelled := util.NewAtomicBool(false)
 
-	slices := m.sliceChunks(request.chunks)
-	numSlices := len(slices)
-	resultChan := make(chan partialResult, numSlices)
+	numWorkers := min(m.partitions, numChunks)
+	var nextChunk atomic.Int32
+	resultChan := make(chan partialResult, numWorkers)
 	countChan := make(chan int, numChunks)
 	waitGroup := sync.WaitGroup{}
 
-	for idx, chunks := range slices {
+	for idx := range numWorkers {
 		waitGroup.Add(1)
 		if m.slab[idx] == nil {
 			m.slab[idx] = util.MakeSlab(slab16Size, slab32Size)
 		}
-		go func(idx int, slab *util.Slab, chunks []*Chunk) {
-			defer func() { waitGroup.Done() }()
-			count := 0
-			allMatches := make([][]Result, len(chunks))
-			for idx, chunk := range chunks {
-				matches := request.pattern.Match(chunk, slab)
-				allMatches[idx] = matches
-				count += len(matches)
+		go func(idx int, slab *util.Slab) {
+			defer waitGroup.Done()
+			var matches []Result
+			for {
+				ci := int(nextChunk.Add(1)) - 1
+				if ci >= numChunks {
+					break
+				}
+				chunkMatches := request.pattern.Match(request.chunks[ci], slab)
+				matches = append(matches, chunkMatches...)
 				if cancelled.Get() {
 					return
 				}
-				countChan <- len(matches)
-			}
-			sliceMatches := make([]Result, 0, count)
-			for _, matches := range allMatches {
-				sliceMatches = append(sliceMatches, matches...)
+				countChan <- len(chunkMatches)
 			}
 			if m.sort && request.pattern.sortable {
-				m.sortBuf[idx] = radixSortResults(sliceMatches, m.tac, m.sortBuf[idx])
+				m.sortBuf[idx] = radixSortResults(matches, m.tac, m.sortBuf[idx])
 			}
-			resultChan <- partialResult{idx, sliceMatches}
-		}(idx, m.slab[idx], chunks)
+			resultChan <- partialResult{idx, matches}
+		}(idx, m.slab[idx])
 	}
 
 	wait := func() bool {
@@ -252,8 +230,8 @@ func (m *Matcher) scan(request MatchRequest) MatchResult {
 		}
 	}
 
-	partialResults := make([][]Result, numSlices)
-	for range slices {
+	partialResults := make([][]Result, numWorkers)
+	for range numWorkers {
 		partialResult := <-resultChan
 		partialResults[partialResult.index] = partialResult.matches
 	}
