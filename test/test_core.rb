@@ -1191,7 +1191,7 @@ class TestCore < TestInteractive
   end
 
   def test_freeze_left_tabstop
-    writelines(["1\t2\t3"])
+    writelines(%W[1\t2\t3])
     # With --freeze-left 1 and --tabstop=2:
     # Frozen left: "1" (width 1)
     # Middle starts with "\t" at prefix width 1, tabstop 2 → 1 space
