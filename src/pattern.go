@@ -61,7 +61,7 @@ type Pattern struct {
 	delimiter     Delimiter
 	nth           []Range
 	revision      revision
-	procFun       map[termType]algo.Algo
+	procFun       [6]algo.Algo
 	cache         *ChunkCache
 	denylist      map[int32]struct{}
 	startIndex    int32
@@ -150,7 +150,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		cache:         cache,
 		denylist:      denylist,
 		startIndex:    startIndex,
-		procFun:       make(map[termType]algo.Algo)}
+	}
 
 	ptr.cacheKey = ptr.buildCacheKey()
 	ptr.directAlgo, ptr.directTerm = ptr.buildDirectAlgo(fuzzyAlgo)
