@@ -218,11 +218,12 @@ func Tokenize(text string, delimiter Delimiter) []Token {
 	return withPrefixLengths(tokens, 0)
 }
 
-// StripLastDelimiter removes the trailing delimiter and whitespaces
+// StripLastDelimiter removes the trailing delimiter
 func StripLastDelimiter(str string, delimiter Delimiter) string {
 	if delimiter.str != nil {
-		str = strings.TrimSuffix(str, *delimiter.str)
-	} else if delimiter.regex != nil {
+		return strings.TrimSuffix(str, *delimiter.str)
+	}
+	if delimiter.regex != nil {
 		locs := delimiter.regex.FindAllStringIndex(str, -1)
 		if len(locs) > 0 {
 			lastLoc := locs[len(locs)-1]
@@ -230,6 +231,7 @@ func StripLastDelimiter(str string, delimiter Delimiter) string {
 				str = str[:lastLoc[0]]
 			}
 		}
+		return str
 	}
 	return strings.TrimRightFunc(str, unicode.IsSpace)
 }
