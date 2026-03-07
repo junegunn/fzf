@@ -195,11 +195,13 @@ func Run(opts *Options) (int, error) {
 	// Reader
 	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync && opts.Bench == 0
 	var reader *Reader
+	var ingestionStart time.Time
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 
+		ingestionStart = time.Now()
 		readyChan := make(chan bool)
 		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, readyChan)
 		<-readyChan
@@ -283,6 +285,7 @@ func Run(opts *Options) (int, error) {
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
+			ingestionTime := time.Since(ingestionStart)
 
 			// NOTE: Streaming filter is inherently not compatible with --tail
 			snapshot, _, _ := chunkList.Snapshot(opts.Tail)
@@ -316,13 +319,14 @@ func Run(opts *Options) (int, error) {
 				}
 				avg := total / time.Duration(len(times))
 				selectivity := float64(matchCount) / float64(totalItems) * 100
-				fmt.Printf("  %d iterations  avg: %.2fms  min: %.2fms  max: %.2fms  total: %.2fs  items: %d  matches: %d (%.2f%%)\n",
+				fmt.Printf("  %d iterations  avg: %.2fms  min: %.2fms  max: %.2fms  total: %.2fs  items: %d  matches: %d (%.2f%%)  ingestion: %.2fms\n",
 					len(times),
 					float64(avg.Microseconds())/1000,
 					float64(minD.Microseconds())/1000,
 					float64(maxD.Microseconds())/1000,
 					total.Seconds(),
-					totalItems, matchCount, selectivity)
+					totalItems, matchCount, selectivity,
+					float64(ingestionTime.Microseconds())/1000)
 				return ExitOk, nil
 			}
 
