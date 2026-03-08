@@ -300,104 +300,87 @@ func (p *Pattern) CacheKey() string {
 
 // Match returns the list of matches Items in the given Chunk
 func (p *Pattern) Match(chunk *Chunk, slab *util.Slab) []Result {
-	// ChunkCache: Exact match
 	cacheKey := p.CacheKey()
+
+	// Bitmap cache: exact match or prefix/suffix
+	var cachedBitmap *ChunkBitmap
 	if p.cacheable {
-		if cached := p.cache.Lookup(chunk, cacheKey); cached != nil {
-			return cached
-		}
+		cachedBitmap = p.cache.Lookup(chunk, cacheKey)
+	}
+	if cachedBitmap == nil {
+		cachedBitmap = p.cache.Search(chunk, cacheKey)
 	}
 
-	// Prefix/suffix cache
-	space := p.cache.Search(chunk, cacheKey)
-
-	matches := p.matchChunk(chunk, space, slab)
+	matches, bitmap := p.matchChunk(chunk, cachedBitmap, slab)
 
 	if p.cacheable {
-		p.cache.Add(chunk, cacheKey, matches)
+		p.cache.Add(chunk, cacheKey, bitmap, len(matches))
 	}
 	return matches
 }
 
-func (p *Pattern) matchChunk(chunk *Chunk, space []Result, slab *util.Slab) []Result {
+func (p *Pattern) matchChunk(chunk *Chunk, cachedBitmap *ChunkBitmap, slab *util.Slab) ([]Result, ChunkBitmap) {
 	matches := []Result{}
+	var bitmap ChunkBitmap
 
 	// Skip header items in chunks that contain them
 	startIdx := 0
 	if p.startIndex > 0 && chunk.count > 0 && chunk.items[0].Index() < p.startIndex {
 		startIdx = int(p.startIndex - chunk.items[0].Index())
 		if startIdx >= chunk.count {
-			return matches
+			return matches, bitmap
 		}
 	}
+
+	hasCachedBitmap := cachedBitmap != nil
 
 	// Fast path: single fuzzy term, no nth, no denylist.
 	// Calls the algo function directly, bypassing MatchItem/extendedMatch/iter
 	// and avoiding per-match []Offset heap allocation.
 	if p.directAlgo != nil && len(p.denylist) == 0 {
 		t := p.directTerm
-		if space == nil {
-			for idx := startIdx; idx < chunk.count; idx++ {
-				res, _ := p.directAlgo(t.caseSensitive, t.normalize, p.forward,
-					&chunk.items[idx].text, t.text, p.withPos, slab)
-				if res.Start >= 0 {
-					matches = append(matches, buildResultFromBounds(
-						&chunk.items[idx], res.Score,
-						int(res.Start), int(res.End), int(res.End), true))
-				}
+		for idx := startIdx; idx < chunk.count; idx++ {
+			if hasCachedBitmap && cachedBitmap[idx/64]&(uint64(1)<<(idx%64)) == 0 {
+				continue
 			}
-		} else {
-			for _, result := range space {
-				res, _ := p.directAlgo(t.caseSensitive, t.normalize, p.forward,
-					&result.item.text, t.text, p.withPos, slab)
-				if res.Start >= 0 {
-					matches = append(matches, buildResultFromBounds(
-						result.item, res.Score,
-						int(res.Start), int(res.End), int(res.End), true))
-				}
+			res, _ := p.directAlgo(t.caseSensitive, t.normalize, p.forward,
+				&chunk.items[idx].text, t.text, p.withPos, slab)
+			if res.Start >= 0 {
+				bitmap[idx/64] |= uint64(1) << (idx % 64)
+				matches = append(matches, buildResultFromBounds(
+					&chunk.items[idx], res.Score,
+					int(res.Start), int(res.End), int(res.End), true))
 			}
 		}
-		return matches
+		return matches, bitmap
 	}
 
 	if len(p.denylist) == 0 {
-		// Huge code duplication for minimizing unnecessary map lookups
-		if space == nil {
-			for idx := startIdx; idx < chunk.count; idx++ {
-				if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match.item != nil {
-					matches = append(matches, match)
-				}
-			}
-		} else {
-			for _, result := range space {
-				if match, _, _ := p.MatchItem(result.item, p.withPos, slab); match.item != nil {
-					matches = append(matches, match)
-				}
-			}
-		}
-		return matches
-	}
-
-	if space == nil {
 		for idx := startIdx; idx < chunk.count; idx++ {
-			if _, prs := p.denylist[chunk.items[idx].Index()]; prs {
+			if hasCachedBitmap && cachedBitmap[idx/64]&(uint64(1)<<(idx%64)) == 0 {
 				continue
 			}
 			if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match.item != nil {
+				bitmap[idx/64] |= uint64(1) << (idx % 64)
 				matches = append(matches, match)
 			}
 		}
-	} else {
-		for _, result := range space {
-			if _, prs := p.denylist[result.item.Index()]; prs {
-				continue
-			}
-			if match, _, _ := p.MatchItem(result.item, p.withPos, slab); match.item != nil {
-				matches = append(matches, match)
-			}
+		return matches, bitmap
+	}
+
+	for idx := startIdx; idx < chunk.count; idx++ {
+		if hasCachedBitmap && cachedBitmap[idx/64]&(uint64(1)<<(idx%64)) == 0 {
+			continue
+		}
+		if _, prs := p.denylist[chunk.items[idx].Index()]; prs {
+			continue
+		}
+		if match, _, _ := p.MatchItem(&chunk.items[idx], p.withPos, slab); match.item != nil {
+			bitmap[idx/64] |= uint64(1) << (idx % 64)
+			matches = append(matches, match)
 		}
 	}
-	return matches
+	return matches, bitmap
 }
 
 // MatchItem returns the match result if the Item is a match.
