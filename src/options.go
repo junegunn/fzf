@@ -101,6 +101,8 @@ Usage: fzf [options]
     --no-multi-line          Disable multi-line display of items when using --read0
     --raw                    Enable raw mode (show non-matching items)
     --track                  Track the current selection when the result is updated
+    --track-nth=N[,..]       Track the current selection by the value of specific fields
+                             when the result is updated
     --tac                    Reverse the order of the input
     --gap[=N]                Render empty lines between each item
     --gap-line[=STR]         Draw horizontal line on each gap using the string
@@ -594,6 +596,7 @@ type Options struct {
 	Sort              int
 	Raw               bool
 	Track             trackOption
+	TrackNth          []Range
 	Tac               bool
 	Tail              int
 	Criteria          []criterion
@@ -2811,6 +2814,15 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Track = trackEnabled
 		case "--no-track":
 			opts.Track = trackDisabled
+		case "--track-nth":
+			str, err := nextString("nth expression required")
+			if err != nil {
+				return err
+			}
+			if opts.TrackNth, err = splitNth(str); err != nil {
+				return err
+			}
+			opts.Track = trackEnabled
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":
