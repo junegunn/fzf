@@ -41,11 +41,11 @@ cpuid_no:
 	MOVB	$0, ret+0(FP)
 	RET
 
-// func indexByteTwo(s []byte, b1, b2 byte) int
+// func IndexByteTwo(s []byte, b1, b2 byte) int
 //
 // Returns the index of the first occurrence of b1 or b2 in s, or -1.
 // Uses AVX2 (32 bytes/iter) when available, SSE2 (16 bytes/iter) otherwise.
-TEXT ·indexByteTwo(SB),NOSPLIT,$0-40
+TEXT ·IndexByteTwo(SB),NOSPLIT,$0-40
 	MOVQ	s_base+0(FP), SI
 	MOVQ	s_len+8(FP), BX
 	MOVBLZX	b1+24(FP), AX

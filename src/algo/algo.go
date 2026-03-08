@@ -323,7 +323,7 @@ func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
 	byteArray := input.Bytes()[from:]
 	// For case-insensitive search of a letter, search for both cases in one pass
 	if !caseSensitive && b >= 'a' && b <= 'z' {
-		idx := indexByteTwo(byteArray, b, b-32)
+		idx := IndexByteTwo(byteArray, b, b-32)
 		if idx < 0 {
 			return -1
 		}

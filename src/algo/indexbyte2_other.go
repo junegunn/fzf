@@ -6,7 +6,7 @@ import "bytes"
 
 // indexByteTwo returns the index of the first occurrence of b1 or b2 in s,
 // or -1 if neither is present.
-func indexByteTwo(s []byte, b1, b2 byte) int {
+func IndexByteTwo(s []byte, b1, b2 byte) int {
 	i1 := bytes.IndexByte(s, b1)
 	if i1 == 0 {
 		return 0

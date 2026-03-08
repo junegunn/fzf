@@ -15,7 +15,7 @@ func cpuHasAVX2() bool
 // or -1 if neither is present. Uses AVX2 when available, SSE2 otherwise.
 //
 //go:noescape
-func indexByteTwo(s []byte, b1, b2 byte) int
+func IndexByteTwo(s []byte, b1, b2 byte) int
 
 // lastIndexByteTwo returns the index of the last occurrence of b1 or b2 in s,
 // or -1 if neither is present. Uses AVX2 when available, SSE2 otherwise.

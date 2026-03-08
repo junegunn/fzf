@@ -28,9 +28,9 @@ func TestIndexByteTwo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := indexByteTwo([]byte(tt.s), tt.b1, tt.b2)
+			got := IndexByteTwo([]byte(tt.s), tt.b1, tt.b2)
 			if got != tt.want {
-				t.Errorf("indexByteTwo(%q, %c, %c) = %d, want %d", tt.s[:min(len(tt.s), 40)], tt.b1, tt.b2, got, tt.want)
+				t.Errorf("IndexByteTwo(%q, %c, %c) = %d, want %d", tt.s[:min(len(tt.s), 40)], tt.b1, tt.b2, got, tt.want)
 			}
 		})
 	}
@@ -46,27 +46,27 @@ func TestIndexByteTwo(t *testing.T) {
 		for pos := 0; pos < n; pos++ {
 			for _, b := range []byte{'A', 'B'} {
 				data[pos] = b
-				got := indexByteTwo(data, 'A', 'B')
+				got := IndexByteTwo(data, 'A', 'B')
 				want := loopIndexByteTwo(data, 'A', 'B')
 				if got != want {
-					t.Fatalf("indexByteTwo(len=%d, match=%c@%d) = %d, want %d", n, b, pos, got, want)
+					t.Fatalf("IndexByteTwo(len=%d, match=%c@%d) = %d, want %d", n, b, pos, got, want)
 				}
 				data[pos] = byte('c' + (pos % 20))
 			}
 		}
 		// Test with no match
-		got := indexByteTwo(data, 'A', 'B')
+		got := IndexByteTwo(data, 'A', 'B')
 		if got != -1 {
-			t.Fatalf("indexByteTwo(len=%d, no match) = %d, want -1", n, got)
+			t.Fatalf("IndexByteTwo(len=%d, no match) = %d, want -1", n, got)
 		}
 		// Test with both bytes present
 		if n >= 2 {
 			data[n/3] = 'A'
 			data[n*2/3] = 'B'
-			got := indexByteTwo(data, 'A', 'B')
+			got := IndexByteTwo(data, 'A', 'B')
 			want := loopIndexByteTwo(data, 'A', 'B')
 			if got != want {
-				t.Fatalf("indexByteTwo(len=%d, both@%d,%d) = %d, want %d", n, n/3, n*2/3, got, want)
+				t.Fatalf("IndexByteTwo(len=%d, both@%d,%d) = %d, want %d", n, n/3, n*2/3, got, want)
 			}
 			data[n/3] = byte('c' + ((n / 3) % 20))
 			data[n*2/3] = byte('c' + ((n * 2 / 3) % 20))
@@ -147,10 +147,10 @@ func FuzzIndexByteTwo(f *testing.F) {
 	f.Add([]byte(""), byte('a'), byte('b'))
 	f.Add([]byte("aaa"), byte('a'), byte('a'))
 	f.Fuzz(func(t *testing.T, data []byte, b1, b2 byte) {
-		got := indexByteTwo(data, b1, b2)
+		got := IndexByteTwo(data, b1, b2)
 		want := loopIndexByteTwo(data, b1, b2)
 		if got != want {
-			t.Errorf("indexByteTwo(len=%d, b1=%d, b2=%d) = %d, want %d", len(data), b1, b2, got, want)
+			t.Errorf("IndexByteTwo(len=%d, b1=%d, b2=%d) = %d, want %d", len(data), b1, b2, got, want)
 		}
 	})
 }
@@ -214,7 +214,7 @@ func benchIndexByteTwo(b *testing.B, size int, pos int) {
 		fn   func([]byte, byte, byte) int
 	}
 	impls := []impl{
-		{"asm", indexByteTwo},
+		{"asm", IndexByteTwo},
 		{"2xIndexByte", refIndexByteTwo},
 		{"loop", loopIndexByteTwo},
 	}

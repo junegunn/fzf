@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 )
 
@@ -123,31 +124,31 @@ func toAnsiString(color tui.Color, offset int) string {
 	return ret + ";"
 }
 
-func isPrint(c uint8) bool {
-	return '\x20' <= c && c <= '\x7e'
-}
-
 func matchOperatingSystemCommand(s string, start int) int {
 	// `\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)`
 	//                 ^ match starting here after the first printable character
 	//
 	i := start // prefix matched in nextAnsiEscapeSequence()
-	for ; i < len(s) && isPrint(s[i]); i++ {
+
+	// Find the terminator: BEL (\x07) or ESC (\x1b) for ST (\x1b\\)
+	idx := algo.IndexByteTwo(stringBytes(s[i:]), '\x07', '\x1b')
+	if idx < 0 {
+		return -1
 	}
-	if i < len(s) {
-		if s[i] == '\x07' {
-			return i + 1
-		}
-		// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
-		//                   ------
-		if s[i] == '\x1b' && i < len(s)-1 && s[i+1] == '\\' {
-			return i + 2
-		}
+	i += idx
+
+	if s[i] == '\x07' {
+		return i + 1
+	}
+	// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
+	//                   ------
+	if i < len(s)-1 && s[i+1] == '\\' {
+		return i + 2
 	}
 
 	// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
 	//                              ------------
-	if i < len(s) && s[:i+1] == "\x1b]8;;\x1b" {
+	if s[:i+1] == "\x1b]8;;\x1b" {
 		return i + 1
 	}
 
@@ -233,7 +234,7 @@ Loop:
 
 				// \x1b][0-9]+[;:][[:print:]]+(?:\x1b\\\\|\x07)
 				//            ---------------
-				if j > 2 && i+j+1 < len(s) && (s[i+j] == ';' || s[i+j] == ':') && isPrint(s[i+j+1]) {
+				if j > 2 && i+j+1 < len(s) && (s[i+j] == ';' || s[i+j] == ':') && s[i+j+1] >= '\x20' {
 					if k := matchOperatingSystemCommand(s[i:], j+2); k != -1 {
 						return i, i + k
 					}
