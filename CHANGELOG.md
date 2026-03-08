@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.70.1
+------
+- Performance improvements
+    - Replaced `[]Result` cache with bitmap cache (~86x less memory per cache entry)
+    - Raised `queryCacheMax` from `chunkSize/5` to `chunkSize/2` for broader cache coverage
+    - Replaced procFun map with fixed-size array for faster algo dispatch
+    - Replaced static chunk partitioning with a shared work queue in matcher
+    - Changed chunk size from 1000 to 1024 for clean 64-bit alignment
+- Fixed AWK tokenizer not treating a new line character as whitespace
+- Fixed `--{accept,with}-nth` removing trailing whitespaces with a non-default `--delimiter`
+
 0.70.0
 ------
 - Added `change-with-nth` action for dynamically changing the `--with-nth` option.
