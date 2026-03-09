@@ -20,6 +20,7 @@ CHANGELOG
     - Fixed AWK tokenizer not treating a new line character as whitespace
     - Fixed `--{accept,with}-nth` removing trailing whitespaces with a non-default `--delimiter`
     - Fixed OSC8 hyperlinks being mangled when the URL contains unicode characters (#4707)
+    - Fixed `--with-shell` not handling quoted arguments correctly (#4709)
 
 0.70.0
 ------

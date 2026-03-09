@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/junegunn/go-shellwords"
 	"golang.org/x/sys/unix"
 )
 
@@ -20,8 +21,8 @@ type Executor struct {
 
 func NewExecutor(withShell string) *Executor {
 	shell := os.Getenv("SHELL")
-	args := strings.Fields(withShell)
-	if len(args) > 0 {
+	args, err := shellwords.Parse(withShell)
+	if err == nil && len(args) > 0 {
 		shell = args[0]
 		args = args[1:]
 	} else {
