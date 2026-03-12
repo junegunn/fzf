@@ -158,23 +158,6 @@ module TestShell
       tmux.until { |lines| assert lines[-1]&.start_with?(query) }
     end
   end
-
-  def test_ctrl_r_zsh_sh_glob
-    skip("this is a zsh-specific test") unless shell == :zsh
-    tmux.prepare
-    tmux.send_keys 'echo foo', :Enter
-    tmux.prepare
-    tmux.send_keys 'setopt sh_glob', :Enter
-    tmux.prepare
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys 'foo'
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'echo foo', lines[-1] }
-    tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'foo', lines[-1] }
-  end
 end
 
 module CompletionTest
@@ -937,6 +920,7 @@ class TestZsh < TestBase
   end
 
   test_perl_and_awk 'ctrl_r_multiline_index_collision' do
+    tmux.send_keys 'setopt sh_glob', :Enter
     # Leading number in multi-line history content is not confused with index
     prepare_ctrl_r_test
     tmux.send_keys "'line 1"
