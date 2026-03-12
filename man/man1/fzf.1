@@ -617,17 +617,37 @@ Disable multi-line display of items when using \fB\-\-read0\fR
 .B "\-\-raw"
 Enable raw mode where non-matching items are also displayed in a dimmed color.
 .TP
-.B "\-\-track"
+.BI "\-\-track" "[=NTH]"
 Make fzf track the current selection when the result list is updated.
 This can be useful when browsing logs using fzf with sorting disabled. It is
 not recommended to use this option with \fB\-\-tac\fR as the resulting behavior
-can be confusing. Also, consider using \fBtrack\fR action instead of this
-option.
+can be confusing.
+
+When an nth expression is explicitly given (e.g. \fB\-\-track=..\fR or
+\fB\-\-track=1\fR), fzf enables field\-based tracking across \fBreload\fRs.
+On reload, fzf extracts the tracking key from the current item using the nth
+expression and searches for a matching item in the reloaded list. While
+searching, the UI is blocked (query input and cursor movement are disabled, and
+the prompt is dimmed). With \fBreload\fR, the blocked state clears as soon as
+the match is found in the stream. With \fBreload\-sync\fR, the blocked state
+persists until the entire stream is complete. Press \fBEscape\fR or
+\fBCtrl\-C\fR to cancel the blocked state without quitting fzf.
+
+Without the nth expression, \fB\-\-track\fR uses index\-based tracking that
+does not persist across reloads.
+
+The info line shows \fB+T*\fR (or \fB+t*\fR for one\-off tracking) while
+the search is in progress.
 
 .RS
 e.g.
-     \fBgit log \-\-oneline \-\-graph \-\-color=always | nl |
+     \fB# Index\-based tracking (does not persist across reloads)
+     git log \-\-oneline \-\-graph \-\-color=always | nl |
          fzf \-\-ansi \-\-track \-\-no\-sort \-\-layout=reverse\-list\fR
+
+     \fB# Track by first field (e.g. pod name) across reloads
+     kubectl get pods | fzf \-\-track=1 \-\-header\-lines=1 \\
+         \-\-bind 'ctrl\-r:reload:kubectl get pods'\fR
 .RE
 .TP
 .B "\-\-tac"
@@ -2007,6 +2027,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle+down\fR                  \fIctrl\-i  (tab)\fR
     \fBtoggle+up\fR                    \fIbtab    (shift\-tab)\fR
     \fBtrack\-current\fR                (track the current item; automatically disabled if focus changes)
+    \fBtrack\-current(...)\fR           (track the current item using the given nth expression as the tracking key)
     \fBtransform(...)\fR               (transform states using the output of an external command)
     \fBtransform\-border\-label(...)\fR  (transform border label using an external command)
     \fBtransform\-ghost(...)\fR         (transform ghost text using an external command)

@@ -1,8 +1,18 @@
 CHANGELOG
 =========
 
-0.70.1
+0.71.0
 ------
+- Cross-reload tracking
+    - `--track` now accepts an optional nth expression (`--track=NTH`) for field-based tracking across `reload`s
+        - `--track` without `NTH` retains the existing index-based tracking behavior (does not persist across reloads)
+        - `--track=..` tracks by the entire line across reloads
+        - `--track=1` tracks by the first field across reloads
+    - When a `reload` is triggered, fzf searches for the tracked item by its nth field in the new list.
+        - The UI is temporarily blocked (prompt dimmed, input disabled) until the item is found or loading completes.
+        - Press `Escape` or `Ctrl-C` to cancel the blocked state without quitting
+        - Info line shows `+T*` / `+t*` while searching
+    - `track-current` action now also accepts an optional nth argument: `track-current(1)`
 - Performance improvements
     - The search performance now scales linearly with the number of CPU cores, as we dropped static partitioning to allow better load balancing across threads.
       ```

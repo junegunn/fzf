@@ -594,6 +594,7 @@ type Options struct {
 	Sort              int
 	Raw               bool
 	Track             trackOption
+	TrackNth          []Range
 	Tac               bool
 	Tail              int
 	Criteria          []criterion
@@ -1610,7 +1611,7 @@ func parseWalkerOpts(str string) (walkerOpts, error) {
 }
 
 var (
-	executeRegexp    *regexp.Regexp
+	argActionRegexp  *regexp.Regexp
 	splitRegexp      *regexp.Regexp
 	actionNameRegexp *regexp.Regexp
 )
@@ -1629,8 +1630,8 @@ const (
 )
 
 func init() {
-	executeRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
+	argActionRegexp = regexp.MustCompile(
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger|track(?:-current)?)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1639,7 +1640,7 @@ func maskActionContents(action string) string {
 	masked := ""
 Loop:
 	for len(action) > 0 {
-		loc := executeRegexp.FindStringIndex(action)
+		loc := argActionRegexp.FindStringIndex(action)
 		if loc == nil {
 			masked += action
 			break
@@ -1694,7 +1695,7 @@ Loop:
 }
 
 func parseSingleActionList(str string) ([]*action, error) {
-	// We prepend a colon to satisfy executeRegexp and remove it later
+	// We prepend a colon to satisfy argActionRegexp and remove it later
 	masked := maskActionContents(":" + str)[1:]
 	return parseActionList(masked, str, []*action{}, false)
 }
@@ -1954,6 +1955,12 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					if _, _, err := parseKeyChords(actionArg, spec[0:offset]+" target required"); err != nil {
 						return nil, err
 					}
+				case actTrackCurrent:
+					if len(actionArg) > 0 {
+						if _, err := splitNth(actionArg); err != nil {
+							return nil, err
+						}
+					}
 				case actChangePreviewWindow:
 					opts := previewOpts{}
 					for _, arg := range strings.Split(actionArg, "|") {
@@ -2159,6 +2166,8 @@ func isExecuteAction(str string) actionType {
 		return actTrigger
 	case "search":
 		return actSearch
+	case "track", "track-current":
+		return actTrackCurrent
 	}
 	return actIgnore
 }
@@ -2809,8 +2818,18 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Raw = false
 		case "--track":
 			opts.Track = trackEnabled
+			if ok, str := optionalNextString(); ok {
+				nth, err := splitNth(str)
+				if err != nil {
+					return err
+				}
+				opts.TrackNth = nth
+			} else {
+				opts.TrackNth = nil
+			}
 		case "--no-track":
 			opts.Track = trackDisabled
+			opts.TrackNth = nil
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":

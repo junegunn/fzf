@@ -1659,6 +1659,212 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_track_nth_reload_whole_line
+    # --track=.. should track by entire line across reloads
+    tmux.send_keys "seq 1000 | #{FZF} --track=.. --bind 'ctrl-r:reload:seq 1000 | sort -R'", :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+
+    # Move to item 555
+    tmux.send_keys '555'
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 555'
+    end
+    tmux.send_keys :BSpace, :BSpace, :BSpace
+
+    # Reload with shuffled order — cursor should track "555"
+    tmux.send_keys 'C-r'
+    tmux.until do |lines|
+      assert_equal 1000, lines.match_count
+      assert_includes lines, '> 555'
+      assert_includes lines[-2], '+T'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_nth_reload_field
+    # --track=1 should track by first field across reloads
+    tmux.send_keys "printf '1 apple\\n2 banana\\n3 cherry\\n' | #{FZF} --track=1 --bind 'ctrl-r:reload:printf \"1 apricot\\n2 blueberry\\n3 cranberry\\n\"'", :Enter
+    tmux.until do |lines|
+      assert_equal 3, lines.match_count
+      assert_includes lines, '> 1 apple'
+    end
+
+    # Move up to "2 banana"
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2 banana' }
+
+    # Reload — the second field changes, but first field "2" stays
+    tmux.send_keys 'C-r'
+    tmux.until do |lines|
+      assert_equal 3, lines.match_count
+      assert_includes lines, '> 2 blueberry'
+    end
+  end
+
+  def test_track_nth_reload_no_match
+    # When tracked item is not found after reload, cursor stays at current position
+    tmux.send_keys "printf 'alpha\\nbeta\\ngamma\\n' | #{FZF} --track=.. --bind 'ctrl-r:reload:printf \"delta\\nepsilon\\nzeta\\n\"'", :Enter
+    tmux.until { |lines| assert_equal 3, lines.match_count }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> beta' }
+
+    # Reload with completely different items — no match for "beta"
+    # Cursor stays at the same position (second item)
+    tmux.send_keys 'C-r'
+    tmux.until do |lines|
+      assert_equal 3, lines.match_count
+      assert_includes lines, '> epsilon'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_nth_blocked_indicator
+    # +T* should appear during reload and disappear when match is found
+    tmux.send_keys "seq 100 | #{FZF} --track=.. --bind 'ctrl-r:reload:sleep 1; seq 100 | sort -R'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines[-2], '+T'
+    end
+
+    # Trigger slow reload — should show +T* while blocked
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+
+    # After reload completes, +T* should clear back to +T
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines[-2], '+T'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_nth_abort_unblocks
+    # Escape during track-blocked state should unblock, not quit
+    tmux.send_keys "seq 100 | #{FZF} --track=.. --bind 'ctrl-r:reload:sleep 3; seq 100'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines[-2], '+T'
+    end
+
+    # Trigger slow reload
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+
+    # Escape should unblock, not quit fzf
+    tmux.send_keys :Escape
+    tmux.until do |lines|
+      assert_includes lines[-2], '+T'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_nth_reload_async_unblocks_early
+    # With async reload, +T* should clear as soon as the match streams in,
+    # even while loading is still in progress.
+    # sleep 1 first so +T* is observable, then the match arrives, then more items after a delay.
+    tmux.send_keys "seq 5 | #{FZF} --track=.. --bind 'ctrl-r:reload:sleep 1; echo 1; sleep 2; seq 2 10'", :Enter
+    tmux.until do |lines|
+      assert_equal 5, lines.match_count
+      assert_includes lines, '> 1'
+    end
+
+    # Trigger reload — blocked during initial sleep
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+    # Match "1" arrives, unblocks before the remaining items load
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_includes lines, '> 1'
+      assert_includes lines[-2], '+T'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_nth_reload_sync_blocks_until_complete
+    # With reload-sync, +T* should stay until the entire stream is complete,
+    # even though the match arrives early in the stream.
+    tmux.send_keys "seq 5 | #{FZF} --track=.. --bind 'ctrl-r:reload-sync:sleep 1; echo 1; sleep 2; seq 2 10'", :Enter
+    tmux.until do |lines|
+      assert_equal 5, lines.match_count
+      assert_includes lines, '> 1'
+    end
+
+    # Trigger reload-sync — every observable state must be either:
+    # 1. +T* (still blocked), or
+    # 2. final state (count=10, +T without *)
+    # Any other combination (e.g. unblocked while count < 10) is a bug.
+    tmux.send_keys 'C-r'
+    tmux.until do |lines|
+      info = lines[-2]
+      blocked = info&.include?('+T*')
+      unless blocked
+        raise "Unblocked before stream complete (count: #{lines.match_count})" if lines.match_count != 10
+
+        assert_includes info, '+T'
+        assert_includes lines, '> 1'
+      end
+      !blocked
+    end
+  end
+
+  def test_track_nth_toggle_track_unblocks
+    # toggle-track during track-blocked state should unblock and disable tracking
+    tmux.send_keys "seq 100 | #{FZF} --track=.. --bind 'ctrl-r:reload:sleep 5; seq 100' --bind 'ctrl-t:toggle-track'", :Enter
+    tmux.until do |lines|
+      assert_equal 100, lines.match_count
+      assert_includes lines[-2], '+T'
+    end
+
+    # Trigger slow reload
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+
+    # toggle-track should unblock and disable tracking before reload completes
+    tmux.send_keys 'C-t'
+    tmux.until(timeout: 3) do |lines|
+      refute_includes lines[-2], '+T'
+    end
+  end
+
+  def test_track_nth_reload_async_no_match
+    # With async reload, when tracked item is not found, cursor stays at
+    # current position after stream completes
+    tmux.send_keys "printf 'alpha\\nbeta\\ngamma\\n' | #{FZF} --track=.. --bind 'ctrl-r:reload:sleep 1; printf \"delta\\nepsilon\\nzeta\\n\"'", :Enter
+    tmux.until { |lines| assert_equal 3, lines.match_count }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> beta' }
+
+    # Reload with completely different items — no match for "beta"
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+    # After stream completes, unblocks with cursor at same position (second item)
+    tmux.until do |lines|
+      assert_equal 3, lines.match_count
+      assert_includes lines, '> epsilon'
+      refute_includes lines[-2], '+T*'
+    end
+  end
+
+  def test_track_action_with_nth
+    # track(1) action should track by first field
+    tmux.send_keys "printf '1 apple\\n2 banana\\n3 cherry\\n' | #{FZF} --bind 'ctrl-t:track(1),ctrl-r:reload:printf \"1 apricot\\n2 blueberry\\n3 cranberry\\n\"'", :Enter
+    tmux.until { |lines| assert_equal 3, lines.match_count }
+
+    # Move to "2 banana" and activate field tracking
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2 banana' }
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_includes lines[-2], '+t' }
+
+    # Reload — should track by field "2"
+    tmux.send_keys 'C-r'
+    tmux.until do |lines|
+      assert_equal 3, lines.match_count
+      assert_includes lines, '> 2 blueberry'
+    end
+  end
+
   def test_one_and_zero
     tmux.send_keys "seq 10 | #{FZF} --bind 'zero:preview(echo no match),one:preview(echo {} is the only match)'", :Enter
     tmux.send_keys '1'

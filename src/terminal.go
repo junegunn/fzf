@@ -314,6 +314,11 @@ type Terminal struct {
 	sort                 bool
 	toggleSort           bool
 	track                trackOption
+	trackNth             []Range
+	trackKey             string
+	trackBlocked         bool
+	trackSync            bool
+	trackKeyCache        map[int32]bool
 	targetIndex          int32
 	delimiter            Delimiter
 	expect               map[tui.Event]string
@@ -1043,6 +1048,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
 		track:              opts.Track,
+		trackNth:           opts.TrackNth,
 		targetIndex:        minItem.Index(),
 		delimiter:          opts.Delimiter,
 		expect:             opts.Expect,
@@ -1893,7 +1899,33 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		t.triggerLoad = false
 		t.eventChan <- tui.Load.AsEvent()
 	}
-	if prevIndex >= 0 {
+	// Search for the tracked item by nth key
+	// - reload (async): search eagerly, unblock as soon as match is found
+	// - reload-sync: wait until stream is complete before searching
+	trackWasBlocked := t.trackBlocked
+	if len(t.trackKey) > 0 && (!t.trackSync || !t.reading) {
+		found := false
+		for i := 0; i < t.merger.Length(); i++ {
+			item := t.merger.Get(i).item
+			idx := item.Index()
+			match, ok := t.trackKeyCache[idx]
+			if !ok {
+				match = t.trackKeyFor(item, t.trackNth) == t.trackKey
+				t.trackKeyCache[idx] = match
+			}
+			if match {
+				t.cy = i
+				if t.track.Current() {
+					t.track.index = idx
+				}
+				found = true
+				break
+			}
+		}
+		if found || !t.reading {
+			t.unblockTrack()
+		}
+	} else if prevIndex >= 0 {
 		pos := t.cy - t.offset
 		count := t.merger.Length()
 		i := t.merger.FindIndex(prevIndex)
@@ -1929,9 +1961,17 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	if t.hasResultActions {
 		t.eventChan <- tui.Result.AsEvent()
 	}
+	updateList := !t.trackBlocked
+	updatePrompt := trackWasBlocked && !t.trackBlocked
 	t.mutex.Unlock()
+
 	t.reqBox.Set(reqInfo, nil)
-	t.reqBox.Set(reqList, nil)
+	if updateList {
+		t.reqBox.Set(reqList, nil)
+	}
+	if updatePrompt {
+		t.reqBox.Set(reqPrompt, nil)
+	}
 	if needActivation {
 		t.reqBox.Set(reqActivate, nil)
 	}
@@ -2880,6 +2920,8 @@ func (t *Terminal) printPrompt() {
 	color := tui.ColInput
 	if t.paused {
 		color = tui.ColDisabled
+	} else if t.trackBlocked {
+		color = color.WithAttr(tui.Dim)
 	}
 	w.CPrint(color, string(before))
 	w.CPrint(color, string(after))
@@ -2971,9 +3013,17 @@ func (t *Terminal) printInfoImpl() {
 		}
 	}
 	if t.track.Global() {
-		output += " +T"
+		if t.trackBlocked {
+			output += " +T*"
+		} else {
+			output += " +T"
+		}
 	} else if t.track.Current() {
-		output += " +t"
+		if t.trackBlocked {
+			output += " +t*"
+		} else {
+			output += " +t"
+		}
 	}
 	if t.multi > 0 {
 		if t.multi == maxMulti {
@@ -5366,6 +5416,22 @@ func (t *Terminal) currentIndex() int32 {
 	return minItem.Index()
 }
 
+func (t *Terminal) trackKeyFor(item *Item, nth []Range) string {
+	tokens := Tokenize(item.AsString(t.ansi), t.delimiter)
+	return StripLastDelimiter(JoinTokens(Transform(tokens, nth)), t.delimiter)
+}
+
+func (t *Terminal) unblockTrack() {
+	if t.trackBlocked {
+		t.trackBlocked = false
+		t.trackKey = ""
+		t.trackKeyCache = nil
+		if !t.inputless {
+			t.tui.ShowCursor()
+		}
+	}
+}
+
 func (t *Terminal) addClickHeaderWord(env []string) []string {
 	/*
 	 * echo $'HL1\nHL2' | fzf --header-lines 3 --header $'H1\nH2' --header-lines-border --bind 'click-header:preview:env | grep FZF_CLICK'
@@ -6187,6 +6253,14 @@ func (t *Terminal) Loop() error {
 					callback(a.a)
 				}
 			}
+			// When track-blocked, only allow abort/cancel and track-disabling actions
+			if t.trackBlocked && a.t != actToggleTrack && a.t != actToggleTrackCurrent && a.t != actUntrackCurrent {
+				if a.t == actAbort || a.t == actCancel {
+					t.unblockTrack()
+					req(reqPrompt, reqInfo)
+				}
+				return true
+			}
 		Action:
 			switch a.t {
 			case actIgnore, actStart, actClick:
@@ -6958,14 +7032,16 @@ func (t *Terminal) Loop() error {
 				case trackDisabled:
 					t.track = trackEnabled
 				}
-				req(reqInfo)
+				t.unblockTrack()
+				req(reqPrompt, reqInfo)
 			case actToggleTrackCurrent:
 				if t.track.Current() {
 					t.track = trackDisabled
 				} else if t.track.Disabled() {
 					t.track = trackCurrent(t.currentIndex())
 				}
-				req(reqInfo)
+				t.unblockTrack()
+				req(reqPrompt, reqInfo)
 			case actShowHeader:
 				t.headerVisible = true
 				req(reqList, reqInfo, reqPrompt, reqHeader)
@@ -7023,12 +7099,19 @@ func (t *Terminal) Loop() error {
 				if !t.track.Global() {
 					t.track = trackCurrent(t.currentIndex())
 				}
+				// Parse optional nth argument: track-current(1) or track-current(1,3)
+				if len(a.a) > 0 {
+					if nth, err := splitNth(a.a); err == nil {
+						t.trackNth = nth
+					}
+				}
 				req(reqInfo)
 			case actUntrackCurrent:
 				if t.track.Current() {
 					t.track = trackDisabled
 				}
-				req(reqInfo)
+				t.unblockTrack()
+				req(reqPrompt, reqInfo)
 			case actSearch:
 				override := []rune(a.a)
 				t.inputOverride = &override
@@ -7379,6 +7462,20 @@ func (t *Terminal) Loop() error {
 					newCommand = &commandSpec{command, tempFiles}
 					reloadSync = a.t == actReloadSync
 					t.reading = true
+
+					// Capture tracking key before reload
+					if !t.track.Disabled() && len(t.trackNth) > 0 {
+						if item := t.currentItem(); item != nil {
+							t.trackKey = t.trackKeyFor(item, t.trackNth)
+							t.trackKeyCache = make(map[int32]bool)
+							t.trackBlocked = true
+							t.trackSync = reloadSync
+							if !t.inputless {
+								t.tui.HideCursor()
+							}
+							req(reqPrompt, reqInfo)
+						}
+					}
 				}
 			case actUnbind:
 				if keys, _, err := parseKeyChords(a.a, "PANIC"); err == nil {
