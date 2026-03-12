@@ -212,7 +212,7 @@ function fzf_key_bindings
 
     set -lx FZF_DEFAULT_OPTS_FILE
 
-    set -lx -- FZF_DEFAULT_COMMAND 'builtin history -z --show-time="%s%t"'
+    set -lx -- FZF_DEFAULT_COMMAND 'builtin history -z --show-time="%Y-%m-%d %H:%M:%S "'
 
     # Enable syntax highlighting colors on fish v4.3.3 and newer
     if set -l -- v (string match -r -- '^(\d+)\.(\d+)(?:\.(\d+))?' $version)
