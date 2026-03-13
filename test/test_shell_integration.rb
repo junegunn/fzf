@@ -920,6 +920,7 @@ class TestZsh < TestBase
   end
 
   test_perl_and_awk 'ctrl_r_multiline_index_collision' do
+    tmux.send_keys 'setopt sh_glob', :Enter
     # Leading number in multi-line history content is not confused with index
     prepare_ctrl_r_test
     tmux.send_keys "'line 1"
