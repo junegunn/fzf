@@ -136,14 +136,7 @@ func (mg *Merger) Get(idx int) Result {
 	if mg.tac {
 		idx = mg.count - idx - 1
 	}
-	for _, list := range mg.lists {
-		numItems := len(list)
-		if idx < numItems {
-			return list[idx]
-		}
-		idx -= numItems
-	}
-	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
+	return mg.mergedGet(idx)
 }
 
 func (mg *Merger) ToMap() map[int32]Result {
@@ -171,7 +164,7 @@ func (mg *Merger) mergedGet(idx int) Result {
 			}
 			if cursor >= 0 {
 				rank := list[cursor]
-				if minIdx < 0 || compareRanks(rank, minRank, mg.tac) {
+				if minIdx < 0 || mg.sorted && compareRanks(rank, minRank, mg.tac) || !mg.sorted && rank.item.Index() < minRank.item.Index() {
 					minRank = rank
 					minIdx = listIdx
 				}

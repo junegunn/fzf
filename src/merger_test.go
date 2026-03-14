@@ -54,10 +54,25 @@ func buildLists(partiallySorted bool) ([][]Result, []Result) {
 }
 
 func TestMergerUnsorted(t *testing.T) {
-	lists, items := buildLists(false)
+	lists, _ := buildLists(false)
+
+	// Sort each list by index to simulate real worker behavior
+	// (workers process chunks in ascending order via nextChunk.Add(1))
+	for _, list := range lists {
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].item.Index() < list[j].item.Index()
+		})
+	}
+	items := []Result{}
+	for _, list := range lists {
+		items = append(items, list...)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].item.Index() < items[j].item.Index()
+	})
 	cnt := len(items)
 
-	// Not sorted: same order
+	// Not sorted: items in ascending index order
 	mg := NewMerger(nil, lists, false, false, revision{}, 0, 0)
 	assert(t, cnt == mg.Length(), "Invalid Length")
 	for i := range cnt {
