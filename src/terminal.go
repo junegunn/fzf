@@ -392,6 +392,7 @@ type Terminal struct {
 	hasLoadActions       bool
 	hasResizeActions     bool
 	triggerLoad          bool
+	pendingReqList       bool
 	filterSelection      bool
 	reading              bool
 	running              *util.AtomicBool
@@ -1897,6 +1898,7 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	}
 	if t.triggerLoad {
 		t.triggerLoad = false
+		t.pendingReqList = true
 		t.eventChan <- tui.Load.AsEvent()
 	}
 	// Search for the tracked item by nth key
@@ -1947,6 +1949,7 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		case 0:
 			zero := tui.Zero.AsEvent()
 			if _, prs := t.keymap[zero]; prs {
+				t.pendingReqList = true
 				t.eventChan <- zero
 			}
 			// --sync, only 'focus' is bound, but no items to focus
@@ -1954,14 +1957,16 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		case 1:
 			one := tui.One.AsEvent()
 			if _, prs := t.keymap[one]; prs {
+				t.pendingReqList = true
 				t.eventChan <- one
 			}
 		}
 	}
 	if t.hasResultActions {
+		t.pendingReqList = true
 		t.eventChan <- tui.Result.AsEvent()
 	}
-	updateList := !t.trackBlocked
+	updateList := !t.trackBlocked && !t.pendingReqList
 	updatePrompt := trackWasBlocked && !t.trackBlocked
 	t.mutex.Unlock()
 
@@ -7678,6 +7683,11 @@ func (t *Terminal) Loop() error {
 
 		// Dispatch queued background requests
 		t.dispatchAsync()
+
+		if t.pendingReqList {
+			t.pendingReqList = false
+			req(reqList)
+		}
 
 		t.mutex.Unlock() // Must be unlocked before touching reqBox
 
