@@ -101,6 +101,7 @@ Usage: fzf [options]
     --no-multi-line          Disable multi-line display of items when using --read0
     --raw                    Enable raw mode (show non-matching items)
     --track                  Track the current selection when the result is updated
+    --id-nth=N[,..]          Define item identity fields for cross-reload operations
     --tac                    Reverse the order of the input
     --gap[=N]                Render empty lines between each item
     --gap-line[=STR]         Draw horizontal line on each gap using the string
@@ -594,7 +595,7 @@ type Options struct {
 	Sort              int
 	Raw               bool
 	Track             trackOption
-	TrackNth          []Range
+	IdNth             []Range
 	Tac               bool
 	Tail              int
 	Criteria          []criterion
@@ -1631,7 +1632,7 @@ const (
 
 func init() {
 	argActionRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger|track(?:-current)?)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -1955,12 +1956,6 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 					if _, _, err := parseKeyChords(actionArg, spec[0:offset]+" target required"); err != nil {
 						return nil, err
 					}
-				case actTrackCurrent:
-					if len(actionArg) > 0 {
-						if _, err := splitNth(actionArg); err != nil {
-							return nil, err
-						}
-					}
 				case actChangePreviewWindow:
 					opts := previewOpts{}
 					for _, arg := range strings.Split(actionArg, "|") {
@@ -2166,8 +2161,6 @@ func isExecuteAction(str string) actionType {
 		return actTrigger
 	case "search":
 		return actSearch
-	case "track", "track-current":
-		return actTrackCurrent
 	}
 	return actIgnore
 }
@@ -2818,18 +2811,18 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Raw = false
 		case "--track":
 			opts.Track = trackEnabled
-			if ok, str := optionalNextString(); ok {
-				nth, err := splitNth(str)
-				if err != nil {
-					return err
-				}
-				opts.TrackNth = nth
-			} else {
-				opts.TrackNth = nil
-			}
 		case "--no-track":
 			opts.Track = trackDisabled
-			opts.TrackNth = nil
+		case "--id-nth":
+			str, err := nextString("nth expression required")
+			if err != nil {
+				return err
+			}
+			if opts.IdNth, err = splitNth(str); err != nil {
+				return err
+			}
+		case "--no-id-nth":
+			opts.IdNth = nil
 		case "--tac":
 			opts.Tac = true
 		case "--no-tac":

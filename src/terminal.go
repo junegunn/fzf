@@ -314,11 +314,12 @@ type Terminal struct {
 	sort                 bool
 	toggleSort           bool
 	track                trackOption
-	trackNth             []Range
+	idNth                []Range
 	trackKey             string
 	trackBlocked         bool
 	trackSync            bool
 	trackKeyCache        map[int32]bool
+	pendingSelections    map[string]selectedItem
 	targetIndex          int32
 	delimiter            Delimiter
 	expect               map[tui.Event]string
@@ -1049,7 +1050,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		sort:               opts.Sort > 0,
 		toggleSort:         opts.ToggleSort,
 		track:              opts.Track,
-		trackNth:           opts.TrackNth,
+		idNth:              opts.IdNth,
 		targetIndex:        minItem.Index(),
 		delimiter:          opts.Delimiter,
 		expect:             opts.Expect,
@@ -1857,7 +1858,14 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	}
 	if t.revision != newRevision {
 		if !t.revision.compatible(newRevision) {
-			// Reloaded: clear selection
+			// Reloaded: capture selection keys for restoration, then clear
+			if len(t.idNth) > 0 && t.multi > 0 && len(t.selected) > 0 {
+				t.pendingSelections = make(map[string]selectedItem, len(t.selected))
+				for _, sel := range t.selected {
+					key := t.trackKeyFor(sel.item, t.idNth)
+					t.pendingSelections[key] = sel
+				}
+			}
 			t.selected = make(map[int32]selectedItem)
 			t.clearNumLinesCache()
 		} else {
@@ -1912,7 +1920,7 @@ func (t *Terminal) UpdateList(result MatchResult) {
 			idx := item.Index()
 			match, ok := t.trackKeyCache[idx]
 			if !ok {
-				match = t.trackKeyFor(item, t.trackNth) == t.trackKey
+				match = t.trackKeyFor(item, t.idNth) == t.trackKey
 				t.trackKeyCache[idx] = match
 			}
 			if match {
@@ -1942,6 +1950,18 @@ func (t *Terminal) UpdateList(result MatchResult) {
 			// Try to keep the vertical position when the list shrinks
 			t.cy = count - min(count, t.maxItems()) + pos
 		}
+	}
+	// Restore selections by id-nth key after reload completes
+	if !t.reading && t.pendingSelections != nil {
+		for i := 0; i < t.merger.Length() && len(t.pendingSelections) > 0; i++ {
+			item := t.merger.Get(i).item
+			key := t.trackKeyFor(item, t.idNth)
+			if sel, found := t.pendingSelections[key]; found {
+				t.selected[item.Index()] = selectedItem{sel.at, item}
+				delete(t.pendingSelections, key)
+			}
+		}
+		t.pendingSelections = nil
 	}
 	needActivation := false
 	if !t.reading {
@@ -7104,12 +7124,6 @@ func (t *Terminal) Loop() error {
 				if !t.track.Global() {
 					t.track = trackCurrent(t.currentIndex())
 				}
-				// Parse optional nth argument: track-current(1) or track-current(1,3)
-				if len(a.a) > 0 {
-					if nth, err := splitNth(a.a); err == nil {
-						t.trackNth = nth
-					}
-				}
 				req(reqInfo)
 			case actUntrackCurrent:
 				if t.track.Current() {
@@ -7469,9 +7483,9 @@ func (t *Terminal) Loop() error {
 					t.reading = true
 
 					// Capture tracking key before reload
-					if !t.track.Disabled() && len(t.trackNth) > 0 {
+					if !t.track.Disabled() && len(t.idNth) > 0 {
 						if item := t.currentItem(); item != nil {
-							t.trackKey = t.trackKeyFor(item, t.trackNth)
+							t.trackKey = t.trackKeyFor(item, t.idNth)
 							t.trackKeyCache = make(map[int32]bool)
 							t.trackBlocked = true
 							t.trackSync = reloadSync
