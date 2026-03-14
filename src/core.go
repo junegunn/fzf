@@ -469,7 +469,9 @@ func Run(opts *Options) (int, error) {
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
-					matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
+					if !useSnapshot || evt == EvtReadFin {
+						matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
+					}
 
 				case EvtSearchNew:
 					var command *commandSpec
