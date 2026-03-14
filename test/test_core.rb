@@ -404,11 +404,11 @@ class TestCore < TestInteractive
       tmux.send_keys "seq 1 111 | #{fzf("-m +s --tac #{opt} -q11")}", :Enter
       tmux.until { |lines| assert_equal '> 111', lines[-3] }
       tmux.send_keys :Tab
-      tmux.until { |lines| assert_equal '  4/111 -S (1)', lines[-2] }
+      tmux.until { |lines| assert_equal '  4/111 (1) -S', lines[-2] }
       tmux.send_keys 'C-R'
       tmux.until { |lines| assert_equal '> 11', lines[-3] }
       tmux.send_keys :Tab
-      tmux.until { |lines| assert_equal '  4/111 +S (2)', lines[-2] }
+      tmux.until { |lines| assert_equal '  4/111 (2) +S', lines[-2] }
       tmux.send_keys :Enter
       assert_equal %w[111 11], fzf_output_lines
     end

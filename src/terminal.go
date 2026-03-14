@@ -3030,6 +3030,16 @@ func (t *Terminal) printInfoImpl() {
 	found := t.resultMerger.Length()
 	total := max(found, t.count)
 	output := fmt.Sprintf("%d/%d", found, total)
+	if t.multi > 0 {
+		if t.multi == maxMulti {
+			output += fmt.Sprintf(" (%d)", len(t.selected))
+		} else {
+			output += fmt.Sprintf(" (%d/%d)", len(t.selected), t.multi)
+		}
+	}
+	if t.progress > 0 && t.progress < 100 {
+		output += fmt.Sprintf(" (%d%%)", t.progress)
+	}
 	if t.toggleSort {
 		if t.sort {
 			output += " +S"
@@ -3049,16 +3059,6 @@ func (t *Terminal) printInfoImpl() {
 		} else {
 			output += " +t"
 		}
-	}
-	if t.multi > 0 {
-		if t.multi == maxMulti {
-			output += fmt.Sprintf(" (%d)", len(t.selected))
-		} else {
-			output += fmt.Sprintf(" (%d/%d)", len(t.selected), t.multi)
-		}
-	}
-	if t.progress > 0 && t.progress < 100 {
-		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
