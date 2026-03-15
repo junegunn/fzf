@@ -1858,8 +1858,8 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	}
 	if t.revision != newRevision {
 		if !t.revision.compatible(newRevision) {
-			// Reloaded: capture selection keys for restoration, then clear
-			if len(t.idNth) > 0 && t.multi > 0 && len(t.selected) > 0 {
+			// Reloaded: capture selection keys for restoration, then clear (reload-sync only)
+			if t.trackSync && len(t.idNth) > 0 && t.multi > 0 && len(t.selected) > 0 {
 				t.pendingSelections = make(map[string]selectedItem, len(t.selected))
 				for _, sel := range t.selected {
 					key := t.trackKeyFor(sel.item, t.idNth)
@@ -7482,13 +7482,15 @@ func (t *Terminal) Loop() error {
 					reloadSync = a.t == actReloadSync
 					t.reading = true
 
+					if len(t.idNth) > 0 {
+						t.trackSync = reloadSync
+					}
 					// Capture tracking key before reload
 					if !t.track.Disabled() && len(t.idNth) > 0 {
 						if item := t.currentItem(); item != nil {
 							t.trackKey = t.trackKeyFor(item, t.idNth)
 							t.trackKeyCache = make(map[int32]bool)
 							t.trackBlocked = true
-							t.trackSync = reloadSync
 							if !t.inputless {
 								t.tui.HideCursor()
 							}
