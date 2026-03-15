@@ -161,6 +161,7 @@ _fzf_opts_completion() {
     --history
     --history-size
     --hscroll-off
+    --id-nth
     --info
     --info-command
     --input-border
