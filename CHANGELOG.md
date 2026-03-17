@@ -25,7 +25,7 @@ CHANGELOG
       ```
     - Improved the cache structure, reducing memory footprint per entry by 86x.
         - With the reduced per-entry cost, the cache now has broader coverage.
-- fish: Improved command history (CTRL-R) (#44703) (@bitraid)
+- fish: Improved command history (CTRL-R) (#4703) (@bitraid)
 - Bug fixes
     - Fixed AWK tokenizer not treating a new line character as whitespace
     - Fixed `--{accept,with}-nth` removing trailing whitespaces with a non-default `--delimiter`
