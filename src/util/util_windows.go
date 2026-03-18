@@ -75,19 +75,25 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		}
 		x.shellPath.Store(shell)
 	}
+
+	var creationFlags uint32
+	if setpgid {
+		creationFlags = windows.CREATE_NEW_PROCESS_GROUP
+	}
+
 	var cmd *exec.Cmd
 	if x.shellType == shellTypeCmd {
 		cmd = exec.Command(shell)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
 			CmdLine:       fmt.Sprintf(`%s "%s"`, strings.Join(x.args, " "), command),
-			CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
+			CreationFlags: creationFlags,
 		}
 	} else {
 		cmd = exec.Command(shell, append(x.args, command)...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
-			CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
+			CreationFlags: creationFlags,
 		}
 	}
 	return cmd
