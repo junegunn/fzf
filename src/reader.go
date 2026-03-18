@@ -269,9 +269,7 @@ func trimPath(path string) string {
 
 func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bool {
 	conf := fastwalk.Config{
-		// When opts.follow is true, symlink following and loop/duplicate
-		// detection is handled by IgnoreDuplicateDirs below.
-		Follow: false,
+		Follow: opts.follow,
 		// Use forward slashes when running a Windows binary under WSL or MSYS
 		ToSlash: fastwalk.DefaultToSlash(),
 		Sort:    fastwalk.SortFilesFirst,
@@ -341,13 +339,9 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		}
 		return nil
 	}
-	var walkFn fs.WalkDirFunc = fn
-	if opts.follow {
-		walkFn = fastwalk.IgnoreDuplicateDirs(fn)
-	}
 	noerr := true
 	for _, root := range roots {
-		noerr = noerr && (fastwalk.Walk(&conf, root, walkFn) == nil)
+		noerr = noerr && (fastwalk.Walk(&conf, root, fn) == nil)
 	}
 	return noerr
 }
