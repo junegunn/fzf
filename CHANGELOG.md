@@ -27,6 +27,7 @@ CHANGELOG
         - With the reduced per-entry cost, the cache now has broader coverage.
 - fish: Improved command history (CTRL-R) (#4703) (@bitraid)
 - Bug fixes
+    - `--walker=follow` no longer follows symlinks whose target is an ancestor of the walker root, avoiding severe resource exhaustion when a symlink points outside the tree (e.g. Wine's `z:` → `/`) (#4710)
     - Fixed AWK tokenizer not treating a new line character as whitespace
     - Fixed `--{accept,with}-nth` removing trailing whitespaces with a non-default `--delimiter`
     - Fixed OSC8 hyperlinks being mangled when the URL contains unicode characters (#4707)
