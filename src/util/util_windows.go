@@ -58,8 +58,8 @@ func NewExecutor(withShell string) *Executor {
 }
 
 // ExecCommand executes the given command with $SHELL
-// FIXME: setpgid is unused. We set it in the Unix implementation so that we
-// can kill preview process with its child processes at once.
+// On Windows, setpgid controls whether the spawned process is placed in a new
+// process group (so that it can be signaled independently, e.g. for previews).
 // NOTE: For "powershell", we should ideally set output encoding to UTF8,
 // but it is left as is now because no adverse effect has been observed.
 func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
