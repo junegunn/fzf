@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 type shellType int
@@ -79,13 +81,13 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
 			CmdLine:       fmt.Sprintf(`%s "%s"`, strings.Join(x.args, " "), command),
-			CreationFlags: 0,
+			CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
 		}
 	} else {
 		cmd = exec.Command(shell, append(x.args, command)...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
-			CreationFlags: 0,
+			CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
 		}
 	}
 	return cmd
@@ -166,7 +168,7 @@ func (x *Executor) QuoteEntry(entry string) string {
 
 // KillCommand kills the process for the given command
 func KillCommand(cmd *exec.Cmd) error {
-	return cmd.Process.Kill()
+	return windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid))
 }
 
 // IsWindows returns true on Windows
