@@ -174,7 +174,22 @@ func (x *Executor) QuoteEntry(entry string) string {
 
 // KillCommand kills the process for the given command
 func KillCommand(cmd *exec.Cmd) error {
-	return windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid))
+	// Safely handle nil command or process.
+	if cmd == nil || cmd.Process == nil {
+		return nil
+	}
+	// If it has its own process group, we can send it Ctrl-Break
+	if cmd.SysProcAttr.CreationFlags == windows.CREATE_NEW_PROCESS_GROUP {
+		if err := windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid)); err == nil {
+			return nil
+		}
+	}
+	// If it's the same process group, or if sending the console control event
+	// fails (e.g., no console, different console, or process already exited),
+	// fall back to a standard kill.  This probably won't *help* if there's I/O
+	// going on, because Wait() will still hang until the I/O finishes unless we
+	// hard-kill the entire process group.  But it doesn't hurt to try!
+	return cmd.Process.Kill()
 }
 
 // IsWindows returns true on Windows
