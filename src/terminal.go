@@ -216,8 +216,9 @@ const (
 )
 
 type StatusItem struct {
-	Index int    `json:"index"`
-	Text  string `json:"text"`
+	Index     int    `json:"index"`
+	Text      string `json:"text"`
+	Positions []int  `json:"positions,omitempty"`
 }
 
 type Status struct {
@@ -7869,10 +7870,18 @@ func (t *Terminal) dumpItem(i *Item) StatusItem {
 	if i == nil {
 		return StatusItem{}
 	}
-	return StatusItem{
+	item := StatusItem{
 		Index: int(i.Index()),
 		Text:  i.AsString(t.ansi),
 	}
+	if t.resultMerger.pattern != nil {
+		_, _, pos := t.resultMerger.pattern.MatchItem(i, true, t.slab)
+		if pos != nil {
+			sort.Ints(*pos)
+			item.Positions = *pos
+		}
+	}
+	return item
 }
 
 func (t *Terminal) tryLock(timeout time.Duration) bool {

@@ -16,6 +16,31 @@ class TestServer < TestInteractive
       assert_empty state[:query]
       assert_equal({ index: 0, text: '1' }, state[:current])
 
+      # No positions when query is empty
+      state[:matches].each do |m|
+        assert_nil m[:positions]
+      end
+      assert_nil state[:current][:positions] if state[:current]
+
+      # Positions with a single-character query
+      Net::HTTP.post(fn.call, 'change-query(1)')
+      tmux.until { |lines| assert_equal 2, lines.match_count }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal [0], state[:current][:positions]
+      state[:matches].each do |m|
+        assert_includes m[:text], '1'
+        assert_equal [m[:text].index('1')], m[:positions]
+      end
+
+      # Positions with a multi-character query; verify sorted ascending
+      Net::HTTP.post(fn.call, 'change-query(10)')
+      tmux.until { |lines| assert_equal 1, lines.match_count }
+      state = JSON.parse(Net::HTTP.get(fn.call), symbolize_names: true)
+      assert_equal '10', state[:current][:text]
+      assert_equal [0, 1], state[:current][:positions]
+      assert_equal state[:current][:positions], state[:current][:positions].sort
+
+      # No match — no current item
       Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }
