@@ -98,6 +98,14 @@ itest:
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
 
+# Regenerate default.pgo for profile-guided optimization.
+# Run this periodically to keep the profile in sync with code changes.
+profile:
+	SHELL=/bin/sh GOOS= $(GO) test -tags "$(TAGS)" -run='^$$' -bench=. -cpuprofile=$(ROOT_DIR)/cpu_algo.prof github.com/junegunn/fzf/src/algo
+	SHELL=/bin/sh GOOS= $(GO) test -tags "$(TAGS)" -run='^$$' -bench=. -cpuprofile=$(ROOT_DIR)/cpu_src.prof github.com/junegunn/fzf/src
+	$(GO) tool pprof -proto $(ROOT_DIR)/cpu_algo.prof $(ROOT_DIR)/cpu_src.prof > $(ROOT_DIR)/default.pgo
+	$(RM) $(ROOT_DIR)/cpu_algo.prof $(ROOT_DIR)/cpu_src.prof
+
 lint: $(SOURCES) test/*.rb test/lib/*.rb ${BASH_SCRIPTS}
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	bundle exec rubocop -a --require rubocop-minitest --require rubocop-performance
@@ -204,4 +212,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all generate build release test itest bench lint install clean docker docker-test update fmt
+.PHONY: all generate build release test itest bench lint install clean docker docker-test update fmt profile
