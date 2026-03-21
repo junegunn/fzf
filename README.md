@@ -732,60 +732,78 @@ _fzf_complete_foo_post() {
 
 ### Fuzzy completion for fish
 
-(Available in 0.68.0 or later)
-
 Fuzzy completion for fish differs from bash and zsh in that:
 
 - It doesn't require a trigger sequence like `**`. Instead, if activates
-  on `Shift-TAB`, while `TAB` preserves fish's native completion behavior.
+  on `Shift-TAB` (replacing the native pager search mode), while `TAB` preserves
+  fish's native completion behavior.
 - It relies on fish's native completion system to populate the candidate list,
   rather than performing a recursive file system traversal. For recursive
   searching, use the `CTRL-T` binding instead.
-- The only supported configuration variable is `FZF_COMPLETION_OPTS`.
+- If the current command line token is a wildcard pattern, it performs search on
+  the wildcard expansion path list (instead of the native behavior of inserting
+  all the results in command line). Because the shell is used for the expansion,
+  there is a limit in the number of results.
+- The only supported configuration variables are `FZF_COMPLETION_OPTS` and
+  `FZF_EXPANSION_OPS`.
+- The function that is used by custom completion functions is named
+  `fzf_complete`, which only accepts fzf options as arguments, and can be also
+  called without any redirected input, to just modify fzf options while
+  presenting the native completion results. For compatibility with other shells,
+  a function named `_fzf_complete` is provided, that can accept ` -- $argv` in
+  its command line arguments, after fzf options.
 
-That said, just like in bash and zsh, you can implement custom completion for
-a specific command by defining an `_fzf_complete_COMMAND` function. For example:
+For commands that are not covered by fish completions, it is better to create
+regular fish completion functions (which will work for both `TAB` and
+`Shift-TAB`), and create fzf completion functions only when needing to modify
+fzf options for a specific command or want different results for `Shift-TAB`:
 
 ```fish
-function _fzf_complete_foo
-  function _fzf_complete_foo_post
-    awk '{print $NF}'
-  end
-  _fzf_complete --multi --reverse --header-lines=3 -- $argv < (ls -al | psub)
+# Customize git completion
+function _fzf_complete_git
+  # Show header text with active branch for all git completions
+  set -lx -- FZF_COMPLETION_OPTS --header="'"(git branch --show-current 2>/dev/null)"'"
 
-  functions -e _fzf_complete_foo_post
+  # No other changes when less than 3 arguments, or when completing options
+  if not set -q argv[3]; or string match -q -- '-*' $argv[-1]
+    fzf_complete
+    return
+  end
+
+  # Check subcommand
+  switch $argv[2]
+    case checkout diff log show
+      # Set preview and display all branches and commits for subcommands: checkout, diff, log, show
+      begin
+        git branch --all --format='%(refname:short)'
+        git log --all --oneline --color=always
+      end | fzf_complete --no-multi --ansi --accept-nth=1 --query=$argv[-1] --preview='git show --color=always {1}'
+
+    case add rm mv
+      # Only set preview for subcommands: add, rm, mv
+      # Special characters in fish completion lists are escaped, so the r flag must be used.
+      fzf_complete --preview="git diff --color=always {r1}"
+
+    case '*'
+      # No changes for other subcommands
+      fzf_complete
+  end
 end
 ```
 
-And here's a more complex example for customizing `git`
+Similar to bash and zsh, the output of fzf can be processed before inserted in
+command line, by defining a function named `_fzf_complete_COMMAND_post` or
+`_fzf_post_complete_COMMAND`:
 
 ```fish
-function _fzf_complete_git
-  switch $argv[2]
-    case checkout switch
-      _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+function _fzf_complete_foo
+  ls -sh --zero --color=always | fzf_complete --read0 --print0 --ansi --no-multi-line --header-lines=1
+end
 
-    case add
-      function _fzf_complete_git_post
-        awk '{print $NF}'
-      end
-      _fzf_complete --multi --reverse -- $argv < (git status --short | psub)
-
-    case show log diff
-      function _fzf_complete_git_post
-        awk '{print $1}'
-      end
-      _fzf_complete --reverse --no-sort --preview='git show --color=always {1}' -- $argv < (git log --oneline | psub)
-
-    case ''
-      __fzf_complete_native "$argv[1] " --query=(commandline -t | string escape)
-
-    case '*'
-      set -l -- current_token (commandline -t)
-      __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+function _fzf_post_complete_foo
+  while read -lz result
+    string escape -n -- $result | string trim -l -c '\ ' | string split -m 1 -f 2 ' '
   end
-
-  functions -e _fzf_complete_git_post
 end
 ```
 
