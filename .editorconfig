@@ -1,6 +1,6 @@
 root = true
 
-[*.{sh,bash}]
+[*.{sh,bash,fish}]
 indent_style       = space
 indent_size        = 2
 simplify           = true
