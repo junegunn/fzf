@@ -26,7 +26,7 @@ CHANGELOG
     - Improved the cache structure, reducing memory footprint per entry by 86x.
         - With the reduced per-entry cost, the cache now has broader coverage.
 - Shell integration improvements
-    - bash: Press `shift-delete` to delete history entries during CTRL-R search (#4715)
+    - bash: CTRL-R now supports multi-select and `shift-delete` to delete history entries (#4715)
     - fish: Improved command history (CTRL-R) (#4703) (@bitraid)
 - `GET /` HTTP endpoint now includes `positions` field in each match entry, providing the indices of matched characters for external highlighting (#4726)
 - Bug fixes

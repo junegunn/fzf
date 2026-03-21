@@ -840,20 +840,25 @@ class TestBash < TestBase
     tmux.prepare
     tmux.send_keys 'echo to-delete-2', :Enter
     tmux.prepare
+    tmux.send_keys 'echo to-delete-3', :Enter
+    tmux.prepare
     tmux.send_keys 'echo another-keeper', :Enter
     tmux.prepare
 
-    # Open Ctrl-R and delete two entries
+    # Open Ctrl-R and delete one entry
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys 'to-delete'
-    tmux.until { |lines| assert_equal 2, lines.match_count }
-    # Delete the first match
+    tmux.until { |lines| assert_equal 3, lines.match_count }
     tmux.send_keys 'S-Delete'
-    tmux.until { |lines| assert_equal 1, lines.match_count }
-    # Delete the second match
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+
+    # Multi-select remaining two and delete them at once
+    tmux.send_keys :BTab, :BTab
+    tmux.until { |lines| assert_includes lines[-2], '(2)' }
     tmux.send_keys 'S-Delete'
     tmux.until { |lines| assert_equal 0, lines.match_count }
+
     # Exit without selecting
     tmux.send_keys :Escape
     tmux.prepare
