@@ -832,6 +832,50 @@ class TestBash < TestBase
     tmux.prepare
   end
 
+  def test_ctrl_r_delete
+    tmux.prepare
+    tmux.send_keys 'echo to-keep', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo to-delete-1', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo to-delete-2', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo another-keeper', :Enter
+    tmux.prepare
+
+    # Open Ctrl-R and delete two entries
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'to-delete'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    # Delete the first match
+    tmux.send_keys 'S-Delete'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    # Delete the second match
+    tmux.send_keys 'S-Delete'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    # Exit without selecting
+    tmux.send_keys :Escape
+    tmux.prepare
+
+    # Verify deleted entries are gone from history
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'to-delete'
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :Escape
+    tmux.prepare
+
+    # Verify kept entries are still there
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'to-keep'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'echo to-keep', lines[-1] }
+    tmux.send_keys 'C-c'
+  end
+
   def test_dynamic_completion_loader
     tmux.paste 'touch /tmp/foo; _fzf_completion_loader=1'
     tmux.paste '_completion_loader() { complete -o default fake; }'

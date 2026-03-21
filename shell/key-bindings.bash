@@ -77,17 +77,31 @@ __fzf_cd__() {
   ) && printf 'builtin cd -- %q' "$(builtin unset CDPATH && builtin cd -- "$dir" && builtin pwd)"
 }
 
+__fzf_history_delete() {
+  [[ -s $1 ]] || return
+
+  local offsets
+  offsets=($(sort -rnu "$1"))
+  for offset in "${offsets[@]}"; do
+    builtin history -d "$offset"
+  done
+}
+
 if command -v perl > /dev/null; then
   __fzf_history__() {
-    local output script
+    local output script deletefile
+    deletefile=$(mktemp)
     script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; s/\n/\n\t/gm; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
     output=$(
       set +o pipefail
       builtin fc -lnr -2147483648 |
         last_hist=$(HISTTIMEFORMAT='' builtin history 1) command perl -n -l0 -e "$script" |
-        FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,alt-r:toggle-raw --wrap-sign '"$'\t'"↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} +m --read0") \
+        FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,alt-r:toggle-raw --wrap-sign '"$'\t'"↳ ' --highlight-line --bind 'shift-delete:execute-silent(echo {1} >> \"$deletefile\")+exclude' ${FZF_CTRL_R_OPTS-} +m --read0") \
         FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) --query "$READLINE_LINE"
-    ) || return
+    )
+    __fzf_history_delete "$deletefile"
+    command rm -f "$deletefile"
+    [[ -n $output ]] || return
     READLINE_LINE=$(command perl -pe 's/^\d*\t//' <<< "$output")
     if [[ -z $READLINE_POINT ]]; then
       echo "$READLINE_LINE"
@@ -97,7 +111,8 @@ if command -v perl > /dev/null; then
   }
 else # awk - fallback for POSIX systems
   __fzf_history__() {
-    local output script
+    local output script deletefile
+    deletefile=$(mktemp)
     [[ $(HISTTIMEFORMAT='' builtin history 1) =~ [[:digit:]]+ ]] # how many history entries
     script='function P(b) { ++n; sub(/^[ *]/, "", b); if (!seen[b]++) { printf "%d\t%s%c", '$((BASH_REMATCH + 1))' - n, b, 0 } }
     NR==1 { b = substr($0, 2); next }
@@ -108,9 +123,12 @@ else # awk - fallback for POSIX systems
       set +o pipefail
       builtin fc -lnr -2147483648 2> /dev/null | # ( $'\t '<lines>$'\n' )* ; <lines> ::= [^\n]* ( $'\n'<lines> )*
         __fzf_exec_awk "$script" |               # ( <counter>$'\t'<lines>$'\000' )*
-        FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,alt-r:toggle-raw --wrap-sign '"$'\t'"↳ ' --highlight-line ${FZF_CTRL_R_OPTS-} +m --read0") \
+        FZF_DEFAULT_OPTS=$(__fzf_defaults "" "-n2..,.. --scheme=history --bind=ctrl-r:toggle-sort,alt-r:toggle-raw --wrap-sign '"$'\t'"↳ ' --highlight-line --bind 'shift-delete:execute-silent(echo {1} >> \"$deletefile\")+exclude' ${FZF_CTRL_R_OPTS-} +m --read0") \
         FZF_DEFAULT_OPTS_FILE='' $(__fzfcmd) --query "$READLINE_LINE"
-    ) || return
+    )
+    __fzf_history_delete "$deletefile"
+    command rm -f "$deletefile"
+    [[ -n $output ]] || return
     READLINE_LINE=${output#*$'\t'}
     if [[ -z $READLINE_POINT ]]; then
       echo "$READLINE_LINE"

@@ -25,7 +25,9 @@ CHANGELOG
       ```
     - Improved the cache structure, reducing memory footprint per entry by 86x.
         - With the reduced per-entry cost, the cache now has broader coverage.
-- fish: Improved command history (CTRL-R) (#4703) (@bitraid)
+- Shell integration improvements
+    - bash: Press `shift-delete` to delete history entries during CTRL-R search (#4715)
+    - fish: Improved command history (CTRL-R) (#4703) (@bitraid)
 - `GET /` HTTP endpoint now includes `positions` field in each match entry, providing the indices of matched characters for external highlighting (#4726)
 - Bug fixes
     - `--walker=follow` no longer follows symlinks whose target is an ancestor of the walker root, avoiding severe resource exhaustion when a symlink points outside the tree (e.g. Wine's `z:` → `/`) (#4710)
