@@ -869,7 +869,7 @@ func nthTransformer(str string) (func(Delimiter) func([]Token, int32) string, er
 		nth   []Range
 	}
 
-	parts := make([]NthParts, len(indexes))
+	parts := make([]NthParts, 0, len(indexes))
 	idx := 0
 	for _, index := range indexes {
 		if idx < index[0] {
