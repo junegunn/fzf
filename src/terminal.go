@@ -7184,10 +7184,12 @@ func (t *Terminal) Loop() error {
 				}
 				if !me.Down {
 					barDragging = false
+					pmx, pmy = -1, -1
+				}
+				if !me.Down || !t.hasPreviewWindow() {
 					pbarDragging = false
 					pborderDragging = -1
 					previewDraggingPos = -1
-					pmx, pmy = -1, -1
 				}
 
 				// Scrolling
@@ -7215,7 +7217,7 @@ func (t *Terminal) Loop() error {
 				}
 
 				// Preview dragging
-				if me.Down && (previewDraggingPos >= 0 || click && t.hasPreviewWindow() && t.pwindow.Enclose(my, mx)) {
+				if t.hasPreviewWindow() && me.Down && (previewDraggingPos >= 0 || click && t.pwindow.Enclose(my, mx)) {
 					if previewDraggingPos > 0 {
 						scrollPreviewBy(previewDraggingPos - my)
 					}
@@ -7225,7 +7227,7 @@ func (t *Terminal) Loop() error {
 
 				// Preview scrollbar dragging
 				headerLines := t.activePreviewOpts.headerLines
-				pbarDragging = me.Down && (pbarDragging || click && t.hasPreviewWindow() && my >= t.pwindow.Top()+headerLines && my < t.pwindow.Top()+t.pwindow.Height() && mx == t.pwindow.Left()+t.pwindow.Width())
+				pbarDragging = t.hasPreviewWindow() && me.Down && (pbarDragging || click && my >= t.pwindow.Top()+headerLines && my < t.pwindow.Top()+t.pwindow.Height() && mx == t.pwindow.Left()+t.pwindow.Width())
 				if pbarDragging {
 					effectiveHeight := t.pwindow.Height() - headerLines
 					numLines := len(t.previewer.lines) - headerLines
@@ -7242,7 +7244,7 @@ func (t *Terminal) Loop() error {
 				}
 
 				// Preview border dragging (resizing)
-				if pborderDragging < 0 && click && t.hasPreviewWindow() {
+				if t.hasPreviewWindow() && pborderDragging < 0 && click {
 					switch t.activePreviewOpts.position {
 					case posUp:
 						if t.pborder.Enclose(my, mx) && my == t.pborder.Top()+t.pborder.Height()-1 {
@@ -7271,7 +7273,7 @@ func (t *Terminal) Loop() error {
 					}
 				}
 
-				if pborderDragging >= 0 && t.hasPreviewWindow() {
+				if t.hasPreviewWindow() && pborderDragging >= 0 {
 					var newSize int
 					var prevSize int
 					switch t.activePreviewOpts.position {
