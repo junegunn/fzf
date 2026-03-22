@@ -4630,7 +4630,7 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 	w := t.pborder.Width()
 	xw := [2]int{t.pwindow.Left(), t.pwindow.Width()}
 	redraw := false
-	if len(t.previewer.bar) != height || t.previewer.xw != xw {
+	if len(t.previewer.bar) != height || t.previewer.xw != xw || t.previewed.version != t.previewer.version {
 		redraw = true
 		t.previewer.bar = make([]bool, height)
 		t.previewer.xw = xw

@@ -623,4 +623,20 @@ class TestPreview < TestInteractive
       assert_equal(0, lines.count { |line| line.include?('│ h') })
     end
   end
+
+  def test_preview_toggle_should_redraw_scrollbar
+    tmux.send_keys %(seq 1 | #{FZF} --no-border --scrollbar --preview 'seq $((FZF_PREVIEW_LINES + 1))' --preview-border line --bind tab:toggle-preview --header foo --header-border --footer bar --footer-border), :Enter
+    tmux.until do |lines|
+      assert_equal 1, lines.match_count
+      assert_operator lines.count { |line| line.end_with?('│') }, :>, 2
+    end
+    tmux.send_keys :Tab
+    tmux.until do |lines|
+      assert_equal(2, lines.count { |line| line.end_with?('│') })
+    end
+    tmux.send_keys :Tab
+    tmux.until do |lines|
+      assert_operator lines.count { |line| line.end_with?('│') }, :>, 2
+    end
+  end
 end
