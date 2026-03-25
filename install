@@ -118,7 +118,7 @@ try_curl() {
 
     case "$archi" in
       OpenBSD\ *64*) curl -fL $1 | tar -xzf - ;;
-      *) curl -fL $1 | tar --no-same-owner -xvf - ;;
+      *) curl -fL $1 | tar --no-same-owner -xzf - ;;
     esac
 
     else
@@ -133,7 +133,7 @@ try_wget() {
 
     case "$archi" in
       OpenBSD\ *64*) wget -O - $1 $1 | tar -xzf - ;;
-      *) wget -O - $1 | tar --no-same-owner -xvf - ;;
+      *) wget -O - $1 | tar --no-same-owner -xzf - ;;
     esac
 
     else
