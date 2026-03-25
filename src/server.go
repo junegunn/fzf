@@ -122,13 +122,12 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, getHan
 		}
 	}
 
-	server := httpServer{
-		apiKey:        []byte(apiKey),
-		actionChannel: actionChannel,
-		getHandler:    getHandler,
-	}
-
 	go func() {
+		server := httpServer{
+			apiKey:        []byte(apiKey),
+			actionChannel: actionChannel,
+			getHandler:    getHandler,
+		}
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
