@@ -3,6 +3,10 @@ CHANGELOG
 
 0.71.0
 ------
+- Added `--popup` as a new name for `--tmux` with Zellij support
+    - `--popup` starts fzf in a tmux popup or a Zellij floating pane
+    - `--tmux` is now an alias for `--popup`
+    - Requires tmux 3.3+ or Zellij 0.44+
 - Cross-reload item identity with `--id-nth`
     - Added `--id-nth=NTH` to define item identity fields for cross-reload operations
     - When a `reload` is triggered with tracking enabled, fzf searches for the tracked item by its identity fields in the new list.

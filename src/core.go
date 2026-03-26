@@ -56,6 +56,9 @@ func Run(opts *Options) (int, error) {
 		if opts.useTmux() {
 			return runTmux(os.Args, opts)
 		}
+		if opts.useZellij() {
+			return runZellij(os.Args, opts)
+		}
 
 		if needWinpty(opts) {
 			return runWinpty(os.Args, opts)

@@ -23,6 +23,32 @@ func escapeSingleQuote(str string) string {
 	return "'" + strings.ReplaceAll(str, "'", "'\\''") + "'"
 }
 
+func popupArgStr(args []string, opts *Options) (string, string) {
+	fzf, rest := args[0], args[1:]
+	args = []string{"--bind=ctrl-z:ignore"}
+	if !opts.Tmux.border && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
+		if tui.DefaultBorderShape == tui.BorderRounded {
+			rest = append(rest, "--border=rounded")
+		} else {
+			rest = append(rest, "--border=sharp")
+		}
+	}
+	if opts.Tmux.border && opts.Margin == defaultMargin() {
+		args = append(args, "--margin=0,1")
+	}
+	argStr := escapeSingleQuote(fzf)
+	for _, arg := range append(args, rest...) {
+		argStr += " " + escapeSingleQuote(arg)
+	}
+	argStr += ` --no-popup --no-height`
+
+	dir, err := os.Getwd()
+	if err != nil {
+		dir = "."
+	}
+	return argStr, dir
+}
+
 func fifo(name string) (string, error) {
 	ns := time.Now().UnixNano()
 	output := filepath.Join(os.TempDir(), fmt.Sprintf("fzf-%s-%d", name, ns))

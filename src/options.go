@@ -75,9 +75,10 @@ Usage: fzf [options]
     --min-height=HEIGHT[+]   Minimum height when --height is given as a percentage.
                              Add '+' to automatically increase the value
                              according to the other layout options (default: 10+).
-    --tmux[=OPTS]            Start fzf in a tmux popup (requires tmux 3.3+)
+    --popup[=OPTS]           Start fzf in a popup window (requires tmux 3.3+ or Zellij 0.44+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
                              [,border-native] (default: center,50%)
+    --tmux[=OPTS]            Alias for --popup
 
   LAYOUT
     --layout=LAYOUT          Choose layout: [default|reverse|reverse-list]
@@ -417,7 +418,7 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid tmux option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
+	errorToReturn := errors.New("invalid popup option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
 	if len(tokens) == 0 || len(tokens) > 4 {
 		return nil, errorToReturn
 	}
@@ -2636,7 +2637,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			opts.Version = true
 		case "--no-winpty":
 			opts.NoWinpty = true
-		case "--tmux":
+		case "--tmux", "--popup":
 			given, str := optionalNextString()
 			if given {
 				if opts.Tmux, err = parseTmuxOptions(str, index); err != nil {
@@ -2645,7 +2646,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			} else {
 				opts.Tmux = defaultTmuxOptions(index)
 			}
-		case "--no-tmux":
+		case "--no-tmux", "--no-popup":
 			opts.Tmux = nil
 		case "--tty-default":
 			if opts.TtyDefault, err = nextString("tty device name required"); err != nil {
@@ -3625,6 +3626,10 @@ func noSeparatorLine(style infoStyle, separator bool) bool {
 
 func (opts *Options) useTmux() bool {
 	return opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index
+}
+
+func (opts *Options) useZellij() bool {
+	return opts.Tmux != nil && len(os.Getenv("ZELLIJ")) > 0 && opts.Tmux.index >= opts.Height.index
 }
 
 func (opts *Options) noSeparatorLine() bool {
