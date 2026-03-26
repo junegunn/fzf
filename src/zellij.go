@@ -7,13 +7,11 @@ import (
 	"github.com/junegunn/fzf/src/tui"
 )
 
-func runTmux(args []string, opts *Options) (int, error) {
+func runZellij(args []string, opts *Options) (int, error) {
 	// Prepare arguments
 	fzf, rest := args[0], args[1:]
 	args = []string{"--bind=ctrl-z:ignore"}
 	if !opts.Tmux.border && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
-		// We append --border option at the end, because `--style=full:STYLE`
-		// may have changed the default border style.
 		if tui.DefaultBorderShape == tui.BorderRounded {
 			rest = append(rest, "--border=rounded")
 		} else {
@@ -35,38 +33,35 @@ func runTmux(args []string, opts *Options) (int, error) {
 		dir = "."
 	}
 
-	// Set tmux options for popup placement
-	// C        Both    The centre of the terminal
-	// R        -x      The right side of the terminal
-	// P        Both    The bottom left of the pane
-	// M        Both    The mouse position
-	// W        Both    The window position on the status line
-	// S        -y      The line above or below the status line
-	tmuxArgs := []string{"display-popup", "-E", "-d", dir}
+	zellijArgs := []string{
+		"run", "--floating", "--close-on-exit", "--block-until-exit",
+		"--cwd", dir,
+	}
 	if !opts.Tmux.border {
-		tmuxArgs = append(tmuxArgs, "-B")
+		zellijArgs = append(zellijArgs, "--borderless", "true")
 	}
 	switch opts.Tmux.position {
 	case posUp:
-		tmuxArgs = append(tmuxArgs, "-xC", "-y0")
+		zellijArgs = append(zellijArgs, "-y", "0")
 	case posDown:
-		tmuxArgs = append(tmuxArgs, "-xC", "-y9999")
+		zellijArgs = append(zellijArgs, "-y", "9999")
 	case posLeft:
-		tmuxArgs = append(tmuxArgs, "-x0", "-yC")
+		zellijArgs = append(zellijArgs, "-x", "0")
 	case posRight:
-		tmuxArgs = append(tmuxArgs, "-xR", "-yC")
+		zellijArgs = append(zellijArgs, "-x", "9999")
 	case posCenter:
-		tmuxArgs = append(tmuxArgs, "-xC", "-yC")
+		// Zellij centers floating panes by default
 	}
-	tmuxArgs = append(tmuxArgs, "-w"+opts.Tmux.width.String())
-	tmuxArgs = append(tmuxArgs, "-h"+opts.Tmux.height.String())
+	zellijArgs = append(zellijArgs, "--width", opts.Tmux.width.String())
+	zellijArgs = append(zellijArgs, "--height", opts.Tmux.height.String())
+	zellijArgs = append(zellijArgs, "--")
 
 	return runProxy(argStr, func(temp string, needBash bool) (*exec.Cmd, error) {
 		sh, err := sh(needBash)
 		if err != nil {
 			return nil, err
 		}
-		tmuxArgs = append(tmuxArgs, sh, temp)
-		return exec.Command("tmux", tmuxArgs...), nil
+		zellijArgs = append(zellijArgs, sh, temp)
+		return exec.Command("zellij", zellijArgs...), nil
 	}, opts, true)
 }
