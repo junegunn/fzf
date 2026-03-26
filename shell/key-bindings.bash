@@ -4,7 +4,6 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ key-bindings.bash
 #
-# - $FZF_TMUX_OPTS
 # - $FZF_CTRL_T_COMMAND
 # - $FZF_CTRL_T_OPTS
 # - $FZF_CTRL_R_COMMAND
