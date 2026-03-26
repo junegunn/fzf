@@ -1,37 +1,11 @@
 package fzf
 
 import (
-	"os"
 	"os/exec"
-
-	"github.com/junegunn/fzf/src/tui"
 )
 
 func runZellij(args []string, opts *Options) (int, error) {
-	// Prepare arguments
-	fzf, rest := args[0], args[1:]
-	args = []string{"--bind=ctrl-z:ignore"}
-	if !opts.Tmux.border && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
-		if tui.DefaultBorderShape == tui.BorderRounded {
-			rest = append(rest, "--border=rounded")
-		} else {
-			rest = append(rest, "--border=sharp")
-		}
-	}
-	if opts.Tmux.border && opts.Margin == defaultMargin() {
-		args = append(args, "--margin=0,1")
-	}
-	argStr := escapeSingleQuote(fzf)
-	for _, arg := range append(args, rest...) {
-		argStr += " " + escapeSingleQuote(arg)
-	}
-	argStr += ` --no-popup --no-height`
-
-	// Get current directory
-	dir, err := os.Getwd()
-	if err != nil {
-		dir = "."
-	}
+	argStr, dir := popupArgStr(args, opts)
 
 	zellijArgs := []string{
 		"run", "--floating", "--close-on-exit", "--block-until-exit",
