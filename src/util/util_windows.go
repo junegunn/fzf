@@ -21,6 +21,7 @@ const (
 	shellTypeUnknown shellType = iota
 	shellTypeCmd
 	shellTypePowerShell
+	shellTypePwsh
 )
 
 var escapeRegex = regexp.MustCompile(`[&|<>()^%!"]`)
@@ -48,7 +49,10 @@ func NewExecutor(withShell string) *Executor {
 	} else if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
 		args = []string{"/s/c"}
-	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
+	} else if strings.HasPrefix(basename, "pwsh") {
+		shellType = shellTypePwsh
+		args = []string{"-NoProfile", "-Command"}
+	} else if strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
 	} else {
@@ -58,8 +62,12 @@ func NewExecutor(withShell string) *Executor {
 }
 
 // ExecCommand executes the given command with $SHELL
+//
 // On Windows, setpgid controls whether the spawned process is placed in a new
 // process group (so that it can be signaled independently, e.g. for previews).
+// However, we only do this for "pwsh" and non-standard shells, because cmd.exe
+// and Windows PowerShell ("powershell.exe") don't always exit on Ctrl-Break.
+//
 // NOTE: For "powershell", we should ideally set output encoding to UTF8,
 // but it is left as is now because no adverse effect has been observed.
 func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
@@ -77,7 +85,8 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 	}
 
 	var creationFlags uint32
-	if setpgid {
+	// Set new process group for pwsh (PowerShell 7+) and unknown/posix-ish shells
+	if setpgid && (x.shellType == shellTypePwsh || x.shellType == shellTypeUnknown) {
 		creationFlags = windows.CREATE_NEW_PROCESS_GROUP
 	}
 
@@ -90,7 +99,12 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 			CreationFlags: creationFlags,
 		}
 	} else {
-		cmd = exec.Command(shell, append(x.args, command)...)
+		args := x.args
+		if setpgid && x.shellType == shellTypePwsh {
+			// pwsh needs -NonInteractive flag to exit on Ctrl-Break
+			args = append([]string{"-NonInteractive"}, x.args...)
+		}
+		cmd = exec.Command(shell, append(args, command)...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
 			CreationFlags: creationFlags,
@@ -164,6 +178,8 @@ func (x *Executor) QuoteEntry(entry string) string {
 		   fd -H --no-ignore -td -d 4 | fzf --preview ".\eza.exe --color=always --tree --level=3 --icons=always {}" --with-shell "powershell -NoProfile -Command"
 		*/
 		return escapeArg(entry)
+	case shellTypePwsh:
+		fallthrough
 	case shellTypePowerShell:
 		escaped := strings.ReplaceAll(entry, `"`, `\"`)
 		return "'" + strings.ReplaceAll(escaped, "'", "''") + "'"
