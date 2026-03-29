@@ -178,9 +178,7 @@ func (x *Executor) QuoteEntry(entry string) string {
 		   fd -H --no-ignore -td -d 4 | fzf --preview ".\eza.exe --color=always --tree --level=3 --icons=always {}" --with-shell "powershell -NoProfile -Command"
 		*/
 		return escapeArg(entry)
-	case shellTypePwsh:
-		fallthrough
-	case shellTypePowerShell:
+	case shellTypePowerShell, shellTypePwsh:
 		escaped := strings.ReplaceAll(entry, `"`, `\"`)
 		return "'" + strings.ReplaceAll(escaped, "'", "''") + "'"
 	default:
