@@ -195,7 +195,7 @@ func KillCommand(cmd *exec.Cmd) error {
 		return nil
 	}
 	// If it has its own process group, we can send it Ctrl-Break
-	if cmd.SysProcAttr.CreationFlags == windows.CREATE_NEW_PROCESS_GROUP {
+	if cmd.SysProcAttr != nil && cmd.SysProcAttr.CreationFlags&windows.CREATE_NEW_PROCESS_GROUP != 0 {
 		if err := windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid)); err == nil {
 			return nil
 		}
