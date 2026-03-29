@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 type shellType int
@@ -19,6 +21,7 @@ const (
 	shellTypeUnknown shellType = iota
 	shellTypeCmd
 	shellTypePowerShell
+	shellTypePwsh
 )
 
 var escapeRegex = regexp.MustCompile(`[&|<>()^%!"]`)
@@ -46,7 +49,10 @@ func NewExecutor(withShell string) *Executor {
 	} else if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
 		args = []string{"/s/c"}
-	} else if strings.HasPrefix(basename, "pwsh") || strings.HasPrefix(basename, "powershell") {
+	} else if strings.HasPrefix(basename, "pwsh") {
+		shellType = shellTypePwsh
+		args = []string{"-NoProfile", "-Command"}
+	} else if strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
 		args = []string{"-NoProfile", "-Command"}
 	} else {
@@ -56,8 +62,12 @@ func NewExecutor(withShell string) *Executor {
 }
 
 // ExecCommand executes the given command with $SHELL
-// FIXME: setpgid is unused. We set it in the Unix implementation so that we
-// can kill preview process with its child processes at once.
+//
+// On Windows, setpgid controls whether the spawned process is placed in a new
+// process group (so that it can be signaled independently, e.g. for previews).
+// However, we only do this for "pwsh" and non-standard shells, because cmd.exe
+// and Windows PowerShell ("powershell.exe") don't always exit on Ctrl-Break.
+//
 // NOTE: For "powershell", we should ideally set output encoding to UTF8,
 // but it is left as is now because no adverse effect has been observed.
 func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
@@ -73,19 +83,31 @@ func (x *Executor) ExecCommand(command string, setpgid bool) *exec.Cmd {
 		}
 		x.shellPath.Store(shell)
 	}
+
+	var creationFlags uint32
+	// Set new process group for pwsh (PowerShell 7+) and unknown/posix-ish shells
+	if setpgid && (x.shellType == shellTypePwsh || x.shellType == shellTypeUnknown) {
+		creationFlags = windows.CREATE_NEW_PROCESS_GROUP
+	}
+
 	var cmd *exec.Cmd
 	if x.shellType == shellTypeCmd {
 		cmd = exec.Command(shell)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
 			CmdLine:       fmt.Sprintf(`%s "%s"`, strings.Join(x.args, " "), command),
-			CreationFlags: 0,
+			CreationFlags: creationFlags,
 		}
 	} else {
-		cmd = exec.Command(shell, append(x.args, command)...)
+		args := x.args
+		if setpgid && x.shellType == shellTypePwsh {
+			// pwsh needs -NonInteractive flag to exit on Ctrl-Break
+			args = append([]string{"-NonInteractive"}, x.args...)
+		}
+		cmd = exec.Command(shell, append(args, command)...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:    false,
-			CreationFlags: 0,
+			CreationFlags: creationFlags,
 		}
 	}
 	return cmd
@@ -156,7 +178,7 @@ func (x *Executor) QuoteEntry(entry string) string {
 		   fd -H --no-ignore -td -d 4 | fzf --preview ".\eza.exe --color=always --tree --level=3 --icons=always {}" --with-shell "powershell -NoProfile -Command"
 		*/
 		return escapeArg(entry)
-	case shellTypePowerShell:
+	case shellTypePowerShell, shellTypePwsh:
 		escaped := strings.ReplaceAll(entry, `"`, `\"`)
 		return "'" + strings.ReplaceAll(escaped, "'", "''") + "'"
 	default:
@@ -166,6 +188,21 @@ func (x *Executor) QuoteEntry(entry string) string {
 
 // KillCommand kills the process for the given command
 func KillCommand(cmd *exec.Cmd) error {
+	// Safely handle nil command or process.
+	if cmd == nil || cmd.Process == nil {
+		return nil
+	}
+	// If it has its own process group, we can send it Ctrl-Break
+	if cmd.SysProcAttr != nil && cmd.SysProcAttr.CreationFlags&windows.CREATE_NEW_PROCESS_GROUP != 0 {
+		if err := windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(cmd.Process.Pid)); err == nil {
+			return nil
+		}
+	}
+	// If it's the same process group, or if sending the console control event
+	// fails (e.g., no console, different console, or process already exited),
+	// fall back to a standard kill.  This probably won't *help* if there's I/O
+	// going on, because Wait() will still hang until the I/O finishes unless we
+	// hard-kill the entire process group.  But it doesn't hurt to try!
 	return cmd.Process.Kill()
 }
 
