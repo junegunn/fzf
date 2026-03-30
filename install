@@ -439,7 +439,7 @@ if [ $update_config -eq 1 ]; then
     echo
   fi
   [[ $shells =~ zsh ]] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-  [[ $shells =~ fish && $lno_func -ne 0 ]] && echo '   fzf_user_key_bindings  # fish'
+  [[ $shells =~ fish && $lno_func -ne 0 ]] && echo '   fish_user_key_bindings  # fish'
   echo
   echo 'Use uninstall script to remove fzf.'
   echo
