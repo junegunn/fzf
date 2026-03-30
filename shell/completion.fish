@@ -5,6 +5,16 @@
 # /_/   /___/_/ completion.fish
 #
 # - $FZF_COMPLETION_OPTS                  (default: empty)
+#
+# To customize the completion candidates, define _fzf_compgen_fish function.
+# It should take a command line string as its argument and output completion
+# candidates in the same format as Fish's native completion (tab-separated
+# name and description).
+#
+#   function _fzf_compgen_fish
+#     # Example: post-process Fish's native completions to format descriptions
+#     eval complete -C \"$argv[1]\" | string replace -r \t' *' \t'  '
+#   end
 
 function fzf_completion_setup
 
@@ -137,7 +147,13 @@ function fzf_completion_setup
   # Use complete builtin for specific commands
   function __fzf_complete_native
     set -l -- token (commandline -t)
-    set -l -- completions (eval complete -C \"$argv[1]\")
+    # Check for custom completion generator function
+    set -l -- completions
+    if functions -q _fzf_compgen_fish
+      set -- completions (_fzf_compgen_fish $argv[1])
+    else
+      set -- completions (eval complete -C \"$argv[1]\")
+    end
     test -n "$completions"; or begin commandline -f repaint; return; end
 
     # Calculate tabstop based on longest completion item (sample first 500 for performance)
