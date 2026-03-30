@@ -14,17 +14,15 @@
 
 # Key bindings
 # ------------
-# The oldest supported fish version is 3.1b1. To maintain compatibility, the
-# command substitution syntax $(cmd) should never be used, even behind a version
-# check, otherwise the source command will fail on fish versions older than 3.4.0.
 function fzf_key_bindings
 
-  # Check fish version
-  if set -l -- fish_ver (string match -r '^(\d+)\.(\d+)' $version 2>/dev/null)
-  and test "$fish_ver[2]" -lt 3 -o "$fish_ver[2]" -eq 3 -a "$fish_ver[3]" -lt 1
-    echo "This script requires fish version 3.1b1 or newer." >&2
+  # The oldest supported fish version is 3.4.0. For this message being able to be
+  # displayed on older versions, the command substitution syntax $() should not
+  # be used anywhere in the script, otherwise the source command will fail.
+  if string match -qr -- '^[12]\\.|^3\\.[0-3]' $version
+    echo "fzf key bindings script requires fish version 3.4.0 or newer." >&2
     return 1
-  else if not type -q fzf
+  else if not command -q fzf
     echo "fzf was not found in path." >&2
     return 1
   end
@@ -36,7 +34,7 @@ function fzf_key_bindings
     string join ' ' -- \
       "--height $FZF_TMUX_HEIGHT --min-height=20+ --bind=ctrl-z:ignore" $argv[1] \
       (test -r "$FZF_DEFAULT_OPTS_FILE"; and string join -- ' ' <$FZF_DEFAULT_OPTS_FILE) \
-      $FZF_DEFAULT_OPTS $argv[2..-1]
+      $FZF_DEFAULT_OPTS $argv[2..]
   end
 
   function __fzfcmd
@@ -55,38 +53,25 @@ function fzf_key_bindings
     set -l prefix ''
     set -l dir '.'
 
-    # Set variables containing the major and minor fish version numbers, using
-    # a method compatible with all supported fish versions.
-    set -l -- fish_major (string match -r -- '^\d+' $version)
-    set -l -- fish_minor (string match -r -- '^\d+\.(\d+)' $version)[2]
+    set -l -- match_regex '(?<fzf_query>[\\s\\S]*?(?=\\n?$)$)'
+    set -l -- prefix_regex '^-[^\\s=]+=|^-(?!-)\\S'
 
-    # fish v3.3.0 and newer: Don't use option prefix if " -- " is preceded.
-    set -l -- match_regex '(?<fzf_query>[\s\S]*?(?=\n?$)$)'
-    set -l -- prefix_regex '^-[^\s=]+=|^-(?!-)\S'
-    if test "$fish_major" -eq 3 -a "$fish_minor" -lt 3
-    or string match -q -v -- '* -- *' (string sub -l (commandline -Cp) -- (commandline -p))
-      set -- match_regex "(?<prefix>$prefix_regex)?$match_regex"
-    end
+    # Don't use option prefix if " -- " is preceded.
+    string match -qv -- '* -- *' (string sub -l (commandline -Cp) -- (commandline -p))
+    and set -- match_regex "(?<prefix>$prefix_regex)?$match_regex"
 
     # Set $prefix and expanded $fzf_query with preserved trailing newlines.
-    if test "$fish_major" -ge 4
+    if string match -qr -- '^\\d\\d+|^[4-9]' $version
       # fish v4.0.0 and newer
       string match -q -r -- $match_regex (commandline --current-token --tokens-expanded | string collect -N)
-    else if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
-      # fish v3.2.0 - v3.7.1 (last v3)
-      string match -q -r -- $match_regex (commandline --current-token --tokenize | string collect -N)
-      eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)' '')
     else
-      # fish older than v3.2.0 (v3.1b1 - v3.1.2)
-      set -l -- cl_token (commandline --current-token --tokenize | string collect -N)
-      set -- prefix (string match -r -- $prefix_regex $cl_token)
-      set -- fzf_query (string replace -- "$prefix" '' $cl_token | string collect -N)
-      eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\(?=~)|\\\(?=\$\w)|\\\n\\\n$' '')
+      string match -q -r -- $match_regex (commandline --current-token --tokenize | string collect -N)
+      eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^\\\\(?=~)|\\\\(?=\\$\\w)' '')
     end
 
     if test -n "$fzf_query"
       # Normalize path in $fzf_query, set $dir to the longest existing directory.
-      if test \( "$fish_major" -ge 4 \) -o \( "$fish_major" -eq 3 -a "$fish_minor" -ge 5 \)
+      if string match -qr -- '^\\d\\d+|^4|^3\\.[5-9]' $version
         # fish v3.5.0 and newer
         set -- fzf_query (path normalize -- $fzf_query)
         set -- dir $fzf_query
@@ -94,35 +79,22 @@ function fzf_key_bindings
           set -- dir (path dirname $dir)
         end
       else
-        # fish older than v3.5.0 (v3.1b1 - v3.4.1)
-        if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
-          # fish v3.2.0 - v3.4.1
-          string match -q -r -- '(?<fzf_query>^[\s\S]*?(?=\n?$)$)' \
-            (string replace -r -a -- '(?<=/)/|(?<!^)/+(?!\n)$' '' $fzf_query | string collect -N)
-        else
-          # fish v3.1b1 - v3.1.2
-          set -- fzf_query (string replace -r -a -- '(?<=/)/|(?<!^)/+(?!\n)$' '' $fzf_query | string collect -N)
-          eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r '\\\n$' '')
-        end
+        string match -q -r -- '(?<fzf_query>^[\\s\\S]*?(?=\\n?$)$)' \
+          (string replace -r -a -- '(?<=/)/|(?<!^)/+(?!\\n)$' '' $fzf_query | string collect -N)
         set -- dir $fzf_query
         while not test -d "$dir"
           set -- dir (dirname -z -- "$dir" | string split0)
         end
       end
 
-      if not string match -q -- '.' $dir; or string match -q -r -- '^\./|^\.$' $fzf_query
+      if not string match -q -- '.' $dir; or string match -qr -- '^\\.(/|$)' $fzf_query
         # Strip $dir from $fzf_query - preserve trailing newlines.
-        if test "$fish_major" -ge 4
+        if string match -qr -- '^\\d\\d+|^[4-9]' $version
           # fish v4.0.0 and newer
-          string match -q -r -- '^'(string escape --style=regex -- $dir)'/?(?<fzf_query>[\s\S]*)' $fzf_query
-        else if test "$fish_major" -eq 3 -a "$fish_minor" -ge 2
-          # fish v3.2.0 - v3.7.1 (last v3)
-          string match -q -r -- '^/?(?<fzf_query>[\s\S]*?(?=\n?$)$)' \
-            (string replace -- "$dir" '' $fzf_query | string collect -N)
+          string match -q -r -- '^'(string escape --style=regex -- $dir)'/?(?<fzf_query>[\\s\\S]*)' $fzf_query
         else
-          # fish older than v3.2.0 (v3.1b1 - v3.1.2)
-          set -- fzf_query (string replace -- "$dir" '' $fzf_query | string collect -N)
-          eval set -- fzf_query (string escape -n -- $fzf_query | string replace -r -a '^/?|\\\n$' '')
+          string match -q -r -- '^/?(?<fzf_query>[\\s\\S]*?(?=\\n?$)$)' \
+            (string replace -- "$dir" '' $fzf_query | string collect -N)
         end
       end
     end
@@ -169,8 +141,8 @@ function fzf_key_bindings
     if string match -qvr -- '--preview[= ]' "$FZF_DEFAULT_OPTS"
       # Prepend the options to allow user overrides
       set -p -- FZF_DEFAULT_OPTS \
-        '--bind="focus,multi,resize:bg-transform:if test \\"$FZF_COLUMNS\\" -gt 100 -a \\\\( \\"$FZF_SELECT_COUNT\\" -gt 0 -o \\\\( -z \\"$FZF_WRAP\\" -a (string join0 -- <{f3..} | string length) -gt (math $FZF_COLUMNS - (switch $FZF_WITH_NTH; case 2..; echo 13; case 1,3..; echo 25; case 3..; echo 1; end)) \\\\) -o (string split0 -- <{sf3..} | fish_indent | count) -gt 1 \\\\); echo show-preview; else echo hide-preview; end"' \
-        '--preview="test \\"$FZF_SELECT_COUNT\\" -gt 0; and string split0 -- <{+sf3..} | fish_indent --only-indent --ansi; and echo -n \\\\n; string collect -- \\\\#\\\\ {1} (string split0 -- <{sf3..}) | fish_indent --ansi"' \
+        '--bind="focus,multi,resize:bg-transform:if test \\"$FZF_COLUMNS\\" -gt 100 -a \\\\( \\"$FZF_SELECT_COUNT\\" -gt 0 -o \\\\( -z \\"$FZF_WRAP\\" -a (string join0 -- <{f3..} | string length) -gt (math $FZF_COLUMNS - (switch $FZF_WITH_NTH; case 2..; echo 13; case 1,3..; echo 25; case 3..; echo 1; end)) \\\\) -o (string split0 -- <{sf3..} | fish_indent | count) -gt 1 \\\\); echo show-preview; else; echo hide-preview; end"' \
+        '--preview="test \\"$FZF_SELECT_COUNT\\" -gt 0; and string split0 -- <{+sf3..} | fish_indent (string match -q -- 3.\\\\* $version; or echo -- --only-indent) --ansi; and echo -n \\\\n; string collect -- \\\\#\\\\ {1} (string split0 -- <{sf3..}) | fish_indent --ansi"' \
         '--preview-window="right,50%,wrap-word,follow,info,hidden"'
     end
 
@@ -179,11 +151,7 @@ function fzf_key_bindings
     set -lx -- FZF_DEFAULT_COMMAND 'builtin history -z'
 
     # Enable syntax highlighting colors on fish v4.3.3 and newer
-    if set -l -- v (string match -r -- '^(\d+)\.(\d+)(?:\.(\d+))?' $version)
-    and test "$v[2]" -gt 4 -o "$v[2]" -eq 4 -a \
-      \( "$v[3]" -gt 3 -o "$v[3]" -eq 3 -a \
-      \( -n "$v[4]" -a "$v[4]" -ge 3 \) \)
-
+    if string match -qr -- '^\\d\\d+|^4\\.[4-9]|^4\\.3\\.[3-9]' $version
       set -a -- FZF_DEFAULT_OPTS '--ansi'
       set -a -- FZF_DEFAULT_COMMAND '--color=always --show-time=(set_color $fish_color_comment)"%F %a %T%t%s%t"(set_color $fish_color_normal)'
     else
