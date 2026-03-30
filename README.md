@@ -159,7 +159,7 @@ On Windows, fzf is available via [Chocolatey][choco], [Scoop][scoop],
 
 ### Using git
 
-Alternatively, you can "git clone" this repository to any directory and run
+Alternatively, you can "git clone" this repository to any directory and run the
 [install](https://github.com/junegunn/fzf/blob/master/install) script.
 
 ```sh
