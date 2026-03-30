@@ -249,7 +249,7 @@ func Run(opts *Options) (int, error) {
 		denyMutex.Unlock()
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy, headerLines)
+			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy, headerLines, opts.Ansi)
 	}
 	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision, opts.Threads)
 

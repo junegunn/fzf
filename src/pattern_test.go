@@ -69,7 +69,7 @@ func buildPattern(fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case,
 	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, runes []rune) *Pattern {
 	return BuildPattern(NewChunkCache(), make(map[string]*Pattern),
 		fuzzy, fuzzyAlgo, extended, caseMode, normalize, forward,
-		withPos, cacheable, nth, delimiter, revision{}, runes, nil, 0)
+		withPos, cacheable, nth, delimiter, revision{}, runes, nil, 0, false)
 }
 
 func TestExact(t *testing.T) {
@@ -161,24 +161,94 @@ func TestOrigTextAndTransformed(t *testing.T) {
 func TestTransformInputWithOrigText(t *testing.T) {
 	delim := Delimiter{str: &[]string{":"}[0]}
 	nth := []Range{{1, 1}}
-	origBytes := []byte("col1:col2")
 
-	test := func(query string, expectedMatches int) {
-		pat := buildPattern(true, algo.FuzzyMatchV2, true, CaseSmart, false, true, false, true,
-			nth, delim, []rune(query))
-		chunk := Chunk{count: 1}
-		chunk.items[0] = Item{
+	pat := BuildPattern(NewChunkCache(), make(map[string]*Pattern),
+		true, algo.FuzzyMatchV2, true, CaseSmart, false, true,
+		false, true, nth, delim, revision{}, []rune("col1"), nil, 0, false)
+
+	makeItem := func(origText string) Item {
+		origBytes := []byte(origText)
+		return Item{
 			text:     util.ToChars([]byte("col2")),
 			origText: &origBytes,
 		}
-		matches, _ := pat.matchChunk(&chunk, nil, slab)
-		if len(matches) != expectedMatches {
-			t.Errorf("query=%q: expected %d matches, got %d", query, expectedMatches, len(matches))
+	}
+
+	// Verify that transformInput tokenizes origText, not the with-nth display text.
+	// nth={1} with delimiter ":" should extract the first field from origText.
+	item := makeItem("col1:col2")
+	tokens := pat.transformInput(&item)
+	if len(tokens) != 1 || tokens[0].text.ToString() != "col1" {
+		t.Errorf("expected token 'col1', got %v", tokens)
+	}
+
+	cases := []struct {
+		name     string
+		origText string
+		ansi     bool
+		query    string
+		matches  int
+	}{
+		// --nth matches against origText, not the with-nth transformed text
+		{"match first field", "col1:col2", false, "col1", 1},
+		{"no match second field", "col1:col2", false, "col2", 0},
+
+		// With --ansi, ANSI codes are stripped before nth tokenization
+		{"ansi stripped match", "\x1b[33mcol1\x1b[m:col2", true, "col1", 1},
+		{"ansi stripped no second field", "\x1b[33mcol1\x1b[m:col2", true, "col2", 0},
+
+		// Without --ansi, escape codes are literal text in the field
+		{"ansi literal match", "\x1b[33mcol1\x1b[m:col2", false, "col1", 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := BuildPattern(NewChunkCache(), make(map[string]*Pattern),
+				true, algo.FuzzyMatchV2, true, CaseSmart, false, true,
+				false, true, nth, delim, revision{}, []rune(tc.query), nil, 0, tc.ansi)
+			chunk := Chunk{count: 1}
+			chunk.items[0] = makeItem(tc.origText)
+			matches, _ := p.matchChunk(&chunk, nil, slab)
+			if len(matches) != tc.matches {
+				t.Errorf("expected %d matches, got %d", tc.matches, len(matches))
+			}
+		})
+	}
+}
+
+func TestTransformInputAfterWithNthChange(t *testing.T) {
+	delim := Delimiter{str: &[]string{":"}[0]}
+	nth := []Range{{1, 1}}
+
+	makeItem := func(origText string) Item {
+		origBytes := []byte(origText)
+		return Item{
+			text:     util.ToChars([]byte("col2")),
+			origText: &origBytes,
 		}
 	}
 
-	test("col1", 1)
-	test("col2", 0)
+	// First match caches transformed tokens
+	pat := BuildPattern(NewChunkCache(), make(map[string]*Pattern),
+		true, algo.FuzzyMatchV2, true, CaseSmart, false, true,
+		false, true, nth, delim, revision{}, []rune("col1"), nil, 0, false)
+	item := makeItem("col1:col2")
+	tokens := pat.transformInput(&item)
+	if len(tokens) != 1 || tokens[0].text.ToString() != "col1" {
+		t.Errorf("expected token 'col1', got %v", tokens)
+	}
+
+	// Simulate change-with-nth: display text changes, cached tokens cleared.
+	item.text = util.ToChars([]byte("col2:col1"))
+	item.transformed = nil
+
+	// Re-match should still tokenize origText, not the new display text.
+	pat2 := BuildPattern(NewChunkCache(), make(map[string]*Pattern),
+		true, algo.FuzzyMatchV2, true, CaseSmart, false, true,
+		false, true, nth, delim, revision{}, []rune("col1"), nil, 0, false)
+	tokens = pat2.transformInput(&item)
+	if len(tokens) != 1 || tokens[0].text.ToString() != "col1" {
+		t.Errorf("after with-nth change, expected token 'col1', got %v", tokens)
+	}
 }
 
 func TestCacheKey(t *testing.T) {
@@ -252,7 +322,7 @@ func buildChunks(numChunks int) []*Chunk {
 func buildPatternWith(cache *ChunkCache, runes []rune) *Pattern {
 	return BuildPattern(cache, make(map[string]*Pattern),
 		true, algo.FuzzyMatchV2, true, CaseSmart, false, true,
-		false, true, []Range{}, Delimiter{}, revision{}, runes, nil, 0)
+		false, true, []Range{}, Delimiter{}, revision{}, runes, nil, 0, false)
 }
 
 func TestBitmapCacheBenefit(t *testing.T) {

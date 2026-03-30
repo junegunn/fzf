@@ -62,21 +62,21 @@ class TestFilter < TestBase
     writelines(['hello world ', 'byebye'])
     assert_equal \
       'hello world ',
-      `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 < #{tempname}`.chomp
+      `#{FZF} -f"^wo" -x -n 2.. --with-nth 2,1,1 < #{tempname}`.chomp
   end
 
   def test_with_nth_template
     writelines(['hello world ', 'byebye'])
     assert_equal \
       'hello world ',
-      `#{FZF} -f"^he he.he." -x -n 2.. --with-nth '{2} {1}. {1}.' < #{tempname}`.chomp
+      `#{FZF} -f"^wo" -x -n 2.. --with-nth '{2} {1}. {1}.' < #{tempname}`.chomp
   end
 
   def test_with_nth_ansi
     writelines(["\x1b[33mhello \x1b[34;1mworld\x1b[m ", 'byebye'])
     assert_equal \
       'hello world ',
-      `#{FZF} -f"^he hehe" -x -n 2.. --with-nth 2,1,1 --ansi < #{tempname}`.chomp
+      `#{FZF} -f"^wo" -x -n 2.. --with-nth 2,1,1 --ansi < #{tempname}`.chomp
   end
 
   def test_with_nth_no_ansi
@@ -84,7 +84,7 @@ class TestFilter < TestBase
     writelines([src, 'byebye'])
     assert_equal \
       src,
-      `#{FZF} -fhehe -x -n 2.. --with-nth 2,1,1 --no-ansi < #{tempname}`.chomp
+      `#{FZF} -fworld -x -n 2.. --with-nth 2,1,1 --no-ansi < #{tempname}`.chomp
   end
 
   def test_escaped_meta_characters

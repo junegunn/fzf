@@ -248,7 +248,9 @@ class TestCore < TestInteractive
         tmux.send_keys :Enter
         assert_equal ['  1st 2nd 3rd/', '  first second third/'], fzf_output_lines
       else
-        tmux.send_keys '^', '3'
+        # --nth 2 matches against the original input ("1st 2nd 3rd/"),
+        # so "^2" matches the 2nd field "2nd" — not the with-nth display.
+        tmux.send_keys '^', '2'
         tmux.until { |lines| assert_equal '  1/2', lines[-2] }
         tmux.send_keys :Enter
         assert_equal ['  1st 2nd 3rd/'], fzf_output_lines

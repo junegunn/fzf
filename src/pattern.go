@@ -53,6 +53,7 @@ type Pattern struct {
 	normalize     bool
 	forward       bool
 	withPos       bool
+	ansi          bool
 	text          []rune
 	termSets      []termSet
 	sortable      bool
@@ -77,7 +78,7 @@ func init() {
 
 // BuildPattern builds Pattern object from the given arguments
 func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy bool, fuzzyAlgo algo.Algo, extended bool, caseMode Case, normalize bool, forward bool,
-	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}, startIndex int32) *Pattern {
+	withPos bool, cacheable bool, nth []Range, delimiter Delimiter, revision revision, runes []rune, denylist map[int32]struct{}, startIndex int32, ansi bool) *Pattern {
 
 	var asString string
 	if extended {
@@ -140,6 +141,7 @@ func BuildPattern(cache *ChunkCache, patternCache map[string]*Pattern, fuzzy boo
 		normalize:     normalize,
 		forward:       forward,
 		withPos:       withPos,
+		ansi:          ansi,
 		text:          []rune(asString),
 		termSets:      termSets,
 		sortable:      sortable,
@@ -471,7 +473,7 @@ func (p *Pattern) transformInput(item *Item) []Token {
 		}
 	}
 
-	tokens := Tokenize(item.AsString(true), p.delimiter)
+	tokens := Tokenize(item.AsString(p.ansi), p.delimiter)
 	ret := Transform(tokens, p.nth)
 	// Strip the last delimiter to allow suffix match
 	if len(ret) > 0 && !p.delimiter.IsAwk() {

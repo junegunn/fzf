@@ -33,6 +33,10 @@ CHANGELOG
     - bash: CTRL-R now supports multi-select and `shift-delete` to delete history entries (#4715)
     - fish: Improved command history (CTRL-R) (#4703) (@bitraid)
 - `GET /` HTTP endpoint now includes `positions` field in each match entry, providing the indices of matched characters for external highlighting (#4726)
+- `--nth` now always matches against the original input line, even when
+  `--with-nth` is set. Previously `--nth` operated on the `--with-nth`
+  transformed text, coupling display and search. They are now independent:
+  `--with-nth` controls display, `--nth` controls search scope.
 - Bug fixes
     - `--walker=follow` no longer follows symlinks whose target is an ancestor of the walker root, avoiding severe resource exhaustion when a symlink points outside the tree (e.g. Wine's `z:` → `/`) (#4710)
     - Fixed AWK tokenizer not treating a new line character as whitespace
