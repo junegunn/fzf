@@ -12,13 +12,13 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Generate Sponsors 💖
-        uses: JamesIves/github-sponsors-readme-action@v1
+        uses: JamesIves/github-sponsors-readme-action@2fd9142e765f755780202122261dc85e78459405 # v1
         with:
           token: ${{ secrets.SPONSORS_TOKEN }}
           file: 'README.md'
 
       - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4
         with:
           branch: master
           folder: '.'
