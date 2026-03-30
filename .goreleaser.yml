@@ -94,7 +94,8 @@ archives:
         formats:
           - zip
     files:
-      - non-existent*
+      - man/man1/fzf.1
+      - man/man1/fzf-tmux.1
 
 release:
   github:
