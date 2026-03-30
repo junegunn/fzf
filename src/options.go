@@ -2222,9 +2222,6 @@ func parseHeight(str string, index int) (heightSpec, error) {
 		str = str[1:]
 	}
 	if strings.HasPrefix(str, "-") {
-		if heightSpec.auto {
-			return heightSpec, errors.New("negative(-) height is not compatible with adaptive(~) height")
-		}
 		heightSpec.inverse = true
 		str = str[1:]
 	}
