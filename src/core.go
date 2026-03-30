@@ -156,6 +156,9 @@ func Run(opts *Options) (int, error) {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
 			item.text, item.colors = ansiProcessor(data)
 			item.text.Index = itemIndex
+			if opts.Ansi {
+				item.origText = &data
+			}
 			itemIndex++
 			return true
 		})

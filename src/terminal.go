@@ -2014,11 +2014,11 @@ func (t *Terminal) output() bool {
 		t.printer(s)
 	}
 	transform := func(item *Item) string {
-		return item.AsString(t.ansi)
+		return item.AsString(!t.ansi)
 	}
 	if t.acceptNth != nil {
 		transform = func(item *Item) string {
-			return item.acceptNth(t.ansi, t.delimiter, t.acceptNth)
+			return item.acceptNth(!t.ansi, t.delimiter, t.acceptNth)
 		}
 	}
 	found := len(t.selected) > 0
@@ -4898,7 +4898,7 @@ func (t *Terminal) replacePlaceholderInInitialCommand(template string) (string, 
 func (t *Terminal) replacePlaceholder(template string, forcePlus bool, input string, list [3][]*Item) (string, []string) {
 	return replacePlaceholder(replacePlaceholderParams{
 		template:   template,
-		stripAnsi:  t.ansi,
+		stripAnsi:  !t.ansi,
 		delimiter:  t.delimiter,
 		printsep:   t.printsep,
 		forcePlus:  forcePlus,
@@ -7874,7 +7874,7 @@ func (t *Terminal) dumpItem(i *Item) StatusItem {
 	}
 	item := StatusItem{
 		Index: int(i.Index()),
-		Text:  i.AsString(t.ansi),
+		Text:  i.AsString(!t.ansi),
 	}
 	if t.resultMerger.pattern != nil {
 		_, _, pos := t.resultMerger.pattern.MatchItem(i, true, t.slab)
