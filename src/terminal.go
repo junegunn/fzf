@@ -6849,12 +6849,24 @@ func (t *Terminal) Loop() error {
 						t.vset(t.merger.FindIndex(t.resultMerger.Get(0).item.Index()))
 					}
 				} else {
-					t.vset(0)
+					// actFirst should always go to visual top
+					// In reverse layouts, visual top is the last index
+					if t.layout == layoutReverse || t.layout == layoutReverseList {
+						t.vset(t.merger.Length() - 1)
+					} else {
+						t.vset(0)
+					}
 				}
 				t.constrain()
 				req(reqList)
 			case actLast:
-				t.vset(t.merger.Length() - 1)
+				// actLast should always go to visual bottom
+				// In reverse layouts, visual bottom is the first index (0)
+				if t.layout == layoutReverse || t.layout == layoutReverseList {
+					t.vset(0)
+				} else {
+					t.vset(t.merger.Length() - 1)
+				}
 				t.constrain()
 				req(reqList)
 			case actPosition:
