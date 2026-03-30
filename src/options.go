@@ -777,7 +777,7 @@ func defaultOptions() *Options {
 		Preview:      defaultPreviewOpts(""),
 		PrintQuery:   false,
 		ReadZero:     false,
-		Printer:      func(str string) { fmt.Println(str) },
+		Printer:      func(str string) { util.PrintlnWithConsoleEncoding(str) },
 		PrintSep:     "\n",
 		Sync:         false,
 		History:      nil,
@@ -3004,10 +3004,10 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--no-read0":
 			opts.ReadZero = false
 		case "--print0":
-			opts.Printer = func(str string) { fmt.Print(str, "\x00") }
+			opts.Printer = func(str string) { util.PrintWithConsoleEncodingSep(str, "\x00") }
 			opts.PrintSep = "\x00"
 		case "--no-print0":
-			opts.Printer = func(str string) { fmt.Println(str) }
+			opts.Printer = func(str string) { util.PrintlnWithConsoleEncoding(str) }
 			opts.PrintSep = "\n"
 		case "--print-query":
 			opts.PrintQuery = true
