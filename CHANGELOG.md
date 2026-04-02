@@ -27,7 +27,10 @@ CHANGELOG
         - With the reduced per-entry cost, the cache now has broader coverage.
 - Shell integration improvements
     - bash: CTRL-R now supports multi-select and `shift-delete` to delete history entries (#4715)
-    - fish: Improved command history (CTRL-R) (#4703) (@bitraid)
+    - fish:
+        - Improved command history (CTRL-R) (#4703) (@bitraid)
+        - Rewrite completion script (SHIFT-TAB) (#4731) (@bitraid)
+        - Increase minimum fish version requirement to 3.4.0 (#4731) (@bitraid)
 - `GET /` HTTP endpoint now includes `positions` field in each match entry, providing the indices of matched characters for external highlighting (#4726)
 - Bug fixes
     - `--walker=follow` no longer follows symlinks whose target is an ancestor of the walker root, avoiding severe resource exhaustion when a symlink points outside the tree (e.g. Wine's `z:` → `/`) (#4710)
