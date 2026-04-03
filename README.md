@@ -10,6 +10,21 @@
 
 ---
 
+<kbd align="center">
+  <br/>
+  <a href="https://commitgoods.com/collections/fzf"><img src="https://junegunn.github.io/fzf/images/fzf-mugs.jpg" width="80%" alt="fzf merch"></a>
+  <br/>
+  <br/>
+  Show your love for fzf — T-shirts, mugs, and stickers now available!
+  <br/>
+  <br/>
+  <a href="https://commitgoods.com/collections/fzf">commitgoods.com/collections/fzf</a>
+  <br/>
+  <br/>
+</kbd>
+
+---
+
 fzf is a general-purpose command-line fuzzy finder.
 
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-preview.png" width=640>
