@@ -3,6 +3,8 @@ CHANGELOG
 
 0.71.0
 ------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.71.0/_
+
 - Added `--popup` as a new name for `--tmux` with Zellij support
     - `--popup` starts fzf in a tmux popup or a Zellij floating pane
     - `--tmux` is now an alias for `--popup`
@@ -21,11 +23,11 @@ CHANGELOG
     - The search performance now scales linearly with the number of CPU cores, as we dropped static partitioning to allow better load balancing across threads.
       ```
       === query: 'linux' ===
-        [all]   baseline:    17.12ms  current:    14.28ms  (1.20x)  matches: 179966 (12.79%)
-        [1T]    baseline:   136.49ms  current:   137.25ms  (0.99x)  matches: 179966 (12.79%)
-        [2T]    baseline:    75.74ms  current:    68.75ms  (1.10x)  matches: 179966 (12.79%)
-        [4T]    baseline:    41.16ms  current:    34.97ms  (1.18x)  matches: 179966 (12.79%)
-        [8T]    baseline:    32.82ms  current:    17.79ms  (1.84x)  matches: 179966 (12.79%)
+        [all]   baseline:    21.95ms  current:    17.47ms  (1.26x)  matches: 179966 (12.79%)
+        [1T]    baseline:   179.63ms  current:   180.53ms  (1.00x)  matches: 179966 (12.79%)
+        [2T]    baseline:    97.38ms  current:    90.05ms  (1.08x)  matches: 179966 (12.79%)
+        [4T]    baseline:    53.83ms  current:    44.77ms  (1.20x)  matches: 179966 (12.79%)
+        [8T]    baseline:    41.66ms  current:    22.58ms  (1.84x)  matches: 179966 (12.79%)
       ```
     - Improved the cache structure, reducing memory footprint per entry by 86x.
         - With the reduced per-entry cost, the cache now has broader coverage.
@@ -36,12 +38,19 @@ CHANGELOG
         - Rewrite completion script (SHIFT-TAB) (#4731) (@bitraid)
         - Increase minimum fish version requirement to 3.4.0 (#4731) (@bitraid)
 - `GET /` HTTP endpoint now includes `positions` field in each match entry, providing the indices of matched characters for external highlighting (#4726)
+- Allow adaptive height with negative value (`--height=~-HEIGHT`) (#4682)
 - Bug fixes
     - `--walker=follow` no longer follows symlinks whose target is an ancestor of the walker root, avoiding severe resource exhaustion when a symlink points outside the tree (e.g. Wine's `z:` → `/`) (#4710)
     - Fixed AWK tokenizer not treating a new line character as whitespace
     - Fixed `--{accept,with}-nth` removing trailing whitespaces with a non-default `--delimiter`
     - Fixed OSC8 hyperlinks being mangled when the URL contains unicode characters (#4707)
     - Fixed `--with-shell` not handling quoted arguments correctly (#4709)
+    - Fixed child processes not being terminated on Windows (#4723) (@pjeby)
+    - Fixed preview scrollbar not rendered after `toggle-preview`
+    - Fixed preview follow/scroll with long wrapped lines
+    - Fixed tab width when `--frozen-left` is used
+    - Fixed preview mouse events being processed when no preview window exists
+    - zsh: Fixed history widget when `sh_glob` option is on (#4714) (@EvanHahn)
 
 0.70.0
 ------
