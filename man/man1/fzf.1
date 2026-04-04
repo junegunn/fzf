@@ -384,7 +384,7 @@ Use black background
 
 .SS DISPLAY MODE
 .TP
-.BI "\-\-height=" "[~]HEIGHT[%]"
+.BI "\-\-height=" "[~][\-]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
 the full screen.
 
@@ -394,16 +394,18 @@ height minus the given value.
   fzf \-\-height=\-1
 
 When prefixed with \fB~\fR, fzf will automatically determine the height in the
-range according to the input size.
+range according to the input size. You can combine \fB~\fR with a negative
+value.
 
   # Will not take up 100% of the screen
   seq 5 | fzf \-\-height=~100%
 
+  # Adapt to input size, up to terminal height minus 1
+  seq 5 | fzf \-\-height=~\-1
+
 Adaptive height has the following limitations:
 .br
 * Cannot be used with top/bottom margin and padding given in percent size
-.br
-* Negative value is not allowed
 .br
 * It will not find the right size when there are multi-line items
 

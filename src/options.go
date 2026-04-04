@@ -66,7 +66,7 @@ Usage: fzf [options]
     --no-bold                Do not use bold text
 
   DISPLAY MODE
-    --height=[~]HEIGHT[%]    Display fzf window below the cursor with the given
+    --height=[~][-]HEIGHT[%] Display fzf window below the cursor with the given
                              height instead of using fullscreen.
                              A negative value is calculated as the terminal height
                              minus the given value.
@@ -2222,9 +2222,6 @@ func parseHeight(str string, index int) (heightSpec, error) {
 		str = str[1:]
 	}
 	if strings.HasPrefix(str, "-") {
-		if heightSpec.auto {
-			return heightSpec, errors.New("negative(-) height is not compatible with adaptive(~) height")
-		}
 		heightSpec.inverse = true
 		str = str[1:]
 	}
@@ -3152,7 +3149,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 			}
 			opts.PreviewWrapSign = &str
 		case "--height":
-			str, err := nextString("height required: [~]HEIGHT[%]")
+			str, err := nextString("height required: [~][-]HEIGHT[%]")
 			if err != nil {
 				return err
 			}
