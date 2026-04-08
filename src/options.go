@@ -3516,7 +3516,9 @@ func applyPreset(opts *Options, preset string) error {
 		opts.Preview.border = tui.BorderLine
 		opts.Preview.info = false
 		opts.InfoStyle = infoDefault
-		opts.Theme.Gutter = tui.ColorAttr{Color: -1, Attr: 0}
+		opts.Theme.Gutter = tui.NewColorAttr()
+		space := " "
+		opts.Gutter = &space
 		empty := ""
 		opts.Separator = &empty
 		opts.Scrollbar = &empty
