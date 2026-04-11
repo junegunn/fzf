@@ -84,6 +84,10 @@ __fzf_history_delete() {
   for offset in "${offsets[@]}"; do
     builtin history -d "$offset"
   done
+
+  if [[ ${#offsets[@]} -gt 0 ]] && shopt -q histappend; then
+    builtin history -w
+  fi
 }
 
 if command -v perl > /dev/null; then
