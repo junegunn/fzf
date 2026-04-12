@@ -3,6 +3,7 @@ package fzf
 import (
 	"math"
 	"math/rand"
+	"slices"
 	"sort"
 	"testing"
 
@@ -19,7 +20,7 @@ func TestOffsetSort(t *testing.T) {
 	offsets := []Offset{
 		{3, 5}, {2, 7},
 		{1, 3}, {2, 9}}
-	sort.Sort(ByOrder(offsets))
+	slices.SortFunc(offsets, compareOffsets)
 
 	if offsets[0][0] != 1 || offsets[0][1] != 3 ||
 		offsets[1][0] != 2 || offsets[1][1] != 7 ||

@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -3751,7 +3752,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 			offset := Offset{int32(p), int32(p + w)}
 			charOffsets[idx] = offset
 		}
-		sort.Sort(ByOrder(charOffsets))
+		slices.SortFunc(charOffsets, compareOffsets)
 	}
 
 	// When postTask is nil, we're printing header lines. No need to care about nth.
@@ -3788,7 +3789,7 @@ func (t *Terminal) printHighlighted(result Result, colBase tui.ColorPair, colMat
 				end := start + int32(length)
 				nthOffsets[i] = Offset{int32(start), int32(end)}
 			}
-			sort.Sort(ByOrder(nthOffsets))
+			slices.SortFunc(nthOffsets, compareOffsets)
 		}
 	}
 	allOffsets := result.colorOffsets(charOffsets, nthOffsets, t.theme, colBase, colMatch, t.nthAttr, nthOverlay, hidden)

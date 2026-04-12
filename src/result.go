@@ -2,6 +2,7 @@ package fzf
 
 import (
 	"math"
+	"slices"
 	"sort"
 	"unicode"
 
@@ -30,7 +31,7 @@ type Result struct {
 
 func buildResult(item *Item, offsets []Offset, score int) Result {
 	if len(offsets) > 1 {
-		sort.Sort(ByOrder(offsets))
+		slices.SortFunc(offsets, compareOffsets)
 	}
 
 	minBegin := math.MaxUint16
@@ -187,7 +188,7 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 		}
 	}
 
-	// sort.Sort(ByOrder(offsets))
+	// slices.SortFunc(offsets, compareOffsets)
 
 	// Merge offsets
 	// ------------  ----  --  ----
@@ -297,21 +298,20 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	return colors
 }
 
-// ByOrder is for sorting substring offsets
-type ByOrder []Offset
-
-func (a ByOrder) Len() int {
-	return len(a)
-}
-
-func (a ByOrder) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func (a ByOrder) Less(i, j int) bool {
-	ioff := a[i]
-	joff := a[j]
-	return (ioff[0] < joff[0]) || (ioff[0] == joff[0]) && (ioff[1] <= joff[1])
+func compareOffsets(a, b Offset) int {
+	if a[0] < b[0] {
+		return -1
+	}
+	if a[0] > b[0] {
+		return 1
+	}
+	if a[1] < b[1] {
+		return -1
+	}
+	if a[1] > b[1] {
+		return 1
+	}
+	return 0
 }
 
 // ByRelevance is for sorting Items
