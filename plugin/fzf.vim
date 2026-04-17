@@ -896,6 +896,7 @@ function! s:execute_term(dict, command, temps) abort
     endif
   endfunction
   function! fzf.on_exit(id, code, ...)
+    silent! autocmd! fzf_popup_resize
     if s:getpos() == self.ppos " {'window': 'enew'}
       for [opt, val] in items(self.winopts)
         execute 'let' opt '=' val
@@ -1023,15 +1024,17 @@ function! s:callback(dict, lines) abort
 endfunction
 
 if has('nvim')
-  function s:create_popup(opts) abort
+  function! s:create_popup() abort
+    let opts = s:popup_bounds()
+    let opts = extend({'relative': 'editor', 'style': 'minimal'}, opts)
+
     let buf = nvim_create_buf(v:false, v:true)
-    let opts = extend({'relative': 'editor', 'style': 'minimal'}, a:opts)
-    let win = nvim_open_win(buf, v:true, opts)
-    call setwinvar(win, '&colorcolumn', '')
+    let s:popup_id = nvim_open_win(buf, v:true, opts)
+    call setwinvar(s:popup_id, '&colorcolumn', '')
 
     " Colors
     try
-      call setwinvar(win, '&winhighlight', 'Pmenu:,Normal:Normal')
+      call setwinvar(s:popup_id, '&winhighlight', 'Pmenu:,Normal:Normal')
       let rules = get(g:, 'fzf_colors', {})
       if has_key(rules, 'bg')
         let color = call('s:get_color', rules.bg)
@@ -1039,40 +1042,61 @@ if has('nvim')
           let ns = nvim_create_namespace('fzf_popup')
           let hl = nvim_set_hl(ns, 'Normal',
                 \ &termguicolors ? { 'bg': color } : { 'ctermbg': str2nr(color) })
-          call nvim_win_set_hl_ns(win, ns)
+          call nvim_win_set_hl_ns(s:popup_id, ns)
         endif
       endif
     catch
     endtry
     return buf
   endfunction
+
+  function! s:resize_popup() abort
+    if !exists('s:popup_id') || !nvim_win_is_valid(s:popup_id)
+      return
+    endif
+    let opts = s:popup_bounds()
+    let opts = extend({'relative': 'editor'}, opts)
+    call nvim_win_set_config(s:popup_id, opts)
+  endfunction
 else
-  function! s:create_popup(opts) abort
-    let s:popup_create = {buf -> popup_create(buf, #{
-      \ line: a:opts.row,
-      \ col: a:opts.col,
-      \ minwidth: a:opts.width,
-      \ maxwidth: a:opts.width,
-      \ minheight: a:opts.height,
-      \ maxheight: a:opts.height,
-      \ zindex: 1000,
-    \ })}
+  function! s:create_popup() abort
+    function! s:popup_create(buf)
+      let s:popup_id = popup_create(a:buf, #{zindex: 1000})
+      call s:resize_popup()
+    endfunction
     autocmd TerminalOpen * ++once call s:popup_create(str2nr(expand('<abuf>')))
+  endfunction
+
+  function! s:resize_popup() abort
+    if !exists('s:popup_id') || empty(popup_getpos(s:popup_id))
+      return
+    endif
+    let opts = s:popup_bounds()
+    call popup_move(s:popup_id, {
+      \ 'line': opts.row,
+      \ 'col': opts.col,
+      \ 'minwidth': opts.width,
+      \ 'maxwidth': opts.width,
+      \ 'minheight': opts.height,
+      \ 'maxheight': opts.height,
+    \ })
   endfunction
 endif
 
-function! s:popup(opts) abort
-  let xoffset = get(a:opts, 'xoffset', 0.5)
-  let yoffset = get(a:opts, 'yoffset', 0.5)
-  let relative = get(a:opts, 'relative', 0)
+function! s:popup_bounds() abort
+  let opts = s:popup_opts
+
+  let xoffset = get(opts, 'xoffset', 0.5)
+  let yoffset = get(opts, 'yoffset', 0.5)
+  let relative = get(opts, 'relative', 0)
 
   " Use current window size for positioning relatively positioned popups
   let columns = relative ? winwidth(0) : &columns
   let lines = relative ? winheight(0) : (&lines - has('nvim'))
 
   " Size and position
-  let width = min([max([8, a:opts.width > 1 ? a:opts.width : float2nr(columns * a:opts.width)]), columns])
-  let height = min([max([4, a:opts.height > 1 ? a:opts.height : float2nr(lines * a:opts.height)]), lines])
+  let width = min([max([8, opts.width > 1 ? opts.width : float2nr(columns * opts.width)]), columns])
+  let height = min([max([4, opts.height > 1 ? opts.height : float2nr(lines * opts.height)]), lines])
   let row = float2nr(yoffset * (lines - height)) + (relative ? win_screenpos(0)[0] - 1 : 0)
   let col = float2nr(xoffset * (columns - width)) + (relative ? win_screenpos(0)[1] - 1 : 0)
 
@@ -1082,9 +1106,17 @@ function! s:popup(opts) abort
   let row += !has('nvim')
   let col += !has('nvim')
 
-  call s:create_popup({
-    \ 'row': row, 'col': col, 'width': width, 'height': height
-  \ })
+  return { 'row': row, 'col': col, 'width': width, 'height': height }
+endfunction
+
+function! s:popup(opts) abort
+  let s:popup_opts = a:opts
+  call s:create_popup()
+
+  augroup fzf_popup_resize
+    autocmd!
+    autocmd VimResized * call s:resize_popup()
+  augroup END
 endfunction
 
 let s:default_action = {
