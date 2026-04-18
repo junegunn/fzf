@@ -595,11 +595,12 @@ const (
 	BorderBottom
 	BorderLeft
 	BorderRight
+	BorderInline
 )
 
 func (s BorderShape) HasLeft() bool {
 	switch s {
-	case BorderNone, BorderPhantom, BorderLine, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
+	case BorderNone, BorderPhantom, BorderLine, BorderInline, BorderRight, BorderTop, BorderBottom, BorderHorizontal: // No Left
 		return false
 	}
 	return true
@@ -607,7 +608,7 @@ func (s BorderShape) HasLeft() bool {
 
 func (s BorderShape) HasRight() bool {
 	switch s {
-	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
+	case BorderNone, BorderPhantom, BorderLine, BorderInline, BorderLeft, BorderTop, BorderBottom, BorderHorizontal: // No right
 		return false
 	}
 	return true
@@ -615,7 +616,7 @@ func (s BorderShape) HasRight() bool {
 
 func (s BorderShape) HasTop() bool {
 	switch s {
-	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderRight, BorderBottom, BorderVertical: // No top
+	case BorderNone, BorderPhantom, BorderLine, BorderInline, BorderLeft, BorderRight, BorderBottom, BorderVertical: // No top
 		return false
 	}
 	return true
@@ -623,7 +624,7 @@ func (s BorderShape) HasTop() bool {
 
 func (s BorderShape) HasBottom() bool {
 	switch s {
-	case BorderNone, BorderPhantom, BorderLine, BorderLeft, BorderRight, BorderTop, BorderVertical: // No bottom
+	case BorderNone, BorderPhantom, BorderLine, BorderInline, BorderLeft, BorderRight, BorderTop, BorderVertical: // No bottom
 		return false
 	}
 	return true
@@ -643,6 +644,8 @@ type BorderStyle struct {
 	topRight    rune
 	bottomLeft  rune
 	bottomRight rune
+	leftMid     rune
+	rightMid    rune
 }
 
 type BorderCharacter int
@@ -658,7 +661,9 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topLeft:     ' ',
 			topRight:    ' ',
 			bottomLeft:  ' ',
-			bottomRight: ' '}
+			bottomRight: ' ',
+			leftMid:     ' ',
+			rightMid:    ' '}
 	}
 	if !unicode {
 		return BorderStyle{
@@ -671,6 +676,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '+',
 			bottomLeft:  '+',
 			bottomRight: '+',
+			leftMid:     '+',
+			rightMid:    '+',
 		}
 	}
 	switch shape {
@@ -685,6 +692,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '┐',
 			bottomLeft:  '└',
 			bottomRight: '┘',
+			leftMid:     '├',
+			rightMid:    '┤',
 		}
 	case BorderBold:
 		return BorderStyle{
@@ -697,6 +706,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '┓',
 			bottomLeft:  '┗',
 			bottomRight: '┛',
+			leftMid:     '┣',
+			rightMid:    '┫',
 		}
 	case BorderBlock:
 		// ▛▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▜
@@ -712,6 +723,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '▜',
 			bottomLeft:  '▙',
 			bottomRight: '▟',
+			leftMid:     '▌',
+			rightMid:    '▐',
 		}
 
 	case BorderThinBlock:
@@ -728,6 +741,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '🭾',
 			bottomLeft:  '🭼',
 			bottomRight: '🭿',
+			leftMid:     '▏',
+			rightMid:    '▕',
 		}
 
 	case BorderDouble:
@@ -741,6 +756,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			topRight:    '╗',
 			bottomLeft:  '╚',
 			bottomRight: '╝',
+			leftMid:     '╠',
+			rightMid:    '╣',
 		}
 	}
 	return BorderStyle{
@@ -753,6 +770,8 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 		topRight:    '╮',
 		bottomLeft:  '╰',
 		bottomRight: '╯',
+		leftMid:     '├',
+		rightMid:    '┤',
 	}
 }
 
@@ -772,6 +791,35 @@ const (
 	WindowInput
 	WindowHeader
 	WindowFooter
+)
+
+// BorderColor returns the ColorPair used to draw borders for the given WindowType.
+func BorderColor(wt WindowType) ColorPair {
+	switch wt {
+	case WindowList:
+		return ColListBorder
+	case WindowInput:
+		return ColInputBorder
+	case WindowHeader:
+		return ColHeaderBorder
+	case WindowFooter:
+		return ColFooterBorder
+	case WindowPreview:
+		return ColPreviewBorder
+	}
+	return ColBorder
+}
+
+// SectionEdge selects which outer edge of the frame an inline section
+// should claim when PaintSectionFrame overpaints its adjacent border.
+// SectionEdgeNone paints only the inner verticals (for sections that
+// don't touch the outer top or bottom).
+type SectionEdge int
+
+const (
+	SectionEdgeNone SectionEdge = iota
+	SectionEdgeTop
+	SectionEdgeBottom
 )
 
 type Renderer interface {
@@ -811,6 +859,19 @@ type Window interface {
 
 	DrawBorder()
 	DrawHBorder()
+	// DrawHSeparator draws an inline horizontal separator at `row` (relative to the
+	// window's top) using the color for `windowType`. The separator is conceptually
+	// the section's inner edge (e.g. the bottom border of an inline header), so the
+	// whole row including junctions carries the section's fg + bg. When useBottom is
+	// true the `bottom` horizontal char is used instead of `top`; for thinblock/block
+	// styles this keeps the thin line bonded to the list content on the opposite side.
+	DrawHSeparator(row int, windowType WindowType, useBottom bool)
+	// PaintSectionFrame overpaints the border cells around the rows [topContent,
+	// bottomContent] (inclusive, relative to the window's top) with the color for
+	// `windowType`. When edge is SectionEdgeTop / SectionEdgeBottom, the
+	// corresponding outer horizontal (+ corners) is also painted, letting the
+	// inline section claim that edge of the outer frame.
+	PaintSectionFrame(topContent, bottomContent int, windowType WindowType, edge SectionEdge)
 	Refresh()
 	FinishFill()
 
@@ -1166,7 +1227,7 @@ func init() {
 	}
 }
 
-func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlack bool, hasInputWindow bool, hasHeaderWindow bool) {
+func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlack bool, hasInputWindow bool, hasHeaderWindow bool, headerInline bool, footerInline bool) {
 	if forceBlack {
 		theme.Bg = ColorAttr{colBlack, AttrUndefined}
 	}
@@ -1300,11 +1361,22 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	} else {
 		theme.HeaderBg = o(theme.Bg, theme.ListBg)
 	}
-	theme.HeaderBorder = o(theme.Border, theme.HeaderBorder)
+	// Inline header/footer borders sit inside the list frame, so default their color
+	// to the list-border color when the user has not explicitly set it. The inline
+	// separator then matches the surrounding frame.
+	headerBorderFallback := theme.Border
+	if headerInline {
+		headerBorderFallback = theme.ListBorder
+	}
+	theme.HeaderBorder = o(headerBorderFallback, theme.HeaderBorder)
 	theme.HeaderLabel = o(theme.BorderLabel, theme.HeaderLabel)
 
 	theme.FooterBg = o(theme.Bg, theme.FooterBg)
-	theme.FooterBorder = o(theme.Border, theme.FooterBorder)
+	footerBorderFallback := theme.Border
+	if footerInline {
+		footerBorderFallback = theme.ListBorder
+	}
+	theme.FooterBorder = o(footerBorderFallback, theme.FooterBorder)
 	theme.FooterLabel = o(theme.BorderLabel, theme.FooterLabel)
 
 	if theme.Nomatch.IsUndefined() {

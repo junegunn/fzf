@@ -1017,6 +1017,113 @@ func (w *TcellWindow) DrawHBorder() {
 	w.drawBorder(true)
 }
 
+// borderStyleFor returns the tcell.Style used to draw borders for `wt`, honoring
+// whether the window is rendering with colors.
+func (w *TcellWindow) borderStyleFor(wt WindowType) tcell.Style {
+	if !w.color {
+		return w.normal.style()
+	}
+	return BorderColor(wt).style()
+}
+
+// drawHLine fills row `y` with `line` between optional left/right caps.
+// A zero rune means "no cap"; caps are placed at the very edges of `w`.
+// tcell has an issue displaying two overlapping wide runes, so the line
+// stops before the cap position rather than overpainting.
+func (w *TcellWindow) drawHLine(y int, line, leftCap, rightCap rune, style tcell.Style) {
+	left := w.left
+	right := left + w.width
+	hw := runeWidth(line)
+	lw := 0
+	rw := 0
+	if leftCap != 0 {
+		lw = runeWidth(leftCap)
+	}
+	if rightCap != 0 {
+		rw = runeWidth(rightCap)
+	}
+	for x := left + lw; x <= right-rw-hw; x += hw {
+		_screen.SetContent(x, y, line, nil, style)
+	}
+	if leftCap != 0 {
+		_screen.SetContent(left, y, leftCap, nil, style)
+	}
+	if rightCap != 0 {
+		_screen.SetContent(right-rw, y, rightCap, nil, style)
+	}
+}
+
+func (w *TcellWindow) DrawHSeparator(row int, windowType WindowType, useBottom bool) {
+	if w.height == 0 {
+		return
+	}
+	shape := w.borderStyle.shape
+	if shape == BorderNone {
+		return
+	}
+	style := w.borderStyleFor(windowType)
+	line := w.borderStyle.top
+	if useBottom {
+		line = w.borderStyle.bottom
+	}
+	var leftCap, rightCap rune
+	if shape.HasLeft() || shape.HasRight() {
+		leftCap = w.borderStyle.leftMid
+		rightCap = w.borderStyle.rightMid
+	}
+	w.drawHLine(w.top+row, line, leftCap, rightCap, style)
+}
+
+func (w *TcellWindow) PaintSectionFrame(topContent, bottomContent int, windowType WindowType, edge SectionEdge) {
+	if w.height == 0 {
+		return
+	}
+	shape := w.borderStyle.shape
+	if shape == BorderNone {
+		return
+	}
+	style := w.borderStyleFor(windowType)
+	left := w.left
+	right := left + w.width
+	hasLeft := shape.HasLeft()
+	hasRight := shape.HasRight()
+	leftW := runeWidth(w.borderStyle.left)
+	rightW := runeWidth(w.borderStyle.right)
+	// Content rows: overpaint the left and right verticals (+ their 1-char margin) in
+	// the section's color. Inner margin stays at whatever bg the sub-window set.
+	for row := topContent; row <= bottomContent; row++ {
+		y := w.top + row
+		if hasLeft {
+			_screen.SetContent(left, y, w.borderStyle.left, nil, style)
+			_screen.SetContent(left+leftW, y, ' ', nil, style)
+		}
+		if hasRight {
+			_screen.SetContent(right-rightW-1, y, ' ', nil, style)
+			_screen.SetContent(right-rightW, y, w.borderStyle.right, nil, style)
+		}
+	}
+	if edge == SectionEdgeTop && shape.HasTop() {
+		var leftCap, rightCap rune
+		if hasLeft {
+			leftCap = w.borderStyle.topLeft
+		}
+		if hasRight {
+			rightCap = w.borderStyle.topRight
+		}
+		w.drawHLine(w.top, w.borderStyle.top, leftCap, rightCap, style)
+	}
+	if edge == SectionEdgeBottom && shape.HasBottom() {
+		var leftCap, rightCap rune
+		if hasLeft {
+			leftCap = w.borderStyle.bottomLeft
+		}
+		if hasRight {
+			rightCap = w.borderStyle.bottomRight
+		}
+		w.drawHLine(w.top+w.height-1, w.borderStyle.bottom, leftCap, rightCap, style)
+	}
+}
+
 func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	if w.height == 0 {
 		return
@@ -1031,72 +1138,44 @@ func (w *TcellWindow) drawBorder(onlyHorizontal bool) {
 	top := w.top
 	bot := top + w.height
 
-	var style tcell.Style
-	if w.color {
-		switch w.windowType {
-		case WindowBase:
-			style = ColBorder.style()
-		case WindowList:
-			style = ColListBorder.style()
-		case WindowHeader:
-			style = ColHeaderBorder.style()
-		case WindowFooter:
-			style = ColFooterBorder.style()
-		case WindowInput:
-			style = ColInputBorder.style()
-		case WindowPreview:
-			style = ColPreviewBorder.style()
-		}
-	} else {
-		style = w.normal.style()
-	}
+	style := w.borderStyleFor(w.windowType)
 
-	hw := runeWidth(w.borderStyle.top)
-	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderTop:
-		max := right - 2*hw
-		if shape == BorderHorizontal || shape == BorderTop {
-			max = right - hw
+	hasLeft := shape.HasLeft()
+	hasRight := shape.HasRight()
+
+	if shape.HasTop() {
+		var leftCap, rightCap rune
+		if hasLeft {
+			leftCap = w.borderStyle.topLeft
 		}
-		// tcell has an issue displaying two overlapping wide runes
-		// e.g.  SetContent(  HH  )
-		//       SetContent(   TR )
-		//       ==================
-		//                 (  HH  ) => TR is ignored
-		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, top, w.borderStyle.top, nil, style)
+		if hasRight {
+			rightCap = w.borderStyle.topRight
 		}
+		w.drawHLine(top, w.borderStyle.top, leftCap, rightCap, style)
 	}
-	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderHorizontal, BorderBottom:
-		max := right - 2*hw
-		if shape == BorderHorizontal || shape == BorderBottom {
-			max = right - hw
+	if shape.HasBottom() {
+		var leftCap, rightCap rune
+		if hasLeft {
+			leftCap = w.borderStyle.bottomLeft
 		}
-		for x := left; x <= max; x += hw {
-			_screen.SetContent(x, bot-1, w.borderStyle.bottom, nil, style)
+		if hasRight {
+			rightCap = w.borderStyle.bottomRight
 		}
+		w.drawHLine(bot-1, w.borderStyle.bottom, leftCap, rightCap, style)
 	}
 	if !onlyHorizontal {
-		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderLeft:
-			for y := top; y < bot; y++ {
+		vw := runeWidth(w.borderStyle.right)
+		for y := top; y < bot; y++ {
+			// Corner rows are already painted by drawHLine above / below.
+			if (y == top && shape.HasTop()) || (y == bot-1 && shape.HasBottom()) {
+				continue
+			}
+			if hasLeft {
 				_screen.SetContent(left, y, w.borderStyle.left, nil, style)
 			}
-		}
-		switch shape {
-		case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble, BorderVertical, BorderRight:
-			vw := runeWidth(w.borderStyle.right)
-			for y := top; y < bot; y++ {
+			if hasRight {
 				_screen.SetContent(right-vw, y, w.borderStyle.right, nil, style)
 			}
 		}
-	}
-	switch shape {
-	case BorderRounded, BorderSharp, BorderBold, BorderBlock, BorderThinBlock, BorderDouble:
-		_screen.SetContent(left, top, w.borderStyle.topLeft, nil, style)
-		_screen.SetContent(right-runeWidth(w.borderStyle.topRight), top, w.borderStyle.topRight, nil, style)
-		_screen.SetContent(left, bot-1, w.borderStyle.bottomLeft, nil, style)
-		_screen.SetContent(right-runeWidth(w.borderStyle.bottomRight), bot-1, w.borderStyle.bottomRight, nil, style)
 	}
 }

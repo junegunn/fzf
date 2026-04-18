@@ -130,6 +130,66 @@ class Tmux
     go(%W[capture-pane -p -J -t #{win}]).map(&:rstrip).reverse.drop_while(&:empty?).reverse
   end
 
+  # 3-bit ANSI bg code (40..47) -> color name used in --color options.
+  BG_NAMES = %w[black red green yellow blue magenta cyan white].freeze
+
+  # Parse `tmux capture-pane -e` output into per-row bg ranges. Each row is an
+  # array of [col_start, col_end, bg] tuples where bg is one of:
+  #   'default'
+  #   'red' / 'green' / 'blue' / ... (3-bit names)
+  #   'bright-red' / ...             (bright variants)
+  #   '256:<n>'                      (256-color fallback)
+  # ANSI state persists across rows, matching real terminal behavior.
+  def bg_ranges
+    raw = go(%W[capture-pane -p -J -e -t #{win}])
+    bg = 'default'
+    raw.map do |row|
+      cells = []
+      i = 0
+      len = row.length
+      while i < len
+        c = row[i]
+        if c == "\e" && row[i + 1] == '['
+          j = i + 2
+          j += 1 while j < len && row[j] != 'm'
+          parts = row[i + 2...j].split(';')
+          k = 0
+          while k < parts.length
+            p = parts[k].to_i
+            case p
+            when 0, 49 then bg = 'default'
+            when 40..47 then bg = BG_NAMES[p - 40]
+            when 100..107 then bg = "bright-#{BG_NAMES[p - 100]}"
+            when 48
+              if parts[k + 1] == '5'
+                bg = "256:#{parts[k + 2]}"
+                k += 2
+              elsif parts[k + 1] == '2'
+                bg = "rgb:#{parts[k + 2]}:#{parts[k + 3]}:#{parts[k + 4]}"
+                k += 4
+              end
+            end
+            k += 1
+          end
+          i = j + 1
+        else
+          cells << bg
+          i += 1
+        end
+      end
+      ranges = []
+      start = 0
+      cells.each_with_index do |b, idx|
+        if idx.positive? && b != cells[idx - 1]
+          ranges << [start, idx - 1, cells[idx - 1]]
+          start = idx
+        end
+      end
+      ranges << [start, cells.length - 1, cells.last] unless cells.empty?
+      ranges
+    end
+  end
+
   def until(refresh = false, timeout: DEFAULT_TIMEOUT)
     lines = nil
     begin

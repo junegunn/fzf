@@ -1100,7 +1100,13 @@ Print header before the prompt line. When both normal header and header lines
 .TP
 .BI "\-\-header\-border" [=STYLE]
 Draw border around the header section. \fBline\fR style draws a single
-separator line between the header window and the list section.
+separator line between the header window and the list section. \fBinline\fR
+style embeds the header inside the list border frame, joined to the list
+section by a horizontal separator with T-junctions; it requires a
+line-drawing \fB\-\-list\-border\fR (rounded / sharp / bold / double /
+horizontal) and falls back to \fBline\fR otherwise. Not compatible with
+\fB\-\-header\-first\fR, and when \fB\-\-header\-lines\fR is also set
+\fB\-\-header\-lines\-border\fR must also be \fBinline\fR.
 
 .TP
 .BI "\-\-header\-label" [=LABEL]
@@ -1116,6 +1122,10 @@ Display header from \fB--header\-lines\fR with a separate border. Pass
 \fBnone\fR to still separate the header lines but without a border. To combine
 two headers, use \fB\-\-no\-header\-lines\-border\fR. \fBline\fR style draws
 a single separator line between the header lines and the list section.
+\fBinline\fR style embeds the header lines inside the list border frame
+with a T-junction separator; it requires a line-drawing
+\fB\-\-list\-border\fR, falls back to \fBline\fR otherwise, and is not
+compatible with \fB\-\-header\-first\fR.
 
 .SS FOOTER
 
@@ -1129,7 +1139,10 @@ are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even whe
 .TP
 .BI "\-\-footer\-border" [=STYLE]
 Draw border around the footer section. \fBline\fR style draws a single
-separator line between the footer and the list section.
+separator line between the footer and the list section. \fBinline\fR style
+embeds the footer inside the list border frame with a T-junction separator;
+it requires a line-drawing \fB\-\-list\-border\fR and falls back to
+\fBline\fR otherwise.
 
 .TP
 .BI "\-\-footer\-label" [=LABEL]
