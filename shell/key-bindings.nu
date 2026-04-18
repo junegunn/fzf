@@ -11,20 +11,17 @@
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
-# Dependencies: `fd`, `bat, `tree`.
-
 # Code provided by @igor-ramazanov
 # Source: https://github.com/junegunn/fzf/issues/4122#issuecomment-2607368316
 
 
 export-env {
   $env.FZF_TMUX_OPTS       = $env.FZF_TMUX_OPTS?       | default "--height 40%"
-  $env.FZF_CTRL_T_COMMAND  = $env.FZF_CTRL_T_COMMAND?  | default "fd --type file --hidden"
-  $env.FZF_CTRL_T_OPTS     = $env.FZF_CTRL_T_OPTS?     | default "--preview 'bat --color=always --style=full --line-range=:500 {}' "
+  $env.FZF_CTRL_T_COMMAND  = $env.FZF_CTRL_T_COMMAND?  | default ""
+  $env.FZF_CTRL_T_OPTS     = $env.FZF_CTRL_T_OPTS?     | default ""
   $env.FZF_CTRL_R_OPTS     = $env.FZF_CTRL_R_OPTS?     | default ""
-  $env.FZF_ALT_C_COMMAND   = $env.FZF_ALT_C_COMMAND?   | default "fd --type directory --hidden"
-  $env.FZF_ALT_C_OPTS      = $env.FZF_ALT_C_OPTS?      | default "--preview 'tree -C {} | head -n 200'"
-  $env.FZF_DEFAULT_COMMAND = $env.FZF_DEFAULT_COMMAND? | default "fd --type file --hidden"
+  $env.FZF_ALT_C_COMMAND   = $env.FZF_ALT_C_COMMAND?   | default ""
+  $env.FZF_ALT_C_OPTS      = $env.FZF_ALT_C_OPTS?      | default ""
 }
 
 # Directories
@@ -37,8 +34,13 @@ const alt_c = {
       {
         send: executehostcommand
         cmd: "
-          let fzf_command = \$\"($env.FZF_ALT_C_COMMAND) | fzf ($env.FZF_ALT_C_OPTS)\";
-          let result = nu -c $fzf_command;
+          let fzf_opts = $'--reverse --walker=dir,follow,hidden --scheme=path ($env.FZF_ALT_C_OPTS) +m';
+          let result = if ($env.FZF_ALT_C_COMMAND | is-empty) {
+            fzf ...(($fzf_opts | split row ' ') | where { $in != '' })
+          } else {
+            let fzf_command = $'($env.FZF_ALT_C_COMMAND) | fzf ($fzf_opts)';
+            nu -c $fzf_command
+          };
           cd $result;
         "
       }
@@ -79,8 +81,13 @@ const ctrl_t =  {
       {
         send: executehostcommand
         cmd: "
-          let fzf_command = \$\"($env.FZF_CTRL_T_COMMAND) | fzf ($env.FZF_CTRL_T_OPTS)\";
-          let result = nu -l -i -c $fzf_command;
+          let fzf_opts = $'--reverse --walker=file,dir,follow,hidden --scheme=path ($env.FZF_CTRL_T_OPTS) -m';
+          let result = if ($env.FZF_CTRL_T_COMMAND | is-empty) {
+            fzf ...(($fzf_opts | split row ' ') | where { $in != '' })
+          } else {
+            let fzf_command = $'($env.FZF_CTRL_T_COMMAND) | fzf ($fzf_opts)';
+            nu -l -i -c $fzf_command
+          };
           commandline edit --append $result;
           commandline set-cursor --end
         "
