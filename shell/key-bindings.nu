@@ -57,7 +57,7 @@ const ctrl_r = {
     {
       send: executehostcommand
       cmd: "commandline edit --insert (
-        let fzf_command = \$\"fzf --scheme history --read0 --query '\(commandline\)' ($env.FZF_CTRL_R_OPTS)\";
+        let fzf_command = \$\"fzf --scheme=history --bind=ctrl-r:toggle-sort --wrap-sign '\t↳ ' --highlight-line --read0 --query '\(commandline\)' ($env.FZF_CTRL_R_OPTS) +m\";
         history
           | get command
           | reverse
