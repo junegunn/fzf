@@ -105,6 +105,23 @@ class Tmux
     go(%W[send-keys -t #{win}] + args.map(&:to_s))
   end
 
+  # Simulate a mouse click at the given 1-based column and row using the SGR mouse protocol
+  # (xterm mouse mode 1006, which fzf enables). The escape sequence is injected as literal
+  # keystrokes via tmux, and fzf parses it like a real terminal mouse event.
+  #
+  # tmux's own mouse handling intercepts these sequences when `set -g mouse on`, so we toggle
+  # mouse off for the duration of the click and restore the previous state afterwards.
+  def click(col, row, button: 0)
+    prev = go(%w[show-options -gv mouse]).first
+    go(%w[set-option -g mouse off])
+    begin
+      seq = "\e[<#{button};#{col};#{row}M\e[<#{button};#{col};#{row}m"
+      go(%W[send-keys -t #{win} -l #{seq}])
+    ensure
+      go(%W[set-option -g mouse #{prev}]) if prev && !prev.empty?
+    end
+  end
+
   def paste(str)
     system('tmux', 'setb', str, ';', 'pasteb', '-t', win, ';', 'send-keys', '-t', win, 'Enter')
   end
