@@ -1,6 +1,22 @@
 CHANGELOG
 =========
 
+0.72.0
+------
+- `--header-border`, `--header-lines-border`, and `--footer-border` now accept a new `inline` style that embeds the section inside the list frame, separated from the list content by a horizontal line whose endpoints join the surrounding list border as T-junctions.
+    - Requires `--list-border` with a line-drawing shape (rounded / sharp / bold / double / horizontal); falls back to `line` otherwise.
+    - Sections stack. Example combining all three:
+      ```sh
+      ps -ef | fzf --reverse --style full:double \
+          --header 'Select a process' --header-lines 1 \
+          --bind 'load:transform-footer:echo $FZF_TOTAL_COUNT processes' \
+          --header-border=inline --header-lines-border=inline \
+          --footer-border=inline
+      ```
+    - `--header-label` and `--footer-label` render on their respective separator row.
+    - The separator inherits `--color list-border` when the section's own border color is not explicitly set.
+    - `--header-first` is not compatible with `--header-border=inline` or `--header-lines-border=inline`; `--header-border=inline` requires `--header-lines-border` to be `inline` or unset.
+
 0.71.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.71.0/_

@@ -178,10 +178,11 @@ Usage: fzf [options]
     --header-first           Print header before the prompt line
     --header-border[=STYLE]  Draw border around the header section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|line|none] (default: rounded)
+                              top|bottom|left|right|line|inline|none] (default: rounded)
     --header-lines-border[=STYLE]
                              Display header from --header-lines with a separate border.
                              Pass 'none' to still separate it but without a border.
+                             Pass 'inline' to embed it inside the list frame.
     --header-label=LABEL     Label to print on the header border
     --header-label-pos=COL   Position of the header label
                              [POSITIVE_INTEGER: columns from left|
@@ -192,7 +193,7 @@ Usage: fzf [options]
     --footer=STR             String to print as footer
     --footer-border[=STYLE]  Draw border around the footer section
                              [rounded|sharp|bold|block|thinblock|double|horizontal|vertical|
-                              top|bottom|left|right|line|none] (default: line)
+                              top|bottom|left|right|line|inline|none] (default: line)
     --footer-label=LABEL     Label to print on the footer border
     --footer-label-pos=COL   Position of the footer label
                              [POSITIVE_INTEGER: columns from left|
@@ -953,6 +954,8 @@ func parseBorder(str string, optional bool) (tui.BorderShape, error) {
 	switch str {
 	case "line":
 		return tui.BorderLine, nil
+	case "inline":
+		return tui.BorderInline, nil
 	case "rounded":
 		return tui.BorderRounded, nil
 	case "sharp":
@@ -983,7 +986,7 @@ func parseBorder(str string, optional bool) (tui.BorderShape, error) {
 	if optional && str == "" {
 		return defaultBorderShape, nil
 	}
-	return tui.BorderNone, errors.New("invalid border style (expected: rounded|sharp|bold|block|thinblock|double|horizontal|vertical|top|bottom|left|right|none)")
+	return tui.BorderNone, errors.New("invalid border style (expected: rounded|sharp|bold|block|thinblock|double|horizontal|vertical|top|bottom|left|right|line|inline|none)")
 }
 
 func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Event, error) {
@@ -3608,6 +3611,22 @@ func validateOptions(opts *Options) error {
 
 	if opts.Theme.Nth.IsColorDefined() {
 		return errors.New("only ANSI attributes are allowed for 'nth' (regular, bold, underline, reverse, dim, italic, strikethrough)")
+	}
+
+	if opts.BorderShape == tui.BorderInline ||
+		opts.ListBorderShape == tui.BorderInline ||
+		opts.InputBorderShape == tui.BorderInline ||
+		opts.Preview.border == tui.BorderInline {
+		return errors.New("inline border is only supported for --header-border, --header-lines-border, and --footer-border")
+	}
+	if opts.HeaderFirst && (opts.HeaderBorderShape == tui.BorderInline || opts.HeaderLinesShape == tui.BorderInline) {
+		return errors.New("--header-first is not compatible with --header-border=inline or --header-lines-border=inline")
+	}
+	if opts.HeaderBorderShape == tui.BorderInline &&
+		opts.HeaderLinesShape != tui.BorderInline &&
+		opts.HeaderLinesShape != tui.BorderUndefined &&
+		opts.HeaderLinesShape != tui.BorderNone {
+		return errors.New("--header-border=inline requires --header-lines-border to be inline or unset")
 	}
 
 	return nil
