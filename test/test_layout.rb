@@ -1298,4 +1298,79 @@ class TestLayout < TestInteractive
       tmux.send_keys :Enter
     end
   end
+
+  # Locate a word in the currently captured screen and click its first character.
+  # tmux rows/columns are 1-based; capture indices are 0-based.
+  def click_word(word)
+    tmux.capture.each_with_index do |line, idx|
+      col = line.index(word)
+      return tmux.click(col + 1, idx + 1) if col
+    end
+    flunk("word #{word.inspect} not found on screen")
+  end
+
+  # Launch fzf with a click-{header,footer} binding that echoes FZF_CLICK_* into the prompt,
+  # then click each word in `clicks` and assert the resulting L/W values.
+  # `clicks` is an array of [word_to_click, expected_line].
+  def verify_clicks(kind:, opts:, input:, clicks:)
+    var = kind.to_s.upcase # HEADER or FOOTER
+    binding = "click-#{kind}:transform-prompt:" \
+              "echo \"L=$FZF_CLICK_#{var}_LINE W=$FZF_CLICK_#{var}_WORD> \""
+    # --multi makes the info line end in " (0)" so the wait regex is unambiguous.
+    tmux.send_keys %(#{input} | #{FZF} #{opts} --multi --bind '#{binding}'), :Enter
+    # Wait for fzf to fully render before inspecting the screen, otherwise the echoed
+    # command line can shadow click targets.
+    tmux.until { |lines| lines.any_include?(%r{ [0-9]+/[0-9]+ \(0\)}) }
+    clicks.each do |word, line|
+      click_word(word)
+      tmux.until { |lines| assert lines.any_include?("L=#{line} W=#{word}>") }
+    end
+    tmux.send_keys 'Escape'
+  end
+
+  # Header lines (--header-lines) are rendered in reverse display order only under
+  # layout=default; in layout=reverse and layout=reverse-list they keep the input order.
+  # FZF_CLICK_HEADER_LINE reflects the visual row, so the expected value flips.
+  HEADER_CLICKS = [%w[Aaa 1], %w[Bbb 2], %w[Ccc 3]].freeze
+
+  %w[default reverse reverse-list].each do |layout|
+    slug = layout.tr('-', '_')
+
+    # Plain --header with no border around the header section.
+    define_method(:"test_click_header_plain_#{slug}") do
+      verify_clicks(kind: :header,
+                    opts: %(--layout=#{layout} --header $'Aaa\\nBbb\\nCcc'),
+                    input: 'seq 5',
+                    clicks: HEADER_CLICKS)
+    end
+
+    # --header with a framing border (--style full gives --header-border=rounded by default).
+    define_method(:"test_click_header_border_rounded_#{slug}") do
+      verify_clicks(kind: :header,
+                    opts: %(--layout=#{layout} --style full --header $'Aaa\\nBbb\\nCcc'),
+                    input: 'seq 5',
+                    clicks: HEADER_CLICKS)
+    end
+
+    # --header-lines consumed from stdin, with its own framing border.
+    define_method(:"test_click_header_lines_border_rounded_#{slug}") do
+      clicks_hl = if layout == 'default'
+                    [%w[Xaa 3], %w[Ybb 2], %w[Zcc 1]]
+                  else
+                    [%w[Xaa 1], %w[Ybb 2], %w[Zcc 3]]
+                  end
+      verify_clicks(kind: :header,
+                    opts: %(--layout=#{layout} --style full --header-lines 3),
+                    input: "(printf 'Xaa\\nYbb\\nZcc\\n'; seq 5)",
+                    clicks: clicks_hl)
+    end
+
+    # --footer with a framing border.
+    define_method(:"test_click_footer_border_rounded_#{slug}") do
+      verify_clicks(kind: :footer,
+                    opts: %(--layout=#{layout} --style full --footer $'Foo\\nBar\\nBaz'),
+                    input: 'seq 5',
+                    clicks: [%w[Foo 1], %w[Bar 2], %w[Baz 3]])
+    end
+  end
 end
