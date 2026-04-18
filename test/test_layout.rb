@@ -1372,5 +1372,25 @@ class TestLayout < TestInteractive
                     input: 'seq 5',
                     clicks: [%w[Foo 1], %w[Bar 2], %w[Baz 3]])
     end
+
+    # --header and --header-lines combined. Click-header numbering concatenates the two
+    # sections, but the order depends on the layout:
+    #   layoutReverse:     custom header (1..N), then header-lines (N+1..N+M)
+    #   layoutDefault:     header-lines (1..M, reversed visually), then custom header (M+1..M+N)
+    #   layoutReverseList: header-lines (1..M), then custom header (M+1..M+N)
+    define_method(:"test_click_header_combined_#{slug}") do
+      clicks = case layout
+               when 'reverse'
+                 [%w[Aaa 1], %w[Bbb 2], %w[Ccc 3], %w[Xaa 4], %w[Ybb 5], %w[Zcc 6]]
+               when 'default'
+                 [%w[Aaa 4], %w[Bbb 5], %w[Ccc 6], %w[Xaa 3], %w[Ybb 2], %w[Zcc 1]]
+               else # reverse-list
+                 [%w[Aaa 4], %w[Bbb 5], %w[Ccc 6], %w[Xaa 1], %w[Ybb 2], %w[Zcc 3]]
+               end
+      verify_clicks(kind: :header,
+                    opts: %(--layout=#{layout} --header $'Aaa\\nBbb\\nCcc' --header-lines 3),
+                    input: "(printf 'Xaa\\nYbb\\nZcc\\n'; seq 5)",
+                    clicks: clicks)
+    end
   end
 end
