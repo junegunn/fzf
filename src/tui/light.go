@@ -689,6 +689,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					switch r.buffer[4] {
 					case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 						//                   Kitty      iTerm2     WezTerm
+						// ARROW             "\e[1;1D"
 						// SHIFT-ARROW       "\e[1;2D"
 						// ALT-SHIFT-ARROW   "\e[1;4D"  "\e[1;10D" "\e[1;4D"
 						// CTRL-SHIFT-ARROW  "\e[1;6D"             N/A
@@ -743,6 +744,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if shift {
 								return Event{ShiftUp, 0, nil}
 							}
+							return Event{Up, 0, nil}
 						case 'B':
 							if ctrlAltShift {
 								return Event{CtrlAltShiftDown, 0, nil}
@@ -765,6 +767,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if shift {
 								return Event{ShiftDown, 0, nil}
 							}
+							return Event{Down, 0, nil}
 						case 'C':
 							if ctrlAltShift {
 								return Event{CtrlAltShiftRight, 0, nil}
@@ -787,6 +790,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if alt {
 								return Event{AltRight, 0, nil}
 							}
+							return Event{Right, 0, nil}
 						case 'D':
 							if ctrlAltShift {
 								return Event{CtrlAltShiftLeft, 0, nil}
@@ -809,6 +813,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if shift {
 								return Event{ShiftLeft, 0, nil}
 							}
+							return Event{Left, 0, nil}
 						case 'H':
 							if ctrlAltShift {
 								return Event{CtrlAltShiftHome, 0, nil}
@@ -831,6 +836,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if shift {
 								return Event{ShiftHome, 0, nil}
 							}
+							return Event{Home, 0, nil}
 						case 'F':
 							if ctrlAltShift {
 								return Event{CtrlAltShiftEnd, 0, nil}
@@ -853,6 +859,7 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 							if shift {
 								return Event{ShiftEnd, 0, nil}
 							}
+							return Event{End, 0, nil}
 						}
 					} // r.buffer[4]
 				} // r.buffer[3]
