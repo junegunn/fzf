@@ -134,8 +134,8 @@ const ctrl_t =  {
 
 # Update the $env.config
 export-env {
-  if not ($env.__keybindings_loaded? | default false) {
-    $env.__keybindings_loaded = true
+  let already_loaded = ($env.config.keybindings | any { |kb| $kb.name == 'fzf_files' })
+  if not $already_loaded {
     $env.config.keybindings = $env.config.keybindings | append [
       $alt_c
       $ctrl_r
