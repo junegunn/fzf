@@ -3619,9 +3619,6 @@ func validateOptions(opts *Options) error {
 		opts.Preview.border == tui.BorderInline {
 		return errors.New("inline border is only supported for --header-border, --header-lines-border, and --footer-border")
 	}
-	if opts.HeaderFirst && (opts.HeaderBorderShape == tui.BorderInline || opts.HeaderLinesShape == tui.BorderInline) {
-		return errors.New("--header-first is not compatible with --header-border=inline or --header-lines-border=inline")
-	}
 	if opts.HeaderBorderShape == tui.BorderInline &&
 		opts.HeaderLinesShape != tui.BorderInline &&
 		opts.HeaderLinesShape != tui.BorderUndefined &&

@@ -1107,9 +1107,10 @@ shape that has both top and bottom segments (rounded / sharp / bold /
 double / block / thinblock / horizontal) and falls back to \fBline\fR
 otherwise. When the list border also has side segments, the separator
 joins them with T-junctions; \fBhorizontal\fR has no side borders, so the
-separator is drawn without T-junction endpoints. Not compatible with
-\fB\-\-header\-first\fR, and when \fB\-\-header\-lines\fR is also set
-\fB\-\-header\-lines\-border\fR must also be \fBinline\fR.
+separator is drawn without T-junction endpoints. Takes precedence over
+\fB\-\-header\-first\fR (the section stays inside the list frame), and
+when \fB\-\-header\-lines\fR is also set \fB\-\-header\-lines\-border\fR
+must also be \fBinline\fR.
 
 .TP
 .BI "\-\-header\-label" [=LABEL]
@@ -1128,7 +1129,7 @@ a single separator line between the header lines and the list section.
 \fBinline\fR style embeds the header lines inside the list border frame
 with a horizontal separator; it requires a \fB\-\-list\-border\fR shape
 that has both top and bottom segments, falls back to \fBline\fR
-otherwise, and is not compatible with \fB\-\-header\-first\fR.
+otherwise.
 
 .SS FOOTER
 
