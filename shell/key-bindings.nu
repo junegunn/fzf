@@ -4,10 +4,12 @@
 #  / __/ / /_/ __/
 # /_/   /___/_/ key-bindings.nu
 #
-# - $FZF_TMUX_OPTS --
+# - $FZF_TMUX               (default: 0)
+# - $FZF_TMUX_OPTS
+# - $FZF_TMUX_HEIGHT        (default: 40%)
 # - $FZF_CTRL_T_COMMAND
 # - $FZF_CTRL_T_OPTS
-# - $FZF_CTRL_R_OPTS ---
+# - $FZF_CTRL_R_OPTS
 # - $FZF_ALT_C_COMMAND
 # - $FZF_ALT_C_OPTS
 
@@ -29,9 +31,23 @@ def __fzf_defaults [prepend: string, append: string]: nothing -> string {
   $"($base) ($opts_file) ($default_opts) ($append)" | str trim
 }
 
+# Return the fzf command to use: fzf-tmux when inside tmux and
+# FZF_TMUX is enabled or FZF_TMUX_OPTS is set, plain fzf otherwise.
+def __fzfcmd []: nothing -> list<string> {
+  let in_tmux = ($env.TMUX_PANE? | default '' | into string | is-not-empty)
+  if $in_tmux {
+    let fzf_tmux = ($env.FZF_TMUX? | default 0 | into string)
+    let fzf_tmux_opts = ($env.FZF_TMUX_OPTS? | default '' | into string)
+    if ($fzf_tmux != '0') or ($fzf_tmux_opts | is-not-empty) {
+      let opts = if ($fzf_tmux_opts | is-not-empty) { $fzf_tmux_opts } else { $"-d($env.FZF_TMUX_HEIGHT? | default '40%')" }
+      return ['fzf-tmux' ...(($opts | split row ' ' | where { $in != '' })) '--']
+    }
+  }
+  ['fzf']
+}
+
 
 export-env {
-  $env.FZF_TMUX_OPTS       = $env.FZF_TMUX_OPTS?       | default "--height 40%"
   $env.FZF_CTRL_T_COMMAND  = $env.FZF_CTRL_T_COMMAND?  | default ""
   $env.FZF_CTRL_T_OPTS     = $env.FZF_CTRL_T_OPTS?     | default ""
   $env.FZF_CTRL_R_OPTS     = $env.FZF_CTRL_R_OPTS?     | default ""
@@ -50,11 +66,13 @@ const alt_c = {
         send: executehostcommand
         cmd: "
           let fzf_opts = (__fzf_defaults '--reverse --walker=dir,follow,hidden --scheme=path' $'($env.FZF_ALT_C_OPTS) +m');
+          let fzfcmd = (__fzfcmd);
+          let fzf_args = ($fzfcmd | skip 1);
           let result = if ($env.FZF_ALT_C_COMMAND | is-empty) {
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { fzf }
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
-            let fzf_command = $'($env.FZF_ALT_C_COMMAND) | fzf';
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -c $fzf_command }
+            let fzf_cmd_str = ($fzfcmd | str join ' ');
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -c $'($env.FZF_ALT_C_COMMAND) | ($fzf_cmd_str)' }
           };
           cd $result;
         "
@@ -73,12 +91,14 @@ const ctrl_r = {
       send: executehostcommand
       cmd: "commandline edit --insert (
         let fzf_opts = (__fzf_defaults '' $'--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign \"\t↳ \" --highlight-line ($env.FZF_CTRL_R_OPTS) +m --read0');
+        let fzfcmd = (__fzfcmd);
+        let fzf_args = ($fzfcmd | skip 1);
         history
           | get command
           | reverse
           | uniq
           | str join (char -i 0)
-          | with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { fzf --query (commandline) }
+          | with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args --query (commandline) }
           | decode utf-8
           | str trim
       )"
@@ -97,11 +117,13 @@ const ctrl_t =  {
         send: executehostcommand
         cmd: "
           let fzf_opts = (__fzf_defaults '--reverse --walker=file,dir,follow,hidden --scheme=path' $'($env.FZF_CTRL_T_OPTS) -m');
+          let fzfcmd = (__fzfcmd);
+          let fzf_args = ($fzfcmd | skip 1);
           let result = if ($env.FZF_CTRL_T_COMMAND | is-empty) {
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { fzf }
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
-            let fzf_command = $'($env.FZF_CTRL_T_COMMAND) | fzf';
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -l -i -c $fzf_command }
+            let fzf_cmd_str = ($fzfcmd | str join ' ');
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -l -i -c $'($env.FZF_CTRL_T_COMMAND) | ($fzf_cmd_str)' }
           };
           commandline edit --append $result;
           commandline set-cursor --end
