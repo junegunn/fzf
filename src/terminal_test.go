@@ -721,7 +721,7 @@ func TestWordWrapAnsiLine(t *testing.T) {
 		t.Errorf("ANSI: %q", result)
 	}
 
-	// Long word (no space) — no break, let character wrapping handle it
+	// Long word (no space) - no break, let character wrapping handle it
 	result = term.wordWrapAnsiLine("abcdefghij", 5, 2)
 	if len(result) != 1 || result[0] != "abcdefghij" {
 		t.Errorf("Long word: %q", result)
@@ -749,7 +749,7 @@ func TestWordWrapAnsiLine(t *testing.T) {
 
 	// Tab handling: tab expands to tabstop-aligned width
 	term.tabstop = 8
-	// "\thi there" — tab at column 0 expands to 8, total "hi" starts at 8
+	// "\thi there" - tab at column 0 expands to 8, total "hi" starts at 8
 	// maxWidth=15: "\thi" = 10 wide, "there" = 5 wide, total 16 > 15, wrap at space
 	result = term.wordWrapAnsiLine("\thi there", 15, 2)
 	if len(result) != 2 || result[0] != "\thi" || result[1] != "there" {

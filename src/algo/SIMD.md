@@ -2,10 +2,10 @@
 
 ## What these functions do
 
-`indexByteTwo(s []byte, b1, b2 byte) int` — returns the index of the
+`indexByteTwo(s []byte, b1, b2 byte) int` -- returns the index of the
 **first** occurrence of `b1` or `b2` in `s`, or `-1`.
 
-`lastIndexByteTwo(s []byte, b1, b2 byte) int` — returns the index of the
+`lastIndexByteTwo(s []byte, b1, b2 byte) int` -- returns the index of the
 **last** occurrence of `b1` or `b2` in `s`, or `-1`.
 
 They are used by the fuzzy matching algorithm (`algo.go`) to skip ahead
@@ -91,9 +91,9 @@ implementations (`2xIndexByte` using `bytes.IndexByte`, and a simple `loop`).
 
 The assembly is verified by three layers of testing:
 
-1. **Table-driven tests** — known inputs with expected outputs.
-2. **Exhaustive tests** — all lengths 0–256, every match position, no-match
+1. **Table-driven tests** -- known inputs with expected outputs.
+2. **Exhaustive tests** -- all lengths 0–256, every match position, no-match
    cases, and both-bytes-present cases, compared against a simple loop
    reference.
-3. **Fuzz tests** — randomized inputs via `testing.F`, compared against the
+3. **Fuzz tests** -- randomized inputs via `testing.F`, compared against the
    same loop reference.

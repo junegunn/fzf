@@ -9,7 +9,7 @@ func TestWrapLine(t *testing.T) {
 		t.Errorf("Basic wrap: %v", lines)
 	}
 
-	// Exact fit — no wrapping needed
+	// Exact fit - no wrapping needed
 	lines = WrapLine("hello", 0, 5, 8, 2)
 	if len(lines) != 1 || lines[0].Text != "hello" || lines[0].DisplayWidth != 5 {
 		t.Errorf("Exact fit: %v", lines)

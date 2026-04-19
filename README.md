@@ -15,7 +15,7 @@
   <a href="https://commitgoods.com/collections/fzf"><img src="https://junegunn.github.io/fzf/images/fzf-mugs.jpg" width="80%" alt="fzf merch"></a>
   <br/>
   <br/>
-  Show your love for fzf — T-shirts, mugs, and stickers now available!
+  Show your love for fzf -- T-shirts, mugs, and stickers now available!
   <br/>
   <br/>
   <a href="https://commitgoods.com/collections/fzf">commitgoods.com/collections/fzf</a>
@@ -37,10 +37,10 @@ characters and still get the results you want.
 Highlights
 ----------
 
-- **Portable** — Distributed as a single binary for easy installation
-- **Fast** — Optimized to process millions of items instantly
-- **Versatile** — Fully customizable through an event-action binding mechanism
-- **All-inclusive** — Comes with integrations for Bash, Zsh, Fish, Vim, and Neovim
+- **Portable** -- Distributed as a single binary for easy installation
+- **Fast** -- Optimized to process millions of items instantly
+- **Versatile** -- Fully customizable through an event-action binding mechanism
+- **All-inclusive** -- Comes with integrations for Bash, Zsh, Fish, Vim, and Neovim
 
 Table of Contents
 -----------------
@@ -440,7 +440,7 @@ or `py`.
 
 The user interface of fzf is fully customizable with a large number of
 configuration options. For a quick setup, you can start with one of the style
-presets — `default`, `full`, or `minimal` — using the `--style` option.
+presets -- `default`, `full`, or `minimal` -- using the `--style` option.
 
 ```sh
 fzf --style full \

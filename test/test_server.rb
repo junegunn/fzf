@@ -40,7 +40,7 @@ class TestServer < TestInteractive
       assert_equal [0, 1], state[:current][:positions]
       assert_equal state[:current][:positions], state[:current][:positions].sort
 
-      # No match — no current item
+      # No match - no current item
       Net::HTTP.post(fn.call, 'change-query(yo)+reload(seq 100)+change-prompt:hundred> ')
       tmux.until { |lines| assert_equal 100, lines.item_count }
       tmux.until { |lines| assert_equal 'hundred> yo', lines[-1] }

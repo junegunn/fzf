@@ -484,7 +484,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 					state.attr = state.attr | tui.Italic
 				case 4:
 					if sep == ':' {
-						// SGR 4:N — underline style sub-parameter
+						// SGR 4:N - underline style sub-parameter
 						var subNum int
 						subNum, _, ansiCode = parseAnsiCode(ansiCode)
 						state.attr = state.attr &^ tui.UnderlineStyleMask
