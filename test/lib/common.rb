@@ -130,6 +130,11 @@ class Tmux
     go(%W[capture-pane -p -J -t #{win}]).map(&:rstrip).reverse.drop_while(&:empty?).reverse
   end
 
+  # Raw pane capture with ANSI escape sequences preserved.
+  def capture_ansi
+    go(%W[capture-pane -p -J -e -t #{win}])
+  end
+
   # 3-bit ANSI bg code (40..47) -> color name used in --color options.
   BG_NAMES = %w[black red green yellow blue magenta cyan white].freeze
 

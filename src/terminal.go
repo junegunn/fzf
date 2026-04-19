@@ -1167,10 +1167,14 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	if baseTheme == nil {
 		baseTheme = renderer.DefaultTheme()
 	}
-	// This should be called before accessing tui.Color*
-	headerInline := opts.HeaderBorderShape == tui.BorderInline || opts.HeaderLinesShape == tui.BorderInline
-	footerInline := opts.FooterBorderShape == tui.BorderInline
+	// If the list border can't host an inline separator, the runtime later coerces
+	// BorderInline to BorderLine. Mirror that here so theme color inheritance matches
+	// the final rendering rather than the user's requested shape.
+	inlineListSupported := opts.ListBorderShape.HasTop() && opts.ListBorderShape.HasBottom()
+	headerInline := inlineListSupported && (opts.HeaderBorderShape == tui.BorderInline || opts.HeaderLinesShape == tui.BorderInline)
+	footerInline := inlineListSupported && opts.FooterBorderShape == tui.BorderInline
 	hasHeader := opts.HeaderBorderShape.Visible() || opts.HeaderLinesShape.Visible()
+	// This should be called before accessing tui.Color*
 	tui.InitTheme(opts.Theme, baseTheme, opts.Bold, opts.Black, opts.InputBorderShape.Visible(), hasHeader, headerInline, footerInline)
 
 	// Gutter character
