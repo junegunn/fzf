@@ -347,9 +347,9 @@ def _fzf_complete_ssh_nu [ prefix:                    string
 
   # If not handled by path completion, do host completion
   if not $handled {
-    let user_part = if ($prefix | str contains "@") { ($prefix | split column "@" | first) + "@" } else { "" }
+    let user_part = if ($prefix | str contains "@") { ($prefix | split row "@" | first) + "@" } else { "" }
     # The part after '@' (or the whole prefix if no '@') is the initial query for fzf
-    let query = if ($prefix | str contains "@") { $prefix | split column "@" | get 1 } else { $prefix }
+    let query = if ($prefix | str contains "@") { $prefix | split row "@" | last } else { $prefix }
 
     let host_candidates_gen = {||
       __fzf_list_hosts_nu
