@@ -1527,6 +1527,19 @@ class TestLayout < TestInteractive
     end
   end
 
+  # Regression: with --header-border=inline and --header-lines but no
+  # --header, the inline slot was sized for header-lines only. After
+  # change-header added a main header line, resizeIfNeeded tolerated the
+  # too-small slot, so the header-lines line got displaced and disappeared.
+  def test_inline_change_header_grows_slot
+    tmux.send_keys %(seq 5 | #{FZF} --style full --header-lines 1 --header-border inline --bind space:change-header:tada), :Enter
+    tmux.until { |lines| lines.any_include?(/\A│\s+1\s+│\z/) }
+    tmux.send_keys ' '
+    tmux.until do |lines|
+      lines.any_include?(/\A│\s+1\s+│\z/) && lines.any_include?(/\A│\s+tada\s+│\z/)
+    end
+  end
+
   # Invalid inline combinations must be rejected at startup.
   def test_inline_rejected_on_unsupported_options
     [
