@@ -467,7 +467,9 @@ let fzf_external_completer = {|spans|
       # "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
       # "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
       "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
-      "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")    }
+      _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
+        $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")
+      }
       _                                 => {
         # Default to path completion if no specific command matches
         $completion_results = (_fzf_path_completion_nu $prefix)
