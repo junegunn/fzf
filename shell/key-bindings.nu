@@ -72,7 +72,8 @@ const alt_c = {
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
             let fzf_cmd_str = ($fzfcmd | str join ' ');
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -c $'($alt_c_cmd) | ($fzf_cmd_str)' }
+            let sh_cmd = [$alt_c_cmd '|' $fzf_cmd_str] | str join ' ';
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^sh -c $sh_cmd }
           };
           cd $result;
         "
@@ -124,8 +125,10 @@ const ctrl_t =  {
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
             let fzf_cmd_str = ($fzfcmd | str join ' ');
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -l -i -c $'($ctrl_t_cmd) | ($fzf_cmd_str)' }
+            let sh_cmd = [$ctrl_t_cmd '|' $fzf_cmd_str] | str join ' ';
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^sh -c $sh_cmd }
           };
+          let result = ($result | str replace --all (char newline) ' ' | str trim);
           commandline edit --append $result;
           commandline set-cursor --end
         "
