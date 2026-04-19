@@ -2844,7 +2844,11 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	if hasInputWindow {
 		var btop int
-		if (hasHeaderWindow || hasHeaderLinesWindow) && t.headerFirst {
+		// Inline sections live inside the list frame, so they don't participate
+		// in --header-first repositioning; only non-inline sections do.
+		hasNonInlineHeader := hasHeaderWindow && t.headerBorderShape != tui.BorderInline
+		hasNonInlineHeaderLines := hasHeaderLinesWindow && headerLinesShape != tui.BorderInline
+		if (hasNonInlineHeader || hasNonInlineHeaderLines) && t.headerFirst {
 			switch t.layout {
 			case layoutDefault:
 				btop = w.Top() + w.Height()

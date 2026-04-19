@@ -1491,6 +1491,42 @@ class TestLayout < TestInteractive
     tmux.send_keys 'Escape'
   end
 
+  # Inline takes precedence over --header-first: the main header stays
+  # inside the list frame instead of moving below the input.
+  def test_inline_header_border_overrides_header_first
+    tmux.send_keys %(seq 5 | #{FZF} --style full --header foo --header-first --header-border inline), :Enter
+    tmux.until do |lines|
+      foo_idx = lines.index { |l| l.match?(/\A│\s+foo\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      foo_idx && input_idx && foo_idx < input_idx
+    end
+  end
+
+  # With both sections present, --header-first still moves the main --header
+  # below the input while --header-lines-border=inline keeps header-lines
+  # inside the list frame.
+  def test_inline_header_lines_with_header_first_and_main_header
+    tmux.send_keys %(seq 5 | #{FZF} --style full --header foo --header-lines 1 --header-first --header-lines-border inline), :Enter
+    tmux.until do |lines|
+      one_idx = lines.index { |l| l.match?(/\A│\s+1\s+│\z/) }
+      foo_idx = lines.index { |l| l.match?(/\A│\s+foo\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      one_idx && foo_idx && input_idx && one_idx < input_idx && input_idx < foo_idx
+    end
+  end
+
+  # With no main --header, --header-first previously repositioned
+  # header-lines. Inline now takes precedence: header-lines stays inside
+  # the list frame.
+  def test_inline_header_lines_with_header_first_no_main_header
+    tmux.send_keys %(seq 5 | #{FZF} --style full --header-lines 1 --header-first --header-lines-border inline), :Enter
+    tmux.until do |lines|
+      one_idx = lines.index { |l| l.match?(/\A│\s+1\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      one_idx && input_idx && one_idx < input_idx
+    end
+  end
+
   # Invalid inline combinations must be rejected at startup.
   def test_inline_rejected_on_unsupported_options
     [
@@ -1498,8 +1534,6 @@ class TestLayout < TestInteractive
       ['--list-border=inline', 'inline border is only supported'],
       ['--input-border=inline', 'inline border is only supported'],
       ['--preview-window=border-inline --preview :', 'invalid preview window option: border-inline'],
-      ['--header-first --header-border=inline', '--header-first is not compatible'],
-      ['--header-first --header-lines-border=inline --header-lines=1', '--header-first is not compatible'],
       ['--header-border=inline --header-lines-border=sharp --header-lines=1',
        '--header-border=inline requires --header-lines-border to be inline or unset']
     ].each do |args, expected|
