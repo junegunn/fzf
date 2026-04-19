@@ -1466,6 +1466,31 @@ class TestLayout < TestInteractive
     tmux.send_keys 'Escape'
   end
 
+  # Regression: when --header-border=inline falls back to `line` because the
+  # list border can't host an inline separator, the header-border color must
+  # inherit from `border`, not `list-border`. The effective shape is `line`,
+  # so color inheritance must match what `line` rendering would use.
+  def test_inline_fallback_does_not_inherit_list_border_color
+    # Marker attribute (bold) on list-border. If HeaderBorder wrongly inherits
+    # from ListBorder, the header separator characters will carry the bold
+    # attribute. --info=hidden and --no-separator strip other separator lines
+    # so the only row of `─` chars is the header separator.
+    tmux.send_keys %(seq 5 | #{FZF} --list-border=none --header HEADER --header-border=inline --info=hidden --no-separator --color=bg:-1,list-border:red:bold), :Enter
+    sep_row = nil
+    tmux.until do |_|
+      sep_row = tmux.capture_ansi.find do |row|
+        stripped = row.gsub(/\e\[[\d;]*m/, '').rstrip
+        stripped.match?(/\A─+\z/)
+      end
+      !sep_row.nil?
+    end
+    # Bold (1) or red fg (31) on the header separator means it inherited from
+    # list-border even though the effective shape is `line` (non-inline).
+    refute_match(/\e\[(?:[\d;]*;)?(?:1|31)(?:;[\d;]*)?m─/, sep_row,
+                 "header separator inherited list-border attr: #{sep_row.inspect}")
+    tmux.send_keys 'Escape'
+  end
+
   # Invalid inline combinations must be rejected at startup.
   def test_inline_rejected_on_unsupported_options
     [
