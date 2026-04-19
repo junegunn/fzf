@@ -7,10 +7,11 @@
 # - $FZF_TMUX               (default: 0)
 # - $FZF_TMUX_OPTS
 # - $FZF_TMUX_HEIGHT        (default: 40%)
-# - $FZF_CTRL_T_COMMAND
+# - $FZF_CTRL_T_COMMAND     (set to "" to disable)
 # - $FZF_CTRL_T_OPTS
+# - $FZF_CTRL_R_COMMAND     (set to "" to disable)
 # - $FZF_CTRL_R_OPTS
-# - $FZF_ALT_C_COMMAND
+# - $FZF_ALT_C_COMMAND      (set to "" to disable)
 # - $FZF_ALT_C_OPTS
 
 # Code provided by @igor-ramazanov
@@ -48,10 +49,8 @@ def __fzfcmd []: nothing -> list<string> {
 
 
 export-env {
-  $env.FZF_CTRL_T_COMMAND  = $env.FZF_CTRL_T_COMMAND?  | default ""
   $env.FZF_CTRL_T_OPTS     = $env.FZF_CTRL_T_OPTS?     | default ""
   $env.FZF_CTRL_R_OPTS     = $env.FZF_CTRL_R_OPTS?     | default ""
-  $env.FZF_ALT_C_COMMAND   = $env.FZF_ALT_C_COMMAND?   | default ""
   $env.FZF_ALT_C_OPTS      = $env.FZF_ALT_C_OPTS?      | default ""
 }
 
@@ -68,11 +67,12 @@ const alt_c = {
           let fzf_opts = (__fzf_defaults '--reverse --walker=dir,follow,hidden --scheme=path' $'($env.FZF_ALT_C_OPTS) +m');
           let fzfcmd = (__fzfcmd);
           let fzf_args = ($fzfcmd | skip 1);
-          let result = if ($env.FZF_ALT_C_COMMAND | is-empty) {
+          let alt_c_cmd = ($env.FZF_ALT_C_COMMAND? | default null);
+          let result = if ($alt_c_cmd == null) or ($alt_c_cmd | is-empty) {
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
             let fzf_cmd_str = ($fzfcmd | str join ' ');
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -c $'($env.FZF_ALT_C_COMMAND) | ($fzf_cmd_str)' }
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -c $'($alt_c_cmd) | ($fzf_cmd_str)' }
           };
           cd $result;
         "
@@ -119,11 +119,12 @@ const ctrl_t =  {
           let fzf_opts = (__fzf_defaults '--reverse --walker=file,dir,follow,hidden --scheme=path' $'($env.FZF_CTRL_T_OPTS) -m');
           let fzfcmd = (__fzfcmd);
           let fzf_args = ($fzfcmd | skip 1);
-          let result = if ($env.FZF_CTRL_T_COMMAND | is-empty) {
+          let ctrl_t_cmd = ($env.FZF_CTRL_T_COMMAND? | default null);
+          let result = if ($ctrl_t_cmd == null) or ($ctrl_t_cmd | is-empty) {
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^($fzfcmd | first) ...$fzf_args }
           } else {
             let fzf_cmd_str = ($fzfcmd | str join ' ');
-            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -l -i -c $'($env.FZF_CTRL_T_COMMAND) | ($fzf_cmd_str)' }
+            with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { nu -l -i -c $'($ctrl_t_cmd) | ($fzf_cmd_str)' }
           };
           commandline edit --append $result;
           commandline set-cursor --end
@@ -132,14 +133,23 @@ const ctrl_t =  {
     ]
 }
 
+# Helper to check if a binding is enabled. A binding is disabled when
+# the corresponding *_COMMAND variable is explicitly set to "".
+# When not defined (null), the binding is enabled (using fzf's built-in walker).
+def __fzf_binding_enabled [var_name: string]: nothing -> bool {
+  let val = ($env | get -o $var_name)
+  # null = not defined = enabled; "" = explicitly disabled
+  $val == null or ($val | into string | is-not-empty)
+}
+
 # Update the $env.config
 export-env {
   let already_loaded = ($env.config.keybindings | any { |kb| $kb.name == 'fzf_files' })
   if not $already_loaded {
-    $env.config.keybindings = $env.config.keybindings | append [
-      $alt_c
-      $ctrl_r
-      $ctrl_t
-    ]
+    mut bindings = []
+    if (__fzf_binding_enabled 'FZF_ALT_C_COMMAND') { $bindings = ($bindings | append $alt_c) }
+    if (__fzf_binding_enabled 'FZF_CTRL_R_COMMAND') { $bindings = ($bindings | append $ctrl_r) }
+    if (__fzf_binding_enabled 'FZF_CTRL_T_COMMAND') { $bindings = ($bindings | append $ctrl_t) }
+    $env.config.keybindings = ($env.config.keybindings | append $bindings)
   }
 }
