@@ -89,7 +89,7 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
   let has_walker = ($fzf_prefinal_opt | find '--walker' | is-not-empty)
 
   # Check for custom comprun function (Nu equivalent)
-  if ((help commands | where name == '_fzf_comprun_nu') | is-not-empty) {
+  if (which _fzf_comprun_nu | is-not-empty) {
     # Note: Nushell doesn't have a direct equivalent to Zsh/Bash `type -t _fzf_comprun`.
     # This check assumes a user might define a custom command named `_fzf_comprun_nu`.
     _fzf_comprun_nu $context_name $query ...$fzf_prefinal_opt # Pass args correctly to custom function
