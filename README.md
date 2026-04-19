@@ -30,7 +30,7 @@ Highlights
 - 📦 **Portable** — Distributed as a single binary for easy installation
 - ⚡ **Blazingly fast** — Highly optimized code instantly processes millions of items
 - 🛠️ **Extremely versatile** — Fully customizable via an event-action binding mechanism
-- 🔋 **Batteries included** — Includes integration with bash, zsh, fish, Vim, and Neovim
+- 🔋 **Batteries included** — Includes integration with bash, zsh, fish, Nushell, Vim, and Neovim
 
 Table of Contents
 -----------------
@@ -59,7 +59,7 @@ Table of Contents
     * [Demo](#demo)
 * [Examples](#examples)
 * [Key bindings for command-line](#key-bindings-for-command-line)
-* [Fuzzy completion for bash and zsh](#fuzzy-completion-for-bash-and-zsh)
+* [Fuzzy completion for bash, zsh, and Nushell](#fuzzy-completion-for-bash-zsh-and-nushell)
     * [Files and directories](#files-and-directories)
     * [Process IDs](#process-ids)
     * [Host names](#host-names)
@@ -188,9 +188,17 @@ Add the following line to your shell configuration file.
   # Set up fzf key bindings
   fzf --fish | source
   ```
+* Nushell — Nushell does not support piping into `source`, so the install
+  script generates a file in the autoload directory. If you didn't use the
+  install script, you can manually set it up:
+  ```nu
+  # Generate the integration script
+  # (run this in your regular shell, not in Nushell)
+  fzf --nushell > ($nu.default-config-dir | path join "autoload" "fzf.nu")
+  ```
 
 > [!NOTE]
-> `--bash`, `--zsh`, and `--fish` options are only available in fzf 0.48.0 or
+> `--bash`, `--zsh`, `--fish`, and `--nushell` options are only available in fzf 0.48.0 or
 > later. If you have an older version of fzf, or want finer control, you can
 > source individual script files in the [/shell](/shell) directory. The
 > location of the files may vary depending on the package manager you use.
@@ -483,7 +491,7 @@ Key bindings for command-line
 -----------------------------
 
 By [setting up shell integration](#setting-up-shell-integration), you can use
-the following key bindings in bash, zsh, and fish.
+the following key bindings in bash, zsh, fish, and Nushell.
 
 - `CTRL-T` - Paste the selected files and directories onto the command-line
     - The list is generated using `--walker file,dir,follow,hidden` option
@@ -531,8 +539,8 @@ Display modes for these bindings can be separately configured via
 
 More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/Configuring-shell-key-bindings).
 
-Fuzzy completion for bash and zsh
----------------------------------
+Fuzzy completion for bash, zsh, and Nushell
+--------------------------------------------
 
 ### Files and directories
 
@@ -589,6 +597,23 @@ unset **<TAB>
 export **<TAB>
 unalias **<TAB>
 ```
+
+### Nushell notes
+
+Fuzzy completion in Nushell works via the
+[external completer](https://www.nushell.sh/cookbook/external_completers.html)
+mechanism. There are some differences compared to bash and zsh:
+
+- On Nushell >= 0.103.0, the external completer is no longer called for
+  built-in commands (e.g. `cd`, `ls`). Fuzzy completion with `**<TAB>` only
+  works for external commands.
+- Custom completion extensibility (e.g. `_fzf_complete_COMMAND` in bash/zsh)
+  is not available. Custom completions are defined via a `match` statement
+  in `completion.nu`.
+- The following environment variables are supported:
+  `FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
+  `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_OPTS`,
+  `FZF_COMPLETION_DIR_COMMANDS`.
 
 ### Customizing fzf options for completion
 
