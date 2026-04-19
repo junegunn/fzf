@@ -107,12 +107,22 @@ class Tmux
   attr_reader :win
 
   def initialize(shell = :bash)
+    @shell = shell
     @win = go(%W[new-window -d -P -F #I #{Shell.send(shell)}]).first
     go(%W[set-window-option -t #{@win} pane-base-index 0])
-    return unless shell == :fish
-
-    send_keys 'function fish_prompt; end; clear', :Enter
-    self.until(&:empty?)
+    if shell == :fish
+      send_keys 'function fish_prompt; end; clear', :Enter
+      self.until(&:empty?)
+    elsif shell == :nushell
+      # Wait for nushell to be ready: send a marker and wait for it
+      sleep 2
+      send_keys 'clear', :Enter
+      self.until(&:empty?)
+      send_keys '"ready"', :Enter
+      self.until { |lines| lines.any_include?('ready') }
+      send_keys 'clear', :Enter
+      self.until(&:empty?)
+    end
   end
 
   def kill
@@ -182,10 +192,18 @@ class Tmux
   def prepare
     tries = 0
     begin
-      self.until(true) do |lines|
+      if @shell == :nushell
         message = "Prepare[#{tries}]"
-        send_keys ' ', 'C-u', :Enter, message, :Left, :Right
-        lines[-1] == message
+        send_keys 'C-u', 'C-l'
+        sleep 0.2
+        send_keys ' ', 'C-u', :Enter, message
+        self.until { |lines| lines[-1] == message }
+      else
+        self.until(true) do |lines|
+          message = "Prepare[#{tries}]"
+          send_keys ' ', 'C-u', :Enter, message, :Left, :Right
+          lines[-1] == message
+        end
       end
     rescue Minitest::Assertion
       (tries += 1) < 5 ? retry : raise

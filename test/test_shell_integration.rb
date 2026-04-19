@@ -540,6 +540,65 @@ class TestNushell < TestBase
     tmux.prepare
   end
 
+  def test_ctrl_t
+    # FZF_CTRL_T_COMMAND is now executed via sh -c, so use standard shell commands
+    set_var('FZF_CTRL_T_COMMAND', 'seq 100')
+
+    tmux.prepare
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until { |lines| assert lines.any_include?(' (3)') }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('1 2 3') }
+    tmux.send_keys 'C-c'
+  end
+
+  def test_ctrl_t_unicode
+    writelines(['fzf-unicode 테스트1', 'fzf-unicode 테스트2'])
+    set_var('FZF_CTRL_T_COMMAND', "cat #{tempname}")
+
+    tmux.prepare
+    tmux.send_keys '^echo ', 'C-t'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys 'fzf-unicode'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+
+    tmux.send_keys '1'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+
+    tmux.send_keys '2'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_match(/\^echo .*fzf-unicode.*1.* .*fzf-unicode.*2/, lines.join) }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'fzf-unicode 테스트1 fzf-unicode 테스트2', lines[-1] }
+  end
+
+  def test_alt_c_command
+    set_var('FZF_ALT_C_COMMAND', 'echo /tmp')
+
+    tmux.prepare
+    tmux.send_keys 'cd /', :Enter
+
+    tmux.prepare
+    tmux.send_keys :Escape, :c
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+
+    tmux.prepare
+    tmux.send_keys 'pwd', :Enter
+    tmux.until { |lines| assert_equal '/tmp', lines[-1] }
+  end
+
   def test_ctrl_r
     tmux.prepare
     tmux.send_keys 'echo 1st', :Enter
