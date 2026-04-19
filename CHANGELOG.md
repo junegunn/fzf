@@ -3,8 +3,8 @@ CHANGELOG
 
 0.72.0
 ------
-- `--header-border`, `--header-lines-border`, and `--footer-border` now accept a new `inline` style that embeds the section inside the list frame, separated from the list content by a horizontal line whose endpoints join the surrounding list border as T-junctions.
-    - Requires `--list-border` with a line-drawing shape (rounded / sharp / bold / double / horizontal); falls back to `line` otherwise.
+- `--header-border`, `--header-lines-border`, and `--footer-border` now accept a new `inline` style that embeds the section inside the list frame, separated from the list content by a horizontal line. When the list border has side segments, the separator joins them as T-junctions.
+    - Requires a `--list-border` shape that has both top and bottom segments (`rounded`, `sharp`, `bold`, `double`, `block`, `thinblock`, or `horizontal`); falls back to `line` otherwise. `horizontal` has no side borders, so the separator is drawn without T-junction endpoints.
     - Sections stack. Example combining all three:
       ```sh
       ps -ef | fzf --reverse --style full:double \
