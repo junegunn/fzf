@@ -2,7 +2,7 @@
 #    / __/___  / __/
 #   / /_/_  / / /_
 #  / __/ / /_/ __/
-# /_/   /___/_/ completion-external.nu
+# /_/   /___/_/ completion.nu
 
 
 # An implementation of completion.nu
