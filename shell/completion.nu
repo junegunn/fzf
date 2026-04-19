@@ -483,6 +483,9 @@ let fzf_external_completer = {|spans|
     # --- Dispatch to Completer ---
     mut completion_results = [] # Will hold the list of strings from the completer
 
+    # To add custom completions for a command, add a new match arm below.
+    # Each arm should call _fzf_complete_nu or __fzf_generic_path_completion_nu
+    # and assign the result to $completion_results.
     match $cmd_word {
       "pacman"                          => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
       "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                         }
@@ -492,12 +495,12 @@ let fzf_external_completer = {|spans|
       # "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
       "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
       "cd" | "pushd" | "rmdir"          => { $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")    }
-      # Add other command-specific completions here
       _                                 => {
-        # Default to path completion if no specific command matches or cmd_word is empty
+        # Default to path completion if no specific command matches
         $completion_results = (_fzf_path_completion_nu $prefix)
       }
     }
+
 
     # --- Return Results ---
     # The _fzf_... functions return a list of completion strings.
