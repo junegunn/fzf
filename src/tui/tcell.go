@@ -1067,8 +1067,10 @@ func (w *TcellWindow) DrawHSeparator(row int, windowType WindowType, useBottom b
 		line = w.borderStyle.bottom
 	}
 	var leftCap, rightCap rune
-	if shape.HasLeft() || shape.HasRight() {
+	if shape.HasLeft() {
 		leftCap = w.borderStyle.leftMid
+	}
+	if shape.HasRight() {
 		rightCap = w.borderStyle.rightMid
 	}
 	w.drawHLine(w.top+row, line, leftCap, rightCap, style)

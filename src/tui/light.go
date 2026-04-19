@@ -1167,8 +1167,10 @@ func (w *LightWindow) DrawHSeparator(row int, windowType WindowType, useBottom b
 		line = w.border.bottom
 	}
 	var leftCap, rightCap rune
-	if shape.HasLeft() || shape.HasRight() {
+	if shape.HasLeft() {
 		leftCap = w.border.leftMid
+	}
+	if shape.HasRight() {
 		rightCap = w.border.rightMid
 	}
 	w.drawHLine(row, line, leftCap, rightCap, color)
