@@ -345,10 +345,11 @@ def _fzf_complete_ssh_nu [ prefix:                    string
 }
 
 def _fzf_list_pacman_packages [--installed] {
-  let pkg_line_regex = '^[^/ ]+/(\S+).*$'
-  do (if $installed {{|| pacman -Qs . }} else {{|| pacman -Ss .}}) | lines
-                                                                   | where $it =~ $pkg_line_regex
-                                                                   | each { $in | str replace -r $pkg_line_regex '${1}' }
+  if $installed {
+    ^pacman -Qq | lines
+  } else {
+    ^pacman -Slq | lines
+  }
 }
 
 def _fzf_complete_pacman_nu [ prefix:                    string
