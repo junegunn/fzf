@@ -27,10 +27,6 @@
 # - $env.FZF_COMPLETION_DIR_OPTS  (default: empty)
 
 
-# Set default height for fzf-tmux pane. e.g. '40%'
-$env.FZF_TMUX_HEIGHT = $env.FZF_TMUX_HEIGHT? | default '40%'
-# Options for fzf-tmux wrapper. e.g. '--paneid popup'
-$env.FZF_TMUX_OPTS = $env.FZF_TMUX_OPTS? | default ''
 
 $env.FZF_COMPLETION_TRIGGER = $env.FZF_COMPLETION_TRIGGER? | default '**'
 
