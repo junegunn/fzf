@@ -68,6 +68,38 @@ class Shell
     def fish
       "unset #{UNSETS.join(' ')}; rm -f ~/.local/share/fish/fzf_test_history; FZF_DEFAULT_OPTS=\"--no-scrollbar --pointer '>' --marker '>'\" fish_history=fzf_test fish"
     end
+
+    def nushell
+      @nushell ||=
+        begin
+          xdg_home = '/tmp/fzf-nushell-xdg'
+          config_dir = "#{xdg_home}/nushell"
+          FileUtils.rm_rf(xdg_home)
+          FileUtils.mkdir_p(config_dir)
+
+          # Write env.nu to set up PATH and unset FZF variables
+          File.open("#{config_dir}/env.nu", 'w') do |f|
+            f.puts "$env.PATH = ($env.PATH | split row (char esep) | prepend '#{BASE}/bin')"
+            UNSETS.each do |var|
+              f.puts "hide-env -i #{var}"
+            end
+            f.puts "$env.FZF_DEFAULT_OPTS = \"--no-scrollbar --pointer '>' --marker '>'\""
+            f.puts '$env.config = ($env.config | upsert history { file_format: "plaintext", max_size: 100 })'
+          end
+
+          # Write config.nu with minimal prompt
+          File.open("#{config_dir}/config.nu", 'w') do |f|
+            f.puts '$env.PROMPT_COMMAND = {|| "" }'
+            f.puts '$env.PROMPT_INDICATOR = ""'
+            f.puts '$env.PROMPT_COMMAND_RIGHT = {|| "" }'
+            f.puts '$env.config = ($env.config | upsert show_banner false)'
+            f.puts "source #{BASE}/shell/key-bindings.nu"
+            f.puts "source #{BASE}/shell/completion.nu"
+          end
+
+          "unset #{UNSETS.join(' ')}; env XDG_CONFIG_HOME=#{xdg_home} XDG_DATA_HOME=#{xdg_home}/../fzf-nushell-data nu --config #{config_dir}/config.nu --env-config #{config_dir}/env.nu"
+        end
+    end
   end
 end
 

@@ -515,3 +515,71 @@ class TestFish < TestBase
     end
   end
 end
+
+class TestNushell < TestBase
+  include TestShell
+
+  def shell
+    :nushell
+  end
+
+  def set_var(name, val)
+    tmux.prepare
+    tmux.send_keys "$env.#{name} = '#{val}'", :Enter
+    tmux.prepare
+  end
+
+  def unset_var(name)
+    tmux.prepare
+    tmux.send_keys "hide-env -i #{name}", :Enter
+    tmux.prepare
+  end
+
+  def new_shell
+    tmux.send_keys "FZF_TMUX=1 nu", :Enter
+    tmux.prepare
+  end
+
+  def test_ctrl_r
+    tmux.prepare
+    tmux.send_keys 'echo 1st', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo 2nd', :Enter
+    tmux.prepare
+    tmux.send_keys 'echo 3d', :Enter
+    tmux.prepare
+    3.times do
+      tmux.send_keys 'echo 3rd', :Enter
+      tmux.prepare
+    end
+    tmux.send_keys 'echo 4th', :Enter
+    tmux.prepare
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'e3d'
+    # Duplicates removed: 3d (1) + 3rd (1) => 2 matches
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.until { |lines| assert lines[-3]&.end_with?(' echo 3d') }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert lines[-3]&.end_with?(' echo 3rd') }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'echo 3rd', lines[-1] }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal '3rd', lines[-1] }
+  end
+
+  # Nushell does not support multiline command recall the same way
+  # as bash/zsh/fish, so test_ctrl_r_multiline is omitted.
+
+  def test_ctrl_r_abort
+    %w[foo].each do |query|
+      tmux.prepare
+      tmux.send_keys :Enter, query
+      tmux.until { |lines| assert lines[-1]&.start_with?(query) }
+      tmux.send_keys 'C-r'
+      tmux.until { |lines| assert_equal "> #{query}", lines[-1] }
+      tmux.send_keys 'C-g'
+      tmux.until { |lines| assert lines[-1]&.start_with?(query) }
+    end
+  end
+end
