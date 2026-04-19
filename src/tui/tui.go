@@ -596,6 +596,7 @@ const (
 	BorderLeft
 	BorderRight
 	BorderInline
+	BorderDashed
 )
 
 func (s BorderShape) HasLeft() bool {
@@ -758,6 +759,23 @@ func MakeBorderStyle(shape BorderShape, unicode bool) BorderStyle {
 			bottomRight: '╝',
 			leftMid:     '╠',
 			rightMid:    '╣',
+		}
+	case BorderDashed:
+		// Terminal cells are taller than wide (~2:1), so horizontals can use a
+		// sparse stub per cell while verticals need more dashes per cell to look
+		// evenly dashed. Rounded corners and sharp T-junction mids.
+		return BorderStyle{
+			shape:       shape,
+			top:         '╶',
+			bottom:      '╶',
+			left:        '┆',
+			right:       '┆',
+			topLeft:     '╭',
+			topRight:    '╮',
+			bottomLeft:  '╰',
+			bottomRight: '╯',
+			leftMid:     '├',
+			rightMid:    '┤',
 		}
 	}
 	return BorderStyle{
