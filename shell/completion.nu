@@ -61,8 +61,8 @@ def __fzf_defaults_nu [prepend: list<string>, append: string] {
   # Build options list
                                                                                                      # Start with the prepend argument
   return $prepend | append $file_opts                                                                # Append options from file
-                  | append ($default_opts | split words | where not ($in | is-empty))                # Append options from $FZF_DEFAULT_OPTS
-                  | append ($append | split words | where not ($in | is-empty))                      # Append options from function argument
+                  | append ($default_opts | split row ' ' | where not ($in | is-empty))              # Append options from $FZF_DEFAULT_OPTS
+                  | append ($append | split row ' ' | where not ($in | is-empty))                    # Append options from function argument
                   | where {|it| try { ($it | is-string) and not ($it | is-empty) } catch { false } } # Filter to keep only non-empty strings, safely handling potential errors
 }
 
@@ -224,9 +224,9 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
 
   # --- Prepare FZF options ---
   let completion_type_opts = if $suffix == '/' {
-      $env.FZF_COMPLETION_DIR_OPTS? | default '' | split words
+      $env.FZF_COMPLETION_DIR_OPTS? | default '' | split row ' ' | where not ($in | is-empty)
   } else {
-      $env.FZF_COMPLETION_PATH_OPTS? | default '' | split words
+      $env.FZF_COMPLETION_PATH_OPTS? | default '' | split row ' ' | where not ($in | is-empty)
   }
 
   let walker_type = if ($suffix == '/') {
