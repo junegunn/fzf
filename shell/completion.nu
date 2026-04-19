@@ -430,13 +430,13 @@ def _fzf_complete_kill_nu [query: string] {
     # Try standard ps, then busybox, then cygwin format approximation
     # Use `^ps` to ensure external command execution
     try {
-      ^ps -eo user,pid,ppid,start,time,command | lines # Keep header for --header-lines=1
+      ^ps -eo user,pid,ppid,start,time,command | complete | if $in.exit_code == 0 { $in.stdout | lines } else { error make {msg: "ps failed"} }
     } catch {
       try {
-        ^ps -eo user,pid,ppid,time,args | lines # BusyBox?
+        ^ps -eo user,pid,ppid,time,args | complete | if $in.exit_code == 0 { $in.stdout | lines } else { error make {msg: "ps failed"} }
       } catch {
         try {
-          ^ps --everyone --full --windows | lines # Cygwin?
+          ^ps --everyone --full --windows | complete | if $in.exit_code == 0 { $in.stdout | lines } else { error make {msg: "ps failed"} }
         } catch {
           print -e "Error: ps command failed."
           [] # Return empty list on failure
