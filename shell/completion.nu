@@ -369,25 +369,6 @@ def _fzf_complete_pass_nu [prefix: string] {
   _fzf_complete_nu $prefix $passwordstore_files_gen_closure ["+m"]
 }
 
-# Export completion
-def _fzf_complete_export_nu [query: string] {
-  let vars_gen_closure = {|| env | get name } # Nushell `env` provides names directly
-  # Zsh options: -m -- ; Nu: pass ["-m"] ; +m = multiple choice
-  _fzf_complete_nu $query $vars_gen_closure ["-m"]
-}
-
-# Unset completion (same as export)
-def _fzf_complete_unset_nu [query: string] {
-  _fzf_complete_export_nu $query # Re-use export logic
-}
-
-# Unalias completion
-def _fzf_complete_unalias_nu [query: string] {
-  let aliases_gen_closure = {|| aliases | get alias } # Use 'alias' column from `aliases` command
-  # Zsh options: +m -- ; Nu: pass ["+m"] ; +m = multiple choice
-  _fzf_complete_nu $query $aliases_gen_closure ["+m"]
-}
-
 # Kill completion post-processor (extracts PID)
 def _fzf_complete_kill_post_get_pid [selected_line: string] {
   # Assuming standard ps output where PID is the second column
@@ -460,9 +441,6 @@ let fzf_external_completer = {|spans|
       "pacman"                          => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
       "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                         }
       "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
-      # "export" | "printenv"             => { $completion_results = (_fzf_complete_export_nu $prefix)                    }
-      # "unset"                           => { $completion_results = (_fzf_complete_unset_nu $prefix)                     }
-      # "unalias"                         => { $completion_results = (_fzf_complete_unalias_nu $prefix)                   }
       "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
       _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
         $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")
