@@ -368,14 +368,10 @@ def _fzf_complete_ssh_nu [ prefix:                    string
 }
 
 def _fzf_list_pacman_packages [--installed] {
-  let pkg_line_regex        = '^[^/ ]+/(\S+).*$'
-  let accumulating_closure  = { |line, acc|
-    match $line {
-      $l if $l =~ $pkg_line_regex => ( $acc | append ($l | str replace -r $pkg_line_regex '${1}') )
-      _                           => (                                                            )
-    }
-  }
-  do (if $installed {{|| pacman -Qs . }} else {{|| pacman -Ss .}}) | lines | where $it =~ $pkg_line_regex | each {$in | str replace -r $pkg_line_regex '${1}'}
+  let pkg_line_regex = '^[^/ ]+/(\S+).*$'
+  do (if $installed {{|| pacman -Qs . }} else {{|| pacman -Ss .}}) | lines
+                                                                   | where $it =~ $pkg_line_regex
+                                                                   | each { $in | str replace -r $pkg_line_regex '${1}' }
 }
 
 def _fzf_complete_pacman_nu [ prefix:                    string
