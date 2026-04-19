@@ -239,29 +239,9 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
   let fzf_selection = ( __fzf_comprun_nu "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
 
 
-  # --- Format Selection ---
-  # Reconstruct the full path relative to the original prefix structure,
-  # as fzf walker output is relative to --walker-root.
-  # let completed_item = if ($fzf_selection | is-not-empty) {
-  #     let joined_path = if ($fzf_selection | path type) == 'absolute' or $walker_root == '.' {
-  #         # If selection is absolute OR walker_root was '.', use selection as is.
-  #         $fzf_selection
-  #     } else {
-  #         # Otherwise, join the walker_root and the selection.
-  #         $walker_root | path join $fzf_selection
-  #     }
-  #     # Add suffix (e.g., "/" for directories)
-  #     $joined_path + $suffix
-  # } else {
-  #     "" # No selection
-  # }
-
-  let completed_item = $fzf_selection
-
-
   # --- Return Result ---
-  if ($completed_item | is-not-empty) {
-      [$completed_item]
+  if ($fzf_selection | is-not-empty) {
+      [$fzf_selection]
   } else {
       []
   }
