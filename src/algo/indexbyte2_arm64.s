@@ -78,7 +78,7 @@ loop:
 	CBZ	R6, loop
 
 end:
-	// Found something or out of data — build full syndrome
+	// Found something or out of data, build full syndrome
 	VAND	V5.B16, V3.B16, V3.B16
 	VAND	V5.B16, V4.B16, V4.B16
 	VADDP	V4.B16, V3.B16, V6.B16

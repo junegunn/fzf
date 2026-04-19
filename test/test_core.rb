@@ -1672,7 +1672,7 @@ class TestCore < TestInteractive
     end
     tmux.send_keys :BSpace, :BSpace, :BSpace
 
-    # Reload with shuffled order — cursor should track "555"
+    # Reload with shuffled order - cursor should track "555"
     tmux.send_keys 'C-r'
     tmux.until do |lines|
       assert_equal 1000, lines.match_count
@@ -1694,7 +1694,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> 2 banana' }
 
-    # Reload — the second field changes, but first field "2" stays
+    # Reload - the second field changes, but first field "2" stays
     tmux.send_keys 'C-r'
     tmux.until do |lines|
       assert_equal 3, lines.match_count
@@ -1709,7 +1709,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> beta' }
 
-    # Reload with completely different items — no match for "beta"
+    # Reload with completely different items - no match for "beta"
     # Cursor stays at the same position (second item)
     tmux.send_keys 'C-r'
     tmux.until do |lines|
@@ -1727,7 +1727,7 @@ class TestCore < TestInteractive
       assert_includes lines[-2], '+T'
     end
 
-    # Trigger slow reload — should show +T* while blocked
+    # Trigger slow reload - should show +T* while blocked
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_includes lines[-2], '+T*' }
 
@@ -1769,7 +1769,7 @@ class TestCore < TestInteractive
       assert_includes lines, '> 1'
     end
 
-    # Trigger reload — blocked during initial sleep
+    # Trigger reload - blocked during initial sleep
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_includes lines[-2], '+T*' }
     # Match "1" arrives, unblocks before the remaining items load
@@ -1790,7 +1790,7 @@ class TestCore < TestInteractive
       assert_includes lines, '> 1'
     end
 
-    # Trigger reload-sync — every observable state must be either:
+    # Trigger reload-sync - every observable state must be either:
     # 1. +T* (still blocked), or
     # 2. final state (count=10, +T without *)
     # Any other combination (e.g. unblocked while count < 10) is a bug.
@@ -1835,7 +1835,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Up
     tmux.until { |lines| assert_includes lines, '> beta' }
 
-    # Reload with completely different items — no match for "beta"
+    # Reload with completely different items - no match for "beta"
     tmux.send_keys 'C-r'
     tmux.until { |lines| assert_includes lines[-2], '+T*' }
     # After stream completes, unblocks with cursor at same position (second item)
@@ -1857,7 +1857,7 @@ class TestCore < TestInteractive
     tmux.send_keys 'C-t'
     tmux.until { |lines| assert_includes lines[-2], '+t' }
 
-    # Reload — should track by field "2"
+    # Reload - should track by field "2"
     tmux.send_keys 'C-r'
     tmux.until do |lines|
       assert_equal 3, lines.match_count
@@ -1876,7 +1876,7 @@ class TestCore < TestInteractive
     tmux.send_keys :Up, :Up, :Tab
     tmux.until { |lines| assert_includes lines[-2], '(2)' }
 
-    # Reload — selections should be preserved by id-nth key
+    # Reload - selections should be preserved by id-nth key
     tmux.send_keys 'C-r'
     tmux.until do |lines|
       assert_equal 3, lines.match_count
