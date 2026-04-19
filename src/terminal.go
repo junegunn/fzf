@@ -3432,10 +3432,12 @@ func (t *Terminal) printHeader() {
 		return
 	}
 
-	// When an inline section was requested but addInline had no budget, its window is
-	// nil. Don't fall through to withWindow — that would leak header content into the
-	// list window. A nil window is only legitimate when the shape is NOT inline (e.g.
-	// header combined with the list when --no-list-border is in effect).
+	// headerWindow is nil when hasHeaderWindow() returned false at resize time,
+	// e.g. --header-border=inline combined with empty header content. Don't
+	// delegate to printHeaderImpl because its nil-window branch folds the header
+	// into the list window, which isn't valid for inline. A nil window is only
+	// legitimate when the shape is NOT inline (e.g. header combined with the
+	// list when --no-list-border is in effect).
 	if !(t.headerBorderShape == tui.BorderInline && t.headerWindow == nil) {
 		t.withWindow(t.headerWindow, func() {
 			var headerItems []Item
