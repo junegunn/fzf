@@ -108,6 +108,9 @@ if [ -d "${fish_dir}/functions" ]; then
   fi
 fi
 
+nushell_autoload_dir=${XDG_CONFIG_HOME:-$HOME/.config}/nushell/autoload
+remove "${nushell_autoload_dir}/fzf.nu"
+
 config_dir=$(dirname "$prefix_expand")
 if [[ "$xdg" = 1 ]] && [[ "$config_dir" = */fzf ]] && [[ -d "$config_dir" ]]; then
   rmdir "$config_dir"
