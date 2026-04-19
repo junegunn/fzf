@@ -6781,10 +6781,16 @@ func (t *Terminal) Loop() error {
 				t.cx = len(t.input)
 			case actChangeHeader, actTransformHeader, actBgTransformHeader:
 				capture(false, func(header string) {
-					// When a dedicated header window is not used, we may need to
-					// update other elements as well.
 					if t.changeHeader(header) {
-						req(reqList, reqPrompt, reqInfo)
+						// resizeIfNeeded() tolerates a shorter-than-wanted inline
+						// window, so a length change can leave the inline slot
+						// stale. Force a redraw to re-run the layout. Non-inline
+						// shapes are handled by resizeIfNeeded.
+						if t.headerBorderShape == tui.BorderInline {
+							req(reqRedraw)
+						} else {
+							req(reqList, reqPrompt, reqInfo)
+						}
 					}
 					req(reqHeader)
 				})
