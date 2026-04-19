@@ -89,7 +89,7 @@ const ctrl_r = {
   event: [
     {
       send: executehostcommand
-      cmd: "commandline edit --insert (
+      cmd: "commandline edit --replace (
         let fzf_opts = (__fzf_defaults '' $'--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign \"\t↳ \" --highlight-line ($env.FZF_CTRL_R_OPTS) +m --read0');
         let fzfcmd = (__fzfcmd);
         let fzf_args = ($fzfcmd | skip 1);
