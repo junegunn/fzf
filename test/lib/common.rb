@@ -114,6 +114,8 @@ class Tmux
       send_keys 'function fish_prompt; end; clear', :Enter
       self.until(&:empty?)
     elsif shell == :nushell
+      # Clear history from previous tests to avoid contamination
+      FileUtils.rm_f('/tmp/fzf-nushell-xdg/nushell/history.txt')
       # Wait for nushell to be ready: send a marker and wait for it
       sleep 2
       send_keys 'clear', :Enter
