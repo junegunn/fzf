@@ -15,7 +15,12 @@ CHANGELOG
       ```
     - `--header-label` and `--footer-label` render on their respective separator row.
     - The separator inherits `--color list-border` when the section's own border color is not explicitly set.
-    - `--header-first` is not compatible with `--header-border=inline` or `--header-lines-border=inline`; `--header-border=inline` requires `--header-lines-border` to be `inline` or unset.
+    - `inline` takes precedence over `--header-first`: the inline section stays inside the list frame. `--header-border=inline` requires `--header-lines-border` to be `inline` or unset.
+- [vim] Move and resize popup window when detecting `VimResized` event (#4778) (@Vulcalien)
+- Bug fixes
+    - Fixed gutter display in `--style=minimal`
+    - Fixed arrow keys / Home / End without modifiers being ignored under the kitty keyboard protocol (#4776) (@TymekDev)
+    - bash: Persist history deletion when `histappend` is on (#4764)
 
 0.71.0
 ------
