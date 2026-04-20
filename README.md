@@ -81,6 +81,7 @@ Table of Contents
         * [Supported commands (bash)](#supported-commands-bash)
         * [Custom fuzzy completion](#custom-fuzzy-completion)
     * [Fuzzy completion for fish](#fuzzy-completion-for-fish)
+    * [Fuzzy completion for Nushell](#fuzzy-completion-for-nushell)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Customizing for different types of input](#customizing-for-different-types-of-input)
@@ -643,23 +644,6 @@ unalias **<TAB>
 set <SHIFT-TAB>
 ```
 
-### Nushell notes
-
-Fuzzy completion in Nushell works via the
-[external completer](https://www.nushell.sh/cookbook/external_completers.html)
-mechanism. There are some differences compared to bash and zsh:
-
-- On Nushell >= 0.103.0, the external completer is no longer called for
-  built-in commands (e.g. `cd`, `ls`). Fuzzy completion with `**<TAB>` only
-  works for external commands.
-- Custom completion extensibility (e.g. `_fzf_complete_COMMAND` in bash/zsh)
-  is not available. Custom completions are defined via a `match` statement
-  in `completion.nu`.
-- The following environment variables are supported:
-  `FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
-  `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_OPTS`,
-  `FZF_COMPLETION_DIR_COMMANDS`.
-
 ### Customizing fuzzy completion for bash and zsh
 
 #### Customizing fzf options for completion
@@ -847,6 +831,23 @@ function _fzf_post_complete_foo
   end
 end
 ```
+
+### Fuzzy completion for Nushell
+
+Fuzzy completion in Nushell works via the
+[external completer](https://www.nushell.sh/cookbook/external_completers.html)
+mechanism. There are some differences compared to bash and zsh:
+
+- On Nushell >= 0.103.0, the external completer is no longer called for
+  built-in commands (e.g. `cd`, `ls`). Fuzzy completion with `**<TAB>` only
+  works for external commands.
+- Custom completion extensibility (e.g. `_fzf_complete_COMMAND` in bash/zsh)
+  is not available. Custom completions are defined via a `match` statement
+  in `completion.nu`.
+- The following environment variables are supported:
+  `FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
+  `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_OPTS`,
+  `FZF_COMPLETION_DIR_COMMANDS`.
 
 Vim plugin
 ----------
