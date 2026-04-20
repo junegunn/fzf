@@ -41,8 +41,29 @@ func (c *Chunk) IsFull() bool {
 	return c.count == chunkSize
 }
 
+func (c *Chunk) lastIndex(minValue int32) int32 {
+	if c.count == 0 {
+		return minValue
+	}
+	return c.items[c.count-1].Index() + 1 // Exclusive
+}
+
 func (cl *ChunkList) lastChunk() *Chunk {
 	return cl.chunks[len(cl.chunks)-1]
+}
+
+// GetItems returns the first n items from the given chunks
+func GetItems(chunks []*Chunk, n int) []Item {
+	items := make([]Item, 0, n)
+	for _, chunk := range chunks {
+		for i := 0; i < chunk.count && len(items) < n; i++ {
+			items = append(items, chunk.items[i])
+		}
+		if len(items) >= n {
+			break
+		}
+	}
+	return items
 }
 
 // CountItems returns the total number of Items
@@ -75,6 +96,21 @@ func (cl *ChunkList) Push(data []byte) bool {
 func (cl *ChunkList) Clear() {
 	cl.mutex.Lock()
 	cl.chunks = nil
+	cl.mutex.Unlock()
+}
+
+// ForEachItem iterates all items and applies fn to each one.
+// The done callback runs under the lock to safely update shared state.
+func (cl *ChunkList) ForEachItem(fn func(*Item), done func()) {
+	cl.mutex.Lock()
+	for _, chunk := range cl.chunks {
+		for i := 0; i < chunk.count; i++ {
+			fn(&chunk.items[i])
+		}
+	}
+	if done != nil {
+		done()
+	}
 	cl.mutex.Unlock()
 }
 

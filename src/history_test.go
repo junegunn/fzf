@@ -38,7 +38,7 @@ func TestHistory(t *testing.T) {
 		if len(h.lines) != maxHistory+1 {
 			t.Errorf("Expected: %d, actual: %d\n", maxHistory+1, len(h.lines))
 		}
-		for i := 0; i < maxHistory; i++ {
+		for i := range maxHistory {
 			if h.lines[i] != "foobar" {
 				t.Error("Expected: foobar, actual: " + h.lines[i])
 			}

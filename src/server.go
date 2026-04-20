@@ -46,15 +46,20 @@ type httpServer struct {
 type listenAddress struct {
 	host string
 	port int
+	sock string
 }
 
 func (addr listenAddress) IsLocal() bool {
-	return addr.host == "localhost" || addr.host == "127.0.0.1"
+	return addr.host == "localhost" || addr.host == "127.0.0.1" || len(addr.sock) > 0
 }
 
-var defaultListenAddr = listenAddress{"localhost", 0}
+var defaultListenAddr = listenAddress{"localhost", 0, ""}
 
 func parseListenAddress(address string) (listenAddress, error) {
+	if strings.HasSuffix(address, ".sock") {
+		return listenAddress{"", 0, address}, nil
+	}
+
 	parts := strings.SplitN(address, ":", 3)
 	if len(parts) == 1 {
 		parts = []string{"localhost", parts[0]}
@@ -70,7 +75,7 @@ func parseListenAddress(address string) (listenAddress, error) {
 	if len(parts[0]) == 0 {
 		parts[0] = "localhost"
 	}
-	return listenAddress{parts[0], port}, nil
+	return listenAddress{parts[0], port, ""}, nil
 }
 
 func startHttpServer(address listenAddress, actionChannel chan []*action, getHandler func(getParams) string) (net.Listener, int, error) {
@@ -80,31 +85,49 @@ func startHttpServer(address listenAddress, actionChannel chan []*action, getHan
 	if !address.IsLocal() && len(apiKey) == 0 {
 		return nil, port, errors.New("FZF_API_KEY is required to allow remote access")
 	}
-	addrStr := fmt.Sprintf("%s:%d", host, port)
-	listener, err := net.Listen("tcp", addrStr)
-	if err != nil {
-		return nil, port, fmt.Errorf("failed to listen on %s", addrStr)
-	}
-	if port == 0 {
-		addr := listener.Addr().String()
-		parts := strings.Split(addr, ":")
-		if len(parts) < 2 {
-			return nil, port, fmt.Errorf("cannot extract port: %s", addr)
-		}
-		var err error
-		port, err = strconv.Atoi(parts[len(parts)-1])
-		if err != nil {
-			return nil, port, err
-		}
-	}
 
-	server := httpServer{
-		apiKey:        []byte(apiKey),
-		actionChannel: actionChannel,
-		getHandler:    getHandler,
+	var listener net.Listener
+	var err error
+	if len(address.sock) > 0 {
+		if _, err := os.Stat(address.sock); err == nil {
+			// Check if the socket is already in use
+			if conn, err := net.Dial("unix", address.sock); err == nil {
+				conn.Close()
+				return nil, 0, fmt.Errorf("socket already in use: %s", address.sock)
+			}
+			os.Remove(address.sock)
+		}
+		listener, err = net.Listen("unix", address.sock)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to listen on %s", address.sock)
+		}
+		os.Chmod(address.sock, 0600)
+	} else {
+		addrStr := fmt.Sprintf("%s:%d", host, port)
+		listener, err = net.Listen("tcp", addrStr)
+		if err != nil {
+			return nil, port, fmt.Errorf("failed to listen on %s", addrStr)
+		}
+		if port == 0 {
+			addr := listener.Addr().String()
+			parts := strings.Split(addr, ":")
+			if len(parts) < 2 {
+				return nil, port, fmt.Errorf("cannot extract port: %s", addr)
+			}
+			var err error
+			port, err = strconv.Atoi(parts[len(parts)-1])
+			if err != nil {
+				return nil, port, err
+			}
+		}
 	}
 
 	go func() {
+		server := httpServer{
+			apiKey:        []byte(apiKey),
+			actionChannel: actionChannel,
+			getHandler:    getHandler,
+		}
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
@@ -159,23 +182,22 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 	})
 
 	section := 0
+	var getMatch []string
+Loop:
 	for scanner.Scan() {
 		text := scanner.Text()
 		switch section {
-		case 0:
-			getMatch := getRegex.FindStringSubmatch(text)
-			if len(getMatch) > 0 {
-				response := server.getHandler(parseGetParams(getMatch[1]))
-				if len(response) > 0 {
-					return good(response)
-				}
-				return answer(httpUnavailable+jsonContentType, `{"error":"timeout"}`)
-			} else if !strings.HasPrefix(text, "POST / HTTP") {
+		case 0: // Request line
+			getMatch = getRegex.FindStringSubmatch(text)
+			if len(getMatch) == 0 && !strings.HasPrefix(text, "POST / HTTP") {
 				return bad("invalid request method")
 			}
 			section++
-		case 1:
-			if text == crlf {
+		case 1: // Request headers
+			if text == crlf { // End of headers
+				if len(getMatch) > 0 {
+					break Loop
+				}
 				if contentLength == 0 {
 					return bad("content-length header missing")
 				}
@@ -195,13 +217,21 @@ func (server *httpServer) handleHttpRequest(conn net.Conn) string {
 					apiKey = strings.TrimSpace(pair[1])
 				}
 			}
-		case 2:
+		case 2: // Request body
 			body += text
 		}
 	}
 
 	if len(server.apiKey) != 0 && subtle.ConstantTimeCompare([]byte(apiKey), server.apiKey) != 1 {
 		return unauthorized("invalid api key")
+	}
+
+	if len(getMatch) > 0 {
+		response := server.getHandler(parseGetParams(getMatch[1]))
+		if len(response) > 0 {
+			return good(response)
+		}
+		return answer(httpUnavailable+jsonContentType, `{"error":"timeout"}`)
 	}
 
 	if len(body) < contentLength {

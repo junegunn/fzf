@@ -1,9 +1,19 @@
 GO             ?= go
+DOCKER         ?= docker
 GOOS           ?= $(shell $(GO) env GOOS)
 
 MAKEFILE       := $(realpath $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR       := $(shell dirname $(MAKEFILE))
 SOURCES        := $(wildcard *.go src/*.go src/*/*.go shell/*sh man/man1/*.1) $(MAKEFILE)
+
+BASH_SCRIPTS   := $(ROOT_DIR)/bin/fzf-preview.sh \
+					$(ROOT_DIR)/bin/fzf-tmux \
+					$(ROOT_DIR)/install \
+					$(ROOT_DIR)/uninstall \
+					$(ROOT_DIR)/shell/common.sh \
+					$(ROOT_DIR)/shell/update.sh \
+					$(ROOT_DIR)/shell/completion.bash \
+					$(ROOT_DIR)/shell/key-bindings.bash
 
 ifdef FZF_VERSION
 VERSION        := $(FZF_VERSION)
@@ -42,6 +52,8 @@ UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_M),x86_64)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),amd64)
+	BINARY := $(BINARY64)
+else ifeq ($(UNAME_M),i86pc)
 	BINARY := $(BINARY64)
 else ifeq ($(UNAME_M),s390x)
 	BINARY := $(BINARYS390)
@@ -88,9 +100,14 @@ itest:
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
 
-lint: $(SOURCES) test/*.rb test/lib/*.rb
+lint: $(SOURCES) test/*.rb test/lib/*.rb ${BASH_SCRIPTS}
 	[ -z "$$(gofmt -s -d src)" ] || (gofmt -s -d src; exit 1)
 	bundle exec rubocop -a --require rubocop-minitest --require rubocop-performance
+	shell/update.sh --check ${BASH_SCRIPTS}
+
+fmt: $(SOURCES) $(BASH_SCRIPTS)
+	gofmt -s -w src
+	shell/update.sh ${BASH_SCRIPTS}
 
 install: bin/fzf
 
@@ -178,15 +195,15 @@ bin/fzf: target/$(BINARY) | bin
 	cp -f target/$(BINARY) bin/fzf
 
 docker:
-	docker build -t fzf-ubuntu .
-	docker run -it fzf-ubuntu tmux
+	$(DOCKER) build -t fzf-ubuntu .
+	$(DOCKER) run -it fzf-ubuntu tmux
 
 docker-test:
-	docker build -t fzf-ubuntu .
-	docker run -it fzf-ubuntu
+	$(DOCKER) build -t fzf-ubuntu .
+	$(DOCKER) run -it fzf-ubuntu
 
 update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all generate build release test itest bench lint install clean docker docker-test update
+.PHONY: all generate build release test itest bench lint install clean docker docker-test update fmt

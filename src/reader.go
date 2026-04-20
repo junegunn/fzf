@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -177,8 +178,8 @@ func (r *Reader) feed(src io.Reader) {
 	var err error
 	for {
 		n := 0
-		scope := slab[:util.Min(len(slab), readerBufferSize)]
-		for i := 0; i < 100; i++ {
+		scope := slab[:min(len(slab), readerBufferSize)]
+		for range 100 {
 			n, err = src.Read(scope)
 			if n > 0 || err != nil {
 				break
@@ -273,6 +274,24 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		ToSlash: fastwalk.DefaultToSlash(),
 		Sort:    fastwalk.SortFilesFirst,
 	}
+
+	// When following symlinks, precompute the absolute real paths of walker
+	// roots so we can skip symlinks that point to an ancestor. fastwalk's
+	// built-in loop detection (shouldTraverse) catches loops on the second
+	// pass, but a single pass through a symlink like z: -> / already
+	// traverses the entire root filesystem, causing severe resource
+	// exhaustion. Skipping ancestor symlinks prevents this entirely.
+	var absRoots []string
+	if opts.follow {
+		for _, root := range roots {
+			if real, err := filepath.EvalSymlinks(root); err == nil {
+				if abs, err := filepath.Abs(real); err == nil {
+					absRoots = append(absRoots, filepath.Clean(abs))
+				}
+			}
+		}
+	}
+
 	ignoresBase := []string{}
 	ignoresFull := []string{}
 	ignoresSuffix := []string{}
@@ -285,7 +304,7 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 			if strings.HasPrefix(ignore, sep) {
 				ignoresSuffix = append(ignoresSuffix, ignore)
 			} else {
-				// 'foo/bar' should match match
+				// 'foo/bar' should match
 				// * 'foo/bar'
 				// * 'baz/foo/bar'
 				// * but NOT 'bazfoo/bar'
@@ -302,21 +321,39 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		}
 		path = trimPath(path)
 		if path != "." {
-			isDir := de.IsDir()
-			if isDir || opts.follow && isSymlinkToDir(path, de) {
+			isDirSymlink := isSymlinkToDir(path, de)
+			if isDirSymlink && !opts.follow {
+				return filepath.SkipDir
+			}
+			// Skip symlinks whose target is an ancestor of (or equal to)
+			// any walker root. Following such symlinks would traverse a
+			// superset of the tree we're already walking.
+			if isDirSymlink && len(absRoots) > 0 {
+				if target, err := filepath.EvalSymlinks(path); err == nil {
+					if abs, err := filepath.Abs(target); err == nil {
+						abs = filepath.Clean(abs)
+						if abs == string(os.PathSeparator) {
+							return filepath.SkipDir
+						}
+						for _, absRoot := range absRoots {
+							if absRoot == abs || strings.HasPrefix(absRoot, abs+string(os.PathSeparator)) {
+								return filepath.SkipDir
+							}
+						}
+					}
+				}
+			}
+			isDir := de.IsDir() || isDirSymlink
+			if isDir {
 				base := filepath.Base(path)
 				if !opts.hidden && base[0] == '.' && base != ".." {
 					return filepath.SkipDir
 				}
-				for _, ignore := range ignoresBase {
-					if ignore == base {
-						return filepath.SkipDir
-					}
+				if slices.Contains(ignoresBase, base) {
+					return filepath.SkipDir
 				}
-				for _, ignore := range ignoresFull {
-					if ignore == path {
-						return filepath.SkipDir
-					}
+				if slices.Contains(ignoresFull, path) {
+					return filepath.SkipDir
 				}
 				for _, ignore := range ignoresSuffix {
 					if strings.HasSuffix(path, ignore) {

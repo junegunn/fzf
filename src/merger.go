@@ -4,50 +4,57 @@ import "fmt"
 
 // EmptyMerger is a Merger with no data
 func EmptyMerger(revision revision) *Merger {
-	return NewMerger(nil, [][]Result{}, false, false, revision, 0)
+	return NewMerger(nil, [][]Result{}, false, false, revision, 0, 0)
 }
 
 // Merger holds a set of locally sorted lists of items and provides the view of
 // a single, globally-sorted list
 type Merger struct {
-	pattern  *Pattern
-	lists    [][]Result
-	merged   []Result
-	chunks   *[]*Chunk
-	cursors  []int
-	sorted   bool
-	tac      bool
-	final    bool
-	count    int
-	pass     bool
-	revision revision
-	minIndex int32
+	pattern    *Pattern
+	lists      [][]Result
+	merged     []Result
+	chunks     *[]*Chunk
+	cursors    []int
+	sorted     bool
+	tac        bool
+	final      bool
+	count      int
+	pass       bool
+	startIndex int
+	revision   revision
+	minIndex   int32
+	maxIndex   int32
 }
 
 // PassMerger returns a new Merger that simply returns the items in the
-// original order
-func PassMerger(chunks *[]*Chunk, tac bool, revision revision) *Merger {
-	var minIndex int32
+// original order. startIndex items are skipped from the beginning.
+func PassMerger(chunks *[]*Chunk, tac bool, revision revision, startIndex int32) *Merger {
+	var minIndex, maxIndex int32
 	if len(*chunks) > 0 {
 		minIndex = (*chunks)[0].items[0].Index()
+		maxIndex = (*chunks)[len(*chunks)-1].lastIndex(minIndex)
 	}
+	si := int(startIndex)
 	mg := Merger{
-		pattern:  nil,
-		chunks:   chunks,
-		tac:      tac,
-		count:    0,
-		pass:     true,
-		revision: revision,
-		minIndex: minIndex}
+		pattern:    nil,
+		chunks:     chunks,
+		tac:        tac,
+		count:      0,
+		pass:       true,
+		startIndex: si,
+		revision:   revision,
+		minIndex:   minIndex + startIndex,
+		maxIndex:   maxIndex}
 
 	for _, chunk := range *mg.chunks {
 		mg.count += chunk.count
 	}
+	mg.count = max(0, mg.count-si)
 	return &mg
 }
 
 // NewMerger returns a new Merger
-func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revision revision, minIndex int32) *Merger {
+func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revision revision, minIndex int32, maxIndex int32) *Merger {
 	mg := Merger{
 		pattern:  pattern,
 		lists:    lists,
@@ -59,7 +66,8 @@ func NewMerger(pattern *Pattern, lists [][]Result, sorted bool, tac bool, revisi
 		final:    false,
 		count:    0,
 		revision: revision,
-		minIndex: minIndex}
+		minIndex: minIndex,
+		maxIndex: maxIndex}
 
 	for _, list := range mg.lists {
 		mg.count += len(list)
@@ -109,6 +117,7 @@ func (mg *Merger) Get(idx int) Result {
 		if mg.tac {
 			idx = mg.count - idx - 1
 		}
+		idx += mg.startIndex
 		firstChunk := (*mg.chunks)[0]
 		if firstChunk.count < chunkSize && idx >= firstChunk.count {
 			idx -= firstChunk.count
@@ -127,14 +136,16 @@ func (mg *Merger) Get(idx int) Result {
 	if mg.tac {
 		idx = mg.count - idx - 1
 	}
-	for _, list := range mg.lists {
-		numItems := len(list)
-		if idx < numItems {
-			return list[idx]
-		}
-		idx -= numItems
+	return mg.mergedGet(idx)
+}
+
+func (mg *Merger) ToMap() map[int32]Result {
+	ret := make(map[int32]Result, mg.count)
+	for i := 0; i < mg.count; i++ {
+		result := mg.Get(i)
+		ret[result.Index()] = result
 	}
-	panic(fmt.Sprintf("Index out of bounds (unsorted, %d/%d)", idx, mg.count))
+	return ret
 }
 
 func (mg *Merger) cacheable() bool {
@@ -153,7 +164,7 @@ func (mg *Merger) mergedGet(idx int) Result {
 			}
 			if cursor >= 0 {
 				rank := list[cursor]
-				if minIdx < 0 || compareRanks(rank, minRank, mg.tac) {
+				if minIdx < 0 || mg.sorted && compareRanks(rank, minRank, mg.tac) || !mg.sorted && rank.item.Index() < minRank.item.Index() {
 					minRank = rank
 					minIdx = listIdx
 				}

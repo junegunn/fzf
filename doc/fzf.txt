@@ -112,7 +112,7 @@ the whole if we start off with `:FZF` command.
     " Bang version starts fzf in fullscreen mode
     :FZF!
 <
-Similarly to {ctrlp.vim}{3}, use enter key, CTRL-T, CTRL-X or CTRL-V to open
+Similarly to {ctrlp.vim}{3}, use Enter key, CTRL-T, CTRL-X or CTRL-V to open
 selected files in the current window, in new tabs, in horizontal splits, or in
 vertical splits respectively.
 
@@ -218,7 +218,6 @@ list:
   `fg`   /  `bg`   /  `hl`         | Item (foreground / background / highlight)
   `fg+`  /  `bg+`  /  `hl+`        | Current item (foreground / background / highlight)
   `preview-fg`  /  `preview-bg`  | Preview window text and background
-  `hl`   /  `hl+`                | Highlighted substrings (normal / current)
   `gutter`                     | Background of the gutter on the left
   `pointer`                    | Pointer to the current line ( `>` )
   `marker`                     | Multi-select marker ( `>` )
@@ -229,7 +228,6 @@ list:
   `query`                      | Query string
   `disabled`                   | Query string when search is disabled
   `prompt`                     | Prompt before query ( `> ` )
-  `pointer`                    | Pointer to the current line ( `>` )
  ----------------------------+------------------------------------------------------
  - `component` specifies the component (`fg` / `bg`) from which to extract the
    color when considering each of the following highlight groups
@@ -245,7 +243,7 @@ if it exists, - otherwise use the `fg` attribute of the `Comment` highlight
 group if it exists, - otherwise fall back to the default color settings for
 the prompt.
 
-You can examine the color option generated according the setting by printing
+You can examine the color option generated according to the setting by printing
 the result of `fzf#wrap()` function like so:
 >
     :echo fzf#wrap()
@@ -503,7 +501,7 @@ LICENSE                                                            *fzf-license*
 
 The MIT License (MIT)
 
-Copyright (c) 2013-2024 Junegunn Choi
+Copyright (c) 2013-2026 Junegunn Choi
 
 ==============================================================================
 vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:

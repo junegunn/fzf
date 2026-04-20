@@ -1,7 +1,7 @@
 .ig
 The MIT License (MIT)
 
-Copyright (c) 2013-2024 Junegunn Choi
+Copyright (c) 2013-2026 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ..
-.TH fzf 1 "Apr 2025" "fzf 0.61.3" "fzf - a command-line fuzzy finder"
+.TH fzf 1 "Apr 2026" "fzf 0.71.0" "fzf - a command-line fuzzy finder"
 
 .SH NAME
 fzf - a command-line fuzzy finder
@@ -134,6 +134,14 @@ e.g.
      # Use template to rearrange fields
      echo foo,bar,baz | fzf --delimiter , --with-nth '{n},{1},{3},{2},{1..2}'
 .RE
+.RS
+
+\fBchange\-with\-nth\fR action is only available when \fB\-\-with\-nth\fR is set.
+When \fB\-\-with\-nth\fR is used, fzf retains the original input lines in memory
+so they can be re\-transformed on the fly (e.g. \fB\-\-with\-nth ..\fR to keep
+the original presentation). This increases memory usage, so only use
+\fB\-\-with\-nth\fR when you actually need field transformation.
+.RE
 .TP
 .BI "\-\-accept\-nth=" "N[,..] or TEMPLATE"
 Define which fields to print on accept. The last delimiter is stripped from the
@@ -242,15 +250,15 @@ Apply a style preset [default|minimal|full[:BORDER_STYLE]]
 .TP
 .BI "\-\-color=" "[BASE_SCHEME][,COLOR_NAME[:ANSI_COLOR][:ANSI_ATTRIBUTES]]..."
 Color configuration. The name of the base color scheme is followed by custom
-color mappings.
+color mappings. Each entry is separated by a comma and/or whitespaces.
 
 .RS
 .B BASE SCHEME:
-    (default: \fBdark\fR on 256-color terminal, otherwise \fB16\fR; If \fBNO_COLOR\fR is set, \fBbw\fR)
+    (default: \fBdark\fR on 256-color terminal, otherwise \fBbase16\fR; If \fBNO_COLOR\fR is set, \fBbw\fR)
 
-    \fBdark    \fRColor scheme for dark 256-color terminal
-    \fBlight   \fRColor scheme for light 256-color terminal
-    \fB16      \fRColor scheme for 16-color terminal
+    \fBdark    \fRColor scheme for dark terminal
+    \fBlight   \fRColor scheme for light terminal
+    \fBbase16  \fRColor scheme using base 16 colors (alias: \fB16\fR)
     \fBbw      \fRNo colors (equivalent to \fB\-\-no\-color\fR)
 
 .B COLOR NAMES:
@@ -262,15 +270,19 @@ color mappings.
       \fBlist\-bg             \fRList section background
         \fBselected\-bg       \fRSelected line background
       \fBpreview\-bg          \fRPreview window background
-      \fBinput\-bg            \fRInput window background (\fB\-\-input\-border\fR)
-      \fBheader\-bg           \fRHeader window background (\fB\-\-header\-border\fR)
+      \fBinput\-bg            \fRInput window background
+      \fBheader\-bg           \fRHeader window background
+      \fBfooter\-bg           \fRFooter window background
     \fBhl                    \fRHighlighted substrings
       \fBselected\-hl         \fRHighlighted substrings in the selected line
     \fBcurrent\-fg (fg+)      \fRText (current line)
     \fBcurrent\-bg (bg+)      \fRBackground (current line)
       \fBgutter              \fRGutter on the left
     \fBcurrent\-hl (hl+)      \fRHighlighted substrings (current line)
+    \fBalt\-bg                \fRAlternate background color to create striped lines
+    \fBalt\-gutter            \fRAlternate gutter color to create the striped pattern
     \fBquery (input\-fg)      \fRQuery string
+      \fBghost               \fRGhost text (\fB\-\-ghost\fR, \fBdim\fR applied by default)
       \fBdisabled            \fRQuery string when search is disabled (\fB\-\-disabled\fR)
     \fBinfo                  \fRInfo line (match counters)
     \fBborder                \fRBorder around the window (\fB\-\-border\fR and \fB\-\-preview\fR)
@@ -282,17 +294,21 @@ color mappings.
         \fBpreview\-scrollbar \fRScrollbar
       \fBinput\-border        \fRBorder around the input window (\fB\-\-input\-border\fR)
       \fBheader\-border       \fRBorder around the header window (\fB\-\-header\-border\fR)
+      \fBfooter\-border       \fRBorder around the footer window (\fB\-\-footer\-border\fR)
     \fBlabel                 \fRBorder label (\fB\-\-border\-label\fR, \fB\-\-list\-label\fR, \fB\-\-input\-label\fR, and \fB\-\-preview\-label\fR)
       \fBlist\-label          \fRBorder label of the list section (\fB\-\-list\-label\fR)
       \fBpreview\-label       \fRBorder label of the preview window (\fB\-\-preview\-label\fR)
       \fBinput\-label         \fRBorder label of the input window (\fB\-\-input\-label\fR)
       \fBheader\-label        \fRBorder label of the header window (\fB\-\-header\-label\fR)
+      \fBfooter\-label        \fRBorder label of the footer window (\fB\-\-footer\-label\fR)
     \fBprompt                \fRPrompt
     \fBpointer               \fRPointer to the current line
     \fBmarker                \fRMulti\-select marker
     \fBspinner               \fRStreaming input indicator
     \fBheader (header\-fg)   \fRHeader
+    \fBfooter (footer\-fg)   \fRFooter
     \fBnth                   \fRParts of the line specified by \fB\-\-nth\fR (only supports attributes)
+    \fBnomatch               \fRNon-matching items in raw mode (default: \fBdim\fR)
 
 .B ANSI COLORS:
     \fB\-1         \fRDefault terminal foreground/background color
@@ -318,9 +334,14 @@ color mappings.
     \fB#rrggbb    \fR24-bit colors
 
 .B ANSI ATTRIBUTES: (Only applies to foreground colors)
-    \fBregular    \fRClears previously set attributes; should precede the other ones
+    \fBregular           \fRClear previously set attributes; should precede the other ones
+    \fBstrip             \fRRemove colors
     \fBbold\fR
     \fBunderline\fR
+    \fBunderline-double\fR
+    \fBunderline-curly\fR
+    \fBunderline-dotted\fR
+    \fBunderline-dashed\fR
     \fBreverse\fR
     \fBdim\fR
     \fBitalic\fR
@@ -337,7 +358,19 @@ color mappings.
      # Seoul256 theme with 24-bit colors
      fzf \-\-color='bg:#4B4B4B,bg+:#3F3F3F,info:#BDBB72,border:#6B6B6B,spinner:#98BC99' \\
          \-\-color='hl:#719872,fg:#D9D9D9,header:#719872,fg+:#D9D9D9' \\
-         \-\-color='pointer:#E12672,marker:#E17899,prompt:#98BEDE,hl+:#98BC99'\fR
+         \-\-color='pointer:#E12672,marker:#E17899,prompt:#98BEDE,hl+:#98BC99'
+
+     # Seoul256 light theme with 24-bit colors, each entry separated by whitespaces
+     fzf \-\-style full \-\-color='
+       fg:#616161 fg+:#616161
+       bg:#ffffff bg+:#e9e9e9 alt-bg:#f1f1f1
+       hl:#719872 hl+:#719899
+       pointer:#e12672 marker:#e17899
+       header:#719872
+       spinner:#719899 info:#727100
+       prompt:#0099bd query:#616161
+       border:#e1e1e1
+     '\fR
 .RE
 .TP
 .B "\-\-no\-color"
@@ -351,7 +384,7 @@ Use black background
 
 .SS DISPLAY MODE
 .TP
-.BI "\-\-height=" "[~]HEIGHT[%]"
+.BI "\-\-height=" "[~][\-]HEIGHT[%]"
 Display fzf window below the cursor with the given height instead of using
 the full screen.
 
@@ -361,16 +394,18 @@ height minus the given value.
   fzf \-\-height=\-1
 
 When prefixed with \fB~\fR, fzf will automatically determine the height in the
-range according to the input size.
+range according to the input size. You can combine \fB~\fR with a negative
+value.
 
   # Will not take up 100% of the screen
   seq 5 | fzf \-\-height=~100%
 
+  # Adapt to input size, up to terminal height minus 1
+  seq 5 | fzf \-\-height=~\-1
+
 Adaptive height has the following limitations:
 .br
 * Cannot be used with top/bottom margin and padding given in percent size
-.br
-* Negative value is not allowed
 .br
 * It will not find the right size when there are multi-line items
 
@@ -382,25 +417,26 @@ layout options so that the specified number of items are visible in the list
 section (default: \fB10+\fR).
 Ignored when \fB\-\-height\fR is not specified or set as an absolute value.
 .TP
-.BI "\-\-tmux" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
-Start fzf in a tmux popup (default \fBcenter,50%\fR). Requires tmux 3.3 or
-later. This option is ignored if you are not running fzf inside tmux.
+.BI "\-\-popup" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
+Start fzf in a tmux popup or in a Zellij floating pane (default
+\fBcenter,50%\fR). Requires tmux 3.3+ or Zellij 0.44+. This option is ignored if you
+are not running fzf inside tmux or Zellij. \fB\-\-tmux\fR is an alias for this option.
 
 e.g.
   \fB# Popup in the center with 70% width and height
-  fzf \-\-tmux 70%
+  fzf \-\-popup 70%
 
   # Popup on the left with 40% width and 100% height
-  fzf \-\-tmux right,40%
+  fzf \-\-popup right,40%
 
   # Popup on the bottom with 100% width and 30% height
-  fzf \-\-tmux bottom,30%
+  fzf \-\-popup bottom,30%
 
   # Popup on the top with 80% width and 40% height
-  fzf \-\-tmux top,80%,40%
+  fzf \-\-popup top,80%,40%
 
-  # Popup with a native tmux border in the center with 80% width and height
-  fzf \-\-tmux center,80%,border\-native\fR
+  # Popup with a native tmux or Zellij border in the center with 80% width and height
+  fzf \-\-popup center,80%,border\-native\fR
 
 .SS LAYOUT
 .TP
@@ -489,6 +525,8 @@ Draw border around the finder
 .br
 .BR vertical "      Vertical lines on each side of the finder"
 .br
+.BR line "          Single line border (position automatically determined)"
+.br
 .BR top " (up)"
 .br
 .BR bottom " (down)"
@@ -503,6 +541,9 @@ Draw border around the finder
 If you use a terminal emulator where each box-drawing character takes
 2 columns, try setting \fB\-\-ambidouble\fR. If the border is still not properly
 rendered, set \fB\-\-no\-unicode\fR.
+
+\fBline\fR style draws a single separator line at the top when \fB\-\-height\fR
+is used.
 
 .TP
 .BI "\-\-border\-label" [=LABEL]
@@ -563,8 +604,11 @@ Highlight the whole current line
 .B "\-\-cycle"
 Enable cyclic scroll
 .TP
-.B "\-\-wrap"
-Enable line wrap
+.BI "\-\-wrap" "[=MODE]"
+Enable line wrap. \fIMODE\fR can be \fBchar\fR (default) or \fBword\fR.
+\fBword\fR mode wraps lines at word boundaries (spaces and tabs) instead of
+at arbitrary character positions. \fB\-\-wrap\-word\fR is a synonym for
+\fB\-\-wrap=word\fR.
 .TP
 .BI "\-\-wrap\-sign" "=INDICATOR"
 Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
@@ -573,17 +617,56 @@ Indicator for wrapped lines. The default is '↳ ' or '> ' depending on
 .B "\-\-no\-multi\-line"
 Disable multi-line display of items when using \fB\-\-read0\fR
 .TP
-.B "\-\-track"
+.B "\-\-raw"
+Enable raw mode where non-matching items are also displayed in a dimmed color.
+.TP
+.BI "\-\-track"
 Make fzf track the current selection when the result list is updated.
 This can be useful when browsing logs using fzf with sorting disabled. It is
 not recommended to use this option with \fB\-\-tac\fR as the resulting behavior
-can be confusing. Also, consider using \fBtrack\fR action instead of this
-option.
+can be confusing.
+
+When \fB\-\-id\-nth\fR is also set, fzf enables field\-based tracking across
+\fBreload\fRs. See \fB\-\-id\-nth\fR for details.
+
+Without \fB\-\-id\-nth\fR, \fB\-\-track\fR uses index\-based tracking that
+does not persist across reloads.
 
 .RS
 e.g.
-     \fBgit log \-\-oneline \-\-graph \-\-color=always | nl |
+     \fB# Index\-based tracking (does not persist across reloads)
+     git log \-\-oneline \-\-graph \-\-color=always | nl |
          fzf \-\-ansi \-\-track \-\-no\-sort \-\-layout=reverse\-list\fR
+
+     \fB# Track by first field (e.g. pod name) across reloads
+     kubectl get pods | fzf \-\-track \-\-id\-nth 1 \-\-header\-lines=1 \\
+         \-\-bind 'ctrl\-r:reload:kubectl get pods'\fR
+.RE
+.TP
+.BI "\-\-id\-nth=" "N[,..]"
+Define item identity fields for cross\-reload operations. When set, fzf
+uses the specified fields to identify items across \fBreload\fR and
+\fBreload\-sync\fR.
+
+With \fB\-\-track\fR, fzf extracts the tracking key from the current item
+using the nth expression and searches for a matching item in the reloaded list.
+While searching, the UI is blocked (query input and cursor movement are
+disabled, and the prompt is dimmed). With \fBreload\fR, the blocked state
+clears as soon as the match is found in the stream. With \fBreload\-sync\fR,
+the blocked state persists until the entire stream is complete. Press
+\fBEscape\fR or \fBCtrl\-C\fR to cancel the blocked state without quitting fzf.
+
+The info line shows \fB+T*\fR (or \fB+t*\fR for one\-off tracking) while
+the search is in progress.
+
+With \fB\-\-multi\fR, selected items are preserved across \fBreload\-sync\fR
+by matching their identity fields in the reloaded list.
+
+.RS
+e.g.
+     \fB# Track and preserve selections by pod name across reloads
+     kubectl get pods | fzf \-\-multi \-\-track \-\-id\-nth 1 \-\-header\-lines=1 \\
+         \-\-bind 'ctrl\-r:reload\-sync:kubectl get pods'\fR
 .RE
 .TP
 .B "\-\-tac"
@@ -601,9 +684,16 @@ Render empty lines between each item
 The given string will be repeated to draw a horizontal line on each gap
 (default: '┈' or '\-' depending on \fB\-\-no\-unicode\fR).
 .TP
+.BI "\-\-freeze\-left=" "N"
+Number of fields to freeze on the left.
+.TP
+.BI "\-\-freeze\-right=" "N"
+Number of fields to freeze on the right.
+.TP
 .B "\-\-keep\-right"
 Keep the right end of the line visible when it's too long. Effective only when
-the query string is empty.
+the query string is empty. Use \fB\-\-freeze\-right=1\fR instead if you want
+the last field to be always visible even with a non-empty query.
 .TP
 .BI "\-\-scroll\-off=" "LINES"
 Number of screen lines to keep above or below when scrolling to the top or to
@@ -619,6 +709,12 @@ on the center of the screen.
 .TP
 .BI "\-\-jump\-labels=" "CHARS"
 Label characters for \fBjump\fR mode.
+.TP
+.BI "\-\-gutter=" "CHAR"
+Character used for the gutter column (default: '▌' unless \fB\-\-no\-unicode\fR is given)
+.TP
+.BI "\-\-gutter\-raw=" "CHAR"
+Character used for the gutter column in raw mode (default: '▖' unless \fB\-\-no\-unicode\fR is given)
 .TP
 .BI "\-\-pointer=" "STR"
 Pointer to the current line (default: '▌' or '>' depending on \fB\-\-no\-unicode\fR)
@@ -647,7 +743,8 @@ Do not display scrollbar. A synonym for \fB\-\-scrollbar=''\fB
 
 .TP
 .BI "\-\-list\-border" [=STYLE]
-Draw border around the list section
+Draw border around the list section. \fBline\fR style is not supported for
+this border.
 
 .TP
 .BI "\-\-list\-label" [=LABEL]
@@ -698,7 +795,7 @@ ENVIRONMENT VARIABLES EXPORTED TO CHILD PROCESSES.
 
 e.g.
      \fB# Prepend the current cursor position in yellow
-     fzf \-\-info\-command='echo \-e "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
+     fzf \-\-info\-command='printf "\\x1b[33;1m$FZF_POS\\x1b[m/$FZF_INFO 💛"'\fR
 
 .TP
 .B "\-\-no\-info"
@@ -734,7 +831,8 @@ actions are affected:
 \fBkill\-word\fR
 .TP
 .BI "\-\-input\-border" [=STYLE]
-Draw border around the input section
+Draw border around the input section. \fBline\fR style draws a single separator
+line between the input section and the list section.
 
 .TP
 .BI "\-\-input\-label" [=LABEL]
@@ -768,12 +866,15 @@ fzf also exports \fB$FZF_PREVIEW_TOP\fR and \fB$FZF_PREVIEW_LEFT\fR so that
 the preview command can determine the position of the preview window.
 
 A placeholder expression starting with \fB+\fR flag will be replaced to the
-space-separated list of the selected lines (or the current line if no selection
+space-separated list of the selected items (or the current item if no selection
 was made) individually quoted.
 
 e.g.
      \fBfzf \-\-multi \-\-preview='head \-10 {+}'
      git log \-\-oneline | fzf \-\-multi \-\-preview 'git show {+1}'\fR
+
+Similarly, a placeholder expression starting with \fB*\fR flag will be replaced
+to the space-separated list of all matched items individually quoted.
 
 Each expression expands to a quoted string, so that it's safe to pass it as an
 argument to an external command. So you should not manually add quotes around
@@ -786,14 +887,16 @@ from the replacement string. To preserve the whitespace, use the \fBs\fR flag.
 
 A placeholder expression with \fBf\fR flag is replaced to the path of
 a temporary file that holds the evaluated list. This is useful when you
-multi-select a large number of items and the length of the evaluated string may
+pass a large number of items and the length of the evaluated string may
 exceed \fBARG_MAX\fR.
 
 e.g.
-     \fB# Press CTRL\-A to select 100K items and see the sum of all the numbers.
+     \fB# See the sum of all the matched numbers
      # This won't work properly without 'f' flag due to ARG_MAX limit.
-     seq 100000 | fzf \-\-multi \-\-bind ctrl\-a:select\-all \\
-                      \-\-preview "awk '{sum+=\\$1} END {print sum}' {+f}"\fR
+     seq 100000 | fzf \-\-preview "awk '{sum+=\\$1} END {print sum}' {*f}"\fR
+
+     \fB# Use {+f} to get the selected items as a line-separated list
+     seq 100 | fzf \-\-multi \-\-bind 'enter:become:cat {+f}'\fR
 
 Also,
 
@@ -834,8 +937,7 @@ e.g.
 
 .TP
 .BI "\-\-preview\-border" [=STYLE]
-Short for \fB\-\-preview\-window=border\-STYLE\fR. In addition to the other
-styles, \fBline\fR style is also supported for preview border, which draws
+Short for \fB\-\-preview\-window=border\-STYLE\fR. \fBline\fR style draws
 a single separator line between the preview window and the rest of the
 interface.
 
@@ -865,6 +967,11 @@ Should be used with one of the following \fB\-\-preview\-window\fR options.
 .br
 
 .TP
+.BI "\-\-preview\-wrap\-sign" =INDICATOR
+Indicator for wrapped lines in the preview window. If not set, the value of
+\fB\-\-wrap\-sign\fR is used.
+
+.TP
 .BI "\-\-preview\-label\-pos" [=N[:top|bottom]]
 Position of the border label on the border line of the preview window. Specify
 a positive integer as the column position from the left. Specify a negative
@@ -874,7 +981,7 @@ default value 0 (or \fBcenter\fR) will put the label at the center of the
 border line.
 
 .TP
-.BI "\-\-preview\-window=" "[POSITION][,SIZE[%]][,border\-STYLE][,[no]wrap][,[no]follow][,[no]cycle][,[no]info][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
+.BI "\-\-preview\-window=" "[POSITION][,SIZE[%]][,border\-STYLE][,[no]wrap][,wrap\-word][,[no]follow][,[no]cycle][,[no]info][,[no]hidden][,+SCROLL[OFFSETS][/DENOM]][,~HEADER_LINES][,default][,<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)]"
 
 .RS
 .B POSITION: (default: right)
@@ -892,7 +999,8 @@ default until \fBtoggle\-preview\fR action is triggered.
 execute the command in the background.
 
 * Long lines are truncated by default. Line wrap can be enabled with
-\fBwrap\fR flag.
+\fBwrap\fR flag. \fBwrap\-word\fR flag enables word-level wrapping, which
+breaks lines at word boundaries instead of mid-word.
 
 * Preview window will automatically scroll to the bottom when \fBfollow\fR
 flag is set, similarly to how \fBtail \-f\fR works.
@@ -987,10 +1095,22 @@ The first N lines of the input are treated as the sticky header. When
 lines that follow.
 .TP
 .B "\-\-header\-first"
-Print header before the prompt line
+Print header before the prompt line. When both normal header and header lines
+(\fB\-\-header\-lines\fR) are present, this applies only to the normal header.
 .TP
 .BI "\-\-header\-border" [=STYLE]
-Draw border around the header section
+Draw border around the header section. \fBline\fR style draws a single
+separator line between the header window and the list section. \fBinline\fR
+style embeds the header inside the list border frame, joined to the list
+section by a horizontal separator; it requires a \fB\-\-list\-border\fR
+shape that has both top and bottom segments (rounded / sharp / bold /
+double / block / thinblock / horizontal) and falls back to \fBline\fR
+otherwise. When the list border also has side segments, the separator
+joins them with T-junctions; \fBhorizontal\fR has no side borders, so the
+separator is drawn without T-junction endpoints. Takes precedence over
+\fB\-\-header\-first\fR (the section stays inside the list frame), and
+when \fB\-\-header\-lines\fR is also set \fB\-\-header\-lines\-border\fR
+must also be \fBinline\fR.
 
 .TP
 .BI "\-\-header\-label" [=LABEL]
@@ -1004,7 +1124,37 @@ Position of the header label
 .BI "\-\-header\-lines\-border" [=STYLE]
 Display header from \fB--header\-lines\fR with a separate border. Pass
 \fBnone\fR to still separate the header lines but without a border. To combine
-two headers, use \fB\-\-no\-header\-lines\-border\fR.
+two headers, use \fB\-\-no\-header\-lines\-border\fR. \fBline\fR style draws
+a single separator line between the header lines and the list section.
+\fBinline\fR style embeds the header lines inside the list border frame
+with a horizontal separator; it requires a \fB\-\-list\-border\fR shape
+that has both top and bottom segments, falls back to \fBline\fR
+otherwise.
+
+.SS FOOTER
+
+.TP
+.BI "\-\-footer=" "STR"
+The given string will be printed as the sticky footer. The lines are displayed
+in the given order from top to bottom regardless of \fB\-\-layout\fR option, and
+are not affected by \fB\-\-with\-nth\fR. ANSI color codes are processed even when
+\fB\-\-ansi\fR is not set.
+
+.TP
+.BI "\-\-footer\-border" [=STYLE]
+Draw border around the footer section. \fBline\fR style draws a single
+separator line between the footer and the list section. \fBinline\fR style
+embeds the footer inside the list border frame with a horizontal separator;
+it requires a \fB\-\-list\-border\fR shape that has both top and bottom
+segments and falls back to \fBline\fR otherwise.
+
+.TP
+.BI "\-\-footer\-label" [=LABEL]
+Label to print on the footer border
+
+.TP
+.BI "\-\-footer\-label\-pos" [=N[:top|bottom]]
+Position of the footer label
 
 .SS SCRIPTING
 .TP
@@ -1074,19 +1224,25 @@ On Windows, the default value is \fBcmd /s/c\fR when \fB$SHELL\fR is not
 set.
 
 .TP
-.B "\-\-listen[=[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
-Start HTTP server and listen on the given address. It allows external processes
-to send actions to perform via POST method.
+.B "\-\-listen[=SOCKET_PATH|[ADDR:]PORT]" "\-\-listen\-unsafe[=[ADDR:]PORT]"
+Start HTTP server and listen on the given address or Unix socket. It allows
+external processes to send actions to perform via POST method and query the
+program state via GET method. For the argument to be recognized as a socket
+path, it must have \fB.sock\fR extension.
 
 - If the port number is omitted or given as 0, fzf will automatically choose
-a port and export it as \fBFZF_PORT\fR environment variable to the child processes
+a port and export it as \fBFZF_PORT\fR environment variable to the child processes.
+
+- If a Unix socket path is given, fzf will create a Unix domain socket at the
+  given path. The existing file will be removed. The path to the socket file
+  is exported as \fBFZF_SOCK\fR environment variable.
 
 - If \fBFZF_API_KEY\fR environment variable is set, the server would require
-sending an API key with the same value in the \fBx\-api\-key\fR HTTP header
+  sending an API key with the same value in the \fBx\-api\-key\fR HTTP header.
 
-- \fBFZF_API_KEY\fR is required for a non-localhost listen address
+- \fBFZF_API_KEY\fR is required for a non-localhost listen address.
 
-- To allow remote process execution, use \fB\-\-listen\-unsafe\fR
+- To allow remote process execution, use \fB\-\-listen\-unsafe\fR.
 
 e.g.
      \fB# Start HTTP server on port 6266
@@ -1094,11 +1250,6 @@ e.g.
 
      # Send action to the server
      curl \-XPOST localhost:6266 \-d 'reload(seq 100)+change\-prompt(hundred> )'
-
-     # Get program state in JSON format (experimental)
-     # * Make sure NOT to access this endpoint from execute/transform actions
-     #   as it will result in a timeout
-     curl localhost:6266
 
      # Start HTTP server on port 6266 with remote connections allowed
      # * Listening on non-localhost address requires using an API key
@@ -1110,7 +1261,49 @@ e.g.
 
      # Choose port automatically and export it as $FZF_PORT to the child process
      fzf \-\-listen \-\-bind 'start:execute\-silent:echo $FZF_PORT > /tmp/fzf\-port'
+
+     # Get program state in JSON format (experimental)
+     # - GET Parameters:
+     #    - limit: number of items to return (default: 100)
+     #    - offset: number of items to skip (default: 0)
+     curl localhost:6266
+
+     # Automatically select items with .txt extension
+     fzf \-\-multi \-\-sync \-\-listen \-\-bind 'load:transform:
+       pos=1
+       curl \-s localhost:$FZF_PORT?limit=1000 | jq \-r .matches[].text | while read \-r text; do
+         if [[ $text =~ \\.txt$ ]]; then
+           echo \-n "+pos($pos)+select"
+         fi
+         pos=$((pos + 1))
+       done
+       echo +first
+     '
      \fR
+
+Here is an example script that uses a Unix socket instead of a TCP port.
+
+    \fB
+    fzf --listen=/tmp/fzf.sock
+
+    # GET
+    curl --unix-socket /tmp/fzf.sock http
+
+    # POST
+    curl --unix-socket /tmp/fzf.sock http -d up
+    \fR
+
+.TP
+.BI "\-\-threads=" "N"
+Number of matcher threads to use. The default value is
+\fBmin(8 * NUM_CPU, 32)\fR.
+.TP
+.BI "\-\-bench=" "DURATION"
+Repeatedly run \fB\-\-filter\fR for the given duration and print timing
+statistics. Must be used with \fB\-\-filter\fR.
+
+e.g.
+     \fBcat /usr/share/dict/words | fzf \-\-filter abc \-\-bench 10s\fR
 
 .SS DIRECTORY TRAVERSAL
 .TP
@@ -1263,6 +1456,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_COLUMNS "         Number of columns fzf takes up excluding padding and margin"
 .br
+.BR FZF_DIRECTION "       Direction of the list (\fBup\fR or \fBdown\fR)"
+.br
 .BR FZF_TOTAL_COUNT "     Total number of items"
 .br
 .BR FZF_MATCH_COUNT "     Number of matched items"
@@ -1271,11 +1466,15 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_POS "             Vertical position of the cursor in the list starting from 1"
 .br
+.BR FZF_WRAP "            The line wrapping mode (char, word) when enabled"
+.br
 .BR FZF_QUERY "           Current query string"
 .br
 .BR FZF_INPUT_STATE "     Current input state (enabled, disabled, hidden)"
 .br
 .BR FZF_NTH "             Current \-\-nth option"
+.br
+.BR FZF_WITH_NTH "        Current \-\-with\-nth option"
 .br
 .BR FZF_PROMPT "          Prompt string"
 .br
@@ -1299,6 +1498,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_PORT "            Port number when \-\-listen option is used"
 .br
+.BR FZF_SOCK "            Unix socket path when \-\-listen option is used"
+.br
 .BR FZF_PREVIEW_TOP "     Top position of the preview window"
 .br
 .BR FZF_PREVIEW_LEFT "    Left position of the preview window"
@@ -1306,6 +1507,8 @@ fzf exports the following environment variables to its child processes.
 .BR FZF_PREVIEW_LINES "   Number of lines in the preview window"
 .br
 .BR FZF_PREVIEW_COLUMNS " Number of columns in the preview window"
+.br
+.BR FZF_RAW "             Only in raw mode. 1 if the current item matches, 0 otherwise"
 
 .SH EXTENDED SEARCH MODE
 
@@ -1389,7 +1592,7 @@ e.g.
 .br
 \fIctrl\-/\fR         (\fIctrl\-_\fR)
 .br
-\fIctrl\-alt\-[a\-z]\fR
+\fIctrl\-alt\-[a\-z]\fR (\fIctrl\-alt\-h\fR is \fIctrl\-alt\-backspace\fR on non-Windows)
 .br
 \fIalt\-[*]\fR        (Any case-sensitive single character is allowed)
 .br
@@ -1409,11 +1612,21 @@ e.g.
 .br
 \fIalt\-right\fR
 .br
+\fIalt\-home\fR
+.br
+\fIalt\-end\fR
+.br
+\fIalt\-backspace\fR  (\fIalt\-bspace\fR \fIalt\-bs\fR)
+.br
+\fIalt\-delete\fR
+.br
+\fIalt\-page\-up\fR
+.br
+\fIalt\-page\-down\fR
+.br
 \fIalt\-enter\fR
 .br
 \fIalt\-space\fR
-.br
-\fIalt\-backspace\fR  (\fIalt\-bspace\fR \fIalt\-bs\fR)
 .br
 \fItab\fR
 .br
@@ -1441,6 +1654,26 @@ e.g.
 .br
 \fIpage\-down\fR      (\fIpgdn\fR)
 .br
+\fIctrl\-up\fR
+.br
+\fIctrl\-down\fR
+.br
+\fIctrl\-left\fR
+.br
+\fIctrl\-right\fR
+.br
+\fIctrl\-home\fR
+.br
+\fIctrl\-end\fR
+.br
+\fIctrl\-backspace\fR  (\fIctrl\-bspace\fR \fIctrl\-bs\fR)
+.br
+\fIctrl\-delete\fR
+.br
+\fIctrl\-page\-up\fR
+.br
+\fIctrl\-page\-down\fR
+.br
 \fIshift\-up\fR
 .br
 \fIshift\-down\fR
@@ -1449,7 +1682,15 @@ e.g.
 .br
 \fIshift\-right\fR
 .br
+\fIshift\-home\fR
+.br
+\fIshift\-end\fR
+.br
 \fIshift\-delete\fR
+.br
+\fIshift\-page\-up\fR
+.br
+\fIshift\-page\-down\fR
 .br
 \fIalt\-shift\-up\fR
 .br
@@ -1458,6 +1699,72 @@ e.g.
 \fIalt\-shift\-left\fR
 .br
 \fIalt\-shift\-right\fR
+.br
+\fIalt\-shift\-home\fR
+.br
+\fIalt\-shift\-end\fR
+.br
+\fIalt\-shift\-delete\fR
+.br
+\fIalt\-shift\-page\-up\fR
+.br
+\fIalt\-shift\-page\-down\fR
+.br
+\fIctrl\-alt\-up\fR
+.br
+\fIctrl\-alt\-down\fR
+.br
+\fIctrl\-alt\-left\fR
+.br
+\fIctrl\-alt\-right\fR
+.br
+\fIctrl\-alt\-home\fR
+.br
+\fIctrl\-alt\-end\fR
+.br
+\fIctrl\-alt\-backspace\fR  (\fIctrl\-alt\-bspace\fR \fIctrl\-alt\-bs\fR) (\fIctrl\-alt\-h\fR (non-Windows))
+.br
+\fIctrl\-alt\-delete\fR
+.br
+\fIctrl\-alt\-page\-up\fR
+.br
+\fIctrl\-alt\-page\-down\fR
+.br
+\fIctrl\-shift\-up\fR
+.br
+\fIctrl\-shift\-down\fR
+.br
+\fIctrl\-shift\-left\fR
+.br
+\fIctrl\-shift\-right\fR
+.br
+\fIctrl\-shift\-home\fR
+.br
+\fIctrl\-shift\-end\fR
+.br
+\fIctrl\-shift\-delete\fR
+.br
+\fIctrl\-shift\-page\-up\fR
+.br
+\fIctrl\-shift\-page\-down\fR
+.br
+\fIctrl\-alt\-shift\-up\fR
+.br
+\fIctrl\-alt\-shift\-down\fR
+.br
+\fIctrl\-alt\-shift\-left\fR
+.br
+\fIctrl\-alt\-shift\-right\fR
+.br
+\fIctrl\-alt\-shift\-home\fR
+.br
+\fIctrl\-alt\-shift\-end\fR
+.br
+\fIctrl\-alt\-shift\-delete\fR
+.br
+\fIctrl\-alt\-shift\-page\-up\fR
+.br
+\fIctrl\-alt\-shift\-page\-down\fR
 .br
 \fIleft\-click\fR
 .br
@@ -1482,6 +1789,8 @@ e.g.
 \fIshift\-scroll\-down\fR
 .br
 or any single character
+
+Note that some terminal emulators may not support \fIctrl-*\fR bindings.
 
 .SS AVAILABLE EVENTS:
 \fIstart\fR
@@ -1544,6 +1853,10 @@ e.g.
 
      # Beware not to introduce an infinite loop
      seq 10 | fzf \-\-bind 'focus:up' \-\-cycle\fR
+.RE
+\fImulti\fR
+.RS
+Triggered when the multi\-selection has changed.
 .RE
 
 \fIone\fR
@@ -1614,6 +1927,14 @@ e.g.
                           )'\fR
 .RE
 
+\fIclick\-footer\fR
+.RS
+Triggered when a mouse click occurs within the footer. Sets
+\fBFZF_CLICK_FOOTER_LINE\fR and \fBFZF_CLICK_FOOTER_COLUMN\fR environment
+variables starting from 1. It optionally sets \fBFZF_CLICK_FOOTER_WORD\fR
+if clicked on a word.
+.RE
+
 .SS AVAILABLE ACTIONS:
 A key or an event can be bound to one or more of the following actions.
 
@@ -1623,23 +1944,29 @@ A key or an event can be bound to one or more of the following actions.
     \fBaccept\-non\-empty\fR             (same as \fBaccept\fR except that it prevents fzf from exiting without selection)
     \fBaccept\-or\-print\-query\fR        (same as \fBaccept\fR except that it prints the query when there's no match)
     \fBbackward\-char\fR                \fIctrl\-b  left\fR
-    \fBbackward\-delete\-char\fR         \fIctrl\-h  bspace\fR
+    \fBbackward\-delete\-char\fR         \fIctrl\-h ctrl\-bspace bspace\fR
     \fBbackward\-delete\-char/eof\fR     (same as \fBbackward\-delete\-char\fR except aborts fzf if query is empty)
+    \fBbackward\-kill\-subword\fR
     \fBbackward\-kill\-word\fR           \fIalt\-bs\fR
+    \fBbackward\-subword\fR
     \fBbackward\-word\fR                \fIalt\-b   shift\-left\fR
     \fBbecome(...)\fR                  (replace fzf process with the specified command; see below for the details)
     \fBbeginning\-of\-line\fR            \fIctrl\-a  home\fR
     \fBbell\fR                         (ring the terminal bell)
+    \fBbest\fR                         (move to the best match; same as \fBfirst\fR if raw mode is disabled)
+    \fBbg\-cancel\fR                    (cancel background transform processes)
     \fBcancel\fR                       (clear query string if not empty, abort fzf otherwise)
     \fBchange\-border\-label(...)\fR     (change \fB\-\-border\-label\fR to the given string)
     \fBchange\-ghost(...)\fR            (change ghost text to the given string)
     \fBchange\-header(...)\fR           (change header to the given string; doesn't affect \fB\-\-header\-lines\fR)
+    \fBchange\-header\-lines(N)\fR       (change the number of \fB\-\-header\-lines\fR)
     \fBchange\-header\-label(...)\fR     (change \fB\-\-header\-label\fR to the given string)
     \fBchange\-input\-label(...)\fR      (change \fB\-\-input\-label\fR to the given string)
     \fBchange\-list\-label(...)\fR       (change \fB\-\-list\-label\fR to the given string)
     \fBchange\-multi\fR                 (enable multi-select mode with no limit)
     \fBchange\-multi(...)\fR            (enable multi-select mode with a limit or disable it with 0)
     \fBchange\-nth(...)\fR              (change \fB\-\-nth\fR option; rotate through the multiple options separated by '|')
+    \fBchange\-with\-nth(...)\fR         (change \fB\-\-with\-nth\fR option; rotate through the multiple options separated by '|')
     \fBchange\-pointer(...)\fR          (change \fB\-\-pointer\fR option)
     \fBchange\-preview(...)\fR          (change \fB\-\-preview\fR option)
     \fBchange\-preview\-label(...)\fR    (change \fB\-\-preview\-label\fR to the given string)
@@ -1647,15 +1974,19 @@ A key or an event can be bound to one or more of the following actions.
     \fBchange\-prompt(...)\fR           (change prompt to the given string)
     \fBchange\-query(...)\fR            (change query string to the given string)
     \fBclear\-screen\fR                 \fIctrl\-l\fR
-    \fBclear\-selection\fR              (clear multi\-selection)
+    \fBclear\-multi\fR                  (clear multi\-selection)
     \fBclose\fR                        (close preview window if open, abort fzf otherwise)
     \fBclear\-query\fR                  (clear query string)
     \fBdelete\-char\fR                  \fIdel\fR
     \fBdelete\-char/eof\fR              \fIctrl\-d\fR (same as \fBdelete\-char\fR except aborts fzf if query is empty)
     \fBdeselect\fR
-    \fBdeselect\-all\fR                 (deselect all matches)
+    \fBdeselect\-all\fR                 (deselect all matches; to also clear non-matching selections, use \fBclear\-multi\fR)
+    \fBdisable\-raw\fR                  (disable raw mode)
     \fBdisable\-search\fR               (disable search functionality)
-    \fBdown\fR                         \fIctrl\-j  ctrl\-n  down\fR
+    \fBdown\fR                         \fIctrl\-j  down\fR
+    \fBdown\-match\fR                   \fIctrl\-n\fR  \fIalt\-down\fR (move to the match below the cursor)
+    \fBdown\-selected\fR                (move to the selected item below the cursor)
+    \fBenable\-raw\fR                   (enable raw mode)
     \fBenable\-search\fR                (enable search functionality)
     \fBend\-of\-line\fR                  \fIctrl\-e  end\fR
     \fBexclude\fR                      (exclude the current item from the result)
@@ -1664,14 +1995,16 @@ A key or an event can be bound to one or more of the following actions.
     \fBexecute\-silent(...)\fR          (see below for the details)
     \fBfirst\fR                        (move to the first match; same as \fBpos(1)\fR)
     \fBforward\-char\fR                 \fIctrl\-f  right\fR
+    \fBforward\-subword\fR
     \fBforward\-word\fR                 \fIalt\-f   shift\-right\fR
     \fBignore\fR
     \fBjump\fR                         (EasyMotion-like 2-keystroke movement)
     \fBkill\-line\fR
+    \fBkill\-subword\fR
     \fBkill\-word\fR                    \fIalt\-d\fR
     \fBlast\fR                         (move to the last match; same as \fBpos(\-1)\fR)
     \fBnext\-history\fR                 (\fIctrl\-n\fR on \fB\-\-history\fR)
-    \fBnext\-selected\fR                (move to the next selected item)
+    \fBnext\-selected\fR                (synonym to \fBdown\-selected\fR)
     \fBpage\-down\fR                    \fIpgdn\fR
     \fBpage\-up\fR                      \fIpgup\fR
     \fBhalf\-page\-down\fR
@@ -1684,7 +2017,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBoffset\-middle\fR                (place the current item is in the middle of the screen)
     \fBpos(...)\fR                     (move cursor to the numeric position; negative number to count from the end)
     \fBprev\-history\fR                 (\fIctrl\-p\fR on \fB\-\-history\fR)
-    \fBprev\-selected\fR                (move to the previous selected item)
+    \fBprev\-selected\fR                (synonym to \fBup\-selected\fR)
     \fBpreview(...)\fR                 (see below for the details)
     \fBpreview\-down\fR                 \fIshift\-down\fR
     \fBpreview\-up\fR                   \fIshift\-up\fR
@@ -1719,11 +2052,14 @@ A key or an event can be bound to one or more of the following actions.
     \fBtoggle\-multi\-line\fR
     \fBtoggle\-preview\fR
     \fBtoggle\-preview\-wrap\fR
+    \fBtoggle\-preview\-wrap\-word\fR
+    \fBtoggle\-raw\fR                   (toggle raw mode for displaying non-matching items)
     \fBtoggle\-search\fR                (toggle search functionality)
     \fBtoggle\-sort\fR
     \fBtoggle\-track\fR                 (toggle global tracking option (\fB\-\-track\fR))
     \fBtoggle\-track\-current\fR         (toggle tracking of the current item)
-    \fBtoggle\-wrap\fR                  \fIctrl\-/\fR  \fIalt\-/\fR
+    \fBtoggle\-wrap\fR
+    \fBtoggle\-wrap\-word\fR             \fIctrl\-/\fR  \fIalt\-/\fR
     \fBtoggle+down\fR                  \fIctrl\-i  (tab)\fR
     \fBtoggle+up\fR                    \fIbtab    (shift\-tab)\fR
     \fBtrack\-current\fR                (track the current item; automatically disabled if focus changes)
@@ -1731,21 +2067,29 @@ A key or an event can be bound to one or more of the following actions.
     \fBtransform\-border\-label(...)\fR  (transform border label using an external command)
     \fBtransform\-ghost(...)\fR         (transform ghost text using an external command)
     \fBtransform\-header(...)\fR        (transform header using an external command)
+    \fBtransform\-header\-lines(...)\fR  (transform the number of \fB\-\-header\-lines\fR using an external command)
     \fBtransform\-header\-label(...)\fR  (transform header label using an external command)
     \fBtransform\-input\-label(...)\fR   (transform input label using an external command)
     \fBtransform\-list\-label(...)\fR    (transform list label using an external command)
     \fBtransform\-nth(...)\fR           (transform nth using an external command)
+    \fBtransform\-with\-nth(...)\fR      (transform with-nth using an external command)
     \fBtransform\-pointer(...)\fR       (transform pointer using an external command)
     \fBtransform\-preview\-label(...)\fR (transform preview label using an external command)
     \fBtransform\-prompt(...)\fR        (transform prompt string using an external command)
     \fBtransform\-query(...)\fR         (transform query string using an external command)
     \fBtransform\-search(...)\fR        (trigger fzf search with the output of an external command)
+    \fBtrigger(...)\fR                 (trigger actions bound to a comma-separated list of keys and events)
     \fBunbind(...)\fR                  (unbind bindings)
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
     \fBuntrack\-current\fR              (stop tracking the current item; no-op if global tracking is enabled)
-    \fBup\fR                           \fIctrl\-k  ctrl\-p  up\fR
+    \fBup\fR                           \fIctrl\-k  up\fR
+    \fBup\-match\fR                     \fIctrl\-p\fR  \fIalt\-up\fR (move to the match above the cursor)
+    \fBup\-selected\fR                  (move to the selected item above the cursor)
     \fByank\fR                         \fIctrl\-y\fR
+
+Each \fBtransform*\fR action has a corresponding \fBbg\-transform*\fR
+variant that runs the command in the background.
 
 .SS ACTION COMPOSITION
 
@@ -1864,12 +2208,32 @@ payload of HTTP POST request to the \fB\-\-listen\fR server.
 
 e.g.
     \fB# Disallow selecting an empty line
-    echo \-e "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
+    printf "1. Hello\\n2. Goodbye\\n\\n3. Exit" |
       fzf \-\-height '~100%' \-\-reverse \-\-header 'Select one' \\
           \-\-bind 'enter:transform:[[ \-n {} ]] &&
                     echo accept ||
                     echo "change\-header:Invalid selection"'
     \fR
+
+A common mistake when writing a \fBtransform\fR action is not escaping
+placeholder expressions when passing them back to fzf. In the following
+example, if you don't escape \fB{}\fR, fzf will immediately replace it with the
+single-quoted string of the current item. This causes single quotes to appear
+in the header and footer, and the script will break if any item contains
+double-quote characters.
+
+    \fBfzf \-\-bind 'focus:transform:[[ $FZF_ACTION =~ up ]] &&
+                echo "change\-header()+transform\-footer:echo \\{}" ||
+                echo "change\-footer()+transform\-header:echo \\{}"'\fR
+
+.SS TRANSFORM IN THE BACKGROUND
+
+Transform actions are synchronous, meaning fzf becomes unresponsive while the
+command runs. To avoid this, each \fBtransform*\fR action has a corresponding
+\fBbg\-transform*\fR variant that runs in the background. Unless you need to
+chain multiple transform actions where later ones depend on earlier results,
+prefer using the \fBbg\fR variant. To cancel currently running background
+transform processes, use \fBbg\-cancel\fR action.
 
 .SS PREVIEW BINDING
 

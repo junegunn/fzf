@@ -303,7 +303,7 @@ func bonusAt(input *util.Chars, idx int) int16 {
 }
 
 func normalizeRune(r rune) rune {
-	if r < 0x00C0 || r > 0x2184 {
+	if r < 0x00C0 || r > 0xFF61 {
 		return r
 	}
 
@@ -321,22 +321,15 @@ type Algo func(caseSensitive bool, normalize bool, forward bool, input *util.Cha
 
 func trySkip(input *util.Chars, caseSensitive bool, b byte, from int) int {
 	byteArray := input.Bytes()[from:]
-	idx := bytes.IndexByte(byteArray, b)
-	if idx == 0 {
-		// Can't skip any further
-		return from
-	}
-	// We may need to search for the uppercase letter again. We don't have to
-	// consider normalization as we can be sure that this is an ASCII string.
+	// For case-insensitive search of a letter, search for both cases in one pass
 	if !caseSensitive && b >= 'a' && b <= 'z' {
-		if idx > 0 {
-			byteArray = byteArray[:idx]
+		idx := IndexByteTwo(byteArray, b, b-32)
+		if idx < 0 {
+			return -1
 		}
-		uidx := bytes.IndexByte(byteArray, b-32)
-		if uidx >= 0 {
-			idx = uidx
-		}
+		return from + idx
 	}
+	idx := bytes.IndexByte(byteArray, b)
 	if idx < 0 {
 		return -1
 	}
@@ -365,7 +358,7 @@ func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int
 
 	firstIdx, idx, lastIdx := 0, 0, 0
 	var b byte
-	for pidx := 0; pidx < len(pattern); pidx++ {
+	for pidx := range pattern {
 		b = byte(pattern[pidx])
 		idx = trySkip(input, caseSensitive, b, idx)
 		if idx < 0 {
@@ -380,14 +373,17 @@ func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int
 	}
 
 	// Find the last appearance of the last character of the pattern to limit the search scope
-	bu := b
-	if !caseSensitive && b >= 'a' && b <= 'z' {
-		bu = b - 32
-	}
 	scope := input.Bytes()[lastIdx:]
-	for offset := len(scope) - 1; offset > 0; offset-- {
-		if scope[offset] == b || scope[offset] == bu {
-			return firstIdx, lastIdx + offset + 1
+	if len(scope) > 1 {
+		tail := scope[1:]
+		var end int
+		if !caseSensitive && b >= 'a' && b <= 'z' {
+			end = lastIndexByteTwo(tail, b, b-32)
+		} else {
+			end = bytes.LastIndexByte(tail, b)
+		}
+		if end >= 0 {
+			return firstIdx, lastIdx + 1 + end + 1
 		}
 	}
 	return firstIdx, lastIdx + 1
@@ -445,7 +441,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 
 	// Since O(nm) algorithm can be prohibitively expensive for large input,
 	// we fall back to the greedy algorithm.
-	if slab != nil && N*M > cap(slab.I16) {
+	// Also, we should not allow a very long pattern to avoid 16-bit integer
+	// overflow in the score matrix. 1000 is a safe limit.
+	if slab != nil && N*M > cap(slab.I16) || M > 1000 {
 		return FuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab)
 	}
 
@@ -501,7 +499,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			if pidx < M {
 				F[pidx] = int32(off)
 				pidx++
-				pchar = pattern[util.Min(pidx, M-1)]
+				pchar = pattern[min(pidx, M-1)]
 			}
 			lastIdx = off
 		}
@@ -519,9 +517,9 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			inGap = false
 		} else {
 			if inGap {
-				H0[off] = util.Max16(prevH0+scoreGapExtension, 0)
+				H0[off] = max(prevH0+scoreGapExtension, 0)
 			} else {
-				H0[off] = util.Max16(prevH0+scoreGapStart, 0)
+				H0[off] = max(prevH0+scoreGapStart, 0)
 			}
 			C0[off] = 0
 			inGap = true
@@ -587,7 +585,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 					if b >= bonusBoundary && b > fb {
 						consecutive = 1
 					} else {
-						b = util.Max16(b, util.Max16(bonusConsecutive, fb))
+						b = max(b, bonusConsecutive, fb)
 					}
 				}
 				if s1+b < s2 {
@@ -600,7 +598,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 			Csub[off] = consecutive
 
 			inGap = s1 < s2
-			score := util.Max16(util.Max16(s1, s2), 0)
+			score := max(s1, s2, 0)
 			if pidx == M-1 && (forward && score > maxScore || !forward && score >= maxScore) {
 				maxScore, maxScorePos = score, col
 			}
@@ -684,7 +682,7 @@ func calculateScore(caseSensitive bool, normalize bool, text *util.Chars, patter
 				if bonus >= bonusBoundary && bonus > firstBonus {
 					firstBonus = bonus
 				}
-				bonus = util.Max16(util.Max16(bonus, firstBonus), bonusConsecutive)
+				bonus = max(bonus, firstBonus, bonusConsecutive)
 			}
 			if pidx == 0 {
 				score += int(bonus * bonusFirstCharMultiplier)
@@ -726,7 +724,7 @@ func FuzzyMatchV1(caseSensitive bool, normalize bool, forward bool, text *util.C
 	lenRunes := text.Length()
 	lenPattern := len(pattern)
 
-	for index := 0; index < lenRunes; index++ {
+	for index := range lenRunes {
 		char := text.Get(indexAt(index, lenRunes, forward))
 		// This is considerably faster than blindly applying strings.ToLower to the
 		// whole string
@@ -827,7 +825,7 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 
 	// For simplicity, only look at the bonus at the first character position
 	pidx := 0
-	bestPos, bonus, bestBonus := -1, int16(0), int16(-1)
+	bestPos, bonus, bbonus, bestBonus := -1, int16(0), int16(0), int16(-1)
 	for index := 0; index < lenRunes; index++ {
 		index_ := indexAt(index, lenRunes, forward)
 		char := text.Get(index_)
@@ -849,7 +847,16 @@ func exactMatchNaive(caseSensitive bool, normalize bool, forward bool, boundaryC
 				bonus = bonusAt(text, index_)
 			}
 			if boundaryCheck {
-				ok = bonus >= bonusBoundary
+				if forward && pidx_ == 0 {
+					bbonus = bonus
+				} else if !forward && pidx_ == lenPattern-1 {
+					if index_ < lenRunes-1 {
+						bbonus = bonusAt(text, index_+1)
+					} else {
+						bbonus = bonusBoundaryWhite
+					}
+				}
+				ok = bbonus >= bonusBoundary
 				if ok && pidx_ == 0 {
 					ok = index_ == 0 || charClassOf(text.Get(index_-1)) <= charDelimiter
 				}

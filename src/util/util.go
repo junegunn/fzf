@@ -1,11 +1,11 @@
 package util
 
 import (
+	"cmp"
 	"math"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/uniseg"
@@ -18,8 +18,13 @@ func StringWidth(s string) int {
 
 // RunesWidth returns runes width
 func RunesWidth(runes []rune, prefixWidth int, tabstop int, limit int) (int, int) {
+	return StringsWidth(string(runes), prefixWidth, tabstop, limit)
+}
+
+// StringsWidth returns the width of the string
+func StringsWidth(str string, prefixWidth int, tabstop int, limit int) (int, int) {
 	width := 0
-	gr := uniseg.NewGraphemes(string(runes))
+	gr := uniseg.NewGraphemes(str)
 	idx := 0
 	for gr.Next() {
 		rs := gr.Runes()
@@ -55,66 +60,8 @@ func Truncate(input string, limit int) ([]rune, int) {
 	return runes, width
 }
 
-// Max returns the largest integer
-func Max(first int, second int) int {
-	if first >= second {
-		return first
-	}
-	return second
-}
-
-// Max16 returns the largest integer
-func Max16(first int16, second int16) int16 {
-	if first >= second {
-		return first
-	}
-	return second
-}
-
-// Max32 returns the largest 32-bit integer
-func Max32(first int32, second int32) int32 {
-	if first > second {
-		return first
-	}
-	return second
-}
-
-// Min returns the smallest integer
-func Min(first int, second int) int {
-	if first <= second {
-		return first
-	}
-	return second
-}
-
-// Min32 returns the smallest 32-bit integer
-func Min32(first int32, second int32) int32 {
-	if first <= second {
-		return first
-	}
-	return second
-}
-
-// Constrain32 limits the given 32-bit integer with the upper and lower bounds
-func Constrain32(val int32, min int32, max int32) int32 {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
-}
-
-// Constrain limits the given integer with the upper and lower bounds
-func Constrain(val int, min int, max int) int {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
+func Constrain[T cmp.Ordered](val, minimum, maximum T) T {
+	return max(min(val, maximum), minimum)
 }
 
 func AsUint16(val int) uint16 {
@@ -124,18 +71,6 @@ func AsUint16(val int) uint16 {
 		return 0
 	}
 	return uint16(val)
-}
-
-// DurWithin limits the given time.Duration with the upper and lower bounds
-func DurWithin(
-	val time.Duration, min time.Duration, max time.Duration) time.Duration {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
 }
 
 // IsTty returns true if the file is a terminal
@@ -209,7 +144,7 @@ func CompareVersions(v1, v2 string) int {
 		return n
 	}
 
-	for i := 0; i < Max(len(parts1), len(parts2)); i++ {
+	for i := 0; i < max(len(parts1), len(parts2)); i++ {
 		var p1, p2 int
 		if i < len(parts1) {
 			p1 = atoi(parts1[i])

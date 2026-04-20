@@ -2,29 +2,7 @@
 
 package tui
 
-type Attr int32
-
-func HasFullscreenRenderer() bool {
-	return false
-}
-
-var DefaultBorderShape = BorderRounded
-
-func (a Attr) Merge(b Attr) Attr {
-	if b&AttrRegular > 0 {
-		// Only keep bold attribute set by the system
-		return b | (a & BoldForce)
-	}
-
-	return a | b
-}
-
 const (
-	AttrUndefined = Attr(0)
-	AttrRegular   = Attr(1 << 8)
-	AttrClear     = Attr(1 << 9)
-	BoldForce     = Attr(1 << 10)
-
 	Bold          = Attr(1)
 	Dim           = Attr(1 << 1)
 	Italic        = Attr(1 << 2)
@@ -34,6 +12,12 @@ const (
 	Reverse       = Attr(1 << 6)
 	StrikeThrough = Attr(1 << 7)
 )
+
+func HasFullscreenRenderer() bool {
+	return false
+}
+
+var DefaultBorderShape = BorderRounded
 
 func (r *FullscreenRenderer) Init() error                        { return nil }
 func (r *FullscreenRenderer) DefaultTheme() *ColorTheme          { return nil }
@@ -50,11 +34,11 @@ func (r *FullscreenRenderer) ShowCursor()                        {}
 func (r *FullscreenRenderer) Refresh()                           {}
 func (r *FullscreenRenderer) Close()                             {}
 func (r *FullscreenRenderer) Size() TermSize                     { return TermSize{} }
-
-func (r *FullscreenRenderer) GetChar() Event { return Event{} }
-func (r *FullscreenRenderer) Top() int       { return 0 }
-func (r *FullscreenRenderer) MaxX() int      { return 0 }
-func (r *FullscreenRenderer) MaxY() int      { return 0 }
+func (r *FullscreenRenderer) Top() int                           { return 0 }
+func (r *FullscreenRenderer) MaxX() int                          { return 0 }
+func (r *FullscreenRenderer) MaxY() int                          { return 0 }
+func (r *FullscreenRenderer) GetChar(bool) Event                 { return Event{} }
+func (r *FullscreenRenderer) CancelGetChar()                     {}
 
 func (r *FullscreenRenderer) RefreshWindows(windows []Window) {}
 

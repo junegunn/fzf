@@ -8,7 +8,7 @@ import (
 func TestAtExit(t *testing.T) {
 	want := []int{3, 2, 1, 0}
 	var called []int
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		n := i
 		AtExit(func() { called = append(called, n) })
 	}

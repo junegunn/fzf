@@ -86,7 +86,7 @@ func TestFuzzyMatch(t *testing.T) {
 					scoreGapStart*2+scoreGapExtension*2)
 			assertMatch(t, fn, true, forward, "FooBar Baz", "FooB", 0, 4,
 				scoreMatch*4+int(bonusBoundaryWhite)*bonusFirstCharMultiplier+int(bonusBoundaryWhite)*2+
-					util.Max(bonusCamel123, int(bonusBoundaryWhite)))
+					max(bonusCamel123, int(bonusBoundaryWhite)))
 
 			// Consecutive bonus updated
 			assertMatch(t, fn, true, forward, "foo-bar", "o-ba", 2, 6,

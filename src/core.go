@@ -2,10 +2,13 @@
 package fzf
 
 import (
+	"fmt"
+	"maps"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
 )
 
@@ -15,7 +18,6 @@ Reader   -> EvtReadNew        -> Matcher  (restart)
 Terminal -> EvtSearchNew:bool -> Matcher  (restart)
 Matcher  -> EvtSearchProgress -> Terminal (update info)
 Matcher  -> EvtSearchFin      -> Terminal (update list)
-Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
 type revision struct {
@@ -36,11 +38,26 @@ func (r revision) compatible(other revision) bool {
 	return r.major == other.major
 }
 
+func buildItemTransformer(opts *Options) func(*Item) string {
+	if opts.AcceptNth != nil {
+		fn := opts.AcceptNth(opts.Delimiter)
+		return func(item *Item) string {
+			return item.acceptNth(opts.Ansi, opts.Delimiter, fn)
+		}
+	}
+	return func(item *Item) string {
+		return item.AsString(opts.Ansi)
+	}
+}
+
 // Run starts fzf
 func Run(opts *Options) (int, error) {
 	if opts.Filter == nil {
-		if opts.Tmux != nil && len(os.Getenv("TMUX")) > 0 && opts.Tmux.index >= opts.Height.index {
+		if opts.useTmux() {
 			return runTmux(os.Args, opts)
+		}
+		if opts.useZellij() {
+			return runZellij(os.Args, opts)
 		}
 
 		if needWinpty(opts) {
@@ -74,20 +91,24 @@ func Run(opts *Options) (int, error) {
 
 	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
-		if opts.Theme.Colored {
-			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				prevLineAnsiState = lineAnsiState
-				trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
-				lineAnsiState = newState
-				return util.ToChars(stringBytes(trimmed)), offsets
+		ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
+			prevLineAnsiState = lineAnsiState
+			trimmed, offsets, newState := extractColor(byteString(data), lineAnsiState, nil)
+			lineAnsiState = newState
+
+			// Full line background is found. Add a special marker.
+			if offsets != nil && newState != nil && len(*offsets) > 0 && newState.lbg >= 0 {
+				marker := (*offsets)[len(*offsets)-1]
+				marker.offset[0] = marker.offset[1]
+				marker.color.bg = newState.lbg
+				marker.color.attr = marker.color.attr | tui.FullBg
+				newOffsets := append(*offsets, marker)
+				offsets = &newOffsets
+
+				// Reset the full-line background color
+				lineAnsiState.lbg = -1
 			}
-		} else {
-			// When color is disabled but ansi option is given,
-			// we simply strip out ANSI codes from the input
-			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
-				trimmed, _, _ := extractColor(byteString(data), nil, nil)
-				return util.ToChars(stringBytes(trimmed)), nil
-			}
+			return util.ToChars(stringBytes(trimmed)), offsets
 		}
 	}
 
@@ -95,47 +116,57 @@ func Run(opts *Options) (int, error) {
 	cache := NewChunkCache()
 	var chunkList *ChunkList
 	var itemIndex int32
-	header := make([]string, 0, opts.HeaderLines)
+	// transformItem applies with-nth transformation to an item's raw data.
+	// It handles ANSI token propagation using prevLineAnsiState for cross-line continuity.
+	transformItem := func(item *Item, data []byte, transformer func([]Token, int32) string, index int32) {
+		tokens := Tokenize(byteString(data), opts.Delimiter)
+		if opts.Ansi && len(tokens) > 1 {
+			var ansiState *ansiState
+			if prevLineAnsiState != nil {
+				ansiStateDup := *prevLineAnsiState
+				ansiState = &ansiStateDup
+			}
+			for _, token := range tokens {
+				prevAnsiState := ansiState
+				_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
+				if prevAnsiState != nil {
+					token.text.Prepend("\x1b[m" + prevAnsiState.ToString())
+				} else {
+					token.text.Prepend("\x1b[m")
+				}
+			}
+		}
+		transformed := transformer(tokens, index)
+		item.text, item.colors = ansiProcessor(stringBytes(transformed))
+
+		// We should not trim trailing whitespaces with background colors
+		var maxColorOffset int32
+		if item.colors != nil {
+			for _, ansi := range *item.colors {
+				if ansi.color.bg >= 0 {
+					maxColorOffset = max(maxColorOffset, ansi.offset[1])
+				}
+			}
+		}
+		item.text.TrimTrailingWhitespaces(int(maxColorOffset))
+	}
+
+	var nthTransformer func([]Token, int32) string
 	if opts.WithNth == nil {
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
-			if len(header) < opts.HeaderLines {
-				header = append(header, byteString(data))
-				eventBox.Set(EvtHeader, header)
-				return false
-			}
 			item.text, item.colors = ansiProcessor(data)
 			item.text.Index = itemIndex
 			itemIndex++
 			return true
 		})
 	} else {
-		nthTransformer := opts.WithNth(opts.Delimiter)
+		nthTransformer = opts.WithNth(opts.Delimiter)
 		chunkList = NewChunkList(cache, func(item *Item, data []byte) bool {
-			tokens := Tokenize(byteString(data), opts.Delimiter)
-			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
-				var ansiState *ansiState
-				if prevLineAnsiState != nil {
-					ansiStateDup := *prevLineAnsiState
-					ansiState = &ansiStateDup
-				}
-				for _, token := range tokens {
-					prevAnsiState := ansiState
-					_, _, ansiState = extractColor(token.text.ToString(), ansiState, nil)
-					if prevAnsiState != nil {
-						token.text.Prepend("\x1b[m" + prevAnsiState.ToString())
-					} else {
-						token.text.Prepend("\x1b[m")
-					}
-				}
+			if nthTransformer == nil {
+				item.text, item.colors = ansiProcessor(data)
+			} else {
+				transformItem(item, data, nthTransformer, itemIndex)
 			}
-			transformed := nthTransformer(tokens, itemIndex)
-			if len(header) < opts.HeaderLines {
-				header = append(header, transformed)
-				eventBox.Set(EvtHeader, header)
-				return false
-			}
-			item.text, item.colors = ansiProcessor(stringBytes(transformed))
-			item.text.TrimTrailingWhitespaces()
 			item.text.Index = itemIndex
 			item.origText = &data
 			itemIndex++
@@ -165,13 +196,15 @@ func Run(opts *Options) (int, error) {
 	}
 
 	// Reader
-	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync
+	streamingFilter := opts.Filter != nil && !sort && !opts.Tac && !opts.Sync && opts.Bench == 0
 	var reader *Reader
+	var ingestionStart time.Time
 	if !streamingFilter {
 		reader = NewReader(func(data []byte) bool {
 			return chunkList.Push(data)
 		}, eventBox, executor, opts.ReadZero, opts.Filter == nil)
 
+		ingestionStart = time.Now()
 		readyChan := make(chan bool)
 		go reader.ReadSource(opts.Input, opts.WalkerRoot, opts.WalkerOpts, opts.WalkerSkip, initialReload, initialEnv, readyChan)
 		<-readyChan
@@ -208,18 +241,17 @@ func Run(opts *Options) (int, error) {
 		denylist = make(map[int32]struct{})
 		denyMutex.Unlock()
 	}
+	headerLines := int32(opts.HeaderLines)
+	headerUpdated := false
 	patternBuilder := func(runes []rune) *Pattern {
 		denyMutex.Lock()
-		denylistCopy := make(map[int32]struct{})
-		for k, v := range denylist {
-			denylistCopy[k] = v
-		}
+		denylistCopy := maps.Clone(denylist)
 		denyMutex.Unlock()
 		return BuildPattern(cache, patternCache,
 			opts.Fuzzy, opts.FuzzyAlgo, opts.Extended, opts.Case, opts.Normalize, forward, withPos,
-			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy)
+			opts.Filter == nil, nth, opts.Delimiter, inputRevision, runes, denylistCopy, headerLines)
 	}
-	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision)
+	matcher := NewMatcher(cache, patternBuilder, sort, opts.Tac, eventBox, inputRevision, opts.Threads)
 
 	// Filtering mode
 	if opts.Filter != nil {
@@ -230,6 +262,8 @@ func Run(opts *Options) (int, error) {
 		pattern := patternBuilder([]rune(*opts.Filter))
 		matcher.sort = pattern.sortable
 
+		transformer := buildItemTransformer(opts)
+
 		found := false
 		if streamingFilter {
 			slab := util.MakeSlab(slab16Size, slab32Size)
@@ -238,9 +272,12 @@ func Run(opts *Options) (int, error) {
 				func(runes []byte) bool {
 					item := Item{}
 					if chunkList.trans(&item, runes) {
+						if item.Index() < headerLines {
+							return false
+						}
 						mutex.Lock()
-						if result, _, _ := pattern.MatchItem(&item, false, slab); result != nil {
-							opts.Printer(item.text.ToString())
+						if result, _, _ := pattern.MatchItem(&item, false, slab); result.item != nil {
+							opts.Printer(transformer(&item))
 							found = true
 						}
 						mutex.Unlock()
@@ -251,14 +288,56 @@ func Run(opts *Options) (int, error) {
 		} else {
 			eventBox.Unwatch(EvtReadNew)
 			eventBox.WaitFor(EvtReadFin)
+			ingestionTime := time.Since(ingestionStart)
 
 			// NOTE: Streaming filter is inherently not compatible with --tail
 			snapshot, _, _ := chunkList.Snapshot(opts.Tail)
-			merger, _ := matcher.scan(MatchRequest{
+
+			if opts.Bench > 0 {
+				// Benchmark mode: repeat scan for the given duration
+				totalItems := CountItems(snapshot)
+				var matchCount int
+				var times []time.Duration
+				deadline := time.Now().Add(opts.Bench)
+				for time.Now().Before(deadline) {
+					cache.Clear()
+					start := time.Now()
+					result := matcher.scan(MatchRequest{
+						chunks:  snapshot,
+						pattern: pattern})
+					times = append(times, time.Since(start))
+					matchCount = result.merger.Length()
+				}
+				// Print stats
+				var total time.Duration
+				minD, maxD := times[0], times[0]
+				for _, d := range times {
+					total += d
+					if d < minD {
+						minD = d
+					}
+					if d > maxD {
+						maxD = d
+					}
+				}
+				avg := total / time.Duration(len(times))
+				selectivity := float64(matchCount) / float64(totalItems) * 100
+				fmt.Printf("  %d iterations  avg: %.2fms  min: %.2fms  max: %.2fms  total: %.2fs  items: %d  matches: %d (%.2f%%)  ingestion: %.2fms\n",
+					len(times),
+					float64(avg.Microseconds())/1000,
+					float64(minD.Microseconds())/1000,
+					float64(maxD.Microseconds())/1000,
+					total.Seconds(),
+					totalItems, matchCount, selectivity,
+					float64(ingestionTime.Microseconds())/1000)
+				return ExitOk, nil
+			}
+
+			result := matcher.scan(MatchRequest{
 				chunks:  snapshot,
 				pattern: pattern})
-			for i := 0; i < merger.Length(); i++ {
-				opts.Printer(merger.Get(i).item.AsString(opts.Ansi))
+			for i := 0; i < result.merger.Length(); i++ {
+				opts.Printer(transformer(result.merger.Get(i).item))
 				found = true
 			}
 		}
@@ -303,10 +382,11 @@ func Run(opts *Options) (int, error) {
 	query := []rune{}
 	determine := func(final bool) {
 		if heightUnknown {
-			if total >= maxFit || final {
+			items := max(0, total-int(headerLines))
+			if items >= maxFit || final {
 				deferred = false
 				heightUnknown = false
-				terminal.startChan <- fitpad{util.Min(total, maxFit), padHeight}
+				terminal.startChan <- fitpad{min(items, maxFit), padHeight}
 			}
 		} else if deferred {
 			deferred = false
@@ -322,11 +402,11 @@ func Run(opts *Options) (int, error) {
 			clearDenylist()
 		}
 		reading = true
+		headerUpdated = false
 		startTick = ticks
 		chunkList.Clear()
 		itemIndex = 0
 		inputRevision.bumpMajor()
-		header = make([]string, 0, opts.HeaderLines)
 		readyChan := make(chan bool)
 		go reader.restart(command, environ, readyChan)
 		<-readyChan
@@ -384,16 +464,24 @@ func Run(opts *Options) (int, error) {
 						snapshotRevision = inputRevision
 					}
 					total = count
-					terminal.UpdateCount(total, !reading, value.(*string))
+					terminal.UpdateCount(max(0, total-int(headerLines)), !reading, value.(*string))
+					if headerLines > 0 && !headerUpdated {
+						terminal.UpdateHeader(GetItems(snapshot, int(headerLines)))
+						headerUpdated = int32(total) >= headerLines
+					}
 					if heightUnknown && !deferred {
 						determine(!reading)
 					}
-					matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
+					if !useSnapshot || evt == EvtReadFin {
+						matcher.Reset(snapshot, input(), false, !reading, sort, snapshotRevision)
+					}
 
 				case EvtSearchNew:
 					var command *commandSpec
 					var environ []string
 					var changed bool
+					headerLinesChanged := false
+					withNthChanged := false
 					switch val := value.(type) {
 					case searchRequest:
 						sort = val.sort
@@ -412,6 +500,40 @@ func Run(opts *Options) (int, error) {
 						if val.nth != nil {
 							// Change nth and clear caches
 							nth = *val.nth
+							bump = true
+						}
+						if val.headerLines != nil {
+							headerLines = int32(*val.headerLines)
+							headerUpdated = false
+							headerLinesChanged = true
+							bump = true
+						}
+						if val.withNth != nil {
+							newTransformer := val.withNth.fn
+							// Cancel any in-flight scan and block the terminal from reading
+							// items before mutating them in-place. Snapshot shares middle
+							// chunk pointers, so the matcher and terminal can race with us.
+							matcher.CancelScan()
+							terminal.PauseRendering()
+							// Reset cross-line ANSI state before re-processing all items
+							lineAnsiState = nil
+							prevLineAnsiState = nil
+							chunkList.ForEachItem(func(item *Item) {
+								origBytes := *item.origText
+								savedIndex := item.Index()
+								if newTransformer != nil {
+									transformItem(item, origBytes, newTransformer, savedIndex)
+								} else {
+									item.text, item.colors = ansiProcessor(origBytes)
+								}
+								item.text.Index = savedIndex
+								item.transformed = nil
+							}, func() {
+								nthTransformer = newTransformer
+							})
+							terminal.ResumeRendering()
+							matcher.ResumeScan()
+							withNthChanged = true
 							bump = true
 						}
 						if bump {
@@ -450,6 +572,16 @@ func Run(opts *Options) (int, error) {
 							snapshotRevision = inputRevision
 						}
 					}
+					if headerLinesChanged {
+						terminal.UpdateCount(max(0, total-int(headerLines)), !reading, nil)
+						if headerLines > 0 {
+							terminal.UpdateHeader(GetItems(snapshot, int(headerLines)))
+						} else {
+							terminal.UpdateHeader(nil)
+						}
+					} else if withNthChanged && headerLines > 0 {
+						terminal.UpdateHeader(GetItems(snapshot, int(headerLines)))
+					}
 					matcher.Reset(snapshot, input(), true, !reading, sort, snapshotRevision)
 					delay = false
 
@@ -459,19 +591,15 @@ func Run(opts *Options) (int, error) {
 						terminal.UpdateProgress(val)
 					}
 
-				case EvtHeader:
-					headerPadded := make([]string, opts.HeaderLines)
-					copy(headerPadded, value.([]string))
-					terminal.UpdateHeader(headerPadded)
-
 				case EvtSearchFin:
 					switch val := value.(type) {
-					case *Merger:
+					case MatchResult:
+						merger := val.merger
 						if deferred {
-							count := val.Length()
+							count := merger.Length()
 							if opts.Select1 && count > 1 || opts.Exit0 && !opts.Select1 && count > 0 {
-								determine(val.final)
-							} else if val.final {
+								determine(merger.final)
+							} else if merger.final {
 								if opts.Exit0 && count == 0 || opts.Select1 && count == 1 {
 									if opts.PrintQuery {
 										opts.Printer(opts.Query)
@@ -479,17 +607,9 @@ func Run(opts *Options) (int, error) {
 									if len(opts.Expect) > 0 {
 										opts.Printer("")
 									}
-									transformer := func(item *Item) string {
-										return item.AsString(opts.Ansi)
-									}
-									if opts.AcceptNth != nil {
-										fn := opts.AcceptNth(opts.Delimiter)
-										transformer = func(item *Item) string {
-											return item.acceptNth(opts.Ansi, opts.Delimiter, fn)
-										}
-									}
-									for i := 0; i < count; i++ {
-										opts.Printer(transformer(val.Get(i).item))
+									transformer := buildItemTransformer(opts)
+									for i := range count {
+										opts.Printer(transformer(merger.Get(i).item))
 									}
 									if count == 0 {
 										exitCode = ExitNoMatch
@@ -497,7 +617,7 @@ func Run(opts *Options) (int, error) {
 									stop = true
 									return
 								}
-								determine(val.final)
+								determine(merger.final)
 							}
 						}
 						terminal.UpdateList(val)
@@ -510,7 +630,7 @@ func Run(opts *Options) (int, error) {
 			break
 		}
 		if delay && reading {
-			dur := util.DurWithin(
+			dur := util.Constrain(
 				time.Duration(ticks-startTick)*coordinatorDelayStep,
 				0, coordinatorDelayMax)
 			time.Sleep(dur)

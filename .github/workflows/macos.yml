@@ -15,22 +15,22 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: "1.20"
+        go-version: "1.23"
 
     - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@3ff19f5e2baf30647122352b96108b1fbe250c64 # v1
       with:
         ruby-version: 3.0.0
 
     - name: Install packages
-      run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew install fish zsh tmux
+      run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew install fish zsh tmux shfmt
 
     - name: Install Ruby gems
       run: gem install --no-document minitest:5.14.2 rubocop:1.0.0 rubocop-minitest:0.10.1 rubocop-performance:1.8.1

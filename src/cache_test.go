@@ -6,34 +6,34 @@ func TestChunkCache(t *testing.T) {
 	cache := NewChunkCache()
 	chunk1p := &Chunk{}
 	chunk2p := &Chunk{count: chunkSize}
-	items1 := []Result{{}}
-	items2 := []Result{{}, {}}
-	cache.Add(chunk1p, "foo", items1)
-	cache.Add(chunk2p, "foo", items1)
-	cache.Add(chunk2p, "bar", items2)
+	bm1 := ChunkBitmap{1}
+	bm2 := ChunkBitmap{1, 2}
+	cache.Add(chunk1p, "foo", bm1, 1)
+	cache.Add(chunk2p, "foo", bm1, 1)
+	cache.Add(chunk2p, "bar", bm2, 2)
 
 	{ // chunk1 is not full
 		cached := cache.Lookup(chunk1p, "foo")
 		if cached != nil {
-			t.Error("Cached disabled for non-empty chunks", cached)
+			t.Error("Cached disabled for non-full chunks", cached)
 		}
 	}
 	{
 		cached := cache.Lookup(chunk2p, "foo")
-		if cached == nil || len(cached) != 1 {
-			t.Error("Expected 1 item cached", cached)
+		if cached == nil || cached[0] != 1 {
+			t.Error("Expected bitmap cached", cached)
 		}
 	}
 	{
 		cached := cache.Lookup(chunk2p, "bar")
-		if cached == nil || len(cached) != 2 {
-			t.Error("Expected 2 items cached", cached)
+		if cached == nil || cached[1] != 2 {
+			t.Error("Expected bitmap cached", cached)
 		}
 	}
 	{
 		cached := cache.Lookup(chunk1p, "foobar")
 		if cached != nil {
-			t.Error("Expected 0 item cached", cached)
+			t.Error("Expected nil cached", cached)
 		}
 	}
 }

@@ -6,7 +6,7 @@ Build instructions
 
 ### Prerequisites
 
-- Go 1.20 or above
+- Go 1.23 or above
 
 ### Using Makefile
 
@@ -40,6 +40,20 @@ make release
 > fzf --profile-cpu /tmp/cpu.pprof --profile-mem /tmp/mem.pprof \
 >     --profile-block /tmp/block.pprof --profile-mutex /tmp/mutex.pprof
 > ```
+
+Running tests
+-------------
+
+```sh
+# Run go unit tests
+make test
+
+# Run integration tests (requires to be on tmux)
+make itest
+
+# Run a single test case
+ruby test/runner.rb --name test_something
+```
 
 Third-party libraries used
 --------------------------

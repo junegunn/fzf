@@ -2,10 +2,13 @@ package fzf
 
 import "sync"
 
-// queryCache associates strings to lists of items
-type queryCache map[string][]Result
+// ChunkBitmap is a bitmap with one bit per item in a chunk.
+type ChunkBitmap [chunkBitWords]uint64
 
-// ChunkCache associates Chunk and query string to lists of items
+// queryCache associates query strings to bitmaps of matching items
+type queryCache map[string]ChunkBitmap
+
+// ChunkCache associates Chunk and query string to bitmaps
 type ChunkCache struct {
 	mutex sync.Mutex
 	cache map[*Chunk]*queryCache
@@ -30,9 +33,9 @@ func (cc *ChunkCache) retire(chunk ...*Chunk) {
 	cc.mutex.Unlock()
 }
 
-// Add adds the list to the cache
-func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
-	if len(key) == 0 || !chunk.IsFull() || len(list) > queryCacheMax {
+// Add stores the bitmap for the given chunk and key
+func (cc *ChunkCache) Add(chunk *Chunk, key string, bitmap ChunkBitmap, matchCount int) {
+	if len(key) == 0 || !chunk.IsFull() || matchCount > queryCacheMax {
 		return
 	}
 
@@ -44,11 +47,11 @@ func (cc *ChunkCache) Add(chunk *Chunk, key string, list []Result) {
 		cc.cache[chunk] = &queryCache{}
 		qc = cc.cache[chunk]
 	}
-	(*qc)[key] = list
+	(*qc)[key] = bitmap
 }
 
-// Lookup is called to lookup ChunkCache
-func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []Result {
+// Lookup returns the bitmap for the exact key
+func (cc *ChunkCache) Lookup(chunk *Chunk, key string) *ChunkBitmap {
 	if len(key) == 0 || !chunk.IsFull() {
 		return nil
 	}
@@ -58,15 +61,15 @@ func (cc *ChunkCache) Lookup(chunk *Chunk, key string) []Result {
 
 	qc, ok := cc.cache[chunk]
 	if ok {
-		list, ok := (*qc)[key]
-		if ok {
-			return list
+		if bm, ok := (*qc)[key]; ok {
+			return &bm
 		}
 	}
 	return nil
 }
 
-func (cc *ChunkCache) Search(chunk *Chunk, key string) []Result {
+// Search finds the bitmap for the longest prefix or suffix of the key
+func (cc *ChunkCache) Search(chunk *Chunk, key string) *ChunkBitmap {
 	if len(key) == 0 || !chunk.IsFull() {
 		return nil
 	}
@@ -86,8 +89,8 @@ func (cc *ChunkCache) Search(chunk *Chunk, key string) []Result {
 		prefix := key[:len(key)-idx]
 		suffix := key[idx:]
 		for _, substr := range [2]string{prefix, suffix} {
-			if cached, found := (*qc)[substr]; found {
-				return cached
+			if bm, found := (*qc)[substr]; found {
+				return &bm
 			}
 		}
 	}

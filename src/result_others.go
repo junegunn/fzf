@@ -1,4 +1,4 @@
-//go:build !386 && !amd64
+//go:build !386 && !amd64 && !arm64
 
 package fzf
 
@@ -13,4 +13,8 @@ func compareRanks(irank Result, jrank Result, tac bool) bool {
 		}
 	}
 	return (irank.item.Index() <= jrank.item.Index()) != tac
+}
+
+func sortKey(r *Result) uint64 {
+	return uint64(r.points[0]) | uint64(r.points[1])<<16 | uint64(r.points[2])<<32 | uint64(r.points[3])<<48
 }

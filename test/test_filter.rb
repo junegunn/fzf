@@ -304,12 +304,49 @@ class TestFilter < TestBase
   def test_boundary_match
     # Underscore boundaries should be ranked lower
     {
-      default: [' x '] + %w[/x/ [x] -x- -x_ _x- _x_],
-      path: ['/x/', ' x '] + %w[[x] -x- -x_ _x- _x_],
-      history: ['[x]', '-x-', ' x '] + %w[/x/ -x_ _x- _x_]
+      default: [' xyz '] + %w[/xyz/ [xyz] -xyz- -xyz_ _xyz- _xyz_],
+      path: ['/xyz/', ' xyz '] + %w[[xyz] -xyz- -xyz_ _xyz- _xyz_],
+      history: ['[xyz]', '-xyz-', ' xyz '] + %w[/xyz/ -xyz_ _xyz- _xyz_]
     }.each do |scheme, expected|
-      result = `printf -- 'xxx\n-xx\nxx-\n_x_\n_x-\n-x_\n[x]\n-x-\n x \n/x/\n' | #{FZF} -f"'x'" --scheme=#{scheme}`.lines(chomp: true)
+      result = `printf -- 'xxyzx\n-xxyz\nxyzx-\n_xyz_\n_xyz-\n-xyz_\n[xyz]\n-xyz-\n xyz \n/xyz/\n' | #{FZF} -f"'xyz'" --scheme=#{scheme}`.lines(chomp: true)
       assert_equal expected, result
     end
+  end
+
+  def test_accept_nth
+    # Single field selection
+    assert_equal 'three', `echo 'one two three' | #{FZF} -d' ' --with-nth 1 --accept-nth -1 -f one`.chomp
+
+    # Multiple field selection
+    writelines(['ID001:John:Developer', 'ID002:Jane:Manager', 'ID003:Bob:Designer'])
+    assert_equal 'ID001', `#{FZF} -d: --with-nth 2 --accept-nth 1 -f John < #{tempname}`.chomp
+    assert_equal 'ID002:Manager', `#{FZF} -d: --with-nth 2 --accept-nth 1,3 -f Jane < #{tempname}`.chomp
+
+    # Test with different delimiters
+    writelines(['emp001 Alice Engineering', 'emp002 Bob Marketing'])
+    assert_equal 'emp001', `#{FZF} -d' ' --with-nth 2 --accept-nth 1 -f Alice < #{tempname}`.chomp
+  end
+
+  def test_header_lines_filter
+    assert_equal %w[4 5 6 7 8 9 10],
+                 `seq 10 | #{FZF} --header-lines 3 -f ""`.lines(chomp: true)
+    assert_equal %w[5],
+                 `seq 10 | #{FZF} --header-lines 3 -f 5`.lines(chomp: true)
+    # Header items should not be matched
+    assert_empty `seq 10 | #{FZF} --header-lines 3 -f "^1$"`.lines(chomp: true)
+  end
+
+  def test_header_lines_filter_with_nth
+    writelines(%w[a:1 b:2 c:3 d:4 e:5])
+    assert_equal %w[c:3 d:4 e:5],
+                 `#{FZF} --header-lines 2 -d: --with-nth 2 -f "" < #{tempname}`.lines(chomp: true)
+    assert_equal %w[d:4],
+                 `#{FZF} --header-lines 2 -d: --with-nth 2 -f 4 < #{tempname}`.lines(chomp: true)
+  end
+
+  def test_header_lines_all_headers
+    # When all lines are header lines, no results
+    assert_empty `seq 3 | #{FZF} --header-lines 10 -f ""`.chomp
+    assert_equal 1, $CHILD_STATUS.exitstatus
   end
 end

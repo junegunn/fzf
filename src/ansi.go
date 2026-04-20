@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
 )
 
@@ -22,20 +23,21 @@ type url struct {
 type ansiState struct {
 	fg   tui.Color
 	bg   tui.Color
+	ul   tui.Color
 	attr tui.Attr
 	lbg  tui.Color
 	url  *url
 }
 
 func (s *ansiState) colored() bool {
-	return s.fg != -1 || s.bg != -1 || s.attr > 0 || s.lbg >= 0 || s.url != nil
+	return s.fg != -1 || s.bg != -1 || s.ul != -1 || s.attr > 0 || s.lbg >= 0 || s.url != nil
 }
 
 func (s *ansiState) equals(t *ansiState) bool {
 	if t == nil {
 		return !s.colored()
 	}
-	return s.fg == t.fg && s.bg == t.bg && s.attr == t.attr && s.lbg == t.lbg && s.url == t.url
+	return s.fg == t.fg && s.bg == t.bg && s.ul == t.ul && s.attr == t.attr && s.lbg == t.lbg && s.url == t.url
 }
 
 func (s *ansiState) ToString() string {
@@ -54,7 +56,18 @@ func (s *ansiState) ToString() string {
 		ret += "3;"
 	}
 	if s.attr&tui.Underline > 0 {
-		ret += "4;"
+		switch s.attr.UnderlineStyle() {
+		case tui.UlStyleDouble:
+			ret += "4:2;"
+		case tui.UlStyleCurly:
+			ret += "4:3;"
+		case tui.UlStyleDotted:
+			ret += "4:4;"
+		case tui.UlStyleDashed:
+			ret += "4:5;"
+		default:
+			ret += "4;"
+		}
 	}
 	if s.attr&tui.Blink > 0 {
 		ret += "5;"
@@ -66,12 +79,29 @@ func (s *ansiState) ToString() string {
 		ret += "9;"
 	}
 	ret += toAnsiString(s.fg, 30) + toAnsiString(s.bg, 40)
+	if s.ul != -1 {
+		ret += toAnsiStringUl(s.ul)
+	}
 
 	ret = "\x1b[" + strings.TrimSuffix(ret, ";") + "m"
 	if s.url != nil {
 		ret = fmt.Sprintf("\x1b]8;%s;%s\x1b\\%s\x1b]8;;\x1b", s.url.params, s.url.uri, ret)
 	}
 	return ret
+}
+
+func toAnsiStringUl(color tui.Color) string {
+	col := int(color)
+	if col < 0 {
+		return ""
+	}
+	if col >= (1 << 24) {
+		r := strconv.Itoa((col >> 16) & 0xff)
+		g := strconv.Itoa((col >> 8) & 0xff)
+		b := strconv.Itoa(col & 0xff)
+		return "58;2;" + r + ";" + g + ";" + b + ";"
+	}
+	return "58;5;" + strconv.Itoa(col) + ";"
 }
 
 func toAnsiString(color tui.Color, offset int) string {
@@ -94,31 +124,31 @@ func toAnsiString(color tui.Color, offset int) string {
 	return ret + ";"
 }
 
-func isPrint(c uint8) bool {
-	return '\x20' <= c && c <= '\x7e'
-}
-
 func matchOperatingSystemCommand(s string, start int) int {
 	// `\x1b][0-9][;:][[:print:]]+(?:\x1b\\\\|\x07)`
 	//                 ^ match starting here after the first printable character
 	//
 	i := start // prefix matched in nextAnsiEscapeSequence()
-	for ; i < len(s) && isPrint(s[i]); i++ {
+
+	// Find the terminator: BEL (\x07) or ESC (\x1b) for ST (\x1b\\)
+	idx := algo.IndexByteTwo(stringBytes(s[i:]), '\x07', '\x1b')
+	if idx < 0 {
+		return -1
 	}
-	if i < len(s) {
-		if s[i] == '\x07' {
-			return i + 1
-		}
-		// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
-		//                   ------
-		if s[i] == '\x1b' && i < len(s)-1 && s[i+1] == '\\' {
-			return i + 2
-		}
+	i += idx
+
+	if s[i] == '\x07' {
+		return i + 1
+	}
+	// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
+	//                   ------
+	if i < len(s)-1 && s[i+1] == '\\' {
+		return i + 2
 	}
 
 	// `\x1b]8;PARAMS;URI\x1b\\TITLE\x1b]8;;\x1b`
 	//                              ------------
-	if i < len(s) && s[:i+1] == "\x1b]8;;\x1b" {
+	if s[:i+1] == "\x1b]8;;\x1b" {
 		return i + 1
 	}
 
@@ -156,13 +186,13 @@ func isCtrlSeqStart(c uint8) bool {
 // nextAnsiEscapeSequence returns the ANSI escape sequence and is equivalent to
 // calling FindStringIndex() on the below regex (which was originally used):
 //
-// "(?:\x1b[\\[()][0-9;:?]*[a-zA-Z@]|\x1b][0-9]+[;:][[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08)"
+// "(?:\x1b[\\[()][0-9;:?]*[a-zA-Z@]|\x1b][0-9]+[;:][[:print:]]+(?:\x1b\\\\|\x07)|\x1b.|[\x0e\x0f]|.\x08|\n)"
 func nextAnsiEscapeSequence(s string) (int, int) {
 	// fast check for ANSI escape sequences
 	i := 0
 	for ; i < len(s); i++ {
 		switch s[i] {
-		case '\x0e', '\x0f', '\x1b', '\x08':
+		case '\x0e', '\x0f', '\x1b', '\x08', '\n':
 			// We ignore the fact that '\x08' cannot be the first char
 			// in the string and be an escape sequence for the sake of
 			// speed and simplicity.
@@ -174,6 +204,9 @@ func nextAnsiEscapeSequence(s string) (int, int) {
 Loop:
 	for ; i < len(s); i++ {
 		switch s[i] {
+		case '\n':
+			// match: `\n`
+			return i, i + 1
 		case '\x08':
 			// backtrack to match: `.\x08`
 			if i > 0 && s[i-1] != '\n' {
@@ -201,7 +234,7 @@ Loop:
 
 				// \x1b][0-9]+[;:][[:print:]]+(?:\x1b\\\\|\x07)
 				//            ---------------
-				if j > 2 && i+j+1 < len(s) && (s[i+j] == ';' || s[i+j] == ':') && isPrint(s[i+j+1]) {
+				if j > 2 && i+j+1 < len(s) && (s[i+j] == ';' || s[i+j] == ':') && s[i+j+1] >= '\x20' {
 					if k := matchOperatingSystemCommand(s[i:], j+2); k != -1 {
 						return i, i + k
 					}
@@ -265,11 +298,28 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 			output.WriteString(prev)
 		}
 
-		newState := interpretCode(str[start:idx], state)
-		if !newState.equals(state) {
+		code := str[start:idx]
+		newState := interpretCode(code, state)
+		if code == "\n" || !newState.equals(state) {
 			if state != nil {
 				// Update last offset
 				(&offsets[len(offsets)-1]).offset[1] = int32(runeCount)
+			}
+
+			if code == "\n" {
+				output.WriteRune('\n')
+				runeCount++
+				// Full-background marker
+				if newState.lbg >= 0 {
+					marker := newState
+					marker.attr |= tui.FullBg
+					offsets = append(offsets, ansiOffset{
+						[2]int32{int32(runeCount), int32(runeCount)},
+						marker,
+					})
+					// Reset the full-line background color
+					newState.lbg = -1
+				}
 			}
 
 			if newState.colored() {
@@ -318,15 +368,19 @@ func extractColor(str string, state *ansiState, proc func(string, *ansiState) bo
 	return trimmed, nil, state
 }
 
-func parseAnsiCode(s string) (int, string) {
+func parseAnsiCode(s string) (int, byte, string) {
 	var remaining string
-	var i int
-	// Faster than strings.IndexAny(";:")
-	i = strings.IndexByte(s, ';')
-	if i < 0 {
-		i = strings.IndexByte(s, ':')
+	var sep byte
+	// Find the first separator (either ; or :)
+	i := -1
+	for j := 0; j < len(s); j++ {
+		if s[j] == ';' || s[j] == ':' {
+			i = j
+			break
+		}
 	}
 	if i >= 0 {
+		sep = s[i]
 		remaining = s[i+1:]
 		s = s[:i]
 	}
@@ -338,25 +392,32 @@ func parseAnsiCode(s string) (int, string) {
 		for _, ch := range stringBytes(s) {
 			ch -= '0'
 			if ch > 9 {
-				return -1, remaining
+				return -1, sep, remaining
 			}
 			code = code*10 + int(ch)
 		}
-		return code, remaining
+		return code, sep, remaining
 	}
 
-	return -1, remaining
+	return -1, sep, remaining
 }
 
 func interpretCode(ansiCode string, prevState *ansiState) ansiState {
+	if ansiCode == "\n" {
+		if prevState != nil {
+			return *prevState
+		}
+		return ansiState{-1, -1, -1, 0, -1, nil}
+	}
+
 	var state ansiState
 	if prevState == nil {
-		state = ansiState{-1, -1, 0, -1, nil}
+		state = ansiState{-1, -1, -1, 0, -1, nil}
 	} else {
-		state = ansiState{prevState.fg, prevState.bg, prevState.attr, prevState.lbg, prevState.url}
+		state = ansiState{prevState.fg, prevState.bg, prevState.ul, prevState.attr, prevState.lbg, prevState.url}
 	}
 	if ansiCode[0] != '\x1b' || ansiCode[1] != '[' || ansiCode[len(ansiCode)-1] != 'm' {
-		if prevState != nil && strings.HasSuffix(ansiCode, "0K") {
+		if prevState != nil && (strings.HasSuffix(ansiCode, "0K") || strings.HasSuffix(ansiCode, "[K")) {
 			state.lbg = prevState.bg
 		} else if strings.HasPrefix(ansiCode, "\x1b]8;") && (strings.HasSuffix(ansiCode, "\x1b\\") || strings.HasSuffix(ansiCode, "\a")) {
 			stLen := 2
@@ -375,10 +436,15 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 		return state
 	}
 
-	if len(ansiCode) <= 3 {
+	reset := func() {
 		state.fg = -1
 		state.bg = -1
+		state.ul = -1
 		state.attr = 0
+	}
+
+	if len(ansiCode) <= 3 {
+		reset()
 		return state
 	}
 	ansiCode = ansiCode[2 : len(ansiCode)-1]
@@ -389,7 +455,8 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 	count := 0
 	for len(ansiCode) != 0 {
 		var num int
-		if num, ansiCode = parseAnsiCode(ansiCode); num != -1 {
+		var sep byte
+		if num, sep, ansiCode = parseAnsiCode(ansiCode); num != -1 {
 			count++
 			switch state256 {
 			case 0:
@@ -400,10 +467,15 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 				case 48:
 					ptr = &state.bg
 					state256++
+				case 58:
+					ptr = &state.ul
+					state256++
 				case 39:
 					state.fg = -1
 				case 49:
 					state.bg = -1
+				case 59:
+					state.ul = -1
 				case 1:
 					state.attr = state.attr | tui.Bold
 				case 2:
@@ -411,7 +483,30 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 				case 3:
 					state.attr = state.attr | tui.Italic
 				case 4:
-					state.attr = state.attr | tui.Underline
+					if sep == ':' {
+						// SGR 4:N - underline style sub-parameter
+						var subNum int
+						subNum, _, ansiCode = parseAnsiCode(ansiCode)
+						state.attr = state.attr &^ tui.UnderlineStyleMask
+						switch subNum {
+						case 0:
+							state.attr = state.attr &^ tui.Underline
+						case 1:
+							state.attr = state.attr | tui.Underline
+						case 2:
+							state.attr = state.attr | tui.Underline | tui.UlStyleDouble
+						case 3:
+							state.attr = state.attr | tui.Underline | tui.UlStyleCurly
+						case 4:
+							state.attr = state.attr | tui.Underline | tui.UlStyleDotted
+						case 5:
+							state.attr = state.attr | tui.Underline | tui.UlStyleDashed
+						default:
+							state.attr = state.attr | tui.Underline
+						}
+					} else {
+						state.attr = state.attr | tui.Underline
+					}
 				case 5:
 					state.attr = state.attr | tui.Blink
 				case 7:
@@ -425,6 +520,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 					state.attr = state.attr &^ tui.Italic
 				case 24: // tput rmul
 					state.attr = state.attr &^ tui.Underline
+					state.attr = state.attr &^ tui.UnderlineStyleMask
 				case 25:
 					state.attr = state.attr &^ tui.Blink
 				case 27:
@@ -432,9 +528,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 				case 29:
 					state.attr = state.attr &^ tui.StrikeThrough
 				case 0:
-					state.fg = -1
-					state.bg = -1
-					state.attr = 0
+					reset()
 					state256 = 0
 				default:
 					if num >= 30 && num <= 37 {
@@ -474,9 +568,7 @@ func interpretCode(ansiCode string, prevState *ansiState) ansiState {
 
 	// Empty sequence: reset
 	if count == 0 {
-		state.fg = -1
-		state.bg = -1
-		state.attr = 0
+		reset()
 	}
 
 	if state256 > 0 {

@@ -309,16 +309,16 @@ I know it's a lot to digest, let's try to break down the code.
   available color options.
 - The value of `--preview-window` option consists of 5 components delimited
   by `,`
-    1. `up` — Position of the preview window
-    1. `60%` — Size of the preview window
-    1. `border-bottom` — Preview window border only on the bottom side
-    1. `+{2}+3/3` — Scroll offset of the preview contents
-    1. `~3` — Fixed header
+    1. `up` -- Position of the preview window
+    1. `60%` -- Size of the preview window
+    1. `border-bottom` -- Preview window border only on the bottom side
+    1. `+{2}+3/3` -- Scroll offset of the preview contents
+    1. `~3` -- Fixed header
 - Let's break down the latter two. We want to display the bat output in the
   preview window with a certain scroll offset so that the matching line is
   positioned near the center of the preview window.
-    - `+{2}` — The base offset is extracted from the second token
-    - `+3` — We add 3 lines to the base offset to compensate for the header
+    - `+{2}` -- The base offset is extracted from the second token
+    - `+3` -- We add 3 lines to the base offset to compensate for the header
       part of `bat` output
         - ```
           ───────┬──────────────────────────────────────────────────────────
@@ -363,7 +363,7 @@ projects, and it will free up memory as you narrow down the results.
 RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
 INITIAL_QUERY="${*:-}"
 fzf --ansi --disabled --query "$INITIAL_QUERY" \
-    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "start:reload:$RG_PREFIX {q} || true" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
     --delimiter : \
     --preview 'bat --color=always {1} --highlight-line {2}' \

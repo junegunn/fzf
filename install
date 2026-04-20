@@ -2,7 +2,7 @@
 
 set -u
 
-version=0.61.3
+version=0.71.0
 auto_completion=
 key_bindings=
 update_config=2
@@ -48,17 +48,17 @@ for opt in "$@"; do
       prefix_expand=${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf
       mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/fzf"
       ;;
-    --key-bindings)    key_bindings=1    ;;
-    --no-key-bindings) key_bindings=0    ;;
-    --completion)      auto_completion=1 ;;
-    --no-completion)   auto_completion=0 ;;
-    --update-rc)       update_config=1   ;;
-    --no-update-rc)    update_config=0   ;;
-    --bin)             ;;
-    --no-bash)         shells=${shells/bash/} ;;
-    --no-zsh)          shells=${shells/zsh/} ;;
-    --no-fish)         shells=${shells/fish/} ;;
-    --no-nushell)      shells=${shells/nushell/} ;;
+    --key-bindings) key_bindings=1 ;;
+    --no-key-bindings) key_bindings=0 ;;
+    --completion) auto_completion=1 ;;
+    --no-completion) auto_completion=0 ;;
+    --update-rc) update_config=1 ;;
+    --no-update-rc) update_config=0 ;;
+    --bin) ;;
+    --no-bash) shells=${shells/bash/} ;;
+    --no-zsh) shells=${shells/zsh/} ;;
+    --no-fish) shells=${shells/fish/} ;;
+    --no-nushell) shells=${shells/nushell/} ;;
     *)
       echo "unknown option: $opt"
       help
@@ -107,7 +107,7 @@ check_binary() {
 
 link_fzf_in_path() {
   if which_fzf="$(command -v fzf)"; then
-    echo "  - Found in \$PATH"
+    echo '  - Found in $PATH'
     echo "  - Creating symlink: bin/fzf -> $which_fzf"
     (cd "$fzf_base"/bin && rm -f fzf && ln -sf "$which_fzf" fzf)
     check_binary && return
@@ -115,24 +115,29 @@ link_fzf_in_path() {
   return 1
 }
 
+tar_opts="-xzf -"
+if tar --no-same-owner -tf /dev/null 2> /dev/null; then
+  tar_opts="--no-same-owner $tar_opts"
+fi
+
 try_curl() {
   command -v curl > /dev/null &&
-  if [[ $1 =~ tar.gz$ ]]; then
-    curl -fL $1 | tar --no-same-owner -xzf -
-  else
-    local temp=${TMPDIR:-/tmp}/fzf.zip
-    curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
-  fi
+    if [[ $1 =~ tar.gz$ ]]; then
+      curl -fL $1 | tar $tar_opts
+    else
+      local temp=${TMPDIR:-/tmp}/fzf.zip
+      curl -fLo "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+    fi
 }
 
 try_wget() {
   command -v wget > /dev/null &&
-  if [[ $1 =~ tar.gz$ ]]; then
-    wget -O - $1 | tar --no-same-owner -xzf -
-  else
-    local temp=${TMPDIR:-/tmp}/fzf.zip
-    wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
-  fi
+    if [[ $1 =~ tar.gz$ ]]; then
+      wget -O - $1 | tar $tar_opts
+    else
+      local temp=${TMPDIR:-/tmp}/fzf.zip
+      wget -O "$temp" $1 && unzip -o "$temp" && rm -f "$temp"
+    fi
 }
 
 download() {
@@ -167,28 +172,30 @@ download() {
 }
 
 # Try to download binary executable
-archi=$(uname -sm)
+archi=$(uname -smo 2> /dev/null || uname -sm)
 binary_available=1
 binary_error=""
 case "$archi" in
-  Darwin\ arm64)      download fzf-$version-darwin_arm64.tar.gz  ;;
-  Darwin\ x86_64)     download fzf-$version-darwin_amd64.tar.gz  ;;
-  Linux\ armv5*)      download fzf-$version-linux_armv5.tar.gz   ;;
-  Linux\ armv6*)      download fzf-$version-linux_armv6.tar.gz   ;;
-  Linux\ armv7*)      download fzf-$version-linux_armv7.tar.gz   ;;
-  Linux\ armv8*)      download fzf-$version-linux_arm64.tar.gz   ;;
-  Linux\ aarch64*)    download fzf-$version-linux_arm64.tar.gz   ;;
-  Linux\ loongarch64) download fzf-$version-linux_loong64.tar.gz ;;
-  Linux\ ppc64le)     download fzf-$version-linux_ppc64le.tar.gz ;;
-  Linux\ *64)         download fzf-$version-linux_amd64.tar.gz   ;;
-  Linux\ s390x)       download fzf-$version-linux_s390x.tar.gz   ;;
-  FreeBSD\ *64)       download fzf-$version-freebsd_amd64.tar.gz ;;
-  OpenBSD\ *64)       download fzf-$version-openbsd_amd64.tar.gz ;;
-  CYGWIN*\ *64)       download fzf-$version-windows_amd64.zip    ;;
-  MINGW*\ *64)        download fzf-$version-windows_amd64.zip    ;;
-  MSYS*\ *64)         download fzf-$version-windows_amd64.zip    ;;
-  Windows*\ *64)      download fzf-$version-windows_amd64.zip    ;;
-  *)                  binary_available=0 binary_error=1          ;;
+  Darwin\ arm64*) download fzf-$version-darwin_arm64.tar.gz ;;
+  Darwin\ x86_64*) download fzf-$version-darwin_amd64.tar.gz ;;
+  Linux\ armv5*) download fzf-$version-linux_armv5.tar.gz ;;
+  Linux\ armv6*) download fzf-$version-linux_armv6.tar.gz ;;
+  Linux\ armv7*) download fzf-$version-linux_armv7.tar.gz ;;
+  Linux\ armv8*) download fzf-$version-linux_arm64.tar.gz ;;
+  Linux\ aarch64\ Android) download fzf-$version-android_arm64.tar.gz ;;
+  Linux\ aarch64*) download fzf-$version-linux_arm64.tar.gz ;;
+  Linux\ loongarch64*) download fzf-$version-linux_loong64.tar.gz ;;
+  Linux\ riscv64*) download fzf-$version-linux_riscv64.tar.gz ;;
+  Linux\ ppc64le*) download fzf-$version-linux_ppc64le.tar.gz ;;
+  Linux\ *64*) download fzf-$version-linux_amd64.tar.gz ;;
+  Linux\ s390x*) download fzf-$version-linux_s390x.tar.gz ;;
+  FreeBSD\ *64*) download fzf-$version-freebsd_amd64.tar.gz ;;
+  OpenBSD\ *64*) download fzf-$version-openbsd_amd64.tar.gz ;;
+  CYGWIN*\ *64*) download fzf-$version-windows_amd64.zip ;;
+  MINGW*\ *64*) download fzf-$version-windows_amd64.zip ;;
+  MSYS*\ *64*) download fzf-$version-windows_amd64.zip ;;
+  Windows*\ *64*) download fzf-$version-windows_amd64.zip ;;
+  *) binary_available=0 binary_error=1 ;;
 esac
 
 cd "$fzf_base"
@@ -217,7 +224,7 @@ if [ -n "$binary_error" ]; then
   fi
 fi
 
-[[ "$*" =~ "--bin" ]] && exit 0
+[[ $* =~ "--bin" ]] && exit 0
 
 for s in $shells; do
   bin=$s
@@ -246,17 +253,16 @@ fi
 
 echo
 for shell in $shells; do
-  [[ "$shell" = fish ]] && continue
-  [[ "$shell" = nushell ]] && continue
-  src=${prefix_expand}.${shell}
+  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
+  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
+  [[ $shell == fish ]] && continue
+  [[ $shell == nushell ]] && continue
   echo -n "Generate $src ... "
 
-  fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   if [ $auto_completion -eq 0 ]; then
     fzf_completion="# $fzf_completion"
   fi
 
-  fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   if [ $key_bindings -eq 0 ]; then
     fzf_key_bindings="# $fzf_key_bindings"
   fi
@@ -271,7 +277,7 @@ fi
 EOF
 
   if [[ $auto_completion -eq 1 ]] && [[ $key_bindings -eq 1 ]]; then
-    if [[ "$shell" = zsh ]]; then
+    if [[ $shell == zsh ]]; then
       echo "source <(fzf --$shell)" >> "$src"
     else
       echo "eval \"\$(fzf --$shell)\"" >> "$src"
@@ -291,7 +297,7 @@ EOF
 done
 
 # fish
-if [[ "$shells" =~ fish ]]; then
+if [[ $shells =~ fish ]]; then
   echo -n "Update fish_user_paths ... "
   fish << EOF
   echo \$fish_user_paths | \grep "$fzf_base"/bin > /dev/null
@@ -306,15 +312,16 @@ append_line() {
   line="$2"
   file="$3"
   pat="${4:-}"
+  at_lno="${5:-}"
   lines=""
 
   echo "Update $file:"
   echo "  - $line"
   if [ -f "$file" ]; then
-    if [ $# -lt 4 ]; then
-      lines=$(\grep -nF "$line" "$file")
-    else
+    if [[ -n $pat ]]; then
       lines=$(\grep -nF "$pat" "$file")
+    else
+      lines=$(\grep -nF "${line#"${line%%[![:space:]]*}"}" "$file")
     fi
   fi
 
@@ -323,17 +330,21 @@ append_line() {
     sed 's/^/        Line /' <<< "$lines"
 
     update=0
-    if ! \grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines" ; then
+    if ! \grep -qv "^[0-9]*:[[:space:]]*#" <<< "$lines"; then
       echo "    - But they all seem to be commented"
-      ask  "    - Continue modifying $file?"
+      ask "    - Continue modifying $file?"
       update=$?
     fi
   fi
 
   set -e
   if [ "$update" -eq 1 ]; then
-    [ -f "$file" ] && echo >> "$file"
-    echo "$line" >> "$file"
+    if [[ -z $at_lno ]]; then
+      [ -f "$file" ] && echo >> "$file"
+      echo "$line" >> "$file"
+    else
+      sed -i.~fzf_bak "${at_lno}a\\"$'\n'"$line" "$file" && rm "$file.~fzf_bak"
+    fi
     echo "    + Added"
   else
     echo "    ~ Skipped"
@@ -361,31 +372,72 @@ if [ $update_config -eq 2 ]; then
 fi
 echo
 for shell in $shells; do
-  [[ "$shell" = fish ]] && continue
-  [[ "$shell" = nushell ]] && continue
+  [[ $shell == fish ]] && continue
+  [[ $shell == nushell ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
 
-if [ $key_bindings -eq 1 ] && [[ "$shells" =~ fish ]]; then
+if [[ $shells =~ fish ]]; then
   bind_file="${fish_dir}/functions/fish_user_key_bindings.fish"
   if [ ! -e "$bind_file" ]; then
-    mkdir -p "${fish_dir}/functions"
-    create_file "$bind_file" \
-      'function fish_user_key_bindings' \
-      '  fzf --fish | source' \
-      'end'
+    if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
+      mkdir -p "${fish_dir}/functions"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          '  fzf --fish | source' \
+          'end'
+      elif [[ $key_bindings -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          "  $fzf_key_bindings" \
+          'end'
+      elif [[ $auto_completion -eq 1 ]]; then
+        create_file "$bind_file" \
+          'function fish_user_key_bindings' \
+          "  $fzf_completion" \
+          'end'
+      fi
+      lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    else
+      lno_func=0
+    fi
   else
     echo "Check $bind_file:"
-    lno=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
-    if [[ -n $lno ]]; then
-      echo "  ** Found 'fzf_key_bindings' in line #$lno"
-      echo "  ** You have to replace the line to 'fzf --fish | source'"
+    lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -z $lno_func ]]; then
+      echo -e "function fish_user_key_bindings\nend" >> "$bind_file"
+      lno_func=$(\grep -nF "function fish_user_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    fi
+    lno_keys=$(\grep -nF "fzf_key_bindings" "$bind_file" | sed 's/:.*//' | tr '\n' ' ')
+    if [[ -n $lno_keys ]]; then
+      echo "  ** Found 'fzf_key_bindings' in line #$lno_keys"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        echo "  ** You have to replace the line to 'fzf --fish | source'"
+      elif [[ $key_bindings -eq 1 ]]; then
+        echo "  ** You have to replace the line to '$fzf_key_bindings'"
+      else
+        echo "  ** You have to remove the line"
+      fi
       echo
     else
       echo "  - Clear"
       echo
-      append_line $update_config "fzf --fish | source" "$bind_file"
+      if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+        sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+        sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+        append_line $update_config "  fzf --fish | source" "$bind_file" "" "$lno_func"
+      else
+        sed -i.~fzf_bak '/fzf --fish \| source/d' "$bind_file" && rm "$bind_file.~fzf_bak"
+        if [[ $key_bindings -eq 1 ]]; then
+          sed -i.~fzf_bak "\#$fzf_completion#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+          append_line $update_config "  $fzf_key_bindings" "$bind_file" "" "$lno_func"
+        elif [[ $auto_completion -eq 1 ]]; then
+          sed -i.~fzf_bak "\#$fzf_key_bindings#d" "$bind_file" && rm "$bind_file.~fzf_bak"
+          append_line $update_config "  $fzf_completion" "$bind_file" "" "$lno_func"
+        fi
+      fi
     fi
   fi
 fi
@@ -401,14 +453,14 @@ fi
 
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
-  if [[ "$shells" =~ bash ]]; then
+  if [[ $shells =~ bash ]]; then
     echo -n '   source ~/.bashrc  # bash'
-    [[ "$archi" =~ Darwin ]] && echo -n '  (.bashrc should be loaded from .bash_profile)'
+    [[ $archi =~ Darwin ]] && echo -n '  (.bashrc should be loaded from .bash_profile)'
     echo
   fi
-  [[ "$shells" =~ zsh ]]  && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
-  [[ "$shells" =~ fish ]] && [ $key_bindings -eq 1 ] && echo '   fzf_key_bindings  # fish'
-  [[ "$shells" =~ nushell ]] && echo '   # nushell: files are loaded automatically from autoload directory'
+  [[ $shells =~ zsh ]] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
+  [[ $shells =~ fish && $lno_func -ne 0 ]] && echo '   fish_user_key_bindings  # fish'
+  [[ $shells =~ nushell ]] && echo '   # nushell: files are loaded automatically from autoload directory'
   echo
   echo 'Use uninstall script to remove fzf.'
   echo

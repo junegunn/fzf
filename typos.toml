@@ -5,6 +5,7 @@ fo = "fo"
 enew = "enew"
 tabe = "tabe"
 Iterm = "Iterm"
+ser = "ser"
 
 [files]
-extend-exclude = ["README.md"]
+extend-exclude = ["README.md", "*.s"]
