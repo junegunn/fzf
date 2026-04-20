@@ -352,13 +352,14 @@ def _fzf_complete_pacman_nu [ prefix:                    string
                             , input_line_before_trigger: string
                             ] {
   let command_words = $input_line_before_trigger | split row ' '
+  let fzf_opts = ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
   let sub_command   = $command_words | skip 1 | first
   match $sub_command {
-    $s if $s =~ "-S[bcdgilpqrsuvwy]*"     => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } ["-m"] )
-    $s if $s =~ "-Q[bcdegiklmnpqrstuv]*"  => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} ["-m"] )
-    $s if $s =~ "-F[blqrvxy]*"            => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } ["-m"] )
-    $s if $s =~ "-R[bcdnprsuv]*"          => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} ["-m"] )
-    _                                     => (                                                                         )
+    $s if $s =~ "-S[bcdgilpqrsuvwy]*"     => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } $fzf_opts )
+    $s if $s =~ "-Q[bcdegiklmnpqrstuv]*"  => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} $fzf_opts )
+    $s if $s =~ "-F[blqrvxy]*"            => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } $fzf_opts )
+    $s if $s =~ "-R[bcdnprsuv]*"          => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} $fzf_opts )
+    _                                     => (                                                                            )
   }
 }
 
@@ -422,14 +423,16 @@ let fzf_external_completer = {|spans|
   if ($last_span | str ends-with $trigger) {
     # --- Trigger Found ---
 
-    let cmd_word = ($spans | first | default "")
+    # Skip sudo to determine the actual command
+    let cmd_spans = if ($spans | first) == "sudo" { $spans | skip 1 } else { $spans }
+    let cmd_word = ($cmd_spans | first | default "")
 
     # Calculate the prefix (part before the trigger in the last span)
     let prefix = $last_span | str substring 0..(-1 * ($trigger | str length) - 1)
 
     # Reconstruct the line content *before* the trigger for context
     # This is an approximation based on spans
-    let line_without_trigger = $spans | take (($spans | length) - 1) | append $prefix | str join ' '
+    let line_without_trigger = $cmd_spans | take (($cmd_spans | length) - 1) | append $prefix | str join ' '
 
     # --- Dispatch to Completer ---
     mut completion_results = [] # Will hold the list of strings from the completer
@@ -438,7 +441,7 @@ let fzf_external_completer = {|spans|
     # Each arm should call _fzf_complete_nu or __fzf_generic_path_completion_nu
     # and assign the result to $completion_results.
     match $cmd_word {
-      "pacman"                          => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
+      "pacman" | "paru"                 => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
       "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                         }
       "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
       "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
