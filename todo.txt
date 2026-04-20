@@ -1,8 +1,0 @@
-# Quicktask v1.4
-
-TÂCHES COURANTES:
-  - pass: peut pas passer `-m`. Il faut retirer.
-    @ Added [dim 2025-12-07]
-TÂCHES COMPLÉTÉES:
-
-# vim:ft=quicktask
