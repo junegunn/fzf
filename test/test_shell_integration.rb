@@ -1187,6 +1187,20 @@ class TestNushell < TestBase
     tmux.until { |lines| assert_equal '/tmp', lines[-1] }
   end
 
+  def test_file_completion
+    FileUtils.mkdir_p('/tmp/fzf-test')
+    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys '0'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) do |lines|
+      assert lines[-1]&.include?('/tmp/fzf-test/100')
+    end
+  end
+
   def test_ctrl_r
     tmux.prepare
     tmux.send_keys 'echo 1st', :Enter
