@@ -75,7 +75,7 @@ const alt_c = {
             let sh_cmd = [$alt_c_cmd '|' $fzf_cmd_str] | str join ' ';
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^sh -c $sh_cmd }
           };
-          cd $result;
+          if ($result | is-not-empty) { cd $result };
         "
       }
     ]

@@ -6,11 +6,11 @@
 
 
 # An implementation of completion.nu
-# This loads FZF as an Nushell External Completer
+# This loads FZF as a Nushell External Completer
 # https://www.nushell.sh/cookbook/external_completers.html
 
 # It's the most stable implementation.
-# The drawback is that it does't work for completing some commands, like 'cd' and 'ls' on Nushell >= 0.103.0
+# The drawback is that it doesn't work for completing some commands, like 'cd' and 'ls' on Nushell >= 0.103.0
 # https://www.nushell.sh/blog/2025-03-18-nushell_0_103_0.html#external-completers-are-no-longer-used-for-internal-commands-toc
 
 
@@ -39,7 +39,6 @@ $env.FZF_COMPLETION_PATH_OPTS = $env.FZF_COMPLETION_PATH_OPTS? | default ''
 $env.FZF_COMPLETION_DIR_OPTS = $env.FZF_COMPLETION_DIR_OPTS? | default ''
 
 $env.FZF_COMPLETION_DIR_COMMANDS = $env.FZF_COMPLETION_DIR_COMMANDS? | default ['cd', 'pushd', 'rmdir']
-$env.FZF_COMPLETION_VAR_COMMANDS = $env.FZF_COMPLETION_VAR_COMMANDS? | default ['export', 'unset', 'printenv']
 
 # --- Helper Functions ---
 
@@ -251,7 +250,7 @@ def _fzf_path_completion_nu [prefix: string] {
 }
 
 # General completion helper for commands that feed a list to fzf
-# This is called by ssh, export, unalias, kill. everything exept path and dir
+# This is called by ssh, export, unalias, kill. everything except path and dir
 def _fzf_complete_nu [ query:                  string       # The initial query string for fzf
                      , data_gen_closure:       closure      # Closure that generates candidates
                      , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
