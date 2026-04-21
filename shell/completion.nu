@@ -227,7 +227,7 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
       "file,dir,follow,hidden"
   }
   # Use the 'walker_root' calculated at the beginning
-  let $fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root] | append $fzf_opts_arg
+  let fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root] | append $fzf_opts_arg
                                                                                                  | append $completion_type_opts
 
   # Call FZF run

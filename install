@@ -257,6 +257,7 @@ for shell in $shells; do
   fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   [[ $shell == fish ]] && continue
   [[ $shell == nushell ]] && continue
+  src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
   if [ $auto_completion -eq 0 ]; then
