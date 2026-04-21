@@ -1107,6 +1107,10 @@ end
 class TestNushell < TestBase
   include TestShell
 
+  def teardown
+    @tmux&.kill
+  end
+
   def shell
     :nushell
   end
@@ -1124,7 +1128,7 @@ class TestNushell < TestBase
   end
 
   def new_shell
-    tmux.send_keys "FZF_TMUX=1 nu", :Enter
+    tmux.send_keys 'FZF_TMUX=1 nu', :Enter
     tmux.prepare
   end
 
@@ -1197,7 +1201,7 @@ class TestNushell < TestBase
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
-      assert lines[-1]&.include?('/tmp/fzf-test/100')
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/100'
     end
   end
 
