@@ -7,15 +7,18 @@ CHANGELOG
     - Requires a `--list-border` shape that has both top and bottom segments (`rounded`, `sharp`, `bold`, `double`, `block`, `thinblock`, or `horizontal`); falls back to `line` otherwise. `horizontal` has no side borders, so the separator is drawn without T-junction endpoints.
     - Sections stack. Example combining all three:
       ```sh
-      ps -ef | fzf --reverse --style full:double \
+      ps -ef | fzf --reverse --style full \
           --header 'Select a process' --header-lines 1 \
           --bind 'load:transform-footer:echo $FZF_TOTAL_COUNT processes' \
-          --header-border=inline --header-lines-border=inline \
-          --footer-border=inline
+          --header-border dashed --header-first \
+          --header-lines-border inline --footer-border inline \
       ```
     - `--header-label` and `--footer-label` render on their respective separator row.
     - The separator inherits `--color list-border` when the section's own border color is not explicitly set.
     - `inline` takes precedence over `--header-first`: the inline section stays inside the list frame. `--header-border=inline` requires `--header-lines-border` to be `inline` or unset.
+- New `dashed` border style with dashed edges (`╶` / `┆`) and rounded corners.
+    - `--border=dashed`, `--list-border=dashed`, etc.
+    - Works with inline sections (T-junctions render correctly).
 - [vim] Move and resize popup window when detecting `VimResized` event (#4778) (@Vulcalien)
 - Bug fixes
     - Fixed gutter display in `--style=minimal`

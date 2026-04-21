@@ -517,6 +517,8 @@ Draw border around the finder
 .br
 .BR double "        Border with double lines"
 .br
+.BR dashed "        Border with dashed lines and rounded corners"
+.br
 .BR block "         Border using block elements; suitable when using different background colors"
 .br
 .BR thinblock "     Border using legacy computing symbols; may not be displayed on some terminals"
@@ -955,6 +957,8 @@ Should be used with one of the following \fB\-\-preview\-window\fR options.
 .br
 .B * border\-double
 .br
+.B * border\-dashed
+.br
 .B * border\-block
 .br
 .B * border\-thinblock
@@ -1104,7 +1108,7 @@ separator line between the header window and the list section. \fBinline\fR
 style embeds the header inside the list border frame, joined to the list
 section by a horizontal separator; it requires a \fB\-\-list\-border\fR
 shape that has both top and bottom segments (rounded / sharp / bold /
-double / block / thinblock / horizontal) and falls back to \fBline\fR
+double / dashed / block / thinblock / horizontal) and falls back to \fBline\fR
 otherwise. When the list border also has side segments, the separator
 joins them with T-junctions; \fBhorizontal\fR has no side borders, so the
 separator is drawn without T-junction endpoints. Takes precedence over

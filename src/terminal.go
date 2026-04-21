@@ -1816,14 +1816,16 @@ func (t *Terminal) changeHeader(header string) bool {
 	return needFullRedraw
 }
 
-func (t *Terminal) changeFooter(footer string) {
+func (t *Terminal) changeFooter(footer string) bool {
 	var lines []string
 	if len(footer) > 0 {
 		lines = strings.Split(strings.TrimSuffix(footer, "\n"), "\n")
 	}
+	needFullRedraw := len(t.footer) != len(lines)
 	t.footer = lines
 	t.clickFooterLine = 0
 	t.clickFooterColumn = 0
+	return needFullRedraw
 }
 
 // UpdateHeader updates the header
@@ -2155,7 +2157,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 			if idx == 3 {
 				extraMargin[idx] += 1 + bw
 			}
-		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
+		case tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble, tui.BorderDashed:
 			extraMargin[idx] += 1 + bw*(idx%2)
 		}
 		marginInt[idx] = sizeSpecToInt(idx, sizeSpec) + extraMargin[idx]
@@ -3017,7 +3019,7 @@ func (t *Terminal) printLabel(window tui.Window, render labelPrinter, opts label
 		return
 	}
 	switch borderShape {
-	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble:
+	case tui.BorderHorizontal, tui.BorderTop, tui.BorderBottom, tui.BorderRounded, tui.BorderSharp, tui.BorderBold, tui.BorderBlock, tui.BorderThinBlock, tui.BorderDouble, tui.BorderDashed:
 		if redrawBorder {
 			window.DrawHBorder()
 		}
@@ -6796,7 +6798,12 @@ func (t *Terminal) Loop() error {
 				})
 			case actChangeFooter, actTransformFooter, actBgTransformFooter:
 				capture(false, func(footer string) {
-					t.changeFooter(footer)
+					if t.changeFooter(footer) && t.footerBorderShape == tui.BorderInline {
+						// resizeIfNeeded() tolerates a shorter-than-wanted inline
+						// window, so a length change can leave the inline slot
+						// stale. Force a redraw to re-run the layout.
+						req(reqRedraw)
+					}
 					req(reqFooter)
 				})
 			case actChangeHeaderLabel, actTransformHeaderLabel, actBgTransformHeaderLabel:
