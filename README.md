@@ -216,8 +216,7 @@ Add the following line to your shell configuration file.
   install script, you can manually set it up:
   ```nu
   # Generate the integration script
-  # (run this in your regular shell, not in Nushell)
-  fzf --nushell > ($nu.default-config-dir | path join "autoload" "fzf.nu")
+  fzf --nushell | save -f ($nu.default-config-dir | path join "autoload" "fzf.nu")
   ```
 
 > [!NOTE]
