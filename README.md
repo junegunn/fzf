@@ -220,7 +220,7 @@ Add the following line to your shell configuration file.
   ```
 
 > [!NOTE]
-> `--bash`, `--zsh`, `--fish`, and `--nushell` options are only available in fzf 0.48.0 or
+> `--bash`, `--zsh`, and `--fish` options are only available in fzf 0.48.0 or
 > later. If you have an older version of fzf, or want finer control, you can
 > source individual script files in the [/shell](/shell) directory. The
 > location of the files may vary depending on the package manager you use.
