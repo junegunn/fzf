@@ -98,24 +98,19 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
     }
 
     if $has_walker or ($stdin_content == null) {
-      # Run directly if walker or no stdin provided
-      fzf-tmux ...$final_fzf_opts
+      with-env { FZF_DEFAULT_OPTS: '', FZF_DEFAULT_OPTS_FILE: '' } { fzf-tmux ...$final_fzf_opts }
     } else {
-      # Pipe captured stdin to fzf-tmux
-      $stdin_content | fzf-tmux ...$final_fzf_opts
+      $stdin_content | with-env { FZF_DEFAULT_OPTS: '', FZF_DEFAULT_OPTS_FILE: '' } { fzf-tmux ...$final_fzf_opts }
     }
 
   } else {
     # Not in tmux or not configured for fzf-tmux, use fzf directly
-    # Add --height option for plain fzf
     let final_fzf_opts = ['--height', $height_opt] | append $fzf_prefinal_opt
 
     if $has_walker or ($stdin_content == null) {
-      # Run directly if walker or no stdin provided
-      fzf ...$final_fzf_opts
+      with-env { FZF_DEFAULT_OPTS: '', FZF_DEFAULT_OPTS_FILE: '' } { fzf ...$final_fzf_opts }
     } else {
-      # Pipe captured stdin to fzf
-      $stdin_content | fzf ...$final_fzf_opts
+      $stdin_content | with-env { FZF_DEFAULT_OPTS: '', FZF_DEFAULT_OPTS_FILE: '' } { fzf ...$final_fzf_opts }
     }
   }
 }
