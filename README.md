@@ -211,7 +211,7 @@ Add the following line to your shell configuration file.
   # Set up fzf key bindings
   fzf --fish | source
   ```
-* Nushell — Nushell does not support piping into `source`, so the install
+* Nushell -- Nushell does not support piping into `source`, so the install
   script generates a file in the autoload directory. If you didn't use the
   install script, you can manually set it up:
   ```nu
