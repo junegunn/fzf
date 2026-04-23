@@ -236,7 +236,8 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
 
   # --- Return Result ---
   if ($fzf_selection | is-not-empty) {
-      [$fzf_selection]
+      # Join multiple selections (one per line) into a single space-separated string
+      [($fzf_selection | lines | str join ' ')]
   } else {
       []
   }
