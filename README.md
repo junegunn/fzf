@@ -216,12 +216,13 @@ Add the following line to your shell configuration file.
   install script, you can manually set it up:
   ```nu
   # Generate the integration script
+  mkdir ($nu.default-config-dir | path join "autoload")
   fzf --nushell | save -f ($nu.default-config-dir | path join "autoload" "fzf.nu")
   ```
 
 > [!NOTE]
-> `--bash`, `--zsh`, and `--fish` options are only available in fzf 0.48.0 or
-> later. If you have an older version of fzf, or want finer control, you can
+> `--bash`, `--zsh`, `--fish`, and `--nushell` options are only available in
+> recent versions of fzf. If you have an older version of fzf, or want finer control, you can
 > source individual script files in the [/shell](/shell) directory. The
 > location of the files may vary depending on the package manager you use.
 > Please refer to the package documentation for more information.
