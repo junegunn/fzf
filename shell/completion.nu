@@ -221,9 +221,13 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
   } else {
       "file,dir,follow,hidden"
   }
+  # Expand tilde so fzf receives a valid absolute path as walker-root
+  let needs_tilde_rewrite = ($walker_root | str starts-with '~')
+  let walker_root_expanded = ($walker_root | path expand)
+
   # Use the 'walker_root' calculated at the beginning
-  let fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root] | append $fzf_opts_arg
-                                                                                                 | append $completion_type_opts
+  let fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root_expanded] | append $fzf_opts_arg
+                                                                                                          | append $completion_type_opts
 
   # Call FZF run
   let fzf_selection = ( __fzf_comprun_nu "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
@@ -231,8 +235,14 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
 
   # --- Return Result ---
   if ($fzf_selection | is-not-empty) {
-      # Join multiple selections (one per line) into a single space-separated string
-      [($fzf_selection | lines | str join ' ')]
+      # Restore tilde prefix if the user originally typed ~/
+      let result = if $needs_tilde_rewrite {
+          let home = $nu.home-path | path expand
+          $fzf_selection | lines | each {|line| $line | str replace $home '~' } | str join ' '
+      } else {
+          $fzf_selection | lines | str join ' '
+      }
+      [$result]
   } else {
       []
   }
