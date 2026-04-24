@@ -1182,7 +1182,7 @@ class TestNushell < TestBase
   # Nushell does not support multiline command recall the same way
   # as bash/zsh/fish, so test_ctrl_r_multiline is omitted.
 
-  # Override: only test with 'foo' — single and double quotes cause
+  # Override: only test with 'foo' -- single and double quotes cause
   # issues in Nushell's line editor.
   def test_ctrl_r_abort
     %w[foo].each do |query|
