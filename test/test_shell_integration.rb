@@ -1163,20 +1163,47 @@ class TestNushell < TestBase
     tmux.until { |lines| assert_equal 'fzf-unicode 테스트1 fzf-unicode 테스트2', lines[-1] }
   end
 
-  # Nushell-specific: the external completer replaces the current token rather
-  # than appending, so we test single-selection only.
+  # Override: Nushell's external completer replaces the entire token,
+  # so we use assert_includes instead of assert_equal for the result.
+  # ~USERNAME expansion and backslash-escaped spaces are not applicable.
   def test_file_completion
     FileUtils.mkdir_p('/tmp/fzf-test')
     (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
     tmux.prepare
+
+    # Multi-selection
     tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
-    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+    tmux.send_keys :Enter
+    tmux.until(true) do |lines|
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/10'
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/100'
+    end
+
+    # Single selection
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 2, lines.match_count }
     tmux.send_keys '0'
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
     tmux.until(true) do |lines|
       assert_includes lines[-1].to_s, '/tmp/fzf-test/100'
     end
+
+    # Should include hidden files
+    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/.hidden-#{i}") }
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test/hidden#{trigger}", :Tab
+    tmux.until(true) do |lines|
+      assert_equal 100, lines.match_count
+      assert lines.any_include?('/tmp/fzf-test/.hidden-')
+    end
+    tmux.send_keys :Enter
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test')
   end
 
   # Nushell does not support multiline command recall the same way
