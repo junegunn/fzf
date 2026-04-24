@@ -1132,6 +1132,8 @@ class TestNushell < TestBase
     tmux.prepare
   end
 
+  # Override: Nushell's builtin `echo` outputs structured data, so we need
+  # `^echo` (external echo) for plain text output on the command line.
   def test_ctrl_t_unicode
     writelines(['fzf-unicode 테스트1', 'fzf-unicode 테스트2'])
     set_var('FZF_CTRL_T_COMMAND', "cat #{tempname}")
@@ -1161,6 +1163,8 @@ class TestNushell < TestBase
     tmux.until { |lines| assert_equal 'fzf-unicode 테스트1 fzf-unicode 테스트2', lines[-1] }
   end
 
+  # Nushell-specific: the external completer replaces the current token rather
+  # than appending, so we test single-selection only.
   def test_file_completion
     FileUtils.mkdir_p('/tmp/fzf-test')
     (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
@@ -1175,37 +1179,11 @@ class TestNushell < TestBase
     end
   end
 
-  def test_ctrl_r
-    tmux.prepare
-    tmux.send_keys 'echo 1st', :Enter
-    tmux.prepare
-    tmux.send_keys 'echo 2nd', :Enter
-    tmux.prepare
-    tmux.send_keys 'echo 3d', :Enter
-    tmux.prepare
-    3.times do
-      tmux.send_keys 'echo 3rd', :Enter
-      tmux.prepare
-    end
-    tmux.send_keys 'echo 4th', :Enter
-    tmux.prepare
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
-    tmux.send_keys 'e3d'
-    # Duplicates removed: 3d (1) + 3rd (1) => 2 matches
-    tmux.until { |lines| assert_equal 2, lines.match_count }
-    tmux.until { |lines| assert lines[-3]&.end_with?(' echo 3d') }
-    tmux.send_keys 'C-r'
-    tmux.until { |lines| assert lines[-3]&.end_with?(' echo 3rd') }
-    tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal 'echo 3rd', lines[-1] }
-    tmux.send_keys :Enter
-    tmux.until { |lines| assert_equal '3rd', lines[-1] }
-  end
-
   # Nushell does not support multiline command recall the same way
   # as bash/zsh/fish, so test_ctrl_r_multiline is omitted.
 
+  # Override: only test with 'foo' — single and double quotes cause
+  # issues in Nushell's line editor.
   def test_ctrl_r_abort
     %w[foo].each do |query|
       tmux.prepare
