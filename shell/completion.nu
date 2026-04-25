@@ -236,8 +236,8 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
   # --- Return Result ---
   if ($fzf_selection | is-not-empty) {
       # Restore tilde prefix if the user originally typed ~/
+      let home = $nu.home-dir | path expand
       let result = if $needs_tilde_rewrite {
-          let home = $nu.home-path | path expand
           $fzf_selection | lines | each {|line| $line | str replace $home '~' } | str join ' '
       } else {
           $fzf_selection | lines | str join ' '
