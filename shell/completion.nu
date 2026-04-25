@@ -345,40 +345,6 @@ def _fzf_complete_ssh_nu [ prefix:                    string
   $completion_result
 }
 
-def _fzf_list_pacman_packages [--installed] {
-  if $installed {
-    ^pacman -Qq | lines
-  } else {
-    ^pacman -Slq | lines
-  }
-}
-
-def _fzf_complete_pacman_nu [ prefix:                    string
-                            , input_line_before_trigger: string
-                            ] {
-  let command_words = $input_line_before_trigger | split row ' '
-  let fzf_opts = ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
-  let sub_command   = $command_words | skip 1 | first
-  match $sub_command {
-    $s if $s =~ "-S[bcdgilpqrsuvwy]*"     => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } $fzf_opts )
-    $s if $s =~ "-Q[bcdegiklmnpqrstuv]*"  => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} $fzf_opts )
-    $s if $s =~ "-F[blqrvxy]*"            => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages            } $fzf_opts )
-    $s if $s =~ "-R[bcdnprsuv]*"          => ( _fzf_complete_nu $prefix {_fzf_list_pacman_packages --installed} $fzf_opts )
-    _                                     => (                                                                            )
-  }
-}
-
-def _fzf_complete_pass_nu [prefix: string] {
-  let passwordstore_files_gen_closure = {||
-    try {
-      ls ~/.password-store/**/*.gpg | get name | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}' }
-    } catch {
-      []
-    }
-  }
-  _fzf_complete_nu $prefix $passwordstore_files_gen_closure ["+m"]
-}
-
 # Kill completion post-processor (extracts PID)
 def _fzf_complete_kill_post_get_pid [selected_line: string] {
   # Assuming standard ps output where PID is the second column
@@ -446,20 +412,37 @@ let fzf_external_completer = {|spans|
     # --- Dispatch to Completer ---
     mut completion_results = [] # Will hold the list of strings from the completer
 
-    # To add custom completions for a command, add a new match arm below.
-    # Each arm should call _fzf_complete_nu or __fzf_generic_path_completion_nu
-    # and assign the result to $completion_results.
-    match $cmd_word {
-      "pacman" | "paru"                 => { $completion_results = (_fzf_complete_pacman_nu $prefix $line_without_trigger) }
-      "pass"                            => { $completion_results = (_fzf_complete_pass_nu $prefix)                         }
-      "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
-      "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
-      _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
-        $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")
+    # Check for user-defined completer in $env.FZF_COMPLETERS first.
+    # Users can define custom completers in their config.nu as a record of closures:
+    #   $env.FZF_COMPLETERS = { git: {|prefix, spans| ... }, docker: {|prefix, spans| ... } }
+    # Each closure receives the prefix (text before the trigger) and the full
+    # command spans (e.g. ["pacman", "-S", "vim**"]), and should return either:
+    #   - a list of candidate strings, or
+    #   - a record { candidates: [...], opts: [...] } to pass custom fzf options.
+    # See shell/completion-examples.nu for examples.
+    let user_completers = ($env.FZF_COMPLETERS? | default {})
+    if ($cmd_word in $user_completers) {
+      let user_gen = ($user_completers | get $cmd_word)
+      let user_result = (do $user_gen $prefix $cmd_spans)
+      "\n" | save -a /tmp/fzf-debug.log
+      if ($user_result | describe | str starts-with 'record') {
+        let candidates = ($user_result | get candidates)
+        let fzf_opts = ($user_result | get opts? | default ["-m"])
+        $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts)
+      } else {
+        $completion_results = (_fzf_complete_nu $prefix {|| $user_result} ["-m"])
       }
-      _                                 => {
-        # Default to path completion if no specific command matches
-        $completion_results = (_fzf_path_completion_nu $prefix)
+    } else {
+      match $cmd_word {
+        "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
+        "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
+        _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
+          $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")
+        }
+        _                                 => {
+          # Default to path completion if no specific command matches
+          $completion_results = (_fzf_path_completion_nu $prefix)
+        }
       }
     }
 

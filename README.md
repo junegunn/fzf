@@ -843,9 +843,23 @@ mechanism. There are some differences compared to bash and zsh:
 - On Nushell >= 0.103.0, the external completer is no longer called for
   built-in commands (e.g. `cd`, `ls`). Fuzzy completion with `**<TAB>` only
   works for external commands.
-- Custom completion extensibility (e.g. `_fzf_complete_COMMAND` in bash/zsh)
-  is not available. Custom completions are defined via a `match` statement
-  in `completion.nu`.
+- Custom completers can be defined via the `$env.FZF_COMPLETERS` record in
+  your `config.nu`. Each entry is a closure that receives the prefix and the
+  command spans, and returns either a list of candidate strings or a record
+  `{ candidates: [...], opts: [...] }` for custom fzf options:
+  ```nu
+  $env.FZF_COMPLETERS = {
+      pacman: {|prefix, spans|
+          let sub = $spans | skip 1 | first
+          let candidates = (if ($sub =~ "-[SF]") { ^pacman -Slq | lines
+          } else if ($sub =~ "-[QR]") { ^pacman -Qq | lines
+          } else { [] })
+          { candidates: $candidates, opts: ["--preview", "pacman -Si {}"] }
+      }
+  }
+  ```
+  See [shell/completion-examples.nu](shell/completion-examples.nu) for more
+  examples.
 - The following environment variables are supported:
   `FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
   `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_OPTS`,
