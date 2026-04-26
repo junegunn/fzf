@@ -1572,7 +1572,7 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, *tui
 			case "info":
 				mergeAttr(&theme.Info)
 			case "pointer":
-				mergeAttr(&theme.Cursor)
+				mergeAttr(&theme.Pointer)
 			case "marker":
 				mergeAttr(&theme.Marker)
 			case "header", "header-fg":

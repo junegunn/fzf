@@ -3604,18 +3604,18 @@ func (t *Terminal) renderEmptyLine(line int, barRange [2]int) {
 func (t *Terminal) gutter(current bool, alt bool) {
 	var color tui.ColorPair
 	if current {
-		color = tui.ColCurrentCursorEmpty
+		color = tui.ColCurrentPointerEmpty
 	} else if !t.raw && t.gutterReverse || t.raw && t.gutterRawReverse {
 		if alt {
-			color = tui.ColAltCursorEmpty
+			color = tui.ColAltPointerEmpty
 		} else {
-			color = tui.ColCursorEmpty
+			color = tui.ColPointerEmpty
 		}
 	} else {
 		if alt {
-			color = tui.ColAltCursorEmptyChar
+			color = tui.ColAltPointerEmptyChar
 		} else {
-			color = tui.ColCursorEmptyChar
+			color = tui.ColPointerEmptyChar
 		}
 	}
 	gutter := t.pointerEmpty
@@ -3803,7 +3803,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			if len(label) == 0 {
 				t.gutter(true, false)
 			} else {
-				t.window.CPrint(tui.ColCurrentCursor, label)
+				t.window.CPrint(tui.ColCurrentPointer, label)
 			}
 			if w-t.markerLen < 0 {
 				return indentSize
@@ -3832,7 +3832,7 @@ func (t *Terminal) printItem(result Result, line int, maxLine int, index int, cu
 			if len(label) == 0 {
 				t.gutter(false, index%2 == 1)
 			} else {
-				t.window.CPrint(tui.ColCursor, label)
+				t.window.CPrint(tui.ColPointer, label)
 			}
 			if w-t.markerLen < 0 {
 				return indentSize

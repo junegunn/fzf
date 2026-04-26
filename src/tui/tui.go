@@ -506,7 +506,7 @@ type ColorTheme struct {
 	CurrentMatch     ColorAttr
 	Spinner          ColorAttr
 	Info             ColorAttr
-	Cursor           ColorAttr
+	Pointer          ColorAttr
 	Marker           ColorAttr
 	Header           ColorAttr
 	HeaderBg         ColorAttr
@@ -948,18 +948,18 @@ var (
 	ColDisabled             ColorPair
 	ColGhost                ColorPair
 	ColMatch                ColorPair
-	ColCursor               ColorPair
-	ColCursorEmpty          ColorPair
-	ColCursorEmptyChar      ColorPair
-	ColAltCursorEmpty       ColorPair
-	ColAltCursorEmptyChar   ColorPair
+	ColPointer              ColorPair
+	ColPointerEmpty         ColorPair
+	ColPointerEmptyChar     ColorPair
+	ColAltPointerEmpty      ColorPair
+	ColAltPointerEmptyChar  ColorPair
 	ColMarker               ColorPair
 	ColSelected             ColorPair
 	ColSelectedMatch        ColorPair
 	ColCurrent              ColorPair
 	ColCurrentMatch         ColorPair
-	ColCurrentCursor        ColorPair
-	ColCurrentCursorEmpty   ColorPair
+	ColCurrentPointer       ColorPair
+	ColCurrentPointerEmpty  ColorPair
 	ColCurrentMarker        ColorPair
 	ColCurrentSelectedEmpty ColorPair
 	ColSpinner              ColorPair
@@ -1008,7 +1008,7 @@ func init() {
 		CurrentMatch:     undefined,
 		Spinner:          defaultColor,
 		Info:             defaultColor,
-		Cursor:           defaultColor,
+		Pointer:          defaultColor,
 		Marker:           defaultColor,
 		Header:           defaultColor,
 		Border:           undefined,
@@ -1058,7 +1058,7 @@ func init() {
 		CurrentMatch:     undefined,
 		Spinner:          undefined,
 		Info:             undefined,
-		Cursor:           undefined,
+		Pointer:          undefined,
 		Marker:           undefined,
 		Header:           undefined,
 		Footer:           undefined,
@@ -1109,7 +1109,7 @@ func init() {
 		CurrentMatch:     ColorAttr{colBrightGreen, AttrUndefined},
 		Spinner:          ColorAttr{colGreen, AttrUndefined},
 		Info:             ColorAttr{colYellow, AttrUndefined},
-		Cursor:           ColorAttr{colRed, AttrUndefined},
+		Pointer:          ColorAttr{colRed, AttrUndefined},
 		Marker:           ColorAttr{colMagenta, AttrUndefined},
 		Header:           ColorAttr{colCyan, AttrUndefined},
 		Footer:           ColorAttr{colCyan, AttrUndefined},
@@ -1160,7 +1160,7 @@ func init() {
 		CurrentMatch:     ColorAttr{151, AttrUndefined},
 		Spinner:          ColorAttr{148, AttrUndefined},
 		Info:             ColorAttr{144, AttrUndefined},
-		Cursor:           ColorAttr{161, AttrUndefined},
+		Pointer:          ColorAttr{161, AttrUndefined},
 		Marker:           ColorAttr{168, AttrUndefined},
 		Header:           ColorAttr{109, AttrUndefined},
 		Footer:           ColorAttr{109, AttrUndefined},
@@ -1211,7 +1211,7 @@ func init() {
 		CurrentMatch:     ColorAttr{23, AttrUndefined},
 		Spinner:          ColorAttr{65, AttrUndefined},
 		Info:             ColorAttr{101, AttrUndefined},
-		Cursor:           ColorAttr{161, AttrUndefined},
+		Pointer:          ColorAttr{161, AttrUndefined},
 		Marker:           ColorAttr{168, AttrUndefined},
 		Header:           ColorAttr{31, AttrUndefined},
 		Footer:           ColorAttr{31, AttrUndefined},
@@ -1262,7 +1262,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 		theme.CurrentMatch = boldify(theme.CurrentMatch)
 		theme.Prompt = boldify(theme.Prompt)
 		theme.Input = boldify(theme.Input)
-		theme.Cursor = boldify(theme.Cursor)
+		theme.Pointer = boldify(theme.Pointer)
 		theme.Spinner = boldify(theme.Spinner)
 	}
 
@@ -1306,7 +1306,7 @@ func InitTheme(theme *ColorTheme, baseTheme *ColorTheme, boldify bool, forceBlac
 	theme.CurrentMatch = o(baseTheme.CurrentMatch, currentMatch)
 	theme.Spinner = o(baseTheme.Spinner, theme.Spinner)
 	theme.Info = o(baseTheme.Info, theme.Info)
-	theme.Cursor = o(baseTheme.Cursor, theme.Cursor)
+	theme.Pointer = o(baseTheme.Pointer, theme.Pointer)
 	theme.Marker = o(baseTheme.Marker, theme.Marker)
 	theme.Header = o(baseTheme.Header, theme.Header)
 	theme.Footer = o(baseTheme.Footer, theme.Footer)
@@ -1422,11 +1422,11 @@ func initPalette(theme *ColorTheme) {
 	ColDisabled = pair(theme.Disabled, theme.InputBg)
 	ColMatch = pair(theme.Match, theme.ListBg)
 	ColSelectedMatch = pair(theme.SelectedMatch, theme.SelectedBg)
-	ColCursor = pair(theme.Cursor, theme.Gutter)
-	ColCursorEmpty = pair(blank, theme.Gutter)
-	ColCursorEmptyChar = pair(theme.Gutter, theme.ListBg)
-	ColAltCursorEmpty = pair(blank, theme.AltGutter)
-	ColAltCursorEmptyChar = pair(theme.AltGutter, theme.ListBg)
+	ColPointer = pair(theme.Pointer, theme.Gutter)
+	ColPointerEmpty = pair(blank, theme.Gutter)
+	ColPointerEmptyChar = pair(theme.Gutter, theme.ListBg)
+	ColAltPointerEmpty = pair(blank, theme.AltGutter)
+	ColAltPointerEmptyChar = pair(theme.AltGutter, theme.ListBg)
 	if theme.SelectedBg.Color != theme.ListBg.Color {
 		ColMarker = pair(theme.Marker, theme.SelectedBg)
 	} else {
@@ -1434,8 +1434,8 @@ func initPalette(theme *ColorTheme) {
 	}
 	ColCurrent = pair(theme.Current, theme.DarkBg)
 	ColCurrentMatch = pair(theme.CurrentMatch, theme.DarkBg)
-	ColCurrentCursor = pair(theme.Cursor, theme.DarkBg)
-	ColCurrentCursorEmpty = pair(blank, theme.DarkBg)
+	ColCurrentPointer = pair(theme.Pointer, theme.DarkBg)
+	ColCurrentPointerEmpty = pair(blank, theme.DarkBg)
 	ColCurrentMarker = pair(theme.Marker, theme.DarkBg)
 	ColCurrentSelectedEmpty = pair(blank, theme.DarkBg)
 	ColSpinner = pair(theme.Spinner, theme.InputBg)
