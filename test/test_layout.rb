@@ -1497,7 +1497,7 @@ class TestLayout < TestInteractive
     tmux.send_keys %(seq 5 | #{FZF} --style full --header foo --header-first --header-border inline), :Enter
     tmux.until do |lines|
       foo_idx = lines.index { |l| l.match?(/\A│\s+foo\s+│\z/) }
-      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(%r{\A│\s+>\s+\d+/\d+\s+│\z}) }
       foo_idx && input_idx && foo_idx < input_idx
     end
   end
@@ -1510,7 +1510,7 @@ class TestLayout < TestInteractive
     tmux.until do |lines|
       one_idx = lines.index { |l| l.match?(/\A│\s+1\s+│\z/) }
       foo_idx = lines.index { |l| l.match?(/\A│\s+foo\s+│\z/) }
-      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(%r{\A│\s+>\s+\d+/\d+\s+│\z}) }
       one_idx && foo_idx && input_idx && one_idx < input_idx && input_idx < foo_idx
     end
   end
@@ -1522,7 +1522,7 @@ class TestLayout < TestInteractive
     tmux.send_keys %(seq 5 | #{FZF} --style full --header-lines 1 --header-first --header-lines-border inline), :Enter
     tmux.until do |lines|
       one_idx = lines.index { |l| l.match?(/\A│\s+1\s+│\z/) }
-      input_idx = lines.index { |l| l.match?(/\A│\s+>\s+\d+\/\d+\s+│\z/) }
+      input_idx = lines.index { |l| l.match?(%r{\A│\s+>\s+\d+/\d+\s+│\z}) }
       one_idx && input_idx && one_idx < input_idx
     end
   end
