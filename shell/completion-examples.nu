@@ -27,79 +27,49 @@
 #   -S (sync), -F (files): list available packages from repos
 #   -Q (query), -R (remove): list installed packages
 # Returns a record with custom fzf options for package preview.
-#
-# $env.FZF_COMPLETERS = {
-#     pacman: {|prefix, spans|
-#         let sub = $spans | skip 1 | first
-#         let candidates = (if ($sub =~ "-[SF]") {
-#             ^pacman -Slq | lines
-#         } else if ($sub =~ "-[QR]") {
-#             ^pacman -Qq | lines
-#         } else {
-#             []
-#         })
-#         {
-#             candidates: $candidates
-#             opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
-#         }
-#     }
-#     paru: {|prefix, spans|
-#         let sub = $spans | skip 1 | first
-#         let candidates = (if ($sub =~ "-[SF]") {
-#             ^pacman -Slq | lines
-#         } else if ($sub =~ "-[QR]") {
-#             ^pacman -Qq | lines
-#         } else {
-#             []
-#         })
-#         {
-#             candidates: $candidates
-#             opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
-#         }
-#     }
-# }
+
+$env.FZF_COMPLETERS = {}
+
+$env.FZF_COMPLETERS.pacman = {|prefix, spans|
+    let sub = $spans | skip 1 | first
+    let candidates = (if ($sub =~ "-[SF]") {
+        ^pacman -Slq | lines
+    } else if ($sub =~ "-[QR]") {
+        ^pacman -Qq | lines
+    } else {
+        []
+    })
+    {
+        candidates: $candidates
+        opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
+    }
+}
+
+$env.FZF_COMPLETERS.paru = {|prefix, spans|
+    let sub = $spans | skip 1 | first
+    let candidates = (if ($sub =~ "-[SF]") {
+        ^pacman -Slq | lines
+    } else if ($sub =~ "-[QR]") {
+        ^pacman -Qq | lines
+    } else {
+        []
+    })
+    {
+        candidates: $candidates
+        opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "]
+    }
+}
 
 # --- pass (password-store) ---
 # Completes entry names from ~/.password-store.
 # Returns a simple list (no custom fzf options needed).
-#
-# $env.FZF_COMPLETERS = {
-#     pass: {|prefix, spans|
-#         try {
-#             ls ~/.password-store/**/*.gpg
-#             | get name
-#             | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}'}
-#         } catch {
-#             []
-#         }
-#     }
-# }
 
-# --- Combined example ---
-# You can combine multiple completers in a single record:
-#
-# $env.FZF_COMPLETERS = {
-#     pacman: {|prefix, spans|
-#         let sub = $spans | skip 1 | first
-#         let candidates = (if ($sub =~ "-[SF]") { ^pacman -Slq | lines
-#         } else if ($sub =~ "-[QR]") { ^pacman -Qq | lines
-#         } else { [] })
-#         { candidates: $candidates, opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "] }
-#     }
-#     paru: {|prefix, spans|
-#         let sub = $spans | skip 1 | first
-#         let candidates = (if ($sub =~ "-[SF]") { ^pacman -Slq | lines
-#         } else if ($sub =~ "-[QR]") { ^pacman -Qq | lines
-#         } else { [] })
-#         { candidates: $candidates, opts: ["-m", "--preview", "pacman -Si {}", "--prompt", "Package > "] }
-#     }
-#     pass: {|prefix, spans|
-#         try {
-#             ls ~/.password-store/**/*.gpg
-#             | get name
-#             | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}'}
-#         } catch {
-#             []
-#         }
-#     }
-# }
+$env.FZF_COMPLETERS.pass = {|prefix, spans|
+    try {
+        ls ~/.password-store/**/*.gpg
+        | get name
+        | each {$in | str replace -r '^.*?\.password-store/(.*).gpg' '${1}'}
+    } catch {
+        []
+    }
+}
