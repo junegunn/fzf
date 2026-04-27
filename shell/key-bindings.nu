@@ -152,7 +152,8 @@ def __fzf_binding_enabled [var_name: string]: nothing -> bool {
 
 # Update the $env.config
 export-env {
-  let already_loaded = ($env.config.keybindings | any { |kb| $kb.name == 'fzf_files' })
+  let fzf_names = ['fzf_files', 'fzf_dirs', 'history_menu']
+  let already_loaded = ($env.config.keybindings | any { |kb| $kb.name in $fzf_names })
   if not $already_loaded {
     mut bindings = []
     if (__fzf_binding_enabled 'FZF_ALT_C_COMMAND') { $bindings = ($bindings | append $alt_c) }
