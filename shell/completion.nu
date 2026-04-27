@@ -418,7 +418,8 @@ let fzf_external_completer = {|spans|
     # Each closure receives the prefix (text before the trigger) and the full
     # command spans (e.g. ["pacman", "-S", "vim**"]), and should return either:
     #   - a list of candidate strings, or
-    #   - a record { candidates: [...], opts: [...] } to pass custom fzf options.
+    #   - a record { candidates: [...], opts: [...], post: {|sel| ...} } to pass
+    #     custom fzf options and/or a post-processing closure.
     # See shell/completion-examples.nu for examples.
     let user_completers = ($env.FZF_COMPLETERS? | default {})
     if ($cmd_word in $user_completers) {
@@ -427,7 +428,12 @@ let fzf_external_completer = {|spans|
       if ($user_result | describe | str starts-with 'record') {
         let candidates = ($user_result | get candidates)
         let fzf_opts = ($user_result | get opts? | default ["-m"])
-        $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts)
+        let post = ($user_result | get post? | default null)
+        if ($post != null) {
+          $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts --post_process_closure $post)
+        } else {
+          $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts)
+        }
       } else {
         $completion_results = (_fzf_complete_nu $prefix {|| $user_result} ["-m"])
       }

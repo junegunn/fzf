@@ -13,8 +13,10 @@
 #
 # A closure can return either:
 #   - a list of candidate strings (fzf will use default options), or
-#   - a record { candidates: [...], opts: [...] } to pass custom fzf options
-#     (e.g. --preview, --prompt, +m).
+#   - a record with the following optional fields:
+#       candidates: list<string>          # candidates to feed to fzf
+#       opts:       list<string>          # custom fzf options (default: ["-m"])
+#       post:       closure (|sel| ...)   # post-processing of the selected item
 #
 # Simple example:
 #   $env.FZF_COMPLETERS = {
@@ -73,3 +75,17 @@ $env.FZF_COMPLETERS.pass = {|prefix, spans|
         []
     }
 }
+
+# --- Example with post-processing hook ---
+# The "post" closure transforms the selected line after fzf returns.
+# This is useful when the displayed line contains more information than
+# what you want inserted on the command line (e.g. extracting a PID from
+# a full "ps" output line).
+#
+# $env.FZF_COMPLETERS.mycommand = {|prefix, spans|
+#     {
+#         candidates: (^some-command | lines)
+#         opts: ["+m", "--header-lines=1"]
+#         post: {|selection| $selection | split row ' ' | get 0}
+#     }
+# }
