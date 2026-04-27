@@ -94,6 +94,11 @@ const ctrl_r = {
         let fzf_opts = (__fzf_defaults '' $'--scheme=history --bind=ctrl-r:toggle-sort --wrap-sign \"\t↳ \" --highlight-line ($env.FZF_CTRL_R_OPTS) +m --read0');
         let fzfcmd = (__fzfcmd);
         let fzf_args = ($fzfcmd | skip 1);
+        # reverse | uniq: show most recent first, deduplicate keeping the latest.
+        # Nushell's `history` loads the full history as an in-memory table
+        # (bounded by $env.config.history.max_size, default 100,000), so
+        # reverse and uniq operate on an already-materialized list and are
+        # effectively free.
         history
           | get command
           | reverse
