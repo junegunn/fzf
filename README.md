@@ -40,7 +40,7 @@ Highlights
 - **Portable** -- Distributed as a single binary for easy installation
 - **Fast** -- Optimized to process millions of items instantly
 - **Versatile** -- Fully customizable through an event-action binding mechanism
-- **All-inclusive** -- Comes with integrations for Bash, Zsh, Fish, Vim, and Neovim
+- **All-inclusive** -- Comes with integrations for Bash, Zsh, Fish, Nushell, Vim, and Neovim
 
 Table of Contents
 -----------------
@@ -81,6 +81,7 @@ Table of Contents
         * [Supported commands (bash)](#supported-commands-bash)
         * [Custom fuzzy completion](#custom-fuzzy-completion)
     * [Fuzzy completion for fish](#fuzzy-completion-for-fish)
+    * [Fuzzy completion for Nushell](#fuzzy-completion-for-nushell)
 * [Vim plugin](#vim-plugin)
 * [Advanced topics](#advanced-topics)
     * [Customizing for different types of input](#customizing-for-different-types-of-input)
@@ -210,10 +211,18 @@ Add the following line to your shell configuration file.
   # Set up fzf key bindings
   fzf --fish | source
   ```
+* Nushell -- Nushell does not support piping into `source`, so the install
+  script generates a file in the autoload directory. If you didn't use the
+  install script, you can manually set it up:
+  ```nu
+  # Generate the integration script
+  mkdir ($nu.default-config-dir | path join "autoload")
+  fzf --nushell | save -f ($nu.default-config-dir | path join "autoload" "fzf.nu")
+  ```
 
 > [!NOTE]
-> `--bash`, `--zsh`, and `--fish` options are only available in fzf 0.48.0 or
-> later. If you have an older version of fzf, or want finer control, you can
+> `--bash`, `--zsh`, `--fish`, and `--nushell` options are only available in
+> recent versions of fzf. If you have an older version of fzf, or want finer control, you can
 > source individual script files in the [/shell](/shell) directory. The
 > location of the files may vary depending on the package manager you use.
 > Please refer to the package documentation for more information.
@@ -227,6 +236,8 @@ Add the following line to your shell configuration file.
 > * bash: `FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"`
 > * zsh: `FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source <(fzf --zsh)`
 > * fish: `fzf --fish | FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source`
+> * nushell: add to your `env.nu`:
+>   `$env.FZF_CTRL_R_COMMAND = ""; $env.FZF_ALT_C_COMMAND = ""`
 >
 > Setting the variables after sourcing the script will have no effect.
 
@@ -506,7 +517,7 @@ Key bindings for command-line
 -----------------------------
 
 By [setting up shell integration](#setting-up-shell-integration), you can use
-the following key bindings in bash, zsh, and fish.
+the following key bindings in bash, zsh, fish, and Nushell.
 
 - `CTRL-T` - Paste the selected files and directories onto the command-line
     - The list is generated using `--walker file,dir,follow,hidden` option
@@ -574,7 +585,7 @@ More tips can be found on [the wiki page](https://github.com/junegunn/fzf/wiki/C
 Fuzzy completion
 ----------------
 
-Shell integration also provides fuzzy completion for bash, zsh, and fish.
+Shell integration also provides fuzzy completion for bash, zsh, fish, and Nushell.
 
 ### Files and directories
 
@@ -822,6 +833,37 @@ function _fzf_post_complete_foo
   end
 end
 ```
+
+### Fuzzy completion for Nushell
+
+Fuzzy completion in Nushell works via the
+[external completer](https://www.nushell.sh/cookbook/external_completers.html)
+mechanism. There are some differences compared to bash and zsh:
+
+- On Nushell >= 0.103.0, the external completer is no longer called for
+  built-in commands (e.g. `cd`, `ls`). Fuzzy completion with `**<TAB>` only
+  works for external commands.
+- Custom completers can be defined via the `$env.FZF_COMPLETERS` record in
+  your `config.nu`. Each entry is a closure that receives the prefix and the
+  command spans, and returns either a list of candidate strings or a record
+  `{ candidates: [...], opts: [...] }` for custom fzf options:
+  ```nu
+  $env.FZF_COMPLETERS = {
+      pacman: {|prefix, spans|
+          let sub = $spans | skip 1 | first
+          let candidates = (if ($sub =~ "-[SF]") { ^pacman -Slq | lines
+          } else if ($sub =~ "-[QR]") { ^pacman -Qq | lines
+          } else { [] })
+          { candidates: $candidates, opts: ["--preview", "pacman -Si {}"] }
+      }
+  }
+  ```
+  See [shell/completion-examples.nu](shell/completion-examples.nu) for more
+  examples.
+- The following environment variables are supported:
+  `FZF_COMPLETION_TRIGGER`, `FZF_COMPLETION_OPTS`,
+  `FZF_COMPLETION_PATH_OPTS`, `FZF_COMPLETION_DIR_OPTS`,
+  `FZF_COMPLETION_DIR_COMMANDS`.
 
 Vim plugin
 ----------

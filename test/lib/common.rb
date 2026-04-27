@@ -78,6 +78,38 @@ class Shell
           "rm -f ~/.local/share/fish/fzf_test_history; XDG_CONFIG_HOME=#{confdir} fish"
         end
     end
+
+    def nushell
+      @nushell ||=
+        begin
+          xdg_home = '/tmp/fzf-nushell-xdg'
+          config_dir = "#{xdg_home}/nushell"
+          FileUtils.rm_rf(xdg_home)
+          FileUtils.mkdir_p(config_dir)
+
+          # Write env.nu to set up PATH and unset FZF variables
+          File.open("#{config_dir}/env.nu", 'w') do |f|
+            f.puts "$env.PATH = ($env.PATH | split row (char esep) | prepend '#{BASE}/bin')"
+            UNSETS.each do |var|
+              f.puts "hide-env -i #{var}"
+            end
+            f.puts "$env.FZF_DEFAULT_OPTS = \"--no-scrollbar --pointer '>' --marker '>'\""
+            f.puts '$env.config = ($env.config | upsert history { file_format: "plaintext", max_size: 100 })'
+          end
+
+          # Write config.nu with minimal prompt
+          File.open("#{config_dir}/config.nu", 'w') do |f|
+            f.puts '$env.PROMPT_COMMAND = {|| "" }'
+            f.puts '$env.PROMPT_INDICATOR = ""'
+            f.puts '$env.PROMPT_COMMAND_RIGHT = {|| "" }'
+            f.puts '$env.config = ($env.config | upsert show_banner false)'
+            f.puts "source #{BASE}/shell/key-bindings.nu"
+            f.puts "source #{BASE}/shell/completion.nu"
+          end
+
+          "unset #{UNSETS.join(' ')}; env XDG_CONFIG_HOME=#{xdg_home} XDG_DATA_HOME=#{xdg_home}/../fzf-nushell-data nu --config #{config_dir}/config.nu --env-config #{config_dir}/env.nu"
+        end
+    end
   end
 end
 
@@ -85,12 +117,24 @@ class Tmux
   attr_reader :win
 
   def initialize(shell = :bash)
+    @shell = shell
     @win = go(%W[new-window -d -P -F #I #{Shell.send(shell)}]).first
     go(%W[set-window-option -t #{@win} pane-base-index 0])
-    return unless shell == :fish
-
-    send_keys 'function fish_prompt; end; clear', :Enter
-    self.until(&:empty?)
+    if shell == :fish
+      send_keys 'function fish_prompt; end; clear', :Enter
+      self.until(&:empty?)
+    elsif shell == :nushell
+      # Clear history from previous tests to avoid contamination
+      FileUtils.rm_f('/tmp/fzf-nushell-xdg/nushell/history.txt')
+      # Wait for nushell to be ready: send a marker and wait for it
+      sleep 2
+      send_keys 'clear', :Enter
+      self.until(&:empty?)
+      send_keys '"ready"', :Enter
+      self.until { |lines| lines.any_include?('ready') }
+      send_keys 'clear', :Enter
+      self.until(&:empty?)
+    end
   end
 
   def kill
@@ -242,11 +286,19 @@ class Tmux
   def prepare
     tries = 0
     begin
-      self.until(true) do |lines|
+      if @shell == :nushell
         message = "Prepare[#{tries}]"
-        send_keys ' ', 'C-u', :Enter, message, :Left, :Right
-        sleep(0.15)
-        lines[-1] == message
+        send_keys 'C-u', 'C-l'
+        sleep 0.2
+        send_keys ' ', 'C-u', :Enter, message
+        self.until { |lines| lines[-1] == message }
+      else
+        self.until(true) do |lines|
+          message = "Prepare[#{tries}]"
+          send_keys ' ', 'C-u', :Enter, message, :Left, :Right
+          sleep(0.15)
+          lines[-1] == message
+        end
       end
     rescue Minitest::Assertion
       (tries += 1) < 5 ? retry : raise
