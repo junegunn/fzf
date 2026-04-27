@@ -445,7 +445,6 @@ let fzf_external_completer = {|spans|
       }
     }
 
-
     # --- Return Results ---
     # The _fzf_... functions return a list of completion strings.
     # Nushell's completer expects the suggestions for the token being completed (prefix + trigger).
