@@ -424,7 +424,6 @@ let fzf_external_completer = {|spans|
     if ($cmd_word in $user_completers) {
       let user_gen = ($user_completers | get $cmd_word)
       let user_result = (do $user_gen $prefix $cmd_spans)
-      "\n" | save -a /tmp/fzf-debug.log
       if ($user_result | describe | str starts-with 'record') {
         let candidates = ($user_result | get candidates)
         let fzf_opts = ($user_result | get opts? | default ["-m"])
