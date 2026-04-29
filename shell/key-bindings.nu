@@ -83,7 +83,7 @@ const alt_c = {
 
 # History
 const ctrl_r = {
-  name: history_menu
+  name: fzf_history
   modifier: control
   keycode: char_r
   mode: [emacs, vi_insert, vi_normal]
@@ -152,13 +152,13 @@ def __fzf_binding_enabled [var_name: string]: nothing -> bool {
 
 # Update the $env.config
 export-env {
-  let fzf_names = ['fzf_files', 'fzf_dirs', 'history_menu']
-  let already_loaded = ($env.config.keybindings | any { |kb| $kb.name in $fzf_names })
-  if not $already_loaded {
-    mut bindings = []
-    if (__fzf_binding_enabled 'FZF_ALT_C_COMMAND') { $bindings = ($bindings | append $alt_c) }
-    if (__fzf_binding_enabled 'FZF_CTRL_R_COMMAND') { $bindings = ($bindings | append $ctrl_r) }
-    if (__fzf_binding_enabled 'FZF_CTRL_T_COMMAND') { $bindings = ($bindings | append $ctrl_t) }
-    $env.config.keybindings = ($env.config.keybindings | append $bindings)
-  }
+  let fzf_names = ['fzf_files', 'fzf_dirs', 'fzf_history']
+  # Filter out any existing fzf bindings, then re-add the enabled ones.
+  # This allows re-sourcing to update bindings (e.g. after changing
+  # FZF_CTRL_T_COMMAND) without creating duplicates.
+  mut bindings = ($env.config.keybindings | where { |kb| $kb.name not-in $fzf_names })
+  if (__fzf_binding_enabled 'FZF_ALT_C_COMMAND') { $bindings = ($bindings | append $alt_c) }
+  if (__fzf_binding_enabled 'FZF_CTRL_R_COMMAND') { $bindings = ($bindings | append $ctrl_r) }
+  if (__fzf_binding_enabled 'FZF_CTRL_T_COMMAND') { $bindings = ($bindings | append $ctrl_t) }
+  $env.config.keybindings = $bindings
 }
