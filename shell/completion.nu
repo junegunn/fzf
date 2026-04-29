@@ -9,10 +9,6 @@
 # This loads FZF as a Nushell External Completer
 # https://www.nushell.sh/cookbook/external_completers.html
 
-# It's the most stable implementation.
-# The drawback is that it doesn't work for completing some commands, like 'cd' and 'ls' on Nushell >= 0.103.0
-# https://www.nushell.sh/blog/2025-03-18-nushell_0_103_0.html#external-completers-are-no-longer-used-for-internal-commands-toc
-
 
 # --- Default Environment Variables ---
 # These can be overridden in your config.nu or environment.
@@ -66,7 +62,6 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
                      , query:        string       # The initial query string for fzf
                      , fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
                      ] {
-  # in which case $stdin_content will be null.
   let stdin_content = try {
     # Collect stdin into a single string. Adjust if structured data is expected.
     $in | into string
@@ -166,48 +161,42 @@ def __fzf_list_hosts_nu [] {
 
 # Base function for path/directory completion
 def __fzf_generic_path_completion_nu [ prefix:           string       # The text before the trigger
-                                     , compgen_cmd_name: string       # not used
                                      , fzf_opts_arg:     list<string> # Extra options for fzf
                                      , suffix:           string       # Suffix to add to selection (e.g. , "/")
                                      ] {
-  # --- Determine walker root and initial query from the raw prefix ---
-  let raw_prefix = $prefix # Use the original prefix before any expansion
+  # --- Determine walker root and initial query from the prefix ---
 
   mut walker_root   = "."
   mut initial_query = ""
 
-  if ($raw_prefix | is-empty) {
+  if ($prefix | is-empty) {
     # Case: "**"
     $walker_root   = "."
     $initial_query = ""
-  } else if ($raw_prefix | str contains (char separator)) {
+  } else if ($prefix | str contains (char separator)) {
     # Case: "dir/subdir/partial**" or "dir/**"
-    $walker_root   = $raw_prefix | path dirname
-    $initial_query = $raw_prefix | path basename
+    $walker_root   = $prefix | path dirname
+    $initial_query = $prefix | path basename
     # Handle edge case where prefix ends with separator, e.g., "dir/"
-    if ($raw_prefix | str ends-with (char separator)) {
+    if ($prefix | str ends-with (char separator)) {
       # Remove trailing separator to get the intended directory
-      $walker_root = $raw_prefix | str substring 0..-2
+      $walker_root = $prefix | str substring 0..-2
       $initial_query = ""
     }
     # Ensure walker_root isn't empty if prefix was like "/file**"
     # or if path dirname returned empty string for some reason (e.g. prefix="file/")
     if ($walker_root | is-empty) {
-      if ($raw_prefix | str starts-with (char separator)) {
+      if ($prefix | str starts-with (char separator)) {
         $walker_root = (char separator)
-      } else if ($raw_prefix | str ends-with (char separator)) {
-        $walker_root = $raw_prefix | str substring 0..-2
+      } else if ($prefix | str ends-with (char separator)) {
+        $walker_root = $prefix | str substring 0..-2
       } else { $walker_root = "." } # Fallback if dirname weirdly fails
     }
   } else {
     # Case: "partial**" (no slashes)
     $walker_root   = "."
-    $initial_query = $raw_prefix
+    $initial_query = $prefix
   }
-
-  # --- Candidate Generation ---
-  # Keep existing logic for custom generators vs walker, but use newly calculated values.
-  # Custom generators might still expect/need an absolute path. Expand walker_root only for them.
 
   # --- Prepare FZF options ---
   let completion_type_opts = if $suffix == '/' {
@@ -252,11 +241,11 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
 def _fzf_path_completion_nu [prefix: string] {
   # Zsh args: base, lbuf, _fzf_compgen_path, "-m", "", " "
   # Nu: prefix, empty command name (use find), ["-m"], "", " "
-  __fzf_generic_path_completion_nu $prefix "" ["-m"] ""
+  __fzf_generic_path_completion_nu $prefix ["-m"] ""
 }
 
 # General completion helper for commands that feed a list to fzf
-# This is called by ssh, export, unalias, kill. everything except path and dir
+# This is called by ssh, kill, and user-defined completers.
 def _fzf_complete_nu [ query:                  string       # The initial query string for fzf
                      , data_gen_closure:       closure      # Closure that generates candidates
                      , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
@@ -393,7 +382,6 @@ let fzf_external_completer = {|spans|
   if (($spans | length ) == 0) { return null } # Nothing to complete
 
   let last_span = $spans | last
-  let line_before_cursor = $spans | str join ' ' # Reconstruct line for context
 
   if ($last_span | str ends-with $trigger) {
     # --- Trigger Found ---
@@ -442,7 +430,7 @@ let fzf_external_completer = {|spans|
         "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
         "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
         _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
-          $completion_results = (__fzf_generic_path_completion_nu $prefix "" [] "/")
+          $completion_results = (__fzf_generic_path_completion_nu $prefix [] "/")
         }
         _                                 => {
           # Default to path completion if no specific command matches
