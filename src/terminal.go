@@ -7819,6 +7819,11 @@ func (t *Terminal) Loop() error {
 				t.previewOpts = t.initialPreviewOpts
 				t.previewOpts.command = currentPreviewOpts.command
 
+				// Carry over toggle-driven state so toggle-preview-wrap survives
+				// a change-preview-window. Tokens below can still override.
+				t.previewOpts.wrap = currentPreviewOpts.wrap
+				t.previewOpts.wrapWord = currentPreviewOpts.wrapWord
+
 				// Split window options
 				tokens := strings.Split(a.a, "|")
 				if len(tokens[0]) > 0 && t.initialPreviewOpts.hidden {

@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.73.0
+------
+- Bug fixes
+    - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word`. Layout fields still snap to the preset, so cycling and the empty-token reset behave as before. The new spec can still override by including `wrap` or `nowrap` explicitly. (#4791)
+
 0.72.0
 ------
 _Release highlights: https://junegunn.github.io/fzf/releases/0.72.0/_
