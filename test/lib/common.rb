@@ -126,12 +126,16 @@ class Tmux
     elsif shell == :nushell
       # Clear history from previous tests to avoid contamination
       FileUtils.rm_f('/tmp/fzf-nushell-xdg/nushell/history.txt')
-      # Wait for nushell to be ready: send a marker and wait for it
-      sleep 2
-      send_keys 'clear', :Enter
-      self.until(&:empty?)
-      send_keys '"ready"', :Enter
-      self.until { |lines| lines.any_include?('ready') }
+      # Wait for nushell to be ready by polling with a marker command
+      retries = 0
+      begin
+        send_keys '"ready"', :Enter
+        self.until(timeout: 10) { |lines| lines.any_include?('ready') }
+      rescue Minitest::Assertion
+        retries += 1
+        raise if retries > 5
+        retry
+      end
       send_keys 'clear', :Enter
       self.until(&:empty?)
     end
