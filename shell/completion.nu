@@ -45,7 +45,7 @@ def __fzf_defaults_nu [prepend: string, append: string] {
   let height_opt        = $env.FZF_TMUX_HEIGHT? | default '40%'
 
   let file_opts = try {
-     open $default_opts_file | str trim
+     open --raw $default_opts_file | str trim
   } catch {
      ''
   }
