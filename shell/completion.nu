@@ -58,7 +58,7 @@ def __fzf_defaults_nu [prepend: string, append: string] {
 }
 
 # Wrapper for running fzf or fzf-tmux
-def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fzf-helper" - mainly for potential debugging
+def __fzf_comprun [ context_name: string       # e.g., "fzf-completion" , "fzf-helper" - mainly for potential debugging
                      , query:        string       # The initial query string for fzf
                      , fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
                      ] {
@@ -79,10 +79,10 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
   let has_walker = ($fzf_prefinal_opt | find '--walker' | is-not-empty)
 
   # Check for custom comprun function (Nu equivalent)
-  if (which _fzf_comprun_nu | is-not-empty) {
+  if (which _fzf_comprun | is-not-empty) {
     # Note: Nushell doesn't have a direct equivalent to Zsh/Bash `type -t _fzf_comprun`.
-    # This check assumes a user might define a custom command named `_fzf_comprun_nu`.
-    _fzf_comprun_nu $context_name $query ...$fzf_prefinal_opt # Pass args correctly to custom function
+    # This check assumes a user might define a custom command named `_fzf_comprun`.
+    _fzf_comprun $context_name $query ...$fzf_prefinal_opt # Pass args correctly to custom function
   } else if ($env.TMUX_PANE? | default '' | into string | is-not-empty) and (($env.FZF_TMUX? | default 0) != 0 or ($env.FZF_TMUX_OPTS? | is-not-empty)) {
     # Running inside tmux, use fzf-tmux
     let final_fzf_opts = if ($env.FZF_TMUX_OPTS? | is-not-empty) {
@@ -111,7 +111,7 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
 }
 
 # Generate host list for ssh/telnet
-def __fzf_list_hosts_nu [] {
+def __fzf_list_hosts [] {
   # Translate the Zsh pipeline using Nu commands and external tools
   let ssh_configs       = try { open ~/.ssh/config       | lines } catch { [] }
   let ssh_configs_d     = try { open ~/.ssh/config.d/*   | lines } catch { [] }
@@ -160,7 +160,7 @@ def __fzf_list_hosts_nu [] {
 
 
 # Base function for path/directory completion
-def __fzf_generic_path_completion_nu [ prefix:           string       # The text before the trigger
+def __fzf_generic_path_completion [ prefix:           string       # The text before the trigger
                                      , fzf_opts_arg:     list<string> # Extra options for fzf
                                      , suffix:           string       # Suffix to add to selection (e.g. , "/")
                                      ] {
@@ -219,7 +219,7 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
                                                                                                           | append $completion_type_opts
 
   # Call FZF run
-  let fzf_selection = ( __fzf_comprun_nu "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
+  let fzf_selection = ( __fzf_comprun "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
 
 
   # --- Return Result ---
@@ -238,15 +238,15 @@ def __fzf_generic_path_completion_nu [ prefix:           string       # The text
 }
 
 # Specific path completion wrapper
-def _fzf_path_completion_nu [prefix: string] {
+def _fzf_path_completion [prefix: string] {
   # Zsh args: base, lbuf, _fzf_compgen_path, "-m", "", " "
   # Nu: prefix, empty command name (use find), ["-m"], "", " "
-  __fzf_generic_path_completion_nu $prefix ["-m"] ""
+  __fzf_generic_path_completion $prefix ["-m"] ""
 }
 
 # General completion helper for commands that feed a list to fzf
 # This is called by ssh, kill, and user-defined completers.
-def _fzf_complete_nu [ query:                  string       # The initial query string for fzf
+def _fzf_complete [ query:                  string       # The initial query string for fzf
                      , data_gen_closure:       closure      # Closure that generates candidates
                      , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
                      , --post_process_closure: closure      # Closure to process the selected item (optional)
@@ -264,7 +264,7 @@ def _fzf_complete_nu [ query:                  string       # The initial query 
 
   # Run fzf and get selection
   let fzf_selection = $candidates | to text
-                                  | __fzf_comprun_nu "fzf-helper" $query $fzf_opts_arg
+                                  | __fzf_comprun "fzf-helper" $query $fzf_opts_arg
                                   | str trim # Trim potential trailing newline from fzf
 
   # Apply post-processing if closure provided and selection is not empty
@@ -288,7 +288,7 @@ def _fzf_complete_nu [ query:                  string       # The initial query 
 }
 
 # SSH/Telnet completion
-def _fzf_complete_ssh_nu [ prefix:                    string
+def _fzf_complete_ssh [ prefix:                    string
                          , input_line_before_trigger: string
                          ] {
   let words      = ($input_line_before_trigger | split row ' ')
@@ -308,7 +308,7 @@ def _fzf_complete_ssh_nu [ prefix:                    string
     if ($prev_arg in ['-i', '-F', '-E']) {
       $handled = true
       # Call path completion with the current prefix
-      $completion_result = (_fzf_path_completion_nu $prefix)
+      $completion_result = (_fzf_path_completion $prefix)
     }
   }
 
@@ -319,15 +319,15 @@ def _fzf_complete_ssh_nu [ prefix:                    string
     let query = if ($prefix | str contains "@") { $prefix | split row "@" | last } else { $prefix }
 
     let host_candidates_gen = {||
-      __fzf_list_hosts_nu
+      __fzf_list_hosts
       | each {|host_item| $user_part + $host_item } # Prepend user@ if present in prefix
     }
 
     # Zsh options: +m -- ; Nu: pass ["+m"]
-    # Pass the host part of the prefix to _fzf_complete_nu for the initial query
-    let selected_host = (_fzf_complete_nu $query $host_candidates_gen ["+m"]) # Pass host_prefix here
+    # Pass the host part of the prefix to _fzf_complete for the initial query
+    let selected_host = (_fzf_complete $query $host_candidates_gen ["+m"]) # Pass host_prefix here
     if not ($selected_host | is-empty) {
-      $completion_result = $selected_host # _fzf_complete_nu returns a list
+      $completion_result = $selected_host # _fzf_complete returns a list
     }
   }
 
@@ -341,7 +341,7 @@ def _fzf_complete_kill_post_get_pid [selected_line: string] {
 }
 
 # Kill completion to get process PID
-def _fzf_complete_kill_nu [query: string] {
+def _fzf_complete_kill [query: string] {
   let ps_gen_closure = {|| # Define ps generator as a closure
     # Try standard ps, then busybox, then cygwin format approximation
     # Use `^ps` to ensure external command execution
@@ -367,7 +367,7 @@ def _fzf_complete_kill_nu [query: string] {
 
   let fzf_opts = ["-m", "--header-lines=1", "--no-preview", "--wrap", "--color", "fg:dim,nth:regular"]
 
-  _fzf_complete_nu $query $ps_gen_closure $fzf_opts --post_process_closure $kill_post_closure
+  _fzf_complete $query $ps_gen_closure $fzf_opts --post_process_closure $kill_post_closure
 }
 
 
@@ -418,23 +418,23 @@ let fzf_external_completer = {|spans|
         let fzf_opts = ($user_result | get opts? | default ["-m"])
         let post = ($user_result | get post? | default null)
         if ($post != null) {
-          $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts --post_process_closure $post)
+          $completion_results = (_fzf_complete $prefix {|| $candidates} $fzf_opts --post_process_closure $post)
         } else {
-          $completion_results = (_fzf_complete_nu $prefix {|| $candidates} $fzf_opts)
+          $completion_results = (_fzf_complete $prefix {|| $candidates} $fzf_opts)
         }
       } else {
-        $completion_results = (_fzf_complete_nu $prefix {|| $user_result} ["-m"])
+        $completion_results = (_fzf_complete $prefix {|| $user_result} ["-m"])
       }
     } else {
       match $cmd_word {
-        "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh_nu $prefix $line_without_trigger)    }
-        "kill"                            => { $completion_results = (_fzf_complete_kill_nu $prefix)                         }
+        "ssh" | "scp" | "sftp" | "telnet" => { $completion_results = (_fzf_complete_ssh $prefix $line_without_trigger)    }
+        "kill"                            => { $completion_results = (_fzf_complete_kill $prefix)                         }
         _ if ($cmd_word in $env.FZF_COMPLETION_DIR_COMMANDS) => {
-          $completion_results = (__fzf_generic_path_completion_nu $prefix [] "/")
+          $completion_results = (__fzf_generic_path_completion $prefix [] "/")
         }
         _                                 => {
           # Default to path completion if no specific command matches
-          $completion_results = (_fzf_path_completion_nu $prefix)
+          $completion_results = (_fzf_path_completion $prefix)
         }
       }
     }
