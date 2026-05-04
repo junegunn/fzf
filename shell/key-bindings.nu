@@ -97,8 +97,10 @@ const ctrl_r = {
         # reverse | uniq: show most recent first, deduplicate keeping the latest.
         # Nushell's `history` loads the full history as an in-memory table
         # (bounded by $env.config.history.max_size, default 100,000), so
-        # reverse and uniq operate on an already-materialized list and are
-        # effectively free.
+        # reverse and uniq run on an already-materialized list. This is O(n)
+        # but acceptable for typical history sizes; unlike bash/zsh `fc -r`,
+        # there is no streaming primitive that would let fzf show the latest
+        # entries before the full list is consumed.
         history
           | get command
           | reverse
