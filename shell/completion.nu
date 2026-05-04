@@ -83,7 +83,7 @@ def __fzf_comprun_nu [ context_name: string       # e.g., "fzf-completion" , "fz
     # Note: Nushell doesn't have a direct equivalent to Zsh/Bash `type -t _fzf_comprun`.
     # This check assumes a user might define a custom command named `_fzf_comprun_nu`.
     _fzf_comprun_nu $context_name $query ...$fzf_prefinal_opt # Pass args correctly to custom function
-  } else if ($env.TMUX_PANE? | is-not-empty) and (($env.FZF_TMUX? | default 0) != 0 or ($env.FZF_TMUX_OPTS? | is-not-empty)) {
+  } else if ($env.TMUX_PANE? | default '' | into string | is-not-empty) and (($env.FZF_TMUX? | default 0) != 0 or ($env.FZF_TMUX_OPTS? | is-not-empty)) {
     # Running inside tmux, use fzf-tmux
     let final_fzf_opts = if ($env.FZF_TMUX_OPTS? | is-not-empty) {
       $env.FZF_TMUX_OPTS | split row ' ' | append ['--'] | append $fzf_prefinal_opt
