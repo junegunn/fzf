@@ -126,11 +126,13 @@ class Tmux
     elsif shell == :nushell
       # Clear history from previous tests to avoid contamination
       FileUtils.rm_f('/tmp/fzf-nushell-xdg/nushell/history.txt')
-      # Wait for nushell to be ready by polling with a marker command
+      # Wait for nushell to be ready by polling with a marker command.
+      # We use 'print "fzf-ready"' and check for a line that is exactly
+      # 'fzf-ready' (not the command echo which includes 'print').
       retries = 0
       begin
-        send_keys '"ready"', :Enter
-        self.until(timeout: 10) { |lines| lines.any_include?('ready') }
+        send_keys 'print "fzf-ready"', :Enter
+        self.until { |lines| lines.any? { |l| l.strip == 'fzf-ready' } }
       rescue Minitest::Assertion
         retries += 1
         raise if retries > 5
