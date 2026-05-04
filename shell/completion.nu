@@ -454,36 +454,43 @@ let fzf_external_completer = {|spans|
 
 # --- WRAPPER AND REGISTRATION ---
 
-# Get the currently configured external completer, if any exists
-let previous_external_completer = $env.config? | get completions? | get external? | get completer?
+# Guard against re-sourcing: wrapping the completer multiple times would
+# nest wrappers and grow the call chain on every reload.
+if ($env.__fzf_completer_registered? | default false) != true {
 
-# Define the new wrapper completer
-let fzf_wrapper_completer = {|spans|
-  # 1. Try the FZF completer logic first
-  let fzf_result = do $fzf_external_completer $spans
+  # Get the currently configured external completer, if any exists
+  let previous_external_completer = $env.config? | get completions? | get external? | get completer?
 
-  # 2. If FZF returned a result (a list, even an empty one), return it.
-  #    `null` means FZF didn't handle it because the trigger wasn't present.
-  if $fzf_result != null {
-    $fzf_result
-  } else {
-    # 3. FZF didn't handle it, so call the previous completer (if it exists).
-    if $previous_external_completer != null {
-      do $previous_external_completer $spans
+  # Define the new wrapper completer
+  let fzf_wrapper_completer = {|spans|
+    # 1. Try the FZF completer logic first
+    let fzf_result = do $fzf_external_completer $spans
+
+    # 2. If FZF returned a result (a list, even an empty one), return it.
+    #    `null` means FZF didn't handle it because the trigger wasn't present.
+    if $fzf_result != null {
+      $fzf_result
     } else {
-      # 4. No previous completer, and FZF didn't handle it. Return null.
-      null
+      # 3. FZF didn't handle it, so call the previous completer (if it exists).
+      if $previous_external_completer != null {
+        do $previous_external_completer $spans
+      } else {
+        # 4. No previous completer, and FZF didn't handle it. Return null.
+        null
+      }
     }
   }
-}
 
-# Register the new wrapper completer
-# This ensures external completions are enabled and sets our wrapper.
-$env.config = $env.config | upsert completions {
-  external: {
-    enable: true
-    completer: $fzf_wrapper_completer
+  # Register the new wrapper completer
+  # This ensures external completions are enabled and sets our wrapper.
+  $env.config = $env.config | upsert completions {
+    external: {
+      enable: true
+      completer: $fzf_wrapper_completer
+    }
   }
+
+  $env.__fzf_completer_registered = true
 }
 
 #  vim: set sts=2 ts=2 sw=2 tw=120 et :
