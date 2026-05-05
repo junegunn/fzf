@@ -6,10 +6,11 @@ version=0.72.0
 auto_completion=
 key_bindings=
 update_config=2
-shells="bash zsh fish"
+shells="bash zsh fish nushell"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
+nushell_autoload_dir=${XDG_CONFIG_HOME:-$HOME/.config}/nushell/autoload
 
 help() {
   cat << EOF
@@ -27,6 +28,7 @@ usage: $0 [OPTIONS]
     --no-bash            Do not set up bash configuration
     --no-zsh             Do not set up zsh configuration
     --no-fish            Do not set up fish configuration
+    --no-nushell         Do not set up nushell configuration
 EOF
 }
 
@@ -56,6 +58,7 @@ for opt in "$@"; do
     --no-bash) shells=${shells/bash/} ;;
     --no-zsh) shells=${shells/zsh/} ;;
     --no-fish) shells=${shells/fish/} ;;
+    --no-nushell) shells=${shells/nushell/} ;;
     *)
       echo "unknown option: $opt"
       help
@@ -224,7 +227,9 @@ fi
 [[ $* =~ "--bin" ]] && exit 0
 
 for s in $shells; do
-  if ! command -v "$s" > /dev/null; then
+  bin=$s
+  [[ "$s" = nushell ]] && bin=nu
+  if ! command -v "$bin" > /dev/null; then
     shells=${shells/$s/}
   fi
 done
@@ -251,6 +256,7 @@ for shell in $shells; do
   fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   [[ $shell == fish ]] && continue
+  [[ $shell == nushell ]] && continue
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
@@ -368,6 +374,7 @@ fi
 echo
 for shell in $shells; do
   [[ $shell == fish ]] && continue
+  [[ $shell == nushell ]] && continue
   [ $shell = zsh ] && dest=${ZDOTDIR:-~}/.zshrc || dest=~/.bashrc
   append_line $update_config "[ -f ${prefix}.${shell} ] && source ${prefix}.${shell}" "$dest" "${prefix}.${shell}"
 done
@@ -436,6 +443,15 @@ if [[ $shells =~ fish ]]; then
   fi
 fi
 
+if [[ "$shells" =~ nushell ]]; then
+  echo "Setting up Nushell integration ..."
+  mkdir -p "$nushell_autoload_dir"
+  echo -n "  Generate fzf.nu ... "
+  "$fzf_base"/bin/fzf --nushell > "$nushell_autoload_dir/fzf.nu"
+  echo "OK"
+  echo
+fi
+
 if [ $update_config -eq 1 ]; then
   echo 'Finished. Restart your shell or reload config file.'
   if [[ $shells =~ bash ]]; then
@@ -445,6 +461,7 @@ if [ $update_config -eq 1 ]; then
   fi
   [[ $shells =~ zsh ]] && echo "   source ${ZDOTDIR:-~}/.zshrc   # zsh"
   [[ $shells =~ fish && $lno_func -ne 0 ]] && echo '   fish_user_key_bindings  # fish'
+  [[ $shells =~ nushell ]] && echo '   # nushell: files are loaded automatically from autoload directory'
   echo
   echo 'Use uninstall script to remove fzf.'
   echo
