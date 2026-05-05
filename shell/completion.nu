@@ -39,22 +39,15 @@ $env.FZF_COMPLETION_DIR_COMMANDS = $env.FZF_COMPLETION_DIR_COMMANDS? | default [
 # --- Helper Functions ---
 
 # Helper to build default fzf options list
-def __fzf_defaults_nu [prepend: string, append: string] {
-  let default_opts      = $env.FZF_DEFAULT_OPTS? | default ''
-  let default_opts_file = $env.FZF_DEFAULT_OPTS_FILE? | default ''
-  let height_opt        = $env.FZF_TMUX_HEIGHT? | default '40%'
-
-  let file_opts = try {
-     open --raw $default_opts_file | str trim
-  } catch {
-     ''
+def __fzf_defaults [prepend: string, append: string]: nothing -> string {
+  let base = $"--height ($env.FZF_TMUX_HEIGHT? | default '40%') --min-height 20+ --bind=ctrl-z:ignore ($prepend)"
+  let opts_file = if ($env.FZF_DEFAULT_OPTS_FILE? | default '' | is-not-empty) {
+    try { open --raw ($env.FZF_DEFAULT_OPTS_FILE) | str trim } catch { '' }
+  } else {
+    ''
   }
-
-  # Build options string in the same order as bash/zsh:
-  #   1. --height, --min-height, --bind=ctrl-z:ignore, $prepend
-  #   2. $FZF_DEFAULT_OPTS_FILE contents
-  #   3. $FZF_DEFAULT_OPTS, $append
-  $"--height ($height_opt) --min-height 20+ --bind=ctrl-z:ignore ($prepend) ($file_opts) ($default_opts) ($append)" | str trim
+  let default_opts = $env.FZF_DEFAULT_OPTS? | default ''
+  $"($base) ($opts_file) ($default_opts) ($append)" | str trim
 }
 
 # Wrapper for running fzf or fzf-tmux
@@ -69,7 +62,7 @@ def __fzf_comprun [ context_name: string       # e.g., "fzf-completion" , "fzf-h
     null # Set to null if there's no stdin or an error occurs reading it
   }
 
-  let fzf_default_opts = (__fzf_defaults_nu "" ($env.FZF_COMPLETION_OPTS | default ''))
+  let fzf_default_opts = (__fzf_defaults "" ($env.FZF_COMPLETION_OPTS | default ''))
   let fzf_prefinal_opt = ['--query', $query, '--reverse'] | append $fzf_opts_arg
 
   # Get the configured height, defaulting to '40%'
