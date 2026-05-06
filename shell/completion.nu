@@ -52,9 +52,9 @@ def __fzf_defaults [prepend: string, append: string]: nothing -> string {
 
 # Wrapper for running fzf or fzf-tmux
 def __fzf_comprun [ context_name: string       # e.g., "fzf-completion" , "fzf-helper" - mainly for potential debugging
-                     , query:        string       # The initial query string for fzf
-                     , fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
-                     ] {
+                  , query:        string       # The initial query string for fzf
+                  , fzf_opts_arg: list<string> # Remaining options for fzf/fzf-tmux
+                  ] {
   let stdin_content = try {
     # Collect stdin into a single string. Adjust if structured data is expected.
     $in | into string
@@ -154,9 +154,9 @@ def __fzf_list_hosts [] {
 
 # Base function for path/directory completion
 def __fzf_generic_path_completion [ prefix:           string       # The text before the trigger
-                                     , fzf_opts_arg:     list<string> # Extra options for fzf
-                                     , suffix:           string       # Suffix to add to selection (e.g. , "/")
-                                     ] {
+                                  , fzf_opts_arg:     list<string> # Extra options for fzf
+                                  , suffix:           string       # Suffix to add to selection (e.g. , "/")
+                                  ] {
   # --- Determine walker root and initial query from the prefix ---
 
   mut walker_root   = "."
@@ -209,7 +209,7 @@ def __fzf_generic_path_completion [ prefix:           string       # The text be
 
   # Use the 'walker_root' calculated at the beginning
   let fzf_all_opts = ["--scheme=path", "--walker", $walker_type, "--walker-root", $walker_root_expanded] | append $fzf_opts_arg
-                                                                                                          | append $completion_type_opts
+                                                                                                         | append $completion_type_opts
 
   # Call FZF run
   let fzf_selection = ( __fzf_comprun "fzf-path-completion-walker" $initial_query $fzf_all_opts ) | str trim
@@ -240,10 +240,10 @@ def _fzf_path_completion [prefix: string] {
 # General completion helper for commands that feed a list to fzf
 # This is called by ssh, kill, and user-defined completers.
 def _fzf_complete [ query:                  string       # The initial query string for fzf
-                     , data_gen_closure:       closure      # Closure that generates candidates
-                     , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
-                     , --post_process_closure: closure      # Closure to process the selected item (optional)
-                     ] {
+                  , data_gen_closure:       closure      # Closure that generates candidates
+                  , fzf_opts_arg:           list<string> # Extra options for fzf (like -m, +m)
+                  , --post_process_closure: closure      # Closure to process the selected item (optional)
+                  ] {
   # Generate candidates using the provided command
   let candidates = try {
     do $data_gen_closure
@@ -282,8 +282,8 @@ def _fzf_complete [ query:                  string       # The initial query str
 
 # SSH/Telnet completion
 def _fzf_complete_ssh [ prefix:                    string
-                         , input_line_before_trigger: string
-                         ] {
+                      , input_line_before_trigger: string
+                      ] {
   let words      = ($input_line_before_trigger | split row ' ')
   let word_count = $words | length
 
@@ -447,49 +447,43 @@ let fzf_external_completer = {|spans|
 
 # --- WRAPPER AND REGISTRATION ---
 
-# On first load, capture the pre-fzf completer and save it so that
-# re-sourcing can re-wrap the original cleanly instead of nesting.
-let previous_external_completer = if ($env.__fzf_completer_registered? | default false) {
-  # Re-source: use the saved original completer as the base, not the
-  # current one (which is already the fzf wrapper).
-  $env.__fzf_previous_completer? | default null
-} else {
-  # First load: capture whatever completer was configured before fzf.
-  $env.config? | get completions? | get external? | get completer?
-}
+# Guard against re-sourcing: wrapping the completer multiple times would
+# nest wrappers and grow the call chain on every reload.
+if ($env.__fzf_completer_registered? | default false) != true {
 
-# Save the pre-fzf completer so re-sourcing can retrieve it.
-$env.__fzf_previous_completer = $previous_external_completer
+  # Get the currently configured external completer, if any exists
+  let previous_external_completer = $env.config? | get completions? | get external? | get completer?
 
-# Define the new wrapper completer
-let fzf_wrapper_completer = {|spans|
-  # 1. Try the FZF completer logic first
-  let fzf_result = do $fzf_external_completer $spans
+  # Define the new wrapper completer
+  let fzf_wrapper_completer = {|spans|
+    # 1. Try the FZF completer logic first
+    let fzf_result = do $fzf_external_completer $spans
 
-  # 2. If FZF returned a result (a list, even an empty one), return it.
-  #    `null` means FZF didn't handle it because the trigger wasn't present.
-  if $fzf_result != null {
-    $fzf_result
-  } else {
-    # 3. FZF didn't handle it, so call the previous completer (if it exists).
-    if $previous_external_completer != null {
-      do $previous_external_completer $spans
+    # 2. If FZF returned a result (a list, even an empty one), return it.
+    #    `null` means FZF didn't handle it because the trigger wasn't present.
+    if $fzf_result != null {
+      $fzf_result
     } else {
-      # 4. No previous completer, and FZF didn't handle it. Return null.
-      null
+      # 3. FZF didn't handle it, so call the previous completer (if it exists).
+      if $previous_external_completer != null {
+        do $previous_external_completer $spans
+      } else {
+        # 4. No previous completer, and FZF didn't handle it. Return null.
+        null
+      }
     }
   }
-}
 
-# Register the new wrapper completer
-# This ensures external completions are enabled and sets our wrapper.
-$env.config = $env.config | upsert completions {
-  external: {
-    enable: true
-    completer: $fzf_wrapper_completer
+  # Register the new wrapper completer
+  # This ensures external completions are enabled and sets our wrapper.
+  $env.config = $env.config | upsert completions {
+    external: {
+      enable: true
+      completer: $fzf_wrapper_completer
+    }
   }
-}
 
-$env.__fzf_completer_registered = true
+  $env.__fzf_completer_registered = true
+}
 
 #  vim: set sts=2 ts=2 sw=2 tw=120 et :
