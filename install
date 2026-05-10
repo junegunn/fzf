@@ -444,12 +444,21 @@ if [[ $shells =~ fish ]]; then
 fi
 
 if [[ "$shells" =~ nushell ]]; then
-  echo "Setting up Nushell integration ..."
-  mkdir -p "$nushell_autoload_dir"
-  echo -n "  Generate fzf.nu ... "
-  "$fzf_base"/bin/fzf --nushell > "$nushell_autoload_dir/fzf.nu"
-  echo "OK"
-  echo
+  if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
+    echo "Setting up Nushell integration ..."
+    mkdir -p "$nushell_autoload_dir"
+    echo -n "  Generate fzf.nu ... "
+    if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
+      "$fzf_base"/bin/fzf --nushell > "$nushell_autoload_dir/fzf.nu"
+    else
+      {
+        [[ $key_bindings -eq 1 ]]   && "$fzf_base"/bin/fzf --nushell | awk '/^### key-bindings.nu ###$/,/^### end: key-bindings.nu ###$/'
+        [[ $auto_completion -eq 1 ]] && "$fzf_base"/bin/fzf --nushell | awk '/^### completion.nu ###$/,/^### end: completion.nu ###$/'
+      } > "$nushell_autoload_dir/fzf.nu"
+    fi
+    echo "OK"
+    echo
+  fi
 fi
 
 if [ $update_config -eq 1 ]; then
