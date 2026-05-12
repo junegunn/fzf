@@ -447,14 +447,13 @@ if [[ "$shells" =~ nushell ]]; then
   if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
     echo "Setting up Nushell integration ..."
     mkdir -p "$nushell_autoload_dir"
-    echo -n "  Generate fzf.nu ... "
+    echo -n "  Generate _fzf_integration.nu ... "
     if [[ $key_bindings -eq 1 && $auto_completion -eq 1 ]]; then
-      "$fzf_base"/bin/fzf --nushell > "$nushell_autoload_dir/fzf.nu"
+      "$fzf_base"/bin/fzf --nushell > "$nushell_autoload_dir/_fzf_integration.nu"
+    elif [[ $key_bindings -eq 1 ]]; then
+      cp "$fzf_base/shell/key-bindings.nu" "$nushell_autoload_dir/_fzf_integration.nu"
     else
-      {
-        [[ $key_bindings -eq 1 ]]   && "$fzf_base"/bin/fzf --nushell | awk '/^### key-bindings.nu ###$/,/^### end: key-bindings.nu ###$/'
-        [[ $auto_completion -eq 1 ]] && "$fzf_base"/bin/fzf --nushell | awk '/^### completion.nu ###$/,/^### end: completion.nu ###$/'
-      } > "$nushell_autoload_dir/fzf.nu"
+      cp "$fzf_base/shell/completion.nu" "$nushell_autoload_dir/_fzf_integration.nu"
     fi
     echo "OK"
     echo

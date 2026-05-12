@@ -217,7 +217,7 @@ Add the following line to your shell configuration file.
   ```nu
   # Generate the integration script
   mkdir ($nu.default-config-dir | path join "autoload")
-  fzf --nushell | save -f ($nu.default-config-dir | path join "autoload" "fzf.nu")
+  fzf --nushell | save -f ($nu.default-config-dir | path join "autoload" "_fzf_integration.nu")
   ```
 
 > [!NOTE]
