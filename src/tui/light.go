@@ -67,7 +67,8 @@ func (r *LightRenderer) stderrInternal(str string, allowNLCR bool, resetCode str
 	for len(bytes) > 0 {
 		r, sz := utf8.DecodeRune(bytes)
 		nlcr := r == '\n' || r == '\r'
-		if r >= 32 || r == '\x1b' || nlcr {
+		isC1 := r >= 0x80 && r <= 0x9F
+		if (r >= 32 && !isC1) || r == '\x1b' || nlcr {
 			if nlcr && !allowNLCR {
 				if r == '\r' {
 					runes = append(runes, []rune(CR+resetCode)...)
