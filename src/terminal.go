@@ -1389,7 +1389,7 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_KEY="+t.lastKey)
-	env = append(env, fmt.Sprintf("FZF_IDLE_TIME=%d", int(time.Since(t.lastActivity).Seconds())))
+	env = append(env, fmt.Sprintf("FZF_IDLE_MS=%d", time.Since(t.lastActivity).Milliseconds()))
 	env = append(env, "FZF_PROMPT="+string(t.promptString))
 	env = append(env, "FZF_GHOST="+string(t.ghost))
 	env = append(env, "FZF_POINTER="+string(t.pointer))

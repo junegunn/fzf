@@ -1431,9 +1431,10 @@ class TestCore < TestInteractive
     assert_includes tmux.capture[-3], 'STOPPED'
   end
 
-  def test_fzf_idle_time_env
-    # FZF_IDLE_TIME, combined with every(), implements idle-based behavior.
-    tmux.send_keys %(seq 100 | fzf --bind 'every(0.5):transform-header(echo "idle=$FZF_IDLE_TIME")'), :Enter
+  def test_fzf_idle_ms_env
+    # FZF_IDLE_MS, combined with every(), implements idle-based behavior.
+    # Print seconds derived from milliseconds for stable assertions.
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-header(echo "idle=$((FZF_IDLE_MS / 1000))")'), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
     # Idle counter advances without any input
     tmux.until { |lines| assert_includes lines[-3], 'idle=1' }

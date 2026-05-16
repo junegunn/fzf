@@ -4,15 +4,15 @@ CHANGELOG
 0.73.0
 ------
 - Timer-driven `every(N)` event for `--bind`, where `N` is seconds (fractional, floored to `0.01`). Ticks that overlap an in-flight action are coalesced, so a slow `reload` cannot accumulate a backlog.
-- New `FZF_IDLE_TIME` environment variable (whole seconds since the last user activity) exported to child processes. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
+- New `FZF_IDLE_MS` environment variable (milliseconds since the last user activity) exported to child processes. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
       ```sh
       # Live process list; --track --id-nth 2 keeps the cursor on the same PID across reloads
       fzf --header-lines 1 --track --id-nth 2 --bind 'start,every(2):reload-sync:ps -ef'
 
       # Auto-accept after 10 seconds of inactivity, with a countdown in the footer after 5s
       fzf --bind 'every(1):bg-transform:
-        if   [[ $FZF_IDLE_TIME -lt 5  ]]; then echo change-footer:
-        elif [[ $FZF_IDLE_TIME -lt 10 ]]; then echo "change-footer:auto-accept in $((10 - FZF_IDLE_TIME))s"
+        if   [[ $FZF_IDLE_MS -lt 5000  ]]; then echo change-footer:
+        elif [[ $FZF_IDLE_MS -lt 10000 ]]; then echo "change-footer:auto-accept in $(((10000 - FZF_IDLE_MS) / 1000))s"
         else echo accept
         fi'
       ```
