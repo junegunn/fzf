@@ -133,22 +133,22 @@ func _() {
 	_ = x[CtrlAltShiftDelete-122]
 	_ = x[CtrlAltShiftPageUp-123]
 	_ = x[CtrlAltShiftPageDown-124]
-	_ = x[Invalid-125]
-	_ = x[Fatal-126]
-	_ = x[BracketedPasteBegin-127]
-	_ = x[BracketedPasteEnd-128]
-	_ = x[Mouse-129]
-	_ = x[DoubleClick-130]
-	_ = x[LeftClick-131]
-	_ = x[RightClick-132]
-	_ = x[SLeftClick-133]
-	_ = x[SRightClick-134]
-	_ = x[ScrollUp-135]
-	_ = x[ScrollDown-136]
-	_ = x[SScrollUp-137]
-	_ = x[SScrollDown-138]
-	_ = x[PreviewScrollUp-139]
-	_ = x[PreviewScrollDown-140]
+	_ = x[Mouse-125]
+	_ = x[DoubleClick-126]
+	_ = x[LeftClick-127]
+	_ = x[RightClick-128]
+	_ = x[SLeftClick-129]
+	_ = x[SRightClick-130]
+	_ = x[ScrollUp-131]
+	_ = x[ScrollDown-132]
+	_ = x[SScrollUp-133]
+	_ = x[SScrollDown-134]
+	_ = x[PreviewScrollUp-135]
+	_ = x[PreviewScrollDown-136]
+	_ = x[Invalid-137]
+	_ = x[Fatal-138]
+	_ = x[BracketedPasteBegin-139]
+	_ = x[BracketedPasteEnd-140]
 	_ = x[Resize-141]
 	_ = x[Change-142]
 	_ = x[BackwardEOF-143]
@@ -166,9 +166,9 @@ func _() {
 	_ = x[Every-155]
 }
 
-const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLEnterCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteShiftHomeShiftEndShiftPageUpShiftPageDownF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltDeleteAltHomeAltEndAltPageUpAltPageDownAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltShiftDeleteAltShiftHomeAltShiftEndAltShiftPageUpAltShiftPageDownCtrlUpCtrlDownCtrlLeftCtrlRightCtrlHomeCtrlEndCtrlBackspaceCtrlDeleteCtrlPageUpCtrlPageDownAltCtrlAltCtrlAltUpCtrlAltDownCtrlAltLeftCtrlAltRightCtrlAltHomeCtrlAltEndCtrlAltBackspaceCtrlAltDeleteCtrlAltPageUpCtrlAltPageDownCtrlShiftUpCtrlShiftDownCtrlShiftLeftCtrlShiftRightCtrlShiftHomeCtrlShiftEndCtrlShiftDeleteCtrlShiftPageUpCtrlShiftPageDownCtrlAltShiftUpCtrlAltShiftDownCtrlAltShiftLeftCtrlAltShiftRightCtrlAltShiftHomeCtrlAltShiftEndCtrlAltShiftDeleteCtrlAltShiftPageUpCtrlAltShiftPageDownInvalidFatalBracketedPasteBeginBracketedPasteEndMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeaderClickFooterMultiEvery"
+const _EventType_name = "RuneCtrlACtrlBCtrlCCtrlDCtrlECtrlFCtrlGCtrlHTabCtrlJCtrlKCtrlLEnterCtrlNCtrlOCtrlPCtrlQCtrlRCtrlSCtrlTCtrlUCtrlVCtrlWCtrlXCtrlYCtrlZEscCtrlSpaceCtrlBackSlashCtrlRightBracketCtrlCaretCtrlSlashShiftTabBackspaceDeletePageUpPageDownUpDownLeftRightHomeEndInsertShiftUpShiftDownShiftLeftShiftRightShiftDeleteShiftHomeShiftEndShiftPageUpShiftPageDownF1F2F3F4F5F6F7F8F9F10F11F12AltBackspaceAltUpAltDownAltLeftAltRightAltDeleteAltHomeAltEndAltPageUpAltPageDownAltShiftUpAltShiftDownAltShiftLeftAltShiftRightAltShiftDeleteAltShiftHomeAltShiftEndAltShiftPageUpAltShiftPageDownCtrlUpCtrlDownCtrlLeftCtrlRightCtrlHomeCtrlEndCtrlBackspaceCtrlDeleteCtrlPageUpCtrlPageDownAltCtrlAltCtrlAltUpCtrlAltDownCtrlAltLeftCtrlAltRightCtrlAltHomeCtrlAltEndCtrlAltBackspaceCtrlAltDeleteCtrlAltPageUpCtrlAltPageDownCtrlShiftUpCtrlShiftDownCtrlShiftLeftCtrlShiftRightCtrlShiftHomeCtrlShiftEndCtrlShiftDeleteCtrlShiftPageUpCtrlShiftPageDownCtrlAltShiftUpCtrlAltShiftDownCtrlAltShiftLeftCtrlAltShiftRightCtrlAltShiftHomeCtrlAltShiftEndCtrlAltShiftDeleteCtrlAltShiftPageUpCtrlAltShiftPageDownMouseDoubleClickLeftClickRightClickSLeftClickSRightClickScrollUpScrollDownSScrollUpSScrollDownPreviewScrollUpPreviewScrollDownInvalidFatalBracketedPasteBeginBracketedPasteEndResizeChangeBackwardEOFStartLoadFocusOneZeroResultJumpJumpCancelClickHeaderClickFooterMultiEvery"
 
-var _EventType_index = [...]uint16{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 135, 144, 157, 173, 182, 191, 199, 208, 214, 220, 228, 230, 234, 238, 243, 247, 250, 256, 263, 272, 281, 291, 302, 311, 319, 330, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 364, 367, 370, 382, 387, 394, 401, 409, 418, 425, 431, 440, 451, 461, 473, 485, 498, 512, 524, 535, 549, 565, 571, 579, 587, 596, 604, 611, 624, 634, 644, 656, 659, 666, 675, 686, 697, 709, 720, 730, 746, 759, 772, 787, 798, 811, 824, 838, 851, 863, 878, 893, 910, 924, 940, 956, 973, 989, 1004, 1022, 1040, 1060, 1067, 1072, 1091, 1108, 1113, 1124, 1133, 1143, 1153, 1164, 1172, 1182, 1191, 1202, 1217, 1234, 1240, 1246, 1257, 1262, 1266, 1271, 1274, 1278, 1284, 1288, 1298, 1309, 1320, 1325, 1330}
+var _EventType_index = [...]uint16{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 102, 107, 112, 117, 122, 127, 132, 135, 144, 157, 173, 182, 191, 199, 208, 214, 220, 228, 230, 234, 238, 243, 247, 250, 256, 263, 272, 281, 291, 302, 311, 319, 330, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 364, 367, 370, 382, 387, 394, 401, 409, 418, 425, 431, 440, 451, 461, 473, 485, 498, 512, 524, 535, 549, 565, 571, 579, 587, 596, 604, 611, 624, 634, 644, 656, 659, 666, 675, 686, 697, 709, 720, 730, 746, 759, 772, 787, 798, 811, 824, 838, 851, 863, 878, 893, 910, 924, 940, 956, 973, 989, 1004, 1022, 1040, 1060, 1065, 1076, 1085, 1095, 1105, 1116, 1124, 1134, 1143, 1154, 1169, 1186, 1193, 1198, 1217, 1234, 1240, 1246, 1257, 1262, 1266, 1271, 1274, 1278, 1284, 1288, 1298, 1309, 1320, 1325, 1330}
 
 func (i EventType) String() string {
 	if i < 0 || i >= EventType(len(_EventType_index)-1) {

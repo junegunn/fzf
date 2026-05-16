@@ -6408,7 +6408,9 @@ func (t *Terminal) Loop() error {
 		select {
 		case event = <-t.keyChan:
 			needBarrier = true
-			t.lastActivity = time.Now()
+			if event.Type < tui.Invalid {
+				t.lastActivity = time.Now()
+			}
 		case event = <-t.timerChan:
 		case event = <-t.eventChan:
 			// Drain channel to process all queued events at once without rendering
