@@ -1387,6 +1387,73 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_includes lines, '> 1' }
   end
 
+  def test_every_event
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-prompt(cat #{tempname})'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    # Trigger external state changes; the every() tick should pick them up.
+    writelines(['AAA>'])
+    tmux.until { |lines| assert_includes lines[-1], 'AAA>' }
+    writelines(['BBB>'])
+    tmux.until { |lines| assert_includes lines[-1], 'BBB>' }
+  end
+
+  def test_every_event_multiple_independent_timers
+    # Two timers with different durations should fire independently.
+    fast = tempname + '.fast'
+    slow = tempname + '.slow'
+    FileUtils.rm_f(fast)
+    FileUtils.rm_f(slow)
+    tmux.send_keys %(seq 100 | fzf \\
+        --bind 'every(0.1):execute-silent(printf . >> #{fast})' \\
+        --bind 'every(0.5):execute-silent(printf . >> #{slow})'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    sleep 1.2
+    a = File.exist?(fast) ? File.size(fast) : 0
+    b = File.exist?(slow) ? File.size(slow) : 0
+    # Sanity: faster timer fired more times.
+    assert a > b, "fast timer should fire more (#{a} vs #{b})"
+    # Sanity: slow timer fired at least once.
+    assert b >= 1, "slow timer should have fired at least once (#{b})"
+  ensure
+    FileUtils.rm_f(fast)
+    FileUtils.rm_f(slow)
+  end
+
+  def test_every_event_unbind
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.1):transform-header(date +%S.%N)' --bind 'space:unbind(every(0.1))+change-header(STOPPED)'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    # Header should be ticking
+    tmux.until { |lines| assert_match(/^  \d{2}\.\d+/, lines[-3]) }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_includes lines[-3], 'STOPPED' }
+    sleep 0.4
+    # Header must stay STOPPED after the unbind
+    assert_includes tmux.capture[-3], 'STOPPED'
+  end
+
+  def test_fzf_idle_time_env
+    # FZF_IDLE_TIME, combined with every(), implements idle-based behavior.
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.5):transform-header(echo "idle=$FZF_IDLE_TIME")'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    # Idle counter advances without any input
+    tmux.until { |lines| assert_includes lines[-3], 'idle=1' }
+    tmux.until { |lines| assert_includes lines[-3], 'idle=2' }
+    # Any keystroke resets the counter
+    tmux.send_keys 'x'
+    tmux.until { |lines| assert_includes lines[-3], 'idle=0' }
+    tmux.send_keys :BSpace
+    # And it advances again afterwards
+    tmux.until { |lines| assert_includes lines[-3], 'idle=1' }
+  end
+
+  def test_every_event_rejects_invalid_arg
+    %w[every(0) every(-1) every(abc) every()].each do |spec|
+      tmux.send_keys %(seq 1 | fzf --bind '#{spec}:abort' 2>&1; echo done=$?), :Enter
+      tmux.until { |lines| assert(lines.any? { |l| l.include?('done=2') }) }
+      tmux.send_keys 'clear', :Enter
+    end
+  end
+
   def test_labels_center
     tmux.send_keys 'echo x | fzf --border --border-label foobar --preview : --preview-label barfoo --bind "space:change-border-label(foobarfoo)+change-preview-label(barfoobar),enter:transform-border-label(echo foo{}foo)+transform-preview-label(echo bar{}bar)"', :Enter
     tmux.until do

@@ -3,6 +3,19 @@ CHANGELOG
 
 0.73.0
 ------
+- Timer-driven `every(N)` event for `--bind`, where `N` is seconds (fractional, floored to `0.01`). Ticks that overlap an in-flight action are coalesced, so a slow `reload` cannot accumulate a backlog.
+- New `FZF_IDLE_TIME` environment variable (whole seconds since the last user activity) exported to child processes. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
+      ```sh
+      # Live process list; --track --id-nth 2 keeps the cursor on the same PID across reloads
+      fzf --header-lines 1 --track --id-nth 2 --bind 'start,every(2):reload-sync:ps -ef'
+
+      # Auto-accept after 10 seconds of inactivity, with a countdown in the footer after 5s
+      fzf --bind 'every(1):bg-transform:
+        if   [[ $FZF_IDLE_TIME -lt 5  ]]; then echo change-footer:
+        elif [[ $FZF_IDLE_TIME -lt 10 ]]; then echo "change-footer:auto-accept in $((10 - FZF_IDLE_TIME))s"
+        else echo accept
+        fi'
+      ```
 - Bug fixes
     - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word`. Layout fields still snap to the preset, so cycling and the empty-token reset behave as before. The new spec can still override by including `wrap` or `nowrap` explicitly. (#4791)
 

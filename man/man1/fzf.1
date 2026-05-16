@@ -1500,6 +1500,8 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_KEY "             The name of the last key pressed"
 .br
+.BR FZF_IDLE_TIME "       Whole seconds since the last user activity"
+.br
 .BR FZF_PORT "            Port number when \-\-listen option is used"
 .br
 .BR FZF_SOCK "            Unix socket path when \-\-listen option is used"
@@ -1937,6 +1939,29 @@ Triggered when a mouse click occurs within the footer. Sets
 \fBFZF_CLICK_FOOTER_LINE\fR and \fBFZF_CLICK_FOOTER_COLUMN\fR environment
 variables starting from 1. It optionally sets \fBFZF_CLICK_FOOTER_WORD\fR
 if clicked on a word.
+.RE
+
+\fIevery(N)\fR
+.RS
+Triggered every \fIN\fR seconds (\fIN\fR can be a fractional number, e.g.
+\fB0.5\fR). The minimum interval is \fB0.01\fR seconds; values are floored
+to that.
+
+Combine with the \fBFZF_IDLE_TIME\fR environment variable (seconds since
+last user activity) to build idle\-based behavior without a separate event.
+
+e.g.
+     \fB# Live process list, refreshed every 2 seconds.
+     # --track --id-nth 2 keeps the cursor on the same PID across reloads.
+     fzf \-\-header\-lines 1 \-\-track \-\-id\-nth 2 \\
+         \-\-bind 'start,every(2):reload\-sync:ps \-ef'
+
+     # Auto\-accept after 10 seconds of inactivity, with a countdown in the footer after 5s.
+     fzf \-\-bind 'every(1):bg\-transform:
+       if   [[ $FZF_IDLE_TIME \-lt 5  ]]; then echo change\-footer:
+       elif [[ $FZF_IDLE_TIME \-lt 10 ]]; then echo "change\-footer:auto\-accept in $((10 \- FZF_IDLE_TIME))s"
+       else echo accept
+       fi'\fR
 .RE
 
 .SS AVAILABLE ACTIONS:

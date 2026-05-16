@@ -229,6 +229,7 @@ const (
 	ClickHeader
 	ClickFooter
 	Multi
+	Every
 )
 
 func (t EventType) AsEvent() Event {
@@ -251,6 +252,10 @@ func (e Event) Comparable() Event {
 func (e Event) KeyName() string {
 	if me := e.MouseEvent; me != nil {
 		return me.Name()
+	}
+
+	if e.Type == Every {
+		return "every(" + strconv.FormatFloat(float64(e.Char)/1000, 'f', -1, 64) + ")"
 	}
 
 	if e.Type >= Invalid {
