@@ -1500,7 +1500,9 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_KEY "             The name of the last key pressed"
 .br
-.BR FZF_IDLE_MS "         Milliseconds since the last user activity"
+.BR FZF_IDLE_TIME "       Whole seconds since the last user activity"
+.br
+.BR FZF_IDLE_TIME_MS "    Milliseconds since the last user activity"
 .br
 .BR FZF_PORT "            Port number when \-\-listen option is used"
 .br
@@ -1947,9 +1949,9 @@ Triggered every \fIN\fR seconds (\fIN\fR can be a fractional number, e.g.
 \fB0.5\fR). The minimum interval is \fB0.01\fR seconds; values are floored
 to that.
 
-Combine with the \fBFZF_IDLE_MS\fR environment variable (milliseconds
-since the last user activity) to build idle\-based behavior without a
-separate event.
+Combine with the \fBFZF_IDLE_TIME\fR (whole seconds) and
+\fBFZF_IDLE_TIME_MS\fR (milliseconds) environment variables to build
+idle\-based behavior without a separate event.
 
 e.g.
      \fB# Live process list, refreshed every 2 seconds.
@@ -1959,8 +1961,8 @@ e.g.
 
      # Auto\-accept after 10 seconds of inactivity, with a countdown in the footer after 5s.
      fzf \-\-bind 'every(1):bg\-transform:
-       if   [[ $FZF_IDLE_MS \-lt 5000  ]]; then echo change\-footer:
-       elif [[ $FZF_IDLE_MS \-lt 10000 ]]; then echo "change\-footer:auto\-accept in $(((10000 \- FZF_IDLE_MS) / 1000))s"
+       if   [[ $FZF_IDLE_TIME \-lt 5  ]]; then echo change\-footer:
+       elif [[ $FZF_IDLE_TIME \-lt 10 ]]; then echo "change\-footer:auto\-accept in $((10 \- FZF_IDLE_TIME))s"
        else echo accept
        fi'\fR
 .RE

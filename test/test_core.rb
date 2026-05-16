@@ -1431,20 +1431,19 @@ class TestCore < TestInteractive
     assert_includes tmux.capture[-3], 'STOPPED'
   end
 
-  def test_fzf_idle_ms_env
-    # FZF_IDLE_MS, combined with every(), implements idle-based behavior.
-    # Print seconds derived from milliseconds for stable assertions.
-    tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-header(echo "idle=$((FZF_IDLE_MS / 1000))")'), :Enter
+  def test_fzf_idle_time_env
+    # FZF_IDLE_TIME + FZF_IDLE_TIME_MS combined with every() implement idle-based behavior.
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-header(echo "s=$FZF_IDLE_TIME ms_ok=$((FZF_IDLE_TIME_MS / 1000 == FZF_IDLE_TIME))")'), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
-    # Idle counter advances without any input
-    tmux.until { |lines| assert_includes lines[-3], 'idle=1' }
-    tmux.until { |lines| assert_includes lines[-3], 'idle=2' }
+    # Idle counter advances without any input; ms/1000 stays consistent with seconds.
+    tmux.until { |lines| assert_includes lines[-3], 's=1 ms_ok=1' }
+    tmux.until { |lines| assert_includes lines[-3], 's=2 ms_ok=1' }
     # Any keystroke resets the counter
     tmux.send_keys 'x'
-    tmux.until { |lines| assert_includes lines[-3], 'idle=0' }
+    tmux.until { |lines| assert_includes lines[-3], 's=0 ms_ok=1' }
     tmux.send_keys :BSpace
     # And it advances again afterwards
-    tmux.until { |lines| assert_includes lines[-3], 'idle=1' }
+    tmux.until { |lines| assert_includes lines[-3], 's=1 ms_ok=1' }
   end
 
   def test_every_event_rejects_invalid_arg
