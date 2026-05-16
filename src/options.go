@@ -1315,8 +1315,11 @@ func parseEveryEvent(arg string) (tui.Event, error) {
 	if secs < 0.01 {
 		secs = 0.01
 	}
-	ms := int32(math.Round(secs * 1000))
-	return tui.Event{Type: tui.Every, Char: rune(ms)}, nil
+	ms := math.Round(secs * 1000)
+	if ms > math.MaxInt32 {
+		return tui.Event{}, errors.New("every() interval is too large")
+	}
+	return tui.Event{Type: tui.Every, Char: rune(int32(ms))}, nil
 }
 
 func parseScheme(str string) (string, []criterion, error) {

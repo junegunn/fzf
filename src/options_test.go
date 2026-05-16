@@ -323,8 +323,8 @@ func TestParseEveryEvent(t *testing.T) {
 		t.Errorf("every(0.001) should floor to 10ms")
 	}
 
-	// Reject zero and negatives
-	for _, bad := range []string{"every(0)", "every(-1)", "every(abc)", "every()"} {
+	// Reject zero, negatives, and overflow (>= 2^31 ms = ~24.85 days)
+	for _, bad := range []string{"every(0)", "every(-1)", "every(abc)", "every()", "every(2147484)"} {
 		if _, _, err := parseKeyChords(bad, ""); err == nil {
 			t.Errorf("%s should be rejected", bad)
 		}
