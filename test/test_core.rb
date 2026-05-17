@@ -1454,6 +1454,18 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_fzf_key_ignores_synthetic_events
+    tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-prompt(echo "[$FZF_KEY]> ")'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    # No user input yet: prompt should show empty FZF_KEY
+    tmux.until { |lines| assert_includes lines[-1], '[]>' }
+    tmux.send_keys 'x'
+    tmux.until { |lines| assert_includes lines[-1], '[x]>' }
+    # every() ticks shouldn't overwrite FZF_KEY
+    sleep 1
+    assert_includes tmux.capture[-1], '[x]>'
+  end
+
   def test_labels_center
     tmux.send_keys 'echo x | fzf --border --border-label foobar --preview : --preview-label barfoo --bind "space:change-border-label(foobarfoo)+change-preview-label(barfoobar),enter:transform-border-label(echo foo{}foo)+transform-preview-label(echo bar{}bar)"', :Enter
     tmux.until do
