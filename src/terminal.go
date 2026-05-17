@@ -6478,7 +6478,9 @@ func (t *Terminal) Loop() error {
 		previousInput := t.input
 		previousCx := t.cx
 		previousVersion := t.version
-		t.lastKey = event.KeyName()
+		if event.Type < tui.Invalid {
+			t.lastKey = event.KeyName()
+		}
 		updatePreviewWindow := func(forcePreview bool) {
 			t.resizeWindows(forcePreview, false)
 			req(reqPrompt, reqList, reqInfo, reqHeader, reqFooter)

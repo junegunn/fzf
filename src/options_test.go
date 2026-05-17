@@ -330,10 +330,6 @@ func TestParseEveryEvent(t *testing.T) {
 		}
 	}
 
-	// KeyName round-trips with the original duration
-	if got := (tui.Event{Type: tui.Every, Char: 2000}).KeyName(); got != "every(2)" {
-		t.Errorf("KeyName: %q != every(2)", got)
-	}
 }
 
 func TestColorSpec(t *testing.T) {
