@@ -436,6 +436,7 @@ type Terminal struct {
 	bgSemaphores         map[action]chan struct{}
 	keyChan              chan tui.Event
 	eventChan            chan tui.Event
+	timerChan            chan tui.Event
 	slab                 *util.Slab
 	theme                *tui.ColorTheme
 	tui                  tui.Renderer
@@ -456,6 +457,7 @@ type Terminal struct {
 	proxyScript          string
 	numLinesCache        map[int32]numLinesCacheValue
 	raw                  bool
+	lastActivity         time.Time
 }
 
 type numLinesCacheValue struct {
@@ -1151,6 +1153,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		bgSemaphores:       make(map[action]chan struct{}),
 		keyChan:            make(chan tui.Event),
 		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
+		timerChan:          make(chan tui.Event),    // unbuffered: every() ticks coalesce when main loop is busy
 		tui:                renderer,
 		ttyDefault:         opts.TtyDefault,
 		ttyin:              ttyin,
@@ -1158,6 +1161,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
 		lastFocus:          minItem.Index(),
+		lastActivity:       time.Now(),
 		numLinesCache:      make(map[int32]numLinesCacheValue)}
 	if opts.AcceptNth != nil {
 		t.acceptNth = opts.AcceptNth(t.delimiter)
@@ -1385,6 +1389,9 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, "FZF_QUERY="+string(t.input))
 	env = append(env, "FZF_ACTION="+t.lastAction.Name())
 	env = append(env, "FZF_KEY="+t.lastKey)
+	idleMs := time.Since(t.lastActivity).Milliseconds()
+	env = append(env, fmt.Sprintf("FZF_IDLE_TIME=%d", idleMs/1000))
+	env = append(env, fmt.Sprintf("FZF_IDLE_TIME_MS=%d", idleMs))
 	env = append(env, "FZF_PROMPT="+string(t.promptString))
 	env = append(env, "FZF_GHOST="+string(t.ghost))
 	env = append(env, "FZF_POINTER="+string(t.pointer))
@@ -5807,6 +5814,35 @@ func (t *Terminal) addClickFooterWord(env []string) []string {
 	return env
 }
 
+// startTimers spawns a goroutine per every() bind event. Forwarding ticks
+// onto the unbuffered timerChan lets the ticker drop overlapping ticks
+// while the main loop is busy.
+func (t *Terminal) startTimers(ctx context.Context) {
+	for evt := range t.keymap {
+		switch evt.Type {
+		case tui.Every:
+			d := time.Duration(evt.Char) * time.Millisecond
+			evt := evt
+			go func() {
+				ticker := time.NewTicker(d)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case <-ticker.C:
+						select {
+						case <-ctx.Done():
+							return
+						case t.timerChan <- evt:
+						}
+					}
+				}
+			}()
+		}
+	}
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() error {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -6314,6 +6350,7 @@ func (t *Terminal) Loop() error {
 			}
 		}
 	}()
+	t.startTimers(ctx)
 	previewDraggingPos := -1
 	barDragging := false
 	pbarDragging := false
@@ -6373,6 +6410,7 @@ func (t *Terminal) Loop() error {
 		select {
 		case event = <-t.keyChan:
 			needBarrier = true
+		case event = <-t.timerChan:
 		case event = <-t.eventChan:
 			// Drain channel to process all queued events at once without rendering
 			// the intermediate states
@@ -6437,7 +6475,10 @@ func (t *Terminal) Loop() error {
 		previousInput := t.input
 		previousCx := t.cx
 		previousVersion := t.version
-		t.lastKey = event.KeyName()
+		if event.Type < tui.Invalid {
+			t.lastKey = event.KeyName()
+			t.lastActivity = time.Now()
+		}
 		updatePreviewWindow := func(forcePreview bool) {
 			t.resizeWindows(forcePreview, false)
 			req(reqPrompt, reqList, reqInfo, reqHeader, reqFooter)

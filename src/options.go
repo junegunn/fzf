@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -1257,7 +1258,14 @@ func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Eve
 			add(tui.F12)
 		default:
 			runes := []rune(key)
-			if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
+			if strings.HasPrefix(lkey, "every(") && strings.HasSuffix(lkey, ")") {
+				evt, err := parseEveryEvent(key[6 : len(key)-1])
+				if err != nil {
+					return nil, list, err
+				}
+				chords[evt] = key
+				list = append(list, evt)
+			} else if len(key) == 10 && strings.HasPrefix(lkey, "ctrl-alt-") && isAlphabet(lkey[9]) {
 				r := rune(lkey[9])
 				evt := tui.CtrlAltKey(r)
 				if r == 'h' && !util.IsWindows() {
@@ -1297,6 +1305,21 @@ func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Eve
 		}
 	}
 	return chords, list, nil
+}
+
+func parseEveryEvent(arg string) (tui.Event, error) {
+	secs, err := strconv.ParseFloat(strings.TrimSpace(arg), 64)
+	if err != nil || math.IsNaN(secs) || math.IsInf(secs, 0) || secs <= 0 {
+		return tui.Event{}, errors.New("every() requires a positive number of seconds")
+	}
+	if secs < 0.01 {
+		secs = 0.01
+	}
+	ms := math.Round(secs * 1000)
+	if ms > math.MaxInt32 {
+		return tui.Event{}, errors.New("every() interval is too large")
+	}
+	return tui.Event{Type: tui.Every, Char: rune(int32(ms))}, nil
 }
 
 func parseScheme(str string) (string, []criterion, error) {
