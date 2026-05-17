@@ -6410,9 +6410,6 @@ func (t *Terminal) Loop() error {
 		select {
 		case event = <-t.keyChan:
 			needBarrier = true
-			if event.Type < tui.Invalid {
-				t.lastActivity = time.Now()
-			}
 		case event = <-t.timerChan:
 		case event = <-t.eventChan:
 			// Drain channel to process all queued events at once without rendering
@@ -6480,6 +6477,7 @@ func (t *Terminal) Loop() error {
 		previousVersion := t.version
 		if event.Type < tui.Invalid {
 			t.lastKey = event.KeyName()
+			t.lastActivity = time.Now()
 		}
 		updatePreviewWindow := func(forcePreview bool) {
 			t.resizeWindows(forcePreview, false)
