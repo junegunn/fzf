@@ -2153,6 +2153,24 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
   end
 
+  # Regression: actions emitted by bg-transform must affect the iteration that
+  # processes the async result, not the (no-longer-active) iteration that
+  # scheduled the transform. Covers reload (newCommand) and exclude (denylist).
+  def test_bg_transform_action_output
+    tmux.send_keys %(seq 5 | #{FZF} --bind 'a:bg-transform(echo reload:seq 10 20),b:bg-transform(echo exclude)'), :Enter
+    tmux.until { |lines| assert_equal 5, lines.item_count }
+    tmux.send_keys :a
+    tmux.until do |lines|
+      assert_equal 11, lines.match_count
+      assert_includes lines, '> 10'
+    end
+    tmux.send_keys :b
+    tmux.until do |lines|
+      assert_equal 10, lines.match_count
+      assert_includes lines, '> 11'
+    end
+  end
+
   def test_change_with_nth_search
     input = [
       'alpha bravo charlie',

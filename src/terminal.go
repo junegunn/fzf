@@ -6366,12 +6366,18 @@ func (t *Terminal) Loop() error {
 		needBarrier = false
 	}
 
-	// These variables are defined outside the loop to be accessible from closures
+	// These variables are defined outside the loop to be accessible from closures.
+	// In particular, async bg-transform callbacks run in a later iteration than
+	// the one that scheduled them, but still need to mutate state that the
+	// loop-end reload/event dispatch reads.
 	events := []util.EventType{}
 	changed := false
 	var newNth *[]Range
 	var newWithNth *withNthSpec
 	var newHeaderLines *int
+	var newCommand *commandSpec
+	var reloadSync bool
+	var denylist []int32
 	req := func(evts ...util.EventType) {
 		for _, event := range evts {
 			events = append(events, event)
@@ -6383,16 +6389,16 @@ func (t *Terminal) Loop() error {
 
 	// The main event loop
 	for loopIndex := int64(0); looping; loopIndex++ {
-		var newCommand *commandSpec
-		var reloadSync bool
 		events = []util.EventType{}
 		changed = false
 		newNth = nil
 		newWithNth = nil
 		newHeaderLines = nil
+		newCommand = nil
+		reloadSync = false
+		denylist = nil
 		beof := false
 		queryChanged := false
-		denylist := []int32{}
 
 		// Special handling of --sync. Activate the interface on the second tick.
 		if loopIndex == 1 && t.deferActivation() {
