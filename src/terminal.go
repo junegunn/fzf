@@ -2623,6 +2623,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
+	cleanLeft := []int{}
 	if forcePreview || t.needPreviewWindow() {
 		var resizePreviewWindows func(previewOpts *previewOpts)
 		resizePreviewWindows = func(previewOpts *previewOpts) {
@@ -2741,19 +2742,13 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 						innerMarginInt[0]+shift+inlineTopLines, innerMarginInt[3]+pwidth+m, innerWidth-pwidth-m, innerHeight-shrink-inlineTopLines-inlineBottomLines, tui.WindowList, noBorder, true)
 
 					// Clear characters on the margin
-					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1
-					if !hasListBorder {
-						for y := 0; y < innerHeight; y++ {
-							t.window.Move(y, -1)
-							t.window.Print(" ")
-						}
-					}
-					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1,border-none
+					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1,border-none --footer-border --footer f --header h --header-border
 					if !previewOpts.Border().HasRight() {
-						for y := 0; y < innerHeight; y++ {
-							t.window.Move(y, -2)
-							t.window.Print(" ")
-						}
+						cleanLeft = append(cleanLeft, -2)
+					}
+					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1 --footer-border --footer f --header h --header-border
+					if !hasListBorder {
+						cleanLeft = append(cleanLeft, -1)
 					}
 
 					innerBorderFn(marginInt[0], marginInt[3]+pwidth, width-pwidth, height)
@@ -2978,6 +2973,19 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			w.Width(),
 			footerBorderHeight, tui.WindowFooter, tui.MakeBorderStyle(t.footerBorderShape, t.unicode), true)
 		t.footerWindow = createInnerWindow(t.footerBorder, t.footerBorderShape, tui.WindowFooter, 0)
+	}
+
+	for _, w := range []tui.Window{t.window, t.headerBorder, t.headerLinesBorder, t.footerBorder, t.inputBorder} {
+		if w == nil {
+			continue
+		}
+
+		for y := 0; y < w.Height(); y++ {
+			for _, left := range cleanLeft {
+				w.Move(y, left)
+				w.Print(" ")
+			}
+		}
 	}
 
 	// When the list label lands on an edge owned by an inline section, swap its bg
