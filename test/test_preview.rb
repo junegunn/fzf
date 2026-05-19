@@ -389,7 +389,7 @@ class TestPreview < TestInteractive
                    "--preview-window 'right,nowrap,border-rounded' " \
                    '--bind ctrl-w:toggle-preview-wrap ' \
                    '--bind ctrl-r:change-preview-window:border-bold', :Enter
-    sleep 2
+    sleep(2)
     # Initial: nowrap, rounded border. The long line is truncated; "wrapped" is hidden.
     tmux.until do |lines|
       assert_includes lines[2], '2nd line'
