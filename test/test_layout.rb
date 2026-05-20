@@ -243,6 +243,90 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(expected, it) }
   end
 
+  def test_preview_window_next_reverse
+    # https://github.com/junegunn/fzf/issues/4798
+    tmux.send_keys %(seq 5 | #{FZF} --layout=reverse --preview 'echo PREVIEW' --preview-window=next:3 --prompt='line2$ > '), :Enter
+    expected = <<~OUTPUT
+      line2$ >
+        5/5 ───
+      ╭────────
+      │ PREVIEW
+      │
+      │
+      ╰────────
+      > 1
+    OUTPUT
+    tmux.until { assert_block(expected, it) }
+  end
+
+  def test_preview_window_next_default
+    tmux.send_keys %(seq 5 | #{FZF} --preview 'echo PREVIEW' --preview-window=next:3), :Enter
+    expected = <<~OUTPUT
+      > 1
+      ╭────────
+      │ PREVIEW
+      │
+      │
+      ╰────────
+        5/5 ───
+      >
+    OUTPUT
+    tmux.until { assert_block(expected, it) }
+  end
+
+  def test_preview_window_next_border_line_at_runtime
+    # change-preview-window to next,border-line should resolve BorderLine
+    # to a single horizontal separator, matching the behavior
+    # when next,border-line is the initial spec.
+    tmux.send_keys %(seq 5 | #{FZF} --preview 'echo PREVIEW' --bind 'space:change-preview-window:next:3,border-line'), :Enter
+    tmux.until { |lines| assert_equal 5, lines.match_count }
+    tmux.send_keys :Space
+    expected = <<~OUTPUT
+      > 1
+      ───────
+      PREVIEW
+    OUTPUT
+    tmux.until do |lines|
+      cursor = lines.index { it.start_with?('> 1') }
+      assert(cursor)
+      assert_block(expected, lines[cursor..])
+    end
+  end
+
+  def test_header_first_change_header_at_runtime
+    # --header-first with no initial --header content needs to grow a
+    # header window when change-header adds content at runtime, so the
+    # new header lands below the prompt (not on top of it).
+    tmux.send_keys %(seq 5 | #{FZF} --header-first --bind 'space:change-header:foo'), :Enter
+    tmux.until { |lines| assert_equal 5, lines.match_count }
+    tmux.send_keys :Space
+    expected = <<~OUTPUT
+      >
+        foo
+    OUTPUT
+    tmux.until do |lines|
+      prompt = lines.index { it.start_with?('>') }
+      assert(prompt)
+      assert_block(expected, lines[prompt..])
+    end
+  end
+
+  def test_preview_window_next_style_full_line
+    tmux.send_keys %(seq 5 | #{FZF} --reverse --preview 'echo PREVIEW' --preview-window=next:3 --header foo --footer bar --style full:line), :Enter
+    expected = <<~OUTPUT
+      >
+      ───────
+      PREVIEW
+
+
+      ───────
+        foo
+      ───────
+      > 1
+    OUTPUT
+    tmux.until { assert_block(expected, it) }
+  end
+
   def test_height_range_overflow
     tmux.send_keys 'seq 100 | fzf --height ~5 --info=inline --border rounded', :Enter
     expected = <<~OUTPUT
@@ -1227,75 +1311,106 @@ class TestLayout < TestInteractive
   def test_combinations
     skip unless ENV['LONGTEST']
 
-    base = [
-      '--pointer=@',
-      '--exact',
-      '--query=123',
-      '--header="$(seq 101 103)"',
-      '--header-lines=3',
-      '--footer "$(seq 201 203)"',
-      '--preview "echo foobar"'
-    ]
-    options = [
-      ['--separator==', '--no-separator'],
-      ['--info=default', '--info=inline', '--info=inline-right'],
-      ['--no-input-border', '--input-border'],
-      ['--no-header-border', '--header-border=none', '--header-border'],
-      ['--no-header-lines-border', '--header-lines-border'],
-      ['--no-footer-border', '--footer-border'],
-      ['--no-list-border', '--list-border'],
-      ['--preview-window=right', '--preview-window=up', '--preview-window=down', '--preview-window=left'],
-      ['--header-first', '--no-header-first'],
-      ['--layout=default', '--layout=reverse', '--layout=reverse-list']
-    ]
-    # Combination of all options
-    combinations = options[0].product(*options.drop(1))
-    combinations.each_with_index do |combination, index|
-      opts = base + combination
-      command = %(seq 1001 2000 | #{FZF} #{opts.join(' ')})
-      puts "# #{index + 1}/#{combinations.length}\n#{command}"
-      tmux.send_keys command, :Enter
-      tmux.until do |lines|
-        layout = combination.find { it.start_with?('--layout=') }.split('=').last
-        header_first = combination.include?('--header-first')
+    begin
+      base = [
+        '--pointer=@',
+        '--exact',
+        '--query=123',
+        '--header="$(seq 101 103)"',
+        '--header-lines=3',
+        '--footer "$(seq 201 203)"',
+        '--preview "echo foobar"'
+      ]
+      options = [
+        ['--separator==', '--no-separator'],
+        ['--info=default', '--info=inline', '--info=inline-right'],
+        ['--no-input-border', '--input-border'],
+        ['--no-header-border', '--header-border=none', '--header-border'],
+        ['--no-header-lines-border', '--header-lines-border'],
+        ['--no-footer-border', '--footer-border'],
+        ['--no-list-border', '--list-border'],
+        ['--preview-window=right', '--preview-window=up', '--preview-window=down', '--preview-window=left', '--preview-window=next'],
+        ['--header-first', '--no-header-first'],
+        ['--layout=default', '--layout=reverse', '--layout=reverse-list']
+      ]
+      # Combination of all options
+      combinations = options[0].product(*options.drop(1))
 
-        # Input
-        input = lines.index { it.include?('> 123') }
-        assert(input)
+      # Run workers in parallel, each with its own pre-created tmux window.
+      # Tmux setup/teardown is serialized in the main thread to avoid racing
+      # `tmux new-window` and `tmux kill-window` calls on the tmux server.
+      workers = 10
+      tmuxes = Array.new(workers) { Tmux.new }
+      failures = []
+      mutex = Mutex.new
+      queue = Queue.new
+      index = 0
+      threads = tmuxes.map do |local_tmux|
+        Thread.new do
+          command = nil
+          loop do
+            combination = queue.pop or break
 
-        # Info
-        info = lines.index { it.include?('11/997') }
-        assert(info)
+            opts = base + combination
+            command = %(seq 1001 2000 | #{FZF} #{opts.join(' ')})
+            mutex.synchronize do
+              print("\r#{index += 1}/#{combinations.length}")
+            end
+            local_tmux.send_keys command, :Enter
+            local_tmux.until do |lines|
+              layout = combination.find { it.start_with?('--layout=') }.split('=').last
+              header_first = combination.include?('--header-first')
 
-        assert(layout == 'reverse' ? input <= info : input >= info)
+              # Input
+              input = lines.index { it.include?('> 123') }
+              assert(input)
 
-        # List
-        item1 = lines.index { it.include?('1230') }
-        item2 = lines.index { it.include?('1231') }
-        assert_equal(item1, layout == 'default' ? item2 + 1 : item2 - 1)
+              # Info
+              info = lines.index { it.include?('11/997') }
+              assert(info)
 
-        # Preview
-        assert(lines.any? { it.include?('foobar') })
+              assert(layout == 'reverse' ? input <= info : input >= info)
 
-        # Header
-        header1 = lines.index { it.include?('101') }
-        header2 = lines.index { it.include?('102') }
-        assert_equal(header2, header1 + 1)
-        assert((layout == 'reverse') == header_first ? input > header1 : input < header1)
+              # List
+              item1 = lines.index { it.include?('1230') }
+              item2 = lines.index { it.include?('1231') }
+              assert_equal(item1, layout == 'default' ? item2 + 1 : item2 - 1)
 
-        # Footer
-        footer1 = lines.index { it.include?('201') }
-        footer2 = lines.index { it.include?('202') }
-        assert_equal(footer2, footer1 + 1)
-        assert(layout == 'reverse' ? footer1 > item2 : footer1 < item2)
+              # Preview
+              assert(lines.any? { it.include?('foobar') })
 
-        # Header lines
-        hline1 = lines.index { it.include?('1001') }
-        hline2 = lines.index { it.include?('1002') }
-        assert_equal(hline1, layout == 'default' ? hline2 + 1 : hline2 - 1)
-        assert(layout == 'reverse' ? hline1 > header1 : hline1 < header1)
+              # Header
+              header1 = lines.index { it.include?('101') }
+              header2 = lines.index { it.include?('102') }
+              assert_equal(header2, header1 + 1)
+              assert((layout == 'reverse') == header_first ? input > header1 : input < header1)
+
+              # Footer
+              footer1 = lines.index { it.include?('201') }
+              footer2 = lines.index { it.include?('202') }
+              assert_equal(footer2, footer1 + 1)
+              assert(layout == 'reverse' ? footer1 > item2 : footer1 < item2)
+
+              # Header lines
+              hline1 = lines.index { it.include?('1001') }
+              hline2 = lines.index { it.include?('1002') }
+              assert_equal(hline1, layout == 'default' ? hline2 + 1 : hline2 - 1)
+              assert(layout == 'reverse' ? hline1 > header1 : hline1 < header1)
+            end
+            local_tmux.send_keys :Enter
+          end
+        rescue StandardError, Minitest::Assertion => e
+          mutex.synchronize { failures << [command, e] }
+        end
       end
-      tmux.send_keys :Enter
+      combinations.each { queue << it }
+      queue.close
+
+      threads.each(&:join)
+      raise failures.inspect unless failures.empty?
+    ensure
+      # Reverse so any tmux window renumbering does not leave stale indices behind.
+      tmuxes&.reverse_each(&:kill)
     end
   end
 
