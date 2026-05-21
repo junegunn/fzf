@@ -2453,7 +2453,56 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	hasHeaderWindow := t.hasHeaderWindow()
 	hasFooterWindow := len(t.footer) > 0
 	hasHeaderLinesWindow, headerLinesShape := t.determineHeaderLinesShape()
-	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow || t.activePreviewOpts.position == posNext)
+	// computePreviewSize returns the size resizePreviewWindows will compute
+	// for opts and the minimum size for that axis: height/minPreviewHeight
+	// for vertical positions, width/minPreviewWidth for horizontal.
+	computePreviewSize := func(opts *previewOpts) (int, int) {
+		minPreviewWidth, minPreviewHeight := t.minPreviewSize(opts)
+		switch opts.position {
+		case posUp, posDown, posNext:
+			minWindowHeight := minHeight
+			if t.inputless {
+				minWindowHeight--
+			}
+			if t.noSeparatorLine() {
+				minWindowHeight--
+			}
+			return calculateSize(height, opts.size, minWindowHeight, minPreviewHeight), minPreviewHeight
+		case posLeft, posRight:
+			minListWidth := minWidth
+			if t.listBorderShape.HasLeft() {
+				minListWidth += 2
+			}
+			if t.listBorderShape.HasRight() {
+				minListWidth++
+			}
+			return calculateSize(width, opts.size, minListWidth, minPreviewWidth), minPreviewWidth
+		}
+		return 0, 0
+	}
+	// Walk the threshold chain to determine the previewOpts that
+	// resizePreviewWindows will actually settle on. We need this here
+	// because hasInputWindow and the availableLines adjustment below run
+	// before resizePreviewWindows, and t.activePreviewOpts still holds the
+	// previous frame's resolution.
+	effectivePreviewOpts := &t.previewOpts
+	if t.needPreviewWindow() {
+		opts := &t.previewOpts
+		for {
+			if opts.size.size == 0 || opts.threshold <= 0 || opts.alternative == nil {
+				break
+			}
+			if actual, _ := computePreviewSize(opts); actual >= opts.threshold {
+				break
+			}
+			opts = opts.alternative
+			if opts.hidden {
+				break
+			}
+		}
+		effectivePreviewOpts = opts
+	}
+	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow || effectivePreviewOpts.position == posNext)
 	inputWindowHeight := 2
 	if t.noSeparatorLine() {
 		inputWindowHeight--
@@ -2473,9 +2522,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	// FIXME: Needed?
 	if t.needPreviewWindow() {
-		_, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
-		switch t.activePreviewOpts.position {
+		switch effectivePreviewOpts.position {
 		case posUp, posDown, posNext:
+			_, minPreviewHeight := t.minPreviewSize(effectivePreviewOpts)
 			availableLines -= minPreviewHeight
 		}
 	}
@@ -2703,20 +2752,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					t.pwindow.Erase()
 				}
 			}
-			minPreviewWidth, minPreviewHeight := t.minPreviewSize(previewOpts)
 			// Shared boilerplate for vertical positions (posUp/posDown/posNext):
 			// compute pheight, apply the threshold alternative, honor hidden,
 			// and update listStickToRight. Returns (pheight, true) when the
 			// caller should return early.
 			computeVerticalSize := func() (int, bool) {
-				minWindowHeight := minHeight
-				if t.inputless {
-					minWindowHeight--
-				}
-				if t.noSeparatorLine() {
-					minWindowHeight--
-				}
-				pheight := calculateSize(height, previewOpts.size, minWindowHeight, minPreviewHeight)
+				pheight, minPreviewHeight := computePreviewSize(previewOpts)
 				if hasThreshold && pheight < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -2783,14 +2824,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					createPreviewWindow(inputBorderTop()-pheight, marginInt[3], width, pheight)
 				}
 			case posLeft, posRight:
-				minListWidth := minWidth
-				if t.listBorderShape.HasLeft() {
-					minListWidth += 2
-				}
-				if t.listBorderShape.HasRight() {
-					minListWidth++
-				}
-				pwidth := calculateSize(width, previewOpts.size, minListWidth, minPreviewWidth)
+				pwidth, _ := computePreviewSize(previewOpts)
 				if hasThreshold && pwidth < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
