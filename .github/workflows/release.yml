@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to validate (e.g. 0.73.0).'
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Determine version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            v=${GITHUB_REF_NAME#v}
+          else
+            v='${{ inputs.version }}'
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: '$v'"
+
+      - name: Verify version consistency
+        run: |
+          set -e
+          V='${{ steps.ver.outputs.version }}'
+          R=$(echo "$V" | sed 's/\./\\./g')
+          grep -q "^${R}$" CHANGELOG.md
+          grep -qF "\"fzf ${V}\"" man/man1/fzf.1
+          grep -qF "\"fzf ${V}\"" man/man1/fzf-tmux.1
+          grep -qF "${V}" install
+          grep -qF "${V}" install.ps1
+
+      - name: Extract release notes
+        run: |
+          set -e
+          mkdir -p tmp
+          V='${{ steps.ver.outputs.version }}'
+          R=$(echo "$V" | sed 's/\./\\./g')
+          sed -n "/^${R}$/,/^[0-9]/p" CHANGELOG.md \
+            | tail -r | sed '1,/^ *$/d' | tail -r | sed '1,2d' \
+            | tee tmp/release-note
+
+      - name: Run goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: >-
+            ${{ github.event_name == 'push'
+                && 'release --clean --release-notes tmp/release-note'
+                || 'release --snapshot --clean --skip=publish' }}
+        env:
+          GITHUB_TOKEN:           ${{ secrets.GITHUB_TOKEN }}
+          MACOS_SIGN_P12:         ${{ secrets.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD:    ${{ secrets.MACOS_SIGN_PASSWORD }}
+          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          MACOS_NOTARY_KEY_ID:    ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_KEY:       ${{ secrets.MACOS_NOTARY_KEY }}
