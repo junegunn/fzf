@@ -10,7 +10,6 @@ shells="bash zsh fish nushell"
 prefix='~/.fzf'
 prefix_expand=~/.fzf
 fish_dir=${XDG_CONFIG_HOME:-$HOME/.config}/fish
-nushell_autoload_dir=${XDG_CONFIG_HOME:-$HOME/.config}/nushell/autoload
 
 help() {
   cat << EOF
@@ -446,6 +445,7 @@ fi
 if [[ "$shells" =~ nushell ]]; then
   if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
     echo "Setting up Nushell integration ..."
+    nushell_autoload_dir=$(nu -c '$nu.user-autoload-dirs | first')
     mkdir -p "$nushell_autoload_dir"
     dest="$nushell_autoload_dir/_fzf_integration.nu"
     echo -n "  Generate $dest ... "
