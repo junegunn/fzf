@@ -1438,6 +1438,9 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, fmt.Sprintf("FZF_LINES=%d", t.areaLines))
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	env = append(env, fmt.Sprintf("FZF_POS=%d", min(t.merger.Length(), t.cy+1)))
+	if item := t.currentItem(); item != nil {
+		env = append(env, "FZF_CURRENT_ITEM="+item.AsString(t.ansi))
+	}
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_LINE=%d", t.clickHeaderLine))
 	env = append(env, fmt.Sprintf("FZF_CLICK_HEADER_COLUMN=%d", t.clickHeaderColumn))
 	env = append(env, fmt.Sprintf("FZF_CLICK_FOOTER_LINE=%d", t.clickFooterLine))

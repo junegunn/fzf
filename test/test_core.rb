@@ -2286,6 +2286,7 @@ class TestCore < TestInteractive
       FZF_ACTION: 'start',
       FZF_KEY: '',
       FZF_POS: '1',
+      FZF_CURRENT_ITEM: '1',
       FZF_QUERY: '',
       FZF_POINTER: '>',
       FZF_PROMPT: '> ',
@@ -2301,12 +2302,12 @@ class TestCore < TestInteractive
     end
     tmux.send_keys :Tab, :Tab
     tmux.until do
-      expected.merge!(FZF_ACTION: 'toggle-down', FZF_KEY: 'tab', FZF_POS: '3', FZF_SELECT_COUNT: '2')
+      expected.merge!(FZF_ACTION: 'toggle-down', FZF_KEY: 'tab', FZF_POS: '3', FZF_CURRENT_ITEM: '3', FZF_SELECT_COUNT: '2')
       assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys '99'
     tmux.until do
-      expected.merge!(FZF_ACTION: 'char', FZF_KEY: '9', FZF_QUERY: '99', FZF_MATCH_COUNT: '1', FZF_POS: '1')
+      expected.merge!(FZF_ACTION: 'char', FZF_KEY: '9', FZF_QUERY: '99', FZF_MATCH_COUNT: '1', FZF_POS: '1', FZF_CURRENT_ITEM: '99')
       assert_equal expected, env_vars.slice(*expected.keys)
     end
     tmux.send_keys :Space
