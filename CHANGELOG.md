@@ -4,6 +4,7 @@ CHANGELOG
 0.73.0
 ------
 - Timer-driven `every(N)` event for `--bind`, where `N` is seconds (fractional, floored to `0.01`). Ticks that overlap an in-flight action are coalesced, so a slow `reload` cannot accumulate a backlog.
+- New `FZF_CURRENT_ITEM` environment variable exported to child processes, holding the text of the current item. Useful on shells where quoting `{}` is awkward (e.g. PowerShell on Windows). Unset when the list is empty (#4802).
 - New `FZF_IDLE_TIME` (whole seconds) and `FZF_IDLE_TIME_MS` (milliseconds) environment variables exported to child processes, holding the elapsed time since the last user activity. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
       ```sh
       # Live process list; --track --id-nth 2 keeps the cursor on the same PID across reloads
@@ -16,6 +17,7 @@ CHANGELOG
         else echo accept
         fi'
       ```
+- New `--preview-window=next` position that places the preview adjacent to the input section, on the list side: above the input in the default layout, below it in `--layout=reverse` (#4798).
 - Bug fixes
     - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word`. Layout fields still snap to the preset, so cycling and the empty-token reset behave as before. The new spec can still override by including `wrap` or `nowrap` explicitly. (#4791)
 

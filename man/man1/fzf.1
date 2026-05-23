@@ -993,8 +993,13 @@ border line.
     \fBdown
     \fBleft
     \fBright
+    \fBnext
 
 \fRDetermines the layout of the preview window.
+
+* \fBnext\fR places the preview window adjacent to the input section, on
+the list side: above the input in the default layout, below the input
+in \fB\-\-layout=reverse\fR.
 
 * If the argument contains \fB:hidden\fR, the preview window will be hidden by
 default until \fBtoggle\-preview\fR action is triggered.
@@ -1469,6 +1474,8 @@ fzf exports the following environment variables to its child processes.
 .BR FZF_SELECT_COUNT "    Number of selected items"
 .br
 .BR FZF_POS "             Vertical position of the cursor in the list starting from 1"
+.br
+.BR FZF_CURRENT_ITEM "    Text of the current item (unset if the list is empty)"
 .br
 .BR FZF_WRAP "            The line wrapping mode (char, word) when enabled"
 .br
