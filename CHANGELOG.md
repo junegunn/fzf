@@ -16,6 +16,7 @@ CHANGELOG
         else echo accept
         fi'
       ```
+- New `--preview-window=next` position that places the preview adjacent to the input section, on the list side: above the input in the default layout, below it in `--layout=reverse` (#4798).
 - Bug fixes
     - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word`. Layout fields still snap to the preset, so cycling and the empty-token reset behave as before. The new spec can still override by including `wrap` or `nowrap` explicitly. (#4791)
 

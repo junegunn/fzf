@@ -988,7 +988,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 			// Minimum height required to render fzf excluding margin and padding
 			effectiveMinHeight := minHeight
 			if previewBox != nil && opts.Preview.aboveOrBelow() {
-				effectiveMinHeight += 1 + borderLines(opts.Preview.Border())
+				effectiveMinHeight += 1 + borderLines(opts.Preview.Border(opts.Layout))
 			}
 			if opts.noSeparatorLine() {
 				effectiveMinHeight--
@@ -1652,12 +1652,11 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 		wrap := t.wrap
 		t.wrap = false
 		t.withWindow(t.inputWindow, func() {
-			line := t.promptLine()
 			preTask := func(markerClass) int {
 				return 1
 			}
 			t.printHighlighted(
-				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, line, line, true, preTask, nil, 0)
+				Result{item: item}, tui.ColPrompt, tui.ColPrompt, false, false, false, 0, 0, true, preTask, nil, 0)
 		})
 		t.wrap = wrap
 	}
@@ -2105,12 +2104,13 @@ func calculateSize(base int, size sizeSpec, occupied int, minSize int) int {
 }
 
 func (t *Terminal) minPreviewSize(opts *previewOpts) (int, int) {
-	minPreviewWidth := 1 + borderColumns(opts.Border(), t.borderWidth)
-	minPreviewHeight := 1 + borderLines(opts.Border())
+	border := opts.Border(t.layout)
+	minPreviewWidth := 1 + borderColumns(border, t.borderWidth)
+	minPreviewHeight := 1 + borderLines(border)
 
 	switch opts.position {
 	case posLeft, posRight:
-		if len(t.scrollbar) > 0 && !opts.Border().HasRight() {
+		if len(t.scrollbar) > 0 && !border.HasRight() {
 			// Need a column to show scrollbar
 			minPreviewWidth++
 		}
@@ -2195,7 +2195,7 @@ func (t *Terminal) adjustMarginAndPadding() (int, int, [4]int, [4]int) {
 	if t.needPreviewWindow() {
 		minPreviewWidth, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
 		switch t.activePreviewOpts.position {
-		case posUp, posDown:
+		case posUp, posDown, posNext:
 			minAreaHeight += minPreviewHeight
 			minAreaWidth = max(minPreviewWidth, minAreaWidth)
 		case posLeft, posRight:
@@ -2220,7 +2220,7 @@ func (t *Terminal) hasHeaderWindow() bool {
 	if t.hasHeaderLinesWindow() {
 		return len(t.header0) > 0
 	}
-	if t.headerBorderShape.Visible() {
+	if t.headerBorderShape.Visible() || t.headerFirst {
 		return len(t.header0)+t.headerLines > 0
 	}
 	return t.inputBorderShape.Visible()
@@ -2258,6 +2258,9 @@ func (t *Terminal) determineHeaderLinesShape() (bool, tui.BorderShape) {
 
 	// Use header window instead
 	if len(t.header0) == 0 {
+		if t.headerFirst && shape == tui.BorderPhantom {
+			return true, shape
+		}
 		return false, t.headerBorderShape
 	}
 
@@ -2450,7 +2453,56 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	hasHeaderWindow := t.hasHeaderWindow()
 	hasFooterWindow := len(t.footer) > 0
 	hasHeaderLinesWindow, headerLinesShape := t.determineHeaderLinesShape()
-	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow)
+	// computePreviewSize returns the size resizePreviewWindows will compute
+	// for opts and the minimum size for that axis: height/minPreviewHeight
+	// for vertical positions, width/minPreviewWidth for horizontal.
+	computePreviewSize := func(opts *previewOpts) (int, int) {
+		minPreviewWidth, minPreviewHeight := t.minPreviewSize(opts)
+		switch opts.position {
+		case posUp, posDown, posNext:
+			minWindowHeight := minHeight
+			if t.inputless {
+				minWindowHeight--
+			}
+			if t.noSeparatorLine() {
+				minWindowHeight--
+			}
+			return calculateSize(height, opts.size, minWindowHeight, minPreviewHeight), minPreviewHeight
+		case posLeft, posRight:
+			minListWidth := minWidth
+			if t.listBorderShape.HasLeft() {
+				minListWidth += 2
+			}
+			if t.listBorderShape.HasRight() {
+				minListWidth++
+			}
+			return calculateSize(width, opts.size, minListWidth, minPreviewWidth), minPreviewWidth
+		}
+		return 0, 0
+	}
+	// Walk the threshold chain to determine the previewOpts that
+	// resizePreviewWindows will actually settle on. We need this here
+	// because hasInputWindow and the availableLines adjustment below run
+	// before resizePreviewWindows, and t.activePreviewOpts still holds the
+	// previous frame's resolution.
+	effectivePreviewOpts := &t.previewOpts
+	if t.needPreviewWindow() {
+		opts := &t.previewOpts
+		for {
+			if opts.size.size == 0 || opts.threshold <= 0 || opts.alternative == nil {
+				break
+			}
+			if actual, _ := computePreviewSize(opts); actual >= opts.threshold {
+				break
+			}
+			opts = opts.alternative
+			if opts.hidden {
+				break
+			}
+		}
+		effectivePreviewOpts = opts
+	}
+	hasInputWindow := !t.inputless && (t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow || effectivePreviewOpts.position == posNext)
 	inputWindowHeight := 2
 	if t.noSeparatorLine() {
 		inputWindowHeight--
@@ -2470,9 +2522,9 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 	// FIXME: Needed?
 	if t.needPreviewWindow() {
-		_, minPreviewHeight := t.minPreviewSize(t.activePreviewOpts)
-		switch t.activePreviewOpts.position {
-		case posUp, posDown:
+		switch effectivePreviewOpts.position {
+		case posUp, posDown, posNext:
+			_, minPreviewHeight := t.minPreviewSize(effectivePreviewOpts)
 			availableLines -= minPreviewHeight
 		}
 	}
@@ -2624,6 +2676,50 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	// Set up preview window
 	noBorder := tui.MakeBorderStyle(tui.BorderNone, t.unicode)
 	cleanLeft := []int{}
+	// previewNextSize is pheight when the preview is placed adjacent to
+	// the input (position == "next"); inputBorderTop() reads it through the
+	// closure to push input past the preview band.
+	previewNextSize := 0
+	// inputBorderTop returns the canvas Y at which the input border window
+	// should be placed. It depends on wborder/t.window (set by the preview
+	// case), the layout, --header-first, and previewNextSize (set when
+	// posNext is active). Used both for placing the preview adjacent to
+	// input and later for placing the input window itself.
+	inputBorderTop := func() int {
+		w := t.wborder
+		if w == nil {
+			w = t.window
+		}
+		hasSeparateHeader := hasHeaderWindow && t.headerBorderShape != tui.BorderInline
+		hasSeparateHeaderLines := hasHeaderLinesWindow && headerLinesShape != tui.BorderInline
+		if (hasSeparateHeader || hasSeparateHeaderLines) && t.headerFirst {
+			switch t.layout {
+			case layoutDefault:
+				btop := w.Top() + w.Height() + previewNextSize
+				if hasHeaderWindow && hasHeaderLinesWindow {
+					btop += headerLinesHeight
+				}
+				return btop
+			case layoutReverse:
+				btop := w.Top() - inputBorderHeight - previewNextSize
+				if hasHeaderWindow && hasHeaderLinesWindow {
+					btop -= headerLinesHeight
+				}
+				return btop
+			case layoutReverseList:
+				return w.Top() + w.Height() + previewNextSize
+			}
+		}
+		switch t.layout {
+		case layoutDefault:
+			return w.Top() + w.Height() + headerBorderHeight + headerLinesHeight + previewNextSize
+		case layoutReverse:
+			return w.Top() - shrink + footerBorderHeight - previewNextSize
+		case layoutReverseList:
+			return w.Top() + w.Height() + headerBorderHeight + previewNextSize
+		}
+		return 0
+	}
 	if forcePreview || t.needPreviewWindow() {
 		var resizePreviewWindows func(previewOpts *previewOpts)
 		resizePreviewWindows = func(previewOpts *previewOpts) {
@@ -2635,7 +2731,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 			createPreviewWindow := func(y int, x int, w int, h int) {
 				pwidth := w
 				pheight := h
-				shape := previewOpts.Border()
+				shape := previewOpts.Border(t.layout)
 				previewBorder := tui.MakeBorderStyle(shape, t.unicode)
 				t.pborder = t.tui.NewWindow(y, x, w, h, tui.WindowPreview, previewBorder, false)
 				pwidth -= borderColumns(shape, bw)
@@ -2656,17 +2752,12 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					t.pwindow.Erase()
 				}
 			}
-			minPreviewWidth, minPreviewHeight := t.minPreviewSize(previewOpts)
-			switch previewOpts.position {
-			case posUp, posDown:
-				minWindowHeight := minHeight
-				if t.inputless {
-					minWindowHeight--
-				}
-				if t.noSeparatorLine() {
-					minWindowHeight--
-				}
-				pheight := calculateSize(height, previewOpts.size, minWindowHeight, minPreviewHeight)
+			// Shared boilerplate for vertical positions (posUp/posDown/posNext):
+			// compute pheight, apply the threshold alternative, honor hidden,
+			// and update listStickToRight. Returns (pheight, true) when the
+			// caller should return early.
+			computeVerticalSize := func() (int, bool) {
+				pheight, minPreviewHeight := computePreviewSize(previewOpts)
 				if hasThreshold && pheight < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -2675,22 +2766,27 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					if !previewOpts.alternative.hidden {
 						resizePreviewWindows(previewOpts.alternative)
 					}
-					return
+					return 0, true
 				}
 				if forcePreview {
 					previewOpts.hidden = false
 				}
 				if previewOpts.hidden {
-					return
+					return 0, true
 				}
-
-				listStickToRight = listStickToRight && !previewOpts.Border().HasRight()
+				listStickToRight = listStickToRight && !previewOpts.Border(t.layout).HasRight()
 				if listStickToRight {
 					innerWidth++
 					width++
 				}
-
-				pheight = util.Constrain(pheight, minPreviewHeight, availableLines)
+				return util.Constrain(pheight, minPreviewHeight, availableLines), false
+			}
+			switch previewOpts.position {
+			case posUp, posDown:
+				pheight, done := computeVerticalSize()
+				if done {
+					return
+				}
 
 				if previewOpts.position == posUp {
 					innerBorderFn(marginInt[0]+pheight, marginInt[3], width, height-pheight)
@@ -2703,15 +2799,32 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 						innerMarginInt[0]+shift+inlineTopLines, innerMarginInt[3], innerWidth, innerHeight-pheight-shrink-inlineTopLines-inlineBottomLines, tui.WindowList, noBorder, true)
 					createPreviewWindow(marginInt[0]+height-pheight, marginInt[3], width, pheight)
 				}
+			case posNext:
+				pheight, done := computeVerticalSize()
+				if done {
+					return
+				}
+				previewNextSize = pheight
+
+				if t.layout == layoutReverse {
+					// [(header)][input][preview]([header])[list]: reuse posUp's
+					// wborder/list math; input is pulled back up by pheight in
+					// its positioning. Preview sits directly below input.
+					innerBorderFn(marginInt[0]+pheight, marginInt[3], width, height-pheight)
+					t.window = t.tui.NewWindow(
+						innerMarginInt[0]+pheight+shift+inlineTopLines, innerMarginInt[3], innerWidth, innerHeight-pheight-shrink-inlineTopLines-inlineBottomLines, tui.WindowList, noBorder, true)
+					createPreviewWindow(inputBorderTop()+inputBorderHeight, marginInt[3], width, pheight)
+				} else {
+					// [list]([header])[preview][input][(header)]: reuse posDown's
+					// wborder/list math; input is pushed down by pheight in its
+					// positioning. Preview sits directly above input.
+					innerBorderFn(marginInt[0], marginInt[3], width, height-pheight)
+					t.window = t.tui.NewWindow(
+						innerMarginInt[0]+shift+inlineTopLines, innerMarginInt[3], innerWidth, innerHeight-pheight-shrink-inlineTopLines-inlineBottomLines, tui.WindowList, noBorder, true)
+					createPreviewWindow(inputBorderTop()-pheight, marginInt[3], width, pheight)
+				}
 			case posLeft, posRight:
-				minListWidth := minWidth
-				if t.listBorderShape.HasLeft() {
-					minListWidth += 2
-				}
-				if t.listBorderShape.HasRight() {
-					minListWidth++
-				}
-				pwidth := calculateSize(width, previewOpts.size, minListWidth, minPreviewWidth)
+				pwidth, _ := computePreviewSize(previewOpts)
 				if hasThreshold && pwidth < previewOpts.threshold {
 					t.activePreviewOpts = previewOpts.alternative
 					if forcePreview {
@@ -2743,7 +2856,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 					// Clear characters on the margin
 					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1,border-none --footer-border --footer f --header h --header-border
-					if !previewOpts.Border().HasRight() {
+					if !previewOpts.Border(t.layout).HasRight() {
 						cleanLeft = append(cleanLeft, -2)
 					}
 					// fzf --bind 'space:toggle-preview' --preview ':' --preview-window left,1 --footer-border --footer f --header h --header-border
@@ -2758,7 +2871,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 					//  fzf --preview 'seq 500' --preview-window border-left --border
 					//  fzf --preview 'seq 500' --preview-window border-left --border --list-border
 					//  fzf --preview 'seq 500' --preview-window border-left --border --input-border
-					listStickToRight = t.borderShape.HasRight() && !previewOpts.Border().HasRight()
+					listStickToRight = t.borderShape.HasRight() && !previewOpts.Border(t.layout).HasRight()
 					if listStickToRight {
 						innerWidth++
 						width++
@@ -2847,37 +2960,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 
 	if hasInputWindow {
-		var btop int
-		// Inline sections live inside the list frame, so they don't participate
-		// in --header-first repositioning; only non-inline sections do.
-		hasNonInlineHeader := hasHeaderWindow && t.headerBorderShape != tui.BorderInline
-		hasNonInlineHeaderLines := hasHeaderLinesWindow && headerLinesShape != tui.BorderInline
-		if (hasNonInlineHeader || hasNonInlineHeaderLines) && t.headerFirst {
-			switch t.layout {
-			case layoutDefault:
-				btop = w.Top() + w.Height()
-				// If both headers are present, the header lines are displayed with the list
-				if hasHeaderWindow && hasHeaderLinesWindow {
-					btop += headerLinesHeight
-				}
-			case layoutReverse:
-				btop = w.Top() - inputBorderHeight
-				if hasHeaderWindow && hasHeaderLinesWindow {
-					btop -= headerLinesHeight
-				}
-			case layoutReverseList:
-				btop = w.Top() + w.Height()
-			}
-		} else {
-			switch t.layout {
-			case layoutDefault:
-				btop = w.Top() + w.Height() + headerBorderHeight + headerLinesHeight
-			case layoutReverse:
-				btop = w.Top() - shrink + footerBorderHeight
-			case layoutReverseList:
-				btop = w.Top() + w.Height() + headerBorderHeight
-			}
-		}
+		btop := inputBorderTop()
 		shift := 0
 		if !t.inputBorderShape.HasLeft() && t.listBorderShape.HasLeft() {
 			shift += t.borderWidth + 1
@@ -2901,11 +2984,11 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 		var btop int
 		if hasInputWindow && t.headerFirst {
 			if t.layout == layoutReverse {
-				btop = w.Top() - shrink + footerBorderHeight
+				btop = w.Top() - shrink + footerBorderHeight - previewNextSize
 			} else if t.layout == layoutReverseList {
-				btop = w.Top() + w.Height() + inputBorderHeight
+				btop = w.Top() + w.Height() + inputBorderHeight + previewNextSize
 			} else {
-				btop = w.Top() + w.Height() + inputBorderHeight + headerLinesHeight
+				btop = w.Top() + w.Height() + inputBorderHeight + headerLinesHeight + previewNextSize
 			}
 		} else {
 			if t.layout == layoutReverse {
@@ -2936,7 +3019,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 
 		if headerFirst {
 			if t.layout == layoutDefault {
-				btop = w.Top() + w.Height() + inputBorderHeight
+				btop = w.Top() + w.Height() + inputBorderHeight + previewNextSize
 			} else if t.layout == layoutReverse {
 				btop = w.Top() - headerLinesHeight - inputBorderHeight
 			} else {
@@ -3004,7 +3087,7 @@ func (t *Terminal) resizeWindows(forcePreview bool, redrawBorder bool) {
 	}
 	t.printLabel(t.wborder, listLabel, t.listLabelOpts, listLabelLen, t.listBorderShape, false)
 	t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, false)
-	t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.activePreviewOpts.Border(), false)
+	t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.activePreviewOpts.Border(t.layout), false)
 	t.printLabel(t.inputBorder, t.inputLabel, t.inputLabelOpts, t.inputLabelLen, t.inputBorderShape, false)
 	t.printLabel(t.headerBorder, t.headerLabel, t.headerLabelOpts, t.headerLabelLen, t.headerBorderShape, false)
 	t.printLabel(t.footerBorder, t.footerLabel, t.footerLabelOpts, t.footerLabelLen, t.footerBorderShape, false)
@@ -3113,23 +3196,6 @@ func (t *Terminal) updatePromptOffset() ([]rune, []rune) {
 	return before, after
 }
 
-func (t *Terminal) promptLine() int {
-	if t.inputWindow != nil {
-		return 0
-	}
-	if t.headerFirst {
-		max := t.window.Height() - 1
-		if max <= 0 { // Extremely short terminal
-			return 0
-		}
-		if !t.noSeparatorLine() {
-			max--
-		}
-		return min(t.visibleHeaderLinesInList(), max)
-	}
-	return 0
-}
-
 func (t *Terminal) placeCursor() {
 	if t.inputless {
 		return
@@ -3145,7 +3211,7 @@ func (t *Terminal) placeCursor() {
 		return
 	}
 	x = min(x, t.window.Width()-1)
-	t.move(t.promptLine(), x, false)
+	t.move(0, x, false)
 }
 
 func (t *Terminal) printPrompt() {
@@ -3199,7 +3265,7 @@ func (t *Terminal) printInfoImpl() {
 		return
 	}
 	pos := 0
-	line := t.promptLine()
+	line := 0
 	maxHeight := t.window.Height()
 	move := func(y int, x int, clear bool) bool {
 		if y < 0 || y >= maxHeight {
@@ -3534,12 +3600,6 @@ func (t *Terminal) headerIndentImpl(base int, borderShape tui.BorderShape) int {
 
 func (t *Terminal) printHeaderImpl(window tui.Window, borderShape tui.BorderShape, lines1 []string, lines2 []Item) {
 	max := t.window.Height()
-	if !t.inputless && t.inputWindow == nil && window == nil && t.headerFirst {
-		max--
-		if !t.noSeparatorLine() {
-			max--
-		}
-	}
 	var state *ansiState
 	needReverse := false
 	switch t.layout {
@@ -4883,11 +4943,11 @@ func (t *Terminal) renderPreviewScrollbar(yoff int, barLength int, barStart int)
 		t.previewer.xw = xw
 	}
 	xshift := -1 - t.borderWidth
-	if !t.activePreviewOpts.Border().HasRight() {
+	if !t.activePreviewOpts.Border(t.layout).HasRight() {
 		xshift = -1
 	}
 	yshift := 1
-	if !t.activePreviewOpts.Border().HasTop() {
+	if !t.activePreviewOpts.Border(t.layout).HasTop() {
 		yshift = 0
 	}
 	for i := yoff; i < height; i++ {
@@ -5864,13 +5924,13 @@ func (t *Terminal) Loop() error {
 				if t.activePreviewOpts.aboveOrBelow() {
 					if t.activePreviewOpts.size.percent {
 						newContentHeight := int(float64(contentHeight) * 100. / (100. - t.activePreviewOpts.size.size))
-						contentHeight = max(contentHeight+1+borderLines(t.activePreviewOpts.Border()), newContentHeight)
+						contentHeight = max(contentHeight+1+borderLines(t.activePreviewOpts.Border(t.layout)), newContentHeight)
 					} else {
-						contentHeight += int(t.activePreviewOpts.size.size) + borderLines(t.activePreviewOpts.Border())
+						contentHeight += int(t.activePreviewOpts.size.size) + borderLines(t.activePreviewOpts.Border(t.layout))
 					}
 				} else {
 					// Minimum height if preview window can appear
-					contentHeight = max(contentHeight, 1+borderLines(t.activePreviewOpts.Border()))
+					contentHeight = max(contentHeight, 1+borderLines(t.activePreviewOpts.Border(t.layout)))
 				}
 			}
 			return min(termHeight, contentHeight+pad)
@@ -6252,7 +6312,7 @@ func (t *Terminal) Loop() error {
 					case reqRedrawBorderLabel:
 						t.printLabel(t.border, t.borderLabel, t.borderLabelOpts, t.borderLabelLen, t.borderShape, true)
 					case reqRedrawPreviewLabel:
-						t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.activePreviewOpts.Border(), true)
+						t.printLabel(t.pborder, t.previewLabel, t.previewLabelOpts, t.previewLabelLen, t.activePreviewOpts.Border(t.layout), true)
 					case reqReinit, reqResize, reqFullRedraw, reqRedraw:
 						if req == reqReinit {
 							t.tui.Resume(t.fullscreen, true)
@@ -7585,6 +7645,20 @@ func (t *Terminal) Loop() error {
 						} else if t.listBorderShape.HasRight() && t.pborder.EncloseY(my) && mx == t.wborder.Left()+t.wborder.Width()-1 {
 							pborderDragging = 1
 						}
+					case posNext:
+						if t.layout == layoutReverse {
+							if t.pborder.Enclose(my, mx) && my == t.pborder.Top()+t.pborder.Height()-1 {
+								pborderDragging = 0
+							} else if t.listBorderShape.HasTop() && t.pborder.EncloseX(mx) && my == t.wborder.Top() {
+								pborderDragging = 1
+							}
+						} else {
+							if t.pborder.Enclose(my, mx) && my == t.pborder.Top() {
+								pborderDragging = 0
+							} else if t.listBorderShape.HasBottom() && t.pborder.EncloseX(mx) && my == t.wborder.Top()+t.wborder.Height()-1 {
+								pborderDragging = 1
+							}
+						}
 					}
 				}
 
@@ -7608,6 +7682,27 @@ func (t *Terminal) Loop() error {
 						prevSize = t.pwindow.Width()
 						offset := mx - t.pborder.Left()
 						newSize = prevSize - offset
+					case posNext:
+						prevSize = t.pwindow.Height()
+						// In posNext, header/header-lines sections may sit
+						// between preview and list. When the list border is
+						// dragged (pborderDragging == 1), subtract that gap
+						// so the initial click does not jump.
+						headerGap := 0
+						if pborderDragging == 1 && t.wborder != nil {
+							if t.layout == layoutReverse {
+								headerGap = t.wborder.Top() - (t.pborder.Top() + t.pborder.Height())
+							} else {
+								headerGap = t.pborder.Top() - (t.wborder.Top() + t.wborder.Height())
+							}
+						}
+						if t.layout == layoutReverse {
+							diff := t.pborder.Height() - prevSize
+							newSize = my - t.pborder.Top() - diff + 1 - headerGap
+						} else {
+							offset := my - t.pborder.Top()
+							newSize = prevSize - offset - headerGap
+						}
 					}
 					newSize -= pborderDragging
 					if newSize < 1 {
@@ -7740,7 +7835,7 @@ func (t *Terminal) Loop() error {
 
 				if me.Down {
 					mxCons := util.Constrain(mx-t.promptLen, 0, len(t.input))
-					if !t.inputless && t.inputWindow == nil && my == t.promptLine() && mxCons >= 0 {
+					if !t.inputless && t.inputWindow == nil && my == 0 && mxCons >= 0 {
 						// Prompt
 						t.cx = mxCons + t.xoffset
 					} else if my >= min {
