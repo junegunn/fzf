@@ -114,7 +114,11 @@ if [ -d "${fish_dir}/functions" ]; then
   fi
 fi
 
-nushell_autoload_dir=${XDG_CONFIG_HOME:-$HOME/.config}/nushell/autoload
+if command -v nu > /dev/null; then
+  nushell_autoload_dir=$(nu -c '$nu.user-autoload-dirs | first')
+else
+  nushell_autoload_dir=${XDG_CONFIG_HOME:-$HOME/.config}/nushell/autoload
+fi
 remove "${nushell_autoload_dir}/_fzf_integration.nu"
 
 config_dir=$(dirname "$prefix_expand")
