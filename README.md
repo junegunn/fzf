@@ -533,15 +533,16 @@ the following key bindings in bash, zsh, fish, and Nushell.
       ```
     - Can be disabled by setting `FZF_CTRL_T_COMMAND` to an empty string when
       sourcing the script
-- `CTRL-R` - Paste the selected command from history onto the command-line. With fish shell, it is possible to select multiple commands.
+- `CTRL-R` - Paste the selected command from history onto the command-line.
+    - Select multiple commands with `TAB`.
     - If you want to see the commands in chronological order, press `CTRL-R`
       again which toggles sorting by relevance
     - Press `ALT-R` to toggle "raw" mode where you can see the surrounding items
       of a match. In this mode, you can press `CTRL-N` and `CTRL-P` to move
       between the matching items only.
     - Press `CTRL-/` or `ALT-/` to toggle line wrapping
+    - Press `SHIFT-DELETE` to delete the selected commands (bash and fish)
     - Fish shell only:
-      - Press `SHIFT-DELETE` to delete the selected commands
       - Press `ALT-ENTER` to reformat and insert the selected commands
       - Press `ALT-T` to cycle through command prefix (timestamp, date/time, none)
     - Set `FZF_CTRL_R_OPTS` to pass additional options to fzf

@@ -3,9 +3,13 @@ CHANGELOG
 
 0.73.0
 ------
-- Timer-driven `every(N)` event for `--bind`, where `N` is seconds (fractional, floored to `0.01`). Ticks that overlap an in-flight action are coalesced, so a slow `reload` cannot accumulate a backlog.
-- New `FZF_CURRENT_ITEM` environment variable exported to child processes, holding the text of the current item. Useful on shells where quoting `{}` is awkward (e.g. PowerShell on Windows). Unset when the list is empty (#4802).
-- New `FZF_IDLE_TIME` (whole seconds) and `FZF_IDLE_TIME_MS` (milliseconds) environment variables exported to child processes, holding the elapsed time since the last user activity. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
+_Release highlights: https://junegunn.github.io/fzf/releases/0.73.0/_
+
+- Nushell integration via `fzf --nushell` and the installer (#4630) (@sim590)
+- New `--preview-window=next` position that places the preview adjacent to the input section, on the list side: above the input in the default layout, below it in `--layout=reverse` (#4798)
+- Timer-driven `every(N)` event for `--bind`, where `N` is seconds
+- Added `$FZF_IDLE_TIME` (whole seconds) and `$FZF_IDLE_TIME_MS` (milliseconds), holding the elapsed time since the last user activity
+    - Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211)
       ```sh
       # Live process list; --track --id-nth 2 keeps the cursor on the same PID across reloads
       fzf --header-lines 1 --track --id-nth 2 --bind 'start,every(2):reload-sync:ps -ef'
@@ -17,9 +21,14 @@ CHANGELOG
         else echo accept
         fi'
       ```
-- New `--preview-window=next` position that places the preview adjacent to the input section, on the list side: above the input in the default layout, below it in `--layout=reverse` (#4798).
+- Added `$FZF_CURRENT_ITEM` for shells where quoting `{}` is awkward (#4802)
 - Bug fixes
-    - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word`. Layout fields still snap to the preset, so cycling and the empty-token reset behave as before. The new spec can still override by including `wrap` or `nowrap` explicitly. (#4791)
+    - Scoring: non-word characters at the start of input or after a delimiter now receive the same boundary bonus as word characters (#4795)
+    - `change-preview-window` no longer resets `wrap` / `wrap-word` state set via `toggle-preview-wrap` / `toggle-preview-wrap-word` (#4791)
+    - Stripped UTF-8-encoded C1 control characters from rendered items to prevent terminal control-sequence injection
+    - Fixed integer-overflow panic in `FuzzyMatchV2` on 32-bit builds (Michal Majchrowicz, Marcin Wyczechowski, AFINE Team)
+    - Fixed `bg-transform` `reload` / `exclude` payloads being dropped
+    - Fixed rendering glitch with preview window on the left combined with footer
 
 0.72.0
 ------
