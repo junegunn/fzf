@@ -39,7 +39,7 @@ $env.FZF_COMPLETION_DIR_COMMANDS = $env.FZF_COMPLETION_DIR_COMMANDS? | default [
 # --- Helper Functions ---
 
 # Helper to build default fzf options list
-def __fzf_defaults [prepend: string, append: string]: nothing -> string {
+def __fzf_defaults_completion [prepend: string, append: string]: nothing -> string {
   let base = $"--height ($env.FZF_TMUX_HEIGHT? | default '40%') --min-height 20+ --bind=ctrl-z:ignore ($prepend)"
   let opts_file = if ($env.FZF_DEFAULT_OPTS_FILE? | default '' | is-not-empty) {
     try { open --raw ($env.FZF_DEFAULT_OPTS_FILE) | str trim } catch { '' }
@@ -62,7 +62,7 @@ def __fzf_comprun [ context_name: string       # e.g., "fzf-completion" , "fzf-h
     null # Set to null if there's no stdin or an error occurs reading it
   }
 
-  let fzf_default_opts = (__fzf_defaults "" ($env.FZF_COMPLETION_OPTS | default ''))
+  let fzf_default_opts = (__fzf_defaults_completion "" ($env.FZF_COMPLETION_OPTS | default ''))
   let fzf_prefinal_opt = ['--query', $query, '--reverse'] | append $fzf_opts_arg
 
   # Get the configured height, defaulting to '40%'
