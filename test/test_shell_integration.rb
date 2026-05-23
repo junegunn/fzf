@@ -1103,3 +1103,123 @@ class TestFish < TestBase
     end
   end
 end
+
+class TestNushell < TestBase
+  include TestShell
+
+  def teardown
+    @tmux&.kill
+  end
+
+  def shell
+    :nushell
+  end
+
+  def set_var(name, val)
+    tmux.prepare
+    tmux.send_keys "$env.#{name} = '#{val}'", :Enter
+    tmux.prepare
+  end
+
+  def unset_var(name)
+    tmux.prepare
+    tmux.send_keys "hide-env -i #{name}", :Enter
+    tmux.prepare
+  end
+
+  def new_shell
+    tmux.send_keys 'FZF_TMUX=1 nu', :Enter
+    tmux.prepare
+  end
+
+  # Override: Nushell's builtin `echo` outputs structured data, so we need
+  # `^echo` (external echo) for plain text output on the command line.
+  def test_ctrl_t_unicode
+    writelines(['fzf-unicode 테스트1', 'fzf-unicode 테스트2'])
+    set_var('FZF_CTRL_T_COMMAND', "cat #{tempname}")
+
+    tmux.prepare
+    tmux.send_keys '^echo ', 'C-t'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys 'fzf-unicode'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+
+    tmux.send_keys '1'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 1, lines.select_count }
+
+    tmux.send_keys :BSpace
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+
+    tmux.send_keys '2'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_match(/\^echo .*fzf-unicode.*1.* .*fzf-unicode.*2/, lines.join) }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_equal 'fzf-unicode 테스트1 fzf-unicode 테스트2', lines[-1] }
+  end
+
+  # Override: Nushell's external completer replaces the entire token,
+  # so we use assert_includes instead of assert_equal for the result.
+  # ~USERNAME expansion and backslash-escaped spaces are not applicable.
+  def test_file_completion
+    FileUtils.mkdir_p('/tmp/fzf-test')
+    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/#{i}") }
+    tmux.prepare
+
+    # Multi-selection
+    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+    tmux.send_keys :Enter
+    tmux.until(true) do |lines|
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/10'
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/100'
+    end
+
+    # Single selection
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test/10#{trigger}", :Tab
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys '0'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.until(true) do |lines|
+      assert_includes lines[-1].to_s, '/tmp/fzf-test/100'
+    end
+
+    # Should include hidden files
+    (1..100).each { |i| FileUtils.touch("/tmp/fzf-test/.hidden-#{i}") }
+    tmux.prepare
+    tmux.send_keys "cat /tmp/fzf-test/hidden#{trigger}", :Tab
+    tmux.until(true) do |lines|
+      assert_equal 100, lines.match_count
+      assert lines.any_include?('/tmp/fzf-test/.hidden-')
+    end
+    tmux.send_keys :Enter
+  ensure
+    FileUtils.rm_rf('/tmp/fzf-test')
+  end
+
+  # Nushell does not support multiline command recall the same way
+  # as bash/zsh/fish, so test_ctrl_r_multiline is omitted.
+
+  # Override: only test with 'foo' -- single and double quotes cause
+  # issues in Nushell's line editor.
+  def test_ctrl_r_abort
+    %w[foo].each do |query|
+      tmux.prepare
+      tmux.send_keys :Enter, query
+      tmux.until { |lines| assert lines[-1]&.start_with?(query) }
+      tmux.send_keys 'C-r'
+      tmux.until { |lines| assert_equal "> #{query}", lines[-1] }
+      tmux.send_keys 'C-g'
+      tmux.until { |lines| assert lines[-1]&.start_with?(query) }
+    end
+  end
+end

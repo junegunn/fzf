@@ -233,6 +233,7 @@ Usage: fzf [options]
     --bash                   Print script to set up Bash shell integration
     --zsh                    Print script to set up Zsh shell integration
     --fish                   Print script to set up Fish shell integration
+    --nushell                Print script to set up Nushell integration
 
   HELP
     --version                Display version information and exit
@@ -586,6 +587,7 @@ type Options struct {
 	Bash              bool
 	Zsh               bool
 	Fish              bool
+	Nushell           bool
 	Man               bool
 	Fuzzy             bool
 	FuzzyAlgo         algo.Algo
@@ -733,6 +735,7 @@ func defaultOptions() *Options {
 		Bash:         false,
 		Zsh:          false,
 		Fish:         false,
+		Nushell:      false,
 		Man:          false,
 		Fuzzy:        true,
 		FuzzyAlgo:    algo.FuzzyMatchV2,
@@ -2553,6 +2556,7 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		opts.Bash = false
 		opts.Zsh = false
 		opts.Fish = false
+		opts.Nushell = false
 		opts.Help = false
 		opts.Version = false
 		opts.Man = false
@@ -2665,6 +2669,9 @@ func parseOptions(index *int, opts *Options, allArgs []string) error {
 		case "--fish":
 			clearExitingOpts()
 			opts.Fish = true
+		case "--nushell":
+			clearExitingOpts()
+			opts.Nushell = true
 		case "-h", "--help":
 			clearExitingOpts()
 			opts.Help = true

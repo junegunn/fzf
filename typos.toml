@@ -6,6 +6,7 @@ enew = "enew"
 tabe = "tabe"
 Iterm = "Iterm"
 ser = "ser"
+Slq = "Slq"
 
 [files]
 extend-exclude = ["README.md", "*.s"]
