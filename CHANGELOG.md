@@ -4,6 +4,7 @@ CHANGELOG
 0.73.0
 ------
 - Timer-driven `every(N)` event for `--bind`, where `N` is seconds (fractional, floored to `0.01`). Ticks that overlap an in-flight action are coalesced, so a slow `reload` cannot accumulate a backlog.
+- New `FZF_CURRENT_ITEM` environment variable exported to child processes, holding the text of the current item. Useful on shells where quoting `{}` is awkward (e.g. PowerShell on Windows). Unset when the list is empty (#4802).
 - New `FZF_IDLE_TIME` (whole seconds) and `FZF_IDLE_TIME_MS` (milliseconds) environment variables exported to child processes, holding the elapsed time since the last user activity. Pair with `every(N)` to build idle-based behavior such as auto-accept or auto-quit (#1211).
       ```sh
       # Live process list; --track --id-nth 2 keeps the cursor on the same PID across reloads
