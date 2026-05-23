@@ -117,6 +117,19 @@ generate:
 build:
 	goreleaser build --clean --snapshot --skip=post-hooks
 
+prerelease:
+	# Check if version numbers are properly updated
+	grep -q ^$(VERSION_REGEX)$$ CHANGELOG.md
+	grep -qF '"fzf $(VERSION_TRIM)"' man/man1/fzf.1
+	grep -qF '"fzf $(VERSION_TRIM)"' man/man1/fzf-tmux.1
+	grep -qF $(VERSION) install
+	grep -qF $(VERSION) install.ps1
+	@echo "OK: all files consistent at $(VERSION)"
+
+tag: prerelease
+	git tag -s v$(VERSION) -m v$(VERSION)
+	git push origin v$(VERSION)
+
 release:
 	# Make sure that the tests pass and the build works
 	TAGS=tcell make test
@@ -206,4 +219,4 @@ update:
 	$(GO) get -u
 	$(GO) mod tidy
 
-.PHONY: all generate build release test itest bench lint install clean docker docker-test update fmt
+.PHONY: all generate build prerelease tag release test itest bench lint install clean docker docker-test update fmt

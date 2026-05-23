@@ -15,17 +15,19 @@ triggered by a tag push.
     - `man/man1/fzf.1`
     - `man/man1/fzf-tmux.1`
 
-2. Sign and push the tag.
+2. Verify file consistency, sign the tag, and push the tag.
 
     ```sh
-    export V=v0.73.0
-    git tag -s $V -m $V
-
-    # Push the tag only. master on origin still points to the old version,
-    # so /master/install keeps resolving against existing binaries during
-    # the publish window.
-    git push origin $V
+    make tag VERSION=0.73.0
     ```
+
+    `make tag` runs `prerelease` first (checks that the version
+    appears in CHANGELOG.md, both man pages, install, and install.ps1)
+    and only signs + pushes the tag if the checks pass.
+
+    Only the tag is pushed; `master` on origin still points to the
+    old version, so `/master/install` keeps resolving against existing
+    binaries during the publish window.
 
 3. The workflow fires on the tag push and pauses on the `release`
    environment gate. Approve it in the Actions tab to release.
