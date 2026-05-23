@@ -57,6 +57,15 @@ func TestFuzzyMatch(t *testing.T) {
 				scoreMatch*4+int(bonusBoundaryDelimiter)*bonusFirstCharMultiplier+int(bonusBoundaryDelimiter)*3)
 			assertMatch(t, fn, false, forward, "/.oh-my-zsh/cache", "zshc", 8, 13,
 				scoreMatch*4+bonusBoundary*bonusFirstCharMultiplier+bonusBoundary*2+scoreGapStart+int(bonusBoundaryDelimiter))
+			// Non-word character at start of input is treated as a strong boundary
+			assertMatch(t, fn, false, forward, ".vimrc", ".vimrc", 0, 6,
+				scoreMatch*6+int(bonusBoundaryWhite)*(bonusFirstCharMultiplier+5))
+			// Non-word character right after a delimiter inherits the delimiter boundary
+			assertMatch(t, fn, false, forward, "/.vimrc", ".vimrc", 1, 7,
+				scoreMatch*6+int(bonusBoundaryDelimiter)*(bonusFirstCharMultiplier+5))
+			// Non-word character in the middle of a word stays at bonusNonWord
+			assertMatch(t, fn, false, forward, "a.vimrc", ".vimrc", 1, 7,
+				scoreMatch*6+bonusBoundary*(bonusFirstCharMultiplier+5))
 			assertMatch(t, fn, false, forward, "ab0123 456", "12356", 3, 10,
 				scoreMatch*5+bonusConsecutive*3+scoreGapStart+scoreGapExtension)
 			assertMatch(t, fn, false, forward, "abc123 456", "12356", 3, 10,

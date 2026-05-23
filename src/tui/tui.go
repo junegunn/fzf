@@ -196,11 +196,6 @@ const (
 	CtrlAltShiftPageUp
 	CtrlAltShiftPageDown
 
-	Invalid
-	Fatal
-	BracketedPasteBegin
-	BracketedPasteEnd
-
 	Mouse
 	DoubleClick
 	LeftClick
@@ -214,7 +209,15 @@ const (
 	PreviewScrollUp
 	PreviewScrollDown
 
-	// Events
+	// Synthetic / non-user events. Everything from Invalid onward is
+	// either internally generated or a state-change notification, not
+	// direct user input. Use `>= Invalid` to gate activity tracking.
+	// BracketedPasteBegin/End sit here too: they enclose user input
+	// (which arrives as Rune events) and should not appear in FZF_KEY.
+	Invalid
+	Fatal
+	BracketedPasteBegin
+	BracketedPasteEnd
 	Resize
 	Change
 	BackwardEOF
@@ -229,6 +232,7 @@ const (
 	ClickHeader
 	ClickFooter
 	Multi
+	Every
 )
 
 func (t EventType) AsEvent() Event {

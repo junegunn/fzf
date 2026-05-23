@@ -299,6 +299,39 @@ func TestBind(t *testing.T) {
 	check(tui.F1.AsEvent(), "", actAbort)
 }
 
+func TestParseEveryEvent(t *testing.T) {
+	pairs, _, err := parseKeyChords("every(2),every(0.5)", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pairs) != 2 {
+		t.Errorf("expected 2 distinct every events, got %d", len(pairs))
+	}
+	if pairs[(tui.Event{Type: tui.Every, Char: 2000})] != "every(2)" {
+		t.Errorf("every(2) not registered")
+	}
+	if pairs[(tui.Event{Type: tui.Every, Char: 500})] != "every(0.5)" {
+		t.Errorf("every(0.5) not registered")
+	}
+
+	// Floor at 0.01s -> 10ms
+	pairs, _, err = parseKeyChords("every(0.001)", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pairs[(tui.Event{Type: tui.Every, Char: 10})] != "every(0.001)" {
+		t.Errorf("every(0.001) should floor to 10ms")
+	}
+
+	// Reject zero, negatives, and overflow (>= 2^31 ms = ~24.85 days)
+	for _, bad := range []string{"every(0)", "every(-1)", "every(abc)", "every()", "every(2147484)"} {
+		if _, _, err := parseKeyChords(bad, ""); err == nil {
+			t.Errorf("%s should be rejected", bad)
+		}
+	}
+
+}
+
 func TestColorSpec(t *testing.T) {
 	var base *tui.ColorTheme
 	theme := tui.Dark256
