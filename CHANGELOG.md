@@ -4,7 +4,7 @@ CHANGELOG
 0.73.1
 ------
 - Bug fixes
-    - Skip `$FZF_CURRENT_ITEM` export when the item contains a NUL byte; `exec(2)` rejects the env, breaking preview and other child commands (#2395)
+    - Skip `$FZF_CURRENT_ITEM` export when the item contains a NUL byte; `exec(2)` rejects the env, breaking preview and other child commands (#4806)
     - Fixed O(n^2) HTTP body accumulation in `--listen`; a single ~390 KB request could block the single-threaded server for ~8 s (Michal Majchrowicz, Marcin Wyczechowski, AFINE Team)
 
 0.73.0
