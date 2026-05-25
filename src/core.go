@@ -4,6 +4,7 @@ package fzf
 import (
 	"fmt"
 	"maps"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -241,6 +242,9 @@ func Run(opts *Options) (int, error) {
 		denylist = make(map[int32]struct{})
 		denyMutex.Unlock()
 	}
+	if opts.HeaderLines > math.MaxInt32 {
+		opts.HeaderLines = math.MaxInt32
+	}
 	headerLines := int32(opts.HeaderLines)
 	headerUpdated := false
 	patternBuilder := func(runes []rune) *Pattern {
@@ -467,7 +471,7 @@ func Run(opts *Options) (int, error) {
 					terminal.UpdateCount(max(0, total-int(headerLines)), !reading, value.(*string))
 					if headerLines > 0 && !headerUpdated {
 						terminal.UpdateHeader(GetItems(snapshot, int(headerLines)))
-						headerUpdated = int32(total) >= headerLines
+						headerUpdated = total >= int(headerLines)
 					}
 					if heightUnknown && !deferred {
 						determine(!reading)

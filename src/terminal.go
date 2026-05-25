@@ -6829,7 +6829,7 @@ func (t *Terminal) Loop() error {
 						changed = true
 						// Deselect items that are now part of the header
 						for idx := range t.selected {
-							if idx < int32(n) {
+							if int(idx) < n {
 								delete(t.selected, idx)
 							}
 						}
