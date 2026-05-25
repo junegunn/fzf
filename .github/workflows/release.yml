@@ -68,7 +68,7 @@ jobs:
                 && 'release --clean --release-notes tmp/release-note'
                 || 'release --snapshot --clean --skip=publish' }}
         env:
-          GITHUB_TOKEN:           ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:           ${{ secrets.RELEASE_PAT }}
           MACOS_SIGN_P12:         ${{ secrets.MACOS_SIGN_P12 }}
           MACOS_SIGN_PASSWORD:    ${{ secrets.MACOS_SIGN_PASSWORD }}
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
