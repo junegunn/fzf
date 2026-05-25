@@ -1531,6 +1531,10 @@ fzf exports the following environment variables to its child processes.
 .br
 .BR FZF_RAW "             Only in raw mode. 1 if the current item matches, 0 otherwise"
 
+.PP
+.B FZF_CURRENT_ITEM
+is omitted when the item contains a NUL byte, because exec(2) cannot pass it.
+
 .SH EXTENDED SEARCH MODE
 
 Unless specified otherwise, fzf will start in "extended\-search mode". In this
