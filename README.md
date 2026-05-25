@@ -25,22 +25,22 @@
 
 ---
 
-fzf is a general-purpose command-line fuzzy finder.
+fzf is a general-purpose command-line fuzzy finder and an interactive terminal toolkit.
 
 <img src="https://raw.githubusercontent.com/junegunn/i/master/fzf-preview.png" width=640>
 
-It's an interactive filter program for any kind of list; files, command
-history, processes, hostnames, bookmarks, git commits, etc. It implements
-a "fuzzy" matching algorithm, so you can quickly type in patterns with omitted
-characters and still get the results you want.
+Whether you're selecting files, browsing command history, previewing data,
+navigating complex datasets with fuzzy matching, or creating custom menus and
+workflows, fzf provides the building blocks to turn shell scripts into rich
+terminal applications.
 
 Highlights
 ----------
 
-- **Portable** -- Distributed as a single binary for easy installation
-- **Fast** -- Optimized to process millions of items instantly
-- **Versatile** -- Fully customizable through an event-action binding mechanism
-- **All-inclusive** -- Comes with integrations for Bash, Zsh, Fish, Nushell, Vim, and Neovim
+- **Portable** // Distributed as a single binary for easy installation
+- **Fast** // Optimized to process millions of items in milliseconds
+- **Programmable** // Event-driven architecture for building custom terminal interfaces and workflows
+- **Batteries-included** // Comes with integrations for Bash, Zsh, Fish, Nushell, Vim, and Neovim
 
 Table of Contents
 -----------------
