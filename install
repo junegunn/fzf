@@ -233,7 +233,7 @@ for s in $shells; do
   fi
 done
 
-if [[ ${#shells} -lt 3 ]]; then
+if [[ -z "${shells// /}" ]]; then
   echo "No shell configuration to be updated."
   exit 0
 fi
