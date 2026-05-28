@@ -252,10 +252,10 @@ fi
 
 echo
 for shell in $shells; do
+  [[ $shell == nushell ]] && continue
   fzf_completion="source \"$fzf_base/shell/completion.${shell}\""
   fzf_key_bindings="source \"$fzf_base/shell/key-bindings.${shell}\""
   [[ $shell == fish ]] && continue
-  [[ $shell == nushell ]] && continue
   src=${prefix_expand}.${shell}
   echo -n "Generate $src ... "
 
