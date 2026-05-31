@@ -110,14 +110,8 @@ fzf-cd-widget() {
     zle redisplay
     return 0
   fi
-  # Use subshell expansion to get the absolute PWD of the target dir.
-  # This allows the recorded shell history to be reused even from a different
-  # working directory.
-  # If failed, fallback to the unexpanded path to surface the error to the user.
-  # NOTE: Don't use the `:a` modifier as it resolves symlinks like `pwd -P`.
-  dir=$(builtin cd >/dev/null -- "${dir}" && echo "${PWD}" || echo "${dir}")
   zle push-line # Clear buffer. Auto-restored on next prompt.
-  BUFFER="builtin cd -- ${(q)dir}"
+  BUFFER="builtin cd -- ${(q)dir:a}"
   zle accept-line
   local ret=$?
   unset dir # ensure this doesn't end up appearing in prompt expansion
