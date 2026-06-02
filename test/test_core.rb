@@ -971,6 +971,24 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_includes lines[1], ' aabravo/aabravo' }
   end
 
+  def test_transform_put
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:transform:echo put'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_equal '> a', lines.last }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_equal '> ab', lines.last }
+  end
+
+  # The async callback runs in a later iteration, but 'put' must still insert
+  # the key that triggered the bg-transform (snapshot of the scheduling event).
+  def test_bg_transform_put
+    tmux.send_keys %(seq 1000 | #{FZF} --bind 'a:bg-transform:sleep 0.5; echo put'), :Enter
+    tmux.until { |lines| assert_equal 1000, lines.match_count }
+    tmux.send_keys 'ab'
+    tmux.until { |lines| assert_equal '> ba', lines.last }
+  end
+
   def test_accept_non_empty
     tmux.send_keys %(seq 1000 | #{fzf('--print-query --bind enter:accept-non-empty')}), :Enter
     tmux.until { |lines| assert_equal 1000, lines.match_count }

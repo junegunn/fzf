@@ -6973,7 +6973,8 @@ func (t *Terminal) Loop() error {
 				})
 			case actTransform, actBgTransform:
 				capture(false, func(body string) {
-					if actions, err := parseSingleActionList(strings.Trim(body, "\r\n")); err == nil {
+					// Allow 'put' if the triggering key is a printable character
+					if actions, err := parseSingleActionList(strings.Trim(body, "\r\n"), event.Printable()); err == nil {
 						// NOTE: We're not properly passing the return value here
 						doActions(actions)
 					}

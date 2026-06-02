@@ -240,7 +240,7 @@ Loop:
 	}
 	body = body[:contentLength]
 
-	actions, err := parseSingleActionList(strings.Trim(string(body), "\r\n"))
+	actions, err := parseSingleActionList(strings.Trim(string(body), "\r\n"), false)
 	if err != nil {
 		return bad(err.Error())
 	}

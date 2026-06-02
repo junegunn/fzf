@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/junegunn/fzf/src/util"
 	"github.com/rivo/uniseg"
@@ -250,6 +251,12 @@ func (t EventType) Byte() byte {
 func (e Event) Comparable() Event {
 	// Ignore MouseEvent pointer
 	return Event{e.Type, e.Char, nil}
+}
+
+// Printable returns true if the event is a printable character that can be
+// inserted into the query (e.g. via the 'put' action).
+func (e Event) Printable() bool {
+	return e.Type == Rune && unicode.IsGraphic(e.Char)
 }
 
 func (e Event) KeyName() string {

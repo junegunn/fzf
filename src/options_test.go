@@ -572,7 +572,7 @@ func TestValidateSign(t *testing.T) {
 }
 
 func TestParseSingleActionList(t *testing.T) {
-	actions, _ := parseSingleActionList("Execute@foo+bar,baz@+up+up+reload:down+down")
+	actions, _ := parseSingleActionList("Execute@foo+bar,baz@+up+up+reload:down+down", false)
 	if len(actions) != 4 {
 		t.Errorf("Invalid number of actions parsed:%d", len(actions))
 	}
@@ -588,7 +588,7 @@ func TestParseSingleActionList(t *testing.T) {
 }
 
 func TestParseSingleActionListError(t *testing.T) {
-	_, err := parseSingleActionList("change-query(foobar)baz")
+	_, err := parseSingleActionList("change-query(foobar)baz", false)
 	if err == nil {
 		t.Errorf("Failed to detect error")
 	}

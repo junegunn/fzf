@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/tui"
@@ -1734,10 +1733,10 @@ Loop:
 	return masked
 }
 
-func parseSingleActionList(str string) ([]*action, error) {
+func parseSingleActionList(str string, putAllowed bool) ([]*action, error) {
 	// We prepend a colon to satisfy argActionRegexp and remove it later
 	masked := maskActionContents(":" + str)[1:]
-	return parseActionList(masked, str, []*action{}, false)
+	return parseActionList(masked, str, []*action{}, putAllowed)
 }
 
 func parseActionList(masked string, original string, prevActions []*action, putAllowed bool) ([]*action, error) {
@@ -2043,8 +2042,7 @@ func parseKeymap(keymap map[tui.Event][]*action, str string) error {
 				}
 				key = firstKey(keys)
 			}
-			putAllowed := key.Type == tui.Rune && unicode.IsGraphic(key.Char)
-			keymap[key], err = parseActionList(pair[1], origPairStr[len(pair[0])+1:], keymap[key], putAllowed)
+			keymap[key], err = parseActionList(pair[1], origPairStr[len(pair[0])+1:], keymap[key], key.Printable())
 			if err != nil {
 				return err
 			}
