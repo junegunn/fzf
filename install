@@ -227,13 +227,13 @@ fi
 
 for s in $shells; do
   bin=$s
-  [[ "$s" = nushell ]] && bin=nu
+  [[ $s == nushell ]] && bin=nu
   if ! command -v "$bin" > /dev/null; then
     shells=${shells/$s/}
   fi
 done
 
-if [[ -z "${shells// /}" ]]; then
+if [[ -z ${shells// /} ]]; then
   echo "No shell configuration to be updated."
   exit 0
 fi
@@ -442,7 +442,7 @@ if [[ $shells =~ fish ]]; then
   fi
 fi
 
-if [[ "$shells" =~ nushell ]]; then
+if [[ $shells =~ nushell ]]; then
   if [[ $key_bindings -eq 1 || $auto_completion -eq 1 ]]; then
     echo "Setting up Nushell integration ..."
     nushell_autoload_dir=$(nu -c '$nu.user-autoload-dirs | first')
