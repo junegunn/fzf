@@ -100,6 +100,47 @@ module TestShell
     tmux.until { |lines| assert_equal '/tmp', lines[-1] }
   end
 
+  def test_alt_c_symlink
+    base = '/tmp/fzf-test-alt-c-symlink'
+    FileUtils.rm_rf(base)
+    FileUtils.mkdir_p("#{base}/real/subdir")
+    FileUtils.ln_s("#{base}/real", "#{base}/link")
+
+    tmux.prepare
+    tmux.send_keys "cd #{base}/link", :Enter
+    tmux.prepare
+    tmux.send_keys :Escape, :c
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'subdir'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.prepare
+    tmux.send_keys :pwd, :Enter
+    tmux.until { |lines| assert_equal "#{base}/link/subdir", lines[-1] }
+  ensure
+    FileUtils.rm_rf(base)
+  end
+
+  def test_alt_c_absolute_cmd
+    base = '/tmp/fzf-test-alt-c-absolute'
+    FileUtils.rm_rf(base)
+    FileUtils.mkdir_p(base)
+
+    set_var('FZF_ALT_C_COMMAND', "echo #{base}")
+
+    tmux.prepare
+    tmux.send_keys 'cd /tmp', :Enter
+    tmux.prepare
+    tmux.send_keys :Escape, :c
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Enter
+    tmux.prepare
+    tmux.send_keys :pwd, :Enter
+    tmux.until { |lines| assert_equal base, lines[-1] }
+  ensure
+    FileUtils.rm_rf(base)
+  end
+
   def test_ctrl_r
     tmux.prepare
     tmux.send_keys 'echo 1st', :Enter
