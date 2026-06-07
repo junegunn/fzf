@@ -198,7 +198,10 @@ func (result *Result) colorOffsets(matchOffsets []Offset, nthOffsets []Offset, t
 	start := 0
 	ansiToColorPair := func(ansi ansiOffset, base tui.ColorPair) tui.ColorPair {
 		if !theme.Colored {
-			return tui.NewColorPair(-1, -1, ansi.color.attr).MergeAttr(base)
+			// Ignore ANSI colors but keep the attributes. Retain the base
+			// colors (e.g. an overridden input-bg or list-bg) instead of
+			// resetting to the terminal default.
+			return tui.NewColorPair(base.Fg(), base.Bg(), ansi.color.attr).MergeAttr(base)
 		}
 		// fd --color always | fzf --ansi --delimiter / --nth -1 --color fg:dim:strip,nth:regular
 		if base.ShouldStripColors() {
