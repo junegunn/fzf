@@ -11,6 +11,7 @@ CHANGELOG
       (seq 100; sleep 1; seq 100) | fzf --query 1 \
         --bind 'result:transform-header(echo result: $FZF_MATCH_COUNT),result-final:transform-footer(echo final: $FZF_MATCH_COUNT)'
       ```
+- Bound `alt-left` to `backward-word` and `alt-right` to `forward-word` by default (#4833)
 
 0.73.1
 ------

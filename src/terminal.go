@@ -871,8 +871,10 @@ func defaultKeymap() map[tui.Event][]*action {
 
 	addEvent(tui.AltKey('b'), actBackwardWord)
 	add(tui.ShiftLeft, actBackwardWord)
+	add(tui.AltLeft, actBackwardWord)
 	addEvent(tui.AltKey('f'), actForwardWord)
 	add(tui.ShiftRight, actForwardWord)
+	add(tui.AltRight, actForwardWord)
 	addEvent(tui.AltKey('d'), actKillWord)
 	add(tui.AltBackspace, actBackwardKillWord)
 
