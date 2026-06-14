@@ -1152,7 +1152,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		bgSemaphore:        make(chan struct{}, maxBgProcesses),
 		bgSemaphores:       make(map[action]chan struct{}),
 		keyChan:            make(chan tui.Event),
-		eventChan:          make(chan tui.Event, 6), // start | (load + result + zero|one) | (focus) | (resize)
+		eventChan:          make(chan tui.Event, 7), // start | (load + result + result-final + zero|one) | (focus) | (resize)
 		timerChan:          make(chan tui.Event),    // unbuffered: every() ticks coalesce when main loop is busy
 		tui:                renderer,
 		ttyDefault:         opts.TtyDefault,
@@ -1345,6 +1345,9 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	}
 	_, t.hasStartActions = t.keymap[tui.Start.AsEvent()]
 	_, t.hasResultActions = t.keymap[tui.Result.AsEvent()]
+	if _, prs := t.keymap[tui.ResultFinal.AsEvent()]; prs {
+		t.hasResultActions = true
+	}
 	_, t.hasFocusActions = t.keymap[tui.Focus.AsEvent()]
 	_, t.hasLoadActions = t.keymap[tui.Load.AsEvent()]
 
@@ -2022,8 +2025,18 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		}
 	}
 	if t.hasResultActions {
-		t.pendingReqList = true
-		t.eventChan <- tui.Result.AsEvent()
+		result := tui.Result.AsEvent()
+		if _, prs := t.keymap[result]; prs {
+			t.pendingReqList = true
+			t.eventChan <- result
+		}
+		if !t.reading {
+			resultFinal := tui.ResultFinal.AsEvent()
+			if _, prs := t.keymap[resultFinal]; prs {
+				t.pendingReqList = true
+				t.eventChan <- resultFinal
+			}
+		}
 	}
 	updateList := !t.trackBlocked && !t.pendingReqList
 	updatePrompt := trackWasBlocked && !t.trackBlocked

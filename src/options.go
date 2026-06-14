@@ -1063,6 +1063,8 @@ func parseKeyChords(str string, message string) (map[tui.Event]string, []tui.Eve
 			add(tui.Focus)
 		case "result":
 			add(tui.Result)
+		case "result-final":
+			add(tui.ResultFinal)
 		case "resize":
 			add(tui.Resize)
 		case "one":

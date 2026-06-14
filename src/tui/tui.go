@@ -234,6 +234,7 @@ const (
 	ClickFooter
 	Multi
 	Every
+	ResultFinal
 )
 
 func (t EventType) AsEvent() Event {

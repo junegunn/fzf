@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.74.0 (WIP)
+------------
+- Added `result-final` event, a variant of `result` that is not triggered while the input stream is still open (#4835)
+    - Use it for one-shot, per-query actions that would otherwise re-fire on every intermediate snapshot during loading
+      ```sh
+      # 'result' fires per intermediate snapshot (header keeps updating during load);
+      # 'result-final' fires once after the stream closes (footer shows the final count)
+      (seq 100; sleep 1; seq 100) | fzf --query 1 \
+        --bind 'result:transform-header(echo result: $FZF_MATCH_COUNT),result-final:transform-footer(echo final: $FZF_MATCH_COUNT)'
+      ```
+
 0.73.1
 ------
 - Bug fixes

@@ -1405,6 +1405,17 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_includes lines, '> 1' }
   end
 
+  def test_result_final_event
+    tmux.send_keys %[(seq 100; sleep 1; seq 100) | #{FZF} \\
+        --query 1 \\
+        --bind 'result:transform-header(echo "R=$FZF_MATCH_COUNT")' \\
+        --bind 'result-final:transform-footer(echo "F=$FZF_MATCH_COUNT")'], :Enter
+    tmux.until { |lines| assert lines.any_include?('R=20') }
+    tmux.until { |lines| refute lines.any_include?('F=20') }
+    tmux.until { |lines| assert lines.any_include?('R=40') }
+    tmux.until { |lines| assert lines.any_include?('F=40') }
+  end
+
   def test_every_event
     tmux.send_keys %(seq 100 | fzf --bind 'every(0.2):transform-prompt(cat #{tempname})'), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }

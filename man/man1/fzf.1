@@ -226,7 +226,7 @@ Enable processing of ANSI color codes
 Synchronous search for multi-staged filtering. If specified, fzf will launch
 the finder only after the input stream is complete and the initial filtering
 and the associated actions (bound to any of \fBstart\fR, \fBload\fR,
-\fBresult\fR, or \fBfocus\fR) are complete.
+\fBresult\fR, \fBresult\-final\fR, or \fBfocus\fR) are complete.
 
 .RS
 e.g. \fB# Avoid rendering both fzf instances at the same time
@@ -1855,6 +1855,20 @@ e.g.
      # * Note that you can't use 'change' event in this case because the second position may not be available
      fzf \-\-sync \-\-bind 'result:transform:[[ \-z {q} ]] && echo "pos(2)"'\fR
 .RE
+
+\fIresult\-final\fR
+.RS
+Same as \fIresult\fR, but suppressed while the input stream is still open. Use
+this when you want a one-shot action per query instead of one per intermediate
+snapshot during loading.
+
+e.g.
+     \fB# 'result' fires per intermediate snapshot (header keeps updating during load);
+     # 'result-final' fires once after the stream closes (footer shows the final count)
+     (seq 100; sleep 1; seq 100) | fzf \-\-query 1 \\
+       \-\-bind 'result:transform\-header(echo result: $FZF_MATCH_COUNT),result\-final:transform\-footer(echo final: $FZF_MATCH_COUNT)'\fR
+.RE
+
 \fIchange\fR
 .RS
 Triggered whenever the query string is changed
