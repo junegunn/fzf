@@ -152,7 +152,7 @@ function fzf_key_bindings
     # Enable syntax highlighting colors on fish v4.3.3 and newer
     if string match -qr -- '^\\d\\d+|^4\\.[4-9]|^4\\.3\\.[3-9]' $version
       set -a -- FZF_DEFAULT_OPTS '--ansi'
-      set -a -- FZF_DEFAULT_COMMAND '--color=always --show-time=(set_color $fish_color_comment)"%F %a %T%t%s%t"(set_color $fish_color_normal)'
+      set -a -- FZF_DEFAULT_COMMAND '--color=always --show-time=(set_color $fish_color_comment 2>/dev/null; or set_color normal)"%F %a %T%t%s%t"(set_color normal)'
     else
       set -a -- FZF_DEFAULT_COMMAND '--show-time="%F %a %T%t%s%t"'
     end
