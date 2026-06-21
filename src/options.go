@@ -1958,6 +1958,8 @@ func parseActionList(masked string, original string, prevActions []*action, putA
 			} else {
 				return nil, errors.New("unable to put non-printable character")
 			}
+		case "wait":
+			appendAction(actWait)
 		case "bell":
 			appendAction(actBell)
 		case "exclude":

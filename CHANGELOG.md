@@ -11,6 +11,12 @@ CHANGELOG
       (seq 100; sleep 1; seq 100) | fzf --query 1 \
         --bind 'result:transform-header(echo result: $FZF_MATCH_COUNT),result-final:transform-footer(echo final: $FZF_MATCH_COUNT)'
       ```
+- Added `wait` action to block subsequent actions until search completes (#4825)
+    - Useful for chaining transform actions with motion actions to ensure operations on complete results
+      ```sh
+      # Wait for search to complete before moving to the best match
+      fzf --bind 'start:search(foo)+wait+best'
+      ```
 - Bound `alt-left` to `backward-word` and `alt-right` to `forward-word` by default (#4833)
 
 0.73.1
