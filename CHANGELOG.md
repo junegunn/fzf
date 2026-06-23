@@ -12,6 +12,7 @@ CHANGELOG
         --bind 'result:transform-header(echo result: $FZF_MATCH_COUNT),result-final:transform-footer(echo final: $FZF_MATCH_COUNT)'
       ```
 - Bound `alt-left` to `backward-word` and `alt-right` to `forward-word` by default (#4833)
+- Skip `$FZF_CURRENT_ITEM` export when the item is larger than 64 KB; a huge item can overflow `ARG_MAX` and break preview and other child commands with `E2BIG` (#4806)
 
 0.73.1
 ------

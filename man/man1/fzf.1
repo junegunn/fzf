@@ -1534,6 +1534,9 @@ fzf exports the following environment variables to its child processes.
 .PP
 .B FZF_CURRENT_ITEM
 is omitted when the item contains a NUL byte, because exec(2) cannot pass it.
+It is also omitted when the item is larger than 64 KB, so that a huge item
+cannot overflow the environment size limit and break preview and other child
+commands.
 
 .SH EXTENDED SEARCH MODE
 

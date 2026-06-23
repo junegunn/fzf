@@ -68,6 +68,10 @@ const maxFocusEvents = 10000
 // After this duration, users can press CTRL-C to terminate the command.
 const blockDuration = 1 * time.Second
 
+// Skip exporting FZF_CURRENT_ITEM when the item is larger than this, so a huge
+// item cannot overflow ARG_MAX and break exec for preview and other commands.
+const maxCurrentItemEnvSize = 64 * 1024
+
 func init() {
 	placeholder = regexp.MustCompile(`\\?(?:{[+*sfr]*[0-9,-.]*}|{q(?::s?[0-9,-.]+)?}|{fzf:(?:query|action|prompt)}|{[+*]?f?nf?})`)
 	whiteSuffix = regexp.MustCompile(`\s*$`)
@@ -1444,8 +1448,10 @@ func (t *Terminal) environImpl(forPreview bool) []string {
 	env = append(env, fmt.Sprintf("FZF_COLUMNS=%d", t.areaColumns))
 	env = append(env, fmt.Sprintf("FZF_POS=%d", min(t.merger.Length(), t.cy+1)))
 	if item := t.currentItem(); item != nil {
-		// Skip if the value contains a NUL byte; exec(2) would reject the env.
-		if s := item.AsString(t.ansi); !strings.ContainsRune(s, 0) {
+		// Skip if the value contains a NUL byte (exec(2) would reject the env)
+		// or is too large (a huge item can overflow ARG_MAX and break exec
+		// entirely for preview and other child commands).
+		if s := item.AsString(t.ansi); !strings.ContainsRune(s, 0) && len(s) <= maxCurrentItemEnvSize {
 			env = append(env, "FZF_CURRENT_ITEM="+s)
 		}
 	}

@@ -2346,6 +2346,26 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_env_current_item_size_limit
+    preview = %[(echo START; env | grep '^FZF_CURRENT_ITEM='; echo END) > #{tempname}]
+    # Large item (> 64 KB) is omitted so it cannot overflow ARG_MAX and break exec
+    tmux.send_keys %(head -c 70000 /dev/zero | tr '\\0' a | #{FZF} --preview-window 0 --preview "#{preview}"), :Enter
+    wait do
+      content = File.exist?(tempname) ? File.read(tempname) : ''
+      assert_includes content, 'END'
+      refute_includes content, 'FZF_CURRENT_ITEM='
+    end
+    tmux.send_keys :Enter
+    FileUtils.rm_f(tempname)
+    # Smaller item is exported as usual
+    tmux.send_keys %(head -c 1000 /dev/zero | tr '\\0' a | #{FZF} --preview-window 0 --preview "#{preview}"), :Enter
+    wait do
+      content = File.exist?(tempname) ? File.read(tempname) : ''
+      assert_includes content, 'END'
+      assert_includes content, 'FZF_CURRENT_ITEM=' + ('a' * 1000)
+    end
+  end
+
   def test_abort_action_chain
     tmux.send_keys %(seq 100 | #{FZF} --bind 'load:accept+up+up' > #{tempname}), :Enter
     wait do
