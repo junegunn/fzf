@@ -322,6 +322,7 @@ type Terminal struct {
 	trackSync            bool
 	trackKeyCache        map[int32]bool
 	waitBlocked          bool
+	waitBlockedAt        time.Time
 	pendingActions       []*action
 	searchInProgress     bool
 	pendingSelections    map[string]selectedItem
@@ -3274,7 +3275,7 @@ func (t *Terminal) printPrompt() {
 	color := tui.ColInput
 	if t.paused {
 		color = tui.ColDisabled
-	} else if t.trackBlocked || t.waitBlocked {
+	} else if t.trackBlocked || t.waitFeedback() {
 		color = color.WithAttr(tui.Dim)
 	}
 	w.CPrint(color, string(before))
@@ -3366,9 +3367,6 @@ func (t *Terminal) printInfoImpl() {
 			output += fmt.Sprintf(" (%d/%d)", len(t.selected), t.multi)
 		}
 	}
-	if t.progress > 0 && t.progress < 100 {
-		output += fmt.Sprintf(" (%d%%)", t.progress)
-	}
 	if t.toggleSort {
 		if t.sort {
 			output += " +S"
@@ -3389,8 +3387,13 @@ func (t *Terminal) printInfoImpl() {
 			output += " +t"
 		}
 	}
-	if t.waitBlocked {
+	if t.waitFeedback() {
 		output += " (..)"
+	}
+	// Keep the search progress at the end so the other indicators don't shift
+	// as it appears and disappears.
+	if t.progress > 0 && t.progress < 100 {
+		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
@@ -5804,9 +5807,14 @@ func (t *Terminal) unblockTrack() {
 	}
 }
 
+// Debounce visual feedback so quick searches don't cause flashing
+func (t *Terminal) waitFeedback() bool {
+	return t.waitBlocked && time.Since(t.waitBlockedAt) > progressMinDuration
+}
+
 func (t *Terminal) unblockWait() {
 	t.waitBlocked = false
-	// Only show cursor if not blocked by tracking
+	// Restore the cursor unless it's still hidden for another reason
 	if !t.inputless && !t.trackBlocked {
 		t.tui.ShowCursor()
 	}
@@ -6437,6 +6445,10 @@ func (t *Terminal) Loop() error {
 						t.printFooter()
 					}
 				}
+				// Hide the cursor while the debounced waiting feedback is shown
+				if !t.inputless && !t.trackBlocked && t.waitFeedback() {
+					t.tui.HideCursor()
+				}
 				t.flush()
 				t.mutex.Unlock()
 				t.uiMutex.Unlock()
@@ -6646,11 +6658,21 @@ func (t *Terminal) Loop() error {
 						// Block if search is in progress or will be triggered
 						if changed || newCommand != nil || t.searchInProgress {
 							t.waitBlocked = true
+							t.waitBlockedAt = time.Now()
 							t.pendingActions = actions[i+1:]
-							if !t.inputless {
-								t.tui.HideCursor()
-							}
-							req(reqPrompt, reqInfo)
+							// Show the waiting feedback only if the search takes long enough,
+							// so that quick searches don't cause flickering.
+							go func() {
+								timer := time.NewTimer(progressMinDuration)
+								<-timer.C
+								t.mutex.Lock()
+								blocked := t.waitBlocked
+								t.mutex.Unlock()
+								if blocked {
+									t.reqBox.Set(reqPrompt, nil)
+									t.reqBox.Set(reqInfo, nil)
+								}
+							}()
 							return true
 						}
 						// No search, wait is a no-op; continue to next action
