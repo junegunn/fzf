@@ -2149,6 +2149,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
     \fBuntrack\-current\fR              (stop tracking the current item; no-op if global tracking is enabled)
+    \fBwait\fR                         (block action execution until search completes)
     \fBup\fR                           \fIctrl\-k  up\fR
     \fBup\-match\fR                     \fIctrl\-p\fR  \fIalt\-up\fR (move to the match above the cursor)
     \fBup\-selected\fR                  (move to the selected item above the cursor)
@@ -2300,6 +2301,24 @@ command runs. To avoid this, each \fBtransform*\fR action has a corresponding
 chain multiple transform actions where later ones depend on earlier results,
 prefer using the \fBbg\fR variant. To cancel currently running background
 transform processes, use \fBbg\-cancel\fR action.
+
+.SS WAITING FOR SEARCH COMPLETION
+
+The \fBwait\fR action blocks the execution of subsequent actions until the
+current search completes. This is useful when chaining transform actions with
+motion actions like \fBbest\fR or \fBfirst\fR, ensuring that the motion action
+operates on the complete search results rather than stale data.
+
+e.g.
+    \fBfzf \-\-bind 'start:search(foo)+wait+best'\fR
+
+In this example, \fBsearch(foo)\fR starts an asynchronous search,
+\fBwait\fR blocks until the search completes, and \fBbest\fR then moves the
+cursor to the best match in the complete result set.
+
+While waiting, the UI is dimmed and user input is ignored (except for Escape or
+Ctrl-C to cancel the wait and discard pending actions). The info line shows
+\fB(..)\fR to indicate that fzf is waiting for the search to complete.
 
 .SS PREVIEW BINDING
 

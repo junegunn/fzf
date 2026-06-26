@@ -325,6 +325,10 @@ type Terminal struct {
 	trackBlocked         bool
 	trackSync            bool
 	trackKeyCache        map[int32]bool
+	waitBlocked          bool
+	waitBlockedAt        time.Time
+	pendingActions       []*action
+	searchInProgress     bool
 	pendingSelections    map[string]selectedItem
 	targetIndex          int32
 	delimiter            Delimiter
@@ -724,6 +728,7 @@ const (
 	actExclude
 	actExcludeMulti
 	actAsync
+	actWait
 )
 
 func (a actionType) Name() string {
@@ -1882,6 +1887,17 @@ func (t *Terminal) UpdateProgress(progress float32) {
 func (t *Terminal) UpdateList(result MatchResult) {
 	merger := result.merger
 	t.mutex.Lock()
+	waitWasBlocked := t.waitBlocked
+	if result.final() {
+		t.searchInProgress = false
+		// If waiting, unblock so main loop can execute pending actions
+		if t.waitBlocked {
+			t.unblockWait()
+			if len(t.pendingActions) > 0 {
+				t.serverInputChan <- []*action{{t: actIgnore}}
+			}
+		}
+	}
 	prevIndex := minItem.Index()
 	newRevision := merger.Revision()
 	if t.revision.compatible(newRevision) && t.track != trackDisabled {
@@ -2047,7 +2063,7 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		}
 	}
 	updateList := !t.trackBlocked && !t.pendingReqList
-	updatePrompt := trackWasBlocked && !t.trackBlocked
+	updatePrompt := (trackWasBlocked && !t.trackBlocked) || (waitWasBlocked && !t.waitBlocked)
 	t.mutex.Unlock()
 
 	t.reqBox.Set(reqInfo, nil)
@@ -3265,7 +3281,7 @@ func (t *Terminal) printPrompt() {
 	color := tui.ColInput
 	if t.paused {
 		color = tui.ColDisabled
-	} else if t.trackBlocked {
+	} else if t.trackBlocked || t.waitFeedback() {
 		color = color.WithAttr(tui.Dim)
 	}
 	w.CPrint(color, string(before))
@@ -3357,9 +3373,6 @@ func (t *Terminal) printInfoImpl() {
 			output += fmt.Sprintf(" (%d/%d)", len(t.selected), t.multi)
 		}
 	}
-	if t.progress > 0 && t.progress < 100 {
-		output += fmt.Sprintf(" (%d%%)", t.progress)
-	}
 	if t.toggleSort {
 		if t.sort {
 			output += " +S"
@@ -3379,6 +3392,14 @@ func (t *Terminal) printInfoImpl() {
 		} else {
 			output += " +t"
 		}
+	}
+	if t.waitFeedback() {
+		output += " (..)"
+	}
+	// Keep the search progress at the end so the other indicators don't shift
+	// as it appears and disappears.
+	if t.progress > 0 && t.progress < 100 {
+		output += fmt.Sprintf(" (%d%%)", t.progress)
 	}
 	if t.failed != nil && t.count == 0 {
 		output = fmt.Sprintf("[Command failed: %s]", *t.failed)
@@ -5792,6 +5813,19 @@ func (t *Terminal) unblockTrack() {
 	}
 }
 
+// Debounce visual feedback so quick searches don't cause flashing
+func (t *Terminal) waitFeedback() bool {
+	return t.waitBlocked && time.Since(t.waitBlockedAt) > progressMinDuration
+}
+
+func (t *Terminal) unblockWait() {
+	t.waitBlocked = false
+	// Restore the cursor unless it's still hidden for another reason
+	if !t.inputless && !t.trackBlocked {
+		t.tui.ShowCursor()
+	}
+}
+
 func (t *Terminal) addClickHeaderWord(env []string) []string {
 	/*
 	 * echo $'HL1\nHL2' | fzf --header-lines 3 --header $'H1\nH2' --header-lines-border --bind 'click-header:preview:env | grep FZF_CLICK'
@@ -6417,6 +6451,10 @@ func (t *Terminal) Loop() error {
 						t.printFooter()
 					}
 				}
+				// Hide the cursor while the debounced waiting feedback is shown
+				if !t.inputless && !t.trackBlocked && t.waitFeedback() {
+					t.tui.HideCursor()
+				}
 				t.flush()
 				t.mutex.Unlock()
 				t.uiMutex.Unlock()
@@ -6621,7 +6659,31 @@ func (t *Terminal) Loop() error {
 		doActions := func(actions []*action) bool {
 			for iter := 0; iter <= maxFocusEvents; iter++ {
 				currentIndex := t.currentIndex()
-				for _, action := range actions {
+				for i, action := range actions {
+					if action.t == actWait {
+						// Block if search is in progress or will be triggered
+						if changed || newCommand != nil || t.searchInProgress {
+							t.waitBlocked = true
+							t.waitBlockedAt = time.Now()
+							t.pendingActions = actions[i+1:]
+							// Show the waiting feedback only if the search takes long enough,
+							// so that quick searches don't cause flickering.
+							go func() {
+								timer := time.NewTimer(progressMinDuration)
+								<-timer.C
+								t.mutex.Lock()
+								blocked := t.waitBlocked
+								t.mutex.Unlock()
+								if blocked {
+									t.reqBox.Set(reqPrompt, nil)
+									t.reqBox.Set(reqInfo, nil)
+								}
+							}()
+							return true
+						}
+						// No search, wait is a no-op; continue to next action
+						continue
+					}
 					if !doAction(action) {
 						return false
 					}
@@ -6669,6 +6731,15 @@ func (t *Terminal) Loop() error {
 					// change-*
 					callback(a.a)
 				}
+			}
+			// When wait-blocked, only allow abort/cancel
+			if t.waitBlocked {
+				if a.t == actAbort || a.t == actCancel {
+					t.unblockWait()
+					t.pendingActions = nil
+					req(reqPrompt, reqInfo)
+				}
+				return true
 			}
 			// When track-blocked, only allow abort/cancel and track-disabling actions
 			if t.trackBlocked && a.t != actToggleTrack && a.t != actToggleTrackCurrent && a.t != actUntrackCurrent {
@@ -8077,6 +8148,15 @@ func (t *Terminal) Loop() error {
 			return true
 		}
 
+		// Execute pending actions if wait just unblocked
+		if len(t.pendingActions) > 0 && !t.waitBlocked {
+			pendingActions := t.pendingActions
+			t.pendingActions = nil
+			if !doActions(pendingActions) {
+				continue
+			}
+		}
+
 		if t.jumping == jumpDisabled || len(actions) > 0 {
 			// Break out of jump mode if any action is submitted to the server
 			if t.jumping != jumpDisabled {
@@ -8138,6 +8218,9 @@ func (t *Terminal) Loop() error {
 		}
 
 		reload := changed || newCommand != nil
+		if reload {
+			t.searchInProgress = true
+		}
 		var reloadRequest *searchRequest
 		if reload {
 			reloadRequest = &searchRequest{sort: t.sort, sync: reloadSync, nth: newNth, withNth: newWithNth, headerLines: newHeaderLines, command: newCommand, environ: t.environ(), changed: changed, denylist: denylist, revision: t.resultMerger.Revision()}

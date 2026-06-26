@@ -1162,6 +1162,14 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 10, lines.match_count }
   end
 
+  def test_wait_action
+    tmux.send_keys %((seq 100; sleep 60) | #{FZF} --bind 'start:search(1)+wait+best'), :Enter
+    tmux.until { |lines| assert_equal 20, lines.match_count }
+    tmux.until { |lines| assert lines.any_include?('20/100 (..)') }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| refute lines.any_include?('20/100 (..)') }
+  end
+
   def test_clear_selection
     tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
