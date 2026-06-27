@@ -19,6 +19,7 @@ set rtp+=/opt/homebrew/opt/fzf
 set rtp+=~/.fzf
 ```
 
+### vim-plug
 If you use [vim-plug](https://github.com/junegunn/vim-plug), the same can be
 written as:
 
@@ -51,6 +52,11 @@ post-update hook like so:
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 ```
 
+### packer
+If you use [packer.nvim](https://github.com/wbthomason/packer.nvim), use:
+```vim
+use { 'junegunn/fzf', run = function() vim.fn['fzf#install']() end }
+```
 Summary
 -------
 
