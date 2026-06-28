@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"unicode"
 )
@@ -349,4 +350,72 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[13~", "f3")
 	assertEscSequence("\x1b[14~", "f4")
 
+}
+
+func TestLightRendererScrollWheel(t *testing.T) {
+	tty_file, _ := os.Open("")
+	renderer, _ := NewLightRenderer(
+		"", tty_file, &ColorTheme{}, true, true, 0, false, true,
+		func(h int) int { return h })
+
+	light_renderer := renderer.(*LightRenderer)
+
+	assertScroll := func(sequence string, scroll int, mods string) {
+		bytes := []byte(sequence)
+		light_renderer.buffer = bytes
+
+		sz := 1
+		event := light_renderer.escSequence(&sz)
+		me := event.MouseEvent
+		if event.Type != Mouse || me == nil {
+			t.Errorf("sequence: %q | got %s, want a Mouse event", sequence, event.Type.String())
+			return
+		}
+		got := ""
+		if me.Ctrl {
+			got += "ctrl-"
+		}
+		if me.Alt {
+			got += "alt-"
+		}
+		if me.Shift {
+			got += "shift-"
+		}
+		got = strings.TrimSuffix(got, "-")
+		if me.S != scroll || got != mods || me.Down {
+			t.Errorf(
+				"sequence: %q | scroll=%d mods=%q down=%v != scroll=%d mods=%q down=false",
+				sequence, me.S, got, me.Down, scroll, mods)
+		}
+	}
+
+	assertScroll("\x1b[<64;1;1M", 1, "")  // up
+	assertScroll("\x1b[<65;1;1M", -1, "") // down
+	assertScroll("\x1b[<66;1;1M", 0, "")  // left  (ignored)
+	assertScroll("\x1b[<67;1;1M", 0, "")  // right (ignored)
+
+	assertScroll("\x1b[<68;1;1M", 1, "shift")  // shift + up
+	assertScroll("\x1b[<69;1;1M", -1, "shift") // shift + down
+	assertScroll("\x1b[<70;1;1M", 0, "shift")  // shift + left  (ignored)
+	assertScroll("\x1b[<71;1;1M", 0, "shift")  // shift + right (ignored)
+
+	assertScroll("\x1b[<72;1;1M", 1, "alt")  // alt + up
+	assertScroll("\x1b[<73;1;1M", -1, "alt") // alt + down
+	assertScroll("\x1b[<74;1;1M", 0, "alt")  // alt + left  (ignored)
+	assertScroll("\x1b[<75;1;1M", 0, "alt")  // alt + right (ignored)
+
+	assertScroll("\x1b[<80;1;1M", 1, "ctrl")  // ctrl + up
+	assertScroll("\x1b[<81;1;1M", -1, "ctrl") // ctrl + down
+	assertScroll("\x1b[<82;1;1M", 0, "ctrl")  // ctrl + left  (ignored)
+	assertScroll("\x1b[<83;1;1M", 0, "ctrl")  // ctrl + right (ignored)
+
+	assertScroll("\x1b[<84;1;1M", 1, "ctrl-shift")  // ctrl+shift + up
+	assertScroll("\x1b[<85;1;1M", -1, "ctrl-shift") // ctrl+shift + down
+	assertScroll("\x1b[<86;1;1M", 0, "ctrl-shift")  // ctrl+shift + left  (ignored)
+	assertScroll("\x1b[<87;1;1M", 0, "ctrl-shift")  // ctrl+shift + right (ignored)
+
+	assertScroll("\x1b[<92;1;1M", 1, "ctrl-alt-shift")  // ctrl+alt+shift + up
+	assertScroll("\x1b[<93;1;1M", -1, "ctrl-alt-shift") // ctrl+alt+shift + down
+	assertScroll("\x1b[<94;1;1M", 0, "ctrl-alt-shift")  // ctrl+alt+shift + left  (ignored)
+	assertScroll("\x1b[<95;1;1M", 0, "ctrl-alt-shift")  // ctrl+alt+shift + right (ignored)
 }
