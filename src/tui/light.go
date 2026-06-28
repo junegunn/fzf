@@ -905,12 +905,15 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	down := rest[end] == 'M'
 
 	scroll := 0
-	if t >= 64 {
+	wheel := t >= 64
+	if wheel {
 		t -= 64
-		if t&0b1 == 1 {
-			scroll = -1
-		} else {
+		// SGR wheel button codes: 64=up, 65=down, 66=left, 67=right
+		switch t & 0b11 {
+		case 0:
 			scroll = 1
+		case 1:
+			scroll = -1
 		}
 	}
 
@@ -921,7 +924,7 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 	shift := t&0b00100 > 0
 	drag := t&0b100000 > 0 // 32
 
-	if scroll != 0 {
+	if wheel {
 		return Event{Mouse, 0, &MouseEvent{y, x, scroll, false, false, false, ctrl, alt, shift}}
 	}
 
