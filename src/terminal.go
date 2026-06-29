@@ -1882,14 +1882,13 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	merger := result.merger
 	t.mutex.Lock()
 	waitWasBlocked := t.waitBlocked
+	wakeUp := false
 	if result.final() {
 		t.searchInProgress = false
 		// If waiting, unblock so main loop can execute pending actions
 		if t.waitBlocked {
 			t.unblockWait()
-			if len(t.pendingActions) > 0 {
-				t.serverInputChan <- []*action{{t: actIgnore}}
-			}
+			wakeUp = len(t.pendingActions) > 0
 		}
 	}
 	prevIndex := minItem.Index()
@@ -2059,6 +2058,13 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	updateList := !t.trackBlocked && !t.pendingReqList
 	updatePrompt := (trackWasBlocked && !t.trackBlocked) || (waitWasBlocked && !t.waitBlocked)
 	t.mutex.Unlock()
+
+	// Wake up the main loop to execute pending actions after wait unblocks.
+	// Send after releasing the mutex to avoid blocking on a full channel
+	// while holding it.
+	if wakeUp {
+		t.serverInputChan <- []*action{{t: actIgnore}}
+	}
 
 	t.reqBox.Set(reqInfo, nil)
 	if updateList {
