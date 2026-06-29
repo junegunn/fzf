@@ -6661,6 +6661,10 @@ func (t *Terminal) Loop() error {
 				currentIndex := t.currentIndex()
 				for i, action := range actions {
 					if action.t == actWait {
+						// Already waiting; ignore so input can't reset the blocked state
+						if t.waitBlocked {
+							return true
+						}
 						// Block if search is in progress or will be triggered
 						if changed || newCommand != nil || t.searchInProgress {
 							t.waitBlocked = true
