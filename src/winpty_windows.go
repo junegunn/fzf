@@ -44,10 +44,26 @@ func needWinpty(opts *Options) bool {
 }
 
 func runWinpty(args []string, opts *Options) (int, error) {
-	argStr := escapeSingleQuote(args[0])
+	_argStr := ""
+
+	osname, _ := exec.Command("uname", "-s").Output()
+	if strings.Contains(strings.ToLower(string(osname)), "cygwin") {
+		out, err := exec.Command("cygpath", args[0]).Output()
+		if err == nil {
+			_argStr += strings.Trim(string(out), "\n")
+		} else {
+			_argStr += args[0]
+		}
+	} else {
+		_argStr += args[0]
+	}
+
+	argStr := escapeSingleQuote(_argStr)
+
 	for _, arg := range args[1:] {
 		argStr += " " + escapeSingleQuote(arg)
 	}
+
 	argStr += ` --no-winpty`
 
 	if isMintty345() {
