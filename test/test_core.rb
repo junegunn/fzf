@@ -1168,6 +1168,9 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert lines.any_include?('20/100 (..)') }
     tmux.send_keys 'C-c'
     tmux.until { |lines| refute lines.any_include?('20/100 (..)') }
+    # Ctrl-C cancels the wait; fzf keeps running and accepts input again
+    tmux.send_keys '99'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
   end
 
   def test_clear_selection
