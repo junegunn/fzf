@@ -5807,7 +5807,8 @@ func (t *Terminal) unblockTrack() {
 		t.trackBlocked = false
 		t.trackKey = ""
 		t.trackKeyCache = nil
-		if !t.inputless {
+		// Keep the cursor hidden if the wait feedback is still showing it
+		if !t.inputless && !t.waitFeedback() {
 			t.tui.ShowCursor()
 		}
 	}
