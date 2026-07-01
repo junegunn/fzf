@@ -1889,7 +1889,13 @@ func (t *Terminal) UpdateList(result MatchResult) {
 	wakeUp := false
 	if result.final() {
 		t.searchInProgress = false
-		// If waiting, unblock so main loop can execute pending actions
+		// If waiting, unblock so main loop can execute pending actions.
+		// Note: we unblock on any final result, not the specific search that
+		// armed the wait. In normal use only one search runs per action batch,
+		// so a stale final from an earlier search can only race in when separate
+		// searches are dispatched back-to-back (e.g. via --listen). The worst
+		// case is an early unblock, not incorrect data, so we accept it rather
+		// than thread a per-search generation token through the matcher.
 		if t.waitBlocked {
 			t.unblockWait()
 			wakeUp = len(t.pendingActions) > 0
