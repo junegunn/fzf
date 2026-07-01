@@ -1169,7 +1169,11 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		lastAction:         actStart,
 		lastFocus:          minItem.Index(),
 		lastActivity:       time.Now(),
-		numLinesCache:      make(map[int32]numLinesCacheValue)}
+		// Consider the initial load a search in progress so 'start:wait' blocks
+		// until the first result set is complete. Set here, before the reader
+		// starts, so the first final() result correctly clears it.
+		searchInProgress: true,
+		numLinesCache:    make(map[int32]numLinesCacheValue)}
 	if opts.AcceptNth != nil {
 		t.acceptNth = opts.AcceptNth(t.delimiter)
 	}

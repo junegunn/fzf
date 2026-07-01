@@ -1173,6 +1173,18 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 1, lines.match_count }
   end
 
+  def test_wait_action_start
+    # 'start:wait' blocks on the initial load until reading completes
+    tmux.send_keys %((seq 100; sleep 60) | #{FZF} --bind 'start:wait'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until { |lines| assert lines.any_include?('(..)') }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| refute lines.any_include?('(..)') }
+    # Ctrl-C cancels the wait; fzf keeps running and accepts input again
+    tmux.send_keys '99'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
+
   def test_clear_selection
     tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
