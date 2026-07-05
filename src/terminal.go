@@ -1900,10 +1900,10 @@ func (t *Terminal) UpdateList(result MatchResult) {
 		t.wait.searching = false
 		// If waiting, unblock so main loop can execute pending actions.
 		// Note: any final result unblocks the wait, not just the one for the
-		// search that armed it. Back-to-back searches (--listen, reload+wait)
-		// can therefore unblock early and run the pending actions on the
-		// previous result set. Accepted; a per-search generation token
-		// through the matcher isn't worth the complexity.
+		// search that armed it. Back-to-back searches (--listen, bg-transform
+		// callbacks, reload+wait) can therefore unblock early and run the
+		// pending actions on the previous result set. Accepted; a per-search
+		// generation token through the matcher isn't worth the complexity.
 		if t.wait.blocked {
 			t.unblockWait()
 			wakeUp = len(t.wait.pending) > 0
@@ -5836,8 +5836,9 @@ func (t *Terminal) unblockTrack() {
 }
 
 // The wait state machine. Invariant: arming captures every action after
-// 'wait' at any nesting level into wait.pending; while blocked, actions
-// are dropped; abort/cancel discards everything.
+// 'wait' at any nesting level into wait.pending; while blocked, actions are
+// dropped unless they are results of work started before the block
+// (bg-transform callbacks); abort/cancel discards everything.
 
 // blockWait blocks action execution and defers the given actions until the
 // current search completes (see UpdateList)
@@ -6568,6 +6569,10 @@ func (t *Terminal) Loop() error {
 	var newCommand *commandSpec
 	var reloadSync bool
 	var denylist []int32
+	// True while running bg-transform callbacks. Declared outside the loop
+	// because callbacks invoke the doActions closure of the iteration that
+	// scheduled them, not the one executing actAsync.
+	inBgCallback := false
 	req := func(evts ...util.EventType) {
 		for _, event := range evts {
 			events = append(events, event)
@@ -6725,8 +6730,13 @@ func (t *Terminal) Loop() error {
 				currentIndex := t.currentIndex()
 				for i, action := range actions {
 					if action.t == actWait {
-						// Already waiting; ignore so input can't reset the blocked state
+						// Already waiting. Actions parsed from a bg-transform
+						// result join the current wait; user input can't reset
+						// the blocked state
 						if t.wait.blocked {
+							if inBgCallback {
+								t.wait.pending = append(t.wait.pending, actions[i+1:]...)
+							}
 							return true
 						}
 						// Block if search is in progress or will be triggered
@@ -6792,8 +6802,12 @@ func (t *Terminal) Loop() error {
 					callback(a.a)
 				}
 			}
+			// Actions that run even while wait/track-blocked: bg-transform
+			// callbacks and their parsed actions (results of processes
+			// started before the block).
+			passthrough := inBgCallback || a.t == actAsync
 			// When wait-blocked, only allow abort/cancel
-			if t.wait.blocked {
+			if t.wait.blocked && !passthrough {
 				if a.t == actAbort || a.t == actCancel {
 					t.cancelWait()
 					req(reqPrompt, reqInfo)
@@ -6801,7 +6815,7 @@ func (t *Terminal) Loop() error {
 				return true
 			}
 			// When track-blocked, only allow abort/cancel and track-disabling actions
-			if t.trackBlocked && a.t != actToggleTrack && a.t != actToggleTrackCurrent && a.t != actUntrackCurrent {
+			if t.trackBlocked && !passthrough && a.t != actToggleTrack && a.t != actToggleTrackCurrent && a.t != actUntrackCurrent {
 				if a.t == actAbort || a.t == actCancel {
 					t.unblockTrack()
 					req(reqPrompt, reqInfo)
@@ -6812,11 +6826,13 @@ func (t *Terminal) Loop() error {
 			switch a.t {
 			case actIgnore, actStart, actClick:
 			case actAsync:
+				inBgCallback = true
 				for _, callback := range callbacks {
 					if t.bgVersion == callback.version {
 						callback.callback()
 					}
 				}
+				inBgCallback = false
 			case actBecome:
 				valid, list := t.buildPlusList(a.a, false)
 				if valid {

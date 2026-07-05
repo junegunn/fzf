@@ -2326,6 +2326,14 @@ default), which cancel the wait and discard the pending actions instead of
 performing their usual role. The remaining actions of such a binding still run,
 so a binding like \fBesc:cancel+first\fR is possible.
 
+Asynchronous \fBbg\-transform\-*\fR actions are not affected; their results are
+applied as soon as they arrive, even while waiting. For the same reason,
+\fBwait\fR does not pair with them: in
+\fBbg\-transform\-query(...)+wait\fR, the background command completes only
+after \fBwait\fR has already been evaluated, so the search its result
+eventually triggers is not waited for. Use the synchronous
+\fBtransform\-query(...)\fR variant instead when chaining with \fBwait\fR.
+
 If the search takes long enough, fzf indicates that it is waiting by dimming the
 input, hiding the cursor, and showing \fB(..)\fR on the info line. This visual
 feedback is debounced so that quick searches do not cause flickering.
