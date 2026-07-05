@@ -26,14 +26,14 @@ func escapeSingleQuote(str string) string {
 func popupArgStr(args []string, opts *Options) (string, string) {
 	fzf, rest := args[0], args[1:]
 	args = []string{"--bind=ctrl-z:ignore"}
-	if opts.Tmux.border != tmuxBorderNative && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
+	if !opts.Tmux.border && (opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine) {
 		if tui.DefaultBorderShape == tui.BorderRounded {
 			rest = append(rest, "--border=rounded")
 		} else {
 			rest = append(rest, "--border=sharp")
 		}
 	}
-	if opts.Tmux.border == tmuxBorderNative && opts.Margin == defaultMargin() {
+	if opts.Tmux.border && opts.Margin == defaultMargin() {
 		args = append(args, "--margin=0,1")
 	}
 	argStr := escapeSingleQuote(fzf)

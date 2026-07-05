@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/junegunn/fzf/src/tui"
 )
 
 // Returns the size of the current window if the tmux server supports
@@ -32,6 +34,21 @@ func tmuxFloatingPaneInfo() (int, int, bool) {
 		return 0, 0, false
 	}
 	return width, height, true
+}
+
+// A lone ';' argument is a command separator to tmux, aborting the whole
+// command at parse time
+func escapeTmuxSeparator(str string) string {
+	if str == ";" {
+		return `\;`
+	}
+	return str
+}
+
+// Escape a string for use as the pane title; select-pane -T expands format
+// expressions denoted by '#', but not time conversion specifiers
+func escapeTmuxTitle(str string) string {
+	return escapeTmuxSeparator(strings.ReplaceAll(str, "#", "##"))
 }
 
 // Convert sizeSpec to the number of cells, clamped between the minimum
@@ -90,19 +107,53 @@ func runTmuxFloatingPane(argStr string, dir string, windowWidth int, windowHeigh
 		}
 		f.Close()
 		code := escapeSingleQuote(codeFile)
-		paneCmd := fmt.Sprintf("%s %s; echo $? > %s; tmux wait-for -S %s",
-			escapeSingleQuote(sh), escapeSingleQuote(temp), code, signal)
+
+		// Pane options are set by the pane itself before running fzf, so
+		// that they are in place no matter how quickly the command exits.
+		// The target must be explicit; without it, the commands would
+		// resolve to the active pane of the session's current window,
+		// which is not necessarily the pane running them.
+		//
+		// The pane should always close on exit like a popup, even when
+		// remain-on-exit is on.
+		setup := `tmux set-option -p -t "$TMUX_PANE" remain-on-exit off 2> /dev/null; `
+
+		// Set --border-label as the title of the floating pane, and as its
+		// pane-border-format so that it is displayed on the border when
+		// pane-border-status is enabled. pane-border-format is pane-scoped,
+		// but pane-border-status is a window option that only becomes
+		// pane-scoped in the next release of tmux, so it is left alone.
+		//   https://github.com/tmux/tmux/commit/7a18fa281db3
+		// --border-label-pos is ignored.
+		// Skipped when fzf draws its own border with the label on it.
+		// '--border=none' is included; fzf would not display the label, but
+		// the native border of a floating pane cannot be removed, so
+		// display the label on it nonetheless.
+		if opts.BorderLabel.label != "" &&
+			(opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine ||
+				opts.BorderShape == tui.BorderNone) {
+			// Strip ANSI sequences fzf would otherwise render itself
+			label, _, _ := extractColor(opts.BorderLabel.label, nil, nil)
+			if label != "" {
+				setup += fmt.Sprintf(`tmux select-pane -t "$TMUX_PANE" -T %s 2> /dev/null; `,
+					escapeSingleQuote(escapeTmuxTitle(label)))
+				// The title is displayed verbatim; substituted values are
+				// not expanded again
+				setup += `tmux set-option -p -t "$TMUX_PANE" pane-border-format '#{pane_title}' 2> /dev/null; `
+			}
+		}
+		paneCmd := fmt.Sprintf("%s%s %s; echo $? > %s; tmux wait-for -S %s",
+			setup, escapeSingleQuote(sh), escapeSingleQuote(temp), code, signal)
 		// Unzoom the window first; creating a floating pane over a zoomed
 		// window crashes the tmux server on 3.7b, and newer versions of
-		// tmux unzoom the window anyway. The pane should always close on
-		// exit like a popup, even when remain-on-exit is on. set-option
-		// targets the new pane as new-pane makes it the current pane.
+		// tmux unzoom the window anyway.
 		target := os.Getenv("TMUX_PANE")
 		newPane := fmt.Sprintf(
-			"tmux if -F -t %s '#{window_zoomed_flag}' %s ';' new-pane -P -F '#{pane_id}' -t %s -c %s -x %d -y %d -X %d -Y %d %s -c %s ';' set-option -p remain-on-exit off",
+			"tmux if -F -t %s '#{window_zoomed_flag}' %s ';' new-pane -P -F '#{pane_id}' -t %s -c %s -x %d -y %d -X %d -Y %d %s -c %s",
 			escapeSingleQuote(target), escapeSingleQuote("resize-pane -Z -t "+target),
 			escapeSingleQuote(target), escapeSingleQuote(dir), width-2, height-2, x, y,
 			escapeSingleQuote(sh), escapeSingleQuote(paneCmd))
+
 		// The pane is killed when the proxy process is interrupted or hung up,
 		// like a popup dying with its client. wait-for runs in the background
 		// and is awaited with the interruptible wait builtin so that the trap
@@ -130,11 +181,16 @@ exit "$code"`, newPane, code, signal, signal, code, code, code)
 func runTmux(args []string, opts *Options) (int, error) {
 	// On tmux 3.7 or above, fzf runs in a floating pane instead of a popup.
 	// A floating pane always has a native border, so 'border-native' is
-	// implied. Give 'border-fzf' to fall back to a popup where fzf draws
-	// its own border.
-	if opts.Tmux.border != tmuxBorderFzf {
+	// implied. When a border style is explicitly specified with --border, a
+	// popup is used instead so that the fzf-drawn border is the only border
+	// shown; the native border of a floating pane cannot be removed. 'none'
+	// and 'line' are treated as no border; fzf draws no box for either, and
+	// 'line' only makes sense with --height. Give 'border-native' to force
+	// a floating pane nonetheless.
+	if opts.Tmux.border || opts.BorderShape == tui.BorderUndefined ||
+		opts.BorderShape == tui.BorderLine || opts.BorderShape == tui.BorderNone {
 		if windowWidth, windowHeight, ok := tmuxFloatingPaneInfo(); ok {
-			opts.Tmux.border = tmuxBorderNative
+			opts.Tmux.border = true
 			argStr, dir := popupArgStr(args, opts)
 			return runTmuxFloatingPane(argStr, dir, windowWidth, windowHeight, opts)
 		}
@@ -150,7 +206,7 @@ func runTmux(args []string, opts *Options) (int, error) {
 	// W        Both    The window position on the status line
 	// S        -y      The line above or below the status line
 	tmuxArgs := []string{"display-popup", "-E", "-d", dir}
-	if opts.Tmux.border != tmuxBorderNative {
+	if !opts.Tmux.border {
 		tmuxArgs = append(tmuxArgs, "-B")
 	}
 	switch opts.Tmux.position {

@@ -32,7 +32,20 @@ class TestTmux < TestInteractive
     tmux.until { |lines| assert lines.any_include?('code:130') }
   end
 
-  def test_border_fzf_falls_back_to_popup
+  def test_floating_pane_border_label
+    tmux.send_keys "seq 100 | #{fzf(%(--popup center,80% --margin 0 --border-label ' #fzf-label 100% '))}", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    pane = floating_pane
+    refute_nil pane
+    title = IO.popen(['tmux', 'display-message', '-p', '-t', pane, "\#{pane_title}"], &:read)
+    assert_equal ' #fzf-label 100% ', title.chomp
+    format = IO.popen(['tmux', 'show-options', '-p', '-t', pane, 'pane-border-format'], &:read)
+    assert_includes format, "\#{pane_title}"
+    tmux.send_keys :Enter
+    assert_equal '1', fzf_output
+  end
+
+  def test_explicit_border_falls_back_to_popup
     # display-popup requires an attached client, which the test environment
     # may not have; intercept it with a tmux shim on PATH
     dir = Dir.mktmpdir
@@ -47,7 +60,7 @@ class TestTmux < TestInteractive
       exec #{real.shellescape} "$@"
     SH
     FileUtils.chmod(0o755, shim)
-    tmux.send_keys "seq 100 | PATH=#{dir.shellescape}:$PATH #{FZF} --popup center,border-fzf", :Enter
+    tmux.send_keys "seq 100 | PATH=#{dir.shellescape}:$PATH #{FZF} --popup center --border rounded", :Enter
     tmux.until { |lines| assert lines.any_include?('popup-used') }
     refute floating_pane
   ensure
