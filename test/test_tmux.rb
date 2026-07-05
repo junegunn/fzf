@@ -48,6 +48,13 @@ class TestTmux < TestInteractive
     assert_equal '1', fzf_output
   end
 
+  def test_floating_pane_become
+    tmux.send_keys "seq 100 | #{fzf(%(--popup center,80% --margin 0 --bind 'enter:become(echo became-{})'))}", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    tmux.send_keys :Enter
+    assert_equal 'became-1', fzf_output
+  end
+
   def test_explicit_border_falls_back_to_popup
     # display-popup requires an attached client, which the test environment
     # may not have; intercept it with a tmux shim on PATH

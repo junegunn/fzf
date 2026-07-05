@@ -138,6 +138,17 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 	temp := WriteTemporaryFile(append(exports, command), "\n")
 	defer os.Remove(temp)
 
+	// Pre-create the become file so that another user on a shared TMPDIR
+	// cannot plant a file or a symbolic link at the predictable path while
+	// fzf is running
+	becomeFile := temp + becomeSuffix
+	becomeF, err := os.OpenFile(becomeFile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return ExitError, err
+	}
+	becomeF.Close()
+	defer os.Remove(becomeFile)
+
 	cmd, err := cmdBuilder(temp, needBash)
 	if err != nil {
 		return ExitError, err
@@ -155,16 +166,15 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 		if exitError, ok := err.(*exec.ExitError); ok {
 			code := exitError.ExitCode()
 			if code == ExitBecome {
-				becomeFile := temp + becomeSuffix
 				data, err := os.ReadFile(becomeFile)
 				os.Remove(becomeFile)
 				if err != nil {
 					return ExitError, err
 				}
-				elems := strings.Split(string(data), "\x00")
-				if len(elems) < 1 {
+				if len(data) == 0 {
 					return ExitError, errors.New("invalid become command")
 				}
+				elems := strings.Split(string(data), "\x00")
 				command := elems[0]
 				env := []string{}
 				if len(elems) > 1 {
