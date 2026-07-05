@@ -1185,6 +1185,30 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 1, lines.match_count }
   end
 
+  def test_wait_action_bg_transform
+    # A bg-transform result is unrelated to the wait, so it's applied while the
+    # wait is still blocking rather than dropped. The long read keeps the wait
+    # blocked so the (instant) bg-transform completes during the block; the
+    # header must show while '(..)' is still displayed.
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --bind 'start:bg-transform-header(echo hello)+search(5)+wait'), :Enter
+    tmux.until { |lines| assert(lines.any_include?('(..)') && lines.any_include?('hello')) }
+  end
+
+  def test_wait_action_bg_transform_actions
+    # Actions parsed from a generic bg-transform result are also applied
+    # while wait-blocked
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --bind 'start:bg-transform(echo change-header:hello)+search(5)+wait'), :Enter
+    tmux.until { |lines| assert(lines.any_include?('(..)') && lines.any_include?('hello')) }
+  end
+
+  def test_wait_action_bg_transform_join
+    # A 'wait' in a bg-transform result body joins the ongoing wait; the
+    # actions after it run when the wait unblocks instead of being dropped
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --bind 'start:bg-transform(echo change-header{hello}+wait+change-footer{world})+search(5)+wait'), :Enter
+    tmux.until { |lines| assert(lines.any_include?('(..)') && lines.any_include?('hello') && !lines.any_include?('world')) }
+    tmux.until { |lines| assert(lines.any_include?('world') && !lines.any_include?('(..)')) }
+  end
+
   def test_wait_action_query_change
     # Query-editing actions must also make wait block; accept must run on the
     # results of the new query, not the stale ones
@@ -1237,6 +1261,15 @@ class TestCore < TestInteractive
     tmux.until { |lines| refute lines.any_include?('(..)') }
     tmux.send_keys 'C-t'
     assert_equal %w[ctrl-t 1], fzf_output_lines
+  end
+
+  def test_track_blocked_bg_transform
+    # A bg-transform result completing while track-blocked is applied, not
+    # dropped. The header must show while '+T*' is still displayed.
+    tmux.send_keys "seq 100 | #{FZF} --track --id-nth .. --bind 'ctrl-r:bg-transform-header(echo hello)+reload(sleep 2; seq 100)'", :Enter
+    tmux.until { |lines| assert_includes lines[-2], '+T' }
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert(lines.any_include?('+T*') && lines.any_include?('hello')) }
   end
 
   def test_clear_selection
