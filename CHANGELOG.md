@@ -6,9 +6,13 @@ CHANGELOG
 - On tmux 3.7 or above, `--popup` starts fzf in a floating pane instead of a popup (#4850)
     - Unlike a popup, a floating pane is not modal; you can switch to other panes and windows while fzf is running, move and resize the pane with the mouse, zoom it to fullscreen, and use copy-mode in it
     - A floating pane always has a native border, which is what makes the pane movable and resizable, so `border-native` is implied
-    - Give `border-fzf` to fall back to a popup where fzf draws its own border
+    - A popup is used instead when a border style is explicitly specified with `--border`, so that the fzf-drawn border is the only border shown (`none` and `line` are treated as no border)
       ```sh
-      fzf --popup center,80%,border-fzf
+      fzf --popup --border rounded
+      ```
+    - `--border-label` is set as the title of the floating pane, and is displayed on the border if `pane-border-status` is enabled in tmux
+      ```sh
+      fzf --popup --border-label ' fzf '
       ```
 - Added `result-final` event, a variant of `result` that is not triggered while the input stream is still open (#4835)
     - Use it for one-shot, per-query actions that would otherwise re-fire on every intermediate snapshot during loading
