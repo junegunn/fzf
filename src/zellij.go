@@ -11,7 +11,7 @@ func runZellij(args []string, opts *Options) (int, error) {
 		"run", "--floating", "--close-on-exit", "--block-until-exit",
 		"--cwd", dir,
 	}
-	if !opts.Tmux.border {
+	if opts.Tmux.border != tmuxBorderNative {
 		zellijArgs = append(zellijArgs, "--borderless", "true")
 	}
 	switch opts.Tmux.position {
