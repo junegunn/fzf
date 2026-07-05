@@ -177,6 +177,12 @@ class Tmux
     system('tmux', 'setb', str, ';', 'pasteb', '-t', win, ';', 'send-keys', '-t', win, 'Enter')
   end
 
+  # Paste with bracketed paste control codes so fzf sees
+  # bracketed-paste-begin/end around the content
+  def paste_bracketed(str)
+    system('tmux', 'setb', str, ';', 'pasteb', '-p', '-t', win)
+  end
+
   def capture
     go(%W[capture-pane -p -J -t #{win}]).map(&:rstrip).reverse.drop_while(&:empty?).reverse
   end

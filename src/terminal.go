@@ -5838,7 +5838,8 @@ func (t *Terminal) unblockTrack() {
 // The wait state machine. Invariant: arming captures every action after
 // 'wait' at any nesting level into wait.pending; while blocked, actions are
 // dropped unless they are results of work started before the block
-// (bg-transform callbacks); abort/cancel discards everything.
+// (bg-transform callbacks, bracketed paste bookkeeping); abort/cancel
+// discards everything.
 
 // blockWait blocks action execution and defers the given actions until the
 // current search completes (see UpdateList)
@@ -6804,8 +6805,10 @@ func (t *Terminal) Loop() error {
 			}
 			// Actions that run even while wait/track-blocked: bg-transform
 			// callbacks and their parsed actions (results of processes
-			// started before the block).
-			passthrough := inBgCallback || a.t == actAsync
+			// started before the block), and bracketed paste bookkeeping (a
+			// swallowed paste-end would leave t.pasting set forever).
+			passthrough := inBgCallback || a.t == actAsync ||
+				a.t == actBracketedPasteBegin || a.t == actBracketedPasteEnd
 			// When wait-blocked, only allow abort/cancel
 			if t.wait.blocked && !passthrough {
 				if a.t == actAbort || a.t == actCancel {

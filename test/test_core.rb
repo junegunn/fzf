@@ -1251,6 +1251,20 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal '> 5', lines[-3] }
   end
 
+  def test_wait_action_bracketed_paste
+    # A wait armed by a binding fired from a pasted character must not break
+    # bracketed paste handling: paste-end passes through the block so
+    # t.pasting is cleared and the pending search is dispatched
+    tmux.send_keys %(seq 100 | #{FZF} --bind 'a:put(a)+wait+first'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.paste_bracketed('1a2')
+    # Search for the edited query must run; blocked forever before the fix
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    # Filtering must still work afterwards
+    tmux.send_keys 'C-u', '55'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
+
   def test_wait_action_expect
     # --expect keys are ignored while wait-blocked, like the rest of the input
     tmux.send_keys %((seq 100; sleep 2) | #{fzf('--expect ctrl-t --bind start:wait')}), :Enter
