@@ -1162,6 +1162,83 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal 10, lines.match_count }
   end
 
+  def test_wait_action
+    tmux.send_keys %((seq 100; sleep 15) | #{FZF} --bind 'start:search(1)+wait+best'), :Enter
+    tmux.until { |lines| assert_equal 20, lines.match_count }
+    tmux.until { |lines| assert lines.any_include?('20/100 (..)') }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| refute lines.any_include?('20/100 (..)') }
+    # Ctrl-C cancels the wait; fzf keeps running and accepts input again
+    tmux.send_keys '99'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
+
+  def test_wait_action_start
+    # 'start:wait' blocks on the initial load until reading completes
+    tmux.send_keys %((seq 100; sleep 15) | #{FZF} --bind 'start:wait'), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until { |lines| assert lines.any_include?('(..)') }
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| refute lines.any_include?('(..)') }
+    # Ctrl-C cancels the wait; fzf keeps running and accepts input again
+    tmux.send_keys '99'
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+  end
+
+  def test_wait_action_query_change
+    # Query-editing actions must also make wait block; accept must run on the
+    # results of the new query, not the stale ones
+    tmux.send_keys %(seq 100 | #{fzf("--bind 'space:change-query(55)+wait+accept'")}), :Enter
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.send_keys :Space
+    assert_equal '55', fzf_output
+  end
+
+  def test_wait_action_trigger_join
+    # A wait armed inside a triggered chord defers the remaining actions of
+    # the outer binding as well
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --bind 'start:trigger(x)+change-footer(world)' --bind 'x:search(5)+wait'), :Enter
+    tmux.until { |lines| assert(lines.any_include?('(..)') && !lines.any_include?('world')) }
+    tmux.until { |lines| assert(lines.any_include?('world') && !lines.any_include?('(..)')) }
+  end
+
+  def test_wait_action_trigger_siblings
+    # Chords after a wait-arming chord are deferred, not dropped
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --bind 'start:trigger(x,y)+change-footer(world)' --bind 'x:search(5)+wait' --bind 'y:change-header(hello)'), :Enter
+    tmux.until { |lines| assert(lines.any_include?('(..)') && !lines.any_include?('hello') && !lines.any_include?('world')) }
+    tmux.until { |lines| assert(lines.any_include?('hello') && lines.any_include?('world') && !lines.any_include?('(..)')) }
+  end
+
+  def test_wait_action_cancel_rearm
+    # Deferral works even when the wait is cancelled and re-armed within a
+    # single action list. --query keeps 'cancel' non-fatal in case the Space
+    # arrives after the initial wait has already unblocked.
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --query 5 --bind 'start:wait' --bind 'space:cancel+trigger(x)+change-footer(world)' --bind 'x:search(5)+wait'), :Enter
+    tmux.until { |lines| assert lines.any_include?('(..)') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert(lines.any_include?('world') && !lines.any_include?('(..)')) }
+  end
+
+  def test_wait_action_jump
+    # A pending jump action must survive the wake-up event after unblock
+    tmux.send_keys %((seq 100; sleep 2) | #{FZF} --jump-labels abc --bind 'start:search(5)+wait+jump'), :Enter
+    tmux.until { |lines| assert_equal 'a 5', lines[-3] }
+    tmux.send_keys 'a'
+    tmux.until { |lines| assert_equal '> 5', lines[-3] }
+  end
+
+  def test_wait_action_expect
+    # --expect keys are ignored while wait-blocked, like the rest of the input
+    tmux.send_keys %((seq 100; sleep 2) | #{fzf('--expect ctrl-t --bind start:wait')}), :Enter
+    tmux.until { |lines| assert lines.any_include?('(..)') }
+    tmux.send_keys 'C-t'
+    # fzf must still be running; the wait unblocks when loading completes
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until { |lines| refute lines.any_include?('(..)') }
+    tmux.send_keys 'C-t'
+    assert_equal %w[ctrl-t 1], fzf_output_lines
+  end
+
   def test_clear_selection
     tmux.send_keys %(seq 100 | #{FZF} --multi --bind space:clear-selection), :Enter
     tmux.until { |lines| assert_equal 100, lines.match_count }
