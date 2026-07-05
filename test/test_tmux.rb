@@ -17,6 +17,9 @@ class TestTmux < TestInteractive
   def test_floating_pane
     tmux.send_keys "seq 100 | #{fzf('--popup center,80% --margin 0')}", :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
+    # Border text is cleared when no label is given
+    format = IO.popen(['tmux', 'show-options', '-p', '-t', floating_pane, 'pane-border-format'], &:read)
+    assert_includes format, "''"
     tmux.send_keys '99'
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter

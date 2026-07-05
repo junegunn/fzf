@@ -120,15 +120,18 @@ func runTmuxFloatingPane(argStr string, dir string, windowWidth int, windowHeigh
 
 		// Set --border-label as the title of the floating pane, and as its
 		// pane-border-format so that it is displayed on the border when
-		// pane-border-status is enabled. pane-border-format is pane-scoped,
+		// pane-border-status is enabled. Without a label, the border text
+		// is cleared so that the default pane status content (e.g. the
+		// pane title) is not shown. pane-border-format is pane-scoped,
 		// but pane-border-status is a window option that only becomes
 		// pane-scoped in the next release of tmux, so it is left alone.
 		//   https://github.com/tmux/tmux/commit/7a18fa281db3
 		// --border-label-pos is ignored.
-		// Skipped when fzf draws its own border with the label on it.
-		// '--border=none' is included; fzf would not display the label, but
-		// the native border of a floating pane cannot be removed, so
-		// display the label on it nonetheless.
+		// The label is left to fzf when it draws its own border with the
+		// label on it. '--border=none' is not the case; fzf would not
+		// display the label, but the native border of a floating pane
+		// cannot be removed, so display the label on it nonetheless.
+		format := ""
 		if opts.BorderLabel.label != "" &&
 			(opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine ||
 				opts.BorderShape == tui.BorderNone) {
@@ -139,9 +142,11 @@ func runTmuxFloatingPane(argStr string, dir string, windowWidth int, windowHeigh
 					escapeSingleQuote(escapeTmuxTitle(label)))
 				// The title is displayed verbatim; substituted values are
 				// not expanded again
-				setup += `tmux set-option -p -t "$TMUX_PANE" pane-border-format '#{pane_title}' 2> /dev/null; `
+				format = "#{pane_title}"
 			}
 		}
+		setup += fmt.Sprintf(`tmux set-option -p -t "$TMUX_PANE" pane-border-format %s 2> /dev/null; `,
+			escapeSingleQuote(format))
 		paneCmd := fmt.Sprintf("%s%s %s; echo $? > %s; tmux wait-for -S %s",
 			setup, escapeSingleQuote(sh), escapeSingleQuote(temp), code, signal)
 		// Unzoom the window first; creating a floating pane over a zoomed
