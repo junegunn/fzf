@@ -75,9 +75,9 @@ Usage: fzf [options]
     --min-height=HEIGHT[+]   Minimum height when --height is given as a percentage.
                              Add '+' to automatically increase the value
                              according to the other layout options (default: 10+).
-    --popup[=OPTS]           Start fzf in a popup window (requires tmux 3.3+ or Zellij 0.44+)
+    --popup[=OPTS]           Start fzf in a floating pane (requires tmux 3.3+ or Zellij 0.44+)
                              [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
-                             [,border-native] (default: center,50%)
+                             [,border-native|border-fzf] (default: center,50%)
     --tmux[=OPTS]            Alias for --popup
 
   LAYOUT
@@ -335,12 +335,20 @@ const (
 	posNext // adjacent to the input section, on the list side
 )
 
+type tmuxBorder int
+
+const (
+	tmuxBorderAuto tmuxBorder = iota
+	tmuxBorderNative
+	tmuxBorderFzf
+)
+
 type tmuxOptions struct {
 	width    sizeSpec
 	height   sizeSpec
 	position windowPosition
 	index    int
-	border   bool
+	border   tmuxBorder
 }
 
 type layoutType int
@@ -427,15 +435,19 @@ func parseTmuxOptions(arg string, index int) (*tmuxOptions, error) {
 	var err error
 	opts := defaultTmuxOptions(index)
 	tokens := splitRegexp.Split(arg, -1)
-	errorToReturn := errors.New("invalid popup option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%][,border-native]])")
+	errorToReturn := errors.New("invalid popup option: " + arg + " (expected: [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native|border-fzf])")
 	if len(tokens) == 0 || len(tokens) > 4 {
 		return nil, errorToReturn
 	}
 
 	for i, token := range tokens {
-		if token == "border-native" {
-			tokens = append(tokens[:i], tokens[i+1:]...) // cut the 'border-native' option
-			opts.border = true
+		if token == "border-native" || token == "border-fzf" {
+			tokens = append(tokens[:i], tokens[i+1:]...) // cut the border option
+			if token == "border-native" {
+				opts.border = tmuxBorderNative
+			} else {
+				opts.border = tmuxBorderFzf
+			}
 			break
 		}
 	}

@@ -417,10 +417,18 @@ layout options so that the specified number of items are visible in the list
 section (default: \fB10+\fR).
 Ignored when \fB\-\-height\fR is not specified or set as an absolute value.
 .TP
-.BI "\-\-popup" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]]"
-Start fzf in a tmux popup or in a Zellij floating pane (default
-\fBcenter,50%\fR). Requires tmux 3.3+ or Zellij 0.44+. This option is ignored if you
+.BI "\-\-popup" "[=[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native|border-fzf]]"
+Start fzf in a tmux or Zellij floating pane (default \fBcenter,50%\fR).
+Requires tmux 3.3+ or Zellij 0.44+. This option is ignored if you
 are not running fzf inside tmux or Zellij. \fB\-\-tmux\fR is an alias for this option.
+
+On tmux 3.7 or above, the floating pane is not modal; you can switch to
+other panes and windows while fzf is running, move and resize the pane with
+the mouse, zoom it to fullscreen, and use copy\-mode in it. The pane always
+has a native border, which is what makes it movable and resizable, so
+\fBborder\-native\fR is implied. On tmux versions below 3.7, or when
+\fBborder\-fzf\fR is given, a modal tmux popup is used instead and fzf draws
+its own border.
 
 e.g.
   \fB# Popup in the center with 70% width and height
