@@ -11,6 +11,17 @@ CHANGELOG
       (seq 100; sleep 1; seq 100) | fzf --query 1 \
         --bind 'result:transform-header(echo result: $FZF_MATCH_COUNT),result-final:transform-footer(echo final: $FZF_MATCH_COUNT)'
       ```
+- Added `wait` action to block subsequent actions until search completes (#4825)
+    - Useful for chaining query-changing actions with motion actions to ensure operations on complete results
+      ```sh
+      # Wait for search to complete before moving to the best match
+      fzf --bind 'start:change-query(foo)+wait+best'
+      ```
+    - The initial loading of the input is also considered a search in progress, so `start:wait` can be used to wait until the input is fully loaded
+      ```sh
+      # Move to the last item after the input is fully loaded
+      (seq 1000; sleep 1; seq 1001 2000) | fzf --bind 'start:wait+last'
+      ```
 - Bound `alt-left` to `backward-word` and `alt-right` to `forward-word` by default (#4833)
 - Skip `$FZF_CURRENT_ITEM` export when the item is larger than 64 KB; a huge item can overflow `ARG_MAX` and break preview and other child commands with `E2BIG` (#4806)
 

@@ -2149,6 +2149,7 @@ A key or an event can be bound to one or more of the following actions.
     \fBunix\-line\-discard\fR            \fIctrl\-u\fR
     \fBunix\-word\-rubout\fR             \fIctrl\-w\fR
     \fBuntrack\-current\fR              (stop tracking the current item; no-op if global tracking is enabled)
+    \fBwait\fR                         (block action execution until search completes)
     \fBup\fR                           \fIctrl\-k  up\fR
     \fBup\-match\fR                     \fIctrl\-p\fR  \fIalt\-up\fR (move to the match above the cursor)
     \fBup\-selected\fR                  (move to the selected item above the cursor)
@@ -2300,6 +2301,39 @@ command runs. To avoid this, each \fBtransform*\fR action has a corresponding
 chain multiple transform actions where later ones depend on earlier results,
 prefer using the \fBbg\fR variant. To cancel currently running background
 transform processes, use \fBbg\-cancel\fR action.
+
+.SS WAITING FOR SEARCH COMPLETION
+
+The \fBwait\fR action blocks the execution of subsequent actions until the
+current search completes. This is useful when chaining query\-changing actions
+with motion actions like \fBbest\fR or \fBfirst\fR, ensuring that the motion
+action operates on the complete search results rather than stale data.
+
+e.g.
+    \fBfzf \-\-bind 'start:change\-query(foo)+wait+best'\fR
+
+In this example, \fBchange\-query(foo)\fR starts an asynchronous search for
+the new query, \fBwait\fR blocks until the search completes, and \fBbest\fR
+then moves the cursor to the best match in the complete result set.
+
+The initial loading of the input is also considered a search in progress, so
+\fBstart:wait\fR can be used to block until the input is fully loaded and
+searched.
+
+While waiting, user input is ignored, except for keys bound to \fBabort\fR or
+\fBcancel\fR (\fIctrl\-c\fR, \fIctrl\-g\fR, \fIctrl\-q\fR, and \fIesc\fR by
+default), which cancel the wait and discard the pending actions instead of
+performing their usual role. The remaining actions of such a binding still run,
+so a binding like \fBesc:cancel+first\fR is possible.
+
+If the search takes long enough, fzf indicates that it is waiting by dimming the
+input, hiding the cursor, and showing \fB(..)\fR on the info line. This visual
+feedback is debounced so that quick searches do not cause flickering.
+
+Note that when searches are triggered in rapid succession (e.g. via
+\fB\-\-listen\fR), \fBwait\fR may unblock on the completion of an earlier
+search. Also, if the input source never completes, \fBwait\fR will block until
+cancelled.
 
 .SS PREVIEW BINDING
 
