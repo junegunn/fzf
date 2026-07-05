@@ -6879,7 +6879,9 @@ func (t *Terminal) Loop() error {
 				t.mutex.Unlock()
 				return false
 			case actBracketedPasteBegin:
-				current := []rune(t.input)
+				// Clone: []rune(t.input) would alias t.input, and in-place
+				// query edits during the paste would corrupt the snapshot
+				current := slices.Clone(t.input)
 				t.pasting = &current
 			case actBracketedPasteEnd:
 				if t.pasting != nil {
