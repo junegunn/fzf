@@ -2,6 +2,8 @@ package fzf
 
 import (
 	"os/exec"
+
+	"github.com/junegunn/fzf/src/tui"
 )
 
 func runZellij(args []string, opts *Options) (int, error) {
@@ -22,13 +24,19 @@ func runZellij(args []string, opts *Options) (int, error) {
 		zellijArgs = append(zellijArgs, "--borderless", "true")
 	} else {
 		// Set --border-label as the name of the pane, displayed on the
-		// native border. Empty when no label is given, to override the
-		// default name (the running command). Passed as a single argument
-		// in the --name=label form; the detached form fails to parse when
-		// the label starts with a hyphen. No escaping is needed beyond
+		// native border. The label is left to fzf when it draws its own
+		// border with the label on it (border-native with an explicit
+		// --border style). Empty otherwise, to override the default name
+		// (the running command). Passed as a single argument in the
+		// --name=label form; the detached form fails to parse when the
+		// label starts with a hyphen. No escaping is needed beyond
 		// stripping ANSI sequences fzf would otherwise render itself.
 		// --border-label-pos is ignored.
-		label, _, _ := extractColor(opts.BorderLabel.label, nil, nil)
+		label := ""
+		if opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine ||
+			opts.BorderShape == tui.BorderNone {
+			label, _, _ = extractColor(opts.BorderLabel.label, nil, nil)
+		}
 		zellijArgs = append(zellijArgs, "--name="+label)
 	}
 	switch opts.Tmux.position {
