@@ -14,6 +14,8 @@ CHANGELOG
       ```sh
       fzf --popup --border-label ' fzf '
       ```
+- On Zellij, `--popup` uses the native border by default, consistent with tmux, so that the pane can be moved and resized with the mouse; fzf draws its own border when a border style is explicitly specified with `--border`
+    - `--border-label` is set as the name of the pane, displayed on the native border
 - Added `result-final` event, a variant of `result` that is not triggered while the input stream is still open (#4835)
     - Use it for one-shot, per-query actions that would otherwise re-fire on every intermediate snapshot during loading
       ```sh

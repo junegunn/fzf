@@ -5,6 +5,13 @@ import (
 )
 
 func runZellij(args []string, opts *Options) (int, error) {
+	// Use the native Zellij border by default, consistent with tmux, so that
+	// the pane can be moved and resized with the mouse. Set before
+	// popupArgStr so that it does not inject an fzf border. fzf draws its own
+	// border instead when a border style is explicitly specified.
+	if nativeBorder(opts) {
+		opts.Tmux.border = true
+	}
 	argStr, dir := popupArgStr(args, opts)
 
 	zellijArgs := []string{
@@ -13,6 +20,15 @@ func runZellij(args []string, opts *Options) (int, error) {
 	}
 	if !opts.Tmux.border {
 		zellijArgs = append(zellijArgs, "--borderless", "true")
+	} else {
+		// Set --border-label as the name of the pane, displayed on the
+		// native border. Empty when no label is given, to override the
+		// default name (the running command). Passed as a distinct
+		// argument, so no escaping is needed beyond stripping ANSI
+		// sequences fzf would otherwise render itself. --border-label-pos
+		// is ignored.
+		label, _, _ := extractColor(opts.BorderLabel.label, nil, nil)
+		zellijArgs = append(zellijArgs, "--name", label)
 	}
 	switch opts.Tmux.position {
 	case posUp:
