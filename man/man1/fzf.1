@@ -422,19 +422,20 @@ Start fzf in a tmux or Zellij floating pane (default \fBcenter,50%\fR).
 Requires tmux 3.3+ or Zellij 0.44+. This option is ignored if you
 are not running fzf inside tmux or Zellij. \fB\-\-tmux\fR is an alias for this option.
 
-On tmux 3.7 or above, the floating pane is not modal; you can switch to
-other panes and windows while fzf is running, move and resize the pane with
-the mouse, zoom it to fullscreen, and use copy\-mode in it. The pane always
-has a native border, which is what makes it movable and resizable, so
-\fBborder\-native\fR is implied. \fB\-\-border\-label\fR is set as the title
-of the pane, and is displayed on the border if \fBpane\-border\-status\fR
-is enabled in tmux (\fB\-\-border\-label\-pos\fR is ignored).
+On tmux 3.7 or above and on Zellij, the floating pane is not modal; you can
+switch to other panes and windows while fzf is running, and move and resize
+the pane with the mouse. The native border of the pane is the handle for
+moving and resizing it, so it is used by default and \fBborder\-native\fR is
+implied. On tmux, \fB\-\-border\-label\fR is set as the title of the pane,
+and is displayed on the border if \fBpane\-border\-status\fR is enabled in
+tmux (\fB\-\-border\-label\-pos\fR is ignored).
 
-A modal tmux popup is used instead on tmux versions below 3.7, or when a
-border style is explicitly specified with \fB\-\-border\fR, so that the
-fzf\-drawn border is the only border shown. \fBnone\fR and \fBline\fR are
-treated as no border. Give \fBborder\-native\fR to
-force a floating pane nonetheless.
+fzf draws its own border instead when a border style is explicitly specified
+with \fB\-\-border\fR, so that it is the only border shown. \fBnone\fR and
+\fBline\fR are treated as no border. Give \fBborder\-native\fR to keep the
+native border nonetheless. On tmux, the fzf\-drawn border is shown in a modal
+popup, since the native border of a tmux floating pane cannot be removed;
+this is also the case on tmux versions below 3.7.
 
 e.g.
   \fB# Popup in the center with 70% width and height

@@ -183,17 +183,24 @@ exit "$code"`, newPane, code, signal, signal, code, code, code)
 	}, opts, true)
 }
 
+// Whether to use the multiplexer's native border for the floating pane. Its
+// native border is the handle that makes the pane movable and resizable with
+// the mouse, so it is the default; 'border-native' forces it. It is not used
+// when a border style is explicitly specified with --border, so that the
+// fzf-drawn border is the only one shown. 'none' and 'line' are treated as no
+// border; fzf draws no box for either, and 'line' only makes sense with
+// --height.
+func nativeBorder(opts *Options) bool {
+	return opts.Tmux.border || opts.BorderShape == tui.BorderUndefined ||
+		opts.BorderShape == tui.BorderLine || opts.BorderShape == tui.BorderNone
+}
+
 func runTmux(args []string, opts *Options) (int, error) {
 	// On tmux 3.7 or above, fzf runs in a floating pane instead of a popup.
-	// A floating pane always has a native border, so 'border-native' is
-	// implied. When a border style is explicitly specified with --border, a
+	// When the native border is not used (an explicit --border style), a
 	// popup is used instead so that the fzf-drawn border is the only border
-	// shown; the native border of a floating pane cannot be removed. 'none'
-	// and 'line' are treated as no border; fzf draws no box for either, and
-	// 'line' only makes sense with --height. Give 'border-native' to force
-	// a floating pane nonetheless.
-	if opts.Tmux.border || opts.BorderShape == tui.BorderUndefined ||
-		opts.BorderShape == tui.BorderLine || opts.BorderShape == tui.BorderNone {
+	// shown; the native border of a tmux floating pane cannot be removed.
+	if nativeBorder(opts) {
 		if windowWidth, windowHeight, ok := tmuxFloatingPaneInfo(); ok {
 			opts.Tmux.border = true
 			argStr, dir := popupArgStr(args, opts)
