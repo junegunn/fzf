@@ -36,7 +36,19 @@ CHANGELOG
       (seq 1000; sleep 1; seq 1001 2000) | fzf --bind 'start:wait+last'
       ```
 - Bound `alt-left` to `backward-word` and `alt-right` to `forward-word` by default (#4833)
-- Skip `$FZF_CURRENT_ITEM` export when the item is larger than 64 KB; a huge item can overflow `ARG_MAX` and break preview and other child commands with `E2BIG` (#4806)
+- Bug fixes and improvements
+    - Skip `$FZF_CURRENT_ITEM` export when the item is larger than 64 KB; a huge item can overflow `ARG_MAX` and break preview and other child commands with `E2BIG` (#4806)
+    - `transform` and `bg-transform` now allow a bare `put` action in the output to insert the key that triggered the action
+      ```sh
+      # Insert the typed key ('a') into the query
+      fzf --bind 'a:transform:echo put'
+      ```
+    - `ALT-C` in zsh no longer resolves symbolic links when changing the directory, consistent with the `cd` builtin (#4816) (@silverneko)
+    - Fixed horizontal mouse wheel events being treated as vertical scrolling (#4848) (@jason5122)
+    - Fixed `bw` theme not inheriting overridden colors
+    - fish: `CTRL-R` now works when `$fish_color_normal` or `$fish_color_comment` is empty or invalid (#4831) (@bitraid)
+    - Fixed empty-shell detection in the install script (#4813)
+    - Fixed the install script writing nushell source lines into the config files of other shells (#4812)
 
 0.73.1
 ------
