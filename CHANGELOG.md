@@ -1,14 +1,16 @@
 CHANGELOG
 =========
 
-0.74.0 (WIP)
-------------
+0.74.0
+------
+_Release highlights: https://junegunn.github.io/fzf/releases/0.74.0/_
+
 - On tmux 3.7 or above, `--popup` starts fzf in a floating pane instead of a popup (#4850)
     - Unlike a popup, a floating pane is not modal; you can switch to other panes and windows while fzf is running, move and resize the pane with the mouse, zoom it to fullscreen, and use copy-mode in it
     - A floating pane always has a native border, which is what makes the pane movable and resizable, so `border-native` is implied
     - A popup is used instead when a border style is explicitly specified with `--border`, so that the fzf-drawn border is the only border shown (`none` and `line` are treated as no border)
       ```sh
-      fzf --popup --border rounded
+      fzf --popup --border
       ```
     - `--border-label` is set as the title of the floating pane, and is displayed on the border if `pane-border-status` is enabled in tmux
       ```sh
