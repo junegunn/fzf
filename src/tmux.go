@@ -13,6 +13,16 @@ import (
 // Returns the size of the current window if the tmux server supports
 // floating panes (tmux 3.7 or above)
 func tmuxFloatingPaneInfo() (int, int, bool) {
+	// TMUX_PANE is not set when fzf is not started from within a pane
+	// (e.g. 'bind-key 0 run-shell "fzf --popup"'). Do not use a floating
+	// pane there; a blocking run-shell suspends key processing for the
+	// client until the command exits, so fzf in a floating pane would
+	// never receive a key and the client would appear frozen until the
+	// process is killed externally. A popup is unaffected; its input is
+	// handled at the client overlay level, bypassing the suspended path.
+	// The right approach for such bindings is 'run-shell -b', which does
+	// not suspend key processing, as discussed in:
+	//   https://github.com/tmux/tmux/issues/5384
 	target := os.Getenv("TMUX_PANE")
 	if target == "" {
 		return 0, 0, false
