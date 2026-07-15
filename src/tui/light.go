@@ -256,8 +256,6 @@ func (r *LightRenderer) move(y int, x int) {
 	} else if r.y > y {
 		r.csi(fmt.Sprintf("%dA", r.y-y))
 	}
-	// Use CHA instead of CR+CUF; Zellij misplaces the next character when
-	// CUF moves the cursor over cells that have not been written to yet.
 	if x == 0 {
 		r.stderr("\r")
 	} else {
