@@ -419,3 +419,61 @@ func TestLightRendererScrollWheel(t *testing.T) {
 	assertScroll("\x1b[<94;1;1M", 0, "ctrl-alt-shift")  // ctrl+alt+shift + left  (ignored)
 	assertScroll("\x1b[<95;1;1M", 0, "ctrl-alt-shift")  // ctrl+alt+shift + right (ignored)
 }
+
+// Assert the exact byte stream emitted for a scripted rendering sequence,
+// locking down the SGR deduplication behavior of the light renderer.
+func TestLightRendererSGRDeduplication(t *testing.T) {
+	renderer, _ := NewLightRenderer(
+		"", nil, &ColorTheme{}, true, false, 8, false, true,
+		func(h int) int { return h })
+	r := renderer.(*LightRenderer)
+	r.width = 80
+	r.height = 24
+
+	out, err := os.CreateTemp(t.TempDir(), "fzf-ttyout")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.ttyout = out
+
+	w := r.NewWindow(0, 0, 40, 4, WindowList, MakeBorderStyle(BorderNone, true), false).(*LightWindow)
+	w.fg = colDefault
+	w.bg = colDefault
+	r.queued.Reset()
+
+	red := NewColorPair(196, colDefault, AttrRegular)
+	blue := NewColorPair(21, colDefault, AttrRegular)
+
+	w.Move(0, 0)
+	w.CPrint(red, "ab")
+	w.CPrint(red, "cd") // same pair; no SGR expected
+	w.CPrint(blue, "ef")
+	w.Print("gh") // default colors; one reset expected
+	w.Print("ij") // still default; no SGR expected
+	w.Move(1, 2)
+	w.CPrint(red, "kl")
+	r.invalidateSGR()
+	w.CPrint(red, "mn") // re-emitted after invalidation
+	r.flush()           // adds a trailing reset to leave the default state
+
+	expected := "\x1b[?2026h\x1b[?7l\x1b[?25l" +
+		"\r" +
+		"\x1b[;38;5;196mab" +
+		"cd" +
+		"\x1b[;38;5;21mef" +
+		"\x1b[0mgh" +
+		"ij" +
+		"\x1b[1B\x1b[3G" +
+		"\x1b[;38;5;196mkl" +
+		"\x1b[;38;5;196mmn" +
+		"\x1b[0m" +
+		"\x1b[?25h\x1b[?7h\x1b[?2026l"
+
+	bytes, err := os.ReadFile(out.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(bytes) != expected {
+		t.Errorf("expected: %q\n     got: %q", expected, string(bytes))
+	}
+}

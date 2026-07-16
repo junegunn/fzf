@@ -39,6 +39,7 @@ func (r *LightRenderer) Bell() {
 
 func (r *LightRenderer) PassThrough(str string) {
 	r.queued.WriteString("\x1b7" + str + "\x1b8")
+	r.invalidateSGR()
 }
 
 func (r *LightRenderer) stderr(str string) {
@@ -90,8 +91,28 @@ func (r *LightRenderer) csi(code string) string {
 	return fullcode
 }
 
+// setSGR emits the given SGR sequence only when the terminal is not already
+// in that state. Sequences built by csiColor start with a reset parameter,
+// so each of them fully determines the state on its own. The zero value of
+// r.sgr never matches a sequence, so the first update after Init, Resume, or
+// invalidateSGR is always emitted.
+func (r *LightRenderer) setSGR(code string) {
+	if code != r.sgr {
+		r.stderr(code)
+		r.sgr = code
+	}
+}
+
+// invalidateSGR marks the terminal SGR state as unknown, e.g. after raw
+// output that may have changed it behind the renderer's back.
+func (r *LightRenderer) invalidateSGR() {
+	r.sgr = ""
+}
+
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
+		// Leave the terminal in the default SGR state between frames
+		r.setSGR("\x1b[0m")
 		// Wrap the frame in synchronized update mode (2026) so that the
 		// terminal applies it atomically. Terminals without support ignore
 		// the unknown private mode and behave as before.
@@ -130,6 +151,7 @@ type LightRenderer struct {
 	fullscreen    bool
 	upOneLine     bool
 	queued        strings.Builder
+	sgr           string
 	y             int
 	x             int
 	maxHeightFunc func(int) int
@@ -1002,6 +1024,9 @@ func (r *LightRenderer) disableModes() {
 
 func (r *LightRenderer) Resume(clear bool, sigcont bool) {
 	r.setupTerminal()
+	// The programs that ran in the meantime may have left the terminal in an
+	// arbitrary SGR state
+	r.invalidateSGR()
 	if clear {
 		if r.fullscreen {
 			r.smcup()
@@ -1273,10 +1298,6 @@ func (w *LightWindow) drawBorder(onlyHorizontal bool) {
 	}
 }
 
-func (w *LightWindow) csi(code string) string {
-	return w.renderer.csi(code)
-}
-
 func (w *LightWindow) stderrInternal(str string, allowNLCR bool, resetCode string) {
 	w.renderer.stderrInternal(str, allowNLCR, resetCode)
 }
@@ -1415,13 +1436,18 @@ func ulColorCode(c Color) string {
 	return ""
 }
 
+// csiColor builds the SGR sequence for the given colors and attributes
+// without emitting it. The sequence starts with a reset parameter, so it
+// fully determines the SGR state on its own.
 func (w *LightWindow) csiColor(fg Color, bg Color, ul Color, attr Attr) (bool, string) {
 	codes := append(attrCodes(attr), colorCodes(fg, bg)...)
 	if ulCode := ulColorCode(ul); ulCode != "" {
 		codes = append(codes, ulCode)
 	}
-	code := w.csi(";" + strings.Join(codes, ";") + "m")
-	return len(codes) > 0, code
+	if len(codes) == 0 {
+		return false, "\x1b[0m"
+	}
+	return true, "\x1b[;" + strings.Join(codes, ";") + "m"
 }
 
 func (w *LightWindow) Print(text string) {
@@ -1434,15 +1460,13 @@ func cleanse(str string) string {
 
 func (w *LightWindow) CPrint(pair ColorPair, text string) {
 	_, code := w.csiColor(pair.Fg(), pair.Bg(), pair.Ul(), pair.Attr())
+	w.renderer.setSGR(code)
 	w.stderrInternal(cleanse(text), false, code)
-	w.csi("0m")
 }
 
 func (w *LightWindow) cprint2(fg Color, bg Color, attr Attr, text string) {
-	hasColors, code := w.csiColor(fg, bg, colDefault, attr)
-	if hasColors {
-		defer w.csi("0m")
-	}
+	_, code := w.csiColor(fg, bg, colDefault, attr)
+	w.renderer.setSGR(code)
 	w.stderrInternal(cleanse(text), false, code)
 }
 
@@ -1463,7 +1487,7 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 				}
 				w.MoveAndClear(w.posy, w.posx)
 				w.Move(w.posy+1, 0)
-				w.renderer.stderr(resetCode)
+				w.renderer.setSGR(resetCode)
 				if len(lines) > 1 {
 					sign := w.wrapSign
 					width := w.wrapSignWidth
@@ -1473,7 +1497,8 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 						width = truncatedWidth
 					}
 					w.stderrInternal(DIM+sign, false, resetCode)
-					w.renderer.stderr(resetCode)
+					w.renderer.invalidateSGR()
+					w.renderer.setSGR(resetCode)
 					w.Move(w.posy, width)
 				}
 			}
@@ -1484,20 +1509,19 @@ func (w *LightWindow) fill(str string, resetCode string) FillReturn {
 			return FillSuspend
 		}
 		w.Move(w.posy+1, 0)
-		w.renderer.stderr(resetCode)
+		w.renderer.setSGR(resetCode)
 		return FillNextLine
 	}
 	return FillContinue
 }
 
 func (w *LightWindow) setBg() string {
-	if w.bg != colDefault {
-		_, code := w.csiColor(colDefault, w.bg, colDefault, AttrRegular)
-		return code
-	}
-	// Should clear dim attribute after ␍ in the preview window
+	// The plain reset code for the default background is still required to
+	// clear the dim attribute after ␍ in the preview window
 	// e.g. printf "foo\rbar" | fzf --ansi --preview 'printf "foo\rbar"'
-	return "\x1b[m"
+	_, code := w.csiColor(colDefault, w.bg, colDefault, AttrRegular)
+	w.renderer.setSGR(code)
+	return code
 }
 
 func (w *LightWindow) LinkBegin(uri string, params string) {
@@ -1523,7 +1547,7 @@ func (w *LightWindow) CFill(fg Color, bg Color, ul Color, attr Attr, text string
 		bg = w.bg
 	}
 	if hasColors, resetCode := w.csiColor(fg, bg, ul, attr); hasColors {
-		defer w.csi("0m")
+		w.renderer.setSGR(resetCode)
 		return w.fill(text, resetCode)
 	}
 	return w.fill(text, w.setBg())
