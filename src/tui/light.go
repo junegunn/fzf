@@ -92,12 +92,14 @@ func (r *LightRenderer) csi(code string) string {
 
 func (r *LightRenderer) flush() {
 	if r.queued.Len() > 0 {
-		raw := "\x1b[?7l\x1b[?25l" + r.queued.String()
+		// Wrap the frame in synchronized update mode (2026) so that the
+		// terminal applies it atomically. Terminals without support ignore
+		// the unknown private mode and behave as before.
+		raw := "\x1b[?2026h\x1b[?7l\x1b[?25l" + r.queued.String()
 		if r.showCursor {
-			raw += "\x1b[?25h\x1b[?7h"
-		} else {
-			raw += "\x1b[?7h"
+			raw += "\x1b[?25h"
 		}
+		raw += "\x1b[?7h\x1b[?2026l"
 		r.flushRaw(raw)
 		r.queued.Reset()
 	}
