@@ -232,7 +232,7 @@ func (r *LightRenderer) Init() error {
 	r.csi("G")
 	r.csi("K")
 	if !r.clearOnExit && !r.fullscreen {
-		r.csi("s")
+		r.stderr("\x1b7") // DECSC: save cursor position
 	}
 	if !r.fullscreen && r.mouse {
 		r.yoffset, _ = r.findOffset()
@@ -250,7 +250,6 @@ func (r *LightRenderer) makeSpace() {
 }
 
 func (r *LightRenderer) move(y int, x int) {
-	// w.csi("u")
 	if r.y < y {
 		r.csi(fmt.Sprintf("%dB", y-r.y))
 	} else if r.y > y {
@@ -1022,7 +1021,6 @@ func (r *LightRenderer) Clear() {
 	if r.fullscreen {
 		r.csi("H")
 	}
-	// r.csi("u")
 	r.origin()
 	r.csi("J")
 	r.flush()
@@ -1045,7 +1043,6 @@ func (r *LightRenderer) Refresh() {
 }
 
 func (r *LightRenderer) Close() {
-	// r.csi("u")
 	if r.clearOnExit {
 		if r.fullscreen {
 			r.rmcup()
@@ -1057,7 +1054,7 @@ func (r *LightRenderer) Close() {
 			r.csi("J")
 		}
 	} else if !r.fullscreen {
-		r.csi("u")
+		r.stderr("\x1b8") // DECRC: restore cursor position
 	}
 	if !r.showCursor {
 		r.csi("?25h")
