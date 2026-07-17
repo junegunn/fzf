@@ -96,6 +96,25 @@ archives:
     files:
       - non-existent*
 
+nfpms:
+  - package_name: fzf
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    vendor: junegunn
+    homepage: https://github.com/junegunn/fzf
+    maintainer: Junegunn Choi <junegunn.c@gmail.com>
+    description: Command-line fuzzy finder
+    license: MIT
+    section: utils
+    formats:
+      - deb
+    ids:
+      - fzf
+    contents:
+      - src: man/man1/fzf.1
+        dst: /usr/share/man/man1/fzf.1
+      - src: LICENSE
+        dst: /usr/share/doc/fzf/copyright
+
 release:
   github:
     owner: junegunn
