@@ -3,12 +3,13 @@ CHANGELOG
 
 0.74.1
 ------
-- Bug fixes and improvements
+- Rendering improvements
     - Each frame is now wrapped in synchronized update mode (mode 2026) to reduce flickering on supported terminals
     - Reduced rendering output by 10-23% by skipping redundant SGR sequences
     - Fixed ghost characters and misplaced colors inside Zellij by using CHA instead of CR + CUF for horizontal cursor movement (#4858, zellij-org/zellij#5370)
     - Fixed cursor restoration on exit with `--height --no-clear` inside Neovim terminal by using DECSC/DECRC instead of `CSI s`/`CSI u`
-    - nushell: fixed deprecation error of `str downcase` on nushell 0.114.0 or above (#4857) (@sim590)
+- nushell: fixed deprecation error of `str downcase` on nushell 0.114.0 or above (#4857) (@sim590)
+- Each release now includes `.deb` packages for easy installation on Debian-based distros (#4859)
 
 0.74.0
 ------
