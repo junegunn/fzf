@@ -3696,6 +3696,9 @@ func (opts *Options) noSeparatorLine() bool {
 	if opts.Inputless {
 		return true
 	}
+	// NOTE: This does not know that the default separator can be suppressed at
+	// runtime (see Terminal.separatorLength), so the minimum heights derived
+	// from it can be one line taller than strictly necessary.
 	sep := opts.Separator == nil && !opts.InputBorderShape.Visible() || opts.Separator != nil && len(*opts.Separator) > 0
 	return noSeparatorLine(opts.InfoStyle, sep)
 }
