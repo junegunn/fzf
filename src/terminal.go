@@ -1726,33 +1726,58 @@ func inputBorderFacesList(layout layoutType, shape tui.BorderShape) bool {
 	return shape.HasTop()
 }
 
-// The default horizontal separator is redundant if the input section is
-// already visually separated from the list section by a border line
+// Whether a border line is already drawn between the info line and the
+// section next to it on the list side, making the default horizontal
+// separator redundant
 func (t *Terminal) separatedByBorder() bool {
 	// The input border itself draws a line on the side facing the list section
 	if inputBorderFacesList(t.layout, t.inputBorderShape) {
 		return true
 	}
+	// A preview window at 'next' position sits right next to the input
+	// section, in front of the sections handled below
+	anyNext := false
 	for po := &t.previewOpts; po != nil; po = po.alternative {
 		if po.position == posNext {
-			// A preview window at 'next' position sits right next to the input
-			// section instead. Keep the separator, as the visibility and the
-			// border of the preview window can change at runtime.
-			//
-			// The whole chain is checked because which spec is active depends
-			// on the terminal size, and the resolution (computePreviewSize in
-			// resizeWindows) itself consults noSeparatorLine, so the decision
-			// here cannot depend on its outcome. When a spec other than 'next'
-			// is active, this errs on the side of showing the separator.
+			anyNext = true
+			break
+		}
+	}
+	if anyNext && t.hasPreviewer() {
+		// The separator is hidden only when every spec in the threshold chain
+		// displays a preview window at 'next' position with a border line
+		// facing the input section. We cannot single out the active spec;
+		// which one is active depends on the terminal size, and the
+		// resolution (computePreviewSize in resizeWindows) itself consults
+		// noSeparatorLine. When not every spec qualifies, err on the side of
+		// showing the separator.
+		if len(t.previewOpts.command) == 0 {
+			// No preview command, so no preview window is normally shown, but
+			// the preview(...) action can still display one at any time
 			return false
 		}
+		// NOTE: resizeWindows can clear 'hidden' mid-layout when the
+		// preview(...) action forces the window, so the frame being laid out
+		// can briefly disagree with this decision until the next relayout
+		for po := &t.previewOpts; po != nil; po = po.alternative {
+			if po.position != posNext || po.hidden || po.size.size == 0 || !t.borderFacingInput(po.Border(t.layout)) {
+				return false
+			}
+		}
+		return true
 	}
 	hasHeaderLinesWindow, headerLinesShape := t.determineHeaderLinesShape()
 	hasHeaderWindow := t.hasHeaderWindow()
-	if !t.inputBorderShape.Visible() && !hasHeaderWindow && !hasHeaderLinesWindow {
-		// No separate window is created for the input section in this case
-		// (see hasInputWindow in resizeWindows), i.e. the input section is
-		// embedded in the list window and no border separates the two
+	// Mirror of hasInputWindow in resizeWindows; a 'next' preview position
+	// gives the input section its own window even when no preview window is
+	// shown. A 'next' spec here implies there is no previewer (the block
+	// above returns otherwise), and without a previewer the position is
+	// resolved from the first spec alone, so a 'next' in a threshold
+	// alternative does not count.
+	hasInputWindow := t.previewOpts.position == posNext || t.inputBorderShape.Visible() || hasHeaderWindow || hasHeaderLinesWindow
+	if !hasInputWindow {
+		// The input section is embedded in the list window and no border
+		// separates the two
 		return false
 	}
 
@@ -1761,26 +1786,26 @@ func (t *Terminal) separatedByBorder() bool {
 	// NOTE: hasHeaderWindow can be true with no header content when the input
 	// border is visible (see Terminal.hasHeaderWindow). An empty header window
 	// takes no space, so it cannot be the facing section.
-	hasHeaderSection := hasHeaderWindow && len(t.header0)+t.headerLines > 0
+	hasHeaderSection := hasHeaderWindow && t.visibleHeaderLines() > 0
 	if hasHeaderSection && !t.headerFirst && t.headerBorderShape != tui.BorderInline {
-		// Header section; an inline header is not a separate section, it is
-		// drawn inside the list border, so it falls through to the branches
-		// below
+		// Header section is facing the input section. An inline header is
+		// excluded; it is drawn inside the list border and is covered by the
+		// branches below.
 		return t.borderFacingInput(t.headerBorderShape)
 	}
-	// The header lines section is next to the input section, except in
+	// Header lines section is facing the input section, except in
 	// reverse-list layout where it is on the other side of the list section,
-	// or with --header-first and no header section where it is moved past the
-	// input section
+	// or with --header-first and no header section where it is moved past
+	// the input section
 	if hasHeaderLinesWindow && t.layout != layoutReverseList && (hasHeaderWindow || !t.headerFirst) {
 		return t.borderFacingInput(headerLinesShape)
 	}
-	// List section
+	// The input section sits right next to the list section
 	return t.borderFacingInput(t.listBorderShape)
 }
 
-// Whether the shape draws a horizontal line facing the info line when the
-// section is placed between the input section and the list section
+// Whether the border of the section next to the input section on the list
+// side draws a horizontal line facing the info line
 func (t *Terminal) borderFacingInput(shape tui.BorderShape) bool {
 	if shape == tui.BorderInline {
 		// Embedded between the horizontal lines of the list border
@@ -8252,6 +8277,8 @@ func (t *Terminal) Loop() error {
 			case actChangePreviewWindow:
 				// NOTE: We intentionally use "previewOpts" instead of "activePreviewOpts" here
 				currentPreviewOpts := t.previewOpts
+				wasNoSeparatorLine := t.noSeparatorLine()
+				wasSeparatorLength := t.separatorLength()
 
 				// Reset preview options and apply the additional options
 				t.previewOpts = t.initialPreviewOpts
@@ -8272,8 +8299,28 @@ func (t *Terminal) Loop() error {
 					a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
 				}
 
+				// Do not drop a preview window forced by the preview(...) action
+				keepForcedPreview := t.hasPreviewWindow() && !t.activePreviewOpts.hidden
+
+				// The default separator is decided from the whole threshold
+				// chain (separatedByBorder), which compare does not fully
+				// inspect, so it can change even when compare finds no
+				// layout difference
+				checkSeparator := func() {
+					if t.noSeparatorLine() != wasNoSeparatorLine {
+						// Number of lines changed; relayout
+						updatePreviewWindow(keepForcedPreview)
+						req(reqPreviewRefresh)
+					} else if t.separatorLength() != wasSeparatorLength {
+						// Only the content of the info line changed
+						req(reqInfo)
+					}
+				}
+
 				// Full redraw
 				switch currentPreviewOpts.compare(t.activePreviewOpts, &t.previewOpts) {
+				case previewOptsSame:
+					checkSeparator()
 				case previewOptsDifferentLayout:
 					// Preview command can be running in the background if the size of
 					// the preview window is 0 but not 'hidden'
@@ -8281,7 +8328,7 @@ func (t *Terminal) Loop() error {
 
 					// FIXME: One-time preview window can't reappear once hidden
 					// fzf --bind space:preview:ls --bind 'enter:change-preview-window:down|left|up|hidden|'
-					updatePreviewWindow(t.hasPreviewWindow() && !t.activePreviewOpts.hidden)
+					updatePreviewWindow(keepForcedPreview)
 					if wasHidden && t.hasPreviewWindow() {
 						// Restart
 						refreshPreview(t.previewOpts.command)
@@ -8295,6 +8342,7 @@ func (t *Terminal) Loop() error {
 				case previewOptsDifferentContentLayout:
 					t.previewed.version = 0
 					req(reqPreviewRefresh)
+					checkSeparator()
 				}
 
 				// Adjust scroll offset
