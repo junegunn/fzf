@@ -11,6 +11,9 @@ CHANGELOG
   # Separator shown; no border separates the input section from the list section
   fzf --style full --input-border none --header foo --no-header-border
 
+  # No separator below the border of the preview window at 'next' position
+  fzf --preview : --preview-window next
+
   # Conversely, separator is now shown when the input border does not draw
   # a line facing the list section
   fzf --input-border bottom
