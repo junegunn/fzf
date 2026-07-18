@@ -1228,6 +1228,115 @@ class TestLayout < TestInteractive
     end
   end
 
+  def test_separator_with_input_border
+    # Border line below input does not face the list; separator is shown
+    tmux.send_keys %(seq 100 | #{FZF} --input-border bottom), :Enter
+    block = <<~BLOCK
+      > 1
+        100/100 ──
+      >
+      ────────────
+    BLOCK
+    tmux.until { assert_block(block, it) }
+    teardown
+    setup
+
+    # List border faces the input instead; separator is hidden
+    tmux.send_keys %(seq 100 | #{FZF} --input-border bottom --list-border rounded), :Enter
+    block = <<~BLOCK
+      │ > 1
+      ╰────────────
+          100/100
+        >
+      ─────────────
+    BLOCK
+    tmux.until { assert_block(block, it) }
+    teardown
+    setup
+
+    # Border line above input faces the list; separator is hidden
+    tmux.send_keys %(seq 100 | #{FZF} --input-border top), :Enter
+    block = <<~BLOCK
+      > 1
+      ────────────
+        100/100
+      >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
+
+  def test_separator_with_input_border_reverse
+    # Border line above input does not face the list; separator is shown
+    tmux.send_keys %(seq 100 | #{FZF} --layout reverse --input-border top), :Enter
+    block = <<~BLOCK
+      ────────────
+      >
+        100/100 ──
+      > 1
+    BLOCK
+    tmux.until { assert_block(block, it) }
+    teardown
+    setup
+
+    # Border line below input faces the list; separator is hidden
+    tmux.send_keys %(seq 100 | #{FZF} --layout reverse --input-border bottom), :Enter
+    block = <<~BLOCK
+      >
+        100/100
+      ────────────
+      > 1
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
+
+  def test_separator_with_preview_next
+    # Preview window at 'next' position sits next to the input section, so the
+    # header border does not hide the separator
+    tmux.send_keys %(seq 100 | #{FZF} --header foo --header-border rounded --no-list-border --preview 'echo hi' --preview-window next,1,border-none), :Enter
+    block = <<~BLOCK
+      ╰────────────
+      hi
+        100/100 ───
+      >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+    teardown
+    setup
+
+    # Same when 'next' position comes from a threshold alternative
+    tmux.send_keys %(seq 100 | #{FZF} --header foo --header-border rounded --no-list-border --preview 'echo hi' --preview-window 'up,40%,<9999(next,1,border-none)'), :Enter
+    tmux.until { assert_block(block, it) }
+  end
+
+  def test_separator_with_inline_header_border
+    # Inline header is drawn inside the list border; bare header lines sit
+    # next to the input section, so the separator is shown
+    tmux.send_keys %(seq 100 | #{FZF} --list-border rounded --header foo --header-lines 2 --header-border inline --header-lines-border none), :Enter
+    block = <<~BLOCK
+      ╰────────────
+          2
+          1
+          98/98 ───
+        >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+    teardown
+    setup
+
+    # Header lines are embedded in the list border along with the inline
+    # header; the list border faces the input section and hides the separator
+    tmux.send_keys %(seq 100 | #{FZF} --list-border rounded --header foo --header-lines 2 --header-border inline), :Enter
+    block = <<~BLOCK
+      │   2
+      │   1
+      │   foo
+      ╰────────────
+          98/98
+        >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
+
   def test_header_border_no_pointer_and_marker
     tmux.send_keys %(seq 10 | #{FZF} --header-lines 1 --header-border sharp --no-list-border --pointer '' --marker ''), :Enter
     block = <<~BLOCK
