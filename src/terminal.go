@@ -1249,13 +1249,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 	}
 
 	// Determine input border shape
-	if t.inputBorderShape == tui.BorderLine {
-		if t.layout == layoutReverse {
-			t.inputBorderShape = tui.BorderBottom
-		} else {
-			t.inputBorderShape = tui.BorderTop
-		}
-	}
+	t.inputBorderShape = resolveInputBorderShape(t.layout, t.inputBorderShape)
 
 	// Inline borders are embedded between the list's top and bottom horizontals.
 	// Shapes missing either one (none/phantom/line/single-sided) fall back to a plain
@@ -1711,10 +1705,32 @@ func (t *Terminal) separatorLength() int {
 	return t.separatorLen
 }
 
+// BorderLine for the input border resolves to a single line on the side
+// facing the list section
+func resolveInputBorderShape(layout layoutType, shape tui.BorderShape) tui.BorderShape {
+	if shape != tui.BorderLine {
+		return shape
+	}
+	if layout == layoutReverse {
+		return tui.BorderBottom
+	}
+	return tui.BorderTop
+}
+
+// Whether the input border draws a line on the side facing the list section
+func inputBorderFacesList(layout layoutType, shape tui.BorderShape) bool {
+	shape = resolveInputBorderShape(layout, shape)
+	if layout == layoutReverse {
+		return shape.HasBottom()
+	}
+	return shape.HasTop()
+}
+
 // The default horizontal separator is redundant if the input section is
 // already visually separated from the list section by a border line
 func (t *Terminal) separatedByBorder() bool {
-	if t.inputBorderShape.Visible() {
+	// The input border itself draws a line on the side facing the list section
+	if inputBorderFacesList(t.layout, t.inputBorderShape) {
 		return true
 	}
 	for po := &t.previewOpts; po != nil; po = po.alternative {
@@ -1722,12 +1738,18 @@ func (t *Terminal) separatedByBorder() bool {
 			// A preview window at 'next' position sits right next to the input
 			// section instead. Keep the separator, as the visibility and the
 			// border of the preview window can change at runtime.
+			//
+			// The whole chain is checked because which spec is active depends
+			// on the terminal size, and the resolution (computePreviewSize in
+			// resizeWindows) itself consults noSeparatorLine, so the decision
+			// here cannot depend on its outcome. When a spec other than 'next'
+			// is active, this errs on the side of showing the separator.
 			return false
 		}
 	}
 	hasHeaderLinesWindow, headerLinesShape := t.determineHeaderLinesShape()
 	hasHeaderWindow := t.hasHeaderWindow()
-	if !hasHeaderWindow && !hasHeaderLinesWindow {
+	if !t.inputBorderShape.Visible() && !hasHeaderWindow && !hasHeaderLinesWindow {
 		// No separate window is created for the input section in this case
 		// (see hasInputWindow in resizeWindows), i.e. the input section is
 		// embedded in the list window and no border separates the two
@@ -1736,7 +1758,11 @@ func (t *Terminal) separatedByBorder() bool {
 
 	// The input section has its own window. Determine which section it is
 	// facing, and check if the border of that section draws a line toward it.
-	if hasHeaderWindow && !t.headerFirst && t.headerBorderShape != tui.BorderInline {
+	// NOTE: hasHeaderWindow can be true with no header content when the input
+	// border is visible (see Terminal.hasHeaderWindow). An empty header window
+	// takes no space, so it cannot be the facing section.
+	hasHeaderSection := hasHeaderWindow && len(t.header0)+t.headerLines > 0
+	if hasHeaderSection && !t.headerFirst && t.headerBorderShape != tui.BorderInline {
 		// Header section; an inline header is not a separate section, it is
 		// drawn inside the list border, so it falls through to the branches
 		// below

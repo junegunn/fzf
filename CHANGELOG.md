@@ -10,6 +10,10 @@ CHANGELOG
 
   # Separator shown; no border separates the input section from the list section
   fzf --style full --input-border none --header foo --no-header-border
+
+  # Conversely, separator is now shown when the input border does not draw
+  # a line facing the list section
+  fzf --input-border bottom
   ```
 - Rendering improvements
     - Each frame is now wrapped in synchronized update mode (mode 2026) to reduce flickering on supported terminals
