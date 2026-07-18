@@ -271,6 +271,7 @@ type Terminal struct {
 	ghost                string
 	separator            labelPrinter
 	separatorLen         int
+	separatorAuto        bool
 	spinner              []string
 	promptString         string
 	prompt               func()
@@ -1299,14 +1300,16 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		}
 	}
 
-	// Disable separator by default if input border is set
-	if opts.Separator == nil && !t.inputBorderShape.Visible() || opts.Separator != nil && len(*opts.Separator) > 0 {
-		bar := "─"
-		if opts.Separator != nil {
-			bar = *opts.Separator
-		} else if !t.unicode {
-			bar = "-"
-		}
+	// The default separator can be suppressed at runtime depending on the
+	// window layout (see separatorLength)
+	t.separatorAuto = opts.Separator == nil
+	bar := "─"
+	if opts.Separator != nil {
+		bar = *opts.Separator
+	} else if !t.unicode {
+		bar = "-"
+	}
+	if len(bar) > 0 {
 		t.separator, t.separatorLen = t.ansiLabelPrinter(bar, &tui.ColSeparator, true)
 	}
 
@@ -1695,7 +1698,72 @@ func (t *Terminal) parsePrompt(prompt string) (func(), int) {
 }
 
 func (t *Terminal) noSeparatorLine() bool {
-	return t.inputless || noSeparatorLine(t.infoStyle, t.separatorLen > 0)
+	return t.inputless || noSeparatorLine(t.infoStyle, t.separatorLength() > 0)
+}
+
+// Effective length of the horizontal separator. The default separator is
+// suppressed when the input section is already visually separated from the
+// list section by a border line.
+func (t *Terminal) separatorLength() int {
+	if t.separatorAuto && t.separatedByBorder() {
+		return 0
+	}
+	return t.separatorLen
+}
+
+// The default horizontal separator is redundant if the input section is
+// already visually separated from the list section by a border line
+func (t *Terminal) separatedByBorder() bool {
+	if t.inputBorderShape.Visible() {
+		return true
+	}
+	for po := &t.previewOpts; po != nil; po = po.alternative {
+		if po.position == posNext {
+			// A preview window at 'next' position sits right next to the input
+			// section instead. Keep the separator, as the visibility and the
+			// border of the preview window can change at runtime.
+			return false
+		}
+	}
+	hasHeaderLinesWindow, headerLinesShape := t.determineHeaderLinesShape()
+	hasHeaderWindow := t.hasHeaderWindow()
+	if !hasHeaderWindow && !hasHeaderLinesWindow {
+		// No separate window is created for the input section in this case
+		// (see hasInputWindow in resizeWindows), i.e. the input section is
+		// embedded in the list window and no border separates the two
+		return false
+	}
+
+	// The input section has its own window. Determine which section it is
+	// facing, and check if the border of that section draws a line toward it.
+	if hasHeaderWindow && !t.headerFirst && t.headerBorderShape != tui.BorderInline {
+		// Header section; an inline header is not a separate section, it is
+		// drawn inside the list border, so it falls through to the branches
+		// below
+		return t.borderFacingInput(t.headerBorderShape)
+	}
+	// The header lines section is next to the input section, except in
+	// reverse-list layout where it is on the other side of the list section,
+	// or with --header-first and no header section where it is moved past the
+	// input section
+	if hasHeaderLinesWindow && t.layout != layoutReverseList && (hasHeaderWindow || !t.headerFirst) {
+		return t.borderFacingInput(headerLinesShape)
+	}
+	// List section
+	return t.borderFacingInput(t.listBorderShape)
+}
+
+// Whether the shape draws a horizontal line facing the info line when the
+// section is placed between the input section and the list section
+func (t *Terminal) borderFacingInput(shape tui.BorderShape) bool {
+	if shape == tui.BorderInline {
+		// Embedded between the horizontal lines of the list border
+		return true
+	}
+	if t.layout == layoutReverse {
+		return shape.HasTop()
+	}
+	return shape.HasBottom()
 }
 
 func getScrollbar(perLine int, total int, height int, offset int) (int, int) {
@@ -3330,6 +3398,7 @@ func (t *Terminal) printInfoImpl() {
 	}
 	pos := 0
 	line := 0
+	separatorLen := t.separatorLength()
 	maxHeight := t.window.Height()
 	move := func(y int, x int, clear bool) bool {
 		if y < 0 || y >= maxHeight {
@@ -3357,7 +3426,7 @@ func (t *Terminal) printInfoImpl() {
 			str = string(trimmed)
 			width = maxWidth
 		}
-		move(line, pos, t.separatorLen == 0)
+		move(line, pos, separatorLen == 0)
 		if t.reading {
 			t.window.CPrint(tui.ColSpinner, str)
 		} else {
@@ -3366,7 +3435,7 @@ func (t *Terminal) printInfoImpl() {
 		pos += width
 	}
 	printSeparator := func(fillLength int, pad bool) {
-		if t.separatorLen > 0 {
+		if separatorLen > 0 {
 			t.separator(t.window, fillLength)
 			t.window.Print(" ")
 		} else if pad {
@@ -3375,7 +3444,7 @@ func (t *Terminal) printInfoImpl() {
 	}
 
 	if t.infoStyle == infoHidden {
-		if t.separatorLen > 0 {
+		if separatorLen > 0 {
 			if !move(line+1, 0, false) {
 				return
 			}
@@ -3438,7 +3507,7 @@ func (t *Terminal) printInfoImpl() {
 	}
 	switch t.infoStyle {
 	case infoDefault:
-		if !move(line+1, 0, t.separatorLen == 0) {
+		if !move(line+1, 0, separatorLen == 0) {
 			return
 		}
 		printSpinner()
@@ -3522,7 +3591,7 @@ func (t *Terminal) printInfoImpl() {
 	}
 
 	if t.infoStyle == infoInlineRight {
-		if t.separatorLen > 0 {
+		if separatorLen > 0 {
 			if !move(line+1, 0, false) {
 				return
 			}

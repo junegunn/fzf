@@ -3,6 +3,14 @@ CHANGELOG
 
 0.74.1
 ------
+- The default separator on the info line is no longer shown when the input section is already visually separated from the list section by a border line
+  ```sh
+  # No separator shown below the header border
+  fzf --style full --input-border none --header foo
+
+  # Separator shown; no border separates the input section from the list section
+  fzf --style full --input-border none --header foo --no-header-border
+  ```
 - Rendering improvements
     - Each frame is now wrapped in synchronized update mode (mode 2026) to reduce flickering on supported terminals
     - Reduced rendering output by 10-23% by skipping redundant SGR sequences
