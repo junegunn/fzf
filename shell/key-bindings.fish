@@ -127,14 +127,21 @@ function fzf_key_bindings
     set -l -- total_lines (count $command_line)
     set -l -- fzf_query (string escape -- $command_line[$current_line])
 
+    set -lx -- FZF_DEFAULT_COMMAND "builtin history -z --show-time=(set_color $fish_color_comment 2>/dev/null; or set_color normal)\"%F %a %T%t%s%t\"(set_color normal)"
+
+    # Enable syntax highlighting colors on fish v4.3.3 and newer
+    if string match -qr -- '^\\d\\d+|^4\\.[4-9]|^4\\.3\\.[3-9]' $version
+      set -a -- FZF_DEFAULT_COMMAND "--color=always"
+    end
+
     set -lx -- FZF_DEFAULT_OPTS (__fzf_defaults '' \
       '--with-nth=2.. --nth=2..,.. --scheme=history --multi --no-multi-line' \
       '--no-wrap --wrap-sign="\t\t\t↳ " --preview-wrap-sign="↳ " --freeze-left=1' \
       '--bind="alt-enter:become(set -g fzf_temp {+sf3..}; string join0 -- (string split0 -- <$fzf_temp | fish_indent -i); unlink $fzf_temp &>/dev/null)"' \
       '--bind="alt-t:change-with-nth(1,3..|3..|2..)"' \
-      '--bind="shift-delete:execute-silent(eval builtin history delete -Ce -- (string escape -n -- (string split0 -- <{+sf3..})))+reload(eval $FZF_DEFAULT_COMMAND)"' \
+      "--bind='shift-delete:execute-silent(eval builtin history delete -Ce -- (string escape -n -- (string split0 -- <{+sf3..})))+reload($FZF_DEFAULT_COMMAND)'" \
       "--bind=ctrl-r:toggle-sort,alt-r:toggle-raw --highlight-line $FZF_CTRL_R_OPTS" \
-      '--accept-nth=3.. --delimiter="\t" --tabstop=4 --read0 --print0 --with-shell='(status fish-path)\\ -c)
+      '--accept-nth=3.. --delimiter="\t" --tabstop=4 --ansi --read0 --print0 --with-shell='(status fish-path)\\ -c)
 
     # Add dynamic preview options if preview command isn't already set by user
     if string match -qvr -- '--preview[= ]' "$FZF_DEFAULT_OPTS"
@@ -146,16 +153,6 @@ function fzf_key_bindings
     end
 
     set -lx FZF_DEFAULT_OPTS_FILE
-
-    set -lx -- FZF_DEFAULT_COMMAND 'builtin history -z'
-
-    # Enable syntax highlighting colors on fish v4.3.3 and newer
-    if string match -qr -- '^\\d\\d+|^4\\.[4-9]|^4\\.3\\.[3-9]' $version
-      set -a -- FZF_DEFAULT_OPTS '--ansi'
-      set -a -- FZF_DEFAULT_COMMAND '--color=always --show-time=(set_color $fish_color_comment 2>/dev/null; or set_color normal)"%F %a %T%t%s%t"(set_color normal)'
-    else
-      set -a -- FZF_DEFAULT_COMMAND '--show-time="%F %a %T%t%s%t"'
-    end
 
     # Merge history from other sessions before searching
     test -z "$fish_private_mode"; and builtin history merge
