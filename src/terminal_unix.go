@@ -3,6 +3,7 @@
 package fzf
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,8 +11,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func notifyOnResize(resizeChan chan<- os.Signal) {
+func notifyOnResize(ctx context.Context, resizeChan chan<- os.Signal) {
 	signal.Notify(resizeChan, syscall.SIGWINCH)
+	go func() {
+		<-ctx.Done()
+		signal.Stop(resizeChan)
+	}()
 }
 
 func notifyStop(p *os.Process) {

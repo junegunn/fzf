@@ -6199,7 +6199,7 @@ func (t *Terminal) Loop() error {
 
 		if !t.tui.ShouldEmitResizeEvent() {
 			resizeChan := make(chan os.Signal, 1)
-			notifyOnResize(resizeChan) // Non-portable
+			notifyOnResize(ctx, resizeChan) // Non-portable
 			go func() {
 				for {
 					select {

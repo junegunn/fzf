@@ -3,6 +3,7 @@
 package fzf
 
 import (
+	"context"
 	"os"
 	"syscall"
 	"time"
@@ -19,19 +20,27 @@ func (resizeSignal) Signal()        {}
 
 // Windows has no SIGWINCH, so poll the console screen buffer for window
 // size changes instead.
-func notifyOnResize(resizeChan chan<- os.Signal) {
+func notifyOnResize(ctx context.Context, resizeChan chan<- os.Signal) {
 	consoleOut, err := syscall.Open("CONOUT$", syscall.O_RDWR, 0)
 	if err != nil {
 		return
 	}
 	var info windows.ConsoleScreenBufferInfo
 	if windows.GetConsoleScreenBufferInfo(windows.Handle(consoleOut), &info) != nil {
+		syscall.Close(consoleOut)
 		return
 	}
 	last := info.Window
 	go func() {
+		defer syscall.Close(consoleOut)
+		ticker := time.NewTicker(resizePollInterval)
+		defer ticker.Stop()
 		for {
-			time.Sleep(resizePollInterval)
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+			}
 			if windows.GetConsoleScreenBufferInfo(windows.Handle(consoleOut), &info) != nil {
 				continue
 			}
