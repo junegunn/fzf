@@ -6187,6 +6187,7 @@ func (t *Terminal) Loop() error {
 			for {
 				select {
 				case <-ctx.Done():
+					signal.Stop(intChan)
 					return
 				case s := <-intChan:
 					// Don't quit by SIGINT while executing because it should be for the executing command and not for fzf itself
