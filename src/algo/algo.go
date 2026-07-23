@@ -425,6 +425,44 @@ func debugV2(T []rune, pattern []rune, F []int32, lastIdx int, H []int16, C []in
 	}
 }
 
+// fuzzyMatchV2Single is a fast path for a single-character ASCII pattern on
+// ASCII input. Same scoring and tiebreaks as Phase 2 of FuzzyMatchV2, but
+// jumps between occurrences instead of scanning every character, and
+// allocates no arrays.
+func fuzzyMatchV2Single(caseSensitive bool, forward bool, input *util.Chars, b byte, withPos bool) (Result, *[]int) {
+	byteArray := input.Bytes()
+	maxScore, maxScorePos := int16(0), -1
+	for idx := 0; idx < len(byteArray); {
+		idx = trySkip(input, caseSensitive, b, idx)
+		if idx < 0 {
+			break
+		}
+		class := asciiCharClasses[byteArray[idx]]
+		prevClass := initialCharClass
+		if idx > 0 {
+			prevClass = asciiCharClasses[byteArray[idx-1]]
+		}
+		bonus := bonusMatrix[prevClass][class]
+		score := scoreMatch + bonus*bonusFirstCharMultiplier
+		if forward && score > maxScore || !forward && score >= maxScore {
+			maxScore, maxScorePos = score, idx
+			if forward && bonus >= bonusBoundary {
+				break
+			}
+		}
+		idx++
+	}
+	if maxScorePos < 0 {
+		return Result{-1, -1, 0}, nil
+	}
+	result := Result{maxScorePos, maxScorePos + 1, int(maxScore)}
+	if !withPos {
+		return result, nil
+	}
+	pos := []int{maxScorePos}
+	return result, &pos
+}
+
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	// Assume that pattern is given in lowercase if case-insensitive.
 	// First check if there's a match and calculate bonus for each position.
@@ -445,6 +483,12 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	// overflow in the score matrix. 1000 is a safe limit.
 	if slab != nil && int64(N)*int64(M) > int64(cap(slab.I16)) || M > 1000 {
 		return FuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab)
+	}
+
+	// Single-character ASCII pattern needs neither the prefilter nor the
+	// score matrix
+	if M == 1 && input.IsBytes() && pattern[0] < utf8.RuneSelf {
+		return fuzzyMatchV2Single(caseSensitive, forward, input, byte(pattern[0]), withPos)
 	}
 
 	// Phase 1. Optimized search for ASCII string
