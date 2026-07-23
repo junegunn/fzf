@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.74.2
+------
+- Up to 2x faster matching for single-character queries
+    - This is the most latency-sensitive case; the first keystroke scans the entire list before the result cache can help
+- Fixed nondeterministic match highlight positions
+- fzf now detects terminal resize on Windows in `--height` mode (#4790) (@Cyrus580529)
+- Fixed signal handler cleanup when fzf is used as a library; SIGINT/SIGTERM/SIGHUP and resize handlers no longer persist after `Run()` returns
+- fish: fixed history command being affected by user initialization scripts, and improved timestamp colors in CTRL-R (#4862) (@bitraid)
+
 0.74.1
 ------
 - The default separator on the info line is no longer shown when the input section is already visually separated from the list section by a border line
