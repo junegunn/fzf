@@ -218,3 +218,26 @@ func TestLongStringWithNormalize(t *testing.T) {
 	unicodeString := string(bytes) + " Minímal example"
 	assertMatch2(t, FuzzyMatchV1, false, true, false, unicodeString, "minim", 30001, 30006, 140)
 }
+
+func TestResultPositionsWithReusedSlab(t *testing.T) {
+	// Backtrace positions in equal-score ties must not depend on data
+	// a previous match left in the slab
+	pattern := []rune("co/")
+	target := util.ToChars([]byte("core_color/view/server.txt"))
+	_, freshPos := FuzzyMatchV2(false, false, true, &target, pattern, true, util.MakeSlab(100*1024, 2048))
+
+	slab := util.MakeSlab(100*1024, 2048)
+	dirty := util.ToChars([]byte("completion/keybinding/client/handler/writer_index.txt"))
+	FuzzyMatchV2(false, false, true, &dirty, pattern, true, slab)
+	_, reusedPos := FuzzyMatchV2(false, false, true, &target, pattern, true, slab)
+
+	if len(*freshPos) != len(*reusedPos) {
+		t.Fatalf("position count mismatch: %v vs %v", *freshPos, *reusedPos)
+	}
+	for i := range *freshPos {
+		if (*freshPos)[i] != (*reusedPos)[i] {
+			t.Errorf("positions differ with reused slab: %v vs %v", *freshPos, *reusedPos)
+			break
+		}
+	}
+}

@@ -630,6 +630,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 				s2 = H[I+j0-1]
 			}
 
+			row := i
 			if s > s1 && (s > s2 || s == s2 && preferMatch) {
 				*pos = append(*pos, j+minIdx)
 				if i == 0 {
@@ -637,7 +638,10 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 				}
 				i--
 			}
-			preferMatch = C[I+j0] > 1 || I+width+j0+1 < len(C) && C[I+width+j0+1] > 0
+			// Row below is only written from column F[row+1]; don't read
+			// stale slab data left of it
+			preferMatch = C[I+j0] > 1 ||
+				row+1 < M && j < lastIdx && int32(j+1) >= F[row+1] && C[I+width+j0+1] > 0
 			j--
 		}
 	}
