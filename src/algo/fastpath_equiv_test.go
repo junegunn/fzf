@@ -32,15 +32,17 @@ func samePos(a, b *[]int) bool {
 
 // compareFastPath runs a single input/pattern/params pair through both the
 // fast path and the general algorithm and fails on any difference.
-func compareFastPath(t *testing.T, chars *util.Chars, pattern []rune, cs, fwd, wp bool, disable *bool, slab *util.Slab) {
+// It toggles the package-global disable* hook, so tests that call it must
+// not run in parallel.
+func compareFastPath(t *testing.T, chars *util.Chars, pattern []rune, cs, norm, fwd, wp bool, disable *bool, slab *util.Slab) {
 	t.Helper()
 	*disable = true
-	rg, pg := FuzzyMatchV2(cs, false, fwd, chars, pattern, wp, slab)
+	rg, pg := FuzzyMatchV2(cs, norm, fwd, chars, pattern, wp, slab)
 	*disable = false
-	rt, pt := FuzzyMatchV2(cs, false, fwd, chars, pattern, wp, slab)
+	rt, pt := FuzzyMatchV2(cs, norm, fwd, chars, pattern, wp, slab)
 	if rg != rt || !samePos(pg, pt) {
-		t.Fatalf("mismatch item=%q pat=%q cs=%v fwd=%v wp=%v: general %v %v vs fast %v %v",
-			chars.ToString(), string(pattern), cs, fwd, wp, rg, pg, rt, pt)
+		t.Fatalf("mismatch item=%q pat=%q cs=%v norm=%v fwd=%v wp=%v: general %v %v vs fast %v %v",
+			chars.ToString(), string(pattern), cs, norm, fwd, wp, rg, pg, rt, pt)
 	}
 }
 
@@ -80,11 +82,15 @@ func runExhaustive(t *testing.T, patLen, maxLen int, disable *bool) {
 	var rec func(depth int)
 	rec = func(depth int) {
 		chars := util.ToChars(append([]byte(nil), buf...))
+		// normalize is not varied: normalizeRune is the identity below 0xC0,
+		// and the general algorithm skips normalization on its ASCII branch,
+		// so it cannot change the result for the ASCII-only fast path. The
+		// fuzz test exercises normalize=true as a guard against that changing.
 		for _, cs := range []bool{false, true} {
 			for _, fwd := range []bool{true, false} {
 				for _, wp := range []bool{false, true} {
 					for _, p := range pats {
-						compareFastPath(t, &chars, lowerPattern(p, cs), cs, fwd, wp, disable, slab)
+						compareFastPath(t, &chars, lowerPattern(p, cs), cs, false, fwd, wp, disable, slab)
 					}
 				}
 			}
@@ -110,10 +116,16 @@ func TestFuzzyMatchV2TwoExhaustive(t *testing.T) {
 }
 
 func fuzzFastPath(f *testing.F, patLen int, disable *bool) {
-	f.Add("core_color/view/server.txt", "co")
-	f.Add("a                        b", "ab")
-	f.Add("XyZ/123_abc.def", "z1")
-	f.Add("aaaaaaaaaaaaaaaaaaaaaaaa", "aa")
+	inputs := []string{"core_color/view/server.txt", "a                        b",
+		"XyZ/123_abc.def", "aaaaaaaaaaaaaaaaaaaaaaaa"}
+	// Seed patterns of the right length; wrong-length seeds are rejected below
+	// and would waste the corpus.
+	seedPats := map[int][]string{1: {"c", "a", "/"}, 2: {"co", "ab", "z1", "aa"}}[patLen]
+	for _, in := range inputs {
+		for _, p := range seedPats {
+			f.Add(in, p)
+		}
+	}
 	slab := util.MakeSlab(200*1024, 4096)
 	f.Fuzz(func(t *testing.T, input, pat string) {
 		r := []rune(pat)
@@ -130,9 +142,11 @@ func fuzzFastPath(f *testing.F, patLen int, disable *bool) {
 			return
 		}
 		for _, cs := range []bool{false, true} {
-			for _, fwd := range []bool{true, false} {
-				for _, wp := range []bool{false, true} {
-					compareFastPath(t, &chars, lowerPattern(r, cs), cs, fwd, wp, disable, slab)
+			for _, norm := range []bool{false, true} {
+				for _, fwd := range []bool{true, false} {
+					for _, wp := range []bool{false, true} {
+						compareFastPath(t, &chars, lowerPattern(r, cs), cs, norm, fwd, wp, disable, slab)
+					}
 				}
 			}
 		}
