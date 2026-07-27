@@ -999,6 +999,20 @@ class TestZsh < TestBase
     tmux.send_keys 'C-l', 'C-r'
   end
 
+  test_perl_and_awk 'ctrl_r_exit_code' do
+    exit_file = "#{tempname}-exit"
+    # Wrapper captures status, as widgets return values don't propagate to "$?"
+    # A non-zero status causes the shell to beep when the widget exits (man zshzle)
+    tmux.send_keys %(f() { zle fzf-history-widget; echo $? > #{exit_file}; zle reset-prompt } && zle -N f && bindkey "^R" f), :Enter
+    prepare_ctrl_r_test
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys 'C-g' # abort
+    tmux.send_keys "cat #{exit_file}", :Enter
+    tmux.until { |lines| assert_equal '130', lines[-1] }
+  ensure
+    FileUtils.rm_f(exit_file)
+  end
+
   test_perl_and_awk 'ctrl_r_accept_or_print_query' do
     set_var('FZF_CTRL_R_OPTS', '--bind enter:accept-or-print-query')
     prepare_ctrl_r_test
