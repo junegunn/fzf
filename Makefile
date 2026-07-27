@@ -97,6 +97,16 @@ test: $(SOURCES)
 itest:
 	ruby test/runner.rb
 
+# Actively fuzz the matcher fast paths against the general algorithm.
+# Go fuzzes one target at a time, so iterate. Override duration with
+# FUZZTIME (e.g. make fuzz FUZZTIME=5m).
+FUZZTIME ?= 30s
+fuzz:
+	@for t in FuzzFuzzyMatchV2Single FuzzFuzzyMatchV2Two; do \
+		echo "== $$t =="; \
+		$(GO) test -run '^$$' -fuzz "^$$t$$" -fuzztime $(FUZZTIME) ./src/algo || exit 1; \
+	done
+
 bench:
 	cd src && SHELL=/bin/sh GOOS= $(GO) test -v -tags "$(TAGS)" -run=Bench -bench=. -benchmem
 

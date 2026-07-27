@@ -241,3 +241,75 @@ func TestResultPositionsWithReusedSlab(t *testing.T) {
 		}
 	}
 }
+
+// TestFuzzyMatchV2TwoEquivalence verifies that the two-character fast path
+// produces the same Result and positions as the general algorithm across
+// case sensitivity, direction, and withPos, using a reused slab to surface
+// any stale-data reads in the backtrace.
+func TestFuzzyMatchV2TwoEquivalence(t *testing.T) {
+	words := []string{"src", "main", "core", "config", "parser", "render", "server",
+		"client", "index", "handler", "util", "list", "cache", "reader"}
+	exts := []string{".go", ".rb", ".py", ".md", ".c", ".txt"}
+	// Deterministic corpus (LCG), plus adversarial short/repeated items
+	corpus := []util.Chars{}
+	seed := uint32(12345)
+	next := func(n int) int { seed = seed*1664525 + 1013904223; return int(seed>>8) % n }
+	for i := 0; i < 4000; i++ {
+		depth := 2 + next(4)
+		s := ""
+		for d := 0; d < depth; d++ {
+			if d > 0 {
+				s += "/"
+			}
+			s += words[next(len(words))]
+			if next(5) == 0 {
+				s += "_" + words[next(len(words))]
+			}
+		}
+		s += exts[next(len(exts))]
+		corpus = append(corpus, util.ToChars([]byte(s)))
+	}
+	for _, s := range []string{"", "a", "ab", "aa", "aXb", "a/b", "//", "..", "abcabc",
+		"AaBb", "x.y.z", "a_b_c", "CoreCore", "  co"} {
+		corpus = append(corpus, util.ToChars([]byte(s)))
+	}
+
+	pats := []string{"co", "ab", "aa", "//", "..", "sr", "a/", "_c", "oo", "Ab",
+		"z.", "b.", "1a", "ll", "re", "er", "Co"}
+	slab := util.MakeSlab(100*1024, 2048)
+	for _, cs := range []bool{false, true} {
+		for _, fwd := range []bool{true, false} {
+			for _, wp := range []bool{false, true} {
+				for _, p := range pats {
+					pattern := []rune(p)
+					for j := range corpus {
+						disableTwo = true
+						rg, pg := FuzzyMatchV2(cs, false, fwd, &corpus[j], pattern, wp, slab)
+						disableTwo = false
+						rt, pt := FuzzyMatchV2(cs, false, fwd, &corpus[j], pattern, wp, slab)
+						if rg != rt {
+							t.Fatalf("Result cs=%v fwd=%v wp=%v pat=%q item=%q: general %v vs two %v",
+								cs, fwd, wp, p, corpus[j].ToString(), rg, rt)
+						}
+						if (pg == nil) != (pt == nil) || (pg != nil && !equalInts(*pg, *pt)) {
+							t.Fatalf("Pos cs=%v fwd=%v wp=%v pat=%q item=%q: general %v vs two %v",
+								cs, fwd, wp, p, corpus[j].ToString(), pg, pt)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func equalInts(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}

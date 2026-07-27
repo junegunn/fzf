@@ -463,6 +463,179 @@ func fuzzyMatchV2Single(caseSensitive bool, forward bool, input *util.Chars, b b
 	return result, &pos
 }
 
+// Test hooks: force the general path instead of a fast path, so the two can
+// be compared for equivalence.
+var (
+	disableSingle bool
+	disableTwo    bool
+)
+
+// fuzzyMatchV2Two is a fused fast path for a two-character ASCII pattern on
+// ASCII input. It replicates Phase 2 (row 0) and Phase 3 (row 1) of
+// FuzzyMatchV2 in a single pass, carrying the row-0 diagonal/left values and
+// the row-1 left value as scalars instead of materializing score arrays.
+// When withPos is set, the two DP rows are stored so the backtrace can
+// recover the matched character positions, exactly as the general Phase 4.
+func fuzzyMatchV2Two(caseSensitive bool, forward bool, input *util.Chars, pchar0 byte, pchar1 byte, minIdx int, maxIdx int, withPos bool, slab *util.Slab) (Result, *[]int) {
+	sl := input.Bytes()
+	N := maxIdx - minIdx
+
+	// Row storage, only needed for the backtrace
+	var H0, C0, H1, C1 []int16
+	if withPos {
+		o := 0
+		o, H0 = alloc16(o, slab, N)
+		o, C0 = alloc16(o, slab, N)
+		o, H1 = alloc16(o, slab, N)
+		_, C1 = alloc16(o, slab, N)
+	}
+
+	maxScore, maxScorePos := int16(0), 0
+	prevClass := initialCharClass
+
+	// Subsequence tracking (equivalent to F[0], F[1] in Phase 2). The scope
+	// from asciiFuzzyIndex ends exactly at the last pchar1, so row 1's upper
+	// bound (Phase 3 lastIdx) is the final loop position; no separate var.
+	f0, f1 := -1, -1
+
+	// Row 0 running state at the previous position
+	var h0Prev, c0Prev, bPrev int16
+	inGap0 := false
+
+	// Row 1 running state
+	var h1Prev int16
+	inGap1 := false
+
+	for off := range N {
+		pos := minIdx + off
+		b := sl[pos]
+		class := asciiCharClasses[b]
+		lb := b
+		if !caseSensitive && b >= 'A' && b <= 'Z' {
+			lb = b + 32
+		}
+		bonus := bonusMatrix[prevClass][class]
+		prevClass = class
+
+		// Subsequence advance: pchar0 then pchar1
+		if f0 < 0 {
+			if lb == pchar0 {
+				f0 = off
+			}
+		} else if lb == pchar1 && f1 < 0 {
+			f1 = off
+		}
+
+		// Row 0 (pchar0)
+		var h0Cur, c0Cur int16
+		if lb == pchar0 {
+			h0Cur = scoreMatch + bonus*bonusFirstCharMultiplier
+			c0Cur = 1
+			inGap0 = false
+		} else {
+			if inGap0 {
+				h0Cur = max(h0Prev+scoreGapExtension, 0)
+			} else {
+				h0Cur = max(h0Prev+scoreGapStart, 0)
+			}
+			c0Cur = 0
+			inGap0 = true
+		}
+		if withPos {
+			H0[off], C0[off] = h0Cur, c0Cur
+		}
+
+		// Row 1 (pchar1), only within [f1, lastIdx]
+		if f1 >= 0 && off >= f1 {
+			var s1, s2, consecutive int16
+			hleft := h1Prev
+			if off == f1 {
+				hleft = 0
+			}
+			if inGap1 {
+				s2 = hleft + scoreGapExtension
+			} else {
+				s2 = hleft + scoreGapStart
+			}
+			if lb == pchar1 {
+				s1 = h0Prev + scoreMatch
+				bb := bonus
+				consecutive = c0Prev + 1
+				if consecutive > 1 {
+					fb := bPrev
+					if bb >= bonusBoundary && bb > fb {
+						consecutive = 1
+					} else {
+						bb = max(bb, bonusConsecutive, fb)
+					}
+				}
+				if s1+bb < s2 {
+					s1 += bonus
+					consecutive = 0
+				} else {
+					s1 += bb
+				}
+			}
+			inGap1 = s1 < s2
+			score := max(s1, s2, 0)
+			if forward && score > maxScore || !forward && score >= maxScore {
+				maxScore, maxScorePos = score, off
+			}
+			h1Prev = score
+			if withPos {
+				H1[off], C1[off] = score, consecutive
+			}
+		}
+
+		h0Prev, c0Prev, bPrev = h0Cur, c0Cur, bonus
+	}
+
+	if f1 < 0 {
+		return Result{-1, -1, 0}, nil
+	}
+	if !withPos {
+		return Result{minIdx + f0, minIdx + maxScorePos + 1, int(maxScore)}, nil
+	}
+
+	// Phase 4 backtrace, specialized to two rows. Mirrors the general loop:
+	// record a cell when it dominates its diagonal and left neighbors, then
+	// step up a row; otherwise step left. preferMatch breaks score ties and
+	// must not read row 1 left of f1 (unwritten, possibly stale slab data).
+	pos := posArray(true, 2)
+	i := 1
+	j := maxScorePos
+	preferMatch := true
+	for {
+		var s, s1, s2, cCur int16
+		if i == 1 {
+			s, cCur = H1[j], C1[j]
+			if j >= f1 {
+				s1 = H0[j-1]
+			}
+			if j > f1 {
+				s2 = H1[j-1]
+			}
+		} else {
+			s, cCur = H0[j], C0[j]
+			if j > f0 {
+				s2 = H0[j-1]
+			}
+		}
+		row := i
+		if s > s1 && (s > s2 || s == s2 && preferMatch) {
+			*pos = append(*pos, j+minIdx)
+			if i == 0 {
+				break
+			}
+			i--
+		}
+		preferMatch = cCur > 1 ||
+			row == 0 && j < N-1 && j+1 >= f1 && C1[j+1] > 0
+		j--
+	}
+	return Result{minIdx + j, minIdx + maxScorePos + 1, int(maxScore)}, pos
+}
+
 func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.Chars, pattern []rune, withPos bool, slab *util.Slab) (Result, *[]int) {
 	// Assume that pattern is given in lowercase if case-insensitive.
 	// First check if there's a match and calculate bonus for each position.
@@ -487,7 +660,7 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 
 	// Single-character ASCII pattern needs neither the prefilter nor the
 	// score matrix
-	if M == 1 && input.IsBytes() && pattern[0] < utf8.RuneSelf {
+	if !disableSingle && M == 1 && input.IsBytes() && pattern[0] < utf8.RuneSelf {
 		return fuzzyMatchV2Single(caseSensitive, forward, input, byte(pattern[0]), withPos)
 	}
 
@@ -498,6 +671,13 @@ func FuzzyMatchV2(caseSensitive bool, normalize bool, forward bool, input *util.
 	}
 	// fmt.Println(N, maxIdx, idx, maxIdx-idx, input.ToString())
 	N = maxIdx - minIdx
+
+	// Two-character ASCII pattern: rows 0 and 1 collapse to scalar running
+	// state, so the general score arrays are unnecessary
+	if !disableTwo && M == 2 && input.IsBytes() &&
+		pattern[0] < utf8.RuneSelf && pattern[1] < utf8.RuneSelf {
+		return fuzzyMatchV2Two(caseSensitive, forward, input, byte(pattern[0]), byte(pattern[1]), minIdx, maxIdx, withPos, slab)
+	}
 
 	// Reuse pre-allocated integer slice to avoid unnecessary sweeping of garbages
 	offset16 := 0

@@ -3,8 +3,10 @@ CHANGELOG
 
 0.74.2
 ------
-- Single-character queries are up to 2.4x faster
-    - This is the most latency-sensitive case; the first keystroke scans the entire list before the result cache can help
+- Performance optimizations for short queries
+    - The most critical case: fzf narrows results as you type, so short queries scan the largest candidate sets and the first keystroke scans the whole input.
+    - Single-character queries are up to 2.4x faster
+    - Two-character queries are up to 1.4x faster
 - Faster sorting of search results; the default two-criteria ranking skips redundant radix passes
 - Fixed nondeterministic match highlight positions
 - fzf now detects terminal resize on Windows in `--height` mode (#4790) (@Cyrus580529)
