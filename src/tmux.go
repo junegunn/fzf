@@ -55,10 +55,24 @@ func escapeTmuxSeparator(str string) string {
 	return str
 }
 
-// Escape a string for use as the pane title; select-pane -T expands format
-// expressions denoted by '#', but not time conversion specifiers
-func escapeTmuxTitle(str string) string {
+// '#[...]' is still processed when a substituted value is drawn, so '#' is
+// doubled. '#{...}' is already literal
+func escapeTmuxFormat(str string) string {
 	return escapeTmuxSeparator(strings.ReplaceAll(str, "#", "##"))
+}
+
+// The option pane-border-format reads back, and the pane it is set on
+const (
+	tmuxBorderLabelOption = "@fzf-border-label"
+	tmuxBorderLabelEnv    = internalEnvPrefix + "TMUX_LABEL_PANE"
+)
+
+// Errors are ignored. The pane may be gone
+func setTmuxBorderLabel(pane string, label string) {
+	// Strip ANSI sequences. tmux would draw the escape's remainder as text
+	label, _, _ = extractColor(label, nil, nil)
+	exec.Command("tmux", "set-option", "-p", "-t", pane,
+		tmuxBorderLabelOption, escapeTmuxFormat(label)).Run()
 }
 
 // Convert sizeSpec to the number of cells, clamped between the minimum
@@ -128,35 +142,28 @@ func runTmuxFloatingPane(argStr string, dir string, windowWidth int, windowHeigh
 		// remain-on-exit is on.
 		setup := `tmux set-option -p -t "$TMUX_PANE" remain-on-exit off 2> /dev/null; `
 
-		// Set --border-label as the title of the floating pane, and as its
-		// pane-border-format so that it is displayed on the border when
-		// pane-border-status is enabled. Without a label, the border text
-		// is cleared so that the default pane status content (e.g. the
-		// pane title) is not shown. pane-border-format is pane-scoped,
-		// but pane-border-status is a window option that only becomes
-		// pane-scoped in the next release of tmux, so it is left alone.
+		// --border-label lives in a pane-scoped user option that
+		// pane-border-format reads back, so a program in the pane cannot
+		// replace it by setting the title. Set even when empty, so
+		// change-border-label can fill it in and the default pane status is
+		// not shown. pane-border-status is a window option until the next
+		// tmux release, so it is left alone.
 		//   https://github.com/tmux/tmux/commit/7a18fa281db3
-		// --border-label-pos is ignored.
-		// The label is left to fzf when it draws its own border with the
-		// label on it. '--border=none' is not the case; fzf would not
-		// display the label, but the native border of a floating pane
-		// cannot be removed, so display the label on it nonetheless.
-		format := ""
-		if opts.BorderLabel.label != "" &&
-			(opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine ||
-				opts.BorderShape == tui.BorderNone) {
+		// --border-label-pos is ignored. With an explicit --border fzf draws
+		// the label itself, but the native border cannot be removed.
+		ownsLabel := noBorderSpecified(opts)
+		label := ""
+		if ownsLabel {
 			// Strip ANSI sequences fzf would otherwise render itself
-			label, _, _ := extractColor(opts.BorderLabel.label, nil, nil)
-			if label != "" {
-				setup += fmt.Sprintf(`tmux select-pane -t "$TMUX_PANE" -T %s 2> /dev/null; `,
-					escapeSingleQuote(escapeTmuxTitle(label)))
-				// The title is displayed verbatim; substituted values are
-				// not expanded again
-				format = "#{pane_title}"
-			}
+			label, _, _ = extractColor(opts.BorderLabel.label, nil, nil)
 		}
+		setup += fmt.Sprintf(`tmux set-option -p -t "$TMUX_PANE" %s %s 2> /dev/null; `,
+			tmuxBorderLabelOption, escapeSingleQuote(escapeTmuxFormat(label)))
 		setup += fmt.Sprintf(`tmux set-option -p -t "$TMUX_PANE" pane-border-format %s 2> /dev/null; `,
-			escapeSingleQuote(format))
+			escapeSingleQuote("#{"+tmuxBorderLabelOption+"}"))
+		if ownsLabel {
+			setup += fmt.Sprintf(`export %s="$TMUX_PANE"; `, tmuxBorderLabelEnv)
+		}
 		paneCmd := fmt.Sprintf("%s%s %s; echo $? > %s; tmux wait-for -S %s",
 			setup, escapeSingleQuote(sh), escapeSingleQuote(temp), code, signal)
 		// Unzoom the window first; creating a floating pane over a zoomed
@@ -193,16 +200,20 @@ exit "$code"`, newPane, code, signal, signal, code, code, code)
 	}, opts, true)
 }
 
+// Whether no box border was asked for. 'none' and 'line' count as none.
+// fzf draws no box for either
+func noBorderSpecified(opts *Options) bool {
+	return opts.BorderShape == tui.BorderUndefined ||
+		opts.BorderShape == tui.BorderLine || opts.BorderShape == tui.BorderNone
+}
+
 // Whether to use the multiplexer's native border for the floating pane. Its
 // native border is the handle that makes the pane movable and resizable with
 // the mouse, so it is the default; 'border-native' forces it. It is not used
 // when a border style is explicitly specified with --border, so that the
-// fzf-drawn border is the only one shown. 'none' and 'line' are treated as no
-// border; fzf draws no box for either, and 'line' only makes sense with
-// --height.
+// fzf-drawn border is the only one shown.
 func nativeBorder(opts *Options) bool {
-	return opts.Tmux.border || opts.BorderShape == tui.BorderUndefined ||
-		opts.BorderShape == tui.BorderLine || opts.BorderShape == tui.BorderNone
+	return opts.Tmux.border || noBorderSpecified(opts)
 }
 
 func runTmux(args []string, opts *Options) (int, error) {

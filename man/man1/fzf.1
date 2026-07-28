@@ -426,9 +426,13 @@ On tmux 3.7 or above and on Zellij, the floating pane is not modal; you can
 switch to other panes and windows while fzf is running, and move and resize
 the pane with the mouse. The native border of the pane is the handle for
 moving and resizing it, so it is used by default and \fBborder\-native\fR is
-implied. On tmux, \fB\-\-border\-label\fR is set as the title of the pane,
-and is displayed on the border if \fBpane\-border\-status\fR is enabled in
-tmux (\fB\-\-border\-label\-pos\fR is ignored).
+implied. \fB\-\-border\-label\fR is displayed on the native border, and
+\fBchange\-border\-label\fR and \fBtransform\-border\-label\fR update it
+(\fB\-\-border\-label\-pos\fR is ignored). On tmux, fzf holds the label in
+the \fB@fzf\-border\-label\fR option of the pane and sets its
+\fBpane\-border\-format\fR to read it back, so the label is displayed if
+\fBpane\-border\-status\fR is enabled in tmux. The title of the pane is left
+alone. On Zellij, the label is the name of the pane.
 
 fzf draws its own border instead when a border style is explicitly specified
 with \fB\-\-border\fR, so that it is the only border shown. \fBnone\fR and

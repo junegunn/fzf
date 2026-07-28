@@ -17,9 +17,11 @@ class TestTmux < TestInteractive
   def test_floating_pane
     tmux.send_keys "seq 100 | #{fzf('--popup center,80% --margin 0')}", :Enter
     tmux.until { |lines| assert_equal 100, lines.item_count }
-    # Border text is cleared when no label is given
-    format = IO.popen(['tmux', 'show-options', '-p', '-t', floating_pane, 'pane-border-format'], &:read)
-    assert_includes format, "''"
+    # Border text is empty when no label is given
+    pane = floating_pane
+    refute_nil pane
+    assert_equal "\#{@fzf-border-label}", pane_option(pane, 'pane-border-format')
+    assert_equal '', pane_option(pane, '@fzf-border-label')
     tmux.send_keys '99'
     tmux.until { |lines| assert_equal 1, lines.match_count }
     tmux.send_keys :Enter
@@ -40,10 +42,41 @@ class TestTmux < TestInteractive
     tmux.until { |lines| assert_equal 100, lines.item_count }
     pane = floating_pane
     refute_nil pane
+    # The label is held in a user option, not in the pane title, which is
+    # left to the user. '#' is doubled so that the label is drawn as it is
+    # written, instead of '#[...]' being taken as a style directive
+    assert_equal ' ##fzf-label 100% ', pane_option(pane, '@fzf-border-label')
+    assert_equal "\#{@fzf-border-label}", pane_option(pane, 'pane-border-format')
     title = IO.popen(['tmux', 'display-message', '-p', '-t', pane, "\#{pane_title}"], &:read)
-    assert_equal ' #fzf-label 100% ', title.chomp
-    format = IO.popen(['tmux', 'show-options', '-p', '-t', pane, 'pane-border-format'], &:read)
-    assert_includes format, "\#{pane_title}"
+    refute_equal ' #fzf-label 100% ', title.chomp
+    tmux.send_keys :Enter
+    assert_equal '1', fzf_output
+  end
+
+  def test_floating_pane_change_border_label
+    tmux.send_keys "seq 100 | #{fzf(%(--popup center,80% --margin 0 --bind 'space:change-border-label( #[fg=red] 100% )'))}", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    pane = floating_pane
+    refute_nil pane
+    assert_equal '', pane_option(pane, '@fzf-border-label')
+    tmux.send_keys :Space
+    wait { assert_equal ' ##[fg=red] 100% ', pane_option(pane, '@fzf-border-label') }
+    tmux.send_keys :Enter
+    assert_equal '1', fzf_output
+  end
+
+  # A program running in the pane owns the pane title, but not the label
+  def test_floating_pane_border_label_not_affected_by_title
+    tmux.send_keys "seq 100 | #{fzf(%(--popup center,80% --margin 0 --border-label ' label ' --bind 'space:execute-silent(printf "\\033]2;hijacked\\033\\\\" > /dev/tty)'))}", :Enter
+    tmux.until { |lines| assert_equal 100, lines.item_count }
+    pane = floating_pane
+    refute_nil pane
+    tmux.send_keys :Space
+    wait do
+      title = IO.popen(['tmux', 'display-message', '-p', '-t', pane, "\#{pane_title}"], &:read)
+      assert_equal 'hijacked', title.chomp
+    end
+    assert_equal ' label ', pane_option(pane, '@fzf-border-label')
     tmux.send_keys :Enter
     assert_equal '1', fzf_output
   end
@@ -78,6 +111,12 @@ class TestTmux < TestInteractive
   end
 
   private
+
+  # stderr is merged in so that an unset option, which prints 'invalid
+  # option' to stderr and nothing to stdout, is not read as an empty value
+  def pane_option(pane, name)
+    IO.popen(['tmux', 'show-options', '-p', '-t', pane, '-v', name], err: %i[child out], &:read).chomp
+  end
 
   def floating_pane
     format = "\#{pane_id} \#{pane_floating_flag}"

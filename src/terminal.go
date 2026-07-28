@@ -470,6 +470,7 @@ type Terminal struct {
 	clickFooterLine      int
 	clickFooterColumn    int
 	proxyScript          string
+	setNativeLabel       func(string)
 	numLinesCache        map[int32]numLinesCacheValue
 	raw                  bool
 	lastActivity         time.Time
@@ -1142,6 +1143,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		printer:            opts.Printer,
 		printsep:           opts.PrintSep,
 		proxyScript:        opts.ProxyScript,
+		setNativeLabel:     nativeLabelSetter(),
 		merger:             em,
 		passMerger:         em,
 		resultMerger:       em,
@@ -7272,6 +7274,10 @@ func (t *Terminal) Loop() error {
 					if t.border != nil {
 						t.borderLabel, t.borderLabelLen = t.ansiLabelPrinter(label, &tui.ColBorderLabel, false)
 						req(reqRedrawBorderLabel)
+					} else if t.setNativeLabel != nil {
+						// fzf draws no border of its own; the label is on the
+						// native border of the floating pane
+						t.setNativeLabel(label)
 					}
 				})
 			case actChangePreviewLabel, actTransformPreviewLabel, actBgTransformPreviewLabel:

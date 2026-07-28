@@ -1,10 +1,19 @@
 package fzf
 
 import (
+	"fmt"
 	"os/exec"
-
-	"github.com/junegunn/fzf/src/tui"
 )
+
+const zellijBorderLabelEnv = internalEnvPrefix + "ZELLIJ_LABEL_PANE"
+
+// Errors are ignored. The pane may be gone
+func setZellijBorderLabel(pane string, label string) {
+	// Strip ANSI sequences fzf would otherwise render itself
+	label, _, _ = extractColor(label, nil, nil)
+	// '--' so that a label starting with a hyphen is not parsed as a flag
+	exec.Command("zellij", "action", "rename-pane", "-p", pane, "--", label).Run()
+}
 
 func runZellij(args []string, opts *Options) (int, error) {
 	// Use the native Zellij border by default, consistent with tmux, so that
@@ -20,6 +29,7 @@ func runZellij(args []string, opts *Options) (int, error) {
 		"run", "--floating", "--close-on-exit", "--block-until-exit",
 		"--cwd", dir,
 	}
+	ownsLabel := false
 	if !opts.Tmux.border {
 		zellijArgs = append(zellijArgs, "--borderless", "true")
 	} else {
@@ -33,8 +43,8 @@ func runZellij(args []string, opts *Options) (int, error) {
 		// stripping ANSI sequences fzf would otherwise render itself.
 		// --border-label-pos is ignored.
 		label := ""
-		if opts.BorderShape == tui.BorderUndefined || opts.BorderShape == tui.BorderLine ||
-			opts.BorderShape == tui.BorderNone {
+		ownsLabel = noBorderSpecified(opts)
+		if ownsLabel {
 			label, _, _ = extractColor(opts.BorderLabel.label, nil, nil)
 		}
 		zellijArgs = append(zellijArgs, "--name="+label)
@@ -60,7 +70,14 @@ func runZellij(args []string, opts *Options) (int, error) {
 		if err != nil {
 			return nil, err
 		}
-		zellijArgs = append(zellijArgs, sh, temp)
+		if ownsLabel {
+			// 'zellij run' cannot set the new pane's environment, so the
+			// command exports it itself. exec avoids a lingering shell
+			zellijArgs = append(zellijArgs, sh, "-c", fmt.Sprintf(`export %s="$ZELLIJ_PANE_ID"; exec %s %s`,
+				zellijBorderLabelEnv, escapeSingleQuote(sh), escapeSingleQuote(temp)))
+		} else {
+			zellijArgs = append(zellijArgs, sh, temp)
+		}
 		return exec.Command("zellij", zellijArgs...), nil
 	}, opts, true)
 }

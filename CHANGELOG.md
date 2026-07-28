@@ -3,6 +3,9 @@ CHANGELOG
 
 0.74.2
 ------
+- `change-border-label` and `transform-border-label` now update the label on the native border of a tmux or Zellij floating pane
+    - On tmux, the label no longer goes through the pane title, so a program running in the pane cannot replace it by setting the title
+- Fixed a Kitty graphics sequence from a preview command being taken by tmux as a request to set the pane title; it is now passed through to the terminal
 - Performance optimizations for short queries
     - The most critical case: fzf narrows results as you type, so short queries scan the largest candidate sets and the first keystroke scans the whole input.
     - Single-character queries are up to 2.4x faster

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/junegunn/fzf/src/tui"
@@ -19,8 +20,73 @@ import (
 
 const becomeSuffix = ".become"
 
+// Withheld from the environment replay below, so an outer value cannot
+// override what the floating pane set
+const internalEnvPrefix = "__FZF_INTERNAL_"
+
 func escapeSingleQuote(str string) string {
 	return "'" + strings.ReplaceAll(str, "'", "'\\''") + "'"
+}
+
+// Read and remove, so preview and execute commands do not inherit it
+func takeEnv(name string) string {
+	value := os.Getenv(name)
+	os.Unsetenv(name)
+	return value
+}
+
+// Applies label updates off the event loop, which would block on the fork
+type labelUpdater struct {
+	set     func(string)
+	mu      sync.Mutex
+	pending *string
+	running bool
+}
+
+// A queue of one: a burst collapses to the newest label. A goroutine per
+// update could apply them out of order
+func (u *labelUpdater) update(label string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.pending = &label
+	if u.running {
+		return
+	}
+	u.running = true
+	go u.run()
+}
+
+// Ends once caught up, so nothing needs cancelling when Run returns
+func (u *labelUpdater) run() {
+	for {
+		u.mu.Lock()
+		label := u.pending
+		if label == nil {
+			u.running = false
+			u.mu.Unlock()
+			return
+		}
+		u.pending = nil
+		u.mu.Unlock()
+		u.set(*label)
+	}
+}
+
+// Updates the label on the native border, or nil when it is not fzf's to update
+func nativeLabelSetter() func(string) {
+	// Read both, so neither is left behind
+	tmuxPane, zellijPane := takeEnv(tmuxBorderLabelEnv), takeEnv(zellijBorderLabelEnv)
+	var set func(string)
+	switch {
+	case tmuxPane != "":
+		set = func(label string) { setTmuxBorderLabel(tmuxPane, label) }
+	case zellijPane != "":
+		set = func(label string) { setZellijBorderLabel(zellijPane, label) }
+	default:
+		return nil
+	}
+	updater := &labelUpdater{set: set}
+	return updater.update
 }
 
 func popupArgStr(args []string, opts *Options) (string, string) {
@@ -125,6 +191,9 @@ func runProxy(commandPrefix string, cmdBuilder func(temp string, needBash bool) 
 		validIdentifier := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 		for _, pairStr := range os.Environ() {
 			pair := strings.SplitN(pairStr, "=", 2)
+			if strings.HasPrefix(pair[0], internalEnvPrefix) {
+				continue
+			}
 			if validIdentifier.MatchString(pair[0]) {
 				exports = append(exports, fmt.Sprintf("export %s=%s", pair[0], escapeSingleQuote(pair[1])))
 			} else if strings.HasPrefix(pair[0], "BASH_FUNC_") && strings.HasSuffix(pair[0], "%%") {
