@@ -46,11 +46,11 @@ func tmuxFloatingPaneInfo() (int, int, bool) {
 	return width, height, true
 }
 
-// A lone ';' argument is a command separator to tmux, aborting the whole
-// command at parse time
+// tmux ends a command at an argument ending in ';', so a trailing one is
+// escaped. Elsewhere it is not special
 func escapeTmuxSeparator(str string) string {
-	if str == ";" {
-		return `\;`
+	if strings.HasSuffix(str, ";") {
+		return str[:len(str)-1] + `\;`
 	}
 	return str
 }

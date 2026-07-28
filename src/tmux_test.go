@@ -18,6 +18,7 @@ func TestEscapeTmuxFormat(t *testing.T) {
 		{" C# notes #S ", " C## notes ##S "},
 		{";", `\;`},
 		{"; rm", "; rm"},
+		{"C#;", `C##\;`},
 	} {
 		if actual := escapeTmuxFormat(tc.given); actual != tc.expected {
 			t.Errorf("expected %q, got %q", tc.expected, actual)
@@ -35,10 +36,15 @@ func TestEscapeTmuxSeparator(t *testing.T) {
 		{"#", "#"},
 		{"#{pane_id}", "#{pane_id}"},
 		{"100%", "100%"},
+		// tmux drops a trailing ';' and everything after it, so only that
+		// one is escaped
 		{";", `\;`},
+		{"abc;", `abc\;`},
+		{";;", `;\;`},
+		{`foo\;`, `foo\\;`},
 		{"; rm", "; rm"},
 		{" ; ", " ; "},
-		{";;", ";;"},
+		{"a;b", "a;b"},
 	} {
 		if actual := escapeTmuxSeparator(tc.given); actual != tc.expected {
 			t.Errorf("expected %q, got %q", tc.expected, actual)
