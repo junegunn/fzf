@@ -59,6 +59,8 @@ var passThroughBeginRegex *regexp.Regexp
 var passThroughEndTmuxRegex *regexp.Regexp
 var ttyin *os.File
 
+var inTmux = len(os.Getenv("TMUX")) > 0
+
 const clearCode string = "\x1b[2J"
 
 // Number of maximum focus events to process synchronously
@@ -4756,6 +4758,22 @@ func findPassThrough(line string) []int {
 	return []int{loc[0], loc[1] + pos + 2}
 }
 
+// tmux takes a bare APC as a request to set the pane title, so a Kitty
+// graphics command never reaches the terminal and clobbers the title on the
+// way. 'kitten icat --clear' emits one unwrapped. Sixel is left alone.
+// https://github.com/junegunn/fzf/issues/4870
+func wrapPassThrough(passThrough string, tmux bool) string {
+	if !tmux || !strings.HasPrefix(passThrough, "\x1b_G") {
+		return passThrough
+	}
+	// Only the sequence is passed through, not the trailing CR
+	suffix := ""
+	if strings.HasSuffix(passThrough, "\r") {
+		passThrough, suffix = passThrough[:len(passThrough)-1], "\r"
+	}
+	return "\x1bPtmux;" + strings.ReplaceAll(passThrough, "\x1b", "\x1b\x1b") + "\x1b\\" + suffix
+}
+
 func extractPassThroughs(line string) ([]string, string) {
 	passThroughs := []string{}
 	transformed := ""
@@ -4996,7 +5014,7 @@ Loop:
 				} else {
 					t.pwindow.Move(y, x)
 				}
-				t.tui.PassThrough(passThrough)
+				t.tui.PassThrough(wrapPassThrough(passThrough, inTmux))
 
 				if requiredLines > 0 {
 					if y+requiredLines == height {

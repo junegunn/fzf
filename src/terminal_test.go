@@ -549,6 +549,35 @@ func TestExtractPassthroughs(t *testing.T) {
 	}
 }
 
+func TestWrapPassThrough(t *testing.T) {
+	for _, passThrough := range []string{
+		"\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\", // Already wrapped
+		"\x1bP0;1;0q#0;2;0;0;0#0~~@@vv@@~~@\x1b\\",    // Sixel
+		"\x1b]1337;File=inline=1:AAAA\a",              // iTerm2
+	} {
+		if got := wrapPassThrough(passThrough, true); got != passThrough {
+			t.Errorf("should have been left alone: %q -> %q", passThrough, got)
+		}
+	}
+
+	kitty := "\x1b_Ga=d,d=A\x1b\\"
+	if got := wrapPassThrough(kitty, false); got != kitty {
+		t.Errorf("should have been left alone outside of tmux: %q", got)
+	}
+
+	// ESC characters are doubled, and the trailing carriage return is kept
+	// outside of the wrapper
+	for _, test := range []struct{ input, want string }{
+		{kitty, "\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\"},
+		{kitty + "\r", "\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\\r"},
+		{"\x1b_Gm=1;\x1bAAA=\x1b\\", "\x1bPtmux;\x1b\x1b_Gm=1;\x1b\x1bAAA=\x1b\x1b\\\x1b\\"},
+	} {
+		if got := wrapPassThrough(test.input, true); got != test.want {
+			t.Errorf("expected %q, got %q", test.want, got)
+		}
+	}
+}
+
 /* utilities section */
 
 // Item represents one line in fzf UI. Usually it is relative path to files and folders.
