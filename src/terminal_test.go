@@ -578,6 +578,60 @@ func TestWrapPassThrough(t *testing.T) {
 	}
 }
 
+func TestIsImagePassThrough(t *testing.T) {
+	for _, tc := range []struct {
+		given string
+		image bool
+	}{
+		// Kitty
+		{"\x1b_Ga=T,f=32,s=1258,v=1295,c=74,r=35,m=1\x1b\\", true},
+		{"\x1b_Ga=p,i=1\x1b\\", true},
+		// The action key is not always first, and a put carries no payload
+		{"\x1b_Gi=1,a=p\x1b\\", true},
+		{"\x1b_Ga=p\x1b\\", true},
+		{"\x1b_Ga=T,f=100\x1b\\\r", true},
+		{"\x1b_Gi=1,a=d\x1b\\", false},
+		{"\x1b_Ga=d,d=A\x1b\\", false},          // 'kitten icat --clear'
+		{"\x1b_Ga=q,i=1\x1b\\", false},          // query
+		{"\x1b_Gi=1,f=100\x1b\\", false},        // transmit only, the default action
+		{"\x1b_Gm=1;AAAA\x1b\\", false},         // continuation chunk
+		{"\x1b_Ga=f,i=1;AAAA\x1b\\", false},     // animation frame
+		{"\x1b_Ga=T,U=1,f=32;AAAA\x1b\\", true}, // unicode placeholder
+		// Wrapped in the tmux passthrough sequence
+		{"\x1bPtmux;\x1b\x1b_Ga=T,f=100\x1b\x1b\\\x1b\\", true},
+		{"\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\", false},
+		{"\x1bPtmux;\x1b\x1b_Gi=1,a=p\x1b\x1b\\\x1b\\", true},
+		// iTerm2
+		{"\x1b]1337;File=inline=1:AAAA\a", true},
+		{"\x1b]1337;MultipartFile=inline=1\a", true},
+		{"\x1b]1337;SetUserVar=foo=YmFy\a", false},
+		{"\x1b]1337;CurrentDir=/tmp\a", false},
+		// Sixel
+		{"\x1bP0;1;0q#0;2;0;0;0#0~~@@vv@@~~@\x1b\\", true},
+		{"\x1bPq#0~~\x1b\\", true},
+		{"\x1bPtmux;\x1b\x1bP0;1;0q#0~~\x1b\x1b\\\x1b\\", true},
+		{"", false},
+	} {
+		if actual := isImagePassThrough(tc.given); actual != tc.image {
+			t.Errorf("expected %v for %q, got %v", tc.image, tc.given, actual)
+		}
+	}
+
+	if containsImage([]string{"foo", "bar"}) {
+		t.Error("plain text carries no image")
+	}
+	if !containsImage([]string{"foo", "bar\x1b_Ga=T,f=100\x1b\\baz"}) {
+		t.Error("failed to find an image in a line")
+	}
+	if containsImage([]string{"foo\x1b_Ga=d,d=A\x1b\\"}) {
+		t.Error("a delete command is not an image")
+	}
+	// The image is not the first passthrough on the line
+	if !containsImage([]string{"\x1b_Ga=d,d=A\x1b\\text\x1b_Ga=T,f=100;AAAA\x1b\\"}) {
+		t.Error("failed to look past an earlier passthrough")
+	}
+}
+
 /* utilities section */
 
 // Item represents one line in fzf UI. Usually it is relative path to files and folders.

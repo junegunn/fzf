@@ -57,6 +57,7 @@ var offsetComponentRegex *regexp.Regexp
 var offsetTrimCharsRegex *regexp.Regexp
 var passThroughBeginRegex *regexp.Regexp
 var passThroughEndTmuxRegex *regexp.Regexp
+var sixelBeginRegex *regexp.Regexp
 var ttyin *os.File
 
 var inTmux = len(os.Getenv("TMUX")) > 0
@@ -94,6 +95,7 @@ func init() {
 	*/
 	passThroughBeginRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b|\x1b(_G|P[0-9;]*q)|\x1b]1337;`)
 	passThroughEndTmuxRegex = regexp.MustCompile(`[^\x1b]\x1b\\`)
+	sixelBeginRegex = regexp.MustCompile(`^\x1bP[0-9;]*q`)
 }
 
 type jumpMode int
@@ -4677,15 +4679,23 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	height := t.pwindow.Height()
 	body := t.previewer.lines
 	headerLines := t.activePreviewOpts.headerLines
+	lineNo := -t.previewer.offset + headerLines
+	// Scrollbar is sized from the body alone, split off or not
+	scrollLines := len(body)
 	// Do not enable preview header lines if it's value is too large
 	if headerLines > 0 && headerLines < min(len(body), height) {
+		scrollLines -= headerLines
 		header := t.previewer.lines[0:headerLines]
-		body = t.previewer.lines[headerLines:]
-		// Always redraw header
-		t.renderPreviewText(height, header, 0, false)
-		t.pwindow.MoveAndClear(t.pwindow.Y(), 0)
+		// A separate header pass would resume the body inside an image, which
+		// takes up more rows than the line it arrives on
+		if !containsImage(header) {
+			// Always redraw header
+			t.renderPreviewText(height, header, 0, false)
+			t.pwindow.MoveAndClear(t.pwindow.Y(), 0)
+			body = t.previewer.lines[headerLines:]
+		}
 	}
-	t.renderPreviewText(height, body, -t.previewer.offset+headerLines, unchanged)
+	t.renderPreviewText(height, body, lineNo, unchanged)
 
 	if !unchanged {
 		t.pwindow.FinishFill()
@@ -4696,7 +4706,7 @@ func (t *Terminal) renderPreviewArea(unchanged bool) {
 	}
 
 	effectiveHeight := height - headerLines
-	barLength, barStart := getScrollbar(1, len(body), effectiveHeight, min(len(body)-effectiveHeight, t.previewer.offset-headerLines))
+	barLength, barStart := getScrollbar(1, scrollLines, effectiveHeight, min(scrollLines-effectiveHeight, t.previewer.offset-headerLines))
 	t.renderPreviewScrollbar(headerLines, barLength, barStart)
 }
 
@@ -4774,6 +4784,50 @@ func wrapPassThrough(passThrough string, tmux bool) string {
 		passThrough, suffix = passThrough[:len(passThrough)-1], "\r"
 	}
 	return "\x1bPtmux;" + strings.ReplaceAll(passThrough, "\x1b", "\x1b\x1b") + "\x1b\\" + suffix
+}
+
+// Whether the sequence draws an image. Kitty commands that only transmit or
+// delete do not
+func isImagePassThrough(passThrough string) bool {
+	// Unwrap the tmux passthrough sequence, in which every ESC is doubled
+	if after, ok := strings.CutPrefix(passThrough, "\x1bPtmux;"); ok {
+		passThrough = strings.ReplaceAll(after, "\x1b\x1b", "\x1b")
+	}
+	if after, ok := strings.CutPrefix(passThrough, "\x1b_G"); ok {
+		// Control data ends at the payload delimiter or at the terminator
+		keys := after
+		if index := strings.IndexAny(keys, ";\x1b"); index >= 0 {
+			keys = keys[:index]
+		}
+		for _, key := range strings.Split(keys, ",") {
+			// Transmit and display, or put an image already transmitted
+			if key == "a=T" || key == "a=p" {
+				return true
+			}
+		}
+		return false
+	}
+	if after, ok := strings.CutPrefix(passThrough, "\x1b]1337;"); ok {
+		return strings.HasPrefix(after, "File=") || strings.HasPrefix(after, "MultipartFile=")
+	}
+	return sixelBeginRegex.MatchString(passThrough)
+}
+
+// Whether any line carries an image
+func containsImage(lines []string) bool {
+	for _, line := range lines {
+		for {
+			loc := findPassThrough(line)
+			if loc == nil {
+				break
+			}
+			if isImagePassThrough(line[loc[0]:loc[1]]) {
+				return true
+			}
+			line = line[loc[1]:]
+		}
+	}
+	return false
 }
 
 func extractPassThroughs(line string) ([]string, string) {
