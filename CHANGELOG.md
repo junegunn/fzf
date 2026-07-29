@@ -3,17 +3,17 @@ CHANGELOG
 
 0.74.2
 ------
-- `change-border-label` and `transform-border-label` now update the label on the native border of a tmux or Zellij floating pane
-    - On tmux, the label no longer goes through the pane title, so a program running in the pane cannot replace it by setting the title
-- Fixed a Kitty graphics sequence from a preview command being taken by tmux as a request to set the pane title; it is now passed through to the terminal
 - Performance optimizations for short queries
-    - The most critical case: fzf narrows results as you type, so short queries scan the largest candidate sets and the first keystroke scans the whole input.
+    - Short queries scan the largest candidate sets, and the first keystroke scans the whole input
     - Single-character queries are up to 2.4x faster
     - Two-character queries are up to 1.4x faster
-- Faster sorting of search results; the default two-criteria ranking skips redundant radix passes
+- Faster sorting of search results, skipping redundant radix passes
+- `change-border-label` and `transform-border-label` now work on the native border of a tmux or Zellij floating pane
+- Fixed Kitty graphics sequences from a preview command being taken by tmux as pane title requests
+- Fixed an image at the top of the preview being torn by `--preview-window ~N`
 - Fixed nondeterministic match highlight positions
+- Fixed signal and resize handlers persisting after `Run()` returns when fzf is used as a library
 - fzf now detects terminal resize on Windows in `--height` mode (#4790) (@Cyrus580529)
-- Fixed signal handler cleanup when fzf is used as a library; SIGINT/SIGTERM/SIGHUP and resize handlers no longer persist after `Run()` returns
 - fish: fixed history command being affected by user initialization scripts, and improved timestamp colors in CTRL-R (#4862) (@bitraid)
 
 0.74.1
