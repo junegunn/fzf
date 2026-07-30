@@ -115,7 +115,7 @@ fzf-cd-widget() {
   # working directory.
   # If failed, fallback to the unexpanded path to surface the error to the user.
   # NOTE: Don't use the `:a` modifier as it resolves symlinks like `pwd -P`.
-  dir=$(builtin cd >/dev/null -- "${dir}" && echo "${PWD}" || echo "${dir}")
+  dir=$(builtin cd -q >/dev/null -- "${dir}" && echo "${PWD}" || echo "${dir}")
   zle push-line # Clear buffer. Auto-restored on next prompt.
   BUFFER="builtin cd -- ${(q)dir}"
   zle accept-line
