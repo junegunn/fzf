@@ -965,6 +965,18 @@ class TestZsh < TestBase
     end
   end
 
+  # Duplicate 'chpwd' calls overcount visits => skews rank tracking tools (e.g. 'zoxide')
+  def test_alt_c_chpwd_hook_once
+    tmux.send_keys "chpwd() { echo 'chpwd hook fired' >&2 }", :Enter
+    tmux.prepare
+    tmux.send_keys :Escape, :c
+    tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal 1, lines.count { |l| l.include?('chpwd hook fired') }
+    end
+  end
+
   # Helper function to run test with Perl and again with Awk
   def self.test_perl_and_awk(name, &block)
     define_method(:"test_#{name}") do
