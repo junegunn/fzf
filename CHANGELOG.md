@@ -15,6 +15,8 @@ CHANGELOG
 - Fixed signal and resize handlers persisting after `Run()` returns when fzf is used as a library
 - fzf now detects terminal resize on Windows in `--height` mode (#4790) (@Cyrus580529)
 - fish: fixed history command being affected by user initialization scripts, and improved timestamp colors in CTRL-R (#4862) (@bitraid)
+- zsh: fixed CTRL-R not propagating the exit status of fzf when perl is available (#4871) (@LangLangBart, @Toliak)
+- zsh: fixed `chpwd` hook functions being called twice by ALT-C (#4879) (@LangLangBart, @lucc)
 
 0.74.1
 ------
