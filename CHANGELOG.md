@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.74.3
+------
+- Fixed an image from a preview command being torn apart when its rows are separated by IND instead of newlines, as `chafa` does under tmux (#4885)
+
 0.74.2
 ------
 - Performance optimizations for short queries

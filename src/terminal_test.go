@@ -851,3 +851,73 @@ func TestWordWrapAnsiLine(t *testing.T) {
 		t.Errorf("Tab wrap: %q", result)
 	}
 }
+
+func TestSplitOnIND(t *testing.T) {
+	term := &Terminal{tabstop: 8}
+	for _, tc := range []struct {
+		name string
+		line string
+		want []string
+	}{
+		{
+			// Nothing to do, so the caller keeps the line as it read it
+			name: "no IND",
+			line: "foo\n",
+			want: nil,
+		},
+		{
+			// chafa: CUB returns to the column the row started on
+			name: "rows at column 0",
+			line: "AAA\x1b[3D\x1bDBBB\x1b[3D\x1bDCCC\n",
+			want: []string{"AAA\x1b[3D\n", "BBB\x1b[3D\n", "CCC\n"},
+		},
+		{
+			// 'printf "  "; chafa ...'
+			name: "indented rows",
+			line: "  AAA\x1b[3D\x1bDBBB\x1b[3D\x1bDCCC\n",
+			want: []string{"  AAA\x1b[3D\n", "  BBB\x1b[3D\n", "  CCC\n"},
+		},
+		{
+			name: "tab indent expands to the tab stop",
+			line: "\tAAA\x1b[3D\x1bDBBB\x1b[3D\x1bDCCC\n",
+			want: []string{"\tAAA\x1b[3D\n", "        BBB\x1b[3D\n", "        CCC\n"},
+		},
+		{
+			// IND on its own keeps the column
+			name: "bare IND",
+			line: "AB\x1bDCD\n",
+			want: []string{"AB\n", "  CD\n"},
+		},
+		{
+			name: "CUB without a parameter moves back one",
+			line: "AB\x1b[D\x1bDCD\n",
+			want: []string{"AB\x1b[D\n", " CD\n"},
+		},
+		{
+			name: "CUB past the left edge is clamped",
+			line: "AB\x1b[9D\x1bDCD\n",
+			want: []string{"AB\x1b[9D\n", "CD\n"},
+		},
+		{
+			name: "SGR codes take no column",
+			line: "\x1b[31mAB\x1b[m\x1b[2D\x1bDCD\n",
+			want: []string{"\x1b[31mAB\x1b[m\x1b[2D\n", "CD\n"},
+		},
+		{
+			name: "pass-throughs take no column",
+			line: "\x1b_Ga=T,c=2,r=1\x1b\\AB\x1b[2D\x1bDCD\n",
+			want: []string{"\x1b_Ga=T,c=2,r=1\x1b\\AB\x1b[2D\n", "CD\n"},
+		},
+	} {
+		got := term.splitOnIND(tc.line)
+		if len(got) != len(tc.want) {
+			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+			continue
+		}
+		for idx, line := range got {
+			if line != tc.want[idx] {
+				t.Errorf("%s: line %d: got %q, want %q", tc.name, idx, line, tc.want[idx])
+			}
+		}
+	}
+}

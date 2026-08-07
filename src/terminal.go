@@ -58,6 +58,7 @@ var offsetTrimCharsRegex *regexp.Regexp
 var passThroughBeginRegex *regexp.Regexp
 var passThroughEndTmuxRegex *regexp.Regexp
 var sixelBeginRegex *regexp.Regexp
+var cursorBackRegex *regexp.Regexp
 var ttyin *os.File
 
 var inTmux = len(os.Getenv("TMUX")) > 0
@@ -96,6 +97,9 @@ func init() {
 	passThroughBeginRegex = regexp.MustCompile(`\x1bPtmux;\x1b\x1b|\x1b(_G|P[0-9;]*q)|\x1b]1337;`)
 	passThroughEndTmuxRegex = regexp.MustCompile(`[^\x1b]\x1b\\`)
 	sixelBeginRegex = regexp.MustCompile(`^\x1bP[0-9;]*q`)
+
+	// CUB right before an IND, used to return to the column a row started on
+	cursorBackRegex = regexp.MustCompile(`\x1b\[([0-9]*)D$`)
 }
 
 type jumpMode int
@@ -2274,6 +2278,14 @@ func (t *Terminal) displayWidth(runes []rune) int {
 func (t *Terminal) displayWidthWithPrefix(str string, prefixWidth int) int {
 	width, _ := util.RunesWidth([]rune(str), prefixWidth, t.tabstop, math.MaxInt32)
 	return width
+}
+
+// displayWidthWithoutEscapes is displayWidthWithPrefix for a string that may
+// still carry pass-throughs and ANSI codes, neither of which take any column.
+func (t *Terminal) displayWidthWithoutEscapes(str string, prefixWidth int) int {
+	_, text := extractPassThroughs(str)
+	stripped, _, _ := extractColor(text, nil, nil)
+	return t.displayWidthWithPrefix(stripped, prefixWidth)
 }
 
 const (
@@ -4849,6 +4861,38 @@ func extractPassThroughs(line string) ([]string, string) {
 	return passThroughs, transformed
 }
 
+// splitOnIND breaks a preview line on IND (ESC D), which moves the cursor
+// down one line, keeping the column. A program drawing at a column offset ends
+// its rows with IND instead of a newline, because ONLCR would rewrite a newline
+// as CR NL and snap the cursor to column 0. chafa does this for Kitty Unicode
+// placeholders, and without the break the whole image collapses into a single
+// line.
+//
+// The column is tracked and re-created with padding so that an indented image
+// keeps its indent, and a CUB right before the IND is subtracted, which is how
+// chafa returns to the column its rows start on.
+func (t *Terminal) splitOnIND(line string) []string {
+	chunks := strings.Split(line, "\x1bD")
+	if len(chunks) == 1 {
+		return nil
+	}
+
+	lines := make([]string, 0, len(chunks))
+	col := 0
+	for _, chunk := range chunks[:len(chunks)-1] {
+		lines = append(lines, strings.Repeat(" ", col)+chunk+"\n")
+		col += t.displayWidthWithoutEscapes(chunk, col)
+		if match := cursorBackRegex.FindStringSubmatch(chunk); match != nil {
+			back := 1
+			if len(match[1]) > 0 {
+				back, _ = strconv.Atoi(match[1])
+			}
+			col = max(0, col-back)
+		}
+	}
+	return append(lines, strings.Repeat(" ", col)+chunks[len(chunks)-1])
+}
+
 // followOffset computes the correct content-line offset for follow mode,
 // accounting for line wrapping in the preview window.
 func (t *Terminal) followOffset() int {
@@ -6421,7 +6465,11 @@ func (t *Terminal) Loop() error {
 											version--
 											offset = 0
 										}
-										lines = append(lines, line)
+										if split := t.splitOnIND(line); split != nil {
+											lines = append(lines, split...)
+										} else {
+											lines = append(lines, line)
+										}
 									}
 									if err != nil {
 										t.reqBox.Set(reqPreviewDisplay, previewResult{version, lines, offset, ""})
