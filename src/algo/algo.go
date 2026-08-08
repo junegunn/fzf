@@ -345,15 +345,53 @@ func isAscii(runes []rune) bool {
 	return true
 }
 
+// runeFuzzyIndex is asciiFuzzyIndex for rune-mode input. Only valid when the
+// input cannot fold to ASCII, see the caller.
+func runeFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
+	runes := input.Runes()
+	firstIdx, idx, lastIdx := 0, 0, 0
+	var b byte
+	for pidx := range pattern {
+		b = byte(pattern[pidx])
+		idx = indexAsciiRune(runes, caseSensitive, b, idx)
+		if idx < 0 {
+			return -1, -1
+		}
+		if pidx == 0 && idx > 0 {
+			// Step back to find the right bonus point
+			firstIdx = idx - 1
+		}
+		lastIdx = idx
+		idx++
+	}
+
+	// Find the last appearance of the last character of the pattern to limit
+	// the search scope
+	if lastIdx+1 < len(runes) {
+		if end := lastIndexAsciiRune(runes, caseSensitive, b, lastIdx+1); end >= 0 {
+			return firstIdx, end + 1
+		}
+	}
+	return firstIdx, lastIdx + 1
+}
+
 func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
-	// Can't determine
-	if !input.IsBytes() {
+	if !isAscii(pattern) {
+		// An ASCII string cannot contain a non-ASCII character
+		if input.IsBytes() {
+			return -1, -1
+		}
+		// Rune input with a non-ASCII pattern is not filtered yet
 		return 0, input.Length()
 	}
 
-	// Not possible
-	if !isAscii(pattern) {
-		return -1, -1
+	if !input.IsBytes() {
+		// Case folding or normalization can turn a non-ASCII rune into the
+		// ASCII character we are looking for, which the scan cannot see
+		if disableRunePrefilter || input.MayFoldToAscii() {
+			return 0, input.Length()
+		}
+		return runeFuzzyIndex(input, pattern, caseSensitive)
 	}
 
 	firstIdx, idx, lastIdx := 0, 0, 0
@@ -466,8 +504,9 @@ func fuzzyMatchV2Single(caseSensitive bool, forward bool, input *util.Chars, b b
 // Test hooks: force the general path instead of a fast path, so the two can
 // be compared for equivalence.
 var (
-	disableSingle bool
-	disableTwo    bool
+	disableSingle        bool
+	disableTwo           bool
+	disableRunePrefilter bool
 )
 
 // fuzzyMatchV2Two is a fused fast path for a two-character ASCII pattern on
