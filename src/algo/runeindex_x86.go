@@ -42,6 +42,69 @@ func indexAsciiRune(runes []rune, caseSensitive bool, b byte, from int) int {
 	return -1
 }
 
+// runeNeedle picks which of the rune's four bytes to scan for, and returns its
+// lane index and value. A zero byte is a useless needle because every ASCII
+// rune contributes three of them, so U+AE00 scanned by its low byte would hit
+// on almost every character of an ASCII-heavy line. Prefer a byte that cannot
+// occur in an ASCII rune at all, then any non-zero byte.
+func runeNeedle(r rune) (int, byte) {
+	var b [4]byte
+	b[0], b[1], b[2], b[3] = byte(r), byte(r>>8), byte(r>>16), byte(r>>24)
+	for i, v := range b {
+		if v >= 0x80 {
+			return i, v
+		}
+	}
+	for i, v := range b {
+		if v != 0 {
+			return i, v
+		}
+	}
+	return 0, 0
+}
+
+func runeAt(view []byte, start int) rune {
+	return rune(view[start]) | rune(view[start+1])<<8 | rune(view[start+2])<<16 | rune(view[start+3])<<24
+}
+
+// indexRune returns the index of the first rune equal to r at or after rune
+// index from. Case is not folded, so the caller must have established that no
+// other rune can transform into r.
+func indexRune(runes []rune, r rune, from int) int {
+	view := runeBytes(runes)
+	lane, needle := runeNeedle(r)
+	for off := from*4 + lane; off < len(view); {
+		idx := bytes.IndexByte(view[off:], needle)
+		if idx < 0 {
+			return -1
+		}
+		pos := off + idx
+		if start := pos - lane; start&3 == 0 && runeAt(view, start) == r {
+			return start >> 2
+		}
+		off = pos + 1
+	}
+	return -1
+}
+
+// lastIndexRune is indexRune scanning backwards from the end.
+func lastIndexRune(runes []rune, r rune, from int) int {
+	view := runeBytes(runes)
+	lane, needle := runeNeedle(r)
+	for end := len(view); end > from*4+lane; {
+		idx := bytes.LastIndexByte(view[from*4+lane:end], needle)
+		if idx < 0 {
+			return -1
+		}
+		pos := from*4 + lane + idx
+		if start := pos - lane; start&3 == 0 && runeAt(view, start) == r {
+			return start >> 2
+		}
+		end = pos
+	}
+	return -1
+}
+
 // lastIndexAsciiRune is indexAsciiRune scanning backwards from the end.
 func lastIndexAsciiRune(runes []rune, caseSensitive bool, b byte, from int) int {
 	view := runeBytes(runes)[from*4:]
