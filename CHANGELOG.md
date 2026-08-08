@@ -3,7 +3,15 @@ CHANGELOG
 
 0.74.3
 ------
+- Performance optimizations for non-ASCII input
+    - A line holding any non-ASCII character is kept as a rune array, and the prefilter did not run on those lines, so every item went through the full score matrix
+    - Queries are up to 16x faster, the gain growing with how much of the line is non-ASCII
+    - Non-ASCII queries are up to 12x faster
+    - Reading non-ASCII input is up to 37% faster and uses up to 29% less memory, the gain depending on how early the first non-ASCII character appears in the line
+    - Accented Latin and fullwidth forms get the faster reading but not the faster queries, because those characters can still match their ASCII counterparts
+    - ASCII input is unaffected
 - Fixed an image from a preview command being torn apart when its rows are separated by IND instead of newlines, as `chafa` does under tmux (#4885)
+- Fixed `replace-query` corrupting the item text when the query is edited afterwards
 
 0.74.2
 ------
