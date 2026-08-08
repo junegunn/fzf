@@ -257,3 +257,29 @@ func TestMayFoldFlag(t *testing.T) {
 		t.Error("Prepend of a foldable prefix must set the flag")
 	}
 }
+
+// Runes and ToRunes alias the text in rune mode, so a consumer that mutates
+// what they return changes the text without updating the cached fold bit. This
+// pins the aliasing so the read-only contract on those methods is not silently
+// dropped later.
+func TestRuneSlicesAliasTheText(t *testing.T) {
+	chars := ToChars([]byte("한글abc"))
+	runes := chars.Runes()
+	if runes == nil {
+		t.Fatal("expected rune mode")
+	}
+	if &runes[0] != &chars.ToRunes()[0] {
+		t.Error("Runes and ToRunes should return the same backing array")
+	}
+	if chars.MayFoldToAscii() {
+		t.Fatal("baseline should not be foldable")
+	}
+	// Demonstrates why callers must copy: the flag does not follow the text.
+	runes[0] = 'e'
+	if chars.MayFoldToAscii() {
+		t.Error("flag unexpectedly updated")
+	}
+	if got := chars.ToString(); got != "e글abc" {
+		t.Errorf("expected the write to reach the text, got %q", got)
+	}
+}

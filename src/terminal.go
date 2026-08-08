@@ -7417,7 +7417,9 @@ func (t *Terminal) Loop() error {
 			case actReplaceQuery:
 				current := t.currentItem()
 				if current != nil {
-					t.input = current.text.ToRunes()
+					// ToRunes aliases the item text in rune mode, and the
+					// editing actions below append into t.input in place
+					t.input = append([]rune{}, current.text.ToRunes()...)
 					t.cx = len(t.input)
 				}
 			case actFatal:
