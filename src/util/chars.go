@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"math/bits"
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
@@ -44,6 +45,26 @@ func checkAscii(bytes []byte) (bool, int) {
 	return true, 0
 }
 
+// countRunes counts the bytes that are not UTF-8 continuation bytes, which is
+// the rune count of valid UTF-8. Each invalid byte decodes to its own
+// RuneError, so the result can undercount but never overcount, making it safe
+// as a capacity hint.
+func countRunes(bytes []byte) int {
+	n, i := 0, 0
+	for ; i <= len(bytes)-8; i += 8 {
+		v := *(*uint64)(unsafe.Pointer(&bytes[i]))
+		// Continuation byte: bit 7 set, bit 6 clear. In `v << 1` bit 7 of each
+		// lane holds bit 6 of that same lane.
+		n += 8 - bits.OnesCount64(v&^(v<<1)&overflow64)
+	}
+	for ; i < len(bytes); i++ {
+		if bytes[i]&0xC0 != 0x80 {
+			n++
+		}
+	}
+	return n
+}
+
 // ToChars converts byte array into rune array
 func ToChars(bytes []byte) Chars {
 	inBytes, bytesUntil := checkAscii(bytes)
@@ -51,7 +72,7 @@ func ToChars(bytes []byte) Chars {
 		return Chars{slice: bytes, inBytes: inBytes}
 	}
 
-	runes := make([]rune, bytesUntil, len(bytes))
+	runes := make([]rune, bytesUntil, bytesUntil+countRunes(bytes[bytesUntil:]))
 	for i := range bytesUntil {
 		runes[i] = rune(bytes[i])
 	}
