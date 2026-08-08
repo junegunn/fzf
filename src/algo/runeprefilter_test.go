@@ -226,6 +226,35 @@ func TestRunePrefilterEquivalenceV1(t *testing.T) {
 	disableRunePrefilter = false
 }
 
+// normalizeRune skips the map when util.MayFoldToAscii rejects the rune. That
+// is only sound if every key of the map is flagged, since a flagged-false rune
+// is returned unchanged.
+func TestNormalizedKeysAreFlagged(t *testing.T) {
+	for k := range normalized {
+		if !util.MayFoldToAscii(k) {
+			t.Errorf("normalized key U+%04X (%c) is not flagged by MayFoldToAscii", k, k)
+		}
+	}
+}
+
+// Guarding normalizeRune must not change what it returns, for any rune.
+func TestNormalizeRuneUnchangedByGuard(t *testing.T) {
+	for r := rune(0); r <= unicode.MaxRune; r++ {
+		if r >= 0xD800 && r <= 0xDFFF {
+			continue
+		}
+		exp := r
+		if r >= 0x00C0 && r <= 0xFF61 {
+			if n := normalized[r]; n > 0 {
+				exp = n
+			}
+		}
+		if got := normalizeRune(r); got != exp {
+			t.Fatalf("normalizeRune(U+%04X) = U+%04X, expected U+%04X", r, got, exp)
+		}
+	}
+}
+
 // preparePattern mirrors what pattern.go guarantees the algo functions:
 // lowercased when case-insensitive, normalized when normalize is on.
 func preparePattern(pat string, caseSensitive, normalize bool) []rune {

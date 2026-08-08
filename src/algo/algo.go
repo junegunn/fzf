@@ -303,7 +303,9 @@ func bonusAt(input *util.Chars, idx int) int16 {
 }
 
 func normalizeRune(r rune) rune {
-	if r < 0x00C0 || r > 0xFF61 {
+	// Every key of the map folds to ASCII, so a rune the bitmap rejects cannot
+	// be in it. TestNormalizedKeysAreFlagged pins that.
+	if !util.MayFoldToAscii(r) {
 		return r
 	}
 
