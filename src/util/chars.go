@@ -77,6 +77,13 @@ func ToChars(bytes []byte) Chars {
 		runes[i] = rune(bytes[i])
 	}
 	for i := bytesUntil; i < len(bytes); {
+		// utf8.DecodeRune has an ASCII path of its own, but it is too complex
+		// to inline, so a mostly-ASCII line pays one call per byte for it.
+		if b := bytes[i]; b < utf8.RuneSelf {
+			runes = append(runes, rune(b))
+			i++
+			continue
+		}
 		r, sz := utf8.DecodeRune(bytes[i:])
 		i += sz
 		runes = append(runes, r)
