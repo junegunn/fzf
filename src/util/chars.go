@@ -21,11 +21,9 @@ const (
 
 type Chars struct {
 	slice []byte // or []rune
-	// Written while the item is built and never after it reaches a matcher,
-	// so nothing reads these bits concurrently with a write. Prepend touches
-	// them, but only on the transient tokens inside transformItem, before
-	// item.text exists. trimLength* is kept out because TrimLength writes it
-	// lazily, long after that point.
+	// Only ever set, never cleared, so a reader racing a Prepend sees either
+	// the old or the new value and both are safe. trimLength* is kept out
+	// because TrimLength rewrites it.
 	flags           uint8
 	trimLengthKnown bool
 	trimLength      uint16
@@ -157,6 +155,8 @@ func ToChars(bytes []byte) Chars {
 	return runesToChars(runes, mayFold)
 }
 
+// RunesToChars adopts the caller's slice rather than copying it, so the caller
+// must not keep mutating it. See Runes for why.
 func RunesToChars(runes []rune) Chars {
 	mayFold := false
 	for _, r := range runes {
@@ -188,7 +188,10 @@ func (chars *Chars) MayFoldToAscii() bool {
 	return chars.flags&flagMayFold != 0
 }
 
-// Runes returns the underlying rune slice, or nil if the text is kept as bytes.
+// Runes returns the underlying rune slice, or nil if the text is kept as
+// bytes. Read only. The result aliases the text, so writing to it would change
+// the text without updating the cached fold bit, and the prefilter would then
+// reject items it should match. Copy before mutating.
 func (chars *Chars) Runes() []rune {
 	return chars.optionalRunes()
 }
@@ -340,6 +343,8 @@ func (chars *Chars) ToString() string {
 	return unsafe.String(unsafe.SliceData(chars.slice), len(chars.slice))
 }
 
+// ToRunes returns the text as runes. In rune mode the result aliases the text
+// and must not be mutated, see Runes. In byte mode it is a fresh slice.
 func (chars *Chars) ToRunes() []rune {
 	if runes := chars.optionalRunes(); runes != nil {
 		return runes

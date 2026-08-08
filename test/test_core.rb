@@ -479,6 +479,19 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert_equal '> 10', lines[-1] }
   end
 
+  def test_bind_replace_query_does_not_mutate_item
+    tmux.send_keys "echo '한글abcde' | #{fzf('--bind=ctrl-j:replace-query,ctrl-o:clear-query')}", :Enter
+    tmux.until { |lines| assert_equal '  1/1', lines[-2] }
+    tmux.send_keys 'C-j'
+    tmux.until { |lines| assert_equal '> 한글abcde', lines[-1] }
+    # Editing away from the end used to write into the item itself
+    tmux.send_keys :Left, :BSpace
+    tmux.until { |lines| assert_equal '> 한글abce', lines[-1] }
+    tmux.send_keys 'C-o'
+    tmux.until { |lines| assert_equal '>', lines[-1] }
+    tmux.until { |lines| assert_equal '> 한글abcde', lines[-3] }
+  end
+
   def test_select_all_deselect_all_toggle_all
     tmux.send_keys "seq 100 | #{fzf('--bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all --multi')}", :Enter
     tmux.until { |lines| assert_equal '  100/100 (0)', lines[-2] }
