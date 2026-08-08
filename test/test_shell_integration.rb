@@ -973,7 +973,7 @@ class TestZsh < TestBase
     tmux.until { |lines| assert_operator lines.match_count, :>, 0 }
     tmux.send_keys :Enter
     tmux.until do |lines|
-      assert_equal 1, lines.count { |l| l.include?('chpwd hook fired') }
+      assert_equal(1, lines.count { |l| l.include?('chpwd hook fired') })
     end
   end
 
