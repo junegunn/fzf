@@ -35,3 +35,21 @@ func lastIndexAsciiRuneRef(runes []rune, caseSensitive bool, b byte, from int) i
 	}
 	return -1
 }
+
+func indexRuneRef(runes []rune, r rune, from int) int {
+	for i := from; i < len(runes); i++ {
+		if runes[i] == r {
+			return i
+		}
+	}
+	return -1
+}
+
+func lastIndexRuneRef(runes []rune, r rune, from int) int {
+	for i := len(runes) - 1; i >= from; i-- {
+		if runes[i] == r {
+			return i
+		}
+	}
+	return -1
+}

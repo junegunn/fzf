@@ -347,15 +347,49 @@ func isAscii(runes []rune) bool {
 	return true
 }
 
-// runeFuzzyIndex is asciiFuzzyIndex for rune-mode input. Only valid when the
-// input cannot fold to ASCII, see the caller.
+// runePrefilterable reports whether scanning the rune array can decide this
+// pattern against this item without missing a match. Phase 2 lowercases an
+// uppercase text rune and then normalizes it, and the scan sees neither
+// transform, so every pattern rune must be unreachable by them.
+func runePrefilterable(input *util.Chars, pattern []rune, caseSensitive bool) bool {
+	if input.MayFoldToAscii() {
+		// A non-ASCII rune of this item could fold onto an ASCII pattern char
+		for _, r := range pattern {
+			if r < utf8.RuneSelf {
+				return false
+			}
+		}
+	}
+	if caseSensitive {
+		// No case transform is applied, and normalization only ever produces
+		// ASCII, so nothing can reach a non-ASCII pattern rune
+		return true
+	}
+	for _, r := range pattern {
+		// Another rune must not lowercase onto this one. Being uncased is not
+		// enough by itself: U+00DF has no simple uppercase yet U+1E9E
+		// lowercases to it. Excluding the foldable set covers that.
+		if r >= utf8.RuneSelf &&
+			(unicode.ToUpper(r) != r || unicode.ToLower(r) != r || util.MayFoldToAscii(r)) {
+			return false
+		}
+	}
+	return true
+}
+
+// runeFuzzyIndex is asciiFuzzyIndex for rune-mode input. Only valid when
+// runePrefilterable says so.
 func runeFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
 	runes := input.Runes()
 	firstIdx, idx, lastIdx := 0, 0, 0
-	var b byte
+	var last rune
 	for pidx := range pattern {
-		b = byte(pattern[pidx])
-		idx = indexAsciiRune(runes, caseSensitive, b, idx)
+		last = pattern[pidx]
+		if last < utf8.RuneSelf {
+			idx = indexAsciiRune(runes, caseSensitive, byte(last), idx)
+		} else {
+			idx = indexRune(runes, last, idx)
+		}
 		if idx < 0 {
 			return -1, -1
 		}
@@ -370,7 +404,13 @@ func runeFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int,
 	// Find the last appearance of the last character of the pattern to limit
 	// the search scope
 	if lastIdx+1 < len(runes) {
-		if end := lastIndexAsciiRune(runes, caseSensitive, b, lastIdx+1); end >= 0 {
+		var end int
+		if last < utf8.RuneSelf {
+			end = lastIndexAsciiRune(runes, caseSensitive, byte(last), lastIdx+1)
+		} else {
+			end = lastIndexRune(runes, last, lastIdx+1)
+		}
+		if end >= 0 {
 			return firstIdx, end + 1
 		}
 	}
@@ -378,22 +418,24 @@ func runeFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int,
 }
 
 func asciiFuzzyIndex(input *util.Chars, pattern []rune, caseSensitive bool) (int, int) {
-	if !isAscii(pattern) {
-		// An ASCII string cannot contain a non-ASCII character
-		if input.IsBytes() {
-			return -1, -1
-		}
-		// Rune input with a non-ASCII pattern is not filtered yet
-		return 0, input.Length()
-	}
-
 	if !input.IsBytes() {
-		// Case folding or normalization can turn a non-ASCII rune into the
-		// ASCII character we are looking for, which the scan cannot see
-		if disableRunePrefilter || input.MayFoldToAscii() {
+		if disableRunePrefilter {
 			return 0, input.Length()
 		}
+		// runePrefilterable does not inline, so keep the common case out of
+		// it: an ASCII pattern against an item that cannot fold to ASCII is
+		// always scannable, and both of these checks do inline.
+		if input.MayFoldToAscii() || !isAscii(pattern) {
+			if !runePrefilterable(input, pattern, caseSensitive) {
+				return 0, input.Length()
+			}
+		}
 		return runeFuzzyIndex(input, pattern, caseSensitive)
+	}
+
+	// Not possible
+	if !isAscii(pattern) {
+		return -1, -1
 	}
 
 	firstIdx, idx, lastIdx := 0, 0, 0

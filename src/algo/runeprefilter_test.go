@@ -255,6 +255,131 @@ func TestNormalizeRuneUnchangedByGuard(t *testing.T) {
 	}
 }
 
+// Step G lets non-ASCII pattern runes use the scan, but only when no other
+// rune can transform into them. Being uncased is not sufficient: U+00DF has no
+// simple uppercase yet U+1E9E lowercases onto it. This pins the guard against
+// the full preimage relation over all of Unicode.
+func TestRunePrefilterableGuardIsSound(t *testing.T) {
+	preimage := map[rune][]rune{}
+	for r := rune(0); r <= unicode.MaxRune; r++ {
+		if r >= 0xD800 && r <= 0xDFFF {
+			continue
+		}
+		if charClassOfNonAscii(r) == charUpper {
+			if l := unicode.To(unicode.LowerCase, r); l != r {
+				preimage[l] = append(preimage[l], r)
+			}
+		}
+	}
+
+	clean := util.ToChars([]byte("漢字")) // rune mode, fold bit clear
+	admitted, violations := 0, 0
+	for r := rune(utf8.RuneSelf); r <= unicode.MaxRune; r++ {
+		if r >= 0xD800 && r <= 0xDFFF {
+			continue
+		}
+		if !runePrefilterable(&clean, []rune{r}, false) {
+			continue
+		}
+		admitted++
+		if extra := preimage[r]; len(extra) > 0 {
+			violations++
+			if violations <= 5 {
+				t.Errorf("guard admits U+%04X but %U lowercases onto it", r, extra)
+			}
+		}
+	}
+	t.Logf("guard admits %d non-ASCII pattern runes, unsound for %d", admitted, violations)
+
+	// The scripts this step exists for must be fully admitted.
+	for _, s := range []struct {
+		name   string
+		lo, hi rune
+	}{{"CJK", 0x4E00, 0x9FFF}, {"Hangul", 0xAC00, 0xD7A3}, {"kana", 0x3040, 0x30FF},
+		{"Thai", 0x0E00, 0x0E7F}, {"emoji", 0x1F300, 0x1FAFF}} {
+		for r := s.lo; r <= s.hi; r++ {
+			if !runePrefilterable(&clean, []rune{r}, false) {
+				t.Errorf("%s U+%04X should be admitted", s.name, r)
+				break
+			}
+		}
+	}
+}
+
+// The Step G path must actually engage and reject, otherwise the equivalence
+// test above proves nothing about non-ASCII patterns.
+func TestNonAsciiPatternPrefilterEngages(t *testing.T) {
+	rng := rand.New(rand.NewSource(6))
+	parts := []string{"漢字", "한글", "src", "conf", "/", "мир", "🎉"}
+	engaged, rejected, narrowed, bypassed := 0, 0, 0, 0
+	for range 5000 {
+		var sb strings.Builder
+		for range 1 + rng.Intn(6) {
+			sb.WriteString(parts[rng.Intn(len(parts))])
+		}
+		chars := util.ToChars([]byte(sb.String()))
+		if chars.IsBytes() {
+			continue
+		}
+		pattern := []rune([]string{"漢", "漢字", "한글", "мир", "🎉", "é", "ß"}[rng.Intn(7)])
+		if !runePrefilterable(&chars, pattern, false) {
+			bypassed++
+			continue
+		}
+		engaged++
+		lo, hi := asciiFuzzyIndex(&chars, pattern, false)
+		switch {
+		case lo < 0:
+			rejected++
+		case hi-lo < chars.Length():
+			narrowed++
+		}
+	}
+	t.Logf("non-ASCII patterns: engaged %d, bypassed %d, rejected %d, narrowed %d",
+		engaged, bypassed, rejected, narrowed)
+	if engaged == 0 || rejected == 0 {
+		t.Fatalf("non-ASCII pattern path not exercised (engaged=%d rejected=%d)", engaged, rejected)
+	}
+	if bypassed == 0 {
+		t.Fatal("cased and foldable patterns should still bypass")
+	}
+}
+
+// indexRune picks which byte lane to scan, and is checked against the shipped
+// reference scanners rather than a copy of them. Zero-low-byte runes (U+AE00) and
+// runes whose lanes collide with common ASCII bytes are the cases that break a
+// naive low-byte scan, so the alphabet includes both.
+func TestIndexRuneMatchesReference(t *testing.T) {
+
+	alphabet := []rune{
+		'a', 'e', 'N', '/', 0x00,
+		0xAE00, 0xAC00, 0xD55C, // Hangul, low byte zero for U+AE00
+		0x4E00, 0x6587, 0x9FFF, // CJK, U+4E00 has zero low byte
+		0x3040, 0x0E00, // kana, Thai with zero low byte
+		0x1F389, 0x1F300, // emoji, 3 significant bytes
+		0x0100, 0x0165, 0x00E9, // low byte zero / ASCII-colliding lanes
+	}
+	rng := rand.New(rand.NewSource(7))
+	for trial := range 30000 {
+		n := rng.Intn(20)
+		runes := make([]rune, n)
+		for i := range runes {
+			runes[i] = alphabet[rng.Intn(len(alphabet))]
+		}
+		r := alphabet[rng.Intn(len(alphabet))]
+		from := 0
+		if n > 0 {
+			from = rng.Intn(n)
+		}
+		if got, exp := indexRune(runes, r, from), indexRuneRef(runes, r, from); got != exp {
+			t.Fatalf("trial %d: indexRune(%U, U+%04X, %d) = %d, expected %d", trial, runes, r, from, got, exp)
+		}
+		if got, exp := lastIndexRune(runes, r, from), lastIndexRuneRef(runes, r, from); got != exp {
+			t.Fatalf("trial %d: lastIndexRune(%U, U+%04X, %d) = %d, expected %d", trial, runes, r, from, got, exp)
+		}
+	}
+}
+
 // preparePattern mirrors what pattern.go guarantees the algo functions:
 // lowercased when case-insensitive, normalized when normalize is on.
 func preparePattern(pat string, caseSensitive, normalize bool) []rune {

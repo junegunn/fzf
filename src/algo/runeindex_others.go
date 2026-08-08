@@ -13,3 +13,11 @@ func indexAsciiRune(runes []rune, caseSensitive bool, b byte, from int) int {
 func lastIndexAsciiRune(runes []rune, caseSensitive bool, b byte, from int) int {
 	return lastIndexAsciiRuneRef(runes, caseSensitive, b, from)
 }
+
+func indexRune(runes []rune, r rune, from int) int {
+	return indexRuneRef(runes, r, from)
+}
+
+func lastIndexRune(runes []rune, r rune, from int) int {
+	return lastIndexRuneRef(runes, r, from)
+}
