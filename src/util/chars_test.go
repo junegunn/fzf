@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"unicode/utf8"
+	"unsafe"
 )
 
 func TestCountRunes(t *testing.T) {
@@ -93,14 +94,14 @@ func TestToCharsIntegrity(t *testing.T) {
 
 func TestToCharsAscii(t *testing.T) {
 	chars := ToChars([]byte("foobar"))
-	if !chars.inBytes || chars.ToString() != "foobar" || !chars.inBytes {
+	if !chars.IsBytes() || chars.ToString() != "foobar" {
 		t.Error()
 	}
 }
 
 func TestCharsLength(t *testing.T) {
 	chars := ToChars([]byte("\tabc한글  "))
-	if chars.inBytes || chars.Length() != 8 || chars.TrimLength() != 5 {
+	if chars.IsBytes() || chars.Length() != 8 || chars.TrimLength() != 5 {
 		t.Error()
 	}
 }
@@ -213,5 +214,46 @@ func TestCharsLinesWrapWord(t *testing.T) {
 	}
 	if string(lines4[0]) != "hello wo" {
 		t.Errorf("Expected first line 'hello wo', got %q", string(lines4[0]))
+	}
+}
+
+// Chars is one per input line, so its size is load-bearing. It has no spare
+// padding, which is why new state goes in the flags byte rather than a field.
+// Derive the expectation from the slice header so the invariant holds on
+// 32-bit builds too, where the header is 12 bytes and Chars is 20.
+func TestCharsSize(t *testing.T) {
+	var slice []byte
+	// flags 1 + trimLengthKnown 1 + trimLength 2 + Index 4, no padding
+	want := unsafe.Sizeof(slice) + 8
+	if size := unsafe.Sizeof(Chars{}); size != want {
+		t.Errorf("unsafe.Sizeof(Chars{}) = %d, expected %d", size, want)
+	}
+}
+
+func TestMayFoldFlag(t *testing.T) {
+	for _, c := range []struct {
+		text string
+		fold bool
+	}{
+		{"한글/src", false}, {"漢字", false}, {"мир", false}, {"🎉", false},
+		{"café", true}, {"Müller", true}, {"Å", true}, {"ｆｕｌｌ", true},
+	} {
+		chars := ToChars([]byte(c.text))
+		if chars.MayFoldToAscii() != c.fold {
+			t.Errorf("ToChars(%q).MayFoldToAscii() = %v, expected %v", c.text, chars.MayFoldToAscii(), c.fold)
+		}
+		if runes := RunesToChars([]rune(c.text)); runes.MayFoldToAscii() != c.fold {
+			t.Errorf("RunesToChars(%q).MayFoldToAscii() = %v, expected %v", c.text, runes.MayFoldToAscii(), c.fold)
+		}
+	}
+
+	// Prepend can introduce foldable runes
+	chars := ToChars([]byte("한글"))
+	if chars.MayFoldToAscii() {
+		t.Fatal("baseline should not be foldable")
+	}
+	chars.Prepend("é")
+	if !chars.MayFoldToAscii() {
+		t.Error("Prepend of a foldable prefix must set the flag")
 	}
 }

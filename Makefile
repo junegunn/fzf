@@ -102,7 +102,7 @@ itest:
 # FUZZTIME (e.g. make fuzz FUZZTIME=5m).
 FUZZTIME ?= 30s
 fuzz:
-	@for t in FuzzFuzzyMatchV2Single FuzzFuzzyMatchV2Two; do \
+	@for t in FuzzFuzzyMatchV2Single FuzzFuzzyMatchV2Two FuzzRunePrefilter; do \
 		echo "== $$t =="; \
 		$(GO) test -run '^$$' -fuzz "^$$t$$" -fuzztime $(FUZZTIME) ./src/algo || exit 1; \
 	done
