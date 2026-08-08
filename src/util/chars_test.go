@@ -2,8 +2,94 @@ package util
 
 import (
 	"fmt"
+	"math/rand"
+	"strings"
 	"testing"
+	"unicode/utf8"
 )
+
+func TestCountRunes(t *testing.T) {
+	for _, str := range []string{
+		"", "a", "abc", "한글", "🎉🎉", "\tabc한글  ",
+		strings.Repeat("漢字", 50), strings.Repeat("a", 33) + "é",
+	} {
+		if got, exp := countRunes([]byte(str)), utf8.RuneCountInString(str); got != exp {
+			t.Errorf("countRunes(%q) = %d, expected %d", str, got, exp)
+		}
+	}
+}
+
+func TestCountRunesRandom(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+
+	// Exact on valid UTF-8
+	for trial := range 20000 {
+		var sb strings.Builder
+		for range rng.Intn(20) {
+			r := rune(rng.Intn(utf8.MaxRune + 1))
+			for r >= 0xD800 && r <= 0xDFFF {
+				r = rune(rng.Intn(utf8.MaxRune + 1))
+			}
+			sb.WriteRune(r)
+		}
+		str := sb.String()
+		if got, exp := countRunes([]byte(str)), utf8.RuneCountInString(str); got != exp {
+			t.Fatalf("trial %d: countRunes(%q) = %d, expected %d", trial, str, got, exp)
+		}
+	}
+
+	// Never an overcount on arbitrary bytes, so the capacity hint never truncates
+	for trial := range 20000 {
+		buf := make([]byte, rng.Intn(40))
+		rng.Read(buf)
+		if got, exp := countRunes(buf), utf8.RuneCount(buf); got > exp {
+			t.Fatalf("trial %d: countRunes(%x) = %d, overcounts %d", trial, buf, got, exp)
+		}
+	}
+}
+
+// ToChars must produce exactly what a []rune conversion produces, including
+// one RuneError per invalid byte, and must size the rune slice exactly when
+// the input is valid UTF-8.
+func TestToCharsIntegrity(t *testing.T) {
+	rng := rand.New(rand.NewSource(2))
+	check := func(buf []byte, exactCap bool) {
+		chars := ToChars(buf)
+		exp := []rune(string(buf))
+		if chars.Length() != len(exp) {
+			t.Fatalf("ToChars(%x).Length() = %d, expected %d", buf, chars.Length(), len(exp))
+		}
+		for i, r := range exp {
+			if chars.Get(i) != r {
+				t.Fatalf("ToChars(%x).Get(%d) = %q, expected %q", buf, i, chars.Get(i), r)
+			}
+		}
+		if runes := chars.optionalRunes(); runes != nil && exactCap && cap(runes) != len(exp) {
+			t.Fatalf("ToChars(%x) cap = %d, expected %d", buf, cap(runes), len(exp))
+		}
+	}
+
+	for range 5000 {
+		var sb strings.Builder
+		sb.WriteString("ascii")
+		for range 1 + rng.Intn(10) {
+			r := rune(0x80 + rng.Intn(utf8.MaxRune-0x80))
+			for r >= 0xD800 && r <= 0xDFFF {
+				r = rune(0x80 + rng.Intn(utf8.MaxRune-0x80))
+			}
+			sb.WriteRune(r)
+		}
+		check([]byte(sb.String()), true)
+	}
+
+	// Invalid UTF-8: still correct, capacity may grow
+	for range 5000 {
+		buf := make([]byte, 1+rng.Intn(40))
+		rng.Read(buf)
+		buf[rng.Intn(len(buf))] |= 0x80 // force the rune path
+		check(buf, false)
+	}
+}
 
 func TestToCharsAscii(t *testing.T) {
 	chars := ToChars([]byte("foobar"))
