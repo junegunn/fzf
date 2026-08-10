@@ -151,6 +151,13 @@ func (r *LightRenderer) findOffset() (row int, col int) {
 	return int(bufferInfo.CursorPosition.Y), int(bufferInfo.CursorPosition.X)
 }
 
+// The console API answers for the cursor, and there is no reply to parse for
+// bracketed paste, so fzf keeps disabling the mode on exit here.
+func (r *LightRenderer) queryStartup() (row int, col int, pasteWasSet *bool) {
+	row, col = r.findOffset()
+	return
+}
+
 func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {
 	if !nonblock && !cancellable {
 		bc := <-r.ttyinChannel

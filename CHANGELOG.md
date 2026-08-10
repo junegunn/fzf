@@ -12,6 +12,8 @@ CHANGELOG
     - ASCII input is unaffected
 - Fixed an image from a preview command being torn apart when its rows are separated by IND instead of newlines, as `chafa` does under tmux (#4885)
 - Fixed `replace-query` corrupting the item text when the query is edited afterwards
+- fzf no longer turns bracketed paste mode off on exit when the terminal already had it on, which broke pasting in shells that run fzf from a line editor widget (#4887)
+- Fixed startup blocking on terminals that never answer escape sequences, such as FreeBSD virtual terminals. fzf waited for a reply until a key was pressed, then dropped that keystroke (#2860, #976)
 
 0.74.2
 ------
