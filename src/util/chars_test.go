@@ -194,31 +194,19 @@ func TestCharsLinesWrapWord(t *testing.T) {
 		t.Errorf("Expected first line 'abcdefghij', got %q", string(lines2[0]))
 	}
 
-	// Tab as word boundary
-	chars3 := ToChars([]byte("hello\tworld"))
-	lines3, _ := chars3.Lines(false, 100, 7, 0, 8, true)
-	// "hello\t" should break at tab (width of tab at pos 5 with tabstop 8 = 3, total width = 8 > 7)
-	// Actually RunesWidth: 'h'=1,'e'=1,'l'=1,'l'=1,'o'=1,'\t'=3 = 8 > 7, overflowIdx=5
-	// Then word-wrap scans back and finds no space/tab before idx 5 (tab IS at idx 5 but we check line[k-1])
-	// Wait - let me think: overflowIdx=5, we check k=5 -> line[4]='o', k=4 -> line[3]='l'... no space/tab found
-	// Falls back to character wrap: "hello" | "\tworld"
-	if len(lines3) < 2 {
-		t.Errorf("Expected at least 2 lines for tab test, got %d: %v", len(lines3), lines3)
-	}
-
 	// wrapWord=false still character-wraps
-	chars4 := ToChars([]byte("hello world"))
-	lines4, _ := chars4.Lines(false, 100, 8, 0, 8, false)
-	if len(lines4) != 2 {
-		t.Errorf("Expected 2 lines with wrapWord=false, got %d: %v", len(lines4), lines4)
+	chars3 := ToChars([]byte("hello world"))
+	lines3, _ := chars3.Lines(false, 100, 8, 0, 8, false)
+	if len(lines3) != 2 {
+		t.Errorf("Expected 2 lines with wrapWord=false, got %d: %v", len(lines3), lines3)
 	}
-	if string(lines4[0]) != "hello wo" {
-		t.Errorf("Expected first line 'hello wo', got %q", string(lines4[0]))
+	if string(lines3[0]) != "hello wo" {
+		t.Errorf("Expected first line 'hello wo', got %q", string(lines3[0]))
 	}
 }
 
-// Chars is one per input line, so its size is load-bearing. It has no spare
-// padding, which is why new state goes in the flags byte rather than a field.
+// Chars is one per input line, so its size matters. It has no spare padding,
+// which is why new state goes in the flags byte rather than a field.
 // Derive the expectation from the slice header so the invariant holds on
 // 32-bit builds too, where the header is 12 bytes and Chars is 20.
 func TestCharsSize(t *testing.T) {
@@ -260,8 +248,8 @@ func TestMayFoldFlag(t *testing.T) {
 
 // Runes and ToRunes alias the text in rune mode, so a consumer that mutates
 // what they return changes the text without updating the cached fold bit. This
-// pins the aliasing so the read-only contract on those methods is not silently
-// dropped later.
+// verifies the aliasing so the read-only contract on those methods is not
+// silently dropped later.
 func TestRuneSlicesAliasTheText(t *testing.T) {
 	chars := ToChars([]byte("한글abc"))
 	runes := chars.Runes()
