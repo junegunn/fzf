@@ -29,9 +29,9 @@ func foldForTest(r rune, normalize bool) rune {
 }
 
 // The prefilter is only safe on items whose runes cannot become ASCII. This
-// pins util.MayFoldToAscii as a superset of the runes that actually can, over
-// the whole Unicode range and both normalization modes. If normalize.go or the
-// Go unicode tables change, this fails.
+// verifies util.MayFoldToAscii as a superset of the runes that actually can,
+// over the whole Unicode range and both normalization modes. If normalize.go
+// or the Go unicode tables change, this fails.
 func TestMayFoldToAsciiIsSuperset(t *testing.T) {
 	missed := 0
 	for r := rune(utf8.RuneSelf); r <= unicode.MaxRune; r++ {
@@ -51,8 +51,8 @@ func TestMayFoldToAsciiIsSuperset(t *testing.T) {
 	}
 }
 
-// Scripts that must stay unflagged, otherwise the prefilter never engages for
-// them and Step C buys nothing.
+// Scripts that must stay unflagged, otherwise the prefilter never runs for
+// them and Step C has no effect.
 func TestMayFoldToAsciiExcludesMajorScripts(t *testing.T) {
 	for _, s := range []struct {
 		name   string
@@ -62,9 +62,9 @@ func TestMayFoldToAsciiExcludesMajorScripts(t *testing.T) {
 		{"Arabic", 0x0600, 0x06FF}, {"Thai", 0x0E00, 0x0E7F}, {"Devanagari", 0x0900, 0x097F},
 		{"CJK", 0x4E00, 0x9FFF}, {"Hangul", 0xAC00, 0xD7A3}, {"kana", 0x3040, 0x30FF},
 		{"box drawing", 0x2500, 0x257F}, {"emoji", 0x1F300, 0x1FAFF},
-		// These sit between the Latin blocks and were swallowed by an earlier,
-		// wider grouping of foldableRanges. General Punctuation is the costly
-		// one: curly quotes, en and em dashes and the ellipsis live there.
+		// These sit between the Latin blocks and were included in an earlier,
+		// wider grouping of foldableRanges. General Punctuation matters most:
+		// curly quotes, en and em dashes and the ellipsis are in it.
 		{"Greek Extended", 0x1F00, 0x1FFF}, {"General Punctuation", 0x2000, 0x206F},
 		{"Currency Symbols", 0x20A0, 0x20CF}, {"CJK Symbols", 0x3000, 0x303F},
 	} {
@@ -257,7 +257,7 @@ func TestNormalizeRuneUnchangedByGuard(t *testing.T) {
 
 // Step G lets non-ASCII pattern runes use the scan, but only when no other
 // rune can transform into them. Being uncased is not sufficient: U+00DF has no
-// simple uppercase yet U+1E9E lowercases onto it. This pins the guard against
+// simple uppercase yet U+1E9E lowercases onto it. This checks the guard against
 // the full preimage relation over all of Unicode.
 func TestRunePrefilterableGuardIsSound(t *testing.T) {
 	preimage := map[rune][]rune{}
@@ -306,7 +306,7 @@ func TestRunePrefilterableGuardIsSound(t *testing.T) {
 	}
 }
 
-// The Step G path must actually engage and reject, otherwise the equivalence
+// The Step G path must actually run and reject, otherwise the equivalence
 // test above proves nothing about non-ASCII patterns.
 func TestNonAsciiPatternPrefilterEngages(t *testing.T) {
 	rng := rand.New(rand.NewSource(6))
@@ -413,7 +413,7 @@ func FuzzRunePrefilter(f *testing.F) {
 		}
 		chars := util.ToChars([]byte(input))
 		if chars.IsBytes() {
-			return // byte mode is the existing fuzzers' territory
+			return // byte mode is covered by the existing fuzzers
 		}
 		for _, cs := range []bool{false, true} {
 			for _, norm := range []bool{false, true} {

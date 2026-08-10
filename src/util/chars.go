@@ -36,9 +36,9 @@ type Chars struct {
 // Rune ranges that case folding or normalization can turn into ASCII, derived
 // from algo's normalization table and unicode.ToLower, then merged. They are a
 // superset of the exact set, which TestMayFoldToAsciiIsSuperset in the algo
-// package pins. Grouped tightly on purpose: a wider merge would swallow Greek
-// Extended, General Punctuation and the currency and letterlike blocks, and
-// every line holding a curly quote or an em dash would then lose the
+// package verifies. Grouped tightly on purpose: a wider merge would include
+// Greek Extended, General Punctuation and the currency and letterlike blocks,
+// and every line holding a curly quote or an em dash would then lose the
 // prefilter. Cyrillic, Greek, Hebrew, Arabic, Thai, Devanagari, CJK, Hangul,
 // kana, emoji, punctuation and box drawing are all outside.
 const (

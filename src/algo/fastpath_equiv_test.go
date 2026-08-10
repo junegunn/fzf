@@ -1,7 +1,7 @@
 package algo
 
 // Equivalence tests for the single- and two-character fast paths against the
-// general FuzzyMatchV2 algorithm, which serves as the oracle.
+// general FuzzyMatchV2 algorithm, which serves as the reference.
 //
 // Two complementary strategies:
 //   - Exhaustive: every string up to a fixed length over an alphabet that
