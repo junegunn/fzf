@@ -183,12 +183,19 @@ func (r *LightRenderer) queryTerminal(queries []termQuery) [][][]byte {
 
 func (r *LightRenderer) queryStartup() (row int, col int, pasteWasSet *bool) {
 	replies := r.queryTerminal(startupQueries)
-	if paste := replies[0]; paste != nil && paste[1][0] != '0' {
+	before, paste, after := replies[0], replies[1], replies[2]
+
+	if paste != nil && paste[1][0] != '0' {
 		// 1 = set, 3 = permanently set
 		set := paste[1][0] == '1' || paste[1][0] == '3'
 		pasteWasSet = &set
 	}
-	row, col = parseOffset(replies[1])
+	row, col = parseOffset(before)
+
+	// The cursor moved right likely because terminal doesn't support DECRQM
+	if row2, col2 := parseOffset(after); row >= 0 && row2 == row && col2 > col {
+		r.flushRaw(strings.Repeat("\b \b", col2-col))
+	}
 	return
 }
 
@@ -200,7 +207,7 @@ func parseOffset(reply [][]byte) (row int, col int) {
 }
 
 func (r *LightRenderer) findOffset() (row int, col int) {
-	return parseOffset(r.queryTerminal(startupQueries[1:])[0])
+	return parseOffset(r.queryTerminal([]termQuery{offsetQuery})[0])
 }
 
 func (r *LightRenderer) getch(cancellable bool, nonblock bool) (int, getCharResult) {

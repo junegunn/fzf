@@ -46,15 +46,21 @@ type termQuery struct {
 	reply *regexp.Regexp
 }
 
-// What we ask the terminal at startup, in the order the queries go out. A
-// terminal answers them in that order, so the cursor position query is last and
-// also ends the wait: every terminal fzf supports answers it, so once its reply
-// arrives, a query still unanswered is one the terminal does not know rather
-// than one we stopped waiting for too early.
-var startupQueries = []termQuery{
-	{"?2004$p", pasteModeRegexp},
-	{"6n", offsetRegexp},
-}
+var offsetQuery = termQuery{"6n", offsetRegexp}
+var pasteModeQuery = termQuery{"?2004$p", pasteModeRegexp}
+
+// What we ask the terminal at startup, in the order the queries go out.
+// A terminal answers them in that order, so the cursor position query is last
+// and also ends the wait: every terminal fzf supports answers it, so once its
+// reply arrives, a query still unanswered is one the terminal does not know
+// rather than one we stopped waiting for too early.
+//
+// Terminals that don't support the paste mode query (DECRQM) might leave
+// 'p' on the screen. To handle such cases, we query the position before and
+// after it, compare them, and clean the artifact if they don't match.
+//
+// Reference: https://ansicode.eversources.app/en/sequence/decrqm
+var startupQueries = []termQuery{offsetQuery, pasteModeQuery, offsetQuery}
 
 func (r *LightRenderer) Bell() {
 	r.flushRaw("\a")
