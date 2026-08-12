@@ -223,7 +223,7 @@ func TestReplacePlaceholder(t *testing.T) {
 	// while the double q is invalid, it is useful here for testing purposes
 	templateToOutput[`{q}`] = "{{.O}}" + query + "{{.O}}"
 	templateToOutput[`{fzf:query}`] = "{{.O}}" + query + "{{.O}}"
-	templateToOutput[`{fzf:action} {fzf:prompt}`] = "backward-delete-char-eof 'prompt'"
+	templateToOutput[`{fzf:action} {fzf:prompt}`] = `backward-delete-char-eof {{.O}}prompt{{.O}}`
 
 	// IV. escaping placeholder
 	templateToOutput[`\{}`] = `{}`
