@@ -251,9 +251,9 @@ func TestReplacePlaceholder(t *testing.T) {
 }
 
 func TestQuoteEntry(t *testing.T) {
-	type quotes struct{ E, O, SQ, DQ, BS string } // standalone escape, outer, single and double quotes, backslash
-	unixStyle := quotes{``, `'`, `'\''`, `"`, `\`}
-	windowsStyle := quotes{`^`, `^"`, `'`, `\^"`, `\\`}
+	type quotes struct{ E, O, SQ, DQ, BS, PB string } // standalone escape, outer, single and double quotes, doubled and plain backslash
+	unixStyle := quotes{``, `'`, `'\''`, `"`, `\`, `\`}
+	windowsStyle := quotes{`^`, `^"`, `'`, `\^"`, `\\`, `\`}
 	var effectiveStyle quotes
 	exec := util.NewExecutor("")
 
@@ -280,13 +280,13 @@ func TestQuoteEntry(t *testing.T) {
 		`>`:                       `{{.O}}{{.E}}>{{.O}}`,
 		`(`:                       `{{.O}}{{.E}}({{.O}}`,
 		`)`:                       `{{.O}}{{.E}}){{.O}}`,
-		`@`:                       `{{.O}}{{.E}}@{{.O}}`,
+		`@`:                       `{{.O}}@{{.O}}`,
 		`^`:                       `{{.O}}{{.E}}^{{.O}}`,
 		`%`:                       `{{.O}}{{.E}}%{{.O}}`,
 		`!`:                       `{{.O}}{{.E}}!{{.O}}`,
 		`%USERPROFILE%`:           `{{.O}}{{.E}}%USERPROFILE{{.E}}%{{.O}}`,
-		`C:\Program Files (x86)\`: `{{.O}}C:{{.BS}}Program Files {{.E}}(x86{{.E}}){{.BS}}{{.O}}`,
-		`"C:\Program Files"`:      `{{.O}}{{.DQ}}C:{{.BS}}Program Files{{.DQ}}{{.O}}`,
+		`C:\Program Files (x86)\`: `{{.O}}C:{{.PB}}Program Files {{.E}}(x86{{.E}}){{.BS}}{{.O}}`,
+		`"C:\Program Files"`:      `{{.O}}{{.DQ}}C:{{.PB}}Program Files{{.DQ}}{{.O}}`,
 	}
 
 	for input, expected := range tests {
