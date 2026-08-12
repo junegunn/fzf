@@ -434,6 +434,7 @@ func TestLightRendererSGRDeduplication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer out.Close()
 	r.ttyout = out
 
 	w := r.NewWindow(0, 0, 40, 4, WindowList, MakeBorderStyle(BorderNone, true), false).(*LightWindow)
