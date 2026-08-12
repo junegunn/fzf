@@ -440,7 +440,7 @@ func TestPowershellCommands(t *testing.T) {
 		// to explorer, which will prompt user to pick editing program for the fzf-preview file
 		// the temp file contains: `cat "C:\test.txt"`
 		// TODO this should actually work
-		{give{`powershell -NoProfile -Command {f}`, ``, newItems(`cat "C:\test.txt"`)}, want{match: `^powershell -NoProfile -Command .*\fzf-preview-[0-9]{9}$`}},
+		{give{`powershell -NoProfile -Command {f}`, ``, newItems(`cat "C:\test.txt"`)}, want{match: `^powershell -NoProfile -Command .*\fzf-temp-[0-9]+$`}},
 	}
 
 	// to force powershell-style escaping we temporarily set environment variable that fzf honors
