@@ -17,5 +17,5 @@ jobs:
         with:
           identifier: junegunn.fzf
           release-tag: ${{ inputs.release-tag || github.event.release.tag_name }}
-          installers-regex: '-windows_(armv7|arm64|amd64)\.zip$'
+          installers-regex: '-windows_(armv7|arm64|amd64)\.(zip|msi)$'
           token: ${{ secrets.WINGET_TOKEN }}

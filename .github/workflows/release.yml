@@ -18,6 +18,8 @@ jobs:
   release:
     runs-on: macos-latest
     environment: release
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -74,3 +76,67 @@ jobs:
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
           MACOS_NOTARY_KEY_ID:    ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_KEY:       ${{ secrets.MACOS_NOTARY_KEY }}
+
+      # The Windows binaries for the msi job below.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-binaries
+          path: |
+            dist/*windows_amd64*/fzf.exe
+            dist/*windows_arm64*/fzf.exe
+          if-no-files-found: error
+
+  # Real per-machine Windows installers (.msi), alongside the portable .zip.
+  # winget's portable install puts a symlink in the WinGet Links folder,
+  # created as whoever runs winget (usually a non-elevated terminal), and
+  # Windows will not let an elevated process, such as an administrator's SSH
+  # session, follow a link a less privileged process created. The MSI installs
+  # fzf.exe under Program Files with a machine PATH entry instead.
+  # WiX only runs on Windows, hence a separate job. Built in both modes, so a
+  # workflow_dispatch validation run checks the MSIs too; only a tag push
+  # uploads them. WiX's -arch has no armv7 target, so armv7 stays zip-only.
+  msi:
+    needs: release
+    runs-on: windows-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-binaries
+          path: dist
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # WiX 5 is the last release that does not require accepting the WiX
+      # Open Source Maintenance Fee EULA; main.wxs uses the v4/v5 schema.
+      - name: Install WiX
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Build Windows MSI installers
+        shell: bash
+        run: |
+          set -e
+          V='${{ needs.release.outputs.version }}'
+          for pair in "amd64:x64" "arm64:arm64"; do
+            goarch="${pair%%:*}"
+            wixarch="${pair##*:}"
+            bindir=$(dirname "$(find dist -type f -iname fzf.exe -path "*windows_${goarch}*" | head -n1)")
+            wix build wix/main.wxs -arch "$wixarch" -d Version="$V" -d BinDir="$bindir" -o "dist/fzf-${V}-windows_${goarch}.msi"
+          done
+          ls -la dist/*.msi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-msi
+          path: dist/*.msi
+
+      - name: Upload MSI installers to release
+        if: github.event_name == 'push'
+        shell: bash
+        run: gh release upload "v${{ needs.release.outputs.version }}" dist/*.msi --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}

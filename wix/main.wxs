@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  WiX v4/v5 source for a real per-machine .msi installer for fzf on Windows.
+
+  Unlike the existing portable .zip distributed via winget (InstallerType:
+  portable), this produces a proper Program Files install with a PATH
+  registration, so `fzf` resolves to a real file instead of a WinGet Links
+  symlink. winget creates that symlink as whoever runs it, usually a
+  non-elevated terminal, and Windows will not let an elevated process (such
+  as an administrator's SSH session) follow a link created by a less
+  privileged one, which breaks fzf's shell integration there.
+
+  Built on Windows with the WiX v5 dotnet-tool CLI (`wix build`; WiX does
+  not support other platforms), not `cargo wix` (this is a Go project). Run
+  with `-arch x64` or `-arch arm64` to select the target Program Files
+  folder, and pass `-d Version=<ver> -d BinDir=<path-to-fzf.exe-dir>`.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="fzf"
+    Manufacturer="junegunn"
+    Version="$(var.Version)"
+    UpgradeCode="C34C8C24-3E05-4D14-BD9A-439C3F6E9942"
+    Language="1033"
+    Scope="perMachine">
+
+    <SummaryInformation Description="fzf - a command-line fuzzy finder" Manufacturer="junegunn" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="APPLICATIONFOLDER" Name="fzf">
+        <Directory Id="BinFolder" Name="bin" />
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="fzf" Level="1" AllowAbsent="no">
+      <ComponentGroupRef Id="MainComponents" />
+    </Feature>
+
+    <ComponentGroup Id="MainComponents" Directory="BinFolder">
+      <Component Id="FzfBinary">
+        <File Id="FzfExe" Name="fzf.exe" Source="$(var.BinDir)\fzf.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="LicenseFile" Directory="APPLICATIONFOLDER">
+        <File Id="License" Name="LICENSE" Source="LICENSE" KeyPath="yes" />
+      </Component>
+      <Component Id="PathEnv" Guid="8B7C2C6A-F4A0-4E3E-9E37-2E8F3E4E5B6A">
+        <Environment Id="PATH" Name="PATH" Value="[BinFolder]" Permanent="no" Part="last" Action="set" System="yes" />
+      </Component>
+    </ComponentGroup>
+
+  </Package>
+</Wix>
