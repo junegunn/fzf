@@ -4,15 +4,44 @@ Execute (Setup):
   Log 'Test directory: ' . g:dir
   Save &acd
 
+  " fzf#run runs fzf in a terminal buffer and returns immediately, so the
+  " assertions have to wait for the run to finish. 'exit' is called from the
+  " same handler that runs the sink, just before it, so once it has fired the
+  " sink has run too. It also fires when nothing is selected, unlike the sink.
+  function! g:FzfExit(code)
+    let g:fzf_done = 1
+  endfunction
+
+  " Collects the output without displacing a 'sink' the spec already has.
+  " s:callback runs both
+  function! g:FzfCollect(lines)
+    call extend(g:fzf_lines, a:lines)
+  endfunction
+
+  function! g:FzfRun(spec) abort
+    let g:fzf_done = 0
+    let g:fzf_lines = []
+    call fzf#run(extend(copy(a:spec),
+    \ { 'exit': function('g:FzfExit'), 'sinklist': function('g:FzfCollect') }))
+    let started = reltime()
+    while !g:fzf_done && reltimefloat(reltime(started)) < 10
+      sleep 10m
+    endwhile
+    if !g:fzf_done
+      throw 'Timed out waiting for fzf#run'
+    endif
+    return g:fzf_lines
+  endfunction
+
 Execute (fzf#run with dir option):
   let cwd = getcwd()
-  let result = fzf#run({ 'source': 'git ls-files', 'options': '--filter=vdr', 'dir': g:dir })
+  let result = g:FzfRun({ 'source': 'git ls-files', 'options': '--filter=vdr', 'dir': g:dir })
   AssertEqual ['fzf.vader'], result
   AssertEqual 0, haslocaldir()
   AssertEqual getcwd(), cwd
 
   execute 'lcd' fnameescape(cwd)
-  let result = sort(fzf#run({ 'source': 'git ls-files', 'options': '--filter e', 'dir': g:dir }))
+  let result = sort(g:FzfRun({ 'source': 'git ls-files', 'options': '--filter e', 'dir': g:dir }))
   AssertEqual ['fzf.vader'], result
   AssertEqual 1, haslocaldir()
   AssertEqual getcwd(), cwd
@@ -22,32 +51,32 @@ Execute (fzf#run with Funcref command):
   function! g:FzfTest(e)
     call add(g:ret, a:e)
   endfunction
-  let result = sort(fzf#run({ 'source': 'git ls-files', 'sink': function('g:FzfTest'), 'options': '--filter e', 'dir': g:dir }))
+  let result = sort(g:FzfRun({ 'source': 'git ls-files', 'sink': function('g:FzfTest'), 'options': '--filter e', 'dir': g:dir }))
   AssertEqual ['fzf.vader'], result
   AssertEqual ['fzf.vader'], sort(g:ret)
 
 Execute (fzf#run with string source):
-  let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
+  let result = sort(g:FzfRun({ 'source': 'echo hi', 'options': '-f i' }))
   AssertEqual ['hi'], result
 
 Execute (fzf#run with list source):
-  let result = sort(fzf#run({ 'source': ['hello', 'world'], 'options': '-f e' }))
+  let result = sort(g:FzfRun({ 'source': ['hello', 'world'], 'options': '-f e' }))
   AssertEqual ['hello'], result
-  let result = sort(fzf#run({ 'source': ['hello', 'world'], 'options': '-f o' }))
+  let result = sort(g:FzfRun({ 'source': ['hello', 'world'], 'options': '-f o' }))
   AssertEqual ['hello', 'world'], result
 
 Execute (fzf#run with string source):
-  let result = sort(fzf#run({ 'source': 'echo hi', 'options': '-f i' }))
+  let result = sort(g:FzfRun({ 'source': 'echo hi', 'options': '-f i' }))
   AssertEqual ['hi'], result
 
 Execute (fzf#run with dir option and noautochdir):
   set noacd
   let cwd = getcwd()
-  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  call g:FzfRun({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
   " No change in working directory
   AssertEqual cwd, getcwd()
 
-  call fzf#run({'source': ['/foobar'], 'sink': 'tabe', 'dir': '/tmp', 'options': '-1'})
+  call g:FzfRun({'source': ['/foobar'], 'sink': 'tabe', 'dir': '/tmp', 'options': '-1'})
   AssertEqual cwd, getcwd()
   tabclose
   AssertEqual cwd, getcwd()
@@ -55,13 +84,13 @@ Execute (fzf#run with dir option and noautochdir):
 Execute (Incomplete fzf#run with dir option and autochdir):
   set acd
   let cwd = getcwd()
-  call fzf#run({'source': [], 'sink': 'e', 'dir': '/tmp', 'options': '-0'})
+  call g:FzfRun({'source': [], 'sink': 'e', 'dir': '/tmp', 'options': '-0'})
   " No change in working directory even if &acd is set
   AssertEqual cwd, getcwd()
 
 Execute (FIXME: fzf#run with dir option and autochdir):
   set acd
-  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  call g:FzfRun({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
   " Working directory changed due to &acd
   AssertEqual '/foobar', expand('%')
   AssertEqual '/', getcwd()
@@ -69,7 +98,7 @@ Execute (FIXME: fzf#run with dir option and autochdir):
 Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
   set acd
   cd /tmp
-  call fzf#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/', 'options': '-1'})
+  call g:FzfRun({'source': ['/foobar'], 'sink': 'e', 'dir': '/', 'options': '-1'})
   " Working directory changed due to &acd
   AssertEqual '/', getcwd()
 
@@ -149,6 +178,30 @@ Execute (fzf#wrap):
   let g:fzf_colors = { 'fg': ['fg', 'Error'] }
   let opts = fzf#wrap({})
   Assert opts.options =~ '--color=fg:'
+
+Execute (popup is a synonym of tmux):
+  unlet! g:fzf_layout
+
+  " Treated as a layout option, so g:fzf_layout is not applied on top
+  let opts = fzf#wrap('foobar', {'popup': '90%,70%'})
+  AssertEqual '90%,70%', opts.popup
+  Assert !has_key(opts, 'window')
+
+  " And stripped in fullscreen, like the others
+  let opts = fzf#wrap('foobar', {'popup': '90%,70%'}, 1)
+  Assert !has_key(opts, 'popup')
+
+  " Accepted in g:fzf_layout
+  let g:fzf_layout = {'popup': '90%,70%'}
+  let opts = fzf#wrap('foobar')
+  AssertEqual '90%,70%', opts.popup
+  unlet g:fzf_layout
+
+  " Listed as a valid key
+  let g:fzf_layout = {'bogus': 1}
+  AssertThrows call fzf#wrap('foobar')
+  Assert g:vader_exception =~ 'popup'
+  unlet g:fzf_layout
 
 Execute (fzf#shellescape with sh):
   AssertEqual '''''', fzf#shellescape('', 'sh')
