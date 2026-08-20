@@ -24,7 +24,8 @@
 if exists('g:loaded_fzf')
   finish
 endif
-let g:loaded_fzf = 1
+" Bumped when the plugin gains behavior a caller may need to detect
+let g:loaded_fzf = 20260821
 
 let s:is_win = has('win32') || has('win64')
 if s:is_win && &shellslash
