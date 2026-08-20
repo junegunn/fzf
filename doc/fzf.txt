@@ -310,7 +310,7 @@ The following table summarizes the available options.
   `options`                   | string/list   | Options to fzf
   `dir`                       | string        | Working directory
   `up` / `down` / `left` / `right`  | number/string | (Layout) Window position and size (e.g.  `20` ,  `50%` )
-  `tmux`                      | string        | (Layout) `--tmux` options (e.g.  `90%,70%` )
+  `popup` / `tmux`              | string        | (Layout) `--popup` options (e.g.  `90%,70%` )
   `window`  (Vim 8 / Neovim)  | string        | (Layout) Command to open fzf window (e.g.  `vertical aboveleft 30new` )
   `window`  (Vim 8 / Neovim)  | dict          | (Layout) Popup window settings (e.g.  `{'width': 0.9, 'height': 0.6}` )
  ---------------------------+---------------+----------------------------------------------------------------------
@@ -467,13 +467,14 @@ in Neovim.
     "   - 'rounded' / 'sharp' / 'horizontal' / 'vertical' / 'top' / 'bottom' / 'left' / 'right'
     let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 <
-Alternatively, you can make fzf open in a tmux popup window (requires tmux 3.2
-or above) by putting `--tmux` options in `tmux` key.
+Alternatively, you can make fzf open in a popup window (requires tmux 3.3 or
+above, or Zellij 0.44 or above) by putting `--popup` options in `popup` key.
+`tmux` is accepted as a synonym, just as `--tmux` is an alias of `--popup`.
 >
-    " See `--tmux` option in `man fzf` for available options
+    " See `--popup` option in `man fzf` for available options
     " [center|top|bottom|left|right][,SIZE[%]][,SIZE[%]]
-    if exists('$TMUX')
-      let g:fzf_layout = { 'tmux': '90%,70%' }
+    if exists('$TMUX') || exists('$ZELLIJ')
+      let g:fzf_layout = { 'popup': '90%,70%' }
     else
       let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
     endif
