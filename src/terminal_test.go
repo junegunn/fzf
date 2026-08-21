@@ -29,6 +29,9 @@ func replacePlaceholderTest(template string, stripAnsi bool, delimiter Delimiter
 }
 
 func TestReplacePlaceholder(t *testing.T) {
+	// Pin $SHELL so the quoting style doesn't depend on the test runner's shell
+	t.Setenv("SHELL", "cmd")
+
 	item1 := newItem("  foo'bar \x1b[31mbaz\x1b[m")
 	items1 := [3][]*Item{{item1}, {item1}, nil}
 	items2 := [3][]*Item{
@@ -255,6 +258,9 @@ func TestQuoteEntry(t *testing.T) {
 	unixStyle := quotes{``, `'`, `'\''`, `"`, `\`, `\`}
 	windowsStyle := quotes{`^`, `^"`, `'`, `\^"`, `\\`, `\`}
 	var effectiveStyle quotes
+
+	// Pin $SHELL so the quoting style doesn't depend on the test runner's shell
+	t.Setenv("SHELL", "cmd")
 	exec := util.NewExecutor("")
 
 	if util.IsWindows() {
