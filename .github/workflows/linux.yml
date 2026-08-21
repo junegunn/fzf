@@ -38,7 +38,9 @@ jobs:
         wget -qO- https://apt.fury.io/nushell/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/fury-nushell.gpg
         echo "deb [signed-by=/etc/apt/keyrings/fury-nushell.gpg] https://apt.fury.io/nushell/ /" | sudo tee /etc/apt/sources.list.d/fury-nushell.list
         sudo apt-get update
-        sudo apt-get install --yes zsh fish tmux shfmt nushell
+        # Pinned: 0.115.0 runs external completers on a background thread, so
+        # fzf never receives keystrokes. https://github.com/nushell/nushell/issues/18771
+        sudo apt-get install --yes zsh fish tmux shfmt nushell=0.114.1-0
 
     - name: Install Ruby gems
       run: bundle install
