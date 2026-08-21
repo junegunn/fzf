@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+0.74.4
+------
+- Vim plugin
+    - fzf no longer blocks the editor, so live previews keep working while fzf is open
+        - `fzf#run` now returns an empty list. Use `sink`, `sinklist`, or `exit` to get the result
+    - The popup layout now works under Zellij
+    - Added `popup` as a synonym of the `tmux` layout key
+      ```vim
+      let g:fzf_layout = { 'popup': '90%,70%' }
+      ```
+
 0.74.3
 ------
 - Performance optimizations for non-ASCII input
