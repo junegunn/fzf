@@ -26,6 +26,7 @@ const (
 	offsetPollTries = 10
 	queryTimeout    = 500 * time.Millisecond
 	maxInputBuffer  = 1024 * 1024
+	escapeLookback  = 256
 	maxSelectTries  = 100
 )
 
@@ -338,6 +339,45 @@ func getEnv(name string, defaultValue int) int {
 	return atoi(env, defaultValue)
 }
 
+// Bytes of a CSI sequence: parameter and intermediate bytes continue it, a
+// final byte ends it. Order is not enforced. Strictness would only make fzf
+// give up on a sequence it could have framed.
+//
+// https://vt100.net/emu/dec_ansi_parser
+func csiContinues(b byte) bool { return b >= 0x20 && b <= 0x3f }
+func csiFinal(b byte) bool     { return b >= 0x40 && b <= 0x7e }
+
+// incompleteEscape reports whether the buffer ends in an escape sequence that
+// has not been terminated yet. The read loop keeps waiting in that case, so the
+// parser is never handed a fragment to guess at.
+func incompleteEscape(buffer []byte) bool {
+	// Only the tail can hold a sequence still arriving. This runs once per byte
+	// read, so scanning all of a large paste would make the read quadratic.
+	tail := buffer
+	if len(tail) > escapeLookback {
+		tail = tail[len(tail)-escapeLookback:]
+	}
+	start := bytes.LastIndexByte(tail, Esc.Byte())
+	if start < 0 || len(tail)-start < 2 {
+		return false
+	}
+	switch tail[start+1] {
+	case '[':
+		for _, b := range tail[start+2:] {
+			if csiFinal(b) {
+				return false
+			}
+			if !csiContinues(b) {
+				return false // malformed, do not wait for a terminator
+			}
+		}
+		return true
+	case 'O':
+		return len(tail)-start < 3
+	}
+	return false
+}
+
 func (r *LightRenderer) getBytes(cancellable bool) ([]byte, getCharResult, error) {
 	return r.getBytesInternal(cancellable, r.buffer, false)
 }
@@ -378,6 +418,11 @@ func (r *LightRenderer) getBytesInternal(cancellable bool, buffer []byte, nonblo
 			retries = 0
 		}
 		buffer = append(buffer, byte(c))
+		// Keep waiting while a sequence is still arriving. Dropping the budget
+		// after every byte left fzf parsing whatever the read happened to end on.
+		if retries == 0 && incompleteEscape(buffer) {
+			retries = r.escDelay / escPollInterval
+		}
 		pc = c
 
 		// This should never happen under normal conditions,
