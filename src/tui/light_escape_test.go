@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestIncompleteEscape(t *testing.T) {
 	for _, c := range []struct {
@@ -29,6 +32,12 @@ func TestIncompleteEscape(t *testing.T) {
 		{"ab\x1b[?2004;2$", true},
 		{"\x1b[A\x1b[", true},
 		{"\x1b[A\x1b[B", false},
+
+		// Long buffers: only the tail is scanned, so an introducer further
+		// back than escapeLookback is not waited for
+		{strings.Repeat("a", 100000), false},
+		{"\x1b[" + strings.Repeat("a", 100000), false},
+		{strings.Repeat("a", 100000) + "\x1b[1;", true},
 
 		// Not a sequence fzf waits on
 		{"", false},

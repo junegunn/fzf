@@ -26,6 +26,7 @@ const (
 	offsetPollTries = 10
 	queryTimeout    = 500 * time.Millisecond
 	maxInputBuffer  = 1024 * 1024
+	escapeLookback  = 256
 	maxSelectTries  = 100
 )
 
@@ -350,13 +351,19 @@ func csiFinal(b byte) bool     { return b >= 0x40 && b <= 0x7e }
 // has not been terminated yet. The read loop keeps waiting in that case, so the
 // parser is never handed a fragment to guess at.
 func incompleteEscape(buffer []byte) bool {
-	start := bytes.LastIndexByte(buffer, Esc.Byte())
-	if start < 0 || len(buffer)-start < 2 {
+	// Only the tail can hold a sequence still arriving. This runs once per byte
+	// read, so scanning all of a large paste would make the read quadratic.
+	tail := buffer
+	if len(tail) > escapeLookback {
+		tail = tail[len(tail)-escapeLookback:]
+	}
+	start := bytes.LastIndexByte(tail, Esc.Byte())
+	if start < 0 || len(tail)-start < 2 {
 		return false
 	}
-	switch buffer[start+1] {
+	switch tail[start+1] {
 	case '[':
-		for _, b := range buffer[start+2:] {
+		for _, b := range tail[start+2:] {
 			if csiFinal(b) {
 				return false
 			}
@@ -366,7 +373,7 @@ func incompleteEscape(buffer []byte) bool {
 		}
 		return true
 	case 'O':
-		return len(buffer)-start < 3
+		return len(tail)-start < 3
 	}
 	return false
 }
