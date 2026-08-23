@@ -273,10 +273,11 @@ function! s:tmux_enabled()
     return 0
   endif
 
-  " --tmux covers Zellij as well, where neither the fzf-tmux script nor the
-  " tmux version is relevant
+  " --tmux covers Zellij as well, where the fzf-tmux script and the tmux
+  " version are irrelevant, but the binary only learned it in 0.71.0
   if exists('$ZELLIJ')
-    return 1
+    return exists('s:exec')
+          \ && s:compare_versions(s:get_version(s:exec), '0.71.0') >= 0
   endif
 
   if !exists('$TMUX')
