@@ -420,8 +420,10 @@ func (r *LightRenderer) getBytesInternal(cancellable bool, buffer []byte, nonblo
 		buffer = append(buffer, byte(c))
 		// Keep waiting while a sequence is still arriving. Dropping the budget
 		// after every byte left fzf parsing whatever the read happened to end on.
+		// Past the introducer this is not the ESC key, so the wait costs no
+		// Escape latency and ESCDELAY=0 must not reduce it to nothing.
 		if retries == 0 && incompleteEscape(buffer) {
-			retries = r.escDelay / escPollInterval
+			retries = max(r.escDelay, defaultEscDelay) / escPollInterval
 		}
 		pc = c
 
