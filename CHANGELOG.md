@@ -3,6 +3,8 @@ CHANGELOG
 
 0.74.4
 ------
+- Fixed an escape sequence split across reads being parsed as a fragment, which leaked the rest into the query (#4899)
+    - e.g. A terminal answering the startup `DECRQM` query late left `?2004;2$y`, CTRL-UP left `5A`, and SGR mouse input left `0;1;1M`
 - Fixed `--tiebreak=pathname` not detecting the last path separator when the line contains a non-ASCII character before it (#4902)
 - Vim plugin
     - fzf no longer blocks the editor, so live previews keep working while fzf is open
