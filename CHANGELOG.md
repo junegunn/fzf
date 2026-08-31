@@ -3,6 +3,7 @@ CHANGELOG
 
 0.74.4
 ------
+- Fixed `--tiebreak=pathname` not detecting the last path separator when the line contains a non-ASCII character before it (#4902)
 - Vim plugin
     - fzf no longer blocks the editor, so live previews keep working while fzf is open
         - `fzf#run` returns an empty list when it runs fzf asynchronously. Use `sink`, `sinklist`, or `exit` to get the result

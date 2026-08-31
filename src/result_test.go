@@ -272,3 +272,28 @@ func TestRadixSortResults(t *testing.T) {
 		}
 	}
 }
+
+func TestPathnameTiebreak(t *testing.T) {
+	// FIXME global
+	sortCriteria = []criterion{byScore, byPathname}
+
+	score := 100
+	test := func(input string, offset Offset, expected uint16) {
+		for _, chars := range []util.Chars{util.ToChars([]byte(input)), util.RunesToChars([]rune(input))} {
+			item := buildResult(withIndex(&Item{text: chars}, 1), []Offset{offset}, score)
+			if item.points[3] != math.MaxUint16-uint16(score) || item.points[2] != expected {
+				t.Error(input, item.points, expected)
+			}
+		}
+	}
+
+	// Match in the file name
+	test("x/foo/foo.txt", Offset{6, 9}, 1)
+	// Match in the directory path
+	test("x/foo/aa.txt", Offset{2, 5}, math.MaxUint16)
+
+	// Offsets are rune indexes, so a multi-byte character before the last
+	// delimiter must not shift the delimiter position
+	test("一x/foo/foo.txt", Offset{7, 10}, 1)
+	test("一x/foo/aa.txt", Offset{3, 6}, math.MaxUint16)
+}

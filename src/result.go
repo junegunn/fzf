@@ -82,10 +82,10 @@ func buildResultFromBounds(item *Item, score int, minBegin, minEnd, maxEnd int, 
 			val = item.TrimLength()
 		case byPathname:
 			if validOffsetFound {
+				// Rune index, to be comparable with minBegin
 				lastDelim := -1
-				s := item.text.ToString()
-				for i := len(s) - 1; i >= 0; i-- {
-					if s[i] == '/' || s[i] == '\\' {
+				for i := numChars - 1; i >= 0; i-- {
+					if r := item.text.Get(i); r == '/' || r == '\\' {
 						lastDelim = i
 						break
 					}
