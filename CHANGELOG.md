@@ -14,6 +14,9 @@ CHANGELOG
       ```vim
       let g:fzf_layout = { 'popup': '90%,70%' }
       ```
+    - fzf now opens in a tmux or Zellij floating pane by default, so the window it was started from stays visible and can be used while fzf is running
+        - Requires tmux 3.7+ or Zellij 0.44+
+        - Set `g:fzf_layout` to pick a different layout
 
 0.74.3
 ------

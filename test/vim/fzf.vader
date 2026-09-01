@@ -102,8 +102,35 @@ Execute (fzf#run with dir option and autochdir when final cwd is same as dir):
   " Working directory changed due to &acd
   AssertEqual '/', getcwd()
 
+Execute (Default layout):
+  unlet! g:fzf_layout g:fzf_height
+  let layout_keys = ['window', 'popup', 'tmux', 'up', 'down', 'left', 'right']
+
+  let opts = fzf#wrap('foobar')
+  Log opts
+  let found = filter(copy(layout_keys), 'has_key(opts, v:val)')
+  AssertEqual 1, len(found)
+  if found[0] ==# 'tmux'
+    " Only where fzf opens a floating pane, which can be left while fzf runs
+    Assert !empty($TMUX) || !empty($ZELLIJ)
+    AssertEqual '90%,60%', opts.tmux
+  elseif found[0] ==# 'window'
+    AssertEqual 0.9, opts.window.width
+  else
+    " No popup support in this build
+    AssertEqual '~40%', opts.down
+  endif
+
+  " Fullscreen strips it, whichever it was
+  let opts = fzf#wrap('foobar', {}, 1)
+  Log opts
+  AssertEqual [], filter(copy(layout_keys), 'has_key(opts, v:val)')
+
 Execute (fzf#wrap):
   AssertThrows fzf#wrap({'foo': 'bar'})
+
+  " Pin the layout so the assertions do not depend on the environment
+  let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 
   let opts = fzf#wrap('foobar')
   Log opts
