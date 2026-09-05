@@ -140,6 +140,15 @@ function! s:popup_support()
 endfunction
 
 function! s:default_layout()
+  " A floating pane leaves the window fzf was started from visible and
+  " reachable while fzf is open. A popup covers it, inside Vim or not.
+  " Without a job, s:execute_tmux() blocks and freezes Vim. fzf also wants a
+  " tmux window of at least 3x3, and Vim's pane is never larger than the
+  " window, so asking Vim is free and survives a resize
+  if (has('nvim') || has('job')) && &columns >= 3 && &lines >= 3
+        \ && s:tmux_enabled() && get(s:, 'tmux_floating', 0)
+    return { 'tmux': '90%,60%' }
+  endif
   return s:popup_support()
         \ ? { 'window' : { 'width': 0.9, 'height': 0.6 } }
         \ : { 'down': '~40%' }
@@ -165,6 +174,12 @@ function! fzf#install()
   if v:shell_error
     throw 'Failed to download fzf: '.script
   endif
+
+  " A new binary invalidates the chosen executable and everything derived from
+  " its version, including whether fzf opens a floating pane. fzf#install() is
+  " also the vim-plug 'do' hook, so this can run long after the first fzf call
+  let [s:versions, s:checked] = [{}, {}]
+  unlet! s:exec s:tmux s:tmux_floating
 endfunction
 
 let s:versions = {}
@@ -257,7 +272,7 @@ function! fzf#exec(...)
 endfunction
 
 " Path to the fzf-tmux script, or an empty string if it is not available. Only
-" the legacy options still need it. --tmux is handled by fzf itself.
+" the legacy options still need it. --popup is handled by fzf itself.
 function! s:fzf_tmux_script()
   if !executable(s:fzf_tmux)
     if !executable('fzf-tmux')
@@ -273,14 +288,7 @@ function! s:tmux_enabled()
     return 0
   endif
 
-  " --tmux covers Zellij as well, where the fzf-tmux script and the tmux
-  " version are irrelevant, but the binary only learned it in 0.71.0
-  if exists('$ZELLIJ')
-    return exists('s:exec')
-          \ && s:compare_versions(s:get_version(s:exec), '0.71.0') >= 0
-  endif
-
-  if !exists('$TMUX')
+  if empty($TMUX) && empty($ZELLIJ)
     return 0
   endif
 
@@ -288,7 +296,21 @@ function! s:tmux_enabled()
     return s:tmux
   endif
 
-  let s:tmux = 0
+  let [s:tmux, s:tmux_floating] = [0, 0]
+
+  " --popup covers Zellij as well, where the fzf-tmux script and the tmux
+  " version are irrelevant. fzf learned it in 0.71.0, and the floating pane
+  " options it passes need Zellij 0.44 or above. fzf checks tmux first, so
+  " this branch is Zellij without tmux. Both non-empty means tmux wins.
+  " empty(), not exists(), to match how fzf reads the two variables
+  if empty($TMUX)
+    let s:tmux =
+          \ s:compare_versions(s:get_version(s:fzf_binary()), '0.71.0') >= 0
+          \ && s:compare_versions(s:zellij_version(), '0.44') >= 0
+    let s:tmux_floating = s:tmux
+    return s:tmux
+  endif
+
   let output = system('tmux -V')
   if v:shell_error
     return s:tmux
@@ -296,9 +318,15 @@ function! s:tmux_enabled()
   " e.g. 'tmux 3.7b', 'tmux next-3.8'
   let ver = matchstr(output, '\d\+\.\d\+')
 
-  " --tmux requires tmux 3.3 or above, and needs no fzf-tmux script
+  " --popup requires tmux 3.3 or above, and needs no fzf-tmux script. The
+  " default layout wants a floating pane, which also needs fzf 0.74.0 or
+  " above. fzf opens a modal popup otherwise. The version here only skips the
+  " probe for servers too old to answer it
   if s:compare_versions(ver, '3.3') >= 0
     let s:tmux = 1
+    let s:tmux_floating = s:compare_versions(ver, '3.7') >= 0
+          \ && s:tmux_floating_pane_support()
+          \ && s:compare_versions(s:get_version(s:fzf_binary()), '0.74.0') >= 0
     return s:tmux
   endif
 
@@ -451,7 +479,10 @@ function! fzf#wrap(...)
     if !exists('g:fzf_layout') && exists('g:fzf_height')
       let opts.down = g:fzf_height
     else
-      let opts = extend(opts, s:validate_layout(get(g:, 'fzf_layout', s:default_layout())))
+      " Not get(), which would evaluate s:default_layout() and run its version
+      " checks even when g:fzf_layout makes the answer irrelevant
+      let opts = extend(opts, s:validate_layout(
+            \ exists('g:fzf_layout') ? g:fzf_layout : s:default_layout()))
     endif
   endif
 
@@ -625,6 +656,44 @@ function! s:present(dict, ...)
     endif
   endfor
   return 0
+endfunction
+
+" The binary fzf#exec() would choose, without its prompting or installing.
+" Layout selection runs before fzf#exec() has resolved one
+function! s:fzf_binary()
+  if exists('s:exec')
+    return s:exec
+  endif
+  let bins = filter(['fzf', s:fzf_go], 'executable(v:val)')
+  if empty(bins)
+    return ''
+  endif
+  return len(bins) > 1 ? sort(bins, 's:compare_binary_versions')[-1] : bins[0]
+endfunction
+
+function! s:zellij_version()
+  if !exists('s:zellij_ver')
+    let output = systemlist('zellij --version')
+    let s:zellij_ver = v:shell_error || empty(output)
+          \ ? '' : matchstr(output[0], '[0-9.]\+')
+  endif
+  return s:zellij_ver
+endfunction
+
+" Whether the running server can put fzf in a floating pane. fzf decides on
+" the server, not on the version the tmux client reports, so ask it the same
+" question rather than predicting the answer. See tmuxFloatingPaneInfo in
+" src/tmux.go, which also requires the tmux window to be at least 3x3; that
+" one changes with a resize, so s:default_layout() reads it from Vim instead
+" of caching it here
+function! s:tmux_floating_pane_support()
+  " fzf does not use a floating pane when it was not started from a pane
+  if empty($TMUX_PANE)
+    return 0
+  endif
+  let out = system('tmux list-commands new-pane')
+  " A server that does not know the command exits normally with no output
+  return !v:shell_error && out =~# 'new-pane'
 endfunction
 
 function! s:fzf_tmux(dict)
