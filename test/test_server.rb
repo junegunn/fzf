@@ -55,6 +55,29 @@ class TestServer < TestInteractive
     end
   end
 
+  def test_listen_progress
+    tmux.send_keys "seq 10 | #{FZF} --listen 6266", :Enter
+    tmux.until { |lines| assert_equal 10, lines.match_count }
+    uri = URI('http://localhost:6266')
+    state = -> { JSON.parse(Net::HTTP.get(uri), symbolize_names: true) }
+
+    # Idle: the last search is complete
+    assert_equal 100, state.call[:progress]
+
+    # While a search is running, progress is not left at 100 from the
+    # previous one, so it can tell a settled snapshot from a stale one
+    Net::HTTP.post(uri, 'reload(sleep 1; seq 100)')
+    tmux.until { assert_equal 0, state.call[:progress] }
+
+    # Settled: matches belong to the snapshot that reports 100
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.until do
+      st = state.call
+      assert_equal 100, st[:progress]
+      assert_equal 100, st[:matchCount]
+    end
+  end
+
   def test_listen_with_api_key
     uri = URI('http://localhost:6266')
     tmux.send_keys 'seq 10 | FZF_API_KEY=123abc fzf --listen 6266', :Enter

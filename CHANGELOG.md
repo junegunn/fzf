@@ -6,6 +6,8 @@ CHANGELOG
 - Fixed an escape sequence split across reads being parsed as a fragment, which leaked the rest into the query (#4899)
     - e.g. A terminal answering the startup `DECRQM` query late left `?2004;2$y`, CTRL-UP left `5A`, and SGR mouse input left `0;1;1M`
 - Fixed `--tiebreak=pathname` not detecting the last path separator when the line contains a non-ASCII character before it (#4902)
+- Fixed `progress` in the `--listen` status payload staying at 100 while a new search was running, which made a snapshot with a new query and the previous result set look complete (#4903)
+    - It is now reset when a search starts and reaches 100 on the final result, so `progress` of 100 means the matches belong to the query reported next to them
 - Fixed adaptive height not reserving a line for the divider of an inline header or footer border, so the list came up one line short for each of them (#4904)
     - e.g. `seq 10 | fzf --height=~100% --list-border --header-lines=1 --header-lines-border=inline`
 - Vim plugin
