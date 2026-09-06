@@ -882,6 +882,28 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(block, it) }
   end
 
+  def test_adaptive_height_with_inline_sections
+    tmux.send_keys %(seq 10 | #{FZF} --height=~100% --list-border --header-lines=1 --header-lines-border=inline), :Enter
+    block = <<~BLOCK
+      ╭──────
+      │   10
+      │   9
+      │   8
+      │   7
+      │   6
+      │   5
+      │   4
+      │   3
+      │ > 2
+      ├──────
+      │   1
+      ╰──────
+          9/9
+        >
+    BLOCK
+    tmux.until { assert_block(block, it) }
+  end
+
   def test_style_full_adaptive_height
     tmux.send_keys %(seq 1| #{FZF} --style=full:rounded --height=~100% --header-lines=1 --info=default), :Enter
     block = <<~BLOCK
