@@ -21,6 +21,7 @@ CHANGELOG
     - fzf now opens in a tmux or Zellij floating pane by default, so the window it was started from stays visible and can be used while fzf is running
         - Requires tmux 3.7+ or Zellij 0.44+
         - Set `g:fzf_layout` to pick a different layout
+- fish: Fixed custom CTRL-T command not using the prefixed target directory in some cases (#4498)
 
 0.74.3
 ------
