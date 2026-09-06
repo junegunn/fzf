@@ -104,7 +104,7 @@ function fzf_key_bindings
   # Store current token in $dir as root for the 'find' command
   function fzf-file-widget -d "List files and folders"
     set -l commandline (__fzf_parse_commandline)
-    set -lx dir $commandline[1]
+    set -l dir $commandline[1]
     set -l fzf_query $commandline[2]
     set -l prefix $commandline[3]
 
@@ -112,10 +112,17 @@ function fzf_key_bindings
       "--reverse --walker=file,dir,follow,hidden --scheme=path" \
       "--multi $FZF_CTRL_T_OPTS --print0")
 
-    set -lx FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
     set -lx FZF_DEFAULT_OPTS_FILE
 
-    set -l result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+    set -lx FZF_DEFAULT_COMMAND
+
+    if test -n "$FZF_CTRL_T_COMMAND"
+      set -f result (eval $FZF_CTRL_T_COMMAND \| (__fzfcmd) --query=$fzf_query | string split0)
+    else
+      set -f result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+    end
+
+    test -n "$result"
     and commandline -rt -- (string join -- ' ' $prefix(string escape -n -- $result))' '
 
     commandline -f repaint
