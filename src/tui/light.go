@@ -175,6 +175,7 @@ type LightRenderer struct {
 	width         int
 	height        int
 	yoffset       int
+	xoffset       int
 	tabstop       int
 	escDelay      int
 	fullscreen    bool
@@ -277,6 +278,7 @@ func (r *LightRenderer) Init() error {
 		// increased and we're left with unwanted extra new line.
 		if x > 0 && r.clearOnExit {
 			r.upOneLine = true
+			r.xoffset = x
 			r.makeSpace()
 		}
 		// We assume that --no-clear is used for repetitive relaunching of fzf.
@@ -1178,10 +1180,13 @@ func (r *LightRenderer) Close() {
 			r.rmcup()
 		} else {
 			r.origin()
+			// Erase our own area first, then step back onto the line the
+			// prompt was on, so nothing on that line is touched
+			r.csi("J")
 			if r.upOneLine {
 				r.csi("A")
+				r.csi(fmt.Sprintf("%dG", r.xoffset+1))
 			}
-			r.csi("J")
 		}
 	} else if !r.fullscreen {
 		r.stderr("\x1b8") // DECRC: restore cursor position
