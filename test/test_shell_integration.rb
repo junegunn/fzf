@@ -1273,6 +1273,43 @@ class TestNushell < TestBase
     FileUtils.rm_rf('/tmp/fzf-test')
   end
 
+  # Override: paths are inserted as Nushell string literals, so the
+  # selections appear quoted on the command line.
+  def test_ctrl_t
+    set_var('FZF_CTRL_T_COMMAND', 'seq 100')
+
+    tmux.prepare
+    tmux.send_keys 'C-t'
+    tmux.until { |lines| assert_equal 100, lines.match_count }
+    tmux.send_keys :Tab, :Tab, :Tab
+    tmux.until { |lines| assert lines.any_include?(' (3)') }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert lines.any_include?('"1" "2" "3"') }
+    tmux.send_keys 'C-c'
+  end
+
+  # A path is inserted as a Nushell string literal, so that syntax in a file
+  # name is not evaluated and each path stays a single argument.
+  def test_ctrl_t_quoting
+    marker = "#{tempname}-marker"
+    FileUtils.rm_f(marker)
+    writelines(["fzf-inject$(touch #{marker}).txt", 'fzf-inject space.txt'])
+    set_var('FZF_CTRL_T_COMMAND', "cat #{tempname}")
+
+    tmux.prepare
+    tmux.send_keys '^printf "%s\n" ', 'C-t'
+    tmux.until { |lines| assert_equal 2, lines.match_count }
+    tmux.send_keys :Tab, :Tab
+    tmux.until { |lines| assert_equal 2, lines.select_count }
+    tmux.send_keys :Enter
+    tmux.until { |lines| assert_includes lines[-1].to_s, '"fzf-inject$(touch' }
+    tmux.send_keys :Enter
+    tmux.until do |lines|
+      assert_equal ["fzf-inject$(touch #{marker}).txt", 'fzf-inject space.txt'], lines[-2..]
+    end
+    refute_path_exists marker
+  end
+
   # Nushell does not support multiline command recall the same way
   # as bash/zsh/fish, so test_ctrl_r_multiline is omitted.
 

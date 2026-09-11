@@ -138,7 +138,7 @@ let ctrl_t =  {
       {
         send: executehostcommand
         cmd: "
-          let fzf_opts = (__fzf_defaults '--reverse --walker=file,dir,follow,hidden --scheme=path' $'($env.FZF_CTRL_T_OPTS) -m');
+          let fzf_opts = (__fzf_defaults '--reverse --walker=file,dir,follow,hidden --scheme=path' $'($env.FZF_CTRL_T_OPTS) -m --print0');
           let fzfcmd = (__fzfcmd);
           let fzf_args = ($fzfcmd | skip 1);
           let ctrl_t_cmd = ($env.FZF_CTRL_T_COMMAND? | default null);
@@ -149,9 +149,19 @@ let ctrl_t =  {
             let sh_cmd = [$ctrl_t_cmd '|' $fzf_cmd_str] | str join ' ';
             with-env { FZF_DEFAULT_OPTS: $fzf_opts, FZF_DEFAULT_OPTS_FILE: '' } { ^sh -c $sh_cmd }
           };
-          let result = ($result | str replace --all (char newline) ' ' | str trim);
-          commandline edit --append $result;
-          commandline set-cursor --end
+          # Serialize each path as a Nushell string literal, so that syntax
+          # in a file name is not evaluated when the line is executed.
+          let result = (
+            $result
+            | split row (char nul)
+            | where {|path| $path != ''}
+            | each {|path| $path | to nuon}
+            | str join ' '
+          );
+          if ($result | is-not-empty) {
+            commandline edit --append $'($result) ';
+            commandline set-cursor --end
+          }
         "
       }
     ]

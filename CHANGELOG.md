@@ -24,6 +24,8 @@ CHANGELOG
 - fish:
     - Fixed custom CTRL-T command not using the prefixed target directory in some cases (#4498)
     - Optimized description alignment of completion items (#4910)
+- nushell: Fixed CTRL-T inserting the selected paths unquoted
+    - p4p3r (@P4P3R-HAK) reported the security vulnerability and suggested the fix
 
 0.74.3
 ------
