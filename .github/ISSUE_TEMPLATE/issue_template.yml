@@ -3,10 +3,6 @@ name: Issue Template
 description: Report a problem or bug related to fzf to help us improve
 
 body:
-  - type: markdown
-    attributes:
-      value: ISSUES NOT FOLLOWING THIS TEMPLATE WILL BE CLOSED AND DELETED
-
   - type: checkboxes
     attributes:
       label: Checklist
@@ -32,7 +28,6 @@ body:
         - label: Linux
         - label: macOS
         - label: Windows
-        - label: Etc.
 
   - type: checkboxes
     attributes:
@@ -41,9 +36,23 @@ body:
         - label: bash
         - label: zsh
         - label: fish
+        - label: nushell
+        - label: PowerShell
 
   - type: textarea
     attributes:
       label: Problem / Steps to reproduce
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: How did you run into this?
+      description: |
+        What were you actually trying to do? Include the command line or
+        configuration from your real setup.
+
+        If you did not hit this in actual use, say how you found it
+        (reading the code, automated analysis, etc.).
     validations:
       required: true
