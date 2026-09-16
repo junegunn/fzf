@@ -215,7 +215,7 @@ _fzf_dir_completion() {
 
 _fzf_feed_fifo() {
   command rm -f "$1"
-  mkfifo "$1"
+  command mkfifo "$1" || return
   cat <&0 > "$1" &|
 }
 
@@ -242,8 +242,9 @@ _fzf_complete() {
     rest=("$@")
   fi
 
-  local fifo lbuf matches post
-  fifo="${TMPDIR:-/tmp}/fzf-complete-fifo-$$"
+  local fifo fifo_dir lbuf matches post
+  fifo_dir=$(command mktemp -d "${TMPDIR:-/tmp}/fzf-completion-XXXXXX") || return
+  fifo="$fifo_dir/fifo"
   lbuf=${rest[0]}
   post="${funcstack[1]}_post"
   type $post > /dev/null 2>&1 || post=cat
@@ -256,7 +257,7 @@ _fzf_complete() {
   if [ -n "$matches" ]; then
     LBUFFER="$lbuf$matches"
   fi
-  command rm -f "$fifo"
+  command rm -rf "$fifo_dir"
 }
 
 # To use custom hostname lists, override __fzf_list_hosts.

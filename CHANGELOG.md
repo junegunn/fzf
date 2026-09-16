@@ -13,6 +13,8 @@ CHANGELOG
     - On tmux 3.7, the window is still unzoomed, as tmux 3.7b crashes when a floating pane is created over a zoomed window
 - Security fixes
     - fzf-tmux no longer evaluates an attached layout size (e.g. `-l50`) via bash arithmetic, which could run commands or inject tmux flags (GHSA-w6x2-f5m4-xw82)
+    - zsh completion now creates its FIFO in a private `mktemp -d` directory instead of a predictable `/tmp` path (GHSA-7rj6-7pqx-v7rm)
+    - Reported by Sai Sreewathsa Kovalluri, Shon Babu, and Kannan K (Researchers) of Innspark Solutions
 
 0.74.4
 ------
