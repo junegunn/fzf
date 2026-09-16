@@ -78,6 +78,7 @@ while [[ $# -gt 0 ]]; do
       fi
       if [[ ${#arg} -gt 2 ]]; then
         size="${arg:2}"
+        [[ $size =~ ^[0-9%,]+$ || $size =~ ^[A-Z]$ ]] || continue
       else
         if [[ $1 =~ ^[0-9%,]+$ ]] || [[ $1 =~ ^[A-Z]$ ]]; then
           size="$1"

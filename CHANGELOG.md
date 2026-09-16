@@ -11,6 +11,8 @@ CHANGELOG
     - A `focus` binding that runs `reload` now triggers itself again after each reload, unless `--id-nth` is set and the key does not change
 - Fixed `--popup` unzooming the window when opened over a zoomed pane on tmux 3.8 or above (#4927, junegunn/fzf.vim#1625)
     - On tmux 3.7, the window is still unzoomed, as tmux 3.7b crashes when a floating pane is created over a zoomed window
+- Security fixes
+    - fzf-tmux no longer evaluates an attached layout size (e.g. `-l50`) via bash arithmetic, which could run commands or inject tmux flags (GHSA-w6x2-f5m4-xw82)
 
 0.74.4
 ------
