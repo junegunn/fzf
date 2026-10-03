@@ -51,3 +51,43 @@ func TestIncompleteEscape(t *testing.T) {
 		}
 	}
 }
+
+// A string sequence is not waited for. Its introducer is also ALT-], ALT-P or
+// ALT-_, and holding the read open on those both delayed the key and let typed
+// bytes accumulate into something that looked like a sequence.
+func TestIncompleteStringEscape(t *testing.T) {
+	for _, buffer := range []string{
+		"\x1b]11;rgb:",
+		"\x1bP>|kitty",
+		"\x1b_Gi=1",
+		"\x1b]0;t\x1b",
+		"\x1b]0;title\a",
+		"ab\x1b]11;rgb:",
+	} {
+		if incompleteEscape([]byte(buffer)) {
+			t.Errorf("incompleteEscape(%q) = true, want false", buffer)
+		}
+	}
+}
+
+// SS3 reaches the same parameterized subcases as CSI in the parser, so it has to
+// be judged the same way here. Declaring it finished after one byte made the
+// parser give up on a split \eO1;5A and type its tail into the query.
+func TestIncompleteSS3(t *testing.T) {
+	for _, c := range []struct {
+		buffer string
+		want   bool
+	}{
+		{"\x1bO", true},
+		{"\x1bO1", true},
+		{"\x1bO1;", true},
+		{"\x1bO1;5", true},
+		{"\x1bOA", false},
+		{"\x1bOP", false},
+		{"\x1bO1;5A", false},
+	} {
+		if got := incompleteEscape([]byte(c.buffer)); got != c.want {
+			t.Errorf("incompleteEscape(%q) = %v, want %v", c.buffer, got, c.want)
+		}
+	}
+}
