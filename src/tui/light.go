@@ -630,20 +630,35 @@ func (r *LightRenderer) setCancel(f func()) {
 	r.mutex.Unlock()
 }
 
-// escSequence parses an escape sequence, widening a CSI or SS3 sequence that
-// parseEscSequence recognized the start of but gave up on partway. Consuming
-// only the part that parsed would leave the rest to be read as input and typed
-// into the query. Complete sequences it does not recognize are dropped there,
-// unless they could be an ALT key followed by typed text.
+// escSequence parses an escape sequence, then checks a CSI or SS3 result
+// against its frame. parseEscSequence can stop after a few bytes, and consuming
+// only those would leave the rest to be typed into the query. Complete
+// sequences it does not recognize are dropped there, unless they could be an
+// ALT key followed by typed text.
 func (r *LightRenderer) escSequence(sz *int) Event {
 	ev := r.parseEscSequence(sz)
-	if ev.Type != Invalid || len(r.buffer) < 3 || !csiIntroducer(r.buffer[1]) {
+	if len(r.buffer) < 3 || !csiIntroducer(r.buffer[1]) {
 		return ev
 	}
-	// Only a framed sequence is dropped. One still missing its final byte may
-	// yet be arriving, and the caller gives it another chance.
-	if end := csiEnd(r.buffer); end > *sz {
+	// A frame missing its final byte may still be arriving
+	end := csiEnd(r.buffer)
+	if end == 0 {
+		return ev
+	}
+	// The same rule as the fall-through: four bytes or fewer could be ALT-[
+	// or ALT-O and typed text
+	if end <= 4 {
+		if ev.Type == Invalid {
+			*sz = 2
+			return AltKey(rune(r.buffer[1]))
+		}
+		return ev
+	}
+	// A key matched on a prefix, such as Home for \e[70;5u, or a sequence
+	// given up on partway
+	if end > *sz {
 		*sz = end
+		return Event{Invalid, 0, nil}
 	}
 	return ev
 }

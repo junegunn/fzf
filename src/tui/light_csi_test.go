@@ -13,6 +13,9 @@ func TestUnknownEscapeSequence(t *testing.T) {
 	}{
 		// Key encodings fzf does not implement
 		{"\x1b[97;5u", Invalid, 7},
+		{"\x1b[70;5u", Invalid, 7}, // not Home, which its prefix \e[7 matches
+		{"\x1b[42;5u", Invalid, 7}, // nor End
+		{"\x1b[4;5~", Invalid, 6},
 		{"\x1b[127;5u", Invalid, 8},
 		{"\x1b[27;5;127~", Invalid, 11},
 		{"\x1b[57441;1u", Invalid, 10},
@@ -46,6 +49,10 @@ func TestUnknownEscapeSequence(t *testing.T) {
 		{"\x1b[ x", Alt, 2},
 		{"\x1bOx", Alt, 2},
 		{"\x1bO9A", Alt, 2},
+		{"\x1b[2m", Alt, 2}, // the parser gives up on these itself
+		{"\x1b[3x", Alt, 2},
+		{"\x1b[<a", Alt, 2},
+		{"\x1bO<a", Alt, 2},
 		{"\x1b]abc", Alt, 2},
 		{"\x1b]11;rgb:", Alt, 2}, // terminator has not arrived
 		{"\x1b]\x1b]", Alt, 2},   // a second sequence must not swallow the ALT key
