@@ -139,19 +139,19 @@ func TestStringEnd(t *testing.T) {
 func TestStillArriving(t *testing.T) {
 	for _, c := range []struct {
 		buffer string
-		sz     int
 		want   bool
 	}{
-		{"\x1b[97;5u\a\x1b[", 7, false},
-		{"\x1b[97;5u\x1b[", 7, false},
-		{"\x1b[1;\a", 4, false}, // the BEL has already ended it
-		{"\x1b[1;", 4, true},
-		{"\x1b[", 2, true},
-		{"\x1bO1", 3, true},
-		{"\x1b[<0;1", 3, true},
+		{"\x1b[97;5u\a\x1b[", false},
+		{"\x1b[97;5u\x1b[", false},
+		{"\x1b[3;\a\x1b[", false}, // the BEL ended it, the trailing \e[ is another one
+		{"\x1b[1;\a", false},      // the BEL has already ended it
+		{"\x1b[1;", true},
+		{"\x1b[", true},
+		{"\x1bO1", true},
+		{"\x1b[<0;1", true},
 	} {
-		if got := stillArriving([]byte(c.buffer), c.sz); got != c.want {
-			t.Errorf("stillArriving(%q, %d) = %v, want %v", c.buffer, c.sz, got, c.want)
+		if got := stillArriving([]byte(c.buffer)); got != c.want {
+			t.Errorf("stillArriving(%q) = %v, want %v", c.buffer, got, c.want)
 		}
 	}
 }

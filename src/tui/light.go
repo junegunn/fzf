@@ -444,12 +444,12 @@ func stringReply(buffer []byte) bool {
 	return false
 }
 
-// stillArriving reports whether the sequence that consumed sz bytes of the
-// buffer may still be completed by more input. Both it and the buffer have to
-// end unfinished: a complete sequence followed by ALT-[ is not waiting for
-// anything, and an unfinished one followed by other bytes cannot complete.
-func stillArriving(buffer []byte, sz int) bool {
-	return incompleteEscape(buffer[:min(sz, len(buffer))]) && incompleteEscape(buffer)
+// stillArriving reports whether the sequence at the start of the buffer may
+// still be completed by more input. It must be the only one in the buffer:
+// whatever follows it, another sequence or a byte that ended it, means it is not
+// waiting for anything.
+func stillArriving(buffer []byte) bool {
+	return bytes.IndexByte(buffer[1:], Esc.Byte()) < 0 && incompleteEscape(buffer)
 }
 
 // incompleteEscape reports whether the buffer ends in an escape sequence that
@@ -589,7 +589,7 @@ func (r *LightRenderer) GetChar(cancellable bool) Event {
 		// Second chance, but only for an unfinished sequence. Re-reading
 		// otherwise blocks until the next keystroke, holding back whatever
 		// follows in the buffer.
-		if ev.Type == Invalid && stillArriving(r.buffer, sz) {
+		if ev.Type == Invalid && stillArriving(r.buffer) {
 			r.buffer, result, err = r.getBytes(true)
 			if err != nil {
 				return Event{Fatal, 0, nil}
