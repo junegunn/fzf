@@ -444,6 +444,14 @@ func stringReply(buffer []byte) bool {
 	return false
 }
 
+// stillArriving reports whether the sequence that consumed sz bytes of the
+// buffer may still be completed by more input. Both it and the buffer have to
+// end unfinished: a complete sequence followed by ALT-[ is not waiting for
+// anything, and an unfinished one followed by other bytes cannot complete.
+func stillArriving(buffer []byte, sz int) bool {
+	return incompleteEscape(buffer[:min(sz, len(buffer))]) && incompleteEscape(buffer)
+}
+
 // incompleteEscape reports whether the buffer ends in an escape sequence that
 // has not been terminated yet. The read loop keeps waiting while it does, so a
 // fragment reaches the parser only once that wait has run out.
@@ -578,10 +586,10 @@ func (r *LightRenderer) GetChar(cancellable bool) Event {
 		return Event{CtrlSlash, 0, nil}
 	case Esc.Byte():
 		ev := r.escSequence(&sz)
-		// Second chance, but only while the buffer ends in an unfinished
-		// sequence. Re-reading otherwise blocks until the next keystroke,
-		// holding back whatever follows in the buffer.
-		if ev.Type == Invalid && incompleteEscape(r.buffer) {
+		// Second chance, but only for an unfinished sequence. Re-reading
+		// otherwise blocks until the next keystroke, holding back whatever
+		// follows in the buffer.
+		if ev.Type == Invalid && stillArriving(r.buffer, sz) {
 			r.buffer, result, err = r.getBytes(true)
 			if err != nil {
 				return Event{Fatal, 0, nil}
