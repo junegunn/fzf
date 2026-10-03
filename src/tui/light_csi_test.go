@@ -49,10 +49,16 @@ func TestUnknownEscapeSequence(t *testing.T) {
 		{"\x1b[ x", Alt, 2},
 		{"\x1bOx", Alt, 2},
 		{"\x1bO9A", Alt, 2},
-		{"\x1b[2m", Alt, 2}, // the parser gives up on these itself
-		{"\x1b[3x", Alt, 2},
-		{"\x1b[<a", Alt, 2},
-		{"\x1bO<a", Alt, 2},
+
+		// rxvt keys fzf does not know: dropped, not typed
+		{"\x1b[3^", Invalid, 4}, // CTRL-DELETE
+		{"\x1b[5^", Invalid, 4}, // CTRL-PAGEUP
+		{"\x1b[3@", Invalid, 4}, // CTRL-SHIFT-DELETE
+		{"\x1b[11^", Invalid, 5},
+
+		// rxvt ends keys with $, so a key typed after one is not part of it
+		{"\x1b[7$x", Home, 4}, // SHIFT-HOME, then x
+		{"\x1b[3$x", Invalid, 4},
 		{"\x1b]abc", Alt, 2},
 		{"\x1b]11;rgb:", Alt, 2}, // terminator has not arrived
 		{"\x1b]\x1b]", Alt, 2},   // a second sequence must not swallow the ALT key

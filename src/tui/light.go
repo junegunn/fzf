@@ -348,6 +348,8 @@ func getEnv(name string, defaultValue int) int {
 func csiContinues(b byte) bool { return b >= 0x20 && b <= 0x3f }
 func csiFinal(b byte) bool     { return b >= 0x40 && b <= 0x7e }
 
+func csiIntermediate(b byte) bool { return b >= 0x20 && b <= 0x2f }
+
 // csiEnd returns the length of the CSI sequence at the start of the buffer, or
 // 0 if it has no final byte yet or is malformed.
 func csiEnd(buffer []byte) int {
@@ -645,18 +647,15 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 	if end == 0 {
 		return ev
 	}
-	// The same rule as the fall-through: four bytes or fewer could be ALT-[
-	// or ALT-O and typed text
+	// Four bytes or fewer could be ALT-[ or ALT-O and typed text, and rxvt sends
+	// keys of that size fzf does not know, such as \e[3^ for CTRL-DELETE
 	if end <= 4 {
-		if ev.Type == Invalid {
-			*sz = 2
-			return AltKey(rune(r.buffer[1]))
-		}
 		return ev
 	}
-	// A key matched on a prefix, such as Home for \e[70;5u, or a sequence
-	// given up on partway
-	if end > *sz {
+	// A key matched on a prefix, such as Home for \e[70;5u, or a sequence given
+	// up on partway. rxvt ends keys with the intermediate byte $, as in \e[7$
+	// for SHIFT-HOME, so a parse ending there is complete.
+	if end > *sz && !csiIntermediate(r.buffer[*sz-1]) {
 		*sz = end
 		return Event{Invalid, 0, nil}
 	}
