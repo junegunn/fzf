@@ -348,9 +348,119 @@ func getEnv(name string, defaultValue int) int {
 func csiContinues(b byte) bool { return b >= 0x20 && b <= 0x3f }
 func csiFinal(b byte) bool     { return b >= 0x40 && b <= 0x7e }
 
-// incompleteEscape reports whether the buffer ends in an escape sequence that
-// has not been terminated yet. The read loop keeps waiting in that case, so the
-// parser is never handed a fragment to guess at.
+// csiEnd returns the length of the CSI or SS3 sequence at the start of the
+// buffer, 0 if it has no final byte yet, or -1 if it is malformed.
+func csiEnd(buffer []byte) int {
+	digits := true
+	for i := 2; i < len(buffer); i++ {
+		b := buffer[i]
+		// rxvt ends keys with $ after at least one digit, as in \e[7$ for
+		// SHIFT-HOME and \e[23$ for SHIFT-F11. Elsewhere $ is an intermediate byte.
+		if csiFinal(b) || b == '$' && digits && i > 2 {
+			return i + 1
+		}
+		if !csiContinues(b) {
+			return -1
+		}
+		digits = digits && b >= '0' && b <= '9'
+	}
+	return 0
+}
+
+// stringEnd returns the length of the string sequence (DCS, OSC or APC) at the
+// start of the buffer, or 0 while nothing has ended it. A terminator is
+// included, an ESC that introduces another sequence is not.
+func stringEnd(buffer []byte) int {
+	if len(buffer) < 2 {
+		return 0
+	}
+	// Every one of them ends with ST. BEL ends an OSC as well, because xterm has
+	// always allowed it, but stopping at a BEL inside a DCS or APC payload would
+	// frame only its first half and leave the rest to be typed into the query.
+	bel := buffer[1] == ']'
+	for i := 2; i < len(buffer); i++ {
+		switch buffer[i] {
+		case '\a':
+			if bel {
+				return i + 1
+			}
+		case Esc.Byte():
+			if i+1 == len(buffer) {
+				return 0 // ST may still be arriving
+			}
+			if buffer[i+1] == '\\' {
+				return i + 2
+			}
+			// Any other ESC ends the string and introduces a sequence of its
+			// own, so frame only what precedes it and leave the ESC to be
+			// parsed again. Scanning past it would swallow that sequence too.
+			return i
+		}
+	}
+	return 0
+}
+
+// csiIntroducer reports whether the byte after ESC starts a sequence that is
+// framed by a final byte. The parser routes CSI and SS3 through the same
+// parameterized subcases, so both are framed by csiEnd.
+func csiIntroducer(b byte) bool {
+	return b == '[' || b == 'O'
+}
+
+// stringIntroducer reports whether the byte after ESC starts a string sequence.
+// Only the three that terminals reply with: OSC for colors, title and clipboard,
+// DCS for XTVERSION, DECRQSS and XTGETTCAP, APC for Kitty graphics. Nothing
+// sends SOS or PM.
+func stringIntroducer(b byte) bool {
+	switch b {
+	case 'P', ']', '_':
+		return true
+	}
+	return false
+}
+
+// stringReply reports whether a framed string sequence starts the way a
+// terminal's reply does. Its introducer is also ALT-], ALT-P or ALT-_, and typed
+// text after one, ended by CTRL-G or another key, frames like a reply when it
+// all arrives in one read.
+func stringReply(buffer []byte) bool {
+	payload := buffer[2:]
+	switch buffer[1] {
+	case ']': // Ps ; ...
+		i := 0
+		for i < len(payload) && payload[i] >= '0' && payload[i] <= '9' {
+			i++
+		}
+		return i > 0 && i < len(payload) && payload[i] == ';'
+	case 'P': // >| or !| for the version, [01]$r or [01]+r for settings
+		if len(payload) < 2 {
+			return false
+		}
+		if payload[1] == '|' {
+			return payload[0] == '>' || payload[0] == '!'
+		}
+		return len(payload) >= 3 && (payload[0] == '0' || payload[0] == '1') &&
+			(payload[1] == '$' || payload[1] == '+') && payload[2] == 'r'
+	case '_': // G, then key=value
+		return len(payload) >= 3 && payload[0] == 'G' &&
+			(payload[1] >= 'a' && payload[1] <= 'z' || payload[1] >= 'A' && payload[1] <= 'Z') &&
+			payload[2] == '='
+	}
+	return false
+}
+
+// stillArriving reports whether the CSI or SS3 sequence at the start of the
+// buffer may still be completed by more input. It must be the only one in the buffer:
+// whatever follows it, another sequence or a byte that ended it, means it is not
+// waiting for anything.
+func stillArriving(buffer []byte) bool {
+	return bytes.IndexByte(buffer[1:], Esc.Byte()) < 0 && incompleteEscape(buffer)
+}
+
+// incompleteEscape reports whether the buffer ends in a CSI or SS3 sequence that
+// has not been terminated yet. The read loop keeps waiting while it does, so a
+// fragment reaches the parser only once that wait has run out. A string sequence
+// is never waited for, because its introducer is also ALT-], ALT-P or ALT-_.
 func incompleteEscape(buffer []byte) bool {
 	// Only the tail can hold a sequence still arriving. This runs once per byte
 	// read, so scanning all of a large paste would make the read quadratic.
@@ -362,21 +472,10 @@ func incompleteEscape(buffer []byte) bool {
 	if start < 0 || len(tail)-start < 2 {
 		return false
 	}
-	switch tail[start+1] {
-	case '[':
-		for _, b := range tail[start+2:] {
-			if csiFinal(b) {
-				return false
-			}
-			if !csiContinues(b) {
-				return false // malformed, do not wait for a terminator
-			}
-		}
-		return true
-	case 'O':
-		return len(tail)-start < 3
-	}
-	return false
+	// SS3 is judged like CSI: declaring it finished after one byte made the
+	// parser give up on a split \eO1;5A. A malformed sequence is not waited for,
+	// as nothing can complete it.
+	return csiIntroducer(tail[start+1]) && csiEnd(tail[start:]) == 0
 }
 
 func (r *LightRenderer) getBytes(cancellable bool) ([]byte, getCharResult, error) {
@@ -483,8 +582,11 @@ func (r *LightRenderer) GetChar(cancellable bool) Event {
 		return Event{CtrlSlash, 0, nil}
 	case Esc.Byte():
 		ev := r.escSequence(&sz)
-		// Second chance
-		if ev.Type == Invalid {
+		// Second chance, but only for an unfinished sequence. Re-reading
+		// otherwise blocks until the next keystroke, holding back whatever
+		// follows in the buffer.
+		if ev.Type == Invalid && stillArriving(r.buffer) {
+			waited := len(r.buffer)
 			r.buffer, result, err = r.getBytes(true)
 			if err != nil {
 				return Event{Fatal, 0, nil}
@@ -494,6 +596,11 @@ func (r *LightRenderer) GetChar(cancellable bool) Event {
 			}
 
 			ev = r.escSequence(&sz)
+			// This read has no time limit, so what it returned may be the next
+			// keystroke rather than the rest of the sequence. Never drop it.
+			if ev.Type == Invalid && sz > waited {
+				sz = waited
+			}
 		}
 		return ev
 	}
@@ -525,7 +632,41 @@ func (r *LightRenderer) setCancel(f func()) {
 	r.mutex.Unlock()
 }
 
+// escSequence parses an escape sequence, then checks a CSI or SS3 result
+// against its frame. parseEscSequence can stop after a few bytes, and consuming
+// only those would leave the rest to be typed into the query. Complete
+// sequences it does not recognize are dropped there, unless they could be an
+// ALT key followed by typed text.
 func (r *LightRenderer) escSequence(sz *int) Event {
+	ev := r.parseEscSequence(sz)
+	if len(r.buffer) < 3 || !csiIntroducer(r.buffer[1]) {
+		return ev
+	}
+	// A frame missing its final byte may still be arriving
+	end := csiEnd(r.buffer)
+	if end <= 0 {
+		return ev
+	}
+	// The parser can also set the size before checking the bytes and then give
+	// up, counting typed input past the frame, as in \e[3;1u followed by ~
+	if ev.Type == Invalid && *sz > end {
+		*sz = end
+	}
+	// Four bytes or fewer could be ALT-[ or ALT-O and typed text, and rxvt sends
+	// keys of that size fzf does not know, such as \e[3^ for CTRL-DELETE
+	if end <= 4 {
+		return ev
+	}
+	// A key matched on a prefix, such as Home for \e[70;5u, or a sequence given
+	// up on partway
+	if end > *sz {
+		*sz = end
+		return Event{Invalid, 0, nil}
+	}
+	return ev
+}
+
+func (r *LightRenderer) parseEscSequence(sz *int) Event {
 	if len(r.buffer) < 2 {
 		return Event{Esc, 0, nil}
 	}
@@ -987,6 +1128,24 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			} // r.buffer[2]
 		} // r.buffer[2]
 	} // r.buffer[1]
+	// Nothing matched. A framed sequence is dropped whole: reading its
+	// introducer as an ALT-key below would type the rest into the query.
+	// Unterminated ones are left alone, as that is how ALT-[, ALT-O, ALT-],
+	// ALT-P and ALT-_ arrive.
+	if csiIntroducer(r.buffer[1]) {
+		// ALT-[ or ALT-O and one or two typed characters can look like a short
+		// sequence, so ask for at least two bytes before the final byte
+		if end := csiEnd(r.buffer); end > 4 {
+			*sz = end
+			return Event{Invalid, 0, nil}
+		}
+	} else if stringIntroducer(r.buffer[1]) {
+		if end := stringEnd(r.buffer); end > 0 && stringReply(r.buffer) {
+			*sz = end
+			return Event{Invalid, 0, nil}
+		}
+	}
+
 	rest := bytes.NewBuffer(r.buffer[1:])
 	c, size, err := rest.ReadRune()
 	if err == nil {

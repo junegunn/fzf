@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Drives queryStartup against a terminal simulated by pipes, with the replies
@@ -125,4 +126,32 @@ func TestQueryStartup(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The second-chance read has no time limit, so a key typed long after an
+// unfinished sequence must not be dropped with it.
+func TestLateKeyAfterUnfinishedSequence(t *testing.T) {
+	inR, inW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { inR.Close(); inW.Close() })
+	inW.WriteString("\x1b[12")
+	go func() {
+		time.Sleep(2 * defaultEscDelay * time.Millisecond)
+		inW.WriteString("x")
+		time.Sleep(2 * defaultEscDelay * time.Millisecond)
+		inW.WriteString("y") // ends the wait if x was dropped
+	}()
+
+	r := &LightRenderer{ttyin: inR, escDelay: defaultEscDelay}
+	for range 3 {
+		if ev := r.GetChar(false); ev.Type == Rune {
+			if ev.Char != 'x' {
+				t.Errorf("got %q, want 'x'", ev.Char)
+			}
+			return
+		}
+	}
+	t.Error("the late key was dropped")
 }

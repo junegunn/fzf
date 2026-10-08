@@ -4,6 +4,7 @@ CHANGELOG
 0.74.5
 ------
 - Fixed `--gap-line` cutting a grapheme cluster when filling the last cells of the line (#4920)
+- Fixed an escape sequence fzf does not recognize being partly consumed, which leaked the rest into the query (#4926)
 
 0.74.4
 ------
