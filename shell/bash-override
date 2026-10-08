@@ -1,0 +1,50 @@
+# Override defaults for improved ctrl-t experience
+__fzf_find() {
+  command ls -1tA $1
+  command find -L $1 -mindepth 2 \( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \) -prune \
+  -o -type f -printf '%P\n' \
+  -o -type d -printf '%P\n' \
+  -o -type l -printf '%P\n' 2> /dev/null
+}
+
+__fzf_select__() {
+  local cmd opts
+  local dir=$1
+  shift
+  cmd="${FZF_CTRL_T_COMMAND:-"__fzf_find $dir"}"
+  opts="--height ${FZF_TMUX_HEIGHT:-40%} --bind=ctrl-z:ignore,ctrl-a:toggle-all --cycle --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS -m"
+  local sep=""
+  eval "$cmd" |
+    FZF_DEFAULT_OPTS="$opts" $(__fzfcmd) "$@" |
+    while read -r item; do
+      if [ "$dir" == "." ]; then
+        printf '%s%q' "$sep" "$item"  # escape special chars
+      else
+        printf '%s%q/%q' "$sep" "$dir" "$item"
+      fi
+      sep=" "
+    done
+}
+
+fzf-file-widget() {
+  local trailing_spaces=$(echo -n "${READLINE_LINE:0:$READLINE_POINT}" | sed "s/^.*\S//")
+  local word=$(echo -n "${READLINE_LINE:0:$READLINE_POINT}" | sed "s/\s*$//"| awk '{print $NF}')
+  local dir=$(echo "${word/#\~/$HOME}" | sed "s#/\+#/#g; s#/\$##")
+  if [[ $READLINE_POINT -eq 0 || -n "$trailing_spaces" || ! -d "$dir" ]]; then
+    local maybe_space=""
+    [[ $READLINE_POINT -gt 0 && -z "$trailing_spaces" ]] && maybe_space=" "
+    local selected="$(__fzf_select__ . "$@")"
+    if [ -n "$selected" ]; then
+      READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$maybe_space$selected${READLINE_LINE:$READLINE_POINT}"
+      READLINE_POINT=$((READLINE_POINT + ${#maybe_space} + ${#selected}))
+    fi
+  else
+    local selected="$(__fzf_select__ "$dir" "$@")"
+    if [ -n "$selected" ]; then
+      local pre_word=$((READLINE_POINT - ${#word}))
+      READLINE_LINE="${READLINE_LINE:0:$pre_word}$selected${READLINE_LINE:$READLINE_POINT}"
+      READLINE_POINT=$((pre_word + ${#selected}))
+    fi
+  fi
+}
+# end of non default section
