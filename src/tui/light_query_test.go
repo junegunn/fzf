@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/term"
 )
 
 // Drives queryStartup against a terminal simulated by pipes, with the replies
@@ -154,4 +156,27 @@ func TestLateKeyAfterUnfinishedSequence(t *testing.T) {
 		}
 	}
 	t.Error("the late key was dropped")
+}
+
+// A read error during the second-chance read must end fzf cleanly, not panic.
+func TestSecondChanceReadError(t *testing.T) {
+	inR, inW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { inR.Close() })
+	inW.WriteString("\x1b[12")
+	go func() {
+		time.Sleep(2 * defaultEscDelay * time.Millisecond)
+		inW.Close()
+	}()
+
+	out, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &LightRenderer{ttyin: inR, ttyout: out, escDelay: defaultEscDelay, origState: &term.State{}}
+	if ev := r.GetChar(false); ev.Type != Fatal {
+		t.Errorf("got %s, want Fatal", ev.Type.String())
+	}
 }

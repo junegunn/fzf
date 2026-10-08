@@ -593,10 +593,12 @@ func (r *LightRenderer) GetChar(cancellable bool) Event {
 		// follows in the buffer.
 		if ev.Type == Invalid && stillArriving(r.buffer) {
 			waited := len(r.buffer)
-			r.buffer, result, err = r.getBytes(true)
+			var buffer []byte
+			buffer, result, err = r.getBytes(true)
 			if err != nil {
 				return Event{Fatal, 0, nil}
 			}
+			r.buffer = buffer
 			if result == getCharCancelled {
 				return Event{Invalid, 0, nil}
 			}
