@@ -400,6 +400,12 @@ func stringEnd(buffer []byte) int {
 	return 0
 }
 
+// rxvtKeyEnd reports whether the byte ends a key such as \e[7~ for Home.
+// rxvt marks modifiers with the final byte: $ for SHIFT, ^ for CTRL, @ for both.
+func rxvtKeyEnd(b byte) bool {
+	return b == '~' || b == '$' || b == '^' || b == '@'
+}
+
 // csiIntroducer reports whether the byte after ESC starts a sequence that is
 // framed by a final byte. The parser routes CSI and SS3 through the same
 // parameterized subcases, so both are framed by csiEnd.
@@ -747,6 +753,11 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 			if len(r.buffer) < 4 {
 				return Event{Invalid, 0, nil}
 			}
+			// A byte that cannot continue the sequence, such as Enter after
+			// ALT-[ and a digit, is a key of its own
+			if csiEnd(r.buffer) < 0 {
+				break
+			}
 			*sz = 4
 			switch r.buffer[2] {
 			case '2':
@@ -779,7 +790,7 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 				if r.buffer[3] == '~' {
 					return Event{Delete, 0, nil}
 				}
-				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+				if len(r.buffer) > 6 && r.buffer[6] == '~' && r.buffer[4] == '1' {
 					*sz = 7
 					switch r.buffer[5] {
 					case '0':
@@ -798,7 +809,7 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 						return Event{CtrlAltShiftDelete, 0, nil}
 					}
 				}
-				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+				if len(r.buffer) > 5 && r.buffer[5] == '~' {
 					*sz = 6
 					switch r.buffer[4] {
 					case '2':
@@ -821,12 +832,14 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 				}
 				return Event{Invalid, 0, nil}
 			case '4':
-				return Event{End, 0, nil}
+				if rxvtKeyEnd(r.buffer[3]) {
+					return Event{End, 0, nil}
+				}
 			case '5':
 				if r.buffer[3] == '~' {
 					return Event{PageUp, 0, nil}
 				}
-				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+				if len(r.buffer) > 6 && r.buffer[6] == '~' && r.buffer[4] == '1' {
 					*sz = 7
 					switch r.buffer[5] {
 					case '0':
@@ -845,7 +858,7 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 						return Event{CtrlAltShiftPageUp, 0, nil}
 					}
 				}
-				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+				if len(r.buffer) > 5 && r.buffer[5] == '~' {
 					*sz = 6
 					switch r.buffer[4] {
 					case '2':
@@ -871,7 +884,7 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 				if r.buffer[3] == '~' {
 					return Event{PageDown, 0, nil}
 				}
-				if len(r.buffer) == 7 && r.buffer[6] == '~' && r.buffer[4] == '1' {
+				if len(r.buffer) > 6 && r.buffer[6] == '~' && r.buffer[4] == '1' {
 					*sz = 7
 					switch r.buffer[5] {
 					case '0':
@@ -890,7 +903,7 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 						return Event{CtrlAltShiftPageDown, 0, nil}
 					}
 				}
-				if len(r.buffer) == 6 && r.buffer[5] == '~' {
+				if len(r.buffer) > 5 && r.buffer[5] == '~' {
 					*sz = 6
 					switch r.buffer[4] {
 					case '2':
@@ -913,15 +926,19 @@ func (r *LightRenderer) parseEscSequence(sz *int) Event {
 				}
 				return Event{Invalid, 0, nil}
 			case '7':
-				return Event{Home, 0, nil}
+				if rxvtKeyEnd(r.buffer[3]) {
+					return Event{Home, 0, nil}
+				}
 			case '8':
-				return Event{End, 0, nil}
+				if rxvtKeyEnd(r.buffer[3]) {
+					return Event{End, 0, nil}
+				}
 			case '1':
 				switch r.buffer[3] {
 				case '~':
 					return Event{Home, 0, nil}
 				case '1', '2', '3', '4', '5', '7', '8', '9':
-					if len(r.buffer) == 5 && r.buffer[4] == '~' {
+					if len(r.buffer) > 4 && r.buffer[4] == '~' {
 						*sz = 5
 						switch r.buffer[3] {
 						case '1':
@@ -1162,11 +1179,13 @@ func (r *LightRenderer) mouseSequence(sz *int) Event {
 		return Event{Invalid, 0, nil}
 	}
 
-	rest := r.buffer[*sz:]
-	end := bytes.IndexAny(rest, "mM")
-	if end == -1 {
+	// Not past the frame, where M or m can be a key typed later
+	frame := csiEnd(r.buffer)
+	if frame <= 0 || r.buffer[frame-1] != 'm' && r.buffer[frame-1] != 'M' {
 		return Event{Invalid, 0, nil}
 	}
+	rest := r.buffer[*sz:]
+	end := frame - 1 - *sz
 
 	elems := strings.SplitN(string(rest[:end]), ";", 3)
 	if len(elems) != 3 {

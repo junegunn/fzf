@@ -66,7 +66,6 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;1R", "!Invalid")
 	assertEscSequence("\x1b[", "!Invalid")
 	assertEscSequence("\x1b[1", "!Invalid")
-	assertEscSequence("\x1b[3;3~1", "!Invalid")
 	assertEscSequence("\x1b[13", "!Invalid")
 	assertEscSequence("\x1b[1;3", "!Invalid")
 	assertEscSequence("\x1b[1;10", "!Invalid")
@@ -200,6 +199,7 @@ func TestLightRenderer(t *testing.T) {
 	assertEscSequence("\x1b[1;3H", "alt-home")
 	assertEscSequence("\x1b[1;3F", "alt-end")
 	assertEscSequence("\x1b[3;3~", "alt-delete")
+	assertEscSequence("\x1b[3;3~1", "alt-delete") // then 1
 	assertEscSequence("\x1b[5;3~", "alt-page-up")
 	assertEscSequence("\x1b[6;3~", "alt-page-down")
 
