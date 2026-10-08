@@ -231,3 +231,44 @@ func TestCsiEnd(t *testing.T) {
 		}
 	}
 }
+
+// A key that follows a sequence in the same read must not be consumed with it
+func TestKeyAfterSequence(t *testing.T) {
+	for _, c := range []struct {
+		sequence string
+		mouse    bool
+		event    EventType
+		size     int
+	}{
+		// Recognized when more input follows, as from a paste or tmux send-keys
+		{"\x1b[15~x", false, F5, 5},
+		{"\x1b[3;5~x", false, CtrlDelete, 6},
+		{"\x1b[5;13~x", false, CtrlAltPageUp, 7},
+		{"\x1b[6;2~\x1b[A", false, ShiftPageDown, 6},
+
+		// ALT-[ or ALT-O and a digit, then a key that cannot continue a sequence
+		{"\x1b[2\r", false, Alt, 2},
+		{"\x1b[12\x03", false, Alt, 2},
+		{"\x1bO2\a", false, Alt, 2},
+		{"\x1b[4x", false, Alt, 2},  // not End
+		{"\x1b[7\r", false, Alt, 2}, // not Home
+		{"\x1b[7~x", false, Home, 4},
+		{"\x1b[8^x", false, End, 4}, // rxvt CTRL-END
+
+		// A mouse report ends at its own final byte
+		{"\x1b[<0;5;3Mx", true, Mouse, 9},
+		{"\x1b[<0;1;\x1b[AM", true, Invalid, 3},
+		{"\x1b[<0;1;1xM", true, Invalid, 9},
+	} {
+		r := &LightRenderer{buffer: []byte(c.sequence), mouse: c.mouse}
+		sz := 1
+		event := r.escSequence(&sz)
+		if event.Type != c.event {
+			t.Errorf("escSequence(%q) = %s, want %s",
+				c.sequence, event.Type.String(), c.event.String())
+		}
+		if sz != c.size {
+			t.Errorf("escSequence(%q) consumed %d bytes, want %d", c.sequence, sz, c.size)
+		}
+	}
+}
