@@ -1909,7 +1909,10 @@ e.g.
 \fIfocus\fR
 .RS
 Triggered when the focus changes due to a vertical cursor movement or a search
-result update.
+result update. After a reload, the focused item is considered new unless
+\fB\-\-id\-nth\fR is set and the item has the same key as the previously
+focused item. Because of this, binding \fBreload\fR to this event can cause an
+infinite loop.
 
 e.g.
      \fBfzf \-\-bind 'focus:transform\-preview\-label:echo [ {} ]' \-\-preview 'cat {}'
