@@ -7,7 +7,7 @@ CHANGELOG
 - Fixed an escape sequence fzf does not recognize being partly consumed, which leaked the rest into the query (#4926)
 - Fixed a key lost when it arrived in the same read as an escape sequence
 - Fixed `focus` event not triggered after `reload` when the new item is at the same position as the previous one (#4930)
-    - With `--id-nth`, the event is not triggered if the focused item has the same key as before
+    - With `--id-nth`, the event is not triggered if the focus moves directly from an item to another item with the same key
     - A `focus` binding that runs `reload` now triggers itself again after each reload, unless `--id-nth` is set and the key does not change
 
 0.74.4
