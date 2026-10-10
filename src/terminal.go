@@ -467,7 +467,7 @@ type Terminal struct {
 	termSize             tui.TermSize
 	lastAction           actionType
 	lastKey              string
-	lastFocus            int32
+	lastFocus            focusedItem
 	areaLines            int
 	areaColumns          int
 	forcePreview         bool
@@ -490,6 +490,11 @@ type numLinesCacheValue struct {
 type selectedItem struct {
 	at   time.Time
 	item *Item
+}
+
+type focusedItem struct {
+	major int // revision.major; changes on reload
+	item  *Item
 }
 
 type byTimeOrder []selectedItem
@@ -1186,7 +1191,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox, executor *util.Executor
 		initFunc:           func() error { return renderer.Init() },
 		executing:          util.NewAtomicBool(false),
 		lastAction:         actStart,
-		lastFocus:          minItem.Index(),
+		lastFocus:          focusedItem{},
 		lastActivity:       time.Now(),
 		numLinesCache:      make(map[int32]numLinesCacheValue),
 		// The initial load counts as a search in progress ('start:wait').
@@ -6066,6 +6071,26 @@ func (t *Terminal) currentIndex() int32 {
 	return minItem.Index()
 }
 
+func (t *Terminal) currentFocus() focusedItem {
+	return focusedItem{t.revision.major, t.currentItem()}
+}
+
+// Records the current focus and returns whether it differs from the last one.
+// Indexes restart after a reload, so items are compared by --id-nth key, if
+// set. Without it, any focused item after a reload is a new one.
+func (t *Terminal) updateFocus() bool {
+	curr := t.currentFocus()
+	last := t.lastFocus
+	t.lastFocus = curr
+	if curr.item == nil || last.item == nil {
+		return curr.item != last.item
+	}
+	if curr.major == last.major {
+		return curr.item.Index() != last.item.Index()
+	}
+	return len(t.idNth) == 0 || t.trackKeyFor(curr.item, t.idNth) != t.trackKeyFor(last.item, t.idNth)
+}
+
 func (t *Terminal) trackKeyFor(item *Item, nth []Range) string {
 	tokens := Tokenize(item.AsString(t.ansi), t.delimiter)
 	return StripLastDelimiter(JoinTokens(Transform(tokens, nth)), t.delimiter)
@@ -6631,8 +6656,7 @@ func (t *Terminal) Loop() error {
 							info = true
 						}
 						focusChanged := focusedIndex != currentIndex
-						if (t.hasFocusActions || t.infoCommand != "") && focusChanged && currentIndex != t.lastFocus {
-							t.lastFocus = currentIndex
+						if (t.hasFocusActions || t.infoCommand != "") && !t.trackBlocked && t.updateFocus() {
 							t.eventChan <- tui.Focus.AsEvent()
 							if t.infoCommand != "" {
 								info = true
@@ -7017,9 +7041,11 @@ func (t *Terminal) Loop() error {
 					}
 				}
 
-				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents {
-					if newIndex := t.currentIndex(); newIndex != currentIndex {
-						t.lastFocus = newIndex
+				// Actions are ignored while blocked. The render loop will
+				// report the focus after the reload.
+				if onFocus, prs := t.keymap[tui.Focus.AsEvent()]; prs && iter < maxFocusEvents && !t.trackBlocked {
+					if t.currentIndex() != currentIndex {
+						t.lastFocus = t.currentFocus()
 						if t.infoCommand != "" {
 							req(reqInfo)
 						}

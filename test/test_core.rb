@@ -1532,6 +1532,61 @@ class TestCore < TestInteractive
     tmux.until { |lines| refute_includes(lines[-1], '[[1]]') }
   end
 
+  def assert_focus_log(expected)
+    wait do
+      assert_path_exists tempname
+      assert_equal expected, File.readlines(tempname, chomp: true)
+    end
+  end
+
+  def test_focus_event_after_reload
+    # Without --id-nth, the item at the same index after reload is a new item
+    tmux.send_keys %(printf 'a\\nb\\n' | #{FZF} --bind 'focus:execute-silent(echo {} >> #{tempname})' --bind 'ctrl-r:reload(printf "c\\nd\\n")'), :Enter
+    tmux.until { |lines| assert_includes lines, '> a' }
+    assert_focus_log(%w[a])
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines, '> c' }
+    assert_focus_log(%w[a c])
+  end
+
+  def test_focus_event_after_reload_id_nth_same_key
+    # Same --id-nth key after reload: no focus event
+    tmux.send_keys %(printf '1 a\\n2 b\\n' | #{FZF} --track --id-nth 1 --bind 'focus:execute-silent(echo {} >> #{tempname})' --bind 'ctrl-r:reload(printf "0 x\\n1 aa\\n2 bb\\n")'), :Enter
+    tmux.until { |lines| assert_includes lines, '> 1 a' }
+    assert_focus_log(['1 a'])
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines, '> 1 aa' }
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2 bb' }
+    assert_focus_log(['1 a', '2 bb'])
+  end
+
+  def test_focus_event_after_reload_id_nth_key_not_found
+    tmux.send_keys %(printf '1 a\\n2 b\\n' | #{FZF} --track --id-nth 1 --bind 'focus:execute-silent(echo {} >> #{tempname})' --bind 'ctrl-r:reload(printf "3 c\\n4 d\\n")'), :Enter
+    tmux.until { |lines| assert_includes lines, '> 1 a' }
+    assert_focus_log(['1 a'])
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines, '> 3 c' }
+    assert_focus_log(['1 a', '3 c'])
+  end
+
+  def test_focus_event_after_async_reload_id_nth
+    # No focus event for the items shown before the tracked item arrives.
+    # 'result' binding makes fzf redraw the list while blocked.
+    tmux.send_keys %(printf '1 a\\n2 b\\n' | #{FZF} --track --id-nth 1 --bind 'result:change-footer(R)' --bind 'focus:execute-silent(echo {} >> #{tempname})' --bind 'ctrl-r:reload(printf "0 x\\n"; sleep 1; printf "1 aa\\n2 bb\\n")'), :Enter
+    tmux.until { |lines| assert_includes lines, '> 1 a' }
+    assert_focus_log(['1 a'])
+    tmux.send_keys 'C-r'
+    tmux.until { |lines| assert_includes lines[-2], '+T*' }
+    tmux.until do |lines|
+      assert_includes lines, '> 1 aa'
+      refute_includes lines[-2], '+T*'
+    end
+    tmux.send_keys :Up
+    tmux.until { |lines| assert_includes lines, '> 2 bb' }
+    assert_focus_log(['1 a', '2 bb'])
+  end
+
   def test_result_event
     tmux.send_keys '(echo 0; seq 10) | fzf --bind "result:pos(2)"', :Enter
     tmux.until { |lines| assert_equal 11, lines.match_count }
