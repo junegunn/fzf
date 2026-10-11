@@ -94,8 +94,12 @@ test: $(SOURCES)
 				github.com/junegunn/fzf/src/tui \
 				github.com/junegunn/fzf/src/util
 
+# Run in a separate tmux server without user config, like CI (80x24)
 itest:
-	ruby test/runner.rb
+	@dir=$$(mktemp -d) && \
+	env -u TMUX TMUX_TMPDIR=$$dir sh -c \
+		'tmux -f /dev/null new-session -d && ruby test/runner.rb; s=$$?; tmux kill-server; exit $$s'; \
+	s=$$?; rm -rf $$dir; exit $$s
 
 # Actively fuzz the matcher fast paths against the general algorithm.
 # Go fuzzes one target at a time, so iterate. Override duration with
