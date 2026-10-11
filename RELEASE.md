@@ -7,7 +7,11 @@ triggered by a tag push.
 
 ## Steps
 
-1. Update version in the following files and commit on `master`:
+1. Sign in at https://developer.apple.com/account and accept any pending
+   agreements (e.g. an updated Apple Developer Program License Agreement).
+   Otherwise notarization fails.
+
+2. Update version in the following files and commit on `master`:
     - `CHANGELOG.md`
     - `main.go`
     - `install`
@@ -15,10 +19,10 @@ triggered by a tag push.
     - `man/man1/fzf.1`
     - `man/man1/fzf-tmux.1`
 
-2. Verify file consistency, sign the tag, and push the tag.
+3. Verify file consistency, sign the tag, and push the tag.
 
     ```sh
-    make tag VERSION=0.74.4
+    make tag VERSION=0.74.5
     ```
 
     `make tag` runs `prerelease` first (checks that the version
@@ -29,10 +33,10 @@ triggered by a tag push.
     old version, so `/master/install` keeps resolving against existing
     binaries during the publish window.
 
-3. The workflow fires on the tag push and pauses on the `release`
+4. The workflow fires on the tag push and pauses on the `release`
    environment gate. Approve it in the Actions tab to release.
 
-4. After the GitHub release is published, fast-forward `master`:
+5. After the GitHub release is published, fast-forward `master`:
 
     ```sh
     git push origin master

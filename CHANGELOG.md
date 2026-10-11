@@ -3,14 +3,14 @@ CHANGELOG
 
 0.74.5
 ------
+- Fixed `--popup` unzooming the window when opened over a zoomed pane on tmux 3.8 or above (#4927, junegunn/fzf.vim#1625) (@jereviikari)
+    - On tmux 3.7, the window is still unzoomed, as tmux 3.7b crashes when a floating pane is created over a zoomed window
 - Fixed `--gap-line` cutting a grapheme cluster when filling the last cells of the line (#4920)
 - Fixed an escape sequence fzf does not recognize being partly consumed, which leaked the rest into the query (#4926)
 - Fixed a key lost when it arrived in the same read as an escape sequence
 - Fixed `focus` event not triggered after `reload` when the new item is at the same position as the previous one (#4930)
     - With `--id-nth`, the event is not triggered if the focus moves directly from an item to another item with the same key
     - A `focus` binding that runs `reload` now triggers itself again after each reload, unless `--id-nth` is set and the key does not change
-- Fixed `--popup` unzooming the window when opened over a zoomed pane on tmux 3.8 or above (#4927, junegunn/fzf.vim#1625)
-    - On tmux 3.7, the window is still unzoomed, as tmux 3.7b crashes when a floating pane is created over a zoomed window
 - Security fixes
     - fzf-tmux no longer evaluates an attached layout size (e.g. `-l50`) via bash arithmetic, which could run commands or inject tmux flags (GHSA-w6x2-f5m4-xw82)
     - zsh completion now creates its FIFO in a private `mktemp -d` directory instead of a predictable `/tmp` path (GHSA-7rj6-7pqx-v7rm)
