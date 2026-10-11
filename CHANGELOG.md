@@ -9,6 +9,8 @@ CHANGELOG
 - Fixed `focus` event not triggered after `reload` when the new item is at the same position as the previous one (#4930)
     - With `--id-nth`, the event is not triggered if the focus moves directly from an item to another item with the same key
     - A `focus` binding that runs `reload` now triggers itself again after each reload, unless `--id-nth` is set and the key does not change
+- Fixed `--popup` unzooming the window when opened over a zoomed pane on tmux 3.8 or above (#4927, junegunn/fzf.vim#1625)
+    - On tmux 3.7, the window is still unzoomed, as tmux 3.7b crashes when a floating pane is created over a zoomed window
 
 0.74.4
 ------
