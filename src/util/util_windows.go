@@ -44,19 +44,21 @@ func NewExecutor(withShell string) *Executor {
 
 	shellType := shellTypeUnknown
 	basename := filepath.Base(shell)
-	if len(args) > 0 {
-		args = args[1:]
-	} else if strings.HasPrefix(basename, "cmd") {
+	defaultArgs := []string{"-c"}
+	if strings.HasPrefix(basename, "cmd") {
 		shellType = shellTypeCmd
-		args = []string{"/s/c"}
+		defaultArgs = []string{"/s/c"}
 	} else if strings.HasPrefix(basename, "pwsh") {
 		shellType = shellTypePwsh
-		args = []string{"-NoProfile", "-Command"}
+		defaultArgs = []string{"-NoProfile", "-Command"}
 	} else if strings.HasPrefix(basename, "powershell") {
 		shellType = shellTypePowerShell
-		args = []string{"-NoProfile", "-Command"}
+		defaultArgs = []string{"-NoProfile", "-Command"}
+	}
+	if len(args) > 0 {
+		args = args[1:]
 	} else {
-		args = []string{"-c"}
+		args = defaultArgs
 	}
 	return &Executor{shell: shell, shellType: shellType, args: args}
 }
