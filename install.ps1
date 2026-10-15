@@ -4,7 +4,7 @@ $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 function check_binary () {
   Write-Host "  - Checking fzf executable ... " -NoNewline
-  $output=cmd /c $fzf_base\bin\fzf.exe --version 2>&1
+  $output= & $fzf_base\bin\fzf.exe --version
   if (-not $?) {
     Write-Host "Error: $output"
     $binary_error="Invalid binary"
