@@ -468,9 +468,20 @@ def __fzf_external_completer [place] {
   if $result != null {
     $result
   } else {
-    # Fall back to the previously configured external completer, if any.
+    # Fall back to the previously configured external completer, if any. It is
+    # handed the new `place` input first. A completer that still declares the
+    # legacy `spans` parameter errors on a record, so it is retried with the
+    # token list, which is what the old positional bridge handed it.
     let previous = ($env.__fzf_previous_completer? | default null)
-    let previous_result = if $previous != null { do $previous $place } else { null }
+    let previous_result = if $previous != null {
+      try {
+        do $previous $place
+      } catch {
+        try { do $previous $place.command } catch { null }
+      }
+    } else {
+      null
+    }
     # An @interactive completer cannot decline with null: null reads as a
     # dismissed picker with an empty, final answer. Request the fallback
     # explicitly so file completion still runs when the trigger is absent.
