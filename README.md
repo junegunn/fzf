@@ -841,7 +841,7 @@ Fuzzy completion in Nushell works via the
 [external completer](https://www.nushell.sh/cookbook/external_completers.html)
 mechanism. There are some differences compared to bash and zsh:
 
-- Nushell 0.116.0 or newer is required. The completion runs on the line-editor
+- Nushell 0.116.1 or newer is required. The completion runs on the line-editor
   thread so fzf can take the terminal; a previously configured external
   completer (e.g. Carapace) is therefore invoked inline when the `**` trigger
   is absent.
