@@ -5,6 +5,8 @@ CHANGELOG
 ------
 - Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)
     - e.g. With `--with-shell "cmd.exe /d /c"`, `--preview '"C:\Program Files\nu\bin\nu.exe" --version'` failed
+- nushell
+    - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
 
 0.74.5
 ------
