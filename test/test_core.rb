@@ -2342,6 +2342,94 @@ class TestCore < TestInteractive
     end
   end
 
+  def test_change_nth_next_value
+    tmux.send_keys %(echo 'a b c d' | #{FZF} --nth 1 --bind 'space:change-nth(1|2|3|4),x:change-nth(3),result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[2]>') }
+    # Changed by another binding. The next value is the one after '3'.
+    tmux.send_keys :x
+    tmux.until { |lines| assert lines.any_include?('[3]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[4]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+  end
+
+  def test_change_nth_all_fields_is_current
+    # '--nth ..' is stored as an empty list, which must match '..'
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth .. --bind 'space:change-nth(..|1|2)' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+  end
+
+  def test_change_nth_repeated_value
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth 1 --bind 'space:change-nth(1|2|1|3)' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+    %w[2 1 3 1 2].each do |nth|
+      tmux.send_keys :Space
+      tmux.until { |lines| assert lines.any_include?("[#{nth}]>") }
+    end
+  end
+
+  def test_change_nth_skips_invalid_value
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth 2 --bind 'space:change-nth(1|x|3)' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[2]>') }
+    %w[1 3 1].each do |nth|
+      tmux.send_keys :Space
+      tmux.until { |lines| assert lines.any_include?("[#{nth}]>") }
+    end
+  end
+
+  def test_change_nth_only_invalid_values_left
+    # 'x' is invalid and '3' is current, so nothing changes
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth 1 --bind 'a:change-nth(3),space:change-nth(x|3)+transform-prompt:echo "S[$FZF_NTH]> "' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+    tmux.send_keys :a
+    tmux.until { |lines| assert lines.any_include?('[3]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('S[3]>') }
+  end
+
+  def test_change_nth_invalid_value_ignored
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth 1 --bind 'a:change-nth(3),space:change-nth(bad)+transform-prompt:echo "S[$FZF_NTH]> "' --bind 'b:transform-nth(echo bad)+transform-prompt:echo "T[$FZF_NTH]> "' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+    tmux.send_keys :a
+    tmux.until { |lines| assert lines.any_include?('[3]>') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('S[3]>') }
+    tmux.send_keys :b
+    tmux.until { |lines| assert lines.any_include?('T[3]>') }
+  end
+
+  def test_change_nth_from_transform
+    # A new action is created on each run, so the next value is found from the current state
+    tmux.send_keys %(echo 'a b c' | #{FZF} --nth 1 --bind 'space:transform:echo "change-nth(1|2|3)"' --bind 'result:transform-prompt:echo "[$FZF_NTH]> "'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[1]>') }
+    %w[2 3 1].each do |nth|
+      tmux.send_keys :Space
+      tmux.until { |lines| assert lines.any_include?("[#{nth}]>") }
+    end
+  end
+
+  def test_change_with_nth_skips_default_value
+    tmux.send_keys %(echo 'a b c' | #{FZF} --with-nth 1 --bind 'space:change-with-nth(|2)'), :Enter
+    tmux.until { |lines| assert lines.any_include?('> a') }
+    # Empty value is the default (field 1), which is current
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('> b') }
+  end
+
+  def test_change_with_nth_skips_invalid_value
+    tmux.send_keys %(echo 'a b c' | #{FZF} --with-nth 1 --bind 'space:change-with-nth(1|foo|2)'), :Enter
+    tmux.until { |lines| assert lines.any_include?('> a') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('> b') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('> a') }
+  end
+
   def test_transform_with_nth_search
     input = [
       'alpha bravo charlie',

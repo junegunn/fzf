@@ -9,6 +9,19 @@ CHANGELOG
     - Only `change-nth` and `change-with-nth` rotate through `|`-separated values
     - Fixed the bound command being replaced with the output. e.g. With `transform-nth(echo '1|2')`, the next key press ran `2|1` as a shell command.
     - A `--with-nth` template in the output can now contain `|`. e.g. `{2}|{1}` was cut to `{2}`.
+- An invalid value for `change-nth` and `transform-nth` no longer restores the default `--nth`. It is ignored, as with `change-with-nth` and `transform-with-nth`.
+- `change-nth` and `change-with-nth` now apply the value after the current one in the `|`-separated list
+    - A value equal to the current one is skipped, e.g. the first value when it is the initial `--nth`
+    - Invalid values in the list are skipped
+    - The rotation follows the current value even when another binding changed it, or when the action is printed by `transform` (unless the list contains the same value more than once)
+    - You can list the values in their natural order, starting with the initial one
+      ```sh
+      # Previously, you would have to write:
+      ls -al | fzf --with-nth .. --bind 'space:change-with-nth:1|2|..'
+
+      # Now you can write:
+      ls -al | fzf --with-nth .. --bind 'space:change-with-nth:..|1|2'
+      ```
 - nushell
     - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
 

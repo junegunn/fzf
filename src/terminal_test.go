@@ -927,3 +927,56 @@ func TestSplitOnIND(t *testing.T) {
 		}
 	}
 }
+
+func TestNextValue(t *testing.T) {
+	tests := []struct {
+		expr    string
+		current string
+		want    string
+		rotated string
+	}{
+		{"a", "x", "a", "a"},
+		{"a", "a", "a", "a"},
+		{"a|b|c", "x", "a", "b|c|a"},
+		{"a|b|c", "a", "b", "c|a|b"},
+		{"a|b|c", "b", "c", "a|b|c"},
+		{"a|b|c", "c", "a", "b|c|a"},
+		{"a|a|b", "a", "b", "a|a|b"},
+		{"a|b|b", "b", "a", "b|b|a"},
+		{"a|a", "a", "a", "a|a"},
+		{"a|b|", "", "a", "b||a"},
+		{"|a", "", "a", "|a"},
+		{"a|bad|b", "a", "b", "a|bad|b"},
+		{"bad|a", "x", "a", "bad|a"},
+		{"a|bad", "a", "a", "a|bad"},
+		// An invalid value is never current
+		{"a|bad|b", "bad", "a", "bad|b|a"},
+		// Nothing to pick: the first valid value
+		{"bad|a", "a", "a", "bad|a"},
+		{"bad", "x", "bad", "bad"},
+		// The last value is checked first
+		{"b|a|c|a", "a", "b", "a|c|a|b"},
+	}
+	isValid := func(v string) bool { return v != "bad" }
+	for _, tc := range tests {
+		got, rotated := nextValue(tc.expr, func(v string) bool { return v == tc.current }, isValid)
+		if got != tc.want || rotated != tc.rotated {
+			t.Errorf("nextValue(%q) with current %q: got (%q, %q), want (%q, %q)",
+				tc.expr, tc.current, got, rotated, tc.want, tc.rotated)
+		}
+	}
+}
+
+func TestNextValueRepeated(t *testing.T) {
+	// Presses with a rotated list reach every position, even with a repeated value
+	expr := "1|2|1|3"
+	current := "1"
+	got := []string{}
+	for range 6 {
+		current, expr = nextValue(expr, func(v string) bool { return v == current }, nil)
+		got = append(got, current)
+	}
+	if want := "2 1 3 1 2 1"; strings.Join(got, " ") != want {
+		t.Errorf("got %q, want %q", strings.Join(got, " "), want)
+	}
+}

@@ -6304,6 +6304,43 @@ func (t *Terminal) startTimers(ctx context.Context) {
 	}
 }
 
+// nextValue returns the first valid, non-current value after the current one
+// in a '|'-separated list, and the list rotated to end with it.
+// isValid can be nil.
+func nextValue(expr string, isCurrent func(string) bool, isValid func(string) bool) (string, string) {
+	valid := func(value string) bool {
+		return isValid == nil || isValid(value)
+	}
+	// An invalid value is never current, even if it resolves to the current one
+	current := func(value string) bool {
+		return valid(value) && isCurrent(value)
+	}
+	values := strings.Split(expr, "|")
+	start := 0
+	// Last value is the one applied by the previous call
+	if !current(values[len(values)-1]) {
+		for i, value := range values {
+			if current(value) {
+				start = i + 1
+				break
+			}
+		}
+	}
+	for i := range values {
+		pick := (start + i) % len(values)
+		if value := values[pick]; valid(value) && !current(value) {
+			return value, strings.Join(slices.Concat(values[pick+1:], values[:pick+1]), "|")
+		}
+	}
+	// Nothing to pick
+	for _, value := range values {
+		if valid(value) {
+			return value, expr
+		}
+	}
+	return values[0], expr
+}
+
 // Loop is called to start Terminal I/O
 func (t *Terminal) Loop() error {
 	// prof := profile.Start(profile.ProfilePath("/tmp/"))
@@ -7304,25 +7341,38 @@ func (t *Terminal) Loop() error {
 				req(reqList, reqInfo)
 			case actChangeNth, actTransformNth, actBgTransformNth:
 				capture(true, func(expr string) {
+					empty := len(expr) == 0
+					// Empty value means all fields if it is the whole
+					// expression, otherwise the default --nth
+					resolve := func(value string) ([]Range, bool) {
+						if nth, err := splitNth(value); err == nil || empty {
+							return nth, true
+						} else if len(value) == 0 {
+							return t.nth, true
+						}
+						return nil, false
+					}
+					// Empty or a single '..' means all fields
+					allFields := func(nth []Range) bool {
+						return len(nth) == 0 || len(nth) == 1 && nth[0].IsFull()
+					}
+					isCurrent := func(nth []Range) bool {
+						return compareRanges(t.nthCurrent, nth) || allFields(t.nthCurrent) && allFields(nth)
+					}
 					// Only change-nth cycles through '|'-separated values
-					tokens := []string{expr}
 					if a.t == actChangeNth {
-						tokens = strings.Split(expr, "|")
+						expr, a.a = nextValue(expr, func(value string) bool {
+							nth, _ := resolve(value)
+							return isCurrent(nth)
+						}, func(value string) bool {
+							_, ok := resolve(value)
+							return ok
+						})
 					}
-					if nth, err := splitNth(tokens[0]); err == nil || len(expr) == 0 {
-						// Changed
+					if nth, ok := resolve(expr); ok && !isCurrent(nth) {
 						newNth = &nth
-					} else {
-						// The default
-						newNth = &t.nth
-					}
-					// Cycle
-					if len(tokens) > 1 {
-						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
-					}
-					if !compareRanges(t.nthCurrent, *newNth) {
 						changed = true
-						t.nthCurrent = *newNth
+						t.nthCurrent = nth
 						t.forceRerenderList()
 					}
 				})
@@ -7331,18 +7381,22 @@ func (t *Terminal) Loop() error {
 					break Action
 				}
 				capture(true, func(expr string) {
-					tokens := []string{expr}
+					resolve := func(value string) string {
+						// Empty value restores the default --with-nth
+						if len(value) == 0 {
+							return t.withNthDefault
+						}
+						return value
+					}
 					if a.t == actChangeWithNth {
-						tokens = strings.Split(expr, "|")
+						expr, a.a = nextValue(expr, func(value string) bool {
+							return resolve(value) == t.withNthExpr
+						}, func(value string) bool {
+							_, err := nthTransformer(resolve(value))
+							return err == nil
+						})
 					}
-					withNthExpr := tokens[0]
-					if len(tokens) > 1 {
-						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
-					}
-					// Empty value restores the default --with-nth
-					if len(withNthExpr) == 0 {
-						withNthExpr = t.withNthDefault
-					}
+					withNthExpr := resolve(expr)
 					if withNthExpr != t.withNthExpr {
 						if factory, err := nthTransformer(withNthExpr); err == nil {
 							newWithNth = &withNthSpec{fn: factory(t.delimiter)}
