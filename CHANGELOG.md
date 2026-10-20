@@ -5,6 +5,10 @@ CHANGELOG
 ------
 - Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)
     - e.g. With `--with-shell "cmd.exe /d /c"`, `--preview '"C:\Program Files\nu\bin\nu.exe" --version'` failed
+- `transform-nth` and `transform-with-nth` (and their `bg-` variants) no longer split the output at `|`
+    - Only `change-nth` and `change-with-nth` rotate through `|`-separated values
+    - Fixed the bound command being replaced with the output. e.g. With `transform-nth(echo '1|2')`, the next key press ran `2|1` as a shell command.
+    - A `--with-nth` template in the output can now contain `|`. e.g. `{2}|{1}` was cut to `{2}`.
 - nushell
     - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
 

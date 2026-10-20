@@ -2374,6 +2374,25 @@ class TestCore < TestInteractive
     tmux.until { |lines| assert lines.any_include?('a b c') || lines.any_include?('d e f') }
   end
 
+  def test_transform_nth_output_does_not_replace_command
+    # '|' in the output must not be treated as a list to cycle through
+    File.write(tempname, '')
+    tmux.send_keys %(echo 'a b' | #{FZF} --with-nth .. --bind "space:transform-nth(echo >> #{tempname}; echo '1|2')+transform-with-nth(echo >> #{tempname}; echo '1|2')"), :Enter
+    tmux.until { |lines| assert_equal 1, lines.item_count }
+    3.times do |i|
+      tmux.send_keys :Space
+      wait { assert_equal 2 * (i + 1), File.readlines(tempname).length }
+    end
+  end
+
+  def test_transform_with_nth_output_with_pipe
+    File.write(tempname, '{2}|{1}')
+    tmux.send_keys %(echo 'a b' | #{FZF} --with-nth .. --bind 'space:transform-with-nth(cat #{tempname})'), :Enter
+    tmux.until { |lines| assert lines.any_include?('a b') }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert lines.any_include?('b|a') }
+  end
+
   # Regression: actions emitted by bg-transform must affect the iteration that
   # processes the async result, not the (no-longer-active) iteration that
   # scheduled the transform. Covers reload (newCommand) and exclude (denylist).

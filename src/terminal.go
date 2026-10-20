@@ -7304,8 +7304,11 @@ func (t *Terminal) Loop() error {
 				req(reqList, reqInfo)
 			case actChangeNth, actTransformNth, actBgTransformNth:
 				capture(true, func(expr string) {
-					// Split nth expression
-					tokens := strings.Split(expr, "|")
+					// Only change-nth cycles through '|'-separated values
+					tokens := []string{expr}
+					if a.t == actChangeNth {
+						tokens = strings.Split(expr, "|")
+					}
 					if nth, err := splitNth(tokens[0]); err == nil || len(expr) == 0 {
 						// Changed
 						newNth = &nth
@@ -7328,7 +7331,10 @@ func (t *Terminal) Loop() error {
 					break Action
 				}
 				capture(true, func(expr string) {
-					tokens := strings.Split(expr, "|")
+					tokens := []string{expr}
+					if a.t == actChangeWithNth {
+						tokens = strings.Split(expr, "|")
+					}
 					withNthExpr := tokens[0]
 					if len(tokens) > 1 {
 						a.a = strings.Join(append(tokens[1:], tokens[0]), "|")
