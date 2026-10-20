@@ -3033,7 +3033,7 @@ class TestCore < TestInteractive
   end
 
   def test_change_nth_unset_default
-    tmux.send_keys %(echo foo bar | #{FZF} --nth 2 --query fb --bind space:change-nth:), :Enter
+    tmux.send_keys %(echo foo bar | #{FZF} --nth 2 --query fb --bind space:change-nth:..), :Enter
     tmux.until do
       assert_equal 1, it.item_count
       assert_equal 0, it.match_count
@@ -3045,6 +3045,19 @@ class TestCore < TestInteractive
       assert_equal 1, it.item_count
       assert_equal 1, it.match_count
     end
+  end
+
+  def test_change_nth_empty_restores_default
+    tmux.send_keys %(echo foo bar | #{FZF} --nth 2 --query fb --bind 'a:change-nth(..),space:change-nth(),b:transform-nth(true)'), :Enter
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :Space
+    tmux.until { |lines| assert_equal 0, lines.match_count }
+    tmux.send_keys :a
+    tmux.until { |lines| assert_equal 1, lines.match_count }
+    tmux.send_keys :b
+    tmux.until { |lines| assert_equal 0, lines.match_count }
   end
 
   def test_change_header_lines

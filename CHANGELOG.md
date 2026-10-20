@@ -9,7 +9,9 @@ CHANGELOG
     - Only `change-nth` and `change-with-nth` rotate through `|`-separated values
     - Fixed the bound command being replaced with the output. e.g. With `transform-nth(echo '1|2')`, the next key press ran `2|1` as a shell command.
     - A `--with-nth` template in the output can now contain `|`. e.g. `{2}|{1}` was cut to `{2}`.
-- An invalid value for `change-nth` and `transform-nth` no longer restores the default `--nth`. It is ignored, as with `change-with-nth` and `transform-with-nth`.
+- `change-nth` and `transform-nth` now handle empty and invalid values the same way as `change-with-nth` and `transform-with-nth`
+    - An empty value restores the default `--nth`. Previously, `change-nth()` and an empty `transform-nth` output searched all fields. Use `change-nth(..)` for that.
+    - A non-empty invalid value is ignored. Previously, it restored the default `--nth`.
 - `change-nth` and `change-with-nth` now apply the value after the current one in the `|`-separated list
     - A value equal to the current one is skipped, e.g. the first value when it is the initial `--nth`
     - Invalid values in the list are skipped

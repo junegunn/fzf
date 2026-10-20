@@ -7341,18 +7341,15 @@ func (t *Terminal) Loop() error {
 				req(reqList, reqInfo)
 			case actChangeNth, actTransformNth, actBgTransformNth:
 				capture(true, func(expr string) {
-					empty := len(expr) == 0
-					// Empty value means all fields if it is the whole
-					// expression, otherwise the default --nth
 					resolve := func(value string) ([]Range, bool) {
-						if nth, err := splitNth(value); err == nil || empty {
-							return nth, true
-						} else if len(value) == 0 {
+						// Empty value restores the default --nth
+						if len(value) == 0 {
 							return t.nth, true
 						}
-						return nil, false
+						nth, err := splitNth(value)
+						return nth, err == nil
 					}
-					// Empty or a single '..' means all fields
+					// Empty range list or a single '..' means all fields
 					allFields := func(nth []Range) bool {
 						return len(nth) == 0 || len(nth) == 1 && nth[0].IsFull()
 					}
