@@ -26,6 +26,7 @@ CHANGELOG
       ```
 - nushell
     - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
+- Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
 - Vim plugin: Fixed garbage text on screen in Neovim with `set title` when the fzf command contains ANSI escape sequences (#4941)
 
 0.74.5

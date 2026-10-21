@@ -25,6 +25,15 @@ class TestFilter < TestBase
     assert_equal 1, `echo Foo bar | #{FZF} -x -f "foo Fbar" | wc -l`.to_i
   end
 
+  def test_filter_no_sort
+    input = "printf 'abz\\nab\\nzab\\n'"
+    ['', '--sync'].each do |opts|
+      assert_equal %w[ab abz zab], `#{input} | #{FZF} -f ab #{opts}`.lines(chomp: true)
+      assert_equal %w[abz ab zab], `#{input} | #{FZF} -f ab --no-sort #{opts}`.lines(chomp: true)
+      assert_equal %w[zab ab abz], `#{input} | #{FZF} -f ab --no-sort --tac #{opts}`.lines(chomp: true)
+    end
+  end
+
   def test_filter_exitstatus
     # filter / streaming filter
     ['', '--no-sort'].each do |opts|

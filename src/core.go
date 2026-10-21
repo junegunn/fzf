@@ -264,7 +264,6 @@ func Run(opts *Options) (int, error) {
 		}
 
 		pattern := patternBuilder([]rune(*opts.Filter))
-		matcher.sort = pattern.sortable
 
 		transformer := buildItemTransformer(opts)
 
