@@ -28,6 +28,7 @@ CHANGELOG
     - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
 - Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
 - Vim plugin: Fixed garbage text on screen in Neovim with `set title` when the fzf command contains ANSI escape sequences (#4941)
+- Fixed `--walker=follow` skipping a symlink in one `--walker-root` when its target is an ancestor of another root (#4944) (@mabunemeh)
 - Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
 
 0.74.5

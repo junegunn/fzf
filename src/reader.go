@@ -275,22 +275,12 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 		Sort:    fastwalk.SortFilesFirst,
 	}
 
-	// When following symlinks, precompute the absolute real paths of walker
-	// roots so we can skip symlinks that point to an ancestor. fastwalk's
-	// built-in loop detection (shouldTraverse) catches loops on the second
-	// pass, but a single pass through a symlink like z: -> / already
-	// traverses the entire root filesystem, causing severe resource
-	// exhaustion. Skipping ancestor symlinks prevents this entirely.
-	var absRoots []string
-	if opts.follow {
-		for _, root := range roots {
-			if real, err := filepath.EvalSymlinks(root); err == nil {
-				if abs, err := filepath.Abs(real); err == nil {
-					absRoots = append(absRoots, filepath.Clean(abs))
-				}
-			}
-		}
-	}
+	// When following symlinks, skip targets that point to an ancestor of the
+	// current walker root. fastwalk's built-in loop detection (shouldTraverse)
+	// catches loops on the second pass, but a single pass through a symlink
+	// like z: -> / already traverses the entire root filesystem, causing
+	// severe resource exhaustion. Skipping ancestor symlinks prevents this.
+	var absRoot string
 
 	ignoresBase := []string{}
 	ignoresFull := []string{}
@@ -326,19 +316,17 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 				return filepath.SkipDir
 			}
 			// Skip symlinks whose target is an ancestor of (or equal to)
-			// any walker root. Following such symlinks would traverse a
+			// the current walker root. Following such symlinks would traverse a
 			// superset of the tree we're already walking.
-			if isDirSymlink && len(absRoots) > 0 {
+			if isDirSymlink && absRoot != "" {
 				if target, err := filepath.EvalSymlinks(path); err == nil {
 					if abs, err := filepath.Abs(target); err == nil {
 						abs = filepath.Clean(abs)
 						if abs == string(os.PathSeparator) {
 							return filepath.SkipDir
 						}
-						for _, absRoot := range absRoots {
-							if absRoot == abs || strings.HasPrefix(absRoot, abs+string(os.PathSeparator)) {
-								return filepath.SkipDir
-							}
+						if absRoot == abs || strings.HasPrefix(absRoot, abs+string(os.PathSeparator)) {
+							return filepath.SkipDir
 						}
 					}
 				}
@@ -377,6 +365,16 @@ func (r *Reader) readFiles(roots []string, opts walkerOpts, ignores []string) bo
 	}
 	noerr := true
 	for _, root := range roots {
+		// Compare against this root only. Safe to update here because
+		// fastwalk.Walk returns after all its workers finish.
+		absRoot = ""
+		if opts.follow {
+			if real, err := filepath.EvalSymlinks(root); err == nil {
+				if abs, err := filepath.Abs(real); err == nil {
+					absRoot = filepath.Clean(abs)
+				}
+			}
+		}
 		noerr = noerr && (fastwalk.Walk(&conf, root, fn) == nil)
 	}
 	return noerr
