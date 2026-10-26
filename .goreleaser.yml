@@ -120,6 +120,8 @@ release:
     owner: junegunn
     name: fzf
   prerelease: auto
+  # Published by the msi job in release.yml after it uploads the MSIs
+  draft: true
   name_template: '{{ .Version }}'
 
 snapshot:

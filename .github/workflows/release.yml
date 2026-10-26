@@ -134,9 +134,15 @@ jobs:
           name: windows-msi
           path: dist/*.msi
 
-      - name: Upload MSI installers to release
+      # Publishing the draft triggers winget.yml, so it must come after the
+      # MSIs are uploaded
+      - name: Upload MSI installers and publish release
         if: github.event_name == 'push'
         shell: bash
-        run: gh release upload "v${{ needs.release.outputs.version }}" dist/*.msi --clobber
+        run: |
+          set -e
+          V='${{ needs.release.outputs.version }}'
+          gh release upload "v$V" dist/*.msi --clobber
+          gh release edit "v$V" --draft=false
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
