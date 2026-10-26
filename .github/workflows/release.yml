@@ -142,7 +142,12 @@ jobs:
         run: |
           set -e
           V='${{ needs.release.outputs.version }}'
-          gh release upload "v$V" dist/*.msi --clobber
+          sums="fzf_${V}_checksums.txt"
+          # Drop MSI lines from a previous run of this job
+          gh release download "v$V" -p "$sums" -O - | grep -v '\.msi$' > "dist/$sums"
+          # sha256sum on Windows may print '<hash> *<name>'
+          (cd dist && sha256sum fzf-*.msi) | sed 's/ \*/  /' >> "dist/$sums"
+          gh release upload "v$V" dist/*.msi "dist/$sums" --clobber
           gh release edit "v$V" --draft=false
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
