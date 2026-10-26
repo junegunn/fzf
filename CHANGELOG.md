@@ -29,6 +29,9 @@ CHANGELOG
 - Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
 - Vim plugin: Fixed garbage text on screen in Neovim with `set title` when the fzf command contains ANSI escape sequences (#4941)
 - Fixed `--walker=follow` skipping a symlink in one `--walker-root` when its target is an ancestor of another root (#4944) (@mabunemeh)
+- Windows: Added `.msi` installers for amd64 and arm64, also offered through winget (#4943) (@meop)
+    - The portable package runs fzf through a symlink in the WinGet Links folder, which an administrator's SSH session refuses to follow
+    - The MSI installs `fzf.exe` under Program Files and adds it to the system PATH
 - Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
 
 0.74.5
