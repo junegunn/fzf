@@ -1,19 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!--
-  WiX v4/v5 source for a real per-machine .msi installer for fzf on Windows.
-
-  Unlike the existing portable .zip distributed via winget (InstallerType:
-  portable), this produces a proper Program Files install with a PATH
-  registration, so `fzf` resolves to a real file instead of a WinGet Links
-  symlink. winget creates that symlink as whoever runs it, usually a
-  non-elevated terminal, and Windows will not let an elevated process (such
-  as an administrator's SSH session) follow a link created by a less
-  privileged one, which breaks fzf's shell integration there.
-
-  Built on Windows with the WiX v5 dotnet-tool CLI (`wix build`; WiX does
-  not support other platforms), not `cargo wix` (this is a Go project). Run
-  with `-arch x64` or `-arch arm64` to select the target Program Files
-  folder, and pass `-d Version=<ver> -d BinDir=<path-to-fzf.exe-dir>`.
+  Per-machine installer for fzf. See the msi job in .github/workflows/release.yml.
+  wix build main.wxs -arch <x64|arm64> -d Version=<ver> -d BinDir=<dir of fzf.exe>
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package

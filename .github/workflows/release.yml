@@ -77,7 +77,7 @@ jobs:
           MACOS_NOTARY_KEY_ID:    ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_KEY:       ${{ secrets.MACOS_NOTARY_KEY }}
 
-      # The Windows binaries for the msi job below.
+      # For the msi job
       - uses: actions/upload-artifact@v7
         with:
           name: windows-binaries
@@ -86,15 +86,9 @@ jobs:
             dist/*windows_arm64*/fzf.exe
           if-no-files-found: error
 
-  # Real per-machine Windows installers (.msi), alongside the portable .zip.
-  # winget's portable install puts a symlink in the WinGet Links folder,
-  # created as whoever runs winget (usually a non-elevated terminal), and
-  # Windows will not let an elevated process, such as an administrator's SSH
-  # session, follow a link a less privileged process created. The MSI installs
-  # fzf.exe under Program Files with a machine PATH entry instead.
-  # WiX only runs on Windows, hence a separate job. Built in both modes, so a
-  # workflow_dispatch validation run checks the MSIs too; only a tag push
-  # uploads them. WiX's -arch has no armv7 target, so armv7 stays zip-only.
+  # winget's portable install runs fzf through a symlink that admin SSH
+  # sessions refuse to follow (#4943). The MSI installs a real file instead.
+  # WiX only runs on Windows.
   msi:
     needs: release
     runs-on: windows-latest
@@ -116,8 +110,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # WiX 5 is the last release that does not require accepting the WiX
-      # Open Source Maintenance Fee EULA; main.wxs uses the v4/v5 schema.
+      # WiX 6 and later fall under the Open Source Maintenance Fee
       - name: Install WiX
         if: env.BUILD_MSI == 'true'
         run: dotnet tool install --global wix --version 5.0.2
