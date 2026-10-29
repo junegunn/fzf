@@ -92,7 +92,6 @@ jobs:
   msi:
     needs: release
     runs-on: windows-latest
-    environment: release
     env:
       # MSI versions cannot have a suffix such as -rc1
       BUILD_MSI: ${{ !contains(needs.release.outputs.version, '-') }}
@@ -135,8 +134,6 @@ jobs:
           name: windows-msi
           path: dist/*.msi
 
-      # Publishing the draft triggers winget.yml, so it must come after the
-      # MSIs are uploaded
       - name: Upload MSI installers and publish release
         if: github.event_name == 'push'
         shell: bash
@@ -153,4 +150,15 @@ jobs:
           fi
           gh release edit "v$V" --draft=false
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # Called directly because a release published with GITHUB_TOKEN does not
+  # trigger other workflows
+  winget:
+    needs: [release, msi]
+    if: github.event_name == 'push' && !contains(needs.release.outputs.version, '-')
+    uses: ./.github/workflows/winget.yml
+    with:
+      release-tag: v${{ needs.release.outputs.version }}
+    secrets:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
