@@ -18,6 +18,8 @@ jobs:
   release:
     runs-on: macos-latest
     environment: release
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -74,3 +76,89 @@ jobs:
           MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
           MACOS_NOTARY_KEY_ID:    ${{ secrets.MACOS_NOTARY_KEY_ID }}
           MACOS_NOTARY_KEY:       ${{ secrets.MACOS_NOTARY_KEY }}
+
+      # For the msi job
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-binaries
+          path: |
+            dist/*windows_amd64*/fzf.exe
+            dist/*windows_arm64*/fzf.exe
+          if-no-files-found: error
+
+  # winget's portable install runs fzf through a symlink that admin SSH
+  # sessions refuse to follow (#4943). The MSI installs a real file instead.
+  # WiX only runs on Windows.
+  msi:
+    needs: release
+    runs-on: windows-latest
+    env:
+      # MSI versions cannot have a suffix such as -rc1
+      BUILD_MSI: ${{ !contains(needs.release.outputs.version, '-') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        if: env.BUILD_MSI == 'true'
+        with:
+          name: windows-binaries
+          path: dist
+
+      - uses: actions/setup-dotnet@v6
+        if: env.BUILD_MSI == 'true'
+        with:
+          dotnet-version: '8.0.x'
+
+      # WiX 6 and later fall under the Open Source Maintenance Fee
+      - name: Install WiX
+        if: env.BUILD_MSI == 'true'
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Build Windows MSI installers
+        if: env.BUILD_MSI == 'true'
+        shell: bash
+        run: |
+          set -e
+          V='${{ needs.release.outputs.version }}'
+          for pair in "amd64:x64" "arm64:arm64"; do
+            goarch="${pair%%:*}"
+            wixarch="${pair##*:}"
+            bindir=$(dirname "$(find dist -type f -iname fzf.exe -path "*windows_${goarch}*" | head -n1)")
+            wix build wix/main.wxs -arch "$wixarch" -d Version="$V" -d BinDir="$bindir" -o "dist/fzf-${V}-windows_${goarch}.msi"
+          done
+          ls -la dist/*.msi
+
+      - uses: actions/upload-artifact@v7
+        if: env.BUILD_MSI == 'true'
+        with:
+          name: windows-msi
+          path: dist/*.msi
+
+      - name: Upload MSI installers and publish release
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -e
+          V='${{ needs.release.outputs.version }}'
+          if [[ $BUILD_MSI == true ]]; then
+            sums="fzf_${V}_checksums.txt"
+            # Drop MSI lines from a previous run of this job
+            gh release download "v$V" -p "$sums" -O - | grep -v '\.msi$' > "dist/$sums"
+            # sha256sum on Windows may print '<hash> *<name>'
+            (cd dist && sha256sum fzf-*.msi) | sed 's/ \*/  /' >> "dist/$sums"
+            gh release upload "v$V" dist/*.msi "dist/$sums" --clobber
+          fi
+          gh release edit "v$V" --draft=false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # Called directly because a release published with GITHUB_TOKEN does not
+  # trigger other workflows
+  winget:
+    needs: [release, msi]
+    if: github.event_name == 'push' && !contains(needs.release.outputs.version, '-')
+    uses: ./.github/workflows/winget.yml
+    with:
+      release-tag: v${{ needs.release.outputs.version }}
+    secrets:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}

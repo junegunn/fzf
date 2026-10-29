@@ -1,7 +1,13 @@
 name: Publish to Winget
 on:
-  release:
-    types: [released]
+  workflow_call:
+    inputs:
+      release-tag:
+        type: string
+        required: true
+    secrets:
+      WINGET_TOKEN:
+        required: true
   workflow_dispatch:
     inputs:
       release-tag:
@@ -16,6 +22,6 @@ jobs:
       - uses: vedantmgoyal2009/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
         with:
           identifier: junegunn.fzf
-          release-tag: ${{ inputs.release-tag || github.event.release.tag_name }}
-          installers-regex: '-windows_(armv7|arm64|amd64)\.zip$'
+          release-tag: ${{ inputs.release-tag }}
+          installers-regex: '-windows_(armv7|arm64|amd64)\.(zip|msi)$'
           token: ${{ secrets.WINGET_TOKEN }}
