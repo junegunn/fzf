@@ -1826,6 +1826,36 @@ class TestCore < TestInteractive
     tmux.until { assert_match(/^  2 xx/, it[-2]) }
   end
 
+  def test_change_info_command
+    tmux.send_keys(%(seq 100 | #{FZF} --separator x --bind 'a:change-info-command(echo {}: $FZF_INFO)' --bind 'b:change-info-command()'), :Enter)
+    tmux.until { assert_match(%r{^  100/100 xx}, it[-2]) }
+    tmux.send_keys :a
+    tmux.until { assert_match(%r{^  1: 100/100 xx}, it[-2]) }
+    # Placeholders are evaluated on each update, not when the action runs
+    tmux.send_keys :Up
+    tmux.until { assert_match(%r{^  2: 100/100 xx}, it[-2]) }
+    tmux.send_keys :b
+    tmux.until { assert_match(%r{^  100/100 xx}, it[-2]) }
+  end
+
+  def test_transform_info_command
+    tmux.send_keys(%(seq 100 | #{FZF} --separator x --bind 'a:transform-info-command(echo "echo {}: \\$FZF_POS")'), :Enter)
+    tmux.until { assert_match(%r{^  100/100 xx}, it[-2]) }
+    tmux.send_keys :a
+    tmux.until { assert_match(%r{^  1: 1 xx}, it[-2]) }
+    tmux.send_keys :Up
+    tmux.until { assert_match(%r{^  1: 2 xx}, it[-2]) }
+  end
+
+  def test_bg_transform_info_command
+    tmux.send_keys(%(seq 100 | #{FZF} --separator x --bind 'a:bg-transform-info-command(sleep 0.5; echo "echo {}: \\$FZF_POS")'), :Enter)
+    tmux.until { assert_match(%r{^  100/100 xx}, it[-2]) }
+    tmux.send_keys :a
+    tmux.until { assert_match(%r{^  1: 1 xx}, it[-2]) }
+    tmux.send_keys :Up
+    tmux.until { assert_match(%r{^  1: 2 xx}, it[-2]) }
+  end
+
   def test_prev_next_selected
     tmux.send_keys 'seq 10 | fzf --multi --bind ctrl-n:next-selected,ctrl-p:prev-selected', :Enter
     tmux.until { |lines| assert_equal 10, lines.match_count }

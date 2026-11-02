@@ -1,8 +1,14 @@
 CHANGELOG
 =========
 
-0.74.6
+0.75.0
 ------
+- Added `{change,transform,bg-transform}-info-command` actions (#4951) (@casperdcl)
+  ```sh
+  seq 100 | fzf --info-command 'echo "mode: A | $FZF_INFO"' \
+                --bind 'ctrl-a:change-info-command:echo "mode: A | $FZF_INFO"' \
+                --bind 'ctrl-b:change-info-command:echo "mode: B | $FZF_INFO"'
+  ```
 - Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)
     - e.g. With `--with-shell "cmd.exe /d /c"`, `--preview '"C:\Program Files\nu\bin\nu.exe" --version'` failed
 - `transform-nth` and `transform-with-nth` (and their `bg-` variants) no longer split the output at `|`
