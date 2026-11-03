@@ -15,6 +15,11 @@ on:
         required: true
         type: string
 
+# winget-releaser passes this token to unpinned actions. Submission uses
+# WINGET_TOKEN.
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
