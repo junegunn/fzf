@@ -122,6 +122,8 @@ release:
   prerelease: auto
   # Published by the msi job in release.yml after it uploads the MSIs
   draft: true
+  # A retried release job would otherwise add a second draft for the tag
+  replace_existing_draft: true
   name_template: '{{ .Version }}'
 
 snapshot:
