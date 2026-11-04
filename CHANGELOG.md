@@ -32,6 +32,7 @@ CHANGELOG
 - Windows: Added `.msi` installers for amd64 and arm64, also offered through winget (#4943) (@meop)
     - The portable package runs fzf through a symlink in the WinGet Links folder, which an administrator's SSH session refuses to follow
     - The MSI installs `fzf.exe` under Program Files and adds it to the system PATH
+    - `winget upgrade` keeps an existing portable install. To switch to the MSI, run `winget uninstall junegunn.fzf` and `winget install junegunn.fzf`.
 - Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
 
 0.74.5
