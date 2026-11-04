@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!--
   Per-machine installer for fzf. See the msi job in .github/workflows/release.yml.
-  wix build main.wxs -arch <x64|arm64> -d Version=<ver> -d BinDir=<dir of fzf.exe>
+  wix build wix/main.wxs -arch <x64|arm64> -d Version=<ver> -d BinDir=<dir of fzf.exe>
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
