@@ -35,11 +35,27 @@ triggered by a tag push.
 
 4. The workflow fires on the tag push and pauses on the `release`
    environment gate. Approve it in the Actions tab to release.
+    - goreleaser creates a draft release
+    - The `msi` job builds the Windows MSIs, uploads them, and publishes
+      the release
+    - The `winget` job submits the release to winget
 
-5. After the GitHub release is published, fast-forward `master`:
+5. After the `msi` job publishes the GitHub release, fast-forward `master`:
 
     ```sh
     git push origin master
+    ```
+
+### If the `msi` job fails
+
+The release stays a draft. Do not push `master` until it is published.
+
+- Fix the problem and re-run the failed jobs, or
+- Publish without MSIs and submit to winget by hand:
+
+    ```sh
+    gh release edit v0.74.5 --draft=false
+    gh workflow run winget.yml -f release-tag=v0.74.5
     ```
 
 ## Testing the workflow
@@ -53,6 +69,9 @@ To exercise the workflow without firing a real release:
 3. Approve the `release` environment gate when prompted.
 4. Goreleaser runs with `--snapshot --skip=publish`. Signing and
    notarization run; only the GitHub release upload is skipped.
+5. The `msi` job builds the MSIs and uploads them as the `windows-msi`
+   artifact of the run. The release upload and the `winget` job are
+   skipped.
 
 Use this to validate the workflow YAML, version-extraction logic,
 the macOS runner setup, and the signing/notarization credentials.
