@@ -140,6 +140,12 @@ jobs:
         run: |
           set -e
           V='${{ needs.release.outputs.version }}'
+          # A re-run would replace MSIs that a winget manifest may already
+          # reference, and submit to winget again
+          if [[ $(gh release view "v$V" --json isDraft --jq .isDraft) != true ]]; then
+            echo "::error::v$V is already published"
+            exit 1
+          fi
           if [[ $BUILD_MSI == true ]]; then
             sums="fzf_${V}_checksums.txt"
             # Drop MSI lines from a previous run of this job
