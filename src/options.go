@@ -1672,7 +1672,7 @@ const (
 
 func init() {
 	argActionRegexp = regexp.MustCompile(
-		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
+		`(?si)[:+](become|execute(?:-multi|-silent)?|reload(?:-sync)?|preview|(?:change|bg-transform|transform)-(?:query|prompt|(?:border|list|preview|input|header|footer)-label|header-lines|header|footer|search|with-nth|nth|pointer|ghost|info-command)|bg-transform|transform|change-(?:preview-window|preview|multi)|(?:re|un|toggle-)bind|pos|put|print|search|trigger)`)
 	splitRegexp = regexp.MustCompile("[,:]+")
 	actionNameRegexp = regexp.MustCompile("(?i)^[a-z-]+")
 }
@@ -2101,6 +2101,8 @@ func isExecuteAction(str string) actionType {
 		return actChangeHeaderLabel
 	case "change-footer-label":
 		return actChangeFooterLabel
+	case "change-info-command":
+		return actChangeInfoCommand
 	case "change-ghost":
 		return actChangeGhost
 	case "change-pointer":
@@ -2145,6 +2147,8 @@ func isExecuteAction(str string) actionType {
 		return actTransformHeaderLabel
 	case "transform-footer-label":
 		return actTransformFooterLabel
+	case "transform-info-command":
+		return actTransformInfoCommand
 	case "transform-footer":
 		return actTransformFooter
 	case "transform-header":
@@ -2179,6 +2183,8 @@ func isExecuteAction(str string) actionType {
 		return actBgTransformHeaderLabel
 	case "bg-transform-footer-label":
 		return actBgTransformFooterLabel
+	case "bg-transform-info-command":
+		return actBgTransformInfoCommand
 	case "bg-transform-footer":
 		return actBgTransformFooter
 	case "bg-transform-header":
