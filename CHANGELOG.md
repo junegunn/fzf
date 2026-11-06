@@ -9,8 +9,6 @@ CHANGELOG
                 --bind 'ctrl-a:change-info-command:echo "mode: A | $FZF_INFO"' \
                 --bind 'ctrl-b:change-info-command:echo "mode: B | $FZF_INFO"'
   ```
-- Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)
-    - e.g. With `--with-shell "cmd.exe /d /c"`, `--preview '"C:\Program Files\nu\bin\nu.exe" --version'` failed
 - `transform-nth` and `transform-with-nth` (and their `bg-` variants) no longer split the output at `|`
     - Only `change-nth` and `change-with-nth` rotate through `|`-separated values
     - Fixed the bound command being replaced with the output. e.g. With `transform-nth(echo '1|2')`, the next key press ran `2|1` as a shell command.
@@ -30,16 +28,20 @@ CHANGELOG
       # Now you can write:
       ls -al | fzf --with-nth .. --bind 'space:change-with-nth:..|1|2'
       ```
+- Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
+- Fixed `--walker=follow` skipping a symlink in one `--walker-root` when its target is an ancestor of another root (#4944) (@mabunemeh)
+- Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
+- Windows
+    - Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)
+        - e.g. With `--with-shell "cmd.exe /d /c"`, `--preview '"C:\Program Files\nu\bin\nu.exe" --version'` failed
+    - Added `.msi` installers for amd64 and arm64, also offered through winget (#4943) (@meop)
+        - The portable package runs fzf through a symlink in the WinGet Links folder, which an administrator's SSH session refuses to follow
+        - The MSI installs `fzf.exe` under Program Files and adds it to the system PATH
+        - `winget upgrade` keeps an existing portable install. To switch to the MSI, run `winget uninstall junegunn.fzf` and `winget install junegunn.fzf`.
+- Vim plugin
+    - Fixed garbage text on screen in Neovim with `set title` when the fzf command contains ANSI escape sequences (#4941)
 - nushell
     - The completion integration now requires nushell 0.116.1 or above, where an interactive completer can take the terminal through the `@interactive` attribute (#4934) (@sim590)
-- Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
-- Vim plugin: Fixed garbage text on screen in Neovim with `set title` when the fzf command contains ANSI escape sequences (#4941)
-- Fixed `--walker=follow` skipping a symlink in one `--walker-root` when its target is an ancestor of another root (#4944) (@mabunemeh)
-- Windows: Added `.msi` installers for amd64 and arm64, also offered through winget (#4943) (@meop)
-    - The portable package runs fzf through a symlink in the WinGet Links folder, which an administrator's SSH session refuses to follow
-    - The MSI installs `fzf.exe` under Program Files and adds it to the system PATH
-    - `winget upgrade` keeps an existing portable install. To switch to the MSI, run `winget uninstall junegunn.fzf` and `winget install junegunn.fzf`.
-- Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
 
 0.74.5
 ------
