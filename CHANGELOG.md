@@ -30,6 +30,7 @@ CHANGELOG
       ```
 - Fixed `--no-sort` being ignored in filter mode with `--sync`, `--tac`, or `--bench` (#4940) (@NavpreetSSidhu)
 - Fixed `--walker=follow` skipping a symlink in one `--walker-root` when its target is an ancestor of another root (#4944) (@mabunemeh)
+- Fixed data races in the preview and the search result cache (#4947)
 - Fixed O(n^2) action parsing in `--listen`. A single ~1 MB request could block the server for ~30 s (@zachariah-mithani, AploSec)
 - Windows
     - Fixed `--with-shell` on Windows not detecting cmd, PowerShell, and pwsh, which made fzf quote commands and entries for a POSIX shell (#4936) (@vimkim)

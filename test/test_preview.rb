@@ -640,6 +640,15 @@ class TestPreview < TestInteractive
     end
   end
 
+  def test_preview_action_and_prompt
+    tmux.send_keys %(seq 100 | #{FZF} --preview 'echo [$FZF_ACTION/$FZF_PROMPT/{q}]' --bind 'space:change-prompt(foo> )'), :Enter
+    tmux.until { |lines| assert lines.any_include?('[start/> /]') }
+    tmux.send_keys '1'
+    tmux.until { |lines| assert lines.any_include?('[char/> /1]') }
+    tmux.send_keys :Space, '2'
+    tmux.until { |lines| assert lines.any_include?('[char/foo> /12]') }
+  end
+
   def test_preview_wrap_sign_between_ansi_fragments
     tmux.send_keys %(seq 1 | #{FZF} --preview 'echo -e "\\x1b[33m1234567890 \\x1b[mhello"; echo -e "\\x1b[33m1234567890 \\x1b[mhello"' --preview-window 10,wrap-word), :Enter
     tmux.until do |lines|

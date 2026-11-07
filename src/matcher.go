@@ -137,13 +137,17 @@ func (m *Matcher) Loop() {
 			m.scanMutex.Lock()
 			result = m.scan(request)
 			m.scanMutex.Unlock()
+			// Not on a cached merger, which the terminal may be reading. It
+			// already has the same value.
+			if result.merger != nil {
+				result.merger.final = request.final
+			}
 		}
 
 		if !result.cancelled {
 			if result.cacheable() {
 				m.mergerCache[patternString] = result
 			}
-			result.merger.final = request.final
 			m.eventBox.Set(EvtSearchFin, result)
 		}
 	}
