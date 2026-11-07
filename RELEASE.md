@@ -22,7 +22,7 @@ triggered by a tag push.
 3. Verify file consistency, sign the tag, and push the tag.
 
     ```sh
-    make tag VERSION=0.74.5
+    make tag VERSION=0.75.0
     ```
 
     `make tag` runs `prerelease` first (checks that the version
@@ -54,8 +54,8 @@ The release stays a draft. Do not push `master` until it is published.
 - Publish without MSIs and submit to winget by hand:
 
     ```sh
-    gh release edit v0.74.5 --draft=false
-    gh workflow run winget.yml -f release-tag=v0.74.5
+    gh release edit v0.75.0 --draft=false
+    gh workflow run winget.yml -f release-tag=v0.75.0
     ```
 
 ## Testing the workflow
