@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.75.1
+------
+- Fixed `--info inline-right:PREFIX` leaving part of the previous output when the info gets shorter (#4953)
+
 0.75.0
 ------
 - Added `{change,transform,bg-transform}-info-command` actions (#4951) (@casperdcl)

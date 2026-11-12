@@ -3664,7 +3664,10 @@ func (t *Terminal) printInfoImpl() {
 				pos++
 			}
 		} else {
-			pos = max(pos, t.window.Width()-outputLen-util.StringWidth(t.infoPrefix)-1)
+			move(line, pos, false)
+			newPos := max(pos, t.window.Width()-outputLen-util.StringWidth(t.infoPrefix)-1)
+			t.window.Print(strings.Repeat(" ", newPos-pos))
+			pos = newPos
 			printInfoPrefix()
 		}
 	}
