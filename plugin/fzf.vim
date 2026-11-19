@@ -1124,6 +1124,10 @@ function! s:execute_term(dict, command, temps) abort
       endif
       if is_popup
         let term_opts.hidden = 1
+        " Avoid resizing the terminal after fzf starts (#4957)
+        let bounds = s:popup_bounds()
+        let term_opts.term_rows = bounds.height
+        let term_opts.term_cols = bounds.width
       else
         let term_opts.curwin = 1
       endif

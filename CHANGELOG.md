@@ -5,6 +5,7 @@ CHANGELOG
 ------
 - Fixed `--info inline-right:PREFIX` leaving part of the previous output when the info gets shorter (#4953)
 - Fixed a one-line picker overwriting the line above it, e.g. `--height=~50%` with inline info and empty input (#4958) (@nhooyr)
+- [vim] Fixed the popup window being cropped on Windows when the first redraw after starting the terminal is delayed (#4957) (@FanXiangTM)
 
 0.75.0
 ------
