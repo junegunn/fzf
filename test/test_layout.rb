@@ -187,6 +187,17 @@ class TestLayout < TestInteractive
     tmux.until { assert_block(expected, it) }
   end
 
+  def test_height_range_empty_input_preserves_previous_line
+    tmux.send_keys %(printf 'KEEP THIS LINE\\n'; : | FZF_DEFAULT_OPTS_FILE= #{FZF} --style=minimal --height='~50%' --info=inline-right), :Enter
+    tmux.until do |lines|
+      assert_match(%r{0/0}, lines.last)
+      assert_equal 'KEEP THIS LINE', lines[-2]
+    end
+
+    tmux.send_keys 'C-c'
+    tmux.until { |lines| assert_equal 'KEEP THIS LINE', lines.last }
+  end
+
   def test_height_range_fit_preview_above
     tmux.send_keys 'seq 3 | fzf --height ~100% --info=inline --border rounded --preview-window border-rounded --preview "seq {}" --preview-window up,60%', :Enter
     expected = <<~OUTPUT

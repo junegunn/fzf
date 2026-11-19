@@ -4,6 +4,7 @@ CHANGELOG
 0.75.1
 ------
 - Fixed `--info inline-right:PREFIX` leaving part of the previous output when the info gets shorter (#4953)
+- Fixed a one-line picker overwriting the line above it, e.g. `--height=~50%` with inline info and empty input (#4958) (@nhooyr)
 
 0.75.0
 ------

@@ -292,7 +292,10 @@ func (r *LightRenderer) Init() error {
 	}
 
 	r.enableModes()
-	r.csi(fmt.Sprintf("%dA", r.MaxY()-1))
+	// CSI 0 A means one row up, not zero rows.
+	if height := r.MaxY(); height > 1 {
+		r.csi(fmt.Sprintf("%dA", height-1))
+	}
 	r.csi("G")
 	r.csi("K")
 	if !r.clearOnExit && !r.fullscreen {
