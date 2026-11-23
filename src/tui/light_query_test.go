@@ -48,6 +48,7 @@ func replyingTerminal(t *testing.T, replies string) (*LightRenderer, func() stri
 const eraseEcho = "\b \b"
 
 func TestQueryStartup(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "")
 	for _, tc := range []struct {
 		name     string
 		replies  string
@@ -127,6 +128,19 @@ func TestQueryStartup(t *testing.T) {
 				t.Errorf("queries %q, want %q in order", out, want)
 			}
 		})
+	}
+}
+
+func TestQueryStartupTerminalApp(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "Apple_Terminal")
+	r, written := replyingTerminal(t, "\x1b[5;10R")
+	row, col, pasteWasSet := r.queryStartup()
+	if row != 4 || col != 9 || pasteWasSet != nil {
+		t.Errorf("got (%d, %d, %v), want (4, 9, nil)", row, col, pasteWasSet)
+	}
+	out := written()
+	if strings.Count(out, "\x1b[6n") != 1 || strings.Contains(out, "\x1b[?2004$p") {
+		t.Errorf("expected only a cursor position query: %q", out)
 	}
 }
 

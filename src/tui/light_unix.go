@@ -182,6 +182,12 @@ func (r *LightRenderer) queryTerminal(queries []termQuery) [][][]byte {
 }
 
 func (r *LightRenderer) queryStartup() (row int, col int, pasteWasSet *bool) {
+	// Skip bracketed paste querying for Terminal.app. Terminal.app prints the trailing 'p' over existing text
+	// instead of answering DECRQM. Our cleanup then erases it, leaving the original character blank.
+	if os.Getenv("TERM_PROGRAM") == "Apple_Terminal" {
+		row, col = r.findOffset()
+		return
+	}
 	replies := r.queryTerminal(startupQueries)
 	before, paste, after := replies[0], replies[1], replies[2]
 
