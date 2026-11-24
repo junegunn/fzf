@@ -94,7 +94,7 @@ if command -v perl > /dev/null; then
   __fzf_history__() {
     local output script deletefile
     deletefile=$(mktemp)
-    script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; s/\n/\n\t/gm; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
+    script='BEGIN { getc; $/ = "\n\t"; $HISTCOUNT = $ENV{last_hist} + 1 } s/^[ *]//; s/\n\z//; s/\n/\n\t/gm; print $HISTCOUNT - $. . "\t$_" if !$seen{$_}++'
     output=$(
       set +o pipefail
       builtin fc -lnr -2147483648 |
